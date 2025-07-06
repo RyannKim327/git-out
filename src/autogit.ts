@@ -1,87 +1,58 @@
-class TreeNode {
-    value: number;
-    left: TreeNode | null;
-    right: TreeNode | null;
-
-    constructor(value: number) {
-        this.value = value;
-        this.left = null;
-        this.right = null;
+function secondLargest(arr: number[]): number | null {
+    if (arr.length < 2) {
+        return null; // Not enough elements
     }
+
+    let largest = Number.NEGATIVE_INFINITY;
+    let secondLargest = Number.NEGATIVE_INFINITY;
+
+    for (const num of arr) {
+        if (num > largest) {
+            secondLargest = largest; // Update second largest
+            largest = num; // Update largest
+        } else if (num > secondLargest && num < largest) {
+            secondLargest = num; // Update second largest
+        }
+    }
+
+    return secondLargest === Number.NEGATIVE_INFINITY ? null : secondLargest;
 }
 
-class BinarySearchTree {
-    root: TreeNode | null;
-
-    constructor() {
-        this.root = null;
+// Example usage
+const array = [10, 5, 3, 7, 8];
+console.log(secondLargest(array)); // Output: 8
+function secondLargest(arr: number[]): number | null {
+    if (arr.length < 2) {
+        return null; // Not enough elements
     }
 
-    insert(value: number): void {
-        const newNode = new TreeNode(value);
-        if (this.root === null) {
-            this.root = newNode;
-        } else {
-            this.insertNode(this.root, newNode);
-        }
-    }
+    const uniqueArr = Array.from(new Set(arr)); // Remove duplicates
+    uniqueArr.sort((a, b) => b - a); // Sort in descending order
 
-    private insertNode(node: TreeNode, newNode: TreeNode): void {
-        if (newNode.value < node.value) {
-            if (node.left === null) {
-                node.left = newNode;
-            } else {
-                this.insertNode(node.left, newNode);
-            }
-        } else {
-            if (node.right === null) {
-                node.right = newNode;
-            } else {
-                this.insertNode(node.right, newNode);
-            }
-        }
-    }
-
-    search(value: number): boolean {
-        return this.searchNode(this.root, value);
-    }
-
-    private searchNode(node: TreeNode | null, value: number): boolean {
-        if (node === null) {
-            return false;
-        }
-        if (value < node.value) {
-            return this.searchNode(node.left, value);
-        } else if (value > node.value) {
-            return this.searchNode(node.right, value);
-        } else {
-            return true; // value is equal to node.value
-        }
-    }
-
-    inOrderTraversal(callback: (value: number) => void): void {
-        this.inOrder(this.root, callback);
-    }
-
-    private inOrder(node: TreeNode | null, callback: (value: number) => void): void {
-        if (node !== null) {
-            this.inOrder(node.left, callback);
-            callback(node.value);
-            this.inOrder(node.right, callback);
-        }
-    }
+    return uniqueArr.length < 2 ? null : uniqueArr[1]; // Return the second largest
 }
 
-// Example usage:
-const bst = new BinarySearchTree();
-bst.insert(10);
-bst.insert(5);
-bst.insert(15);
-bst.insert(3);
-bst.insert(7);
+// Example usage
+const array = [10, 5, 3, 7, 8, 10];
+console.log(secondLargest(array)); // Output: 8
+function secondLargest(arr: number[]): number | null {
+    if (arr.length < 2) {
+        return null; // Not enough elements
+    }
 
-console.log("In-order Traversal:");
-bst.inOrderTraversal(value => console.log(value));
+    const result = arr.reduce((acc, num) => {
+        if (num > acc.largest) {
+            acc.secondLargest = acc.largest;
+            acc.largest = num;
+        } else if (num > acc.secondLargest && num < acc.largest) {
+            acc.secondLargest = num;
+        }
+        return acc;
+    }, { largest: Number.NEGATIVE_INFINITY, secondLargest: Number.NEGATIVE_INFINITY });
 
-console.log("Search for 7:", bst.search(7)); // true
-console.log("Search for 20:", bst.search(20)); // false
+    return result.secondLargest === Number.NEGATIVE_INFINITY ? null : result.secondLargest;
+}
+
+// Example usage
+const array = [10, 5, 3, 7, 8];
+console.log(secondLargest(array)); // Output: 8
