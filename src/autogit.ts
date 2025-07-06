@@ -1,40 +1,82 @@
-class ListNode {
-    value: number;
-    next: ListNode | null;
+class Node<T> {
+    value: T;
+    next: Node<T> | null;
 
-    constructor(value: number) {
+    constructor(value: T) {
         this.value = value;
         this.next = null;
     }
 }
+class LinkedList<T> {
+    head: Node<T> | null;
+    size: number;
 
-function hasCycle(head: ListNode | null): boolean {
-    if (!head) return false;
-
-    let slow: ListNode | null = head;
-    let fast: ListNode | null = head;
-
-    while (fast !== null && fast.next !== null) {
-        slow = slow.next; // Move slow pointer by one step
-        fast = fast.next.next; // Move fast pointer by two steps
-
-        if (slow === fast) {
-            return true; // Cycle detected
-        }
+    constructor() {
+        this.head = null;
+        this.size = 0;
     }
 
-    return false; // No cycle
+    // Add a new node at the end of the list
+    add(value: T): void {
+        const newNode = new Node(value);
+        if (!this.head) {
+            this.head = newNode;
+        } else {
+            let current = this.head;
+            while (current.next) {
+                current = current.next;
+            }
+            current.next = newNode;
+        }
+        this.size++;
+    }
+
+    // Remove a node by value
+    remove(value: T): boolean {
+        if (!this.head) return false;
+
+        if (this.head.value === value) {
+            this.head = this.head.next;
+            this.size--;
+            return true;
+        }
+
+        let current = this.head;
+        while (current.next) {
+            if (current.next.value === value) {
+                current.next = current.next.next;
+                this.size--;
+                return true;
+            }
+            current = current.next;
+        }
+        return false;
+    }
+
+    // Display the list
+    display(): void {
+        let current = this.head;
+        const elements: T[] = [];
+        while (current) {
+            elements.push(current.value);
+            current = current.next;
+        }
+        console.log(elements.join(' -> '));
+    }
+
+    // Get the size of the list
+    getSize(): number {
+        return this.size;
+    }
 }
+const list = new LinkedList<number>();
 
-// Example usage:
-const node1 = new ListNode(3);
-const node2 = new ListNode(2);
-const node3 = new ListNode(0);
-const node4 = new ListNode(-4);
+list.add(10);
+list.add(20);
+list.add(30);
+list.display(); // Output: 10 -> 20 -> 30
 
-node1.next = node2;
-node2.next = node3;
-node3.next = node4;
-node4.next = node2; // Creates a cycle
+list.remove(20);
+list.display(); // Output: 10 -> 30
 
-console.log(hasCycle(node1)); // Output: true
+console.log(`Size of the list: ${list.getSize()}`); // Output: Size of the list: 2
