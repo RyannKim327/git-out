@@ -1,36 +1,21 @@
-// Definition for a binary tree node
-class TreeNode {
-    value: number;
-    left: TreeNode | null;
-    right: TreeNode | null;
+import * as readline from 'readline';
 
-    constructor(value: number) {
-        this.value = value;
-        this.left = null;
-        this.right = null;
+// Create interface for reading input from console
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+// Ask the user for their name
+rl.question('Enter your name: ', (name: string) => {
+  // Ask the user for their age
+  rl.question('Enter your age: ', (ageInput: string) => {
+    const age = parseInt(ageInput, 10);
+    if (isNaN(age)) {
+      console.log('That does not seem to be a valid age.');
+    } else {
+      console.log(`Hello, ${name}! You are ${age} years old.`);
     }
-}
-
-// Function to find the maximum depth of a binary tree
-function maxDepth(root: TreeNode | null): number {
-    // Base case: if the tree is empty, the depth is 0
-    if (root === null) {
-        return 0;
-    }
-
-    // Recursively find the depth of the left and right subtrees
-    const leftDepth = maxDepth(root.left);
-    const rightDepth = maxDepth(root.right);
-
-    // The maximum depth is the greater of the two depths plus one for the current node
-    return Math.max(leftDepth, rightDepth) + 1;
-}
-
-// Example usage:
-const root = new TreeNode(1);
-root.left = new TreeNode(2);
-root.right = new TreeNode(3);
-root.left.left = new TreeNode(4);
-root.left.right = new TreeNode(5);
-
-console.log(maxDepth(root)); // Output: 3
+    rl.close();
+  });
+});
