@@ -1,120 +1,114 @@
-class Graph {
-    private adjList: Map<number, number[]>;
+class TreeNode<T> {
+    value: T;
+    left: TreeNode<T> | null;
+    right: TreeNode<T> | null;
 
-    constructor() {
-        this.adjList = new Map();
-    }
-
-    addEdge(v: number, w: number) {
-        if (!this.adjList.has(v)) {
-            this.adjList.set(v, []);
-        }
-        this.adjList.get(v)!.push(w);
-    }
-
-    topologicalSortUtil(v: number, visited: Set<number>, stack: number[]) {
-        visited.add(v);
-
-        const neighbors = this.adjList.get(v) || [];
-        for (const neighbor of neighbors) {
-            if (!visited.has(neighbor)) {
-                this.topologicalSortUtil(neighbor, visited, stack);
-            }
-        }
-        stack.push(v);
-    }
-
-    topologicalSort(): number[] {
-        const visited = new Set<number>();
-        const stack: number[] = [];
-
-        for (const vertex of this.adjList.keys()) {
-            if (!visited.has(vertex)) {
-                this.topologicalSortUtil(vertex, visited, stack);
-            }
-        }
-
-        return stack.reverse(); // Return the stack in reverse order
+    constructor(value: T) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
     }
 }
-
-// Example usage
-const graph = new Graph();
-graph.addEdge(5, 2);
-graph.addEdge(5, 0);
-graph.addEdge(4, 0);
-graph.addEdge(4, 1);
-graph.addEdge(2, 3);
-graph.addEdge(3, 1);
-
-const result = graph.topologicalSort();
-console.log(result); // Output: A valid topological order
-class GraphKahn {
-    private adjList: Map<number, number[]>;
+class BinaryTree<T> {
+    root: TreeNode<T> | null;
 
     constructor() {
-        this.adjList = new Map();
+        this.root = null;
     }
 
-    addEdge(v: number, w: number) {
-        if (!this.adjList.has(v)) {
-            this.adjList.set(v, []);
+    // Insert a value into the binary tree
+    insert(value: T): void {
+        const newNode = new TreeNode(value);
+        if (this.root === null) {
+            this.root = newNode;
+        } else {
+            this.insertNode(this.root, newNode);
         }
-        this.adjList.get(v)!.push(w);
     }
 
-    topologicalSort(): number[] {
-        const inDegree: Map<number, number> = new Map();
-        const queue: number[] = [];
-        const result: number[] = [];
-
-        // Initialize in-degree of each vertex
-        for (const [vertex, neighbors] of this.adjList.entries()) {
-            if (!inDegree.has(vertex)) {
-                inDegree.set(vertex, 0);
+    private insertNode(node: TreeNode<T>, newNode: TreeNode<T>): void {
+        if (newNode.value < node.value) {
+            if (node.left === null) {
+                node.left = newNode;
+            } else {
+                this.insertNode(node.left, newNode);
             }
-            for (const neighbor of neighbors) {
-                inDegree.set(neighbor, (inDegree.get(neighbor) || 0) + 1);
-            }
-        }
-
-        // Collect all vertices with in-degree 0
-        for (const [vertex, degree] of inDegree.entries()) {
-            if (degree === 0) {
-                queue.push(vertex);
+        } else {
+            if (node.right === null) {
+                node.right = newNode;
+            } else {
+                this.insertNode(node.right, newNode);
             }
         }
+    }
 
-        while (queue.length > 0) {
-            const current = queue.shift()!;
-            result.push(current);
+    // Search for a value in the binary tree
+    search(value: T): boolean {
+        return this.searchNode(this.root, value);
+    }
 
-            const neighbors = this.adjList.get(current) || [];
-            for (const neighbor of neighbors) {
-                inDegree.set(neighbor, inDegree.get(neighbor)! - 1);
-                if (inDegree.get(neighbor) === 0) {
-                    queue.push(neighbor);
-                }
-            }
+    private searchNode(node: TreeNode<T> | null, value: T): boolean {
+        if (node === null) {
+            return false;
         }
-
-        // Check for cycles
-        if (result.length !== inDegree.size) {
-            throw new Error("Graph has at least one cycle, topological sort not possible.");
+        if (value === node.value) {
+            return true;
         }
+        return value < node.value
+            ? this.searchNode(node.left, value)
+            : this.searchNode(node.right, value);
+    }
 
-        return result;
+    // In-order traversal
+    inOrderTraversal(node: TreeNode<T> | null, visit: (value: T) => void): void {
+        if (node !== null) {
+            this.inOrderTraversal(node.left, visit);
+            visit(node.value);
+            this.inOrderTraversal(node.right, visit);
+        }
+    }
+
+    // Pre-order traversal
+    preOrderTraversal(node: TreeNode<T> | null, visit: (value: T) => void): void {
+        if (node !== null) {
+            visit(node.value);
+            this.preOrderTraversal(node.left, visit);
+            this.preOrderTraversal(node.right, visit);
+        }
+    }
+
+    // Post-order traversal
+    postOrderTraversal(node: TreeNode<T> | null, visit: (value: T) => void): void {
+        if (node !== null) {
+            this.postOrderTraversal(node.left, visit);
+            this.postOrderTraversal(node.right, visit);
+            visit(node.value);
+        }
     }
 }
+const tree = new BinaryTree<number>();
 
-// Example usage
-const graphKahn = new GraphKahn();
-graphKahn.addEdge(5, 2);
-graphKahn.addEdge(5, 0);
-graphKahn.addEdge(4, 0);
-graphKahn.addEdge(4, 1);
-graphKahn.addEdge(2, 3);
-graphKahn.addEdge(3, 1);
+// Insert values
+tree.insert(10);
+tree.insert(5);
+tree.insert(15);
+tree.insert(3);
+tree.insert(7);
+tree.insert(12);
+tree.insert(18);
 
-const resultKahn = graphKahn.topologicalSort();
-console.log(resultKahn); // Output: A valid topological order
+// Search for a value
+console.log(tree.search(7));  // true
+console.log(tree.search(20)); // false
+
+// In-order traversal
+console.log("In-order traversal:");
+tree.inOrderTraversal(tree.root, (value) => console.log(value));
+
+// Pre-order traversal
+console.log("Pre-order traversal:");
+tree.preOrderTraversal(tree.root, (value) => console.log(value));
+
+// Post-order traversal
+console.log("Post-order traversal:");
+tree.postOrderTraversal(tree.root, (value) => console.log(value));
