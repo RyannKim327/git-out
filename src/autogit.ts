@@ -1,75 +1,120 @@
-// Define types for clarity
-type Token = string;
-type Sequence = Token[];
-interface Candidate {
-  sequence: Sequence;
-  score: number; // Log probability
-}
+class Graph {
+    private adjList: Map<number, number[]>;
 
-/**
- * Mock model function that, given a sequence, returns next token probabilities.
- * Replace this with your actual model inference.
- */
-function predictNextTokens(sequence: Sequence): Array<{ token: Token; logProb: number }> {
-  // Example mock implementation (replace with your model)
-  // For illustration: always returns the same options
-  return [
-    { token: 'a', logProb: Math.log(0.5) },
-    { token: 'b', logProb: Math.log(0.3) },
-    { token: 'c', logProb: Math.log(0.2) }
-  ];
-}
-
-/**
- * Beam search algorithm
- * @param beamWidth Number of sequences to keep at each step
- * @param maxLength Maximum length of sequences
- * @param startToken The starting token or sequence
- * @param endToken Optional token that indicates sequence completion
- */
-function beamSearch(
-  beamWidth: number,
-  maxLength: number,
-  startToken: Token,
-  endToken?: Token
-): Sequence[] {
-  // Initialize the beam with the start token sequence
-  let candidates: Candidate[] = [
-    { sequence: [startToken], score: 0 } // log probability of 1 = 0
-  ];
-
-  for (let step = 0; step < maxLength; step++) {
-    const allCandidates: Candidate[] = [];
-
-    for (const candidate of candidates) {
-      // If candidate already ended with endToken, keep it as is
-      if (endToken && candidate.sequence[candidate.sequence.length - 1] === endToken) {
-        allCandidates.push(candidate);
-        continue;
-      }
-
-      // Get model predictions for the current sequence
-      const nextTokens = predictNextTokens(candidate.sequence);
-
-      // Expand each candidate
-      for (const next of nextTokens) {
-        const newSequence = [...candidate.sequence, next.token];
-        const newScore = candidate.score + next.logProb;
-        allCandidates.push({ sequence: newSequence, score: newScore });
-      }
+    constructor() {
+        this.adjList = new Map();
     }
 
-    // Sort all candidates by score in descending order (highest probability)
-    allCandidates.sort((a, b) => b.score - a.score);
+    addEdge(v: number, w: number) {
+        if (!this.adjList.has(v)) {
+            this.adjList.set(v, []);
+        }
+        this.adjList.get(v)!.push(w);
+    }
 
-    // Keep top beamWidth candidates
-    candidates = allCandidates.slice(0, beamWidth);
-  }
+    topologicalSortUtil(v: number, visited: Set<number>, stack: number[]) {
+        visited.add(v);
 
-  // Return the sequences without scores
-  return candidates.map(c => c.sequence);
+        const neighbors = this.adjList.get(v) || [];
+        for (const neighbor of neighbors) {
+            if (!visited.has(neighbor)) {
+                this.topologicalSortUtil(neighbor, visited, stack);
+            }
+        }
+        stack.push(v);
+    }
+
+    topologicalSort(): number[] {
+        const visited = new Set<number>();
+        const stack: number[] = [];
+
+        for (const vertex of this.adjList.keys()) {
+            if (!visited.has(vertex)) {
+                this.topologicalSortUtil(vertex, visited, stack);
+            }
+        }
+
+        return stack.reverse(); // Return the stack in reverse order
+    }
 }
 
-// Usage example
-const sequences = beamSearch(3, 10, '<start>', '<end>');
-console.log('Generated sequences:', sequences);
+// Example usage
+const graph = new Graph();
+graph.addEdge(5, 2);
+graph.addEdge(5, 0);
+graph.addEdge(4, 0);
+graph.addEdge(4, 1);
+graph.addEdge(2, 3);
+graph.addEdge(3, 1);
+
+const result = graph.topologicalSort();
+console.log(result); // Output: A valid topological order
+class GraphKahn {
+    private adjList: Map<number, number[]>;
+
+    constructor() {
+        this.adjList = new Map();
+    }
+
+    addEdge(v: number, w: number) {
+        if (!this.adjList.has(v)) {
+            this.adjList.set(v, []);
+        }
+        this.adjList.get(v)!.push(w);
+    }
+
+    topologicalSort(): number[] {
+        const inDegree: Map<number, number> = new Map();
+        const queue: number[] = [];
+        const result: number[] = [];
+
+        // Initialize in-degree of each vertex
+        for (const [vertex, neighbors] of this.adjList.entries()) {
+            if (!inDegree.has(vertex)) {
+                inDegree.set(vertex, 0);
+            }
+            for (const neighbor of neighbors) {
+                inDegree.set(neighbor, (inDegree.get(neighbor) || 0) + 1);
+            }
+        }
+
+        // Collect all vertices with in-degree 0
+        for (const [vertex, degree] of inDegree.entries()) {
+            if (degree === 0) {
+                queue.push(vertex);
+            }
+        }
+
+        while (queue.length > 0) {
+            const current = queue.shift()!;
+            result.push(current);
+
+            const neighbors = this.adjList.get(current) || [];
+            for (const neighbor of neighbors) {
+                inDegree.set(neighbor, inDegree.get(neighbor)! - 1);
+                if (inDegree.get(neighbor) === 0) {
+                    queue.push(neighbor);
+                }
+            }
+        }
+
+        // Check for cycles
+        if (result.length !== inDegree.size) {
+            throw new Error("Graph has at least one cycle, topological sort not possible.");
+        }
+
+        return result;
+    }
+}
+
+// Example usage
+const graphKahn = new GraphKahn();
+graphKahn.addEdge(5, 2);
+graphKahn.addEdge(5, 0);
+graphKahn.addEdge(4, 0);
+graphKahn.addEdge(4, 1);
+graphKahn.addEdge(2, 3);
+graphKahn.addEdge(3, 1);
+
+const resultKahn = graphKahn.topologicalSort();
+console.log(resultKahn); // Output: A valid topological order
