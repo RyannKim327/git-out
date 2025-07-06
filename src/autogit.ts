@@ -1,24 +1,36 @@
-const str: string = "123";
-const num: number = parseInt(str, 10); // 10 is the radix for decimal
-console.log(num); // Output: 123
-const str: string = "123";
-const num: number = +str;
-console.log(num); // Output: 123
-const str: string = "123";
-const num: number = Number(str);
-console.log(num); // Output: 123
-const str: string = "123.45";
-const num: number = Math.floor(parseFloat(str)); // Will give you 123
-console.log(num); // Output: 123
-const str: string = "123";
-const num: number = Number.parseInt(str, 10);
-console.log(num); // Output: 123
-function safeParseInt(str: string): number | null {
-    const trimmedStr = str.trim(); // Trim whitespace
-    const num = parseInt(trimmedStr, 10);
-    return isNaN(num) ? null : num; // Return null if not a number
+// Definition for a binary tree node
+class TreeNode {
+    value: number;
+    left: TreeNode | null;
+    right: TreeNode | null;
+
+    constructor(value: number) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+    }
 }
 
-console.log(safeParseInt("  123  ")); // Output: 123
-console.log(safeParseInt("abc")); // Output: null
-console.log(safeParseInt("")); // Output: null
+// Function to find the maximum depth of a binary tree
+function maxDepth(root: TreeNode | null): number {
+    // Base case: if the tree is empty, the depth is 0
+    if (root === null) {
+        return 0;
+    }
+
+    // Recursively find the depth of the left and right subtrees
+    const leftDepth = maxDepth(root.left);
+    const rightDepth = maxDepth(root.right);
+
+    // The maximum depth is the greater of the two depths plus one for the current node
+    return Math.max(leftDepth, rightDepth) + 1;
+}
+
+// Example usage:
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4);
+root.left.right = new TreeNode(5);
+
+console.log(maxDepth(root)); // Output: 3
