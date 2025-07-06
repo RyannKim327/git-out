@@ -1,18 +1,48 @@
-function isPrime(num: number): boolean {
-    if (num <= 1) return false; // 0 and 1 are not prime numbers
-    if (num <= 3) return true; // 2 and 3 are prime numbers
+let arr = [1, 2, 3, 4, 5];
+const elementToRemove = 3;
+const index = arr.indexOf(elementToRemove);
 
-    // Check for even numbers and multiples of 3
-    if (num % 2 === 0 || num % 3 === 0) return false;
-
-    // Check for factors from 5 to the square root of num
-    for (let i = 5; i * i <= num; i += 6) {
-        if (num % i === 0 || num % (i + 2) === 0) return false;
-    }
-
-    return true;
+if (index > -1) {
+    arr.splice(index, 1); // Remove 1 element at index
 }
 
-// Example usage
-console.log(isPrime(11)); // true
-console.log(isPrime(4));  // false
+console.log(arr); // Output: [1, 2, 4, 5]
+let arr = [1, 2, 3, 4, 5];
+const elementToRemove = 3;
+
+arr = arr.filter(item => item !== elementToRemove);
+
+console.log(arr); // Output: [1, 2, 4, 5]
+let arr = [1, 2, 3, 4, 5];
+const elementToRemove = 3;
+
+arr = arr.reduce((accumulator, current) => {
+    if (current !== elementToRemove) {
+        accumulator.push(current);
+    }
+    return accumulator;
+}, [] as number[]);
+
+console.log(arr); // Output: [1, 2, 4, 5]
+let arr = [1, 2, 3, 4, 5];
+const elementToRemove = 3;
+let newArr: number[] = [];
+
+arr.forEach(item => {
+    if (item !== elementToRemove) {
+        newArr.push(item);
+    }
+});
+
+arr = newArr;
+
+console.log(arr); // Output: [1, 2, 4, 5]
+let arr = [1, 2, 3, 4, 5];
+const elementToRemove = 3;
+const index = arr.findIndex(item => item === elementToRemove);
+
+if (index !== -1) {
+    arr.splice(index, 1);
+}
+
+console.log(arr); // Output: [1, 2, 4, 5]
