@@ -1,34 +1,34 @@
-function burrowsWheelerTransform(input: string): { transformed: string, index: number } {
-    const n = input.length;
-
-    // Step 1: Create the array to hold all cyclic rotations
-    const rotations: string[] = new Array(n);
-  
-    for (let i = 0; i < n; i++) {
-        rotations[i] = input.slice(i) + input.slice(0, i);
+function binarySearch(arr: number[], target: number, left: number, right: number): number {
+    // Base case: if left index exceeds right index, target is not found
+    if (left > right) {
+        return -1; // Target not found
     }
-  
-    // Step 2: Sort the rotations lexicographically
-    rotations.sort();
-  
-    // Step 3: Build the BWT output and find the original index
-    let bwtOutput = '';
-    let originalIndex = 0;
 
-    for (let i = 0; i < n; i++) {
-        bwtOutput += rotations[i][n - 1]; // Take the last character of each sorted rotation
-        if (rotations[i] === input) {
-            originalIndex = i; // Find the index of the original string
-        }
+    // Calculate the middle index
+    const mid = Math.floor((left + right) / 2);
+
+    // Check if the middle element is the target
+    if (arr[mid] === target) {
+        return mid; // Target found
     }
-  
-    return { transformed: bwtOutput, index: originalIndex };
+
+    // If target is less than the middle element, search in the left half
+    if (target < arr[mid]) {
+        return binarySearch(arr, target, left, mid - 1);
+    }
+
+    // If target is greater than the middle element, search in the right half
+    return binarySearch(arr, target, mid + 1, right);
 }
 
-// Example usage:
-const input = "banana";
-const result = burrowsWheelerTransform(input);
-console.log("Transformed:", result.transformed);
-console.log("Original Index:", result.index);
-Transformed: annb$aa
-Original Index: 3
+// Helper function to initiate the binary search
+function search(arr: number[], target: number): number {
+    return binarySearch(arr, target, 0, arr.length - 1);
+}
+
+// Example usage
+const sortedArray = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const targetValue = 5;
+const result = search(sortedArray, targetValue);
+
+console.log(result); // Output: 4 (index of the target value)
