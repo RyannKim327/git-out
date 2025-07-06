@@ -1,15 +1,16 @@
-const numbers = [3, 7, 2, 9, 5];
+function maxSubArray(nums: number[]): number {
+    let maxSoFar = nums[0];
+    let maxEndingHere = nums[0];
 
-const maxValue = Math.max(...numbers);
+    for (let i = 1; i < nums.length; i++) {
+        maxEndingHere = Math.max(nums[i], maxEndingHere + nums[i]);
+        maxSoFar = Math.max(maxSoFar, maxEndingHere);
+    }
 
-console.log(maxValue); // Output: 9
-const numbers = [3, 7, 2, 9, 5];
+    return maxSoFar;
+}
 
-const maxValue = numbers.reduce((max, current) => (current > max ? current : max), -Infinity);
-
-console.log(maxValue); // Output: 9
-const numbers: number[] = [];
-
-const maxValue = numbers.length > 0 ? Math.max(...numbers) : undefined;
-
-console.log(maxValue); // Output: undefined
+// Example usage:
+const array = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
+const result = maxSubArray(array);
+console.log(result); // Output: 6
