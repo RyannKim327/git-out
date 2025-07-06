@@ -1,55 +1,36 @@
-interface Node {
-  id: string; // or any other data you want to store
-  neighbors: Node[];
+class TreeNode {
+    value: number;
+    left: TreeNode | null;
+    right: TreeNode | null;
+
+    constructor(value: number) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+    }
 }
 
-function breadthLimitedSearch(
-  startNode: Node,
-  goalNodeId: string,
-  maxDepth: number
-): Node | null {
-  // Queue will store tuples of [node, currentDepth]
-  const queue: Array<[Node, number]> = [[startNode, 0]];
-  const visited = new Set<string>();
-  visited.add(startNode.id);
-
-  while (queue.length > 0) {
-    const [currentNode, depth] = queue.shift()!;
-
-    // Check if we've reached the goal
-    if (currentNode.id === goalNodeId) {
-      return currentNode;
+function countLeafNodes(root: TreeNode | null): number {
+    // Base case: if the node is null, return 0
+    if (root === null) {
+        return 0;
     }
 
-    // If we're within the depth limit, explore neighbors
-    if (depth < maxDepth) {
-      for (const neighbor of currentNode.neighbors) {
-        if (!visited.has(neighbor.id)) {
-          visited.add(neighbor.id);
-          queue.push([neighbor, depth + 1]);
-        }
-      }
+    // If the node is a leaf node, return 1
+    if (root.left === null && root.right === null) {
+        return 1;
     }
-  }
 
-  // Goal not found within depth limit
-  return null;
+    // Recursively count leaf nodes in the left and right subtrees
+    return countLeafNodes(root.left) + countLeafNodes(root.right);
 }
-// Example nodes
-const nodeA: Node = { id: "A", neighbors: [] };
-const nodeB: Node = { id: "B", neighbors: [] };
-const nodeC: Node = { id: "C", neighbors: [] };
-const nodeD: Node = { id: "D", neighbors: [] };
 
-// Creating a simple graph
-nodeA.neighbors.push(nodeB, nodeC);
-nodeB.neighbors.push(nodeD);
+// Example usage:
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4);
+root.left.right = new TreeNode(5);
 
-// Search for node D starting from node A with depth limit 2
-const result = breadthLimitedSearch(nodeA, "D", 2);
-
-if (result) {
-  console.log(`Found node: ${result.id}`);
-} else {
-  console.log("Node not found within depth limit");
-}
+const leafCount = countLeafNodes(root);
+console.log(`Number of leaf nodes: ${leafCount}`); // Output: Number of leaf nodes: 3
