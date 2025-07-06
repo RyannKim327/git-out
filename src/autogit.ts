@@ -1,53 +1,31 @@
-function secondLargest(arr: number[]): number | null {
-    // Remove duplicates
-    const uniqueArr = Array.from(new Set(arr));
-    
-    // Sort in descending order
-    uniqueArr.sort((a, b) => b - a);
-    
-    // Return the second largest element
-    return uniqueArr.length > 1 ? uniqueArr[1] : null;
-}
+function shellSort(arr: number[]): number[] {
+    const n = arr.length;
+    let gap = Math.floor(n / 2); // Start with a big gap, then reduce the gap
 
-// Example usage:
-const numbers = [3, 1, 4, 4, 5, 2];
-console.log(secondLargest(numbers)); // Output: 4
-function secondLargest(arr: number[]): number | null {
-    let first = -Infinity;
-    let second = -Infinity;
+    // Start with the largest gap and reduce the gap until it is 0
+    while (gap > 0) {
+        // Do a gapped insertion sort for this gap size
+        for (let i = gap; i < n; i++) {
+            // Save the current element to be compared
+            const temp = arr[i];
+            let j = i;
 
-    for (const num of arr) {
-        if (num > first) {
-            second = first; // Update second largest
-            first = num;    // Update largest
-        } else if (num > second && num !== first) {
-            second = num;   // Update second largest if it's not equal to first
+            // Shift earlier gap-sorted elements up until the correct location for arr[i] is found
+            while (j >= gap && arr[j - gap] > temp) {
+                arr[j] = arr[j - gap];
+                j -= gap;
+            }
+            // Put temp (the original arr[i]) in its correct location
+            arr[j] = temp;
         }
+        gap = Math.floor(gap / 2); // Reduce the gap
     }
 
-    return second === -Infinity ? null : second; // Return null if no second largest found
+    return arr;
 }
 
 // Example usage:
-const numbers = [3, 1, 4, 4, 5, 2];
-console.log(secondLargest(numbers)); // Output: 4
-function secondLargest(arr: number[]): number | null {
-    const result = arr.reduce(
-        (acc, num) => {
-            if (num > acc.first) {
-                acc.second = acc.first; // Update second largest
-                acc.first = num;         // Update largest
-            } else if (num > acc.second && num !== acc.first) {
-                acc.second = num;        // Update second largest
-            }
-            return acc;
-        },
-        { first: -Infinity, second: -Infinity }
-    );
-
-    return result.second === -Infinity ? null : result.second; // Return null if no second largest found
-}
-
-// Example usage:
-const numbers = [3, 1, 4, 4, 5, 2];
-console.log(secondLargest(numbers)); // Output: 4
+const array = [12, 34, 54, 2, 3];
+console.log("Original array:", array);
+const sortedArray = shellSort(array);
+console.log("Sorted array:", sortedArray);
