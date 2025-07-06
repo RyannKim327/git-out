@@ -1,48 +1,20 @@
-let arr = [1, 2, 3, 4, 5];
-const elementToRemove = 3;
-const index = arr.indexOf(elementToRemove);
+function findSecondLargest(arr: number[]): number | null {
+    // Remove duplicates by converting the array to a Set and back to an array
+    const uniqueArr = Array.from(new Set(arr));
 
-if (index > -1) {
-    arr.splice(index, 1); // Remove 1 element at index
+    // If there are less than 2 unique elements, return null
+    if (uniqueArr.length < 2) {
+        return null;
+    }
+
+    // Sort the array in descending order
+    uniqueArr.sort((a, b) => b - a);
+
+    // Return the second largest element
+    return uniqueArr[1];
 }
 
-console.log(arr); // Output: [1, 2, 4, 5]
-let arr = [1, 2, 3, 4, 5];
-const elementToRemove = 3;
-
-arr = arr.filter(item => item !== elementToRemove);
-
-console.log(arr); // Output: [1, 2, 4, 5]
-let arr = [1, 2, 3, 4, 5];
-const elementToRemove = 3;
-
-arr = arr.reduce((accumulator, current) => {
-    if (current !== elementToRemove) {
-        accumulator.push(current);
-    }
-    return accumulator;
-}, [] as number[]);
-
-console.log(arr); // Output: [1, 2, 4, 5]
-let arr = [1, 2, 3, 4, 5];
-const elementToRemove = 3;
-let newArr: number[] = [];
-
-arr.forEach(item => {
-    if (item !== elementToRemove) {
-        newArr.push(item);
-    }
-});
-
-arr = newArr;
-
-console.log(arr); // Output: [1, 2, 4, 5]
-let arr = [1, 2, 3, 4, 5];
-const elementToRemove = 3;
-const index = arr.findIndex(item => item === elementToRemove);
-
-if (index !== -1) {
-    arr.splice(index, 1);
-}
-
-console.log(arr); // Output: [1, 2, 4, 5]
+// Example usage:
+const numbers = [3, 5, 1, 4, 5, 2];
+const secondLargest = findSecondLargest(numbers);
+console.log(secondLargest); // Output: 4
