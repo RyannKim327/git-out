@@ -1,14 +1,18 @@
-function calculateMean(numbers: number[]): number {
-  if (numbers.length === 0) {
-    throw new Error("Cannot calculate mean of an empty array");
-  }
+function isPrime(num: number): boolean {
+    if (num <= 1) return false; // 0 and 1 are not prime numbers
+    if (num <= 3) return true;  // 2 and 3 are prime numbers
 
-  const sum = numbers.reduce((acc, current) => acc + current, 0);
-  const mean = sum / numbers.length;
-  return mean;
+    // Check for even numbers and multiples of 3
+    if (num % 2 === 0 || num % 3 === 0) return false;
+
+    // Check for factors from 5 to the square root of num
+    for (let i = 5; i * i <= num; i += 6) {
+        if (num % i === 0 || num % (i + 2) === 0) return false;
+    }
+
+    return true; // num is prime
 }
 
-// Example usage:
-const myNumbers = [10, 20, 30, 40, 50];
-const average = calculateMean(myNumbers);
-console.log(`The mean is: ${average}`); // Output: The mean is: 30
+// Example usage
+console.log(isPrime(11)); // true
+console.log(isPrime(4));  // false
