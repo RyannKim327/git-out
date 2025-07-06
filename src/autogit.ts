@@ -1,26 +1,22 @@
-function countingSort(arr: number[], max: number): number[] {
-    // Step 1: Create a count array to store the count of each unique object
-    const count: number[] = new Array(max + 1).fill(0);
+function firstNonRepeatingCharacter(s: string): string | null {
+    const charCount: { [key: string]: number } = {};
 
-    // Step 2: Store the count of each number in the count array
-    for (let i = 0; i < arr.length; i++) {
-        count[arr[i]]++;
+    // Count the occurrences of each character
+    for (const char of s) {
+        charCount[char] = (charCount[char] || 0) + 1;
     }
 
-    // Step 3: Build the output array
-    const output: number[] = [];
-    for (let i = 0; i <= max; i++) {
-        while (count[i] > 0) {
-            output.push(i);
-            count[i]--;
+    // Find the first non-repeating character
+    for (const char of s) {
+        if (charCount[char] === 1) {
+            return char; // Return the first non-repeating character
         }
     }
 
-    return output;
+    return null; // Return null if there is no non-repeating character
 }
 
 // Example usage:
-const arr = [4, 2, 2, 8, 3, 3, 1];
-const max = Math.max(...arr);
-const sortedArr = countingSort(arr, max);
-console.log(sortedArr); // Output: [1, 2, 2, 3, 3, 4, 8]
+const inputString = "swiss";
+const result = firstNonRepeatingCharacter(inputString);
+console.log(result); // Output: "w"
