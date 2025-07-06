@@ -1,64 +1,43 @@
-// Define the TrieNode class
-class TrieNode {
-    public children: Map<string, TrieNode>;
-    public isEndOfWord: boolean;
+function quickSelect(arr: number[], left: number, right: number, k: number): number {
+    if (left === right) {
+        return arr[left]; // If the list contains only one element
+    }
 
-    constructor() {
-        this.children = new Map();
-        this.isEndOfWord = false;
+    const pivotIndex = partition(arr, left, right);
+
+    // The pivot is in its final sorted position
+    if (k === pivotIndex) {
+        return arr[k];
+    } else if (k < pivotIndex) {
+        return quickSelect(arr, left, pivotIndex - 1, k);
+    } else {
+        return quickSelect(arr, pivotIndex + 1, right, k);
     }
 }
 
-// Define the Trie class
-class Trie {
-    private root: TrieNode;
+function partition(arr: number[], left: number, right: number): number {
+    const pivot = arr[right]; // Choose the rightmost element as pivot
+    let i = left;
 
-    constructor() {
-        this.root = new TrieNode();
-    }
-
-    // Method to insert a word into the trie
-    insert(word: string): void {
-        let currentNode = this.root;
-        for (const char of word) {
-            if (!currentNode.children.has(char)) {
-                currentNode.children.set(char, new TrieNode());
-            }
-            currentNode = currentNode.children.get(char)!;
+    for (let j = left; j < right; j++) {
+        if (arr[j] < pivot) {
+            [arr[i], arr[j]] = [arr[j], arr[i]]; // Swap elements
+            i++;
         }
-        currentNode.isEndOfWord = true;
     }
-
-    // Method to search for a complete word
-    search(word: string): boolean {
-        let currentNode = this.root;
-        for (const char of word) {
-            if (!currentNode.children.has(char)) {
-                return false;
-            }
-            currentNode = currentNode.children.get(char)!;
-        }
-        return currentNode.isEndOfWord;
-    }
-
-    // Optional: method to check if any word starts with a prefix
-    startsWith(prefix: string): boolean {
-        let currentNode = this.root;
-        for (const char of prefix) {
-            if (!currentNode.children.has(char)) {
-                return false;
-            }
-            currentNode = currentNode.children.get(char)!;
-        }
-        return true;
-    }
+    [arr[i], arr[right]] = [arr[right], arr[i]]; // Swap pivot to its final place
+    return i; // Return the index of the pivot
 }
 
-// Usage example:
-const trie = new Trie();
-trie.insert("apple");
-trie.insert("app");
-console.log(trie.search("app"));      // true
-console.log(trie.search("apple"));    // true
-console.log(trie.search("apples"));   // false
-console.log(trie.startsWith("app"));  // true
+function findKthSmallest(arr: number[], k: number): number {
+    if (k < 1 || k > arr.length) {
+        throw new Error("k is out of bounds");
+    }
+    return quickSelect(arr, 0, arr.length - 1, k - 1); // k-1 for zero-based index
+}
+
+// Example usage:
+const arr = [3, 2, 1, 5, 6, 4];
+const k = 2;
+const kthSmallest = findKthSmallest(arr, k);
+console.log(`The ${k}th smallest element is ${kthSmallest}`);
