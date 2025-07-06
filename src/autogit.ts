@@ -1,18 +1,20 @@
-function isPrime(num: number): boolean {
-    if (num <= 1) return false; // 0 and 1 are not prime numbers
-    if (num <= 3) return true;  // 2 and 3 are prime numbers
+function isPrime(n: number): boolean {
+    if (n <= 1) return false; // 0, 1, and negative numbers are not prime
+    if (n <= 3) return true;  // 2 and 3 are prime
 
-    // Check for even numbers and multiples of 3
-    if (num % 2 === 0 || num % 3 === 0) return false;
+    // Check divisibility by 2 and 3 for quick elimination
+    if (n % 2 === 0 || n % 3 === 0) return false;
 
-    // Check for factors from 5 to the square root of num
-    for (let i = 5; i * i <= num; i += 6) {
-        if (num % i === 0 || num % (i + 2) === 0) return false;
+    // Check for factors up to sqrt(n)
+    for (let i = 5; i * i <= n; i += 6) {
+        if (n % i === 0 || n % (i + 2) === 0) {
+            return false;
+        }
     }
 
-    return true; // num is prime
+    return true;  // If no divisors found, n is prime
 }
 
-// Example usage
-console.log(isPrime(11)); // true
-console.log(isPrime(4));  // false
+// Usage:
+console.log(isPrime(17)); // true
+console.log(isPrime(18)); // false
