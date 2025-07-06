@@ -1,44 +1,26 @@
-function decimalToBinary(decimal: number): string {
-    return decimal.toString(2);
-}
+function countingSort(arr: number[], max: number): number[] {
+    // Step 1: Create a count array to store the count of each unique object
+    const count: number[] = new Array(max + 1).fill(0);
 
-// Example usage:
-const decimalNumber = 10;
-const binaryString = decimalToBinary(decimalNumber);
-console.log(`The binary representation of ${decimalNumber} is ${binaryString}`); // Output: 1010
-function decimalToBinary(decimal: number): string {
-    if (decimal === 0) return "0";
-    
-    let binary = '';
-    
-    while (decimal > 0) {
-        const remainder = decimal % 2; // Get the remainder
-        binary = remainder.toString() + binary; // Prepend the remainder to the binary string
-        decimal = Math.floor(decimal / 2); // Divide the number by 2
-    }
-    
-    return binary;
-}
-
-// Example usage:
-const decimalNumber = 10;
-const binaryString = decimalToBinary(decimalNumber);
-console.log(`The binary representation of ${decimalNumber} is ${binaryString}`); // Output: 1010
-function decimalToBinary(decimal: number): string {
-    if (decimal === 0) return "0";
-
-    let binary = '';
-    let number = decimal;
-
-    while (number > 0) {
-        binary = (number & 1).toString() + binary; // Get the last bit
-        number >>= 1; // Shift right by 1 to divide by 2
+    // Step 2: Store the count of each number in the count array
+    for (let i = 0; i < arr.length; i++) {
+        count[arr[i]]++;
     }
 
-    return binary;
+    // Step 3: Build the output array
+    const output: number[] = [];
+    for (let i = 0; i <= max; i++) {
+        while (count[i] > 0) {
+            output.push(i);
+            count[i]--;
+        }
+    }
+
+    return output;
 }
 
 // Example usage:
-const decimalNumber = 10;
-const binaryString = decimalToBinary(decimalNumber);
-console.log(`The binary representation of ${decimalNumber} is ${binaryString}`); // Output: 1010
+const arr = [4, 2, 2, 8, 3, 3, 1];
+const max = Math.max(...arr);
+const sortedArr = countingSort(arr, max);
+console.log(sortedArr); // Output: [1, 2, 2, 3, 3, 4, 8]
