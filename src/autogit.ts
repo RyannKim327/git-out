@@ -1,49 +1,56 @@
-class ListNode {
-  val: number;
-  next: ListNode | null;
+type Graph = {
+  [key: string]: string[];
+};
+type Graph = {
+  [key: string]: string[];
+};
 
-  constructor(val: number, next: ListNode | null = null) {
-    this.val = val;
-    this.next = next;
+function dfsRecursive(graph: Graph, start: string, visited: Set<string> = new Set()): void {
+  // Mark the current node as visited
+  visited.add(start);
+  console.log(start); // Process the current node
+
+  // Recur for all the vertices adjacent to this vertex
+  for (const neighbor of graph[start]) {
+    if (!visited.has(neighbor)) {
+      dfsRecursive(graph, neighbor, visited);
+    }
   }
 }
-function reverseList(head: ListNode | null): ListNode | null {
-  let prev: ListNode | null = null;
-  let current: ListNode | null = head;
 
-  while (current !== null) {
-    // Save the next node
-    const nextNode = current.next;
-    // Reverse the current node's pointer
-    current.next = prev;
-    // Move pointers one position ahead
-    prev = current;
-    current = nextNode;
+// Example usage:
+const graph: Graph = {
+  A: ['B', 'C'],
+  B: ['A', 'D', 'E'],
+  C: ['A', 'F'],
+  D: ['B'],
+  E: ['B', 'F'],
+  F: ['C', 'E'],
+};
+
+console.log('DFS Recursive:');
+dfsRecursive(graph, 'A');
+function dfsIterative(graph: Graph, start: string): void {
+  const stack: string[] = [start];
+  const visited: Set<string> = new Set();
+
+  while (stack.length > 0) {
+    const node = stack.pop()!;
+    
+    if (!visited.has(node)) {
+      visited.add(node);
+      console.log(node); // Process the current node
+
+      // Add all unvisited neighbors to the stack
+      for (const neighbor of graph[node]) {
+        if (!visited.has(neighbor)) {
+          stack.push(neighbor);
+        }
+      }
+    }
   }
-
-  // prev will be the new head of the reversed list
-  return prev;
-}
-// Create a linked list: 1 -> 2 -> 3 -> null
-let node1 = new ListNode(1);
-let node2 = new ListNode(2);
-let node3 = new ListNode(3);
-node1.next = node2;
-node2.next = node3;
-
-console.log("Original list:");
-let current = node1;
-while (current !== null) {
-  console.log(current.val);
-  current = current.next;
 }
 
-// Reverse the list
-const reversedHead = reverseList(node1);
-
-console.log("Reversed list:");
-current = reversedHead;
-while (current !== null) {
-  console.log(current.val);
-  current = current.next;
-}
+// Example usage:
+console.log('DFS Iterative:');
+dfsIterative(graph, 'A');
