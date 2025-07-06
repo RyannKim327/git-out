@@ -1,24 +1,109 @@
-mkdir cron-example
-cd cron-example
-npm init -y
-npm install typescript ts-node @types/node node-cron
-touch cronJob.ts
-import cron from 'node-cron';
+interface Graph {
+  [node: string]: string[];
+}
 
-// Schedule a task to run every minute
-const task = cron.schedule('* * * * *', () => {
-    const currentDate = new Date();
-    console.log(`Task is running every minute. Current date and time: ${currentDate}`);
-});
+function bidirectionalSearch(
+  graph: Graph,
+  start: string,
+  goal: string
+): string[] | null {
+  if (start === goal) return [start];
 
-// Start the cron task
-task.start();
+  // Initialize frontiers for forward and backward searches
+  const forwardQueue: string[] = [start];
+  const backwardQueue: string[] = [goal];
 
-console.log('Cron job has been started. It will log the current date and time every minute.');
+  // Visited nodes and parent maps for path reconstruction
+  const visitedForward: Map<string, string | null> = new Map();
+  const visitedBackward: Map<string, string | null> = new Map();
 
-// Optionally, stop the task after a certain time (for demonstration)
-setTimeout(() => {
-    task.stop();
-    console.log('Cron job has been stopped.');
-}, 300000); // Stops after 5 minutes
-npx ts-node cronJob.ts
+  visitedForward.set(start, null);
+  visitedBackward.set(goal, null);
+
+  while (forwardQueue.length > 0 && backwardQueue.length > 0) {
+    // Expand forward frontier
+    const currentForward = forwardQueue.shift()!;
+    for (const neighbor of graph[currentForward]) {
+      if (!visitedForward.has(neighbor)) {
+        visitedForward.set(neighbor, currentForward);
+        forwardQueue.push(neighbor);
+
+        // Check if we have met the backward search
+        if (visitedBackward.has(neighbor)) {
+          return reconstructPath(
+            neighbor,
+            visitedForward,
+            visitedBackward
+          );
+        }
+      }
+    }
+
+    // Expand backward frontier
+    const currentBackward = backwardQueue.shift()!;
+    for (const neighbor of graph[currentBackward]) {
+      if (!visitedBackward.has(neighbor)) {
+        visitedBackward.set(neighbor, currentBackward);
+        backwardQueue.push(neighbor);
+
+        // Check if we have met the forward search
+        if (visitedForward.has(neighbor)) {
+          return reconstructPath(
+            neighbor,
+            visitedForward,
+            visitedBackward
+          );
+        }
+      }
+    }
+  }
+
+  // No path found
+  return null;
+}
+
+function reconstructPath(
+  meetingNode: string,
+  visitedForward: Map<string, string | null>,
+  visitedBackward: Map<string, string | null>
+): string[] {
+  const pathForward: string[] = [];
+  let node: string | null = meetingNode;
+  // Reconstruct path from start to meeting node
+  while (node !== null) {
+    pathForward.push(node);
+    node = visitedForward.get(node)!;
+  }
+  pathForward.reverse();
+
+  const pathBackward: string[] = [];
+  node = visitedBackward.get(meetingNode)!;
+  // Reconstruct path from goal to meeting node
+  while (node !== null) {
+    pathBackward.push(node);
+    node = visitedBackward.get(node)!;
+  }
+
+  // Combine the two paths
+  // Remove the duplicate meeting node from the backward path
+  pathBackward.shift();
+
+  return [...pathForward, ...pathBackward];
+}
+
+// Example usage:
+const graph: Graph = {
+  A: ["B", "C"],
+  B: ["A", "D", "E"],
+  C: ["A", "F"],
+  D: ["B"],
+  E: ["B", "F"],
+  F: ["C", "E", "G"],
+  G: ["F"]
+};
+
+const startNode = "A";
+const goalNode = "G";
+
+const path = bidirectionalSearch(graph, startNode, goalNode);
+console.log(path); // Output: [ 'A', 'C', 'F', 'G' ]
