@@ -1,13 +1,38 @@
-const array1 = [1, 2, 3, 4, 5];
-const array2 = [3, 4, 5, 6, 7];
+import * as readline from 'readline';
 
-const commonElements = array1.filter(item => array2.includes(item));
+// Create an interface for input and output
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-console.log(commonElements); // Output: [3, 4, 5]
-const array1 = [1, 2, 3, 4, 5];
-const array2 = [3, 4, 5, 6, 7];
+// Function to ask a question and return a promise
+function askQuestion(query: string): Promise<string> {
+    return new Promise((resolve) => {
+        rl.question(query, (answer) => {
+            resolve(answer);
+        });
+    });
+}
 
-const set2 = new Set(array2);
-const commonElements = array1.filter(item => set2.has(item));
+// Main function to run the program
+async function main() {
+    const name = await askQuestion("What is your name? ");
+    const ageInput = await askQuestion("What is your age? ");
 
-console.log(commonElements); // Output: [3, 4, 5]
+    // Convert age input to a number
+    const age = parseInt(ageInput, 10);
+
+    if (isNaN(age)) {
+        console.log("Please enter a valid number for your age.");
+    } else {
+        const yearsUntil100 = 100 - age;
+        console.log(`Hello, ${name}! You have ${yearsUntil100} years until you turn 100.`);
+    }
+
+    // Close the readline interface
+    rl.close();
+}
+
+// Run the main function
+main();
