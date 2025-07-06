@@ -1,8 +1,24 @@
-const numbers: number[] = [5, 2, 9, 1, 5, 6];
+function countCharacter(str: string, char: string): number {
+    let count = 0;
+    for (let i = 0; i < str.length; i++) {
+        if (str[i] === char) {
+            count++;
+        }
+    }
+    return count;
+}
 
-// Sort in ascending order
-numbers.sort((a, b) => a - b);
+// Example usage:
+const myString = "hello world";
+const characterToCount = "o";
+const result = countCharacter(myString, characterToCount);
+console.log(`The character '${characterToCount}' occurs ${result} times.`);
+function countCharacter(str: string, char: string): number {
+    return str.split(char).length - 1;
+}
 
-console.log(numbers); // Output: [1, 2, 5, 5, 6, 9]
-numbers.sort((a, b) => b - a);
-console.log(numbers); // Output: [9, 6, 5, 5, 2, 1]
+// Example usage:
+const myString = "hello world";
+const characterToCount = "o";
+const result = countCharacter(myString, characterToCount);
+console.log(`The character '${characterToCount}' occurs ${result} times.`);
