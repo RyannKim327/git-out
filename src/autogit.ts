@@ -1,25 +1,12 @@
-function getStringLength(input: string): number {
-    let count = 0;
-
-    // Loop through each character in the string
-    for (let char of input) {
-        count++;
+function factorial(n: number): number {
+    // Base case: factorial of 0 or 1 is 1
+    if (n === 0 || n === 1) {
+        return 1;
     }
-
-    return count;
+    // Recursive case: n! = n * (n - 1)!
+    return n * factorial(n - 1);
 }
 
-// Example usage
-const myString = "Hello, TypeScript!";
-const lengthOfString = getStringLength(myString);
-console.log(`Length of the string: ${lengthOfString}`);
-function getStringLength(input: string): number {
-    let count = 0;
-
-    // Using a traditional for loop
-    for (let i = 0; i < input.length; i++) {
-        count++;
-    }
-
-    return count;
-}
+// Example usage:
+const num = 5;
+console.log(`Factorial of ${num} is ${factorial(num)}`); // Output: Factorial of 5 is 120
