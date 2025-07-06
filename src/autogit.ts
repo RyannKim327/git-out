@@ -1,20 +1,31 @@
-function findSecondLargest(arr: number[]): number | null {
-    // Remove duplicates by converting the array to a Set and back to an array
-    const uniqueArr = Array.from(new Set(arr));
+// Import the fetch API (if you're running in an environment that doesn't support it natively)
+// For Node.js, you might need to install node-fetch: npm install node-fetch
+// import fetch from 'node-fetch';
 
-    // If there are less than 2 unique elements, return null
-    if (uniqueArr.length < 2) {
-        return null;
-    }
-
-    // Sort the array in descending order
-    uniqueArr.sort((a, b) => b - a);
-
-    // Return the second largest element
-    return uniqueArr[1];
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
 
-// Example usage:
-const numbers = [3, 5, 1, 4, 5, 2];
-const secondLargest = findSecondLargest(numbers);
-console.log(secondLargest); // Output: 4
+// Async function to fetch posts from JSONPlaceholder API
+async function fetchPosts(): Promise<void> {
+  const apiUrl = 'https://jsonplaceholder.typicode.com/posts';
+
+  try {
+    const response = await fetch(apiUrl);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const posts: Post[] = await response.json();
+
+    // Log the first post
+    console.log('First post:', posts[0]);
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+  }
+}
+
+// Call the function
+fetchPosts();
