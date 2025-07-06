@@ -1,31 +1,92 @@
-function bubbleSort(arr: number[]): number[] {
-    const n = arr.length;
-    let swapped: boolean;
+class Node {
+    value: number;
+    left: Node | null;
+    right: Node | null;
 
-    // Loop through all elements in the array
-    for (let i = 0; i < n - 1; i++) {
-        swapped = false;
+    constructor(value: number) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+    }
+}
+class BinarySearchTree {
+    root: Node | null;
 
-        // Last i elements are already sorted
-        for (let j = 0; j < n - 1 - i; j++) {
-            // Compare adjacent elements
-            if (arr[j] > arr[j + 1]) {
-                // Swap if they are in the wrong order
-                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-                swapped = true;
-            }
-        }
+    constructor() {
+        this.root = null;
+    }
 
-        // If no two elements were swapped, the array is sorted
-        if (!swapped) {
-            break;
+    // Insert a new value into the BST
+    insert(value: number): void {
+        const newNode = new Node(value);
+        if (this.root === null) {
+            this.root = newNode;
+        } else {
+            this.insertNode(this.root, newNode);
         }
     }
 
-    return arr;
-}
+    private insertNode(node: Node, newNode: Node): void {
+        if (newNode.value < node.value) {
+            if (node.left === null) {
+                node.left = newNode;
+            } else {
+                this.insertNode(node.left, newNode);
+            }
+        } else {
+            if (node.right === null) {
+                node.right = newNode;
+            } else {
+                this.insertNode(node.right, newNode);
+            }
+        }
+    }
 
-// Example usage
-const array = [64, 34, 25, 12, 22, 11, 90];
-const sortedArray = bubbleSort(array);
-console.log(sortedArray); // Output: [11, 12, 22, 25, 34, 64, 90]
+    // Search for a value in the BST
+    search(value: number): boolean {
+        return this.searchNode(this.root, value);
+    }
+
+    private searchNode(node: Node | null, value: number): boolean {
+        if (node === null) {
+            return false;
+        }
+        if (value < node.value) {
+            return this.searchNode(node.left, value);
+        } else if (value > node.value) {
+            return this.searchNode(node.right, value);
+        } else {
+            return true; // value is found
+        }
+    }
+
+    // In-order traversal of the BST
+    inOrderTraversal(callback: (value: number) => void): void {
+        this.inOrder(this.root, callback);
+    }
+
+    private inOrder(node: Node | null, callback: (value: number) => void): void {
+        if (node !== null) {
+            this.inOrder(node.left, callback);
+            callback(node.value);
+            this.inOrder(node.right, callback);
+        }
+    }
+}
+const bst = new BinarySearchTree();
+bst.insert(10);
+bst.insert(5);
+bst.insert(15);
+bst.insert(3);
+bst.insert(7);
+bst.insert(12);
+bst.insert(18);
+
+// Search for a value
+console.log(bst.search(7));  // true
+console.log(bst.search(20)); // false
+
+// In-order traversal
+bst.inOrderTraversal(value => {
+    console.log(value); // Outputs: 3, 5, 7, 10, 12, 15, 18
+});
