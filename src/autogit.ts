@@ -1,12 +1,8 @@
-const string1 = "Hello, ";
-const string2 = "World!";
-const result = string1 + string2;
-console.log(result); // Output: Hello, World!
-const string1 = "Hello, ";
-const string2 = "World!";
-const result = `${string1}${string2}`;
-console.log(result); // Output: Hello, World!
-const string1 = "Hello, ";
-const string2 = "World!";
-const result = string1.concat(string2);
-console.log(result); // Output: Hello, World!
+function decimalToBinary(decimal: number): string {
+    return decimal.toString(2);
+}
+
+// Example usage:
+const decimalNumber = 42;
+const binaryString = decimalToBinary(decimalNumber);
+console.log(`The binary representation of ${decimalNumber} is ${binaryString}`);
