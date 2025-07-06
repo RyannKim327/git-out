@@ -1,31 +1,17 @@
-// Import the fetch API (if you're running in an environment that doesn't support it natively)
-// For Node.js, you might need to install node-fetch: npm install node-fetch
-// import fetch from 'node-fetch';
-
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
+function decimalToBinary(decimal: number): string {
+    return decimal.toString(2);
 }
 
-// Async function to fetch posts from JSONPlaceholder API
-async function fetchPosts(): Promise<void> {
-  const apiUrl = 'https://jsonplaceholder.typicode.com/posts';
-
-  try {
-    const response = await fetch(apiUrl);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const posts: Post[] = await response.json();
-
-    // Log the first post
-    console.log('First post:', posts[0]);
-  } catch (error) {
-    console.error('Error fetching posts:', error);
-  }
+// Example usage:
+const decimalNumber = 42;
+const binaryString = decimalToBinary(decimalNumber);
+console.log(`The binary representation of ${decimalNumber} is ${binaryString}`);
+function decimalToBinary(decimal: number, length: number = 0): string {
+    const binaryString = decimal >= 0 ? decimal.toString(2) : (Math.abs(decimal) >>> 0).toString(2);
+    return binaryString.padStart(length, '0');
 }
 
-// Call the function
-fetchPosts();
+// Example usage:
+const decimalNumber = -42;
+const binaryString = decimalToBinary(decimalNumber, 8); // Output will be padded to 8 bits
+console.log(`The binary representation of ${decimalNumber} is ${binaryString}`);
