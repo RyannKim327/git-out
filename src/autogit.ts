@@ -1,121 +1,55 @@
-class Graph {
-    private adjList: Map<number, number[]> = new Map();
-
-    addEdge(u: number, v: number) {
-        if (!this.adjList.has(u)) {
-            this.adjList.set(u, []);
-        }
-        this.adjList.get(u)!.push(v);
-    }
-
-    private dfs(node: number, visited: Set<number>, stack: number[]) {
-        visited.add(node);
-        
-        const neighbors = this.adjList.get(node);
-        if (neighbors) {
-            for (const neighbor of neighbors) {
-                if (!visited.has(neighbor)) {
-                    this.dfs(neighbor, visited, stack);
-                }
-            }
-        }
-        
-        // Push the node to stack after visiting all its neighbors
-        stack.push(node);
-    }
-
-    topologicalSort(): number[] {
-        const visited = new Set<number>();
-        const stack: number[] = [];
-
-        for (const node of this.adjList.keys()) {
-            if (!visited.has(node)) {
-                this.dfs(node, visited, stack);
-            }
-        }
-
-        // The stack now contains the topological sort in reverse order
-        return stack.reverse();
-    }
+interface Node {
+  id: string; // or any other data you want to store
+  neighbors: Node[];
 }
 
-// Example Usage
-const graph = new Graph();
-graph.addEdge(5, 2);
-graph.addEdge(5, 0);
-graph.addEdge(4, 0);
-graph.addEdge(4, 1);
-graph.addEdge(2, 3);
-graph.addEdge(3, 1);
+function breadthLimitedSearch(
+  startNode: Node,
+  goalNodeId: string,
+  maxDepth: number
+): Node | null {
+  // Queue will store tuples of [node, currentDepth]
+  const queue: Array<[Node, number]> = [[startNode, 0]];
+  const visited = new Set<string>();
+  visited.add(startNode.id);
 
-const result = graph.topologicalSort();
-console.log(result); // Output: [5, 4, 2, 3, 1, 0] or similar valid order
-class GraphKahn {
-    private adjList: Map<number, number[]> = new Map();
+  while (queue.length > 0) {
+    const [currentNode, depth] = queue.shift()!;
 
-    addEdge(u: number, v: number) {
-        if (!this.adjList.has(u)) {
-            this.adjList.set(u, []);
-        }
-        this.adjList.get(u)!.push(v);
+    // Check if we've reached the goal
+    if (currentNode.id === goalNodeId) {
+      return currentNode;
     }
 
-    topologicalSort(): number[] {
-        const inDegree: Map<number, number> = new Map();
-        const queue: number[] = [];
-        const result: number[] = [];
-
-        // Initialize in-degree of all nodes
-        for (const node of this.adjList.keys()) {
-            inDegree.set(node, 0);
+    // If we're within the depth limit, explore neighbors
+    if (depth < maxDepth) {
+      for (const neighbor of currentNode.neighbors) {
+        if (!visited.has(neighbor.id)) {
+          visited.add(neighbor.id);
+          queue.push([neighbor, depth + 1]);
         }
-
-        // Calculate in-degrees
-        for (const [u, neighbors] of this.adjList.entries()) {
-            for (const v of neighbors) {
-                inDegree.set(v, (inDegree.get(v) || 0) + 1);
-            }
-        }
-
-        // Collect nodes with in-degree 0
-        for (const [node, degree] of inDegree.entries()) {
-            if (degree === 0) {
-                queue.push(node);
-            }
-        }
-
-        while (queue.length > 0) {
-            const current = queue.shift()!;
-            result.push(current);
-
-            const neighbors = this.adjList.get(current);
-            if (neighbors) {
-                for (const neighbor of neighbors) {
-                    inDegree.set(neighbor, inDegree.get(neighbor)! - 1);
-                    if (inDegree.get(neighbor) === 0) {
-                        queue.push(neighbor);
-                    }
-                }
-            }
-        }
-
-        // Check for cycles
-        if (result.length !== inDegree.size) {
-            throw new Error("Graph has a cycle; topological sort is not possible.");
-        }
-
-        return result;
+      }
     }
+  }
+
+  // Goal not found within depth limit
+  return null;
 }
+// Example nodes
+const nodeA: Node = { id: "A", neighbors: [] };
+const nodeB: Node = { id: "B", neighbors: [] };
+const nodeC: Node = { id: "C", neighbors: [] };
+const nodeD: Node = { id: "D", neighbors: [] };
 
-// Example Usage
-const graphKahn = new GraphKahn();
-graphKahn.addEdge(5, 2);
-graphKahn.addEdge(5, 0);
-graphKahn.addEdge(4, 0);
-graphKahn.addEdge(4, 1);
-graphKahn.addEdge(2, 3);
-graphKahn.addEdge(3, 1);
+// Creating a simple graph
+nodeA.neighbors.push(nodeB, nodeC);
+nodeB.neighbors.push(nodeD);
 
-const resultKahn = graphKahn.topologicalSort();
-console.log(resultKahn); // Output: [5, 4, 2, 3, 1, 0] or similar valid order
+// Search for node D starting from node A with depth limit 2
+const result = breadthLimitedSearch(nodeA, "D", 2);
+
+if (result) {
+  console.log(`Found node: ${result.id}`);
+} else {
+  console.log("Node not found within depth limit");
+}
