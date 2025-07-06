@@ -1,120 +1,67 @@
-class Node {
-    value: number;
-    left: Node | null;
-    right: Node | null;
-    
-    constructor(value: number) {
+class Node<T> {
+    value: T;
+    next: Node<T> | null;
+
+    constructor(value: T) {
         this.value = value;
-        this.left = null;
-        this.right = null;
+        this.next = null;
     }
 }
 
-class BinaryTree {
-    root: Node | null;
+class Queue<T> {
+    private head: Node<T> | null = null;
+    private tail: Node<T> | null = null;
+    private length: number = 0;
 
-    constructor() {
-        this.root = null;
-    }
-
-    // Insert a new value into the tree
-    insert(value: number): void {
+    // Add an element to the end of the queue
+    enqueue(value: T): void {
         const newNode = new Node(value);
-        if (this.root === null) {
-            this.root = newNode;
-        } else {
-            this.insertNode(this.root, newNode);
+        if (this.tail) {
+            this.tail.next = newNode; // Link the old tail to the new node
         }
-    }
-
-    // Helper method to recursively insert a node
-    private insertNode(node: Node, newNode: Node): void {
-        if (newNode.value < node.value) {
-            if (node.left === null) {
-                node.left = newNode;
-            } else {
-                this.insertNode(node.left, newNode);
-            }
-        } else {
-            if (node.right === null) {
-                node.right = newNode;
-            } else {
-                this.insertNode(node.right, newNode);
-            }
+        this.tail = newNode; // Update the tail to the new node
+        if (!this.head) {
+            this.head = newNode; // If the queue was empty, head is also the new node
         }
+        this.length++;
     }
 
-    // In-order traversal (left, root, right)
-    inOrderTraversal(callback: (value: number) => void): void {
-        this.inOrder(this.root, callback);
-    }
-
-    private inOrder(node: Node | null, callback: (value: number) => void): void {
-        if (node) {
-            this.inOrder(node.left, callback);
-            callback(node.value);
-            this.inOrder(node.right, callback);
+    // Remove and return the element from the front of the queue
+    dequeue(): T | null {
+        if (!this.head) {
+            return null; // Queue is empty
         }
-    }
-
-    // Pre-order traversal (root, left, right)
-    preOrderTraversal(callback: (value: number) => void): void {
-        this.preOrder(this.root, callback);
-    }
-
-    private preOrder(node: Node | null, callback: (value: number) => void): void {
-        if (node) {
-            callback(node.value);
-            this.preOrder(node.left, callback);
-            this.preOrder(node.right, callback);
+        const value = this.head.value; // Get the value from the head
+        this.head = this.head.next; // Move the head to the next node
+        if (!this.head) {
+            this.tail = null; // If the queue is now empty, reset the tail
         }
+        this.length--;
+        return value;
     }
 
-    // Post-order traversal (left, right, root)
-    postOrderTraversal(callback: (value: number) => void): void {
-        this.postOrder(this.root, callback);
+    // Peek at the front element without removing it
+    peek(): T | null {
+        return this.head ? this.head.value : null;
     }
 
-    private postOrder(node: Node | null, callback: (value: number) => void): void {
-        if (node) {
-            this.postOrder(node.left, callback);
-            this.postOrder(node.right, callback);
-            callback(node.value);
-        }
+    // Check if the queue is empty
+    isEmpty(): boolean {
+        return this.length === 0;
     }
 
-    // Search for a value in the tree
-    search(value: number): boolean {
-        return this.searchNode(this.root, value);
-    }
-
-    private searchNode(node: Node | null, value: number): boolean {
-        if (node === null) {
-            return false;
-        }
-        if (value < node.value) {
-            return this.searchNode(node.left, value);
-        } else if (value > node.value) {
-            return this.searchNode(node.right, value);
-        } else {
-            return true; // value found
-        }
+    // Get the size of the queue
+    size(): number {
+        return this.length;
     }
 }
 
-// Example Usage:
-const tree = new BinaryTree();
-tree.insert(10);
-tree.insert(5);
-tree.insert(15);
-tree.insert(3);
-tree.insert(7);
-
-// In-order traversal
-tree.inOrderTraversal(value => {
-    console.log(value); // 3, 5, 7, 10, 15
-});
-
-// Searching for a value
-console.log(tree.search(7)); // true
-console.log(tree.search(20)); // false
+// Example usage:
+const queue = new Queue<number>();
+queue.enqueue(1);
+queue.enqueue(2);
+queue.enqueue(3);
+console.log(queue.dequeue()); // Output: 1
+console.log(queue.peek());     // Output: 2
+console.log(queue.size());     // Output: 2
+console.log(queue.isEmpty());  // Output: false
