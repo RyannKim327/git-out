@@ -1,67 +1,49 @@
-class Node<T> {
-    value: T;
-    next: Node<T> | null;
+class ListNode {
+  val: number;
+  next: ListNode | null;
 
-    constructor(value: T) {
-        this.value = value;
-        this.next = null;
-    }
+  constructor(val: number, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
+  }
+}
+function reverseList(head: ListNode | null): ListNode | null {
+  let prev: ListNode | null = null;
+  let current: ListNode | null = head;
+
+  while (current !== null) {
+    // Save the next node
+    const nextNode = current.next;
+    // Reverse the current node's pointer
+    current.next = prev;
+    // Move pointers one position ahead
+    prev = current;
+    current = nextNode;
+  }
+
+  // prev will be the new head of the reversed list
+  return prev;
+}
+// Create a linked list: 1 -> 2 -> 3 -> null
+let node1 = new ListNode(1);
+let node2 = new ListNode(2);
+let node3 = new ListNode(3);
+node1.next = node2;
+node2.next = node3;
+
+console.log("Original list:");
+let current = node1;
+while (current !== null) {
+  console.log(current.val);
+  current = current.next;
 }
 
-class Queue<T> {
-    private head: Node<T> | null = null;
-    private tail: Node<T> | null = null;
-    private length: number = 0;
+// Reverse the list
+const reversedHead = reverseList(node1);
 
-    // Add an element to the end of the queue
-    enqueue(value: T): void {
-        const newNode = new Node(value);
-        if (this.tail) {
-            this.tail.next = newNode; // Link the old tail to the new node
-        }
-        this.tail = newNode; // Update the tail to the new node
-        if (!this.head) {
-            this.head = newNode; // If the queue was empty, head is also the new node
-        }
-        this.length++;
-    }
-
-    // Remove and return the element from the front of the queue
-    dequeue(): T | null {
-        if (!this.head) {
-            return null; // Queue is empty
-        }
-        const value = this.head.value; // Get the value from the head
-        this.head = this.head.next; // Move the head to the next node
-        if (!this.head) {
-            this.tail = null; // If the queue is now empty, reset the tail
-        }
-        this.length--;
-        return value;
-    }
-
-    // Peek at the front element without removing it
-    peek(): T | null {
-        return this.head ? this.head.value : null;
-    }
-
-    // Check if the queue is empty
-    isEmpty(): boolean {
-        return this.length === 0;
-    }
-
-    // Get the size of the queue
-    size(): number {
-        return this.length;
-    }
+console.log("Reversed list:");
+current = reversedHead;
+while (current !== null) {
+  console.log(current.val);
+  current = current.next;
 }
-
-// Example usage:
-const queue = new Queue<number>();
-queue.enqueue(1);
-queue.enqueue(2);
-queue.enqueue(3);
-console.log(queue.dequeue()); // Output: 1
-console.log(queue.peek());     // Output: 2
-console.log(queue.size());     // Output: 2
-console.log(queue.isEmpty());  // Output: false
