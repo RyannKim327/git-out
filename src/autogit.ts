@@ -1,28 +1,44 @@
-function quicksort(arr: number[]): number[] {
-    // Base case: arrays with 0 or 1 element are sorted
-    if (arr.length <= 1) {
-        return arr;
-    }
-
-    // Choose a pivot (using the last element here)
-    const pivot = arr[arr.length - 1];
-    const left: number[] = [];
-    const right: number[] = [];
-
-    // Partitioning
-    for (let i = 0; i < arr.length - 1; i++) {
-        if (arr[i] < pivot) {
-            left.push(arr[i]);
-        } else {
-            right.push(arr[i]);
-        }
-    }
-
-    // Recursively apply quicksort to left and right, and combine with pivot
-    return [...quicksort(left), pivot, ...quicksort(right)];
+function removeDuplicates<T>(arr: T[]): T[] {
+    return Array.from(new Set(arr));
 }
 
-// Example usage
-const arrayToSort = [3, 6, 8, 10, 1, 2, 1];
-const sortedArray = quicksort(arrayToSort);
-console.log(sortedArray); // Output: [1, 1, 2, 3, 6, 8, 10]
+// Example usage:
+const numbers = [1, 2, 2, 3, 4, 4, 5];
+const uniqueNumbers = removeDuplicates(numbers);
+console.log(uniqueNumbers); // Output: [1, 2, 3, 4, 5]
+function removeDuplicates<T>(arr: T[]): T[] {
+    return arr.filter((value, index, self) => self.indexOf(value) === index);
+}
+
+// Example usage:
+const numbers = [1, 2, 2, 3, 4, 4, 5];
+const uniqueNumbers = removeDuplicates(numbers);
+console.log(uniqueNumbers); // Output: [1, 2, 3, 4, 5]
+function removeDuplicates<T>(arr: T[]): T[] {
+    return arr.reduce((accumulator: T[], current: T) => {
+        if (!accumulator.includes(current)) {
+            accumulator.push(current);
+        }
+        return accumulator;
+    }, []);
+}
+
+// Example usage:
+const numbers = [1, 2, 2, 3, 4, 4, 5];
+const uniqueNumbers = removeDuplicates(numbers);
+console.log(uniqueNumbers); // Output: [1, 2, 3, 4, 5]
+function removeDuplicates<T>(arr: T[]): T[] {
+    const seen: { [key: string]: boolean } = {};
+    return arr.filter((item) => {
+        if (seen[item as any]) {
+            return false; // Duplicate found
+        }
+        seen[item as any] = true; // Mark as seen
+        return true; // Keep the item
+    });
+}
+
+// Example usage:
+const numbers = [1, 2, 2, 3, 4, 4, 5];
+const uniqueNumbers = removeDuplicates(numbers);
+console.log(uniqueNumbers); // Output: [1, 2, 3, 4, 5]
