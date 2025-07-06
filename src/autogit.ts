@@ -1,22 +1,22 @@
-const array = [1, 2, 2, 3, 4, 4, 5];
-const uniqueArray = Array.from(new Set(array));
-console.log(uniqueArray); // Output: [1, 2, 3, 4, 5]
-const array = [1, 2, 2, 3, 4, 4, 5];
-const uniqueArray = array.filter((value, index) => array.indexOf(value) === index);
-console.log(uniqueArray); // Output: [1, 2, 3, 4, 5]
-const array = [1, 2, 2, 3, 4, 4, 5];
-const uniqueArray = array.reduce<number[]>((acc, value) => {
-    if (!acc.includes(value)) {
-        acc.push(value);
-    }
-    return acc;
-}, []);
-console.log(uniqueArray); // Output: [1, 2, 3, 4, 5]
-const array = [1, 2, 2, 3, 4, 4, 5];
-const uniqueArray: number[] = [];
-array.forEach(value => {
-    if (!uniqueArray.includes(value)) {
-        uniqueArray.push(value);
-    }
+import cron from 'node-cron';
+
+// Schedule a task to run every minute
+const task = cron.schedule('* * * * *', () => {
+  const now = new Date();
+  console.log(`Task executed at: ${now.toISOString()}`);
 });
-console.log(uniqueArray); // Output: [1, 2, 3, 4, 5]
+
+// Start the scheduled task
+task.start();
+
+// Optional: Handle process termination to gracefully stop the cron job
+process.on('SIGINT', () => {
+  console.log('Gracefully shutting down...');
+  task.stop();
+  process.exit();
+});
+npm init -y
+npm install typescript @types/node node-cron
+npx tsc --init
+npx tsc cron-example.ts
+node cron-example.js
