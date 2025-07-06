@@ -1,44 +1,36 @@
-function removeDuplicates<T>(arr: T[]): T[] {
-    return Array.from(new Set(arr));
+class TreeNode {
+    value: number;
+    left: TreeNode | null;
+    right: TreeNode | null;
+
+    constructor(value: number) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+function countLeafNodes(root: TreeNode | null): number {
+    // Base case: if the node is null, return 0
+    if (root === null) {
+        return 0;
+    }
+
+    // If the node is a leaf node, return 1
+    if (root.left === null && root.right === null) {
+        return 1;
+    }
+
+    // Recursively count the leaf nodes in the left and right subtrees
+    return countLeafNodes(root.left) + countLeafNodes(root.right);
 }
 
 // Example usage:
-const numbers = [1, 2, 2, 3, 4, 4, 5];
-const uniqueNumbers = removeDuplicates(numbers);
-console.log(uniqueNumbers); // Output: [1, 2, 3, 4, 5]
-function removeDuplicates<T>(arr: T[]): T[] {
-    return arr.filter((value, index, self) => self.indexOf(value) === index);
-}
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4);
+root.left.right = new TreeNode(5);
 
-// Example usage:
-const numbers = [1, 2, 2, 3, 4, 4, 5];
-const uniqueNumbers = removeDuplicates(numbers);
-console.log(uniqueNumbers); // Output: [1, 2, 3, 4, 5]
-function removeDuplicates<T>(arr: T[]): T[] {
-    return arr.reduce((accumulator: T[], current: T) => {
-        if (!accumulator.includes(current)) {
-            accumulator.push(current);
-        }
-        return accumulator;
-    }, []);
-}
-
-// Example usage:
-const numbers = [1, 2, 2, 3, 4, 4, 5];
-const uniqueNumbers = removeDuplicates(numbers);
-console.log(uniqueNumbers); // Output: [1, 2, 3, 4, 5]
-function removeDuplicates<T>(arr: T[]): T[] {
-    const seen: { [key: string]: boolean } = {};
-    return arr.filter((item) => {
-        if (seen[item as any]) {
-            return false; // Duplicate found
-        }
-        seen[item as any] = true; // Mark as seen
-        return true; // Keep the item
-    });
-}
-
-// Example usage:
-const numbers = [1, 2, 2, 3, 4, 4, 5];
-const uniqueNumbers = removeDuplicates(numbers);
-console.log(uniqueNumbers); // Output: [1, 2, 3, 4, 5]
+const leafCount = countLeafNodes(root);
+console.log(`Number of leaf nodes: ${leafCount}`); // Output: Number of leaf nodes: 3
