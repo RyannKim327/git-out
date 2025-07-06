@@ -1,26 +1,14 @@
-import * as readline from 'readline';
+function calculateMean(numbers: number[]): number {
+  if (numbers.length === 0) {
+    throw new Error("Cannot calculate mean of an empty array");
+  }
 
-// Create an interface for input and output
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-
-// Function to ask for user input
-function askQuestion(query: string): Promise<string> {
-    return new Promise(resolve => rl.question(query, resolve));
+  const sum = numbers.reduce((acc, current) => acc + current, 0);
+  const mean = sum / numbers.length;
+  return mean;
 }
 
-// Main function to run the program
-async function main() {
-    const name = await askQuestion("What is your name? ");
-    console.log(`Hello, ${name}!`);
-    
-    const age = await askQuestion("How old are you? ");
-    console.log(`You are ${age} years old.`);
-    
-    rl.close();
-}
-
-// Run the main function
-main();
+// Example usage:
+const myNumbers = [10, 20, 30, 40, 50];
+const average = calculateMean(myNumbers);
+console.log(`The mean is: ${average}`); // Output: The mean is: 30
