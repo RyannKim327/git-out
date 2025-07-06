@@ -1,60 +1,26 @@
-class TreeNode<T> {
-    value: T;
-    children: TreeNode<T>[];
+import * as readline from 'readline';
 
-    constructor(value: T) {
-        this.value = value;
-        this.children = [];
-    }
+// Create an interface for input and output
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-    addChild(child: TreeNode<T>) {
-        this.children.push(child);
-    }
+// Function to ask for user input
+function askQuestion(query: string): Promise<string> {
+    return new Promise(resolve => rl.question(query, resolve));
 }
-function breadthLimitedSearch<T>(root: TreeNode<T>, target: T, maxDepth: number): TreeNode<T> | null {
-    if (maxDepth < 0) {
-        return null; // If maxDepth is negative, return null
-    }
 
-    const queue: { node: TreeNode<T>; depth: number }[] = [{ node: root, depth: 0 }];
+// Main function to run the program
+async function main() {
+    const name = await askQuestion("What is your name? ");
+    console.log(`Hello, ${name}!`);
     
-    while (queue.length > 0) {
-        const { node, depth } = queue.shift()!; // Get the first element in the queue
-
-        // Check if the current node is the target
-        if (node.value === target) {
-            return node; // Return the found node
-        }
-
-        // If we haven't reached the maximum depth, add children to the queue
-        if (depth < maxDepth) {
-            for (const child of node.children) {
-                queue.push({ node: child, depth: depth + 1 });
-            }
-        }
-    }
-
-    return null; // Return null if the target is not found within the max depth
+    const age = await askQuestion("How old are you? ");
+    console.log(`You are ${age} years old.`);
+    
+    rl.close();
 }
-// Create a sample tree
-const root = new TreeNode<number>(1);
-const child1 = new TreeNode<number>(2);
-const child2 = new TreeNode<number>(3);
-const child3 = new TreeNode<number>(4);
-const child4 = new TreeNode<number>(5);
 
-root.addChild(child1);
-root.addChild(child2);
-child1.addChild(child3);
-child1.addChild(child4);
-
-// Perform a breadth-limited search
-const targetValue = 4;
-const maxDepth = 2;
-const result = breadthLimitedSearch(root, targetValue, maxDepth);
-
-if (result) {
-    console.log(`Found node with value: ${result.value}`);
-} else {
-    console.log(`Node with value ${targetValue} not found within depth ${maxDepth}.`);
-}
+// Run the main function
+main();
