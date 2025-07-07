@@ -1,32 +1,56 @@
-function largestPrimeFactor(n: number): number {
-    let maxPrime = -1;
+// fetchPosts.ts
 
-    // Handle the smallest prime factor 2
-    while (n % 2 === 0) {
-        maxPrime = 2;
-        n = n / 2;
-    }
+import axios from 'axios';
 
-    // Check for odd factors starting from 3
-    let factor = 3;
-    const sqrtN = Math.sqrt(n);
-    while (factor <= sqrtN && n > 1) {
-        while (n % factor === 0) {
-            maxPrime = factor;
-            n = n / factor;
-        }
-        factor += 2;
-    }
-
-    // If remaining n is greater than 1, it is a prime factor
-    if (n > 1) {
-        maxPrime = n;
-    }
-
-    return maxPrime;
+// Define a Post interface
+interface Post {
+    userId: number;
+    id: number;
+    title: string;
+    body: string;
 }
 
-// Example usage:
-const number = 13195;
-console.log(`Largest prime factor of ${number} is ${largestPrimeFactor(number)}`);
-// Output: Largest prime factor of 13195 is 29
+// Function to fetch posts from JSONPlaceholder API
+async function fetchPosts(): Promise<Post[]> {
+    try {
+        const response = await axios.get<Post[]>('https://jsonplaceholder.typicode.com/posts');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching posts:', error);
+        throw error;
+    }
+}
+
+// Function to display posts
+function displayPosts(posts: Post[]): void {
+    posts.forEach(post => {
+        console.log(`Post ID: ${post.id}`);
+        console.log(`Title: ${post.title}`);
+        console.log(`Body: ${post.body}`);
+        console.log('-------------------------');
+    });
+}
+
+// Main function
+async function main(): Promise<void> {
+    try {
+        const posts = await fetchPosts();
+        displayPosts(posts);
+    } catch (error) {
+        console.error('Failed to fetch posts:', error);
+    }
+}
+
+// Run the main function
+main();
+npx tsc fetchPosts.ts
+node fetchPosts.js
+Post ID: 1
+Title: sunt aut facere repellat provident occaecati excepturi optio reprehenderit
+Body:quia et suscipit\nsuscipit
+-------------------------
+Post ID: 2
+Title: qui est esse
+Body: est rerum tempore vitae\nsequi sint nihil...
+-------------------------
+...
