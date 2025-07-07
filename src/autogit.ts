@@ -1,22 +1,7 @@
-function firstNonRepeatingCharacter(str: string): string | null {
-    const charCount: { [key: string]: number } = {};
+const numbers: number[] = [5, 3, 8, 1, 2];
 
-    // Count occurrences of each character
-    for (const char of str) {
-        charCount[char] = (charCount[char] || 0) + 1;
-    }
+numbers.sort((a, b) => a - b);
 
-    // Find the first non-repeating character
-    for (const char of str) {
-        if (charCount[char] === 1) {
-            return char; // Return the first non-repeating character
-        }
-    }
-
-    return null; // Return null if there is no non-repeating character
-}
-
-// Example usage:
-const input = "swiss";
-const result = firstNonRepeatingCharacter(input);
-console.log(result); // Output: "w"
+console.log(numbers); // Output: [1, 2, 3, 5, 8]
+numbers.sort((a, b) => b - a);
+console.log(numbers); // Output: [8, 5, 3, 2, 1]
