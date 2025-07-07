@@ -1,27 +1,25 @@
-import * as readline from 'readline';
+function factorialRecursive(n: number): number {
+  if (n < 0) {
+    throw new Error('Factorial is not defined for negative numbers.');
+  }
+  if (n === 0 || n === 1) {
+    return 1;
+  }
+  return n * factorialRecursive(n - 1);
+}
 
-// Create an interface for reading input
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+// Usage:
+console.log(factorialRecursive(5)); // Output: 120
+function factorialIterative(n: number): number {
+  if (n < 0) {
+    throw new Error('Factorial is not defined for negative numbers.');
+  }
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
+}
 
-// Ask the user for their name
-rl.question('What is your name? ', (name: string) => {
-  // Greet the user
-  console.log(`Hello, ${name}!`);
-
-  // Ask the user for their age
-  rl.question('How old are you? ', (ageInput: string) => {
-    const age: number = parseInt(ageInput, 10);
-    
-    if (isNaN(age)) {
-      console.log('That does not seem to be a valid number.');
-    } else {
-      console.log(`You are ${age} years old.`);
-    }
-
-    // Close the input stream
-    rl.close();
-  });
-});
+// Usage:
+console.log(factorialIterative(5)); // Output: 120
