@@ -1,96 +1,43 @@
-class BinaryHeap {
-    private heap: number[];
+class TreeNode {
+    val: number;
+    left: TreeNode | null;
+    right: TreeNode | null;
 
-    constructor() {
-        this.heap = [];
-    }
-
-    // Insert a new value into the heap
-    public insert(value: number): void {
-        this.heap.push(value);
-        this.bubbleUp(this.heap.length - 1);
-    }
-
-    // Remove and return the minimum value from the heap
-    public removeMin(): number | null {
-        if (this.heap.length === 0) {
-            return null; // or throw an error
-        }
-        const min = this.heap[0];
-        const end = this.heap.pop()!;
-        if (this.heap.length > 0) {
-            this.heap[0] = end;
-            this.bubbleDown(0);
-        }
-        return min;
-    }
-
-    // Get the minimum value without removing it
-    public peek(): number | null {
-        return this.heap.length > 0 ? this.heap[0] : null;
-    }
-
-    // Get the size of the heap
-    public size(): number {
-        return this.heap.length;
-    }
-
-    // Bubble up the last element to maintain the heap property
-    private bubbleUp(index: number): void {
-        const element = this.heap[index];
-        while (index > 0) {
-            const parentIndex = Math.floor((index - 1) / 2);
-            const parent = this.heap[parentIndex];
-            if (element >= parent) break; // Correct position found
-            this.heap[index] = parent; // Move parent down
-            index = parentIndex; // Move up the tree
-        }
-        this.heap[index] = element; // Place the element in its correct position
-    }
-
-    // Bubble down the element at the given index to maintain the heap property
-    private bubbleDown(index: number): void {
-        const length = this.heap.length;
-        const element = this.heap[index];
-        while (true) {
-            let leftChildIndex = 2 * index + 1;
-            let rightChildIndex = 2 * index + 2;
-            let leftChild: number, rightChild: number;
-            let swapIndex: number = -1;
-
-            if (leftChildIndex < length) {
-                leftChild = this.heap[leftChildIndex];
-                if (leftChild < element) {
-                    swapIndex = leftChildIndex;
-                }
-            }
-
-            if (rightChildIndex < length) {
-                rightChild = this.heap[rightChildIndex];
-                if (
-                    (swapIndex === -1 && rightChild < element) ||
-                    (swapIndex !== -1 && rightChild < leftChild)
-                ) {
-                    swapIndex = rightChildIndex;
-                }
-            }
-
-            if (swapIndex === -1) break; // Correct position found
-            this.heap[index] = this.heap[swapIndex]; // Move child up
-            index = swapIndex; // Move down the tree
-        }
-        this.heap[index] = element; // Place the element in its correct position
+    constructor(val: number) {
+        this.val = val;
+        this.left = null;
+        this.right = null;
     }
 }
 
-// Example usage:
-const pq = new BinaryHeap();
-pq.insert(5);
-pq.insert(3);
-pq.insert(8);
-pq.insert(1);
+function diameterOfBinaryTree(root: TreeNode | null): number {
+    let diameter = 0;
 
-console.log(pq.peek()); // Output: 1
-console.log(pq.removeMin()); // Output: 1
-console.log(pq.peek()); // Output: 3
-console.log(pq.size()); // Output: 3
+    function height(node: TreeNode | null): number {
+        if (node === null) {
+            return 0;
+        }
+
+        // Recursively find the height of left and right subtree
+        const leftHeight = height(node.left);
+        const rightHeight = height(node.right);
+
+        // Update the diameter if the path through this node is larger
+        diameter = Math.max(diameter, leftHeight + rightHeight);
+
+        // Return the height of the subtree rooted at current node
+        return Math.max(leftHeight, rightHeight) + 1;
+    }
+
+    height(root); // Start the recursion
+    return diameter; // The maximum diameter found
+}
+// Creating a sample binary tree
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4);
+root.left.right = new TreeNode(5);
+
+const result = diameterOfBinaryTree(root);
+console.log(`Diameter of the binary tree is: ${result}`); // Output will be 4
