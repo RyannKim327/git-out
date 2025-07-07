@@ -1,40 +1,47 @@
-function longestCommonSubsequence(str1: string, str2: string): string {
-    const m = str1.length;
-    const n = str2.length;
+function createBadCharacterTable(pattern: string): number[] {
+    const table: number[] = new Array(256).fill(-1);
+    const patternLength = pattern.length;
 
-    // Create a 2D array to store lengths of longest common subsequence
-    const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-
-    // Fill the dp array
-    for (let i = 1; i <= m; i++) {
-        for (let j = 1; j <= n; j++) {
-            if (str1[i - 1] === str2[j - 1]) {
-                dp[i][j] = dp[i - 1][j - 1] + 1; // Characters match
-            } else {
-                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]); // Characters do not match
-            }
-        }
+    for (let i = 0; i < patternLength; i++) {
+        table[pattern.charCodeAt(i)] = i;
     }
 
-    // Backtrack to find the LCS
-    let lcs = '';
-    let i = m, j = n;
-    while (i > 0 && j > 0) {
-        if (str1[i - 1] === str2[j - 1]) {
-            lcs = str1[i - 1] + lcs; // Append character to LCS
-            i--;
-            j--;
-        } else if (dp[i - 1][j] > dp[i][j - 1]) {
-            i--; // Move up
-        } else {
-            j--; // Move left
-        }
-    }
-
-    return lcs; // Return the longest common subsequence
+    return table;
 }
 
-// Example usage
-const str1 = "AGGTAB";
-const str2 = "GXTXAYB";
-console.log(longestCommonSubsequence(str1, str2)); // Output: "GTAB"
+function boyerMooreHorspool(text: string, pattern: string): number[] {
+    const badCharTable = createBadCharacterTable(pattern);
+    const patternLength = pattern.length;
+    const textLength = text.length;
+    const result: number[] = [];
+
+    let skip: number = 0; // Skip counter
+
+    while (textLength - skip >= patternLength) {
+        let j: number = patternLength - 1;
+
+        // Compare the pattern with the text from right to left
+        while (j >= 0 && pattern[j] === text[skip + j]) {
+            j--;
+        }
+
+        // If the pattern is found
+        if (j < 0) {
+            result.push(skip); // Store the position of the match
+            // Shift the pattern to the right based on the bad character table
+            skip += (skip + patternLength < textLength) ? patternLength - badCharTable[text.charCodeAt(skip + patternLength)] : 1;
+        } else {
+            // Shift the pattern based on the bad character table
+            skip += Math.max(1, j - badCharTable[text.charCodeAt(skip + j)]);
+        }
+    }
+
+    return result;
+}
+
+// Example usage:
+const text = "ababcabcabababd";
+const pattern = "ababd";
+
+const result = boyerMooreHorspool(text, pattern);
+console.log(result); // Output: [10] (the starting index of the match)
