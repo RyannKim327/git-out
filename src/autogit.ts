@@ -1,22 +1,33 @@
-function firstNonRepeatingCharacter(s: string): string | null {
-    const charCount: { [key: string]: number } = {};
+// Import the fetch function if you're using Node.js environment
+// For browsers, fetch is available globally
+// import fetch from 'node-fetch';
 
-    // Count the occurrences of each character
-    for (const char of s) {
-        charCount[char] = (charCount[char] || 0) + 1;
-    }
-
-    // Find the first non-repeating character
-    for (const char of s) {
-        if (charCount[char] === 1) {
-            return char; // Return the first non-repeating character
-        }
-    }
-
-    return null; // Return null if there is no non-repeating character
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
 
-// Example usage:
-const input = "swiss";
-const result = firstNonRepeatingCharacter(input);
-console.log(result); // Output: "w"
+async function fetchPosts(): Promise<Post[]> {
+  const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+  if (!response.ok) {
+    throw new Error(`Error fetching posts: ${response.statusText}`);
+  }
+  const posts: Post[] = await response.json();
+  return posts;
+}
+
+async function main() {
+  try {
+    const posts = await fetchPosts();
+    console.log(`Fetched ${posts.length} posts:`);
+    posts.forEach(post => {
+      console.log(`Post #${post.id} by User ${post.userId}: ${post.title}`);
+    });
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+main();
