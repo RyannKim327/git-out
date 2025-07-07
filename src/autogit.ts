@@ -1,24 +1,36 @@
-function firstNonRepeatingCharacter(str: string): string | null {
-    // Create a map to store character counts
-    const charCount: { [key: string]: number } = {};
+class Stack<T> {
+  private items: T[] = [];
 
-    // Count the frequency of each character
-    for (const char of str) {
-        charCount[char] = (charCount[char] || 0) + 1;
-    }
+  // Add an item to the top of the stack
+  push(element: T): void {
+    this.items.push(element);
+  }
 
-    // Find the first character with a count of 1
-    for (const char of str) {
-        if (charCount[char] === 1) {
-            return char;
-        }
-    }
+  // Remove and return the top item of the stack
+  pop(): T | undefined {
+    return this.items.pop();
+  }
 
-    // If no non-repeating character found
-    return null;
+  // View the top item without removing it
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  // Check if the stack is empty
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  // Get the current size of the stack
+  size(): number {
+    return this.items.length;
+  }
 }
 
 // Example usage:
-const input = "swiss";
-const result = firstNonRepeatingCharacter(input);
-console.log(result); // Output: 'w'
+const stack = new Stack<number>();
+stack.push(10);
+stack.push(20);
+console.log(stack.peek()); // Output: 20
+console.log(stack.pop());  // Output: 20
+console.log(stack.size()); // Output: 1
