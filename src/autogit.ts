@@ -1,33 +1,32 @@
-// Import the fetch function if you're using Node.js environment
-// For browsers, fetch is available globally
-// import fetch from 'node-fetch';
+function largestPrimeFactor(n: number): number {
+    let maxPrime = -1;
 
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
+    // Handle the smallest prime factor 2
+    while (n % 2 === 0) {
+        maxPrime = 2;
+        n = n / 2;
+    }
+
+    // Check for odd factors starting from 3
+    let factor = 3;
+    const sqrtN = Math.sqrt(n);
+    while (factor <= sqrtN && n > 1) {
+        while (n % factor === 0) {
+            maxPrime = factor;
+            n = n / factor;
+        }
+        factor += 2;
+    }
+
+    // If remaining n is greater than 1, it is a prime factor
+    if (n > 1) {
+        maxPrime = n;
+    }
+
+    return maxPrime;
 }
 
-async function fetchPosts(): Promise<Post[]> {
-  const response = await fetch('https://jsonplaceholder.typicode.com/posts');
-  if (!response.ok) {
-    throw new Error(`Error fetching posts: ${response.statusText}`);
-  }
-  const posts: Post[] = await response.json();
-  return posts;
-}
-
-async function main() {
-  try {
-    const posts = await fetchPosts();
-    console.log(`Fetched ${posts.length} posts:`);
-    posts.forEach(post => {
-      console.log(`Post #${post.id} by User ${post.userId}: ${post.title}`);
-    });
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-main();
+// Example usage:
+const number = 13195;
+console.log(`Largest prime factor of ${number} is ${largestPrimeFactor(number)}`);
+// Output: Largest prime factor of 13195 is 29
