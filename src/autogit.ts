@@ -1,17 +1,22 @@
-function firstRepeatedCharacter(str: string): string | null {
-  const seen = new Set<string>();
+function firstNonRepeatingCharacter(s: string): string | null {
+    const charCount: { [key: string]: number } = {};
 
-  for (const char of str) {
-    if (seen.has(char)) {
-      return char; // Found the first repeated character
+    // Count the occurrences of each character
+    for (const char of s) {
+        charCount[char] = (charCount[char] || 0) + 1;
     }
-    seen.add(char);
-  }
 
-  return null; // No repeated character found
+    // Find the first non-repeating character
+    for (const char of s) {
+        if (charCount[char] === 1) {
+            return char; // Return the first non-repeating character
+        }
+    }
+
+    return null; // Return null if there is no non-repeating character
 }
 
 // Example usage:
-const input = "abca";
-const result = firstRepeatedCharacter(input);
-console.log(result); // Output: 'a'
+const input = "swiss";
+const result = firstNonRepeatingCharacter(input);
+console.log(result); // Output: "w"
