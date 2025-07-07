@@ -1,55 +1,88 @@
-function kmpSearch(text: string, pattern: string): number[] {
-    const lps = computeLPSArray(pattern);
-    const result: number[] = [];
-    let i = 0; // index for text
-    let j = 0; // index for pattern
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null;
+  right: TreeNode<T> | null;
 
-    while (i < text.length) {
-        if (pattern[j] === text[i]) {
-            i++;
-            j++;
-        }
+  constructor(value: T) {
+    this.value = value;
+    this.left = null;
+    this.right = null;
+  }
+}
+class BinaryTree<T> {
+  root: TreeNode<T> | null;
 
-        if (j === pattern.length) {
-            result.push(i - j); // Match found, add the starting index to result
-            j = lps[j - 1]; // Reset j using the LPS array
-        } else if (i < text.length && pattern[j] !== text[i]) {
-            if (j !== 0) {
-                j = lps[j - 1]; // Use LPS to skip characters
-            } else {
-                i++;
-            }
-        }
+  constructor() {
+    this.root = null;
+  }
+
+  // Insert a new value into the tree
+  insert(value: T): void {
+    const newNode = new TreeNode(value);
+    if (this.root === null) {
+      this.root = newNode;
+      return;
     }
 
-    return result; // Return all starting indices of matches
-}
-
-function computeLPSArray(pattern: string): number[] {
-    const lps = new Array(pattern.length).fill(0);
-    let length = 0; // Length of the previous longest prefix suffix
-    let i = 1;
-
-    while (i < pattern.length) {
-        if (pattern[i] === pattern[length]) {
-            length++;
-            lps[i] = length;
-            i++;
+    let current = this.root;
+    while (true) {
+      if (value < current.value) {
+        if (current.left === null) {
+          current.left = newNode;
+          break;
         } else {
-            if (length !== 0) {
-                length = lps[length - 1]; // Use the previous LPS value
-            } else {
-                lps[i] = 0;
-                i++;
-            }
+          current = current.left;
         }
+      } else {
+        if (current.right === null) {
+          current.right = newNode;
+          break;
+        } else {
+          current = current.right;
+        }
+      }
     }
+  }
 
-    return lps;
+  // In-order traversal (left, root, right)
+  inorderTraversal(node: TreeNode<T> | null = this.root, visit: (value: T) => void): void {
+    if (node !== null) {
+      this.inorderTraversal(node.left, visit);
+      visit(node.value);
+      this.inorderTraversal(node.right, visit);
+    }
+  }
+
+  // Pre-order traversal (root, left, right)
+  preorderTraversal(node: TreeNode<T> | null = this.root, visit: (value: T) => void): void {
+    if (node !== null) {
+      visit(node.value);
+      this.preorderTraversal(node.left, visit);
+      this.preorderTraversal(node.right, visit);
+    }
+  }
+
+  // Post-order traversal (left, right, root)
+  postorderTraversal(node: TreeNode<T> | null = this.root, visit: (value: T) => void): void {
+    if (node !== null) {
+      this.postorderTraversal(node.left, visit);
+      this.postorderTraversal(node.right, visit);
+      visit(node.value);
+    }
+  }
 }
+const tree = new BinaryTree<number>();
+tree.insert(10);
+tree.insert(5);
+tree.insert(15);
+tree.insert(3);
+tree.insert(7);
 
-// Example usage:
-const text = "ababcabcabababd";
-const pattern = "ababd";
-const matches = kmpSearch(text, pattern);
-console.log("Pattern found at indices:", matches);
+console.log("In-order traversal:");
+tree.inorderTraversal(undefined, value => console.log(value));
+
+console.log("Pre-order traversal:");
+tree.preorderTraversal(undefined, value => console.log(value));
+
+console.log("Post-order traversal:");
+tree.postorderTraversal(undefined, value => console.log(value));
