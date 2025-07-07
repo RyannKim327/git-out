@@ -1,57 +1,62 @@
-function KMPSearch(pattern: string, text: string): number[] {
-    const lps = computeLPSArray(pattern);
-    const result: number[] = [];
-    let i = 0; // index for text
-    let j = 0; // index for pattern
+class Node {
+    value: string;
+    children: Node[];
 
-    while (i < text.length) {
-        if (pattern[j] === text[i]) {
-            i++;
-            j++;
-        }
+    constructor(value: string) {
+        this.value = value;
+        this.children = [];
+    }
 
-        if (j === pattern.length) {
-            // Found a match, add the starting index to the result
-            result.push(i - j);
-            j = lps[j - 1]; // Use LPS to skip unnecessary comparisons
-        } else if (i < text.length && pattern[j] !== text[i]) {
-            // Mismatch after j matches
-            if (j !== 0) {
-                j = lps[j - 1]; // Use LPS to skip
-            } else {
-                i++;
-            }
+    addChild(child: Node) {
+        this.children.push(child);
+    }
+}
+
+function depthLimitedSearch(node: Node, limit: number): Node | null {
+    // Base case: if the limit is reached, return null
+    if (limit < 0) {
+        return null;
+    }
+
+    // Process the current node (you can modify this to suit your needs)
+    console.log(`Visiting node: ${node.value}`);
+
+    // If the node is the goal, return it (you can define your goal condition)
+    if (isGoal(node)) {
+        return node;
+    }
+
+    // Recur for each child
+    for (const child of node.children) {
+        const result = depthLimitedSearch(child, limit - 1);
+        if (result !== null) {
+            return result; // Return the found node
         }
     }
 
-    return result;
+    return null; // Return null if the goal is not found
 }
 
-function computeLPSArray(pattern: string): number[] {
-    const lps = new Array(pattern.length).fill(0);
-    let length = 0; // length of the previous longest prefix suffix
-    let i = 1;
-
-    while (i < pattern.length) {
-        if (pattern[i] === pattern[length]) {
-            length++;
-            lps[i] = length;
-            i++;
-        } else {
-            if (length !== 0) {
-                length = lps[length - 1]; // Use the previous LPS value
-            } else {
-                lps[i] = 0;
-                i++;
-            }
-        }
-    }
-
-    return lps;
+// Example goal condition (modify as needed)
+function isGoal(node: Node): boolean {
+    return node.value === "goal"; // Replace "goal" with your actual goal value
 }
 
-// Example usage:
-const text = "ababcabcabababd";
-const pattern = "ababd";
-const result = KMPSearch(pattern, text);
-console.log("Pattern found at indices:", result);
+// Example usage
+const root = new Node("start");
+const child1 = new Node("A");
+const child2 = new Node("B");
+const child3 = new Node("goal");
+
+root.addChild(child1);
+root.addChild(child2);
+child1.addChild(child3);
+
+const limit = 2;
+const result = depthLimitedSearch(root, limit);
+
+if (result) {
+    console.log(`Goal found: ${result.value}`);
+} else {
+    console.log("Goal not found within the depth limit.");
+}
