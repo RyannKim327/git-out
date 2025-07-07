@@ -1,39 +1,90 @@
-/**
- * A simple implementation of the Bubble Sort algorithm in TypeScript.
- * It sorts an array of numbers in ascending order.
- *
- * @param arr - The array of numbers to be sorted.
- * @returns The sorted array.
- */
-function bubbleSort(arr: number[]): number[] {
-    const n = arr.length;
-    let swapped: boolean;
+class Graph {
+    private adjList: Map<number, number[]> = new Map();
+    
+    addEdge(u: number, v: number): void {
+        if (!this.adjList.has(u)) {
+            this.adjList.set(u, []);
+        }
+        this.adjList.get(u)!.push(v);
+    }
 
-    // Loop through all elements in the array
-    for (let i = 0; i < n - 1; i++) {
-        swapped = false; // Reset swapped flag for this iteration
+    getNeighbors(v: number): number[] {
+        return this.adjList.get(v) || [];
+    }
+
+    getVertices(): number[] {
+        return Array.from(this.adjList.keys());
+    }
+}
+
+class Tarjan {
+    private index: number = 0;
+    private stack: number[] = [];
+    private onStack: Set<number> = new Set();
+    private lowLink: Map<number, number> = new Map();
+    private indices: Map<number, number> = new Map();
+    private stronglyConnectedComponents: number[][] = [];
+
+    constructor(private graph: Graph) {}
+
+    public findSCCs(): number[][] {
+        const vertices = this.graph.getVertices();
         
-        // Last i elements are already sorted, no need to check them
-        for (let j = 0; j < n - 1 - i; j++) {
-            // Compare adjacent elements
-            if (arr[j] > arr[j + 1]) {
-                // Swap if they are in the wrong order
-                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-                swapped = true; // Set the swapped flag to true
+        for (const vertex of vertices) {
+            if (!this.indices.has(vertex)) {
+                this.strongconnect(vertex);
+            }
+        }
+        
+        return this.stronglyConnectedComponents;
+    }
+
+    private strongconnect(v: number): void {
+        // Set the depth index for v to the smallest unused index
+        this.indices.set(v, this.index);
+        this.lowLink.set(v, this.index);
+        this.index++;
+        this.stack.push(v);
+        this.onStack.add(v);
+
+        // Consider successors of v
+        for (const w of this.graph.getNeighbors(v)) {
+            if (!this.indices.has(w)) {
+                // Successor w has not yet been visited; recurse on it
+                this.strongconnect(w);
+                this.lowLink.set(v, Math.min(this.lowLink.get(v)!, this.lowLink.get(w)!));
+            } else if (this.onStack.has(w)) {
+                // Successor w is in stack and hence in the current SCC
+                this.lowLink.set(v, Math.min(this.lowLink.get(v)!, this.indices.get(w)!));
             }
         }
 
-        // If no two elements were swapped, the array is sorted
-        if (!swapped) {
-            break; // Optimization: stop if the array is sorted early
+        // If v is a root node, pop the stack and generate an SCC
+        if (this.lowLink.get(v) === this.indices.get(v)) {
+            const scc: number[] = [];
+            let w: number;
+
+            do {
+                w = this.stack.pop()!;
+                this.onStack.delete(w);
+                scc.push(w);
+            } while (w !== v);
+
+            this.stronglyConnectedComponents.push(scc);
         }
     }
-
-    return arr;
 }
 
-// Example usage
-const unsortedArray: number[] = [64, 34, 25, 12, 22, 11, 90];
-console.log("Unsorted Array:", unsortedArray);
-const sortedArray = bubbleSort(unsortedArray);
-console.log("Sorted Array:", sortedArray);
+// Example usage:
+const graph = new Graph();
+graph.addEdge(0, 1);
+graph.addEdge(1, 2);
+graph.addEdge(2, 0);
+graph.addEdge(1, 3);
+graph.addEdge(3, 4);
+graph.addEdge(4, 5);
+graph.addEdge(5, 3);
+
+const tarjan = new Tarjan(graph);
+const sccs = tarjan.findSCCs();
+console.log(sccs); // Output strongly connected components
