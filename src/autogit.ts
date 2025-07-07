@@ -1,139 +1,66 @@
-class TreeNode<T> {
-    public key: T;
-    public left: TreeNode<T> | null = null;
-    public right: TreeNode<T> | null = null;
-    public height: number = 1;
-
-    constructor(key: T) {
-        this.key = key;
-    }
+// Define the structure of a graph node (if needed)
+interface GraphNode {
+  id: string; // or number, depending on your data
+  neighbors: GraphNode[];
 }
 
-class AVLTree<T> {
-    private root: TreeNode<T> | null = null;
+// Or, if your graph is represented as an adjacency list:
+type Graph = {
+  [nodeId: string]: string[]; // mapping node IDs to arrays of neighbor IDs
+} ;
 
-    // Get height of the tree
-    private getHeight(node: TreeNode<T> | null): number {
-        return node ? node.height : 0;
+/**
+ * Depth-Limited Search function
+ * @param graph - the graph represented as an adjacency list
+ * @param start - the starting node ID
+ * @param goal - the goal node ID you're searching for
+ * @param maxDepth - maximum depth limit
+ * @returns boolean indicating whether the goal was found within the depth limit
+ */
+function depthLimitedSearch(
+  graph: Graph,
+  start: string,
+  goal: string,
+  maxDepth: number
+): boolean {
+  // Internal recursive function
+  function dls(node: string, depth: number, visited: Set<string>): boolean {
+    if (node === goal) {
+      return true; // Found the goal
     }
-
-    // Right rotate subtree rooted with y
-    private rightRotate(y: TreeNode<T>): TreeNode<T> {
-        let x = y.left!;
-        let T2 = x.right;
-
-        // Perform rotation
-        x.right = y;
-        y.left = T2;
-
-        // Update heights
-        y.height = Math.max(this.getHeight(y.left), this.getHeight(y.right)) + 1;
-        x.height = Math.max(this.getHeight(x.left), this.getHeight(x.right)) + 1;
-
-        // Return new root
-        return x;
+    if (depth >= maxDepth) {
+      return false; // Reached maximum depth limit
     }
-
-    // Left rotate subtree rooted with x
-    private leftRotate(x: TreeNode<T>): TreeNode<T> {
-        let y = x.right!;
-        let T2 = y.left;
-
-        // Perform rotation
-        y.left = x;
-        x.right = T2;
-
-        // Update heights
-        x.height = Math.max(this.getHeight(x.left), this.getHeight(x.right)) + 1;
-        y.height = Math.max(this.getHeight(y.left), this.getHeight(y.right)) + 1;
-
-        // Return new root
-        return y;
-    }
-
-    // Get balance factor of node
-    private getBalance(node: TreeNode<T>): number {
-        return this.getHeight(node.left) - this.getHeight(node.right);
-    }
-
-    // Recursive function to insert a key
-    public insert(key: T): void {
-        this.root = this.insertNode(this.root, key);
-    }
-
-    private insertNode(node: TreeNode<T> | null, key: T): TreeNode<T> {
-        // Perform the normal BST insert
-        if (!node) {
-            return new TreeNode(key);
+    visited.add(node);
+    const neighbors = graph[node] || [];
+    for (const neighbor of neighbors) {
+      if (!visited.has(neighbor)) {
+        if (dls(neighbor, depth + 1, visited)) {
+          return true; // Goal found in recursion
         }
-
-        if (key < node.key) {
-            node.left = this.insertNode(node.left, key);
-        } else if (key > node.key) {
-            node.right = this.insertNode(node.right, key);
-        } else {
-            // Duplicate keys are not allowed in the AVL tree
-            return node;
-        }
-
-        // Update the height of this ancestor node
-        node.height = 1 + Math.max(this.getHeight(node.left), this.getHeight(node.right)));
-
-        // Get the balance factor of this ancestor node to check whether
-        // this node became unbalanced
-        let balance = this.getBalance(node);
-
-        // If this node becomes unbalanced, then there are 4 cases
-
-        // Left Left Case
-        if (balance > 1 && key < node.left!.key) {
-            return this.rightRotate(node);
-        }
-
-        // Right Right Case
-        if (balance < -1 && key > node.right!.key) {
-            return this.leftRotate(node);
-        }
-
-        // Left Right Case
-        if (balance > 1 && key > node.left!.key) {
-            node.left = this.leftRotate(node.left!);
-            return this.rightRotate(node);
-        }
-
-        // Right Left Case
-        if (balance < -1 && key < node.right!.key) {
-            node.right = this.rightRotate(node.right!);
-            return this.leftRotate(node);
-        }
-
-        // Return the (unchanged) node pointer
-        return node;
+      }
     }
+    return false; // Goal not found in this path
+  }
 
-    // Function to perform in-order traversal of the tree
-    public inOrder(): T[] {
-        const result: T[] = [];
-        this.inOrderHelper(this.root, result);
-        return result;
-    }
-
-    private inOrderHelper(node: TreeNode<T> | null, result: T[]): void {
-        if (node) {
-            this.inOrderHelper(node.left, result);
-            result.push(node.key);
-            this.inOrderHelper(node.right, result);
-        }
-    }
+  // Initialize visited set and call the recursive function
+  const visited = new Set<string>();
+  return dls(start, 0, visited);
 }
 
-// Example usage
-const avl = new AVLTree<number>();
-avl.insert(10);
-avl.insert(20);
-avl.insert(30);
-avl.insert(40);
-avl.insert(50);
-avl.insert(25);
+// Example usage:
+const exampleGraph: Graph = {
+  A: ["B", "C"],
+  B: ["D", "E"],
+  C: ["F"],
+  D: [],
+  E: ["F"],
+  F: []
+};
 
-console.log(avl.inOrder()); // Output: [10, 20, 25, 30, 40, 50]
+const startNode = "A";
+const goalNode = "F";
+const maxDepth = 3;
+
+const found = depthLimitedSearch(exampleGraph, startNode, goalNode, maxDepth);
+console.log(`Goal ${goalNode} found within depth ${maxDepth}:`, found);
