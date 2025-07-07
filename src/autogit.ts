@@ -1,103 +1,132 @@
-interface Graph {
-    [key: string]: string[];
-}
+class BinaryHeap<T> {
+    private heap: T[] = [];
+    private compare: (a: T, b: T) => number;
 
-interface SearchResult {
-    path: string[];
-    found: boolean;
-}
-
-function bidirectionalSearch(graph: Graph, start: string, target: string): SearchResult {
-    if (start === target) {
-        return { path: [start], found: true };
+    constructor(compare: (a: T, b: T) => number) {
+        this.compare = compare;
     }
 
-    // Initialize the forward and backward searches
-    const forwardQueue: string[] = [start];
-    const backwardQueue: string[] = [target];
-    const forwardVisited: Set<string> = new Set([start]);
-    const backwardVisited: Set<string> = new Set([target]);
-    const forwardParent: Map<string, string | null> = new Map([[start, null]]);
-    const backwardParent: Map<string, string | null> = new Map([[target, null]]);
+    private parent(index: number): number {
+        return Math.floor((index - 1) / 2);
+    }
 
-    while (forwardQueue.length > 0 && backwardQueue.length > 0) {
-        // Expand one node from the forward search
-        const forwardResult = expandNode(graph, forwardQueue, forwardVisited, forwardParent);
-        if (forwardResult) {
-            const meetNode = forwardResult;
-            if (backwardVisited.has(meetNode)) {
-                return reconstructPath(meetNode, forwardParent, backwardParent);
+    private leftChild(index: number): number {
+        return index * 2 + 1;
+    }
+
+    private rightChild(index: number): number {
+        return index * 2 + 2;
+    }
+
+    private hasParent(index: number): boolean {
+        return this.parent(index) >= 0;
+    }
+
+    private hasLeftChild(index: number): boolean {
+        return this.leftChild(index) < this.heap.length;
+    }
+
+    private hasRightChild(index: number): boolean {
+        return this.rightChild(index) < this.heap.length;
+    }
+
+    private swap(index1: number, index2: number): void {
+        const temp = this.heap[index1];
+        this.heap[index1] = this.heap[index2];
+        this.heap[index2] = temp;
+    }
+
+    private heapifyUp(): void {
+        let index = this.heap.length - 1;
+        while (this.hasParent(index) && this.compare(this.heap[index], this.heap[this.parent(index)]) < 0) {
+            this.swap(index, this.parent(index));
+            index = this.parent(index);
+        }
+    }
+
+    private heapifyDown(): void {
+        let index = 0;
+        while (this.hasLeftChild(index)) {
+            let smallerChildIndex = this.leftChild(index);
+            if (this.hasRightChild(index) && this.compare(this.heap[this.rightChild(index)], this.heap[smallerChildIndex]) < 0) {
+                smallerChildIndex = this.rightChild(index);
             }
-        }
 
-        // Expand one node from the backward search
-        const backwardResult = expandNode(graph, backwardQueue, backwardVisited, backwardParent);
-        if (backwardResult) {
-            const meetNode = backwardResult;
-            if (forwardVisited.has(meetNode)) {
-                return reconstructPath(meetNode, forwardParent, backwardParent);
+            if (this.compare(this.heap[index], this.heap[smallerChildIndex]) <= 0) {
+                break;
             }
+
+            this.swap(index, smallerChildIndex);
+            index = smallerChildIndex;
         }
     }
 
-    return { path: [], found: false }; // No path found
-}
+    public insert(item: T): void {
+        this.heap.push(item);
+        this.heapifyUp();
+    }
 
-function expandNode(
-    graph: Graph, 
-    queue: string[], 
-    visited: Set<string>, 
-    parent: Map<string, string | null>
-): string | null {
-    const currentNode = queue.shift();
-    if (!currentNode) return null;
-
-    for (const neighbor of graph[currentNode] || []) {
-        if (!visited.has(neighbor)) {
-            visited.add(neighbor);
-            parent.set(neighbor, currentNode);
-            queue.push(neighbor);
+    public remove(): T | null {
+        if (this.heap.length === 0) {
+            return null;
         }
+        const item = this.heap[0];
+        this.heap[0] = this.heap[this.heap.length - 1];
+        this.heap.pop();
+        this.heapifyDown();
+        return item;
     }
 
-    return currentNode; // Return the current node for meeting point check
+    public peek(): T | null {
+        return this.heap.length > 0 ? this.heap[0] : null;
+    }
+
+    public size(): number {
+        return this.heap.length;
+    }
+
+    public isEmpty(): boolean {
+        return this.heap.length === 0;
+    }
 }
+class PriorityQueue<T> {
+    private heap: BinaryHeap<T>;
 
-function reconstructPath(
-    meetNode: string,
-    forwardParent: Map<string, string | null>,
-    backwardParent: Map<string, string | null>
-): SearchResult {
-    const path: string[] = [];
-    let node: string | null = meetNode;
-
-    // Reconstruct path from start to meetNode
-    while (node !== null) {
-        path.push(node);
-        node = forwardParent.get(node) || null;
+    constructor() {
+        this.heap = new BinaryHeap<T>((a, b) => {
+            // Change this comparison for max-heap
+            return (a as any) - (b as any); // Assuming T can be cast to number
+        });
     }
 
-    path.reverse(); // Reverse to get start to meetNode
-
-    // Reconstruct path from target to meetNode
-    node = backwardParent.get(meetNode);
-    while (node !== null) {
-        path.push(node);
-        node = backwardParent.get(node) || null;
+    public enqueue(item: T): void {
+        this.heap.insert(item);
     }
 
-    return { path, found: true };
+    public dequeue(): T | null {
+        return this.heap.remove();
+    }
+
+    public peek(): T | null {
+        return this.heap.peek();
+    }
+
+    public size(): number {
+        return this.heap.size();
+    }
+
+    public isEmpty(): boolean {
+        return this.heap.isEmpty();
+    }
 }
+const pq = new PriorityQueue<number>();
 
-// Example usage:
-const graph: Graph = {
-    A: ['B', 'C'],
-    B: ['A', 'D', 'E'],
-    C: ['A', 'F'],
-    D: ['B'],
-    E: ['B', 'F'],
-    F: ['C', 'E'],
-};
+pq.enqueue(5);
+pq.enqueue(3);
+pq.enqueue(8);
+pq.enqueue(1);
 
-const result = bidirectionalSearch(graph, 'A', 'F');
-console.log(result); // Outputs the path found, e.g., { path: ['A', 'C', 'F'], found: true }
+console.log(pq.peek()); // Output: 1
+console.log(pq.dequeue()); // Output: 1
+console.log(pq.peek()); // Output: 3
+console.log(pq.size()); // Output: 3
