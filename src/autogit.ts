@@ -1,34 +1,64 @@
-function binarySearch(arr: number[], target: number, left: number, right: number): number {
-    // Base case: if the left index exceeds the right index, the target is not found
-    if (left > right) {
-        return -1; // Target not found
+class SuffixTreeNode {
+    children: Map<string, SuffixTreeNode>;
+    start: number;
+    end: number | null;
+
+    constructor(start: number, end: number | null) {
+        this.children = new Map();
+        this.start = start;
+        this.end = end;
     }
-
-    // Calculate the middle index
-    const mid = Math.floor((left + right) / 2);
-
-    // Check if the middle element is the target
-    if (arr[mid] === target) {
-        return mid; // Target found
-    }
-
-    // If the target is less than the middle element, search the left half
-    if (target < arr[mid]) {
-        return binarySearch(arr, target, left, mid - 1);
-    }
-
-    // If the target is greater than the middle element, search the right half
-    return binarySearch(arr, target, mid + 1, right);
 }
+class SuffixTree {
+    root: SuffixTreeNode;
+    text: string;
 
-// Helper function to initiate the binary search
-function search(arr: number[], target: number): number {
-    return binarySearch(arr, target, 0, arr.length - 1);
+    constructor(text: string) {
+        this.root = new SuffixTreeNode(-1, null);
+        this.text = text;
+        this.buildSuffixTree();
+    }
+
+    private buildSuffixTree() {
+        const n = this.text.length;
+        for (let i = 0; i < n; i++) {
+            this.insertSuffix(i);
+        }
+    }
+
+    private insertSuffix(start: number) {
+        let currentNode = this.root;
+        let suffix = this.text.substring(start);
+
+        for (let char of suffix) {
+            if (!currentNode.children.has(char)) {
+                const newNode = new SuffixTreeNode(start, null);
+                currentNode.children.set(char, newNode);
+            }
+            currentNode = currentNode.children.get(char)!;
+            start++;
+        }
+    }
+
+    public search(pattern: string): boolean {
+        let currentNode = this.root;
+        let index = 0;
+
+        while (index < pattern.length) {
+            const char = pattern[index];
+            if (!currentNode.children.has(char)) {
+                return false; // Not found
+            }
+            currentNode = currentNode.children.get(char)!;
+            index++;
+        }
+        return true; // Found
+    }
 }
+const text = "banana";
+const suffixTree = new SuffixTree(text);
 
-// Example usage
-const sortedArray = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-const targetValue = 5;
-const result = search(sortedArray, targetValue);
-
-console.log(result); // Output: 4 (index of the target value)
+// Searching for patterns
+console.log(suffixTree.search("ana")); // true
+console.log(suffixTree.search("nan")); // true
+console.log(suffixTree.search("bat")); // false
