@@ -1,67 +1,58 @@
-type Graph = { [node: string]: string[] };
+function buildLPS(pattern: string): number[] {
+    const lps: number[] = new Array(pattern.length).fill(0);
+    let length = 0; // length of the previous longest prefix suffix
+    let i = 1; // start from the second character
 
-function tarjanSCC(graph: Graph): string[][] {
-  let index = 0; // to assign unique indices
-  const indexMap: { [node: string]: number } = {}; // node -> index
-  const lowLinkMap: { [node: string]: number } = {}; // node -> low-link value
-  const stack: string[] = [];
-  const onStack: { [node: string]: boolean } = {};
-  const sccs: string[][] = [];
-
-  function strongConnect(node: string) {
-    // Set the index and low-link value for node
-    indexMap[node] = index;
-    lowLinkMap[node] = index;
-    index++;
-    stack.push(node);
-    onStack[node] = true;
-
-    // Consider successors of node
-    const neighbors = graph[node] || [];
-    for (const neighbor of neighbors) {
-      if (indexMap[neighbor] === undefined) {
-        // Neighbor has not been visited, recurse on it
-        strongConnect(neighbor);
-        // Check if the subtree rooted at neighbor has a connection to an ancestor of node
-        lowLinkMap[node] = Math.min(lowLinkMap[node], lowLinkMap[neighbor]);
-      } else if (onStack[neighbor]) {
-        // The neighbor is in the current SCC
-        lowLinkMap[node] = Math.min(lowLinkMap[node], indexMap[neighbor]);
-      }
+    while (i < pattern.length) {
+        if (pattern[i] === pattern[length]) {
+            length++;
+            lps[i] = length;
+            i++;
+        } else {
+            if (length !== 0) {
+                length = lps[length - 1]; // Use the previous prefix suffix
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
     }
 
-    // If node is a root node, pop the stack and generate an SCC
-    if (lowLinkMap[node] === indexMap[node]) {
-      const scc: string[] = [];
-      let w: string;
-      do {
-        w = stack.pop()!;
-        onStack[w] = false;
-        scc.push(w);
-      } while (w !== node);
-      sccs.push(scc);
-    }
-  }
-
-  // Run Strongly Connected Components algorithm on each node
-  for (const node in graph) {
-    if (indexMap[node] === undefined) {
-      strongConnect(node);
-    }
-  }
-
-  return sccs;
+    return lps;
 }
-const graph: Graph = {
-  A: ['B'],
-  B: ['C', 'E', 'F'],
-  C: ['D', 'G'],
-  D: ['C', 'H'],
-  E: ['A', 'F'],
-  F: ['G'],
-  G: ['F', 'H'],
-  H: ['H']
-};
 
-const sccs = tarjanSCC(graph);
-console.log("Strongly Connected Components:", sccs);
+function kmpSearch(text: string, pattern: string): number[] {
+    const lps = buildLPS(pattern);
+    const result: number[] = [];
+    let i = 0; // index for text
+    let j = 0; // index for pattern
+
+    while (i < text.length) {
+        if (pattern[j] === text[i]) {
+            i++;
+            j++;
+        }
+
+        if (j === pattern.length) {
+            // Found pattern at index (i - j)
+            result.push(i - j);
+            j = lps[j - 1]; // Continue searching for more occurrences
+        } else if (i < text.length && pattern[j] !== text[i]) {
+            // Mismatch after j matches
+            if (j !== 0) {
+                j = lps[j - 1]; // Use the previous prefix suffix
+            } else {
+                i++;
+            }
+        }
+    }
+
+    return result; // Return the list of starting indices of matches
+}
+
+// Example usage:
+const text = "ababcabcabababd";
+const pattern = "ababd";
+const indices = kmpSearch(text, pattern);
+console.log(`Pattern found at indices: ${indices}`);
+Pattern found at indices: [2]
