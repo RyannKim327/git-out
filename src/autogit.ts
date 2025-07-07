@@ -1,17 +1,42 @@
-function firstRepeatedCharacter(str: string): string | null {
-    const seenCharacters = new Set<string>();
+/**
+ * Performs the Burrows-Wheeler Transform (BWT) on the input string.
+ * @param input The input string to transform.
+ * @returns The BWT of the input string.
+ */
+function burrowsWheelerTransform(input: string): string {
+    const length = input.length;
+    const rotations: string[] = [];
 
-    for (const char of str) {
-        if (seenCharacters.has(char)) {
-            return char; // Return the first repeated character
-        }
-        seenCharacters.add(char); // Add the character to the set
+    // Generate all rotations of the input string
+    for (let i = 0; i < length; i++) {
+        // Rotate the string by i positions
+        const rotation = input.slice(i) + input.slice(0, i);
+        rotations.push(rotation);
     }
 
-    return null; // Return null if no repeated character is found
+    // Sort all rotations lexicographically
+    rotations.sort();
+
+    // Construct the BWT by taking the last character from each rotation
+    const lastColumn = rotations.map(rotation => rotation.charAt(rotation.length - 1));
+
+    // Join the last characters to form the transformed string
+    return lastColumn.join('');
 }
 
 // Example usage:
-const inputString = "abca";
-const result = firstRepeatedCharacter(inputString);
-console.log(result); // Output: 'a'
+const inputString = "banana";
+const bwtResult = burrowsWheelerTransform(inputString);
+console.log(`BWT of "${inputString}":`, bwtResult);
+banana
+ananab
+nanaba
+anaban
+nabanA
+abanan
+abanan
+anaban
+ananab
+banana
+nabanA
+nanaba
