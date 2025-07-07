@@ -1,56 +1,67 @@
-// Define a type for the graph nodes
-type Node = {
-    value: string; // or any other type
-    children: Node[];
-};
+type Graph = { [node: string]: string[] };
 
-// Define the depth-limited search function
-function depthLimitedSearch(node: Node, depthLimit: number, target: string): boolean {
-    // Check if the current node's value is the target
-    if (node.value === target) {
-        return true; // Target found
-    }
-    
-    // If we've reached the depth limit, return false
-    if (depthLimit <= 0) {
-        return false; // Depth limit reached
+function tarjanSCC(graph: Graph): string[][] {
+  let index = 0; // to assign unique indices
+  const indexMap: { [node: string]: number } = {}; // node -> index
+  const lowLinkMap: { [node: string]: number } = {}; // node -> low-link value
+  const stack: string[] = [];
+  const onStack: { [node: string]: boolean } = {};
+  const sccs: string[][] = [];
+
+  function strongConnect(node: string) {
+    // Set the index and low-link value for node
+    indexMap[node] = index;
+    lowLinkMap[node] = index;
+    index++;
+    stack.push(node);
+    onStack[node] = true;
+
+    // Consider successors of node
+    const neighbors = graph[node] || [];
+    for (const neighbor of neighbors) {
+      if (indexMap[neighbor] === undefined) {
+        // Neighbor has not been visited, recurse on it
+        strongConnect(neighbor);
+        // Check if the subtree rooted at neighbor has a connection to an ancestor of node
+        lowLinkMap[node] = Math.min(lowLinkMap[node], lowLinkMap[neighbor]);
+      } else if (onStack[neighbor]) {
+        // The neighbor is in the current SCC
+        lowLinkMap[node] = Math.min(lowLinkMap[node], indexMap[neighbor]);
+      }
     }
 
-    // Recursively search in the children nodes
-    for (const child of node.children) {
-        // Call DLS on the child node with depth limit decreased by 1
-        if (depthLimitedSearch(child, depthLimit - 1, target)) {
-            return true; // Target found in child
-        }
+    // If node is a root node, pop the stack and generate an SCC
+    if (lowLinkMap[node] === indexMap[node]) {
+      const scc: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop()!;
+        onStack[w] = false;
+        scc.push(w);
+      } while (w !== node);
+      sccs.push(scc);
     }
+  }
 
-    return false; // Target not found in this branch
+  // Run Strongly Connected Components algorithm on each node
+  for (const node in graph) {
+    if (indexMap[node] === undefined) {
+      strongConnect(node);
+    }
+  }
+
+  return sccs;
 }
-
-// Example usage
-const graph: Node = {
-    value: "A",
-    children: [
-        {
-            value: "B",
-            children: [
-                { value: "D", children: [] },
-                { value: "E", children: [] }
-            ]
-        },
-        {
-            value: "C",
-            children: [
-                { value: "F", children: [] },
-                { value: "G", children: [] }
-            ]
-        }
-    ]
+const graph: Graph = {
+  A: ['B'],
+  B: ['C', 'E', 'F'],
+  C: ['D', 'G'],
+  D: ['C', 'H'],
+  E: ['A', 'F'],
+  F: ['G'],
+  G: ['F', 'H'],
+  H: ['H']
 };
 
-// Searching for a target value within a specified depth limit
-const target = "E";
-const depthLimit = 2;
-
-const found = depthLimitedSearch(graph, depthLimit, target);
-console.log(`Target ${target} found: ${found}`);
+const sccs = tarjanSCC(graph);
+console.log("Strongly Connected Components:", sccs);
