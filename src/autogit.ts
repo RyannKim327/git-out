@@ -1,50 +1,32 @@
-class Node {
-    value: string;
-    children: Node[];
-
-    constructor(value: string) {
-        this.value = value;
-        this.children = [];
-    }
-
-    addChild(child: Node) {
-        this.children.push(child);
-    }
+// Define an interface for the data structure you expect from the API
+interface User {
+    id: number;
+    name: string;
+    username: string;
+    email: string;
 }
 
-function depthLimitedSearch(node: Node, depth: number, target: string): boolean {
-    // Check if the current node is the target
-    if (node.value === target) {
-        return true;
-    }
+// Function to fetch users from a public API
+async function fetchUsers(): Promise<void> {
+    const apiUrl = 'https://jsonplaceholder.typicode.com/users';
 
-    // If the depth limit is reached, return false
-    if (depth === 0) {
-        return false;
-    }
-
-    // Recursively search in the children nodes
-    for (let child of node.children) {
-        if (depthLimitedSearch(child, depth - 1, target)) {
-            return true;
+    try {
+        const response = await fetch(apiUrl);
+        
+        // Check if the response is ok (status code 200-299)
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
         }
-    }
 
-    return false;
+        // Parse the JSON response
+        const users: User[] = await response.json();
+        
+        // Log the users to the console
+        console.log(users);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+    }
 }
 
-// Example usage
-const root = new Node("A");
-const child1 = new Node("B");
-const child2 = new Node("C");
-const child3 = new Node("D");
-
-root.addChild(child1);
-root.addChild(child2);
-child1.addChild(child3);
-
-const target = "D";
-const depthLimit = 2;
-
-const found = depthLimitedSearch(root, depthLimit, target);
-console.log(`Target ${target} found: ${found}`);
+// Call the function to fetch users
+fetchUsers();
