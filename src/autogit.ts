@@ -1,58 +1,57 @@
-class Graph {
-    private adjacencyList: Map<number, { node: number, weight: number }[]>;
+function KMPSearch(pattern: string, text: string): number[] {
+    const lps = computeLPSArray(pattern);
+    const result: number[] = [];
+    let i = 0; // index for text
+    let j = 0; // index for pattern
 
-    constructor() {
-        this.adjacencyList = new Map();
-    }
-
-    addEdge(start: number, end: number, weight: number) {
-        if (!this.adjacencyList.has(start)) {
-            this.adjacencyList.set(start, []);
+    while (i < text.length) {
+        if (pattern[j] === text[i]) {
+            i++;
+            j++;
         }
-        this.adjacencyList.get(start)!.push({ node: end, weight });
-    }
 
-    dijkstra(start: number): Map<number, number> {
-        const distances = new Map<number, number>();
-        const priorityQueue: { node: number, distance: number }[] = [];
-        const visited = new Set<number>();
-
-        // Initialize distances
-        this.adjacencyList.forEach((_, node) => {
-            distances.set(node, Infinity);
-        });
-        distances.set(start, 0);
-        priorityQueue.push({ node: start, distance: 0 });
-
-        while (priorityQueue.length > 0) {
-            // Sort the queue by distance
-            priorityQueue.sort((a, b) => a.distance - b.distance);
-            const { node } = priorityQueue.shift()!;
-
-            if (visited.has(node)) continue;
-            visited.add(node);
-
-            const neighbors = this.adjacencyList.get(node) || [];
-            for (const { node: neighbor, weight } of neighbors) {
-                const newDistance = distances.get(node)! + weight;
-                if (newDistance < distances.get(neighbor)!) {
-                    distances.set(neighbor, newDistance);
-                    priorityQueue.push({ node: neighbor, distance: newDistance });
-                }
+        if (j === pattern.length) {
+            // Found a match, add the starting index to the result
+            result.push(i - j);
+            j = lps[j - 1]; // Use LPS to skip unnecessary comparisons
+        } else if (i < text.length && pattern[j] !== text[i]) {
+            // Mismatch after j matches
+            if (j !== 0) {
+                j = lps[j - 1]; // Use LPS to skip
+            } else {
+                i++;
             }
         }
-
-        return distances;
     }
+
+    return result;
+}
+
+function computeLPSArray(pattern: string): number[] {
+    const lps = new Array(pattern.length).fill(0);
+    let length = 0; // length of the previous longest prefix suffix
+    let i = 1;
+
+    while (i < pattern.length) {
+        if (pattern[i] === pattern[length]) {
+            length++;
+            lps[i] = length;
+            i++;
+        } else {
+            if (length !== 0) {
+                length = lps[length - 1]; // Use the previous LPS value
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+
+    return lps;
 }
 
 // Example usage:
-const graph = new Graph();
-graph.addEdge(0, 1, 4);
-graph.addEdge(0, 2, 1);
-graph.addEdge(2, 1, 2);
-graph.addEdge(1, 3, 1);
-graph.addEdge(2, 3, 5);
-
-const shortestPaths = graph.dijkstra(0);
-console.log(shortestPaths); // Output the shortest paths from node 0
+const text = "ababcabcabababd";
+const pattern = "ababd";
+const result = KMPSearch(pattern, text);
+console.log("Pattern found at indices:", result);
