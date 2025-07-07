@@ -1,76 +1,63 @@
-class Graph {
-    private vertices: number;
-    private adjList: Map<number, number[]>;
+// Define the structure of a node
+class Node {
+    value: string;
+    children: Node[];
 
-    constructor(vertices: number) {
-        this.vertices = vertices;
-        this.adjList = new Map<number, number[]>();
+    constructor(value: string) {
+        this.value = value;
+        this.children = [];
     }
 
-    addEdge(v: number, w: number) {
-        if (!this.adjList.has(v)) {
-            this.adjList.set(v, []);
-        }
-        this.adjList.get(v)!.push(w);
-    }
-
-    tarjan(): number[][] {
-        const index: number[] = new Array(this.vertices).fill(-1);
-        const lowlink: number[] = new Array(this.vertices).fill(-1);
-        const onStack: boolean[] = new Array(this.vertices).fill(false);
-        const stack: number[] = [];
-        const result: number[][] = [];
-        let currentIndex = 0;
-
-        const strongConnect = (v: number) => {
-            index[v] = currentIndex;
-            lowlink[v] = currentIndex;
-            currentIndex++;
-            stack.push(v);
-            onStack[v] = true;
-
-            const neighbors = this.adjList.get(v) || [];
-            for (const w of neighbors) {
-                if (index[w] === -1) {
-                    // Successor w has not yet been visited; recurse on it
-                    strongConnect(w);
-                    lowlink[v] = Math.min(lowlink[v], lowlink[w]);
-                } else if (onStack[w]) {
-                    // Successor w is in stack and hence in the current SCC
-                    lowlink[v] = Math.min(lowlink[v], index[w]);
-                }
-            }
-
-            // If v is a root node, pop the stack and generate an SCC
-            if (lowlink[v] === index[v]) {
-                const scc: number[] = [];
-                let w: number;
-                do {
-                    w = stack.pop()!;
-                    onStack[w] = false;
-                    scc.push(w);
-                } while (w !== v);
-                result.push(scc);
-            }
-        };
-
-        for (let v = 0; v < this.vertices; v++) {
-            if (index[v] === -1) {
-                strongConnect(v);
-            }
-        }
-
-        return result;
+    // Add a child to the node
+    addChild(child: Node) {
+        this.children.push(child);
     }
 }
 
-// Example usage:
-const g = new Graph(5);
-g.addEdge(0, 2);
-g.addEdge(2, 1);
-g.addEdge(1, 0);
-g.addEdge(0, 3);
-g.addEdge(3, 4);
+// Breadth-Limited Search function
+function breadthLimitedSearch(root: Node, goal: string, depthLimit: number): Node | null {
+    // Queue for BFS
+    const queue: { node: Node, depth: number }[] = [];
+    // Start with the root node at depth 0
+    queue.push({ node: root, depth: 0 });
+    
+    while (queue.length > 0) {
+        // Dequeue the front node
+        const { node, depth } = queue.shift()!;
+        
+        // Check if we found the goal
+        if (node.value === goal) {
+            return node; // Return the found node
+        }
+        
+        // If we haven't reached the depth limit
+        if (depth < depthLimit) {
+            // Enqueue all children with incremented depth
+            for (const child of node.children) {
+                queue.push({ node: child, depth: depth + 1 });
+            }
+        }
+    }
+    
+    // If we exhaust the queue without finding the goal
+    return null;
+}
 
-const sccs = g.tarjan();
-console.log("Strongly Connected Components:", sccs);
+// Example Usage
+const root = new Node("A");
+const childB = new Node("B");
+const childC = new Node("C");
+const childD = new Node("D");
+const childE = new Node("E");
+
+root.addChild(childB);
+root.addChild(childC);
+childB.addChild(childD);
+childC.addChild(childE);
+
+const result = breadthLimitedSearch(root, "D", 2);
+if (result) {
+    console.log(`Found: ${result.value}`);
+} else {
+    console.log("Goal not found within depth limit");
+}
