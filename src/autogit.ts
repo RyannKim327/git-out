@@ -1,90 +1,70 @@
-class Graph {
-    private adjList: Map<number, number[]> = new Map();
-    
-    addEdge(u: number, v: number): void {
-        if (!this.adjList.has(u)) {
-            this.adjList.set(u, []);
-        }
-        this.adjList.get(u)!.push(v);
-    }
+type Graph = { [node: string]: string[] };
 
-    getNeighbors(v: number): number[] {
-        return this.adjList.get(v) || [];
-    }
+function tarjanSCC(graph: Graph): string[][] {
+    const indexMap: { [node: string]: number } = {};
+    const lowLinkMap: { [node: string]: number } = {};
+    const onStack: { [node: string]: boolean } = {};
+    const stack: string[] = [];
+    const sccs: string[][] = [];
 
-    getVertices(): number[] {
-        return Array.from(this.adjList.keys());
-    }
-}
+    let index = 0;
 
-class Tarjan {
-    private index: number = 0;
-    private stack: number[] = [];
-    private onStack: Set<number> = new Set();
-    private lowLink: Map<number, number> = new Map();
-    private indices: Map<number, number> = new Map();
-    private stronglyConnectedComponents: number[][] = [];
+    // Recursive function
+    function strongConnect(node: string) {
+        // Set the depth index for node
+        indexMap[node] = index;
+        lowLinkMap[node] = index;
+        index++;
+        stack.push(node);
+        onStack[node] = true;
 
-    constructor(private graph: Graph) {}
-
-    public findSCCs(): number[][] {
-        const vertices = this.graph.getVertices();
-        
-        for (const vertex of vertices) {
-            if (!this.indices.has(vertex)) {
-                this.strongconnect(vertex);
-            }
-        }
-        
-        return this.stronglyConnectedComponents;
-    }
-
-    private strongconnect(v: number): void {
-        // Set the depth index for v to the smallest unused index
-        this.indices.set(v, this.index);
-        this.lowLink.set(v, this.index);
-        this.index++;
-        this.stack.push(v);
-        this.onStack.add(v);
-
-        // Consider successors of v
-        for (const w of this.graph.getNeighbors(v)) {
-            if (!this.indices.has(w)) {
-                // Successor w has not yet been visited; recurse on it
-                this.strongconnect(w);
-                this.lowLink.set(v, Math.min(this.lowLink.get(v)!, this.lowLink.get(w)!));
-            } else if (this.onStack.has(w)) {
-                // Successor w is in stack and hence in the current SCC
-                this.lowLink.set(v, Math.min(this.lowLink.get(v)!, this.indices.get(w)!));
+        // Consider successors of node
+        const neighbors = graph[node] || [];
+        for (const neighbor of neighbors) {
+            if (indexMap[neighbor] === undefined) {
+                // Successor has not yet been visited; recurse on it
+                strongConnect(neighbor);
+                lowLinkMap[node] = Math.min(lowLinkMap[node], lowLinkMap[neighbor]);
+            } else if (onStack[neighbor]) {
+                // Successor is in stack and hence in the current SCC
+                lowLinkMap[node] = Math.min(lowLinkMap[node], indexMap[neighbor]);
             }
         }
 
-        // If v is a root node, pop the stack and generate an SCC
-        if (this.lowLink.get(v) === this.indices.get(v)) {
-            const scc: number[] = [];
-            let w: number;
-
+        // If node is a root node, pop the stack and generate an SCC
+        if (lowLinkMap[node] === indexMap[node]) {
+            const scc: string[] = [];
+            let w: string;
             do {
-                w = this.stack.pop()!;
-                this.onStack.delete(w);
+                w = stack.pop()!;
+                onStack[w] = false;
                 scc.push(w);
-            } while (w !== v);
-
-            this.stronglyConnectedComponents.push(scc);
+            } while (w !== node);
+            sccs.push(scc);
         }
     }
+
+    // For each node in the graph
+    for (const node in graph) {
+        if (indexMap[node] === undefined) {
+            strongConnect(node);
+        }
+    }
+
+    return sccs;
 }
 
 // Example usage:
-const graph = new Graph();
-graph.addEdge(0, 1);
-graph.addEdge(1, 2);
-graph.addEdge(2, 0);
-graph.addEdge(1, 3);
-graph.addEdge(3, 4);
-graph.addEdge(4, 5);
-graph.addEdge(5, 3);
+const exampleGraph: Graph = {
+    'A': ['B'],
+    'B': ['C', 'E', 'F'],
+    'C': ['D', 'G'],
+    'D': ['C', 'H'],
+    'E': ['A', 'F'],
+    'F': ['G'],
+    'G': ['F', 'H'],
+    'H': [],
+};
 
-const tarjan = new Tarjan(graph);
-const sccs = tarjan.findSCCs();
-console.log(sccs); // Output strongly connected components
+const sccs = tarjanSCC(exampleGraph);
+console.log(sccs);
