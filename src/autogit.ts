@@ -1,72 +1,46 @@
-class SuffixTrieNode {
-    children: Map<string, SuffixTrieNode>;
-    indices: number[]; // optional: store starting indices of suffixes
+const array = [1, 2, 3, 4, 5];
+const elementToRemove = 3;
 
-    constructor() {
-        this.children = new Map();
-        this.indices = [];
-    }
+const newArray = array.filter(item => item !== elementToRemove);
+
+console.log(newArray); // Output: [1, 2, 4, 5]
+const array = [1, 2, 3, 4, 5];
+const indexToRemove = array.indexOf(3); // Get the index of the element to remove
+
+if (indexToRemove !== -1) { // Check if the element exists
+    array.splice(indexToRemove, 1); // Remove 1 element at that index
 }
 
-class SuffixTrie {
-    root: SuffixTrieNode;
+console.log(array); // Output: [1, 2, 4, 5]
+const array = [{ id: 1 }, { id: 2 }, { id: 3 }];
+const idToRemove = 2;
 
-    constructor(text: string) {
-        this.root = new SuffixTrieNode();
-        this.buildSuffixTrie(text);
-    }
+const indexToRemove = array.findIndex(item => item.id === idToRemove);
 
-    private buildSuffixTrie(text: string): void {
-        for (let i = 0; i < text.length; i++) {
-            this.insertSuffix(text, i);
-        }
-    }
-
-    private insertSuffix(text: string, start: number): void {
-        let currentNode = this.root;
-        for (let i = start; i < text.length; i++) {
-            const char = text[i];
-            if (!currentNode.children.has(char)) {
-                currentNode.children.set(char, new SuffixTrieNode());
-            }
-            currentNode = currentNode.children.get(char)!;
-            currentNode.indices.push(start);
-        }
-    }
-
-    // Search for a substring in the suffix trie
-    public contains(substring: string): boolean {
-        let currentNode = this.root;
-        for (const char of substring) {
-            if (!currentNode.children.has(char)) {
-                return false;
-            }
-            currentNode = currentNode.children.get(char)!;
-        }
-        return true;
-    }
-
-    // Optional: get all suffix indices
-    public getSuffixIndices(): number[] {
-        const result: number[] = [];
-        const traverse = (node: SuffixTrieNode) => {
-            if (node.indices.length > 0) {
-                result.push(...node.indices);
-            }
-            for (const child of node.children.values()) {
-                traverse(child);
-            }
-        };
-        traverse(this.root);
-        return result;
-    }
+if (indexToRemove !== -1) {
+    array.splice(indexToRemove, 1);
 }
-const text = "banana";
-const suffixTrie = new SuffixTrie(text);
 
-console.log(suffixTrie.contains("ana")); // true
-console.log(suffixTrie.contains("nana")); // true
-console.log(suffixTrie.contains("ban")); // true
-console.log(suffixTrie.contains("apple")); // false
+console.log(array); // Output: [{ id: 1 }, { id: 3 }]
+const array = [1, 2, 3, 4, 5];
+const elementToRemove = 3;
 
-console.log(suffixTrie.getSuffixIndices()); // [5, 3, 1, 0, 4, 2]
+const newArray = array.reduce((acc, item) => {
+    if (item !== elementToRemove) {
+        acc.push(item);
+    }
+    return acc;
+}, [] as number[]);
+
+console.log(newArray); // Output: [1, 2, 4, 5]
+const array = [1, 2, 3, 4, 5];
+const elementToRemove = 3;
+
+const newArray: number[] = [];
+array.forEach(item => {
+    if (item !== elementToRemove) {
+        newArray.push(item);
+    }
+});
+
+console.log(newArray); // Output: [1, 2, 4, 5]
