@@ -1,59 +1,34 @@
-function fibonacciSearch(arr: number[], x: number): number {
-    const n = arr.length;
-    let fibM2 = 0; // (m-2)'th Fibonacci number
-    let fibM1 = 1; // (m-1)'th Fibonacci number
-    let fibM = fibM1 + fibM2; // m'th Fibonacci number
-
-    // Find the smallest Fibonacci number greater than or equal to n
-    while (fibM < n) {
-        fibM2 = fibM1;
-        fibM1 = fibM;
-        fibM = fibM1 + fibM2;
+function binarySearch(arr: number[], target: number, left: number, right: number): number {
+    // Base case: if the left index exceeds the right index, the target is not found
+    if (left > right) {
+        return -1; // Target not found
     }
 
-    // Marks the eliminated range from the front
-    let offset = -1;
+    // Calculate the middle index
+    const mid = Math.floor((left + right) / 2);
 
-    // While there are elements to be inspected
-    while (fibM > 1) {
-        // Check if fibM2 is a valid location
-        const i = Math.min(offset + fibM2, n - 1);
-
-        // If x is greater than the value at index i, cut the subarray after i
-        if (arr[i] < x) {
-            fibM = fibM1;
-            fibM1 = fibM2;
-            fibM2 = fibM - fibM1;
-            offset = i;
-        }
-        // If x is less than the value at index i, cut the subarray before i
-        else if (arr[i] > x) {
-            fibM = fibM2;
-            fibM1 = fibM1 - fibM2;
-            fibM2 = fibM - fibM1;
-        }
-        // Element found
-        else {
-            return i;
-        }
+    // Check if the middle element is the target
+    if (arr[mid] === target) {
+        return mid; // Target found
     }
 
-    // Comparing the last element with x
-    if (fibM1 && arr[offset + 1] === x) {
-        return offset + 1;
+    // If the target is less than the middle element, search the left half
+    if (target < arr[mid]) {
+        return binarySearch(arr, target, left, mid - 1);
     }
 
-    // Element not found
-    return -1;
+    // If the target is greater than the middle element, search the right half
+    return binarySearch(arr, target, mid + 1, right);
+}
+
+// Helper function to initiate the binary search
+function search(arr: number[], target: number): number {
+    return binarySearch(arr, target, 0, arr.length - 1);
 }
 
 // Example usage
-const arr = [10, 22, 35, 40, 45, 50, 80, 82, 85, 90, 100];
-const x = 85;
-const result = fibonacciSearch(arr, x);
+const sortedArray = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const targetValue = 5;
+const result = search(sortedArray, targetValue);
 
-if (result !== -1) {
-    console.log(`Element found at index: ${result}`);
-} else {
-    console.log('Element not found in the array.');
-}
+console.log(result); // Output: 4 (index of the target value)
