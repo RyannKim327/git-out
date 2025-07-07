@@ -1,63 +1,20 @@
-// Define the structure of a node
-class Node {
-    value: string;
-    children: Node[];
+function reverseWords(input: string): string {
+    // Split the string into words by whitespace (space, tab, etc.)
+    const words = input.trim().split(/\s+/);
 
-    constructor(value: string) {
-        this.value = value;
-        this.children = [];
-    }
+    // Reverse the order of the words
+    const reversedWords = words.reverse();
 
-    // Add a child to the node
-    addChild(child: Node) {
-        this.children.push(child);
-    }
+    // Join the reversed array of words back into a single string
+    return reversedWords.join(' ');
 }
 
-// Breadth-Limited Search function
-function breadthLimitedSearch(root: Node, goal: string, depthLimit: number): Node | null {
-    // Queue for BFS
-    const queue: { node: Node, depth: number }[] = [];
-    // Start with the root node at depth 0
-    queue.push({ node: root, depth: 0 });
-    
-    while (queue.length > 0) {
-        // Dequeue the front node
-        const { node, depth } = queue.shift()!;
-        
-        // Check if we found the goal
-        if (node.value === goal) {
-            return node; // Return the found node
-        }
-        
-        // If we haven't reached the depth limit
-        if (depth < depthLimit) {
-            // Enqueue all children with incremented depth
-            for (const child of node.children) {
-                queue.push({ node: child, depth: depth + 1 });
-            }
-        }
-    }
-    
-    // If we exhaust the queue without finding the goal
-    return null;
-}
+// Example usage
+const originalString = "Hello world this is TypeScript";
+const reversedString = reverseWords(originalString);
 
-// Example Usage
-const root = new Node("A");
-const childB = new Node("B");
-const childC = new Node("C");
-const childD = new Node("D");
-const childE = new Node("E");
-
-root.addChild(childB);
-root.addChild(childC);
-childB.addChild(childD);
-childC.addChild(childE);
-
-const result = breadthLimitedSearch(root, "D", 2);
-if (result) {
-    console.log(`Found: ${result.value}`);
-} else {
-    console.log("Goal not found within depth limit");
-}
+console.log(reversedString); // Output: "TypeScript is this world Hello"
+console.log(reverseWords("   Hello   world   ")); // Output: "world Hello"
+console.log(reverseWords(""));                     // Output: ""
+console.log(reverseWords("singleWord"));           // Output: "singleWord"
+console.log(reverseWords("  a b c d e f "));      // Output: "f e d c b a"
