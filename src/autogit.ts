@@ -1,52 +1,155 @@
-function longestCommonPrefix(strs: string[]): string {
-    if (strs.length === 0) return "";
-    let prefix = strs[0];
-
-    for (let i = 1; i < strs.length; i++) {
-        while (strs[i].indexOf(prefix) !== 0) {
-            // Shorten the prefix until it matches the start of the current string
-            prefix = prefix.substring(0, prefix.length - 1);
-            if (prefix === "") return "";
-        }
-    }
-
-    return prefix;
+enum Color {
+    RED = "RED",
+    BLACK = "BLACK",
 }
 
-// Example usage:
-const strings = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(strings)); // Output: "fl"
-function longestCommonPrefix(strs: string[]): string {
-    if (strs.length === 0) return "";
+class Node<T> {
+    value: T;
+    color: Color;
+    left: Node<T> | null;
+    right: Node<T> | null;
+    parent: Node<T> | null;
 
-    for (let i = 0; i < strs[0].length; i++) {
-        const char = strs[0][i];
+    constructor(value: T) {
+        this.value = value;
+        this.color = Color.RED; // New nodes are always red
+        this.left = null;
+        this.right = null;
+        this.parent = null;
+    }
+}
+class RedBlackTree<T> {
+    private root: Node<T> | null = null;
 
-        for (let j = 1; j < strs.length; j++) {
-            // Check if current character matches or if index exceeds string length
-            if (i >= strs[j].length || strs[j][i] !== char) {
-                return strs[0].substring(0, i);
+    // Insertion method
+    insert(value: T) {
+        const newNode = new Node(value);
+        this.root = this.insertNode(this.root, newNode);
+        this.fixViolations(newNode);
+    }
+
+    private insertNode(root: Node<T> | null, node: Node<T>): Node<T> {
+        if (root === null) {
+            return node;
+        }
+
+        if (node.value < root.value) {
+            root.left = this.insertNode(root.left, node);
+            root.left!.parent = root;
+        } else {
+            root.right = this.insertNode(root.right, node);
+            root.right!.parent = root;
+        }
+
+        return root;
+    }
+
+    private fixViolations(node: Node<T>) {
+        let current: Node<T> | null = node;
+
+        while (current !== this.root && current.parent!.color === Color.RED) {
+            const parent = current.parent!;
+            const grandparent = parent.parent;
+
+            if (parent === grandparent?.left) {
+                const uncle = grandparent.right;
+                if (uncle?.color === Color.RED) {
+                    parent.color = Color.BLACK;
+                    uncle.color = Color.BLACK;
+                    grandparent.color = Color.RED;
+                    current = grandparent;
+                } else {
+                    if (current === parent.right) {
+                        this.rotateLeft(parent);
+                        current = parent;
+                        parent = current.parent!;
+                    }
+                    this.rotateRight(grandparent);
+                    [parent.color, grandparent.color] = [grandparent.color, parent.color];
+                    current = parent;
+                }
+            } else {
+                const uncle = grandparent?.left;
+                if (uncle?.color === Color.RED) {
+                    parent.color = Color.BLACK;
+                    uncle.color = Color.BLACK;
+                    grandparent.color = Color.RED;
+                    current = grandparent;
+                } else {
+                    if (current === parent.left) {
+                        this.rotateRight(parent);
+                        current = parent;
+                        parent = current.parent!;
+                    }
+                    this.rotateLeft(grandparent);
+                    [parent.color, grandparent.color] = [grandparent.color, parent.color];
+                    current = parent;
+                }
             }
         }
+
+        this.root!.color = Color.BLACK;
     }
 
-    return strs[0];
-}
+    private rotateLeft(node: Node<T>) {
+        const rightChild = node.right!;
+        node.right = rightChild.left;
 
-// Example usage:
-const strings = ["introduction", "integrate", "integer"];
-console.log(longestCommonPrefix(strings)); // Output: "int"
-function longestCommonPrefix(strs: string[]): string {
-    if (strs.length === 0) return "";
-    return strs.reduce((prefix, current) => {
-        let i = 0;
-        while (i < prefix.length && i < current.length && prefix[i] === current[i]) {
-            i++;
+        if (rightChild.left !== null) {
+            rightChild.left.parent = node;
         }
-        return prefix.substring(0, i);
-    }, strs[0]);
-}
 
-// Example usage:
-const strings = ["interstellar", "interstate", "internal"];
-console.log(longestCommonPrefix(strings)); // Output: "in"
+        rightChild.parent = node.parent;
+
+        if (node.parent === null) {
+            this.root = rightChild;
+        } else if (node === node.parent.left) {
+            node.parent.left = rightChild;
+        } else {
+            node.parent.right = rightChild;
+        }
+
+        rightChild.left = node;
+        node.parent = rightChild;
+    }
+
+    private rotateRight(node: Node<T>) {
+        const leftChild = node.left!;
+        node.left = leftChild.right;
+
+        if (leftChild.right !== null) {
+            leftChild.right.parent = node;
+        }
+
+        leftChild.parent = node.parent;
+
+        if (node.parent === null) {
+            this.root = leftChild;
+        } else if (node === node.parent.right) {
+            node.parent.right = leftChild;
+        } else {
+            node.parent.left = leftChild;
+        }
+
+        leftChild.right = node;
+        node.parent = leftChild;
+    }
+
+    // In-order traversal for debugging
+    inorderTraversal(node: Node<T> | null = this.root): void {
+        if (node !== null) {
+            this.inorderTraversal(node.left);
+            console.log(node.value, node.color);
+            this.inorderTraversal(node.right);
+        }
+    }
+}
+const rbt = new RedBlackTree<number>();
+
+rbt.insert(10);
+rbt.insert(20);
+rbt.insert(30);
+rbt.insert(15);
+
+console.log("In-order Traversal of Red-Black Tree:");
+rbt.inorderTraversal(); // Print the tree
