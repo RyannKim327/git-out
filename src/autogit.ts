@@ -1,32 +1,30 @@
-// Define an interface for the data structure you expect from the API
-interface User {
-    id: number;
-    name: string;
-    username: string;
-    email: string;
+function reverseWords(input: string): string {
+    // Step 1: Split the string into words
+    const words = input.split(' ');
+
+    // Step 2: Reverse the order of words
+    const reversedWords = words.reverse();
+
+    // Step 3: Join the reversed words back into a string
+    return reversedWords.join(' ');
 }
 
-// Function to fetch users from a public API
-async function fetchUsers(): Promise<void> {
-    const apiUrl = 'https://jsonplaceholder.typicode.com/users';
+// Example usage:
+const originalString = "Hello, how are you?";
+const reversedString = reverseWords(originalString);
+console.log(reversedString); // Output: "you? are how Hello,"
+function reverseWords(input: string): string {
+    // Trim the input and split by one or more spaces
+    const words = input.trim().split(/\s+/);
 
-    try {
-        const response = await fetch(apiUrl);
-        
-        // Check if the response is ok (status code 200-299)
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
+    // Reverse the order of words
+    const reversedWords = words.reverse();
 
-        // Parse the JSON response
-        const users: User[] = await response.json();
-        
-        // Log the users to the console
-        console.log(users);
-    } catch (error) {
-        console.error('Error fetching users:', error);
-    }
+    // Join the reversed words back into a string
+    return reversedWords.join(' ');
 }
 
-// Call the function to fetch users
-fetchUsers();
+// Example usage:
+const originalString = "   Hello,   how are   you?   ";
+const reversedString = reverseWords(originalString);
+console.log(reversedString); // Output: "you? are how Hello,"
