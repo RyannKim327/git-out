@@ -1,43 +1,47 @@
-class TreeNode {
-    val: number;
-    left: TreeNode | null;
-    right: TreeNode | null;
+const numbers: number[] = [5, 10, 15, 20, 25];
 
-    constructor(val: number) {
-        this.val = val;
-        this.left = null;
-        this.right = null;
+// Find the maximum value using Math.max and spread operator
+const maxValue = Math.max(...numbers);
+
+console.log(maxValue); // Output: 25
+const numbers: number[] = [5, 10, 15, 20, 25];
+
+let maxValue: number = numbers[0]; // Start with the first element
+
+// Loop through the array to find the maximum value
+for (let i = 1; i < numbers.length; i++) {
+    if (numbers[i] > maxValue) {
+        maxValue = numbers[i];
     }
 }
 
-function diameterOfBinaryTree(root: TreeNode | null): number {
-    let diameter = 0;
+console.log(maxValue); // Output: 25
+const numbers: number[] = [5, 10, 15, 20, 25];
 
-    function height(node: TreeNode | null): number {
-        if (node === null) {
-            return 0;
-        }
+// Use reduce to find the maximum value
+const maxValue = numbers.reduce((max, current) => {
+    return current > max ? current : max;
+}, numbers[0]);
 
-        // Recursively find the height of left and right subtree
-        const leftHeight = height(node.left);
-        const rightHeight = height(node.right);
+console.log(maxValue); // Output: 25
+const numbers: number[] = [5, 10, 15, 20, 25];
 
-        // Update the diameter if the path through this node is larger
-        diameter = Math.max(diameter, leftHeight + rightHeight);
+let maxValue: number = numbers[0]; // Initialize with the first element
 
-        // Return the height of the subtree rooted at current node
-        return Math.max(leftHeight, rightHeight) + 1;
+// Use forEach to find the maximum value
+numbers.forEach((number) => {
+    if (number > maxValue) {
+        maxValue = number;
     }
+});
 
-    height(root); // Start the recursion
-    return diameter; // The maximum diameter found
+console.log(maxValue); // Output: 25
+function findMax(array: number[]): number {
+    if (array.length === 0) {
+        throw new Error("Array must not be empty");
+    }
+    return Math.max(...array);
 }
-// Creating a sample binary tree
-const root = new TreeNode(1);
-root.left = new TreeNode(2);
-root.right = new TreeNode(3);
-root.left.left = new TreeNode(4);
-root.left.right = new TreeNode(5);
 
-const result = diameterOfBinaryTree(root);
-console.log(`Diameter of the binary tree is: ${result}`); // Output will be 4
+const numbers: number[] = [5, 10, 15, 20, 25];
+console.log(findMax(numbers)); // Output: 25
