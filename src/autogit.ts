@@ -1,36 +1,29 @@
-class Stack<T> {
-  private items: T[] = [];
+class TreeNode {
+    value: number;
+    left: TreeNode | null;
+    right: TreeNode | null;
 
-  // Add an item to the top of the stack
-  push(element: T): void {
-    this.items.push(element);
-  }
+    constructor(value: number) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+    }
+}
 
-  // Remove and return the top item of the stack
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  // View the top item without removing it
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  // Check if the stack is empty
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  // Get the current size of the stack
-  size(): number {
-    return this.items.length;
-  }
+function sumOfNodes(root: TreeNode | null): number {
+    if (root === null) {
+        return 0; // Base case: if the node is null, return 0
+    }
+    // Recursively sum the values of the left and right subtrees and add the current node's value
+    return root.value + sumOfNodes(root.left) + sumOfNodes(root.right);
 }
 
 // Example usage:
-const stack = new Stack<number>();
-stack.push(10);
-stack.push(20);
-console.log(stack.peek()); // Output: 20
-console.log(stack.pop());  // Output: 20
-console.log(stack.size()); // Output: 1
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4);
+root.left.right = new TreeNode(5);
+
+const totalSum = sumOfNodes(root);
+console.log(`The sum of all nodes in the binary tree is: ${totalSum}`);
