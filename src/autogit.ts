@@ -1,52 +1,30 @@
-function fibonacciSearch(arr: number[], target: number): number {
+function bubbleSort(arr: number[]): number[] {
     const n = arr.length;
+    let swapped: boolean;
 
-    // Initialize Fibonacci numbers
-    let fibMm2 = 0;  // (m-2)'th Fibonacci number
-    let fibMm1 = 1;  // (m-1)'th Fibonacci number
-    let fibM = fibMm2 + fibMm1; // m'th Fibonacci number
+    // Loop through each element in the array
+    for (let i = 0; i < n - 1; i++) {
+        swapped = false; // Reset the swapped flag for this iteration
 
-    // Find the smallest Fibonacci number greater than or equal to n
-    while (fibM < n) {
-        fibMm2 = fibMm1;
-        fibMm1 = fibM;
-        fibM = fibMm2 + fibMm1;
-    }
+        // Compare adjacent elements
+        for (let j = 0; j < n - 1 - i; j++) {
+            if (arr[j] > arr[j + 1]) {
+                // Swap if the elements are in the wrong order
+                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+                swapped = true; // Set the flag to true since a swap occurred
+            }
+        }
 
-    // Marks the eliminated range from front
-    let offset = -1;
-
-    while (fibM > 1) {
-        // Check if fibMm2 is a valid location
-        const i = Math.min(offset + fibMm2, n - 1);
-
-        if (arr[i] < target) {
-            // Move the three Fibonacci down one
-            fibM = fibMm1;
-            fibMm1 = fibMm2;
-            fibMm2 = fibM - fibMm1;
-            offset = i;
-        } else if (arr[i] > target) {
-            // Move the three Fibonacci down two
-            fibM = fibMm2;
-            fibMm1 = fibMm1 - fibMm2;
-            fibMm2 = fibM - fibMm1;
-        } else {
-            // Found the element
-            return i;
+        // If no elements were swapped, the array is sorted
+        if (!swapped) {
+            break;
         }
     }
 
-    // Checking if the last element matches the target
-    if (fibMm1 && arr[offset + 1] === target) {
-        return offset + 1;
-    }
-
-    // Element not found
-    return -1;
+    return arr; // Return the sorted array
 }
 
 // Example usage:
-const sortedArray = [10, 22, 35, 40, 45, 50, 60, 70, 80, 90, 100];
-console.log(fibonacciSearch(sortedArray, 35)); // Output: 2
-console.log(fibonacciSearch(sortedArray, 55)); // Output: -1
+const numbers: number[] = [64, 34, 25, 12, 22, 11, 90];
+const sortedNumbers = bubbleSort(numbers);
+console.log(sortedNumbers); // Output: [11, 12, 22, 25, 34, 64, 90]
