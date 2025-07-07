@@ -1,156 +1,59 @@
-class Node {
-    value: number;
-    forward: Node[];
+function fibonacciSearch(arr: number[], x: number): number {
+    const n = arr.length;
+    let fibM2 = 0; // (m-2)'th Fibonacci number
+    let fibM1 = 1; // (m-1)'th Fibonacci number
+    let fibM = fibM1 + fibM2; // m'th Fibonacci number
 
-    constructor(value: number, level: number) {
-        this.value = value;
-        this.forward = new Array(level + 1).fill(null);
-    }
-}
-
-class SkipList {
-    private head: Node;
-    private maxLevel: number;
-    private p: number; // Probability for level generation
-    private currentLevel: number;
-
-    constructor(maxLevel: number, p: number) {
-        this.maxLevel = maxLevel;
-        this.p = p;
-        this.currentLevel = 0;
-        this.head = new Node(-Infinity, maxLevel); // Negative infinity as head
+    // Find the smallest Fibonacci number greater than or equal to n
+    while (fibM < n) {
+        fibM2 = fibM1;
+        fibM1 = fibM;
+        fibM = fibM1 + fibM2;
     }
 
-    // Generate a random level for the new node
-    private randomLevel(): number {
-        let level = 0;
-        while (Math.random() < this.p && level < this.maxLevel) {
-            level++;
+    // Marks the eliminated range from the front
+    let offset = -1;
+
+    // While there are elements to be inspected
+    while (fibM > 1) {
+        // Check if fibM2 is a valid location
+        const i = Math.min(offset + fibM2, n - 1);
+
+        // If x is greater than the value at index i, cut the subarray after i
+        if (arr[i] < x) {
+            fibM = fibM1;
+            fibM1 = fibM2;
+            fibM2 = fibM - fibM1;
+            offset = i;
         }
-        return level;
-    }
-
-    // Insert a new value into the skip list
-    insert(value: number): void {
-        const update = new Array(this.maxLevel + 1).fill(null);
-        let currentNode: Node = this.head;
-
-        // Find the position to insert the new value
-        for (let i = this.currentLevel; i >= 0; i--) {
-            while (currentNode.forward[i] !== null && currentNode.forward[i].value < value) {
-                currentNode = currentNode.forward[i];
-            }
-            update[i] = currentNode;
+        // If x is less than the value at index i, cut the subarray before i
+        else if (arr[i] > x) {
+            fibM = fibM2;
+            fibM1 = fibM1 - fibM2;
+            fibM2 = fibM - fibM1;
         }
-
-        currentNode = currentNode.forward[0];
-
-        // If the value already exists, do not insert it
-        if (currentNode !== null && currentNode.value === value) {
-            return;
-        }
-
-        // Generate a random level for the new node
-        const newLevel = this.randomLevel();
-        if (newLevel > this.currentLevel) {
-            for (let i = this.currentLevel + 1; i <= newLevel; i++) {
-                update[i] = this.head;
-            }
-            this.currentLevel = newLevel;
-        }
-
-        // Create the new node
-        const newNode = new Node(value, newLevel);
-
-        // Insert the new node
-        for (let i = 0; i <= newLevel; i++) {
-            newNode.forward[i] = update[i].forward[i];
-            update[i].forward[i] = newNode;
+        // Element found
+        else {
+            return i;
         }
     }
 
-    // Search for a value in the skip list
-    search(value: number): boolean {
-        let currentNode: Node = this.head;
-
-        for (let i = this.currentLevel; i >= 0; i--) {
-            while (currentNode.forward[i] !== null && currentNode.forward[i].value < value) {
-                currentNode = currentNode.forward[i];
-            }
-        }
-
-        currentNode = currentNode.forward[0];
-
-        return currentNode !== null && currentNode.value === value;
+    // Comparing the last element with x
+    if (fibM1 && arr[offset + 1] === x) {
+        return offset + 1;
     }
 
-    // Delete a value from the skip list
-    delete(value: number): boolean {
-        const update = new Array(this.maxLevel + 1).fill(null);
-        let currentNode: Node = this.head;
-
-        // Find the node to delete
-        for (let i = this.currentLevel; i >= 0; i--) {
-            while (currentNode.forward[i] !== null && currentNode.forward[i].value < value) {
-                currentNode = currentNode.forward[i];
-            }
-            update[i] = currentNode;
-        }
-
-        currentNode = currentNode.forward[0];
-
-        // If the node is not found, return false
-        if (currentNode === null || currentNode.value !== value) {
-            return false;
-        }
-
-        // Delete the node
-        for (let i = 0; i <= this.currentLevel; i++) {
-            if (update[i].forward[i] !== currentNode) break;
-            update[i].forward[i] = currentNode.forward[i];
-        }
-
-        // Remove levels if necessary
-        while (this.currentLevel > 0 && this.head.forward[this.currentLevel] === null) {
-            this.currentLevel--;
-        }
-
-        return true;
-    }
-
-    // Utility function to print the skip list
-    printList(): void {
-        for (let i = this.currentLevel; i >= 0; i--) {
-            let currentNode: Node = this.head.forward[i];
-            let levelNodes: number[] = [];
-            while (currentNode !== null) {
-                levelNodes.push(currentNode.value);
-                currentNode = currentNode.forward[i];
-            }
-            console.log(`Level ${i}: ${levelNodes.join(' -> ')}`);
-        }
-    }
+    // Element not found
+    return -1;
 }
 
 // Example usage
-const skipList = new SkipList(3, 0.5);
-skipList.insert(3);
-skipList.insert(6);
-skipList.insert(7);
-skipList.insert(9);
-skipList.insert(12);
-skipList.insert(19);
-skipList.insert(17);
-skipList.insert(26);
-skipList.insert(21);
-skipList.insert(25);
+const arr = [10, 22, 35, 40, 45, 50, 80, 82, 85, 90, 100];
+const x = 85;
+const result = fibonacciSearch(arr, x);
 
-console.log("Skip List after inserts:");
-skipList.printList();
-
-console.log("Searching for 19:", skipList.search(19));
-console.log("Deleting 19:", skipList.delete(19));
-console.log("Searching for 19 after deletion:", skipList.search(19));
-
-console.log("Skip List after deletion:");
-skipList.printList();
+if (result !== -1) {
+    console.log(`Element found at index: ${result}`);
+} else {
+    console.log('Element not found in the array.');
+}
