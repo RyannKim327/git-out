@@ -1,56 +1,53 @@
-// fetchPosts.ts
-
-import axios from 'axios';
-
-// Define a Post interface
-interface Post {
-    userId: number;
-    id: number;
-    title: string;
-    body: string;
-}
-
-// Function to fetch posts from JSONPlaceholder API
-async function fetchPosts(): Promise<Post[]> {
+// src/services/MyService.ts
+export const fetchDataFromService = async (): Promise<string> => {
     try {
-        const response = await axios.get<Post[]>('https://jsonplaceholder.typicode.com/posts');
-        return response.data;
+        const response = await fetch('https://api.example.com/data');
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        return data.message; // Assuming the response has a message field
     } catch (error) {
-        console.error('Error fetching posts:', error);
+        console.error('Error fetching data:', error);
         throw error;
     }
-}
+};
+// src/components/MyComponent.tsx
+import React, { useEffect, useState } from 'react';
+import { View, Text, Button, ActivityIndicator } from 'react-native';
+import { fetchDataFromService } from '../services/MyService';
 
-// Function to display posts
-function displayPosts(posts: Post[]): void {
-    posts.forEach(post => {
-        console.log(`Post ID: ${post.id}`);
-        console.log(`Title: ${post.title}`);
-        console.log(`Body: ${post.body}`);
-        console.log('-------------------------');
-    });
-}
+const MyComponent: React.FC = () => {
+    const [data, setData] = useState<string | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
 
-// Main function
-async function main(): Promise<void> {
-    try {
-        const posts = await fetchPosts();
-        displayPosts(posts);
-    } catch (error) {
-        console.error('Failed to fetch posts:', error);
-    }
-}
+    const handleFetchData = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const result = await fetchDataFromService();
+            setData(result);
+        } catch (err) {
+            setError('Failed to fetch data');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-// Run the main function
-main();
-npx tsc fetchPosts.ts
-node fetchPosts.js
-Post ID: 1
-Title: sunt aut facere repellat provident occaecati excepturi optio reprehenderit
-Body:quia et suscipit\nsuscipit
--------------------------
-Post ID: 2
-Title: qui est esse
-Body: est rerum tempore vitae\nsequi sint nihil...
--------------------------
-...
+    useEffect(() => {
+        handleFetchData();
+    }, []);
+
+    return (
+        <View>
+            {loading && <ActivityIndicator />}
+            {error && <Text>{error}</Text>}
+            {data && <Text>{data}</Text>}
+            <Button title="Fetch Data" onPress={handleFetchData} />
+        </View>
+    );
+};
+
+export default MyComponent;
+npx react-native run-android
