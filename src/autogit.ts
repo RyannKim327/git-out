@@ -1,32 +1,23 @@
-// Define an interface for the data structure you expect from the API
-interface User {
-    id: number;
-    name: string;
-    username: string;
-    email: string;
-}
-
-// Function to fetch users from a public API
-async function fetchUsers(): Promise<void> {
-    const apiUrl = 'https://jsonplaceholder.typicode.com/users';
-
-    try {
-        const response = await fetch(apiUrl);
-        
-        // Check if the response is OK (status code 200-299)
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        // Parse the JSON response
-        const users: User[] = await response.json();
-        
-        // Log the users to the console
-        console.log(users);
-    } catch (error) {
-        console.error('Error fetching users:', error);
+function isSortedAscending(arr: number[]): boolean {
+  for (let i = 0; i < arr.length - 1; i++) {
+    if (arr[i] > arr[i + 1]) {
+      return false; // Found a pair out of order
     }
+  }
+  return true; // All pairs are in order
 }
 
-// Call the function to fetch users
-fetchUsers();
+// Example usage:
+const array1 = [1, 2, 3, 4, 5];
+const array2 = [1, 3, 2, 4, 5];
+
+console.log(isSortedAscending(array1)); // true
+console.log(isSortedAscending(array2)); // false
+function isSortedAscending<T>(arr: T[], compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0): boolean {
+  for (let i = 0; i < arr.length - 1; i++) {
+    if (compareFn(arr[i], arr[i + 1]) > 0) {
+      return false;
+    }
+  }
+  return true;
+}
