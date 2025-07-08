@@ -3,7 +3,7 @@ import { exec } from "child_process";
 import axios from "axios";
 import date from "./date";
 
-let commits: number = Math.floor(Math.random() * 10) + 1;
+let commits: number = Math.floor(Math.random() * 15) + 1;
 let _commitments: number = 1;
 
 console.log(`You send git ${commits} commits`);
