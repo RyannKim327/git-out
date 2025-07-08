@@ -1,57 +1,44 @@
-class ListNode {
-    value: number;
-    next: ListNode | null;
+function mergeSort(arr: number[]): number[] {
+  // Base case: arrays with 0 or 1 element are already sorted
+  if (arr.length <= 1) {
+    return arr;
+  }
 
-    constructor(value: number) {
-        this.value = value;
-        this.next = null;
-    }
+  // Find the middle index
+  const mid = Math.floor(arr.length / 2);
+
+  // Divide the array into left and right halves
+  const left = arr.slice(0, mid);
+  const right = arr.slice(mid);
+
+  // Recursively sort both halves
+  const sortedLeft = mergeSort(left);
+  const sortedRight = mergeSort(right);
+
+  // Merge the sorted halves
+  return merge(sortedLeft, sortedRight);
 }
 
-function isPalindrome(head: ListNode | null): boolean {
-    if (!head || !head.next) {
-        return true; // An empty list or a single node is a palindrome
+function merge(left: number[], right: number[]): number[] {
+  const result: number[] = [];
+  let i = 0, j = 0;
+
+  // Merge elements in order
+  while (i < left.length && j < right.length) {
+    if (left[i] <= right[j]) {
+      result.push(left[i]);
+      i++;
+    } else {
+      result.push(right[j]);
+      j++;
     }
+  }
 
-    // Step 1: Find the middle of the linked list
-    let slow: ListNode | null = head;
-    let fast: ListNode | null = head;
-    
-    while (fast && fast.next) {
-        slow = slow!.next; // Move slow by 1
-        fast = fast.next.next; // Move fast by 2
-    }
-
-    // Step 2: Reverse the second half of the linked list
-    let prev: ListNode | null = null;
-    let current: ListNode | null = slow;
-
-    while (current) {
-        const nextTemp = current.next; // Store next node
-        current.next = prev; // Reverse the link
-        prev = current; // Move prev to current
-        current = nextTemp; // Move to next node
-    }
-
-    // Step 3: Compare the first half and the reversed second half
-    let left: ListNode | null = head;
-    let right: ListNode | null = prev; // This is the head of the reversed second half
-
-    while (right) {
-        if (left!.value !== right.value) {
-            return false; // Not a palindrome
-        }
-        left = left!.next;
-        right = right.next;
-    }
-
-    return true; // It is a palindrome
+  // Concatenate remaining elements (if any)
+  return result.concat(left.slice(i)).concat(right.slice(j));
 }
 
 // Example usage:
-const head = new ListNode(1);
-head.next = new ListNode(2);
-head.next.next = new ListNode(2);
-head.next.next.next = new ListNode(1);
-
-console.log(isPalindrome(head)); // Output: true
+const arrayToSort = [34, 7, 23, 32, 5, 62];
+const sortedArray = mergeSort(arrayToSort);
+console.log(sortedArray); // Output: [5, 7, 23, 32, 34, 62]
