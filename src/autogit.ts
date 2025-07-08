@@ -1,31 +1,13 @@
-function binarySearch(
-  arr: number[],         // Sorted array to search
-  target: number,        // Value to search for
-  left: number = 0,      // Left boundary of current search segment
-  right: number = arr.length - 1 // Right boundary
-): number {               // Returns index of target or -1 if not found
-
-  if (left > right) {
-    // Search space exhausted, target not found
-    return -1;
-  }
-
-  const mid = Math.floor((left + right) / 2);
-
-  if (arr[mid] === target) {
-    return mid; // Found the target
-  } else if (arr[mid] > target) {
-    // Search in the left half
-    return binarySearch(arr, target, left, mid - 1);
-  } else {
-    // Search in the right half
-    return binarySearch(arr, target, mid + 1, right);
-  }
+function countOccurrences(text: string, word: string): number {
+    // Create a regular expression to match the word
+    const regex = new RegExp(`\\b${word}\\b`, 'gi'); // 'g' for global, 'i' for case-insensitive
+    const matches = text.match(regex);
+    return matches ? matches.length : 0;
 }
 
 // Example usage:
-const sortedArr = [1, 3, 5, 7, 9, 11];
-const targetValue = 7;
+const text = "The quick brown fox jumps over the lazy dog. The fox is clever.";
+const word = "the";
+const count = countOccurrences(text, word);
 
-const index = binarySearch(sortedArr, targetValue);
-console.log(index); // Output: 3
+console.log(`The word "${word}" occurs ${count} times.`);
