@@ -1,53 +1,52 @@
-function mergeSort(arr: number[]): number[] {
-    const n = arr.length;
-    if (n < 2) return arr; // If the array is already sorted
-
-    // Create a temporary array to hold the merged results
-    const temp: number[] = new Array(n);
-    
-    // The size of the subarrays to be merged
-    for (let size = 1; size < n; size *= 2) {
-        // Merge subarrays in pairs of size 'size'
-        for (let leftStart = 0; leftStart < n; leftStart += size * 2) {
-            const mid = Math.min(leftStart + size, n);
-            const rightEnd = Math.min(leftStart + size * 2, n);
-            merge(arr, temp, leftStart, mid, rightEnd);
-        }
-        // Copy the sorted subarrays back to the original array
-        for (let i = 0; i < n; i++) {
-            arr[i] = temp[i];
-        }
-    }
-    return arr;
+// Define a Node interface
+interface Node {
+  value: any;
+  neighbors: Node[]; // Array of neighbors
 }
 
-function merge(arr: number[], temp: number[], leftStart: number, mid: number, rightEnd: number): void {
-    let left = leftStart; // Initial index of the first subarray
-    let right = mid;      // Initial index of the second subarray
-    let index = leftStart; // Initial index of the merged subarray
+// Function to perform breadth-limited search
+function breadthLimitedSearch(root: Node, goal: any, maxDepth: number): Node | null {
+  if (maxDepth < 0) {
+    throw new Error("maxDepth must be 0 or greater");
+  }
 
-    // Merge the two subarrays
-    while (left < mid && right < rightEnd) {
-        if (arr[left] <= arr[right]) {
-            temp[index++] = arr[left++];
-        } else {
-            temp[index++] = arr[right++];
+  // Queue for BFS
+  let queue: { node: Node; depth: number }[] = [{ node: root, depth: 0 }];
+  const visited = new Set<Node>(); // Keep track of visited nodes
+
+  while (queue.length > 0) {
+    const { node, depth } = queue.shift()!;
+
+    // Check if the current node is the goal
+    if (node.value === goal) {
+      return node; // Return the found node
+    }
+
+    // If we haven't reached the maximum depth, explore neighbors
+    if (depth < maxDepth) {
+      for (const neighbor of node.neighbors) {
+        if (!visited.has(neighbor)) {
+          visited.add(neighbor);
+          queue.push({ node: neighbor, depth: depth + 1 });
         }
+      }
     }
+  }
 
-    // Copy remaining elements of left subarray, if any
-    while (left < mid) {
-        temp[index++] = arr[left++];
-    }
-
-    // Copy remaining elements of right subarray, if any
-    while (right < rightEnd) {
-        temp[index++] = arr[right++];
-    }
+  return null; // Return null if the goal was not found
 }
 
-// Usage example
-const array = [38, 27, 43, 3, 9, 82, 10];
-console.log('Original Array:', array);
-const sortedArray = mergeSort(array);
-console.log('Sorted Array:', sortedArray);
+// Example usage:
+const nodeA: Node = { value: 'A', neighbors: [] };
+const nodeB: Node = { value: 'B', neighbors: [] };
+const nodeC: Node = { value: 'C', neighbors: [] };
+const nodeD: Node = { value: 'D', neighbors: [] };
+
+// Setting up connections/edges
+nodeA.neighbors.push(nodeB, nodeC);
+nodeB.neighbors.push(nodeD);
+nodeC.neighbors.push(nodeD);
+
+// Searching for 'D' with a max depth of 2
+const result = breadthLimitedSearch(nodeA, 'D', 2);
+console.log(result ? result.value : 'Goal not found'); // Outputs: 'Goal not found'

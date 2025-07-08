@@ -13,23 +13,24 @@
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   },
-  "name": "null",
+  "name": "git-out",
   "version": "1.0.0",
-  "description": "--- ### Introduction > This is a automated process of Git commit contribution powered by github actions",
+  "description": "Basta automation",
   "main": "index.js",
   "scripts": {
+    "start": "npx tsx src/index.ts",
     "test": "tsx src/index.ts"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/RyannKim327/null.git"
+    "url": "git+https://github.com/RyannKim327/git-out.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/RyannKim327/null/issues"
+    "url": "https://github.com/RyannKim327/git-out/issues"
   },
-  "homepage": "https://github.com/RyannKim327/null#readme"
+  "homepage": "https://github.com/RyannKim327/git-out#readme"
 }
