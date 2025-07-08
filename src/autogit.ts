@@ -1,17 +1,37 @@
-function areAnagrams(str1: string, str2: string): boolean {
-    // Normalize the strings: convert to lowercase and remove spaces
-    const normalizedStr1 = str1.toLowerCase().replace(/\s+/g, '');
-    const normalizedStr2 = str2.toLowerCase().replace(/\s+/g, '');
+class TreeNode {
+    value: number;
+    left: TreeNode | null;
+    right: TreeNode | null;
 
-    // Sort the characters of both strings
-    const sortedStr1 = normalizedStr1.split('').sort().join('');
-    const sortedStr2 = normalizedStr2.split('').sort().join('');
-
-    // Compare the sorted strings
-    return sortedStr1 === sortedStr2;
+    constructor(value: number) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+    }
 }
 
-// Example usage:
-const string1 = "listen";
-const string2 = "silent";
-console.log(areAnagrams(string1, string2)); // Output: true
+function countLeafNodes(root: TreeNode | null): number {
+    // Base case: if the tree is empty
+    if (root === null) {
+        return 0;
+    }
+    
+    // If the current node is a leaf node, return 1
+    if (root.left === null && root.right === null) {
+        return 1;
+    }
+    
+    // Recursively count leaf nodes in the left and right subtrees
+    return countLeafNodes(root.left) + countLeafNodes(root.right);
+}
+
+// Example usage
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4);
+root.left.right = new TreeNode(5);
+root.right.right = new TreeNode(6);
+
+const leafCount = countLeafNodes(root);
+console.log(`Number of leaf nodes: ${leafCount}`); // Output: 3
