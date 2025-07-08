@@ -1,29 +1,19 @@
-// Bubble Sort implementation in TypeScript
-function bubbleSort(arr: number[]): number[] {
-  const n = arr.length;
-  let swapped: boolean;
+function findFirstRepeatedCharacter(str: string): string | null {
+    const seenCharacters = new Set<string>();
 
-  for (let i = 0; i < n - 1; i++) {
-    swapped = false;
-
-    // Last i elements are already in place
-    for (let j = 0; j < n - i - 1; j++) {
-      if (arr[j] > arr[j + 1]) {
-        // Swap arr[j] and arr[j + 1]
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
+    for (const char of str) {
+        // Check if the character has been seen before
+        if (seenCharacters.has(char)) {
+            return char; // Return the first repeated character
+        }
+        // Add the character to the set
+        seenCharacters.add(char);
     }
 
-    // If no two elements were swapped by inner loop, array is sorted
-    if (!swapped) {
-      break;
-    }
-  }
-
-  return arr;
+    return null; // No repeated character found
 }
 
 // Example usage:
-const arrayToSort = [64, 34, 25, 12, 22, 11, 90];
-console.log('Sorted array:', bubbleSort(arrayToSort));
+const input = "programming";
+const result = findFirstRepeatedCharacter(input);
+console.log(result); // Output: "r"
