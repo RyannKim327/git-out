@@ -1,13 +1,11 @@
-function countOccurrences(text: string, word: string): number {
-    // Create a regular expression to match the word
-    const regex = new RegExp(`\\b${word}\\b`, 'gi'); // 'g' for global, 'i' for case-insensitive
-    const matches = text.match(regex);
-    return matches ? matches.length : 0;
+function isValidEmail(email: string): boolean {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
 }
 
 // Example usage:
-const text = "The quick brown fox jumps over the lazy dog. The fox is clever.";
-const word = "the";
-const count = countOccurrences(text, word);
+const email1 = "example@example.com";
+const email2 = "invalid-email@.com";
 
-console.log(`The word "${word}" occurs ${count} times.`);
+console.log(isValidEmail(email1)); // true
+console.log(isValidEmail(email2)); // false
