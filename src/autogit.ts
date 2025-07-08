@@ -1,52 +1,71 @@
-// Define a Node interface
-interface Node {
-  value: any;
-  neighbors: Node[]; // Array of neighbors
+// Define the structure of an edge
+interface Edge {
+  source: number;
+  target: number;
+  weight: number;
 }
 
-// Function to perform breadth-limited search
-function breadthLimitedSearch(root: Node, goal: any, maxDepth: number): Node | null {
-  if (maxDepth < 0) {
-    throw new Error("maxDepth must be 0 or greater");
-  }
+// Bellman-Ford algorithm implementation
+function bellmanFord(
+  verticesCount: number,
+  edges: Edge[],
+  source: number
+): { distances: number[]; predecessor: (number | null)[] } {
+  // Initialize distances and predecessors
+  const distances: number[] = Array(verticesCount).fill(Infinity);
+  const predecessor: (number | null)[] = Array(verticesCount).fill(null);
 
-  // Queue for BFS
-  let queue: { node: Node; depth: number }[] = [{ node: root, depth: 0 }];
-  const visited = new Set<Node>(); // Keep track of visited nodes
+  distances[source] = 0;
 
-  while (queue.length > 0) {
-    const { node, depth } = queue.shift()!;
+  // Relax edges repeatedly
+  for (let i = 0; i < verticesCount - 1; i++) {
+    let updated = false;
 
-    // Check if the current node is the goal
-    if (node.value === goal) {
-      return node; // Return the found node
-    }
-
-    // If we haven't reached the maximum depth, explore neighbors
-    if (depth < maxDepth) {
-      for (const neighbor of node.neighbors) {
-        if (!visited.has(neighbor)) {
-          visited.add(neighbor);
-          queue.push({ node: neighbor, depth: depth + 1 });
-        }
+    for (const edge of edges) {
+      if (distances[edge.source] + edge.weight < distances[edge.target]) {
+        distances[edge.target] = distances[edge.source] + edge.weight;
+        predecessor[edge.target] = edge.source;
+        updated = true;
       }
     }
+
+    // Optimization: stop if no update in this iteration
+    if (!updated) {
+      break;
+    }
   }
 
-  return null; // Return null if the goal was not found
+  // Check for negative weight cycles
+  for (const edge of edges) {
+    if (distances[edge.source] + edge.weight < distances[edge.target]) {
+      throw new Error("Graph contains a negative weight cycle");
+    }
+  }
+
+  return { distances, predecessor };
 }
 
 // Example usage:
-const nodeA: Node = { value: 'A', neighbors: [] };
-const nodeB: Node = { value: 'B', neighbors: [] };
-const nodeC: Node = { value: 'C', neighbors: [] };
-const nodeD: Node = { value: 'D', neighbors: [] };
+const edges: Edge[] = [
+  { source: 0, target: 1, weight: 6 },
+  { source: 0, target: 2, weight: 5 },
+  { source: 0, target: 3, weight: 5 },
+  { source: 1, target: 4, weight: -1 },
+  { source: 2, target: 1, weight: -2 },
+  { source: 2, target: 4, weight: 1 },
+  { source: 3, target: 2, weight: -2 },
+  { source: 3, target: 5, weight: -1 },
+  { source: 4, target: 6, weight: 3 },
+  { source: 5, target: 6, weight: 3 },
+];
 
-// Setting up connections/edges
-nodeA.neighbors.push(nodeB, nodeC);
-nodeB.neighbors.push(nodeD);
-nodeC.neighbors.push(nodeD);
+const verticesCount = 7; // number of vertices
+const sourceVertex = 0; // starting point
 
-// Searching for 'D' with a max depth of 2
-const result = breadthLimitedSearch(nodeA, 'D', 2);
-console.log(result ? result.value : 'Goal not found'); // Outputs: 'Goal not found'
+try {
+  const result = bellmanFord(verticesCount, edges, sourceVertex);
+  console.log("Distances from source:", result.distances);
+  console.log("Predecessors:", result.predecessor);
+} catch (error) {
+  console.error(error.message);
+}
