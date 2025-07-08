@@ -1,71 +1,82 @@
-type Edge = {
-    node: string;
-    weight: number;
-};
-
-class Graph {
-    private adjacencyList: Map<string, Edge[]>;
+class MinHeap {
+    private heap: number[];
 
     constructor() {
-        this.adjacencyList = new Map();
+        // Initialize the heap as an empty array
+        this.heap = [];
     }
 
-    addVertex(vertex: string) {
-        if (!this.adjacencyList.has(vertex)) {
-            this.adjacencyList.set(vertex, []);
+    // Insert a new value
+    public insert(val: number): void {
+        this.heap.push(val);
+        this.bubbleUp(this.heap.length - 1);
+    }
+
+    // Remove and return the minimum value
+    public extractMin(): number | null {
+        if (this.heap.length === 0) {
+            return null; // or throw an error if preferred
+        }
+        if (this.heap.length === 1) {
+            return this.heap.pop()!;
+        }
+
+        const minValue = this.heap[0];
+        this.heap[0] = this.heap.pop()!;
+        this.bubbleDown(0);
+        return minValue;
+    }
+
+    // Peek the minimum value without removing it
+    public peek(): number | null {
+        return this.heap.length > 0 ? this.heap[0] : null;
+    }
+
+    // Returns the current size of the heap
+    public size(): number {
+        return this.heap.length;
+    }
+
+    // Helper function to maintain the heap property after inserting
+    private bubbleUp(index: number): void {
+        let parentIndex = Math.floor((index - 1) / 2);
+        while (index > 0 && this.heap[index] < this.heap[parentIndex]) {
+            [this.heap[index], this.heap[parentIndex]] = [this.heap[parentIndex], this.heap[index]];
+            index = parentIndex;
+            parentIndex = Math.floor((index - 1) / 2);
         }
     }
 
-    addEdge(vertex1: string, vertex2: string, weight: number) {
-        this.addVertex(vertex1);
-        this.addVertex(vertex2);
-        this.adjacencyList.get(vertex1)?.push({ node: vertex2, weight });
-        this.adjacencyList.get(vertex2)?.push({ node: vertex1, weight }); // For undirected graph
-    }
+    // Helper function to maintain the heap property after removing
+    private bubbleDown(index: number): void {
+        const length = this.heap.length;
+        let minIndex = index;
 
-    dijkstra(start: string): Map<string, number> {
-        const distances = new Map<string, number>();
-        const priorityQueue: [string, number][] = [];
-        const visited = new Set<string>();
+        const leftChild = 2 * index + 1;
+        const rightChild = 2 * index + 2;
 
-        // Initialize distances
-        for (const vertex of this.adjacencyList.keys()) {
-            distances.set(vertex, Infinity);
-        }
-        distances.set(start, 0);
-        priorityQueue.push([start, 0]);
-
-        while (priorityQueue.length > 0) {
-            // Sort the queue by distance
-            priorityQueue.sort((a, b) => a[1] - b[1]);
-            const [currentVertex, currentDistance] = priorityQueue.shift()!;
-
-            if (visited.has(currentVertex)) continue;
-            visited.add(currentVertex);
-
-            // Explore neighbors
-            for (const edge of this.adjacencyList.get(currentVertex) || []) {
-                const { node: neighbor, weight } = edge;
-                const newDistance = currentDistance + weight;
-
-                if (newDistance < (distances.get(neighbor) || Infinity)) {
-                    distances.set(neighbor, newDistance);
-                    priorityQueue.push([neighbor, newDistance]);
-                }
-            }
+        if (leftChild < length && this.heap[leftChild] < this.heap[minIndex]) {
+            minIndex = leftChild;
         }
 
-        return distances;
+        if (rightChild < length && this.heap[rightChild] < this.heap[minIndex]) {
+            minIndex = rightChild;
+        }
+
+        if (minIndex !== index) {
+            [this.heap[index], this.heap[minIndex]] = [this.heap[minIndex], this.heap[index]];
+            this.bubbleDown(minIndex);
+        }
     }
 }
 
 // Example usage
-const graph = new Graph();
-graph.addEdge('A', 'B', 1);
-graph.addEdge('A', 'C', 4);
-graph.addEdge('B', 'C', 2);
-graph.addEdge('B', 'D', 5);
-graph.addEdge('C', 'D', 1);
+const priorityQueue = new MinHeap();
+priorityQueue.insert(5);
+priorityQueue.insert(3);
+priorityQueue.insert(8);
+priorityQueue.insert(1);
 
-const distances = graph.dijkstra('A');
-console.log(distances); // Output the shortest distances from A
+console.log(priorityQueue.extractMin()); // 1
+console.log(priorityQueue.peek()); // 3
+console.log(priorityQueue.size()); // 3
