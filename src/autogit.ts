@@ -1,45 +1,11 @@
-class Stack<T> {
-    private items: T[] = [];
+const numbers: number[] = [5, 3, 8, 1, 2];
 
-    // Push an item onto the stack
-    push(item: T): void {
-        this.items.push(item);
-    }
+// Sort the array in ascending order
+numbers.sort((a, b) => a - b);
 
-    // Pop an item off the stack
-    pop(): T | undefined {
-        return this.items.pop();
-    }
+console.log(numbers); // Output: [1, 2, 3, 5, 8]
 
-    // Peek at the top item of the stack
-    peek(): T | undefined {
-        return this.items[this.items.length - 1];
-    }
+// Sort the array in descending order
+numbers.sort((a, b) => b - a);
 
-    // Check if the stack is empty
-    isEmpty(): boolean {
-        return this.items.length === 0;
-    }
-
-    // Get the size of the stack
-    size(): number {
-        return this.items.length;
-    }
-
-    // Clear the stack
-    clear(): void {
-        this.items = [];
-    }
-}
-
-// Example usage:
-const stack = new Stack<number>();
-stack.push(1);
-stack.push(2);
-stack.push(3);
-console.log(stack.peek()); // Output: 3
-console.log(stack.pop());   // Output: 3
-console.log(stack.size());  // Output: 2
-console.log(stack.isEmpty()); // Output: false
-stack.clear();
-console.log(stack.isEmpty()); // Output: true
+console.log(numbers); // Output: [8, 5, 3, 2, 1]
