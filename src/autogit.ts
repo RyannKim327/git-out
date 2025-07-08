@@ -1,46 +1,29 @@
-class ListNode {
-    value: number;
-    next: ListNode | null;
-
-    constructor(value: number) {
-        this.value = value;
-        this.next = null;
-    }
-}
-
-function findNthFromEnd(head: ListNode | null, n: number): ListNode | null {
-    let first: ListNode | null = head;
-    let second: ListNode | null = head;
-
-    // Move first pointer n steps ahead
-    for (let i = 0; i < n; i++) {
-        if (first === null) {
-            return null; // n is larger than the length of the list
+function isSorted(arr: number[]): boolean {
+    for (let i = 1; i < arr.length; i++) {
+        if (arr[i] < arr[i - 1]) {
+            return false;
         }
-        first = first.next;
     }
-
-    // Move both pointers until the first pointer reaches the end
-    while (first !== null) {
-        first = first.next;
-        second = second.next;
-    }
-
-    // second pointer is now at the nth node from the end
-    return second;
+    return true;
 }
 
-// Example usage:
-const head = new ListNode(1);
-head.next = new ListNode(2);
-head.next.next = new ListNode(3);
-head.next.next.next = new ListNode(4);
-head.next.next.next.next = new ListNode(5);
-
-const n = 2;
-const result = findNthFromEnd(head, n);
-if (result) {
-    console.log(`The ${n}th node from the end is: ${result.value}`);
-} else {
-    console.log(`The list is shorter than ${n} nodes.`);
+function shuffle(arr: number[]): number[] {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]]; // Swap elements
+    }
+    return arr;
 }
+
+function bogosort(arr: number[]): number[] {
+    while (!isSorted(arr)) {
+        arr = shuffle(arr);
+    }
+    return arr;
+}
+
+// Example usage
+const arr = [3, 2, 5, 1, 4];
+console.log("Unsorted array:", arr);
+const sortedArr = bogosort(arr);
+console.log("Sorted array:", sortedArr);
