@@ -1,40 +1,17 @@
-npm install axios
-import axios from 'axios';
+function areAnagrams(str1: string, str2: string): boolean {
+    // Normalize the strings: convert to lowercase and remove spaces
+    const normalizedStr1 = str1.toLowerCase().replace(/\s+/g, '');
+    const normalizedStr2 = str2.toLowerCase().replace(/\s+/g, '');
 
-// Define an interface for the expected response data
-interface Post {
-    userId: number;
-    id: number;
-    title: string;
-    body: string;
+    // Sort the characters of both strings
+    const sortedStr1 = normalizedStr1.split('').sort().join('');
+    const sortedStr2 = normalizedStr2.split('').sort().join('');
+
+    // Compare the sorted strings
+    return sortedStr1 === sortedStr2;
 }
 
-// Function to fetch posts
-async function fetchPosts(): Promise<Post[]> {
-    try {
-        const response = await axios.get<Post[]>('https://jsonplaceholder.typicode.com/posts');
-        return response.data;
-    } catch (error) {
-        if (axios.isAxiosError(error)) {
-            console.error('Error fetching posts:', error.message);
-        } else {
-            console.error('Unexpected error:', error);
-        }
-        throw error; // Rethrow the error for further handling if necessary
-    }
-}
-
-// Main function to execute code
-async function main() {
-    try {
-        const posts = await fetchPosts();
-        console.log('Fetched posts:', posts);
-    } catch (error) {
-        console.error('Failed to fetch posts:', error);
-    }
-}
-
-// Execute the main function
-main();
-tsc yourFileName.ts
-node yourFileName.js
+// Example usage:
+const string1 = "listen";
+const string2 = "silent";
+console.log(areAnagrams(string1, string2)); // Output: true
