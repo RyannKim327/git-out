@@ -27,6 +27,8 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: git fetch
       - run: git pull
+      - run: git branch -m test
+      - run: git checkout test
       - name: NPM INSTALL
         run: npm install
       - run: git config --global user.name "${{ secrets.NAME }}"
@@ -34,6 +36,6 @@ jobs:
       - name: NODE RUN
         run: npx tsx src/index.ts
       - name: GIT PUSH
-        run: git push
+        run: git push origin test
         env:
           API_GITHUB_TOKEN: ${{ secrets.API_GITHUB_TOKEN }}
