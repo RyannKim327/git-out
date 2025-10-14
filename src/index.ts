@@ -20,11 +20,23 @@ const run = async (): Promise<void> => {
   );
 
   try {
-    const { data } = await axios.get<{ response: string }>(
-      `https://api-freegpt.onrender.com/api/chat/?message=${encodeURIComponent(m3)}`,
+    const { data } = await axios.post<{ response: string }>(
+      `https://g4f.dev/ai/1760433024795`,{
+        "model": "auto",
+        "messages": [
+          {
+            "role": "user",
+            "content": m3
+          }
+        ],
+        "stream": false,
+        "stream_options":{
+          "include_usage": true
+        }
+      }
     );
 
-    const datas: string[] = data.response.split("\n");
+    const datas: string[] = data.split("\n");
     let result: string = "";
     let active = false;
 
