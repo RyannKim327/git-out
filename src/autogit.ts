@@ -1,112 +1,36 @@
-function isAnagram(str1: string, str2: string): boolean {
-    // Remove non-alphanumeric characters and convert to lowercase
-    const cleanStr1 = str1.replace(/[^a-z0-9]/gi, '').toLowerCase();
-    const cleanStr2 = str2.replace(/[^a-z0-9]/gi, '').toLowerCase();
-    
-    // If lengths are different, they can't be anagrams
-    if (cleanStr1.length !== cleanStr2.length) {
-        return false;
-    }
-    
-    // Sort and compare
-    return cleanStr1.split('').sort().join('') === cleanStr2.split('').sort().join('');
-}
+const array1 = [1, 2, 3, 4];
+const array2 = [3, 4, 5, 6];
 
-// Examples
-console.log(isAnagram("listen", "silent")); // true
-console.log(isAnagram("hello", "world"));   // false
-console.log(isAnagram("rail safety", "fairy tales")); // true
-function isAnagramFrequency(str1: string, str2: string): boolean {
-    const cleanStr1 = str1.replace(/[^a-z0-9]/gi, '').toLowerCase();
-    const cleanStr2 = str2.replace(/[^a-z0-9]/gi, '').toLowerCase();
-    
-    if (cleanStr1.length !== cleanStr2.length) {
-        return false;
-    }
-    
-    const charCount: { [key: string]: number } = {};
-    
-    // Count characters in first string
-    for (const char of cleanStr1) {
-        charCount[char] = (charCount[char] || 0) + 1;
-    }
-    
-    // Subtract characters from second string
-    for (const char of cleanStr2) {
-        if (!charCount[char]) {
-            return false;
-        }
-        charCount[char]--;
-    }
-    
-    return true;
-}
-function isAnagramMap(str1: string, str2: string): boolean {
-    const cleanStr1 = str1.replace(/[^a-z0-9]/gi, '').toLowerCase();
-    const cleanStr2 = str2.replace(/[^a-z0-9]/gi, '').toLowerCase();
-    
-    if (cleanStr1.length !== cleanStr2.length) {
-        return false;
-    }
-    
-    const charMap = new Map<string, number>();
-    
-    // Build frequency map from first string
-    for (const char of cleanStr1) {
-        charMap.set(char, (charMap.get(char) || 0) + 1);
-    }
-    
-    // Check against second string
-    for (const char of cleanStr2) {
-        const count = charMap.get(char);
-        if (!count) {
-            return false;
-        }
-        charMap.set(char, count - 1);
-    }
-    
-    return true;
-}
-const isAnagramOneLiner = (str1: string, str2: string): boolean => 
-    str1.replace(/[^a-z0-9]/gi, '').toLowerCase().split('').sort().join('') === 
-    str2.replace(/[^a-z0-9]/gi, '').toLowerCase().split('').sort().join('');
-interface AnagramCheckResult {
-    isAnagram: boolean;
-    message?: string;
-}
+const common = array1.filter(item => array2.includes(item));
 
-function checkAnagram(str1: string, str2: string): AnagramCheckResult {
-    // Input validation
-    if (typeof str1 !== 'string' || typeof str2 !== 'string') {
-        return { isAnagram: false, message: 'Both inputs must be strings' };
-    }
-    
-    const cleanStr1 = str1.replace(/[^a-z0-9]/gi, '').toLowerCase();
-    const cleanStr2 = str2.replace(/[^a-z0-9]/gi, '').toLowerCase();
-    
-    if (cleanStr1.length !== cleanStr2.length) {
-        return { 
-            isAnagram: false, 
-            message: 'Strings have different lengths after cleaning' 
-        };
-    }
-    
-    const charCount: { [key: string]: number } = {};
-    
-    for (const char of cleanStr1) {
-        charCount[char] = (charCount[char] || 0) + 1;
-    }
-    
-    for (const char of cleanStr2) {
-        if (!charCount[char]) {
-            return { isAnagram: false, message: 'Character frequency mismatch' };
-        }
-        charCount[char]--;
-    }
-    
-    return { isAnagram: true };
-}
+console.log(common); // [3, 4]
+const array1 = [1, 2, 3, 4];
+const array2 = [3, 4, 5, 6];
 
-// Usage
-const result = checkAnagram("listen", "silent");
-console.log(result); // { isAnagram: true }
+const set2 = new Set(array2);
+const common = array1.filter(item => set2.has(item));
+
+console.log(common); // [3, 4]
+type User = { id: number; name: string };
+
+const users1: User[] = [
+  { id: 1, name: "Alice" },
+  { id: 2, name: "Bob" }
+];
+const users2: User[] = [
+  { id: 2, name: "Bob" },
+  { id: 3, name: "Charlie" }
+];
+
+const ids2 = new Set(users2.map(u => u.id));
+const common = users1.filter(user => ids2.has(user.id));
+
+console.log(common); // [{ id: 2, name: "Bob" }]
+import _ from "lodash";
+
+const array1 = [1, 2, 3, 4];
+const array2 = [3, 4, 5, 6];
+
+const common = _.intersection(array1, array2);
+
+console.log(common); // [3, 4]
