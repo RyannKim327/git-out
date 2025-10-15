@@ -1,36 +1,52 @@
-const array1 = [1, 2, 3, 4];
-const array2 = [3, 4, 5, 6];
+function kmpSearch(text: string, pattern: string): number[] {
+    const m = pattern.length;
+    const n = text.length;
+    const lps = buildLPS(pattern); // Longest Prefix Suffix array
+    const result: number[] = [];
 
-const common = array1.filter(item => array2.includes(item));
+    let i = 0; // index for text
+    let j = 0; // index for pattern
 
-console.log(common); // [3, 4]
-const array1 = [1, 2, 3, 4];
-const array2 = [3, 4, 5, 6];
+    while (i < n) {
+        if (pattern[j] === text[i]) {
+            i++;
+            j++;
+        }
 
-const set2 = new Set(array2);
-const common = array1.filter(item => set2.has(item));
+        if (j === m) {
+            result.push(i - j); // match found at i-j
+            j = lps[j - 1];
+        } else if (i < n && pattern[j] !== text[i]) {
+            if (j !== 0) {
+                j = lps[j - 1];
+            } else {
+                i++;
+            }
+        }
+    }
 
-console.log(common); // [3, 4]
-type User = { id: number; name: string };
+    return result;
+}
 
-const users1: User[] = [
-  { id: 1, name: "Alice" },
-  { id: 2, name: "Bob" }
-];
-const users2: User[] = [
-  { id: 2, name: "Bob" },
-  { id: 3, name: "Charlie" }
-];
+function buildLPS(pattern: string): number[] {
+    const lps: number[] = new Array(pattern.length).fill(0);
+    let len = 0; // length of the previous longest prefix suffix
+    let i = 1;
 
-const ids2 = new Set(users2.map(u => u.id));
-const common = users1.filter(user => ids2.has(user.id));
+    while (i < pattern.length) {
+        if (pattern[i] === pattern[len]) {
+            len++;
+            lps[i] = len;
+            i++;
+        } else {
+            if (len !== 0) {
+                len = lps[len - 1];
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
 
-console.log(common); // [{ id: 2, name: "Bob" }]
-import _ from "lodash";
-
-const array1 = [1, 2, 3, 4];
-const array2 = [3, 4, 5, 6];
-
-const common = _.intersection(array1, array2);
-
-console.log(common); // [3, 4]
+    return lps;
+}
