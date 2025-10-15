@@ -1,34 +1,49 @@
-/**
- * Shell Sort (in-place, ascending order)
- * @param arr Array of numbers to be sorted
- * @returns the same array instance, now sorted
- */
-export function shellSort(arr: number[]): number[] {
-  const n = arr.length;
-  if (n < 2) return arr;
+type NodeId = string; // or number, depending on your graph
 
-  // Knuth’s interval sequence: h = 3*h + 1
-  let h = 1;
-  while (h < n / 3) h = 3 * h + 1;
-
-  while (h >= 1) {
-    // h-sort the array
-    for (let i = h; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      while (j >= h && arr[j - h] > temp) {
-        arr[j] = arr[j - h];
-        j -= h;
-      }
-      arr[j] = temp;
-    }
-    h = Math.floor(h / 3);
-  }
-  return arr;
+interface QueueItem {
+  node: NodeId;
+  depth: number;
 }
 
-/* ---------- Usage example ---------- */
-const data = [64, 34, 25, 12, 22, 11, 90];
-console.log('before:', data);
-shellSort(data);
-console.log('after: ', data);
+function breadthLimitedSearch(
+  startNode: NodeId,
+  getNeighbors: (node: NodeId) => NodeId[],
+  maxDepth: number
+): NodeId[] {
+  const visited = new Set<NodeId>();
+  const result: NodeId[] = [];
+
+  const queue: QueueItem[] = [{ node: startNode, depth: 0 }];
+
+  visited.add(startNode);
+
+  while (queue.length > 0) {
+    const { node, depth } = queue.shift()!; // get the front of the queue
+
+    result.push(node);
+
+    if (depth < maxDepth) {
+      const neighbors = getNeighbors(node);
+
+      for (const neighbor of neighbors) {
+        if (!visited.has(neighbor)) {
+          visited.add(neighbor);
+          queue.push({ node: neighbor, depth: depth + 1 });
+        }
+      }
+    }
+  }
+
+  return result;
+}
+const graph: Record<NodeId, NodeId[]> = {
+  A: ["B", "C"],
+  B: ["D", "E"],
+  C: ["F"],
+  D: [],
+  E: ["F"],
+  F: []
+};
+
+const nodesReached = breadthLimitedSearch("A", node => graph[node] || [], 2);
+console.log(nodesReached); // should show nodes within depth 2 of A
