@@ -1,88 +1,46 @@
-function isPalindrome(s: string): boolean {
-    let left = 0;
-    let right = s.length - 1;
-    
-    while (left < right) {
-        // Skip non-alphanumeric characters from left
-        while (left < right && !isAlphanumeric(s[left])) {
-            left++;
-        }
-        // Skip non-alphanumeric characters from right
-        while (left < right && !isAlphanumeric(s[right])) {
-            right--;
-        }
-        
-        // Compare characters (case-insensitive)
-        if (s[left].toLowerCase() !== s[right].toLowerCase()) {
-            return false;
-        }
-        
-        left++;
-        right--;
-    }
-    
-    return true;
+const stringWithSpaces = "  Hello   World  \n\t";
+const trimmedString = stringWithSpaces.replace(/\s/g, "");
+console.log(trimmedString); // "HelloWorld"
+const stringWithSpaces = "  Hello World  ";
+const trimmedString = stringWithSpaces.trim();
+console.log(trimmedString); // "Hello World"
+const stringWithSpaces = "  Hello World";
+const trimmedString = stringWithSpaces.trimStart(); // or trimLeft()
+console.log(trimmedString); // "Hello World"
+const stringWithSpaces = "Hello World  ";
+const trimmedString = stringWithSpaces.trimEnd(); // or trimRight()
+console.log(trimmedString); // "Hello World"
+// Remove only spaces
+const stringWithSpaces = "  Hello   World  ";
+const noSpaces = stringWithSpaces.replace(/ /g, "");
+console.log(noSpaces); // "HelloWorld"
+
+// Remove tabs
+const stringWithTabs = "Hello\tWorld";
+const noTabs = stringWithTabs.replace(/\t/g, "");
+console.log(noTabs); // "HelloWorld"
+
+// Remove new lines
+const stringWithNewlines = "Hello\nWorld";
+const noNewlines = stringWithNewlines.replace(/\n/g, "");
+console.log(noNewlines); // "HelloWorld"
+function normalizeSpaces(str: string): string {
+    return str.replace(/\s+/g, " ").trim();
 }
 
-function isAlphanumeric(char: string): boolean {
-    return /^[a-zA-Z0-9]$/.test(char);
+const messyString = "  Hello     World   ";
+const cleanString = normalizeSpaces(messyString);
+console.log(cleanString); // "Hello World"
+// Remove all whitespace
+function removeAllWhitespace(str: string): string {
+    return str.replace(/\s/g, "");
 }
-function isPalindromeSimple(s: string): boolean {
-    let left = 0;
-    let right = s.length - 1;
-    
-    while (left < right) {
-        if (s[left] !== s[right]) {
-            return false;
-        }
-        left++;
-        right--;
-    }
-    
-    return true;
+
+// Remove extra spaces (keep single spaces between words)
+function removeExtraSpaces(str: string): string {
+    return str.replace(/\s+/g, " ").trim();
 }
-function isPalindromeRecursive(s: string, left: number = 0, right: number = s.length - 1): boolean {
-    // Base case
-    if (left >= right) {
-        return true;
-    }
-    
-    // Skip non-alphanumeric characters
-    if (!isAlphanumeric(s[left])) {
-        return isPalindromeRecursive(s, left + 1, right);
-    }
-    if (!isAlphanumeric(s[right])) {
-        return isPalindromeRecursive(s, left, right - 1);
-    }
-    
-    // Compare characters
-    if (s[left].toLowerCase() !== s[right].toLowerCase()) {
-        return false;
-    }
-    
-    return isPalindromeRecursive(s, left + 1, right - 1);
-}
-function isPalindromeCaseInsensitive(s: string): boolean {
-    let left = 0;
-    let right = s.length - 1;
-    
-    while (left < right) {
-        const leftChar = s[left].toLowerCase();
-        const rightChar = s[right].toLowerCase();
-        
-        if (leftChar !== rightChar) {
-            return false;
-        }
-        
-        left++;
-        right--;
-    }
-    
-    return true;
-}
-// Test cases
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("race a car")); // false
-console.log(isPalindrome(" ")); // true
-console.log(isPalindrome("racecar")); // true
-console.log(isPalindrome("hello")); // false
+
+// Usage
+const result1 = removeAllWhitespace("  Hello   World  ");
+const result2 = removeExtraSpaces("  Hello   World  ");
