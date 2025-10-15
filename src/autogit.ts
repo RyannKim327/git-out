@@ -1,48 +1,24 @@
-function removeVowels(text: string): string {
-  return text.replace(/[aeiou]/gi, '');
+function largestPrimeFactor(n: number): number {
+    if (n < 2) return 0;
+
+    // Remove all factors of 2
+    while (n % 2 === 0) {
+        n /= 2;
+    }
+
+    // Check odd factors from 3 upwards
+    let factor = 3;
+    while (factor * factor <= n) {
+        if (n % factor === 0) {
+            n /= factor;
+        } else {
+            factor += 2;
+        }
+    }
+
+    return n > 2 ? n : 2;
 }
 
-// Example usage
-const result = removeVowels("Hello World"); // "Hll Wrld"
-console.log(result);
-function removeVowels(text: string): string {
-  const vowels = ['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U'];
-  return text
-    .split('')
-    .filter(char => !vowels.includes(char))
-    .join('');
-}
-
-// Example usage
-const result = removeVowels("TypeScript"); // "TypScrpt"
-console.log(result);
-function removeVowels(text: string): string {
-  // The 'i' flag makes it case-insensitive
-  return text.replace(/[aeiou]/gi, '');
-}
-
-// Example usage
-const result = removeVowels("Programming"); // "Prgrmmng"
-console.log(result);
-function removeVowels(text: string): string {
-  const vowelRegex = /[aeiou]/gi;
-  return text.replace(vowelRegex, '');
-}
-
-// Example usage
-const input = "Remove Vowels From This String";
-const output = removeVowels(input); // "Rmv Vwls Frm Ths Strng"
-console.log(output);
-function removeVowels(text: string): string {
-  if (typeof text !== 'string') {
-    throw new Error('Input must be a string');
-  }
-  
-  return text.replace(/[aeiou]/gi, '');
-}
-
-// Test cases
-console.log(removeVowels("Hello"));      // "Hll"
-console.log(removeVowels("TypeScript")); // "TypScrpt"
-console.log(removeVowels("AEIOU"));      // ""
-console.log(removeVowels(""));           // ""
+// Example usage:
+console.log(largestPrimeFactor(13195)); // Output: 29
+console.log(largestPrimeFactor(600851475143)); // Output: 6857
