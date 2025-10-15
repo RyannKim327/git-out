@@ -1,74 +1,63 @@
-function findCommonElements<T>(arr1: T[], arr2: T[]): T[] {
-    return arr1.filter(element => arr2.includes(element));
+/**
+ * Pre-process the pattern and return the LPS (Longest Prefix Suffix) array.
+ * Time  : O(pattern.length)
+ * Memory: O(pattern.length)
+ */
+function buildLpsTable(pattern: string): number[] {
+  const m = pattern.length;
+  const lps = new Array<number>(m).fill(0);
+  let len = 0;          // length of the current longest prefix suffix
+  let i = 1;            // lps[0] is always 0, so start at 1
+
+  while (i < m) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else if (len !== 0) {
+      len = lps[len - 1]; // fallback in the LPS table
+    } else {
+      lps[i] = 0;
+      i++;
+    }
+  }
+  return lps;
 }
 
-// Usage
-const array1: number[] = [1, 2, 3, 4, 5];
-const array2: number[] = [4, 5, 6, 7, 8];
+/**
+ * KMP search.
+ * @returns index of the first occurrence of `pattern` in `text`, or -1.
+ * Time  : O(text.length + pattern.length)
+ * Memory: O(pattern.length)
+ */
+export function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;          // empty pattern is found at 0
+  if (pattern.length > text.length) return -1;
 
-const common = findCommonElements(array1, array2);
-console.log(common); // [4, 5]
-function findCommonElements<T>(arr1: T[], arr2: T[]): T[] {
-    const set = new Set(arr2);
-    return arr1.filter(element => set.has(element));
+  const lps = buildLpsTable(pattern);
+  let i = 0;  // index for text
+  let j = 0;  // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) {
+        return i - j;   // match found
+      }
+    } else if (j !== 0) {
+      j = lps[j - 1]; // fallback in pattern
+    } else {
+      i++;
+    }
+  }
+  return -1; // no match
 }
 
-// Usage
-const array1: string[] = ['apple', 'banana', 'cherry', 'date'];
-const array2: string[] = ['banana', 'date', 'elderberry', 'fig'];
-
-const common = findCommonElements(array1, array2);
-console.log(common); // ['banana', 'date']
-function findCommonElements<T>(arr1: T[], arr2: T[]): T[] {
-    const set = new Set<T>(arr2);
-    return arr1.filter(item => set.has(item));
+/* ------------- usage example ------------- */
+if (require.main === module) {
+  const txt = "ababcababaad";
+  const pat = "ababa";
+  console.log(kmpSearch(txt, pat)); // → 5
 }
-
-// Usage with different types
-const numbers: number[] = [1, 2, 3, 4];
-const numbers2: number[] = [3, 4, 5, 6];
-console.log(findCommonElements(numbers, numbers2)); // [3, 4]
-
-const fruits: string[] = ['apple', 'banana', 'orange'];
-const fruits2: string[] = ['banana', 'orange', 'grape'];
-console.log(findCommonElements(fruits, fruits2)); // ['banana', 'orange']
-interface User {
-    id: number;
-    name: string;
-}
-
-function findCommonObjectsByProperty<T, K extends keyof T>(
-    arr1: T[], 
-    arr2: T[], 
-    property: K
-): T[] {
-    const set = new Set(arr2.map(item => item[property]));
-    return arr1.filter(item => set.has(item[property]));
-}
-
-// Usage
-const users1: User[] = [
-    { id: 1, name: 'Alice' },
-    { id: 2, name: 'Bob' },
-    { id: 3, name: 'Charlie' }
-];
-
-const users2: User[] = [
-    { id: 2, name: 'Bob' },
-    { id: 3, name: 'Charlie' },
-    { id: 4, name: 'Diana' }
-];
-
-const commonUsers = findCommonObjectsByProperty(users1, users2, 'id');
-console.log(commonUsers); 
-// [
-//   { id: 2, name: 'Bob' },
-//   { id: 3, name: 'Charlie' }
-// ]
-// Simple one-liner for primitive types
-const array1 = [1, 2, 3, 4, 5];
-const array2 = [4, 5, 6, 7, 8];
-const common = array1.filter(x => array2.includes(x)); // [4, 5]
-
-// More efficient one-liner with Set
-const commonEfficient = array1.filter(x => new Set(array2).has(x)); // [4, 5]
+npx ts-node kmp.ts
