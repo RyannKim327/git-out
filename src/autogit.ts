@@ -1,87 +1,83 @@
-function quicksort<T>(arr: T[]): T[] {
-    // Base case: arrays with 0 or 1 element are already sorted
-    if (arr.length <= 1) {
-        return arr;
-    }
-
-    // Choose the first element as pivot
-    const pivot = arr[0];
-    const left: T[] = [];
-    const right: T[] = [];
-
-    // Partition the array
-    for (let i = 1; i < arr.length; i++) {
-        if (arr[i] < pivot) {
-            left.push(arr[i]);
-        } else {
-            right.push(arr[i]);
-        }
-    }
-
-    // Recursively sort sub-arrays and combine
-    return [...quicksort(left), pivot, ...quicksort(right)];
-}
-
-// Example usage with numbers
-const numbers: number[] = [64, 34, 25, 12, 22, 11, 90];
-console.log("Original:", numbers);
-console.log("Sorted:", quicksort(numbers));
-
-// Example usage with strings
-const words: string[] = ["banana", "apple", "cherry", "date", "elderberry"];
-console.log("Original:", words);
-console.log("Sorted:", quicksort(words));
-function quicksortInPlace<T>(arr: T[], low: number = 0, high: number = arr.length - 1): void {
-    if (low < high) {
-        const partitionIndex = partition(arr, low, high);
-        quicksortInPlace(arr, low, partitionIndex - 1);
-        quicksortInPlace(arr, partitionIndex + 1, high);
-    }
-}
-
-function partition<T>(arr: T[], low: number, high: number): number {
-    const pivot = arr[high];
-    let i = low - 1;
-
-    for (let j = low; j < high; j++) {
-        if (arr[j] < pivot) {
-            i++;
-            [arr[i], arr[j]] = [arr[j], arr[i]];
+function bubbleSort<T>(arr: T[]): T[] {
+    const n = arr.length;
+    
+    // Outer loop for each pass
+    for (let i = 0; i < n - 1; i++) {
+        // Inner loop for comparisons
+        for (let j = 0; j < n - i - 1; j++) {
+            // Compare adjacent elements and swap if needed
+            if (arr[j] > arr[j + 1]) {
+                // Swap elements
+                const temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
+            }
         }
     }
     
-    [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
-    return i + 1;
+    return arr;
 }
-
-// Usage
-const arr = [64, 34, 25, 12, 22, 11, 90];
-quicksortInPlace(arr);
-console.log("Sorted in-place:", arr);
-function quicksortWithComparator<T>(
+function bubbleSortWithComparator<T>(
     arr: T[], 
-    comparator: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+    comparator: (a: T, b: T) => number = (a, b) => (a > b ? 1 : a < b ? -1 : 0)
 ): T[] {
-    if (arr.length <= 1) return arr;
+    const n = arr.length;
     
-    const pivot = arr[0];
-    const left: T[] = [];
-    const right: T[] = [];
-
-    for (let i = 1; i < arr.length; i++) {
-        if (comparator(arr[i], pivot) < 0) {
-            left.push(arr[i]);
-        } else {
-            right.push(arr[i]);
+    for (let i = 0; i < n - 1; i++) {
+        for (let j = 0; j < n - i - 1; j++) {
+            if (comparator(arr[j], arr[j + 1]) > 0) {
+                // Swap elements
+                const temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
+            }
         }
     }
-
-    return [...quicksortWithComparator(left, comparator), 
-            pivot, 
-            ...quicksortWithComparator(right, comparator)];
+    
+    return arr;
 }
+function optimizedBubbleSort<T>(arr: T[]): T[] {
+    const n = arr.length;
+    let swapped: boolean;
+    
+    for (let i = 0; i < n - 1; i++) {
+        swapped = false;
+        
+        for (let j = 0; j < n - i - 1; j++) {
+            if (arr[j] > arr[j + 1]) {
+                // Swap elements
+                const temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
+                swapped = true;
+            }
+        }
+        
+        // If no swapping occurred, array is already sorted
+        if (!swapped) {
+            break;
+        }
+    }
+    
+    return arr;
+}
+// Example 1: Sorting numbers
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log("Original:", numbers);
+console.log("Sorted:", bubbleSort(numbers)); // [11, 12, 22, 25, 34, 64, 90]
 
-// Example with objects
+// Example 2: Sorting strings
+const strings = ["banana", "apple", "cherry", "date"];
+console.log("Sorted strings:", bubbleSort(strings)); 
+// ["apple", "banana", "cherry", "date"]
+
+// Example 3: Using custom comparator for descending order
+const descendingComparator = (a: number, b: number) => (a < b ? 1 : a > b ? -1 : 0);
+const numbersDesc = [1, 3, 2, 5, 4];
+console.log("Descending:", bubbleSortWithComparator(numbersDesc, descendingComparator)); 
+// [5, 4, 3, 2, 1]
+
+// Example 4: Sorting objects by a property
 interface Person {
     name: string;
     age: number;
@@ -93,5 +89,5 @@ const people: Person[] = [
     { name: "Charlie", age: 35 }
 ];
 
-console.log("Sorted by age:", quicksortWithComparator(people, (a, b) => a.age - b.age));
-console.log("Sorted by name:", quicksortWithComparator(people, (a, b) => a.name.localeCompare(b.name)));
+const ageComparator = (a: Person, b: Person) => a.age - b.age;
+console.log("Sorted by age:", bubbleSortWithComparator(people, ageComparator));
