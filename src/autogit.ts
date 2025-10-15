@@ -1,63 +1,76 @@
-/**
- * A practical regex for email validation.
- * Covers most common email formats.
- *
- * - Allows alphanumeric characters, dots, underscores, percents, plus, and hyphens in the local part.
- * - Requires an '@' symbol.
- * - Allows alphanumeric characters and hyphens in the domain part.
- * - Requires at least one dot in the domain, followed by 2 or more letters for the TLD.
- *
- * Limitations:
- * - Does not strictly adhere to all RFC specifications (e.g., quoted local parts, IP literal domains).
- * - Does not handle internationalized domain names (IDN) or email address internationalization (EAI) out of the box.
- */
-const practicalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+// TypeScript – runs inside the WebView
+async function callNativeAsync(): Promise<string> {
+  return new Promise<string>(resolve => {
+    // 1. Subscribe for the single-shot response
+    const listener = (event: MessageEvent) => {
+      if (event.data.type === 'native-result') {
+        window.removeEventListener('message', listener);
+        resolve(event.data.payload);
+      }
+    };
+    window.addEventListener('message', listener);
 
-function isValidEmailPractical(email: string): boolean {
-  if (!email || typeof email !== 'string') {
-    return false;
-  }
-  return practicalEmailRegex.test(email);
+    // 2. Ask Android to do the work
+    (window as any).androidInterface.postMessage(
+      JSON.stringify({ id: 'asyncJob', data: 'hello from ts' })
+    );
+  });
 }
 
-// --- Examples ---
-console.log("--- Practical Regex Examples ---");
-console.log(`test@example.com: ${isValidEmailPractical("test@example.com")}`);      // true
-console.log(`john.doe@sub.example.co.uk: ${isValidEmailPractical("john.doe@sub.example.co.uk")}`); // true
-console.log(`user+tag@domain.net: ${isValidEmailPractical("user+tag@domain.net")}`);  // true
-console.log(`invalid-email: ${isValidEmailPractical("invalid-email")}`);          // false
-console.log(`@example.com: ${isValidEmailPractical("@example.com")}`);            // false
-console.log(`test@.com: ${isValidEmailPractical("test@.com")}`);                  // false
-console.log(`test@domain: ${isValidEmailPractical("test@domain")}`);              // false
-console.log(`test@domain.c: ${isValidEmailPractical("test@domain.c")}`);          // false (TLD must be 2+ chars)
-console.log(`"john.doe"@example.com: ${isValidEmailPractical('"john.doe"@example.com')}`); // false (doesn't handle quoted local part)
-/**
- * A more robust regex for email validation, often used in HTML5 email input validation.
- * It's more complex but covers more valid email formats than the practical one.
- *
- * - Handles quoted strings in the local part (e.g., "John Doe"@example.com).
- * - Handles IP literal domains (e.g., user@[192.168.1.1]).
- * - Still has limitations regarding full RFC compliance and internationalization.
- */
-const robustEmailRegex = new RegExp(
-  /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-);
+// usage
+(async () => {
+  const result = await callNativeAsync();
+  console.log('Native returned:', result);
+})();
+class MainActivity : AppCompatActivity() {
 
-function isValidEmailRobust(email: string): boolean {
-  if (!email || typeof email !== 'string') {
-    return false;
-  }
-  return robustEmailRegex.test(email);
+    private val handler = Handler(Looper.getMainLooper())
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        val webView: WebView = findViewById(R.id.webview)
+        webView.settings.javaScriptEnabled = true
+
+        // 1. Expose a single object to JS context
+        webView.addJavascriptInterface(NativeBridge(webView), "androidInterface")
+
+        // 2. Load the HTML/JS that contains the TypeScript bundle
+        webView.loadUrl("file:///android_asset/index.html")
+    }
+
+    inner class NativeBridge(private val webView: WebView) {
+
+        @JavascriptInterface
+        fun postMessage(json: String) {
+            // Parse the envelope (quick & dirty)
+            val msg = JSONObject(json)
+            val id = msg.getString("id")
+
+            // 3. Do something long on an IO thread
+            lifecycleScope.launch(Dispatchers.IO) {
+                val answer = doSlowAsyncThing(msg.getString("data"))
+
+                // 4. Come back to main thread and answer the WebView
+                withContext(Dispatchers.Main) {
+                    val js = """
+                        window.postMessage(
+                          { type:'native-result', payload: ${JSONObject.quote(answer)} },
+                          '*'
+                        );
+                    """.trimIndent()
+                    webView.evaluateJavascript(js, null)
+                }
+            }
+        }
+
+        private suspend fun doSlowAsyncThing(input: String): String {
+            delay(2_000) // simulate network/db
+            return "Kotlin processed: $input"
+        }
+    }
 }
-
-// --- Examples ---
-console.log("\n--- Robust Regex Examples ---");
-console.log(`test@example.com: ${isValidEmailRobust("test@example.com")}`);      // true
-console.log(`"john.doe"@example.com: ${isValidEmailRobust('"john.doe"@example.com')}`); // true (handles quoted local part)
-console.log(`user@[192.168.1.1]: ${isValidEmailRobust("user@[192.168.1.1]")}`);    // true (handles IP literal domain)
-console.log(`user+tag@domain.net: ${isValidEmailRobust("user+tag@domain.net")}`);  // true
-console.log(`invalid-email: ${isValidEmailRobust("invalid-email")}`);          // false
-console.log(`@example.com: ${isValidEmailRobust("@example.com")}`);            // false
-console.log(`test@.com: ${isValidEmailRobust("test@.com")}`);                  // false
-console.log(`test@domain: ${isValidEmailRobust("test@domain")}`);              // false
-console.log(`test@domain.c: ${isValidEmailRobust("test@domain.c")}`);          // false
+dependencies {
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
+}
