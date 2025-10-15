@@ -1,130 +1,74 @@
-function longestCommonPrefix(strings: string[]): string {
-  if (strings.length === 0) return "";
-  
-  return strings.reduce((prev, current) => {
-    let i = 0;
-    while (i < prev.length && i < current.length && prev[i] === current[i]) {
-      i++;
-    }
-    return prev.substring(0, i);
-  });
+function findCommonElements<T>(arr1: T[], arr2: T[]): T[] {
+    return arr1.filter(element => arr2.includes(element));
 }
 
-// Example usage
-const words = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(words)); // "fl"
-function longestCommonPrefix(strings: string[]): string {
-  if (strings.length === 0) return "";
-  
-  let prefix = strings[0];
-  
-  for (let i = 1; i < strings.length; i++) {
-    while (strings[i].indexOf(prefix) !== 0) {
-      prefix = prefix.substring(0, prefix.length - 1);
-      if (prefix === "") return "";
-    }
-  }
-  
-  return prefix;
+// Usage
+const array1: number[] = [1, 2, 3, 4, 5];
+const array2: number[] = [4, 5, 6, 7, 8];
+
+const common = findCommonElements(array1, array2);
+console.log(common); // [4, 5]
+function findCommonElements<T>(arr1: T[], arr2: T[]): T[] {
+    const set = new Set(arr2);
+    return arr1.filter(element => set.has(element));
 }
 
-// Example usage
-const words = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(words)); // "fl"
-function longestCommonPrefix(strings: string[]): string {
-  if (strings.length === 0) return "";
-  
-  for (let i = 0; i < strings[0].length; i++) {
-    const char = strings[0][i];
-    
-    for (let j = 1; j < strings.length; j++) {
-      if (i === strings[j].length || strings[j][i] !== char) {
-        return strings[0].substring(0, i);
-      }
-    }
-  }
-  
-  return strings[0];
+// Usage
+const array1: string[] = ['apple', 'banana', 'cherry', 'date'];
+const array2: string[] = ['banana', 'date', 'elderberry', 'fig'];
+
+const common = findCommonElements(array1, array2);
+console.log(common); // ['banana', 'date']
+function findCommonElements<T>(arr1: T[], arr2: T[]): T[] {
+    const set = new Set<T>(arr2);
+    return arr1.filter(item => set.has(item));
 }
 
-// Example usage
-const words = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(words)); // "fl"
-function longestCommonPrefix(strings: string[]): string {
-  if (strings.length === 0) return "";
-  
-  function commonPrefix(left: string, right: string): string {
-    const minLength = Math.min(left.length, right.length);
-    for (let i = 0; i < minLength; i++) {
-      if (left[i] !== right[i]) {
-        return left.substring(0, i);
-      }
-    }
-    return left.substring(0, minLength);
-  }
-  
-  function divideAndConquer(low: number, high: number): string {
-    if (low === high) {
-      return strings[low];
-    }
-    
-    const mid = Math.floor((low + high) / 2);
-    const leftPrefix = divideAndConquer(low, mid);
-    const rightPrefix = divideAndConquer(mid + 1, high);
-    
-    return commonPrefix(leftPrefix, rightPrefix);
-  }
-  
-  return divideAndConquer(0, strings.length - 1);
+// Usage with different types
+const numbers: number[] = [1, 2, 3, 4];
+const numbers2: number[] = [3, 4, 5, 6];
+console.log(findCommonElements(numbers, numbers2)); // [3, 4]
+
+const fruits: string[] = ['apple', 'banana', 'orange'];
+const fruits2: string[] = ['banana', 'orange', 'grape'];
+console.log(findCommonElements(fruits, fruits2)); // ['banana', 'orange']
+interface User {
+    id: number;
+    name: string;
 }
 
-// Example usage
-const words = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(words)); // "fl"
-function longestCommonPrefix(strings: string[]): string {
-  if (strings.length === 0) return "";
-  
-  let prefix = "";
-  
-  for (let i = 0; i < strings[0].length; i++) {
-    const char = strings[0][i];
-    
-    // Check if all strings have the same character at position i
-    const allMatch = strings.every(str => str[i] === char);
-    
-    if (allMatch) {
-      prefix += char;
-    } else {
-      break;
-    }
-  }
-  
-  return prefix;
+function findCommonObjectsByProperty<T, K extends keyof T>(
+    arr1: T[], 
+    arr2: T[], 
+    property: K
+): T[] {
+    const set = new Set(arr2.map(item => item[property]));
+    return arr1.filter(item => set.has(item[property]));
 }
 
-// Example usage
-const words = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(words)); // "fl"
-function longestCommonPrefixSafe(strings: string[]): string {
-  // Handle edge cases
-  if (strings.length === 0) return "";
-  if (strings.length === 1) return strings[0];
-  
-  // Remove empty strings if needed
-  const nonEmptyStrings = strings.filter(str => str.length > 0);
-  if (nonEmptyStrings.length === 0) return "";
-  
-  return nonEmptyStrings.reduce((prev, current) => {
-    let i = 0;
-    while (i < prev.length && i < current.length && prev[i] === current[i]) {
-      i++;
-    }
-    return prev.substring(0, i);
-  });
-}
+// Usage
+const users1: User[] = [
+    { id: 1, name: 'Alice' },
+    { id: 2, name: 'Bob' },
+    { id: 3, name: 'Charlie' }
+];
 
-// Example usage with various cases
-console.log(longestCommonPrefixSafe([])); // ""
-console.log(longestCommonPrefixSafe(["abc"])); // "abc"
-console.log(longestCommonPrefixSafe(["", "abc"])); // ""
-console.log(longestCommonPrefixSafe(["abc", "abd", "abe"])); // "ab"
+const users2: User[] = [
+    { id: 2, name: 'Bob' },
+    { id: 3, name: 'Charlie' },
+    { id: 4, name: 'Diana' }
+];
+
+const commonUsers = findCommonObjectsByProperty(users1, users2, 'id');
+console.log(commonUsers); 
+// [
+//   { id: 2, name: 'Bob' },
+//   { id: 3, name: 'Charlie' }
+// ]
+// Simple one-liner for primitive types
+const array1 = [1, 2, 3, 4, 5];
+const array2 = [4, 5, 6, 7, 8];
+const common = array1.filter(x => array2.includes(x)); // [4, 5]
+
+// More efficient one-liner with Set
+const commonEfficient = array1.filter(x => new Set(array2).has(x)); // [4, 5]
