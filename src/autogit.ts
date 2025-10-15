@@ -1,77 +1,100 @@
-class ListNode<T> {
-    value: T;
-    next: ListNode<T> | null;
+/**
+ * Pre-process the pattern and return the longest-prefix-suffix (LPS) array.
+ * Time  : O(m)
+ * Memory: O(m)
+ */
+function buildLpsTable(pattern: string): number[] {
+  const m = pattern.length;
+  const lps = new Array<number>(m).fill(0);
+  let len = 0;          // length of the previous longest prefix suffix
+  let i = 1;
 
-    constructor(value: T, next: ListNode<T> | null = null) {
-        this.value = value;
-        this.next = next;
+  while (i < m) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else if (len !== 0) {
+      len = lps[len - 1]; // fallback
+    } else {
+      lps[i] = 0;
+      i++;
     }
+  }
+  return lps;
 }
 
-function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-    if (!head) return null;
-    
-    let slow: ListNode<T> | null = head;
-    let fast: ListNode<T> | null = head;
-    
-    while (fast && fast.next) {
-        slow = slow!.next;
-        fast = fast.next.next;
-    }
-    
-    return slow;
-}
-function findMiddleWithCount<T>(head: ListNode<T> | null): ListNode<T> | null {
-    if (!head) return null;
-    
-    let count = 0;
-    let current: ListNode<T> | null = head;
-    
-    // Count total nodes
-    while (current) {
-        count++;
-        current = current.next;
-    }
-    
-    // Find middle position
-    const middleIndex = Math.floor(count / 2);
-    current = head;
-    
-    for (let i = 0; i < middleIndex; i++) {
-        current = current!.next;
-    }
-    
-    return current;
-}
-function findMiddleWithArray<T>(head: ListNode<T> | null): ListNode<T> | null {
-    if (!head) return null;
-    
-    const nodes: ListNode<T>[] = [];
-    let current: ListNode<T> | null = head;
-    
-    while (current) {
-        nodes.push(current);
-        current = current.next;
-    }
-    
-    return nodes[Math.floor(nodes.length / 2)];
-}
-// Create a linked list: 1 → 2 → 3 → 4 → 5
-const node5 = new ListNode(5);
-const node4 = new ListNode(4, node5);
-const node3 = new ListNode(3, node4);
-const node2 = new ListNode(2, node3);
-const node1 = new ListNode(1, node2);
+/**
+ * Returns the starting index of the first occurrence of `pattern` in `text`,
+ * or -1 if not found.
+ * Time  : O(n + m)
+ * Memory: O(m)
+ */
+export function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;
+  if (text.length < pattern.length) return -1;
 
-// Find middle element
-const middle = findMiddle(node1);
-console.log(middle?.value); // Output: 3
+  const lps = buildLpsTable(pattern);
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-// For even number of nodes: 1 → 2 → 3 → 4
-const node4b = new ListNode(4);
-const node3b = new ListNode(3, node4b);
-const node2b = new ListNode(2, node3b);
-const node1b = new ListNode(1, node2b);
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) return i - j; // match found
+    } else if (j !== 0) {
+      j = lps[j - 1]; // fallback in pattern
+    } else {
+      i++;
+    }
+  }
+  return -1;
+}
 
-const middleEven = findMiddle(node1b);
-console.log(middleEven?.value); // Output: 3 (second middle in even-length list)
+/**
+ * Same as kmpSearch but returns *all* starting indices.
+ */
+export function kmpSearchAll(text: string, pattern: string): number[] {
+  const res: number[] = [];
+  if (pattern.length === 0) return res;
+
+  const lps = buildLpsTable(pattern);
+  let i = 0;
+  let j = 0;
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) {
+        res.push(i - j);
+        j = lps[j - 1]; // allow overlapping matches
+      }
+    } else if (j !== 0) {
+      j = lps[j - 1];
+    } else {
+      i++;
+    }
+  }
+  return res;
+}
+
+/* ---------- Quick sanity checks ---------- */
+if (import.meta.vitest) {
+  const { it, expect } = import.meta.vitest;
+  it('finds needle in haystack', () => {
+    expect(kmpSearch('abracadabra', 'abra')).toBe(0);
+    expect(kmpSearch('abracadabra', 'dabra')).toBe(5);
+    expect(kmpSearch('aaaa', 'aa')).toBe(0);
+    expect(kmpSearch('abc', '')).toBe(0);
+    expect(kmpSearch('abc', 'xyz')).toBe(-1);
+  });
+  it('finds all overlaps', () => {
+    expect(kmpSearchAll('aaaa', 'aa')).toEqual([0, 1, 2]);
+  });
+}
+import { kmpSearch, kmpSearchAll } from './kmp';
+
+console.log(kmpSearch('The quick brown fox', 'brown')); // 10
+console.log(kmpSearchAll('aaaa', 'aa'));                // [0, 1, 2]
