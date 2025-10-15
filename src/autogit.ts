@@ -1,66 +1,38 @@
-function rabinKarpSearch(text: string, pattern: string): number[] {
-    const results: number[] = [];
-    const n = text.length;
-    const m = pattern.length;
-    
-    // Edge case: pattern is longer than text
-    if (m > n || m === 0) {
-        return results;
-    }
+function longestCommonSubsequence(str1: string, str2: string): string {
+    const m = str1.length;
+    const n = str2.length;
 
-    // Constants (use large primes)
-    const base = 256;        // Number of characters in the alphabet (ASCII)
-    const modulus = 101;     // Prime modulus to prevent overflow and collisions
-    
-    // Precompute (base^(m-1)) % modulus
-    let highestPower = 1;
-    for (let i = 0; i < m - 1; i++) {
-        highestPower = (highestPower * base) % modulus;
-    }
+    // Initialize a (m+1) x (n+1) DP table with zeros
+    const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-    // Calculate initial hash values for 
-    // the pattern and first text window
-    let patternHash = 0;
-    let textHash = 0;
-    
-    for (let i = 0; i < m; i++) {
-        patternHash = (base * patternHash + pattern.charCodeAt(i)) % modulus;
-        textHash = (base * textHash + text.charCodeAt(i)) % modulus;
-    }
-
-    // Slide the pattern over the text
-    for (let i = 0; i <= n - m; i++) {
-        // Check hash collision
-        if (textHash === patternHash) {
-            // Verify actual characters to prevent false positives
-            let match = true;
-            for (let j = 0; j < m; j++) {
-                if (text[i + j] !== pattern[j]) {
-                    match = false;
-                    break;
-                }
-            }
-            if (match) {
-                results.push(i);
-            }
-        }
-
-        // Compute next window hash if not the last window
-        if (i < n - m) {
-            textHash = (base * (textHash - text.charCodeAt(i) * highestPower)
-                        + text.charCodeAt(i + m)) % modulus;
-            
-            // Ensure hash is positive
-            if (textHash < 0) {
-                textHash += modulus;
+    // Fill the DP table
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            if (str1[i - 1] === str2[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
+            } else {
+                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
             }
         }
     }
 
-    return results;
+    // Backtrack to find the LCS
+    let i = m, j = n;
+    const lcsChars: string[] = [];
+
+    while (i > 0 && j > 0) {
+        if (str1[i - 1] === str2[j - 1]) {
+            lcsChars.push(str1[i - 1]);
+            i--;
+            j--;
+        } else if (dp[i - 1][j] > dp[i][j - 1]) {
+            i--;
+        } else {
+            j--;
+        }
+    }
+
+    return lcsChars.reverse().join('');
 }
-
-// Example usage:
-console.log(rabinKarpSearch("abracadabra", "abra")); // Output: [0, 7]
-console.log(rabinKarpSearch("aaaaa", "aa"));        // Output: [0, 1, 2, 3]
-console.log(rabinKarpSearch("mississippi", "issip")); // Output: [4]
+console.log(longestCommonSubsequence("ABCBDAB", "BDCAB")); // Outputs "BCAB" (or "BDAB")
+console.log(longestCommonSubsequence("abcde", "ace"));     // Outputs "ace"
