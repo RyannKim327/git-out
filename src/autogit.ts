@@ -1,100 +1,80 @@
-/**
- * Pre-process the pattern and return the longest-prefix-suffix (LPS) array.
- * Time  : O(m)
- * Memory: O(m)
- */
-function buildLpsTable(pattern: string): number[] {
-  const m = pattern.length;
-  const lps = new Array<number>(m).fill(0);
-  let len = 0;          // length of the previous longest prefix suffix
-  let i = 1;
+function findSecondLargest(arr: number[]): number | null {
+    if (arr.length < 2) return null;
+    
+    const sorted = [...arr].sort((a, b) => b - a);
+    return sorted[1];
+}
 
-  while (i < m) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else if (len !== 0) {
-      len = lps[len - 1]; // fallback
-    } else {
-      lps[i] = 0;
-      i++;
+// Usage
+const numbers = [10, 5, 8, 20, 15];
+console.log(findSecondLargest(numbers)); // Output: 15
+function findSecondLargest(arr: number[]): number | null {
+    if (arr.length < 2) return null;
+    
+    let largest = -Infinity;
+    let secondLargest = -Infinity;
+    
+    for (const num of arr) {
+        if (num > largest) {
+            secondLargest = largest;
+            largest = num;
+        } else if (num > secondLargest && num !== largest) {
+            secondLargest = num;
+        }
     }
-  }
-  return lps;
+    
+    return secondLargest !== -Infinity ? secondLargest : null;
 }
 
-/**
- * Returns the starting index of the first occurrence of `pattern` in `text`,
- * or -1 if not found.
- * Time  : O(n + m)
- * Memory: O(m)
- */
-export function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;
-  if (text.length < pattern.length) return -1;
+// Usage
+const numbers = [10, 5, 8, 20, 15];
+console.log(findSecondLargest(numbers)); // Output: 15
+function findSecondLargest(arr: number[]): number | null {
+    if (arr.length < 2) return null;
+    
+    const uniqueSorted = [...new Set(arr)].sort((a, b) => b - a);
+    return uniqueSorted.length >= 2 ? uniqueSorted[1] : null;
+}
 
-  const lps = buildLpsTable(pattern);
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) return i - j; // match found
-    } else if (j !== 0) {
-      j = lps[j - 1]; // fallback in pattern
-    } else {
-      i++;
+// Usage with duplicates
+const numbers = [10, 10, 5, 8, 20, 20, 15];
+console.log(findSecondLargest(numbers)); // Output: 15
+function findSecondLargest(arr: number[]): number | null {
+    if (arr.length < 2) return null;
+    
+    const result = arr.reduce((acc, num) => {
+        if (num > acc.largest) {
+            acc.secondLargest = acc.largest;
+            acc.largest = num;
+        } else if (num > acc.secondLargest && num !== acc.largest) {
+            acc.secondLargest = num;
+        }
+        return acc;
+    }, { largest: -Infinity, secondLargest: -Infinity });
+    
+    return result.secondLargest !== -Infinity ? result.secondLargest : null;
+}
+function findSecondLargest(arr: number[]): number | null {
+    if (arr.length < 2) return null;
+    
+    let largest = -Infinity;
+    let secondLargest = -Infinity;
+    
+    for (const num of arr) {
+        if (num > largest) {
+            secondLargest = largest;
+            largest = num;
+        } else if (num > secondLargest && num !== largest) {
+            secondLargest = num;
+        }
     }
-  }
-  return -1;
+    
+    return secondLargest !== -Infinity ? secondLargest : null;
 }
 
-/**
- * Same as kmpSearch but returns *all* starting indices.
- */
-export function kmpSearchAll(text: string, pattern: string): number[] {
-  const res: number[] = [];
-  if (pattern.length === 0) return res;
-
-  const lps = buildLpsTable(pattern);
-  let i = 0;
-  let j = 0;
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) {
-        res.push(i - j);
-        j = lps[j - 1]; // allow overlapping matches
-      }
-    } else if (j !== 0) {
-      j = lps[j - 1];
-    } else {
-      i++;
-    }
-  }
-  return res;
-}
-
-/* ---------- Quick sanity checks ---------- */
-if (import.meta.vitest) {
-  const { it, expect } = import.meta.vitest;
-  it('finds needle in haystack', () => {
-    expect(kmpSearch('abracadabra', 'abra')).toBe(0);
-    expect(kmpSearch('abracadabra', 'dabra')).toBe(5);
-    expect(kmpSearch('aaaa', 'aa')).toBe(0);
-    expect(kmpSearch('abc', '')).toBe(0);
-    expect(kmpSearch('abc', 'xyz')).toBe(-1);
-  });
-  it('finds all overlaps', () => {
-    expect(kmpSearchAll('aaaa', 'aa')).toEqual([0, 1, 2]);
-  });
-}
-import { kmpSearch, kmpSearchAll } from './kmp';
-
-console.log(kmpSearch('The quick brown fox', 'brown')); // 10
-console.log(kmpSearchAll('aaaa', 'aa'));                // [0, 1, 2]
+// Test cases
+console.log(findSecondLargest([10, 5, 8, 20, 15]));      // 15
+console.log(findSecondLargest([10, 10, 10]));            // null (all same)
+console.log(findSecondLargest([5]));                     // null (too short)
+console.log(findSecondLargest([-5, -2, -10, -1]));      // -2
+console.log(findSecondLargest([1, 2, 3, 4, 5, 5]));     // 4 (handles duplicates)
