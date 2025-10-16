@@ -1,38 +1,19 @@
-class TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
-
-  constructor(val: number) {
-    this.val = val;
-    this.left = null;
-    this.right = null;
-  }
+function longestCommonPrefix(strs: string[]): string {
+    if (strs.length === 0) return '';
+    if (strs.length === 1) return strs[0];
+    
+    const minLen = Math.min(...strs.map(str => str.length));
+    let prefix = '';
+    
+    for (let i = 0; i < minLen; i++) {
+        const char = strs[0][i];
+        for (const str of strs.slice(1)) {
+            if (str[i] !== char) {
+                return prefix;
+            }
+        }
+        prefix += char;
+    }
+    
+    return prefix;
 }
-
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;
-
-  function height(node: TreeNode | null): number {
-    if (!node) return 0;
-
-    const leftHeight = height(node.left);
-    const rightHeight = height(node.right);
-
-    // Update diameter
-    maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
-
-    return 1 + Math.max(leftHeight, rightHeight);
-  }
-
-  height(root);
-  return maxDiameter;
-}
-
-// Example usage:
-// const root = new TreeNode(1);
-// root.left = new TreeNode(2);
-// root.right = new TreeNode(3);
-// root.left.left = new TreeNode(4);
-// root.left.right = new TreeNode(5);
-// console.log(diameterOfBinaryTree(root)); // Output: 3
