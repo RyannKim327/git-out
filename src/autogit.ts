@@ -1,47 +1,74 @@
-/**
- * In-place quicksort (recursive).
- * @param arr          Array to sort.
- * @param compareFn    Optional comparator. Defaults to ascending `<`/`>` for primitives.
- * @param left         Left index (used internally).
- * @param right        Right index (used internally).
- */
-export function quickSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number,
-  left = 0,
-  right = arr.length - 1
-): T[] {
-  const cmp =
-    compareFn ||
-    ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+// Remove element by value
+const array1 = [1, 2, 3, 4, 2, 5];
+const valueToRemove = 2;
+const newArray = array1.filter(item => item !== valueToRemove);
+console.log(newArray); // [1, 3, 4, 5]
 
-  function partition(l: number, r: number): number {
-    const pivot = arr[r]; // choose right-most as pivot
-    let i = l - 1;        // place for swapping
-
-    for (let j = l; j < r; j++) {
-      if (cmp(arr[j], pivot) <= 0) {
-        i++;
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-    }
-    [arr[i + 1], arr[r]] = [arr[r], arr[i + 1]];
-    return i + 1;
-  }
-
-  if (left < right) {
-    const p = partition(left, right);
-    quickSort(arr, cmp, left, p - 1);
-    quickSort(arr, cmp, p + 1, right);
-  }
-  return arr;
+// Remove element with type safety
+interface Person {
+    id: number;
+    name: string;
 }
 
-/* ---------- usage ---------- */
-const nums = [3, 7, 2, 9, 1];
-quickSort(nums);
-console.log(nums); // [1, 2, 3, 7, 9]
+const people: Person[] = [
+    { id: 1, name: "Alice" },
+    { id: 2, name: "Bob" },
+    { id: 3, name: "Charlie" }
+];
 
-const words = ['pear', 'Banana', 'apple'];
-quickSort(words, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-console.log(words); // ["apple", "Banana", "pear"]
+const personToRemove = 2;
+const filteredPeople = people.filter(person => person.id !== personToRemove);
+// Remove by index
+const array2 = [10, 20, 30, 40, 50];
+const indexToRemove = 2;
+array2.splice(indexToRemove, 1);
+console.log(array2); // [10, 20, 40, 50]
+
+// Remove by value (find index first)
+const array3 = ["apple", "banana", "orange", "grape"];
+const valueToRemove2 = "orange";
+const index = array3.indexOf(valueToRemove2);
+if (index > -1) {
+    array3.splice(index, 1);
+}
+console.log(array3); // ["apple", "banana", "grape"]
+// Generic function to remove element by value
+function removeElement<T>(array: T[], value: T): T[] {
+    return array.filter(item => item !== value);
+}
+
+// Generic function to remove element by predicate
+function removeByPredicate<T>(
+    array: T[], 
+    predicate: (item: T) => boolean
+): T[] {
+    return array.filter(item => !predicate(item));
+}
+
+// Usage examples
+const numbers = [1, 2, 3, 4, 5];
+const result1 = removeElement(numbers, 3); // [1, 2, 4, 5]
+
+const users = [
+    { id: 1, name: "John" },
+    { id: 2, name: "Jane" }
+];
+const result2 = removeByPredicate(users, user => user.id === 1);
+interface Product {
+    id: number;
+    name: string;
+    price: number;
+}
+
+const products: Product[] = [
+    { id: 1, name: "Laptop", price: 1000 },
+    { id: 2, name: "Mouse", price: 25 },
+    { id: 3, name: "Keyboard", price: 75 }
+];
+
+// Remove product with id = 2
+const productsWithoutMouse = products.filter(product => product.id !== 2);
+const arrayWithDuplicates = [1, 2, 3, 2, 4, 2, 5];
+const valueToRemoveAll = 2;
+const cleanArray = arrayWithDuplicates.filter(item => item !== valueToRemoveAll);
+console.log(cleanArray); // [1, 3, 4, 5]
