@@ -1,64 +1,26 @@
-type State = {
-  value: string; // or any structure
-  score: number; // higher is better in this example
-};
+function longestCommonSubstring(a: string, b: string): string {
+    // Table: dp[i][j] = length of longest common substring ending at a[i-1], b[j-1]
+    const dp: number[][] = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+    let maxLength = 0;
+    let endIndexInA = 0;
 
-function beamSearch(
-  initialStates: State[],
-  expand: (state: State) => State[],
-  beamWidth: number,
-  maxSteps: number
-): State {
-  let beam: State[] = initialStates;
+    for (let i = 1; i <= a.length; i++) {
+        for (let j = 1; j <= b.length; j++) {
+            if (a[i - 1] === b[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
 
-  for (let step = 0; step < maxSteps; step++) {
-    // Expand all states in the current beam
-    const candidates: State[] = [];
-    for (const state of beam) {
-      candidates.push(...expand(state));
+                if (dp[i][j] > maxLength) {
+                    maxLength = dp[i][j];
+                    endIndexInA = i;
+                }
+            } else {
+                dp[i][j] = 0; // no match at these positions
+            }
+        }
     }
 
-    // Sort candidates by score (descending) and keep top beamWidth
-    candidates.sort((a, b) => b.score - a.score);
-    beam = candidates.slice(0, beamWidth);
-
-    // Optionally: Check termination condition
-    // For example, if top candidate has some perfect score
-    if (beam[0].score === 1) {
-      break;
-    }
-  }
-
-  // Return the best state found
-  return beam[0];
-}
-const target = "hello";
-
-function scoreWord(word: string): number {
-  let score = 0;
-  for (let i = 0; i < Math.min(word.length, target.length); i++) {
-    if (word[i] === target[i]) score++;
-  }
-  return score / target.length; // normalized 0–1
+    return a.slice(endIndexInA - maxLength, endIndexInA);
 }
 
-function expandState(state: State): State[] {
-  const letters = "abcdefghijklmnopqrstuvwxyz";
-  const nextStates: State[] = [];
-
-  // Append one letter at a time
-  for (const l of letters) {
-    const newValue = state.value + l;
-    nextStates.push({
-      value: newValue,
-      score: scoreWord(newValue)
-    });
-  }
-
-  return nextStates;
-}
-
-const initial = [{ value: "", score: 0 }];
-
-const best = beamSearch(initial, expandState, 3, 5);
-console.log("Best guess:", best);
+// Example usage:
+console.log(longestCommonSubstring("abcdef", "zabcf"));
