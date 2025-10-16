@@ -1,204 +1,179 @@
-class HeapSort<T> {
-  private heapSize: number = 0;
+// User interface defining the expected API response structure
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  website: string;
+}
 
-  public sort(array: T[]): T[] {
-    if (array.length <= 1) return array;
+// Error interface for API error responses
+interface ApiError {
+  message: string;
+  status: number;
+}
 
-    // Create a copy to avoid modifying the original array
-    const result = [...array];
-    this.heapSize = result.length;
+// API response wrapper for better type safety
+interface ApiResponse<T> {
+  data: T | null;
+  error: ApiError | null;
+  loading: boolean;
+}
 
-    // Build max heap
-    this.buildMaxHeap(result);
+class UserApiService {
+  private baseUrl: string = 'https://jsonplaceholder.typicode.com';
 
-    // Extract elements from heap one by one
-    for (let i = result.length - 1; i > 0; i--) {
-      // Move current root to end
-      this.swap(result, 0, i);
-      this.heapSize--;
+  // Generic fetch wrapper with error handling
+  private async fetchData<T>(endpoint: string): Promise<ApiResponse<T>> {
+    const response: ApiResponse<T> = {
+      data: null,
+      error: null,
+      loading: true
+    };
+
+    try {
+      const apiResponse = await fetch(`${this.baseUrl}${endpoint}`);
       
-      // Call maxHeapify on the reduced heap
-      this.maxHeapify(result, 0);
+      if (!apiResponse.ok) {
+        throw new Error(`HTTP error! status: ${apiResponse.status}`);
+      }
+      
+      const data = await apiResponse.json() as T;
+      response.data = data;
+    } catch (error) {
+      response.error = {
+        message: error instanceof Error ? error.message : 'Unknown error occurred',
+        status: error instanceof Response ? error.status : 500
+      };
+    } finally {
+      response.loading = false;
     }
 
-    return result;
+    return response;
   }
 
-  private buildMaxHeap(array: T[]): void {
-    for (let i = Math.floor(this.heapSize / 2); i >= 0; i--) {
-      this.maxHeapify(array, i);
-    }
+  // Get all users
+  async getUsers(): Promise<ApiResponse<User[]>> {
+    return this.fetchData<User[]>('/users');
   }
 
-  private maxHeapify(array: T[], index: number): void {
-    const left = this.leftChild(index);
-    const right = this.rightChild(index);
-    let largest = index;
-
-    // Compare with left child
-    if (left < this.heapSize && array[left] > array[largest]) {
-      largest = left;
-    }
-
-    // Compare with right child
-    if (right < this.heapSize && array[right] > array[largest]) {
-      largest = right;
-    }
-
-    // If largest is not the current index, swap and heapify
-    if (largest !== index) {
-      this.swap(array, index, largest);
-      this.maxHeapify(array, largest);
-    }
+  // Get single user by ID
+  async getUserById(id: number): Promise<ApiResponse<User>> {
+    return this.fetchData<User>(`/users/${id}`);
   }
 
-  private leftChild(index: number): number {
-    return 2 * index + 1;
-  }
+  // Create new user (POST example)
+  async createUser(userData: Omit<User, 'id'>): Promise<ApiResponse<User>> {
+    const response: ApiResponse<User> = {
+      data: null,
+      error: null,
+      loading: true
+    };
 
-  private rightChild(index: number): number {
-    return 2 * index + 2;
-  }
+    try {
+      const apiResponse = await fetch(`${this.baseUrl}/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
 
-  private parent(index: number): number {
-    return Math.floor((index - 1) / 2);
-  }
+      if (!apiResponse.ok) {
+        throw new Error(`HTTP error! status: ${apiResponse.status}`);
+      }
 
-  private swap(array: T[], i: number, j: number): void {
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-}
-class GenericHeapSort<T> {
-  private heapSize: number = 0;
-
-  public sort(
-    array: T[], 
-    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
-  ): T[] {
-    if (array.length <= 1) return array;
-
-    const result = [...array];
-    this.heapSize = result.length;
-
-    this.buildMaxHeap(result, compareFn);
-
-    for (let i = result.length - 1; i > 0; i--) {
-      this.swap(result, 0, i);
-      this.heapSize--;
-      this.maxHeapify(result, 0, compareFn);
+      const data = await apiResponse.json() as User;
+      response.data = data;
+    } catch (error) {
+      response.error = {
+        message: error instanceof Error ? error.message : 'Unknown error occurred',
+        status: error instanceof Response ? error.status : 500
+      };
+    } finally {
+      response.loading = false;
     }
 
-    return result;
-  }
-
-  private buildMaxHeap(array: T[], compareFn: (a: T, b: T) => number): void {
-    for (let i = Math.floor(this.heapSize / 2); i >= 0; i--) {
-      this.maxHeapify(array, i, compareFn);
-    }
-  }
-
-  private maxHeapify(
-    array: T[], 
-    index: number, 
-    compareFn: (a: T, b: T) => number
-  ): void {
-    const left = this.leftChild(index);
-    const right = this.rightChild(index);
-    let largest = index;
-
-    if (left < this.heapSize && compareFn(array[left], array[largest]) > 0) {
-      largest = left;
-    }
-
-    if (right < this.heapSize && compareFn(array[right], array[largest]) > 0) {
-      largest = right;
-    }
-
-    if (largest !== index) {
-      this.swap(array, index, largest);
-      this.maxHeapify(array, largest, compareFn);
-    }
-  }
-
-  private leftChild(index: number): number {
-    return 2 * index + 1;
-  }
-
-  private rightChild(index: number): number {
-    return 2 * index + 2;
-  }
-
-  private swap(array: T[], i: number, j: number): void {
-    [array[i], array[j]] = [array[j], array[i]];
+    return response;
   }
 }
-function heapSort<T>(
-  array: T[], 
-  compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
-): T[] {
-  if (array.length <= 1) return [...array];
 
-  let heapSize = array.length;
-  const result = [...array];
+// Usage example
+async function demonstrateApiUsage() {
+  const userService = new UserApiService();
 
-  const swap = (arr: T[], i: number, j: number): void => {
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  };
-
-  const leftChild = (index: number): number => 2 * index + 1;
-  const rightChild = (index: number): number => 2 * index + 2;
-
-  const maxHeapify = (arr: T[], index: number): void => {
-    const left = leftChild(index);
-    const right = rightChild(index);
-    let largest = index;
-
-    if (left < heapSize && compareFn(arr[left], arr[largest]) > 0) {
-      largest = left;
-    }
-
-    if (right < heapSize && compareFn(arr[right], arr[largest]) > 0) {
-      largest = right;
-    }
-
-    if (largest !== index) {
-      swap(arr, index, largest);
-      maxHeapify(arr, largest);
-    }
-  };
-
-  const buildMaxHeap = (arr: T[]): void => {
-    for (let i = Math.floor(heapSize / 2); i >= 0; i--) {
-      maxHeapify(arr, i);
-    }
-  };
-
-  buildMaxHeap(result);
-
-  for (let i = result.length - 1; i > 0; i--) {
-    swap(result, 0, i);
-    heapSize--;
-    maxHeapify(result, 0);
+  console.log('🔍 Fetching all users...');
+  const allUsers = await userService.getUsers();
+  
+  if (allUsers.error) {
+    console.error('❌ Error fetching users:', allUsers.error);
+  } else if (allUsers.data) {
+    console.log('✅ Users fetched successfully:', allUsers.data.length, 'users found');
+    console.log('First user:', allUsers.data[0]);
   }
 
-  return result;
+  console.log('\n🔍 Fetching user with ID 1...');
+  const singleUser = await userService.getUserById(1);
+  
+  if (singleUser.error) {
+    console.error('❌ Error fetching user:', singleUser.error);
+  } else if (singleUser.data) {
+    console.log('✅ User fetched successfully:', singleUser.data.name);
+  }
+
+  console.log('\n📝 Creating new user...');
+  const newUser = await userService.createUser({
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    phone: '123-456-7890',
+    website: 'johndoe.com'
+  });
+
+  if (newUser.error) {
+    console.error('❌ Error creating user:', newUser.error);
+  } else if (newUser.data) {
+    console.log('✅ User created successfully with ID:', newUser.data.id);
+  }
 }
-// Basic usage with numbers
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-const heapSort = new HeapSort<number>();
-const sortedNumbers = heapSort.sort(numbers);
-console.log(sortedNumbers); // [11, 12, 22, 25, 34, 64, 90]
 
-// Generic usage with strings
-const genericHeapSort = new GenericHeapSort<string>();
-const strings = ["banana", "apple", "cherry", "date"];
-const sortedStrings = genericHeapSort.sort(strings);
-console.log(sortedStrings); // ["apple", "banana", "cherry", "date"]
+// Advanced example with React-like state management
+class ApiStateManager {
+  private users: User[] = [];
+  private loading: boolean = false;
+  private error: string | null = null;
 
-// Custom comparator for descending order
-const sortedDesc = genericHeapSort.sort(numbers, (a, b) => b - a);
-console.log(sortedDesc); // [90, 64, 34, 25, 22, 12, 11]
+  constructor(private userService: UserApiService) {}
 
-// Functional approach
-const functionalSorted = heapSort([3, 1, 4, 1, 5, 9, 2, 6]);
-console.log(functionalSorted); // [1, 1, 2, 3, 4, 5, 6, 9]
+  async loadUsers(): Promise<void> {
+    this.loading = true;
+    this.error = null;
+
+    const response = await this.userService.getUsers();
+
+    if (response.error) {
+      this.error = response.error.message;
+    } else if (response.data) {
+      this.users = response.data;
+    }
+
+    this.loading = false;
+    this.logState();
+  }
+
+  private logState(): void {
+    console.log('\n📊 Current State:');
+    console.log('Loading:', this.loading);
+    console.log('Error:', this.error);
+    console.log('Users count:', this.users.length);
+  }
+}
+
+// Run the examples
+demonstrateApiUsage().catch(console.error);
+
+// Additional example with state manager
+setTimeout(async () => {
+  console.log('\n\n🎯 Advanced Example with State Manager:');
+  const stateManager = new ApiStateManager(new UserApiService());
+  await stateManager.loadUsers();
+}, 1000);
