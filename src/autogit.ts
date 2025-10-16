@@ -1,106 +1,68 @@
-class ListNode<T> {
-    constructor(
-        public value: T,
-        public next: ListNode<T> | null = null
-    ) {}
-}
+type Graph = Map<number, number[]>; 
+// You can also use { [key: number]: number[] } if you prefer plain objects.
 
-class LinkedList<T> {
-    private head: ListNode<T> | null = null;
+function tarjansSCC(graph: Graph): number[][] {
+    let index = 0;
+    const stack: number[] = [];
+    const onStack = new Set<number>();
+    const indices = new Map<number, number>();
+    const lowLink = new Map<number, number>();
 
-    // Add this method to your LinkedList class
-    getLength(): number {
-        let count = 0;
-        let current = this.head;
-        
-        while (current !== null) {
-            count++;
-            current = current.next;
-        }
-        
-        return count;
-    }
-}
-class LinkedList<T> {
-    // ... other methods
-    
-    getLengthRecursive(): number {
-        return this.getLengthHelper(this.head);
-    }
-    
-    private getLengthHelper(node: ListNode<T> | null): number {
-        if (node === null) {
-            return 0;
-        }
-        return 1 + this.getLengthHelper(node.next);
-    }
-}
-function getLinkedListLength<T>(head: ListNode<T> | null): number {
-    let count = 0;
-    let current = head;
-    
-    while (current !== null) {
-        count++;
-        current = current.next;
-    }
-    
-    return count;
-}
-class ListNode<T> {
-    constructor(
-        public value: T,
-        public next: ListNode<T> | null = null
-    ) {}
-}
+    const sccs: number[][] = [];
 
-class LinkedList<T> {
-    private head: ListNode<T> | null = null;
+    function strongConnect(v: number) {
+        // Set the depth index for v
+        indices.set(v, index);
+        lowLink.set(v, index);
+        index++;
 
-    add(value: T): void {
-        const newNode = new ListNode(value);
-        if (!this.head) {
-            this.head = newNode;
-        } else {
-            let current = this.head;
-            while (current.next) {
-                current = current.next;
+        stack.push(v);
+        onStack.add(v);
+
+        for (const w of graph.get(v) || []) {
+            if (!indices.has(w)) {
+                // Successor w has not yet been visited; recurse on it
+                strongConnect(w);
+                lowLink.set(v, Math.min(lowLink.get(v)!, lowLink.get(w)!));
+            } else if (onStack.has(w)) {
+                // Successor w is in the stack, so it's in the current SCC
+                lowLink.set(v, Math.min(lowLink.get(v)!, indices.get(w)!));
             }
-            current.next = newNode;
+        }
+
+        // If v is a root node, pop the stack and generate an SCC
+        if (lowLink.get(v) === indices.get(v)) {
+            const scc: number[] = [];
+            let w: number;
+            do {
+                w = stack.pop()!;
+                onStack.delete(w);
+                scc.push(w);
+            } while (w !== v);
+            sccs.push(scc);
         }
     }
 
-    // Iterative length
-    getLength(): number {
-        let count = 0;
-        let current = this.head;
-        
-        while (current !== null) {
-            count++;
-            current = current.next;
+    for (const v of graph.keys()) {
+        if (!indices.has(v)) {
+            strongConnect(v);
         }
-        
-        return count;
     }
 
-    // Recursive length
-    getLengthRecursive(): number {
-        return this.getLengthHelper(this.head);
-    }
-    
-    private getLengthHelper(node: ListNode<T> | null): number {
-        if (node === null) {
-            return 0;
-        }
-        return 1 + this.getLengthHelper(node.next);
-    }
+    return sccs;
 }
 
-// Usage example
-const list = new LinkedList<number>();
-list.add(1);
-list.add(2);
-list.add(3);
-list.add(4);
+// Example usage:
+const graph: Graph = new Map([
+    [0, [1]],
+    [1, [2, 3]],
+    [2, [0]],
+    [3, [4]],
+    [4, [5, 7]],
+    [5, [6]],
+    [6, [4]],
+    [7, []]
+]);
 
-console.log("Iterative length:", list.getLength()); // Output: 4
-console.log("Recursive length:", list.getLengthRecursive()); // Output: 4
+console.log(tarjansSCC(graph));
+// Example Output: [ [ 2, 1, 0 ], [ 6, 5, 4 ], [ 3 ], [ 7 ] ]
