@@ -1,44 +1,58 @@
-function maxSubArray(nums: number[]): number {
-    let maxSoFar = nums[0];
-    let maxEndingHere = nums[0];
+class TrieNode {
+  children: Map<string, TrieNode>;
+  isEndOfWord: boolean;
 
-    for (let i = 1; i < nums.length; i++) {
-        // Compare current element vs. current element + previous sum
-        maxEndingHere = Math.max(nums[i], maxEndingHere + nums[i]);
-        
-        // Update the global max
-        maxSoFar = Math.max(maxSoFar, maxEndingHere);
-    }
-
-    return maxSoFar;
+  constructor() {
+    this.children = new Map();
+    this.isEndOfWord = false;
+  }
 }
+class Trie {
+  private root: TrieNode;
 
-// Example
-const arr = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
-console.log(maxSubArray(arr)); // Output: 6  (from [4, -1, 2, 1])
-function maxSubArrayWithIndices(nums: number[]): { sum: number, start: number, end: number } {
-    let maxSoFar = nums[0];
-    let maxEndingHere = nums[0];
-    let start = 0, end = 0, s = 0;
+  constructor() {
+    this.root = new TrieNode();
+  }
 
-    for (let i = 1; i < nums.length; i++) {
-        if (nums[i] > maxEndingHere + nums[i]) {
-            maxEndingHere = nums[i];
-            s = i;
-        } else {
-            maxEndingHere += nums[i];
-        }
-
-        if (maxEndingHere > maxSoFar) {
-            maxSoFar = maxEndingHere;
-            start = s;
-            end = i;
-        }
+  insert(word: string): void {
+    let node = this.root;
+    for (const char of word) {
+      if (!node.children.has(char)) {
+        node.children.set(char, new TrieNode());
+      }
+      node = node.children.get(char)!;
     }
+    node.isEndOfWord = true;
+  }
 
-    return { sum: maxSoFar, start, end };
+  search(word: string): boolean {
+    let node = this.root;
+    for (const char of word) {
+      if (!node.children.has(char)) {
+        return false;
+      }
+      node = node.children.get(char)!;
+    }
+    return node.isEndOfWord;
+  }
+
+  startsWith(prefix: string): boolean {
+    let node = this.root;
+    for (const char of prefix) {
+      if (!node.children.has(char)) {
+        return false;
+      }
+      node = node.children.get(char)!;
+    }
+    return true;
+  }
 }
+const trie = new Trie();
+trie.insert("apple");
+trie.insert("app");
 
-const arr2 = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
-console.log(maxSubArrayWithIndices(arr2));
-// { sum: 6, start: 3, end: 6 }
+console.log(trie.search("apple"));    // true
+console.log(trie.search("app"));      // true
+console.log(trie.search("appl"));     // false
+console.log(trie.startsWith("appl")); // true
+console.log(trie.startsWith("bat"));  // false
