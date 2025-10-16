@@ -1,58 +1,23 @@
-class TrieNode {
-  children: Map<string, TrieNode>;
-  isEndOfWord: boolean;
+function firstNonRepeatingChar(str: string): string | null {
+    const charCount: Record<string, number> = {};
 
-  constructor() {
-    this.children = new Map();
-    this.isEndOfWord = false;
-  }
+    // Count occurrences
+    for (const char of str) {
+        charCount[char] = (charCount[char] || 0) + 1;
+    }
+
+    // Find first with count 1
+    for (const char of str) {
+        if (charCount[char] === 1) {
+            return char;
+        }
+    }
+
+    return null; // If no unique character found
 }
-class Trie {
-  private root: TrieNode;
 
-  constructor() {
-    this.root = new TrieNode();
-  }
-
-  insert(word: string): void {
-    let node = this.root;
-    for (const char of word) {
-      if (!node.children.has(char)) {
-        node.children.set(char, new TrieNode());
-      }
-      node = node.children.get(char)!;
-    }
-    node.isEndOfWord = true;
-  }
-
-  search(word: string): boolean {
-    let node = this.root;
-    for (const char of word) {
-      if (!node.children.has(char)) {
-        return false;
-      }
-      node = node.children.get(char)!;
-    }
-    return node.isEndOfWord;
-  }
-
-  startsWith(prefix: string): boolean {
-    let node = this.root;
-    for (const char of prefix) {
-      if (!node.children.has(char)) {
-        return false;
-      }
-      node = node.children.get(char)!;
-    }
-    return true;
-  }
+// Example usage
+console.log(firstNonRepeatingChar("swiss")); // Output: 'w'
+function firstNonRepeatingChar(str: string): string | null {
+    return str.split('').find(char => str.indexOf(char) === str.lastIndexOf(char)) || null;
 }
-const trie = new Trie();
-trie.insert("apple");
-trie.insert("app");
-
-console.log(trie.search("apple"));    // true
-console.log(trie.search("app"));      // true
-console.log(trie.search("appl"));     // false
-console.log(trie.startsWith("appl")); // true
-console.log(trie.startsWith("bat"));  // false
