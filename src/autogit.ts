@@ -1,43 +1,49 @@
-function heapSort(arr: number[]): number[] {
-    let n = arr.length;
+function boyerMooreSearch(text: string, pattern: string): number[] {
+    const m = pattern.length;
+    const n = text.length;
+    const matches: number[] = [];
 
-    // Step 1: Build a max heap
-    for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-        heapify(arr, n, i);
+    if (m === 0 || n === 0 || m > n) {
+        return matches;
     }
 
-    // Step 2: Extract elements one by one
-    for (let i = n - 1; i > 0; i--) {
-        // Move current root to the end
-        [arr[0], arr[i]] = [arr[i], arr[0]];
+    // Build bad character table
+    const badCharShift: Record<string, number> = {};
+    const ALPHABET_SIZE = 256; // ASCII range
 
-        // Call max heapify on the reduced heap
-        heapify(arr, i, 0);
+    // Initialize with m (pattern length)
+    for (let i = 0; i < ALPHABET_SIZE; i++) {
+        badCharShift[String.fromCharCode(i)] = m;
     }
 
-    return arr;
-}
-
-// Heapify subtree rooted at index i
-function heapify(arr: number[], heapSize: number, i: number) {
-    let largest = i;
-    let left = 2 * i + 1;
-    let right = 2 * i + 2;
-
-    if (left < heapSize && arr[left] > arr[largest]) {
-        largest = left;
+    // Set actual shifts based on pattern chars
+    for (let i = 0; i < m - 1; i++) {
+        badCharShift[pattern[i]] = m - i - 1;
     }
 
-    if (right < heapSize && arr[right] > arr[largest]) {
-        largest = right;
+    // Search
+    let skip = 0;
+    while (skip <= n - m) {
+        let j = m - 1;
+
+        // Compare pattern backwards
+        while (j >= 0 && pattern[j] === text[skip + j]) {
+            j--;
+        }
+
+        if (j < 0) {
+            matches.push(skip);
+            skip += m; // or shift more intelligently using good-suffix (optional)
+        } else {
+            const badChar = text[skip + j];
+            skip += badCharShift[badChar] || m;
+        }
     }
 
-    if (largest !== i) {
-        [arr[i], arr[largest]] = [arr[largest], arr[i]];
-        heapify(arr, heapSize, largest);
-    }
+    return matches;
 }
 
 // Example usage:
-const numbers = [4, 10, 3, 5, 1];
-console.log(heapSort(numbers)); // [1, 3, 4, 5, 10]
+const text = "HERE IS A SIMPLE EXAMPLE";
+const pattern = "EXAMPLE";
+console.log(boyerMooreSearch(text, pattern)); // Output: [17]
