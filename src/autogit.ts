@@ -1,150 +1,206 @@
-// ------------- 1.  Node  -------------
-class TreeNode<T> {
+interface Node<T> {
+  data: T;
+  children: Node<T>[];
+  // Optional: parent, depth, etc.
+}
+
+class DepthLimitedSearch<T> {
+  private limit: number;
+  private visited: Set<string>;
+
+  constructor(limit: number) {
+    this.limit = limit;
+    this.visited = new Set();
+  }
+
+  /**
+   * Performs depth-limited search starting from root node
+   * @param root - Starting node
+   * @param target - Target value to find
+   * @param nodeKey - Function to extract unique key from node data
+   * @returns Found node or null if not found
+   */
+  search(
+    root: Node<T>,
+    target: T,
+    nodeKey: (data: T) => string
+  ): Node<T> | null {
+    this.visited.clear();
+    return this.dlsHelper(root, 0, target, nodeKey);
+  }
+
+  private dlsHelper(
+    node: Node<T>,
+    depth: number,
+    target: T,
+    nodeKey: (data: T) => string
+  ): Node<T> | null {
+    // Check if we've reached the depth limit
+    if (depth > this.limit) {
+      return null;
+    }
+
+    // Check if current node is the target
+    if (node.data === target) {
+      return node;
+    }
+
+    // Check if node has been visited to avoid cycles
+    const nodeId = nodeKey(node.data);
+    if (this.visited.has(nodeId)) {
+      return null;
+    }
+    this.visited.add(nodeId);
+
+    // Recursively search children
+    for (const child of node.children) {
+      const result = this.dlsHelper(child, depth + 1, target, nodeKey);
+      if (result !== null) {
+        return result;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Generic version that works with any tree structure
+   * @param root - Starting node
+   * @param getChildren - Function to get children from a node
+   * @param isTarget - Function to check if node matches target
+   * @param getNodeKey - Function to get unique key for visited tracking
+   * @returns Found node or null
+   */
+  searchGeneric<U>(
+    root: U,
+    getChildren: (node: U) => U[],
+    isTarget: (node: U) => boolean,
+    getNodeKey: (node: U) => string
+  ): U | null {
+    this.visited.clear();
+    return this.dlsGenericHelper(root, 0, getChildren, isTarget, getNodeKey);
+  }
+
+  private dlsGenericHelper<U>(
+    node: U,
+    depth: number,
+    getChildren: (node: U) => U[],
+    isTarget: (node: U) => boolean,
+    getNodeKey: (node: U) => string
+  ): U | null {
+    if (depth > this.limit) {
+      return null;
+    }
+
+    if (isTarget(node)) {
+      return node;
+    }
+
+    const nodeId = getNodeKey(node);
+    if (this.visited.has(nodeId)) {
+      return null;
+    }
+    this.visited.add(nodeId);
+
+    const children = getChildren(node);
+    for (const child of children) {
+      const result = this.dlsGenericHelper(
+        child,
+        depth + 1,
+        getChildren,
+        isTarget,
+        getNodeKey
+      );
+      if (result !== null) {
+        return result;
+      }
+    }
+
+    return null;
+  }
+}
+
+// Example usage and test
+class TreeNode {
   constructor(
-    public key: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
+    public value: string,
+    public children: TreeNode[] = []
   ) {}
 }
 
-// ------------- 2.  Comparator  -------------
-type CompareFn<T> = (a: T, b: T) => number;
+// Example tree structure
+function createExampleTree(): TreeNode {
+  const leaf1 = new TreeNode("leaf1");
+  const leaf2 = new TreeNode("leaf2");
+  const leaf3 = new TreeNode("target");
+  const leaf4 = new TreeNode("leaf4");
+  const leaf5 = new TreeNode("leaf5");
 
-function defaultCompare<T>(a: T, b: T): number {
-  return a < b ? -1 : a > b ? 1 : 0;
+  const level2a = new TreeNode("level2a", [leaf1, leaf2]);
+  const level2b = new TreeNode("level2b", [leaf3]);
+  const level2c = new TreeNode("level2c", [leaf4]);
+  const level2d = new TreeNode("level2d", [leaf5]);
+
+  const level1a = new TreeNode("level1a", [level2a, level2b]);
+  const level1b = new TreeNode("level1b", [level2c, level2d]);
+
+  const root = new TreeNode("root", [level1a, level1b]);
+  return root;
 }
 
-// ------------- 3.  BST  -------------
-export class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
+// Usage example
+function demonstrateDepthLimitedSearch() {
+  const search = new DepthLimitedSearch(2); // Limit depth to 2
+  const tree = createExampleTree();
 
-  constructor(private compare: CompareFn<T> = defaultCompare) {}
+  // Using the generic version
+  const foundNode = search.searchGeneric(
+    tree,
+    (node: TreeNode) => node.children, // get children
+    (node: TreeNode) => node.value === "target", // is target
+    (node: TreeNode) => node.value // get unique key
+  );
 
-  // ---------- 3.1  Insert ----------
-  insert(key: T): void {
-    this.root = this._insert(this.root, key);
+  if (foundNode) {
+    console.log("Found target:", foundNode.value);
+    console.log("Search completed within depth limit");
+  } else {
+    console.log("Target not found within depth limit");
   }
 
-  private _insert(node: TreeNode<T> | null, key: T): TreeNode<T> {
-    if (!node) return new TreeNode(key);
+  // Test with deeper limit
+  const deeperSearch = new DepthLimitedSearch(4);
+  const deeperResult = deeperSearch.searchGeneric(
+    tree,
+    (node: TreeNode) => node.children,
+    (node: TreeNode) => node.value === "leaf5",
+    (node: TreeNode) => node.value
+  );
 
-    const cmp = this.compare(key, node.key);
-    if (cmp < 0) node.left = this._insert(node.left, key);
-    else if (cmp > 0) node.right = this._insert(node.right, key);
-    // duplicates are ignored; change policy if you need to store counts
-    return node;
-  }
-
-  // ---------- 3.2  Search ----------
-  contains(key: T): boolean {
-    let cur = this.root;
-    while (cur) {
-      const cmp = this.compare(key, cur.key);
-      if (cmp === 0) return true;
-      cur = cmp < 0 ? cur.left : cur.right;
-    }
-    return false;
-  }
-
-  // ---------- 3.3  Min / Max ----------
-  min(): T | undefined {
-    const node = this._minNode(this.root);
-    return node?.key;
-  }
-
-  max(): T | undefined {
-    const node = this._maxNode(this.root);
-    return node?.key;
-  }
-
-  private _minNode(node: TreeNode<T> | null): TreeNode<T> | null {
-    while (node?.left) node = node.left;
-    return node;
-  }
-
-  private _maxNode(node: TreeNode<T> | null): TreeNode<T> | null {
-    while (node?.right) node = node.right;
-    return node;
-  }
-
-  // ---------- 3.4  Delete ----------
-  delete(key: T): void {
-    this.root = this._delete(this.root, key);
-  }
-
-  private _delete(node: TreeNode<T> | null, key: T): TreeNode<T> | null {
-    if (!node) return null;
-
-    const cmp = this.compare(key, node.key);
-    if (cmp < 0) node.left = this._delete(node.left, key);
-    else if (cmp > 0) node.right = this._delete(node.right, key);
-    else {
-      // node with only one child or no child
-      if (!node.left) return node.right;
-      if (!node.right) return node.left;
-
-      // node with two children: get in-order successor (smallest in right subtree)
-      const minRight = this._minNode(node.right)!;
-      node.key = minRight.key; // copy value
-      node.right = this._delete(node.right, minRight.key); // delete successor
-    }
-    return node;
-  }
-
-  // ---------- 3.5  Traversals ----------
-  inOrder(cb: (key: T) => void): void {
-    this._inOrder(this.root, cb);
-  }
-
-  private _inOrder(node: TreeNode<T> | null, cb: (key: T) => void): void {
-    if (!node) return;
-    this._inOrder(node.left, cb);
-    cb(node.key);
-    this._inOrder(node.right, cb);
-  }
-
-  preOrder(cb: (key: T) => void): void { this._pre(this.root, cb); }
-  private _pre(node: TreeNode<T> | null, cb: (key: T) => void): void {
-    if (!node) return;
-    cb(node.key);
-    this._pre(node.left, cb);
-    this._pre(node.right, cb);
-  }
-
-  postOrder(cb: (key: T) => void): void { this._post(this.root, cb); }
-  private _post(node: TreeNode<T> | null, cb: (key: T) => void): void {
-    if (!node) return;
-    this._post(node.left, cb);
-    this._post(node.right, cb);
-    cb(node.key);
-  }
-
-  // ---------- 3.6  Utility ----------
-  isEmpty(): boolean { return this.root === null; }
-  clear(): void { this.root = null; }
-
-  // Optional: size & height
-  size(): number {
-    let cnt = 0;
-    this.inOrder(() => cnt++);
-    return cnt;
-  }
-
-  height(): number { return this._height(this.root); }
-  private _height(node: TreeNode<T> | null): number {
-    if (!node) return -1;
-    return 1 + Math.max(this._height(node.left), this._height(node.right));
-  }
+  console.log("Leaf5 found:", deeperResult ? deeperResult.value : "not found");
 }
 
-// ------------- 4.  Usage example -------------
-const bst = new BinarySearchTree<number>();
-[7, 3, 9, 1, 5, 8, 10].forEach(n => bst.insert(n));
+// If using the Node interface version
+function demonstrateNodeInterface() {
+  // Convert TreeNode to Node interface format
+  function treeNodeToNode(treeNode: TreeNode): Node<string> {
+    return {
+      data: treeNode.value,
+      children: treeNode.children.map(child => treeNodeToNode(child))
+    };
+  }
 
-console.log("In-order:", [] as number[], (arr => bst.inOrder(n => arr.push(n)))());
-console.log("Contains 5?", bst.contains(5)); // true
-bst.delete(7);
-console.log("After delete 7, in-order:");
-bst.inOrder(console.log);
-tsc bst.ts
-node bst.js
+  const tree = createExampleTree();
+  const nodeTree = treeNodeToNode(tree);
+
+  const search = new DepthLimitedSearch(3);
+  const result = search.search(nodeTree, "target", (data: string) => data);
+
+  console.log("Interface version result:", result ? result.data : "not found");
+}
+
+// Run demonstration
+if (require.main === module) {
+  demonstrateDepthLimitedSearch();
+  demonstrateNodeInterface();
+}
