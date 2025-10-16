@@ -1,41 +1,108 @@
-// Original array
-const numbers: number[] = [1, 2, 3, 4, 5];
-console.log(numbers); // [1, 2, 3, 4, 5]
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Reverse the array (mutates original)
-numbers.reverse();
-console.log(numbers); // [5, 4, 3, 2, 1]
-// Original array
-const fruits: string[] = ['apple', 'banana', 'cherry'];
+function isValidEmailBasic(email: string): boolean {
+  return emailRegex.test(email);
+}
+// More comprehensive regex that handles most common email formats
+const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
-// Create a reversed copy
-const reversedFruits = [...fruits].reverse();
-// or
-const reversedFruits2 = fruits.slice().reverse();
+function isValidEmail(email: string): boolean {
+  return emailRegex.test(email);
+}
+class EmailValidator {
+  // RFC 5322 compliant regex (simplified version)
+  private static emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
-console.log(fruits); // ['apple', 'banana', 'cherry'] (unchanged)
-console.log(reversedFruits); // ['cherry', 'banana', 'apple']
-const numbers: number[] = [1, 2, 3, 4, 5];
-const reversed = numbers.reduce<number[]>((acc, current) => [current, ...acc], []);
-console.log(reversed); // [5, 4, 3, 2, 1]
-function reverseArray<T>(array: T[]): T[] {
-    const reversed: T[] = [];
-    for (let i = array.length - 1; i >= 0; i--) {
-        reversed.push(array[i]);
+  /**
+   * Validate email address format
+   * @param email - Email address to validate
+   * @returns boolean indicating if email is valid
+   */
+  public static validate(email: string): boolean {
+    if (!email || typeof email !== 'string') {
+      return false;
     }
-    return reversed;
+    
+    // Check length constraints
+    if (email.length > 254) {
+      return false;
+    }
+    
+    return this.emailRegex.test(email);
+  }
+
+  /**
+   * Validate email with additional checks
+   * @param email - Email address to validate
+   * @returns Object with validation results
+   */
+  public static validateDetailed(email: string): {
+    isValid: boolean;
+    reasons: string[];
+  } {
+    const reasons: string[] = [];
+    
+    if (!email) {
+      reasons.push('Email is empty');
+      return { isValid: false, reasons };
+    }
+    
+    if (email.length > 254) {
+      reasons.push('Email exceeds maximum length of 254 characters');
+    }
+    
+    if (!this.emailRegex.test(email)) {
+      reasons.push('Email format is invalid');
+    }
+    
+    return {
+      isValid: reasons.length === 0,
+      reasons
+    };
+  }
 }
 
-const items: string[] = ['a', 'b', 'c', 'd'];
-const reversedItems = reverseArray(items);
-console.log(reversedItems); // ['d', 'c', 'b', 'a']
-function reverseArray<T>(array: T[]): T[] {
-    return [...array].reverse();
+// Usage examples
+console.log(EmailValidator.validate('test@example.com')); // true
+console.log(EmailValidator.validate('invalid-email')); // false
+
+const result = EmailValidator.validateDetailed('user@domain.co.uk');
+console.log(result); // { isValid: true, reasons: [] }
+// Install: npm install validator
+import validator from 'validator';
+
+function validateEmail(email: string): boolean {
+  return validator.isEmail(email);
+}
+type ValidEmail = string & { __brand: 'ValidEmail' };
+
+function assertValidEmail(email: string): asserts email is ValidEmail {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!regex.test(email)) {
+    throw new Error(`Invalid email format: ${email}`);
+  }
 }
 
-// Usage with different types
-const numbers = reverseArray([1, 2, 3]); // number[]
-const strings = reverseArray(['a', 'b', 'c']); // string[]
-const mixed = reverseArray([1, 'hello', true]); // (string | number | boolean)[]
-const original = [1, 2, 3, 4, 5];
-const reversed = [...original].reverse();
+function createValidEmail(email: string): ValidEmail {
+  assertValidEmail(email);
+  return email as ValidEmail;
+}
+
+// Usage
+try {
+  const validEmail = createValidEmail('user@example.com');
+  // validEmail is now typed as ValidEmail
+} catch (error) {
+  console.error('Invalid email');
+}
+// Combined approach: simple regex + library for complex cases
+import validator from 'validator';
+
+function validateEmailSafe(email: string): boolean {
+  // Quick basic check first
+  const basicCheck = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (!basicCheck) return false;
+  
+  // More thorough check with library
+  return validator.isEmail(email);
+}
