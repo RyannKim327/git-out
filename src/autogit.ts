@@ -1,132 +1,183 @@
-function binarySearch<T>(array: T[], target: T): number {
-    let left = 0;
-    let right = array.length - 1;
+enum Color {
+    RED,
+    BLACK
+}
 
-    while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        const midValue = array[mid];
+class RBNode<T> {
+    left: RBNode<T>;
+    right: RBNode<T>;
+    parent: RBNode<T>;
+    color: Color;
+    
+    constructor(
+        public value: T,
+        private nullLeaf: RBNode<T>  // Sentinel reference
+    ) {
+        this.left = nullLeaf;
+        this.right = nullLeaf;
+        this.parent = nullLeaf;
+        this.color = Color.RED;  // New nodes are always RED
+    }
+}
 
-        if (midValue === target) {
-            return mid;
-        } else if (midValue < target) {
-            left = mid + 1;
+class RedBlackTree<T> {
+    private nullLeaf: RBNode<T> = new RBNode<T>(null as any, null as any);
+    root: RBNode<T> = this.nullLeaf;
+
+    constructor(private comparator: (a: T, b: T) => number) {
+        this.nullLeaf.color = Color.BLACK;
+    }
+
+    // Public methods
+    insert(value: T): void {
+        let node = new RBNode(value, this.nullLeaf);
+        let parent = this.nullLeaf;
+        let current = this.root;
+
+        // BST insertion
+        while (current !== this.nullLeaf) {
+            parent = current;
+            if (this.comparator(value, current.value) < 0) {
+                current = current.left;
+            } else {
+                current = current.right;
+            }
+        }
+
+        node.parent = parent;
+
+        if (parent === this.nullLeaf) {
+            this.root = node;
+        } else if (this.comparator(value, parent.value) < 0) {
+            parent.left = node;
         } else {
-            right = mid - 1;
+            parent.right = node;
         }
+
+        // Fix RB Tree properties
+        this.fixInsert(node);
     }
 
-    return -1; // Not found
-}
-function binarySearch<T>(
-    array: T[], 
-    target: T, 
-    comparator?: (a: T, b: T) => number
-): number {
-    const compare = comparator || ((a: T, b: T) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    });
+    find(value: T): RBNode<T> | null {
+        let current = this.root;
+        while (current !== this.nullLeaf) {
+            const cmp = this.comparator(value, current.value);
+            if (cmp === 0) return current;
+            current = cmp < 0 ? current.left : current.right;
+        }
+        return null;
+    }
 
-    let left = 0;
-    let right = array.length - 1;
+    // Private helper methods
+    private fixInsert(node: RBNode<T>): void {
+        let current = node;
+        while (current.parent.color === Color.RED) {
+            const parent = current.parent;
+            const grandParent = parent.parent;
 
-    while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        const comparison = compare(array[mid], target);
+            if (parent === grandParent.left) {
+                const uncle = grandParent.right;
+                
+                // Case 1: Uncle is RED
+                if (uncle.color === Color.RED) {
+                    grandParent.color = Color.RED;
+                    parent.color = Color.BLACK;
+                    uncle.color = Color.BLACK;
+                    current = grandParent;
+                } else {
+                    // Case 2: Current is right child (Left-Right Case)
+                    if (current === parent.right) {
+                        current = parent;
+                        this.leftRotate(current);
+                    }
+                    
+                    // Case 3: Current is left child (Left-Left Case)
+                    parent.color = Color.BLACK;
+                    grandParent.color = Color.RED;
+                    this.rightRotate(grandParent);
+                }
+            } else {
+                const uncle = grandParent.left;
+                
+                // Case 1: Uncle is RED
+                if (uncle.color === Color.RED) {
+                    grandParent.color = Color.RED;
+                    parent.color = Color.BLACK;
+                    uncle.color = Color.BLACK;
+                    current = grandParent;
+                } else {
+                    // Case 2: Current is left child (Right-Left Case)
+                    if (current === parent.left) {
+                        current = parent;
+                        this.rightRotate(current);
+                    }
+                    
+                    // Case 3: Current is right child (Right-Right Case)
+                    parent.color = Color.BLACK;
+                    grandParent.color = Color.RED;
+                    this.leftRotate(grandParent);
+                }
+            }
+        }
+        
+        // Ensure root is black
+        this.root.color = Color.BLACK;
+    }
 
-        if (comparison === 0) {
-            return mid;
-        } else if (comparison < 0) {
-            left = mid + 1;
+    private leftRotate(x: RBNode<T>): void {
+        const y = x.right;
+        x.right = y.left;
+        
+        if (y.left !== this.nullLeaf) {
+            y.left.parent = x;
+        }
+        
+        y.parent = x.parent;
+        
+        if (x.parent === this.nullLeaf) {
+            this.root = y;
+        } else if (x === x.parent.left) {
+            x.parent.left = y;
         } else {
-            right = mid - 1;
+            x.parent.right = y;
         }
+        
+        y.left = x;
+        x.parent = y;
     }
 
-    return -1;
-}
-// Example 1: Basic usage with numbers
-const numbers = [1, 3, 5, 7, 9, 11, 13, 15];
-console.log(binarySearch(numbers, 7)); // Output: 3
-console.log(binarySearch(numbers, 10)); // Output: -1
-
-// Example 2: With custom objects
-interface User {
-    id: number;
-    name: string;
-}
-
-const users: User[] = [
-    { id: 1, name: "Alice" },
-    { id: 2, name: "Bob" },
-    { id: 3, name: "Charlie" },
-    { id: 4, name: "Diana" }
-];
-
-// Search by ID
-const userComparator = (a: User, b: User) => a.id - b.id;
-console.log(binarySearch(users, { id: 3 } as User, userComparator)); // Output: 2
-
-// Example 3: With strings
-const fruits = ["apple", "banana", "cherry", "date", "elderberry"];
-console.log(binarySearch(fruits, "cherry")); // Output: 2
-
-// Example 4: Custom comparator for case-insensitive search
-const caseInsensitiveCompare = (a: string, b: string) => 
-    a.toLowerCase().localeCompare(b.toLowerCase());
-
-console.log(binarySearch(fruits, "CHERRY", caseInsensitiveCompare)); // Output: 2
-function binarySearchRecursive<T>(
-    array: T[], 
-    target: T, 
-    left: number = 0, 
-    right: number = array.length - 1,
-    comparator?: (a: T, b: T) => number
-): number {
-    const compare = comparator || ((a: T, b: T) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    });
-
-    if (left > right) return -1;
-
-    const mid = Math.floor((left + right) / 2);
-    const comparison = compare(array[mid], target);
-
-    if (comparison === 0) {
-        return mid;
-    } else if (comparison < 0) {
-        return binarySearchRecursive(array, target, mid + 1, right, compare);
-    } else {
-        return binarySearchRecursive(array, target, left, mid - 1, compare);
-    }
-}
-function safeBinarySearch<T>(
-    array: T[], 
-    target: T, 
-    comparator?: (a: T, b: T) => number
-): number {
-    // Validate input
-    if (!Array.isArray(array)) {
-        throw new Error("First argument must be an array");
-    }
-
-    if (array.length === 0) return -1;
-
-    // Check if array is sorted
-    const compare = comparator || ((a: T, b: T) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    });
-
-    for (let i = 1; i < array.length; i++) {
-        if (compare(array[i - 1], array[i]) > 0) {
-            throw new Error("Array must be sorted for binary search");
+    private rightRotate(y: RBNode<T>): void {
+        const x = y.left;
+        y.left = x.right;
+        
+        if (x.right !== this.nullLeaf) {
+            x.right.parent = y;
         }
+        
+        x.parent = y.parent;
+        
+        if (y.parent === this.nullLeaf) {
+            this.root = x;
+        } else if (y === y.parent.right) {
+            y.parent.right = x;
+        } else {
+            y.parent.left = x;
+        }
+        
+        x.right = y;
+        y.parent = x;
     }
-
-    return binarySearch(array, target, compare);
 }
+// Create a Red-Black Tree for numbers
+const rbTree = new RedBlackTree<number>((a, b) => a - b);
+
+// Insert some values
+rbTree.insert(10);
+rbTree.insert(20);
+rbTree.insert(5);
+rbTree.insert(15);
+rbTree.insert(25);
+
+// Find a value
+const node = rbTree.find(15);
+console.log(node?.value); // 15
