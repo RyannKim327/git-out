@@ -1,90 +1,58 @@
-class TreeNode<T> {
-    val: T;
-    left: TreeNode<T> | null;
-    right: TreeNode<T> | null;
+// Basic example
+const arrayWithDuplicates: number[] = [1, 2, 2, 3, 4, 4, 5];
+const uniqueArray: number[] = [...new Set(arrayWithDuplicates)];
+console.log(uniqueArray); // [1, 2, 3, 4, 5]
 
-    constructor(val: T, left?: TreeNode<T> | null, right?: TreeNode<T> | null) {
-        this.val = val;
-        this.left = left ?? null;
-        this.right = right ?? null;
-    }
-}
-function maxDepthRecursive<T>(root: TreeNode<T> | null): number {
-    if (root === null) {
-        return 0;
-    }
-    
-    const leftDepth = maxDepthRecursive(root.left);
-    const rightDepth = maxDepthRecursive(root.right);
-    
-    return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthIterative<T>(root: TreeNode<T> | null): number {
-    if (root === null) {
-        return 0;
-    }
-    
-    const queue: { node: TreeNode<T>; depth: number }[] = [];
-    queue.push({ node: root, depth: 1 });
-    let maxDepth = 0;
-    
-    while (queue.length > 0) {
-        const { node, depth } = queue.shift()!;
-        maxDepth = Math.max(maxDepth, depth);
-        
-        if (node.left) {
-            queue.push({ node: node.left, depth: depth + 1 });
-        }
-        if (node.right) {
-            queue.push({ node: node.right, depth: depth + 1 });
-        }
-    }
-    
-    return maxDepth;
-}
-function maxDepthLevelOrder<T>(root: TreeNode<T> | null): number {
-    if (root === null) {
-        return 0;
-    }
-    
-    const queue: TreeNode<T>[] = [root];
-    let depth = 0;
-    
-    while (queue.length > 0) {
-        const levelSize = queue.length;
-        
-        for (let i = 0; i < levelSize; i++) {
-            const node = queue.shift()!;
-            
-            if (node.left) {
-                queue.push(node.left);
-            }
-            if (node.right) {
-                queue.push(node.right);
-            }
-        }
-        
-        depth++;
-    }
-    
-    return depth;
-}
-// Create a sample binary tree
-const root = new TreeNode<number>(
-    3,
-    new TreeNode(9),
-    new TreeNode(
-        20,
-        new TreeNode(15),
-        new TreeNode(7)
-    )
+// For strings
+const fruits: string[] = ['apple', 'banana', 'apple', 'orange', 'banana'];
+const uniqueFruits: string[] = [...new Set(fruits)];
+console.log(uniqueFruits); // ['apple', 'banana', 'orange']
+
+// For objects (compares by reference, not by value)
+const objects = [{ id: 1 }, { id: 2 }, { id: 1 }];
+const uniqueObjects = [...new Set(objects)]; // Only removes identical references
+const numbers: number[] = [1, 2, 2, 3, 4, 4, 5];
+const uniqueNumbers: number[] = numbers.filter((item, index) => 
+    numbers.indexOf(item) === index
 );
+console.log(uniqueNumbers); // [1, 2, 3, 4, 5]
+const numbers: number[] = [1, 2, 2, 3, 4, 4, 5];
+const uniqueNumbers: number[] = numbers.reduce((unique, item) => 
+    unique.includes(item) ? unique : [...unique, item], 
+    [] as number[]
+);
+console.log(uniqueNumbers); // [1, 2, 3, 4, 5]
+interface Person {
+    id: number;
+    name: string;
+}
 
-// Test the functions
-console.log("Recursive depth:", maxDepthRecursive(root)); // Output: 3
-console.log("Iterative depth:", maxDepthIterative(root)); // Output: 3
-console.log("Level order depth:", maxDepthLevelOrder(root)); // Output: 3
+const people: Person[] = [
+    { id: 1, name: 'John' },
+    { id: 2, name: 'Jane' },
+    { id: 1, name: 'Johnny' },
+    { id: 3, name: 'Bob' }
+];
 
-// Edge cases
-console.log("Empty tree:", maxDepthRecursive(null)); // Output: 0
-console.log("Single node:", maxDepthRecursive(new TreeNode(1))); // Output: 1
+// Remove duplicates by 'id'
+const uniquePeopleById: Person[] = people.filter(
+    (person, index, self) => 
+        index === self.findIndex(p => p.id === person.id)
+);
+console.log(uniquePeopleById); 
+// [{ id: 1, name: 'John' }, { id: 2, name: 'Jane' }, { id: 3, name: 'Bob' }]
+const people: Person[] = [
+    { id: 1, name: 'John' },
+    { id: 2, name: 'Jane' },
+    { id: 1, name: 'Johnny' },
+    { id: 3, name: 'Bob' }
+];
+
+const uniquePeopleMap = new Map<number, Person>();
+people.forEach(person => {
+    uniquePeopleMap.set(person.id, person);
+});
+
+const uniquePeople: Person[] = Array.from(uniquePeopleMap.values());
+console.log(uniquePeople); 
+// [{ id: 1, name: 'John' }, { id: 2, name: 'Jane' }, { id: 3, name: 'Bob' }]
