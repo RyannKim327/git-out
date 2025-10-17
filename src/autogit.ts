@@ -1,217 +1,128 @@
-// Define a generic type for nodes in our graph
-type GraphNode<T> = T;
+class ListNode {
+    val: number;
+    next: ListNode | null;
 
-class Graph<T> {
-    // An adjacency list where keys are nodes and values are arrays of their neighbors
-    private adjList: Map<GraphNode<T>, GraphNode<T>[]>;
-
-    constructor() {
-        this.adjList = new Map();
+    constructor(val?: number, next?: ListNode | null) {
+        this.val = (val === undefined ? 0 : val);
+        this.next = (next === undefined ? null : next);
     }
-
-    /**
-     * Adds a node to the graph.
-     * @param node The node to add.
-     */
-    addNode(node: GraphNode<T>): void {
-        if (!this.adjList.has(node)) {
-            this.adjList.set(node, []);
-        }
-    }
-
-    /**
-     * Adds an edge between two nodes. Assumes an undirected graph.
-     * @param node1 The first node.
-     * @param node2 The second node.
-     */
-    addEdge(node1: GraphNode<T>, node2: GraphNode<T>): void {
-        // Ensure both nodes exist in the graph
-        this.addNode(node1);
-        this.addNode(node2);
-
-        // Add edge in both directions for an undirected graph
-        this.adjList.get(node1)?.push(node2);
-        this.adjList.get(node2)?.push(node1);
-    }
-
-    /**
-     * Retrieves the neighbors of a given node.
-     * @param node The node whose neighbors are to be retrieved.
-     * @returns An array of neighbors.
-     */
-    getNeighbors(node: GraphNode<T>): GraphNode<T>[] {
-        return this.adjList.get(node) || [];
-    }
-
-    /**
-     * Prints the graph's adjacency list.
-     */
-    printGraph(): void {
-        console.log("Graph Adjacency List:");
-        for (const [node, neighbors] of this.adjList.entries()) {
-            console.log(`${node} -> ${neighbors.join(', ')}`);
-        }
-    }
-
-    // --- DFS Implementations will go here ---
 }
-// Add this method inside the Graph<T> class
-
-    /**
-     * Performs a Depth-First Search (DFS) starting from a given node using recursion.
-     * @param startNode The node to start the DFS from.
-     * @param callback An optional function to execute on each visited node.
-     * @returns An array of nodes in the order they were visited.
-     */
-    dfsRecursive(startNode: GraphNode<T>, callback?: (node: GraphNode<T>) => void): GraphNode<T>[] {
-        const visited = new Set<GraphNode<T>>();
-        const traversalOrder: GraphNode<T>[] = [];
-
-        // Helper function for the recursive traversal
-        const dfsHelper = (currentNode: GraphNode<T>): void => {
-            visited.add(currentNode);
-            traversalOrder.push(currentNode);
-            callback?.(currentNode); // Execute callback if provided
-
-            for (const neighbor of this.getNeighbors(currentNode)) {
-                if (!visited.has(neighbor)) {
-                    dfsHelper(neighbor);
-                }
-            }
-        };
-
-        // Check if the startNode exists in the graph
-        if (!this.adjList.has(startNode)) {
-            console.warn(`Start node '${startNode}' not found in graph.`);
-            return [];
-        }
-
-        dfsHelper(startNode);
-        return traversalOrder;
+function isPalindrome(head: ListNode | null): boolean {
+    // 1. Handle edge cases: empty list or single node list are palindromes
+    if (head === null || head.next === null) {
+        return true;
     }
-// Add this method inside the Graph<T> class
 
-    /**
-     * Performs a Depth-First Search (DFS) starting from a given node using an explicit stack.
-     * @param startNode The node to start the DFS from.
-     * @param callback An optional function to execute on each visited node.
-     * @returns An array of nodes in the order they were visited.
-     */
-    dfsIterative(startNode: GraphNode<T>, callback?: (node: GraphNode<T>) => void): GraphNode<T>[] {
-        const visited = new Set<GraphNode<T>>();
-        const stack: GraphNode<T>[] = []; // Explicit stack
-        const traversalOrder: GraphNode<T>[] = [];
+    // 2. Find the middle of the linked list
+    // 'slow' will point to the beginning of the second half
+    let slow: ListNode | null = head;
+    let fast: ListNode | null = head;
+    let firstHalfEnd: ListNode | null = head; // To mark the end of the first half
 
-        // Check if the startNode exists in the graph
-        if (!this.adjList.has(startNode)) {
-            console.warn(`Start node '${startNode}' not found in graph.`);
-            return [];
-        }
-
-        stack.push(startNode); // Start by pushing the initial node onto the stack
-
-        while (stack.length > 0) {
-            const currentNode = stack.pop()!; // Get the top node from the stack
-
-            // Only process if not visited yet
-            if (!visited.has(currentNode)) {
-                visited.add(currentNode);
-                traversalOrder.push(currentNode);
-                callback?.(currentNode);
-
-                // Add neighbors to the stack. Important: push in reverse order
-                // to mimic the recursive DFS output (if neighbors are ordered).
-                // If getNeighbors returns [A, B, C], pushing C, then B, then A
-                // means A will be popped next, then B, then C, maintaining "left-to-right" exploration.
-                const neighbors = this.getNeighbors(currentNode);
-                for (let i = neighbors.length - 1; i >= 0; i--) {
-                    const neighbor = neighbors[i];
-                    if (!visited.has(neighbor)) { // Only push unvisited neighbors
-                        stack.push(neighbor);
-                    }
-                }
-                // Alternative (simpler, but might not match recursive output order if neighbors are ordered):
-                // for (const neighbor of this.getNeighbors(currentNode)) {
-                //     if (!visited.has(neighbor)) {
-                //         stack.push(neighbor);
-                //     }
-                // }
-            }
-        }
-        return traversalOrder;
+    while (fast && fast.next) {
+        firstHalfEnd = slow; // Keep track of the node *before* slow advances
+        slow = slow!.next; // 'slow' moves one step
+        fast = fast.next.next; // 'fast' moves two steps
     }
-// Create a new graph
-const myGraph = new Graph<string>();
 
-// Add nodes
-myGraph.addNode("A");
-myGraph.addNode("B");
-myGraph.addNode("C");
-myGraph.addNode("D");
-myGraph.addNode("E");
-myGraph.addNode("F");
+    // 'slow' is now at the start of the second half (or the middle node if odd length)
+    // 'firstHalfEnd' is the last node of the first half
 
-// Add edges
-myGraph.addEdge("A", "B");
-myGraph.addEdge("A", "C");
-myGraph.addEdge("B", "D");
-myGraph.addEdge("C", "E");
-myGraph.addEdge("D", "E");
-myGraph.addEdge("D", "F");
-myGraph.addEdge("E", "F");
+    // If 'fast' is not null, it means the list has an odd number of nodes.
+    // In this case, 'slow' is the middle node, and we want to start reversing from 'slow.next'.
+    let secondHalfStart: ListNode | null;
+    if (fast !== null) { // Odd number of nodes, e.g., 1->2->3->2->1, slow is 3, fast is 1(end)
+        secondHalfStart = slow!.next; // The second half starts from 2
+    } else { // Even number of nodes, e.g., 1->2->2->1, slow is first 2, fast is null
+        secondHalfStart = slow; // The second half starts from the first 2
+    }
 
-myGraph.printGraph();
+    // Temporarily break the link between the first and second half
+    // This makes the first half a standalone list
+    if (firstHalfEnd) { // Ensure firstHalfEnd is not null (for list with >= 2 nodes)
+        firstHalfEnd.next = null;
+    }
 
-console.log("\n--- Recursive DFS from 'A' ---");
-const recursiveTraversal = myGraph.dfsRecursive("A", (node) => console.log(`Visited (recursive): ${node}`));
-console.log("Recursive DFS Traversal Order:", recursiveTraversal.join(" -> "));
+    // 3. Reverse the second half of the list
+    let reversedSecondHalf = reverseList(secondHalfStart);
 
-console.log("\n--- Iterative DFS from 'A' ---");
-const iterativeTraversal = myGraph.dfsIterative("A", (node) => console.log(`Visited (iterative): ${node}`));
-console.log("Iterative DFS Traversal Order:", iterativeTraversal.join(" -> "));
+    // 4. Compare the first half and the reversed second half
+    let p1: ListNode | null = head;
+    let p2: ListNode | null = reversedSecondHalf;
 
-// Example for a disconnected graph component
-myGraph.addNode("G");
-myGraph.addNode("H");
-myGraph.addEdge("G", "H");
+    let isPal = true; // Assume it's a palindrome until proven otherwise
 
-console.log("\n--- Recursive DFS from 'G' (disconnected component) ---");
-const disconnectedTraversal = myGraph.dfsRecursive("G");
-console.log("Disconnected DFS Traversal Order:", disconnectedTraversal.join(" -> "));
+    while (p1 !== null && p2 !== null) {
+        if (p1.val !== p2.val) {
+            isPal = false;
+            break; // Mismatch found, not a palindrome
+        }
+        p1 = p1.next;
+        p2 = p2.next;
+    }
 
-// Example of what happens if starting node doesn't exist
-console.log("\n--- Recursive DFS from 'Z' (non-existent node) ---");
-myGraph.dfsRecursive("Z");
-Graph Adjacency List:
-A -> B, C
-B -> A, D
-C -> A, E
-D -> B, E, F
-E -> C, D, F
-F -> D, E
-G -> H
-H -> G
+    // Optional: Restore the list to its original state (good practice if the list
+    // needs to be used later in its original form).
+    // This involves reversing the second half back and reconnecting it.
+    // We won't implement restoration here for brevity, but it would look like:
+    // let originalSecondHalf = reverseList(reversedSecondHalf);
+    // if (firstHalfEnd) {
+    //     firstHalfEnd.next = slow; // 'slow' was the original start of the second half before reversing
+    // }
+    // if (fast !== null && firstHalfEnd && slow) { // For odd lists, middle node
+    //     firstHalfEnd.next = slow;
+    //     slow.next = originalSecondHalf;
+    // } else if (firstHalfEnd) { // For even lists
+    //     firstHalfEnd.next = originalSecondHalf;
+    // }
 
---- Recursive DFS from 'A' ---
-Visited (recursive): A
-Visited (recursive): B
-Visited (recursive): D
-Visited (recursive): E
-Visited (recursive): C
-Visited (recursive): F
-Recursive DFS Traversal Order: A -> B -> D -> E -> C -> F
 
---- Iterative DFS from 'A' ---
-Visited (iterative): A
-Visited (iterative): C
-Visited (iterative): E
-Visited (iterative): F
-Visited (iterative): D
-Visited (iterative): B
-Iterative DFS Traversal Order: A -> C -> E -> F -> D -> B
+    return isPal;
+}
 
---- Recursive DFS from 'G' (disconnected component) ---
-Disconnected DFS Traversal Order: G -> H
+// Helper function to reverse a linked list (iterative approach)
+function reverseList(head: ListNode | null): ListNode | null {
+    let prev: ListNode | null = null;
+    let current: ListNode | null = head;
+    while (current !== null) {
+        let nextTemp: ListNode | null = current.next; // Store next node
+        current.next = prev; // Reverse current node's pointer
+        prev = current; // Move prev to current node
+        current = nextTemp; // Move current to next node
+    }
+    return prev; // 'prev' is the new head of the reversed list
+}
 
---- Recursive DFS from 'Z' (non-existent node) ---
-Start node 'Z' not found in graph.
+// Helper to create a list from an array
+function createLinkedList(arr: number[]): ListNode | null {
+    if (arr.length === 0) return null;
+    const head = new ListNode(arr[0]);
+    let current = head;
+    for (let i = 1; i < arr.length; i++) {
+        current.next = new ListNode(arr[i]);
+        current = current.next;
+    }
+    return head;
+}
+
+// Test cases
+const list1 = createLinkedList([1, 2, 2, 1]);
+console.log(`[1,2,2,1] is palindrome: ${isPalindrome(list1)}`); // Expected: true
+
+const list2 = createLinkedList([1, 2, 3, 2, 1]);
+console.log(`[1,2,3,2,1] is palindrome: ${isPalindrome(list2)}`); // Expected: true
+
+const list3 = createLinkedList([1, 2]);
+console.log(`[1,2] is palindrome: ${isPalindrome(list3)}`);     // Expected: false
+
+const list4 = createLinkedList([1]);
+console.log(`[1] is palindrome: ${isPalindrome(list4)}`);       // Expected: true
+
+const list5 = createLinkedList([]);
+console.log(`[] is palindrome: ${isPalindrome(list5)}`);        // Expected: true
+
+const list6 = createLinkedList([1, 0, 0]);
+console.log(`[1,0,0] is palindrome: ${isPalindrome(list6)}`);   // Expected: false
+
+const list7 = createLinkedList([1, 0, 1]);
+console.log(`[1,0,1] is palindrome: ${isPalindrome(list7)}`);   // Expected: true
