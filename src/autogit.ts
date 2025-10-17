@@ -1,112 +1,112 @@
-import * as cron from 'node-cron';
-import { sendEmailReport } from './email-service';
-import { cleanupTempFiles } from './file-cleanup';
-import { fetchAndProcessData } from './data-processor';
+class TreeNode {
+    val: number;
+    left: TreeNode | null;
+    right: TreeNode | null;
 
-// Scheduled tasks configuration
-interface ScheduledTask {
-  name: string;
-  schedule: string;
-  task: () => Promise<void>;
-  timezone?: string;
-  enabled: boolean;
+    constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+        this.val = val;
+        this.left = left;
+        this.right = right;
+    }
 }
 
-// Define scheduled tasks
-const scheduledTasks: ScheduledTask[] = [
-  {
-    name: 'Daily Email Report',
-    schedule: '0 9 * * *', // 9:00 AM every day
-    task: async () => {
-      console.log('Sending daily email report...');
-      await sendEmailReport();
-      console.log('Daily email report sent successfully');
-    },
-    timezone: 'America/New_York',
-    enabled: true
-  },
-  {
-    name: 'Hourly Data Processing',
-    schedule: '0 * * * *', // Every hour at :00
-    task: async () => {
-      console.log('Starting hourly data processing...');
-      await fetchAndProcessData();
-      console.log('Hourly data processing completed');
-    },
-    enabled: true
-  },
-  {
-    name: 'Weekly File Cleanup',
-    schedule: '0 0 * * 0', // Sunday at midnight
-    task: async () => {
-      console.log('Starting weekly file cleanup...');
-      await cleanupTempFiles();
-      console.log('Weekly file cleanup completed');
-    },
-    enabled: process.env.ENABLE_FILE_CLEANUP === 'true'
-  }
-];
-
-// Initialize cron jobs
-export function initializeCronJobs(): void {
-  scheduledTasks.forEach((taskConfig) => {
-    if (!taskConfig.enabled) {
-      console.log(`Task "${taskConfig.name}" is disabled`);
-      return;
+function sumOfNodes(root: TreeNode | null): number {
+    if (root === null) {
+        return 0;
     }
+    return root.val + sumOfNodes(root.left) + sumOfNodes(root.right);
+}
+class BinaryTreeNode<T extends number> {
+    value: T;
+    left: BinaryTreeNode<T> | null;
+    right: BinaryTreeNode<T> | null;
 
-    try {
-      const task = cron.schedule(
-        taskConfig.schedule,
-        async () => {
-          try {
-            await taskConfig.task();
-          } catch (error) {
-            console.error(`Error executing task "${taskConfig.name}":`, error);
-          }
-        },
-        {
-          scheduled: true,
-          timezone: taskConfig.timezone
+    constructor(value: T, left: BinaryTreeNode<T> | null = null, right: BinaryTreeNode<T> | null = null) {
+        this.value = value;
+        this.left = left;
+        this.right = right;
+    }
+}
+
+function sumBinaryTree<T extends number>(root: BinaryTreeNode<T> | null): number {
+    if (root === null) {
+        return 0;
+    }
+    return Number(root.value) + sumBinaryTree(root.left) + sumBinaryTree(root.right);
+}
+function sumOfNodesIterative(root: TreeNode | null): number {
+    if (root === null) return 0;
+    
+    let sum = 0;
+    const queue: TreeNode[] = [root];
+    
+    while (queue.length > 0) {
+        const node = queue.shift()!;
+        sum += node.val;
+        
+        if (node.left !== null) {
+            queue.push(node.left);
         }
-      );
-
-      console.log(`Scheduled task "${taskConfig.name}" with pattern: ${taskConfig.schedule}`);
-      
-      // Graceful shutdown handling
-      process.on('SIGINT', () => {
-        console.log(`Stopping task "${taskConfig.name}"...`);
-        task.stop();
-        process.exit(0);
-      });
-
-    } catch (error) {
-      console.error(`Failed to schedule task "${taskConfig.name}":`, error);
+        if (node.right !== null) {
+            queue.push(node.right);
+        }
     }
-  });
+    
+    return sum;
+}
+function sumOfNodesDFS(root: TreeNode | null): number {
+    if (root === null) return 0;
+    
+    let sum = 0;
+    const stack: TreeNode[] = [root];
+    
+    while (stack.length > 0) {
+        const node = stack.pop()!;
+        sum += node.val;
+        
+        if (node.right !== null) {
+            stack.push(node.right);
+        }
+        if (node.left !== null) {
+            stack.push(node.left);
+        }
+    }
+    
+    return sum;
+}
+class TreeNode {
+    constructor(
+        public val: number,
+        public left: TreeNode | null = null,
+        public right: TreeNode | null = null
+    ) {}
 }
 
-// Mock service functions (would be implemented in separate files)
-async function sendEmailReport(): Promise<void> {
-  // Implementation for sending email report
-  await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate async work
+// Recursive solution
+function sumOfAllNodes(root: TreeNode | null): number {
+    if (root === null) return 0;
+    return root.val + sumOfAllNodes(root.left) + sumOfAllNodes(root.right);
 }
 
-async function cleanupTempFiles(): Promise<void> {
-  // Implementation for cleaning up temporary files
-  await new Promise(resolve => setTimeout(resolve, 500)); // Simulate async work
+// Example usage:
+function createSampleTree(): TreeNode {
+    /*
+        Tree structure:
+              1
+            /   \
+           2     3
+          / \   /
+         4   5 6
+    */
+    const root = new TreeNode(1);
+    root.left = new TreeNode(2);
+    root.right = new TreeNode(3);
+    root.left.left = new TreeNode(4);
+    root.left.right = new TreeNode(5);
+    root.right.left = new TreeNode(6);
+    return root;
 }
 
-async function fetchAndProcessData(): Promise<void> {
-  // Implementation for data processing
-  await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate async work
-}
-
-// Start the cron jobs when this module is imported
-if (require.main === module) {
-  console.log('Initializing cron jobs...');
-  initializeCronJobs();
-  console.log('Cron jobs initialized. Server is running scheduled tasks.');
-}
-npm install node-cron
-npm install -D @types/node-cron typescript ts-node
+// Test the implementation
+const tree = createSampleTree();
+console.log("Sum of all nodes:", sumOfAllNodes(tree)); // Output: 21 (1+2+3+4+5+6)
