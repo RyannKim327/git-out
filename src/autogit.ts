@@ -1,161 +1,112 @@
-function fibonacciSearch(arr: number[], target: number): number {
-    // Initialize Fibonacci numbers
-    let fibMMm2 = 0; // (m-2)'th Fibonacci number
-    let fibMMm1 = 1; // (m-1)'th Fibonacci number
-    let fibM = fibMMm2 + fibMMm1; // m'th Fibonacci number
+import * as cron from 'node-cron';
+import { sendEmailReport } from './email-service';
+import { cleanupTempFiles } from './file-cleanup';
+import { fetchAndProcessData } from './data-processor';
 
-    // Find the smallest Fibonacci number greater than or equal to array length
-    while (fibM < arr.length) {
-        fibMMm2 = fibMMm1;
-        fibMMm1 = fibM;
-        fibM = fibMMm2 + fibMMm1;
-    }
-
-    // Marks the eliminated range from front
-    let offset = -1;
-
-    while (fibM > 1) {
-        // Check if fibMMm2 is a valid location
-        const i = Math.min(offset + fibMMm2, arr.length - 1);
-
-        // If target is greater than value at index fibMMm2,
-        // cut the subarray from offset to i
-        if (arr[i] < target) {
-            fibM = fibMMm1;
-            fibMMm1 = fibMMm2;
-            fibMMm2 = fibM - fibMMm1;
-            offset = i;
-        }
-        // If target is less than value at index fibMMm2,
-        // cut the subarray after i+1
-        else if (arr[i] > target) {
-            fibM = fibMMm2;
-            fibMMm1 = fibMMm1 - fibMMm2;
-            fibMMm2 = fibM - fibMMm1;
-        }
-        // Element found
-        else {
-            return i;
-        }
-    }
-
-    // Compare the last element with target
-    if (fibMMm1 === 1 && arr[offset + 1] === target) {
-        return offset + 1;
-    }
-
-    // Element not found
-    return -1;
-}
-interface FibonacciSearchResult {
-    index: number;
-    iterations: number;
-    comparisons: number;
+// Scheduled tasks configuration
+interface ScheduledTask {
+  name: string;
+  schedule: string;
+  task: () => Promise<void>;
+  timezone?: string;
+  enabled: boolean;
 }
 
-function fibonacciSearchEnhanced<T>(
-    arr: T[],
-    target: T,
-    compareFn: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): FibonacciSearchResult {
-    if (arr.length === 0) {
-        return { index: -1, iterations: 0, comparisons: 0 };
-    }
-
-    let iterations = 0;
-    let comparisons = 0;
-
-    // Initialize Fibonacci numbers
-    let fibMMm2 = 0;
-    let fibMMm1 = 1;
-    let fibM = fibMMm2 + fibMMm1;
-
-    // Find the smallest Fibonacci number greater than or equal to array length
-    while (fibM < arr.length) {
-        fibMMm2 = fibMMm1;
-        fibMMm1 = fibM;
-        fibM = fibMMm2 + fibMMm1;
-        iterations++;
-    }
-
-    let offset = -1;
-
-    while (fibM > 1) {
-        iterations++;
-        
-        const i = Math.min(offset + fibMMm2, arr.length - 1);
-        comparisons++;
-        
-        const comparison = compareFn(arr[i], target);
-
-        if (comparison < 0) {
-            // Target is greater, search in the right subarray
-            fibM = fibMMm1;
-            fibMMm1 = fibMMm2;
-            fibMMm2 = fibM - fibMMm1;
-            offset = i;
-        } else if (comparison > 0) {
-            // Target is smaller, search in the left subarray
-            fibM = fibMMm2;
-            fibMMm1 = fibMMm1 - fibMMm2;
-            fibMMm2 = fibM - fibMMm1;
-        } else {
-            // Element found
-            return { index: i, iterations, comparisons };
-        }
-    }
-
-    // Check the last element
-    if (fibMMm1 === 1 && offset + 1 < arr.length) {
-        comparisons++;
-        if (compareFn(arr[offset + 1], target) === 0) {
-            return { index: offset + 1, iterations, comparisons };
-        }
-    }
-
-    return { index: -1, iterations, comparisons };
-}
-// Example 1: Basic usage with numbers
-const numbers = [10, 22, 35, 40, 45, 50, 80, 82, 85, 90, 100];
-console.log(fibonacciSearch(numbers, 85)); // Output: 8
-
-// Example 2: Enhanced version with custom objects
-interface Person {
-    id: number;
-    name: string;
-    age: number;
-}
-
-const people: Person[] = [
-    { id: 1, name: "Alice", age: 25 },
-    { id: 2, name: "Bob", age: 30 },
-    { id: 3, name: "Charlie", age: 35 },
-    { id: 4, name: "David", age: 40 }
+// Define scheduled tasks
+const scheduledTasks: ScheduledTask[] = [
+  {
+    name: 'Daily Email Report',
+    schedule: '0 9 * * *', // 9:00 AM every day
+    task: async () => {
+      console.log('Sending daily email report...');
+      await sendEmailReport();
+      console.log('Daily email report sent successfully');
+    },
+    timezone: 'America/New_York',
+    enabled: true
+  },
+  {
+    name: 'Hourly Data Processing',
+    schedule: '0 * * * *', // Every hour at :00
+    task: async () => {
+      console.log('Starting hourly data processing...');
+      await fetchAndProcessData();
+      console.log('Hourly data processing completed');
+    },
+    enabled: true
+  },
+  {
+    name: 'Weekly File Cleanup',
+    schedule: '0 0 * * 0', // Sunday at midnight
+    task: async () => {
+      console.log('Starting weekly file cleanup...');
+      await cleanupTempFiles();
+      console.log('Weekly file cleanup completed');
+    },
+    enabled: process.env.ENABLE_FILE_CLEANUP === 'true'
+  }
 ];
 
-// Search by age
-const result = fibonacciSearchEnhanced(
-    people,
-    { id: 3, name: "Charlie", age: 35 },
-    (a, b) => a.age - b.age
-);
-console.log(result); // Output: { index: 2, iterations: 3, comparisons: 3 }
+// Initialize cron jobs
+export function initializeCronJobs(): void {
+  scheduledTasks.forEach((taskConfig) => {
+    if (!taskConfig.enabled) {
+      console.log(`Task "${taskConfig.name}" is disabled`);
+      return;
+    }
 
-// Example 3: With strings
-const fruits = ['apple', 'banana', 'cherry', 'date', 'elderberry'];
-const fruitResult = fibonacciSearchEnhanced(fruits, 'cherry');
-console.log(fruitResult.index); // Output: 2
+    try {
+      const task = cron.schedule(
+        taskConfig.schedule,
+        async () => {
+          try {
+            await taskConfig.task();
+          } catch (error) {
+            console.error(`Error executing task "${taskConfig.name}":`, error);
+          }
+        },
+        {
+          scheduled: true,
+          timezone: taskConfig.timezone
+        }
+      );
 
-// Example 4: Performance comparison
-function testPerformance() {
-    const largeArray = Array.from({ length: 10000 }, (_, i) => i * 2);
-    const target = 5000;
-    
-    console.time('Fibonacci Search');
-    const result = fibonacciSearchEnhanced(largeArray, target);
-    console.timeEnd('Fibonacci Search');
-    
-    console.log('Result:', result);
+      console.log(`Scheduled task "${taskConfig.name}" with pattern: ${taskConfig.schedule}`);
+      
+      // Graceful shutdown handling
+      process.on('SIGINT', () => {
+        console.log(`Stopping task "${taskConfig.name}"...`);
+        task.stop();
+        process.exit(0);
+      });
+
+    } catch (error) {
+      console.error(`Failed to schedule task "${taskConfig.name}":`, error);
+    }
+  });
 }
 
-testPerformance();
+// Mock service functions (would be implemented in separate files)
+async function sendEmailReport(): Promise<void> {
+  // Implementation for sending email report
+  await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate async work
+}
+
+async function cleanupTempFiles(): Promise<void> {
+  // Implementation for cleaning up temporary files
+  await new Promise(resolve => setTimeout(resolve, 500)); // Simulate async work
+}
+
+async function fetchAndProcessData(): Promise<void> {
+  // Implementation for data processing
+  await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate async work
+}
+
+// Start the cron jobs when this module is imported
+if (require.main === module) {
+  console.log('Initializing cron jobs...');
+  initializeCronJobs();
+  console.log('Cron jobs initialized. Server is running scheduled tasks.');
+}
+npm install node-cron
+npm install -D @types/node-cron typescript ts-node
