@@ -1,135 +1,285 @@
-function countingSort(arr: number[]): number[] {
-    if (arr.length === 0) return arr;
-    
-    // Find min and max values
-    const max = Math.max(...arr);
-    const min = Math.min(...arr);
-    const range = max - min + 1;
-    
-    // Initialize count array
-    const count = new Array(range).fill(0);
-    
-    // Count occurrences of each number
-    for (const num of arr) {
-        count[num - min]++;
+interface Graph {
+  [node: string]: string[];
+}
+
+class BidirectionalSearch {
+  private graph: Graph;
+
+  constructor(graph: Graph) {
+    this.graph = graph;
+  }
+
+  /**
+   * Perform bidirectional search to find the shortest path between start and end nodes
+   */
+  search(start: string, end: string): string[] | null {
+    if (start === end) {
+      return [start];
     }
-    
-    // Reconstruct sorted array
-    const sorted: number[] = [];
-    for (let i = 0; i < range; i++) {
-        while (count[i] > 0) {
-            sorted.push(i + min);
-            count[i]--;
+
+    // Queues for BFS from both directions
+    const queueStart: string[] = [start];
+    const queueEnd: string[] = [end];
+
+    // Visited nodes and their parents for tracking paths
+    const visitedFromStart: Map<string, string | null> = new Map();
+    const visitedFromEnd: Map<string, string | null> = new Map();
+
+    visitedFromStart.set(start, null);
+    visitedFromEnd.set(end, null);
+
+    while (queueStart.length > 0 && queueEnd.length > 0) {
+      // Expand from start side
+      const intersection = this.expandLevel(queueStart, visitedFromStart, visitedFromEnd);
+      if (intersection) {
+        return this.constructPath(intersection, visitedFromStart, visitedFromEnd);
+      }
+
+      // Expand from end side
+      const intersection2 = this.expandLevel(queueEnd, visitedFromEnd, visitedFromStart);
+      if (intersection2) {
+        return this.constructPath(intersection2, visitedFromStart, visitedFromEnd);
+      }
+    }
+
+    return null; // No path found
+  }
+
+  private expandLevel(
+    queue: string[],
+    visitedThisSide: Map<string, string | null>,
+    visitedOtherSide: Map<string, string | null>
+  ): string | null {
+    const levelSize = queue.length;
+
+    for (let i = 0; i < levelSize; i++) {
+      const currentNode = queue.shift()!;
+
+      // Check all neighbors
+      for (const neighbor of this.graph[currentNode] || []) {
+        if (!visitedThisSide.has(neighbor)) {
+          visitedThisSide.set(neighbor, currentNode);
+          queue.push(neighbor);
+
+          // Check if we've found an intersection
+          if (visitedOtherSide.has(neighbor)) {
+            return neighbor;
+          }
         }
+      }
     }
+
+    return null;
+  }
+
+  private constructPath(
+    intersection: string,
+    visitedFromStart: Map<string, string | null>,
+    visitedFromEnd: Map<string, string | null>
+  ): string[] {
+    // Construct path from start to intersection
+    const pathFromStart: string[] = [];
+    let current: string | null = intersection;
     
-    return sorted;
+    while (current !== null) {
+      pathFromStart.unshift(current);
+      current = visitedFromStart.get(current) || null;
+    }
+
+    // Construct path from intersection to end (excluding intersection)
+    const pathFromEnd: string[] = [];
+    current = visitedFromEnd.get(intersection) || null;
+    
+    while (current !== null) {
+      pathFromEnd.push(current);
+      current = visitedFromEnd.get(current) || null;
+    }
+
+    return [...pathFromStart, ...pathFromEnd];
+  }
 }
-function countingSort(
-    arr: number[],
-    min?: number,
-    max?: number
-): number[] {
-    // Handle empty array
-    if (arr.length === 0) return [];
+// Example graph
+const graph: Graph = {
+  'A': ['B', 'C'],
+  'B': ['A', 'D', 'E'],
+  'C': ['A', 'F'],
+  'D': ['B', 'G'],
+  'E': ['B', 'H'],
+  'F': ['C', 'I'],
+  'G': ['D', 'H'],
+  'H': ['E', 'G', 'I'],
+  'I': ['F', 'H', 'J'],
+  'J': ['I']
+};
+
+// Using the bidirectional search
+const bidirectionalSearch = new BidirectionalSearch(graph);
+const path = bidirectionalSearch.search('A', 'J');
+
+console.log('Path found:', path);
+// Output: Path found: ['A', 'C', 'F', 'I', 'J']
+interface SearchResult {
+  path: string[] | null;
+  nodesVisited: number;
+  timeTaken: number;
+}
+
+class EnhancedBidirectionalSearch {
+  private graph: Graph;
+
+  constructor(graph: Graph) {
+    this.graph = graph;
+  }
+
+  search(start: string, end: string): SearchResult {
+    const startTime = performance.now();
     
-    // Determine range if not provided
-    const actualMin = min ?? Math.min(...arr);
-    const actualMax = max ?? Math.max(...arr);
-    const range = actualMax - actualMin + 1;
-    
-    // Validate parameters
-    if (range <= 0) {
-        throw new Error("Invalid range: min must be less than or equal to max");
+    if (!this.graph[start] || !this.graph[end]) {
+      throw new Error('Start or end node not found in graph');
     }
-    
-    if (range > 1000000) {
-        throw new Error("Range too large for counting sort");
+
+    if (start === end) {
+      return {
+        path: [start],
+        nodesVisited: 1,
+        timeTaken: performance.now() - startTime
+      };
     }
+
+    const queueStart: string[] = [start];
+    const queueEnd: string[] = [end];
     
-    // Initialize count array
-    const count = new Array(range).fill(0);
+    const visitedFromStart = new Map<string, string | null>();
+    const visitedFromEnd = new Map<string, string | null>();
     
-    // Count occurrences
-    for (const num of arr) {
-        if (num < actualMin || num > actualMax) {
-            throw new Error(`Value ${num} is out of the specified range [${actualMin}, ${actualMax}]`);
+    visitedFromStart.set(start, null);
+    visitedFromEnd.set(end, null);
+
+    let nodesVisited = 2; // Start and end nodes
+
+    while (queueStart.length > 0 && queueEnd.length > 0) {
+      // Expand from start side
+      const intersection1 = this.expandLevel(
+        queueStart, 
+        visitedFromStart, 
+        visitedFromEnd,
+        () => nodesVisited++
+      );
+      
+      if (intersection1) {
+        return {
+          path: this.constructPath(intersection1, visitedFromStart, visitedFromEnd),
+          nodesVisited,
+          timeTaken: performance.now() - startTime
+        };
+      }
+
+      // Expand from end side
+      const intersection2 = this.expandLevel(
+        queueEnd, 
+        visitedFromEnd, 
+        visitedFromStart,
+        () => nodesVisited++
+      );
+      
+      if (intersection2) {
+        return {
+          path: this.constructPath(intersection2, visitedFromStart, visitedFromEnd),
+          nodesVisited,
+          timeTaken: performance.now() - startTime
+        };
+      }
+    }
+
+    return {
+      path: null,
+      nodesVisited,
+      timeTaken: performance.now() - startTime
+    };
+  }
+
+  private expandLevel(
+    queue: string[],
+    visitedThisSide: Map<string, string | null>,
+    visitedOtherSide: Map<string, string | null>,
+    onVisit: () => void
+  ): string | null {
+    const levelSize = queue.length;
+
+    for (let i = 0; i < levelSize; i++) {
+      const currentNode = queue.shift()!;
+      const neighbors = this.graph[currentNode] || [];
+
+      for (const neighbor of neighbors) {
+        if (!visitedThisSide.has(neighbor)) {
+          visitedThisSide.set(neighbor, currentNode);
+          queue.push(neighbor);
+          onVisit();
+
+          if (visitedOtherSide.has(neighbor)) {
+            return neighbor;
+          }
         }
-        count[num - actualMin]++;
+      }
     }
+
+    return null;
+  }
+
+  private constructPath(
+    intersection: string,
+    visitedFromStart: Map<string, string | null>,
+    visitedFromEnd: Map<string, string | null>
+  ): string[] {
+    const pathFromStart: string[] = [];
+    let current: string | null = intersection;
     
-    // Build sorted array
-    const sorted: number[] = [];
-    for (let i = 0; i < range; i++) {
-        for (let j = 0; j < count[i]; j++) {
-            sorted.push(i + actualMin);
-        }
+    // Build path from start to intersection
+    while (current !== null) {
+      pathFromStart.unshift(current);
+      current = visitedFromStart.get(current) || null;
     }
+
+    // Remove intersection from the end (it will be added from the other side)
+    pathFromStart.pop();
+
+    // Build path from intersection to end
+    const pathFromEnd: string[] = [];
+    current = visitedFromEnd.get(intersection) || null;
     
-    return sorted;
+    while (current !== null) {
+      pathFromEnd.push(current);
+      current = visitedFromEnd.get(current) || null;
+    }
+
+    return [...pathFromStart, intersection, ...pathFromEnd];
+  }
 }
-// Basic usage
-const numbers = [4, 2, 2, 8, 3, 3, 1];
-const sorted = countingSort(numbers);
-console.log(sorted); // [1, 2, 2, 3, 3, 4, 8]
+// Test the implementation
+function testBidirectionalSearch() {
+  const complexGraph: Graph = {
+    '1': ['2', '3'],
+    '2': ['1', '4', '5'],
+    '3': ['1', '6', '7'],
+    '4': ['2', '8'],
+    '5': ['2', '9'],
+    '6': ['3', '10'],
+    '7': ['3', '11'],
+    '8': ['4', '12'],
+    '9': ['5', '12'],
+    '10': ['6', '12'],
+    '11': ['7', '12'],
+    '12': ['8', '9', '10', '11']
+  };
 
-// With known range
-const numbers2 = [10, 15, 12, 11, 13];
-const sorted2 = countingSort(numbers2, 10, 15);
-console.log(sorted2); // [10, 11, 12, 13, 15]
+  const search = new EnhancedBidirectionalSearch(complexGraph);
+  const result = search.search('1', '12');
 
-// Edge cases
-console.log(countingSort([])); // []
-console.log(countingSort([5])); // [5]
-interface SortableObject {
-    key: number;
-    // ... other properties
-}
-
-function countingSortObjects(
-    arr: SortableObject[],
-    keyExtractor: (obj: SortableObject) => number
-): SortableObject[] {
-    if (arr.length === 0) return [];
-    
-    // Extract keys and find range
-    const keys = arr.map(keyExtractor);
-    const min = Math.min(...keys);
-    const max = Math.max(...keys);
-    const range = max - min + 1;
-    
-    // Initialize arrays
-    const count = new Array(range).fill(0);
-    const output: SortableObject[] = new Array(arr.length);
-    
-    // Count occurrences
-    for (const obj of arr) {
-        const key = keyExtractor(obj);
-        count[key - min]++;
-    }
-    
-    // Calculate cumulative counts
-    for (let i = 1; i < range; i++) {
-        count[i] += count[i - 1];
-    }
-    
-    // Build output array (stable sort)
-    for (let i = arr.length - 1; i >= 0; i--) {
-        const key = keyExtractor(arr[i]);
-        output[count[key - min] - 1] = arr[i];
-        count[key - min]--;
-    }
-    
-    return output;
+  console.log('Search Result:', {
+    path: result.path,
+    nodesVisited: result.nodesVisited,
+    timeTaken: `${result.timeTaken.toFixed(2)}ms`
+  });
 }
 
-// Usage
-const objects = [
-    { key: 3, name: "Charlie" },
-    { key: 1, name: "Alice" },
-    { key: 2, name: "Bob" }
-];
-
-const sortedObjects = countingSortObjects(objects, obj => obj.key);
-console.log(sortedObjects);
-// [{ key: 1, name: "Alice" }, { key: 2, name: "Bob" }, { key: 3, name: "Charlie" }]
+testBidirectionalSearch();
