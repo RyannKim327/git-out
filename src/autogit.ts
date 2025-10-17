@@ -1,76 +1,119 @@
-function calculateMean(numbers: number[]): number {
-    if (numbers.length === 0) {
-        return 0; // or throw an error: throw new Error("Cannot calculate mean of empty array");
+function binarySearch(arr: number[], target: number): number {
+    let left = 0;
+    let right = arr.length - 1;
+
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        
+        if (arr[mid] === target) {
+            return mid; // Target found
+        } else if (arr[mid] < target) {
+            left = mid + 1; // Search right half
+        } else {
+            right = mid - 1; // Search left half
+        }
     }
     
-    const sum = numbers.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
-    return sum / numbers.length;
+    return -1; // Target not found
 }
+function binarySearchGeneric<T>(
+    arr: T[], 
+    target: T, 
+    compareFn: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): number {
+    let left = 0;
+    let right = arr.length - 1;
 
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        const comparison = compareFn(arr[mid], target);
+        
+        if (comparison === 0) {
+            return mid; // Target found
+        } else if (comparison < 0) {
+            left = mid + 1; // Search right half
+        } else {
+            right = mid - 1; // Search left half
+        }
+    }
+    
+    return -1; // Target not found
+}
+function binarySearchRecursive(
+    arr: number[], 
+    target: number, 
+    left: number = 0, 
+    right: number = arr.length - 1
+): number {
+    if (left > right) {
+        return -1; // Base case: target not found
+    }
+    
+    const mid = Math.floor((left + right) / 2);
+    
+    if (arr[mid] === target) {
+        return mid;
+    } else if (arr[mid] < target) {
+        return binarySearchRecursive(arr, target, mid + 1, right);
+    } else {
+        return binarySearchRecursive(arr, target, left, mid - 1);
+    }
+}
+function findInsertionPosition(arr: number[], target: number): number {
+    let left = 0;
+    let right = arr.length - 1;
+
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        
+        if (arr[mid] === target) {
+            return mid; // Exact match
+        } else if (arr[mid] < target) {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+    
+    return left; // Position where target should be inserted
+}
 // Example usage
-const numbers = [1, 2, 3, 4, 5];
-const mean = calculateMean(numbers);
-console.log(mean); // Output: 3
-function calculateMean(numbers: number[]): number {
-    if (numbers.length === 0) {
-        return 0;
-    }
-    
-    let sum = 0;
-    for (let i = 0; i < numbers.length; i++) {
-        sum += numbers[i];
-    }
-    return sum / numbers.length;
+const sortedArray = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
+
+// Basic binary search
+console.log(binarySearch(sortedArray, 7));  // Output: 3
+console.log(binarySearch(sortedArray, 10)); // Output: -1
+
+// Generic binary search with numbers
+console.log(binarySearchGeneric(sortedArray, 7)); // Output: 3
+
+// Generic binary search with strings
+const stringArray = ['apple', 'banana', 'cherry', 'date', 'elderberry'];
+console.log(binarySearchGeneric(stringArray, 'cherry')); // Output: 2
+
+// Custom comparison for objects
+interface Person {
+    id: number;
+    name: string;
 }
 
-// Example usage
-const data = [10, 20, 30, 40];
-const average = calculateMean(data);
-console.log(average); // Output: 25
-function calculateMean(numbers: number[]): number {
-    if (numbers.length === 0) {
-        throw new Error("Cannot calculate mean of empty array");
-    }
-    
-    if (!numbers.every(num => typeof num === 'number' && !isNaN(num))) {
-        throw new Error("Array contains non-number values");
-    }
-    
-    const sum = numbers.reduce((acc, curr) => acc + curr, 0);
-    return sum / numbers.length;
-}
+const people: Person[] = [
+    { id: 1, name: 'Alice' },
+    { id: 2, name: 'Bob' },
+    { id: 3, name: 'Charlie' },
+    { id: 4, name: 'Diana' },
+];
 
-// Example usage with error handling
-try {
-    const values = [1.5, 2.5, 3.5, 4.5];
-    const result = calculateMean(values);
-    console.log(`Mean: ${result}`); // Output: Mean: 3
-} catch (error) {
-    console.error(error.message);
-}
-const mean = (numbers: number[]): number => 
-    numbers.length === 0 ? 0 : numbers.reduce((a, b) => a + b) / numbers.length;
+console.log(
+    binarySearchGeneric(people, { id: 3, name: 'Charlie' }, (a, b) => a.id - b.id)
+); // Output: 2
 
-// Example usage
-const scores = [85, 90, 78, 92, 88];
-const averageScore = mean(scores);
-console.log(averageScore); // Output: 86.6
-class Statistics {
-    static mean(numbers: number[]): number {
-        if (numbers.length === 0) return 0;
-        return numbers.reduce((sum, num) => sum + num, 0) / numbers.length;
-    }
-    
-    static meanWithPrecision(numbers: number[], decimals: number = 2): number {
-        const mean = Statistics.mean(numbers);
-        return Number(mean.toFixed(decimals));
-    }
-}
-
-// Example usage
-const temperatures = [22.5, 23.1, 21.8, 24.3, 22.9];
-const avgTemp = Statistics.mean(temperatures);
-const roundedAvg = Statistics.meanWithPrecision(temperatures, 1);
-
-console.log(avgTemp); // Output: 22.92
-console.log(roundedAvg); // Output: 22.9
+// Finding insertion position
+console.log(findInsertionPosition(sortedArray, 8)); // Output: 4 (between 7 and 9)
+console.log(findInsertionPosition(sortedArray, 20)); // Output: 10 (at the end)
+// Edge cases
+console.log(binarySearch([], 5)); // Empty array
+console.log(binarySearch([5], 5)); // Single element array
+console.log(binarySearch([5], 3)); // Single element, not found
+console.log(binarySearch([1, 3, 5], 1)); // First element
+console.log(binarySearch([1, 3, 5], 5)); // Last element
