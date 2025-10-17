@@ -1,122 +1,142 @@
-function rabinKarp(text: string, pattern: string): number[] {
-    const n = text.length;
-    const m = pattern.length;
-    const result: number[] = [];
+class TreeNode<T> {
+    value: T;
+    left: TreeNode<T> | null;
+    right: TreeNode<T> | null;
 
-    // Edge cases
-    if (m === 0) {
-        // If pattern is empty, it "matches" at every position.
-        // Depending on requirements, could return [0, 1, ..., n] or []
-        // For simplicity, we'll treat it as no match, or an invalid pattern.
-        return [];
+    constructor(value: T) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
     }
-    if (n === 0 || m > n) {
-        return [];
+}
+function sumNodesRecursive<T extends number>(root: TreeNode<T> | null): number {
+    if (root === null) {
+        return 0;
+    }
+    
+    return root.value + 
+           sumNodesRecursive(root.left) + 
+           sumNodesRecursive(root.right);
+}
+function sumNodesIterativeBFS<T extends number>(root: TreeNode<T> | null): number {
+    if (root === null) return 0;
+    
+    let sum = 0;
+    const queue: TreeNode<T>[] = [root];
+    
+    while (queue.length > 0) {
+        const current = queue.shift()!;
+        sum += current.value;
+        
+        if (current.left) queue.push(current.left);
+        if (current.right) queue.push(current.right);
+    }
+    
+    return sum;
+}
+function sumNodesIterativeDFS<T extends number>(root: TreeNode<T> | null): number {
+    if (root === null) return 0;
+    
+    let sum = 0;
+    const stack: TreeNode<T>[] = [root];
+    
+    while (stack.length > 0) {
+        const current = stack.pop()!;
+        sum += current.value;
+        
+        if (current.right) stack.push(current.right);
+        if (current.left) stack.push(current.left);
+    }
+    
+    return sum;
+}
+class BinaryTree<T> {
+    root: TreeNode<T> | null;
+
+    constructor() {
+        this.root = null;
     }
 
-    // --- Hash Parameters ---
-    // A prime number for modulo operation. Larger prime reduces collisions.
-    const Q = 10**9 + 7; 
-    // Base for hashing (number of characters in alphabet, e.g., ASCII has 256).
-    const D = 256; 
-
-    // Precompute D^(m-1) % Q. This is used to remove the leftmost digit's value.
-    let h = 1;
-    for (let i = 0; i < m - 1; i++) {
-        h = (h * D) % Q;
+    sumAllNodes(): number {
+        return this.sumNodesRecursive(this.root);
     }
 
-    // --- Calculate initial hashes ---
-    let patternHash = 0;
-    let textWindowHash = 0;
-    for (let i = 0; i < m; i++) {
-        patternHash = (patternHash * D + pattern.charCodeAt(i)) % Q;
-        textWindowHash = (textWindowHash * D + text.charCodeAt(i)) % Q;
-    }
-
-    // --- Slide the window ---
-    for (let i = 0; i <= n - m; i++) {
-        // Step 1: Check for hash match
-        if (patternHash === textWindowHash) {
-            // If hashes match, perform a character-by-character check
-            // to handle spurious matches (hash collisions).
-            let match = true;
-            for (let j = 0; j < m; j++) {
-                if (text.charCodeAt(i + j) !== pattern.charCodeAt(j)) {
-                    match = false;
-                    break;
-                }
-            }
-            if (match) {
-                result.push(i); // Found an occurrence
-            }
+    private sumNodesRecursive(node: TreeNode<T> | null): number {
+        if (node === null) {
+            return 0;
         }
-
-        // Step 2: Calculate hash for the next window
-        // Only update hash if there's a next window to slide to
-        if (i < n - m) {
-            // Remove the leftmost character's contribution
-            // (text.charCodeAt(i) * h) is the value of the character at D^(m-1)
-            textWindowHash = (textWindowHash - (text.charCodeAt(i) * h) % Q + Q) % Q; 
-            // The `+ Q` ensures the result is positive before the final modulo.
-
-            // Multiply by D to shift remaining characters left
-            textWindowHash = (textWindowHash * D) % Q;
-
-            // Add the new rightmost character's contribution
-            textWindowHash = (textWindowHash + text.charCodeAt(i + m)) % Q;
+        
+        // Type guard to ensure we're working with numbers
+        if (typeof node.value !== 'number') {
+            throw new Error('Tree values must be numbers to calculate sum');
         }
+        
+        return node.value + 
+               this.sumNodesRecursive(node.left) + 
+               this.sumNodesRecursive(node.right);
     }
-
-    return result;
 }
 
-// --- Example Usage ---
-const text1 = "ABABDABACDABABCABAB";
-const pattern1 = "ABABCABAB";
-const matches1 = rabinKarp(text1, pattern1);
-console.log(`Text: "${text1}"`);
-console.log(`Pattern: "${pattern1}"`);
-console.log("Matches at indices:", matches1); // Expected: [10]
+// Example usage and testing
+function testBinaryTreeSum(): void {
+    // Create a binary tree
+    const tree = new BinaryTree<number>();
+    
+    // Build tree structure
+    tree.root = new TreeNode(1);
+    tree.root.left = new TreeNode(2);
+    tree.root.right = new TreeNode(3);
+    tree.root.left.left = new TreeNode(4);
+    tree.root.left.right = new TreeNode(5);
+    tree.root.right.left = new TreeNode(6);
+    tree.root.right.right = new TreeNode(7);
+    
+    /*
+    Tree structure:
+           1
+         /   \
+        2     3
+       / \   / \
+      4   5 6   7
+    */
+    
+    console.log("Recursive sum:", sumNodesRecursive(tree.root)); // Output: 28
+    console.log("BFS sum:", sumNodesIterativeBFS(tree.root));    // Output: 28
+    console.log("DFS sum:", sumNodesIterativeDFS(tree.root));    // Output: 28
+    console.log("Class method sum:", tree.sumAllNodes());        // Output: 28
+    
+    // Test with empty tree
+    console.log("Empty tree sum:", sumNodesRecursive(null));     // Output: 0
+}
 
-const text2 = "AAAAAA";
-const pattern2 = "AA";
-const matches2 = rabinKarp(text2, pattern2);
-console.log(`\nText: "${text2}"`);
-console.log(`Pattern: "${pattern2}"`);
-console.log("Matches at indices:", matches2); // Expected: [0, 1, 2, 3, 4]
+testBinaryTreeSum();
+class GenericTreeNode<T extends number | bigint> {
+    value: T;
+    left: GenericTreeNode<T> | null;
+    right: GenericTreeNode<T> | null;
 
-const text3 = "HELLO WORLD";
-const pattern3 = "WORLD";
-const matches3 = rabinKarp(text3, pattern3);
-console.log(`\nText: "${text3}"`);
-console.log(`Pattern: "${pattern3}"`);
-console.log("Matches at indices:", matches3); // Expected: [6]
+    constructor(value: T) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+    }
+}
 
-const text4 = "TESTING RABIN KARP";
-const pattern4 = "XYZ";
-const matches4 = rabinKarp(text4, pattern4);
-console.log(`\nText: "${text4}"`);
-console.log(`Pattern: "${pattern4}"`);
-console.log("Matches at indices:", matches4); // Expected: []
-
-const text5 = "BANANA";
-const pattern5 = "ANA";
-const matches5 = rabinKarp(text5, pattern5);
-console.log(`\nText: "${text5}"`);
-console.log(`Pattern: "${pattern5}"`);
-console.log("Matches at indices:", matches5); // Expected: [1, 3]
-
-const text6 = "A";
-const pattern6 = "A";
-const matches6 = rabinKarp(text6, pattern6);
-console.log(`\nText: "${text6}"`);
-console.log(`Pattern: "${pattern6}"`);
-console.log("Matches at indices:", matches6); // Expected: [0]
-
-const text7 = "ABC";
-const pattern7 = "ABCD";
-const matches7 = rabinKarp(text7, pattern7);
-console.log(`\nText: "${text7}"`);
-console.log(`Pattern: "${pattern7}"`);
-console.log("Matches at indices:", matches7); // Expected: [] (pattern longer than text)
+function sumNodesGeneric<T extends number | bigint>(
+    root: GenericTreeNode<T> | null
+): T {
+    if (root === null) {
+        return typeof root === 'bigint' ? BigInt(0) as T : 0 as T;
+    }
+    
+    // Type-specific addition
+    if (typeof root.value === 'bigint') {
+        return (BigInt(root.value) + 
+                BigInt(sumNodesGeneric(root.left)) + 
+                BigInt(sumNodesGeneric(root.right))) as T;
+    } else {
+        return (root.value + 
+                sumNodesGeneric(root.left) + 
+                sumNodesGeneric(root.right)) as T;
+    }
+}
