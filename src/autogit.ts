@@ -1,198 +1,58 @@
-interface GraphNode<T> {
-  value: T;
-  neighbors: GraphNode<T>[];
-}
+/**
+ * Interpolation search.
+ * @param arr    Sorted array of numbers (or objects).
+ * @param key    Value to search for.
+ * @param map    Optional projector: (element) => number. Default = identity.
+ * @returns Index of key or -1 if not found.
+ */
+export function interpolationSearch<T>(
+  arr: T[],
+  key: number,
+  map: (t: T) => number = (x: any) => x
+): number {
+  let low = 0;
+  let high = arr.length - 1;
 
-class BreadthLimitedSearch<T> {
-  /**
-   * Perform breadth-limited search starting from a node
-   * @param startNode - The starting node
-   * @param depthLimit - Maximum depth to search (0 = only start node)
-   * @returns Array of visited nodes in BFS order
-   */
-  search(startNode: GraphNode<T>, depthLimit: number): T[] {
-    if (depthLimit < 0) return [];
-    
-    const visited = new Set<GraphNode<T>>();
-    const result: T[] = [];
-    const queue: { node: GraphNode<T>; depth: number }[] = [];
-    
-    // Start with the initial node at depth 0
-    queue.push({ node: startNode, depth: 0 });
-    visited.add(startNode);
-    
-    while (queue.length > 0) {
-      const { node, depth } = queue.shift()!;
-      result.push(node.value);
-      
-      // If we haven't reached depth limit, explore neighbors
-      if (depth < depthLimit) {
-        for (const neighbor of node.neighbors) {
-          if (!visited.has(neighbor)) {
-            visited.add(neighbor);
-            queue.push({ node: neighbor, depth: depth + 1 });
-          }
-        }
-      }
+  while (low <= high && key >= map(arr[low]) && key <= map(arr[high])) {
+    // Range is flat → fall back to linear scan
+    if (map(arr[high]) === map(arr[low])) {
+      return map(arr[low]) === key ? low : -1;
     }
-    
-    return result;
+
+    // Estimate position
+    const pos =
+      low +
+      Math.floor(
+        ((key - map(arr[low])) * (high - low)) /
+          (map(arr[high]) - map(arr[low]))
+      );
+
+    if (pos < low || pos > high) return -1; // safeguard
+
+    const value = map(arr[pos]);
+
+    if (value === key) return pos;
+    if (value < key) low = pos + 1;
+    else high = pos - 1;
   }
-}
-interface SearchResult<T> {
-  found: boolean;
-  path: T[];
-  depthReached: number;
+  return -1;
 }
 
-class AdvancedBreadthLimitedSearch<T> {
-  /**
-   * Search for a specific goal node with depth limit
-   */
-  searchWithGoal(
-    startNode: GraphNode<T>, 
-    goalPredicate: (node: T) => boolean,
-    depthLimit: number
-  ): SearchResult<T> {
-    const visited = new Map<GraphNode<T>, GraphNode<T> | null>(); // Track parent for path reconstruction
-    const queue: { node: GraphNode<T>; depth: number }[] = [];
-    
-    queue.push({ node: startNode, depth: 0 });
-    visited.set(startNode, null);
-    
-    while (queue.length > 0) {
-      const { node, depth } = queue.shift()!;
-      
-      // Check if we found the goal
-      if (goalPredicate(node.value)) {
-        return {
-          found: true,
-          path: this.reconstructPath(visited, node),
-          depthReached: depth
-        };
-      }
-      
-      // Expand if within depth limit
-      if (depth < depthLimit) {
-        for (const neighbor of node.neighbors) {
-          if (!visited.has(neighbor)) {
-            visited.set(neighbor, node); // Record parent
-            queue.push({ node: neighbor, depth: depth + 1 });
-          }
-        }
-      }
-    }
-    
-    // Goal not found within depth limit
-    return {
-      found: false,
-      path: [],
-      depthReached: depthLimit
-    };
-  }
-  
-  private reconstructPath(
-    visited: Map<GraphNode<T>, GraphNode<T> | null>, 
-    goalNode: GraphNode<T>
-  ): T[] {
-    const path: T[] = [];
-    let current: GraphNode<T> | null = goalNode;
-    
-    while (current !== null) {
-      path.unshift(current.value);
-      current = visited.get(current)!;
-    }
-    
-    return path;
-  }
+/* ---------- Usage examples ---------- */
+
+// 1. Simple numeric array
+const nums = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20];
+console.log(interpolationSearch(nums, 12)); // → 5
+console.log(interpolationSearch(nums, 3));  // → -1
+
+// 2. Array of objects
+interface Product {
+  id: number;
+  name: string;
 }
-// Create a sample graph
-const createSampleGraph = (): GraphNode<string> => {
-  const nodeA: GraphNode<string> = { value: 'A', neighbors: [] };
-  const nodeB: GraphNode<string> = { value: 'B', neighbors: [] };
-  const nodeC: GraphNode<string> = { value: 'C', neighbors: [] };
-  const nodeD: GraphNode<string> = { value: 'D', neighbors: [] };
-  const nodeE: GraphNode<string> = { value: 'E', neighbors: [] };
-  const nodeF: GraphNode<string> = { value: 'F', neighbors: [] };
-  const nodeG: GraphNode<string> = { value: 'G', neighbors: [] };
-  
-  // Build the graph: A -> B, C; B -> D, E; C -> F; E -> G
-  nodeA.neighbors = [nodeB, nodeC];
-  nodeB.neighbors = [nodeD, nodeE];
-  nodeC.neighbors = [nodeF];
-  nodeE.neighbors = [nodeG];
-  
-  return nodeA;
-};
-
-// Example usage
-const graph = createSampleGraph();
-const bfs = new BreadthLimitedSearch<string>();
-const advancedBfs = new AdvancedBreadthLimitedSearch<string>();
-
-// Basic search with depth limit 2
-console.log('BFS with depth limit 2:', bfs.search(graph, 2));
-// Output: ['A', 'B', 'C', 'D', 'E', 'F']
-
-// Search with depth limit 1
-console.log('BFS with depth limit 1:', bfs.search(graph, 1));
-// Output: ['A', 'B', 'C']
-
-// Goal search
-const result = advancedBfs.searchWithGoal(
-  graph, 
-  (value) => value === 'G',
-  3
-);
-
-console.log('Goal search result:', result);
-// Output: { found: true, path: ['A', 'B', 'E', 'G'], depthReached: 3 }
-interface Graph<T> {
-  getNeighbors(node: T): T[];
-  areEqual(a: T, b: T): boolean;
-}
-
-class GenericBreadthLimitedSearch<T> {
-  constructor(private graph: Graph<T>) {}
-  
-  search(
-    startNode: T,
-    depthLimit: number,
-    visitCallback?: (node: T, depth: number) => void
-  ): T[] {
-    const visited = new Set<T>();
-    const result: T[] = [];
-    const queue: { node: T; depth: number }[] = [];
-    
-    // Use a custom equality function
-    const isVisited = (node: T) => {
-      for (const visitedNode of visited) {
-        if (this.graph.areEqual(node, visitedNode)) {
-          return true;
-        }
-      }
-      return false;
-    };
-    
-    queue.push({ node: startNode, depth: 0 });
-    visited.add(startNode);
-    
-    while (queue.length > 0) {
-      const { node, depth } = queue.shift()!;
-      result.push(node);
-      visitCallback?.(node, depth);
-      
-      if (depth < depthLimit) {
-        const neighbors = this.graph.getNeighbors(node);
-        for (const neighbor of neighbors) {
-          if (!isVisited(neighbor)) {
-            visited.add(neighbor);
-            queue.push({ node: neighbor, depth: depth + 1 });
-          }
-        }
-      }
-    }
-    
-    return result;
-  }
-}
+const prods: Product[] = [
+  { id: 10, name: "A" },
+  { id: 20, name: "B" },
+  { id: 30, name: "C" },
+];
+console.log(interpolationSearch(prods, 20, p => p.id)); // → 1
