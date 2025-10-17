@@ -1,24 +1,23 @@
-/**
- * Sorts the array in ascending order using insertion sort.
- * @param arr Array of numbers (or anything that can be compared with `<`)
- */
-export function insertionSort<T>(arr: T[]): T[] {
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+// Using +
+let result: string = str1 + " " + str2 + "!"; // "Hello TypeScript!"
 
-    // Shift larger items one position to the right
-    while (j >= 0 && arr[j] > key) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-    arr[j + 1] = key;
-  }
-  return arr;
-}
+// Using Template Literals
+let result: string = `${str1} ${str2}!`;
 
-/* ---------- Example ---------- */
-const nums = [5, 2, 9, 1, 5, 6];
-console.log('before:', nums);
-insertionSort(nums);
-console.log('after :', nums);
+// Using concat() with multiple arguments
+let result: string = str1.concat(" ", str2, "!");
+const firstName: string = "John";
+const lastName: string = "Doe";
+
+// Using +
+const fullName1: string = firstName + " " + lastName;
+
+// Using Template Literals
+const fullName2: string = `${firstName} ${lastName}`;
+
+// Using concat()
+const fullName3: string = firstName.concat(" ", lastName);
+
+console.log(fullName1); // "John Doe"
+console.log(fullName2); // "John Doe"
+console.log(fullName3); // "John Doe"
