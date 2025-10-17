@@ -1,142 +1,120 @@
-class TreeNode<T> {
-    value: T;
-    left: TreeNode<T> | null;
-    right: TreeNode<T> | null;
+class AVLNode<T> {
+    key: T;
+    height: number;
+    left: AVLNode<T> | null;
+    right: AVLNode<T> | null;
 
-    constructor(value: T) {
-        this.value = value;
+    constructor(key: T) {
+        this.key = key;
+        this.height = 1; // new nodes start with height 1
         this.left = null;
         this.right = null;
     }
 }
-function sumNodesRecursive<T extends number>(root: TreeNode<T> | null): number {
-    if (root === null) {
-        return 0;
-    }
-    
-    return root.value + 
-           sumNodesRecursive(root.left) + 
-           sumNodesRecursive(root.right);
-}
-function sumNodesIterativeBFS<T extends number>(root: TreeNode<T> | null): number {
-    if (root === null) return 0;
-    
-    let sum = 0;
-    const queue: TreeNode<T>[] = [root];
-    
-    while (queue.length > 0) {
-        const current = queue.shift()!;
-        sum += current.value;
-        
-        if (current.left) queue.push(current.left);
-        if (current.right) queue.push(current.right);
-    }
-    
-    return sum;
-}
-function sumNodesIterativeDFS<T extends number>(root: TreeNode<T> | null): number {
-    if (root === null) return 0;
-    
-    let sum = 0;
-    const stack: TreeNode<T>[] = [root];
-    
-    while (stack.length > 0) {
-        const current = stack.pop()!;
-        sum += current.value;
-        
-        if (current.right) stack.push(current.right);
-        if (current.left) stack.push(current.left);
-    }
-    
-    return sum;
-}
-class BinaryTree<T> {
-    root: TreeNode<T> | null;
-
-    constructor() {
-        this.root = null;
-    }
-
-    sumAllNodes(): number {
-        return this.sumNodesRecursive(this.root);
-    }
-
-    private sumNodesRecursive(node: TreeNode<T> | null): number {
-        if (node === null) {
-            return 0;
-        }
-        
-        // Type guard to ensure we're working with numbers
-        if (typeof node.value !== 'number') {
-            throw new Error('Tree values must be numbers to calculate sum');
-        }
-        
-        return node.value + 
-               this.sumNodesRecursive(node.left) + 
-               this.sumNodesRecursive(node.right);
-    }
+function getHeight<T>(node: AVLNode<T> | null): number {
+    return node ? node.height : 0;
 }
 
-// Example usage and testing
-function testBinaryTreeSum(): void {
-    // Create a binary tree
-    const tree = new BinaryTree<number>();
-    
-    // Build tree structure
-    tree.root = new TreeNode(1);
-    tree.root.left = new TreeNode(2);
-    tree.root.right = new TreeNode(3);
-    tree.root.left.left = new TreeNode(4);
-    tree.root.left.right = new TreeNode(5);
-    tree.root.right.left = new TreeNode(6);
-    tree.root.right.right = new TreeNode(7);
-    
-    /*
-    Tree structure:
-           1
-         /   \
-        2     3
-       / \   / \
-      4   5 6   7
-    */
-    
-    console.log("Recursive sum:", sumNodesRecursive(tree.root)); // Output: 28
-    console.log("BFS sum:", sumNodesIterativeBFS(tree.root));    // Output: 28
-    console.log("DFS sum:", sumNodesIterativeDFS(tree.root));    // Output: 28
-    console.log("Class method sum:", tree.sumAllNodes());        // Output: 28
-    
-    // Test with empty tree
-    console.log("Empty tree sum:", sumNodesRecursive(null));     // Output: 0
+function getBalance<T>(node: AVLNode<T> | null): number {
+    return node ? getHeight(node.left) - getHeight(node.right) : 0;
 }
 
-testBinaryTreeSum();
-class GenericTreeNode<T extends number | bigint> {
-    value: T;
-    left: GenericTreeNode<T> | null;
-    right: GenericTreeNode<T> | null;
+function updateHeight<T>(node: AVLNode<T>): void {
+    node.height = Math.max(getHeight(node.left), getHeight(node.right)) + 1;
+}
+function rightRotate<T>(y: AVLNode<T>): AVLNode<T> {
+    const x = y.left!;
+    const T2 = x.right;
 
-    constructor(value: T) {
-        this.value = value;
-        this.left = null;
-        this.right = null;
-    }
+    // Perform rotation
+    x.right = y;
+    y.left = T2;
+
+    // Update heights
+    updateHeight(y);
+    updateHeight(x);
+
+    return x;
 }
 
-function sumNodesGeneric<T extends number | bigint>(
-    root: GenericTreeNode<T> | null
-): T {
-    if (root === null) {
-        return typeof root === 'bigint' ? BigInt(0) as T : 0 as T;
-    }
-    
-    // Type-specific addition
-    if (typeof root.value === 'bigint') {
-        return (BigInt(root.value) + 
-                BigInt(sumNodesGeneric(root.left)) + 
-                BigInt(sumNodesGeneric(root.right))) as T;
+function leftRotate<T>(x: AVLNode<T>): AVLNode<T> {
+    const y = x.right!;
+    const T2 = y.left;
+
+    // Perform rotation
+    y.left = x;
+    x.right = T2;
+
+    // Update heights
+    updateHeight(x);
+    updateHeight(y);
+
+    return y;
+}
+function insert<T>(node: AVLNode<T> | null, key: T): AVLNode<T> {
+    // 1. Normal BST insertion
+    if (!node) return new AVLNode(key);
+
+    if (key < node.key) {
+        node.left = insert(node.left, key);
+    } else if (key > node.key) {
+        node.right = insert(node.right, key);
     } else {
-        return (root.value + 
-                sumNodesGeneric(root.left) + 
-                sumNodesGeneric(root.right)) as T;
+        // duplicate keys not inserted
+        return node;
+    }
+
+    // 2. Update height
+    updateHeight(node);
+
+    // 3. Get balance factor
+    const balance = getBalance(node);
+
+    // 4. Balance tree
+    // Left Left
+    if (balance > 1 && key < (node.left?.key ?? key)) {
+        return rightRotate(node);
+    }
+
+    // Right Right
+    if (balance < -1 && key > (node.right?.key ?? key)) {
+        return leftRotate(node);
+    }
+
+    // Left Right
+    if (balance > 1 && key > (node.left?.key ?? key)) {
+        node.left = node.left ? leftRotate(node.left) : null;
+        return rightRotate(node);
+    }
+
+    // Right Left
+    if (balance < -1 && key < (node.right?.key ?? key)) {
+        node.right = node.right ? rightRotate(node.right) : null;
+        return leftRotate(node);
+    }
+
+    return node;
+}
+class AVLTree<T> {
+    root: AVLNode<T> | null = null;
+
+    insert(key: T): void {
+        this.root = insert(this.root, key);
+    }
+
+    // You can add search, deletion, traversal here
+    inOrderTraversal(node: AVLNode<T> | null = this.root): void {
+        if (!node) return;
+        this.inOrderTraversal(node.left);
+        console.log(node.key);
+        this.inOrderTraversal(node.right);
     }
 }
+const tree = new AVLTree<number>();
+tree.insert(10);
+tree.insert(20);
+tree.insert(30); // causes rotation
+tree.insert(25);
+tree.insert(5);
+
+tree.inOrderTraversal(); // prints balanced order
