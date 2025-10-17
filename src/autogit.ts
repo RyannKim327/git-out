@@ -1,337 +1,217 @@
-// Node class interface
-interface INode<T> {
-  data: T;
-  next: INode<T> | null;
+// Define a generic type for nodes in our graph
+type GraphNode<T> = T;
+
+class Graph<T> {
+    // An adjacency list where keys are nodes and values are arrays of their neighbors
+    private adjList: Map<GraphNode<T>, GraphNode<T>[]>;
+
+    constructor() {
+        this.adjList = new Map();
+    }
+
+    /**
+     * Adds a node to the graph.
+     * @param node The node to add.
+     */
+    addNode(node: GraphNode<T>): void {
+        if (!this.adjList.has(node)) {
+            this.adjList.set(node, []);
+        }
+    }
+
+    /**
+     * Adds an edge between two nodes. Assumes an undirected graph.
+     * @param node1 The first node.
+     * @param node2 The second node.
+     */
+    addEdge(node1: GraphNode<T>, node2: GraphNode<T>): void {
+        // Ensure both nodes exist in the graph
+        this.addNode(node1);
+        this.addNode(node2);
+
+        // Add edge in both directions for an undirected graph
+        this.adjList.get(node1)?.push(node2);
+        this.adjList.get(node2)?.push(node1);
+    }
+
+    /**
+     * Retrieves the neighbors of a given node.
+     * @param node The node whose neighbors are to be retrieved.
+     * @returns An array of neighbors.
+     */
+    getNeighbors(node: GraphNode<T>): GraphNode<T>[] {
+        return this.adjList.get(node) || [];
+    }
+
+    /**
+     * Prints the graph's adjacency list.
+     */
+    printGraph(): void {
+        console.log("Graph Adjacency List:");
+        for (const [node, neighbors] of this.adjList.entries()) {
+            console.log(`${node} -> ${neighbors.join(', ')}`);
+        }
+    }
+
+    // --- DFS Implementations will go here ---
 }
+// Add this method inside the Graph<T> class
 
-// Linked List interface
-interface ILinkedList<T> {
-  head: INode<T> | null;
-  tail: INode<T> | null;
-  size: number;
-  
-  append(data: T): void;
-  prepend(data: T): void;
-  insertAt(data: T, index: number): void;
-  removeAt(index: number): T | null;
-  remove(data: T): boolean;
-  find(data: T): INode<T> | null;
-  getAt(index: number): T | null;
-  isEmpty(): boolean;
-  clear(): void;
-  toString(): string;
-  toArray(): T[];
-}
+    /**
+     * Performs a Depth-First Search (DFS) starting from a given node using recursion.
+     * @param startNode The node to start the DFS from.
+     * @param callback An optional function to execute on each visited node.
+     * @returns An array of nodes in the order they were visited.
+     */
+    dfsRecursive(startNode: GraphNode<T>, callback?: (node: GraphNode<T>) => void): GraphNode<T>[] {
+        const visited = new Set<GraphNode<T>>();
+        const traversalOrder: GraphNode<T>[] = [];
 
-// Node implementation
-class ListNode<T> implements INode<T> {
-  constructor(
-    public data: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
+        // Helper function for the recursive traversal
+        const dfsHelper = (currentNode: GraphNode<T>): void => {
+            visited.add(currentNode);
+            traversalOrder.push(currentNode);
+            callback?.(currentNode); // Execute callback if provided
 
-// Linked List implementation
-class LinkedList<T> implements ILinkedList<T> {
-  public head: ListNode<T> | null = null;
-  public tail: ListNode<T> | null = null;
-  public size: number = 0;
+            for (const neighbor of this.getNeighbors(currentNode)) {
+                if (!visited.has(neighbor)) {
+                    dfsHelper(neighbor);
+                }
+            }
+        };
 
-  // Add to the end
-  append(data: T): void {
-    const newNode = new ListNode(data);
-    
-    if (!this.head) {
-      this.head = newNode;
-      this.tail = newNode;
-    } else {
-      this.tail!.next = newNode;
-      this.tail = newNode;
+        // Check if the startNode exists in the graph
+        if (!this.adjList.has(startNode)) {
+            console.warn(`Start node '${startNode}' not found in graph.`);
+            return [];
+        }
+
+        dfsHelper(startNode);
+        return traversalOrder;
     }
-    
-    this.size++;
-  }
+// Add this method inside the Graph<T> class
 
-  // Add to the beginning
-  prepend(data: T): void {
-    const newNode = new ListNode(data);
-    
-    if (!this.head) {
-      this.head = newNode;
-      this.tail = newNode;
-    } else {
-      newNode.next = this.head;
-      this.head = newNode;
+    /**
+     * Performs a Depth-First Search (DFS) starting from a given node using an explicit stack.
+     * @param startNode The node to start the DFS from.
+     * @param callback An optional function to execute on each visited node.
+     * @returns An array of nodes in the order they were visited.
+     */
+    dfsIterative(startNode: GraphNode<T>, callback?: (node: GraphNode<T>) => void): GraphNode<T>[] {
+        const visited = new Set<GraphNode<T>>();
+        const stack: GraphNode<T>[] = []; // Explicit stack
+        const traversalOrder: GraphNode<T>[] = [];
+
+        // Check if the startNode exists in the graph
+        if (!this.adjList.has(startNode)) {
+            console.warn(`Start node '${startNode}' not found in graph.`);
+            return [];
+        }
+
+        stack.push(startNode); // Start by pushing the initial node onto the stack
+
+        while (stack.length > 0) {
+            const currentNode = stack.pop()!; // Get the top node from the stack
+
+            // Only process if not visited yet
+            if (!visited.has(currentNode)) {
+                visited.add(currentNode);
+                traversalOrder.push(currentNode);
+                callback?.(currentNode);
+
+                // Add neighbors to the stack. Important: push in reverse order
+                // to mimic the recursive DFS output (if neighbors are ordered).
+                // If getNeighbors returns [A, B, C], pushing C, then B, then A
+                // means A will be popped next, then B, then C, maintaining "left-to-right" exploration.
+                const neighbors = this.getNeighbors(currentNode);
+                for (let i = neighbors.length - 1; i >= 0; i--) {
+                    const neighbor = neighbors[i];
+                    if (!visited.has(neighbor)) { // Only push unvisited neighbors
+                        stack.push(neighbor);
+                    }
+                }
+                // Alternative (simpler, but might not match recursive output order if neighbors are ordered):
+                // for (const neighbor of this.getNeighbors(currentNode)) {
+                //     if (!visited.has(neighbor)) {
+                //         stack.push(neighbor);
+                //     }
+                // }
+            }
+        }
+        return traversalOrder;
     }
-    
-    this.size++;
-  }
+// Create a new graph
+const myGraph = new Graph<string>();
 
-  // Insert at specific index
-  insertAt(data: T, index: number): void {
-    if (index < 0 || index > this.size) {
-      throw new Error('Index out of bounds');
-    }
+// Add nodes
+myGraph.addNode("A");
+myGraph.addNode("B");
+myGraph.addNode("C");
+myGraph.addNode("D");
+myGraph.addNode("E");
+myGraph.addNode("F");
 
-    if (index === 0) {
-      this.prepend(data);
-      return;
-    }
+// Add edges
+myGraph.addEdge("A", "B");
+myGraph.addEdge("A", "C");
+myGraph.addEdge("B", "D");
+myGraph.addEdge("C", "E");
+myGraph.addEdge("D", "E");
+myGraph.addEdge("D", "F");
+myGraph.addEdge("E", "F");
 
-    if (index === this.size) {
-      this.append(data);
-      return;
-    }
+myGraph.printGraph();
 
-    const newNode = new ListNode(data);
-    let current = this.head;
-    let previous: ListNode<T> | null = null;
-    let count = 0;
+console.log("\n--- Recursive DFS from 'A' ---");
+const recursiveTraversal = myGraph.dfsRecursive("A", (node) => console.log(`Visited (recursive): ${node}`));
+console.log("Recursive DFS Traversal Order:", recursiveTraversal.join(" -> "));
 
-    while (count < index) {
-      previous = current;
-      current = current!.next;
-      count++;
-    }
+console.log("\n--- Iterative DFS from 'A' ---");
+const iterativeTraversal = myGraph.dfsIterative("A", (node) => console.log(`Visited (iterative): ${node}`));
+console.log("Iterative DFS Traversal Order:", iterativeTraversal.join(" -> "));
 
-    newNode.next = current;
-    previous!.next = newNode;
-    this.size++;
-  }
+// Example for a disconnected graph component
+myGraph.addNode("G");
+myGraph.addNode("H");
+myGraph.addEdge("G", "H");
 
-  // Remove at specific index
-  removeAt(index: number): T | null {
-    if (index < 0 || index >= this.size || !this.head) {
-      return null;
-    }
+console.log("\n--- Recursive DFS from 'G' (disconnected component) ---");
+const disconnectedTraversal = myGraph.dfsRecursive("G");
+console.log("Disconnected DFS Traversal Order:", disconnectedTraversal.join(" -> "));
 
-    if (index === 0) {
-      const removedData = this.head.data;
-      this.head = this.head.next;
-      if (!this.head) {
-        this.tail = null;
-      }
-      this.size--;
-      return removedData;
-    }
+// Example of what happens if starting node doesn't exist
+console.log("\n--- Recursive DFS from 'Z' (non-existent node) ---");
+myGraph.dfsRecursive("Z");
+Graph Adjacency List:
+A -> B, C
+B -> A, D
+C -> A, E
+D -> B, E, F
+E -> C, D, F
+F -> D, E
+G -> H
+H -> G
 
-    let current = this.head;
-    let previous: ListNode<T> | null = null;
-    let count = 0;
+--- Recursive DFS from 'A' ---
+Visited (recursive): A
+Visited (recursive): B
+Visited (recursive): D
+Visited (recursive): E
+Visited (recursive): C
+Visited (recursive): F
+Recursive DFS Traversal Order: A -> B -> D -> E -> C -> F
 
-    while (count < index && current) {
-      previous = current;
-      current = current.next!;
-      count++;
-    }
+--- Iterative DFS from 'A' ---
+Visited (iterative): A
+Visited (iterative): C
+Visited (iterative): E
+Visited (iterative): F
+Visited (iterative): D
+Visited (iterative): B
+Iterative DFS Traversal Order: A -> C -> E -> F -> D -> B
 
-    if (current) {
-      previous!.next = current.next;
-      
-      // Update tail if we're removing the last element
-      if (!current.next) {
-        this.tail = previous;
-      }
-      
-      this.size--;
-      return current.data;
-    }
+--- Recursive DFS from 'G' (disconnected component) ---
+Disconnected DFS Traversal Order: G -> H
 
-    return null;
-  }
-
-  // Remove by value
-  remove(data: T): boolean {
-    if (!this.head) return false;
-
-    // If head contains the data
-    if (this.head.data === data) {
-      this.head = this.head.next;
-      if (!this.head) {
-        this.tail = null;
-      }
-      this.size--;
-      return true;
-    }
-
-    let current = this.head;
-    let previous: ListNode<T> | null = null;
-
-    while (current && current.data !== data) {
-      previous = current;
-      current = current.next!;
-    }
-
-    if (current && current.data === data) {
-      previous!.next = current.next;
-      
-      // Update tail if we're removing the last element
-      if (!current.next) {
-        this.tail = previous;
-      }
-      
-      this.size--;
-      return true;
-    }
-
-    return false;
-  }
-
-  // Find node by value
-  find(data: T): ListNode<T> | null {
-    let current = this.head;
-    
-    while (current) {
-      if (current.data === data) {
-        return current;
-      }
-      current = current.next;
-    }
-    
-    return null;
-  }
-
-  // Get data at specific index
-  getAt(index: number): T | null {
-    if (index < 0 || index >= this.size || !this.head) {
-      return null;
-    }
-
-    let current = this.head;
-    let count = 0;
-
-    while (count < index && current) {
-      current = current.next!;
-      count++;
-    }
-
-    return current ? current.data : null;
-  }
-
-  // Check if list is empty
-  isEmpty(): boolean {
-    return this.size === 0;
-  }
-
-  // Clear the list
-  clear(): void {
-    this.head = null;
-    this.tail = null;
-    this.size = 0;
-  }
-
-  // Convert to string
-  toString(): string {
-    const elements: T[] = [];
-    let current = this.head;
-    
-    while (current) {
-      elements.push(current.data);
-      current = current.next;
-    }
-    
-    return elements.join(' -> ');
-  }
-
-  // Convert to array
-  toArray(): T[] {
-    const elements: T[] = [];
-    let current = this.head;
-    
-    while (current) {
-      elements.push(current.data);
-      current = current.next;
-    }
-    
-    return elements;
-  }
-
-  // Iterator for easy looping
-  *[Symbol.iterator](): IterableIterator<T> {
-    let current = this.head;
-    while (current) {
-      yield current.data;
-      current = current.next;
-    }
-  }
-}
-// Create and use the linked list
-const list = new LinkedList<number>();
-
-// Basic operations
-list.append(1);
-list.append(2);
-list.append(3);
-list.prepend(0);
-
-console.log(list.toString()); // "0 -> 1 -> 2 -> 3"
-console.log(list.size); // 4
-
-// Insert at position
-list.insertAt(1.5, 2);
-console.log(list.toString()); // "0 -> 1 -> 1.5 -> 2 -> 3"
-
-// Remove operations
-list.removeAt(2); // Remove 1.5
-list.remove(3); // Remove value 3
-console.log(list.toString()); // "0 -> 1 -> 2"
-
-// Find and get
-console.log(list.find(1)); // ListNode { data: 1, next: ListNode { ... } }
-console.log(list.getAt(1)); // 1
-
-// Iteration
-for (const item of list) {
-  console.log(item); // 0, 1, 2
-}
-
-// With custom objects
-interface Person {
-  name: string;
-  age: number;
-}
-
-const peopleList = new LinkedList<Person>();
-peopleList.append({ name: 'Alice', age: 25 });
-peopleList.append({ name: 'Bob', age: 30 });
-
-console.log(peopleList.find({ name: 'Alice', age: 25 })); // Finds the node
-// Doubly Linked List Node
-class DoublyListNode<T> {
-  constructor(
-    public data: T,
-    public next: DoublyListNode<T> | null = null,
-    public prev: DoublyListNode<T> | null = null
-  ) {}
-}
-
-class DoublyLinkedList<T> extends LinkedList<T> {
-  // Override append for doubly linked behavior
-  append(data: T): void {
-    const newNode = new DoublyListNode(data);
-    
-    if (!this.head) {
-      this.head = newNode;
-      this.tail = newNode;
-    } else {
-      newNode.prev = this.tail as DoublyListNode<T>;
-      this.tail!.next = newNode;
-      this.tail = newNode;
-    }
-    
-    this.size++;
-  }
-
-  // Additional methods for reverse traversal
-  toArrayReverse(): T[] {
-    const elements: T[] = [];
-    let current = this.tail as DoublyListNode<T> | null;
-    
-    while (current) {
-      elements.push(current.data);
-      current = current.prev;
-    }
-    
-    return elements;
-  }
-}
+--- Recursive DFS from 'Z' (non-existent node) ---
+Start node 'Z' not found in graph.
