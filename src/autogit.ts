@@ -1,47 +1,49 @@
-/**
- * Returns the maximum possible sum of any contiguous sub-array.
- * Works for arrays that contain negative, zero or positive numbers.
- * If the array is empty it returns 0 (change to -Infinity if you prefer).
- */
-function maxSubArray(nums: number[]): number {
-  if (nums.length === 0) return 0;
-
-  let bestSoFar = nums[0];   // global best
-  let bestEnding = nums[0];  // best sum ending at current index
-
-  for (let i = 1; i < nums.length; i++) {
-    bestEnding = Math.max(nums[i], bestEnding + nums[i]); // extend or restart
-    bestSoFar  = Math.max(bestSoFar, bestEnding);       // update global best
-  }
-  return bestSoFar;
+function calculateMean(numbers: number[]): number {
+    if (numbers.length === 0) return 0;
+    
+    const sum = numbers.reduce((acc, curr) => acc + curr, 0);
+    return sum / numbers.length;
 }
 
-/* ---------- demo ---------- */
-console.log(maxSubArray([-2, 1, -3, 4, -1, 2, 1, -5, 4])); // 6  ([4,-1,2,1])
-console.log(maxSubArray([5, 4, -1, 7, 8]));                 // 23 (whole array)
-function maxSubArrayWithSlice(nums: number[]): { sum: number; slice: number[] } {
-  if (nums.length === 0) return { sum: 0, slice: [] };
-
-  let bestSum = nums[0];
-  let bestStart = 0;
-  let bestEnd   = 0;
-
-  let curSum = nums[0];
-  let curStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    if (curSum < 0) {          // better to start fresh
-      curSum  = nums[i];
-      curStart = i;
-    } else {                   // extend current run
-      curSum += nums[i];
+// Example usage
+const numbers = [1, 2, 3, 4, 5];
+const mean = calculateMean(numbers);
+console.log(mean); // Output: 3
+function calculateMean(numbers: number[]): number {
+    if (numbers.length === 0) return 0;
+    
+    let sum = 0;
+    for (const num of numbers) {
+        sum += num;
     }
-
-    if (curSum > bestSum) {    // found a new global best
-      bestSum = curSum;
-      bestStart = curStart;
-      bestEnd   = i;
-    }
-  }
-  return { sum: bestSum, slice: nums.slice(bestStart, bestEnd + 1) };
+    return sum / numbers.length;
 }
+function calculateMean(numbers: number[]): number {
+    if (numbers.length === 0) return 0;
+    
+    let sum = 0;
+    numbers.forEach(num => sum += num);
+    return sum / numbers.length;
+}
+const calculateMean = (numbers: number[]): number => 
+    numbers.length === 0 ? 0 : numbers.reduce((a, b) => a + b) / numbers.length;
+function calculateMean(numbers: number[]): number {
+    if (!Array.isArray(numbers)) {
+        throw new Error('Input must be an array');
+    }
+    
+    if (numbers.length === 0) return 0;
+    
+    // Filter out non-numeric values if needed
+    const validNumbers = numbers.filter(num => typeof num === 'number' && !isNaN(num));
+    
+    if (validNumbers.length === 0) return 0;
+    
+    return validNumbers.reduce((a, b) => a + b) / validNumbers.length;
+}
+// Test cases
+console.log(calculateMean([1, 2, 3, 4, 5])); // 3
+console.log(calculateMean([10, 20, 30]));    // 20
+console.log(calculateMean([]));              // 0
+console.log(calculateMean([5]));             // 5
+console.log(calculateMean([-1, 0, 1]));      // 0
