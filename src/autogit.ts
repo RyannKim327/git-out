@@ -1,260 +1,102 @@
-interface GraphNode {
-  id: string;
-  neighbors: string[];
-}
-
-interface SearchResult {
-  path: string[];
-  depth: number;
-}
-
-class BreadthLimitedSearch {
-  private graph: Map<string, GraphNode>;
-  
-  constructor(graph: GraphNode[]) {
-    this.graph = new Map();
-    graph.forEach(node => this.graph.set(node.id, node));
-  }
-
-  search(
-    startId: string, 
-    targetId: string, 
-    maxDepth: number
-  ): SearchResult | null {
-    if (!this.graph.has(startId) || !this.graph.has(targetId)) {
-      return null;
-    }
-
-    const queue: { nodeId: string; path: string[]; depth: number }[] = [];
-    const visited = new Set<string>();
+function longestCommonPrefix(strs: string[]): string {
+    if (strs.length === 0) return "";
     
-    queue.push({ nodeId: startId, path: [startId], depth: 0 });
-    visited.add(startId);
-
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      
-      if (current.nodeId === targetId) {
-        return {
-          path: current.path,
-          depth: current.depth
-        };
-      }
-
-      // Stop if we've reached the maximum depth
-      if (current.depth >= maxDepth) {
-        continue;
-      }
-
-      const currentNode = this.graph.get(current.nodeId)!;
-      
-      for (const neighborId of currentNode.neighbors) {
-        if (!visited.has(neighborId)) {
-          visited.add(neighborId);
-          queue.push({
-            nodeId: neighborId,
-            path: [...current.path, neighborId],
-            depth: current.depth + 1
-          });
+    let prefix = strs[0];
+    
+    for (let i = 1; i < strs.length; i++) {
+        while (strs[i].indexOf(prefix) !== 0) {
+            prefix = prefix.substring(0, prefix.length - 1);
+            if (prefix === "") return "";
         }
-      }
     }
-
-    return null;
-  }
-}
-interface AdvancedGraphNode {
-  id: string;
-  neighbors: { id: string; cost?: number }[];
-  heuristic?: number; // For informed search
-}
-
-interface AdvancedSearchResult {
-  path: string[];
-  depth: number;
-  cost: number;
-  nodesVisited: number;
-}
-
-class AdvancedBreadthLimitedSearch {
-  private graph: Map<string, AdvancedGraphNode>;
-  
-  constructor(graph: AdvancedGraphNode[]) {
-    this.graph = new Map();
-    graph.forEach(node => this.graph.set(node.id, node));
-  }
-
-  search(
-    startId: string, 
-    targetId: string, 
-    maxDepth: number,
-    useHeuristic: boolean = false
-  ): AdvancedSearchResult | null {
-    if (!this.graph.has(startId) || !this.graph.has(targetId)) {
-      return null;
-    }
-
-    const queue: {
-      nodeId: string;
-      path: string[];
-      depth: number;
-      cost: number;
-      priority?: number;
-    }[] = [];
     
-    const visited = new Set<string>();
-    let nodesVisited = 0;
-
-    // Initialize with start node
-    queue.push({
-      nodeId: startId,
-      path: [startId],
-      depth: 0,
-      cost: 0,
-      priority: useHeuristic ? this.calculatePriority(startId, targetId, 0) : 0
-    });
-
-    visited.add(startId);
-
-    while (queue.length > 0) {
-      // Sort by priority if using heuristic
-      if (useHeuristic) {
-        queue.sort((a, b) => (a.priority || 0) - (b.priority || 0));
-      }
-      
-      const current = queue.shift()!;
-      nodesVisited++;
-
-      if (current.nodeId === targetId) {
-        return {
-          path: current.path,
-          depth: current.depth,
-          cost: current.cost,
-          nodesVisited
-        };
-      }
-
-      if (current.depth >= maxDepth) {
-        continue;
-      }
-
-      const currentNode = this.graph.get(current.nodeId)!;
-      
-      for (const neighbor of currentNode.neighbors) {
-        if (!visited.has(neighbor.id)) {
-          visited.add(neighbor.id);
-          
-          const newCost = current.cost + (neighbor.cost || 1);
-          const newDepth = current.depth + 1;
-          
-          const newEntry = {
-            nodeId: neighbor.id,
-            path: [...current.path, neighbor.id],
-            depth: newDepth,
-            cost: newCost,
-            priority: useHeuristic 
-              ? this.calculatePriority(neighbor.id, targetId, newCost)
-              : undefined
-          };
-
-          queue.push(newEntry);
-        }
-      }
-    }
-
-    return null;
-  }
-
-  private calculatePriority(
-    nodeId: string, 
-    targetId: string, 
-    currentCost: number
-  ): number {
-    const node = this.graph.get(nodeId)!;
-    const target = this.graph.get(targetId)!;
-    
-    // Simple heuristic: cost + estimated distance to goal
-    const heuristicValue = (target.heuristic || 0) - (node.heuristic || 0);
-    return currentCost + Math.max(0, heuristicValue);
-  }
+    return prefix;
 }
-// Example 1: Basic usage
-const simpleGraph: GraphNode[] = [
-  { id: 'A', neighbors: ['B', 'C'] },
-  { id: 'B', neighbors: ['A', 'D', 'E'] },
-  { id: 'C', neighbors: ['A', 'F'] },
-  { id: 'D', neighbors: ['B'] },
-  { id: 'E', neighbors: ['B', 'F'] },
-  { id: 'F', neighbors: ['C', 'E'] }
-];
 
-const bls = new BreadthLimitedSearch(simpleGraph);
-const result = bls.search('A', 'F', 2);
-console.log(result); // Finds path A->C->F
+// Example usage
+const strings1 = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(strings1)); // "fl"
 
-// Example 2: Advanced usage with cost
-const advancedGraph: AdvancedGraphNode[] = [
-  { id: 'A', neighbors: [{ id: 'B', cost: 2 }, { id: 'C', cost: 1 }], heuristic: 5 },
-  { id: 'B', neighbors: [{ id: 'A', cost: 2 }, { id: 'D', cost: 3 }], heuristic: 3 },
-  { id: 'C', neighbors: [{ id: 'A', cost: 1 }, { id: 'F', cost: 4 }], heuristic: 4 },
-  { id: 'D', neighbors: [{ id: 'B', cost: 3 }], heuristic: 2 },
-  { id: 'F', neighbors: [{ id: 'C', cost: 4 }], heuristic: 1 }
-];
-
-const advancedBls = new AdvancedBreadthLimitedSearch(advancedGraph);
-const advancedResult = advancedBls.search('A', 'F', 3, true);
-console.log(advancedResult); // Finds optimal path considering cost and heuristic
-class OptimizedBreadthLimitedSearch {
-  private graph: Map<string, GraphNode>;
-  
-  constructor(graph: GraphNode[]) {
-    this.graph = new Map();
-    graph.forEach(node => this.graph.set(node.id, node));
-  }
-
-  optimizedSearch(
-    startId: string, 
-    targetId: string, 
-    maxDepth: number
-  ): SearchResult | null {
-    // Use a more efficient data structure for large graphs
-    const queue: { nodeId: string; path: string[]; depth: number }[] = [];
-    const visited = new Map<string, number>(); // Track depth at which nodes were visited
+const strings2 = ["dog", "racecar", "car"];
+console.log(longestCommonPrefix(strings2)); // ""
+function longestCommonPrefixVertical(strs: string[]): string {
+    if (strs.length === 0) return "";
     
-    queue.push({ nodeId: startId, path: [startId], depth: 0 });
-    visited.set(startId, 0);
-
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      
-      if (current.nodeId === targetId) {
-        return {
-          path: current.path,
-          depth: current.depth
-        };
-      }
-
-      if (current.depth >= maxDepth) {
-        continue;
-      }
-
-      const currentNode = this.graph.get(current.nodeId)!;
-      
-      for (const neighborId of currentNode.neighbors) {
-        const existingDepth = visited.get(neighborId);
+    for (let i = 0; i < strs[0].length; i++) {
+        const char = strs[0][i];
         
-        // Only visit if not visited or found at a deeper level
-        if (existingDepth === undefined || existingDepth > current.depth + 1) {
-          visited.set(neighborId, current.depth + 1);
-          queue.push({
-            nodeId: neighborId,
-            path: [...current.path, neighborId],
-            depth: current.depth + 1
-          });
+        for (let j = 1; j < strs.length; j++) {
+            if (i === strs[j].length || strs[j][i] !== char) {
+                return strs[0].substring(0, i);
+            }
         }
-      }
     }
-
-    return null;
-  }
+    
+    return strs[0];
 }
+function longestCommonPrefixDivideConquer(strs: string[]): string {
+    if (strs.length === 0) return "";
+    return divideAndConquer(strs, 0, strs.length - 1);
+}
+
+function divideAndConquer(strs: string[], left: number, right: number): string {
+    if (left === right) {
+        return strs[left];
+    }
+    
+    const mid = Math.floor((left + right) / 2);
+    const leftPrefix = divideAndConquer(strs, left, mid);
+    const rightPrefix = divideAndConquer(strs, mid + 1, right);
+    
+    return commonPrefix(leftPrefix, rightPrefix);
+}
+
+function commonPrefix(str1: string, str2: string): string {
+    const minLength = Math.min(str1.length, str2.length);
+    for (let i = 0; i < minLength; i++) {
+        if (str1[i] !== str2[i]) {
+            return str1.substring(0, i);
+        }
+    }
+    return str1.substring(0, minLength);
+}
+function longestCommonPrefixReduce(strs: string[]): string {
+    if (strs.length === 0) return "";
+    
+    return strs.reduce((prefix, current) => {
+        while (current.indexOf(prefix) !== 0) {
+            prefix = prefix.substring(0, prefix.length - 1);
+            if (prefix === "") return "";
+        }
+        return prefix;
+    }, strs[0]);
+}
+function findLongestCommonPrefix<T extends string>(strings: T[]): string {
+    if (strings.length === 0) return "" as string;
+    if (strings.length === 1) return strings[0];
+    
+    strings.sort((a, b) => a.length - b.length);
+    const shortest = strings[0];
+    
+    for (let i = 0; i < shortest.length; i++) {
+        const char = shortest[i];
+        
+        for (let j = 1; j < strings.length; j++) {
+            if (strings[j][i] !== char) {
+                return shortest.substring(0, i);
+            }
+        }
+    }
+    
+    return shortest;
+}
+
+// Example with type safety
+const words = ["typescript", "type", "typical"] as const;
+const prefix = findLongestCommonPrefix(words); // Type: "typ"
+// Test cases
+console.log(longestCommonPrefix(["flower", "flow", "flight"])); // "fl"
+console.log(longestCommonPrefix(["dog", "racecar", "car"]));    // ""
+console.log(longestCommonPrefix(["interspecies", "interstellar", "interstate"])); // "inters"
+console.log(longestCommonPrefix([""]));                         // ""
+console.log(longestCommonPrefix(["a"]));                        // "a"
