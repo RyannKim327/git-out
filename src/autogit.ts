@@ -1,112 +1,74 @@
-class TreeNode {
-    val: number;
-    left: TreeNode | null;
-    right: TreeNode | null;
+/**
+ * Build the "longest proper prefix which is also suffix" (LPS) table.
+ * Time  : O(pattern.length)
+ * Memory: O(pattern.length)
+ */
+function buildLpsTable(pattern: string): number[] {
+  const m = pattern.length;
+  const lps = new Array<number>(m).fill(0);
+  let len = 0;          // length of the current longest prefix suffix
+  let i = 1;
 
-    constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
-        this.val = val;
-        this.left = left;
-        this.right = right;
+  while (i < m) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else if (len !== 0) {
+      len = lps[len - 1]; // fallback in the LPS table
+    } else {
+      lps[i] = 0;
+      i++;
     }
+  }
+  return lps;
 }
 
-function sumOfNodes(root: TreeNode | null): number {
-    if (root === null) {
-        return 0;
+/**
+ * KMP search.
+ * Returns the index of the first occurrence of `pattern` in `text`,
+ * or -1 if not found.
+ *
+ * Time  : O(text.length + pattern.length)
+ * Memory: O(pattern.length)  (for the LPS table)
+ */
+export function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;          // empty pattern is always at 0
+  if (pattern.length > text.length) return -1;
+
+  const lps = buildLpsTable(pattern);
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) return i - j;    // full match
+    } else if (j !== 0) {
+      j = lps[j - 1];                          // fallback in pattern
+    } else {
+      i++;                                     // advance text pointer
     }
-    return root.val + sumOfNodes(root.left) + sumOfNodes(root.right);
-}
-class BinaryTreeNode<T extends number> {
-    value: T;
-    left: BinaryTreeNode<T> | null;
-    right: BinaryTreeNode<T> | null;
-
-    constructor(value: T, left: BinaryTreeNode<T> | null = null, right: BinaryTreeNode<T> | null = null) {
-        this.value = value;
-        this.left = left;
-        this.right = right;
-    }
+  }
+  return -1;                                   // no match
 }
 
-function sumBinaryTree<T extends number>(root: BinaryTreeNode<T> | null): number {
-    if (root === null) {
-        return 0;
-    }
-    return Number(root.value) + sumBinaryTree(root.left) + sumBinaryTree(root.right);
-}
-function sumOfNodesIterative(root: TreeNode | null): number {
-    if (root === null) return 0;
-    
-    let sum = 0;
-    const queue: TreeNode[] = [root];
-    
-    while (queue.length > 0) {
-        const node = queue.shift()!;
-        sum += node.val;
-        
-        if (node.left !== null) {
-            queue.push(node.left);
-        }
-        if (node.right !== null) {
-            queue.push(node.right);
-        }
-    }
-    
-    return sum;
-}
-function sumOfNodesDFS(root: TreeNode | null): number {
-    if (root === null) return 0;
-    
-    let sum = 0;
-    const stack: TreeNode[] = [root];
-    
-    while (stack.length > 0) {
-        const node = stack.pop()!;
-        sum += node.val;
-        
-        if (node.right !== null) {
-            stack.push(node.right);
-        }
-        if (node.left !== null) {
-            stack.push(node.left);
-        }
-    }
-    
-    return sum;
-}
-class TreeNode {
-    constructor(
-        public val: number,
-        public left: TreeNode | null = null,
-        public right: TreeNode | null = null
-    ) {}
-}
+/* ---------- Usage demo ---------- */
+if (import.meta.vitest) {
+  const { describe, expect, it } = import.meta.vitest;
 
-// Recursive solution
-function sumOfAllNodes(root: TreeNode | null): number {
-    if (root === null) return 0;
-    return root.val + sumOfAllNodes(root.left) + sumOfAllNodes(root.right);
+  describe('KMP', () => {
+    it('finds substring', () => {
+      expect(kmpSearch('ababcababa', 'ababa')).toBe(5);
+      expect(kmpSearch('hello world', 'world')).toBe(6);
+      expect(kmpSearch('aaaa', 'aa')).toBe(0);
+      expect(kmpSearch('abc', 'd')).toBe(-1);
+      expect(kmpSearch('abc', '')).toBe(0);
+    });
+  });
 }
+import { kmpSearch } from './kmp';
 
-// Example usage:
-function createSampleTree(): TreeNode {
-    /*
-        Tree structure:
-              1
-            /   \
-           2     3
-          / \   /
-         4   5 6
-    */
-    const root = new TreeNode(1);
-    root.left = new TreeNode(2);
-    root.right = new TreeNode(3);
-    root.left.left = new TreeNode(4);
-    root.left.right = new TreeNode(5);
-    root.right.left = new TreeNode(6);
-    return root;
-}
-
-// Test the implementation
-const tree = createSampleTree();
-console.log("Sum of all nodes:", sumOfAllNodes(tree)); // Output: 21 (1+2+3+4+5+6)
+const idx = kmpSearch('the quick brown fox', 'brown');
+console.log(idx); // 10
