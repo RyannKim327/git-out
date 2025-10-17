@@ -1,35 +1,43 @@
-function insertionSort(arr: number[]): number[] {
-    for (let i = 1; i < arr.length; i++) {
-        let current = arr[i];
-        let j = i - 1;
+type Graph = Record<string, string[]>;
 
-        // Shift elements of arr[0..i-1] that are greater than `current`
-        while (j >= 0 && arr[j] > current) {
-            arr[j + 1] = arr[j];
-            j--;
+function depthLimitedSearchIterative(
+    graph: Graph,
+    start: string,
+    target: string,
+    limit: number
+): boolean {
+    // Stack holds [node, depth]
+    const stack: [string, number][] = [[start, 0]];
+    const visited = new Set<string>();
+
+    while (stack.length > 0) {
+        const [node, depth] = stack.pop()!;
+
+        if (node === target) {
+            return true; // Found target
         }
-        arr[j + 1] = current;
-    }
-    return arr;
-}
 
-// Example usage:
-const nums = [5, 2, 9, 1, 5, 6];
-console.log(insertionSort(nums)); // [1, 2, 5, 5, 6, 9]
-function insertionSortGeneric<T>(arr: T[], compare: (a: T, b: T) => number): T[] {
-    for (let i = 1; i < arr.length; i++) {
-        const current = arr[i];
-        let j = i - 1;
+        if (depth < limit && !visited.has(node)) {
+            visited.add(node);
+            const neighbors = graph[node] || [];
 
-        while (j >= 0 && compare(arr[j], current) > 0) {
-            arr[j + 1] = arr[j];
-            j--;
+            for (const neighbor of neighbors) {
+                stack.push([neighbor, depth + 1]);
+            }
         }
-        arr[j + 1] = current;
     }
-    return arr;
-}
 
-// Example:
-const words = ["banana", "apple", "cherry"];
-console.log(insertionSortGeneric(words, (a, b) => a.localeCompare(b)));
+    return false; // Not found within depth limit
+}
+const graph: Graph = {
+    A: ["B", "C"],
+    B: ["D", "E"],
+    C: ["F"],
+    D: [],
+    E: ["G"],
+    F: [],
+    G: []
+};
+
+console.log(depthLimitedSearchIterative(graph, "A", "G", 2)); // false
+console.log(depthLimitedSearchIterative(graph, "A", "G", 3)); // true
