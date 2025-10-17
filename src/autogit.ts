@@ -1,42 +1,64 @@
-function factorial(n: number): number {
-    // Validate input
-    if (n < 0 || !Number.isInteger(n)) {
-        throw new Error("Input must be a non-negative integer");
+type State = {
+  value: string; // or any structure
+  score: number; // higher is better in this example
+};
+
+function beamSearch(
+  initialStates: State[],
+  expand: (state: State) => State[],
+  beamWidth: number,
+  maxSteps: number
+): State {
+  let beam: State[] = initialStates;
+
+  for (let step = 0; step < maxSteps; step++) {
+    // Expand all states in the current beam
+    const candidates: State[] = [];
+    for (const state of beam) {
+      candidates.push(...expand(state));
     }
-    
-    let result = 1;
-    for (let i = 2; i <= n; i++) {
-        result *= i;
+
+    // Sort candidates by score (descending) and keep top beamWidth
+    candidates.sort((a, b) => b.score - a.score);
+    beam = candidates.slice(0, beamWidth);
+
+    // Optionally: Check termination condition
+    // For example, if top candidate has some perfect score
+    if (beam[0].score === 1) {
+      break;
     }
-    return result;
+  }
+
+  // Return the best state found
+  return beam[0];
+}
+const target = "hello";
+
+function scoreWord(word: string): number {
+  let score = 0;
+  for (let i = 0; i < Math.min(word.length, target.length); i++) {
+    if (word[i] === target[i]) score++;
+  }
+  return score / target.length; // normalized 0–1
 }
 
-// Example usage
-console.log(factorial(5));   // 120
-console.log(factorial(0));   // 1
-console.log(factorial(1));   // 1
-function factorialRecursive(n: number): number {
-    if (n < 0 || !Number.isInteger(n)) {
-        throw new Error("Input must be a non-negative integer");
-    }
+function expandState(state: State): State[] {
+  const letters = "abcdefghijklmnopqrstuvwxyz";
+  const nextStates: State[] = [];
 
-    if (n === 0 || n === 1) {
-        return 1;
-    }
-    return n * factorialRecursive(n - 1);
+  // Append one letter at a time
+  for (const l of letters) {
+    const newValue = state.value + l;
+    nextStates.push({
+      value: newValue,
+      score: scoreWord(newValue)
+    });
+  }
+
+  return nextStates;
 }
 
-// Example usage
-console.log(factorialRecursive(5));   // 120
-function factorialBigInt(n: bigint): bigint {
-    if (n < 0n) throw new Error("Negative numbers not allowed");
-    
-    let result = 1n;
-    for (let i = 2n; i <= n; i++) {
-        result *= i;
-    }
-    return result;
-}
+const initial = [{ value: "", score: 0 }];
 
-// Usage
-console.log(factorialBigInt(170n).toString());  // 725741561530798...
+const best = beamSearch(initial, expandState, 3, 5);
+console.log("Best guess:", best);
