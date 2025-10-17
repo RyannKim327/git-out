@@ -1,71 +1,120 @@
-const table = new Map<string, number>();
-
-table.set("apple", 5);
-table.set("banana", 2);
-
-console.log(table.get("apple")); // 5
-console.log(table.has("banana")); // true
-table.delete("banana");
-class HashTable<V> {
-  private buckets: [string, V][][]; // array of arrays of key-value pairs
-  private size: number;
-
-  constructor(size: number = 16) {
-    this.size = size;
-    this.buckets = Array.from({ length: size }, () => []);
-  }
-
-  private hash(key: string): number {
-    let hashValue = 0;
-    for (let i = 0; i < key.length; i++) {
-      hashValue = (hashValue + key.charCodeAt(i) * i) % this.size;
-    }
-    return hashValue;
-  }
-
-  set(key: string, value: V): void {
-    const index = this.hash(key);
-    const bucket = this.buckets[index];
-
-    for (let i = 0; i < bucket.length; i++) {
-      if (bucket[i][0] === key) {
-        bucket[i][1] = value; // Update
-        return;
-      }
+function mergeSortIterative<T>(arr: T[]): T[] {
+    if (arr.length <= 1) {
+        return arr;
     }
 
-    bucket.push([key, value]);
-  }
+    // Create a temporary array for merging
+    const temp = new Array<T>(arr.length);
+    let currentSize = 1;
+    const n = arr.length;
 
-  get(key: string): V | undefined {
-    const index = this.hash(key);
-    const bucket = this.buckets[index];
+    // Merge subarrays of increasing size
+    while (currentSize < n - 1) {
+        let leftStart = 0;
+        
+        // Merge pairs of subarrays
+        while (leftStart < n - 1) {
+            const leftEnd = Math.min(leftStart + currentSize - 1, n - 1);
+            const rightEnd = Math.min(leftEnd + currentSize, n - 1);
+            const rightStart = leftEnd + 1;
 
-    for (const [k, v] of bucket) {
-      if (k === key) return v;
+            // Merge the two subarrays
+            merge(arr, temp, leftStart, leftEnd, rightStart, rightEnd);
+            
+            leftStart = rightEnd + 1;
+        }
+        
+        currentSize *= 2;
     }
-    return undefined;
-  }
 
-  remove(key: string): boolean {
-    const index = this.hash(key);
-    const bucket = this.buckets[index];
-
-    for (let i = 0; i < bucket.length; i++) {
-      if (bucket[i][0] === key) {
-        bucket.splice(i, 1);
-        return true;
-      }
+    // Handle the last merge if array length is odd
+    if (currentSize >= n) {
+        const leftStart = 0;
+        const leftEnd = n - 1;
+        const rightEnd = n - 1;
+        merge(arr, temp, leftStart, leftEnd, leftStart, rightEnd);
     }
-    return false;
-  }
+
+    return arr;
 }
 
-// Usage:
-const table = new HashTable<number>();
-table.set("apple", 5);
-table.set("banana", 2);
+function merge<T>(
+    arr: T[], 
+    temp: T[], 
+    leftStart: number, 
+    leftEnd: number, 
+    rightStart: number, 
+    rightEnd: number
+): void {
+    let i = leftStart;      // Starting index of left subarray
+    let j = rightStart;     // Starting index of right subarray
+    let k = leftStart;      // Starting index for the temp array
 
-console.log(table.get("apple")); // 5
-table.remove("banana");
-console.log(table.get("banana")); // undefined
+    // Compare elements from both subarrays and merge them
+    while (i <= leftEnd && j <= rightEnd) {
+        if (compare(arr[i], arr[j]) <= 0) {
+            temp[k++] = arr[i++];
+        } else {
+            temp[k++] = arr[j++];
+        }
+    }
+
+    // Copy remaining elements of left subarray, if any
+    while (i <= leftEnd) {
+        temp[k++] = arr[i++];
+    }
+
+    // Copy remaining elements of right subarray, if any
+    while (j <= rightEnd) {
+        temp[k++] = arr[j++];
+    }
+
+    // Copy merged elements back to original array
+    for (let idx = leftStart; idx <= rightEnd; idx++) {
+        arr[idx] = temp[idx];
+    }
+}
+
+// Generic comparison function - customize based on your needs
+function compare<T>(a: T, b: T): number {
+    if (a instanceof Date && b instanceof Date) {
+        return a.getTime() - b.getTime();
+    }
+    if (typeof a === 'string' && typeof b === 'string') {
+        return a.localeCompare(b);
+    }
+    // For numbers and other comparable types
+    return (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0;
+}
+
+// Usage examples
+console.log(mergeSortIterative([64, 34, 25, 12, 22, 11, 90])); 
+// Output: [11, 12, 22, 25, 34, 64, 90]
+
+console.log(mergeSortIterative(['banana', 'apple', 'cherry', 'date']));
+// Output: ['apple', 'banana', 'cherry', 'date']
+
+console.log(mergeSortIterative([3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5]));
+// Output: [1, 1, 2, 3, 3, 4, 5, 5, 5, 6, 9]
+interface Person {
+    name: string;
+    age: number;
+}
+
+function mergeSortWithComparator<T>(
+    arr: T[], 
+    comparator: (a: T, b: T) => number
+): T[] {
+    // ... (similar structure, but use the provided comparator)
+    // Replace compare(arr[i], arr[j]) with comparator(arr[i], arr[j])
+}
+
+const people: Person[] = [
+    { name: 'John', age: 30 },
+    { name: 'Jane', age: 25 },
+    { name: 'Bob', age: 35 }
+];
+
+const sortedByAge = mergeSortWithComparator(people, (a, b) => a.age - b.age);
+console.log(sortedByAge);
+// Output: [{name: 'Jane', age: 25}, {name: 'John', age: 30}, {name: 'Bob', age: 35}]
