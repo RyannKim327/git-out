@@ -1,147 +1,172 @@
-function largestPrimeFactor(n: number): number {
-    if (n <= 1) return 0;
+/**
+ * Boyer-Moore string searching algorithm implementation
+ * Finds the first occurrence of pattern in text
+ * 
+ * @param text - The text to search in
+ * @param pattern - The pattern to search for
+ * @returns Index of the first occurrence of pattern in text, or -1 if not found
+ */
+function boyerMooreSearch(text: string, pattern: string): number {
+    const n = text.length;
+    const m = pattern.length;
     
-    let largestPrime = -1;
-    let num = n;
+    // Base cases
+    if (m === 0) return 0;
+    if (n < m) return -1;
     
-    // Handle factor 2
-    while (num % 2 === 0) {
-        largestPrime = 2;
-        num /= 2;
-    }
+    // Precompute bad character heuristic table
+    const badCharTable = buildBadCharTable(pattern);
     
-    // Handle odd factors
-    let factor = 3;
-    while (factor * factor <= num) {
-        while (num % factor === 0) {
-            largestPrime = factor;
-            num /= factor;
-        }
-        factor += 2;
-    }
+    // Precompute good suffix heuristic table
+    const goodSuffixTable = buildGoodSuffixTable(pattern);
     
-    // If the remaining number is prime and greater than 2
-    if (num > 2) {
-        largestPrime = num;
-    }
+    let i = 0; // Position in text
     
-    return largestPrime;
-}
-
-// Examples
-console.log(largestPrimeFactor(13195));    // Output: 29
-console.log(largestPrimeFactor(600851475143)); // Output: 6857
-function largestPrimeFactorRecursive(n: number): number {
-    if (n <= 1) return 0;
-    
-    for (let i = 2; i * i <= n; i++) {
-        if (n % i === 0) {
-            return largestPrimeFactorRecursive(n / i);
-        }
-    }
-    
-    return n;
-}
-
-// Examples
-console.log(largestPrimeFactorRecursive(13195));    // Output: 29
-console.log(largestPrimeFactorRecursive(600851475143)); // Output: 6857
-function getPrimeFactors(n: number): number[] {
-    const factors: number[] = [];
-    let num = n;
-    
-    // Factor out 2s
-    while (num % 2 === 0) {
-        factors.push(2);
-        num /= 2;
-    }
-    
-    // Factor out odd numbers
-    for (let i = 3; i * i <= num; i += 2) {
-        while (num % i === 0) {
-            factors.push(i);
-            num /= i;
-        }
-    }
-    
-    // If remaining number is prime
-    if (num > 2) {
-        factors.push(num);
-    }
-    
-    return factors;
-}
-
-function largestPrimeFactorFromFactors(n: number): number {
-    const factors = getPrimeFactors(n);
-    return Math.max(...factors);
-}
-
-// Examples
-console.log(largestPrimeFactorFromFactors(13195));    // Output: 29
-console.log(getPrimeFactors(13195)); // Output: [5, 7, 13, 29]
-class PrimeFactorizer {
-    static isPrime(num: number): boolean {
-        if (num <= 1) return false;
-        if (num <= 3) return true;
-        if (num % 2 === 0 || num % 3 === 0) return false;
+    while (i <= n - m) {
+        let j = m - 1; // Position in pattern
         
-        for (let i = 5; i * i <= num; i += 6) {
-            if (num % i === 0 || num % (i + 2) === 0) return false;
+        // Compare characters from right to left
+        while (j >= 0 && pattern[j] === text[i + j]) {
+            j--;
         }
-        return true;
+        
+        if (j < 0) {
+            // Pattern found
+            return i;
+        }
+        
+        // Calculate shift using both heuristics
+        const badCharShift = j - badCharTable[text[i + j]];
+        const goodSuffixShift = goodSuffixTable[j];
+        const shift = Math.max(1, Math.max(badCharShift, goodSuffixShift));
+        
+        i += shift;
     }
     
-    static largestPrimeFactor(n: number): number {
-        if (n <= 1) return 0;
-        
-        let largestPrime = -1;
-        let num = n;
-        
-        // Handle factors
-        let divisor = 2;
-        while (divisor * divisor <= num) {
-            if (num % divisor === 0) {
-                if (PrimeFactorizer.isPrime(divisor)) {
-                    largestPrime = divisor;
-                }
-                num /= divisor;
+    return -1;
+}
+
+/**
+ * Builds the bad character heuristic table
+ * For each character, stores the rightmost position it appears in the pattern
+ * @param pattern - The pattern to build table for
+ * @returns Lookup table where table[c] = rightmost index of c in pattern, or -1 if not present
+ */
+function buildBadCharTable(pattern: string): { [char: string]: number } {
+    const table: { [char: string]: number } = {};
+    const m = pattern.length;
+    
+    // Initialize all characters to -1
+    for (let i = 0; i < m; i++) {
+        table[pattern[i]] = i;
+    }
+    
+    // For characters not in pattern, they remain undefined (treated as -1)
+    
+    return table;
+}
+
+/**
+ * Builds the good suffix heuristic table
+ * For each position j in pattern, stores how much to shift when pattern[j] doesn't match
+ * @param pattern - The pattern to build table for
+ * @returns Array where table[j] = shift amount for position j
+ */
+function buildGoodSuffixTable(pattern: string): number[] {
+    const m = pattern.length;
+    const table = new Array(m).fill(0);
+    const suffixTable = computeSuffixTable(pattern);
+    
+    let j = 0;
+    let k = 0;
+    
+    // First pass: fill table from the end
+    for (let i = m - 1; i >= 0; i--) {
+        if (i > m - 1 - suffixTable[i]) {
+            table[j] = i - suffixTable[i];
+            j++;
+        }
+    }
+    
+    // Second pass: fill remaining entries
+    for (let i = 0; i < m; i++) {
+        if (table[i] === 0) {
+            table[i] = m;
+        }
+    }
+    
+    return table;
+}
+
+/**
+ * Helper function to compute suffix table for good suffix heuristic
+ * @param pattern - The pattern to compute suffixes for
+ * @returns Suffix table where suffixTable[i] = length of longest proper suffix starting at i
+ */
+function computeSuffixTable(pattern: string): number[] {
+    const m = pattern.length;
+    const suffixTable = new Array(m).fill(0);
+    let k = 0;
+    
+    for (let i = 1; i < m; i++) {
+        if (pattern[i] === pattern[k]) {
+            k++;
+            suffixTable[i] = k;
+        } else {
+            if (k !== 0) {
+                k = suffixTable[k - 1];
+                i--; // Recompare with the new k
             } else {
-                divisor++;
+                suffixTable[i] = 0;
             }
         }
-        
-        // Check if the remaining number is prime
-        if (num > 1 && PrimeFactorizer.isPrime(num)) {
-            largestPrime = num > largestPrime ? num : largestPrime;
-        }
-        
-        return largestPrime;
     }
+    
+    return suffixTable;
 }
 
-// Examples
-console.log(PrimeFactorizer.largestPrimeFactor(13195));    // Output: 29
-console.log(PrimeFactorizer.largestPrimeFactor(600851475143)); // Output: 6857
-function benchmark(func: (n: number) => number, n: number, iterations: number = 1000): number {
+// Example usage and test function
+function testBoyerMoore(): void {
+    const testCases: [string, string, number][] = [
+        ["hello world", "world", 6],
+        ["lorem ipsum dolor sit amet", "sit", 18],
+        ["abcabcabc", "abc", 0],
+        ["abcabcabc", "bcd", -1],
+        ["aaaaaa", "aaa", 0],
+        ["abcde", "abcde", 0],
+        ["abcde", "fghij", -1],
+        ["mississippi", "issip", 4],
+    ];
+    
+    console.log("Boyer-Moore Algorithm Tests:");
+    console.log("=".repeat(40));
+    
+    for (const [text, pattern, expected] of testCases) {
+        const result = boyerMooreSearch(text, pattern);
+        const status = result === expected ? "✓ PASS" : "✗ FAIL";
+        console.log(`Text: "${text}" | Pattern: "${pattern}" | Expected: ${expected} | Got: ${result} | ${status}`);
+    }
+    
+    // Performance test
+    const longText = "a".repeat(1000000) + "b";
+    const pattern = "a".repeat(1000) + "b";
+    console.log("\nPerformance test (large input):");
     const start = performance.now();
-    for (let i = 0; i < iterations; i++) {
-        func(n);
-    }
+    const result = boyerMooreSearch(longText, pattern);
     const end = performance.now();
-    return end - start;
+    console.log(`Found at index ${result} in ${(end - start).toFixed(2)}ms`);
 }
 
-// Performance test
-const testNumber = 600851475143;
-console.log("Performance test (1000 iterations):");
-console.log(`Iterative: ${benchmark(largestPrimeFactor, testNumber)}ms`);
-console.log(`Recursive: ${benchmark(largestPrimeFactorRecursive, testNumber)}ms`);
-// Test with various numbers
-const testCases = [
-    10, 17, 100, 13195, 600851475143, 123456789
-];
+// Run tests
+testBoyerMoore();
+// Simple usage
+const text = "This is a test string with some test content";
+const pattern = "test";
+const position = boyerMooreSearch(text, pattern);
+console.log(`Pattern found at index: ${position}`); // Output: 8
 
-testCases.forEach(num => {
-    console.log(`Largest prime factor of ${num}: ${largestPrimeFactor(num)}`);
-});
+// With error handling
+function safeSearch(text: string, pattern: string): number {
+    if (!text || !pattern) return -1;
+    return boyerMooreSearch(text, pattern);
+}
