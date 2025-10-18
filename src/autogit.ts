@@ -1,47 +1,123 @@
-/**
- * Boyer-Moore-Horspool string search.
- * @param text  The text to be searched.
- * @param pat   The pattern to look for.
- * @returns The zero-based index of the first match, or -1 if not found.
- */
-export function horspool(text: string, pat: string): number {
-  if (pat.length === 0) return 0;                    // empty pattern matches at start
-  if (pat.length > text.length) return -1;         // impossible to match
-
-  /* ---------- 1. Build bad-character skip table ---------- */
-  const skip: number[] = new Array(256).fill(pat.length); // 256 ASCII for speed
-  for (let i = 0; i < pat.length - 1; ++i) {
-    skip[pat.charCodeAt(i)] = pat.length - 1 - i;
-  }
-
-  /* ---------- 2. Search ---------- */
-  let pos = 0;                                       // start of current window
-  const last = pat.length - 1;
-
-  while (pos + last < text.length) {
-    let i = last;                                    // compare from right
-    while (text[pos + i] === pat[i]) {
-      if (i === 0) return pos;                       // full match
-      --i;
+function shellSort<T>(array: T[]): T[] {
+  const n = array.length;
+  let gap = Math.floor(n / 2);
+  
+  while (gap > 0) {
+    for (let i = gap; i < n; i++) {
+      const temp = array[i];
+      let j = i;
+      
+      // Shift elements until correct position is found
+      while (j >= gap && array[j - gap] > temp) {
+        array[j] = array[j - gap];
+        j -= gap;
+      }
+      
+      array[j] = temp;
     }
-    pos += skip[text.charCodeAt(pos + last)];        // shift window
+    
+    gap = Math.floor(gap / 2);
   }
-  return -1;                                         // no match
+  
+  return array;
+}
+function shellSort<T>(
+  array: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  }
+): T[] {
+  const n = array.length;
+  let gap = Math.floor(n / 2);
+  
+  while (gap > 0) {
+    for (let i = gap; i < n; i++) {
+      const temp = array[i];
+      let j = i;
+      
+      while (j >= gap && compareFn(array[j - gap], temp) > 0) {
+        array[j] = array[j - gap];
+        j -= gap;
+      }
+      
+      array[j] = temp;
+    }
+    
+    gap = Math.floor(gap / 2);
+  }
+  
+  return array;
+}
+// Example 1: Sorting numbers
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log('Sorted numbers:', shellSort(numbers));
+
+// Example 2: Sorting strings
+const strings = ['banana', 'apple', 'cherry', 'date'];
+console.log('Sorted strings:', shellSort(strings));
+
+// Example 3: Custom comparator for objects
+interface Person {
+  name: string;
+  age: number;
 }
 
-/* ---------- 3. Quick demo ---------- */
-if (import.meta.url.endsWith(process.argv[1])) {
-  const txt = "abracadabra";
-  const pat = "cad";
-  console.log(`"${pat}" found in "${txt}" at index`, horspool(txt, pat)); // → 4
-}
-function* horspoolAll(text: string, pat: string): Generator<number> {
-  if (!pat) { yield 0; return; }
-  let from = 0;
-  while (from <= text.length - pat.length) {
-    const idx = horspool(text.slice(from), pat);
-    if (idx < 0) break;
-    yield from + idx;
-    from += idx + 1;          // allow overlapping matches
+const people: Person[] = [
+  { name: 'John', age: 30 },
+  { name: 'Alice', age: 25 },
+  { name: 'Bob', age: 35 }
+];
+
+const sortedByAge = shellSort(people, (a, b) => a.age - b.age);
+console.log('Sorted by age:', sortedByAge);
+function shellSortWithCustomGap<T>(array: T[]): T[] {
+  const n = array.length;
+  
+  // Using Knuth's sequence: 1, 4, 13, 40, 121, ...
+  let gap = 1;
+  while (gap < n / 3) {
+    gap = 3 * gap + 1;
   }
+  
+  while (gap > 0) {
+    for (let i = gap; i < n; i++) {
+      const temp = array[i];
+      let j = i;
+      
+      while (j >= gap && array[j - gap] > temp) {
+        array[j] = array[j - gap];
+        j -= gap;
+      }
+      
+      array[j] = temp;
+    }
+    
+    gap = Math.floor((gap - 1) / 3);
+  }
+  
+  return array;
 }
+// Shell sort has time complexity between O(n log n) and O(n²)
+// depending on the gap sequence used
+
+// Space complexity: O(1) - it's an in-place sorting algorithm
+function testShellSort(): void {
+  // Test with various inputs
+  const testCases = [
+    [5, 2, 8, 1, 9],
+    [1],
+    [],
+    [3, 3, 3],
+    [9, 8, 7, 6, 5, 4, 3, 2, 1]
+  ];
+  
+  testCases.forEach((testCase, index) => {
+    const sorted = shellSort([...testCase]);
+    console.log(`Test ${index + 1}:`, sorted);
+  });
+}
+
+// Run tests
+testShellSort();
