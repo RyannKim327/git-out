@@ -1,63 +1,30 @@
-function longestCommonPrefix(strs: string[]): string {
-    if (strs.length === 0) {
-        return "";
+/**
+ * BogoSort (a.k.a. permutation sort, stupid sort, or slow sort)
+ * Keeps shuffling the array until it happens to be sorted.
+ * Worst-case: unbounded (infinite) — expected O((n-1)!·n)
+ * Only for educational purposes … or for driving colleagues insane.
+ */
+export function bogoSort<T>(arr: T[]): T[] {
+  const isSorted = (a: T[]): boolean => {
+    for (let i = 1; i < a.length; i++) if (a[i - 1] > a[i]) return false;
+    return true;
+  };
+
+  const shuffle = (a: T[]): void => {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
     }
-    
-    if (strs.length === 1) {
-        return strs[0];
-    }
-    
-    // Start with the first string as the prefix
-    let prefix = strs[0];
-    
-    // Compare with each subsequent string
-    for (let i = 1; i < strs.length; i++) {
-        let currentStr = strs[i];
-        
-        // Find the common prefix between current prefix and current string
-        while (prefix !== "" && !currentStr.startsWith(prefix)) {
-            // Shorten the prefix by one character and try again
-            prefix = prefix.substring(0, prefix.length - 1);
-        }
-        
-        // If prefix is empty, no common prefix exists
-        if (prefix === "") {
-            return "";
-        }
-    }
-    
-    return prefix;
+  };
+
+  const copy = [...arr];
+  while (!isSorted(copy)) shuffle(copy);
+  return copy;
 }
-// Example usage
-const strings1 = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(strings1)); // Output: "fl"
 
-const strings2 = ["dog", "racecar", "car"];
-console.log(longestCommonPrefix(strings2)); // Output: ""
-
-const strings3 = ["interspecies", "interstellar", "interstate"];
-console.log(longestCommonPrefix(strings3)); // Output: "inters"
-
-const strings4 = ["apple", "apple", "apple"];
-console.log(longestCommonPrefix(strings4)); // Output: "apple"
-
-const emptyArray: string[] = [];
-console.log(longestCommonPrefix(emptyArray)); // Output: ""
-function longestCommonPrefixV2(strs: string[]): string {
-    if (strs.length === 0) return "";
-    
-    const minLength = Math.min(...strs.map(s => s.length));
-    
-    for (let i = 0; i < minLength; i++) {
-        const char = strs[0][i];
-        
-        // Check if all strings have the same character at position i
-        for (let j = 1; j < strs.length; j++) {
-            if (strs[j][i] !== char) {
-                return strs[0].substring(0, i);
-            }
-        }
-    }
-    
-    return strs[0].substring(0, minLength);
+/* quick sanity check */
+if (require.main === module) {
+  const data = Array.from({ length: 6 }, () => Math.floor(Math.random() * 100));
+  console.log('before :', data);
+  console.log('after  :', bogoSort(data));
 }
