@@ -1,280 +1,305 @@
-// node.ts
-class Node {
-    // Maps the first character of an edge label to its child node
-    children: Map<string, Node>;
-    // The start index in the main text of the edge label leading to this node
-    start: number;
-    // The end index in the main text of the edge label leading to this node
-    end: number;
-    // For leaf nodes: the starting index of the suffix this leaf represents in the original text.
-    // For internal nodes: null.
-    suffixIndex: number | null;
+class TreeNode<T> {
+    value: T;
+    left: TreeNode<T> | null;
+    right: TreeNode<T> | null;
 
-    constructor(start: number, end: number, suffixIndex: number | null = null) {
-        this.children = new Map();
-        this.start = start;
-        this.end = end;
-        this.suffixIndex = suffixIndex;
-    }
-
-    // Helper to get the actual string represented by the edge leading to this node
-    // (Requires access to the full text)
-    getEdgeString(text: string): string {
-        return text.substring(this.start, this.end + 1);
-    }
-
-    isLeaf(): boolean {
-        return this.children.size === 0;
-    }
-
-    // Helper to get the length of the string represented by the edge
-    getEdgeLength(): number {
-        return this.end - this.start + 1;
+    constructor(value: T) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
     }
 }
 
-export default Node;
-// suffixTree.ts
-import Node from './node';
+class BinarySearchTree<T> {
+    root: TreeNode<T> | null;
 
-class SuffixTree {
-    private text: string; // The original text + unique terminator
-    root: Node;
-
-    constructor(originalText: string) {
-        // Append a unique terminator to ensure all suffixes end at leaves
-        // and no suffix is a prefix of another.
-        this.text = originalText + '$';
-        // The root node conceptually represents an empty string.
-        // Its start/end indices are arbitrary, as it doesn't have an incoming edge label.
-        this.root = new Node(0, -1, null);
-
-        // Insert each suffix into the tree
-        for (let i = 0; i < this.text.length; i++) {
-            this.insertSuffix(i);
-        }
+    constructor() {
+        this.root = null;
     }
 
-    /**
-     * Inserts a suffix (starting at `suffixStartIndex`) into the suffix tree.
-     * This method iteratively traverses the tree, splitting edges as needed
-     * to insert the new suffix.
-     * @param suffixStartIndex The starting index of the suffix in the full text.
-     */
-    private insertSuffix(suffixStartIndex: number) {
-        let currentNode: Node = this.root;
-        let currentTextPosInSuffix = suffixStartIndex; // Pointer into `this.text` for the *current suffix being inserted*
+    // Insert a value into the BST
+    insert(value: T): void {
+        const newNode = new TreeNode(value);
+        
+        if (this.root === null) {
+            this.root = newNode;
+            return;
+        }
 
-        // Traverse until the entire suffix is inserted
-        while (currentTextPosInSuffix < this.text.length) {
-            const charToMatch = this.text[currentTextPosInSuffix];
-            let childNode = currentNode.children.get(charToMatch);
-
-            if (!childNode) {
-                // Case 1: No existing edge starting with `charToMatch`.
-                // Create a new leaf node representing the rest of the suffix.
-                const newLeaf = new Node(currentTextPosInSuffix, this.text.length - 1, suffixStartIndex);
-                currentNode.children.set(charToMatch, newLeaf);
-                return; // Suffix fully inserted
-            }
-
-            // Case 2: An existing edge starts with `charToMatch`.
-            // Compare the remaining part of the current suffix with the edge label.
-            let edgeStart = childNode.start;
-            let edgeEnd = childNode.end;
-            let edgeLength = edgeEnd - edgeStart + 1;
-            let charsMatchedOnEdge = 0; // How many characters matched along the child's edge
-
-            // Compare character by character along the child's edge
-            while (charsMatchedOnEdge < edgeLength && currentTextPosInSuffix + charsMatchedOnEdge < this.text.length) {
-                if (this.text[edgeStart + charsMatchedOnEdge] === this.text[currentTextPosInSuffix + charsMatchedOnEdge]) {
-                    charsMatchedOnEdge++;
-                } else {
-                    break; // Mismatch encountered on the edge
+        let current = this.root;
+        while (true) {
+            if (value < current.value) {
+                if (current.left === null) {
+                    current.left = newNode;
+                    return;
                 }
-            }
-
-            if (charsMatchedOnEdge === edgeLength) {
-                // Case 2a: The entire existing edge matched.
-                // Move to the child node and continue traversing with the rest of the suffix.
-                currentNode = childNode;
-                currentTextPosInSuffix += edgeLength;
-            } else {
-                // Case 2b: Partial match or mismatch. Need to split the existing edge.
-
-                // 1. Create a new internal node where the split occurs.
-                const splitNode = new Node(edgeStart, edgeStart + charsMatchedOnEdge - 1, null);
-                currentNode.children.set(charToMatch, splitNode); // `currentNode` now points to `splitNode`
-
-                // 2. Adjust the original `childNode` (it becomes a child of the `splitNode`).
-                childNode.start = edgeStart + charsMatchedOnEdge; // Its edge label now starts after the split point
-                splitNode.children.set(this.text[childNode.start], childNode);
-
-                // 3. Insert the remaining part of the current suffix as a new leaf under the `splitNode`.
-                const newLeaf = new Node(currentTextPosInSuffix + charsMatchedOnEdge, this.text.length - 1, suffixStartIndex);
-                splitNode.children.set(this.text[currentTextPosInSuffix + charsMatchedOnEdge], newLeaf);
-                return; // Suffix fully inserted
-            }
-        }
-        // If we reach here, it means the suffix being inserted is already a prefix
-        // of an existing suffix, and we've landed on an existing node.
-        // With the '$' terminator, every suffix should end on a unique leaf,
-        // so this path is usually for identical string insertions or a suffix
-        // that exactly matches an internal node.
-        // In a strict suffix tree, this case means the suffix is already present.
-        // For our purpose of collecting all occurrences, this means the 'suffixStartIndex'
-        // is already represented by the existing path.
-    }
-
-
-    /**
-     * Helper function to traverse the tree and find the node that represents
-     * the end of a given pattern.
-     * @param pattern The string pattern to search for.
-     * @returns The Node representing the end of the pattern if found, otherwise null.
-     */
-    private traverseForPattern(pattern: string): Node | null {
-        let currentNode: Node = this.root;
-        let charPointer = 0; // Pointer into the `pattern`
-
-        while (charPointer < pattern.length) {
-            const charToMatch = pattern[charPointer];
-            let childNode = currentNode.children.get(charToMatch);
-
-            if (!childNode) {
-                return null; // No edge found for this character, pattern not in tree
-            }
-
-            let edgeStart = childNode.start;
-            let edgeEnd = childNode.end;
-            let edgeLength = edgeEnd - edgeStart + 1;
-            let charsMatchedOnEdge = 0;
-
-            // Compare pattern with the edge label
-            while (charsMatchedOnEdge < edgeLength && charPointer + charsMatchedOnEdge < pattern.length) {
-                if (this.text[edgeStart + charsMatchedOnEdge] === pattern[charPointer + charsMatchedOnEdge]) {
-                    charsMatchedOnEdge++;
-                } else {
-                    return null; // Mismatch on edge, pattern not found
+                current = current.left;
+            } else if (value > current.value) {
+                if (current.right === null) {
+                    current.right = newNode;
+                    return;
                 }
-            }
-
-            if (charsMatchedOnEdge === edgeLength) {
-                // Fully matched the edge, move to the child node
-                currentNode = childNode;
-                charPointer += edgeLength;
+                current = current.right;
             } else {
-                // Partial match on edge, but pattern is exhausted OR mismatch
-                // If pattern ended exactly on a partial match, it's found.
-                // Otherwise, it means a mismatch occurred before pattern was exhausted.
-                return (charPointer + charsMatchedOnEdge === pattern.length) ? childNode : null;
+                // Value already exists (handle duplicates as needed)
+                return;
             }
         }
-        return currentNode; // Entire pattern matched, return the node
     }
 
-    /**
-     * Checks if a given pattern exists as a substring in the original text.
-     * @param pattern The substring to check.
-     * @returns true if the pattern is found, false otherwise.
-     */
-    hasSubstring(pattern: string): boolean {
-        return this.traverseForPattern(pattern) !== null;
-    }
-
-    /**
-     * Collects all suffix indices (starting positions in the original text)
-     * from the subtree rooted at the given node.
-     * @param node The starting node of the subtree.
-     * @param results An array to store the collected suffix indices.
-     */
-    private collectSuffixIndexes(node: Node, results: number[]): void {
-        // Only leaf nodes have a suffixIndex assigned during insertion
-        if (node.suffixIndex !== null) {
-            results.push(node.suffixIndex);
+    // Search for a value in the BST
+    search(value: T): boolean {
+        let current = this.root;
+        
+        while (current !== null) {
+            if (value === current.value) {
+                return true;
+            } else if (value < current.value) {
+                current = current.left;
+            } else {
+                current = current.right;
+            }
         }
-        // Recursively collect from all children
-        for (const child of node.children.values()) {
-            this.collectSuffixIndexes(child, results);
+        
+        return false;
+    }
+
+    // In-order traversal (left, root, right)
+    inOrderTraversal(callback: (value: T) => void): void {
+        this.inOrderHelper(this.root, callback);
+    }
+
+    private inOrderHelper(node: TreeNode<T> | null, callback: (value: T) => void): void {
+        if (node !== null) {
+            this.inOrderHelper(node.left, callback);
+            callback(node.value);
+            this.inOrderHelper(node.right, callback);
         }
     }
 
-    /**
-     * Finds all starting positions of a given pattern in the original text.
-     * @param pattern The pattern to search for.
-     * @returns An array of starting indices where the pattern occurs. Returns an empty array if not found.
-     */
-    findAllOccurrences(pattern: string): number[] {
-        const results: number[] = [];
-        const patternNode = this.traverseForPattern(pattern);
-
-        if (patternNode) {
-            this.collectSuffixIndexes(patternNode, results);
-        }
-        return results;
+    // Pre-order traversal (root, left, right)
+    preOrderTraversal(callback: (value: T) => void): void {
+        this.preOrderHelper(this.root, callback);
     }
 
-    // --- Optional: For visualization/debugging ---
-    /**
-     * Prints a representation of the suffix tree to the console.
-     * Useful for debugging and understanding the tree structure.
-     * @param node The current node to print (starts from root).
-     * @param indent String for indentation.
-     * @param prefixChar The character on the edge leading to this node (for display).
-     */
-    printTree(node: Node = this.root, indent: string = '', prefixChar: string = ''): void {
-        if (node === this.root) {
-            console.log("ROOT");
+    private preOrderHelper(node: TreeNode<T> | null, callback: (value: T) => void): void {
+        if (node !== null) {
+            callback(node.value);
+            this.preOrderHelper(node.left, callback);
+            this.preOrderHelper(node.right, callback);
+        }
+    }
+
+    // Post-order traversal (left, right, root)
+    postOrderTraversal(callback: (value: T) => void): void {
+        this.postOrderHelper(this.root, callback);
+    }
+
+    private postOrderHelper(node: TreeNode<T> | null, callback: (value: T) => void): void {
+        if (node !== null) {
+            this.postOrderHelper(node.left, callback);
+            this.postOrderHelper(node.right, callback);
+            callback(node.value);
+        }
+    }
+
+    // Find the minimum value in the tree
+    findMin(): T | null {
+        if (this.root === null) return null;
+        
+        let current = this.root;
+        while (current.left !== null) {
+            current = current.left;
+        }
+        return current.value;
+    }
+
+    // Find the maximum value in the tree
+    findMax(): T | null {
+        if (this.root === null) return null;
+        
+        let current = this.root;
+        while (current.right !== null) {
+            current = current.right;
+        }
+        return current.value;
+    }
+
+    // Delete a value from the BST
+    delete(value: T): void {
+        this.root = this.deleteHelper(this.root, value);
+    }
+
+    private deleteHelper(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
+        if (node === null) return null;
+
+        if (value < node.value) {
+            node.left = this.deleteHelper(node.left, value);
+        } else if (value > node.value) {
+            node.right = this.deleteHelper(node.right, value);
         } else {
-            const edgeLabel = node.getEdgeString(this.text);
-            const suffixInfo = node.suffixIndex !== null ? ` [SufIdx: ${node.suffixIndex}]` : '';
-            console.log(`${indent}---${prefixChar}--> ${edgeLabel}${suffixInfo}`);
+            // Node to be deleted found
+            
+            // Case 1: Node with no children or one child
+            if (node.left === null) {
+                return node.right;
+            } else if (node.right === null) {
+                return node.left;
+            }
+            
+            // Case 2: Node with two children
+            // Find the inorder successor (smallest in the right subtree)
+            let temp = this.findMinNode(node.right);
+            node.value = temp.value;
+            node.right = this.deleteHelper(node.right, temp.value);
         }
+        
+        return node;
+    }
 
-        const childrenArray = Array.from(node.children.entries()).sort(([charA], [charB]) => charA.localeCompare(charB));
-        for (let i = 0; i < childrenArray.length; i++) {
-            const [char, child] = childrenArray[i];
-            const newIndent = indent + (node === this.root ? '' : (i === childrenArray.length - 1 ? '    ' : '|   '));
-            this.printTree(child, newIndent, char);
+    private findMinNode(node: TreeNode<T>): TreeNode<T> {
+        let current = node;
+        while (current.left !== null) {
+            current = current.left;
         }
+        return current;
+    }
+
+    // Get the height of the tree
+    getHeight(): number {
+        return this.heightHelper(this.root);
+    }
+
+    private heightHelper(node: TreeNode<T> | null): number {
+        if (node === null) return 0;
+        
+        const leftHeight = this.heightHelper(node.left);
+        const rightHeight = this.heightHelper(node.right);
+        
+        return Math.max(leftHeight, rightHeight) + 1;
+    }
+
+    // Check if the tree is empty
+    isEmpty(): boolean {
+        return this.root === null;
+    }
+
+    // Get the number of nodes in the tree
+    getSize(): number {
+        return this.sizeHelper(this.root);
+    }
+
+    private sizeHelper(node: TreeNode<T> | null): number {
+        if (node === null) return 0;
+        return this.sizeHelper(node.left) + 1 + this.sizeHelper(node.right);
     }
 }
+class BinarySearchTreeWithComparator<T> {
+    root: TreeNode<T> | null;
+    private comparator: (a: T, b: T) => number;
 
-export default SuffixTree;
-// main.ts
-import SuffixTree from './suffixTree';
+    constructor(comparator?: (a: T, b: T) => number) {
+        this.root = null;
+        this.comparator = comparator || this.defaultComparator;
+    }
 
-const text1 = "banana";
-console.log(`Building Suffix Tree for: "${text1}"`);
-const tree1 = new SuffixTree(text1);
-tree1.printTree();
+    private defaultComparator(a: T, b: T): number {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+    }
 
-console.log("\n--- Queries for 'banana' ---");
-console.log(`Has "ana": ${tree1.hasSubstring("ana")}`); // true
-console.log(`Occurrences of "ana": ${tree1.findAllOccurrences("ana")}`); // [1, 3]
-console.log(`Has "nan": ${tree1.hasSubstring("nan")}`); // true
-console.log(`Occurrences of "nan": ${tree1.findAllOccurrences("nan")}`); // [2]
-console.log(`Has "ban": ${tree1.hasSubstring("ban")}`); // true
-console.log(`Occurrences of "ban": ${tree1.findAllOccurrences("ban")}`); // [0]
-console.log(`Has "na": ${tree1.hasSubstring("na")}`); // true
-console.log(`Occurrences of "na": ${tree1.findAllOccurrences("na")}`); // [2, 4]
-console.log(`Has "band": ${tree1.hasSubstring("band")}`); // false
-console.log(`Occurrences of "band": ${tree1.findAllOccurrences("band")}`); // []
-console.log(`Has "a": ${tree1.hasSubstring("a")}`); // true
-console.log(`Occurrences of "a": ${tree1.findAllOccurrences("a")}`); // [1, 3, 5]
+    insert(value: T): void {
+        const newNode = new TreeNode(value);
+        
+        if (this.root === null) {
+            this.root = newNode;
+            return;
+        }
 
+        let current = this.root;
+        while (true) {
+            const comparison = this.comparator(value, current.value);
+            
+            if (comparison < 0) {
+                if (current.left === null) {
+                    current.left = newNode;
+                    return;
+                }
+                current = current.left;
+            } else if (comparison > 0) {
+                if (current.right === null) {
+                    current.right = newNode;
+                    return;
+                }
+                current = current.right;
+            } else {
+                // Value already exists
+                return;
+            }
+        }
+    }
 
-const text2 = "abracadabra";
-console.log(`\nBuilding Suffix Tree for: "${text2}"`);
-const tree2 = new SuffixTree(text2);
-tree2.printTree();
+    search(value: T): boolean {
+        let current = this.root;
+        
+        while (current !== null) {
+            const comparison = this.comparator(value, current.value);
+            
+            if (comparison === 0) {
+                return true;
+            } else if (comparison < 0) {
+                current = current.left;
+            } else {
+                current = current.right;
+            }
+        }
+        
+        return false;
+    }
 
-console.log("\n--- Queries for 'abracadabra' ---");
-console.log(`Has "abra": ${tree2.hasSubstring("abra")}`); // true
-console.log(`Occurrences of "abra": ${tree2.findAllOccurrences("abra")}`); // [0, 7]
-console.log(`Has "bra": ${tree2.hasSubstring("bra")}`); // true
-console.log(`Occurrences of "bra": ${tree2.findAllOccurrences("bra")}`); // [1, 8]
-console.log(`Has "cad": ${tree2.hasSubstring("cad")}`); // true
-console.log(`Occurrences of "cad": ${tree2.findAllOccurrences("cad")}`); // [4]
-console.log(`Has "xyz": ${tree2.hasSubstring("xyz")}`); // false
-console.log(`Occurrences of "xyz": ${tree2.findAllOccurrences("xyz")}`); // []
+    // ... other methods similar to the basic implementation
+}
+// Basic usage with numbers
+const bst = new BinarySearchTree<number>();
+
+// Insert values
+bst.insert(10);
+bst.insert(5);
+bst.insert(15);
+bst.insert(3);
+bst.insert(7);
+
+// Search
+console.log(bst.search(7)); // true
+console.log(bst.search(20)); // false
+
+// Traversal
+console.log("In-order traversal:");
+bst.inOrderTraversal(value => console.log(value)); // 3, 5, 7, 10, 15
+
+console.log("Min:", bst.findMin()); // 3
+console.log("Max:", bst.findMax()); // 15
+console.log("Height:", bst.getHeight()); // 3
+console.log("Size:", bst.getSize()); // 5
+
+// Delete
+bst.delete(5);
+console.log("After deleting 5:");
+bst.inOrderTraversal(value => console.log(value)); // 3, 7, 10, 15
+
+// Usage with custom objects and comparator
+interface Person {
+    name: string;
+    age: number;
+}
+
+const personBST = new BinarySearchTreeWithComparator<Person>(
+    (a, b) => a.age - b.age
+);
+
+personBST.insert({ name: "Alice", age: 25 });
+personBST.insert({ name: "Bob", age: 30 });
+personBST.insert({ name: "Charlie", age: 20 });
+
+console.log(personBST.search({ name: "Bob", age: 30 })); // true
