@@ -1,126 +1,89 @@
-class KMP {
-    /**
-     * Preprocesses the pattern to create the longest prefix suffix (LPS) array
-     * @param pattern - The pattern to preprocess
-     * @returns The LPS array
-     */
-    private static buildLPS(pattern: string): number[] {
-        const lps: number[] = new Array(pattern.length).fill(0);
-        let length = 0; // Length of the previous longest prefix suffix
-        let i = 1;
-        
-        while (i < pattern.length) {
-            if (pattern[i] === pattern[length]) {
-                length++;
-                lps[i] = length;
-                i++;
-            } else {
-                if (length !== 0) {
-                    length = lps[length - 1];
-                } else {
-                    lps[i] = 0;
-                    i++;
-                }
-            }
-        }
-        
-        return lps;
+function findSecondLargestSorted(arr: number[]): number | undefined {
+    if (arr.length < 2) {
+        return undefined; // Not enough elements
     }
 
-    /**
-     * Searches for all occurrences of pattern in text using KMP algorithm
-     * @param text - The text to search in
-     * @param pattern - The pattern to search for
-     * @returns Array of starting indices where pattern is found
-     */
-    static search(text: string, pattern: string): number[] {
-        if (pattern.length === 0) return [];
-        
-        const lps = KMP.buildLPS(pattern);
-        const result: number[] = [];
-        let i = 0; // Index for text
-        let j = 0; // Index for pattern
-        
-        while (i < text.length) {
-            if (pattern[j] === text[i]) {
-                i++;
-                j++;
-            }
-            
-            if (j === pattern.length) {
-                result.push(i - j);
-                j = lps[j - 1];
-            } else if (i < text.length && pattern[j] !== text[i]) {
-                if (j !== 0) {
-                    j = lps[j - 1];
-                } else {
-                    i++;
-                }
-            }
-        }
-        
-        return result;
-    }
+    // Create a copy to avoid modifying the original array
+    const sortedArr = [...arr].sort((a, b) => a - b);
 
-    /**
-     * Checks if pattern exists in text using KMP algorithm
-     * @param text - The text to search in
-     * @param pattern - The pattern to search for
-     * @returns True if pattern is found, false otherwise
-     */
-    static contains(text: string, pattern: string): boolean {
-        return KMP.search(text, pattern).length > 0;
-    }
-
-    /**
-     * Finds the first occurrence of pattern in text
-     * @param text - The text to search in
-     * @param pattern - The pattern to search for
-     * @returns Starting index of first occurrence, or -1 if not found
-     */
-    static firstOccurrence(text: string, pattern: string): number {
-        const result = KMP.search(text, pattern);
-        return result.length > 0 ? result[0] : -1;
-    }
+    return sortedArr[sortedArr.length - 2];
 }
 
-// Example usage and test cases
-function testKMP() {
-    // Test cases
-    const testCases = [
-        { text: "ABABDABACDABABCABAB", pattern: "ABABCABAB", expected: [10] },
-        { text: "hello world", pattern: "world", expected: [6] },
-        { text: "aaaaaa", pattern: "aa", expected: [0, 1, 2, 3, 4] },
-        { text: "abc", pattern: "d", expected: [] },
-        { text: "", pattern: "test", expected: [] },
-        { text: "test", pattern: "", expected: [] },
-    ];
+// Examples:
+console.log("--- Sorted (potentially not distinct) ---");
+console.log(findSecondLargestSorted([10, 5, 20, 8, 15])); // Output: 15
+console.log(findSecondLargestSorted([5, 5, 5]));          // Output: 5 (might not be desired for "second largest")
+console.log(findSecondLargestSorted([1, 2]));             // Output: 1
+console.log(findSecondLargestSorted([7]));                // Output: undefined
+console.log(findSecondLargestSorted([]));                 // Output: undefined
+function findSecondLargestDistinctSorted(arr: number[]): number | undefined {
+    if (arr.length < 2) {
+        return undefined; // Not enough elements to have a second distinct largest
+    }
 
-    // Run tests
-    testCases.forEach(({ text, pattern, expected }, index) => {
-        const result = KMP.search(text, pattern);
-        const passed = JSON.stringify(result) === JSON.stringify(expected);
-        
-        console.log(`Test ${index + 1}: ${passed ? 'PASS' : 'FAIL'}`);
-        console.log(`  Text: "${text}", Pattern: "${pattern}"`);
-        console.log(`  Expected: [${expected.join(', ')}]`);
-        console.log(`  Got: [${result.join(', ')}]`);
-        console.log('---');
-    });
+    // 1. Remove duplicates using a Set
+    const uniqueArr = Array.from(new Set(arr));
 
-    // Additional functionality examples
-    console.log('Contains check:', KMP.contains("hello world", "world")); // true
-    console.log('First occurrence:', KMP.firstOccurrence("hello world", "world")); // 6
+    // 2. Check if enough unique elements remain
+    if (uniqueArr.length < 2) {
+        return undefined; // After removing duplicates, there's no second distinct largest
+    }
+
+    // 3. Sort the unique elements
+    uniqueArr.sort((a, b) => a - b);
+
+    // 4. Return the second-to-last element
+    return uniqueArr[uniqueArr.length - 2];
 }
 
-// Run the tests
-testKMP();
-// Basic search
-const positions = KMP.search("hello world", "world");
-console.log(positions); // [6]
+// Examples:
+console.log("\n--- Sorted (distinct) ---");
+console.log(findSecondLargestDistinctSorted([10, 5, 20, 8, 15])); // Output: 15
+console.log(findSecondLargestDistinctSorted([5, 5, 5]));          // Output: undefined (no second *distinct* largest)
+console.log(findSecondLargestDistinctSorted([1, 5, 5, 2]));       // Output: 2
+console.log(findSecondLargestDistinctSorted([1, 2]));             // Output: 1
+console.log(findSecondLargestDistinctSorted([7]));                // Output: undefined
+console.log(findSecondLargestDistinctSorted([]));                 // Output: undefined
+function findSecondLargestIterative(arr: number[]): number | undefined {
+    if (arr.length < 2) {
+        return undefined; // Not enough elements
+    }
 
-// Check if pattern exists
-const exists = KMP.contains("hello world", "world"); // true
+    // Initialize largest and secondLargest to a very small number
+    // to ensure any number in the array will be greater.
+    let largest = Number.MIN_SAFE_INTEGER;
+    let secondLargest = Number.MIN_SAFE_INTEGER;
 
-// Find first occurrence
-const firstIndex = KMP.firstOccurrence("hello world", "world"); // 6
+    for (const num of arr) {
+        if (num > largest) {
+            // If current number is greater than largest,
+            // the previous largest becomes the secondLargest,
+            // and current number becomes the new largest.
+            secondLargest = largest;
+            largest = num;
+        } else if (num > secondLargest && num < largest) {
+            // If current number is between largest and secondLargest,
+            // and distinct from largest, it becomes the new secondLargest.
+            secondLargest = num;
+        }
+        // If num is equal to largest, or less than secondLargest, do nothing.
+    }
+
+    // After iterating, if secondLargest is still MIN_SAFE_INTEGER,
+    // it means there was no distinct second largest element (e.g., all elements were the same).
+    if (secondLargest === Number.MIN_SAFE_INTEGER) {
+        return undefined;
+    }
+
+    return secondLargest;
+}
+
+// Examples:
+console.log("\n--- Iterative (distinct) ---");
+console.log(findSecondLargestIterative([10, 5, 20, 8, 15])); // Output: 15
+console.log(findSecondLargestIterative([5, 5, 5]));          // Output: undefined
+console.log(findSecondLargestIterative([1, 5, 5, 2]));       // Output: 2
+console.log(findSecondLargestIterative([1, 2]));             // Output: 1
+console.log(findSecondLargestIterative([7]));                // Output: undefined
+console.log(findSecondLargestIterative([]));                 // Output: undefined
+console.log(findSecondLargestIterative([-10, -5, -20, -8])); // Output: -8
