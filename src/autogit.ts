@@ -1,152 +1,121 @@
-class ListNode<T> {
-    constructor(
-        public value: T,
-        public next: ListNode<T> | null = null
-    ) {}
+/* ---------- BST.ts ---------- */
+
+export class TreeNode<T> {
+  constructor(
+    public key: number,      // BST ordering key
+    public data: T,          // satellite data
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
 
-class LinkedList<T> {
-    private head: ListNode<T> | null = null;
-    private _length: number = 0;
+export class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
+  private _size = 0;
 
-    // Method to get length (O(1) time)
-    get length(): number {
-        return this._length;
+  /* --------- public API --------- */
+
+  insert(key: number, data: T): void {
+    this.root = this._insert(this.root, key, data);
+  }
+
+  search(key: number): T | undefined {
+    const node = this._search(this.root, key);
+    return node ? node.data : undefined;
+  }
+
+  delete(key: number): boolean {
+    const oldSize = this._size;
+    this.root = this._delete(this.root, key);
+    return this._size < oldSize;
+  }
+
+  inOrder(): Iterable<T> {
+    const res: T[] = [];
+    this._inOrder(this.root, res);
+    return res;
+  }
+
+  get size(): number { return this._size; }
+
+  min(): T | undefined {
+    const node = this._min(this.root);
+    return node ? node.data : undefined;
+  }
+
+  max(): T | undefined {
+    const node = this._max(this.root);
+    return node ? node.data : undefined;
+  }
+
+  clear(): void {
+    this.root = null;
+    this._size = 0;
+  }
+
+  /* --------- private helpers --------- */
+
+  private _insert(node: TreeNode<T> | null, key: number, data: T): TreeNode<T> {
+    if (!node) { this._size++; return new TreeNode(key, data); }
+    if (key === node.key) { node.data = data; return node; }
+    if (key < node.key) node.left = this._insert(node.left, key, data);
+    else node.right = this._insert(node.right, key, data);
+    return node;
+  }
+
+  private _search(node: TreeNode<T> | null, key: number): TreeNode<T> | null {
+    if (!node || node.key === key) return node;
+    return key < node.key
+      ? this._search(node.left, key)
+      : this._search(node.right, key);
+  }
+
+  private _delete(node: TreeNode<T> | null, key: number): TreeNode<T> | null {
+    if (!node) return null;
+    if (key < node.key) {
+      node.left = this._delete(node.left, key);
+    } else if (key > node.key) {
+      node.right = this._delete(node.right, key);
+    } else { // found
+      this._size--;
+      if (!node.left) return node.right;
+      if (!node.right) return node.left;
+      // two children: replace with in-order successor (min of right subtree)
+      const succ = this._min(node.right)!;
+      node.key = succ.key;
+      node.data = succ.data;
+      node.right = this._delete(node.right, succ.key);
     }
+    return node;
+  }
 
-    // Add node to the end
-    append(value: T): void {
-        const newNode = new ListNode(value);
-        
-        if (!this.head) {
-            this.head = newNode;
-        } else {
-            let current = this.head;
-            while (current.next) {
-                current = current.next;
-            }
-            current.next = newNode;
-        }
-        
-        this._length++;
-    }
+  private _inOrder(node: TreeNode<T> | null, out: T[]): void {
+    if (!node) return;
+    this._inOrder(node.left, out);
+    out.push(node.data);
+    this._inOrder(node.right, out);
+  }
 
-    // Add node to the beginning
-    prepend(value: T): void {
-        const newNode = new ListNode(value, this.head);
-        this.head = newNode;
-        this._length++;
-    }
+  private _min(node: TreeNode<T> | null): TreeNode<T> | null {
+    return node ? (node.left ? this._min(node.left) : node) : null;
+  }
 
-    // Other methods would also update _length accordingly
+  private _max(node: TreeNode<T> | null): TreeNode<T> | null {
+    return node ? (node.right ? this._max(node.right) : node) : null;
+  }
 }
-class ListNode<T> {
-    constructor(
-        public value: T,
-        public next: ListNode<T> | null = null
-    ) {}
-}
+import { BinarySearchTree } from './BST';
 
-function getLinkedListLength<T>(head: ListNode<T> | null): number {
-    let length = 0;
-    let current = head;
-    
-    while (current !== null) {
-        length++;
-        current = current.next;
-    }
-    
-    return length;
-}
+const bst = new BinarySearchTree<string>();
 
-// Usage
-const node1 = new ListNode(1);
-const node2 = new ListNode(2);
-const node3 = new ListNode(3);
+bst.insert(50, 'fifty');
+bst.insert(30, 'thirty');
+bst.insert(70, 'seventy');
+bst.insert(20, 'twenty');
+bst.insert(40, 'forty');
 
-node1.next = node2;
-node2.next = node3;
-
-console.log(getLinkedListLength(node1)); // Output: 3
-console.log(getLinkedListLength(null));  // Output: 0
-function getLinkedListLengthRecursive<T>(head: ListNode<T> | null): number {
-    if (head === null) {
-        return 0;
-    }
-    
-    return 1 + getLinkedListLengthRecursive(head.next);
-}
-
-// Usage
-console.log(getLinkedListLengthRecursive(node1)); // Output: 3
-class LinkedList<T> {
-    private head: ListNode<T> | null = null;
-
-    // Method 1: Iterative length calculation
-    getLengthIterative(): number {
-        let length = 0;
-        let current = this.head;
-        
-        while (current !== null) {
-            length++;
-            current = current.next;
-        }
-        
-        return length;
-    }
-
-    // Method 2: Recursive length calculation
-    getLengthRecursive(): number {
-        return this._getLengthRecursive(this.head);
-    }
-
-    private _getLengthRecursive(node: ListNode<T> | null): number {
-        if (node === null) {
-            return 0;
-        }
-        
-        return 1 + this._getLengthRecursive(node.next);
-    }
-
-    // Method 3: Using reduce-like approach
-    getLengthFunctional(): number {
-        let length = 0;
-        let current = this.head;
-        
-        while (current !== null) {
-            length++;
-            current = current.next;
-        }
-        
-        return length;
-    }
-
-    // Add node
-    append(value: T): void {
-        const newNode = new ListNode(value);
-        
-        if (!this.head) {
-            this.head = newNode;
-        } else {
-            let current = this.head;
-            while (current.next) {
-                current = current.next;
-            }
-            current.next = newNode;
-        }
-    }
-}
-
-// Usage example
-const list = new LinkedList<number>();
-list.append(1);
-list.append(2);
-list.append(3);
-list.append(4);
-
-console.log("Iterative length:", list.getLengthIterative());    // 4
-console.log("Recursive length:", list.getLengthRecursive());    // 4
-console.log("Functional length:", list.getLengthFunctional());  // 4
-
-const emptyList = new LinkedList<number>();
-console.log("Empty list length:", emptyList.getLengthIterative()); // 0
+console.log([...bst.inOrder()]); // ["twenty","thirty","forty","fifty","seventy"]
+console.log(bst.search(40));     // "forty"
+console.log(bst.delete(30));     // true
+console.log(bst.size);           // 4
+console.log(bst.min());          // "twenty"
