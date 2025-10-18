@@ -1,89 +1,320 @@
-function findSecondLargestSorted(arr: number[]): number | undefined {
-    if (arr.length < 2) {
-        return undefined; // Not enough elements
+class TrieNode {
+    public children: Map<string, TrieNode>;
+    public isEndOfWord: boolean;
+
+    constructor() {
+        this.children = new Map();
+        this.isEndOfWord = false;
     }
-
-    // Create a copy to avoid modifying the original array
-    const sortedArr = [...arr].sort((a, b) => a - b);
-
-    return sortedArr[sortedArr.length - 2];
 }
 
-// Examples:
-console.log("--- Sorted (potentially not distinct) ---");
-console.log(findSecondLargestSorted([10, 5, 20, 8, 15])); // Output: 15
-console.log(findSecondLargestSorted([5, 5, 5]));          // Output: 5 (might not be desired for "second largest")
-console.log(findSecondLargestSorted([1, 2]));             // Output: 1
-console.log(findSecondLargestSorted([7]));                // Output: undefined
-console.log(findSecondLargestSorted([]));                 // Output: undefined
-function findSecondLargestDistinctSorted(arr: number[]): number | undefined {
-    if (arr.length < 2) {
-        return undefined; // Not enough elements to have a second distinct largest
+class Trie {
+    private root: TrieNode;
+
+    constructor() {
+        this.root = new TrieNode();
     }
 
-    // 1. Remove duplicates using a Set
-    const uniqueArr = Array.from(new Set(arr));
-
-    // 2. Check if enough unique elements remain
-    if (uniqueArr.length < 2) {
-        return undefined; // After removing duplicates, there's no second distinct largest
-    }
-
-    // 3. Sort the unique elements
-    uniqueArr.sort((a, b) => a - b);
-
-    // 4. Return the second-to-last element
-    return uniqueArr[uniqueArr.length - 2];
-}
-
-// Examples:
-console.log("\n--- Sorted (distinct) ---");
-console.log(findSecondLargestDistinctSorted([10, 5, 20, 8, 15])); // Output: 15
-console.log(findSecondLargestDistinctSorted([5, 5, 5]));          // Output: undefined (no second *distinct* largest)
-console.log(findSecondLargestDistinctSorted([1, 5, 5, 2]));       // Output: 2
-console.log(findSecondLargestDistinctSorted([1, 2]));             // Output: 1
-console.log(findSecondLargestDistinctSorted([7]));                // Output: undefined
-console.log(findSecondLargestDistinctSorted([]));                 // Output: undefined
-function findSecondLargestIterative(arr: number[]): number | undefined {
-    if (arr.length < 2) {
-        return undefined; // Not enough elements
-    }
-
-    // Initialize largest and secondLargest to a very small number
-    // to ensure any number in the array will be greater.
-    let largest = Number.MIN_SAFE_INTEGER;
-    let secondLargest = Number.MIN_SAFE_INTEGER;
-
-    for (const num of arr) {
-        if (num > largest) {
-            // If current number is greater than largest,
-            // the previous largest becomes the secondLargest,
-            // and current number becomes the new largest.
-            secondLargest = largest;
-            largest = num;
-        } else if (num > secondLargest && num < largest) {
-            // If current number is between largest and secondLargest,
-            // and distinct from largest, it becomes the new secondLargest.
-            secondLargest = num;
+    // Insert a word into the trie
+    insert(word: string): void {
+        let currentNode = this.root;
+        
+        for (const char of word) {
+            if (!currentNode.children.has(char)) {
+                currentNode.children.set(char, new TrieNode());
+            }
+            currentNode = currentNode.children.get(char)!;
         }
-        // If num is equal to largest, or less than secondLargest, do nothing.
+        
+        currentNode.isEndOfWord = true;
     }
 
-    // After iterating, if secondLargest is still MIN_SAFE_INTEGER,
-    // it means there was no distinct second largest element (e.g., all elements were the same).
-    if (secondLargest === Number.MIN_SAFE_INTEGER) {
-        return undefined;
+    // Search for a complete word
+    search(word: string): boolean {
+        let currentNode = this.root;
+        
+        for (const char of word) {
+            if (!currentNode.children.has(char)) {
+                return false;
+            }
+            currentNode = currentNode.children.get(char)!;
+        }
+        
+        return currentNode.isEndOfWord;
     }
 
-    return secondLargest;
+    // Check if any word starts with the given prefix
+    startsWith(prefix: string): boolean {
+        let currentNode = this.root;
+        
+        for (const char of prefix) {
+            if (!currentNode.children.has(char)) {
+                return false;
+            }
+            currentNode = currentNode.children.get(char)!;
+        }
+        
+        return true;
+    }
+
+    // Get all words with a given prefix
+    getWordsWithPrefix(prefix: string): string[] {
+        const results: string[] = [];
+        let currentNode = this.root;
+        
+        // Navigate to the prefix node
+        for (const char of prefix) {
+            if (!currentNode.children.has(char)) {
+                return results; // No words with this prefix
+            }
+            currentNode = currentNode.children.get(char)!;
+        }
+        
+        // Collect all words from this node
+        this.collectWords(currentNode, prefix, results);
+        return results;
+    }
+
+    private collectWords(node: TrieNode, currentWord: string, results: string[]): void {
+        if (node.isEndOfWord) {
+            results.push(currentWord);
+        }
+        
+        for (const [char, childNode] of node.children) {
+            this.collectWords(childNode, currentWord + char, results);
+        }
+    }
+
+    // Delete a word from the trie
+    delete(word: string): boolean {
+        return this.deleteHelper(this.root, word, 0);
+    }
+
+    private deleteHelper(node: TrieNode, word: string, index: number): boolean {
+        if (index === word.length) {
+            if (!node.isEndOfWord) {
+                return false; // Word doesn't exist
+            }
+            node.isEndOfWord = false;
+            return node.children.size === 0; // Return true if no children
+        }
+
+        const char = word[index];
+        const childNode = node.children.get(char);
+        
+        if (!childNode) {
+            return false; // Word doesn't exist
+        }
+
+        const shouldDeleteChild = this.deleteHelper(childNode, word, index + 1);
+
+        if (shouldDeleteChild) {
+            node.children.delete(char);
+            return node.children.size === 0 && !node.isEndOfWord;
+        }
+
+        return false;
+    }
+
+    // Get the total number of words in the trie
+    getWordCount(): number {
+        return this.countWords(this.root);
+    }
+
+    private countWords(node: TrieNode): number {
+        let count = node.isEndOfWord ? 1 : 0;
+        
+        for (const childNode of node.children.values()) {
+            count += this.countWords(childNode);
+        }
+        
+        return count;
+    }
+
+    // Clear all words from the trie
+    clear(): void {
+        this.root = new TrieNode();
+    }
+}
+class ValueTrieNode<T> {
+    public children: Map<string, ValueTrieNode<T>>;
+    public value: T | null;
+    public isEndOfWord: boolean;
+
+    constructor() {
+        this.children = new Map();
+        this.value = null;
+        this.isEndOfWord = false;
+    }
 }
 
-// Examples:
-console.log("\n--- Iterative (distinct) ---");
-console.log(findSecondLargestIterative([10, 5, 20, 8, 15])); // Output: 15
-console.log(findSecondLargestIterative([5, 5, 5]));          // Output: undefined
-console.log(findSecondLargestIterative([1, 5, 5, 2]));       // Output: 2
-console.log(findSecondLargestIterative([1, 2]));             // Output: 1
-console.log(findSecondLargestIterative([7]));                // Output: undefined
-console.log(findSecondLargestIterative([]));                 // Output: undefined
-console.log(findSecondLargestIterative([-10, -5, -20, -8])); // Output: -8
+class ValueTrie<T> {
+    private root: ValueTrieNode<T>;
+
+    constructor() {
+        this.root = new ValueTrieNode<T>();
+    }
+
+    // Insert with value
+    insert(word: string, value: T): void {
+        let currentNode = this.root;
+        
+        for (const char of word) {
+            if (!currentNode.children.has(char)) {
+                currentNode.children.set(char, new ValueTrieNode<T>());
+            }
+            currentNode = currentNode.children.get(char)!;
+        }
+        
+        currentNode.isEndOfWord = true;
+        currentNode.value = value;
+    }
+
+    // Get value for a word
+    getValue(word: string): T | null {
+        let currentNode = this.root;
+        
+        for (const char of word) {
+            if (!currentNode.children.has(char)) {
+                return null;
+            }
+            currentNode = currentNode.children.get(char)!;
+        }
+        
+        return currentNode.isEndOfWord ? currentNode.value : null;
+    }
+
+    // Search (same as basic trie)
+    search(word: string): boolean {
+        let currentNode = this.root;
+        
+        for (const char of word) {
+            if (!currentNode.children.has(char)) {
+                return false;
+            }
+            currentNode = currentNode.children.get(char)!;
+        }
+        
+        return currentNode.isEndOfWord;
+    }
+
+    // Get all key-value pairs with given prefix
+    getEntriesWithPrefix(prefix: string): Array<{key: string, value: T}> {
+        const results: Array<{key: string, value: T}> = [];
+        let currentNode = this.root;
+        
+        for (const char of prefix) {
+            if (!currentNode.children.has(char)) {
+                return results;
+            }
+            currentNode = currentNode.children.get(char)!;
+        }
+        
+        this.collectEntries(currentNode, prefix, results);
+        return results;
+    }
+
+    private collectEntries(node: ValueTrieNode<T>, currentKey: string, results: Array<{key: string, value: T}>): void {
+        if (node.isEndOfWord && node.value !== null) {
+            results.push({ key: currentKey, value: node.value });
+        }
+        
+        for (const [char, childNode] of node.children) {
+            this.collectEntries(childNode, currentKey + char, results);
+        }
+    }
+}
+class ArrayTrieNode {
+    public children: (ArrayTrieNode | null)[];
+    public isEndOfWord: boolean;
+
+    constructor() {
+        this.children = new Array(26).fill(null);
+        this.isEndOfWord = false;
+    }
+}
+
+class ArrayTrie {
+    private root: ArrayTrieNode;
+    private readonly baseChar = 'a'.charCodeAt(0);
+
+    constructor() {
+        this.root = new ArrayTrieNode();
+    }
+
+    private charToIndex(char: string): number {
+        return char.charCodeAt(0) - this.baseChar;
+    }
+
+    insert(word: string): void {
+        let currentNode = this.root;
+        
+        for (const char of word.toLowerCase()) {
+            const index = this.charToIndex(char);
+            if (currentNode.children[index] === null) {
+                currentNode.children[index] = new ArrayTrieNode();
+            }
+            currentNode = currentNode.children[index]!;
+        }
+        
+        currentNode.isEndOfWord = true;
+    }
+
+    search(word: string): boolean {
+        let currentNode = this.root;
+        
+        for (const char of word.toLowerCase()) {
+            const index = this.charToIndex(char);
+            if (currentNode.children[index] === null) {
+                return false;
+            }
+            currentNode = currentNode.children[index]!;
+        }
+        
+        return currentNode.isEndOfWord;
+    }
+
+    startsWith(prefix: string): boolean {
+        let currentNode = this.root;
+        
+        for (const char of prefix.toLowerCase()) {
+            const index = this.charToIndex(char);
+            if (currentNode.children[index] === null) {
+                return false;
+            }
+            currentNode = currentNode.children[index]!;
+        }
+        
+        return true;
+    }
+}
+// Basic Trie Usage
+const trie = new Trie();
+
+// Insert words
+trie.insert("apple");
+trie.insert("app");
+trie.insert("application");
+trie.insert("banana");
+
+// Search
+console.log(trie.search("apple")); // true
+console.log(trie.search("app"));   // true
+console.log(trie.search("appl"));  // false
+
+// Prefix search
+console.log(trie.startsWith("app")); // true
+console.log(trie.getWordsWithPrefix("app")); // ["app", "apple", "application"]
+
+// Delete
+trie.delete("app");
+console.log(trie.search("app")); // false
+console.log(trie.search("apple")); // true
+
+// Value Trie Usage
+const valueTrie = new ValueTrie<number>();
+valueTrie.insert("temperature", 25);
+valueTrie.insert("humidity", 60);
+
+console.log(valueTrie.getValue("temperature")); // 25
+console.log(valueTrie.getEntriesWithPrefix("t")); // [{key: "temperature", value: 25}]
