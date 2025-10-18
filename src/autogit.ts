@@ -1,172 +1,174 @@
-/**
- * Boyer-Moore string searching algorithm implementation
- * Finds the first occurrence of pattern in text
- * 
- * @param text - The text to search in
- * @param pattern - The pattern to search for
- * @returns Index of the first occurrence of pattern in text, or -1 if not found
- */
-function boyerMooreSearch(text: string, pattern: string): number {
-    const n = text.length;
-    const m = pattern.length;
+function shellSort(arr: number[]): number[] {
+    const n = arr.length;
     
-    // Base cases
-    if (m === 0) return 0;
-    if (n < m) return -1;
-    
-    // Precompute bad character heuristic table
-    const badCharTable = buildBadCharTable(pattern);
-    
-    // Precompute good suffix heuristic table
-    const goodSuffixTable = buildGoodSuffixTable(pattern);
-    
-    let i = 0; // Position in text
-    
-    while (i <= n - m) {
-        let j = m - 1; // Position in pattern
-        
-        // Compare characters from right to left
-        while (j >= 0 && pattern[j] === text[i + j]) {
-            j--;
-        }
-        
-        if (j < 0) {
-            // Pattern found
-            return i;
-        }
-        
-        // Calculate shift using both heuristics
-        const badCharShift = j - badCharTable[text[i + j]];
-        const goodSuffixShift = goodSuffixTable[j];
-        const shift = Math.max(1, Math.max(badCharShift, goodSuffixShift));
-        
-        i += shift;
-    }
-    
-    return -1;
-}
-
-/**
- * Builds the bad character heuristic table
- * For each character, stores the rightmost position it appears in the pattern
- * @param pattern - The pattern to build table for
- * @returns Lookup table where table[c] = rightmost index of c in pattern, or -1 if not present
- */
-function buildBadCharTable(pattern: string): { [char: string]: number } {
-    const table: { [char: string]: number } = {};
-    const m = pattern.length;
-    
-    // Initialize all characters to -1
-    for (let i = 0; i < m; i++) {
-        table[pattern[i]] = i;
-    }
-    
-    // For characters not in pattern, they remain undefined (treated as -1)
-    
-    return table;
-}
-
-/**
- * Builds the good suffix heuristic table
- * For each position j in pattern, stores how much to shift when pattern[j] doesn't match
- * @param pattern - The pattern to build table for
- * @returns Array where table[j] = shift amount for position j
- */
-function buildGoodSuffixTable(pattern: string): number[] {
-    const m = pattern.length;
-    const table = new Array(m).fill(0);
-    const suffixTable = computeSuffixTable(pattern);
-    
-    let j = 0;
-    let k = 0;
-    
-    // First pass: fill table from the end
-    for (let i = m - 1; i >= 0; i--) {
-        if (i > m - 1 - suffixTable[i]) {
-            table[j] = i - suffixTable[i];
-            j++;
-        }
-    }
-    
-    // Second pass: fill remaining entries
-    for (let i = 0; i < m; i++) {
-        if (table[i] === 0) {
-            table[i] = m;
-        }
-    }
-    
-    return table;
-}
-
-/**
- * Helper function to compute suffix table for good suffix heuristic
- * @param pattern - The pattern to compute suffixes for
- * @returns Suffix table where suffixTable[i] = length of longest proper suffix starting at i
- */
-function computeSuffixTable(pattern: string): number[] {
-    const m = pattern.length;
-    const suffixTable = new Array(m).fill(0);
-    let k = 0;
-    
-    for (let i = 1; i < m; i++) {
-        if (pattern[i] === pattern[k]) {
-            k++;
-            suffixTable[i] = k;
-        } else {
-            if (k !== 0) {
-                k = suffixTable[k - 1];
-                i--; // Recompare with the new k
-            } else {
-                suffixTable[i] = 0;
+    // Start with a big gap, then reduce the gap
+    for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+        // Do a gapped insertion sort for this gap size
+        for (let i = gap; i < n; i++) {
+            // Save current element and initialize j
+            const temp = arr[i];
+            let j = i;
+            
+            // Shift earlier gap-sorted elements until correct position is found
+            while (j >= gap && arr[j - gap] > temp) {
+                arr[j] = arr[j - gap];
+                j -= gap;
             }
+            
+            // Put temp in its correct position
+            arr[j] = temp;
         }
     }
     
-    return suffixTable;
+    return arr;
+}
+// Different gap sequences for optimization
+type GapSequence = 'original' | 'knuth' | 'ciura';
+
+function shellSortEnhanced(
+    arr: number[], 
+    gapSequence: GapSequence = 'ciura'
+): number[] {
+    const n = arr.length;
+    let gaps: number[];
+    
+    // Select gap sequence
+    switch (gapSequence) {
+        case 'knuth':
+            // Knuth sequence: (3^k - 1) / 2, not greater than n/3
+            gaps = [];
+            let k = 1;
+            while (true) {
+                const gap = Math.floor((Math.pow(3, k) - 1) / 2);
+                if (gap > Math.ceil(n / 3)) break;
+                gaps.unshift(gap);
+                k++;
+            }
+            break;
+            
+        case 'ciura':
+            // Ciura sequence (known to be efficient)
+            const ciuraGaps = [701, 301, 132, 57, 23, 10, 4, 1];
+            gaps = ciuraGaps.filter(gap => gap <= n);
+            break;
+            
+        case 'original':
+        default:
+            // Original Shell sequence: n/2, n/4, n/8, ..., 1
+            gaps = [];
+            for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+                gaps.push(gap);
+            }
+            break;
+    }
+    
+    // Perform Shell Sort with selected gap sequence
+    for (const gap of gaps) {
+        for (let i = gap; i < n; i++) {
+            const temp = arr[i];
+            let j = i;
+            
+            while (j >= gap && arr[j - gap] > temp) {
+                arr[j] = arr[j - gap];
+                j -= gap;
+            }
+            
+            arr[j] = temp;
+        }
+    }
+    
+    return arr;
+}
+function shellSortGeneric<T>(
+    arr: T[],
+    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
+): T[] {
+    const n = arr.length;
+    
+    for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+        for (let i = gap; i < n; i++) {
+            const temp = arr[i];
+            let j = i;
+            
+            while (j >= gap && compareFn(arr[j - gap], temp) > 0) {
+                arr[j] = arr[j - gap];
+                j -= gap;
+            }
+            
+            arr[j] = temp;
+        }
+    }
+    
+    return arr;
+}
+// Basic usage
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log('Original:', numbers);
+console.log('Sorted:', shellSort([...numbers]));
+
+// With different gap sequences
+console.log('Ciura sequence:', shellSortEnhanced([...numbers], 'ciura'));
+console.log('Knuth sequence:', shellSortEnhanced([...numbers], 'knuth'));
+
+// Generic version with strings
+const strings = ['banana', 'apple', 'cherry', 'date'];
+console.log('Sorted strings:', shellSortGeneric([...strings]));
+
+// Generic version with custom objects
+interface Person {
+    name: string;
+    age: number;
 }
 
-// Example usage and test function
-function testBoyerMoore(): void {
-    const testCases: [string, string, number][] = [
-        ["hello world", "world", 6],
-        ["lorem ipsum dolor sit amet", "sit", 18],
-        ["abcabcabc", "abc", 0],
-        ["abcabcabc", "bcd", -1],
-        ["aaaaaa", "aaa", 0],
-        ["abcde", "abcde", 0],
-        ["abcde", "fghij", -1],
-        ["mississippi", "issip", 4],
+const people: Person[] = [
+    { name: 'John', age: 30 },
+    { name: 'Alice', age: 25 },
+    { name: 'Bob', age: 35 }
+];
+
+const sortedByAge = shellSortGeneric([...people], (a, b) => a.age - b.age);
+console.log('Sorted by age:', sortedByAge);
+function testShellSort(): void {
+    const testCases = [
+        [5, 2, 4, 6, 1, 3],
+        [1],
+        [],
+        [3, 3, 3],
+        [9, 8, 7, 6, 5, 4, 3, 2, 1],
+        [1, 2, 3, 4, 5]
     ];
     
-    console.log("Boyer-Moore Algorithm Tests:");
-    console.log("=".repeat(40));
-    
-    for (const [text, pattern, expected] of testCases) {
-        const result = boyerMooreSearch(text, pattern);
-        const status = result === expected ? "✓ PASS" : "✗ FAIL";
-        console.log(`Text: "${text}" | Pattern: "${pattern}" | Expected: ${expected} | Got: ${result} | ${status}`);
-    }
-    
-    // Performance test
-    const longText = "a".repeat(1000000) + "b";
-    const pattern = "a".repeat(1000) + "b";
-    console.log("\nPerformance test (large input):");
-    const start = performance.now();
-    const result = boyerMooreSearch(longText, pattern);
-    const end = performance.now();
-    console.log(`Found at index ${result} in ${(end - start).toFixed(2)}ms`);
+    testCases.forEach((testCase, index) => {
+        const original = [...testCase];
+        const sorted = shellSort([...testCase]);
+        const expected = [...testCase].sort((a, b) => a - b);
+        
+        console.log(`Test ${index + 1}:`);
+        console.log(`  Input:    [${original}]`);
+        console.log(`  Output:   [${sorted}]`);
+        console.log(`  Expected: [${expected}]`);
+        console.log(`  Pass:     ${JSON.stringify(sorted) === JSON.stringify(expected)}`);
+        console.log('---');
+    });
 }
 
 // Run tests
-testBoyerMoore();
-// Simple usage
-const text = "This is a test string with some test content";
-const pattern = "test";
-const position = boyerMooreSearch(text, pattern);
-console.log(`Pattern found at index: ${position}`); // Output: 8
-
-// With error handling
-function safeSearch(text: string, pattern: string): number {
-    if (!text || !pattern) return -1;
-    return boyerMooreSearch(text, pattern);
+testShellSort();
+function benchmarkShellSort(): void {
+    const sizes = [100, 1000, 5000, 10000];
+    
+    sizes.forEach(size => {
+        // Generate random array
+        const arr = Array.from({ length: size }, () => 
+            Math.floor(Math.random() * 1000)
+        );
+        
+        const startTime = performance.now();
+        shellSort([...arr]);
+        const endTime = performance.now();
+        
+        console.log(`Size: ${size}, Time: ${(endTime - startTime).toFixed(2)}ms`);
+    });
 }
+
+// benchmarkShellSort();
