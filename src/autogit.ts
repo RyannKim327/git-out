@@ -1,72 +1,47 @@
-function bwt(input: string): { transformed: string, index: number } {
-    const n = input.length;
-    const rotations: string[] = [];
+/**
+ * Boyer-Moore-Horspool string search.
+ * @param text  The text to be searched.
+ * @param pat   The pattern to look for.
+ * @returns The zero-based index of the first match, or -1 if not found.
+ */
+export function horspool(text: string, pat: string): number {
+  if (pat.length === 0) return 0;                    // empty pattern matches at start
+  if (pat.length > text.length) return -1;         // impossible to match
 
-    // Generate all rotations
-    for (let i = 0; i < n; i++) {
-        rotations.push(input.slice(i) + input.slice(0, i));
+  /* ---------- 1. Build bad-character skip table ---------- */
+  const skip: number[] = new Array(256).fill(pat.length); // 256 ASCII for speed
+  for (let i = 0; i < pat.length - 1; ++i) {
+    skip[pat.charCodeAt(i)] = pat.length - 1 - i;
+  }
+
+  /* ---------- 2. Search ---------- */
+  let pos = 0;                                       // start of current window
+  const last = pat.length - 1;
+
+  while (pos + last < text.length) {
+    let i = last;                                    // compare from right
+    while (text[pos + i] === pat[i]) {
+      if (i === 0) return pos;                       // full match
+      --i;
     }
-
-    // Sort rotations lexicographically
-    const sorted = rotations.slice().sort();
-
-    // Get the last column
-    const lastColumn = sorted.map(row => row[n - 1]).join('');
-
-    // Find the index of the original string in sorted rotations
-    const index = sorted.indexOf(input);
-
-    return { transformed: lastColumn, index };
+    pos += skip[text.charCodeAt(pos + last)];        // shift window
+  }
+  return -1;                                         // no match
 }
 
-// Example
-const result = bwt("banana$"); // '$' as a terminator symbol
-console.log(result.transformed); // "annb$aa"
-console.log(result.index);       // position of original string in sorted rotations
-function inverseBwt(lastColumn: string, index: number): string {
-    const n = lastColumn.length;
-
-    // First column is just the sorted chars of lastColumn
-    const firstColumn = lastColumn.split('').sort();
-
-    // Map from character occurrence to row mapping
-    const rankLast: number[] = [];
-    const occurrenceMapLast: Record<string, number> = {};
-    for (const char of lastColumn) {
-        occurrenceMapLast[char] = (occurrenceMapLast[char] ?? 0) + 1;
-        rankLast.push(occurrenceMapLast[char]);
-    }
-
-    const occurrenceMapFirst: Record<string, number> = {};
-    const firstColumnRank: number[] = [];
-    for (const char of firstColumn) {
-        occurrenceMapFirst[char] = (occurrenceMapFirst[char] ?? 0) + 1;
-        firstColumnRank.push(occurrenceMapFirst[char]);
-    }
-
-    // Link last column to first column rows
-    const rowMapping: number[] = [];
-    for (let i = 0; i < n; i++) {
-        const char = lastColumn[i];
-        const rank = rankLast[i];
-        // Find position of (char, rank) in firstColumn
-        const position = firstColumnRank.findIndex((r, idx) =>
-            firstColumn[idx] === char && r === rank
-        );
-        rowMapping[i] = position;
-    }
-
-    // Rebuild the string
-    let row = index;
-    let original = '';
-    for (let i = 0; i < n; i++) {
-        original += lastColumn[row];
-        row = rowMapping[row];
-    }
-
-    return original;
+/* ---------- 3. Quick demo ---------- */
+if (import.meta.url.endsWith(process.argv[1])) {
+  const txt = "abracadabra";
+  const pat = "cad";
+  console.log(`"${pat}" found in "${txt}" at index`, horspool(txt, pat)); // → 4
 }
-
-// Example
-const restored = inverseBwt("annb$aa", 3);
-console.log(restored); // "banana$"
+function* horspoolAll(text: string, pat: string): Generator<number> {
+  if (!pat) { yield 0; return; }
+  let from = 0;
+  while (from <= text.length - pat.length) {
+    const idx = horspool(text.slice(from), pat);
+    if (idx < 0) break;
+    yield from + idx;
+    from += idx + 1;          // allow overlapping matches
+  }
+}
