@@ -1,57 +1,152 @@
-/**
- * Depth-limited search (iterative, non-recursive)
- * @param start     start node
- * @param goal      predicate that returns true when the node is a goal
- * @param expand    function that returns the *direct* neighbours of a node
- * @param maxDepth  depth limit (0 = start only, 1 = children of start, …)
- * @returns the goal node if found, otherwise undefined
- */
-export function depthLimitedSearch<T>(
-  start: T,
-  goal: (n: T) => boolean,
-  expand: (n: T) => Iterable<T>,
-  maxDepth: number
-): T | undefined {
-  // stack element: [node, currentDepth]
-  const stack: [T, number][] = [[start, 0]];
+class ListNode<T> {
+    constructor(
+        public value: T,
+        public next: ListNode<T> | null = null
+    ) {}
+}
 
-  while (stack.length) {
-    const [node, depth] = stack.pop()!;
+class LinkedList<T> {
+    private head: ListNode<T> | null = null;
+    private _length: number = 0;
 
-    if (goal(node)) return node;          // success
-    if (depth === maxDepth) continue;   // hit limit – skip expansion
-
-    // push children with incremented depth (LIFO → DFS order)
-    for (const child of expand(node)) {
-      stack.push([child, depth + 1]);
+    // Method to get length (O(1) time)
+    get length(): number {
+        return this._length;
     }
-  }
-  return undefined; // failure
+
+    // Add node to the end
+    append(value: T): void {
+        const newNode = new ListNode(value);
+        
+        if (!this.head) {
+            this.head = newNode;
+        } else {
+            let current = this.head;
+            while (current.next) {
+                current = current.next;
+            }
+            current.next = newNode;
+        }
+        
+        this._length++;
+    }
+
+    // Add node to the beginning
+    prepend(value: T): void {
+        const newNode = new ListNode(value, this.head);
+        this.head = newNode;
+        this._length++;
+    }
+
+    // Other methods would also update _length accordingly
 }
-type Board = number[][]; // 3×3 matrix, 0 = blank
-
-function expandBoard(b: Board): Board[] {
-  /* …generate every board reachable by one legal move… */
-  return neighbours;
+class ListNode<T> {
+    constructor(
+        public value: T,
+        public next: ListNode<T> | null = null
+    ) {}
 }
 
-const start: Board = [
-  [1, 2, 3],
-  [4, 0, 6],
-  [7, 5, 8],
-];
+function getLinkedListLength<T>(head: ListNode<T> | null): number {
+    let length = 0;
+    let current = head;
+    
+    while (current !== null) {
+        length++;
+        current = current.next;
+    }
+    
+    return length;
+}
 
-const goal: Board = [
-  [1, 2, 3],
-  [4, 5, 6],
-  [7, 8, 0],
-];
+// Usage
+const node1 = new ListNode(1);
+const node2 = new ListNode(2);
+const node3 = new ListNode(3);
 
-const result = depthLimitedSearch(
-  start,
-  b => JSON.stringify(b) === JSON.stringify(goal),
-  expandBoard,
-  10 // depth limit
-);
+node1.next = node2;
+node2.next = node3;
 
-console.log(result ? 'Solution found!' : 'No solution within depth limit');
+console.log(getLinkedListLength(node1)); // Output: 3
+console.log(getLinkedListLength(null));  // Output: 0
+function getLinkedListLengthRecursive<T>(head: ListNode<T> | null): number {
+    if (head === null) {
+        return 0;
+    }
+    
+    return 1 + getLinkedListLengthRecursive(head.next);
+}
+
+// Usage
+console.log(getLinkedListLengthRecursive(node1)); // Output: 3
+class LinkedList<T> {
+    private head: ListNode<T> | null = null;
+
+    // Method 1: Iterative length calculation
+    getLengthIterative(): number {
+        let length = 0;
+        let current = this.head;
+        
+        while (current !== null) {
+            length++;
+            current = current.next;
+        }
+        
+        return length;
+    }
+
+    // Method 2: Recursive length calculation
+    getLengthRecursive(): number {
+        return this._getLengthRecursive(this.head);
+    }
+
+    private _getLengthRecursive(node: ListNode<T> | null): number {
+        if (node === null) {
+            return 0;
+        }
+        
+        return 1 + this._getLengthRecursive(node.next);
+    }
+
+    // Method 3: Using reduce-like approach
+    getLengthFunctional(): number {
+        let length = 0;
+        let current = this.head;
+        
+        while (current !== null) {
+            length++;
+            current = current.next;
+        }
+        
+        return length;
+    }
+
+    // Add node
+    append(value: T): void {
+        const newNode = new ListNode(value);
+        
+        if (!this.head) {
+            this.head = newNode;
+        } else {
+            let current = this.head;
+            while (current.next) {
+                current = current.next;
+            }
+            current.next = newNode;
+        }
+    }
+}
+
+// Usage example
+const list = new LinkedList<number>();
+list.append(1);
+list.append(2);
+list.append(3);
+list.append(4);
+
+console.log("Iterative length:", list.getLengthIterative());    // 4
+console.log("Recursive length:", list.getLengthRecursive());    // 4
+console.log("Functional length:", list.getLengthFunctional());  // 4
+
+const emptyList = new LinkedList<number>();
+console.log("Empty list length:", emptyList.getLengthIterative()); // 0
