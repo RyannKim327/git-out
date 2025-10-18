@@ -1,212 +1,105 @@
-function longestCommonSubsequence(text1: string, text2: string): string {
-    const m = text1.length;
-    const n = text2.length;
-    
-    // Create DP table
-    const dp: number[][] = Array(m + 1)
-        .fill(0)
-        .map(() => Array(n + 1).fill(0));
-    
-    // Fill DP table
-    for (let i = 1; i <= m; i++) {
-        for (let j = 1; j <= n; j++) {
-            if (text1[i - 1] === text2[j - 1]) {
-                dp[i][j] = dp[i - 1][j - 1] + 1;
-            } else {
-                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-            }
-        }
-    }
-    
-    // Reconstruct the LCS
-    let i = m, j = n;
-    const lcs: string[] = [];
-    
-    while (i > 0 && j > 0) {
-        if (text1[i - 1] === text2[j - 1]) {
-            lcs.push(text1[i - 1]);
-            i--;
-            j--;
-        } else if (dp[i - 1][j] > dp[i][j - 1]) {
-            i--;
-        } else {
-            j--;
-        }
-    }
-    
-    return lcs.reverse().join('');
-}
-
-// Example usage
-const text1 = "ABCDGH";
-const text2 = "AEDFHR";
-const result = longestCommonSubsequence(text1, text2);
-console.log(`LCS: ${result}`); // Output: "ADH"
-function longestCommonSubsequenceOptimized(text1: string, text2: string): string {
-    // Ensure text1 is the shorter string for space optimization
-    if (text1.length > text2.length) {
-        [text1, text2] = [text2, text1];
-    }
-    
-    const m = text1.length;
-    const n = text2.length;
-    
-    let prev: number[] = Array(m + 1).fill(0);
-    let curr: number[] = Array(m + 1).fill(0);
-    const sequence: number[][] = [];
-    
-    // Build DP with tracking
-    for (let j = 1; j <= n; j++) {
-        for (let i = 1; i <= m; i++) {
-            if (text1[i - 1] === text2[j - 1]) {
-                curr[i] = prev[i - 1] + 1;
-                sequence.push([i, j, i - 1, j - 1]); // Track the path
-            } else {
-                if (prev[i] > curr[i - 1]) {
-                    curr[i] = prev[i];
-                    sequence.push([i, j, i - 1, j]); // Track the path
-                } else {
-                    curr[i] = curr[i - 1];
-                    sequence.push([i, j, i, j - 1]); // Track the path
-                }
-            }
-        }
-        [prev, curr] = [curr, prev];
-    }
-    
-    // Reconstruct LCS (simplified - in practice, you'd need more complex backtracking)
-    return reconstructLCS(text1, text2, prev[m]);
-}
-
-function reconstructLCS(text1: string, text2: string, length: number): string {
-    // For space-optimized version, reconstruction is complex
-    // This is a simplified version - use the standard method if you need exact reconstruction
-    return `LCS length: ${length}`;
-}
-interface LCSResult {
-    sequence: string;
-    length: number;
-    table?: number[][];
-}
-
-class LongestCommonSubsequence {
-    static findLCS(text1: string, text2: string): LCSResult {
-        const m = text1.length;
-        const n = text2.length;
-        
-        // Create and fill DP table
-        const dp: number[][] = Array(m + 1)
-            .fill(0)
-            .map(() => Array(n + 1).fill(0));
-        
-        for (let i = 1; i <= m; i++) {
-            for (let j = 1; j <= n; j++) {
-                if (text1[i - 1] === text2[j - 1]) {
-                    dp[i][j] = dp[i - 1][j - 1] + 1;
-                } else {
-                    dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-                }
-            }
-        }
-        
-        // Reconstruct the sequence
-        const sequence = this.reconstructSequence(text1, text2, dp);
-        
-        return {
-            sequence,
-            length: sequence.length,
-            table: dp
-        };
-    }
-    
-    private static reconstructSequence(text1: string, text2: string, dp: number[][]): string {
-        let i = text1.length;
-        let j = text2.length;
-        const lcs: string[] = [];
-        
-        while (i > 0 && j > 0) {
-            if (text1[i - 1] === text2[j - 1]) {
-                lcs.push(text1[i - 1]);
-                i--;
-                j--;
-            } else if (dp[i - 1][j] > dp[i][j - 1]) {
-                i--;
-            } else {
-                j--;
-            }
-        }
-        
-        return lcs.reverse().join('');
-    }
-    
-    // Find all LCS sequences (if there are multiple)
-    static findAllLCS(text1: string, text2: string): string[] {
-        const m = text1.length;
-        const n = text2.length;
-        const dp: number[][] = Array(m + 1)
-            .fill(0)
-            .map(() => Array(n + 1).fill(0));
-        
-        // Fill DP table
-        for (let i = 1; i <= m; i++) {
-            for (let j = 1; j <= n; j++) {
-                if (text1[i - 1] === text2[j - 1]) {
-                    dp[i][j] = dp[i - 1][j - 1] + 1;
-                } else {
-                    dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-                }
-            }
-        }
-        
-        return this.findAllSequences(text1, text2, dp, m, n);
-    }
-    
-    private static findAllSequences(
-        text1: string, 
-        text2: string, 
-        dp: number[][], 
-        i: number, 
-        j: number
-    ): string[] {
-        if (i === 0 || j === 0) {
-            return [''];
-        }
-        
-        if (text1[i - 1] === text2[j - 1]) {
-            const sequences = this.findAllSequences(text1, text2, dp, i - 1, j - 1);
-            return sequences.map(seq => seq + text1[i - 1]);
-        }
-        
-        const result: string[] = [];
-        
-        if (dp[i - 1][j] >= dp[i][j - 1]) {
-            result.push(...this.findAllSequences(text1, text2, dp, i - 1, j));
-        }
-        
-        if (dp[i][j - 1] >= dp[i - 1][j]) {
-            result.push(...this.findAllSequences(text1, text2, dp, i, j - 1));
-        }
-        
-        // Remove duplicates
-        return [...new Set(result)];
+// Define the TreeNode structure
+class TreeNode {
+    val: number;
+    left: TreeNode | null;
+    right: TreeNode | null;
+    constructor(val?: number, left?: TreeNode | null, right?: TreeNode | null) {
+        this.val = (val === undefined ? 0 : val);
+        this.left = (left === undefined ? null : left);
+        this.right = (right === undefined ? null : right);
     }
 }
 
-// Example usage
-const examples = [
-    { text1: "ABCDGH", text2: "AEDFHR" },
-    { text1: "AGGTAB", text2: "GXTXAYB" },
-    { text1: "ABC", text2: "AC" },
-    { text1: "hello", text2: "world" }
-];
+function diameterOfBinaryTree(root: TreeNode | null): number {
+    let maxDiameter = 0; // This will store the maximum diameter found so far
 
-examples.forEach(({ text1, text2 }) => {
-    const result = LongestCommonSubsequence.findLCS(text1, text2);
-    console.log(`Text1: "${text1}", Text2: "${text2}"`);
-    console.log(`LCS: "${result.sequence}", Length: ${result.length}`);
-    console.log('---');
-});
+    /**
+     * Helper function that performs a DFS traversal.
+     * It returns the height of the current subtree (number of edges from current node to its deepest leaf).
+     * It also updates the `maxDiameter` found globally.
+     */
+    function dfs(node: TreeNode | null): number {
+        // Base case: If the node is null, its height is -1.
+        if (!node) {
+            return -1;
+        }
 
-// Find all possible LCS
-const allSequences = LongestCommonSubsequence.findAllLCS("ABCBDAB", "BDCAB");
-console.log("All LCS sequences:", allSequences);
+        // Recursively calculate the height of the left and right subtrees
+        const leftHeight = dfs(node.left);
+        const rightHeight = dfs(node.right);
+
+        // Calculate the diameter passing *through* the current node:
+        // This is (height of left subtree + 1 for edge to left child)
+        // + (height of right subtree + 1 for edge to right child)
+        // = leftHeight + 1 + rightHeight + 1
+        // = leftHeight + rightHeight + 2
+        // We compare this with the current maxDiameter and update if necessary.
+        maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight + 2);
+
+        // Return the height of the current subtree for its parent's calculation:
+        // 1 (for the edge from current node to its deepest child)
+        // + the maximum height of its children's subtrees.
+        return 1 + Math.max(leftHeight, rightHeight);
+    }
+
+    // Start the DFS traversal from the root.
+    // The return value of dfs(root) is the height of the entire tree, which we don't directly need
+    // for the diameter calculation itself, but the side effect of updating maxDiameter is what we want.
+    dfs(root);
+
+    return maxDiameter;
+}
+
+// --- Example Usage ---
+
+// Example 1: Basic tree
+//     1
+//    / \
+//   2   3
+//  / \
+// 4   5
+const root1 = new TreeNode(1);
+root1.left = new TreeNode(2);
+root1.right = new TreeNode(3);
+root1.left.left = new TreeNode(4);
+root1.left.right = new TreeNode(5);
+// Longest path: 4-2-1-3 or 5-2-1-3 (length 3 edges)
+console.log("Diameter of Example 1:", diameterOfBinaryTree(root1)); // Expected: 3
+
+// Example 2: Skewed tree (line)
+//     1
+//      \
+//       2
+//        \
+//         3
+const root2 = new TreeNode(1);
+root2.right = new TreeNode(2);
+root2.right.right = new TreeNode(3);
+// Longest path: 1-2-3 (length 2 edges)
+console.log("Diameter of Example 2:", diameterOfBinaryTree(root2)); // Expected: 2
+
+// Example 3: Single node tree
+const root3 = new TreeNode(10);
+console.log("Diameter of Example 3:", diameterOfBinaryTree(root3)); // Expected: 0
+
+// Example 4: Empty tree
+const root4 = null;
+console.log("Diameter of Example 4:", diameterOfBinaryTree(root4)); // Expected: 0
+
+// Example 5: Another tree
+//       1
+//      / \
+//     2   3
+//    /     \
+//   4       5
+//  /         \
+// 6           7
+// Longest path: 6-4-2-1-3-5-7 (length 6 edges)
+const root5 = new TreeNode(1);
+root5.left = new TreeNode(2);
+root5.right = new TreeNode(3);
+root5.left.left = new TreeNode(4);
+root5.right.right = new TreeNode(5);
+root5.left.left.left = new TreeNode(6);
+root5.right.right.right = new TreeNode(7);
+console.log("Diameter of Example 5:", diameterOfBinaryTree(root5)); // Expected: 6
