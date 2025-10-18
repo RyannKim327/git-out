@@ -1,114 +1,57 @@
-function firstNonRepeatingChar(str: string): string | null {
-    const frequencyMap: Record<string, number> = {};
-    
-    // Count frequency of each character
-    for (const char of str) {
-        frequencyMap[char] = (frequencyMap[char] || 0) + 1;
+/**
+ * Depth-limited search (iterative, non-recursive)
+ * @param start     start node
+ * @param goal      predicate that returns true when the node is a goal
+ * @param expand    function that returns the *direct* neighbours of a node
+ * @param maxDepth  depth limit (0 = start only, 1 = children of start, …)
+ * @returns the goal node if found, otherwise undefined
+ */
+export function depthLimitedSearch<T>(
+  start: T,
+  goal: (n: T) => boolean,
+  expand: (n: T) => Iterable<T>,
+  maxDepth: number
+): T | undefined {
+  // stack element: [node, currentDepth]
+  const stack: [T, number][] = [[start, 0]];
+
+  while (stack.length) {
+    const [node, depth] = stack.pop()!;
+
+    if (goal(node)) return node;          // success
+    if (depth === maxDepth) continue;   // hit limit – skip expansion
+
+    // push children with incremented depth (LIFO → DFS order)
+    for (const child of expand(node)) {
+      stack.push([child, depth + 1]);
     }
-    
-    // Find first character with frequency 1
-    for (const char of str) {
-        if (frequencyMap[char] === 1) {
-            return char;
-        }
-    }
-    
-    return null; // Return null if no non-repeating character found
+  }
+  return undefined; // failure
+}
+type Board = number[][]; // 3×3 matrix, 0 = blank
+
+function expandBoard(b: Board): Board[] {
+  /* …generate every board reachable by one legal move… */
+  return neighbours;
 }
 
-// Example usage
-console.log(firstNonRepeatingChar("swiss")); // "w"
-console.log(firstNonRepeatingChar("aabb"));  // null
-function firstNonRepeatingChar(str: string): string | null {
-    const result = str.split('').find((char, _, arr) => 
-        arr.indexOf(char) === arr.lastIndexOf(char)
-    );
-    
-    return result || null;
-}
-
-// Example usage
-console.log(firstNonRepeatingChar("swiss")); // "w"
-console.log(firstNonRepeatingChar("aabb"));  // null
-function firstNonRepeatingChar(str: string): string | null {
-    const charMap = new Map<string, number>();
-    const order: string[] = [];
-    
-    for (const char of str) {
-        if (charMap.has(char)) {
-            charMap.set(char, charMap.get(char)! + 1);
-        } else {
-            charMap.set(char, 1);
-            order.push(char);
-        }
-    }
-    
-    for (const char of order) {
-        if (charMap.get(char) === 1) {
-            return char;
-        }
-    }
-    
-    return null;
-}
-
-// Example usage
-console.log(firstNonRepeatingChar("swiss")); // "w"
-console.log(firstNonRepeatingChar("aabb"));  // null
-function firstNonRepeatingCharCaseInsensitive(str: string): string | null {
-    const lowerStr = str.toLowerCase();
-    const frequencyMap: Record<string, number> = {};
-    
-    // Count frequency (case-insensitive)
-    for (const char of lowerStr) {
-        frequencyMap[char] = (frequencyMap[char] || 0) + 1;
-    }
-    
-    // Return original case character
-    for (let i = 0; i < str.length; i++) {
-        const lowerChar = str[i].toLowerCase();
-        if (frequencyMap[lowerChar] === 1) {
-            return str[i];
-        }
-    }
-    
-    return null;
-}
-
-// Example usage
-console.log(firstNonRepeatingCharCaseInsensitive("SwIss")); // "w"
-function firstNonRepeatingChar(str: string): string | null {
-    if (!str.length) return null;
-    
-    const frequencyMap: Record<string, number> = {};
-    
-    // Build frequency map
-    for (const char of str) {
-        frequencyMap[char] = (frequencyMap[char] || 0) + 1;
-    }
-    
-    // Find first non-repeating character
-    for (const char of str) {
-        if (frequencyMap[char] === 1) {
-            return char;
-        }
-    }
-    
-    return null;
-}
-
-// Test cases
-const testCases = [
-    { input: "swiss", expected: "w" },
-    { input: "aabb", expected: null },
-    { input: "abcde", expected: "a" },
-    { input: "hello world", expected: "h" },
-    { input: "", expected: null },
-    { input: "a", expected: "a" },
-    { input: "aa", expected: null }
+const start: Board = [
+  [1, 2, 3],
+  [4, 0, 6],
+  [7, 5, 8],
 ];
 
-testCases.forEach(({ input, expected }) => {
-    const result = firstNonRepeatingChar(input);
-    console.log(`Input: "${input}" -> Output: ${result} (Expected: ${expected})`);
-});
+const goal: Board = [
+  [1, 2, 3],
+  [4, 5, 6],
+  [7, 8, 0],
+];
+
+const result = depthLimitedSearch(
+  start,
+  b => JSON.stringify(b) === JSON.stringify(goal),
+  expandBoard,
+  10 // depth limit
+);
+
+console.log(result ? 'Solution found!' : 'No solution within depth limit');
