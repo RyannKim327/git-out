@@ -1,44 +1,43 @@
-function factorial(n: number): number {
-    // Handle invalid inputs
-    if (n < 0 || !Number.isInteger(n)) {
-        throw new Error("Factorial is only defined for non-negative integers.");
-    }
-    
-    // Base case: 0! = 1
-    if (n === 0) return 1;
-
-    // Calculate factorial iteratively
-    let result = 1;
-    for (let i = 2; i <= n; i++) {
-        result *= i;
-    }
-    return result;
-}
-function factorial(n: number): number {
-    // Input validation
-    if (n < 0 || !Number.isInteger(n)) {
-        throw new Error("Factorial is only defined for non-negative integers.");
+/**
+ * Random QuickSort Implementation in TypeScript
+ * 
+ * This function sorts an array of numbers using a randomized pivot
+ * selection to optimize performance and avoid worst-case O(n²) scenarios.
+ */
+function randomQuickSort(arr: number[]): number[] {
+    // Base case: arrays with 0 or 1 elements are already sorted
+    if (arr.length <= 1) {
+        return arr;
     }
 
-    // Base case
-    if (n === 0) return 1;
+    // Random pivot selection (avoids worst-case performance patterns)
+    const pivotIndex = Math.floor(Math.random() * arr.length);
+    const pivot = arr[pivotIndex];
 
-    // Recursive case
-    return n * factorial(n - 1);
-}
-console.log(factorial(5));  // Output: 120
-console.log(factorial(0));  // Output: 1
-console.log(factorial(10)); // Output: 3628800
-function factorialBigInt(n: bigint): bigint {
-    if (n < 0n) throw new Error("Negative values not allowed");
-    if (n === 0n) return 1n;
-    
-    let result = 1n;
-    for (let i = 2n; i <= n; i++) {
-        result *= i;
+    // Partition the array into three parts
+    const less: number[] = [];
+    const equal: number[] = [];
+    const greater: number[] = [];
+
+    for (const element of arr) {
+        if (element < pivot) {
+            less.push(element);
+        } else if (element === pivot) {
+            equal.push(element);
+        } else {
+            greater.push(element);
+        }
     }
-    return result;
+
+    // Recursively sort and combine partitions
+    return [...randomQuickSort(less), ...equal, ...randomQuickSort(greater)];
 }
 
-// Usage:
-console.log(String(factorialBigInt(30n))); // 265252859812191058636308480000000
+// Example usage
+const unsortedArray = [9, 3, 7, 4, 1, 6, 5, 2, 8];
+const sortedArray = randomQuickSort(unsortedArray);
+
+console.log('Original:', unsortedArray);
+console.log('Sorted:', sortedArray);
+Original: [9, 3, 7, 4, 1, 6, 5, 2, 8]
+Sorted: [1, 2, 3, 4, 5, 6, 7, 8, 9]
