@@ -1,165 +1,101 @@
-// For simplicity, nodes can be strings or numbers.
-// For more complex data, you'd use an object like { id: string, data: any }
-type Node = string | number;
+function findCommonElementsSet<T>(arr1: T[], arr2: T[]): T[] {
+    const set2 = new Set(arr2);
+    const commonElements = new Set<T>(); // Use another Set to ensure unique common elements
 
-// Adjacency list representation: Map node to an array of its neighbors
-type Graph<T extends Node> = Map<T, T[]>;
-/**
- * Performs a Breadth-First Search (BFS) traversal on a graph.
- * @param graph The graph represented as an adjacency list.
- * @param startNode The node to start the traversal from.
- * @returns An array of nodes in the order they were visited.
- */
-function bfsTraversal<T extends Node>(graph: Graph<T>, startNode: T): T[] {
-    const queue: T[] = [];          // Our queue for nodes to visit
-    const visited: Set<T> = new Set(); // Set to keep track of visited nodes
-    const traversalOrder: T[] = []; // To store the result of the traversal
-
-    // 1. Start by adding the startNode to the queue and marking it as visited.
-    queue.push(startNode);
-    visited.add(startNode);
-
-    // 2. While there are still nodes in the queue:
-    while (queue.length > 0) {
-        // a. Dequeue the current node.
-        const currentNode = queue.shift()!; // `!` asserts that `shift()` won't return undefined
-
-        // b. Process the current node (e.g., add to traversal order).
-        traversalOrder.push(currentNode);
-
-        // c. Get all neighbors of the current node.
-        const neighbors = graph.get(currentNode) || []; // Handle nodes with no outgoing edges
-
-        // d. For each neighbor:
-        for (const neighbor of neighbors) {
-            // If the neighbor hasn't been visited:
-            if (!visited.has(neighbor)) {
-                // Mark it as visited and enqueue it.
-                visited.add(neighbor);
-                queue.push(neighbor);
-            }
+    for (const item of arr1) {
+        if (set2.has(item)) {
+            commonElements.add(item);
         }
     }
 
-    return traversalOrder;
+    return Array.from(commonElements);
 }
 
-// --- Example Usage for Traversal ---
-const myGraph: Graph<string> = new Map();
-myGraph.set('A', ['B', 'C']);
-myGraph.set('B', ['D', 'E']);
-myGraph.set('C', ['F']);
-myGraph.set('D', []);
-myGraph.set('E', ['F']);
-myGraph.set('F', []);
+// --- Examples ---
 
-console.log("BFS Traversal Order from 'A':", bfsTraversal(myGraph, 'A'));
-// Expected output: BFS Traversal Order from 'A': [ 'A', 'B', 'C', 'D', 'E', 'F' ]
+// 1. Primitive types (numbers)
+const array1 = [1, 2, 3, 4, 5];
+const array2 = [3, 4, 5, 6, 7];
+const commonNumbers = findCommonElementsSet(array1, array2);
+console.log("Common Numbers:", commonNumbers); // Output: Common Numbers: [3, 4, 5]
 
-console.log("BFS Traversal Order from 'B':", bfsTraversal(myGraph, 'B'));
-// Expected output: BFS Traversal Order from 'B': [ 'B', 'D', 'E', 'F' ]
+// 2. Primitive types (strings)
+const fruits1 = ["apple", "banana", "orange", "grape"];
+const fruits2 = ["banana", "kiwi", "orange", "pineapple"];
+const commonFruits = findCommonElementsSet(fruits1, fruits2);
+console.log("Common Fruits:", commonFruits); // Output: Common Fruits: ["banana", "orange"]
 
-// Example with a node not connected to 'A'
-myGraph.set('G', ['H']);
-myGraph.set('H', []);
-console.log("BFS Traversal Order from 'G':", bfsTraversal(myGraph, 'G'));
-// Expected output: BFS Traversal Order from 'G': [ 'G', 'H' ]
-/**
- * Performs a Breadth-First Search (BFS) to find if a target node exists and is reachable.
- * @param graph The graph represented as an adjacency list.
- * @param startNode The node to start the search from.
- * @param targetNode The node to search for.
- * @returns `true` if the target node is found, `false` otherwise.
- */
-function bfsSearch<T extends Node>(graph: Graph<T>, startNode: T, targetNode: T): boolean {
-    const queue: T[] = [];
-    const visited: Set<T> = new Set();
+// 3. With duplicates in input arrays (result will be unique)
+const arrA = [1, 2, 2, 3, 4];
+const arrB = [2, 3, 3, 5, 6];
+const commonUnique = findCommonElementsSet(arrA, arrB);
+console.log("Common Unique (from duplicates):", commonUnique); // Output: Common Unique (from duplicates): [2, 3]
+function findCommonElementsFilter<T>(arr1: T[], arr2: T[]): T[] {
+    // To ensure unique common elements, filter a Set created from arr1
+    const uniqueArr1 = Array.from(new Set(arr1));
+    return uniqueArr1.filter(item => arr2.includes(item));
+}
 
-    queue.push(startNode);
-    visited.add(startNode);
+// --- Examples ---
 
-    while (queue.length > 0) {
-        const currentNode = queue.shift()!;
+const array3 = [1, 2, 3, 4, 5];
+const array4 = [3, 4, 5, 6, 7];
+const commonNumbersFilter = findCommonElementsFilter(array3, array4);
+console.log("Common Numbers (Filter):", commonNumbersFilter); // Output: Common Numbers (Filter): [3, 4, 5]
 
-        // If the current node is our target, we found it!
-        if (currentNode === targetNode) {
-            return true;
-        }
+const arrC = [1, 2, 2, 3, 4];
+const arrD = [2, 3, 3, 5, 6];
+const commonUniqueFilter = findCommonElementsFilter(arrC, arrD);
+console.log("Common Unique (Filter from duplicates):", commonUniqueFilter); // Output: Common Unique (Filter from duplicates): [2, 3]
+const obj1 = { id: 1, name: "Alice" };
+const obj2 = { id: 1, name: "Alice" };
+console.log(obj1 === obj2); // Output: false (different references)
+interface MyObject {
+    id: number;
+    name: string;
+    // Add other properties as needed
+}
 
-        const neighbors = graph.get(currentNode) || [];
-        for (const neighbor of neighbors) {
-            if (!visited.has(neighbor)) {
-                visited.add(neighbor);
-                queue.push(neighbor);
-            }
+function findCommonObjectsByKey(arr1: MyObject[], arr2: MyObject[], key: keyof MyObject): MyObject[] {
+    const map2 = new Map<any, MyObject>(); // Map key value to the actual object
+
+    // Populate map2 for faster lookups
+    for (const obj of arr2) {
+        map2.set(obj[key], obj);
+    }
+
+    const commonObjects: MyObject[] = [];
+    const foundKeys = new Set<any>(); // To ensure unique common objects in the result
+
+    for (const obj1 of arr1) {
+        const keyValue = obj1[key];
+        if (map2.has(keyValue) && !foundKeys.has(keyValue)) {
+            // We can add either obj1 or map2.get(keyValue), depending on preference
+            // Adding obj1 keeps the original reference from arr1
+            commonObjects.push(obj1);
+            foundKeys.add(keyValue); // Mark this key as found to avoid duplicates
         }
     }
 
-    return false; // Target not found after visiting all reachable nodes
+    return commonObjects;
 }
 
-// --- Example Usage for Searching ---
-console.log("\n--- BFS Search Examples ---");
-console.log("Is 'F' reachable from 'A'?", bfsSearch(myGraph, 'A', 'F')); // Expected: true
-console.log("Is 'Z' reachable from 'A'?", bfsSearch(myGraph, 'A', 'Z')); // Expected: false
-console.log("Is 'H' reachable from 'A'?", bfsSearch(myGraph, 'A', 'H')); // Expected: false (G-H is disconnected from A)
-console.log("Is 'A' reachable from 'A'?", bfsSearch(myGraph, 'A', 'A')); // Expected: true
-/**
- * Performs a Breadth-First Search (BFS) to find the shortest path between two nodes
- * in an unweighted graph.
- * @param graph The graph represented as an adjacency list.
- * @param startNode The node to start the path from.
- * @param targetNode The node to find the path to.
- * @returns An array representing the shortest path, or `null` if the target is unreachable.
- */
-function bfsShortestPath<T extends Node>(graph: Graph<T>, startNode: T, targetNode: T): T[] | null {
-    const queue: T[] = [];
-    const visited: Set<T> = new Set();
-    const parents: Map<T, T | null> = new Map(); // Map to store parent of each node for path reconstruction
+// --- Example ---
+const users1: MyObject[] = [
+    { id: 1, name: "Alice" },
+    { id: 2, name: "Bob" },
+    { id: 3, name: "Charlie" },
+    { id: 2, name: "Bobby" } // Different name, same ID as Bob
+];
 
-    queue.push(startNode);
-    visited.add(startNode);
-    parents.set(startNode, null); // The start node has no parent
+const users2: MyObject[] = [
+    { id: 3, name: "Charlie" },
+    { id: 4, name: "David" },
+    { id: 1, name: "Alicia" } // Different name, same ID as Alice
+];
 
-    while (queue.length > 0) {
-        const currentNode = queue.shift()!;
-
-        // If we found the target, reconstruct and return the path
-        if (currentNode === targetNode) {
-            const path: T[] = [];
-            let node: T | null = targetNode;
-            while (node !== null) {
-                path.unshift(node); // Add node to the beginning of the path
-                node = parents.get(node) || null; // Move to its parent
-            }
-            return path;
-        }
-
-        const neighbors = graph.get(currentNode) || [];
-        for (const neighbor of neighbors) {
-            if (!visited.has(neighbor)) {
-                visited.add(neighbor);
-                parents.set(neighbor, currentNode); // Record current node as the parent of neighbor
-                queue.push(neighbor);
-            }
-        }
-    }
-
-    return null; // Target not reachable from startNode
-}
-
-// --- Example Usage for Shortest Path ---
-console.log("\n--- BFS Shortest Path Examples ---");
-console.log("Shortest path from 'A' to 'F':", bfsShortestPath(myGraph, 'A', 'F'));
-// Expected: [ 'A', 'C', 'F' ] or [ 'A', 'B', 'E', 'F' ] (depends on Map iteration order, but length is 3)
-// For this graph, 'A' -> 'C' -> 'F' has length 2. 'A' -> 'B' -> 'E' -> 'F' has length 3.
-// So, the actual output is [ 'A', 'C', 'F' ]
-
-console.log("Shortest path from 'A' to 'D':", bfsShortestPath(myGraph, 'A', 'D'));
-// Expected: [ 'A', 'B', 'D' ]
-
-console.log("Shortest path from 'A' to 'Z':", bfsShortestPath(myGraph, 'A', 'Z'));
-// Expected: null
-
-console.log("Shortest path from 'G' to 'H':", bfsShortestPath(myGraph, 'G', 'H'));
-// Expected: [ 'G', 'H' ]
+const commonUsersById = findCommonObjectsByKey(users1, users2, "id");
+console.log("Common Users by ID:", commonUsersById);
+// Output: Common Users by ID: [ { id: 1, name: 'Alice' }, { id: 3, name: 'Charlie' } ]
+// Note: Only Alice and Charlie are found. Bob (id:2) is not in users2.
+// Alicia (id:1 from users2) is matched with Alice (id:1 from users1).
