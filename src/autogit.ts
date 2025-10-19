@@ -1,101 +1,172 @@
-function areAnagrams(str1: string, str2: string): boolean {
-    // Remove spaces and convert to lowercase for case-insensitive comparison
-    const cleanStr1 = str1.replace(/\s+/g, '').toLowerCase();
-    const cleanStr2 = str2.replace(/\s+/g, '').toLowerCase();
+function maxSubarraySum(arr: number[]): number {
+    if (arr.length === 0) return 0;
     
-    // If lengths are different, they can't be anagrams
-    if (cleanStr1.length !== cleanStr2.length) {
-        return false;
+    let maxCurrent = arr[0];
+    let maxGlobal = arr[0];
+    
+    for (let i = 1; i < arr.length; i++) {
+        maxCurrent = Math.max(arr[i], maxCurrent + arr[i]);
+        maxGlobal = Math.max(maxGlobal, maxCurrent);
     }
     
-    // Sort and compare
-    return cleanStr1.split('').sort().join('') === cleanStr2.split('').sort().join('');
+    return maxGlobal;
 }
 
-// Examples
-console.log(areAnagrams('listen', 'silent')); // true
-console.log(areAnagrams('hello', 'world')); // false
-console.log(areAnagrams('Debit card', 'Bad credit')); // true
-function areAnagramsFrequency(str1: string, str2: string): boolean {
-    const cleanStr1 = str1.replace(/\s+/g, '').toLowerCase();
-    const cleanStr2 = str2.replace(/\s+/g, '').toLowerCase();
-    
-    if (cleanStr1.length !== cleanStr2.length) {
-        return false;
+// Example usage
+const numbers = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
+console.log(maxSubarraySum(numbers)); // Output: 6
+function maxSubarrayWithIndices(arr: number[]): {
+    maxSum: number;
+    startIndex: number;
+    endIndex: number;
+    subarray: number[];
+} {
+    if (arr.length === 0) {
+        return { maxSum: 0, startIndex: -1, endIndex: -1, subarray: [] };
     }
     
-    const charCount: { [key: string]: number } = {};
+    let maxCurrent = arr[0];
+    let maxGlobal = arr[0];
+    let start = 0;
+    let tempStart = 0;
+    let end = 0;
     
-    // Count characters in first string
-    for (const char of cleanStr1) {
-        charCount[char] = (charCount[char] || 0) + 1;
-    }
-    
-    // Subtract characters from second string
-    for (const char of cleanStr2) {
-        if (!charCount[char]) {
-            return false;
+    for (let i = 1; i < arr.length; i++) {
+        if (arr[i] > maxCurrent + arr[i]) {
+            maxCurrent = arr[i];
+            tempStart = i;
+        } else {
+            maxCurrent += arr[i];
         }
-        charCount[char]--;
-    }
-    
-    // Check if all counts are zero
-    return Object.values(charCount).every(count => count === 0);
-}
-function areAnagramsMap(str1: string, str2: string): boolean {
-    const cleanStr1 = str1.replace(/\s+/g, '').toLowerCase();
-    const cleanStr2 = str2.replace(/\s+/g, '').toLowerCase();
-    
-    if (cleanStr1.length !== cleanStr2.length) {
-        return false;
-    }
-    
-    const charMap = new Map<string, number>();
-    
-    // Build frequency map from first string
-    for (const char of cleanStr1) {
-        charMap.set(char, (charMap.get(char) || 0) + 1);
-    }
-    
-    // Check against second string
-    for (const char of cleanStr2) {
-        const count = charMap.get(char);
-        if (!count) {
-            return false;
-        }
-        charMap.set(char, count - 1);
-    }
-    
-    // Verify all counts are zero
-    for (const count of charMap.values()) {
-        if (count !== 0) {
-            return false;
+        
+        if (maxCurrent > maxGlobal) {
+            maxGlobal = maxCurrent;
+            start = tempStart;
+            end = i;
         }
     }
     
-    return true;
-}
-const areAnagramsOneLiner = (str1: string, str2: string): boolean => {
-    const normalize = (s: string) => s.replace(/\s+/g, '').toLowerCase().split('').sort().join('');
-    return normalize(str1) === normalize(str2);
-};
-// Test function
-function testAnagramChecker() {
-    const testCases: [string, string, boolean][] = [
-        ['listen', 'silent', true],
-        ['hello', 'world', false],
-        ['Debit card', 'Bad credit', true],
-        ['astronomer', 'moon starer', true],
-        ['abc', 'abcd', false],
-        ['', '', true],
-        ['a', 'a', true],
-        ['a', 'b', false],
-    ];
+    const subarray = arr.slice(start, end + 1);
     
-    testCases.forEach(([str1, str2, expected]) => {
-        const result = areAnagrams(str1, str2);
-        console.log(`"${str1}" vs "${str2}": ${result} (Expected: ${expected}) - ${result === expected ? '✓' : '✗'}`);
-    });
+    return {
+        maxSum: maxGlobal,
+        startIndex: start,
+        endIndex: end,
+        subarray: subarray
+    };
 }
 
-testAnagramChecker();
+// Example usage
+const result = maxSubarrayWithIndices(numbers);
+console.log(result);
+// Output: { maxSum: 6, startIndex: 3, endIndex: 6, subarray: [4, -1, 2, 1] }
+function maxSubarrayBruteForce(arr: number[]): number {
+    let maxSum = -Infinity;
+    
+    for (let i = 0; i < arr.length; i++) {
+        let currentSum = 0;
+        for (let j = i; j < arr.length; j++) {
+            currentSum += arr[j];
+            maxSum = Math.max(maxSum, currentSum);
+        }
+    }
+    
+    return maxSum;
+}
+function maxSubarraySumSafe(arr: number[]): number {
+    if (arr.length === 0) return 0;
+    
+    // Handle all negative numbers
+    const allNegative = arr.every(num => num < 0);
+    if (allNegative) {
+        return Math.max(...arr);
+    }
+    
+    // Handle all positive numbers
+    const allPositive = arr.every(num => num > 0);
+    if (allPositive) {
+        return arr.reduce((sum, num) => sum + num, 0);
+    }
+    
+    // Regular Kadane's algorithm for mixed arrays
+    let maxCurrent = arr[0];
+    let maxGlobal = arr[0];
+    
+    for (let i = 1; i < arr.length; i++) {
+        maxCurrent = Math.max(arr[i], maxCurrent + arr[i]);
+        maxGlobal = Math.max(maxGlobal, maxCurrent);
+    }
+    
+    return maxGlobal;
+}
+class MaxSubarrayFinder {
+    
+    // Kadane's algorithm implementation
+    static findMaxSum(arr: number[]): number {
+        if (arr.length === 0) return 0;
+        
+        let maxCurrent = arr[0];
+        let maxGlobal = arr[0];
+        
+        for (let i = 1; i < arr.length; i++) {
+            maxCurrent = Math.max(arr[i], maxCurrent + arr[i]);
+            maxGlobal = Math.max(maxGlobal, maxCurrent);
+        }
+        
+        return maxGlobal;
+    }
+    
+    // Find maximum sum with subarray indices
+    static findMaxSubarray(arr: number[]): {
+        sum: number;
+        subarray: number[];
+        indices: [number, number];
+    } {
+        if (arr.length === 0) {
+            return { sum: 0, subarray: [], indices: [-1, -1] };
+        }
+        
+        let maxCurrent = arr[0];
+        let maxGlobal = arr[0];
+        let start = 0;
+        let tempStart = 0;
+        let end = 0;
+        
+        for (let i = 1; i < arr.length; i++) {
+            if (arr[i] > maxCurrent + arr[i]) {
+                maxCurrent = arr[i];
+                tempStart = i;
+            } else {
+                maxCurrent += arr[i];
+            }
+            
+            if (maxCurrent > maxGlobal) {
+                maxGlobal = maxCurrent;
+                start = tempStart;
+                end = i;
+            }
+        }
+        
+        return {
+            sum: maxGlobal,
+            subarray: arr.slice(start, end + 1),
+            indices: [start, end]
+        };
+    }
+}
+
+// Test cases
+const testCases = [
+    [-2, 1, -3, 4, -1, 2, 1, -5, 4],
+    [1, 2, 3, -2, 5],
+    [-1, -2, -3, -4],
+    [5, -2, 3, -1, 2],
+    []
+];
+
+testCases.forEach((testCase, index) => {
+    console.log(`Test case ${index + 1}:`, testCase);
+    console.log('Max sum:', MaxSubarrayFinder.findMaxSum(testCase));
+    console.log('Max subarray:', MaxSubarrayFinder.findMaxSubarray(testCase));
+    console.log('---');
+});
