@@ -1,72 +1,93 @@
-function fisherYatesShuffle<T>(array: T[]): T[] {
-    const shuffled = [...array];
-    let currentIndex = shuffled.length;
+function maxSubArraySum(nums: number[]): number {
+    if (nums.length === 0) return 0;
     
-    // While there remain elements to shuffle
-    while (currentIndex !== 0) {
-        // Pick a remaining element
-        const randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex--;
+    let maxCurrent = nums[0];
+    let maxGlobal = nums[0];
+    
+    for (let i = 1; i < nums.length; i++) {
+        // Either include the current element in a new subarray
+        // or extend the previous subarray
+        maxCurrent = Math.max(nums[i], maxCurrent + nums[i]);
         
-        // Swap it with the current element
-        [shuffled[currentIndex], shuffled[randomIndex]] = [
-            shuffled[randomIndex],
-            shuffled[currentIndex]
-        ];
-    }
-    
-    return shuffled;
-}
-
-// Example usage
-const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-const shuffledNumbers = fisherYatesShuffle(numbers);
-
-console.log('Original:', numbers);
-console.log('Shuffled:', shuffledNumbers);
-
-// Example with strings
-const fruits = ['apple', 'banana', 'cherry', 'date', 'elderberry'];
-const shuffledFruits = fisherYatesShuffle(fruits);
-
-console.log('Original fruits:', fruits);
-console.log('Shuffled fruits:', shuffledFruits);
-
-// Example with custom objects
-interface Person {
-    name: string;
-    age: number;
-}
-
-const people: Person[] = [
-    { name: 'Alice', age: 25 },
-    { name: 'Bob', age: 30 },
-    { name: 'Charlie', age: 35 }
-];
-
-const shuffledPeople = fisherYatesShuffle(people);
-console.log('Shuffled people:', shuffledPeople);
-function quickSort<T>(array: T[]): T[] {
-    if (array.length <= 1) {
-        return array;
-    }
-    
-    const pivot = array[0];
-    const left: T[] = [];
-    const right: T[] = [];
-    
-    for (let i = 1; i < array.length; i++) {
-        if (array[i] < pivot) {
-            left.push(array[i]);
-        } else {
-            right.push(array[i]);
+        // Update the global maximum if current is larger
+        if (maxCurrent > maxGlobal) {
+            maxGlobal = maxCurrent;
         }
     }
     
-    return [...quickSort(left), pivot, ...quickSort(right)];
+    return maxGlobal;
 }
 
 // Example usage
-const unsorted = [3, 1, 4, 1, 5, 9, 2, 6, 5];
-const sorted = quickSort(unsorted);
-console.log('Sorted:', sorted);
+const arr1 = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
+console.log(maxSubArraySum(arr1)); // Output: 6 (subarray [4, -1, 2, 1])
+
+const arr2 = [1];
+console.log(maxSubArraySum(arr2)); // Output: 1
+
+const arr3 = [-1];
+console.log(maxSubArraySum(arr3)); // Output: -1
+interface MaxSubarrayResult {
+    sum: number;
+    startIndex: number;
+    endIndex: number;
+}
+
+function findMaxSubarray(nums: number[]): MaxSubarrayResult {
+    if (nums.length === 0) {
+        return { sum: 0, startIndex: 0, endIndex: -1 };
+    }
+    
+    let maxCurrent = nums[0];
+    let maxGlobal = nums[0];
+    let currentStart = 0;
+    let bestStart = 0;
+    let bestEnd = 0;
+    
+    for (let i = 1; i < nums.length; i++) {
+        if (nums[i] > maxCurrent + nums[i]) {
+            // Start a new subarray
+            maxCurrent = nums[i];
+            currentStart = i;
+        } else {
+            // Extend the current subarray
+            maxCurrent += nums[i];
+        }
+        
+        if (maxCurrent > maxGlobal) {
+            maxGlobal = maxCurrent;
+            bestStart = currentStart;
+            bestEnd = i;
+        }
+    }
+    
+    return {
+        sum: maxGlobal,
+        startIndex: bestStart,
+        endIndex: bestEnd
+    };
+}
+
+// Example usage
+const arr = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
+const result = findMaxSubarray(arr);
+console.log(result); 
+// Output: { sum: 6, startIndex: 3, endIndex: 6 }
+// Subarray: [4, -1, 2, 1]
+function maxSubArrayBruteForce(nums: number[]): number {
+    if (nums.length === 0) return 0;
+    
+    let maxSum = nums[0];
+    
+    for (let i = 0; i < nums.length; i++) {
+        let currentSum = 0;
+        for (let j = i; j < nums.length; j++) {
+            currentSum += nums[j];
+            if (currentSum > maxSum) {
+                maxSum = currentSum;
+            }
+        }
+    }
+    
+    return maxSum;
+}
