@@ -1,43 +1,140 @@
-function calculateMean(numbers: number[]): number {
-    if (numbers.length === 0) {
-        return NaN; // Mean is undefined for an empty list
-    }
+/* ---------- BST Node ---------- */
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null = null;
+  right: TreeNode<T> | null = null;
 
-    const sum = numbers.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
-    return sum / numbers.length;
+  constructor(value: T) {
+    this.value = value;
+  }
 }
 
-// --- Usage Examples ---
-const list1 = [1, 2, 3, 4, 5];
-console.log(`Mean of [${list1}] is:`, calculateMean(list1)); // Output: 3
+/* ---------- Comparator ---------- */
+type CompareFn<T> = (a: T, b: T) => number;   // <0 → a<b, 0 → equal, >0 → a>b
 
-const list2 = [10, 20, 30];
-console.log(`Mean of [${list2}] is:`, calculateMean(list2)); // Output: 20
+/* ---------- Binary Search Tree ---------- */
+class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
+  private compare: CompareFn<T>;
 
-const list3 = [7];
-console.log(`Mean of [${list3}] is:`, calculateMean(list3)); // Output: 7
+  constructor(compareFn?: CompareFn<T>) {
+    this.compare = compareFn || this.defaultCompare;
+  }
 
-const list4 = [-1, 0, 1];
-console.log(`Mean of [${list4}] is:`, calculateMean(list4)); // Output: 0
+  /* ---- Public API ---- */
+  insert(value: T): this {
+    this.root = this._insert(this.root, value);
+    return this;
+  }
 
-const emptyList: number[] = [];
-console.log(`Mean of [${emptyList}] is:`, calculateMean(emptyList)); // Output: NaN
-function calculateMeanLoop(numbers: number[]): number {
-    if (numbers.length === 0) {
-        return NaN; // Mean is undefined for an empty list
+  delete(value: T): boolean {
+    const { node, found } = this._delete(this.root, value);
+    if (found) this.root = node;
+    return found;
+  }
+
+  search(value: T): boolean {
+    return this._search(this.root, value);
+  }
+
+  inOrder(): T[] {
+    const out: T[] = [];
+    this._inOrder(this.root, out);
+    return out;
+  }
+
+  size(): number {
+    return this._size(this.root);
+  }
+
+  isEmpty(): boolean {
+    return this.root === null;
+  }
+
+  /* ---- Private helpers ---- */
+  private defaultCompare(a: T, b: T): number {
+    return a < b ? -1 : a > b ? 1 : 0;
+  }
+
+  private _insert(node: TreeNode<T> | null, value: T): TreeNode<T> {
+    if (!node) return new TreeNode(value);
+    const cmp = this.compare(value, node.value);
+    if (cmp < 0) node.left = this._insert(node.left, value);
+    else if (cmp > 0) node.right = this._insert(node.right, value);
+    /* duplicate → ignore or update policy here */
+    return node;
+  }
+
+  private _search(node: TreeNode<T> | null, value: T): boolean {
+    if (!node) return false;
+    const cmp = this.compare(value, node.value);
+    return cmp === 0
+      ? true
+      : cmp < 0
+      ? this._search(node.left, value)
+      : this._search(node.right, value);
+  }
+
+  private _delete(
+    node: TreeNode<T> | null,
+    value: T
+  ): { node: TreeNode<T> | null; found: boolean } {
+    if (!node) return { node: null, found: false };
+
+    const cmp = this.compare(value, node.value);
+    if (cmp < 0) {
+      const { node: newLeft, found } = this._delete(node.left, value);
+      node.left = newLeft;
+      return { node, found };
+    }
+    if (cmp > 0) {
+      const { node: newRight, found } = this._delete(node.right, value);
+      node.right = newRight;
+      return { node, found };
     }
 
-    let sum = 0;
-    for (const num of numbers) {
-        sum += num;
-    }
+    /* Found node to delete */
+    if (!node.left) return { node: node.right, found: true };
+    if (!node.right) return { node: node.left, found: true };
 
-    return sum / numbers.length;
+    /* Two children: replace with in-order successor (min of right subtree) */
+    const minNode = this._minNode(node.right)!;
+    node.value = minNode.value;
+    const { node: newRight } = this._delete(node.right, minNode.value);
+    node.right = newRight;
+    return { node, found: true };
+  }
+
+  private _minNode(node: TreeNode<T>): TreeNode<T> | null {
+    while (node.left) node = node.left;
+    return node;
+  }
+
+  private _inOrder(node: TreeNode<T> | null, out: T[]): void {
+    if (!node) return;
+    this._inOrder(node.left, out);
+    out.push(node.value);
+    this._inOrder(node.right, out);
+  }
+
+  private _size(node: TreeNode<T> | null): number {
+    return node ? 1 + this._size(node.left) + this._size(node.right) : 0;
+  }
 }
 
-// --- Usage Examples ---
-const listA = [10, 15, 20, 25];
-console.log(`Mean of [${listA}] (loop) is:`, calculateMeanLoop(listA)); // Output: 17.5
+/* ---------- Usage ---------- */
+const bst = new BinarySearchTree<number>();
+bst.insert(50).insert(30).insert(70).insert(20).insert(40);
+console.log("In-order:", bst.inOrder()); // [20, 30, 40, 50, 70]
+console.log("Contains 40?", bst.search(40)); // true
+bst.delete(30);
+console.log("After delete 30:", bst.inOrder()); // [20, 40, 50, 70]
 
-const listB: number[] = [];
-console.log(`Mean of [${listB}] (loop) is:`, calculateMeanLoop(listB)); // Output: NaN
+/* Custom comparator example */
+interface Person { name: string; age: number }
+const peopleTree = new BinarySearchTree<Person>(
+  (a, b) => a.age - b.age
+);
+peopleTree.insert({ name: "Alice", age: 25 });
+peopleTree.insert({ name: "Bob", age: 30 });
+console.log(peopleTree.inOrder());
