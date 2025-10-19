@@ -1,44 +1,23 @@
 /**
- * Extremely inefficient sorting algorithm that randomly shuffles the array
- * until it is sorted. Average time complexity: O(n!) (yes, factorial!).
- * Use only for educational purposes (or pure amusement)!
+ * Returns the largest prime factor of a positive integer.
+ * Throws for n ≤ 1.
  */
-function bogoSort<T>(arr: T[]): T[] {
-    // Helper to check if the array is sorted
-    const isSorted = (arr: T[]): boolean => {
-        for (let i = 1; i < arr.length; i++) {
-            if (arr[i] < arr[i - 1]) return false;
-        }
-        return true;
-    };
+function largestPrimeFactor(n: number): number {
+  if (n <= 1 || !Number.isInteger(n)) {
+    throw new Error('Input must be an integer greater than 1');
+  }
 
-    // Random shuffle using Fisher-Yates algorithm
-    const shuffle = (arr: T[]): T[] => {
-        const copy = [...arr];
-        for (let i = copy.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [copy[i], copy[j]] = [copy[j], copy[i]]; // Swap elements
-        }
-        return copy;
-    };
-
-    // Keep shuffling until sorted (might take 10 years - pentium warned!)
-    while (!isSorted(arr)) {
-        arr = shuffle(arr);
+  let factor = 2;
+  while (factor * factor <= n) {
+    if (n % factor === 0) {
+      n /= factor;          // divide out this factor completely
+    } else {
+      factor += factor === 2 ? 1 : 2; // after 2, only test odd numbers
     }
-
-    return arr;
+  }
+  return n; // whatever is left is prime and the largest factor
 }
 
-// Example usage with a small array (don't try this with large arrays!)
-const unsortedArray = [3, 1, 4, 1, 5, 9, 2, 6];
-console.log("Unsorted:", unsortedArray);
-
-console.time("BogoSort");
-const sortedArray = bogoSort(unsortedArray);
-console.timeEnd("BogoSort");
-
-console.log("Sorted:", sortedArray);
-Unsorted: [3, 1, 4, 1, 5, 9, 2, 6]
-BogoSort: 1327.827ms  ← Whoa, it actually finished quickly!
-Sorted: [1, 1, 2, 3, 4, 5, 6, 9]
+// --- quick checks ---
+console.log(largestPrimeFactor(13195)); // 29
+console.log(largestPrimeFactor(600851475143)); // 6857
