@@ -1,36 +1,71 @@
-const array1 = [1, 2, 3, 4];
-const array2 = [3, 4, 5, 6];
+// graph.ts
+export type Vertex = string | number;
+export type AdjList<T extends Vertex = Vertex> = Map<T, T[]>;
 
-const common = array1.filter(item => array2.includes(item));
+/**
+ * Depth-first search (recursive version).
+ * @param graph   Adjacency-list representation.
+ * @param start   Vertex where traversal begins.
+ * @param visitor Optional callback invoked on every visited vertex.
+ * @returns       Set of vertices that were reachable from start.
+ */
+export function dfs<T extends Vertex>(
+  graph: AdjList<T>,
+  start: T,
+  visitor?: (v: T) => void
+): Set<T> {
+  const visited = new Set<T>();
+  const adj = (v: T) => graph.get(v) ?? [];
 
-console.log(common); // [3, 4]
-const array1 = [1, 2, 3, 4];
-const array2 = [3, 4, 5, 6];
+  function _visit(v: T): void {
+    if (visited.has(v)) return;
+    visited.add(v);
+    visitor?.(v);
+    for (const n of adj(v)) _visit(n);
+  }
 
-const set2 = new Set(array2);
-const common = array1.filter(item => set2.has(item));
+  _visit(start);
+  return visited;
+}
 
-console.log(common); // [3, 4]
-type User = { id: number; name: string };
+/**
+ * Depth-first search (iterative version).
+ * Same signature as dfs() but uses an explicit stack.
+ */
+export function dfsIterative<T extends Vertex>(
+  graph: AdjList<T>,
+  start: T,
+  visitor?: (v: T) => void
+): Set<T> {
+  const visited = new Set<T>();
+  const stack: T[] = [start];
+  const adj = (v: T) => graph.get(v) ?? [];
 
-const users1: User[] = [
-  { id: 1, name: "Alice" },
-  { id: 2, name: "Bob" }
-];
-const users2: User[] = [
-  { id: 2, name: "Bob" },
-  { id: 3, name: "Charlie" }
-];
+  while (stack.length) {
+    const v = stack.pop()!;
+    if (visited.has(v)) continue;
+    visited.add(v);
+    visitor?.(v);
+    // Push neighbours in reverse so that left-most is processed first
+    stack.push(...adj(v).reverse());
+  }
+  return visited;
+}
+import { AdjList, dfs, dfsIterative } from './graph';
 
-const ids2 = new Set(users2.map(u => u.id));
-const common = users1.filter(user => ids2.has(user.id));
+const g: AdjList<number> = new Map([
+  [0, [1, 2]],
+  [1, [3, 4]],
+  [2, [5]],
+  [3, []],
+  [4, [5]],
+  [5, []],
+]);
 
-console.log(common); // [{ id: 2, name: "Bob" }]
-import _ from "lodash";
+// Traverse and print every reachable vertex from 0
+dfs(g, 0, v => console.log('visited', v));
 
-const array1 = [1, 2, 3, 4];
-const array2 = [3, 4, 5, 6];
-
-const common = _.intersection(array1, array2);
-
-console.log(common); // [3, 4]
+// Collect vertices in post-order (iterative)
+const order: number[] = [];
+dfsIterative(g, 0, v => order.push(v));
+console.log(order); // → [3, 5, 4, 1, 2, 0]  (one possible order)
