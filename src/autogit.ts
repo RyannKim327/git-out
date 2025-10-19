@@ -1,52 +1,50 @@
-function calculateMean(numbers: number[]): number {
-    if (numbers.length === 0) {
-        return 0; // or throw an error, depending on your needs
+/**
+ * Bottom-up (iterative) merge sort.
+ * Runs in O(n log n) time and O(n) extra space.
+ * Stable (equal keys keep their original left-to-right order).
+ */
+export function mergeSortIterative<T>(a: T[]): T[] {
+  const n = a.length;
+  if (n < 2) return a;                 // already sorted
+
+  const aux = a.slice();                // one auxiliary buffer
+  let width = 1;                        // current run length
+
+  while (width < n) {
+    let left = 0;
+    while (left < n) {
+      const mid = Math.min(left + width, n);
+      const right = Math.min(left + width * 2, n);
+      merge(a, aux, left, mid, right);  // merge a[left:mid] with a[mid:right]
+      left = right;
     }
-    
-    const sum = numbers.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
-    return sum / numbers.length;
+    width *= 2;
+  }
+  return a;
 }
 
-// Usage
-const numbers = [1, 2, 3, 4, 5];
-const mean = calculateMean(numbers);
-console.log(mean); // Output: 3
-function calculateMean(numbers: number[]): number {
-    if (numbers.length === 0) {
-        throw new Error("Cannot calculate mean of empty array");
-    }
-    
-    const sum = numbers.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
-    return sum / numbers.length;
-}
+/**
+ * Merge two adjacent sorted slices a[l:mid] and a[mid:r] into one slice a[l:r].
+ * Uses aux as temporary storage.
+ */
+function merge<T>(a: T[], aux: T[], l: number, mid: number, r: number): void {
+  let i = l;      // cursor in left half
+  let j = mid;    // cursor in right half
+  let k = l;      // cursor in auxiliary array
 
-// Usage with error handling
-try {
-    const numbers = [10, 20, 30, 40, 50];
-    const mean = calculateMean(numbers);
-    console.log(`Mean: ${mean}`); // Output: Mean: 30
-} catch (error) {
-    console.error(error.message);
-}
-const calculateMean = (numbers: number[]): number => 
-    numbers.length === 0 ? 0 : numbers.reduce((a, b) => a + b, 0) / numbers.length;
+  // Merge while both halves have elements
+  while (i < mid && j < r) {
+    // stable: choose left element on equality
+    aux[k++] = a[i] <= a[j] ? a[i++] : a[j++];
+  }
 
-// Usage
-const numbers = [2, 4, 6, 8, 10];
-const mean = calculateMean(numbers);
-console.log(mean); // Output: 6
-function calculateMean(dataPoints: number[]): number {
-    if (dataPoints.length === 0) {
-        return NaN; // Return NaN for empty arrays
-    }
-    
-    const total = dataPoints.reduce((runningTotal, currentValue) => runningTotal + currentValue, 0);
-    const count = dataPoints.length;
-    
-    return total / count;
-}
+  // Copy leftovers (only one of these loops will run)
+  while (i < mid) aux[k++] = a[i++];
+  while (j < r)   aux[k++] = a[j++];
 
-// Usage
-const measurements = [15.5, 18.2, 12.8, 20.1, 16.7];
-const average = calculateMean(measurements);
-console.log(`Average: ${average.toFixed(2)}`); // Output: Average: 16.66
+  // Copy back from aux to original array
+  for (let t = l; t < r; t++) a[t] = aux[t];
+}
+const nums = [5, 3, 9, 1, 7, 2];
+mergeSortIterative(nums);
+console.log(nums); // [1, 2, 3, 5, 7, 9]
