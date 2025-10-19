@@ -1,56 +1,23 @@
-class ListNode {
-  val: number;
-  next: ListNode | null = null;
-
-  constructor(val: number) {
-    this.val = val;
-  }
+function calculateMean(numbers: number[]): number {
+    if (numbers.length === 0) {
+        throw new Error("Cannot calculate mean of empty array");
+    }
+    
+    const sum = numbers.reduce((accumulator, current) => accumulator + current, 0);
+    return sum / numbers.length;
 }
 
-function getIntersectionNode(headA: ListNode | null, headB: ListNode | null): ListNode | null {
-  if (!headA || !headB) return null;
-
-  let lenA = getLength(headA);
-  let lenB = getLength(headB);
-
-  let longer = lenA > lenB ? headA : headB;
-  let shorter = lenA > lenB ? headB : headA;
-  let diff = Math.abs(lenA - lenB);
-
-  // Advance the longer list by the difference
-  for (let i = 0; i < diff; i++) {
-    longer = longer!.next;
-  }
-
-  // Traverse both together
-  while (longer && shorter) {
-    if (longer === shorter) return longer;
-    longer = longer.next;
-    shorter = shorter.next;
-  }
-
-  return null;
+// Example usage
+const data: number[] = [1, 2, 3, 4, 5];
+const mean = calculateMean(data);
+console.log(mean); // Output: 3
+function calculateMeanRobust(numbers: any[]): number {
+    const validNumbers = numbers.filter(n => typeof n === 'number' && !isNaN(n));
+    
+    if (validNumbers.length === 0) {
+        throw new Error("No valid numbers found in array");
+    }
+    
+    const sum = validNumbers.reduce((acc, curr) => acc + curr, 0);
+    return sum / validNumbers.length;
 }
-
-function getLength(head: ListNode | null): number {
-  let length = 0;
-  while (head) {
-    length++;
-    head = head.next;
-  }
-  return length;
-}
-// Create intersecting lists
-const common = new ListNode(8);
-common.next = new ListNode(10);
-
-const headA = new ListNode(3);
-headA.next = new ListNode(7);
-headA.next.next = common;
-
-const headB = new ListNode(99);
-headB.next = new ListNode(1);
-headB.next.next = common;
-
-const intersection = getIntersectionNode(headA, headB);
-console.log(intersection?.val); // Output: 8
