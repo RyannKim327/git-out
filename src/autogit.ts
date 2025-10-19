@@ -1,153 +1,257 @@
-// node.ts or within the same file
-class Node<T> {
+class BinaryTreeNode<T> {
     value: T;
-    next: Node<T> | null;
+    left: BinaryTreeNode<T> | null;
+    right: BinaryTreeNode<T> | null;
 
     constructor(value: T) {
         this.value = value;
-        this.next = null; // Initially, this node doesn't point to anything
+        this.left = null;
+        this.right = null;
     }
 }
-// queue.ts or within the same file
 
-// (Optional) Define an interface for the Queue for better type safety
-interface IQueue<T> {
-    enqueue(value: T): void;
-    dequeue(): T | undefined;
-    peek(): T | undefined;
-    isEmpty(): boolean;
-    readonly size: number;
-    toArray(): T[]; // For easy visualization/debugging
-}
-
-class Queue<T> implements IQueue<T> {
-    private head: Node<T> | null; // Front of the queue
-    private tail: Node<T> | null; // Back of the queue
-    private _size: number;       // Keep track of the number of elements
+class BinaryTree<T> {
+    root: BinaryTreeNode<T> | null;
 
     constructor() {
-        this.head = null;
-        this.tail = null;
-        this._size = 0;
+        this.root = null;
     }
 
-    /**
-     * Adds an element to the back (tail) of the queue.
-     * Time complexity: O(1)
-     * @param value The value to add to the queue.
-     */
-    enqueue(value: T): void {
-        const newNode = new Node(value);
-        if (this.isEmpty()) {
-            // If the queue is empty, the new node is both head and tail
-            this.head = newNode;
-            this.tail = newNode;
-        } else {
-            // Otherwise, link the current tail to the new node and update the tail
-            this.tail!.next = newNode; // '!' asserts that tail is not null
-            this.tail = newNode;
-        }
-        this._size++;
-    }
-
-    /**
-     * Removes and returns the element from the front (head) of the queue.
-     * Returns `undefined` if the queue is empty.
-     * Time complexity: O(1)
-     * @returns The value removed from the queue, or `undefined` if the queue was empty.
-     */
-    dequeue(): T | undefined {
-        if (this.isEmpty()) {
-            return undefined; // Nothing to dequeue
+    // Insert a value into the tree
+    insert(value: T): void {
+        const newNode = new BinaryTreeNode(value);
+        
+        if (this.root === null) {
+            this.root = newNode;
+            return;
         }
 
-        const value = this.head!.value; // '!' asserts that head is not null
-        this.head = this.head!.next;    // Move head to the next node
-        this._size--;
-
-        if (this.head === null) {
-            // If head became null, the queue is now empty, so tail should also be null
-            this.tail = null;
+        let current = this.root;
+        while (true) {
+            // Simple insertion strategy: left for less, right for greater
+            if (value < current.value) {
+                if (current.left === null) {
+                    current.left = newNode;
+                    return;
+                }
+                current = current.left;
+            } else {
+                if (current.right === null) {
+                    current.right = newNode;
+                    return;
+                }
+                current = current.right;
+            }
         }
-
-        return value;
     }
 
-    /**
-     * Returns the element at the front (head) of the queue without removing it.
-     * Returns `undefined` if the queue is empty.
-     * Time complexity: O(1)
-     * @returns The value at the front of the queue, or `undefined` if the queue was empty.
-     */
-    peek(): T | undefined {
-        return this.head?.value; // Uses optional chaining for concise check
-    }
-
-    /**
-     * Checks if the queue is empty.
-     * Time complexity: O(1)
-     * @returns `true` if the queue contains no elements, `false` otherwise.
-     */
-    isEmpty(): boolean {
-        return this._size === 0;
-    }
-
-    /**
-     * Returns the number of elements in the queue.
-     * Time complexity: O(1)
-     * @returns The current size of the queue.
-     */
-    get size(): number {
-        return this._size;
-    }
-
-    /**
-     * Converts the queue to an array for easy inspection/debugging.
-     * Time complexity: O(N)
-     * @returns An array containing all elements in the queue, from front to back.
-     */
-    toArray(): T[] {
-        const result: T[] = [];
-        let current = this.head;
+    // Search for a value
+    search(value: T): boolean {
+        let current = this.root;
+        
         while (current !== null) {
-            result.push(current.value);
-            current = current.next;
+            if (value === current.value) {
+                return true;
+            } else if (value < current.value) {
+                current = current.left;
+            } else {
+                current = current.right;
+            }
         }
-        return result;
+        
+        return false;
+    }
+
+    // In-order traversal (left, root, right)
+    inOrderTraversal(node: BinaryTreeNode<T> | null = this.root): T[] {
+        if (node === null) return [];
+        
+        return [
+            ...this.inOrderTraversal(node.left),
+            node.value,
+            ...this.inOrderTraversal(node.right)
+        ];
+    }
+
+    // Pre-order traversal (root, left, right)
+    preOrderTraversal(node: BinaryTreeNode<T> | null = this.root): T[] {
+        if (node === null) return [];
+        
+        return [
+            node.value,
+            ...this.preOrderTraversal(node.left),
+            ...this.preOrderTraversal(node.right)
+        ];
+    }
+
+    // Post-order traversal (left, right, root)
+    postOrderTraversal(node: BinaryTreeNode<T> | null = this.root): T[] {
+        if (node === null) return [];
+        
+        return [
+            ...this.postOrderTraversal(node.left),
+            ...this.postOrderTraversal(node.right),
+            node.value
+        ];
+    }
+
+    // Find the minimum value
+    findMin(): T | null {
+        if (this.root === null) return null;
+        
+        let current = this.root;
+        while (current.left !== null) {
+            current = current.left;
+        }
+        return current.value;
+    }
+
+    // Find the maximum value
+    findMax(): T | null {
+        if (this.root === null) return null;
+        
+        let current = this.root;
+        while (current.right !== null) {
+            current = current.right;
+        }
+        return current.value;
+    }
+
+    // Calculate the height of the tree
+    height(node: BinaryTreeNode<T> | null = this.root): number {
+        if (node === null) return 0;
+        
+        const leftHeight = this.height(node.left);
+        const rightHeight = this.height(node.right);
+        
+        return Math.max(leftHeight, rightHeight) + 1;
+    }
+
+    // Count the number of nodes
+    countNodes(node: BinaryTreeNode<T> | null = this.root): number {
+        if (node === null) return 0;
+        
+        return 1 + this.countNodes(node.left) + this.countNodes(node.right);
     }
 }
-// Create a queue for strings
-const stringQueue = new Queue<string>();
+// Create a binary tree
+const tree = new BinaryTree<number>();
 
-console.log("Is empty?", stringQueue.isEmpty()); // true
-console.log("Size:", stringQueue.size);       // 0
-console.log("Peek (empty):", stringQueue.peek()); // undefined
-console.log("Dequeue (empty):", stringQueue.dequeue()); // undefined
+// Insert values
+tree.insert(10);
+tree.insert(5);
+tree.insert(15);
+tree.insert(3);
+tree.insert(7);
+tree.insert(12);
+tree.insert(18);
 
-// Enqueue elements
-stringQueue.enqueue("Alice");
-stringQueue.enqueue("Bob");
-stringQueue.enqueue("Charlie");
-console.log("\nEnqueued Alice, Bob, Charlie.");
-console.log("Queue content:", stringQueue.toArray()); // ["Alice", "Bob", "Charlie"]
-console.log("Size:", stringQueue.size);       // 3
-console.log("Peek:", stringQueue.peek());     // Alice
+// Search for values
+console.log(tree.search(7));  // true
+console.log(tree.search(20)); // false
 
-// Dequeue elements
-console.log("\nDequeued:", stringQueue.dequeue()); // Alice
-console.log("Queue content:", stringQueue.toArray()); // ["Bob", "Charlie"]
-console.log("Size:", stringQueue.size);       // 2
-console.log("Peek:", stringQueue.peek());     // Bob
+// Traversals
+console.log("In-order:", tree.inOrderTraversal());    // [3, 5, 7, 10, 12, 15, 18]
+console.log("Pre-order:", tree.preOrderTraversal());  // [10, 5, 3, 7, 15, 12, 18]
+console.log("Post-order:", tree.postOrderTraversal()); // [3, 7, 5, 12, 18, 15, 10]
 
-stringQueue.enqueue("David");
-console.log("\nEnqueued David.");
-console.log("Queue content:", stringQueue.toArray()); // ["Bob", "Charlie", "David"]
-console.log("Size:", stringQueue.size);       // 3
+// Min/max values
+console.log("Min:", tree.findMin()); // 3
+console.log("Max:", tree.findMax()); // 18
 
-console.log("\nDequeued:", stringQueue.dequeue()); // Bob
-console.log("Dequeued:", stringQueue.dequeue()); // Charlie
-console.log("Dequeued:", stringQueue.dequeue()); // David (Queue is now empty)
-console.log("Queue content:", stringQueue.toArray()); // []
-console.log("Size:", stringQueue.size);          // 0
-console.log("Is empty?", stringQueue.isEmpty()); // true
-console.log("Peek (empty):", stringQueue.peek()); // undefined
+// Tree properties
+console.log("Height:", tree.height());      // 3
+console.log("Node count:", tree.countNodes()); // 7
+class BinaryTreeWithComparator<T> {
+    root: BinaryTreeNode<T> | null;
+    private comparator: (a: T, b: T) => number;
+
+    constructor(comparator?: (a: T, b: T) => number) {
+        this.root = null;
+        this.comparator = comparator || ((a: T, b: T) => {
+            if (a < b) return -1;
+            if (a > b) return 1;
+            return 0;
+        });
+    }
+
+    insert(value: T): void {
+        const newNode = new BinaryTreeNode(value);
+        
+        if (this.root === null) {
+            this.root = newNode;
+            return;
+        }
+
+        let current = this.root;
+        while (true) {
+            const comparison = this.comparator(value, current.value);
+            
+            if (comparison < 0) {
+                if (current.left === null) {
+                    current.left = newNode;
+                    return;
+                }
+                current = current.left;
+            } else {
+                if (current.right === null) {
+                    current.right = newNode;
+                    return;
+                }
+                current = current.right;
+            }
+        }
+    }
+}
+
+// Usage with custom comparator
+const customTree = new BinaryTreeWithComparator<string>((a, b) => a.length - b.length);
+customTree.insert("apple");
+customTree.insert("banana");
+customTree.insert("cherry");
+class ExtendedBinaryTree<T> extends BinaryTree<T> {
+    // Delete a node
+    delete(value: T): void {
+        this.root = this.deleteNode(this.root, value);
+    }
+
+    private deleteNode(node: BinaryTreeNode<T> | null, value: T): BinaryTreeNode<T> | null {
+        if (node === null) return null;
+
+        if (value < node.value) {
+            node.left = this.deleteNode(node.left, value);
+        } else if (value > node.value) {
+            node.right = this.deleteNode(node.right, value);
+        } else {
+            // Node found - handle deletion
+            if (node.left === null) return node.right;
+            if (node.right === null) return node.left;
+
+            // Node has two children
+            const minRight = this.findMinNode(node.right);
+            node.value = minRight.value;
+            node.right = this.deleteNode(node.right, minRight.value);
+        }
+
+        return node;
+    }
+
+    private findMinNode(node: BinaryTreeNode<T>): BinaryTreeNode<T> {
+        while (node.left !== null) {
+            node = node.left;
+        }
+        return node;
+    }
+
+    // Check if tree is balanced
+    isBalanced(node: BinaryTreeNode<T> | null = this.root): boolean {
+        if (node === null) return true;
+
+        const leftHeight = this.height(node.left);
+        const rightHeight = this.height(node.right);
+
+        return Math.abs(leftHeight - rightHeight) <= 1 
+            && this.isBalanced(node.left) 
+            && this.isBalanced(node.right);
+    }
+}
