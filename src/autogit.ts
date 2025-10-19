@@ -1,117 +1,66 @@
-function maxSubarraySum(arr: number[]): number {
-    if (arr.length === 0) return 0;
-    
-    let maxCurrent = arr[0];
-    let maxGlobal = arr[0];
-    
-    for (let i = 1; i < arr.length; i++) {
-        // Choose between extending current subarray or starting fresh
-        maxCurrent = Math.max(arr[i], maxCurrent + arr[i]);
-        
-        // Update global maximum if current is larger
-        if (maxCurrent > maxGlobal) {
-            maxGlobal = maxCurrent;
-        }
+function stringLength(str: string): number {
+    let count = 0;
+    for (const char of str) {
+        count++;
     }
-    
-    return maxGlobal;
+    return count;
 }
 
-// Example usage:
-const numbers = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
-console.log(maxSubarraySum(numbers)); // Output: 6 (subarray [4, -1, 2, 1])
-function maxSubarrayWithIndices(arr: number[]): { sum: number; subarray: number[] } {
-    if (arr.length === 0) return { sum: 0, subarray: [] };
-    
-    let maxCurrent = arr[0];
-    let maxGlobal = arr[0];
-    let start = 0;
-    let end = 0;
-    let tempStart = 0;
-    
-    for (let i = 1; i < arr.length; i++) {
-        if (arr[i] > maxCurrent + arr[i]) {
-            maxCurrent = arr[i];
-            tempStart = i;
-        } else {
-            maxCurrent += arr[i];
-        }
-        
-        if (maxCurrent > maxGlobal) {
-            maxGlobal = maxCurrent;
-            start = tempStart;
-            end = i;
-        }
+// Example usage
+const text = "Hello, World!";
+console.log(stringLength(text)); // Output: 13
+function stringLength(str: string): number {
+    let count = 0;
+    for (let i = 0; str[i] !== undefined; i++) {
+        count++;
     }
-    
-    const subarray = arr.slice(start, end + 1);
-    return { sum: maxGlobal, subarray };
+    return count;
 }
 
-// Example usage:
-const result = maxSubarrayWithIndices([-2, 1, -3, 4, -1, 2, 1, -5, 4]);
-console.log(result); // { sum: 6, subarray: [4, -1, 2, 1] }
-function maxSubarraySumNonEmpty(arr: number[]): number {
-    if (arr.length === 0) return 0;
-    
-    let maxCurrent = arr[0];
-    let maxGlobal = arr[0];
-    
-    for (let i = 1; i < arr.length; i++) {
-        maxCurrent = Math.max(arr[i], maxCurrent + arr[i]);
-        maxGlobal = Math.max(maxGlobal, maxCurrent);
-    }
-    
-    return Math.max(maxGlobal, 0); // Returns 0 if all negative
+// Example usage
+console.log(stringLength("TypeScript")); // Output: 10
+function stringLength(str: string): number {
+    return Array.from(str).length;
 }
 
-// Example usage:
-console.log(maxSubarraySumNonEmpty([-1, -2, -3])); // Output: 0
-interface MaxSubarrayResult {
-    sum: number;
-    subarray: number[];
-    startIndex: number;
-    endIndex: number;
+// Example usage
+console.log(stringLength("Hello")); // Output: 5
+function stringLength(str: string): number {
+    if (str === '') {
+        return 0;
+    }
+    return 1 + stringLength(str.slice(1));
 }
 
-function findMaxSubarray(arr: number[]): MaxSubarrayResult {
-    if (arr.length === 0) {
-        return { sum: 0, subarray: [], startIndex: -1, endIndex: -1 };
-    }
-    
-    let maxCurrent = arr[0];
-    let maxGlobal = arr[0];
-    let start = 0;
-    let end = 0;
-    let tempStart = 0;
-    
-    for (let i = 1; i < arr.length; i++) {
-        if (arr[i] > maxCurrent + arr[i]) {
-            maxCurrent = arr[i];
-            tempStart = i;
-        } else {
-            maxCurrent += arr[i];
-        }
-        
-        if (maxCurrent > maxGlobal) {
-            maxGlobal = maxCurrent;
-            start = tempStart;
-            end = i;
-        }
-    }
-    
-    return {
-        sum: maxGlobal,
-        subarray: arr.slice(start, end + 1),
-        startIndex: start,
-        endIndex: end
-    };
+// Example usage
+console.log(stringLength("Recursion")); // Output: 9
+function stringLength(str: string): number {
+    return str.split('').length;
 }
 
-// Usage example:
-const testArray = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
-const result = findMaxSubarray(testArray);
+// Example usage
+console.log(stringLength("Split method")); // Output: 12
+function stringLength(str: string): number {
+    const matches = str.match(/./gs); // 's' flag for dotall mode
+    return matches ? matches.length : 0;
+}
 
-console.log(`Maximum sum: ${result.sum}`);
-console.log(`Subarray: [${result.subarray.join(', ')}]`);
-console.log(`Indices: ${result.startIndex} to ${result.endIndex}`);
+// Example usage
+console.log(stringLength("Regex method")); // Output: 12
+function getStringLength(input: string): number {
+    // Type guard for null/undefined
+    if (input == null) {
+        return 0;
+    }
+    
+    let length = 0;
+    for (const char of input) {
+        length++;
+    }
+    return length;
+}
+
+// Test cases
+console.log(getStringLength(""));           // 0
+console.log(getStringLength("Hello"));     // 5
+console.log(getStringLength("🌍 World"));  // 7 (correctly handles Unicode)
