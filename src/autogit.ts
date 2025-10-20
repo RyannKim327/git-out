@@ -1,60 +1,195 @@
-function insertionSort<T>(arr: T[]): T[] {
-    // Create a copy of the array to avoid mutating the original
-    const sortedArray = [...arr];
-    
-    // Start from the second element (index 1)
-    for (let i = 1; i < sortedArray.length; i++) {
-        // Store the current element to be inserted
-        const current = sortedArray[i];
-        let j = i - 1;
-        
-        // Shift elements that are greater than current to the right
-        while (j >= 0 && sortedArray[j] > current) {
-            sortedArray[j + 1] = sortedArray[j];
-            j--;
-        }
-        
-        // Insert the current element in its correct position
-        sortedArray[j + 1] = current;
-    }
-    
-    return sortedArray;
+interface Graph {
+  [key: string]: string[];
 }
 
-// Generic version with custom comparator (optional)
-function insertionSortWithComparator<T>(
-    arr: T[], 
-    comparator: (a: T, b: T) => number = (a, b) => (a > b ? 1 : a < b ? -1 : 0)
-): T[] {
-    const sortedArray = [...arr];
-    
-    for (let i = 1; i < sortedArray.length; i++) {
-        const current = sortedArray[i];
-        let j = i - 1;
-        
-        while (j >= 0 && comparator(sortedArray[j], current) > 0) {
-            sortedArray[j + 1] = sortedArray[j];
-            j--;
-        }
-        
-        sortedArray[j + 1] = current;
+function bfs(graph: Graph, startNode: string): string[] {
+  const visited: Set<string> = new Set();
+  const queue: string[] = [];
+  const result: string[] = [];
+
+  // Start with the initial node
+  visited.add(startNode);
+  queue.push(startNode);
+
+  while (queue.length > 0) {
+    const currentNode = queue.shift()!;
+    result.push(currentNode);
+
+    // Visit all unvisited neighbors
+    for (const neighbor of graph[currentNode]) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
     }
+  }
+
+  return result;
+}
+function bfsWithPath(graph: Graph, startNode: string, targetNode: string): string[] | null {
+  const visited: Set<string> = new Set();
+  const queue: { node: string; path: string[] }[] = [];
+  
+  visited.add(startNode);
+  queue.push({ node: startNode, path: [startNode] });
+
+  while (queue.length > 0) {
+    const { node, path } = queue.shift()!;
     
-    return sortedArray;
+    if (node === targetNode) {
+      return path;
+    }
+
+    for (const neighbor of graph[node]) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push({
+          node: neighbor,
+          path: [...path, neighbor]
+        });
+      }
+    }
+  }
+
+  return null; // No path found
+}
+interface BFSResult<T> {
+  visited: T[];
+  distances: Map<T, number>;
+  predecessors: Map<T, T | null>;
 }
 
-// Example usage:
-const numbers: number[] = [64, 34, 25, 12, 22, 11, 90];
-console.log("Original:", numbers);
-console.log("Sorted:", insertionSort(numbers));
-// Output: [11, 12, 22, 25, 34, 64, 90]
+function genericBfs<T>(
+  startNode: T,
+  getNeighbors: (node: T) => T[]
+): BFSResult<T> {
+  const visited: T[] = [];
+  const distances = new Map<T, number>();
+  const predecessors = new Map<T, T | null>();
+  const queue: T[] = [];
 
-// Example with strings:
-const names: string[] = ["banana", "apple", "cherry", "date"];
-console.log("Sorted names:", insertionSort(names));
-// Output: ["apple", "banana", "cherry", "date"]
+  distances.set(startNode, 0);
+  predecessors.set(startNode, null);
+  queue.push(startNode);
 
-// Example with custom comparator (descending order)
-const descendingNumbers = insertionSortWithComparator(numbers, (a, b) => (a > b ? -1 : a < b ? 1 : 0));
-console.log("Descending:", descendingNumbers);
-// Output: [90, 64, 34, 25, 22, 12, 11]
+  while (queue.length > 0) {
+    const currentNode = queue.shift()!;
+    visited.push(currentNode);
+
+    const currentDistance = distances.get(currentNode)!;
+
+    for (const neighbor of getNeighbors(currentNode)) {
+      if (!distances.has(neighbor)) {
+        distances.set(neighbor, currentDistance + 1);
+        predecessors.set(neighbor, currentNode);
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  return { visited, distances, predecessors };
+}
+// Example 1: Simple Graph
+const graph: Graph = {
+  'A': ['B', 'C'],
+  'B': ['A', 'D', 'E'],
+  'C': ['A', 'F'],
+  'D': ['B'],
+  'E': ['B', 'F'],
+  'F': ['C', 'E']
+};
+
+console.log('BFS traversal:', bfs(graph, 'A'));
+// Output: ['A', 'B', 'C', 'D', 'E', 'F']
+
+console.log('Path from A to F:', bfsWithPath(graph, 'A', 'F'));
+// Output: ['A', 'B', 'E', 'F'] or ['A', 'C', 'F']
+
+// Example 2: Using generic BFS
+const result = genericBfs('A', (node: string) => graph[node]);
+console.log('Visited order:', result.visited);
+console.log('Distances:', result.distances);
+console.log('Predecessors:', result.predecessors);
+interface Point {
+  x: number;
+  y: number;
+}
+
+function bfsGrid(
+  grid: number[][],
+  start: Point,
+  isTarget: (point: Point) => boolean,
+  isValidMove: (point: Point) => boolean
+): Point[] | null {
+  const rows = grid.length;
+  const cols = grid[0].length;
+  const visited: boolean[][] = Array(rows).fill(null).map(() => Array(cols).fill(false));
+  const queue: { point: Point; path: Point[] }[] = [];
+  const directions = [
+    { x: 0, y: 1 },  // right
+    { x: 1, y: 0 },  // down
+    { x: 0, y: -1 }, // left
+    { x: -1, y: 0 }  // up
+  ];
+
+  visited[start.x][start.y] = true;
+  queue.push({ point: start, path: [start] });
+
+  while (queue.length > 0) {
+    const { point, path } = queue.shift()!;
+
+    if (isTarget(point)) {
+      return path;
+    }
+
+    for (const dir of directions) {
+      const newPoint: Point = {
+        x: point.x + dir.x,
+        y: point.y + dir.y
+      };
+
+      if (isValidMove(newPoint) && !visited[newPoint.x]?.[newPoint.y]) {
+        visited[newPoint.x][newPoint.y] = true;
+        queue.push({
+          point: newPoint,
+          path: [...path, newPoint]
+        });
+      }
+    }
+  }
+
+  return null;
+}
+class GraphNode<T> {
+  constructor(
+    public value: T,
+    public neighbors: GraphNode<T>[] = []
+  ) {}
+
+  addNeighbor(node: GraphNode<T>): void {
+    this.neighbors.push(node);
+  }
+}
+
+function bfsGraphNode<T>(startNode: GraphNode<T>): T[] {
+  const visited = new Set<GraphNode<T>>();
+  const queue: GraphNode<T>[] = [];
+  const result: T[] = [];
+
+  visited.add(startNode);
+  queue.push(startNode);
+
+  while (queue.length > 0) {
+    const currentNode = queue.shift()!;
+    result.push(currentNode.value);
+
+    for (const neighbor of currentNode.neighbors) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  return result;
+}
