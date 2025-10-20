@@ -1,195 +1,157 @@
-interface Graph {
-  [key: string]: string[];
-}
-
-function bfs(graph: Graph, startNode: string): string[] {
-  const visited: Set<string> = new Set();
-  const queue: string[] = [];
-  const result: string[] = [];
-
-  // Start with the initial node
-  visited.add(startNode);
-  queue.push(startNode);
-
-  while (queue.length > 0) {
-    const currentNode = queue.shift()!;
-    result.push(currentNode);
-
-    // Visit all unvisited neighbors
-    for (const neighbor of graph[currentNode]) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
+function kthSmallestSort(arr: number[], k: number): number {
+    if (k < 1 || k > arr.length) {
+        throw new Error("Invalid k value");
     }
-  }
-
-  return result;
-}
-function bfsWithPath(graph: Graph, startNode: string, targetNode: string): string[] | null {
-  const visited: Set<string> = new Set();
-  const queue: { node: string; path: string[] }[] = [];
-  
-  visited.add(startNode);
-  queue.push({ node: startNode, path: [startNode] });
-
-  while (queue.length > 0) {
-    const { node, path } = queue.shift()!;
     
-    if (node === targetNode) {
-      return path;
+    const sorted = [...arr].sort((a, b) => a - b);
+    return sorted[k - 1];
+}
+
+// Example usage
+const arr = [7, 10, 4, 3, 20, 15];
+console.log(kthSmallestSort(arr, 3)); // Output: 7
+function kthSmallestQuickSelect(arr: number[], k: number): number {
+    if (k < 1 || k > arr.length) {
+        throw new Error("Invalid k value");
     }
+    
+    return quickSelect([...arr], 0, arr.length - 1, k - 1);
+}
 
-    for (const neighbor of graph[node]) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push({
-          node: neighbor,
-          path: [...path, neighbor]
-        });
-      }
+function quickSelect(
+    arr: number[], 
+    left: number, 
+    right: number, 
+    k: number
+): number {
+    if (left === right) {
+        return arr[left];
     }
-  }
-
-  return null; // No path found
-}
-interface BFSResult<T> {
-  visited: T[];
-  distances: Map<T, number>;
-  predecessors: Map<T, T | null>;
-}
-
-function genericBfs<T>(
-  startNode: T,
-  getNeighbors: (node: T) => T[]
-): BFSResult<T> {
-  const visited: T[] = [];
-  const distances = new Map<T, number>();
-  const predecessors = new Map<T, T | null>();
-  const queue: T[] = [];
-
-  distances.set(startNode, 0);
-  predecessors.set(startNode, null);
-  queue.push(startNode);
-
-  while (queue.length > 0) {
-    const currentNode = queue.shift()!;
-    visited.push(currentNode);
-
-    const currentDistance = distances.get(currentNode)!;
-
-    for (const neighbor of getNeighbors(currentNode)) {
-      if (!distances.has(neighbor)) {
-        distances.set(neighbor, currentDistance + 1);
-        predecessors.set(neighbor, currentNode);
-        queue.push(neighbor);
-      }
+    
+    const pivotIndex = partition(arr, left, right);
+    
+    if (k === pivotIndex) {
+        return arr[k];
+    } else if (k < pivotIndex) {
+        return quickSelect(arr, left, pivotIndex - 1, k);
+    } else {
+        return quickSelect(arr, pivotIndex + 1, right, k);
     }
-  }
-
-  return { visited, distances, predecessors };
-}
-// Example 1: Simple Graph
-const graph: Graph = {
-  'A': ['B', 'C'],
-  'B': ['A', 'D', 'E'],
-  'C': ['A', 'F'],
-  'D': ['B'],
-  'E': ['B', 'F'],
-  'F': ['C', 'E']
-};
-
-console.log('BFS traversal:', bfs(graph, 'A'));
-// Output: ['A', 'B', 'C', 'D', 'E', 'F']
-
-console.log('Path from A to F:', bfsWithPath(graph, 'A', 'F'));
-// Output: ['A', 'B', 'E', 'F'] or ['A', 'C', 'F']
-
-// Example 2: Using generic BFS
-const result = genericBfs('A', (node: string) => graph[node]);
-console.log('Visited order:', result.visited);
-console.log('Distances:', result.distances);
-console.log('Predecessors:', result.predecessors);
-interface Point {
-  x: number;
-  y: number;
 }
 
-function bfsGrid(
-  grid: number[][],
-  start: Point,
-  isTarget: (point: Point) => boolean,
-  isValidMove: (point: Point) => boolean
-): Point[] | null {
-  const rows = grid.length;
-  const cols = grid[0].length;
-  const visited: boolean[][] = Array(rows).fill(null).map(() => Array(cols).fill(false));
-  const queue: { point: Point; path: Point[] }[] = [];
-  const directions = [
-    { x: 0, y: 1 },  // right
-    { x: 1, y: 0 },  // down
-    { x: 0, y: -1 }, // left
-    { x: -1, y: 0 }  // up
-  ];
-
-  visited[start.x][start.y] = true;
-  queue.push({ point: start, path: [start] });
-
-  while (queue.length > 0) {
-    const { point, path } = queue.shift()!;
-
-    if (isTarget(point)) {
-      return path;
+function partition(arr: number[], left: number, right: number): number {
+    const pivot = arr[right];
+    let i = left;
+    
+    for (let j = left; j < right; j++) {
+        if (arr[j] <= pivot) {
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+            i++;
+        }
     }
+    
+    [arr[i], arr[right]] = [arr[right], arr[i]];
+    return i;
+}
 
-    for (const dir of directions) {
-      const newPoint: Point = {
-        x: point.x + dir.x,
-        y: point.y + dir.y
-      };
-
-      if (isValidMove(newPoint) && !visited[newPoint.x]?.[newPoint.y]) {
-        visited[newPoint.x][newPoint.y] = true;
-        queue.push({
-          point: newPoint,
-          path: [...path, newPoint]
-        });
-      }
+// Example usage
+console.log(kthSmallestQuickSelect(arr, 3)); // Output: 7
+class MinHeap {
+    private heap: number[];
+    
+    constructor() {
+        this.heap = [];
     }
-  }
-
-  return null;
-}
-class GraphNode<T> {
-  constructor(
-    public value: T,
-    public neighbors: GraphNode<T>[] = []
-  ) {}
-
-  addNeighbor(node: GraphNode<T>): void {
-    this.neighbors.push(node);
-  }
-}
-
-function bfsGraphNode<T>(startNode: GraphNode<T>): T[] {
-  const visited = new Set<GraphNode<T>>();
-  const queue: GraphNode<T>[] = [];
-  const result: T[] = [];
-
-  visited.add(startNode);
-  queue.push(startNode);
-
-  while (queue.length > 0) {
-    const currentNode = queue.shift()!;
-    result.push(currentNode.value);
-
-    for (const neighbor of currentNode.neighbors) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
+    
+    insert(value: number): void {
+        this.heap.push(value);
+        this.bubbleUp();
     }
-  }
-
-  return result;
+    
+    extractMin(): number {
+        if (this.heap.length === 0) throw new Error("Heap is empty");
+        
+        const min = this.heap[0];
+        const last = this.heap.pop()!;
+        
+        if (this.heap.length > 0) {
+            this.heap[0] = last;
+            this.sinkDown();
+        }
+        
+        return min;
+    }
+    
+    private bubbleUp(): void {
+        let index = this.heap.length - 1;
+        
+        while (index > 0) {
+            const parentIndex = Math.floor((index - 1) / 2);
+            
+            if (this.heap[parentIndex] <= this.heap[index]) break;
+            
+            [this.heap[parentIndex], this.heap[index]] = 
+                [this.heap[index], this.heap[parentIndex]];
+            
+            index = parentIndex;
+        }
+    }
+    
+    private sinkDown(): void {
+        let index = 0;
+        const length = this.heap.length;
+        const element = this.heap[0];
+        
+        while (true) {
+            let leftChildIndex = 2 * index + 1;
+            let rightChildIndex = 2 * index + 2;
+            let swap = null;
+            let leftChild, rightChild;
+            
+            if (leftChildIndex < length) {
+                leftChild = this.heap[leftChildIndex];
+                if (leftChild < element) {
+                    swap = leftChildIndex;
+                }
+            }
+            
+            if (rightChildIndex < length) {
+                rightChild = this.heap[rightChildIndex];
+                if ((swap === null && rightChild < element) || 
+                    (swap !== null && rightChild < leftChild!)) {
+                    swap = rightChildIndex;
+                }
+            }
+            
+            if (swap === null) break;
+            
+            [this.heap[index], this.heap[swap]] = 
+                [this.heap[swap], this.heap[index]];
+            
+            index = swap;
+        }
+    }
 }
+
+function kthSmallestHeap(arr: number[], k: number): number {
+    if (k < 1 || k > arr.length) {
+        throw new Error("Invalid k value");
+    }
+    
+    const heap = new MinHeap();
+    arr.forEach(num => heap.insert(num));
+    
+    let result = 0;
+    for (let i = 0; i < k; i++) {
+        result = heap.extractMin();
+    }
+    
+    return result;
+}
+
+// Example usage
+console.log(kthSmallestHeap(arr, 3)); // Output: 7
+const kthSmallest = (arr: number[], k: number): number => 
+    [...arr].sort((a, b) => a - b)[k - 1];
+
+console.log(kthSmallest(arr, 3)); // Output: 7
