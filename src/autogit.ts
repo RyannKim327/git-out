@@ -1,106 +1,71 @@
-function longestCommonPrefix(strings: string[]): string {
-    if (strings.length === 0) return '';
-    if (strings.length === 1) return strings[0];
-    
-    let prefix = strings[0];
-    
-    for (let i = 1; i < strings.length; i++) {
-        const currentString = strings[i];
-        let j = 0;
-        
-        // Compare characters until mismatch or end of shorter string
-        while (j < prefix.length && j < currentString.length && prefix[j] === currentString[j]) {
-            j++;
-        }
-        
-        prefix = prefix.substring(0, j);
-        
-        // Early exit if prefix becomes empty
-        if (prefix === '') return '';
-    }
-    
-    return prefix;
+function countOccurrences(text: string, char: string): number {
+  return text.split(char).length - 1;
 }
 
-// Example usage
-const strings = ['flower', 'flow', 'flight'];
-console.log(longestCommonPrefix(strings)); // Output: "fl"
-function longestCommonPrefixReduce(strings: string[]): string {
-    if (strings.length === 0) return '';
-    
-    return strings.reduce((prefix, currentString) => {
-        let i = 0;
-        while (i < prefix.length && i < currentString.length && prefix[i] === currentString[i]) {
-            i++;
-        }
-        return prefix.substring(0, i);
-    });
+// Examples
+const text = "Hello, World!";
+console.log(countOccurrences(text, 'l')); // Output: 3
+console.log(countOccurrences(text, 'o')); // Output: 2
+console.log(countOccurrences(text, 'x')); // Output: 0
+function countOccurrencesRegex(text: string, char: string): number {
+  const matches = text.match(new RegExp(escapeRegex(char), 'g'));
+  return matches ? matches.length : 0;
 }
 
-// Example usage
-console.log(longestCommonPrefixReduce(['flower', 'flow', 'flight'])); // "fl"
-function longestCommonPrefixSorted(strings: string[]): string {
-    if (strings.length === 0) return '';
-    
-    // Sort to compare only first and last strings
-    strings.sort();
-    const first = strings[0];
-    const last = strings[strings.length - 1];
-    
-    let i = 0;
-    while (i < first.length && i < last.length && first[i] === last[i]) {
-        i++;
-    }
-    
-    return first.substring(0, i);
+// Helper function to escape special regex characters
+function escapeRegex(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// Example usage
-console.log(longestCommonPrefixSorted(['flower', 'flow', 'flight'])); // "fl"
-function longestCommonPrefixOptimized(strings: string[]): string {
-    if (strings.length === 0) return '';
-    
-    // Find the shortest string to use as initial prefix
-    const minLength = Math.min(...strings.map(s => s.length));
-    let prefix = strings[0].substring(0, minLength);
-    
-    for (const str of strings) {
-        for (let i = 0; i < prefix.length; i++) {
-            if (str[i] !== prefix[i]) {
-                prefix = prefix.substring(0, i);
-                break;
-            }
-        }
-        if (prefix === '') return '';
+// Examples
+const text = "Hello, World!";
+console.log(countOccurrencesRegex(text, 'l')); // Output: 3
+function countOccurrencesLoop(text: string, char: string): number {
+  let count = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === char) {
+      count++;
     }
-    
-    return prefix;
-}
-function longestCommonPrefix(strings: string[]): string {
-    if (strings.length === 0) return '';
-    if (strings.length === 1) return strings[0];
-    
-    let prefix = strings[0];
-    
-    for (let i = 1; i < strings.length; i++) {
-        const currentString = strings[i];
-        let j = 0;
-        
-        while (j < prefix.length && j < currentString.length && prefix[j] === currentString[j]) {
-            j++;
-        }
-        
-        prefix = prefix.substring(0, j);
-        
-        if (prefix === '') return '';
-    }
-    
-    return prefix;
+  }
+  return count;
 }
 
-// Test cases
-console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // "fl"
-console.log(longestCommonPrefix(['dog', 'racecar', 'car']));    // ""
-console.log(longestCommonPrefix(['apple', 'apple', 'apple']));  // "apple"
-console.log(longestCommonPrefix(['']));                         // ""
-console.log(longestCommonPrefix([]));                           // ""
+// Examples
+const text = "Hello, World!";
+console.log(countOccurrencesLoop(text, 'l')); // Output: 3
+function countOccurrencesFilter(text: string, char: string): number {
+  return Array.from(text).filter(c => c === char).length;
+}
+
+// Examples
+const text = "Hello, World!";
+console.log(countOccurrencesFilter(text, 'l')); // Output: 3
+function countOccurrencesCaseInsensitive(text: string, char: string): number {
+  return text.toLowerCase().split(char.toLowerCase()).length - 1;
+}
+
+// Example
+const text = "Hello, World!";
+console.log(countOccurrencesCaseInsensitive(text, 'L')); // Output: 3
+function countCharacterOccurrences(
+  text: string, 
+  character: string
+): number {
+  // Input validation
+  if (character.length !== 1) {
+    throw new Error('Character parameter must be a single character');
+  }
+  
+  if (text.length === 0) {
+    return 0;
+  }
+  
+  return text.split(character).length - 1;
+}
+
+// Usage examples
+const exampleText = "TypeScript is awesome!";
+
+console.log(countCharacterOccurrences(exampleText, 's')); // 2
+console.log(countCharacterOccurrences(exampleText, '!')); // 1
+console.log(countCharacterOccurrences(exampleText, 'x')); // 0
