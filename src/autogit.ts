@@ -1,92 +1,34 @@
-function triangleAreaBaseHeight(base: number, height: number): number {
-    return 0.5 * base * height;
-}
+function countingSort(arr: number[]): number[] {
+    if (arr.length === 0) return arr;
 
-// Usage
-const area1 = triangleAreaBaseHeight(10, 5);
-console.log(area1); // Output: 25
-function triangleAreaHeron(a: number, b: number, c: number): number {
-    const s = (a + b + c) / 2; // semi-perimeter
-    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
-}
+    const min = Math.min(...arr);
+    const max = Math.max(...arr);
+    const range = max - min + 1;
 
-// Usage
-const area2 = triangleAreaHeron(3, 4, 5);
-console.log(area2); // Output: 6
-interface Point {
-    x: number;
-    y: number;
-}
+    // Step 1: Initialize counts array
+    const counts = new Array<number>(range).fill(0);
 
-function triangleAreaCoordinates(
-    pointA: Point, 
-    pointB: Point, 
-    pointC: Point
-): number {
-    return Math.abs(
-        (pointA.x * (pointB.y - pointC.y) +
-         pointB.x * (pointC.y - pointA.y) +
-         pointC.x * (pointA.y - pointB.y)) / 2
-    );
-}
-
-// Usage
-const area3 = triangleAreaCoordinates(
-    {x: 0, y: 0},
-    {x: 4, y: 0},
-    {x: 0, y: 3}
-);
-console.log(area3); // Output: 6
-function triangleAreaSidesAngle(
-    side1: number, 
-    side2: number, 
-    angleDegrees: number
-): number {
-    const angleRadians = (angleDegrees * Math.PI) / 180;
-    return 0.5 * side1 * side2 * Math.sin(angleRadians);
-}
-
-// Usage
-const area4 = triangleAreaSidesAngle(4, 5, 30);
-console.log(area4); // Output: 5
-class TriangleCalculator {
-    static areaFromBaseHeight(base: number, height: number): number {
-        if (base <= 0 || height <= 0) {
-            throw new Error("Base and height must be positive numbers");
-        }
-        return 0.5 * base * height;
+    // Step 2: Count occurrences
+    for (const num of arr) {
+        counts[num - min]++;
     }
 
-    static areaFromSides(a: number, b: number, c: number): number {
-        if (a <= 0 || b <= 0 || c <= 0) {
-            throw new Error("All sides must be positive numbers");
-        }
-        
-        // Check triangle inequality theorem
-        if (a + b <= c || a + c <= b || b + c <= a) {
-            throw new Error("Invalid triangle: sum of any two sides must be greater than the third side");
-        }
-        
-        const s = (a + b + c) / 2;
-        return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+    // Step 3: Accumulate counts
+    for (let i = 1; i < counts.length; i++) {
+        counts[i] += counts[i - 1];
     }
 
-    static areaFromVertices(
-        x1: number, y1: number,
-        x2: number, y2: number,
-        x3: number, y3: number
-    ): number {
-        return Math.abs(
-            (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) / 2
-        );
+    // Step 4: Build output array (stable sort: iterate backwards)
+    const output = new Array<number>(arr.length);
+    for (let i = arr.length - 1; i >= 0; i--) {
+        const num = arr[i];
+        counts[num - min]--;
+        output[counts[num - min]] = num;
     }
+
+    return output;
 }
 
-// Usage examples
-try {
-    console.log(TriangleCalculator.areaFromBaseHeight(10, 5)); // 25
-    console.log(TriangleCalculator.areaFromSides(3, 4, 5));   // 6
-    console.log(TriangleCalculator.areaFromVertices(0, 0, 4, 0, 0, 3)); // 6
-} catch (error) {
-    console.error(error.message);
-}
+// Example usage:
+console.log(countingSort([4, 2, 2, 8, 3, 3, 1]));
+// Output: [1, 2, 2, 3, 3, 4, 8]
