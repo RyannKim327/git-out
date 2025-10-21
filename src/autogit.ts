@@ -1,111 +1,66 @@
-class ListNode {
-    val: number;
-    next: ListNode | null;
-    constructor(val?: number, next?: ListNode | null) {
-        this.val = (val === undefined ? 0 : val);
-        this.next = (next === undefined ? null : next);
+interface ListNode<T> {
+    value: T;
+    next: ListNode<T> | null;
+}
+/**
+ * Calculates the length of a singly linked list.
+ *
+ * @param head The head node of the linked list. Can be null for an empty list.
+ * @returns The number of nodes in the linked list.
+ */
+function getLength<T>(head: ListNode<T> | null): number {
+    let count = 0;
+    let current = head; // Start from the head of the list
+
+    // Traverse the list until we reach the end (current becomes null)
+    while (current !== null) {
+        count++;             // Increment the counter for each node
+        current = current.next; // Move to the next node
     }
+
+    return count;
+}
+// --- Example 1: A list with 3 nodes ---
+const node3: ListNode<number> = { value: 30, next: null };
+const node2: ListNode<number> = { value: 20, next: node3 };
+const node1: ListNode<number> = { value: 10, next: node2 }; // This is our head
+
+console.log("Length of list 10->20->30:", getLength(node1)); // Expected: 3
+
+// --- Example 2: An empty list ---
+const emptyListHead: ListNode<string> | null = null;
+console.log("Length of empty list:", getLength(emptyListHead)); // Expected: 0
+
+// --- Example 3: A list with a single node ---
+const singleNodeHead: ListNode<boolean> = { value: true, next: null };
+console.log("Length of single node list:", getLength(singleNodeHead)); // Expected: 1
+
+// --- Example 4: A more complex list (e.g., strings) ---
+const lastNode: ListNode<string> = { value: "Cherry", next: null };
+const middleNode: ListNode<string> = { value: "Banana", next: lastNode };
+const firstNode: ListNode<string> = { value: "Apple", next: middleNode };
+
+console.log("Length of list Apple->Banana->Cherry:", getLength(firstNode)); // Expected: 3
+/**
+ * Recursively calculates the length of a singly linked list.
+ *
+ * @param node The current node being processed. Starts from the head.
+ * @returns The number of nodes from the current node to the end of the list.
+ */
+function getLengthRecursive<T>(node: ListNode<T> | null): number {
+    // Base case: If the node is null, we've reached the end of the list
+    if (node === null) {
+        return 0;
+    }
+    // Recursive step: Add 1 (for the current node) to the length of the rest of the list
+    return 1 + getLengthRecursive(node.next);
 }
 
-function isPalindrome(head: ListNode | null): boolean {
-    if (!head || !head.next) return true;
-    
-    // Find middle using slow/fast pointers
-    let slow = head;
-    let fast = head;
-    
-    while (fast && fast.next) {
-        slow = slow.next!;
-        fast = fast.next.next!;
-    }
-    
-    // Reverse second half
-    let prev: ListNode | null = null;
-    let current = slow;
-    
-    while (current) {
-        const next = current.next;
-        current.next = prev;
-        prev = current;
-        current = next;
-    }
-    
-    // Compare first half with reversed second half
-    let left = head;
-    let right = prev;
-    
-    while (right) {
-        if (left!.val !== right.val) return false;
-        left = left!.next;
-        right = right.next;
-    }
-    
-    return true;
-}
-function isPalindromeStack(head: ListNode | null): boolean {
-    const stack: number[] = [];
-    let current = head;
-    
-    // Push all elements to stack
-    while (current) {
-        stack.push(current.val);
-        current = current.next;
-    }
-    
-    // Compare with original list
-    current = head;
-    while (current) {
-        if (current.val !== stack.pop()) return false;
-        current = current.next;
-    }
-    
-    return true;
-}
-function isPalindromeRecursive(head: ListNode | null): boolean {
-    let frontPointer = head;
-    
-    function recursivelyCheck(current: ListNode | null): boolean {
-        if (current !== null) {
-            if (!recursivelyCheck(current.next)) return false;
-            if (current.val !== frontPointer!.val) return false;
-            frontPointer = frontPointer!.next;
-        }
-        return true;
-    }
-    
-    return recursivelyCheck(head);
-}
-// Linked List implementation
-class LinkedList {
-    head: ListNode | null;
-    
-    constructor() {
-        this.head = null;
-    }
-    
-    add(val: number): void {
-        const newNode = new ListNode(val);
-        if (!this.head) {
-            this.head = newNode;
-        } else {
-            let current = this.head;
-            while (current.next) {
-                current = current.next;
-            }
-            current.next = newNode;
-        }
-    }
-    
-    isPalindrome(): boolean {
-        return isPalindrome(this.head);
-    }
-}
+// Example Usage:
+const recursiveNode3: ListNode<number> = { value: 3, next: null };
+const recursiveNode2: ListNode<number> = { value: 2, next: recursiveNode3 };
+const recursiveNode1: ListNode<number> = { value: 1, next: recursiveNode2 };
 
-// Test
-const list = new LinkedList();
-list.add(1);
-list.add(2);
-list.add(2);
-list.add(1);
-
-console.log(list.isPalindrome()); // true
+console.log("\n--- Recursive Length Calculation ---");
+console.log("Length of recursive list 1->2->3:", getLengthRecursive(recursiveNode1)); // Expected: 3
+console.log("Length of empty list (recursive):", getLengthRecursive(null)); // Expected: 0
