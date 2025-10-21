@@ -1,112 +1,70 @@
 /**
- * Normalizes a string by converting it to lowercase and removing all
- * non-alphanumeric characters (spaces, punctuation, symbols).
- * @param str The input string to normalize.
- * @returns The normalized string.
+ * Randomly shuffles an array using Fisher-Yates algorithm
  */
-function normalizeString(str: string): string {
-    // Convert to lowercase and remove non-alphanumeric characters
-    // The regular expression `[^a-z0-9]` matches any character that is NOT a-z or 0-9.
-    return str.toLowerCase().replace(/[^a-z0-9]/g, '');
+function shuffleArray<T>(array: T[]): T[] {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
 }
 
 /**
- * Checks if two strings are anagrams of each other.
- * Anagrams are words or phrases formed by rearranging the letters of another,
- * typically using all the original letters exactly once.
- * This function is case-insensitive and ignores non-alphanumeric characters.
- *
- * @param str1 The first string to compare.
- * @param str2 The second string to compare.
- * @returns True if the strings are anagrams, false otherwise.
+ * Checks if an array is sorted in ascending order
  */
-function areAnagramsSort(str1: string, str2: string): boolean {
-    const normalized1 = normalizeString(str1);
-    const normalized2 = normalizeString(str2);
-
-    // If, after normalization, the lengths are different, they cannot be anagrams
-    if (normalized1.length !== normalized2.length) {
-        return false;
-    }
-
-    // Sort the characters of both normalized strings and compare them
-    const sorted1 = normalized1.split('').sort().join('');
-    const sorted2 = normalized2.split('').sort().join('');
-
-    return sorted1 === sorted2;
-}
-
-// --- Examples ---
-console.log("--- Method 1: Sorting Characters ---");
-console.log(`"listen" and "silent": ${areAnagramsSort("listen", "silent")}`); // true
-console.log(`"Debit card" and "Bad credit": ${areAnagramsSort("Debit card", "Bad credit")}`); // true (ignores spaces, case-insensitive)
-console.log(`"Anagram" and "Nag a ram": ${areAnagramsSort("Anagram", "Nag a ram")}`); // true
-console.log(`"hello" and "world": ${areAnagramsSort("hello", "world")}`); // false
-console.log(`"A gentleman" and "Elegant man": ${areAnagramsSort("A gentleman", "Elegant man")}`); // true
-console.log(`"test!" and "tset.": ${areAnagramsSort("test!", "tset.")}`); // true (ignores punctuation)
-console.log(`"abc" and "ab": ${areAnagramsSort("abc", "ab")}`); // false (different lengths after normalization)
-console.log(`"" and "": ${areAnagramsSort("", "")}`); // true (empty strings are anagrams of each other)
-console.log(`"123" and "321": ${areAnagramsSort("123", "321")}`); // true (includes numbers by default)
-/**
- * Builds a character frequency map for a given string.
- * It normalizes the string first by converting it to lowercase and
- * removing non-alphanumeric characters.
- *
- * @param str The input string.
- * @returns A Map where keys are characters and values are their counts.
- */
-function buildCharFrequencyMap(str: string): Map<string, number> {
-    const charCounts = new Map<string, number>();
-    const normalizedStr = normalizeString(str); // Reusing the normalizeString from Method 1
-
-    for (const char of normalizedStr) {
-        charCounts.set(char, (charCounts.get(char) || 0) + 1);
-    }
-    return charCounts;
-}
-
-/**
- * Checks if two strings are anagrams of each other using character frequency maps.
- * This function is case-insensitive and ignores non-alphanumeric characters.
- *
- * @param str1 The first string to compare.
- * @param str2 The second string to compare.
- * @returns True if the strings are anagrams, false otherwise.
- */
-function areAnagramsMap(str1: string, str2: string): boolean {
-    const normalized1 = normalizeString(str1);
-    const normalized2 = normalizeString(str2);
-
-    // Early exit: If lengths differ after normalization, they can't be anagrams.
-    if (normalized1.length !== normalized2.length) {
-        return false;
-    }
-
-    const map1 = buildCharFrequencyMap(normalized1);
-    const map2 = buildCharFrequencyMap(normalized2);
-
-    // If the number of unique characters is different, they cannot be anagrams
-    if (map1.size !== map2.size) {
-        return false;
-    }
-
-    // Compare the counts in the maps
-    for (const [char, count] of map1) {
-        if (map2.get(char) !== count) {
-            return false; // Character not found in map2 or counts don't match
+function isSorted<T>(array: T[]): boolean {
+    for (let i = 0; i < array.length - 1; i++) {
+        if (array[i] > array[i + 1]) {
+            return false;
         }
     }
-
-    return true; // All characters and their counts match
+    return true;
 }
 
-// --- Examples ---
-console.log("\n--- Method 2: Character Frequency Map ---");
-console.log(`"listen" and "silent": ${areAnagramsMap("listen", "silent")}`); // true
-console.log(`"Debit card" and "Bad credit": ${areAnagramsMap("Debit card", "Bad credit")}`); // true
-console.log(`"hello" and "world": ${areAnagramsMap("hello", "world")}`); // false
-console.log(`"A gentleman" and "Elegant man": ${areAnagramsMap("A gentleman", "Elegant man")}`); // true
-console.log(`"test!" and "tset.": ${areAnagramsMap("test!", "tset.")}`); // true
-console.log(`"abc" and "ab": ${areAnagramsMap("abc", "ab")}`); // false
-console.log(`"" and "": ${areAnagramsMap("", "")}`); // true
-console.log(`"123" and "321": ${areAnagramsMap("123", "321")}`); // true
+/**
+ * Bogo Sort - The worst possible sorting algorithm
+ * Time Complexity: O(∞) in worst case, O(n!) in average case
+ * Space Complexity: O(1)
+ */
+function bogoSort<T>(array: T[]): T[] {
+    let attempts = 0;
+    let sortedArray = [...array];
+    
+    while (!isSorted(sortedArray)) {
+        sortedArray = shuffleArray(sortedArray);
+        attempts++;
+        
+        // Optional: log progress for entertainment
+        if (attempts % 1000 === 0) {
+            console.log(`Attempt ${attempts}... still sorting...`);
+        }
+    }
+    
+    console.log(`Sorted after ${attempts} attempts!`);
+    return sortedArray;
+}
+
+// Example usage with different data types
+const numbers = [3, 1, 4, 1, 5, 9, 2, 6];
+console.log('Original:', numbers);
+console.log('Sorted:', bogoSort(numbers));
+
+const strings = ['banana', 'apple', 'cherry', 'date'];
+console.log('Original:', strings);
+console.log('Sorted:', bogoSort(strings));
+
+// Generic function demonstration
+const mixedTypes = [
+    { name: 'Alice', age: 30 },
+    { name: 'Bob', age: 25 },
+    { name: 'Charlie', age: 35 }
+];
+
+// Sort objects by age using Bogo Sort
+const sortedByAge = bogoSort(mixedTypes.map(obj => obj.age));
+console.log('Ages sorted:', sortedByAge);
+
+// Warning: Don't use this for large arrays!
+// For arrays larger than 10 elements, this might take... a while.
+// Actually, for arrays larger than 15 elements, it might take longer than the universe has existed.
