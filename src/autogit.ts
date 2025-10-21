@@ -1,75 +1,110 @@
-const mainString: string = "Hello, TypeScript world!";
-const substring: string = "TypeScript";
-
-// Check if string contains substring
-if (mainString.includes(substring)) {
-    console.log("Substring found!");
-} else {
-    console.log("Substring not found!");
+interface TreeNode<T> {
+    value: T;
+    left?: TreeNode<T>;
+    right?: TreeNode<T>;
 }
 
-// You can also specify a starting position
-if (mainString.includes("world", 10)) {
-    console.log("Found 'world' starting from position 10");
+function countLeafNodesRecursive<T>(node?: TreeNode<T>): number {
+    if (!node) {
+        return 0;
+    }
+    
+    if (!node.left && !node.right) {
+        return 1; // Leaf node found
+    }
+    
+    return countLeafNodesRecursive(node.left) + countLeafNodesRecursive(node.right);
 }
-const mainString: string = "Hello, TypeScript world!";
-const substring: string = "TypeScript";
-
-// Check if substring exists (returns -1 if not found)
-if (mainString.indexOf(substring) !== -1) {
-    console.log("Substring found!");
+function countLeafNodesIterative<T>(root?: TreeNode<T>): number {
+    if (!root) return 0;
+    
+    let count = 0;
+    const queue: TreeNode<T>[] = [root];
+    
+    while (queue.length > 0) {
+        const currentNode = queue.shift()!;
+        
+        if (!currentNode.left && !currentNode.right) {
+            count++;
+            continue;
+        }
+        
+        if (currentNode.left) {
+            queue.push(currentNode.left);
+        }
+        
+        if (currentNode.right) {
+            queue.push(currentNode.right);
+        }
+    }
+    
+    return count;
 }
-
-// Get the position where substring starts
-const position = mainString.indexOf(substring);
-if (position !== -1) {
-    console.log(`Substring found at position: ${position}`);
-}
-const mainString: string = "Hello, TypeScript world!";
-const substring: string = "TypeScript";
-
-// Case-sensitive search
-if (new RegExp(substring).test(mainString)) {
-    console.log("Substring found!");
-}
-
-// Case-insensitive search
-if (new RegExp(substring, "i").test(mainString)) {
-    console.log("Substring found (case-insensitive)!");
-}
-// Function to check substring
-function containsSubstring(main: string, sub: string): boolean {
-    return main.includes(sub);
-}
-
-// Usage
-const text: string = "The quick brown fox jumps over the lazy dog";
-console.log(containsSubstring(text, "brown")); // true
-console.log(containsSubstring(text, "red"));   // false
-
-// Function with case-insensitive option
-function containsSubstringCaseInsensitive(main: string, sub: string): boolean {
-    return main.toLowerCase().includes(sub.toLowerCase());
+interface TreeNode<T> {
+    value: T;
+    left?: TreeNode<T>;
+    right?: TreeNode<T>;
 }
 
-console.log(containsSubstringCaseInsensitive(text, "BROWN")); // true
-interface User {
-    name: string;
-    email: string;
+class BinaryTree<T> {
+    constructor(public root?: TreeNode<T>) {}
+
+    countLeaves(): number {
+        return this.countLeavesRecursive(this.root);
+    }
+
+    private countLeavesRecursive(node?: TreeNode<T>): number {
+        if (!node) return 0;
+        
+        if (!node.left && !node.right) {
+            return 1;
+        }
+        
+        return this.countLeavesRecursive(node.left) + 
+               this.countLeavesRecursive(node.right);
+    }
 }
 
-function findUsersBySearchTerm(users: User[], searchTerm: string): User[] {
-    return users.filter(user => 
-        user.name.includes(searchTerm) || 
-        user.email.includes(searchTerm)
-    );
+// Example usage
+const tree: BinaryTree<number> = new BinaryTree({
+    value: 1,
+    left: {
+        value: 2,
+        left: { value: 4 },
+        right: { value: 5 }
+    },
+    right: {
+        value: 3,
+        left: { value: 6 },
+        right: { value: 7 }
+    }
+});
+
+console.log("Number of leaf nodes:", tree.countLeaves()); // Output: 4
+class BinaryTreeNode<T> {
+    constructor(
+        public value: T,
+        public left?: BinaryTreeNode<T>,
+        public right?: BinaryTreeNode<T>
+    ) {}
 }
 
-const users: User[] = [
-    { name: "John Doe", email: "john@example.com" },
-    { name: "Jane Smith", email: "jane.smith@test.com" },
-    { name: "Bob Johnson", email: "bob@example.com" }
-];
-
-const results = findUsersBySearchTerm(users, "smith");
-console.log(results); // Finds Jane Smith
+function countLeafNodes<T>(root?: BinaryTreeNode<T>): number {
+    if (!root) return 0;
+    
+    let count = 0;
+    const stack: BinaryTreeNode<T>[] = [root];
+    
+    while (stack.length > 0) {
+        const node = stack.pop()!;
+        
+        if (!node.left && !node.right) {
+            count++;
+        } else {
+            if (node.right) stack.push(node.right);
+            if (node.left) stack.push(node.left);
+        }
+    }
+    
+    return count;
+}
