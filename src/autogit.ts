@@ -1,141 +1,42 @@
-function buildShiftTable(pattern: string): Map<string, number> {
-    const patternLength = pattern.length;
-    const shiftTable = new Map<string, number>();
-    
-    // Precompute the shift table
-    for (let i = 0; i < patternLength - 1; i++) {
-        const char = pattern[i];
-        const shift = patternLength - i - 1;
-        shiftTable.set(char, shift);
-    }
-    
-    // Default shift for characters not in pattern
-    const defaultShift = patternLength;
-    shiftTable.set('*', defaultShift); // Using '*' as key for default
-    
-    return shiftTable;
+function kthSmallestBySorting(arr: number[], k: number): number | null {
+    if (k < 1 || k > arr.length) return null;
+    // Clone to avoid modifying the original array
+    const sorted = [...arr].sort((a, b) => a - b);
+    return sorted[k - 1];
 }
+function kthSmallestQuickSelect(arr: number[], k: number): number | null {
+    if (k < 1 || k > arr.length) return null;
 
-function horspoolSearch(text: string, pattern: string): number[] {
-    const n = text.length;
-    const m = pattern.length;
-    const results: number[] = [];
-    
-    if (m === 0 || n === 0 || m > n) {
-        return results;
+    // Random pivot selection reduces worst-case performance issues
+    const pivot = arr[Math.floor(Math.random() * arr.length)];
+
+    // Partition into lower, same, and higher elements
+    const lower: number[] = [];
+    const same: number[] = [];
+    const higher: number[] = [];
+
+    for (const num of arr) {
+        if (num < pivot) lower.push(num);
+        else if (num === pivot) same.push(num);
+        else higher.push(num);
     }
-    
-    // Build shift table
-    const shiftTable = buildShiftTable(pattern);
-    
-    let i = 0;
-    while (i <= n - m) {
-        let j = m - 1;
-        
-        // Compare from right to left
-        while (j >= 0 && pattern[j] === text[i + j]) {
-            j--;
-        }
-        
-        if (j < 0) {
-            // Match found
-            results.push(i);
-            i += m; // Shift by pattern length for next search
-        } else {
-            // Get shift amount from table (or use default)
-            const currentChar = text[i + m - 1];
-            const shiftAmount = shiftTable.get(currentChar) || shiftTable.get('*')!;
-            i += shiftAmount;
-        }
+
+    // Recurse or return solution
+    if (k <= lower.length) {
+        return kthSmallestQuickSelect(lower, k);
+    } else if (k <= lower.length + same.length) {
+        return pivot;
+    } else {
+        return kthSmallestQuickSelect(
+            higher,
+            k - lower.length - same.length
+        );
     }
-    
-    return results;
 }
+const arr = [12, 3, 5, 7, 19];
+const k = 3;
 
-// Enhanced version with better type safety and options
-interface SearchOptions {
-    caseSensitive?: boolean;
-    findAll?: boolean;
-}
-
-function horspoolSearchAdvanced(
-    text: string, 
-    pattern: string, 
-    options: SearchOptions = {}
-): number[] {
-    const {
-        caseSensitive = true,
-        findAll = true
-    } = options;
-    
-    let processedText = text;
-    let processedPattern = pattern;
-    
-    if (!caseSensitive) {
-        processedText = text.toLowerCase();
-        processedPattern = pattern.toLowerCase();
-    }
-    
-    const n = processedText.length;
-    const m = processedPattern.length;
-    const results: number[] = [];
-    
-    if (m === 0 || n === 0 || m > n) {
-        return results;
-    }
-    
-    const shiftTable = buildShiftTable(processedPattern);
-    
-    let i = 0;
-    while (i <= n - m) {
-        let j = m - 1;
-        
-        while (j >= 0 && processedPattern[j] === processedText[i + j]) {
-            j--;
-        }
-        
-        if (j < 0) {
-            results.push(i);
-            if (!findAll) {
-                break; // Return after first match
-            }
-            i += m; // Continue searching
-        } else {
-            const currentChar = processedText[i + m - 1];
-            const shiftAmount = shiftTable.get(currentChar) || shiftTable.get('*')!;
-            i += shiftAmount;
-        }
-    }
-    
-    return results;
-}
-
-// Example usage and test cases
-function testHorspoolAlgorithm() {
-    const text = "ABAAABCDBBABCDEFGABCD";
-    const pattern = "ABCD";
-    
-    console.log("Basic search:");
-    console.log("Text:", text);
-    console.log("Pattern:", pattern);
-    
-    const results = horspoolSearch(text, pattern);
-    console.log("Matches found at indices:", results);
-    
-    console.log("\nAdvanced search (case insensitive):");
-    const results2 = horspoolSearchAdvanced("Hello World", "hello", { caseSensitive: false });
-    console.log("Matches:", results2);
-    
-    console.log("\nAdvanced search (first match only):");
-    const results3 = horspoolSearchAdvanced("banana", "ana", { findAll: false });
-    console.log("First match:", results3);
-    
-    // Edge cases
-    console.log("\nEdge cases:");
-    console.log("Empty pattern:", horspoolSearch("test", ""));
-    console.log("Pattern longer than text:", horspoolSearch("short", "verylongpattern"));
-    console.log("No matches:", horspoolSearch("abc", "xyz"));
-}
-
-// Run tests
-testHorspoolAlgorithm();
+// Using Sorting
+console.log(kthSmallestBySorting(arr, k)); // 7
+// Using QuickSelect
+console.log(kthSmallestQuickSelect(arr, k)); // 7
