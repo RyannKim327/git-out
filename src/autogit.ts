@@ -1,23 +1,21 @@
-class ListNode {
-  val: number;
-  next: ListNode | null;
-  constructor(val: number) {
-    this.val = val;
-    this.next = null;
-  }
-}
+npm i node-cron @types/node
+// src/randomPing.ts
+import cron from 'node-cron';
 
-function getIntersectionNode(headA: ListNode | null, headB: ListNode | null): ListNode | null {
-  if (!headA || !headB) return null;
+const messages = ['Ping!', 'Pong!', 'Boing!', 'Beep!', 'Boop!', 'Zap!'];
 
-  let pA: ListNode | null = headA;
-  let pB: ListNode | null = headB;
+// ┌───────────── second (optional)
+// │ ┌───────────── minute
+// │ │ ┌───────────── hour
+// │ │ │ ┌───────────── day of month
+// │ │ │ │ ┌───────────── month
+// │ │ │ │ │ ┌───────────── day of week
+// │ │ │ │ │ │
+// │ │ │ │ │ │
+cron.schedule('*/30 * * * * *', () => {
+  const msg = messages[Math.floor(Math.random() * messages.length)];
+  console.log(`[${new Date().toISOString()}] ${msg}`);
+});
 
-  while (pA !== pB) {
-    // If a pointer reaches the end, jump to the other list's head
-    pA = pA ? pA.next : headB;
-    pB = pB ? pB.next : headA;
-  }
-
-  return pA; // either null (no intersection) or the intersection node
-}
+console.log('Cron job started… (Ctrl-C to stop)');
+npx ts-node src/randomPing.ts
