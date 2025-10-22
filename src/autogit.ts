@@ -1,43 +1,33 @@
-class Stack<T> {
-  private items: T[] = [];
-
-  // Add an item to the top (push)
-  push(element: T): void {
-    this.items.push(element);
-  }
-
-  // Remove and return the top item (pop)
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  // Look at the top item without removing it
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  // Check if stack is empty
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  // Get the size of the stack
-  size(): number {
-    return this.items.length;
-  }
-
-  // Optional: clear the stack
-  clear(): void {
-    this.items = [];
-  }
+class ListNode {
+  value: any;
+  next: ListNode | null = null;
+  constructor(val: any) { this.value = val; }
 }
-const stack = new Stack<number>();
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
+/**
+ * Returns true if the linked list starting at `head` contains a cycle.
+ * O(n) time, O(1) space.
+ */
+function hasCycle(head: ListNode | null): boolean {
+  if (!head) return false;
 
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.pop());  // 20
-console.log(stack.isEmpty()); // false
+  let slow: ListNode | null = head;
+  let fast: ListNode | null = head;
+
+  while (fast && fast.next) {
+    slow = slow!.next;           // 1 step
+    fast = fast.next.next;       // 2 steps
+
+    if (slow === fast) return true; // pointers met → cycle
+  }
+  return false; // fast hit null → no cycle
+}
+
+/* ---------- usage ---------- */
+const n1 = new ListNode(1);
+const n2 = new ListNode(2);
+const n3 = new ListNode(3);
+n1.next = n2;
+n2.next = n3;
+n3.next = n1;        // creates the cycle
+console.log(hasCycle(n1)); // true
