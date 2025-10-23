@@ -1,31 +1,67 @@
-const str = "123";
-const num: number = parseInt(str);
-console.log(num); // 123
-
-// With radix/base (recommended)
-const num2: number = parseInt("1010", 2); // Binary to decimal
-console.log(num2); // 10
-const str = "456";
-const num: number = Number(str);
-console.log(num); // 456
-const str = "789";
-const num: number = +str;
-console.log(num); // 789
-function safeParseInt(str: string, defaultValue: number = 0): number {
-    const result = parseInt(str);
-    return isNaN(result) ? defaultValue : result;
+// Stack.ts
+export class StackEmptyError extends Error {
+  constructor() {
+    super('Stack is empty');
+  }
 }
 
-const num1 = safeParseInt("123"); // 123
-const num2 = safeParseInt("abc"); // 0
-const num3 = safeParseInt("xyz", -1); // -1
-const str = "12345";
-const num = parseInt(str);
+export class Stack<T> {
+  private readonly _items: T[] = [];
 
-if (!isNaN(num)) {
-    console.log(`Valid number: ${num}`);
-} else {
-    console.log("Invalid number");
+  /*----- Core API -----*/
+  push(item: T): void {
+    this._items.push(item);
+  }
+
+  pop(): T {
+    if (this.isEmpty()) throw new StackEmptyError();
+    return this._items.pop()!;
+  }
+
+  peek(): T {
+    if (this.isEmpty()) throw new StackEmptyError();
+    return this._items[this._items.length - 1];
+  }
+
+  isEmpty(): boolean {
+    return this._items.length === 0;
+  }
+
+  get size(): number {
+    return this._items.length;
+  }
+
+  /*----- Convenience -----*/
+  clear(): void {
+    this._items.length = 0;
+  }
+
+  toArray(): T[] {
+    return [...this._items]; // shallow copy
+  }
+
+  [Symbol.iterator](): IterableIterator<T> {
+    // iterate from bottom to top (LIFO order when you pop manually)
+    let i = 0;
+    return {
+      next: () => ({
+        value: this._items[i++],
+        done: i > this._items.length,
+      }),
+      [Symbol.iterator]() {
+        return this;
+      },
+    };
+  }
 }
-const str = "42";
-const num = parseInt(str) as number;
+import { Stack } from './Stack';
+
+const s = new Stack<number>();
+s.push(10);
+s.push(20);
+console.log(s.peek()); // 20
+console.log(s.pop());  // 20
+console.log(s.size);   // 1
+console.log(s.isEmpty()); // false
+s.pop();
+console.log(s.isEmpty()); // true
