@@ -1,63 +1,26 @@
-const numbers: number[] = [1, 2, 3, 4, 3, 5];
-const valueToRemove: number = 3;
+let originalString: string = "Hello World!";
+let lowercaseString: string = originalString.toLowerCase();
 
-// Using filter() to create a new array without the specified value
-const updatedNumbers: number[] = numbers.filter(item => item !== valueToRemove);
+console.log(originalString);    // Output: "Hello World!"
+console.log(lowercaseString);   // Output: "hello world!"
 
-console.log("Original numbers:", numbers);          // [1, 2, 3, 4, 3, 5]
-console.log("Updated numbers (filtered):", updatedNumbers); // [1, 2, 4, 5]
-const colors: string[] = ['red', 'green', 'blue', 'green', 'yellow'];
-const colorToRemove: string = 'green';
+let anotherString: string = "TYPESCRIPT IS GREAT";
+let result: string = anotherString.toLowerCase();
 
-const indexToRemove: number = colors.indexOf(colorToRemove);
+console.log(result);            // Output: "typescript is great"
+let originalTurkishI: string = "I"; // This is a capital 'I'
+let originalTurkishDotlessI: string = "İ"; // This is a capital 'I' with a dot (Turkish)
 
-if (indexToRemove > -1) { // Only splice if the element is found
-    colors.splice(indexToRemove, 1); // Remove 1 element at the found index
-}
+// Standard lowercase (English rules)
+console.log(originalTurkishI.toLowerCase()); // Output: "i"
+console.log(originalTurkishDotlessI.toLowerCase()); // Output: "i̇" (still has the dot, standard English doesn't change it)
 
-console.log("Original colors (modified):", colors); // ['red', 'blue', 'green', 'yellow']
-interface Product {
-    id: number;
-    name: string;
-    price: number;
-}
+// Turkish lowercase
+// 'I' (capital dotless I) becomes 'ı' (lowercase dotless i)
+console.log(originalTurkishI.toLocaleLowerCase("tr")); // Output: "ı"
 
-const products: Product[] = [
-    { id: 1, name: 'Laptop', price: 1200 },
-    { id: 2, name: 'Mouse', price: 25 },
-    { id: 3, name: 'Keyboard', price: 75 },
-    { id: 4, name: 'Monitor', price: 300 },
-];
+// 'İ' (capital dotted I) becomes 'i' (lowercase dotted i)
+console.log(originalTurkishDotlessI.toLocaleLowerCase("tr")); // Output: "i"
 
-const productIdToRemove: number = 2;
-
-// Filter out the product with the matching ID
-const remainingProducts: Product[] = products.filter(product => product.id !== productIdToRemove);
-
-console.log("Original products:", products);
-/*
-[
-  { id: 1, name: 'Laptop', price: 1200 },
-  { id: 2, name: 'Mouse', price: 25 },
-  { id: 3, name: 'Keyboard', price: 75 },
-  { id: 4, name: 'Monitor', price: 300 }
-]
-*/
-console.log("Remaining products:", remainingProducts);
-/*
-[
-  { id: 1, name: 'Laptop', price: 1200 },
-  { id: 3, name: 'Keyboard', price: 75 },
-  { id: 4, name: 'Monitor', price: 300 }
-]
-*/
-const fruits: string[] = ['apple', 'banana', 'cherry', 'date', 'elderberry'];
-const indexToRemove: number = 2; // Remove 'cherry' (at index 2)
-
-// Check if the index is valid to prevent errors or unexpected behavior
-if (indexToRemove >= 0 && indexToRemove < fruits.length) {
-    const removedElements: string[] = fruits.splice(indexToRemove, 1); // Remove 1 element at indexToRemove
-    console.log("Removed elements:", removedElements); // ['cherry']
-}
-
-console.log("Fruits after removal:", fruits); // ['apple', 'banana', 'date', 'elderberry']
+// Using multiple locales (the first one that provides a valid rule will be used)
+console.log(originalTurkishI.toLocaleLowerCase(["en-US", "tr"])); // Output: "i" (en-US takes precedence here for 'I')
