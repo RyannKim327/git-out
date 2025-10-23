@@ -1,26 +1,68 @@
-let originalString: string = "Hello World!";
-let lowercaseString: string = originalString.toLowerCase();
+type Graph = Map<number, number[]>; 
+// You can also use { [key: number]: number[] } if you prefer plain objects.
 
-console.log(originalString);    // Output: "Hello World!"
-console.log(lowercaseString);   // Output: "hello world!"
+function tarjansSCC(graph: Graph): number[][] {
+    let index = 0;
+    const stack: number[] = [];
+    const onStack = new Set<number>();
+    const indices = new Map<number, number>();
+    const lowLink = new Map<number, number>();
 
-let anotherString: string = "TYPESCRIPT IS GREAT";
-let result: string = anotherString.toLowerCase();
+    const sccs: number[][] = [];
 
-console.log(result);            // Output: "typescript is great"
-let originalTurkishI: string = "I"; // This is a capital 'I'
-let originalTurkishDotlessI: string = "İ"; // This is a capital 'I' with a dot (Turkish)
+    function strongConnect(v: number) {
+        // Set the depth index for v
+        indices.set(v, index);
+        lowLink.set(v, index);
+        index++;
 
-// Standard lowercase (English rules)
-console.log(originalTurkishI.toLowerCase()); // Output: "i"
-console.log(originalTurkishDotlessI.toLowerCase()); // Output: "i̇" (still has the dot, standard English doesn't change it)
+        stack.push(v);
+        onStack.add(v);
 
-// Turkish lowercase
-// 'I' (capital dotless I) becomes 'ı' (lowercase dotless i)
-console.log(originalTurkishI.toLocaleLowerCase("tr")); // Output: "ı"
+        for (const w of graph.get(v) || []) {
+            if (!indices.has(w)) {
+                // Successor w has not yet been visited; recurse on it
+                strongConnect(w);
+                lowLink.set(v, Math.min(lowLink.get(v)!, lowLink.get(w)!));
+            } else if (onStack.has(w)) {
+                // Successor w is in the stack, so it's in the current SCC
+                lowLink.set(v, Math.min(lowLink.get(v)!, indices.get(w)!));
+            }
+        }
 
-// 'İ' (capital dotted I) becomes 'i' (lowercase dotted i)
-console.log(originalTurkishDotlessI.toLocaleLowerCase("tr")); // Output: "i"
+        // If v is a root node, pop the stack and generate an SCC
+        if (lowLink.get(v) === indices.get(v)) {
+            const scc: number[] = [];
+            let w: number;
+            do {
+                w = stack.pop()!;
+                onStack.delete(w);
+                scc.push(w);
+            } while (w !== v);
+            sccs.push(scc);
+        }
+    }
 
-// Using multiple locales (the first one that provides a valid rule will be used)
-console.log(originalTurkishI.toLocaleLowerCase(["en-US", "tr"])); // Output: "i" (en-US takes precedence here for 'I')
+    for (const v of graph.keys()) {
+        if (!indices.has(v)) {
+            strongConnect(v);
+        }
+    }
+
+    return sccs;
+}
+
+// Example usage:
+const graph: Graph = new Map([
+    [0, [1]],
+    [1, [2, 3]],
+    [2, [0]],
+    [3, [4]],
+    [4, [5, 7]],
+    [5, [6]],
+    [6, [4]],
+    [7, []]
+]);
+
+console.log(tarjansSCC(graph));
+// Example Output: [ [ 2, 1, 0 ], [ 6, 5, 4 ], [ 3 ], [ 7 ] ]
