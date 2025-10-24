@@ -1,51 +1,33 @@
-/**
- * Returns the longest increasing subsequence (strictly increasing).
- * If several have the same maximum length, the one that ends first is returned.
- */
-export function longestIncreasingSubsequence<T>(arr: T[]): T[] {
-  if (arr.length === 0) return [];
-
-  const n = arr.length;
-  const tailIdx: number[] = [];      // tailIdx[len] = index of best tail of length len+1
-  const parent: number[] = new Array(n).fill(-1); // predecessor pointer for reconstruction
-
-  for (let i = 0; i < n; i++) {
-    const val = arr[i];
-
-    // Binary search on the tail indices
-    let left = 0;
-    let right = tailIdx.length;
-
-    while (left < right) {
-      const mid = Math.floor((left + right) / 2);
-      if (arr[tailIdx[mid]] < val) {
-        left = mid + 1;
-      } else {
-        right = mid;
-      }
-    }
-
-    const pos = left;                 // pos == length of best subsequence ending at i
-    if (pos > 0) parent[i] = tailIdx[pos - 1];
-    if (pos === tailIdx.length) {
-      tailIdx.push(i);
-    } else if (arr[tailIdx[pos]] > val) {
-      tailIdx[pos] = i;               // replace with smaller tail
-    }
-  }
-
-  // Reconstruct the sequence by following parent pointers
-  const lis: T[] = [];
-  let k = tailIdx[tailIdx.length - 1];
-  while (k !== -1) {
-    lis.push(arr[k]);
-    k = parent[k];
-  }
-  return lis.reverse();
+function getDigit(num: number, place: number): number {
+    return Math.floor(Math.abs(num) / Math.pow(10, place)) % 10;
 }
 
-/* ---------- demo ---------- */
-if (require.main === module) {
-  const data = [10, 9, 2, 5, 3, 7, 101, 18];
-  console.log(longestIncreasingSubsequence(data)); // → [2, 3, 7, 18]
+function digitCount(num: number): number {
+    if (num === 0) return 1;
+    return Math.floor(Math.log10(Math.abs(num))) + 1;
 }
+
+function mostDigits(nums: number[]): number {
+    return nums.reduce((max, num) => Math.max(max, digitCount(num)), 0);
+}
+
+function radixSort(nums: number[]): number[] {
+    const maxDigitCount = mostDigits(nums);
+
+    for (let k = 0; k < maxDigitCount; k++) {
+        const buckets: number[][] = Array.from({ length: 10 }, () => []);
+
+        for (const num of nums) {
+            const digit = getDigit(num, k);
+            buckets[digit].push(num);
+        }
+
+        nums = ([] as number[]).concat(...buckets);
+    }
+
+    return nums;
+}
+
+// Example usage:
+const arr = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log(radixSort(arr)); // [2, 24, 45, 66, 75, 90, 170, 802]
