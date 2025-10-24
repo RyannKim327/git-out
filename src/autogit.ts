@@ -1,43 +1,108 @@
-/**
- * Iterative (bottom-up) merge sort.
- * Returns the same array instance, now sorted.
- */
-export function mergeSortIterative(a: number[]): number[] {
-  const n = a.length;
-  if (n < 2) return a;
+function selectionSort(arr: number[]): number[] {
+    // Create a copy to avoid mutating the original array
+    const sortedArray = [...arr];
+    const n = sortedArray.length;
 
-  // one auxiliary buffer that we ping-pong between
-  const aux = new Array<number>(n);
+    for (let i = 0; i < n - 1; i++) {
+        // Assume the current position has the minimum value
+        let minIndex = i;
 
-  // width of the sub-array being merged (1, 2, 4, 8 ...)
-  for (let w = 1; w < n; w *= 2) {
-    // left start
-    for (let left = 0; left < n - w; left += 2 * w) {
-      const mid = left + w;
-      const right = Math.min(left + 2 * w, n); // upper bound exclusive
+        // Find the index of the minimum element in the remaining unsorted portion
+        for (let j = i + 1; j < n; j++) {
+            if (sortedArray[j] < sortedArray[minIndex]) {
+                minIndex = j;
+            }
+        }
 
-      // merge a[left..mid-1] and a[mid..right-1] into aux[left..right-1]
-      let i = left;
-      let j = mid;
-      let k = left;
-
-      while (i < mid && j < right) {
-        aux[k++] = a[i] <= a[j] ? a[i++] : a[j++];
-      }
-      while (i < mid) aux[k++] = a[i++];
-      while (j < right) aux[k++] = a[j++];
+        // Swap the found minimum element with the element at position i
+        if (minIndex !== i) {
+            [sortedArray[i], sortedArray[minIndex]] = [sortedArray[minIndex], sortedArray[i]];
+        }
     }
 
-    // copy back for next pass (or swap pointers)
-    for (let i = 0; i < n; i++) a[i] = aux[i];
-  }
-  return a;
+    return sortedArray;
+}
+function selectionSortGeneric<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
+    const sortedArray = [...arr];
+    const n = sortedArray.length;
+    
+    // Default comparison function for numbers/strings
+    const compare = compareFn || ((a: T, b: T) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+    });
+
+    for (let i = 0; i < n - 1; i++) {
+        let minIndex = i;
+
+        for (let j = i + 1; j < n; j++) {
+            if (compare(sortedArray[j], sortedArray[minIndex]) < 0) {
+                minIndex = j;
+            }
+        }
+
+        if (minIndex !== i) {
+            [sortedArray[i], sortedArray[minIndex]] = [sortedArray[minIndex], sortedArray[i]];
+        }
+    }
+
+    return sortedArray;
+}
+function selectionSortInPlace(arr: number[]): void {
+    const n = arr.length;
+
+    for (let i = 0; i < n - 1; i++) {
+        let minIndex = i;
+
+        for (let j = i + 1; j < n; j++) {
+            if (arr[j] < arr[minIndex]) {
+                minIndex = j;
+            }
+        }
+
+        if (minIndex !== i) {
+            // Swap using temporary variable
+            const temp = arr[i];
+            arr[i] = arr[minIndex];
+            arr[minIndex] = temp;
+        }
+    }
+}
+// Test the implementations
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+const strings = ["banana", "apple", "cherry", "date"];
+
+console.log("Original:", numbers);
+console.log("Sorted:", selectionSort(numbers));
+
+console.log("Strings sorted:", selectionSortGeneric(strings));
+
+// With custom comparison for descending order
+console.log("Descending:", selectionSortGeneric(numbers, (a, b) => b - a));
+
+// Sorting objects
+interface Person {
+    name: string;
+    age: number;
 }
 
-/* ---------- quick sanity check ---------- */
-if (require.main === module) {
-  const data = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5];
-  console.log("before:", data.join());
-  mergeSortIterative(data);
-  console.log("after: ", data.join());
+const people: Person[] = [
+    { name: "Alice", age: 30 },
+    { name: "Bob", age: 25 },
+    { name: "Charlie", age: 35 }
+];
+
+console.log("People by age:", selectionSortGeneric(people, (a, b) => a.age - b.age));
+// Helper to measure performance
+function measurePerformance<T>(sortFn: (arr: T[]) => T[], arr: T[]): void {
+    const start = performance.now();
+    const result = sortFn(arr);
+    const end = performance.now();
+    
+    console.log(`Sorted ${arr.length} elements in ${(end - start).toFixed(2)}ms`);
 }
+
+// Test with larger array
+const largeArray = Array.from({ length: 1000 }, () => Math.floor(Math.random() * 1000));
+measurePerformance(selectionSort, largeArray);
