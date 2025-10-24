@@ -1,55 +1,51 @@
-const message: string = "Hello, TypeScript developers!";
+/**
+ * Returns the longest increasing subsequence (strictly increasing).
+ * If several have the same maximum length, the one that ends first is returned.
+ */
+export function longestIncreasingSubsequence<T>(arr: T[]): T[] {
+  if (arr.length === 0) return [];
 
-// Case-sensitive check
-console.log(message.includes("Type"));       // true
-console.log(message.includes("type"));       // false (because of 'T' vs 't')
-console.log(message.includes("World"));      // false
-console.log(message.includes("developers", 10)); // true (starts searching from index 10)
-console.log(message.includes("developers", 25)); // false (starts searching after "developers")
-const sentence: string = "The quick brown fox jumps over the lazy dog.";
+  const n = arr.length;
+  const tailIdx: number[] = [];      // tailIdx[len] = index of best tail of length len+1
+  const parent: number[] = new Array(n).fill(-1); // predecessor pointer for reconstruction
 
-// Check if it contains "fox"
-if (sentence.indexOf("fox") !== -1) {
-    console.log("The sentence contains 'fox' at index:", sentence.indexOf("fox")); // 16
-} else {
-    console.log("The sentence does not contain 'fox'.");
+  for (let i = 0; i < n; i++) {
+    const val = arr[i];
+
+    // Binary search on the tail indices
+    let left = 0;
+    let right = tailIdx.length;
+
+    while (left < right) {
+      const mid = Math.floor((left + right) / 2);
+      if (arr[tailIdx[mid]] < val) {
+        left = mid + 1;
+      } else {
+        right = mid;
+      }
+    }
+
+    const pos = left;                 // pos == length of best subsequence ending at i
+    if (pos > 0) parent[i] = tailIdx[pos - 1];
+    if (pos === tailIdx.length) {
+      tailIdx.push(i);
+    } else if (arr[tailIdx[pos]] > val) {
+      tailIdx[pos] = i;               // replace with smaller tail
+    }
+  }
+
+  // Reconstruct the sequence by following parent pointers
+  const lis: T[] = [];
+  let k = tailIdx[tailIdx.length - 1];
+  while (k !== -1) {
+    lis.push(arr[k]);
+    k = parent[k];
+  }
+  return lis.reverse();
 }
 
-// Case-sensitive check
-console.log(sentence.indexOf("The"));      // 0
-console.log(sentence.indexOf("the"));      // 31 (different case, different position)
-console.log(sentence.indexOf("cat"));      // -1
-const product: string = "Apple iPhone 15 Pro";
-const searchLower: string = "iphone"; // User might type this
-
-if (product.toLowerCase().includes(searchLower.toLowerCase())) {
-    console.log(`'${product}' contains '${searchLower}' (case-insensitive).`); // true
-} else {
-    console.log(`'${product}' does not contain '${searchLower}' (case-insensitive).`);
+/* ---------- demo ---------- */
+if (require.main === module) {
+  const data = [10, 9, 2, 5, 3, 7, 101, 18];
+  console.log(longestIncreasingSubsequence(data)); // → [2, 3, 7, 18]
 }
-
-// Example with different case
-const anotherSearch: string = "pro";
-if (product.toLowerCase().includes(anotherSearch.toLowerCase())) {
-    console.log(`'${product}' contains '${anotherSearch}' (case-insensitive).`); // true
-}
-const text: string = "My email is user@example.com.";
-
-// Case-sensitive regex search
-const emailRegex: RegExp = /example\.com/; // Need to escape the dot
-console.log(emailRegex.test(text)); // true
-
-// Case-insensitive regex search using the 'i' flag
-const fruitRegex: RegExp = /apple/i; // 'i' flag for case-insensitive
-console.log(fruitRegex.test("I have an Apple.")); // true
-console.log(fruitRegex.test("I have an apple.")); // true
-
-// Search for a word boundary (e.g., "TypeScript" as a whole word, not "MyTypeScript")
-const wordRegex: RegExp = /\bTypeScript\b/; // \b is a word boundary
-console.log(wordRegex.test("Hello, TypeScript developers!")); // true
-console.log(wordRegex.test("Hello, MyTypeScript developers!")); // false
-const data: string = "The price is $123.45.";
-const dollarSignRegex: RegExp = /\$/;
-
-console.log(data.search(dollarSignRegex)); // 13 (index of '$')
-console.log(data.search(/€/));            // -1
