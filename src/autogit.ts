@@ -1,173 +1,156 @@
 interface TreeNode<T> {
-  value: T;
-  children: TreeNode<T>[];
+    value: T;
+    left: TreeNode<T> | null;
+    right: TreeNode<T> | null;
 }
 
-function bfsTree<T>(root: TreeNode<T>): T[] {
-  const result: T[] = [];
-  const queue: TreeNode<T>[] = [root];
-
-  while (queue.length > 0) {
-    const currentNode = queue.shift()!;
-    result.push(currentNode.value);
+function bfsTree<T>(root: TreeNode<T> | null): T[] {
+    if (!root) return [];
     
-    // Add all children to the queue
-    for (const child of currentNode.children) {
-      queue.push(child);
+    const result: T[] = [];
+    const queue: TreeNode<T>[] = [root];
+    
+    while (queue.length > 0) {
+        const currentNode = queue.shift()!;
+        result.push(currentNode.value);
+        
+        if (currentNode.left) queue.push(currentNode.left);
+        if (currentNode.right) queue.push(currentNode.right);
     }
-  }
-
-  return result;
+    
+    return result;
 }
 
-// Example usage:
+// Usage example
 const tree: TreeNode<number> = {
-  value: 1,
-  children: [
-    {
-      value: 2,
-      children: [
-        { value: 4, children: [] },
-        { value: 5, children: [] }
-      ]
+    value: 1,
+    left: {
+        value: 2,
+        left: { value: 4, left: null, right: null },
+        right: { value: 5, left: null, right: null }
     },
-    {
-      value: 3,
-      children: [
-        { value: 6, children: [] }
-      ]
+    right: {
+        value: 3,
+        left: { value: 6, left: null, right: null },
+        right: { value: 7, left: null, right: null }
     }
-  ]
 };
 
-console.log(bfsTree(tree)); // Output: [1, 2, 3, 4, 5, 6]
-type Graph = Map<number, number[]>;
-
-function bfsGraph(
-  graph: Graph, 
-  startNode: number
-): number[] {
-  const visited: Set<number> = new Set();
-  const result: number[] = [];
-  const queue: number[] = [startNode];
-  visited.add(startNode);
-
-  while (queue.length > 0) {
-    const currentNode = queue.shift()!;
-    result.push(currentNode);
-
-    const neighbors = graph.get(currentNode) || [];
-    
-    for (const neighbor of neighbors) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
-    }
-  }
-
-  return result;
+console.log(bfsTree(tree)); // [1, 2, 3, 4, 5, 6, 7]
+interface Graph {
+    [key: string]: string[];
 }
 
-// Example usage:
-const graph: Graph = new Map([
-  [1, [2, 3]],
-  [2, [4, 5]],
-  [3, [6]],
-  [4, []],
-  [5, []],
-  [6, []]
-]);
+function bfsGraph(graph: Graph, startNode: string): string[] {
+    const visited: Set<string> = new Set();
+    const result: string[] = [];
+    const queue: string[] = [startNode];
+    visited.add(startNode);
+    
+    while (queue.length > 0) {
+        const currentNode = queue.shift()!;
+        result.push(currentNode);
+        
+        for (const neighbor of graph[currentNode]) {
+            if (!visited.has(neighbor)) {
+                visited.add(neighbor);
+                queue.push(neighbor);
+            }
+        }
+    }
+    
+    return result;
+}
 
-console.log(bfsGraph(graph, 1)); // Output: [1, 2, 3, 4, 5, 6]
-function bfs<T>(
-  startNode: T,
-  getNeighbors: (node: T) => T[],
-  processNode?: (node: T) => void
+// Usage example
+const graph: Graph = {
+    'A': ['B', 'C'],
+    'B': ['A', 'D', 'E'],
+    'C': ['A', 'F'],
+    'D': ['B'],
+    'E': ['B', 'F'],
+    'F': ['C', 'E']
+};
+
+console.log(bfsGraph(graph, 'A')); // ['A', 'B', 'C', 'D', 'E', 'F']
+function bfsGeneric<T>(
+    startNode: T,
+    getNeighbors: (node: T) => T[],
+    processNode?: (node: T) => void
 ): T[] {
-  const visited = new Set<T>();
-  const result: T[] = [];
-  const queue: T[] = [startNode];
-  visited.add(startNode);
-
-  while (queue.length > 0) {
-    const currentNode = queue.shift()!;
-    result.push(currentNode);
+    const visited: Set<T> = new Set();
+    const result: T[] = [];
+    const queue: T[] = [startNode];
+    visited.add(startNode);
     
-    // Optional processing callback
-    if (processNode) {
-      processNode(currentNode);
+    while (queue.length > 0) {
+        const currentNode = queue.shift()!;
+        result.push(currentNode);
+        
+        // Optional callback for processing
+        if (processNode) {
+            processNode(currentNode);
+        }
+        
+        const neighbors = getNeighbors(currentNode);
+        for (const neighbor of neighbors) {
+            if (!visited.has(neighbor)) {
+                visited.add(neighbor);
+                queue.push(neighbor);
+            }
+        }
     }
-
-    const neighbors = getNeighbors(currentNode);
     
-    for (const neighbor of neighbors) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
-    }
-  }
-
-  return result;
+    return result;
 }
 
-// Example usage with a graph:
-const graphNodes = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [4, 5]],
-  [3, [6]],
-  [4, []],
-  [5, []],
-  [6, []]
+// Usage example
+const graphNodes = {
+    'A': ['B', 'C'],
+    'B': ['A', 'D'],
+    'C': ['A', 'E'],
+    'D': ['B'],
+    'E': ['C']
+};
+
+const getNeighbors = (node: string) => graphNodes[node] || [];
+console.log(bfsGeneric('A', getNeighbors)); // ['A', 'B', 'C', 'D', 'E']
+function bfsShortestPath<T>(
+    graph: Map<T, T[]>,
+    start: T,
+    end: T
+): T[] | null {
+    const visited: Set<T> = new Set();
+    const queue: T[][] = [[start]];
+    visited.add(start);
+    
+    while (queue.length > 0) {
+        const path = queue.shift()!;
+        const node = path[path.length - 1];
+        
+        if (node === end) return path;
+        
+        const neighbors = graph.get(node) || [];
+        for (const neighbor of neighbors) {
+            if (!visited.has(neighbor)) {
+                visited.add(neighbor);
+                const newPath = [...path, neighbor];
+                queue.push(newPath);
+            }
+        }
+    }
+    
+    return null;
+}
+
+// Usage example
+const graphMap = new Map<string, string[]>([
+    ['A', ['B', 'C']],
+    ['B', ['A', 'D', 'E']],
+    ['C', ['A', 'F']],
+    ['D', ['B']],
+    ['E', ['B', 'F']],
+    ['F', ['C', 'E']]
 ]);
 
-const getNeighbors = (node: number): number[] => 
-  graphNodes.get(node) || [];
-
-console.log(bfs(1, getNeighbors)); // Output: [1, 2, 3, 4, 5, 6]
-function bfsWithPath<T>(
-  startNode: T,
-  targetNode: T,
-  getNeighbors: (node: T) => T[]
-): T[] | null {
-  const visited = new Set<T>();
-  const queue: T[] = [startNode];
-  const parentMap = new Map<T, T>();
-  visited.add(startNode);
-  parentMap.set(startNode, startNode);
-
-  while (queue.length > 0) {
-    const currentNode = queue.shift()!;
-    
-    if (currentNode === targetNode) {
-      // Reconstruct path
-      const path: T[] = [];
-      let node: T = targetNode;
-      
-      while (node !== startNode) {
-        path.unshift(node);
-        node = parentMap.get(node)!;
-      }
-      path.unshift(startNode);
-      
-      return path;
-    }
-
-    const neighbors = getNeighbors(currentNode);
-    
-    for (const neighbor of neighbors) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        parentMap.set(neighbor, currentNode);
-        queue.push(neighbor);
-      }
-    }
-  }
-
-  return null; // No path found
-}
-
-// Example usage:
-const path = bfsWithPath(1, 6, getNeighbors);
-console.log(path); // Output: [1, 3, 6]
+console.log(bfsShortestPath(graphMap, 'A', 'F')); // ['A', 'C', 'F']
