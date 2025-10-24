@@ -1,156 +1,86 @@
-interface TreeNode<T> {
+class ListNode<T> {
     value: T;
-    left: TreeNode<T> | null;
-    right: TreeNode<T> | null;
-}
+    next: ListNode<T> | null;
 
-function bfsTree<T>(root: TreeNode<T> | null): T[] {
-    if (!root) return [];
+    constructor(value: T) {
+        this.value = value;
+        this.next = null;
+    }
+}
+function getLengthIterative(head: ListNode<any> | null): number {
+    let count = 0;
+    let current = head;
     
-    const result: T[] = [];
-    const queue: TreeNode<T>[] = [root];
-    
-    while (queue.length > 0) {
-        const currentNode = queue.shift()!;
-        result.push(currentNode.value);
-        
-        if (currentNode.left) queue.push(currentNode.left);
-        if (currentNode.right) queue.push(currentNode.right);
+    while (current !== null) {
+        count++;
+        current = current.next;
     }
     
-    return result;
+    return count;
+}
+function getLengthRecursive(head: ListNode<any> | null): number {
+    if (head === null) {
+        return 0;
+    }
+    return 1 + getLengthRecursive(head.next);
+}
+class LinkedList<T> {
+    head: ListNode<T> | null = null;
+
+    // Add node to the end
+    append(value: T): void {
+        const newNode = new ListNode(value);
+        
+        if (!this.head) {
+            this.head = newNode;
+            return;
+        }
+        
+        let current = this.head;
+        while (current.next !== null) {
+            current = current.next;
+        }
+        current.next = newNode;
+    }
+
+    // Get length iteratively
+    getLengthIterative(): number {
+        let count = 0;
+        let current = this.head;
+        
+        while (current !== null) {
+            count++;
+            current = current.next;
+        }
+        
+        return count;
+    }
+
+    // Get length recursively
+    getLengthRecursive(): number {
+        const helper = (node: ListNode<T> | null): number => {
+            if (node === null) return 0;
+            return 1 + helper(node.next);
+        };
+        
+        return helper(this.head);
+    }
 }
 
 // Usage example
-const tree: TreeNode<number> = {
-    value: 1,
-    left: {
-        value: 2,
-        left: { value: 4, left: null, right: null },
-        right: { value: 5, left: null, right: null }
-    },
-    right: {
-        value: 3,
-        left: { value: 6, left: null, right: null },
-        right: { value: 7, left: null, right: null }
-    }
-};
+const list = new LinkedList<number>();
+list.append(1);
+list.append(2);
+list.append(3);
+list.append(4);
 
-console.log(bfsTree(tree)); // [1, 2, 3, 4, 5, 6, 7]
-interface Graph {
-    [key: string]: string[];
-}
+console.log("Iterative length:", list.getLengthIterative()); // Output: 4
+console.log("Recursive length:", list.getLengthRecursive()); // Output: 4
+// Test with empty list
+const emptyList = new LinkedList<number>();
+console.log(emptyList.getLengthIterative()); // Output: 0
 
-function bfsGraph(graph: Graph, startNode: string): string[] {
-    const visited: Set<string> = new Set();
-    const result: string[] = [];
-    const queue: string[] = [startNode];
-    visited.add(startNode);
-    
-    while (queue.length > 0) {
-        const currentNode = queue.shift()!;
-        result.push(currentNode);
-        
-        for (const neighbor of graph[currentNode]) {
-            if (!visited.has(neighbor)) {
-                visited.add(neighbor);
-                queue.push(neighbor);
-            }
-        }
-    }
-    
-    return result;
-}
-
-// Usage example
-const graph: Graph = {
-    'A': ['B', 'C'],
-    'B': ['A', 'D', 'E'],
-    'C': ['A', 'F'],
-    'D': ['B'],
-    'E': ['B', 'F'],
-    'F': ['C', 'E']
-};
-
-console.log(bfsGraph(graph, 'A')); // ['A', 'B', 'C', 'D', 'E', 'F']
-function bfsGeneric<T>(
-    startNode: T,
-    getNeighbors: (node: T) => T[],
-    processNode?: (node: T) => void
-): T[] {
-    const visited: Set<T> = new Set();
-    const result: T[] = [];
-    const queue: T[] = [startNode];
-    visited.add(startNode);
-    
-    while (queue.length > 0) {
-        const currentNode = queue.shift()!;
-        result.push(currentNode);
-        
-        // Optional callback for processing
-        if (processNode) {
-            processNode(currentNode);
-        }
-        
-        const neighbors = getNeighbors(currentNode);
-        for (const neighbor of neighbors) {
-            if (!visited.has(neighbor)) {
-                visited.add(neighbor);
-                queue.push(neighbor);
-            }
-        }
-    }
-    
-    return result;
-}
-
-// Usage example
-const graphNodes = {
-    'A': ['B', 'C'],
-    'B': ['A', 'D'],
-    'C': ['A', 'E'],
-    'D': ['B'],
-    'E': ['C']
-};
-
-const getNeighbors = (node: string) => graphNodes[node] || [];
-console.log(bfsGeneric('A', getNeighbors)); // ['A', 'B', 'C', 'D', 'E']
-function bfsShortestPath<T>(
-    graph: Map<T, T[]>,
-    start: T,
-    end: T
-): T[] | null {
-    const visited: Set<T> = new Set();
-    const queue: T[][] = [[start]];
-    visited.add(start);
-    
-    while (queue.length > 0) {
-        const path = queue.shift()!;
-        const node = path[path.length - 1];
-        
-        if (node === end) return path;
-        
-        const neighbors = graph.get(node) || [];
-        for (const neighbor of neighbors) {
-            if (!visited.has(neighbor)) {
-                visited.add(neighbor);
-                const newPath = [...path, neighbor];
-                queue.push(newPath);
-            }
-        }
-    }
-    
-    return null;
-}
-
-// Usage example
-const graphMap = new Map<string, string[]>([
-    ['A', ['B', 'C']],
-    ['B', ['A', 'D', 'E']],
-    ['C', ['A', 'F']],
-    ['D', ['B']],
-    ['E', ['B', 'F']],
-    ['F', ['C', 'E']]
-]);
-
-console.log(bfsShortestPath(graphMap, 'A', 'F')); // ['A', 'C', 'F']
+// Test with single node
+const singleNodeList = new LinkedList<number>();
+singleNodeList.append(42);
+console.log(singleNodeList.getLengthIterative()); // Output: 1
