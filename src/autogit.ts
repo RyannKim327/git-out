@@ -1,99 +1,52 @@
-function majorityElement(nums: number[]): number | null {
-    let candidate: number | null = null;
-    let count = 0;
+function topologicalSort<T>(edges: [T, T][]): T[] {
+    // Step 1: Build the adjacency list and in-degree map
+    const adjList = new Map<T, T[]>();
+    const inDegree = new Map<T, number>();
 
-    for (const num of nums) {
-        if (count === 0) {
-            candidate = num;
-        }
-        count += (num === candidate) ? 1 : -1;
+    for (const [from, to] of edges) {
+        if (!adjList.has(from)) adjList.set(from, []);
+        if (!adjList.has(to)) adjList.set(to, []);
+        adjList.get(from)!.push(to);
+
+        inDegree.set(to, (inDegree.get(to) || 0) + 1);
+        if (!inDegree.has(from)) inDegree.set(from, 0);
     }
 
-    // Verify if candidate is actually majority
-    count = 0;
-    for (const num of nums) {
-        if (num === candidate) count++;
+    // Step 2: Find all nodes with in-degree 0
+    const queue: T[] = [];
+    for (const [node, degree] of inDegree.entries()) {
+        if (degree === 0) queue.push(node);
     }
 
-    return count > nums.length / 2 ? candidate : null;
-}
+    // Step 3: Process the queue
+    const sorted: T[] = [];
+    while (queue.length > 0) {
+        const node = queue.shift()!;
+        sorted.push(node);
 
-// Example usage:
-const arr = [2, 2, 1, 1, 1, 2, 2];
-const result = majorityElement(arr);
-console.log(result); // Output: 2
-function majorityElementHashMap(nums: number[]): number | null {
-    const frequencyMap: Map<number, number> = new Map();
-    
-    for (const num of nums) {
-        frequencyMap.set(num, (frequencyMap.get(num) || 0) + 1);
-    }
-    
-    const threshold = nums.length / 2;
-    for (const [num, count] of frequencyMap) {
-        if (count > threshold) {
-            return num;
+        for (const neighbor of adjList.get(node) || []) {
+            inDegree.set(neighbor, inDegree.get(neighbor)! - 1);
+            if (inDegree.get(neighbor) === 0) {
+                queue.push(neighbor);
+            }
         }
     }
-    
-    return null;
-}
-function majorityElementSorting(nums: number[]): number | null {
-    nums.sort();
-    const candidate = nums[Math.floor(nums.length / 2)];
-    
-    // Verify
-    let count = 0;
-    for (const num of nums) {
-        if (num === candidate) count++;
-    }
-    
-    return count > nums.length / 2 ? candidate : null;
-}
-interface MajorityElementResult {
-    element: number | null;
-    count: number;
-    isMajority: boolean;
-}
 
-function findMajorityElement(nums: number[]): MajorityElementResult {
-    if (nums.length === 0) {
-        return { element: null, count: 0, isMajority: false };
+    // Step 4: Detect cycle
+    if (sorted.length !== adjList.size) {
+        throw new Error("Graph has at least one cycle, topological sort not possible.");
     }
 
-    // Boyer-Moore algorithm
-    let candidate: number = nums[0];
-    let count = 0;
-
-    for (const num of nums) {
-        if (count === 0) {
-            candidate = num;
-        }
-        count += (num === candidate) ? 1 : -1;
-    }
-
-    // Count occurrences of candidate
-    const candidateCount = nums.filter(n => n === candidate).length;
-    const isMajority = candidateCount > nums.length / 2;
-
-    return {
-        element: isMajority ? candidate : null,
-        count: candidateCount,
-        isMajority
-    };
+    return sorted;
 }
 
-// Usage example
-const numbers = [3, 2, 3];
-const result = findMajorityElement(numbers);
+// Example Usage:
+const edges: [string, string][] = [
+    ["A", "C"],
+    ["B", "C"],
+    ["C", "D"],
+    ["D", "E"]
+];
 
-if (result.isMajority) {
-    console.log(`Majority element: ${result.element} (appears ${result.count} times)`);
-} else {
-    console.log("No majority element found");
-}
-// Test cases
-console.log(majorityElement([])); // null
-console.log(majorityElement([1])); // 1
-console.log(majorityElement([1, 2, 3])); // null (no majority)
-console.log(majorityElement([2, 2, 1, 1, 1, 2, 2])); // 2
+console.log(topologicalSort(edges)); 
+// Possible output: ["A", "B", "C", "D", "E"]
