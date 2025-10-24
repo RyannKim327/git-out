@@ -1,223 +1,184 @@
-interface Graph<T> {
-  getNeighbors(node: T): T[];
-  nodesEqual(node1: T, node2: T): boolean;
-}
-
-interface BidirectionalSearchResult<T> {
-  path: T[];
-  found: boolean;
-  iterations: number;
-}
-class BidirectionalSearch<T> {
-  constructor(private graph: Graph<T>) {}
-
-  search(start: T, goal: T): BidirectionalSearchResult<T> {
-    if (this.graph.nodesEqual(start, goal)) {
-      return {
-        path: [start],
-        found: true,
-        iterations: 0
-      };
+function quicksort<T>(array: T[]): T[] {
+    if (array.length <= 1) {
+        return array;
     }
 
-    // Forward search data
-    const forwardQueue: T[] = [start];
-    const forwardVisited = new Map<string, T>();
-    const forwardParent = new Map<string, T>();
-    
-    // Backward search data
-    const backwardQueue: T[] = [goal];
-    const backwardVisited = new Map<string, T>();
-    const backwardParent = new Map<string, T>();
-    
-    let iterations = 0;
-    let meetingPoint: T | null = null;
+    const pivot = array[Math.floor(array.length / 2)];
+    const left: T[] = [];
+    const right: T[] = [];
+    const equal: T[] = [];
 
-    while (forwardQueue.length > 0 && backwardQueue.length > 0) {
-      iterations++;
+    for (const element of array) {
+        if (element < pivot) {
+            left.push(element);
+        } else if (element > pivot) {
+            right.push(element);
+        } else {
+            equal.push(element);
+        }
+    }
 
-      // Expand forward search
-      const forwardCurrent = forwardQueue.shift()!;
-      const forwardKey = JSON.stringify(forwardCurrent);
-      
-      if (!forwardVisited.has(forwardKey)) {
-        forwardVisited.set(forwardKey, forwardCurrent);
-        
-        // Check if current node is visited by backward search
-        if (backwardVisited.has(forwardKey)) {
-          meetingPoint = forwardCurrent;
-          break;
+    return [...quicksort(left), ...equal, ...quicksort(right)];
+}
+
+// Usage examples
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+const sortedNumbers = quicksort(numbers);
+console.log(sortedNumbers); // [11, 12, 22, 25, 34, 64, 90]
+
+const strings = ["banana", "apple", "cherry", "date"];
+const sortedStrings = quicksort(strings);
+console.log(sortedStrings); // ["apple", "banana", "cherry", "date"]
+function quicksortInPlace<T>(array: T[], left: number = 0, right: number = array.length - 1): T[] {
+    if (left < right) {
+        const pivotIndex = partition(array, left, right);
+        quicksortInPlace(array, left, pivotIndex - 1);
+        quicksortInPlace(array, pivotIndex + 1, right);
+    }
+    return array;
+}
+
+function partition<T>(array: T[], left: number, right: number): number {
+    const pivot = array[right];
+    let i = left - 1;
+
+    for (let j = left; j < right; j++) {
+        if (array[j] <= pivot) {
+            i++;
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    [array[i + 1], array[right]] = [array[right], array[i + 1]];
+    return i + 1;
+}
+
+// Usage
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+quicksortInPlace(numbers);
+console.log(numbers); // [11, 12, 22, 25, 34, 64, 90]
+function quicksortWithComparator<T>(
+    array: T[], 
+    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
+): T[] {
+    if (array.length <= 1) {
+        return array;
+    }
+
+    const pivot = array[Math.floor(array.length / 2)];
+    const left: T[] = [];
+    const right: T[] = [];
+    const equal: T[] = [];
+
+    for (const element of array) {
+        const comparison = compareFn(element, pivot);
+        if (comparison < 0) {
+            left.push(element);
+        } else if (comparison > 0) {
+            right.push(element);
+        } else {
+            equal.push(element);
+        }
+    }
+
+    return [
+        ...quicksortWithComparator(left, compareFn),
+        ...equal,
+        ...quicksortWithComparator(right, compareFn)
+    ];
+}
+
+// Usage examples with custom comparators
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+
+// Descending order
+const descending = quicksortWithComparator(numbers, (a, b) => b - a);
+console.log(descending); // [90, 64, 34, 25, 22, 12, 11]
+
+// Sorting objects
+interface Person {
+    name: string;
+    age: number;
+}
+
+const people: Person[] = [
+    { name: "Alice", age: 30 },
+    { name: "Bob", age: 25 },
+    { name: "Charlie", age: 35 }
+];
+
+const sortedByAge = quicksortWithComparator(people, (a, b) => a.age - b.age);
+console.log(sortedByAge);
+// [{name: "Bob", age: 25}, {name: "Alice", age: 30}, {name: "Charlie", age: 35}]
+function quicksortOptimized<T>(array: T[]): T[] {
+    if (array.length <= 1) {
+        return array;
+    }
+
+    // Choose random pivot for better average performance
+    const pivotIndex = Math.floor(Math.random() * array.length);
+    const pivot = array[pivotIndex];
+    
+    const left: T[] = [];
+    const right: T[] = [];
+    const equal: T[] = [];
+
+    for (const element of array) {
+        if (element < pivot) {
+            left.push(element);
+        } else if (element > pivot) {
+            right.push(element);
+        } else {
+            equal.push(element);
+        }
+    }
+
+    return [...quicksortOptimized(left), ...equal, ...quicksortOptimized(right)];
+}
+class QuickSort<T> {
+    private array: T[];
+
+    constructor(array: T[]) {
+        this.array = [...array]; // Create a copy to avoid mutating original
+    }
+
+    sort(compareFn?: (a: T, b: T) => number): T[] {
+        return this.quicksort(this.array, compareFn);
+    }
+
+    private quicksort(
+        array: T[], 
+        compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
+    ): T[] {
+        if (array.length <= 1) {
+            return array;
         }
 
-        const neighbors = this.graph.getNeighbors(forwardCurrent);
-        for (const neighbor of neighbors) {
-          const neighborKey = JSON.stringify(neighbor);
-          if (!forwardVisited.has(neighborKey)) {
-            forwardParent.set(neighborKey, forwardCurrent);
-            forwardQueue.push(neighbor);
-          }
-        }
-      }
+        const pivot = array[Math.floor(array.length / 2)];
+        const left: T[] = [];
+        const right: T[] = [];
+        const equal: T[] = [];
 
-      // Expand backward search
-      const backwardCurrent = backwardQueue.shift()!;
-      const backwardKey = JSON.stringify(backwardCurrent);
-      
-      if (!backwardVisited.has(backwardKey)) {
-        backwardVisited.set(backwardKey, backwardCurrent);
-        
-        // Check if current node is visited by forward search
-        if (forwardVisited.has(backwardKey)) {
-          meetingPoint = backwardCurrent;
-          break;
+        for (const element of array) {
+            const comparison = compareFn(element, pivot);
+            if (comparison < 0) {
+                left.push(element);
+            } else if (comparison > 0) {
+                right.push(element);
+            } else {
+                equal.push(element);
+            }
         }
 
-        const neighbors = this.graph.getNeighbors(backwardCurrent);
-        for (const neighbor of neighbors) {
-          const neighborKey = JSON.stringify(neighbor);
-          if (!backwardVisited.has(neighborKey)) {
-            backwardParent.set(neighborKey, backwardCurrent);
-            backwardQueue.push(neighbor);
-          }
-        }
-      }
+        return [
+            ...this.quicksort(left, compareFn),
+            ...equal,
+            ...this.quicksort(right, compareFn)
+        ];
     }
-
-    if (!meetingPoint) {
-      return {
-        path: [],
-        found: false,
-        iterations
-      };
-    }
-
-    // Reconstruct path
-    const path = this.reconstructPath(
-      meetingPoint,
-      forwardParent,
-      backwardParent,
-      start,
-      goal
-    );
-
-    return {
-      path,
-      found: true,
-      iterations
-    };
-  }
-
-  private reconstructPath(
-    meetingPoint: T,
-    forwardParent: Map<string, T>,
-    backwardParent: Map<string, T>,
-    start: T,
-    goal: T
-  ): T[] {
-    // Reconstruct path from start to meeting point
-    const forwardPath: T[] = [];
-    let current: T = meetingPoint;
-    const meetingKey = JSON.stringify(meetingPoint);
-    
-    while (!this.graph.nodesEqual(current, start)) {
-      forwardPath.unshift(current);
-      const currentKey = JSON.stringify(current);
-      current = forwardParent.get(currentKey)!;
-    }
-    forwardPath.unshift(start);
-
-    // Reconstruct path from meeting point to goal
-    const backwardPath: T[] = [];
-    current = meetingPoint;
-    
-    while (!this.graph.nodesEqual(current, goal)) {
-      const currentKey = JSON.stringify(current);
-      current = backwardParent.get(currentKey)!;
-      backwardPath.push(current);
-    }
-
-    // Combine paths
-    return [...forwardPath, ...backwardPath];
-  }
-}
-// Example graph implementation
-class StringGraph implements Graph<string> {
-  private adjacencyList: Map<string, string[]>;
-
-  constructor() {
-    this.adjacencyList = new Map();
-  }
-
-  addEdge(from: string, to: string) {
-    if (!this.adjacencyList.has(from)) {
-      this.adjacencyList.set(from, []);
-    }
-    if (!this.adjacencyList.has(to)) {
-      this.adjacencyList.set(to, []);
-    }
-    this.adjacencyList.get(from)!.push(to);
-    this.adjacencyList.get(to)!.push(from);
-  }
-
-  getNeighbors(node: string): string[] {
-    return this.adjacencyList.get(node) || [];
-  }
-
-  nodesEqual(node1: string, node2: string): boolean {
-    return node1 === node2;
-  }
 }
 
-// Usage example
-const graph = new StringGraph();
-graph.addEdge("A", "B");
-graph.addEdge("A", "C");
-graph.addEdge("B", "D");
-graph.addEdge("C", "E");
-graph.addEdge("D", "F");
-graph.addEdge("E", "F");
-graph.addEdge("F", "G");
-
-const bidirectionalSearch = new BidirectionalSearch<string>(graph);
-const result = bidirectionalSearch.search("A", "G");
-
-console.log("Path found:", result.found);
-console.log("Path:", result.path.join(" → "));
-console.log("Iterations:", result.iterations);
-interface CustomNode {
-  id: number;
-  name: string;
-}
-
-class CustomGraph implements Graph<CustomNode> {
-  private nodes: Map<number, CustomNode>;
-  private edges: Map<number, number[]>;
-
-  constructor() {
-    this.nodes = new Map();
-    this.edges = new Map();
-  }
-
-  addNode(node: CustomNode) {
-    this.nodes.set(node.id, node);
-    this.edges.set(node.id, []);
-  }
-
-  addEdge(fromId: number, toId: number) {
-    if (this.edges.has(fromId)) {
-      this.edges.get(fromId)!.push(toId);
-    }
-    if (this.edges.has(toId)) {
-      this.edges.get(toId)!.push(fromId);
-    }
-  }
-
-  getNeighbors(node: CustomNode): CustomNode[] {
-    const neighborIds = this.edges.get(node.id) || [];
-    return neighborIds.map(id => this.nodes.get(id)!);
-  }
-
-  nodesEqual(node1: CustomNode, node2: CustomNode): boolean {
-    return node1.id === node2.id;
-  }
-}
+// Usage
+const sorter = new QuickSort([64, 34, 25, 12, 22, 11, 90]);
+const sorted = sorter.sort();
+console.log(sorted); // [11, 12, 22, 25, 34, 64, 90]
