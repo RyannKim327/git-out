@@ -1,169 +1,99 @@
-function binarySearch(arr: number[], target: number): number {
-    let left = 0;
-    let right = arr.length - 1;
+function majorityElement(nums: number[]): number | null {
+    let candidate: number | null = null;
+    let count = 0;
+
+    for (const num of nums) {
+        if (count === 0) {
+            candidate = num;
+        }
+        count += (num === candidate) ? 1 : -1;
+    }
+
+    // Verify if candidate is actually majority
+    count = 0;
+    for (const num of nums) {
+        if (num === candidate) count++;
+    }
+
+    return count > nums.length / 2 ? candidate : null;
+}
+
+// Example usage:
+const arr = [2, 2, 1, 1, 1, 2, 2];
+const result = majorityElement(arr);
+console.log(result); // Output: 2
+function majorityElementHashMap(nums: number[]): number | null {
+    const frequencyMap: Map<number, number> = new Map();
     
-    while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        
-        if (arr[mid] === target) {
-            return mid; // Target found
-        } else if (arr[mid] < target) {
-            left = mid + 1; // Search right half
-        } else {
-            right = mid - 1; // Search left half
+    for (const num of nums) {
+        frequencyMap.set(num, (frequencyMap.get(num) || 0) + 1);
+    }
+    
+    const threshold = nums.length / 2;
+    for (const [num, count] of frequencyMap) {
+        if (count > threshold) {
+            return num;
         }
     }
     
-    return -1; // Target not found
+    return null;
 }
-
-// Usage
-const sortedArray = [1, 3, 5, 7, 9, 11, 13, 15, 17];
-console.log(binarySearch(sortedArray, 9)); // Output: 4
-console.log(binarySearch(sortedArray, 10)); // Output: -1
-function binarySearchRecursive(
-    arr: number[], 
-    target: number, 
-    left: number = 0, 
-    right: number = arr.length - 1
-): number {
-    if (left > right) {
-        return -1; // Base case: target not found
+function majorityElementSorting(nums: number[]): number | null {
+    nums.sort();
+    const candidate = nums[Math.floor(nums.length / 2)];
+    
+    // Verify
+    let count = 0;
+    for (const num of nums) {
+        if (num === candidate) count++;
     }
     
-    const mid = Math.floor((left + right) / 2);
-    
-    if (arr[mid] === target) {
-        return mid; // Target found
-    } else if (arr[mid] < target) {
-        return binarySearchRecursive(arr, target, mid + 1, right);
-    } else {
-        return binarySearchRecursive(arr, target, left, mid - 1);
-    }
+    return count > nums.length / 2 ? candidate : null;
+}
+interface MajorityElementResult {
+    element: number | null;
+    count: number;
+    isMajority: boolean;
 }
 
-// Usage
-console.log(binarySearchRecursive(sortedArray, 7)); // Output: 3
-function binarySearchGeneric<T>(
-    arr: T[],
-    target: T,
-    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
-): number {
-    let left = 0;
-    let right = arr.length - 1;
-    
-    while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        const comparison = compareFn(arr[mid], target);
-        
-        if (comparison === 0) {
-            return mid; // Target found
-        } else if (comparison < 0) {
-            left = mid + 1; // Search right half
-        } else {
-            right = mid - 1; // Search left half
+function findMajorityElement(nums: number[]): MajorityElementResult {
+    if (nums.length === 0) {
+        return { element: null, count: 0, isMajority: false };
+    }
+
+    // Boyer-Moore algorithm
+    let candidate: number = nums[0];
+    let count = 0;
+
+    for (const num of nums) {
+        if (count === 0) {
+            candidate = num;
         }
+        count += (num === candidate) ? 1 : -1;
     }
-    
-    return -1; // Target not found
+
+    // Count occurrences of candidate
+    const candidateCount = nums.filter(n => n === candidate).length;
+    const isMajority = candidateCount > nums.length / 2;
+
+    return {
+        element: isMajority ? candidate : null,
+        count: candidateCount,
+        isMajority
+    };
 }
 
-// Usage with numbers
-console.log(binarySearchGeneric(sortedArray, 11));
+// Usage example
+const numbers = [3, 2, 3];
+const result = findMajorityElement(numbers);
 
-// Usage with strings
-const stringArray = ["apple", "banana", "cherry", "date", "elderberry"];
-console.log(binarySearchGeneric(stringArray, "cherry")); // Output: 2
-
-// Usage with custom objects
-interface Person {
-    id: number;
-    name: string;
+if (result.isMajority) {
+    console.log(`Majority element: ${result.element} (appears ${result.count} times)`);
+} else {
+    console.log("No majority element found");
 }
-
-const people: Person[] = [
-    { id: 1, name: "Alice" },
-    { id: 3, name: "Bob" },
-    { id: 5, name: "Charlie" },
-    { id: 7, name: "Diana" }
-];
-
-console.log(binarySearchGeneric(people, { id: 5, name: "Charlie" }, 
-    (a, b) => a.id - b.id)); // Output: 2
-function findInsertPosition(arr: number[], target: number): number {
-    let left = 0;
-    let right = arr.length - 1;
-    
-    while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        
-        if (arr[mid] === target) {
-            return mid; // Exact match found
-        } else if (arr[mid] < target) {
-            left = mid + 1;
-        } else {
-            right = mid - 1;
-        }
-    }
-    
-    return left; // Insertion position
-}
-
-// Usage
-console.log(findInsertPosition([1, 3, 5, 7, 9], 6)); // Output: 3
-console.log(findInsertPosition([1, 3, 5, 7, 9], 3)); // Output: 1
-function findFirstOccurrence(arr: number[], target: number): number {
-    let left = 0;
-    let right = arr.length - 1;
-    let result = -1;
-    
-    while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        
-        if (arr[mid] === target) {
-            result = mid;
-            right = mid - 1; // Continue searching left
-        } else if (arr[mid] < target) {
-            left = mid + 1;
-        } else {
-            right = mid - 1;
-        }
-    }
-    
-    return result;
-}
-
-function findLastOccurrence(arr: number[], target: number): number {
-    let left = 0;
-    let right = arr.length - 1;
-    let result = -1;
-    
-    while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        
-        if (arr[mid] === target) {
-            result = mid;
-            left = mid + 1; // Continue searching right
-        } else if (arr[mid] < target) {
-            left = mid + 1;
-        } else {
-            right = mid - 1;
-        }
-    }
-    
-    return result;
-}
-
-// Usage
-const arrWithDuplicates = [1, 2, 2, 2, 3, 4, 4, 5];
-console.log(findFirstOccurrence(arrWithDuplicates, 2)); // Output: 1
-console.log(findLastOccurrence(arrWithDuplicates, 2)); // Output: 3
-// Empty array
-binarySearch([], 5); // Returns -1
-
-// Single element
-binarySearch([5], 5); // Returns 0
-binarySearch([5], 3); // Returns -1
-
-// Non-existent element
-binarySearch([1, 2, 3, 4], 5); // Returns -1
+// Test cases
+console.log(majorityElement([])); // null
+console.log(majorityElement([1])); // 1
+console.log(majorityElement([1, 2, 3])); // null (no majority)
+console.log(majorityElement([2, 2, 1, 1, 1, 2, 2])); // 2
