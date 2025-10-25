@@ -1,79 +1,68 @@
-function isPalindrome(str: string): boolean {
-    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    let left = 0;
-    let right = cleanStr.length - 1;
-    
-    while (left < right) {
-        if (cleanStr[left] !== cleanStr[right]) {
+function isSortedAscending<T>(arr: T[]): boolean {
+    for (let i = 1; i < arr.length; i++) {
+        if (arr[i] < arr[i - 1]) {
             return false;
         }
-        left++;
-        right--;
     }
     return true;
 }
 
-// Examples
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("racecar")); // true
-console.log(isPalindrome("hello")); // false
-function isPalindromeEasy(str: string): boolean {
-    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const reversedStr = cleanStr.split('').reverse().join('');
-    return cleanStr === reversedStr;
+// Usage
+const numbers = [1, 2, 3, 4, 5];
+const mixed = [1, 3, 2, 4, 5];
+
+console.log(isSortedAscending(numbers)); // true
+console.log(isSortedAscending(mixed));   // false
+function isSortedAscending<T>(arr: T[]): boolean {
+    return arr.every((value, index, array) => 
+        index === 0 || value >= array[index - 1]
+    );
 }
 
-// Examples
-console.log(isPalindromeEasy("racecar")); // true
-console.log(isPalindromeEasy("A man, a plan, a canal: Panama")); // true
-function isPalindromeRobust(input: string): boolean {
-    // Type guard for empty or null input
-    if (!input || typeof input !== 'string') {
-        return false;
-    }
-    
-    const cleanStr = input.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
-    // Handle edge cases
-    if (cleanStr.length <= 1) {
-        return true;
-    }
-    
-    return cleanStr === cleanStr.split('').reverse().join('');
+// Usage
+const numbers = [1, 2, 3, 4, 5];
+console.log(isSortedAscending(numbers)); // true
+function isSortedAscending<T>(arr: T[]): boolean {
+    return arr.slice(1).every((value, index) => 
+        value >= arr[index]
+    );
 }
 
-// Examples
-console.log(isPalindromeRobust("racecar")); // true
-console.log(isPalindromeRobust("A")); // true
-console.log(isPalindromeRobust("")); // true (empty string is a palindrome)
-console.log(isPalindromeRobust("hello")); // false
-function isPalindromeRecursive(str: string): boolean {
-    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
-    function checkPalindrome(s: string): boolean {
-        if (s.length <= 1) {
-            return true;
-        }
-        if (s[0] !== s[s.length - 1]) {
+// Usage
+const numbers = [1, 2, 3, 4, 5];
+console.log(isSortedAscending(numbers)); // true
+function isSorted<T>(
+    arr: T[], 
+    compare: (a: T, b: T) => boolean = (a, b) => a <= b
+): boolean {
+    for (let i = 1; i < arr.length; i++) {
+        if (!compare(arr[i - 1], arr[i])) {
             return false;
         }
-        return checkPalindrome(s.substring(1, s.length - 1));
     }
-    
-    return checkPalindrome(cleanStr);
-}
-function isPalindromeCaseSensitive(str: string): boolean {
-    const cleanStr = str.replace(/[^a-zA-Z0-9]/g, '');
-    return cleanStr === cleanStr.split('').reverse().join('');
+    return true;
 }
 
-// Examples
-console.log(isPalindromeCaseSensitive("Racecar")); // false (case sensitive)
-console.log(isPalindromeCaseSensitive("racecar")); // true
-// You can also create a type for better type safety
-type StringPredicate = (str: string) => boolean;
+// Usage for ascending order
+const numbers = [1, 2, 3, 4, 5];
+console.log(isSorted(numbers)); // true
 
-const palindromeCheck: StringPredicate = (str: string): boolean => {
-    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    return cleanStr === cleanStr.split('').reverse().join('');
-};
+// You can also check for descending order
+console.log(isSorted([5, 4, 3, 2, 1], (a, b) => a >= b)); // true
+function isSortedAscending(arr: number[]): boolean {
+    for (let i = 1; i < arr.length; i++) {
+        if (arr[i] < arr[i - 1]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Usage
+const numbers = [1, 2, 3, 4, 5];
+console.log(isSortedAscending(numbers)); // true
+// Test edge cases
+console.log(isSortedAscending([]));        // true (empty array)
+console.log(isSortedAscending([1]));       // true (single element)
+console.log(isSortedAscending([1, 1, 1])); // true (equal elements)
+console.log(isSortedAscending([1, 2, 2])); // true (non-strict ascending)
