@@ -1,95 +1,55 @@
-interface User {
-    name: string;
-    age: number;
-    email: string;
+function removeVowels(str: string): string {
+  return str.replace(/[aeiou]/gi, '');
 }
 
-class UserManager {
-    private users: User[] = [];
-
-    addUser(): void {
-        const name = prompt("Enter user name:") || "Unknown";
-        const ageInput = prompt("Enter user age:") || "0";
-        const email = prompt("Enter user email:") || "unknown@example.com";
-
-        const age = parseInt(ageInput);
-
-        if (isNaN(age) || age < 0) {
-            console.log("Invalid age entered!");
-            return;
-        }
-
-        const newUser: User = {
-            name,
-            age,
-            email
-        };
-
-        this.users.push(newUser);
-        console.log(`User ${name} added successfully!`);
-    }
-
-    displayUsers(): void {
-        console.log("\n--- All Users ---");
-        this.users.forEach((user, index) => {
-            console.log(`${index + 1}. Name: ${user.name}, Age: ${user.age}, Email: ${user.email}`);
-        });
-    }
-
-    findUserByName(): void {
-        const searchName = prompt("Enter name to search:")?.toLowerCase();
-        
-        if (!searchName) {
-            console.log("No name entered!");
-            return;
-        }
-
-        const foundUsers = this.users.filter(user => 
-            user.name.toLowerCase().includes(searchName)
-        );
-
-        if (foundUsers.length === 0) {
-            console.log("No users found with that name.");
-        } else {
-            console.log("\n--- Found Users ---");
-            foundUsers.forEach(user => {
-                console.log(`Name: ${user.name}, Age: ${user.age}, Email: ${user.email}`);
-            });
-        }
-    }
+// Usage
+const result = removeVowels("Hello World");
+console.log(result); // "Hll Wrld"
+function removeVowels(str: string): string {
+  return str.replace(/[aeiouAEIOU]/g, '');
 }
 
-// Main program
-function main(): void {
-    const userManager = new UserManager();
-    let running = true;
-
-    console.log("=== User Management System ===");
-
-    while (running) {
-        const choice = prompt(
-            "\nChoose an option:\n1. Add User\n2. Display All Users\n3. Find User by Name\n4. Exit\n\nEnter choice (1-4):"
-        );
-
-        switch (choice) {
-            case "1":
-                userManager.addUser();
-                break;
-            case "2":
-                userManager.displayUsers();
-                break;
-            case "3":
-                userManager.findUserByName();
-                break;
-            case "4":
-                running = false;
-                console.log("Goodbye!");
-                break;
-            default:
-                console.log("Invalid choice! Please enter 1-4.");
-        }
-    }
+// Usage
+const result = removeVowels("Hello World");
+console.log(result); // "Hll Wrld"
+function removeVowels(str: string): string {
+  const vowels = ['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U'];
+  return str
+    .split('')
+    .filter(char => !vowels.includes(char))
+    .join('');
 }
 
-// Run the program
-main();
+// Usage
+const result = removeVowels("Hello World");
+console.log(result); // "Hll Wrld"
+function removeVowels(str: string): string {
+  const vowels = new Set(['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']);
+  return str
+    .split('')
+    .reduce((acc, char) => vowels.has(char) ? acc : acc + char, '');
+}
+
+// Usage
+const result = removeVowels("Hello World");
+console.log(result); // "Hll Wrld"
+const removeVowels = (str: string): string => str.replace(/[aeiou]/gi, '');
+
+// Usage
+const result = removeVowels("Hello World");
+console.log(result); // "Hll Wrld"
+interface StringProcessor {
+  process(str: string): string;
+}
+
+class VowelRemover implements StringProcessor {
+  process(str: string): string {
+    return str.replace(/[aeiou]/gi, '');
+  }
+}
+
+// Usage
+const remover = new VowelRemover();
+console.log(remover.process("Hello World")); // "Hll Wrld"
+console.log(remover.process("TypeScript"));   // "TypScrpt"
+console.log(remover.process("AEIOU"));        // ""
