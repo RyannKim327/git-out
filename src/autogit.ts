@@ -1,152 +1,97 @@
-class ListNode<T> {
-    constructor(
-        public value: T,
-        public next: ListNode<T> | null = null
-    ) {}
-}
+class Node<T> {
+  value: T;
+  next: Node<T> | null;
 
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-    if (!head || !head.next) {
-        return false;
-    }
-    
-    let slow: ListNode<T> | null = head;
-    let fast: ListNode<T> | null = head;
-    
-    while (fast && fast.next) {
-        slow = slow!.next;
-        fast = fast.next.next;
-        
-        if (slow === fast) {
-            return true;
-        }
-    }
-    
-    return false;
+  constructor(value: T) {
+    this.value = value;
+    this.next = null;
+  }
 }
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-    if (!head) return false;
-    
-    const visited = new Set<ListNode<T>>();
-    let current: ListNode<T> | null = head;
-    
-    while (current) {
-        if (visited.has(current)) {
-            return true;
-        }
-        visited.add(current);
-        current = current.next;
-    }
-    
-    return false;
-}
-class ListNode<T> {
-    constructor(
-        public value: T,
-        public next: ListNode<T> | null = null
-    ) {}
-}
+class Queue<T> {
+  private front: Node<T> | null; 
+  private rear: Node<T> | null; 
+  private count: number;
 
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-    if (!head || !head.next) {
-        return false;
-    }
-    
-    let slow: ListNode<T> | null = head;
-    let fast: ListNode<T> | null = head;
-    
-    while (fast && fast.next) {
-        slow = slow!.next;
-        fast = fast.next.next;
-        
-        if (slow === fast) {
-            return true;
-        }
-    }
-    
-    return false;
-}
+  constructor() {
+    this.front = null;
+    this.rear = null;
+    this.count = 0;
+  }
 
-// Helper function to create a cycle in the list
-function createCycle<T>(head: ListNode<T>, pos: number): void {
-    if (pos < 0) return;
+  /**
+   * Add an item to the end of the queue
+   */
+  enqueue(value: T): void {
+    const newNode = new Node(value);
     
-    let cycleNode: ListNode<T> | null = null;
-    let current: ListNode<T> | null = head;
-    let index = 0;
-    
-    while (current && current.next) {
-        if (index === pos) {
-            cycleNode = current;
-        }
-        current = current.next;
-        index++;
+    if (this.isEmpty()) {
+      this.front = newNode;
+      this.rear = newNode;
+    } else {
+      this.rear!.next = newNode; // Existing rear's next points to new node
+      this.rear = newNode;       // Update rear to new node
     }
-    
-    if (cycleNode && current) {
-        current.next = cycleNode;
-    }
-}
+    this.count++;
+  }
 
-// Test the implementation
-function testCycleDetection(): void {
-    // Create a list without cycle: 1 -> 2 -> 3 -> 4 -> 5
-    const head = new ListNode(1);
-    head.next = new ListNode(2);
-    head.next.next = new ListNode(3);
-    head.next.next.next = new ListNode(4);
-    head.next.next.next.next = new ListNode(5);
-    
-    console.log("List without cycle:", hasCycle(head)); // false
-    
-    // Create a cycle: 1 -> 2 -> 3 -> 4 -> 5 -> back to 3
-    createCycle(head, 2);
-    console.log("List with cycle:", hasCycle(head)); // true
-    
-    // Test empty list
-    console.log("Empty list:", hasCycle(null)); // false
-    
-    // Single node without cycle
-    const singleNode = new ListNode(1);
-    console.log("Single node:", hasCycle(singleNode)); // false
-    
-    // Single node with cycle (pointing to itself)
-    const selfLoopNode = new ListNode(1);
-    selfLoopNode.next = selfLoopNode;
-    console.log("Self-loop node:", hasCycle(selfLoopNode)); // true
-}
+  /**
+   * Remove and return the item from the front of the queue
+   */
+  dequeue(): T | null {
+    if (this.isEmpty()) return null;
 
-testCycleDetection();
-function detectCycleStart<T>(head: ListNode<T> | null): ListNode<T> | null {
-    if (!head || !head.next) {
-        return null;
+    const removedNode = this.front;
+    this.front = this.front!.next;
+
+    // If queue becomes empty, update rear to null
+    if (this.front === null) {
+      this.rear = null;
     }
-    
-    let slow: ListNode<T> | null = head;
-    let fast: ListNode<T> | null = head;
-    let hasCycle = false;
-    
-    // Detect if cycle exists
-    while (fast && fast.next) {
-        slow = slow!.next;
-        fast = fast.next.next;
-        
-        if (slow === fast) {
-            hasCycle = true;
-            break;
-        }
-    }
-    
-    if (!hasCycle) {
-        return null;
-    }
-    
-    // Find the start of the cycle
-    slow = head;
-    while (slow !== fast) {
-        slow = slow!.next;
-        fast = fast!.next;
-    }
-    
-    return slow;
+
+    this.count--;
+    return removedNode!.value;
+  }
+
+  /**
+   * Get the front item without removing it
+   */
+  peek(): T | null {
+    return this.front?.value ?? null;
+  }
+
+  /**
+   * Check if the queue is empty
+   */
+  isEmpty(): boolean {
+    return this.count === 0;
+  }
+
+  /**
+   * Get the number of items in the queue
+   */
+  size(): number {
+    return this.count;
+  }
+
+  /**
+   * Clear the queue
+   */
+  clear(): void {
+    this.front = null;
+    this.rear = null;
+    this.count = 0;
+  }
 }
+const queue = new Queue<number>();
+
+queue.enqueue(10);
+queue.enqueue(20);
+queue.enqueue(30);
+
+console.log(queue.size());   // 3
+console.log(queue.peek());   // 10
+console.log(queue.dequeue()); // 10
+console.log(queue.peek());   // 20
+
+queue.clear();
+console.log(queue.isEmpty()); // true
