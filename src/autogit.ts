@@ -1,74 +1,196 @@
-// Random Number Guessing Game with Input
-class NumberGame {
-    private secretNumber: number;
-    private attempts: number = 0;
+function longestCommonSubsequence(text1: string, text2: string): string {
+    const m = text1.length;
+    const n = text2.length;
     
-    constructor(min: number = 1, max: number = 100) {
-        this.secretNumber = Math.floor(Math.random() * (max - min + 1)) + min;
-    }
+    // Create DP table
+    const dp: number[][] = Array(m + 1)
+        .fill(0)
+        .map(() => Array(n + 1).fill(0));
     
-    // Method to process user input
-    guessNumber(userInput: string): string {
-        this.attempts++;
-        
-        const guessedNumber = parseInt(userInput);
-        
-        if (isNaN(guessedNumber)) {
-            return "Please enter a valid number!";
-        }
-        
-        if (guessedNumber === this.secretNumber) {
-            return `🎉 Congratulations! You guessed it in ${this.attempts} attempts!`;
-        } else if (guessedNumber < this.secretNumber) {
-            return "📈 Try higher!";
-        } else {
-            return "📉 Try lower!";
-        }
-    }
-    
-    getSecretNumber(): number {
-        return this.secretNumber;
-    }
-}
-
-// Example usage with simulated input
-const game = new NumberGame();
-
-// Simulating user inputs
-const inputs = ["50", "75", "25", "60", "85", "95", "100"];
-
-console.log("🤔 Guess the number between 1-100!");
-console.log("Secret number:", game.getSecretNumber()); // Cheat code!
-
-inputs.forEach((input, index) => {
-    console.log(`\nAttempt ${index + 1}: "${input}"`);
-    const result = game.guessNumber(input);
-    console.log(result);
-});
-
-// Function to get real user input (Node.js environment)
-function getUserInput(): void {
-    if (typeof process !== 'undefined') {
-        const readline = require('readline').createInterface({
-            input: process.stdin,
-            output: process.stdout
-        });
-        
-        readline.question('Enter your guess: ', (input: string) => {
-            const result = game.guessNumber(input);
-            console.log(result);
-            
-            if (result.includes("Congratulations")) {
-                readline.close();
+    // Fill DP table
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            if (text1[i - 1] === text2[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
             } else {
-                getUserInput(); // Recursive call for next guess
+                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
             }
-        });
+        }
+    }
+    
+    // Reconstruct the LCS
+    let i = m, j = n;
+    const lcs: string[] = [];
+    
+    while (i > 0 && j > 0) {
+        if (text1[i - 1] === text2[j - 1]) {
+            lcs.unshift(text1[i - 1]);
+            i--;
+            j--;
+        } else if (dp[i - 1][j] > dp[i][j - 1]) {
+            i--;
+        } else {
+            j--;
+        }
+    }
+    
+    return lcs.join('');
+}
+
+// Example usage
+const text1 = "ABCDGH";
+const text2 = "AEDFHR";
+console.log(longestCommonSubsequence(text1, text2)); // Output: "ADH"
+interface LCSResult {
+    length: number;
+    sequence: string;
+}
+
+function findLCS(text1: string, text2: string): LCSResult {
+    const m = text1.length;
+    const n = text2.length;
+    
+    const dp: number[][] = Array(m + 1)
+        .fill(0)
+        .map(() => Array(n + 1).fill(0));
+    
+    // Fill DP table
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            if (text1[i - 1] === text2[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
+            } else {
+                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+            }
+        }
+    }
+    
+    // Reconstruct LCS
+    let i = m, j = n;
+    const sequence: string[] = [];
+    
+    while (i > 0 && j > 0) {
+        if (text1[i - 1] === text2[j - 1]) {
+            sequence.unshift(text1[i - 1]);
+            i--;
+            j--;
+        } else if (dp[i - 1][j] > dp[i][j - 1]) {
+            i--;
+        } else {
+            j--;
+        }
+    }
+    
+    return {
+        length: dp[m][n],
+        sequence: sequence.join('')
+    };
+}
+
+// Example usage
+const result = findLCS("ABCDGH", "AEDFHR");
+console.log(result); // Output: { length: 3, sequence: "ADH" }
+function lcsLength(text1: string, text2: string): number {
+    const m = text1.length;
+    const n = text2.length;
+    
+    // Only keep two rows at a time
+    let prev: number[] = Array(n + 1).fill(0);
+    let curr: number[] = Array(n + 1).fill(0);
+    
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            if (text1[i - 1] === text2[j - 1]) {
+                curr[j] = prev[j - 1] + 1;
+            } else {
+                curr[j] = Math.max(prev[j], curr[j - 1]);
+            }
+        }
+        // Swap arrays
+        [prev, curr] = [curr, prev];
+    }
+    
+    return prev[n];
+}
+function lcsRecursive(text1: string, text2: string): string {
+    const memo = new Map<string, string>();
+    
+    function solve(i: number, j: number): string {
+        if (i === 0 || j === 0) return '';
+        
+        const key = `${i},${j}`;
+        if (memo.has(key)) return memo.get(key)!;
+        
+        if (text1[i - 1] === text2[j - 1]) {
+            const result = solve(i - 1, j - 1) + text1[i - 1];
+            memo.set(key, result);
+            return result;
+        } else {
+            const lcs1 = solve(i - 1, j);
+            const lcs2 = solve(i, j - 1);
+            const result = lcs1.length > lcs2.length ? lcs1 : lcs2;
+            memo.set(key, result);
+            return result;
+        }
+    }
+    
+    return solve(text1.length, text2.length);
+}
+class LCSFinder {
+    constructor(private text1: string, private text2: string) {}
+    
+    find(): string {
+        const dp = this.buildDPTable();
+        return this.reconstructLCS(dp);
+    }
+    
+    private buildDPTable(): number[][] {
+        const m = this.text1.length;
+        const n = this.text2.length;
+        
+        const dp: number[][] = Array(m + 1)
+            .fill(0)
+            .map(() => Array(n + 1).fill(0));
+        
+        for (let i = 1; i <= m; i++) {
+            for (let j = 1; j <= n; j++) {
+                if (this.text1[i - 1] === this.text2[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                } else {
+                    dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                }
+            }
+        }
+        
+        return dp;
+    }
+    
+    private reconstructLCS(dp: number[][]): string {
+        let i = this.text1.length;
+        let j = this.text2.length;
+        const sequence: string[] = [];
+        
+        while (i > 0 && j > 0) {
+            if (this.text1[i - 1] === this.text2[j - 1]) {
+                sequence.unshift(this.text1[i - 1]);
+                i--;
+                j--;
+            } else if (dp[i - 1][j] > dp[i][j - 1]) {
+                i--;
+            } else {
+                j--;
+            }
+        }
+        
+        return sequence.join('');
+    }
+    
+    getLength(): number {
+        return this.find().length;
     }
 }
 
-// Uncomment to play with real input (Node.js only)
-// console.log("🤔 Guess the number between 1-100!");
-// getUserInput();
-
-export { NumberGame };
+// Example usage
+const finder = new LCSFinder("ABCDGH", "AEDFHR");
+console.log(finder.find()); // Output: "ADH"
+console.log(finder.getLength()); // Output: 3
