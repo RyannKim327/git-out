@@ -1,105 +1,137 @@
-import axios, { AxiosResponse } from 'axios';
-
-// Define interface for the API response
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  website: string;
+interface Node {
+    id: string;
+    children?: Node[];
+    // Add any other properties you need
 }
 
-// Function to fetch users from JSONPlaceholder API
-async function fetchUsers(): Promise<User[]> {
-  try {
-    const response: AxiosResponse<User[]> = await axios.get<User[]>(
-      'https://jsonplaceholder.typicode.com/users',
-      {
-        timeout: 5000,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+interface SearchResult {
+    found: boolean;
+    node?: Node;
+    depth?: number;
+}
 
-    console.log('Status:', response.status);
-    console.log('Headers:', response.headers);
-
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.error('Axios error:', error.message);
-      if (error.response) {
-        console.error('Response status:', error.response.status);
-      }
-    } else {
-      console.error('Unexpected error:', error);
+class DepthLimitedSearch {
+    /**
+     * Iterative Depth-Limited Search implementation
+     * @param root Starting node of the search
+     * @param targetId ID of the node to find
+     * @param maxDepth Maximum depth to search (0-based)
+     * @returns Search result with found status and node if found
+     */
+    static iterativeDLS(root: Node, targetId: string, maxDepth: number): SearchResult {
+        for (let depth = 0; depth <= maxDepth; depth++) {
+            const result = this.depthLimitedSearch(root, targetId, depth);
+            if (result.found) {
+                return result;
+            }
+        }
+        
+        return { found: false };
     }
-    throw error;
-  }
+
+    /**
+     * Recursive helper function for depth-limited search
+     * @param node Current node being examined
+     * @param targetId ID of the node to find
+     * @param depthLimit Remaining depth allowed
+     * @returns Search result
+     */
+    private static depthLimitedSearch(node: Node, targetId: string, depthLimit: number): SearchResult {
+        if (node.id === targetId) {
+            return { found: true, node, depth: depthLimit };
+        }
+
+        if (depthLimit === 0) {
+            return { found: false };
+        }
+
+        if (node.children) {
+            for (const child of node.children) {
+                const result = this.depthLimitedSearch(child, targetId, depthLimit - 1);
+                if (result.found) {
+                    return result;
+                }
+            }
+        }
+
+        return { found: false };
+    }
 }
 
-// Function to create a new user
-async function createUser(userData: Partial<User>): Promise<User> {
-  try {
-    const response: AxiosResponse<User> = await axios.post<User>(
-      'https://jsonplaceholder.typicode.com/users',
-      userData,
-      {
-        timeout: 3000,
-      }
-    );
+// Alternative: Fully Iterative Implementation (no recursion)
+class IterativeDepthLimitedSearch {
+    /**
+     * Fully iterative depth-limited search using a stack
+     * @param root Starting node
+     * @param targetId ID to search for
+     * @param maxDepth Maximum search depth
+     * @returns Search result
+     */
+    static iterativeDLS(root: Node, targetId: string, maxDepth: number): SearchResult {
+        // Use a stack to track nodes and their remaining depth
+        const stack: { node: Node; depth: number }[] = [];
+        stack.push({ node: root, depth: maxDepth });
 
-    console.log('Created user with ID:', response.data.id);
-    return response.data;
-  } catch (error) {
-    console.error('Failed to create user:', error);
-    throw error;
-  }
+        while (stack.length > 0) {
+            const { node, depth } = stack.pop()!;
+
+            if (node.id === targetId) {
+                return { found: true, node, depth: maxDepth - depth };
+            }
+
+            // Only explore children if we haven't reached depth limit
+            if (depth > 0 && node.children) {
+                // Push children in reverse order to maintain original search order
+                for (let i = node.children.length - 1; i >= 0; i--) {
+                    stack.push({ node: node.children[i], depth: depth - 1 });
+                }
+            }
+        }
+
+        return { found: false };
+    }
 }
 
-// Main execution
-async function main() {
-  try {
-    // Fetch users
-    const users = await fetchUsers();
-    console.log('Fetched users:', users.slice(0, 2)); // Show first 2 users
+// Example usage and test
+const exampleTree: Node = {
+    id: "A",
+    children: [
+        {
+            id: "B",
+            children: [
+                { id: "D" },
+                { id: "E" }
+            ]
+        },
+        {
+            id: "C",
+            children: [
+                { id: "F", children: [{ id: "H" }] },
+                { id: "G" }
+            ]
+        }
+    ]
+};
 
-    // Create a new user
-    const newUser = await createUser({
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      website: 'https://johndoe.com',
-    });
-    
-    console.log('New user created:', newUser);
+// Test the implementation
+console.log("Testing Iterative DLS:");
+const result1 = DepthLimitedSearch.iterativeDLS(exampleTree, "H", 3);
+console.log("Found H at depth 3:", result1);
 
-  } catch (error) {
-    console.error('Main execution failed:', error);
-  }
-}
+const result2 = DepthLimitedSearch.iterativeDLS(exampleTree, "H", 2);
+console.log("Found H at depth 2:", result2); // Should not find it
 
-// Run the program
-main();
+console.log("\nTesting Fully Iterative DLS:");
+const result3 = IterativeDepthLimitedSearch.iterativeDLS(exampleTree, "H", 3);
+console.log("Found H at depth 3:", result3);
 
-// Alternative: Using axios with then/catch syntax
-axios.get<User[]>('https://jsonplaceholder.typicode.com/users')
-  .then((response: AxiosResponse<User[]>) => {
-    console.log('Total users:', response.data.length);
-  })
-  .catch((error) => {
-    console.error('Request failed:', error);
-  });
-npm install axios
-npm install -D typescript @types/node ts-node
-{
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "CommonJS",
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
-  }
+const result4 = IterativeDepthLimitedSearch.iterativeDLS(exampleTree, "H", 2);
+console.log("Found H at depth 2:", result4); // Should not find it
+// For deeper searches with unknown depth, use iterative deepening:
+function findNodeWithIterativeDeepening(root: Node, targetId: string, maxDepth: number = 10) {
+    for (let depth = 0; depth <= maxDepth; depth++) {
+        const result = IterativeDepthLimitedSearch.iterativeDLS(root, targetId, depth);
+        if (result.found) return result;
+    }
+    return { found: false };
 }
