@@ -1,41 +1,23 @@
-function longestCommonSubsequence(a: string, b: string): string {
-    const m = a.length;
-    const n = b.length;
-
-    // dp[i][j] = length of LCS of a[0..i-1], b[0..j-1]
-    const dp: number[][] = Array.from({ length: m + 1 }, () =>
-        Array(n + 1).fill(0)
-    );
-
-    // Fill DP table
-    for (let i = 1; i <= m; i++) {
-        for (let j = 1; j <= n; j++) {
-            if (a[i - 1] === b[j - 1]) {
-                dp[i][j] = dp[i - 1][j - 1] + 1;
-            } else {
-                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-            }
-        }
-    }
-
-    // Backtrack to find sequence
-    let i = m, j = n;
-    const lcsChars: string[] = [];
-
-    while (i > 0 && j > 0) {
-        if (a[i - 1] === b[j - 1]) {
-            lcsChars.push(a[i - 1]);
-            i--;
-            j--;
-        } else if (dp[i - 1][j] > dp[i][j - 1]) {
-            i--;
-        } else {
-            j--;
-        }
-    }
-
-    return lcsChars.reverse().join('');
+class ListNode {
+  val: number;
+  next: ListNode | null;
+  constructor(val: number) {
+    this.val = val;
+    this.next = null;
+  }
 }
 
-// Example:
-console.log(longestCommonSubsequence("ACDBE", "ABCDE")); // Output: "ACDE"
+function getIntersectionNode(headA: ListNode | null, headB: ListNode | null): ListNode | null {
+  if (!headA || !headB) return null;
+
+  let pA: ListNode | null = headA;
+  let pB: ListNode | null = headB;
+
+  while (pA !== pB) {
+    // If a pointer reaches the end, jump to the other list's head
+    pA = pA ? pA.next : headB;
+    pB = pB ? pB.next : headA;
+  }
+
+  return pA; // either null (no intersection) or the intersection node
+}
