@@ -1,108 +1,191 @@
-function quicksort<T>(array: T[]): T[] {
-    // Base case: arrays with 0 or 1 element are already sorted
-    if (array.length <= 1) {
-        return array;
+function kthSmallestSort(arr: number[], k: number): number {
+    if (k < 1 || k > arr.length) {
+        throw new Error("k is out of bounds");
     }
     
-    // Make a copy to avoid mutating the original array
-    const arr = [...array];
-    
-    // Choose pivot (middle element)
-    const pivotIndex = Math.floor(arr.length / 2);
-    const pivot = arr[pivotIndex];
-    
-    // Partition the array into three parts
-    const left: T[] = [];
-    const right: T[] = [];
-    
-    for (let i = 0; i < arr.length; i++) {
-        if (i === pivotIndex) continue; // Skip the pivot element
-        
-        if (arr[i] <= pivot) {
-            left.push(arr[i]);
-        } else {
-            right.push(arr[i]);
-        }
-    }
-    
-    // Recursively sort and combine
-    return [...quicksort(left), pivot, ...quicksort(right)];
+    const sorted = [...arr].sort((a, b) => a - b);
+    return sorted[k - 1];
 }
-function quicksortInPlace<T>(array: T[], left: number = 0, right: number = array.length - 1): void {
-    if (left < right) {
-        // Partition the array and get the pivot index
-        const pivotIndex = partition(array, left, right);
-        
-        // Recursively sort elements before and after partition
-        quicksortInPlace(array, left, pivotIndex - 1);
-        quicksortInPlace(array, pivotIndex + 1, right);
+
+// Example usage
+const arr = [7, 10, 4, 3, 20, 15];
+console.log(kthSmallestSort(arr, 3)); // Output: 7
+function quickSelect(arr: number[], k: number): number {
+    if (k < 1 || k > arr.length) {
+        throw new Error("k is out of bounds");
+    }
+    
+    return quickSelectHelper([...arr], 0, arr.length - 1, k - 1);
+}
+
+function quickSelectHelper(
+    arr: number[], 
+    left: number, 
+    right: number, 
+    k: number
+): number {
+    if (left === right) {
+        return arr[left];
+    }
+    
+    const pivotIndex = partition(arr, left, right);
+    
+    if (k === pivotIndex) {
+        return arr[k];
+    } else if (k < pivotIndex) {
+        return quickSelectHelper(arr, left, pivotIndex - 1, k);
+    } else {
+        return quickSelectHelper(arr, pivotIndex + 1, right, k);
     }
 }
 
-function partition<T>(array: T[], left: number, right: number): number {
-    // Choose the rightmost element as pivot
-    const pivot = array[right];
-    
-    // Index of smaller element (indicates right position of pivot)
-    let i = left - 1;
+function partition(arr: number[], left: number, right: number): number {
+    const pivot = arr[right];
+    let i = left;
     
     for (let j = left; j < right; j++) {
-        // If current element is smaller than or equal to pivot
-        if (array[j] <= pivot) {
+        if (arr[j] <= pivot) {
+            [arr[i], arr[j]] = [arr[j], arr[i]];
             i++;
-            [array[i], array[j]] = [array[j], array[i]]; // Swap elements
         }
     }
     
-    // Place pivot in correct position
-    [array[i + 1], array[right]] = [array[right], array[i + 1]];
-    return i + 1;
+    [arr[i], arr[right]] = [arr[right], arr[i]];
+    return i;
 }
-function quicksortGeneric<T>(
-    array: T[], 
-    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
-): T[] {
-    if (array.length <= 1) {
-        return array;
-    }
-    
-    const arr = [...array];
-    const pivotIndex = Math.floor(arr.length / 2);
-    const pivot = arr[pivotIndex];
-    
-    const left: T[] = [];
-    const right: T[] = [];
-    
-    for (let i = 0; i < arr.length; i++) {
-        if (i === pivotIndex) continue;
-        
-        if (compareFn(arr[i], pivot) <= 0) {
-            left.push(arr[i]);
-        } else {
-            right.push(arr[i]);
-        }
-    }
-    
-    return [
-        ...quicksortGeneric(left, compareFn),
-        pivot,
-        ...quicksortGeneric(right, compareFn)
-    ];
-}
+
 // Example usage
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-const strings = ["banana", "apple", "cherry", "date"];
+const arr2 = [7, 10, 4, 3, 20, 15];
+console.log(quickSelect(arr2, 3)); // Output: 7
+class MaxHeap {
+    private heap: number[] = [];
+    
+    constructor() {}
+    
+    push(val: number): void {
+        this.heap.push(val);
+        this.bubbleUp(this.heap.length - 1);
+    }
+    
+    pop(): number {
+        if (this.heap.length === 0) throw new Error("Heap is empty");
+        
+        const max = this.heap[0];
+        const end = this.heap.pop()!;
+        
+        if (this.heap.length > 0) {
+            this.heap[0] = end;
+            this.sinkDown(0);
+        }
+        
+        return max;
+    }
+    
+    peek(): number {
+        return this.heap[0];
+    }
+    
+    size(): number {
+        return this.heap.length;
+    }
+    
+    private bubbleUp(idx: number): void {
+        const element = this.heap[idx];
+        
+        while (idx > 0) {
+            const parentIdx = Math.floor((idx - 1) / 2);
+            const parent = this.heap[parentIdx];
+            
+            if (element <= parent) break;
+            
+            this.heap[parentIdx] = element;
+            this.heap[idx] = parent;
+            idx = parentIdx;
+        }
+    }
+    
+    private sinkDown(idx: number): void {
+        const length = this.heap.length;
+        const element = this.heap[idx];
+        
+        while (true) {
+            let leftChildIdx = 2 * idx + 1;
+            let rightChildIdx = 2 * idx + 2;
+            let swap: number | null = null;
+            let leftChild: number, rightChild: number;
+            
+            if (leftChildIdx < length) {
+                leftChild = this.heap[leftChildIdx];
+                if (leftChild > element) {
+                    swap = leftChildIdx;
+                }
+            }
+            
+            if (rightChildIdx < length) {
+                rightChild = this.heap[rightChildIdx];
+                if (
+                    (swap === null && rightChild > element) ||
+                    (swap !== null && rightChild > leftChild!)
+                ) {
+                    swap = rightChildIdx;
+                }
+            }
+            
+            if (swap === null) break;
+            
+            this.heap[idx] = this.heap[swap];
+            this.heap[swap] = element;
+            idx = swap;
+        }
+    }
+}
 
-// Basic quicksort
-console.log(quicksort(numbers)); // [11, 12, 22, 25, 34, 64, 90]
-console.log(quicksort(strings)); // ["apple", "banana", "cherry", "date"]
+function kthSmallestHeap(arr: number[], k: number): number {
+    if (k < 1 || k > arr.length) {
+        throw new Error("k is out of bounds");
+    }
+    
+    const heap = new MaxHeap();
+    
+    // Insert first k elements
+    for (let i = 0; i < k; i++) {
+        heap.push(arr[i]);
+    }
+    
+    // For remaining elements, if smaller than max in heap, replace
+    for (let i = k; i < arr.length; i++) {
+        if (arr[i] < heap.peek()) {
+            heap.pop();
+            heap.push(arr[i]);
+        }
+    }
+    
+    return heap.peek();
+}
 
-// In-place quicksort
-const numbersCopy = [...numbers];
-quicksortInPlace(numbersCopy);
-console.log(numbersCopy); // [11, 12, 22, 25, 34, 64, 90]
+// Example usage
+const arr3 = [7, 10, 4, 3, 20, 15];
+console.log(kthSmallestHeap(arr3, 3)); // Output: 7
+function kthSmallestGeneric<T>(
+    arr: T[], 
+    k: number, 
+    compareFn?: (a: T, b: T) => number
+): T {
+    if (k < 1 || k > arr.length) {
+        throw new Error("k is out of bounds");
+    }
+    
+    const comparator = compareFn || ((a: T, b: T) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+    });
+    
+    const sorted = [...arr].sort(comparator);
+    return sorted[k - 1];
+}
 
-// Generic with custom comparator
+// Example with custom objects
 interface Person {
     name: string;
     age: number;
@@ -114,12 +197,5 @@ const people: Person[] = [
     { name: "Charlie", age: 35 }
 ];
 
-// Sort by age
-const sortedByAge = quicksortGeneric(people, (a, b) => a.age - b.age);
-console.log(sortedByAge);
-// [{name: "Bob", age: 25}, {name: "Alice", age: 30}, {name: "Charlie", age: 35}]
-
-// Sort by name
-const sortedByName = quicksortGeneric(people, (a, b) => a.name.localeCompare(b.name));
-console.log(sortedByName);
-// [{name: "Alice", age: 30}, {name: "Bob", age: 25}, {name: "Charlie", age: 35}]
+const secondYoungest = kthSmallestGeneric(people, 2, (a, b) => a.age - b.age);
+console.log(secondYoungest); // Output: { name: "Alice", age: 30 }
