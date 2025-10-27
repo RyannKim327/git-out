@@ -1,46 +1,65 @@
-const numbers: number[] = [1, 2, 3, 4, 5];
-const elementToRemove = 3;
+// graph.ts
+export type AdjacencyList = Record<string, string[]>;
 
-// Remove all occurrences of the element
-const filteredArray = numbers.filter(item => item !== elementToRemove);
-console.log(filteredArray); // [1, 2, 4, 5]
-const numbers: number[] = [1, 2, 3, 4, 5];
-const elementToRemove = 3;
+/**
+ * Breadth-first search.
+ * @param graph   Adjacency-list representation of the graph.
+ * @param start   Starting vertex.
+ * @param goal    Predicate that returns true when the goal vertex is reached.
+ * @returns       The shortest path (array of vertices) from start to the first vertex
+ *                that satisfies the goal predicate, or null if no such vertex exists.
+ */
+export function bfs(
+  graph: AdjacencyList,
+  start: string,
+  goal: (v: string) => boolean
+): string[] | null {
+  if (goal(start)) return [start];          // trivial case
 
-// Find index first
-const index = numbers.indexOf(elementToRemove);
-if (index > -1) {
-    numbers.splice(index, 1);
-}
-console.log(numbers); // [1, 2, 4, 5]
-const numbers: number[] = [1, 2, 3, 3, 4, 5];
-const elementToRemove = 3;
+  const queue: string[][] = [[start]];    // each queue item is a path
+  const visited = new Set<string>([start]);
 
-// Remove all occurrences
-const result = numbers.filter(item => item !== elementToRemove);
-console.log(result); // [1, 2, 4, 5]
-// Remove last element
-const numbers = [1, 2, 3, 4, 5];
-numbers.pop();
-console.log(numbers); // [1, 2, 3, 4]
+  while (queue.length) {
+    const path = queue.shift()!;          // shortest path so far
+    const tail = path[path.length - 1];
 
-// Remove first element
-numbers.shift();
-console.log(numbers); // [2, 3, 4]
-function removeElement<T>(arr: T[], element: T): T[] {
-    return arr.filter(item => item !== element);
-}
-
-// Usage
-const numbers = [1, 2, 3, 4, 5];
-const result = removeElement(numbers, 3);
-console.log(result); // [1, 2, 4, 5]
-const numbers: number[] = [1, 2, 3, 4, 5];
-
-// Remove element at specific index
-function removeByIndex<T>(arr: T[], index: number): T[] {
-    return [...arr.slice(0, index), ...arr.slice(index + 1)];
+    for (const neighbor of graph[tail] ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        const newPath = [...path, neighbor];
+        if (goal(neighbor)) return newPath; // first time we hit the goal
+        queue.push(newPath);
+      }
+    }
+  }
+  return null; // goal unreachable
 }
 
-const result = removeByIndex(numbers, 2);
-console.log(result); // [1, 2, 4, 5]
+/* ------------------------------------------------------------------ */
+/* -------------------------- usage example --------------------------- */
+if (import.meta.vitest) {
+  const { describe, expect, it } = import.meta.vitest;
+
+  describe('BFS', () => {
+    it('finds the shortest path', () => {
+      const g: AdjacencyList = {
+        A: ['B', 'C'],
+        B: ['D'],
+        C: ['E'],
+        D: ['F'],
+        E: ['F'],
+        F: [],
+      };
+
+      const path = bfs(g, 'A', v => v === 'F');
+      expect(path).toEqual(['A', 'B', 'D', 'F']);
+    });
+
+    it('returns null when unreachable', () => {
+      const g: AdjacencyList = { A: ['B'], B: [] };
+      expect(bfs(g, 'A', v => v === 'Z')).toBeNull();
+    });
+  });
+}
+npm i -D vitest
+npx vitest graph.ts
