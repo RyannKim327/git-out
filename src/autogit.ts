@@ -1,30 +1,49 @@
-class TreeNode {
-    val: number;
-    left: TreeNode | null;
-    right: TreeNode | null;
-    constructor(val?: number, left?: TreeNode | null, right?: TreeNode | null) {
-        this.val = val === undefined ? 0 : val;
-        this.left = left === undefined ? null : left;
-        this.right = right === undefined ? null : right;
-    }
+function removeVowels(str: string): string {
+  return str.replace(/[aeiou]/gi, '');
 }
 
-function diameterOfBinaryTree(root: TreeNode | null): number {
-    let diameter = 0;
-
-    function height(node: TreeNode | null): number {
-        if (!node) return 0;
-
-        const leftHeight = height(node.left);
-        const rightHeight = height(node.right);
-
-        // Update diameter: longest path passing through this node
-        diameter = Math.max(diameter, leftHeight + rightHeight);
-
-        // Height of this node is 1 + max(left, right)
-        return Math.max(leftHeight, rightHeight) + 1;
-    }
-
-    height(root);
-    return diameter;
+// Usage
+const result = removeVowels("Hello World");
+console.log(result); // "Hll Wrld"
+function removeVowels(str: string): string {
+  const vowels = ['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U'];
+  return str
+    .split('')
+    .filter(char => !vowels.includes(char))
+    .join('');
 }
+
+// Usage
+const result = removeVowels("TypeScript is awesome");
+console.log(result); // "TypScrpt s wsm"
+function removeVowels(str: string): string {
+  const vowels = 'aeiouAEIOU';
+  let result = '';
+  
+  for (let i = 0; i < str.length; i++) {
+    if (!vowels.includes(str[i])) {
+      result += str[i];
+    }
+  }
+  
+  return result;
+}
+
+// Usage
+const result = removeVowels("Programming");
+console.log(result); // "Prgrmmng"
+const removeVowels = (str: string): string => str.replace(/[aeiou]/gi, '');
+
+// Usage
+const result = removeVowels("JavaScript");
+console.log(result); // "JvScrpt"
+function removeCharacters(str: string, charactersToRemove: string[] = ['a', 'e', 'i', 'o', 'u']): string {
+  const regex = new RegExp(`[${charactersToRemove.join('')}]`, 'gi');
+  return str.replace(regex, '');
+}
+
+// Usage
+const result1 = removeCharacters("Hello World"); // removes default vowels
+const result2 = removeCharacters("Hello World", ['e', 'o']); // removes only 'e' and 'o'
+console.log(result1); // "Hll Wrld"
+console.log(result2); // "Hll Wrld"
