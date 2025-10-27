@@ -1,15 +1,41 @@
-const str1: string = "Hello";
-const str2: string = "World";
-const result: string = str1 + " " + str2;
-console.log(result); // Output: "Hello World"
-const firstName: string = "John";
-const lastName: string = "Doe";
-const fullName: string = `${firstName} ${lastName}`;
-console.log(fullName); // Output: "John Doe"
-const part1: string = "Hello";
-const part2: string = "TypeScript";
-const result: string = part1.concat(" ", part2);
-console.log(result); // Output: "Hello TypeScript"
-const strings: string[] = ["Hello", "TypeScript", "World"];
-const result: string = strings.join(" ");
-console.log(result); // Output: "Hello TypeScript World"
+function longestCommonSubsequence(a: string, b: string): string {
+    const m = a.length;
+    const n = b.length;
+
+    // dp[i][j] = length of LCS of a[0..i-1], b[0..j-1]
+    const dp: number[][] = Array.from({ length: m + 1 }, () =>
+        Array(n + 1).fill(0)
+    );
+
+    // Fill DP table
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            if (a[i - 1] === b[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
+            } else {
+                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+            }
+        }
+    }
+
+    // Backtrack to find sequence
+    let i = m, j = n;
+    const lcsChars: string[] = [];
+
+    while (i > 0 && j > 0) {
+        if (a[i - 1] === b[j - 1]) {
+            lcsChars.push(a[i - 1]);
+            i--;
+            j--;
+        } else if (dp[i - 1][j] > dp[i][j - 1]) {
+            i--;
+        } else {
+            j--;
+        }
+    }
+
+    return lcsChars.reverse().join('');
+}
+
+// Example:
+console.log(longestCommonSubsequence("ACDBE", "ABCDE")); // Output: "ACDE"
