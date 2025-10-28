@@ -1,98 +1,138 @@
 /**
- * Implements the Rabin-Karp algorithm for string searching.
+ * Merges two sorted sub-arrays into a single sorted array.
+ * This is the core utility function for both recursive and iterative merge sort.
  *
- * @param text The text to search within.
- * @param pattern The pattern to search for.
- * @returns An array of starting indices where the pattern is found in the text.
+ * @param arr The array containing the sub-arrays to be merged.
+ * @param left The starting index of the first sub-array.
+ * @param mid The ending index of the first sub-array.
+ * @param right The ending index of the second sub-array.
  */
-function rabinKarp(text: string, pattern: string): number[] {
-    const n = text.length;
-    const m = pattern.length;
-    const results: number[] = [];
+function merge(arr: number[], left: number, mid: number, right: number): void {
+    const n1 = mid - left + 1; // Length of the left sub-array
+    const n2 = right - mid;     // Length of the right sub-array
 
-    // Edge cases:
-    if (m === 0) {
-        // An empty pattern matches everywhere, before each character and at the end.
-        return Array.from({ length: n + 1 }, (_, i) => i);
+    // Create temporary arrays to hold the left and right sub-arrays
+    const L: number[] = new Array(n1);
+    const R: number[] = new Array(n2);
+
+    // Copy data to temporary arrays L[] and R[]
+    for (let i = 0; i < n1; i++) {
+        L[i] = arr[left + i];
     }
-    if (n < m) {
-        // Pattern is longer than text, no match possible.
-        return [];
-    }
-
-    // --- Hashing Constants ---
-    // A prime number, typically larger than the alphabet size.
-    // Using 31 for lowercase English alphabet, but charCodeAt can go up to 65535,
-    // so 257 (a prime larger than 256 for common ASCII) or even 53 is often used.
-    const PRIME = 31;
-    // A large prime modulus to prevent integer overflow and reduce collisions.
-    const MOD = 1_000_000_007; // 10^9 + 7
-
-    // --- Precompute h_power (PRIME^(m-1) % MOD) ---
-    // This value is used to remove the contribution of the leading character when rolling the hash.
-    let h_power = 1;
-    for (let i = 0; i < m - 1; i++) {
-        h_power = (h_power * PRIME) % MOD;
+    for (let j = 0; j < n2; j++) {
+        R[j] = arr[mid + 1 + j];
     }
 
-    // --- Calculate initial hashes for pattern and first text window ---
-    let patternHash = 0;
-    let textHash = 0;
-    for (let i = 0; i < m; i++) {
-        // Calculate pattern hash: (P[0]*p^(m-1) + P[1]*p^(m-2) + ... + P[m-1]*p^0) % MOD
-        patternHash = (patternHash * PRIME + pattern.charCodeAt(i)) % MOD;
-        // Calculate text window hash: (T[0]*p^(m-1) + T[1]*p^(m-2) + ... + T[m-1]*p^0) % MOD
-        textHash = (textHash * PRIME + text.charCodeAt(i)) % MOD;
-    }
+    // Merge the temporary arrays back into arr[left..right]
+    let i = 0; // Initial index of first sub-array
+    let j = 0; // Initial index of second sub-array
+    let k = left; // Initial index of merged sub-array
 
-    // --- Slide the window over the text ---
-    for (let i = 0; i <= n - m; i++) {
-        // Step 1: Check for hash match
-        if (patternHash === textHash) {
-            // Step 2: If hashes match, perform a full character-by-character comparison
-            // This is crucial to handle hash collisions (false positives).
-            let match = true;
-            for (let j = 0; j < m; j++) {
-                if (text[i + j] !== pattern[j]) {
-                    match = false;
-                    break;
-                }
-            }
-            if (match) {
-                results.push(i);
-            }
+    while (i < n1 && j < n2) {
+        if (L[i] <= R[j]) {
+            arr[k] = L[i];
+            i++;
+        } else {
+            arr[k] = R[j];
+            j++;
         }
+        k++;
+    }
 
-        // Step 3: Calculate hash for the next window
-        // Only do this if there's a next window to consider.
-        if (i < n - m) {
-            // Remove the leading character's contribution:
-            // current_hash - T[i]*p^(m-1)
-            textHash = (textHash - (text.charCodeAt(i) * h_power) % MOD + MOD) % MOD; // Add MOD to ensure positive result before final modulo
+    // Copy the remaining elements of L[], if any
+    while (i < n1) {
+        arr[k] = L[i];
+        i++;
+        k++;
+    }
 
-            // Shift the hash by multiplying by PRIME:
-            // (current_hash - T[i]*p^(m-1)) * p
-            textHash = (textHash * PRIME) % MOD;
+    // Copy the remaining elements of R[], if any
+    while (j < n2) {
+        arr[k] = R[j];
+        j++;
+        k++;
+    }
+}
 
-            // Add the new trailing character's contribution:
-            // (current_hash - T[i]*p^(m-1)) * p + T[i+m]
-            textHash = (textHash + text.charCodeAt(i + m)) % MOD;
+/**
+ * Implements the Merge Sort algorithm iteratively (bottom-up).
+ * Sorts an array of numbers in ascending order.
+ *
+ * @param arr The array of numbers to be sorted. This array will be modified in place.
+ * @returns The sorted array.
+ */
+function iterativeMergeSort(arr: number[]): number[] {
+    const n = arr.length;
+
+    // A merge sort needs at least 2 elements to sort.
+    // An array of 0 or 1 element is already sorted.
+    if (n <= 1) {
+        return arr;
+    }
+
+    // Outer loop: `currentSize` determines the length of sub-arrays we are merging.
+    // It starts with 1 (merging single elements into pairs), then 2 (merging pairs into quads), etc.
+    // It doubles in each iteration.
+    for (let currentSize = 1; currentSize < n; currentSize *= 2) {
+        // Inner loop: iterates through the array, merging sub-arrays of `currentSize`.
+        // `leftStart` is the starting index of the left sub-array to be merged.
+        // Each merge operation processes 2 * `currentSize` elements.
+        for (let leftStart = 0; leftStart < n - currentSize; leftStart += 2 * currentSize) {
+            // Calculate the end index of the left sub-array.
+            const mid = leftStart + currentSize - 1;
+
+            // Calculate the end index of the right sub-array.
+            // Ensure `rightEnd` does not exceed the array bounds.
+            const rightEnd = Math.min(leftStart + 2 * currentSize - 1, n - 1);
+
+            // Perform the merge operation on the two sub-arrays
+            merge(arr, leftStart, mid, rightEnd);
         }
     }
 
-    return results;
+    return arr;
 }
 
 // --- Example Usage ---
 
-console.log("Example 1:", rabinKarp("ABABDABACDABABCABAB", "ABABCABAB")); // Expected: [10]
-console.log("Example 2:", rabinKarp("AAAAA", "AAA"));                  // Expected: [0, 1, 2]
-console.log("Example 3:", rabinKarp("test", "test"));                  // Expected: [0]
-console.log("Example 4:", rabinKarp("apple", "banana"));               // Expected: []
-console.log("Example 5:", rabinKarp("ababa", "aba"));                  // Expected: [0, 2]
-console.log("Example 6:", rabinKarp("long string with multiple matches", "match")); // Expected: [20]
-console.log("Example 7:", rabinKarp("aaaaa", "a"));                    // Expected: [0, 1, 2, 3, 4]
-console.log("Example 8:", rabinKarp("TypeScript", "type"));             // Expected: [-1] (oops, pattern not found) -> [4]
-console.log("Example 9:", rabinKarp("TypeScript", "Type"));             // Expected: [0]
-console.log("Example 10:", rabinKarp("abc", ""));                       // Expected: [0, 1, 2, 3] (empty string matches everywhere)
-console.log("Example 11:", rabinKarp("abacaba", "aba"));              // Expected: [0, 4]
+// Test case 1: Basic array
+const arr1 = [38, 27, 43, 3, 9, 82, 10];
+console.log("Original array 1:", arr1);
+iterativeMergeSort(arr1); // Modifies arr1 in place
+console.log("Sorted array 1 (iterative):", arr1); // Expected: [3, 9, 10, 27, 38, 43, 82]
+
+// Test case 2: Already sorted array
+const arr2 = [1, 2, 3, 4, 5];
+console.log("Original array 2:", arr2);
+iterativeMergeSort(arr2);
+console.log("Sorted array 2 (iterative):", arr2); // Expected: [1, 2, 3, 4, 5]
+
+// Test case 3: Reverse sorted array
+const arr3 = [5, 4, 3, 2, 1];
+console.log("Original array 3:", arr3);
+iterativeMergeSort(arr3);
+console.log("Sorted array 3 (iterative):", arr3); // Expected: [1, 2, 3, 4, 5]
+
+// Test case 4: Array with duplicate elements
+const arr4 = [4, 2, 1, 3, 4, 2, 5];
+console.log("Original array 4:", arr4);
+iterativeMergeSort(arr4);
+console.log("Sorted array 4 (iterative):", arr4); // Expected: [1, 2, 2, 3, 4, 4, 5]
+
+// Test case 5: Empty array
+const arr5: number[] = [];
+console.log("Original array 5:", arr5);
+iterativeMergeSort(arr5);
+console.log("Sorted array 5 (iterative):", arr5); // Expected: []
+
+// Test case 6: Single element array
+const arr6 = [7];
+console.log("Original array 6:", arr6);
+iterativeMergeSort(arr6);
+console.log("Sorted array 6 (iterative):", arr6); // Expected: [7]
+
+// Test case 7: Even length array
+const arr7 = [64, 34, 25, 12];
+console.log("Original array 7:", arr7);
+iterativeMergeSort(arr7);
+console.log("Sorted array 7 (iterative):", arr7); // Expected: [12, 25, 34, 64]
