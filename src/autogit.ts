@@ -1,156 +1,134 @@
-function binarySearch<T>(arr: T[], target: T): number {
-    let left = 0;
-    let right = arr.length - 1;
-
-    while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        
-        if (arr[mid] === target) {
-            return mid;
-        }
-        
-        if (arr[mid] < target) {
-            left = mid + 1;
-        } else {
-            right = mid - 1;
-        }
-    }
-    
-    return -1;
-}
-function binarySearch<T>(
-    arr: T[], 
-    target: T, 
-    comparator?: (a: T, b: T) => number
-): number {
-    let left = 0;
-    let right = arr.length - 1;
-    
-    const compare = comparator || ((a: T, b: T) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    });
-
-    while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        const comparison = compare(arr[mid], target);
-        
-        if (comparison === 0) {
-            return mid;
-        }
-        
-        if (comparison < 0) {
-            left = mid + 1;
-        } else {
-            right = mid - 1;
-        }
-    }
-    
-    return -1;
-}
-function binarySearchRecursive<T>(
-    arr: T[], 
-    target: T, 
-    left: number = 0, 
-    right: number = arr.length - 1
-): number {
-    if (left > right) return -1;
-    
-    const mid = Math.floor((left + right) / 2);
-    
-    if (arr[mid] === target) {
-        return mid;
-    }
-    
-    if (arr[mid] < target) {
-        return binarySearchRecursive(arr, target, mid + 1, right);
-    } else {
-        return binarySearchRecursive(arr, target, left, mid - 1);
-    }
-}
-function findFirstOccurrence<T>(arr: T[], target: T): number {
-    let left = 0;
-    let right = arr.length - 1;
-    let result = -1;
-
-    while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        
-        if (arr[mid] === target) {
-            result = mid;
-            right = mid - 1; // Continue searching left
-        } else if (arr[mid] < target) {
-            left = mid + 1;
-        } else {
-            right = mid - 1;
-        }
-    }
-    
-    return result;
+function removeDuplicatesPrimitives<T>(arr: T[]): T[] {
+  return [...new Set(arr)];
 }
 
-function findLastOccurrence<T>(arr: T[], target: T): number {
-    let left = 0;
-    let right = arr.length - 1;
-    let result = -1;
+// --- Examples ---
+const numbers = [1, 2, 2, 3, 4, 4, 5, 1];
+const uniqueNumbers = removeDuplicatesPrimitives(numbers);
+console.log("Unique Numbers:", uniqueNumbers); // Output: Unique Numbers: [1, 2, 3, 4, 5]
 
-    while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        
-        if (arr[mid] === target) {
-            result = mid;
-            left = mid + 1; // Continue searching right
-        } else if (arr[mid] < target) {
-            left = mid + 1;
-        } else {
-            right = mid - 1;
-        }
+const strings = ["apple", "banana", "orange", "apple", "grape", "banana"];
+const uniqueStrings = removeDuplicatesPrimitives(strings);
+console.log("Unique Strings:", uniqueStrings); // Output: Unique Strings: ["apple", "banana", "orange", "grape"]
+
+const booleans = [true, false, true, false];
+const uniqueBooleans = removeDuplicatesPrimitives(booleans);
+console.log("Unique Booleans:", uniqueBooleans); // Output: Unique Booleans: [true, false]
+interface MyObject {
+  id: number;
+  name: string;
+}
+
+const obj1 = { id: 1, name: "Alice" };
+const obj2 = { id: 2, name: "Bob" };
+const obj3 = { id: 1, name: "Alice" }; // Same content as obj1, but a different object instance
+const obj4 = obj1; // Same object instance as obj1
+
+const objectArray = [obj1, obj2, obj3, obj4];
+
+// Using Set directly:
+const uniqueObjectsByReference = [...new Set(objectArray)];
+console.log("Unique Objects (by reference):", uniqueObjectsByReference);
+/* Output:
+[
+  { id: 1, name: 'Alice' }, // obj1
+  { id: 2, name: 'Bob' },   // obj2
+  { id: 1, name: 'Alice' }  // obj3 (different instance than obj1)
+]
+*/
+// Notice obj3 is still present because it's a different object instance than obj1,
+// even though its content is identical. obj4 (which is obj1) *was* removed.
+interface MyObject {
+  id: number;
+  name: string;
+  category?: string;
+}
+
+function removeDuplicatesByProperty<T>(arr: T[], keyExtractor: (item: T) => string | number): T[] {
+  const seen = new Set<string | number>();
+  return arr.filter(item => {
+    const key = keyExtractor(item);
+    if (!seen.has(key)) {
+      seen.add(key);
+      return true; // Keep this item
     }
-    
-    return result;
-}
-// Basic usage
-const numbers = [1, 3, 5, 7, 9, 11, 13];
-console.log(binarySearch(numbers, 7)); // Output: 3
-console.log(binarySearch(numbers, 6)); // Output: -1
-
-// With custom comparator
-interface Person {
-    id: number;
-    name: string;
+    return false; // Discard this item (it's a duplicate)
+  });
 }
 
-const people: Person[] = [
-    { id: 1, name: "Alice" },
-    { id: 3, name: "Bob" },
-    { id: 5, name: "Charlie" }
+// --- Examples ---
+const people: MyObject[] = [
+  { id: 1, name: "Alice" },
+  { id: 2, name: "Bob" },
+  { id: 1, name: "Alice" }, // Duplicate by 'id'
+  { id: 3, name: "Charlie" },
+  { id: 2, name: "Robert" }, // Duplicate by 'id' (name is different)
+  { id: 4, name: "Alice" }, // Duplicate by 'name' (id is different)
 ];
 
-const result = binarySearch(people, { id: 3 } as Person, 
-    (a, b) => a.id - b.id
-);
-console.log(result); // Output: 1
+// 1. Remove duplicates based on 'id'
+const uniqueById = removeDuplicatesByProperty(people, (person) => person.id);
+console.log("Unique by ID:", uniqueById);
+/* Output:
+Unique by ID: [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Charlie' },
+  { id: 4, name: 'Alice' }
+]
+*/
 
-// Finding boundaries
-const duplicates = [1, 2, 2, 2, 3, 4, 5];
-console.log(findFirstOccurrence(duplicates, 2)); // Output: 1
-console.log(findLastOccurrence(duplicates, 2));  // Output: 3
-class BinarySearch<T> {
-    static search(
-        arr: T[], 
-        target: T, 
-        comparator?: (a: T, b: T) => number
-    ): number {
-        // Implementation here
-    }
+// 2. Remove duplicates based on 'name'
+const uniqueByName = removeDuplicatesByProperty(people, (person) => person.name);
+console.log("Unique by Name:", uniqueByName);
+/* Output:
+Unique by Name: [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Charlie' },
+  { id: 2, name: 'Robert' } // 'Robert' is unique by name
+]
+*/
 
-    static recursiveSearch(
-        arr: T[], 
-        target: T, 
-        left: number = 0, 
-        right: number = arr.length - 1
-    ): number {
-        // Recursive implementation
+// 3. Remove duplicates based on a combination of properties (e.g., id and name)
+const products: MyObject[] = [
+    { id: 101, name: "Laptop", category: "Electronics" },
+    { id: 102, name: "Mouse", category: "Electronics" },
+    { id: 101, name: "Laptop", category: "Electronics" }, // Exact duplicate
+    { id: 103, name: "Keyboard", category: "Electronics" },
+    { id: 101, name: "Laptop Pro", category: "Electronics" }, // Different name, same ID
+];
+
+const uniqueProducts = removeDuplicatesByProperty(products, (product) => `${product.id}-${product.name}`);
+console.log("Unique Products (by ID & Name):", uniqueProducts);
+/* Output:
+Unique Products (by ID & Name): [
+  { id: 101, name: 'Laptop', category: 'Electronics' },
+  { id: 102, name: 'Mouse', category: 'Electronics' },
+  { id: 103, name: 'Keyboard', category: 'Electronics' },
+  { id: 101, name: 'Laptop Pro', category: 'Electronics' }
+]
+*/
+function removeDuplicatesReduce<T>(arr: T[], keyExtractor: (item: T) => string | number): T[] {
+  const seen = new Set<string | number>();
+  return arr.reduce((accumulator: T[], currentItem: T) => {
+    const key = keyExtractor(currentItem);
+    if (!seen.has(key)) {
+      seen.add(key);
+      accumulator.push(currentItem);
     }
+    return accumulator;
+  }, []); // Initial value of accumulator is an empty array
 }
+
+// Example using the same 'people' array as before:
+const uniquePeopleReduce = removeDuplicatesReduce(people, (person) => person.id);
+console.log("Unique People (by ID using reduce):", uniquePeopleReduce);
+/* Output:
+Unique People (by ID using reduce): [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Charlie' },
+  { id: 4, name: 'Alice' }
+]
+*/
