@@ -1,234 +1,234 @@
-// Node represents a vertex in the graph
-type Node = string | number;
+class RabinKarp {
+    private base: number;
+    private modulus: number;
 
-// Edge represents a connection between nodes with a weight
-interface Edge {
-  target: Node;
-  weight: number;
-}
-
-// Graph structure using adjacency list
-type Graph = Map<Node, Edge[]>;
-
-// Result of Dijkstra's algorithm
-interface DijkstraResult {
-  distances: Map<Node, number>;
-  previous: Map<Node, Node | null>;
-}
-
-// Shortest path result
-interface ShortestPath {
-  path: Node[];
-  distance: number;
-}
-class PriorityQueue<T> {
-  private elements: [T, number][] = [];
-
-  enqueue(item: T, priority: number): void {
-    this.elements.push([item, priority]);
-    this.elements.sort((a, b) => a[1] - b[1]);
-  }
-
-  dequeue(): T | null {
-    return this.elements.shift()?.[0] ?? null;
-  }
-
-  isEmpty(): boolean {
-    return this.elements.length === 0;
-  }
-}
-class DijkstraAlgorithm {
-  private graph: Graph;
-
-  constructor(graph: Graph) {
-    this.graph = graph;
-  }
-
-  findShortestPaths(startNode: Node): DijkstraResult {
-    // Initialize data structures
-    const distances = new Map<Node, number>();
-    const previous = new Map<Node, Node | null>();
-    const visited = new Set<Node>();
-    const priorityQueue = new PriorityQueue<Node>();
-
-    // Set initial values
-    for (const node of this.graph.keys()) {
-      distances.set(node, node === startNode ? 0 : Infinity);
-      previous.set(node, null);
+    constructor(base: number = 256, modulus: number = 101) {
+        this.base = base;
+        this.modulus = modulus;
     }
 
-    // Start with the initial node
-    priorityQueue.enqueue(startNode, 0);
+    /**
+     * Simple hash function for strings
+     */
+    private hash(str: string, start: number, end: number): number {
+        let hash = 0;
+        for (let i = start; i < end; i++) {
+            hash = (hash * this.base + str.charCodeAt(i)) % this.modulus;
+        }
+        return hash;
+    }
 
-    while (!priorityQueue.isEmpty()) {
-      const currentNode = priorityQueue.dequeue();
-      
-      if (!currentNode || visited.has(currentNode)) {
-        continue;
-      }
+    /**
+     * Main search function using Rabin-Karp algorithm
+     */
+    search(text: string, pattern: string): number[] {
+        const n = text.length;
+        const m = pattern.length;
+        const occurrences: number[] = [];
 
-      visited.add(currentNode);
-      const currentDistance = distances.get(currentNode)!;
-
-      // Explore neighbors
-      const neighbors = this.graph.get(currentNode) || [];
-      
-      for (const neighbor of neighbors) {
-        if (visited.has(neighbor.target)) {
-          continue;
+        if (m === 0 || n < m) {
+            return occurrences;
         }
 
-        const newDistance = currentDistance + neighbor.weight;
-        const existingDistance = distances.get(neighbor.target) ?? Infinity;
-
-        if (newDistance < existingDistance) {
-          distances.set(neighbor.target, newDistance);
-          previous.set(neighbor.target, currentNode);
-          priorityQueue.enqueue(neighbor.target, newDistance);
+        // Calculate the highest power for rolling hash
+        let highestPower = 1;
+        for (let i = 0; i < m - 1; i++) {
+            highestPower = (highestPower * this.base) % this.modulus;
         }
-      }
+
+        // Calculate initial hashes
+        const patternHash = this.hash(pattern, 0, m);
+        let textHash = this.hash(text, 0, m);
+
+        // Check the first window
+        if (textHash === patternHash && this.verifyMatch(text, pattern, 0)) {
+            occurrences.push(0);
+        }
+
+        // Slide the window over the text
+        for (let i = 1; i <= n - m; i++) {
+            // Remove the leftmost character and add the new rightmost character
+            textHash = (textHash - text.charCodeAt(i - 1) * highestPower) % this.modulus;
+            textHash = (textHash * this.base + text.charCodeAt(i + m - 1)) % this.modulus;
+            
+            // Ensure positive hash value
+            if (textHash < 0) {
+                textHash += this.modulus;
+            }
+
+            // Check for match
+            if (textHash === patternHash && this.verifyMatch(text, pattern, i)) {
+                occurrences.push(i);
+            }
+        }
+
+        return occurrences;
     }
 
-    return { distances, previous };
-  }
-
-  getShortestPath(startNode: Node, endNode: Node): ShortestPath | null {
-    const { distances, previous } = this.findShortestPaths(startNode);
-    
-    // Check if end node is reachable
-    const distance = distances.get(endNode);
-    if (distance === undefined || distance === Infinity) {
-      return null;
+    /**
+     * Verify actual match to handle hash collisions
+     */
+    private verifyMatch(text: string, pattern: string, start: number): boolean {
+        const m = pattern.length;
+        for (let i = 0; i < m; i++) {
+            if (text.charCodeAt(start + i) !== pattern.charCodeAt(i)) {
+                return false;
+            }
+        }
+        return true;
     }
-
-    // Reconstruct path
-    const path: Node[] = [];
-    let currentNode: Node | null = endNode;
-    
-    while (currentNode !== null) {
-      path.unshift(currentNode);
-      currentNode = previous.get(currentNode) ?? null;
-    }
-
-    // Verify path starts from startNode
-    if (path[0] !== startNode) {
-      return null;
-    }
-
-    return {
-      path,
-      distance: distances.get(endNode)!
-    };
-  }
 }
-// Create a graph
-const graph: Graph = new Map();
-
-// Add nodes and edges
-graph.set('A', [
-  { target: 'B', weight: 4 },
-  { target: 'C', weight: 2 }
-]);
-
-graph.set('B', [
-  { target: 'D', weight: 3 },
-  { target: 'E', weight: 1 }
-]);
-
-graph.set('C', [
-  { target: 'B', weight: 1 },
-  { target: 'D', weight: 5 }
-]);
-
-graph.set('D', [
-  { target: 'E', weight: 2 }
-]);
-
-graph.set('E', []);
-
-// Use the algorithm
-const dijkstra = new DijkstraAlgorithm(graph);
-
-// Find shortest path from A to E
-const result = dijkstra.getShortestPath('A', 'E');
-
-if (result) {
-  console.log(`Shortest path: ${result.path.join(' -> ')}`);
-  console.log(`Total distance: ${result.distance}`);
-} else {
-  console.log('No path found');
+interface HashResult {
+    hash1: number;
+    hash2: number;
 }
 
-// Output:
-// Shortest path: A -> C -> B -> E
-// Total distance: 4
-function dijkstraShortestPath(
-  graph: Graph, 
-  startNode: Node, 
-  endNode: Node
-): ShortestPath | null {
-  
-  const distances = new Map<Node, number>();
-  const previous = new Map<Node, Node | null>();
-  const unvisited = new Set<Node>();
-  
-  // Initialize
-  for (const node of graph.keys()) {
-    distances.set(node, node === startNode ? 0 : Infinity);
-    previous.set(node, null);
-    unvisited.add(node);
-  }
-  
-  while (unvisited.size > 0) {
-    // Find unvisited node with smallest distance
-    let currentNode: Node | null = null;
-    let smallestDistance = Infinity;
-    
-    for (const node of unvisited) {
-      const distance = distances.get(node)!;
-      if (distance < smallestDistance) {
-        smallestDistance = distance;
-        currentNode = node;
-      }
+class EnhancedRabinKarp {
+    private base1: number;
+    private base2: number;
+    private modulus1: number;
+    private modulus2: number;
+
+    constructor(
+        base1: number = 256,
+        base2: number = 131,
+        modulus1: number = 1000000007,
+        modulus2: number = 1000000009
+    ) {
+        this.base1 = base1;
+        this.base2 = base2;
+        this.modulus1 = modulus1;
+        this.modulus2 = modulus2;
     }
-    
-    if (currentNode === null || smallestDistance === Infinity) {
-      break;
-    }
-    
-    unvisited.delete(currentNode);
-    
-    // Update neighbors
-    const neighbors = graph.get(currentNode) || [];
-    for (const neighbor of neighbors) {
-      if (unvisited.has(neighbor.target)) {
-        const newDistance = smallestDistance + neighbor.weight;
-        const currentNeighborDistance = distances.get(neighbor.target)!;
+
+    private doubleHash(str: string, start: number, end: number): HashResult {
+        let hash1 = 0;
+        let hash2 = 0;
         
-        if (newDistance < currentNeighborDistance) {
-          distances.set(neighbor.target, newDistance);
-          previous.set(neighbor.target, currentNode);
+        for (let i = start; i < end; i++) {
+            const charCode = str.charCodeAt(i);
+            hash1 = (hash1 * this.base1 + charCode) % this.modulus1;
+            hash2 = (hash2 * this.base2 + charCode) % this.modulus2;
         }
-      }
+        
+        return { hash1, hash2 };
     }
-  }
-  
-  // Reconstruct path
-  const distance = distances.get(endNode);
-  if (distance === undefined || distance === Infinity) {
-    return null;
-  }
-  
-  const path: Node[] = [];
-  let currentNode: Node | null = endNode;
-  
-  while (currentNode !== null) {
-    path.unshift(currentNode);
-    currentNode = previous.get(currentNode) ?? null;
-  }
-  
-  return {
-    path,
-    distance
-  };
+
+    search(text: string, pattern: string): number[] {
+        const n = text.length;
+        const m = pattern.length;
+        const occurrences: number[] = [];
+
+        if (m === 0 || n < m) {
+            return occurrences;
+        }
+
+        // Calculate highest powers for rolling hash
+        let highestPower1 = 1;
+        let highestPower2 = 1;
+        for (let i = 0; i < m - 1; i++) {
+            highestPower1 = (highestPower1 * this.base1) % this.modulus1;
+            highestPower2 = (highestPower2 * this.base2) % this.modulus2;
+        }
+
+        // Calculate pattern hashes
+        const patternHashes = this.doubleHash(pattern, 0, m);
+        
+        // Calculate initial text window hashes
+        let textHashes = this.doubleHash(text, 0, m);
+
+        // Check first window
+        if (this.matchesHash(textHashes, patternHashes) && 
+            this.verifyMatch(text, pattern, 0)) {
+            occurrences.push(0);
+        }
+
+        // Slide window
+        for (let i = 1; i <= n - m; i++) {
+            // Update hash1
+            textHashes.hash1 = (
+                textHashes.hash1 - 
+                text.charCodeAt(i - 1) * highestPower1
+            ) % this.modulus1;
+            textHashes.hash1 = (
+                textHashes.hash1 * this.base1 + 
+                text.charCodeAt(i + m - 1)
+            ) % this.modulus1;
+            if (textHashes.hash1 < 0) textHashes.hash1 += this.modulus1;
+
+            // Update hash2
+            textHashes.hash2 = (
+                textHashes.hash2 - 
+                text.charCodeAt(i - 1) * highestPower2
+            ) % this.modulus2;
+            textHashes.hash2 = (
+                textHashes.hash2 * this.base2 + 
+                text.charCodeAt(i + m - 1)
+            ) % this.modulus2;
+            if (textHashes.hash2 < 0) textHashes.hash2 += this.modulus2;
+
+            // Check for match
+            if (this.matchesHash(textHashes, patternHashes) && 
+                this.verifyMatch(text, pattern, i)) {
+                occurrences.push(i);
+            }
+        }
+
+        return occurrences;
+    }
+
+    private matchesHash(textHashes: HashResult, patternHashes: HashResult): boolean {
+        return textHashes.hash1 === patternHashes.hash1 && 
+               textHashes.hash2 === patternHashes.hash2;
+    }
+
+    private verifyMatch(text: string, pattern: string, start: number): boolean {
+        const m = pattern.length;
+        for (let i = 0; i < m; i++) {
+            if (text.charCodeAt(start + i) !== pattern.charCodeAt(i)) {
+                return false;
+            }
+        }
+        return true;
+    }
+}
+// Basic usage
+const rk = new RabinKarp();
+const text = "hello world, welcome to the world of programming";
+const pattern = "world";
+
+const positions = rk.search(text, pattern);
+console.log(`Pattern found at positions: ${positions}`); 
+// Output: Pattern found at positions: 6,24
+
+// Enhanced usage
+const enhancedRk = new EnhancedRabinKarp();
+const code = `function calculate(a, b) {
+    return a + b;
+}`;
+const funcPattern = "function";
+
+const funcPositions = enhancedRk.search(code, funcPattern);
+console.log(`Function keyword found at: ${funcPositions}`);
+// Output: Function keyword found at: 0
+
+// Multiple patterns search
+function searchMultiplePatterns(text: string, patterns: string[]): Map<string, number[]> {
+    const rk = new EnhancedRabinKarp();
+    const results = new Map<string, number[]>();
+    
+    for (const pattern of patterns) {
+        results.set(pattern, rk.search(text, pattern));
+    }
+    
+    return results;
+}
+
+// Example with multiple patterns
+const document = "The quick brown fox jumps over the lazy dog. Brown is a nice color.";
+const patterns = ["brown", "the", "fox"];
+const multiResults = searchMultiplePatterns(document, patterns);
+
+for (const [pattern, positions] of multiResults) {
+    console.log(`"${pattern}" found at: ${positions}`);
 }
