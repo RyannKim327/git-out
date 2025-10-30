@@ -1,40 +1,119 @@
-function isPalindrome(str: string): boolean {
-    const reversed = str.split('').reverse().join('');
-    return str === reversed;
+import axios, { AxiosResponse } from 'axios';
+
+// Define interface for the data structure
+interface User {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  address: {
+    street: string;
+    city: string;
+    zipcode: string;
+  };
 }
 
-// Example usage:
-console.log(isPalindrome("madam")); // true
-console.log(isPalindrome("racecar")); // true
-console.log(isPalindrome("hello")); // false
-function isPalindrome(str: string): boolean {
-    // Clean the string: lowercase and remove non-alphanumeric characters
-    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    // Reverse the cleaned string
-    const reversed = cleanStr.split('').reverse().join('');
-    return cleanStr === reversed;
-}
+// API configuration
+const API_BASE_URL = 'https://jsonplaceholder.typicode.com';
 
-// Example usage:
-console.log(isPalindrome("RaceCar")); // true (case-insensitive)
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true (ignores non-alphanumeric)
-console.log(isPalindrome("12321!")); // true (ignores punctuation)
-function isPalindrome(str: string): boolean {
-    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    let left = 0;
-    let right = cleanStr.length - 1;
-    // Compare characters from both ends moving towards the center
-    while (left < right) {
-        if (cleanStr[left] !== cleanStr[right]) return false;
-        left++;
-        right--;
+// Async function to fetch user data
+async function fetchUserData(userId: number): Promise<User> {
+  try {
+    const response: AxiosResponse<User> = await axios.get(
+      `${API_BASE_URL}/users/${userId}`
+    );
+    
+    console.log('Response status:', response.status);
+    console.log('User data:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.message);
+      console.error('Status code:', error.response?.status);
+    } else {
+      console.error('Unexpected error:', error);
     }
-    return true;
+    throw error;
+  }
 }
 
-// Example usage same as Approach 2
-console.log(isPalindrome(""));           // true (edge case)
-console.log(isPalindrome("a"));          // true (edge case)
-console.log(isPalindrome("Noon"));       // true
-console.log(isPalindrome("Was it a car or a cat I saw?")); // true
-console.log(isPalindrome("TypeScript")); // false
+// Function to fetch multiple users concurrently
+async function fetchMultipleUsers(userIds: number[]): Promise<User[]> {
+  try {
+    const requests = userIds.map(id => 
+      axios.get<User>(`${API_BASE_URL}/users/${id}`)
+    );
+    
+    const responses = await Promise.all(requests);
+    return responses.map(response => response.data);
+  } catch (error) {
+    console.error('Error fetching multiple users:', error);
+    throw error;
+  }
+}
+
+// Function to create a new user
+async function createUser(userData: Partial<User>): Promise<User> {
+  try {
+    const response: AxiosResponse<User> = await axios.post(
+      `${API_BASE_URL}/users`,
+      userData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 5000,
+      }
+    );
+    
+    console.log('User created with ID:', response.data.id);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating user:', error);
+    throw error;
+  }
+}
+
+// Example usage
+async function main() {
+  try {
+    // Fetch single user
+    const user = await fetchUserData(1);
+    console.log(`Fetched user: ${user.name}`);
+    
+    // Fetch multiple users
+    const users = await fetchMultipleUsers([2, 3, 4]);
+    console.log(`Fetched ${users.length} users`);
+    
+    // Create new user
+    const newUser = await createUser({
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+    });
+    console.log(`Created user with ID: ${newUser.id}`);
+    
+  } catch (error) {
+    console.error('Main function error:', error);
+  }
+}
+
+// Run the example
+main();
+npm install axios
+npm install -D typescript @types/node ts-node
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}
