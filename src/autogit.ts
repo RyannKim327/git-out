@@ -1,149 +1,126 @@
-function fibonacciSearch(arr: number[], target: number): number {
-    if (arr.length === 0) return -1;
-    
-    // Generate Fibonacci numbers up to or beyond array length
-    let fibMMinus2 = 0;
-    let fibMMinus1 = 1;
-    let fibM = fibMMinus1 + fibMMinus2;
-    
-    // Find the smallest Fibonacci number greater than or equal to array length
-    while (fibM < arr.length) {
-        fibMMinus2 = fibMMinus1;
-        fibMMinus1 = fibM;
-        fibM = fibMMinus1 + fibMMinus2;
-    }
-    
-    let offset = -1;
-    
-    while (fibM > 1) {
-        // Check if fibMMinus2 is a valid index
-        const i = Math.min(offset + fibMMinus2, arr.length - 1);
-        
-        if (arr[i] < target) {
-            // Target is in the right subarray
-            fibM = fibMMinus1;
-            fibMMinus1 = fibMMinus2;
-            fibMMinus2 = fibM - fibMMinus1;
-            offset = i;
-        } else if (arr[i] > target) {
-            // Target is in the left subarray
-            fibM = fibMMinus2;
-            fibMMinus1 = fibMMinus1 - fibMMinus2;
-            fibMMinus2 = fibM - fibMMinus1;
+function binarySearch<T>(array: T[], target: T): number {
+    let left = 0;
+    let right = array.length - 1;
+
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        const current = array[mid];
+
+        if (current === target) {
+            return mid; // Found the target
+        } else if (current < target) {
+            left = mid + 1; // Search right half
         } else {
-            // Target found
-            return i;
+            right = mid - 1; // Search left half
         }
     }
-    
-    // Compare the last element
-    if (fibMMinus1 === 1 && arr[offset + 1] === target) {
-        return offset + 1;
-    }
-    
+
     return -1; // Target not found
 }
-
-// Helper function to generate Fibonacci sequence (optional)
-function generateFibonacciSequence(n: number): number[] {
-    if (n <= 0) return [];
-    if (n === 1) return [0];
+function binarySearch<T>(
+    array: T[],
+    target: T,
+    comparator?: (a: T, b: T) => number
+): number {
+    let left = 0;
+    let right = array.length - 1;
     
-    const fibSequence: number[] = [0, 1];
-    for (let i = 2; i < n; i++) {
-        fibSequence.push(fibSequence[i - 1] + fibSequence[i - 2]);
-    }
-    return fibSequence;
-}
-
-// Example usage and testing
-function demonstrateFibonacciSearch(): void {
-    const sortedArray = [10, 22, 35, 40, 45, 50, 80, 82, 85, 90, 100];
-    const targets = [10, 50, 90, 35, 105];
-    
-    console.log('Array:', sortedArray);
-    console.log('Fibonacci sequence:', generateFibonacciSequence(10));
-    
-    targets.forEach(target => {
-        const index = fibonacciSearch(sortedArray, target);
-        if (index !== -1) {
-            console.log(`Found ${target} at index ${index}`);
-        } else {
-            console.log(`${target} not found in the array`);
-        }
+    // Default comparator for primitive types
+    const compare = comparator || ((a: T, b: T) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
     });
+
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        const comparison = compare(array[mid], target);
+
+        if (comparison === 0) {
+            return mid; // Found the target
+        } else if (comparison < 0) {
+            left = mid + 1; // Search right half
+        } else {
+            right = mid - 1; // Search left half
+        }
+    }
+
+    return -1; // Target not found
+}
+// Example with numbers
+const numbers = [1, 3, 5, 7, 9, 11, 13];
+console.log(binarySearch(numbers, 7)); // Output: 3
+console.log(binarySearch(numbers, 12)); // Output: -1
+
+// Example with strings
+const strings = ["apple", "banana", "cherry", "date"];
+console.log(binarySearch(strings, "cherry")); // Output: 2
+
+// Example with custom objects
+interface Person {
+    id: number;
+    name: string;
 }
 
-// Run the demonstration
-demonstrateFibonacciSearch();
-class FibonacciSearch {
-    private fibSequence: number[] = [];
-    
-    constructor() {
-        this.generateFibonacciSequence(20); // Pre-generate some Fibonacci numbers
-    }
-    
-    private generateFibonacciSequence(n: number): void {
-        this.fibSequence = [0, 1];
-        for (let i = 2; i < n; i++) {
-            this.fibSequence.push(this.fibSequence[i - 1] + this.fibSequence[i - 2]);
-        }
-    }
-    
-    search(arr: number[], target: number): number {
-        if (arr.length === 0) return -1;
-        
-        let fibMMinus2 = 0;
-        let fibMMinus1 = 1;
-        let fibM = fibMMinus1 + fibMMinus2;
-        
-        // Find suitable Fibonacci number
-        let fibIndex = 2;
-        while (fibM < arr.length) {
-            if (fibIndex >= this.fibSequence.length) {
-                // Extend Fibonacci sequence if needed
-                this.fibSequence.push(
-                    this.fibSequence[this.fibSequence.length - 1] + 
-                    this.fibSequence[this.fibSequence.length - 2]
-                );
-            }
-            fibMMinus2 = this.fibSequence[fibIndex - 1];
-            fibMMinus1 = this.fibSequence[fibIndex];
-            fibM = fibMMinus1 + fibMMinus2;
-            fibIndex++;
-        }
-        
-        let offset = -1;
-        
-        while (fibM > 1) {
-            const i = Math.min(offset + fibMMinus2, arr.length - 1);
-            
-            console.log(`Checking index ${i}, value: ${arr[i]}`);
-            
-            if (arr[i] < target) {
-                offset = i;
-                fibM = fibMMinus1;
-                fibMMinus1 = fibMMinus2;
-                fibMMinus2 = fibM - fibMMinus1;
-            } else if (arr[i] > target) {
-                fibM = fibMMinus2;
-                fibMMinus1 = fibMMinus1 - fibMMinus2;
-                fibMMinus2 = fibM - fibMMinus1;
-            } else {
-                return i;
-            }
-        }
-        
-        if (fibMMinus1 === 1 && offset + 1 < arr.length && arr[offset + 1] === target) {
-            return offset + 1;
-        }
-        
-        return -1;
+const people: Person[] = [
+    { id: 1, name: "Alice" },
+    { id: 2, name: "Bob" },
+    { id: 3, name: "Charlie" }
+];
+
+// Custom comparator for objects
+const personComparator = (a: Person, b: Person) => a.id - b.id;
+console.log(binarySearch(people, { id: 2, name: "" }, personComparator)); // Output: 1
+function binarySearchRecursive<T>(
+    array: T[],
+    target: T,
+    left: number = 0,
+    right: number = array.length - 1,
+    comparator?: (a: T, b: T) => number
+): number {
+    if (left > right) return -1;
+
+    const mid = Math.floor((left + right) / 2);
+    const compare = comparator || ((a: T, b: T) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+    });
+
+    const comparison = compare(array[mid], target);
+
+    if (comparison === 0) {
+        return mid;
+    } else if (comparison < 0) {
+        return binarySearchRecursive(array, target, mid + 1, right, comparator);
+    } else {
+        return binarySearchRecursive(array, target, left, mid - 1, comparator);
     }
 }
+function findInsertionPosition<T>(
+    array: T[],
+    target: T,
+    comparator?: (a: T, b: T) => number
+): number {
+    let left = 0;
+    let right = array.length;
+    
+    const compare = comparator || ((a: T, b: T) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+    });
 
-// Usage example
-const fibSearch = new FibonacciSearch();
-const testArray = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29];
-const result = fibSearch.search(testArray, 13);
-console.log(`Found at index: ${result}`);
+    while (left < right) {
+        const mid = Math.floor((left + right) / 2);
+        const comparison = compare(array[mid], target);
+
+        if (comparison < 0) {
+            left = mid + 1;
+        } else {
+            right = mid;
+        }
+    }
+
+    return left;
+}
