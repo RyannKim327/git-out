@@ -1,134 +1,95 @@
-function selectionSort(arr: number[]): number[] {
-    const array = [...arr]; // Create a copy to avoid mutating the original
+function largestPrimeFactorSimple(n: number): number {
+    if (n <= 1) return 1;
     
-    for (let i = 0; i < array.length - 1; i++) {
-        // Find the index of the minimum element in the unsorted portion
-        let minIndex = i;
-        
-        for (let j = i + 1; j < array.length; j++) {
-            if (array[j] < array[minIndex]) {
-                minIndex = j;
-            }
-        }
-        
-        // Swap the found minimum element with the first element of unsorted portion
-        if (minIndex !== i) {
-            [array[i], array[minIndex]] = [array[minIndex], array[i]];
+    let largestPrime = 1;
+    let temp = n;
+    
+    // Factor out 2s first
+    if (temp % 2 === 0) {
+        largestPrime = 2;
+        while (temp % 2 === 0) {
+            temp /= 2;
         }
     }
     
-    return array;
+    // Check odd factors
+    for (let i = 3; i <= Math.sqrt(temp); i += 2) {
+        while (temp % i === 0) {
+            largestPrime = i;
+            temp /= i;
+        }
+    }
+    
+    // If remaining number is prime and greater than current largest
+    if (temp > 2 && temp > largestPrime) {
+        largestPrime = temp;
+    }
+    
+    return largestPrime;
 }
-function selectionSort<T>(
-    arr: T[], 
-    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
-): T[] {
-    const array = [...arr];
+function largestPrimeFactorOptimized(n: number): number {
+    if (n <= 1) return 1;
     
-    for (let i = 0; i < array.length - 1; i++) {
-        let minIndex = i;
-        
-        for (let j = i + 1; j < array.length; j++) {
-            if (compareFn(array[j], array[minIndex]) < 0) {
-                minIndex = j;
-            }
-        }
-        
-        if (minIndex !== i) {
-            [array[i], array[minIndex]] = [array[minIndex], array[i]];
-        }
+    let largestPrime = 1;
+    let temp = n;
+    
+    // Remove factors of 2
+    if (temp % 2 === 0) {
+        largestPrime = 2;
+        do {
+            temp /= 2;
+        } while (temp % 2 === 0);
     }
     
-    return array;
-}
-// Complete implementation with type annotations
-class SelectionSort {
-    // For numbers (ascending order by default)
-    static sortNumbers(arr: number[]): number[] {
-        const array = [...arr];
-        
-        for (let i = 0; i < array.length - 1; i++) {
-            let minIndex = i;
-            
-            for (let j = i + 1; j < array.length; j++) {
-                if (array[j] < array[minIndex]) {
-                    minIndex = j;
-                }
-            }
-            
-            if (minIndex !== i) {
-                [array[i], array[minIndex]] = [array[minIndex], array[i]];
-            }
+    // Check odd factors up to sqrt(n)
+    let factor = 3;
+    const maxFactor = Math.sqrt(temp);
+    
+    while (temp > 1 && factor <= maxFactor) {
+        if (temp % factor === 0) {
+            largestPrime = factor;
+            do {
+                temp /= factor;
+            } while (temp % factor === 0);
+            maxFactor = Math.sqrt(temp);
         }
-        
-        return array;
+        factor += 2;
     }
     
-    // Generic implementation
-    static sort<T>(
-        arr: T[], 
-        compareFn?: (a: T, b: T) => number
-    ): T[] {
-        const defaultCompare = (a: T, b: T): number => {
-            if (a < b) return -1;
-            if (a > b) return 1;
-            return 0;
-        };
-        
-        const comparator = compareFn || defaultCompare;
-        const array = [...arr];
-        
-        for (let i = 0; i < array.length - 1; i++) {
-            let minIndex = i;
-            
-            for (let j = i + 1; j < array.length; j++) {
-                if (comparator(array[j], array[minIndex]) < 0) {
-                    minIndex = j;
-                }
-            }
-            
-            if (minIndex !== i) {
-                [array[i], array[minIndex]] = [array[minIndex], array[i]];
-            }
-        }
-        
-        return array;
+    // If what's left is prime
+    if (temp > 1 && temp > largestPrime) {
+        largestPrime = temp;
     }
+    
+    return largestPrime;
 }
-
-// Test the implementation
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-const strings = ['banana', 'apple', 'cherry', 'date'];
-
-console.log('Original numbers:', numbers);
-console.log('Sorted numbers:', SelectionSort.sortNumbers(numbers));
-
-console.log('Original strings:', strings);
-console.log('Sorted strings:', SelectionSort.sort(strings));
-
-// Custom comparator for descending order
-const descendingNumbers = SelectionSort.sort(numbers, (a, b) => b - a);
-console.log('Descending order:', descendingNumbers);
-function selectionSortInPlace(arr: number[]): void {
-    for (let i = 0; i < arr.length - 1; i++) {
-        let minIndex = i;
-        
-        for (let j = i + 1; j < arr.length; j++) {
-            if (arr[j] < arr[minIndex]) {
-                minIndex = j;
-            }
-        }
-        
-        if (minIndex !== i) {
-            // Swap using temporary variable (alternative to destructuring)
-            const temp = arr[i];
-            arr[i] = arr[minIndex];
-            arr[minIndex] = temp;
-        }
+function largestPrimeFactorRecursive(n: number): number {
+    if (n <= 1) return 1;
+    
+    // Find the smallest prime factor
+    let factor = 2;
+    while (n % factor !== 0 && factor <= Math.sqrt(n)) {
+        factor++;
     }
+    
+    // If n is prime
+    if (factor > Math.sqrt(n)) {
+        return n;
+    }
+    
+    // Recursively find largest prime factor of the quotient
+    return largestPrimeFactorRecursive(n / factor);
 }
+// Test the functions
+console.log(largestPrimeFactorOptimized(13195));  // 29
+console.log(largestPrimeFactorOptimized(600851475143));  // 6857
 
-// Usage
-const mutableArray = [64, 34, 25, 12, 22, 11, 90];
-selectionSortInPlace(mutableArray);
-console.log('Sorted in-place:', mutableArray);
+// Performance comparison
+const testNumber = 600851475143;
+console.time('Optimized');
+console.log(largestPrimeFactorOptimized(testNumber));
+console.timeEnd('Optimized');
+
+console.time('Simple');
+console.log(largestPrimeFactorSimple(testNumber));
+console.timeEnd('Simple');
