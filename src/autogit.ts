@@ -1,218 +1,127 @@
-class HeapSort<T> {
-    private heapSize: number = 0;
-
-    /**
-     * Main heap sort function
-     */
-    public sort(array: T[]): T[] {
-        // Clone array to avoid mutating original
-        const sortedArray = [...array];
-        this.heapSize = sortedArray.length;
-
-        // Build max heap
-        this.buildMaxHeap(sortedArray);
-
-        // Extract elements from heap one by one
-        for (let i = sortedArray.length - 1; i >= 1; i--) {
-            // Move current root to end
-            this.swap(sortedArray, 0, i);
-            this.heapSize--;
-            
-            // Restore max heap property on reduced heap
-            this.maxHeapify(sortedArray, 0);
-        }
-
-        return sortedArray;
-    }
-
-    /**
-     * Build a max heap from an unsorted array
-     */
-    private buildMaxHeap(array: T[]): void {
-        for (let i = Math.floor(array.length / 2); i >= 0; i--) {
-            this.maxHeapify(array, i);
-        }
-    }
-
-    /**
-     * Maintain the max heap property
-     */
-    private maxHeapify(array: T[], index: number): void {
-        const left = this.leftChild(index);
-        const right = this.rightChild(index);
-        let largest = index;
-
-        // Compare with left child
-        if (left < this.heapSize && array[left] > array[largest]) {
-            largest = left;
-        }
-
-        // Compare with right child
-        if (right < this.heapSize && array[right] > array[largest]) {
-            largest = right;
-        }
-
-        // If largest is not the current node, swap and recursively heapify
-        if (largest !== index) {
-            this.swap(array, index, largest);
-            this.maxHeapify(array, largest);
-        }
-    }
-
-    /**
-     * Get left child index
-     */
-    private leftChild(index: number): number {
-        return 2 * index + 1;
-    }
-
-    /**
-     * Get right child index
-     */
-    private rightChild(index: number): number {
-        return 2 * index + 2;
-    }
-
-    /**
-     * Swap two elements in array
-     */
-    private swap(array: T[], i: number, j: number): void {
-        [array[i], array[j]] = [array[j], array[i]];
-    }
+/* ---------- BST Node ---------- */
+class TreeNode<T> {
+  constructor(
+    public key: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
 
-// Alternative functional implementation
-function heapSort<T>(array: T[]): T[] {
-    const result = [...array];
-    let heapSize = result.length;
+/* ---------- Binary Search Tree ---------- */
+class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
 
-    function buildMaxHeap(): void {
-        for (let i = Math.floor(result.length / 2); i >= 0; i--) {
-            maxHeapify(i);
-        }
+  constructor(private compareFn?: (a: T, b: T) => number) {
+    // Default comparator works for numbers, strings, Dates, etc.
+    if (!compareFn) {
+      this.compareFn = (a: T, b: T) => (a as any) - (b as any);
     }
+  }
 
-    function maxHeapify(index: number): void {
-        const left = 2 * index + 1;
-        const right = 2 * index + 2;
-        let largest = index;
+  /* --------- Public API --------- */
+  insert(key: T): void {
+    this.root = this._insert(this.root, key);
+  }
 
-        if (left < heapSize && result[left] > result[largest]) {
-            largest = left;
-        }
+  remove(key: T): void {
+    this.root = this._remove(this.root, key);
+  }
 
-        if (right < heapSize && result[right] > result[largest]) {
-            largest = right;
-        }
+  search(key: T): boolean {
+    return this._search(this.root, key);
+  }
 
-        if (largest !== index) {
-            [result[index], result[largest]] = [result[largest], result[index]];
-            maxHeapify(largest);
-        }
+  /* Returns keys in ascending order */
+  inOrder(): T[] {
+    const res: T[] = [];
+    this._inOrder(this.root, res);
+    return res;
+  }
+
+  min(): T | undefined {
+    const node = this._minNode(this.root);
+    return node ? node.key : undefined;
+  }
+
+  max(): T | undefined {
+    const node = this._maxNode(this.root);
+    return node ? node.key : undefined;
+  }
+
+  isEmpty(): boolean {
+    return this.root === null;
+  }
+
+  /* --------- Private helpers --------- */
+  private _insert(node: TreeNode<T> | null, key: T): TreeNode<T> {
+    if (!node) return new TreeNode(key);
+
+    const cmp = this.compareFn!(key, node.key);
+    if (cmp < 0) node.left = this._insert(node.left, key);
+    else if (cmp > 0) node.right = this._insert(node.right, key);
+    // duplicate keys are ignored (could also count them)
+    return node;
+  }
+
+  private _remove(node: TreeNode<T> | null, key: T): TreeNode<T> | null {
+    if (!node) return null;
+
+    const cmp = this.compareFn!(key, node.key);
+    if (cmp < 0) node.left = this._remove(node.left, key);
+    else if (cmp > 0) node.right = this._remove(node.right, key);
+    else {
+      // Node with only one child or no child
+      if (!node.left) return node.right;
+      if (!node.right) return node.left;
+
+      // Node with two children: get in-order successor (smallest in right subtree)
+      const minRight = this._minNode(node.right)!;
+      node.key = minRight.key;
+      node.right = this._remove(node.right, minRight.key);
     }
+    return node;
+  }
 
-    buildMaxHeap();
+  private _search(node: TreeNode<T> | null, key: T): boolean {
+    if (!node) return false;
+    const cmp = this.compareFn!(key, node.key);
+    if (cmp === 0) return true;
+    return cmp < 0
+      ? this._search(node.left, key)
+      : this._search(node.right, key);
+  }
 
-    for (let i = result.length - 1; i >= 1; i--) {
-        [result[0], result[i]] = [result[i], result[0]];
-        heapSize--;
-        maxHeapify(0);
-    }
+  private _inOrder(node: TreeNode<T> | null, out: T[]): void {
+    if (!node) return;
+    this._inOrder(node.left, out);
+    out.push(node.key);
+    this._inOrder(node.right, out);
+  }
 
-    return result;
+  private _minNode(node: TreeNode<T> | null): TreeNode<T> | null {
+    while (node && node.left) node = node.left;
+    return node;
+  }
+
+  private _maxNode(node: TreeNode<T> | null): TreeNode<T> | null {
+    while (node && node.right) node = node.right;
+    return node;
+  }
 }
 
-// Generic implementation with custom comparator
-function heapSortWithComparator<T>(
-    array: T[], 
-    comparator: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
-): T[] {
-    const result = [...array];
-    let heapSize = result.length;
+/* ---------- Usage ---------- */
+const bst = new BinarySearchTree<number>();
+[50, 30, 70, 20, 40, 60, 80].forEach(n => bst.insert(n));
+console.log('In-order:', bst.inOrder()); // [20,30,40,50,60,70,80]
+console.log('Has 60?', bst.search(60));   // true
+bst.remove(50);
+console.log('After deleting 50:', bst.inOrder()); // [20,30,40,60,70,80]
 
-    function buildMaxHeap(): void {
-        for (let i = Math.floor(result.length / 2); i >= 0; i--) {
-            maxHeapify(i);
-        }
-    }
-
-    function maxHeapify(index: number): void {
-        const left = 2 * index + 1;
-        const right = 2 * index + 2;
-        let largest = index;
-
-        if (left < heapSize && comparator(result[left], result[largest]) > 0) {
-            largest = left;
-        }
-
-        if (right < heapSize && comparator(result[right], result[largest]) > 0) {
-            largest = right;
-        }
-
-        if (largest !== index) {
-            [result[index], result[largest]] = [result[largest], result[index]];
-            maxHeapify(largest);
-        }
-    }
-
-    buildMaxHeap();
-
-    for (let i = result.length - 1; i >= 1; i--) {
-        [result[0], result[i]] = [result[i], result[0]];
-        heapSize--;
-        maxHeapify(0);
-    }
-
-    return result;
-}
-
-// Example usage and testing
-console.log("Heap Sort Examples:");
-
-// Test with numbers
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-const heapSorter = new HeapSort<number>();
-console.log("Numbers sorted:", heapSorter.sort(numbers));
-console.log("Functional version:", heapSort(numbers));
-
-// Test with strings
-const strings = ["banana", "apple", "cherry", "date"];
-console.log("Strings sorted:", heapSort(strings));
-
-// Test with custom objects
-interface Person {
-    name: string;
-    age: number;
-}
-
-const people: Person[] = [
-    { name: "John", age: 30 },
-    { name: "Alice", age: 25 },
-    { name: "Bob", age: 35 }
-];
-
-// Sort by age using custom comparator
-const sortedByAge = heapSortWithComparator(people, (a, b) => a.age - b.age);
-console.log("People sorted by age:", sortedByAge);
-
-// Sort by name using custom comparator
-const sortedByName = heapSortWithComparator(people, (a, b) => 
-    a.name.localeCompare(b.name)
+/* Custom comparator example */
+interface Person { id: number; name: string }
+const peopleTree = new BinarySearchTree<Person>(
+  (a, b) => a.id - b.id
 );
-console.log("People sorted by name:", sortedByName);
-
-// Performance test
-const largeArray = Array.from({ length: 1000 }, () => 
-    Math.floor(Math.random() * 1000)
-);
-console.log("Large array sorted (first 10 elements):", 
-    heapSort(largeArray).slice(0, 10));
-// Simple number sorting
-const sorted = heapSort([3, 1, 4, 1, 5, 9, 2, 6]);
-
-// Custom object sorting
-const users = [{ name: "John", score: 85 }, { name: "Jane", score: 92 }];
-const sortedUsers = heapSortWithComparator(users, (a, b) => b.score - a.score);
-
-// Descending order
-const descending = heapSortWithComparator([5, 2, 8, 1], (a, b) => b - a);
+peopleTree.insert({ id: 3, name: 'Carol' });
+peopleTree.insert({ id: 1, name: 'Alice' });
+console.log(peopleTree.inOrder().map(p => p.name)); // ["Alice","Carol"]
