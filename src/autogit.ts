@@ -1,23 +1,77 @@
-// random-user-fetch.ts
-// Fetches a random user from https://randomuser.me and prints a friendly greeting
+class TreeNode<T> {
+    value: T;
+    left: TreeNode<T> | null;
+    right: TreeNode<T> | null;
 
-(async () => {
-  interface RandomUserResponse {
-    results: Array<{
-      name: { first: string; last: string };
-      location: { country: string };
-    }>;
-  }
+    constructor(value: T) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+    }
+}
+class BinarySearchTree<T> {
+    root: TreeNode<T> | null;
 
-  try {
-    const res = await fetch('https://randomuser.me/api/');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data: RandomUserResponse = await res.json();
-    const user = data.results[0];
-    console.log(
-      `Hello, ${user.name.first} ${user.name.last} from ${user.location.country}!`
-    );
-  } catch (err) {
-    console.error('Failed to fetch random user:', (err as Error).message);
-  }
-})();
+    constructor() {
+        this.root = null;
+    }
+
+    insert(value: T): void {
+        const newNode = new TreeNode(value);
+        
+        if (!this.root) {
+            this.root = newNode;
+            return;
+        }
+
+        let current = this.root;
+        while (true) {
+            if (value < current.value) {
+                if (!current.left) {
+                    current.left = newNode;
+                    return;
+                }
+                current = current.left;
+            } else {
+                if (!current.right) {
+                    current.right = newNode;
+                    return;
+                }
+                current = current.right;
+            }
+        }
+    }
+
+    find(value: T): boolean {
+        let current = this.root;
+
+        while (current) {
+            if (value === current.value) return true;
+            if (value < current.value) {
+                current = current.left;
+            } else {
+                current = current.right;
+            }
+        }
+        return false;
+    }
+
+    inOrderTraversal(node: TreeNode<T> | null, callback: (value: T) => void): void {
+        if (!node) return;
+        this.inOrderTraversal(node.left, callback);
+        callback(node.value);
+        this.inOrderTraversal(node.right, callback);
+    }
+}
+const bst = new BinarySearchTree<number>();
+
+bst.insert(10);
+bst.insert(5);
+bst.insert(15);
+bst.insert(3);
+
+console.log(bst.find(15)); // true
+console.log(bst.find(8));  // false
+
+bst.inOrderTraversal(bst.root, value => console.log(value));
+// Output: 3, 5, 10, 15
