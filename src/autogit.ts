@@ -1,41 +1,23 @@
-const str: string = "  Hello World  ";
-const trimmed: string = str.trim();
-console.log(trimmed); // "Hello World"
-const str: string = "  Hello World  ";
-const trimmedStart: string = str.trimStart(); // or trimLeft()
-console.log(trimmedStart); // "Hello World  "
-const str: string = "  Hello World  ";
-const trimmedEnd: string = str.trimEnd(); // or trimRight()
-console.log(trimmedEnd); // "  Hello World"
-const str: string = "  Hello   World  ";
-const noWhitespace: string = str.replace(/\s/g, '');
-console.log(noWhitespace); // "HelloWorld"
-const str: string = "  Hello   World  ";
-const singleSpaced: string = str.replace(/\s+/g, ' ').trim();
-console.log(singleSpaced); // "Hello World"
-function removeWhitespace(str: string, options?: {
-  leading?: boolean;
-  trailing?: boolean;
-  all?: boolean;
-}): string {
-  let result = str;
-  
-  if (options?.all) {
-    return result.replace(/\s/g, '');
-  }
-  
-  if (options?.leading) {
-    result = result.trimStart();
-  }
-  
-  if (options?.trailing) {
-    result = result.trimEnd();
-  }
-  
-  return result;
+function bubbleSort(arr: number[]): number[] {
+    const n = arr.length;
+    let swapped: boolean;
+
+    do {
+        swapped = false;
+        for (let i = 0; i < n - 1; i++) {
+            if (arr[i] > arr[i + 1]) {
+                // Swap
+                const temp = arr[i];
+                arr[i] = arr[i + 1];
+                arr[i + 1] = temp;
+                swapped = true;
+            }
+        }
+    } while (swapped);
+
+    return arr;
 }
 
-// Usage examples:
-const str = "  Hello   World  ";
-console.log(removeWhitespace(str, { all: true })); // "HelloWorld"
-console.log(removeWhitespace(str, { leading: true })); // "Hello   World  "
+// Example usage
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log(bubbleSort(numbers)); // [ 11, 12, 22, 25, 34, 64, 90 ]
