@@ -1,126 +1,197 @@
-function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
+function interpolationSearch(
+  arr: number[],
+  target: number
+): number {
+  let low = 0;
+  let high = arr.length - 1;
 
-// Usage
-console.log(isValidEmail("test@example.com")); // true
-console.log(isValidEmail("invalid-email"));    // false
-function isValidEmailStrict(email: string): boolean {
-  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-  return emailRegex.test(email);
+  while (low <= high && target >= arr[low] && target <= arr[high]) {
+    // Prevent division by zero
+    if (arr[high] === arr[low]) {
+      return arr[low] === target ? low : -1;
+    }
+
+    // Calculate position using interpolation formula
+    const position = low + Math.floor(
+      ((target - arr[low]) * (high - low)) / (arr[high] - arr[low])
+    );
+
+    if (arr[position] === target) {
+      return position;
+    }
+
+    if (arr[position] < target) {
+      low = position + 1;
+    } else {
+      high = position - 1;
+    }
+  }
+
+  return -1;
 }
-class EmailValidator {
-  private static readonly EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function interpolationSearchGeneric<T>(
+  arr: T[],
+  target: T,
+  keySelector: (item: T) => number = (item) => Number(item)
+): number {
+  let low = 0;
+  let high = arr.length - 1;
   
-  static validate(email: string): boolean {
-    if (!email || typeof email !== 'string') {
-      return false;
-    }
-    return this.EMAIL_REGEX.test(email.trim());
-  }
-  
-  static validateWithAdditionalChecks(email: string): { isValid: boolean; message: string } {
-    if (!email) {
-      return { isValid: false, message: 'Email is required' };
-    }
-    
-    const trimmedEmail = email.trim();
-    
-    if (trimmedEmail.length === 0) {
-      return { isValid: false, message: 'Email cannot be empty' };
-    }
-    
-    if (!this.EMAIL_REGEX.test(trimmedEmail)) {
-      return { isValid: false, message: 'Invalid email format' };
-    }
-    
-    // Additional length check
-    if (trimmedEmail.length > 254) {
-      return { isValid: false, message: 'Email is too long' };
-    }
-    
-    return { isValid: true, message: 'Valid email' };
-  }
-}
+  const getValue = (index: number) => keySelector(arr[index]);
 
-// Usage
-console.log(EmailValidator.validate('user@example.com')); // true
-console.log(EmailValidator.validateWithAdditionalChecks('invalid')); 
-// { isValid: false, message: 'Invalid email format' }
-// First install: npm install validator
-import validator from 'validator';
+  while (low <= high) {
+    const lowVal = getValue(low);
+    const highVal = getValue(high);
+    const targetVal = keySelector(target);
 
-function validateEmailWithLibrary(email: string): boolean {
-  return validator.isEmail(email);
-}
-type Email = string & { readonly __brand: unique symbol };
+    if (targetVal < lowVal || targetVal > highVal) {
+      break;
+    }
 
-function isEmail(value: string): value is Email {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(value);
-}
+    // Handle equal values at boundaries
+    if (highVal === lowVal) {
+      return lowVal === targetVal ? low : -1;
+    }
 
-function createEmail(value: string): Email | null {
-  return isEmail(value) ? value as Email : null;
-}
+    // Interpolation formula
+    const position = low + Math.floor(
+      ((targetVal - lowVal) * (high - low)) / (highVal - lowVal)
+    );
 
-// Usage
-const email1 = createEmail('test@example.com');
-if (email1) {
-  // TypeScript knows email1 is a valid Email type
-  console.log('Valid email:', email1);
-}
-class EmailValidation {
-  // Simple validation - good for most use cases
-  static simple(email: string): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const positionVal = getValue(position);
+
+    if (positionVal === targetVal) {
+      return position;
+    }
+
+    if (positionVal < targetVal) {
+      low = position + 1;
+    } else {
+      high = position - 1;
+    }
   }
 
-  // RFC 5322 compliant (more strict)
-  static rfc5322(email: string): boolean {
-    const regex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    return regex.test(email);
+  return -1;
+}
+class InterpolationSearch {
+  // Basic number array search
+  static search(arr: number[], target: number): number {
+    let low = 0;
+    let high = arr.length - 1;
+
+    while (low <= high && target >= arr[low] && target <= arr[high]) {
+      if (arr[high] === arr[low]) {
+        return arr[low] === target ? low : -1;
+      }
+
+      const position = this.calculatePosition(arr, low, high, target);
+
+      if (arr[position] === target) {
+        return position;
+      }
+
+      if (arr[position] < target) {
+        low = position + 1;
+      } else {
+        high = position - 1;
+      }
+    }
+
+    return -1;
   }
 
-  // Validation with length constraints
-  static withConstraints(email: string): { isValid: boolean; errors: string[] } {
-    const errors: string[] = [];
+  private static calculatePosition(
+    arr: number[], 
+    low: number, 
+    high: number, 
+    target: number
+  ): number {
+    return low + Math.floor(
+      ((target - arr[low]) * (high - low)) / (arr[high] - arr[low])
+    );
+  }
+
+  // Generic search with custom key extraction
+  static searchGeneric<T>(
+    arr: T[],
+    target: T,
+    keyExtractor: (item: T) => number = (item) => Number(item)
+  ): number {
+    let low = 0;
+    let high = arr.length - 1;
     
-    if (!email) {
-      errors.push('Email is required');
-      return { isValid: false, errors };
+    const getKey = (index: number) => keyExtractor(arr[index]);
+    const targetKey = keyExtractor(target);
+
+    while (low <= high) {
+      const lowKey = getKey(low);
+      const highKey = getKey(high);
+
+      if (targetKey < lowKey || targetKey > highKey) {
+        break;
+      }
+
+      if (highKey === lowKey) {
+        return lowKey === targetKey ? low : -1;
+      }
+
+      const position = low + Math.floor(
+        ((targetKey - lowKey) * (high - low)) / (highKey - lowKey)
+      );
+
+      const positionKey = getKey(position);
+
+      if (positionKey === targetKey) {
+        return position;
+      }
+
+      if (positionKey < targetKey) {
+        low = position + 1;
+      } else {
+        high = position - 1;
+      }
     }
 
-    const trimmed = email.trim();
-    
-    if (trimmed.length > 254) {
-      errors.push('Email too long (max 254 characters)');
-    }
-    
-    if (!this.simple(trimmed)) {
-      errors.push('Invalid email format');
-    }
-    
-    return {
-      isValid: errors.length === 0,
-      errors
-    };
+    return -1;
   }
 }
 
-// Usage examples
-const testEmails = [
-  'user@example.com',
-  'invalid-email',
-  'user@sub.domain.com',
-  'user+tag@example.com'
+// Usage Examples
+const numbers = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+const objects = [
+  { id: 10, name: "Alice" },
+  { id: 20, name: "Bob" },
+  { id: 30, name: "Charlie" }
 ];
 
-testEmails.forEach(email => {
-  const result = EmailValidation.withConstraints(email);
-  console.log(`${email}: ${result.isValid ? 'Valid' : 'Invalid'}`);
-  if (!result.isValid) {
-    console.log('  Errors:', result.errors);
-  }
-});
+// Search in number array
+console.log(InterpolationSearch.search(numbers, 50)); // 4
+
+// Search in object array using custom key
+console.log(
+  InterpolationSearch.searchGeneric(
+    objects, 
+    { id: 20, name: "Bob" }, 
+    item => item.id
+  )
+); // 1
+
+// Edge case: Empty array
+console.log(InterpolationSearch.search([], 5)); // -1
+
+// Edge case: Target not in range
+console.log(InterpolationSearch.search(numbers, 5)); // -1
+// Benchmark comparison
+function benchmarkSearch(): void {
+  const largeArray = Array.from({ length: 1000000 }, (_, i) => i * 2); // Even numbers
+  
+  console.time('Interpolation Search');
+  const result1 = InterpolationSearch.search(largeArray, 500000);
+  console.timeEnd('Interpolation Search');
+  
+  console.time('Binary Search');
+  const result2 = largeArray.indexOf(500000);
+  console.timeEnd('Binary Search');
+  
+  console.log(`Results: ${result1}, ${result2}`);
+}
