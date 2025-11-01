@@ -1,90 +1,71 @@
-interface HashTableEntry<K, V> {
-  key: K;
-  value: V;
-}
-class HashTable<K, V> {
-  private buckets: Array<Array<HashTableEntry<K, V>>>;
-  private capacity: number;
+const table = new Map<string, number>();
 
-  constructor(capacity: number = 16) {
-    this.capacity = capacity;
-    this.buckets = new Array(this.capacity);
-    for (let i = 0; i < this.capacity; i++) {
-      this.buckets[i] = [];
-    }
+table.set("apple", 5);
+table.set("banana", 2);
+
+console.log(table.get("apple")); // 5
+console.log(table.has("banana")); // true
+table.delete("banana");
+class HashTable<V> {
+  private buckets: [string, V][][]; // array of arrays of key-value pairs
+  private size: number;
+
+  constructor(size: number = 16) {
+    this.size = size;
+    this.buckets = Array.from({ length: size }, () => []);
   }
 
-  // Hash function (simple example for strings)
-  private hash(key: K): number {
-    const stringKey = String(key);
-    let hash = 0;
-    for (let i = 0; i < stringKey.length; i++) {
-      hash += stringKey.charCodeAt(i);
+  private hash(key: string): number {
+    let hashValue = 0;
+    for (let i = 0; i < key.length; i++) {
+      hashValue = (hashValue + key.charCodeAt(i) * i) % this.size;
     }
-    return hash % this.capacity;
+    return hashValue;
   }
 
-  // Insert/Update a key-value pair
-  set(key: K, value: V): void {
+  set(key: string, value: V): void {
     const index = this.hash(key);
     const bucket = this.buckets[index];
-    
-    // Check if key exists and update
+
     for (let i = 0; i < bucket.length; i++) {
-      if (bucket[i].key === key) {
-        bucket[i].value = value;
+      if (bucket[i][0] === key) {
+        bucket[i][1] = value; // Update
         return;
       }
     }
-    
-    // Add new entry
-    bucket.push({ key, value });
+
+    bucket.push([key, value]);
   }
 
-  // Retrieve a value by key
-  get(key: K): V | undefined {
+  get(key: string): V | undefined {
     const index = this.hash(key);
     const bucket = this.buckets[index];
-    
-    for (const entry of bucket) {
-      if (entry.key === key) {
-        return entry.value;
-      }
+
+    for (const [k, v] of bucket) {
+      if (k === key) return v;
     }
-    
     return undefined;
   }
 
-  // Delete a key-value pair
-  delete(key: K): boolean {
+  remove(key: string): boolean {
     const index = this.hash(key);
     const bucket = this.buckets[index];
-    
+
     for (let i = 0; i < bucket.length; i++) {
-      if (bucket[i].key === key) {
+      if (bucket[i][0] === key) {
         bucket.splice(i, 1);
         return true;
       }
     }
-    
     return false;
   }
 }
-const hashTable = new HashTable<string, number>();
 
-// Insert values
-hashTable.set("apple", 5);
-hashTable.set("banana", 10);
-hashTable.set("cherry", 15);
+// Usage:
+const table = new HashTable<number>();
+table.set("apple", 5);
+table.set("banana", 2);
 
-// Get values
-console.log(hashTable.get("apple"));  // Output: 5
-console.log(hashTable.get("banana")); // Output: 10
-
-// Update value
-hashTable.set("apple", 20);
-console.log(hashTable.get("apple"));  // Output: 20
-
-// Delete value
-hashTable.delete("banana");
-console.log(hashTable.get("banana")); // Output: undefined
+console.log(table.get("apple")); // 5
+table.remove("banana");
+console.log(table.get("banana")); // undefined
