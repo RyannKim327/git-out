@@ -1,29 +1,27 @@
-function countChar(str: string, char: string): number {
-  if (char.length !== 1) throw new Error('char must be a single character');
-  return str.split(char).length - 1;
-}
-
-console.log(countChar('mississippi', 's')); // 4
-function countChar(str: string, char: string): number {
-  if (char.length !== 1) throw new Error('char must be a single character');
-  const matches = str.match(new RegExp(escapeRegExp(char), 'g'));
-  return matches ? matches.length : 0;
-}
-
-// helper to avoid issues with special regex chars like ., *, etc.
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-function countChar(str: string, char: string): number {
-  if (char.length !== 1) throw new Error('char must be a single character');
-  let count = 0;
-  for (let i = 0; i < str.length; ++i) {
-    if (str[i] === char) ++count;
+function factorial(n: number): number {
+  if (n < 0 || !Number.isInteger(n)) {
+    throw new Error('Input must be a non-negative integer');
   }
-  return count;
+
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
 }
-const countChar = (str: string, char: string) =>
-  [...str].reduce((n, c) => n + (c === char ? 1 : 0), 0);
-const phrase = 'TypeScript is strongly typed!';
-const tally = countChar(phrase, 't');
-console.log(`The letter "t" occurs ${tally} times.`); // 3
+
+// Usage
+console.log(factorial(5)); // 120
+function factorialBig(n: number): bigint {
+  if (n < 0 || !Number.isInteger(n)) {
+    throw new Error('Input must be a non-negative integer');
+  }
+
+  let result = 1n;
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
+}
+
+console.log(factorialBig(25)); // 15511210043330985984000000n
