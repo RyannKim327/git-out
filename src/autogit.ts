@@ -1,53 +1,46 @@
+// src/cronExample.ts
+import cron from 'node-cron';
+
 /**
- * Radix sort (LSD, base-256) for non-negative 32-bit integers.
- * @param arr  Array of numbers (0 … 2³²-1)
- * @returns    The same array instance, now sorted
+ * A tiny “daily-surprise” service that runs every 30 seconds
+ * (so you don’t have to wait a whole day while testing).
+ * In real life you’d change the pattern to '0 9 * * *' for 09:00 daily.
  */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length < 2) return arr;
-
-  // 256 buckets per byte
-  const bucket = new Array<number>(arr.length);
-  const count  = new Array<number>(256);
-
-  // Process bytes from least to most significant
-  for (let shift = 0; shift < 32; shift += 8) {
-    count.fill(0);
-
-    // 1. Histogram
-    for (const v of arr) count[(v >>> shift) & 0xFF]++;
-
-    // 2. Prefix sum (start positions)
-    let sum = 0;
-    for (let i = 0; i < 256; ++i) {
-      const c = count[i];
-      count[i] = sum;
-      sum += c;
-    }
-
-    // 3. Stable scatter into bucket
-    for (const v of arr) {
-      const idx = (v >>> shift) & 0xFF;
-      bucket[count[idx]++] = v;
-    }
-
-    // 4. Copy back
-    arr.set(bucket);
-  }
-  return arr;
-}
-
-/* ---------- small sanity check ---------- */
-if (import.meta.vitest) {
-  const { it, expect } = import.meta.vitest;
-  it('sorts', () => {
-    const data = Array.from({ length: 1_000_000 }, () => Math.floor(Math.random() * 2 ** 32));
-    const copy = [...data];
-    radixSort(data);
-    copy.sort((a, b) => a - b);
-    expect(data).toEqual(copy);
+class SurpriseService {
+  private task = cron.schedule('*/30 * * * * *', () => this.deliverSurprise(), {
+    scheduled: false,
   });
+
+  private readonly goodies = [
+    '🍕  Pizza coupon: -10 %',
+    '🎮  New game released today',
+    '🎵  Random Spotify playlist',
+    '📚  Book recommendation',
+    '☕  Coffee voucher',
+  ];
+
+  start(): void {
+    this.task.start();
+    console.log('[SurpriseService] Started – next surprise in 30 s…');
+  }
+
+  stop(): void {
+    this.task.stop();
+    console.log('[SurpriseService] Stopped');
+  }
+
+  private deliverSurprise(): void {
+    const pick = this.goodies[Math.floor(Math.random() * this.goodies.length)];
+    console.log(`[${new Date().toISOString()}] 🎁  Today's surprise: ${pick}`);
+  }
 }
-const nums = [170, 45, 75, 90, 2, 802, 2, 66];
-radixSort(nums);
-console.log(nums); // [2, 2, 45, 66, 75, 90, 170, 802]
+
+/* ------------------------------------------------------------------ */
+/* Quick demo – start the service and stop it after 2 minutes         */
+/* ------------------------------------------------------------------ */
+const service = new SurpriseService();
+service.start();
+
+setTimeout(() => service.stop(), 2 * 60 * 1000);
+npm i node-cron
+npx ts-node src/cronExample.ts
