@@ -1,172 +1,208 @@
-function shellSort(arr: number[]): number[] {
-    const n = arr.length;
-    let gap = Math.floor(n / 2);
+interface TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null;
+  right: TreeNode<T> | null;
+}
+
+function bfsTree<T>(root: TreeNode<T> | null): T[] {
+  if (!root) return [];
+  
+  const result: T[] = [];
+  const queue: TreeNode<T>[] = [root];
+  
+  while (queue.length > 0) {
+    const currentNode = queue.shift()!;
+    result.push(currentNode.value);
     
-    // Start with a large gap and reduce it
-    while (gap > 0) {
-        // Perform insertion sort for elements at gap intervals
-        for (let i = gap; i < n; i++) {
-            const temp = arr[i];
-            let j = i;
-            
-            // Shift elements that are greater than temp to the right
-            while (j >= gap && arr[j - gap] > temp) {
-                arr[j] = arr[j - gap];
-                j -= gap;
-            }
-            
-            arr[j] = temp;
-        }
-        
-        // Reduce the gap
-        gap = Math.floor(gap / 2);
+    if (currentNode.left) {
+      queue.push(currentNode.left);
     }
     
-    return arr;
+    if (currentNode.right) {
+      queue.push(currentNode.right);
+    }
+  }
+  
+  return result;
 }
-function shellSortGeneric<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
-    const n = arr.length;
-    let gap = Math.floor(n / 2);
+
+// Usage example
+const tree: TreeNode<number> = {
+  value: 1,
+  left: {
+    value: 2,
+    left: { value: 4, left: null, right: null },
+    right: { value: 5, left: null, right: null }
+  },
+  right: {
+    value: 3,
+    left: { value: 6, left: null, right: null },
+    right: { value: 7, left: null, right: null }
+  }
+};
+
+console.log(bfsTree(tree)); // [1, 2, 3, 4, 5, 6, 7]
+interface Graph {
+  [key: string]: string[];
+}
+
+function bfsGraph(
+  graph: Graph,
+  startNode: string,
+  targetNode?: string
+): { path: string[]; found: boolean } {
+  const visited: Set<string> = new Set();
+  const queue: string[] = [startNode];
+  const parent: Map<string, string> = new Map();
+  
+  visited.add(startNode);
+  parent.set(startNode, null);
+
+  while (queue.length > 0) {
+    const currentNode = queue.shift()!;
     
-    // Default comparison function for numbers
-    const compare = compareFn || ((a: T, b: T) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    });
-    
-    while (gap > 0) {
-        for (let i = gap; i < n; i++) {
-            const temp = arr[i];
-            let j = i;
-            
-            while (j >= gap && compare(arr[j - gap], temp) > 0) {
-                arr[j] = arr[j - gap];
-                j -= gap;
-            }
-            
-            arr[j] = temp;
-        }
-        
-        gap = Math.floor(gap / 2);
+    // If we're searching for a specific node and found it
+    if (targetNode && currentNode === targetNode) {
+      return {
+        path: reconstructPath(parent, startNode, targetNode),
+        found: true
+      };
     }
     
-    return arr;
+    for (const neighbor of graph[currentNode] || []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        parent.set(neighbor, currentNode);
+        queue.push(neighbor);
+      }
+    }
+  }
+  
+  return {
+    path: targetNode ? [] : Array.from(visited),
+    found: false
+  };
 }
-class ShellSort {
-    // Common gap sequences
-    static readonly GAP_SEQUENCES = {
-        SHELL: (n: number) => Math.floor(n / 2),
-        KNUTH: (n: number) => Math.floor((3 ** Math.floor(Math.log(2 * n + 1) / Math.log(3)) - 1) / 2),
-        SEDGEWICK: (n: number) => {
-            const gaps = [];
-            let i = 0;
-            let gap = 1;
-            
-            while (gap < n) {
-                gaps.push(gap);
-                gap = i % 2 === 0 
-                    ? 9 * (2 ** i - 2 ** (i / 2)) + 1 
-                    : 8 * 2 ** i - 6 * 2 ** ((i + 1) / 2) + 1;
-                i++;
-            }
-            
-            return gaps.reverse();
+
+function reconstructPath(
+  parent: Map<string, string>,
+  start: string,
+  end: string
+): string[] {
+  const path: string[] = [];
+  let current = end;
+  
+  while (current !== null) {
+    path.unshift(current);
+    current = parent.get(current)!;
+  }
+  
+  return path;
+}
+
+// Usage example
+const graph: Graph = {
+  'A': ['B', 'C'],
+  'B': ['A', 'D', 'E'],
+  'C': ['A', 'F'],
+  'D': ['B'],
+  'E': ['B', 'F'],
+  'F': ['C', 'E']
+};
+
+// Find shortest path from A to F
+const result = bfsGraph(graph, 'A', 'F');
+console.log(result.path); // ['A', 'C', 'F']
+console.log(result.found); // true
+
+// Get all nodes in BFS order
+const allNodes = bfsGraph(graph, 'A');
+console.log(allNodes.path); // ['A', 'B', 'C', 'D', 'E', 'F']
+class BFS<T> {
+  constructor(
+    private getNeighbors: (node: T) => T[],
+    private areEqual: (a: T, b: T) => boolean = (a, b) => a === b
+  ) {}
+
+  search(
+    startNode: T,
+    targetNode?: T
+  ): { path: T[]; visited: T[]; found: boolean } {
+    const visited: T[] = [];
+    const queue: T[] = [startNode];
+    const parent = new Map<T, T>();
+    const visitedSet = new Set<T>([startNode]);
+    
+    parent.set(startNode, null!);
+
+    while (queue.length > 0) {
+      const currentNode = queue.shift()!;
+      visited.push(currentNode);
+
+      // Check if we found the target
+      if (targetNode && this.areEqual(currentNode, targetNode)) {
+        return {
+          path: this.reconstructPath(parent, startNode, targetNode),
+          visited,
+          found: true
+        };
+      }
+
+      // Explore neighbors
+      for (const neighbor of this.getNeighbors(currentNode)) {
+        if (!Array.from(visitedSet).some(node => this.areEqual(node, neighbor))) {
+          visitedSet.add(neighbor);
+          parent.set(neighbor, currentNode);
+          queue.push(neighbor);
         }
+      }
+    }
+
+    return {
+      path: [],
+      visited,
+      found: false
     };
+  }
+
+  private reconstructPath(
+    parent: Map<T, T>,
+    start: T,
+    end: T
+  ): T[] {
+    const path: T[] = [];
+    let current = end;
     
-    static sort<T>(
-        arr: T[], 
-        compareFn?: (a: T, b: T) => number,
-        gapSequence: 'SHELL' | 'KNUTH' | 'SEDGEWICK' = 'SHELL'
-    ): T[] {
-        const n = arr.length;
-        const compare = compareFn || this.defaultCompare;
-        
-        let gaps: number[];
-        
-        // Generate gap sequence
-        if (gapSequence === 'SEDGEWICK') {
-            gaps = this.GAP_SEQUENCES.SEDGEWICK(n);
-        } else {
-            gaps = [];
-            let gap = gapSequence === 'SHELL' 
-                ? this.GAP_SEQUENCES.SHELL(n)
-                : this.GAP_SEQUENCES.KNUTH(n);
-            
-            while (gap > 0) {
-                gaps.push(gap);
-                gap = gapSequence === 'SHELL' 
-                    ? Math.floor(gap / 2)
-                    : Math.floor(gap / 3);
-            }
-        }
-        
-        // Perform shell sort with the selected gap sequence
-        for (const gap of gaps) {
-            for (let i = gap; i < n; i++) {
-                const temp = arr[i];
-                let j = i;
-                
-                while (j >= gap && compare(arr[j - gap], temp) > 0) {
-                    arr[j] = arr[j - gap];
-                    j -= gap;
-                }
-                
-                arr[j] = temp;
-            }
-        }
-        
-        return arr;
+    while (current !== null!) {
+      path.unshift(current);
+      current = parent.get(current)!;
     }
     
-    private static defaultCompare<T>(a: T, b: T): number {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    }
+    return path;
+  }
 }
-// Basic usage with numbers
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-console.log('Original:', numbers);
-console.log('Sorted:', shellSort([...numbers]));
 
-// Generic usage with strings
-const strings = ['banana', 'apple', 'cherry', 'date'];
-console.log('Original strings:', strings);
-console.log('Sorted strings:', shellSortGeneric([...strings]));
+// Usage example with custom objects
+interface City {
+  name: string;
+  connections: string[];
+}
 
-// With custom comparison function
-const people = [
-    { name: 'John', age: 30 },
-    { name: 'Jane', age: 25 },
-    { name: 'Bob', age: 35 }
+const cityGraph: City[] = [
+  { name: 'NYC', connections: ['Boston', 'Philly'] },
+  { name: 'Boston', connections: ['NYC', 'Portland'] },
+  { name: 'Philly', connections: ['NYC', 'DC'] },
+  { name: 'DC', connections: ['Philly'] },
+  { name: 'Portland', connections: ['Boston'] }
 ];
 
-const sortedByAge = shellSortGeneric([...people], (a, b) => a.age - b.age);
-console.log('People sorted by age:', sortedByAge);
+const bfs = new BFS<City>(
+  (city) => cityGraph.filter(c => city.connections.includes(c.name)),
+  (a, b) => a.name === b.name
+);
 
-// Using the advanced class
-const advancedNumbers = [64, 34, 25, 12, 22, 11, 90, 5, 77, 88];
+const start = cityGraph[0]; // NYC
+const target = cityGraph.find(c => c.name === 'DC')!;
 
-console.log('Knuth sequence:', ShellSort.sort([...advancedNumbers], undefined, 'KNUTH'));
-console.log('Sedgewick sequence:', ShellSort.sort([...advancedNumbers], undefined, 'SEDGEWICK'));
-
-// Sorting in descending order
-const descending = ShellSort.sort([...advancedNumbers], (a, b) => b - a);
-console.log('Descending order:', descending);
-function analyzePerformance<T>(arr: T[], sortFn: (arr: T[]) => T[]): void {
-    const startTime = performance.now();
-    const sorted = sortFn([...arr]);
-    const endTime = performance.now();
-    
-    console.log(`Array size: ${arr.length}`);
-    console.log(`Time taken: ${(endTime - startTime).toFixed(2)}ms`);
-    console.log('Sorted array (first 10 elements):', sorted.slice(0, 10));
-}
-
-// Performance comparison
-const largeArray = Array.from({ length: 1000 }, () => Math.floor(Math.random() * 1000));
-
-console.log('=== Performance Analysis ===');
-analyzePerformance(largeArray, shellSort);
+const result = bfs.search(start, target);
+console.log(result.path.map(c => c.name)); // ['NYC', 'Philly', 'DC']
