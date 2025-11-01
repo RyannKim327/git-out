@@ -1,213 +1,258 @@
-interface TreeNode<T> {
+class TreeNode<T> {
   value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+  left: TreeNode<T> | null;
+  right: TreeNode<T> | null;
+
+  constructor(value: T) {
+    this.value = value;
+    this.left = null;
+    this.right = null;
+  }
 }
-
 class BinarySearchTree<T> {
-  private root?: TreeNode<T>;
+  private root: TreeNode<T> | null;
 
-  constructor(private compareFn: (a: T, b: T) => number = (a, b) => {
-    if (a > b) return 1;
-    if (a < b) return -1;
-    return 0;
-  }) {}
-
-  // Insert a value into the BST
-  insert(value: T): void {
-    this.root = this.insertNode(this.root, value);
+  constructor() {
+    this.root = null;
   }
 
-  private insertNode(node: TreeNode<T> | undefined, value: T): TreeNode<T> {
-    if (!node) {
-      return { value };
+  // Insert a new value into the BST
+  insert(value: T): void {
+    const newNode = new TreeNode(value);
+    
+    if (!this.root) {
+      this.root = newNode;
+      return;
     }
 
-    const comparison = this.compareFn(value, node.value);
+    let current = this.root;
     
-    if (comparison < 0) {
-      node.left = this.insertNode(node.left, value);
-    } else if (comparison > 0) {
-      node.right = this.insertNode(node.right, value);
+    while (true) {
+      if (value < current.value) {
+        // Go left
+        if (!current.left) {
+          current.left = newNode;
+          return;
+        }
+        current = current.left;
+      } else if (value > current.value) {
+        // Go right
+        if (!current.right) {
+          current.right = newNode;
+          return;
+        }
+        current = current.right;
+      } else {
+        // Value already exists, don't insert duplicates
+        return;
+      }
+    }
+  }
+
+  // Search for a value in the BST
+  search(value: T): boolean {
+    let current = this.root;
+    
+    while (current) {
+      if (value === current.value) {
+        return true;
+      } else if (value < current.value) {
+        current = current.left;
+      } else {
+        current = current.right;
+      }
     }
     
+    return false;
+  }
+
+  // Remove a value from the BST
+  delete(value: T): boolean {
+    this.root = this._deleteRecursive(this.root, value);
+    return true;
+  }
+
+  private _deleteRecursive(
+    node: TreeNode<T> | null, 
+    value: T
+  ): TreeNode<T> | null {
+    if (!node) {
+      return null;
+    }
+
+    if (value < node.value) {
+      node.left = this._deleteRecursive(node.left, value);
+    } else if (value > node.value) {
+      node.right = this._deleteRecursive(node.right, value);
+    } else {
+      // Node to delete found
+
+      // Case 1: Leaf node
+      if (!node.left && !node.right) {
+        return null;
+      }
+
+      // Case 2: Node with one child
+      if (!node.left) {
+        return node.right;
+      }
+      if (!node.right) {
+        return node.left;
+      }
+
+      // Case 3: Node with two children
+      // Find the inorder successor (smallest in right subtree)
+      const successor = this._findMinNode(node.right);
+      node.value = successor!.value;
+      // Delete the successor
+      node.right = this._deleteRecursive(node.right, successor!.value);
+    }
+
     return node;
   }
 
-  // Search for a value
-  search(value: T): boolean {
-    return this.searchNode(this.root, value);
+  private _findMinNode(node: TreeNode<T>): TreeNode<T> | null {
+    while (node.left) {
+      node = node.left;
+    }
+    return node;
   }
 
-  private searchNode(node: TreeNode<T> | undefined, value: T): boolean {
-    if (!node) return false;
-
-    const comparison = this.compareFn(value, node.value);
+  // Get the minimum value in the tree
+  min(): T | null {
+    if (!this.root) return null;
     
-    if (comparison === 0) return true;
-    if (comparison < 0) return this.searchNode(node.left, value);
-    return this.searchNode(node.right, value);
-  }
-
-  // In-order traversal (left, root, right)
-  inOrderTraversal(callback: (value: T) => void): void {
-    this.inOrder(this.root, callback);
-  }
-
-  private inOrder(node: TreeNode<T> | undefined, callback: (value: T) => void): void {
-    if (node) {
-      this.inOrder(node.left, callback);
-      callback(node.value);
-      this.inOrder(node.right, callback);
+    let current = this.root;
+    while (current.left) {
+      current = current.left;
     }
+    return current.value;
   }
 
-  // Pre-order traversal (root, left, right)
-  preOrderTraversal(callback: (value: T) => void): void {
-    this.preOrder(this.root, callback);
-  }
-
-  private preOrder(node: TreeNode<T> | undefined, callback: (value: T) => void): void {
-    if (node) {
-      callback(node.value);
-      this.preOrder(node.left, callback);
-      this.preOrder(node.right, callback);
-    }
-  }
-
-  // Post-order traversal (left, right, root)
-  postOrderTraversal(callback: (value: T) => void): void {
-    this.postOrder(this.root, callback);
-  }
-
-  private postOrder(node: TreeNode<T> | undefined, callback: (value: T) => void): void {
-    if (node) {
-      this.postOrder(node.left, callback);
-      this.postOrder(node.right, callback);
-      callback(node.value);
-    }
-  }
-
-  // Find minimum value
-  findMin(): T | undefined {
-    if (!this.root) return undefined;
-    return this.findMinNode(this.root).value;
-  }
-
-  private findMinNode(node: TreeNode<T>): TreeNode<T> {
-    return node.left ? this.findMinNode(node.left) : node;
-  }
-
-  // Find maximum value
-  findMax(): T | undefined {
-    if (!this.root) return undefined;
-    return this.findMaxNode(this.root).value;
-  }
-
-  private findMaxNode(node: TreeNode<T>): TreeNode<T> {
-    return node.right ? this.findMaxNode(node.right) : node;
-  }
-
-  // Remove a value
-  remove(value: T): void {
-    this.root = this.removeNode(this.root, value);
-  }
-
-  private removeNode(node: TreeNode<T> | undefined, value: T): TreeNode<T> | undefined {
-    if (!node) return undefined;
-
-    const comparison = this.compareFn(value, node.value);
+  // Get the maximum value in the tree
+  max(): T | null {
+    if (!this.root) return null;
     
-    if (comparison < 0) {
-      node.left = this.removeNode(node.left, value);
-      return node;
-    } else if (comparison > 0) {
-      node.right = this.removeNode(node.right, value);
-      return node;
-    } else {
-      // Node to delete found
-      if (!node.left && !node.right) {
-        return undefined; // No children
-      }
-      
-      if (!node.left) {
-        return node.right; // Only right child
-      }
-      
-      if (!node.right) {
-        return node.left; // Only left child
-      }
-      
-      // Node has two children
-      const minRight = this.findMinNode(node.right);
-      node.value = minRight.value;
-      node.right = this.removeNode(node.right, minRight.value);
-      return node;
+    let current = this.root;
+    while (current.right) {
+      current = current.right;
     }
+    return current.value;
   }
 
-  // Get height of the tree
+  // Check if the tree is empty
+  isEmpty(): boolean {
+    return this.root === null;
+  }
+
+  // Get the height of the tree
   height(): number {
-    return this.getHeight(this.root);
+    return this._heightRecursive(this.root);
   }
 
-  private getHeight(node: TreeNode<T> | undefined): number {
+  private _heightRecursive(node: TreeNode<T> | null): number {
     if (!node) return -1;
-    
-    const leftHeight = this.getHeight(node.left);
-    const rightHeight = this.getHeight(node.right);
-    
+    const leftHeight = this._heightRecursive(node.left);
+    const rightHeight = this._heightRecursive(node.right);
     return Math.max(leftHeight, rightHeight) + 1;
   }
 
-  // Check if tree is empty
-  isEmpty(): boolean {
-    return !this.root;
+  // Traverse the tree (Inorder traversal)
+  // Inorder: Left -> Root -> Right (gives sorted order for BST)
+  inorderTraversal(): T[] {
+    const result: T[] = [];
+    this._inorderRecursive(this.root, result);
+    return result;
   }
 
-  // Clear the tree
-  clear(): void {
-    this.root = undefined;
+  private _inorderRecursive(node: TreeNode<T> | null, result: T[]): void {
+    if (!node) return;
+    
+    this._inorderRecursive(node.left, result);
+    result.push(node.value);
+    this._inorderRecursive(node.right, result);
+  }
+
+  // Preorder traversal: Root -> Left -> Right
+  preorderTraversal(): T[] {
+    const result: T[] = [];
+    this._preorderRecursive(this.root, result);
+    return result;
+  }
+
+  private _preorderRecursive(node: TreeNode<T> | null, result: T[]): void {
+    if (!node) return;
+    
+    result.push(node.value);
+    this._preorderRecursive(node.left, result);
+    this._preorderRecursive(node.right, result);
+  }
+
+  // Postorder traversal: Left -> Right -> Root
+  postorderTraversal(): T[] {
+    const result: T[] = [];
+    this._postorderRecursive(this.root, result);
+    return result;
+  }
+
+  private _postorderRecursive(node: TreeNode<T> | null, result: T[]): void {
+    if (!node) return;
+    
+    this._postorderRecursive(node.left, result);
+    this._postorderRecursive(node.right, result);
+    result.push(node.value);
+  }
+
+  // Get the size of the tree (number of nodes)
+  size(): number {
+    return this._sizeRecursive(this.root);
+  }
+
+  private _sizeRecursive(node: TreeNode<T> | null): number {
+    if (!node) return 0;
+    return (
+      this._sizeRecursive(node.left) + 
+      1 + 
+      this._sizeRecursive(node.right)
+    );
   }
 }
-// Example 1: Number BST
-const numberBST = new BinarySearchTree<number>();
-numberBST.insert(10);
-numberBST.insert(5);
-numberBST.insert(15);
-numberBST.insert(3);
-numberBST.insert(7);
+// Create a new BST for numbers
+const bst = new BinarySearchTree<number>();
 
-console.log('In-order traversal:');
-numberBST.inOrderTraversal(value => console.log(value));
-// Output: 3, 5, 7, 10, 15
+// Insert values
+bst.insert(50);
+bst.insert(30);
+bst.insert(70);
+bst.insert(20);
+bst.insert(40);
+bst.insert(60);
+bst.insert(80);
 
-console.log('Search for 7:', numberBST.search(7)); // true
-console.log('Search for 20:', numberBST.search(20)); // false
-console.log('Min value:', numberBST.findMin()); // 3
-console.log('Max value:', numberBST.findMax()); // 15
+// Search for values
+console.log(bst.search(40)); // true
+console.log(bst.search(90)); // false
 
-// Example 2: Custom objects with comparison function
-interface Person {
-  name: string;
-  age: number;
-}
+// Get min and max
+console.log(bst.min()); // 20
+console.log(bst.max()); // 80
 
-const personBST = new BinarySearchTree<Person>((a, b) => a.age - b.age);
-personBST.insert({ name: 'Alice', age: 25 });
-personBST.insert({ name: 'Bob', age: 30 });
-personBST.insert({ name: 'Charlie', age: 20 });
+// Traversals
+console.log("Inorder:", bst.inorderTraversal()); 
+// [20, 30, 40, 50, 60, 70, 80]
 
-console.log('People in age order:');
-personBST.inOrderTraversal(person => console.log(`${person.name}: ${person.age}`));
-// Output: Charlie:20, Alice:25, Bob:30
+console.log("Preorder:", bst.preorderTraversal()); 
+// [50, 30, 20, 40, 70, 60, 80]
 
-// Example 3: String BST with custom comparison
-const stringBST = new BinarySearchTree<string>((a, b) => a.localeCompare(b));
-stringBST.insert('apple');
-stringBST.insert('banana');
-stringBST.insert('cherry');
+console.log("Postorder:", bst.postorderTraversal()); 
+// [20, 40, 30, 60, 80, 70, 50]
 
-console.log('Pre-order traversal:');
-stringBST.preOrderTraversal(value => console.log(value));
-// Output: apple, banana, cherry
+// Tree properties
+console.log("Height:", bst.height()); // 2
+console.log("Size:", bst.size()); // 7
+console.log("Is empty:", bst.isEmpty()); // false
+
+// Delete a node
+bst.delete(30);
+console.log("Inorder after deleting 30:", bst.inorderTraversal()); 
+// [20, 40, 50, 60, 70, 80]
