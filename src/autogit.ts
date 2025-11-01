@@ -1,194 +1,266 @@
-// --- 1. Define Interfaces ---
+class TrieNode {
+  children: Map<string, TrieNode>;
+  isEndOfWord: boolean;
 
-/**
- * Represents a generic node in our graph.
- * T is the type of the actual data/value stored in the node.
- */
-interface GraphNode<T> {
-    id: string; // A unique identifier for the node (e.g., for the visited set)
-    value: T;   // The actual data
-    // In a real graph, you might have an array of neighbor IDs or neighbor objects
-    // For this generic algorithm, we'll pass a `getNeighbors` function.
+  constructor() {
+    this.children = new Map();
+    this.isEndOfWord = false;
+  }
 }
 
-/**
- * An item stored in our BFS queue.
- * It contains the node itself and its depth from the start node.
- */
-interface QueueItem<T> {
-    node: GraphNode<T>;
-    depth: number;
-}
+class Trie {
+  private root: TrieNode;
 
-// --- 2. The Breadth-Limited Search Function ---
+  constructor() {
+    this.root = new TrieNode();
+  }
 
-/**
- * Performs a Breadth-Limited Search on a graph.
- *
- * @param startNode The node to start the search from.
- * @param getNeighbors A function that takes a node and returns an array of its direct neighbors.
- * @param maxDepth The maximum depth to explore from the startNode (inclusive).
- * @param targetPredicate An optional function to check if a node is the target. If found, the search stops early.
- * @returns The target node if found and targetPredicate is provided, otherwise null.
- *          If targetPredicate is not provided, it effectively just explores up to maxDepth.
- */
-function breadthLimitedSearch<T>(
-    startNode: GraphNode<T>,
-    getNeighbors: (node: GraphNode<T>) => GraphNode<T>[],
-    maxDepth: number,
-    targetPredicate?: (node: GraphNode<T>) => boolean
-): GraphNode<T> | null {
-    // Input validation
-    if (maxDepth < 0) {
-        console.warn("maxDepth cannot be negative. Setting to 0.");
-        maxDepth = 0;
+  // Insert a word into the trie
+  insert(word: string): void {
+    let currentNode = this.root;
+    
+    for (const char of word) {
+      if (!currentNode.children.has(char)) {
+        currentNode.children.set(char, new TrieNode());
+      }
+      currentNode = currentNode.children.get(char)!;
     }
+    
+    currentNode.isEndOfWord = true;
+  }
 
-    const queue: QueueItem<T>[] = [];
-    const visited = new Set<string>(); // Stores node IDs to prevent cycles and redundant visits
-
-    // Initialize the queue with the start node at depth 0
-    queue.push({ node: startNode, depth: 0 });
-    visited.add(startNode.id);
-
-    // Check if the start node itself is the target
-    if (targetPredicate && targetPredicate(startNode)) {
-        return startNode;
+  // Search for an exact word
+  search(word: string): boolean {
+    let currentNode = this.root;
+    
+    for (const char of word) {
+      if (!currentNode.children.has(char)) {
+        return false;
+      }
+      currentNode = currentNode.children.get(char)!;
     }
+    
+    return currentNode.isEndOfWord;
+  }
 
-    while (queue.length > 0) {
-        const { node: currentNode, depth: currentDepth } = queue.shift()!; // Dequeue
-
-        // If we've reached the maximum depth, we don't explore its neighbors.
-        // We still process the currentNode itself (e.g., check if it's the target).
-        if (currentDepth >= maxDepth) {
-            continue; // Stop exploring further down this path
-        }
-
-        const neighbors = getNeighbors(currentNode);
-
-        for (const neighbor of neighbors) {
-            if (!visited.has(neighbor.id)) {
-                visited.add(neighbor.id);
-
-                // If this neighbor is the target, return it immediately
-                if (targetPredicate && targetPredicate(neighbor)) {
-                    return neighbor;
-                }
-
-                // Enqueue the neighbor with its new depth
-                queue.push({ node: neighbor, depth: currentDepth + 1 });
-            }
-        }
+  // Check if any word starts with the given prefix
+  startsWith(prefix: string): boolean {
+    let currentNode = this.root;
+    
+    for (const char of prefix) {
+      if (!currentNode.children.has(char)) {
+        return false;
+      }
+      currentNode = currentNode.children.get(char)!;
     }
-
-    // Target not found within the specified depth limit
-    return null;
+    
+    return true;
+  }
+}
+interface TrieNode {
+  children: Map<string, TrieNode>;
+  isEndOfWord: boolean;
+  wordCount: number; // Tracks how many times this word was inserted
 }
 
-// --- 3. Example Usage ---
+class EnhancedTrie {
+  private root: TrieNode;
+  private totalWords: number;
 
-// Let's create a simple graph represented by an array of nodes,
-// where each node explicitly lists its connected neighbor IDs.
+  constructor() {
+    this.root = this.createNode();
+    this.totalWords = 0;
+  }
 
-interface City {
-    id: string;
-    name: string;
-    connections: string[]; // IDs of connected cities
+  private createNode(): TrieNode {
+    return {
+      children: new Map(),
+      isEndOfWord: false,
+      wordCount: 0
+    };
+  }
+
+  insert(word: string): void {
+    let currentNode = this.root;
+    
+    for (const char of word) {
+      if (!currentNode.children.has(char)) {
+        currentNode.children.set(char, this.createNode());
+      }
+      currentNode = currentNode.children.get(char)!;
+    }
+    
+    if (!currentNode.isEndOfWord) {
+      this.totalWords++;
+    }
+    
+    currentNode.isEndOfWord = true;
+    currentNode.wordCount++;
+  }
+
+  search(word: string): boolean {
+    const node = this.traverse(word);
+    return node ? node.isEndOfWord : false;
+  }
+
+  startsWith(prefix: string): boolean {
+    return this.traverse(prefix) !== null;
+  }
+
+  // Get all words with a given prefix
+  getWordsWithPrefix(prefix: string): string[] {
+    const results: string[] = [];
+    const prefixNode = this.traverse(prefix);
+    
+    if (prefixNode) {
+      this.collectWords(prefixNode, prefix, results);
+    }
+    
+    return results;
+  }
+
+  // Delete a word from the trie
+  delete(word: string): boolean {
+    return this.deleteRecursive(this.root, word, 0);
+  }
+
+  // Get total number of unique words
+  getTotalWords(): number {
+    return this.totalWords;
+  }
+
+  // Get word frequency
+  getWordCount(word: string): number {
+    const node = this.traverse(word);
+    return node && node.isEndOfWord ? node.wordCount : 0;
+  }
+
+  private traverse(word: string): TrieNode | null {
+    let currentNode = this.root;
+    
+    for (const char of word) {
+      if (!currentNode.children.has(char)) {
+        return null;
+      }
+      currentNode = currentNode.children.get(char)!;
+    }
+    
+    return currentNode;
+  }
+
+  private collectWords(node: TrieNode, currentWord: string, results: string[]): void {
+    if (node.isEndOfWord) {
+      results.push(currentWord);
+    }
+    
+    for (const [char, childNode] of node.children) {
+      this.collectWords(childNode, currentWord + char, results);
+    }
+  }
+
+  private deleteRecursive(node: TrieNode, word: string, index: number): boolean {
+    if (index === word.length) {
+      if (!node.isEndOfWord) {
+        return false; // Word doesn't exist
+      }
+      
+      node.isEndOfWord = false;
+      node.wordCount = 0;
+      this.totalWords--;
+      return node.children.size === 0; // Return true if node has no children
+    }
+    
+    const char = word[index];
+    const childNode = node.children.get(char);
+    
+    if (!childNode) {
+      return false; // Word doesn't exist
+    }
+    
+    const shouldDeleteChild = this.deleteRecursive(childNode, word, index + 1);
+    
+    if (shouldDeleteChild) {
+      node.children.delete(char);
+      return node.children.size === 0 && !node.isEndOfWord;
+    }
+    
+    return false;
+  }
+}
+// Basic Trie usage
+const basicTrie = new Trie();
+basicTrie.insert("apple");
+basicTrie.insert("app");
+basicTrie.insert("banana");
+
+console.log(basicTrie.search("apple")); // true
+console.log(basicTrie.search("app"));   // true
+console.log(basicTrie.search("ap"));    // false
+console.log(basicTrie.startsWith("ap")); // true
+
+// Enhanced Trie usage
+const enhancedTrie = new EnhancedTrie();
+enhancedTrie.insert("cat");
+enhancedTrie.insert("category");
+enhancedTrie.insert("caterpillar");
+enhancedTrie.insert("cat"); // Insert duplicate
+
+console.log(enhancedTrie.getWordsWithPrefix("cat")); 
+// ["cat", "category", "caterpillar"]
+
+console.log(enhancedTrie.getWordCount("cat")); // 2
+console.log(enhancedTrie.getTotalWords()); // 3 (unique words)
+
+enhancedTrie.delete("category");
+console.log(enhancedTrie.search("category")); // false
+class GenericTrie<T> {
+  private root: TrieNode<T>;
+
+  constructor() {
+    this.root = new TrieNode<T>();
+  }
+
+  insert(key: string, value: T): void {
+    let currentNode = this.root;
+    
+    for (const char of key) {
+      if (!currentNode.children.has(char)) {
+        currentNode.children.set(char, new TrieNode<T>());
+      }
+      currentNode = currentNode.children.get(char)!;
+    }
+    
+    currentNode.isEndOfWord = true;
+    currentNode.values.push(value);
+  }
+
+  search(key: string): T[] {
+    const node = this.traverse(key);
+    return node && node.isEndOfWord ? node.values : [];
+  }
+
+  private traverse(key: string): TrieNode<T> | null {
+    let currentNode = this.root;
+    
+    for (const char of key) {
+      if (!currentNode.children.has(char)) {
+        return null;
+      }
+      currentNode = currentNode.children.get(char)!;
+    }
+    
+    return currentNode;
+  }
 }
 
-const citiesData: City[] = [
-    { id: "A", name: "Aliceville", connections: ["B", "C"] },
-    { id: "B", name: "Bobtown", connections: ["A", "D", "E"] },
-    { id: "C", name: "Charlieburg", connections: ["A", "F"] },
-    { id: "D", name: "Davidville", connections: ["B", "G"] },
-    { id: "E", name: "Emily City", connections: ["B", "H"] },
-    { id: "F", name: "Frankfurt", connections: ["C"] },
-    { id: "G", name: "Graceville", connections: ["D"] },
-    { id: "H", name: "Heidi Hights", connections: ["E", "I"] },
-    { id: "I", name: "Ivyville", connections: ["H", "J"] },
-    { id: "J", name: "Jasper Junction", connections: ["I"] },
-];
+class TrieNode<T> {
+  children: Map<string, TrieNode<T>>;
+  isEndOfWord: boolean;
+  values: T[];
 
-// Map for quick lookup of cities by ID
-const cityMap = new Map<string, City>();
-citiesData.forEach(city => cityMap.set(city.id, city));
-
-// Adapter function to make our City data compatible with GraphNode<T>
-const getCityGraphNode = (city: City): GraphNode<City> => ({
-    id: city.id,
-    value: city,
-});
-
-// The `getNeighbors` function required by `breadthLimitedSearch`
-const getCityNeighbors = (node: GraphNode<City>): GraphNode<City>[] => {
-    const city = node.value; // Get the actual City object from the GraphNode
-    return city.connections
-        .map(connectionId => cityMap.get(connectionId))
-        .filter((c): c is City => c !== undefined) // Filter out undefined connections
-        .map(getCityGraphNode); // Convert City back to GraphNode<City>
-};
-
-// --- Test Cases ---
-
-const startCity = getCityGraphNode(cityMap.get("A")!);
-
-console.log("--- Search for Emily City (E) ---");
-
-// Test 1: maxDepth = 1 (Should not find 'E')
-let targetCityId = "E";
-let foundNode = breadthLimitedSearch(
-    startCity,
-    getCityNeighbors,
-    1, // Max depth 1
-    (node) => node.id === targetCityId
-);
-console.log(`Searching for ${targetCityId} from ${startCity.id} with maxDepth=1:`,
-    foundNode ? foundNode.value.name : "Not Found (too deep)"
-); // Expected: Not Found
-
-// Test 2: maxDepth = 2 (Should find 'E')
-foundNode = breadthLimitedSearch(
-    startCity,
-    getCityNeighbors,
-    2, // Max depth 2
-    (node) => node.id === targetCityId
-);
-console.log(`Searching for ${targetCityId} from ${startCity.id} with maxDepth=2:`,
-    foundNode ? foundNode.value.name : "Not Found"
-); // Expected: Emily City
-
-// Test 3: Search for Jasper Junction (J) with maxDepth = 3 (Should not find 'J')
-targetCityId = "J";
-foundNode = breadthLimitedSearch(
-    startCity,
-    getCityNeighbors,
-    3, // Max depth 3
-    (node) => node.id === targetCityId
-);
-console.log(`Searching for ${targetCityId} from ${startCity.id} with maxDepth=3:`,
-    foundNode ? foundNode.value.name : "Not Found (too deep)"
-); // Expected: Not Found
-
-// Test 4: Search for Jasper Junction (J) with maxDepth = 4 (Should find 'J')
-foundNode = breadthLimitedSearch(
-    startCity,
-    getCityNeighbors,
-    4, // Max depth 4
-    (node) => node.id === targetCityId
-);
-console.log(`Searching for ${targetCityId} from ${startCity.id} with maxDepth=4:`,
-    foundNode ? foundNode.value.name : "Not Found"
-); // Expected: Jasper Junction
-
-// Test 5: What if the start node is the target? (maxDepth doesn't matter much here, but still limited)
-targetCityId = "A";
-foundNode = breadthLimitedSearch(
-    startCity,
-    getCityNeighbors,
-    0, // Max depth 0
-    (node) => node.id === targetCityId
-);
-console.log(`Searching for ${targetCityId} from ${startCity.id} with maxDepth=0:`,
-    foundNode ? foundNode.value.name : "Not Found"
-); // Expected: Aliceville
+  constructor() {
+    this.children = new Map();
+    this.isEndOfWord = false;
+    this.values = [];
+  }
+}
