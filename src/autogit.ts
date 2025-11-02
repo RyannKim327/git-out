@@ -1,109 +1,83 @@
-class TreeNode<T> {
-    value: T;
-    left: TreeNode<T> | null = null;
-    right: TreeNode<T> | null = null;
-
-    constructor(value: T) {
-        this.value = value;
+function stringLength(str: string): number {
+    let count = 0;
+    for (let i = 0; i < str.length; i++) {  // Note: This still uses .length in the loop condition
+        count++;
     }
+    return count;
 }
 
-class BinaryTree<T> {
-    root: TreeNode<T> | null = null;
-
-    // Insert a value (level order insertion)
-    insert(value: T): void {
-        const newNode = new TreeNode(value);
-        
-        if (!this.root) {
-            this.root = newNode;
-            return;
+// But to be truly manual, you'd need to handle it differently:
+function manualStringLength(str: string): number {
+    let count = 0;
+    let index = 0;
+    while (true) {
+        if (str.charAt(index) === '') {  // Empty string indicates end
+            break;
         }
-
-        const queue: TreeNode<T>[] = [this.root];
-        while (queue.length > 0) {
-            const current = queue.shift()!;
-            
-            if (!current.left) {
-                current.left = newNode;
-                return;
-            } else {
-                queue.push(current.left);
-            }
-
-            if (!current.right) {
-                current.right = newNode;
-                return;
-            } else {
-                queue.push(current.right);
-            }
-        }
+        count++;
+        index++;
     }
-
-    // In-order traversal: left -> root -> right
-    inOrderTraversal(node: TreeNode<T> | null = this.root): T[] {
-        if (!node) return [];
-        
-        return [
-            ...this.inOrderTraversal(node.left),
-            node.value,
-            ...this.inOrderTraversal(node.right)
-        ];
-    }
-
-    // Pre-order traversal: root -> left -> right
-    preOrderTraversal(node: TreeNode<T> | null = this.root): T[] {
-        if (!node) return [];
-        
-        return [
-            node.value,
-            ...this.preOrderTraversal(node.left),
-            ...this.preOrderTraversal(node.right)
-        ];
-    }
-
-    // Post-order traversal: left -> right -> root
-    postOrderTraversal(node: TreeNode<T> | null = this.root): T[] {
-        if (!node) return [];
-        
-        return [
-            ...this.postOrderTraversal(node.left),
-            ...this.postOrderTraversal(node.right),
-            node.value
-        ];
-    }
-
-    // Level-order traversal (Breadth-first search)
-    levelOrderTraversal(): T[] {
-        if (!this.root) return [];
-        
-        const result: T[] = [];
-        const queue: TreeNode<T>[] = [this.root];
-        
-        while (queue.length > 0) {
-            const current = queue.shift()!;
-            result.push(current.value);
-            
-            if (current.left) queue.push(current.left);
-            if (current.right) queue.push(current.right);
-        }
-        
-        return result;
-    }
+    return count;
 }
-// Create a binary tree of numbers
-const tree = new BinaryTree<number>();
 
-// Insert values
-[1, 2, 3, 4, 5, 6].forEach(n => tree.insert(n));
+const text = "Hello World";
+console.log(manualStringLength(text)); // Output: 11
+function getStringLength(str: string): number {
+    let length = 0;
+    let i = 0;
+    
+    // Continue until we reach the end of the string
+    while (str.charAt(i) !== '') {
+        length++;
+        i++;
+    }
+    
+    return length;
+}
 
-// Traversal examples
-console.log("In-order:", tree.inOrderTraversal());      // [4, 2, 5, 1, 6, 3]
-console.log("Pre-order:", tree.preOrderTraversal());    // [1, 2, 4, 5, 3, 6]
-console.log("Post-order:", tree.postOrderTraversal());  // [4, 5, 2, 6, 3, 1]
-console.log("Level-order:", tree.levelOrderTraversal()); // [1, 2, 3, 4, 5, 6]
-      1
-     / \
-    2   3
-   / \ /
-  4 5 6
+// Or using bracket notation
+function getStringLengthWithIndex(str: string): number {
+    let length = 0;
+    let i = 0;
+    
+    try {
+        while (true) {
+            // This will throw when accessing beyond the string length
+            const char = str[i];
+            if (char === undefined) break;
+            length++;
+            i++;
+        }
+    } catch (e) {
+        // Handle the out-of-bounds access
+    }
+    
+    return length;
+}
+
+const message = "TypeScript";
+console.log(getStringLength(message)); // Output: 10
+function regexStringLength(str: string): number {
+    // Match all characters and get the count
+    const matches = str.match(/.*/g);
+    return matches ? matches[0].length : 0;
+}
+
+// Or more directly:
+function regexLength(str: string): number {
+    return (str.match(/./g) || []).length;
+}
+
+console.log(regexLength("Hello")); // Output: 5
+function recursiveStringLength(str: string): number {
+    if (str === '') {
+        return 0;
+    }
+    return 1 + recursiveStringLength(str.substring(1));
+}
+
+console.log(recursiveStringLength("ABC")); // Output: 3
+function unicodeStringLength(str: string): number {
+    return [...str].length; // Spread operator handles Unicode properly
+    // But this still technically uses iteration under the hood
+}
