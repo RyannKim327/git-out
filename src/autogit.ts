@@ -1,163 +1,103 @@
-function kthSmallestSort(arr: number[], k: number): number {
-    if (k < 1 || k > arr.length) {
-        throw new Error('k is out of bounds');
-    }
-    
-    const sorted = [...arr].sort((a, b) => a - b);
-    return sorted[k - 1];
+function triangleAreaBaseHeight(base: number, height: number): number {
+    return 0.5 * base * height;
 }
 
-// Usage
-const numbers = [3, 2, 1, 5, 6, 4];
-console.log(kthSmallestSort(numbers, 2)); // Output: 2
-function kthSmallestQuickSelect(arr: number[], k: number): number {
-    if (k < 1 || k > arr.length) {
-        throw new Error('k is out of bounds');
-    }
-    
-    return quickSelect([...arr], 0, arr.length - 1, k - 1);
+// Example usage
+const area1 = triangleAreaBaseHeight(10, 5); // 25
+function triangleAreaHeron(a: number, b: number, c: number): number {
+    const s = (a + b + c) / 2; // semi-perimeter
+    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
 }
 
-function quickSelect(
-    arr: number[], 
-    left: number, 
-    right: number, 
-    k: number
+// Example usage
+const area2 = triangleAreaHeron(3, 4, 5); // 6
+function triangleAreaCoordinates(
+    x1: number, y1: number,
+    x2: number, y2: number,
+    x3: number, y3: number
 ): number {
-    if (left === right) {
-        return arr[left];
+    return Math.abs((x1*(y2 - y3) + x2*(y3 - y1) + x3*(y1 - y2)) / 2);
+}
+
+// Example usage
+const area3 = triangleAreaCoordinates(0, 0, 4, 0, 0, 3); // 6
+function triangleAreaSidesAngle(a: number, b: number, angle: number): number {
+    // Angle should be in radians
+    return 0.5 * a * b * Math.sin(angle);
+}
+
+// Example usage
+const area4 = triangleAreaSidesAngle(5, 6, Math.PI / 2); // 15
+class TriangleCalculator {
+    // Base and height
+    static areaBaseHeight(base: number, height: number): number {
+        return 0.5 * base * height;
     }
     
-    const pivotIndex = partition(arr, left, right);
+    // Heron's formula
+    static areaHeron(a: number, b: number, c: number): number {
+        if (a + b <= c || a + c <= b || b + c <= a) {
+            throw new Error("Invalid triangle sides: sum of any two sides must be greater than the third");
+        }
+        
+        const s = (a + b + c) / 2;
+        return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+    }
     
-    if (k === pivotIndex) {
-        return arr[k];
-    } else if (k < pivotIndex) {
-        return quickSelect(arr, left, pivotIndex - 1, k);
-    } else {
-        return quickSelect(arr, pivotIndex + 1, right, k);
+    // Coordinates
+    static areaCoordinates(
+        x1: number, y1: number,
+        x2: number, y2: number,
+        x3: number, y3: number
+    ): number {
+        return Math.abs((x1*(y2 - y3) + x2*(y3 - y1) + x3*(y1 - y2)) / 2);
+    }
+    
+    // Two sides and included angle
+    static areaSidesAngle(a: number, b: number, angleRadians: number): number {
+        return 0.5 * a * b * Math.sin(angleRadians);
     }
 }
 
-function partition(arr: number[], left: number, right: number): number {
-    const pivot = arr[right];
-    let i = left;
-    
-    for (let j = left; j < right; j++) {
-        if (arr[j] <= pivot) {
-            [arr[i], arr[j]] = [arr[j], arr[i]];
-            i++;
-        }
-    }
-    
-    [arr[i], arr[right]] = [arr[right], arr[i]];
-    return i;
-}
+// Example usage
+console.log(TriangleCalculator.areaBaseHeight(10, 5)); // 25
+console.log(TriangleCalculator.areaHeron(3, 4, 5)); // 6
+console.log(TriangleCalculator.areaCoordinates(0, 0, 4, 0, 0, 3)); // 6
+console.log(TriangleCalculator.areaSidesAngle(5, 6, Math.PI / 2)); // 15
+type TriangleMethod = 'baseHeight' | 'heron' | 'coordinates' | 'sidesAngle';
 
-// Usage
-const numbers = [3, 2, 1, 5, 6, 4];
-console.log(kthSmallestQuickSelect(numbers, 2)); // Output: 2
-class MinHeap {
-    private heap: number[];
-    
-    constructor() {
-        this.heap = [];
-    }
-    
-    push(val: number): void {
-        this.heap.push(val);
-        this.bubbleUp(this.heap.length - 1);
-    }
-    
-    pop(): number | undefined {
-        if (this.heap.length === 0) return undefined;
-        
-        const min = this.heap[0];
-        const end = this.heap.pop()!;
-        
-        if (this.heap.length > 0) {
-            this.heap[0] = end;
-            this.sinkDown(0);
-        }
-        
-        return min;
-    }
-    
-    private bubbleUp(index: number): void {
-        const element = this.heap[index];
-        
-        while (index > 0) {
-            const parentIndex = Math.floor((index - 1) / 2);
-            const parent = this.heap[parentIndex];
+function calculateTriangleArea(
+    method: TriangleMethod,
+    ...args: number[]
+): number {
+    switch (method) {
+        case 'baseHeight':
+            if (args.length !== 2) throw new Error("Base and height method requires 2 arguments");
+            return 0.5 * args[0] * args[1];
             
-            if (element >= parent) break;
-            
-            this.heap[parentIndex] = element;
-            this.heap[index] = parent;
-            index = parentIndex;
-        }
-    }
-    
-    private sinkDown(index: number): void {
-        const length = this.heap.length;
-        const element = this.heap[index];
-        
-        while (true) {
-            let leftChildIndex = 2 * index + 1;
-            let rightChildIndex = 2 * index + 2;
-            let swap: number | null = null;
-            let leftChild: number, rightChild: number;
-            
-            if (leftChildIndex < length) {
-                leftChild = this.heap[leftChildIndex];
-                if (leftChild < element) {
-                    swap = leftChildIndex;
-                }
+        case 'heron':
+            if (args.length !== 3) throw new Error("Heron's formula requires 3 arguments");
+            const [a, b, c] = args;
+            if (a + b <= c || a + c <= b || b + c <= a) {
+                throw new Error("Invalid triangle sides");
             }
+            const s = (a + b + c) / 2;
+            return Math.sqrt(s * (s - a) * (s - b) * (s - c));
             
-            if (rightChildIndex < length) {
-                rightChild = this.heap[rightChildIndex];
-                if (
-                    (swap === null && rightChild < element) ||
-                    (swap !== null && rightChild < leftChild!)
-                ) {
-                    swap = rightChildIndex;
-                }
-            }
+        case 'coordinates':
+            if (args.length !== 6) throw new Error("Coordinates method requires 6 arguments");
+            const [x1, y1, x2, y2, x3, y3] = args;
+            return Math.abs((x1*(y2 - y3) + x2*(y3 - y1) + x3*(y1 - y2)) / 2);
             
-            if (swap === null) break;
+        case 'sidesAngle':
+            if (args.length !== 3) throw new Error("Sides and angle method requires 3 arguments");
+            return 0.5 * args[0] * args[1] * Math.sin(args[2]);
             
-            this.heap[index] = this.heap[swap];
-            this.heap[swap] = element;
-            index = swap;
-        }
+        default:
+            throw new Error("Invalid method");
     }
 }
 
-function kthSmallestHeap(arr: number[], k: number): number {
-    if (k < 1 || k > arr.length) {
-        throw new Error('k is out of bounds');
-    }
-    
-    const heap = new MinHeap();
-    for (const num of arr) {
-        heap.push(num);
-    }
-    
-    let result = 0;
-    for (let i = 0; i < k; i++) {
-        result = heap.pop()!;
-    }
-    
-    return result;
-}
-
-// Usage
-const numbers = [3, 2, 1, 5, 6, 4];
-console.log(kthSmallestHeap(numbers, 2)); // Output: 2
-const kthSmallest = (arr: number[], k: number): number => 
-    [...arr].sort((a, b) => a - b)[k - 1];
-
-// Usage
-const numbers = [3, 2, 1, 5, 6, 4];
-console.log(kthSmallest(numbers, 2)); // Output: 2
+// Example usage
+const area1 = calculateTriangleArea('baseHeight', 10, 5); // 25
+const area2 = calculateTriangleArea('heron', 3, 4, 5); // 6
