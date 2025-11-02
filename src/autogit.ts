@@ -1,59 +1,55 @@
-/**
- * Breadth-Limited Search
- * ----------------------
- * @param start        Starting node
- * @param expand       Function that returns the children of a node
- * @param isGoal       Predicate that returns true when a node is a goal
- * @param maxDepth     Non-negative depth limit (0 = only test start node)
- * @returns The first goal node found within the depth limit, or undefined
- */
-export function breadthLimitedSearch<T>(
-  start: T,
-  expand: (node: T) => Iterable<T>,
-  isGoal: (node: T) => boolean,
-  maxDepth: number
-): T | undefined {
-  if (maxDepth < 0) return undefined;
+import axios, { AxiosResponse } from 'axios';
 
-  // Queue entries carry the node and its depth
-  interface Entry { node: T; depth: number }
-  const queue: Entry[] = [{ node: start, depth: 0 }];
+// Define interface for the expected response data
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+}
 
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;
+async function fetchTodo(): Promise<void> {
+  try {
+    // Make GET request to JSONPlaceholder API
+    const response: AxiosResponse<Todo> = await axios.get<Todo>(
+      'https://jsonplaceholder.typicode.com/todos/1'
+    );
 
-    if (isGoal(node)) return node;
-
-    // Do not expand nodes that have already reached the limit
-    if (depth < maxDepth) {
-      for (const child of expand(node)) {
-        queue.push({ node: child, depth: depth + 1 });
-      }
+    // Access response data (automatically typed as Todo)
+    const todo: Todo = response.data;
+    
+    console.log('Fetched Todo:');
+    console.log(`Title: ${todo.title}`);
+    console.log(`Completed: ${todo.completed ? 'Yes' : 'No'}`);
+    console.log(`User ID: ${todo.userId}`);
+  } catch (error) {
+    console.error('Error fetching todo:');
+    if (axios.isAxiosError(error)) {
+      // Axios-specific error
+      console.error(`Status: ${error.response?.status}`);
+      console.error(`Message: ${error.message}`);
+    } else {
+      // Generic error
+      console.error(error);
     }
   }
-  return undefined; // No goal found within the limit
 }
-// A simple graph: 0 → 1 → 2 → 3 → 4
-const adj = new Map<number, number[]>([
-  [0, [1]],
-  [1, [2]],
-  [2, [3]],
-  [3, [4]],
-]);
 
-const start = 0;
-const goal  = 4;
-
-console.log(breadthLimitedSearch(
-  start,
-  n => adj.get(n) ?? [],
-  n => n === goal,
-  2 // depth limit
-)); // → undefined (goal 4 is at depth 4 > 2)
-
-console.log(breadthLimitedSearch(
-  start,
-  n => adj.get(n) ?? [],
-  n => n === goal,
-  4 // depth limit
-)); // → 4
+// Execute the function
+fetchTodo();
+npm install axios
+npm install --save-dev typescript @types/node @types/axios
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "CommonJS",
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true
+  }
+}
+tsc && node dist/your-file-name.js
+Fetched Todo:
+Title: delectus aut autem
+Completed: No
+User ID: 1
