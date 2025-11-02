@@ -1,69 +1,129 @@
-function decimalToBinaryBuiltIn(decimal: number): string {
-    if (decimal === 0) {
-        return "0";
+function fibonacciSearch(arr: number[], target: number): number {
+    const n = arr.length;
+    
+    // Initialize Fibonacci numbers
+    let fibM2 = 0; // (m-2)'th Fibonacci number
+    let fibM1 = 1; // (m-1)'th Fibonacci number
+    let fibM = fibM2 + fibM1; // m'th Fibonacci number
+
+    // Find the smallest Fibonacci number >= n
+    while (fibM < n) {
+        fibM2 = fibM1;
+        fibM1 = fibM;
+        fibM = fibM2 + fibM1;
     }
-    // Handles positive and negative integers.
-    // For negative numbers, it will prepend a '-' and then convert the absolute value.
-    // E.g., (-5).toString(2) will be "-101", not two's complement.
-    return decimal.toString(2);
+
+    // Marks the eliminated range from front
+    let offset = -1;
+
+    while (fibM > 1) {
+        // Check if fibM2 is valid location
+        const i = Math.min(offset + fibM2, n - 1);
+
+        // If target is greater than value at index fibM2
+        // cut the subarray array from offset to i
+        if (arr[i] < target) {
+            fibM = fibM1;
+            fibM1 = fibM2;
+            fibM2 = fibM - fibM1;
+            offset = i;
+        }
+        // If target is less than value at index fibM2
+        // cut the subarray after i+1
+        else if (arr[i] > target) {
+            fibM = fibM2;
+            fibM1 = fibM1 - fibM2;
+            fibM2 = fibM - fibM1;
+        }
+        // Element found
+        else {
+            return i;
+        }
+    }
+
+    // Compare the last element with target
+    if (fibM1 === 1 && arr[offset + 1] === target) {
+        return offset + 1;
+    }
+
+    // Element not found
+    return -1;
 }
 
-// --- Examples ---
-console.log("Built-in Method:");
-console.log(`13  -> ${decimalToBinaryBuiltIn(13)}`);    // Output: 1101
-console.log(`0   -> ${decimalToBinaryBuiltIn(0)}`);     // Output: 0
-console.log(`-5  -> ${decimalToBinaryBuiltIn(-5)}`);    // Output: -101
-console.log(`255 -> ${decimalToBinaryBuiltIn(255)}`);   // Output: 11111111
-console.log(`1   -> ${decimalToBinaryBuiltIn(1)}`);     // Output: 1
-function decimalToBinaryManual(decimal: number): string {
-    if (decimal === 0) {
-        return "0";
-    }
+// Example usage
+const sortedArray = [10, 22, 35, 40, 45, 50, 80, 82, 85, 90, 100];
+const target = 85;
 
-    let isNegative = decimal < 0;
-    let absDecimal = Math.abs(decimal);
-    let binary = "";
+const result = fibonacciSearch(sortedArray, target);
 
-    while (absDecimal > 0) {
-        const remainder = absDecimal % 2; // Get the remainder (0 or 1)
-        binary = remainder + binary;       // Prepend the remainder to the binary string
-        absDecimal = Math.floor(absDecimal / 2); // Integer division
-    }
-
-    return isNegative ? "-" + binary : binary;
+if (result !== -1) {
+    console.log(`Element found at index ${result}`);
+} else {
+    console.log("Element not found in the array");
 }
 
-// --- Examples ---
-console.log("\nManual Division Method:");
-console.log(`13  -> ${decimalToBinaryManual(13)}`);    // Output: 1101
-console.log(`0   -> ${decimalToBinaryManual(0)}`);     // Output: 0
-console.log(`-5  -> ${decimalToBinaryManual(-5)}`);    // Output: -101
-console.log(`255 -> ${decimalToBinaryManual(255)}`);   // Output: 11111111
-function decimalToBinaryBitwise(decimal: number): string {
-    if (decimal === 0) {
-        return "0";
-    }
-    if (decimal < 0) {
-        // Bitwise operations on negative numbers behave according to two's complement.
-        // If you just want the absolute value's binary with a minus sign,
-        // you'd call this function recursively with Math.abs(decimal).
-        // For actual two's complement, it's more involved and depends on the desired bit width.
-        return "-" + decimalToBinaryBitwise(Math.abs(decimal));
+// Output: Element found at index 8
+function fibonacciSearchGeneric<T>(
+    arr: T[], 
+    target: T, 
+    compareFn: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): number {
+    const n = arr.length;
+    
+    let fibM2 = 0;
+    let fibM1 = 1;
+    let fibM = fibM2 + fibM1;
+
+    while (fibM < n) {
+        fibM2 = fibM1;
+        fibM1 = fibM;
+        fibM = fibM2 + fibM1;
     }
 
-    let binary = "";
-    let tempDecimal = decimal;
+    let offset = -1;
 
-    while (tempDecimal > 0) {
-        binary = (tempDecimal & 1) + binary; // Get the LSB (least significant bit)
-        tempDecimal >>>= 1;                  // Unsigned right shift by 1 (removes LSB)
+    while (fibM > 1) {
+        const i = Math.min(offset + fibM2, n - 1);
+        const comparison = compareFn(arr[i], target);
+
+        if (comparison < 0) {
+            fibM = fibM1;
+            fibM1 = fibM2;
+            fibM2 = fibM - fibM1;
+            offset = i;
+        } else if (comparison > 0) {
+            fibM = fibM2;
+            fibM1 = fibM1 - fibM2;
+            fibM2 = fibM - fibM1;
+        } else {
+            return i;
+        }
     }
-    return binary;
+
+    if (fibM1 === 1 && offset + 1 < n && compareFn(arr[offset + 1], target) === 0) {
+        return offset + 1;
+    }
+
+    return -1;
 }
 
-// --- Examples ---
-console.log("\nBitwise Operator Method (for positive integers / absolute value):");
-console.log(`13  -> ${decimalToBinaryBitwise(13)}`);    // Output: 1101
-console.log(`0   -> ${decimalToBinaryBitwise(0)}`);     // Output: 0
-console.log(`-5  -> ${decimalToBinaryBitwise(-5)}`);    // Output: -101 (recursive call converts abs value)
-console.log(`255 -> ${decimalToBinaryBitwise(255)}`);   // Output: 11111111
+// Example with custom objects
+interface Person {
+    id: number;
+    name: string;
+}
+
+const people: Person[] = [
+    { id: 1, name: "Alice" },
+    { id: 2, name: "Bob" },
+    { id: 3, name: "Charlie" },
+    { id: 4, name: "Diana" }
+];
+
+const result2 = fibonacciSearchGeneric(
+    people, 
+    { id: 3, name: "Charlie" },
+    (a, b) => a.id - b.id
+);
+
+console.log(`Found at index ${result2}`); // Output: Found at index 2
