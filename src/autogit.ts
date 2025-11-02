@@ -1,261 +1,169 @@
-interface SkipListNode<T> {
-  value: T;
-  next: (SkipListNode<T> | null)[];
-  prev: (SkipListNode<T> | null)[];
+/**
+ * Generates a random integer between min (inclusive) and max (inclusive).
+ * The value is no lower than `min` and no greater than `max`.
+ * @param min The lower bound (inclusive).
+ * @param max The upper bound (inclusive).
+ * @returns A random integer within the specified range.
+ */
+function getRandomIntInclusive(min: number, max: number): number {
+    min = Math.ceil(min);   // Ensure min is treated as an integer boundary
+    max = Math.floor(max);  // Ensure max is treated as an integer boundary
+    
+    // The maximum is inclusive and the minimum is inclusive
+    // Math.random() * (max - min + 1) generates a number from [0, max - min + 1)
+    // Math.floor() truncates it to an integer from [0, max - min]
+    // Adding min shifts the range to [min, max]
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-interface SkipListOptions {
-  maxLevel?: number;
-  probability?: number;
-}
-class SkipList<T> {
-  private head: SkipListNode<T>;
-  private tail: SkipListNode<T>;
-  private level: number;
-  private maxLevel: number;
-  private probability: number;
-  private size: number;
+// --- Example Usage ---
+console.log("Random integer between 1 and 10 (inclusive):");
+console.log(getRandomIntInclusive(1, 10)); // e.g., 3, 7, 10, 1, 5
 
-  constructor(options: SkipListOptions = {}) {
-    this.maxLevel = options.maxLevel || 16;
-    this.probability = options.probability || 0.5;
-    this.level = 0;
-    this.size = 0;
+// If you pass floats, they will be floored/ceiled for integer boundaries:
+console.log(getRandomIntInclusive(1.2, 9.8)); // Effectively between 2 and 9 inclusive
 
-    // Create head and tail nodes
-    this.head = this.createNode(undefined as T, this.maxLevel);
-    this.tail = this.createNode(undefined as T, this.maxLevel);
-
-    // Initialize head's next pointers to tail
-    for (let i = 0; i < this.maxLevel; i++) {
-      this.head.next[i] = this.tail;
-      this.tail.prev[i] = this.head;
-    }
-  }
-
-  private createNode(value: T, level: number): SkipListNode<T> {
-    return {
-      value,
-      next: new Array(level).fill(null),
-      prev: new Array(level).fill(null),
-    };
-  }
-
-  private randomLevel(): number {
-    let level = 1;
-    while (Math.random() < this.probability && level < this.maxLevel) {
-      level++;
-    }
-    return level;
-  }
-
-  insert(value: T): void {
-    const update: SkipListNode<T>[] = new Array(this.maxLevel).fill(this.head);
-    const currentNode = this.head;
-
-    // Track the path for updating pointers
-    for (let i = this.level - 1; i >= 0; i--) {
-      while (
-        currentNode.next[i] !== this.tail &&
-        currentNode.next[i].value < value
-      ) {
-        currentNode = currentNode.next[i];
-      }
-      update[i] = currentNode;
-    }
-
-    currentNode = currentNode.next[0];
-
-    // If value already exists, update it or handle as needed
-    if (currentNode !== this.tail && currentNode.value === value) {
-      // For simplicity, we'll just update the value
-      currentNode.value = value;
-      return;
-    }
-
-    // Create new node with random level
-    const newNodeLevel = this.randomLevel();
-    const newNode = this.createNode(value, newNodeLevel);
-
-    // Update the maximum level if needed
-    if (newNodeLevel > this.level) {
-      for (let i = this.level; i < newNodeLevel; i++) {
-        update[i] = this.head;
-      }
-      this.level = newNodeLevel;
-    }
-
-    // Update next and previous pointers
-    for (let i = 0; i < newNodeLevel; i++) {
-      newNode.next[i] = update[i].next[i];
-      newNode.prev[i] = update[i];
-      update[i].next[i].prev[i] = newNode;
-      update[i].next[i] = newNode;
-    }
-
-    this.size++;
-  }
-
-  search(value: T): boolean {
-    let currentNode = this.head;
-
-    for (let i = this.level - 1; i >= 0; i--) {
-      while (
-        currentNode.next[i] !== this.tail &&
-        currentNode.next[i].value < value
-      ) {
-        currentNode = currentNode.next[i];
-      }
-    }
-
-    currentNode = currentNode.next[0];
-    return currentNode !== this.tail && currentNode.value === value;
-  }
-
-  delete(value: T): boolean {
-    const update: SkipListNode<T>[] = new Array(this.maxLevel).fill(null);
-    let currentNode = this.head;
-
-    // Find the node and track the update path
-    let found = false;
-    for (let i = this.level - 1; i >= 0; i--) {
-      while (
-        currentNode.next[i] !== this.tail &&
-        currentNode.next[i].value < value
-      ) {
-        currentNode = currentNode.next[i];
-      }
-      update[i] = currentNode;
-    }
-
-    currentNode = currentNode.next[0];
-
-    // Verify we found the exact node
-    if (currentNode !== this.tail && currentNode.value === value) {
-      // Update next pointers
-      for (let i = 0; i < this.level; i++) {
-        if (update[i].next[i] !== currentNode) {
-          break;
-        }
-        update[i].next[i] = currentNode.next[i];
-      }
-
-      // Update previous pointers
-      for (let i = 0; i < currentNode.next.length; i++) {
-        if (currentNode.next[i].prev[i] === currentNode) {
-          currentNode.next[i].prev[i] = currentNode.prev[i];
-        }
-      }
-
-      // Update level if necessary
-      while (this.level > 0 && this.head.next[this.level - 1] === this.tail) {
-        this.level--;
-      }
-
-      this.size--;
-      return true;
-    }
-
-    return false;
-  }
-
-  getMin(): T | null {
-    const firstNode = this.head.next[0];
-    return firstNode !== this.tail ? firstNode.value : null;
-  }
-
-  getMax(): T | null {
-    const lastNode = this.tail.prev[0];
-    return lastNode !== this.head ? lastNode.value : null;
-  }
-
-  isEmpty(): boolean {
-    return this.size === 0;
-  }
-
-  getSize(): number {
-    return this.size;
-  }
-
-  // Generator method for iteration
-  *[Symbol.iterator](): Generator<T> {
-    let currentNode = this.head.next[0];
-    while (currentNode !== this.tail) {
-      yield currentNode.value;
-      currentNode = currentNode.next[0];
-    }
-  }
-
-  // Utility method to visualize the skip list (for debugging)
-  toArray(): T[] {
-    return Array.from(this);
-  }
-
-  // Print method for debugging
-  print(): void {
-    for (let i = this.level - 1; i >= 0; i--) {
-      let output = `Level ${i}: HEAD -> `;
-      let currentNode = this.head.next[i];
-      
-      while (currentNode !== this.tail) {
-        output += `${currentNode.value} -> `;
-        currentNode = currentNode.next[i];
-      }
-      
-      output += "TAIL";
-      console.log(output);
-    }
-  }
-}
-// Create a skip list with default options
-const skipList = new SkipList<number>();
-
-// Insert values
-skipList.insert(3);
-skipList.insert(6);
-skipList.insert(7);
-skipList.insert(9);
-skipList.insert(12);
-skipList.insert(19);
-skipList.insert(17);
-
-// Search for values
-console.log(skipList.search(6)); // true
-console.log(skipList.search(15)); // false
-
-// Delete values
-console.log(skipList.delete(7)); // true
-console.log(skipList.delete(20)); // false
-
-// Get min and max
-console.log(skipList.getMin()); // 3
-console.log(skipList.getMax()); // 19
-
-// Iterate through values
-for (const value of skipList) {
-  console.log(value);
+// To get 0 or 1 (e.g., for a boolean random choice):
+console.log(getRandomIntInclusive(0, 1)); // 0 or 1
+/**
+ * Generates a random floating-point number between min (inclusive) and max (exclusive).
+ * The value is no lower than `min` and less than `max`.
+ * @param min The lower bound (inclusive).
+ * @param max The upper bound (exclusive).
+ * @returns A random float within the specified range.
+ */
+function getRandomFloat(min: number, max: number): number {
+    // The maximum is exclusive and the minimum is inclusive
+    // Math.random() * (max - min) generates a number from [0, max - min)
+    // Adding min shifts the range to [min, max)
+    return Math.random() * (max - min) + min;
 }
 
-// Convert to array
-console.log(skipList.toArray()); // [3, 6, 9, 12, 17, 19]
+// --- Example Usage ---
+console.log("Random float between 0 and 1 (exclusive of 1):");
+console.log(getRandomFloat(0, 1)); // This is essentially Math.random() itself
 
-// Print structure (for debugging)
-skipList.print();
-class ComparableSkipList<T> extends SkipList<T> {
-  private compare: (a: T, b: T) => number;
-
-  constructor(
-    compareFn: (a: T, b: T) => number,
-    options: SkipListOptions = {}
-  ) {
-    super(options);
-    this.compare = compareFn;
-  }
-
-  protected compareValues(a: T, b: T): number {
-    return this.compare(a, b);
-  }
-
-  // You would need to override insert, search, and delete methods
-  // to use the custom comparison instead of the default < operator
+console.log("Random float between 1.5 and 10.5 (exclusive of 10.5):");
+console.log(getRandomFloat(1.5, 10.5)); // e.g., 6.78, 1.5001, 10.499
+/**
+ * Generates a random floating-point number between min (inclusive) and max (inclusive).
+ * Note: Achieving true inclusivity of 'max' with standard Math.random() is numerically tricky
+ * due to floating point precision and Math.random()'s [0, 1) range.
+ * This function provides a practical approximation where the chance of hitting 'max' is very small
+ * but technically possible by extending the range slightly.
+ * @param min The lower bound (inclusive).
+ * @param max The upper bound (inclusive).
+ * @returns A random float within the specified range, attempting to include max.
+ */
+function getRandomFloatInclusive(min: number, max: number): number {
+    // To make max inclusive, we can slightly extend the upper bound.
+    // A common, albeit imperfect, way is to add Number.EPSILON or a tiny amount.
+    // This makes the range effectively [min, max + epsilon).
+    // The chance of hitting max exactly is still very low but not strictly zero.
+    return Math.random() * (max - min + Number.EPSILON) + min; 
 }
+
+// --- Example Usage ---
+console.log("Random float between 1.0 and 5.0 (attempting inclusive of 5.0):");
+console.log(getRandomFloatInclusive(1.0, 5.0)); // e.g., 3.45, 1.0001, potentially 5.0 (extremely rare)
+/**
+ * Generates a cryptographically secure random integer between min (inclusive) and max (inclusive).
+ * @param min The lower bound (inclusive).
+ * @param max The upper bound (inclusive).
+ * @returns A cryptographically secure random integer within the specified range.
+ * @throws {Error} If `window.crypto` is not available.
+ */
+function getSecureRandomIntInclusive(min: number, max: number): number {
+    if (typeof window === 'undefined' || !window.crypto || !window.crypto.getRandomValues) {
+        throw new Error("window.crypto.getRandomValues is not available. This function requires a secure context.");
+    }
+
+    min = Math.ceil(min);
+    max = Math.floor(max);
+
+    // Calculate the range size + 1 for inclusive max
+    const range = max - min + 1;
+
+    // To avoid modulo bias, we find the largest multiple of 'range' that fits into the maximum
+    // value of a 32-bit unsigned integer (2^32 - 1).
+    // This ensures all numbers within the range have an equal probability.
+    const maxUint32 = 0xFFFFFFFF; // 2^32 - 1
+    const numBytes = 4; // Use 4 bytes for a Uint32Array
+
+    // Find the largest number that is a multiple of 'range' and fits into maxUint32
+    // If range is large, max may be less than what can be stored in 32 bits,
+    // so it makes sense to work with the `range` itself.
+    // This is often simplified for small ranges:
+    let randomNumber: number;
+    let byteArray = new Uint32Array(1);
+
+    do {
+        window.crypto.getRandomValues(byteArray);
+        randomNumber = byteArray[0];
+        // Keep generating until we get a number within the "unbiased" range
+        // This avoids modulo bias if (maxUint32 + 1) % range != 0
+    } while (randomNumber >= Math.floor(maxUint32 / range) * range);
+
+    return (randomNumber % range) + min;
+}
+
+// --- Example Usage ---
+try {
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+        console.log("\nCryptographically secure random integer between 1 and 100:");
+        console.log(getSecureRandomIntInclusive(1, 100));
+    } else {
+        console.warn("\nCryptographically secure random numbers not available in this environment.");
+    }
+} catch (error) {
+    console.error(error.message);
+}
+function getRandomIntInclusiveSafe(min: number, max: number): number {
+    if (min > max) {
+        // Option 1: Throw an error
+        // throw new Error("min cannot be greater than max.");
+
+        // Option 2: Swap min and max
+        [min, max] = [max, min]; 
+    }
+
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Example:
+console.log("\nUsing safe function:");
+console.log(getRandomIntInclusiveSafe(10, 1)); // Will swap and return between 1 and 10
+// console.log(getRandomIntInclusiveSafe(10, 1)); // If throwing error, this line would crash
+/**
+ * Generates a random integer between min (inclusive) and max (inclusive).
+ * @param min The lower bound (inclusive).
+ * @param max The upper bound (inclusive).
+ * @returns A random integer within the specified range.
+ */
+function getRandomIntInclusive(min: number, max: number): number {
+    // Ensure min <= max. If not, swap them.
+    if (min > max) [min, max] = [max, min]; 
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/**
+ * Generates a random floating-point number between min (inclusive) and max (exclusive).
+ * @param min The lower bound (inclusive).
+ * @param max The upper bound (exclusive).
+ * @returns A random float within the specified range.
+ */
+function getRandomFloat(min: number, max: number): number {
+    // Ensure min <= max. If not, swap them.
+    if (min > max) [min, max] = [max, min];
+    return Math.random() * (max - min) + min;
+}
+
+// --- Example Usage ---
+console.log("\n--- Final Examples ---");
+console.log("Integer [1, 5]:", getRandomIntInclusive(1, 5));
+console.log("Float [0.0, 1.0):", getRandomFloat(0.0, 1.0));
+console.log("Integer [5, 1]: (swapped)", getRandomIntInclusive(5, 1)); // min and max are swapped internally
