@@ -1,165 +1,139 @@
-interface Node {
-  id: string;
-  children?: Node[];
+// A*.ts
+export interface Node<T = any> {
+  id: string;          // must be unique
+  x: number;           // for heuristic only (can be 0-D)
+  y: number;
+  data?: T;             // optional payload
 }
 
-interface DLSResult {
-  found: boolean;
-  node?: Node;
-  path: string[];
+export interface Edge {
+  from: string;
+  to: string;
+  cost: number;
 }
-function depthLimitedSearch(
-  node: Node,
-  targetId: string,
-  depthLimit: number,
-  currentDepth: number = 0,
-  path: string[] = []
-): DLSResult {
-  // Add current node to path
-  const currentPath = [...path, node.id];
-  
-  // Base case: found the target
-  if (node.id === targetId) {
-    return { found: true, node, path: currentPath };
+
+export interface Graph {
+  nodes: Map<string, Node>;
+  outbound: Map<string, Edge[]>; // adjacency list
+}
+
+/** Euclidean distance (change to Manhattan, Chebyshev, etc. if needed) */
+function heuristic(a: Node, b: Node): number {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.hypot(dx, dy);
+}
+
+/** Reconstruct path from goal to start by following .parent */
+function rebuildPath(cameFrom: Map<string, string | null>, goal: string): string[] {
+  const path: string[] = [];
+  let curr: string | null = goal;
+  while (curr !== null) {
+    path.unshift(curr);
+    curr = cameFrom.get(curr)!;
   }
-  
-  // Base case: reached depth limit
-  if (currentDepth >= depthLimit) {
-    return { found: false, path: currentPath };
-  }
-  
-  // Recursive case: search children
-  if (node.children && node.children.length > 0) {
-    for (const child of node.children) {
-      const result = depthLimitedSearch(
-        child,
-        targetId,
-        depthLimit,
-        currentDepth + 1,
-        currentPath
-      );
-      
-      if (result.found) {
-        return result;
+  return path;
+}
+
+export interface AStarResult {
+  path: string[];      // empty if no route
+  cost: number;        // Infinity if no route
+  explored: number;      // number of nodes popped from open
+}
+
+/**
+ * A* search on a generic graph.
+ * Returns the shortest path (array of node ids) and its total cost.
+ */
+export function aStar(graph: Graph, startId: string, goalId: string): AStarResult {
+  const start = graph.nodes.get(startId);
+  const goal = graph.nodes.get(goalId);
+  if (!start || !goal) return { path: [], cost: Infinity, explored: 0 };
+
+  // Min-heap keyed by fScore
+  interface Entry { id: string; f: number }
+  const openHeap: Entry[] = [];
+  const indexOf = (id: string) => openHeap.findIndex(e => e.id === id);
+
+  const gScore = new Map<string, number>();
+  const fScore = new Map<string, number>();
+  const cameFrom = new Map<string, string | null>();
+
+  gScore.set(startId, 0);
+  fScore.set(startId, heuristic(start, goal));
+  openHeap.push({ id: startId, f: fScore.get(startId)! });
+
+  let explored = 0;
+
+  while (openHeap.length) {
+    // pop smallest f
+    openHeap.sort((a, b) => a.f - b.f);
+    const current = openHeap.shift()!.id;
+    explored++;
+
+    if (current === goalId) {
+      return {
+        path: rebuildPath(cameFrom, goalId),
+        cost: gScore.get(goalId)!,
+        explored,
+      };
+    }
+
+    const edges = graph.outbound.get(current) ?? [];
+    for (const edge of edges) {
+      const neighbor = edge.to;
+      const tentativeG = gScore.get(current)! + edge.cost;
+
+      if (tentativeG < (gScore.get(neighbor) ?? Infinity)) {
+        cameFrom.set(neighbor, current);
+        gScore.set(neighbor, tentativeG);
+        const h = heuristic(graph.nodes.get(neighbor)!, goal);
+        const f = tentativeG + h;
+        fScore.set(neighbor, f);
+
+        const idx = indexOf(neighbor);
+        if (idx === -1) {
+          openHeap.push({ id: neighbor, f });
+        } else {
+          openHeap[idx].f = f; // update key
+        }
       }
     }
   }
-  
-  return { found: false, path: currentPath };
+
+  return { path: [], cost: Infinity, explored };
 }
-function iterativeDepthLimitedSearch(
-  startNode: Node,
-  targetId: string,
-  depthLimit: number
-): DLSResult {
-  const stack: { node: Node; depth: number; path: string[] }[] = [
-    { node: startNode, depth: 0, path: [startNode.id] }
-  ];
-  
-  while (stack.length > 0) {
-    const { node, depth, path } = stack.pop()!;
-    
-    if (node.id === targetId) {
-      return { found: true, node, path };
+import { Graph, Node, Edge, aStar } from './A*';
+
+function buildGridGraph(width: number, height: number, barriers: Set<string>): Graph {
+  const nodes = new Map<string, Node>();
+  const outbound = new Map<string, Edge[]>();
+
+  const key = (x: number, y: number) => `${x},${y}`;
+  const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const id = key(x, y);
+      if (barriers.has(id)) continue;
+      nodes.set(id, { id, x, y });
+      outbound.set(id, []);
     }
-    
-    if (depth < depthLimit && node.children) {
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        const child = node.children[i];
-        stack.push({
-          node: child,
-          depth: depth + 1,
-          path: [...path, child.id]
-        });
+  }
+
+  for (const [id, node] of nodes) {
+    for (const [dx, dy] of dirs) {
+      const nx = node.x + dx, ny = node.y + dy;
+      const nid = key(nx, ny);
+      if (nodes.has(nid)) {
+        outbound.get(id)!.push({ from: id, to: nid, cost: 1 });
       }
     }
   }
-  
-  return { found: false, path: [] };
-}
-// Example tree structure
-const tree: Node = {
-  id: 'A',
-  children: [
-    {
-      id: 'B',
-      children: [
-        { id: 'D', children: [{ id: 'H' }] },
-        { id: 'E' }
-      ]
-    },
-    {
-      id: 'C',
-      children: [
-        { id: 'F' },
-        { id: 'G' }
-      ]
-    }
-  ]
-};
-
-// Using the recursive implementation
-const result1 = depthLimitedSearch(tree, 'G', 3);
-console.log('Recursive result:', result1);
-
-// Using the iterative implementation  
-const result2 = iterativeDepthLimitedSearch(tree, 'G', 3);
-console.log('Iterative result:', result2);
-interface EnhancedDLSResult extends DLSResult {
-  depthReached: number;
-  nodesVisited: number;
+  return { nodes, outbound };
 }
 
-function enhancedDepthLimitedSearch(
-  node: Node,
-  targetId: string,
-  depthLimit: number,
-  currentDepth: number = 0,
-  path: string[] = [],
-  nodesVisited: number = 0
-): EnhancedDLSResult {
-  const currentNodesVisited = nodesVisited + 1;
-  
-  if (node.id === targetId) {
-    return {
-      found: true,
-      node,
-      path: [...path, node.id],
-      depthReached: currentDepth,
-      nodesVisited: currentNodesVisited
-    };
-  }
-  
-  if (currentDepth >= depthLimit) {
-    return {
-      found: false,
-      path: [...path, node.id],
-      depthReached: currentDepth,
-      nodesVisited: currentNodesVisited
-    };
-  }
-  
-  if (node.children) {
-    for (const child of node.children) {
-      const result = enhancedDepthLimitedSearch(
-        child,
-        targetId,
-        depthLimit,
-        currentDepth + 1,
-        [...path, node.id],
-        currentNodesVisited
-      );
-      
-      if (result.found) {
-        return result;
-      }
-    }
-  }
-  
-  return {
-    found: false,
-    path: [...path, node.id],
-    depthReached: currentDepth,
-    nodesVisited: currentNodesVisited
-  };
-}
+const barriers = new Set(['2,2', '2,3', '3,2']);
+const graph = buildGridGraph(5, 5, barriers);
+const result = aStar(graph, '0,0', '4,4');
+console.log('path:', result.path, 'cost:', result.cost);
