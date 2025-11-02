@@ -1,88 +1,144 @@
-function removeDuplicates<T>(arr: T[]): T[] {
-  return [...new Set(arr)];
-}
+class SkipListNode<T> {
+    value: T | null;       // null for the head sentinel
+    forwards: Array<SkipListNode<T> | null>;
 
-// Example usage
-const numbers = [1, 2, 2, 3, 4, 4, 5];
-const uniqueNumbers = removeDuplicates(numbers);
-console.log(uniqueNumbers); // [1, 2, 3, 4, 5]
-
-const strings = ["apple", "banana", "apple", "orange"];
-const uniqueStrings = removeDuplicates(strings);
-console.log(uniqueStrings); // ["apple", "banana", "orange"]
-function removeDuplicates<T>(arr: T[]): T[] {
-  return arr.filter((item, index) => arr.indexOf(item) === index);
-}
-
-// Example
-const fruits = ["apple", "banana", "apple", "orange"];
-const uniqueFruits = removeDuplicates(fruits);
-console.log(uniqueFruits); // ["apple", "banana", "orange"]
-function removeDuplicates<T>(arr: T[]): T[] {
-  return arr.reduce((unique, item) => 
-    unique.includes(item) ? unique : [...unique, item], 
-    [] as T[]
-  );
-}
-
-// Example
-const colors = ["red", "blue", "red", "green"];
-const uniqueColors = removeDuplicates(colors);
-console.log(uniqueColors); // ["red", "blue", "green"]
-interface User {
-  id: number;
-  name: string;
-}
-
-function removeDuplicateObjects<T>(arr: T[], key: keyof T): T[] {
-  const seen = new Set<T[keyof T]>();
-  return arr.filter(item => {
-    if (seen.has(item[key])) {
-      return false;
+    constructor(value: T | null, level: number) {
+        this.value = value;
+        this.forwards = new Array(level).fill(null);
     }
-    seen.add(item[key]);
-    return true;
-  });
 }
 
-// Example
-const users: User[] = [
-  { id: 1, name: "Alice" },
-  { id: 2, name: "Bob" },
-  { id: 1, name: "Alice" }, // duplicate ID
-  { id: 3, name: "Charlie" }
-];
+class SkipList<T> {
+    private readonly MAX_LEVEL: number;
+    private readonly P: number;
+    private level: number; // Current max level in the list
+    private head: SkipListNode<T>;
+    private compare: (a: T, b: T) => number;
 
-const uniqueUsers = removeDuplicateObjects(users, 'id');
-console.log(uniqueUsers); 
-// [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }, { id: 3, name: "Charlie" }]
-function uniqueArray<T>(arr: T[]): T[] {
-  return arr.filter((item, index, self) => 
-    index === self.findIndex(i => 
-      JSON.stringify(i) === JSON.stringify(item)
-    )
-  );
-}
-
-// Better for objects - using a custom equality function
-function uniqueBy<T, K>(arr: T[], getKey: (item: T) => K): T[] {
-  const seen = new Set<K>();
-  return arr.filter(item => {
-    const key = getKey(item);
-    if (seen.has(key)) {
-      return false;
+    constructor(maxLevel: number = 16, p: number = 0.5, compareFn?: (a: T, b: T) => number) {
+        this.MAX_LEVEL = maxLevel;
+        this.P = p;
+        this.level = 0;
+        this.head = new SkipListNode<T>(null, this.MAX_LEVEL);
+        this.compare = compareFn ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
     }
-    seen.add(key);
-    return true;
-  });
+
+    private randomLevel(): number {
+        let lvl = 1;
+        while (Math.random() < this.P && lvl < this.MAX_LEVEL) {
+            lvl++;
+        }
+        return lvl;
+    }
+
+    search(value: T): T | null {
+        let current = this.head;
+        for (let i = this.level - 1; i >= 0; i--) {
+            while (current.forwards[i] && this.compare(current.forwards[i]!.value!, value) < 0) {
+                current = current.forwards[i]!;
+            }
+        }
+        current = current.forwards[0]!;
+        if (current && this.compare(current.value!, value) === 0) {
+            return current.value!;
+        }
+        return null;
+    }
+
+    insert(value: T): void {
+        let update = new Array<SkipListNode<T>>(this.MAX_LEVEL);
+        let current = this.head;
+
+        // Step 1: Find the path
+        for (let i = this.level - 1; i >= 0; i--) {
+            while (current.forwards[i] && this.compare(current.forwards[i]!.value!, value) < 0) {
+                current = current.forwards[i]!;
+            }
+            update[i] = current;
+        }
+
+        current = current.forwards[0]!;
+        if (current && this.compare(current.value!, value) === 0) {
+            return; // Value already exists; no duplicates
+        }
+
+        // Step 2: Choose random level for new node
+        let newLevel = this.randomLevel();
+        if (newLevel > this.level) {
+            for (let i = this.level; i < newLevel; i++) {
+                update[i] = this.head;
+            }
+            this.level = newLevel;
+        }
+
+        // Step 3: Insert new node
+        let newNode = new SkipListNode<T>(value, newLevel);
+        for (let i = 0; i < newLevel; i++) {
+            newNode.forwards[i] = update[i].forwards[i];
+            update[i].forwards[i] = newNode;
+        }
+    }
+
+    delete(value: T): boolean {
+        let update = new Array<SkipListNode<T>>(this.MAX_LEVEL);
+        let current = this.head;
+
+        for (let i = this.level - 1; i >= 0; i--) {
+            while (current.forwards[i] && this.compare(current.forwards[i]!.value!, value) < 0) {
+                current = current.forwards[i]!;
+            }
+            update[i] = current;
+        }
+
+        current = current.forwards[0]!;
+
+        if (!current || this.compare(current.value!, value) !== 0) {
+            return false; // Not found
+        }
+
+        for (let i = 0; i < this.level; i++) {
+            if (update[i].forwards[i] !== current) {
+                break;
+            }
+            update[i].forwards[i] = current.forwards[i];
+        }
+
+        // Adjust current level of list if needed
+        while (this.level > 0 && !this.head.forwards[this.level - 1]) {
+            this.level--;
+        }
+
+        return true;
+    }
+
+    print(): void {
+        for (let i = this.level - 1; i >= 0; i--) {
+            let line = `Level ${i}: `;
+            let current = this.head.forwards[i];
+            while (current) {
+                line += current.value + " ";
+                current = current.forwards[i];
+            }
+            console.log(line);
+        }
+    }
 }
 
-// Usage
-const items = [
-  { id: 1, value: "A" },
-  { id: 2, value: "B" },
-  { id: 1, value: "A" }
-];
+// Example usage:
+const sl = new SkipList<number>();
+sl.insert(3);
+sl.insert(6);
+sl.insert(7);
+sl.insert(9);
+sl.insert(12);
+sl.insert(19);
+sl.insert(17);
+sl.insert(26);
+sl.insert(21);
+sl.insert(25);
 
-const uniqueItems = uniqueBy(items, item => item.id);
-console.log(uniqueItems); // Only first item with id: 1
+sl.print();
+
+console.log("Search 19:", sl.search(19));
+console.log("Delete 19:", sl.delete(19));
+sl.print();
