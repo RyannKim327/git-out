@@ -1,53 +1,96 @@
-const myString = "  Hello   World!\nThis is a test.  ";
+// ------------- types -------------
+export type NodeId = string | number;
 
-// Method 1.1: Using \s (most common)
-// \s matches any whitespace character (space, tab, form feed, line feed, carriage return, vertical tab).
-// The 'g' flag means "global" - replace all occurrences, not just the first.
-const noWhitespace_s = myString.replace(/\s/g, '');
-console.log("Using \\s/g:", noWhitespace_s);
-// Output: "HelloWorld!Thisisatest."
+/** Generic adjacency list. */
+export type Graph = Map<NodeId, NodeId[]>;
 
-// Method 1.2: Using \p{White_Space} (more comprehensive for Unicode whitespace)
-// \p{White_Space} matches any Unicode character with the White_Space property.
-// The 'u' flag is required for Unicode property escapes like \p{}.
-const noWhitespace_unicode = myString.replace(/\p{White_Space}/gu, '');
-console.log("Using \\p{White_Space}/gu:", noWhitespace_unicode);
-// Output: "HelloWorld!Thisisatest."
+/** Called when we first discover a node. */
+export type EnterFn = (id: NodeId, depth: number) => void;
+/** Called when we have finished all its descendants. */
+export type ExitFn = (id: NodeId, depth: number) => void;
 
-// Method 1.3: Removing only standard spaces (less common for "all whitespace")
-const noStandardSpaces = myString.replace(/ /g, '');
-console.log("Removing only standard spaces:", noStandardSpaces);
-// Output: "  HelloWorld!\nThisisatest.  " (tabs and newlines remain)
-const myString = "  \t  Hello World!   \n ";
+// ------------- DFS -------------
+/**
+ * Depth-first search (iterative).
+ * @param graph   adjacency list
+ * @param start   where to start (may be a single node or many)
+ * @param enter   invoked when a node is first popped from stack
+ * @param exit    invoked when a node is fully processed (back-track)
+ * @param visited optional external Set to keep state across calls
+ */
+export function dfs(
+  graph: Graph,
+  start: NodeId | Iterable<NodeId>,
+  enter?: EnterFn,
+  exit?: ExitFn,
+  visited = new Set<NodeId>()
+): Set<NodeId> {
+  // stack holds tuples: [nodeId, depth, isExiting]
+  const stack: [NodeId, number, boolean][] = [];
 
-// Method 2.1: trim() - removes from both ends
-const trimmedString = myString.trim();
-console.log("trim():", trimmedString);
-// Output: "Hello World!"
+  const enqueue = (id: NodeId, depth = 0) => {
+    if (!visited.has(id)) {
+      visited.add(id);
+      stack.push([id, depth, false]);
+    }
+  };
 
-// Method 2.2: trimStart() - removes from the beginning
-const trimmedStart = myString.trimStart();
-console.log("trimStart():", trimmedStart);
-// Output: "Hello World!   \n "
+  if (typeof start === "object" && typeof start[Symbol.iterator] === "function") {
+    for (const s of start) enqueue(s);
+  } else {
+    enqueue(start as NodeId);
+  }
 
-// Method 2.3: trimEnd() - removes from the end
-const trimmedEnd = myString.trimEnd();
-console.log("trimEnd():", trimmedEnd);
-// Output: "  \t  Hello World!"
-const myString = "  Hello   World!\nThis is a    test.  ";
+  while (stack.length) {
+    const [id, depth, isExiting] = stack.pop()!;
+    if (isExiting) {
+      exit?.(id, depth);
+      continue;
+    }
+    enter?.(id, depth);
+    // schedule exit callback
+    stack.push([id, depth, true]);
 
-// Method 3.1: Replace multiple spaces with a single space (normalize)
-// \s+ matches one or more whitespace characters.
-const normalizedSpaces = myString.replace(/\s+/g, ' ').trim();
-console.log("Normalized spaces:", normalizedSpaces);
-// Output: "Hello World! This is a test."
+    // push children in reverse order so that left-most is processed first
+    const neighbors = graph.get(id) ?? [];
+    for (let i = neighbors.length - 1; i >= 0; i--) {
+      const n = neighbors[i];
+      if (!visited.has(n)) enqueue(n, depth + 1);
+    }
+  }
+  return visited;
+}
 
-// Method 3.2: Remove only tabs
-const noTabs = myString.replace(/\t/g, '');
-console.log("No tabs:", noTabs);
-// Output: "  Hello   World!\nThis is a    test.  " (assuming no tabs in original)
+// ------------- usage example -------------
+if (import.meta.vitest) {
+  const { test, expect } = import.meta.vitest;
 
-// Method 3.3: Remove only newlines
-const noNewlines = myString.replace(/[\n\r]/g, '');
-console.log("No newlines:", noNewlines);
-// Output: "  Hello   World!This is a    test.  "
+  test("dfs on tree", () => {
+    /*
+        A
+       / \
+      B   C
+     / \
+    D   E
+    */
+    const g: Graph = new Map([
+      ["A", ["B", "C"]],
+      ["B", ["D", "E"]],
+      ["C", []],
+      ["D", []],
+      ["E", []],
+    ]);
+
+    const pre: string[] = [];
+    const post: string[] = [];
+    dfs(
+      g,
+      "A",
+      (id) => pre.push(id),
+      (id) => post.push(id)
+    );
+
+    expect(pre).toEqual(["A", "B", "D", "E", "C"]);
+    expect(post).toEqual(["D", "E", "B", "C", "A"]);
+  });
+}
