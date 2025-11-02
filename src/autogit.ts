@@ -1,39 +1,46 @@
-class TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
+class MainActivity : AppCompatActivity() {
+    private lateinit var webView: WebView
 
-  constructor(val: number) {
-    this.val = val;
-    this.left = null;
-    this.right = null;
-  }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        webView = WebView(this)
+        setContentView(webView)
+        webView.settings.javaScriptEnabled = true
+
+        // Add JS interface so TypeScript can call Android
+        webView.addJavascriptInterface(AndroidBridge(), "AndroidBridge")
+
+        // Load your local TypeScript-compiled JS
+        webView.loadUrl("file:///android_asset/index.html")
+    }
+
+    inner class AndroidBridge {
+        @JavascriptInterface
+        fun fetchData(request: String) {
+            AsyncTask.execute {
+                val result = "Fetched data for: $request" // Simulate fetching
+                runOnUiThread {
+                    webView.evaluateJavascript("window.onAndroidResult('$result');", null)
+                }
+            }
+        }
+    }
+}
+// Assume this code is compiled to JS and included in index.html
+
+// Ask Android to do an async task
+function requestDataFromAndroid(request: string) {
+    // "AndroidBridge" is the name we used above
+    // This will call the Kotlin method
+    (window as any).AndroidBridge.fetchData(request);
 }
 
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;
-
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;
-
-    const leftHeight = dfs(node.left);
-    const rightHeight = dfs(node.right);
-
-    // Update diameter
-    maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
-
-    // Return height
-    return 1 + Math.max(leftHeight, rightHeight);
-  }
-
-  dfs(root);
-  return maxDiameter;
+// Callback for Android to send back result
+(window as any).onAndroidResult = (result: string) => {
+    console.log("Received from Android:", result);
+    // Handle the result however you want
 }
 
-// ✅ Example usage:
-// const root = new TreeNode(1);
-// root.left = new TreeNode(2);
-// root.right = new TreeNode(3);
-// root.left.left = new TreeNode(4);
-// root.left.right = new TreeNode(5);
-// console.log(diameterOfBinaryTree(root)); // Output: 3
+// Fire off a request
+requestDataFromAndroid("example query");
