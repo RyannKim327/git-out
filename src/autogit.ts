@@ -1,52 +1,51 @@
-// Generic graph node.  Only needs `neighbors(): Iterable<T>`.
-interface Node<T> {
-  value: T;
-  neighbors(): Iterable<Node<T>>;
-}
-
 /**
- * Depth-limited search.
- * @param start   Start node.
- * @param isGoal  Predicate that returns true for goal nodes.
- * @param limit   Maximum depth to explore (0 = start only).
- * @returns       The goal node if found, otherwise undefined.
+ * In-place heap-sort.
+ * @param arr  Array to sort (ascending).
+ * @param compare Optional comparator. Defaults to (a, b) => a - b.
  */
-function depthLimitedSearch<T>(
-  start: Node<T>,
-  isGoal: (n: Node<T>) => boolean,
-  limit: number
-): Node<T> | undefined {
-  // Internal recursive DFS
-  function dfs(node: Node<T>, depth: number): Node<T> | undefined {
-    if (isGoal(node)) return node;          // success
-    if (depth >= limit) return undefined;   // hit depth bound
+export function heapSort<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
+): void {
+  const n = arr.length;
 
-    for (const child of node.neighbors()) {
-      const found = dfs(child, depth + 1);
-      if (found) return found;            // propagate success
-    }
-    return undefined;                       // failure in this branch
+  /* ---------- 1. Build max-heap ---------- */
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+    siftDown(i, n);
   }
 
-  return dfs(start, 0);
-}
-class TreeNode implements Node<number> {
-  constructor(public value: number, private kids: TreeNode[] = []) {}
-  neighbors(): Iterable<TreeNode> { return this.kids; }
+  /* ---------- 2. Repeatedly extract max ---------- */
+  for (let end = n - 1; end > 0; end--) {
+    swap(0, end);          // move current max to final position
+    siftDown(0, end);      // restore heap property on the reduced heap
+  }
+
+  /* ---------- helpers ---------- */
+  function siftDown(root: number, size: number): void {
+    while (true) {
+      let largest = root;
+      const left = 2 * root + 1;
+      const right = 2 * root + 2;
+
+      if (left < size && compare(arr[left], arr[largest]) > 0) largest = left;
+      if (right < size && compare(arr[right], arr[largest]) > 0) largest = right;
+
+      if (largest === root) break;
+
+      swap(root, largest);
+      root = largest;
+    }
+  }
+
+  function swap(i: number, j: number): void {
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
 }
 
-// Build a small tree
-//        1
-//      / | \
-//     2  3  4
-//    / \
-//   5   6
-const root = new TreeNode(1, [
-  new TreeNode(2, [new TreeNode(5), new TreeNode(6)]),
-  new TreeNode(3),
-  new TreeNode(4)
-]);
-
-// Search for value 6 with different depth limits
-console.log(depthLimitedSearch(root, n => n.value === 6, 1)); // undefined
-console.log(depthLimitedSearch(root, n => n.value === 6, 2)); // TreeNode{value:6}
+/* ---------- quick demo ---------- */
+if (require.main === module) {
+  const data = [23, 1, 7, 4, 99, 55, 3];
+  heapSort(data);
+  console.log(data); // [1, 3, 4, 7, 23, 55, 99]
+}
+heapSort(users, (u1, u2) => u2.age - u1.age); // descending by age
