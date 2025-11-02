@@ -1,47 +1,98 @@
-class TreeNode {
-    val: number;
-    left: TreeNode | null;
-    right: TreeNode | null;
-    constructor(val?: number, left?: TreeNode | null, right?: TreeNode | null) {
-        this.val = val === undefined ? 0 : val;
-        this.left = left === undefined ? null : left;
-        this.right = right === undefined ? null : right;
+function isAnagram(str1: string, str2: string): boolean {
+    if (str1.length !== str2.length) {
+        return false;
     }
-}
 
-function maxDepth(root: TreeNode | null): number {
-    if (root === null) {
-        return 0; // Base case: empty tree
+    const charCount: { [key: string]: number } = {};
+
+    // Count characters in first string
+    for (const char of str1.toLowerCase()) {
+        charCount[char] = (charCount[char] || 0) + 1;
     }
-    // Recursively get depths of left/right subtrees
-    const leftDepth = maxDepth(root.left);
-    const rightDepth = maxDepth(root.right);
-    // Max of subtrees + 1 (current node)
-    return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthBFS(root: TreeNode | null): number {
-    if (root === null) return 0;
-    
-    const queue: TreeNode[] = [root];
-    let depth = 0;
-    
-    while (queue.length > 0) {
-        const levelSize = queue.length;
-        depth++; // Increment depth for each level
-        for (let i = 0; i < levelSize; i++) {
-            const node = queue.shift()!; // Dequeue current node
-            if (node.left) queue.push(node.left);
-            if (node.right) queue.push(node.right);
+
+    // Subtract characters from second string
+    for (const char of str2.toLowerCase()) {
+        if (!charCount[char]) {
+            return false;
         }
+        charCount[char]--;
     }
-    return depth;
-}
-// Example Tree: [3, 9, 20, null, null, 15, 7]
-const root = new TreeNode(3);
-root.left = new TreeNode(9);
-root.right = new TreeNode(20);
-root.right.left = new TreeNode(15);
-root.right.right = new TreeNode(7);
 
-console.log(maxDepth(root)); // Output: 3
-console.log(maxDepthBFS(root)); // Output: 3
+    return true;
+}
+function isAnagramWithSort(str1: string, str2: string): boolean {
+    if (str1.length !== str2.length) {
+        return false;
+    }
+
+    const sorted1 = str1.toLowerCase().split('').sort().join('');
+    const sorted2 = str2.toLowerCase().split('').sort().join('');
+
+    return sorted1 === sorted2;
+}
+function isAnagramWithMap(str1: string, str2: string): boolean {
+    if (str1.length !== str2.length) {
+        return false;
+    }
+
+    const charMap = new Map<string, number>();
+
+    // Count characters in first string
+    for (const char of str1.toLowerCase()) {
+        charMap.set(char, (charMap.get(char) || 0) + 1);
+    }
+
+    // Check characters in second string
+    for (const char of str2.toLowerCase()) {
+        const count = charMap.get(char);
+        if (!count) {
+            return false;
+        }
+        charMap.set(char, count - 1);
+    }
+
+    return true;
+}
+const isAnagramFunctional = (str1: string, str2: string): boolean => {
+    const normalize = (str: string): string => 
+        str.toLowerCase().split('').sort().join('');
+    
+    return str1.length === str2.length && normalize(str1) === normalize(str2);
+};
+// Test the functions
+console.log(isAnagram("listen", "silent")); // true
+console.log(isAnagram("hello", "world"));   // false
+console.log(isAnagram("anagram", "nagaram")); // true
+console.log(isAnagram("rat", "car"));       // false
+
+// Case insensitive examples
+console.log(isAnagram("Listen", "Silent")); // true
+console.log(isAnagram("Dormitory", "Dirty room")); // false (spaces matter)
+function isAnagramEnhanced(str1: string, str2: string, ignoreSpaces: boolean = false): boolean {
+    let processed1 = str1.toLowerCase();
+    let processed2 = str2.toLowerCase();
+
+    if (ignoreSpaces) {
+        processed1 = processed1.replace(/\s+/g, '');
+        processed2 = processed2.replace(/\s+/g, '');
+    }
+
+    if (processed1.length !== processed2.length) {
+        return false;
+    }
+
+    const charCount: Record<string, number> = {};
+
+    for (const char of processed1) {
+        charCount[char] = (charCount[char] || 0) + 1;
+    }
+
+    for (const char of processed2) {
+        if (!charCount[char]) {
+            return false;
+        }
+        charCount[char]--;
+    }
+
+    return true;
+}
