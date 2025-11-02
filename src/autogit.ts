@@ -1,48 +1,30 @@
-/**
- * Performs Burrows-Wheeler Transform on a string
- * @param input Input string (must not contain the null terminator '\0')
- * @returns Object containing the transformed string and primary index
- */
-function burrowsWheelerTransform(input: string): { transformed: string; index: number } {
-    // Terminator character (modify if needed, must not appear in input)
-    const terminator = '\0';
-
-    // Check for terminator in input
-    if (input.includes(terminator)) {
-        throw new Error(`Input contains terminator character '${terminator}', which is not allowed.`);
+class TreeNode {
+    val: number;
+    left: TreeNode | null;
+    right: TreeNode | null;
+    constructor(val?: number, left?: TreeNode | null, right?: TreeNode | null) {
+        this.val = val === undefined ? 0 : val;
+        this.left = left === undefined ? null : left;
+        this.right = right === undefined ? null : right;
     }
-
-    // Append terminator character
-    const str = input + terminator;
-    const n = str.length;
-    const rotations: string[] = [];
-
-    // Generate all cyclic rotations
-    for (let i = 0; i < n; i++) {
-        rotations.push(str.slice(i) + str.slice(0, i));
-    }
-
-    // Sort rotations lexicographically
-    rotations.sort();
-
-    // Extract last characters to form transformed string
-    const transformed = rotations.map(rotation => rotation[n - 1]).join('');
-
-    // Find index of original string (with terminator appended)
-    const index = rotations.indexOf(str);
-
-    return { transformed, index };
-}
-// Example usage
-const testString = "banana";
-try {
-    const result = burrowsWheelerTransform(testString);
-    console.log(`Transformed: '${result.transformed}'`);
-    console.log(`Primary Index: ${result.index}`);
-} catch (error) {
-    console.error(error.message);
 }
 
-// Output:
-// Transformed: 'annb\0aa'
-// Primary Index: 4
+function diameterOfBinaryTree(root: TreeNode | null): number {
+    let diameter = 0;
+
+    function height(node: TreeNode | null): number {
+        if (!node) return 0;
+
+        const leftHeight = height(node.left);
+        const rightHeight = height(node.right);
+
+        // Update diameter: longest path passing through this node
+        diameter = Math.max(diameter, leftHeight + rightHeight);
+
+        // Height of this node is 1 + max(left, right)
+        return Math.max(leftHeight, rightHeight) + 1;
+    }
+
+    height(root);
+    return diameter;
+}
