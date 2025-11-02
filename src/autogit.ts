@@ -1,83 +1,47 @@
-function stringLength(str: string): number {
-    let count = 0;
-    for (let i = 0; i < str.length; i++) {  // Note: This still uses .length in the loop condition
-        count++;
+interface TreeNode {
+    value: number;        // Node value
+    left: TreeNode | null; // Left child (or null)
+    right: TreeNode | null; // Right child (or null)
+}
+function sumNodes(root: TreeNode | null): number {
+    if (!root) {
+        return 0; // Base case: empty tree/subtree
     }
-    return count;
+    // Recursive case: current value + left subtree sum + right subtree sum
+    return root.value + sumNodes(root.left) + sumNodes(root.right);
 }
+// Create leaf nodes
+const leaf1 = { value: 4, left: null, right: null };
+const leaf2 = { value: 5, left: null, right: null };
+const leaf3 = { value: 6, left: null, right: null };
 
-// But to be truly manual, you'd need to handle it differently:
-function manualStringLength(str: string): number {
-    let count = 0;
-    let index = 0;
-    while (true) {
-        if (str.charAt(index) === '') {  // Empty string indicates end
-            break;
-        }
-        count++;
-        index++;
+// Build the tree
+const tree: TreeNode = {
+    value: 1,
+    left: {
+        value: 2,
+        left: leaf1,
+        right: leaf2
+    },
+    right: {
+        value: 3,
+        left: leaf3,
+        right: null
     }
-    return count;
-}
+};
 
-const text = "Hello World";
-console.log(manualStringLength(text)); // Output: 11
-function getStringLength(str: string): number {
-    let length = 0;
-    let i = 0;
-    
-    // Continue until we reach the end of the string
-    while (str.charAt(i) !== '') {
-        length++;
-        i++;
+console.log(sumNodes(tree)); // Output: 21 (1 + 2 + 3 + 4 + 5 + 6)
+function sumNodesIterative(root: TreeNode | null): number {
+    if (!root) return 0;
+    let sum = 0;
+    const stack: TreeNode[] = [root];
+
+    while (stack.length > 0) {
+        const node = stack.pop()!;
+        sum += node.value;
+        if (node.left) stack.push(node.left);
+        if (node.right) stack.push(node.right);
     }
-    
-    return length;
-}
 
-// Or using bracket notation
-function getStringLengthWithIndex(str: string): number {
-    let length = 0;
-    let i = 0;
-    
-    try {
-        while (true) {
-            // This will throw when accessing beyond the string length
-            const char = str[i];
-            if (char === undefined) break;
-            length++;
-            i++;
-        }
-    } catch (e) {
-        // Handle the out-of-bounds access
-    }
-    
-    return length;
-}
-
-const message = "TypeScript";
-console.log(getStringLength(message)); // Output: 10
-function regexStringLength(str: string): number {
-    // Match all characters and get the count
-    const matches = str.match(/.*/g);
-    return matches ? matches[0].length : 0;
-}
-
-// Or more directly:
-function regexLength(str: string): number {
-    return (str.match(/./g) || []).length;
-}
-
-console.log(regexLength("Hello")); // Output: 5
-function recursiveStringLength(str: string): number {
-    if (str === '') {
-        return 0;
-    }
-    return 1 + recursiveStringLength(str.substring(1));
-}
-
-console.log(recursiveStringLength("ABC")); // Output: 3
-function unicodeStringLength(str: string): number {
-    return [...str].length; // Spread operator handles Unicode properly
-    // But this still technically uses iteration under the hood
+    return sum;
 }
