@@ -1,167 +1,109 @@
-// src/Node.ts
-class Node<T> {
+class TreeNode<T> {
     value: T;
-    next: Node<T> | null;
+    left: TreeNode<T> | null = null;
+    right: TreeNode<T> | null = null;
 
     constructor(value: T) {
         this.value = value;
-        this.next = null;
     }
 }
-// src/LinkedListQueue.ts
-import { Node } from './Node'; // Assuming Node.ts is in the same directory or properly imported
 
-class LinkedListQueue<T> {
-    private head: Node<T> | null; // Front of the queue
-    private tail: Node<T> | null; // Back of the queue
-    private _size: number;
+class BinaryTree<T> {
+    root: TreeNode<T> | null = null;
 
-    constructor() {
-        this.head = null;
-        this.tail = null;
-        this._size = 0;
-    }
-
-    /**
-     * Adds an element to the back (tail) of the queue.
-     * @param item The element to add.
-     */
-    enqueue(item: T): void {
-        const newNode = new Node(item);
-
-        if (this.isEmpty()) {
-            this.head = newNode;
-            this.tail = newNode;
-        } else {
-            // Append new node to the current tail's next
-            this.tail!.next = newNode;
-            // Update tail to be the new node
-            this.tail = newNode;
-        }
-        this._size++;
-    }
-
-    /**
-     * Removes and returns the element from the front (head) of the queue.
-     * Returns undefined if the queue is empty.
-     */
-    dequeue(): T | undefined {
-        if (this.isEmpty()) {
-            return undefined;
+    // Insert a value (level order insertion)
+    insert(value: T): void {
+        const newNode = new TreeNode(value);
+        
+        if (!this.root) {
+            this.root = newNode;
+            return;
         }
 
-        const value = this.head!.value; // Store the value of the head
-        this.head = this.head!.next;     // Move head to the next node
+        const queue: TreeNode<T>[] = [this.root];
+        while (queue.length > 0) {
+            const current = queue.shift()!;
+            
+            if (!current.left) {
+                current.left = newNode;
+                return;
+            } else {
+                queue.push(current.left);
+            }
 
-        // If head becomes null, the queue is now empty, so tail must also be null
-        if (this.head === null) {
-            this.tail = null;
+            if (!current.right) {
+                current.right = newNode;
+                return;
+            } else {
+                queue.push(current.right);
+            }
         }
-        this._size--;
-        return value;
     }
 
-    /**
-     * Returns the element at the front (head) of the queue without removing it.
-     * Returns undefined if the queue is empty.
-     */
-    peek(): T | undefined {
-        if (this.isEmpty()) {
-            return undefined;
+    // In-order traversal: left -> root -> right
+    inOrderTraversal(node: TreeNode<T> | null = this.root): T[] {
+        if (!node) return [];
+        
+        return [
+            ...this.inOrderTraversal(node.left),
+            node.value,
+            ...this.inOrderTraversal(node.right)
+        ];
+    }
+
+    // Pre-order traversal: root -> left -> right
+    preOrderTraversal(node: TreeNode<T> | null = this.root): T[] {
+        if (!node) return [];
+        
+        return [
+            node.value,
+            ...this.preOrderTraversal(node.left),
+            ...this.preOrderTraversal(node.right)
+        ];
+    }
+
+    // Post-order traversal: left -> right -> root
+    postOrderTraversal(node: TreeNode<T> | null = this.root): T[] {
+        if (!node) return [];
+        
+        return [
+            ...this.postOrderTraversal(node.left),
+            ...this.postOrderTraversal(node.right),
+            node.value
+        ];
+    }
+
+    // Level-order traversal (Breadth-first search)
+    levelOrderTraversal(): T[] {
+        if (!this.root) return [];
+        
+        const result: T[] = [];
+        const queue: TreeNode<T>[] = [this.root];
+        
+        while (queue.length > 0) {
+            const current = queue.shift()!;
+            result.push(current.value);
+            
+            if (current.left) queue.push(current.left);
+            if (current.right) queue.push(current.right);
         }
-        return this.head!.value;
-    }
-
-    /**
-     * Checks if the queue is empty.
-     * @returns True if the queue is empty, false otherwise.
-     */
-    isEmpty(): boolean {
-        return this.head === null; // or this._size === 0;
-    }
-
-    /**
-     * Returns the number of elements in the queue.
-     */
-    get size(): number {
-        return this._size;
-    }
-
-    /**
-     * Clears all elements from the queue.
-     */
-    clear(): void {
-        this.head = null;
-        this.tail = null;
-        this._size = 0;
-    }
-
-    /**
-     * Converts the queue elements to an array (for debugging/inspection).
-     * @returns An array containing all elements in the queue, from head to tail.
-     */
-    toArray(): T[] {
-        const elements: T[] = [];
-        let current = this.head;
-        while (current !== null) {
-            elements.push(current.value);
-            current = current.next;
-        }
-        return elements;
-    }
-
-    /**
-     * Returns a string representation of the queue.
-     */
-    toString(): string {
-        return this.toArray().join(' -> ');
+        
+        return result;
     }
 }
-// main.ts (or wherever you want to use the queue)
-import { LinkedListQueue } from './LinkedListQueue';
+// Create a binary tree of numbers
+const tree = new BinaryTree<number>();
 
-const myQueue = new LinkedListQueue<string>();
+// Insert values
+[1, 2, 3, 4, 5, 6].forEach(n => tree.insert(n));
 
-console.log("Is queue empty?", myQueue.isEmpty()); // true
-console.log("Queue size:", myQueue.size);       // 0
-
-myQueue.enqueue("Apple");
-myQueue.enqueue("Banana");
-myQueue.enqueue("Cherry");
-
-console.log("\nAfter enqueuing Apple, Banana, Cherry:");
-console.log("Queue:", myQueue.toString());         // Apple -> Banana -> Cherry
-console.log("Queue size:", myQueue.size);         // 3
-console.log("Front element (peek):", myQueue.peek()); // Apple
-console.log("Is queue empty?", myQueue.isEmpty()); // false
-
-const dequeued1 = myQueue.dequeue();
-console.log("\nDequeued:", dequeued1);             // Apple
-console.log("Queue:", myQueue.toString());         // Banana -> Cherry
-console.log("Queue size:", myQueue.size);         // 2
-console.log("Front element (peek):", myQueue.peek()); // Banana
-
-myQueue.enqueue("Date");
-console.log("\nAfter enqueuing Date:");
-console.log("Queue:", myQueue.toString());         // Banana -> Cherry -> Date
-console.log("Queue size:", myQueue.size);         // 3
-
-const dequeued2 = myQueue.dequeue();
-const dequeued3 = myQueue.dequeue();
-const dequeued4 = myQueue.dequeue();
-console.log("\nDequeued three more times:", dequeued2, dequeued3, dequeued4); // Banana, Cherry, Date
-console.log("Queue:", myQueue.toString());         // (empty string)
-console.log("Queue size:", myQueue.size);         // 0
-console.log("Front element (peek):", myQueue.peek()); // undefined
-console.log("Is queue empty?", myQueue.isEmpty()); // true
-
-const dequeuedEmpty = myQueue.dequeue();
-console.log("\nAttempt to dequeue from empty queue:", dequeuedEmpty); // undefined
-
-const numQueue = new LinkedListQueue<number>();
-numQueue.enqueue(10);
-numQueue.enqueue(20);
-console.log("\nNumber Queue:", numQueue.toString()); // 10 -> 20
-numQueue.clear();
-console.log("Number Queue after clear:", numQueue.toString()); // (empty string)
-console.log("Number Queue size:", numQueue.size);             // 0
+// Traversal examples
+console.log("In-order:", tree.inOrderTraversal());      // [4, 2, 5, 1, 6, 3]
+console.log("Pre-order:", tree.preOrderTraversal());    // [1, 2, 4, 5, 3, 6]
+console.log("Post-order:", tree.postOrderTraversal());  // [4, 5, 2, 6, 3, 1]
+console.log("Level-order:", tree.levelOrderTraversal()); // [1, 2, 3, 4, 5, 6]
+      1
+     / \
+    2   3
+   / \ /
+  4 5 6
