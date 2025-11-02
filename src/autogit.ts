@@ -1,21 +1,48 @@
-const arr = ['a', 'b', 'c', 'd'];
-const index = arr.indexOf('b');   // 1
-if (index !== -1) arr.splice(index, 1); // ['a', 'c', 'd']
-const toRemove = 'b';
-for (let i = arr.length - 1; i >= 0; i--) { // iterate backwards
-  if (arr[i] === toRemove) arr.splice(i, 1);
-}
-const arr = ['a', 'b', 'c', 'b'];
-const value = 'b';
+hash(S) = (S[0]*base^(m-1) + S[1]*base^(m-2) + ... + S[m-1]*base^0) mod prime
+function rabinKarp(text: string, pattern: string): number[] {
+    const result: number[] = [];
+    const n = text.length;
+    const m = pattern.length;
+    if (m > n) return result;
 
-const newArr = [...arr.slice(0, arr.indexOf(value)),
-                ...arr.slice(arr.indexOf(value) + 1)];
-// ['a', 'c', 'b']
-const newArr = arr.filter(item => item !== 'b'); // ['a', 'c']
-function remove<T>(arr: T[], predicate: (item: T) => boolean): T[] {
-  return arr.filter(item => !predicate(item));
+    const base = 256; // number of possible chars
+    const prime = 101; // a prime modulus for hashing
+
+    let patternHash = 0;
+    let textHash = 0;
+    let h = 1;
+
+    // h = base^(m-1) % prime
+    for (let i = 0; i < m - 1; i++) {
+        h = (h * base) % prime;
+    }
+
+    // Calculate initial hashes
+    for (let i = 0; i < m; i++) {
+        patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
+        textHash = (base * textHash + text.charCodeAt(i)) % prime;
+    }
+
+    // Slide through the text
+    for (let i = 0; i <= n - m; i++) {
+        // If hashes match, check actual substring
+        if (patternHash === textHash) {
+            if (text.substr(i, m) === pattern) {
+                result.push(i);
+            }
+        }
+
+        // Roll the hash forward
+        if (i < n - m) {
+            textHash = (base * (textHash - text.charCodeAt(i) * h) + text.charCodeAt(i + m)) % prime;
+            // handle negative hash
+            if (textHash < 0) {
+                textHash += prime;
+            }
+        }
+    }
+    return result;
 }
 
-// usage
-const nums = [1, 2, 3, 2, 4];
-const noTwos = remove(nums, n => n === 2); // [1, 3, 4]
+// Example usage:
+console.log(rabinKarp("abracadabra", "abra")); // Output: [0, 7]
