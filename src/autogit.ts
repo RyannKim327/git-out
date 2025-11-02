@@ -1,169 +1,217 @@
-/**
- * Generates a random integer between min (inclusive) and max (inclusive).
- * The value is no lower than `min` and no greater than `max`.
- * @param min The lower bound (inclusive).
- * @param max The upper bound (inclusive).
- * @returns A random integer within the specified range.
- */
-function getRandomIntInclusive(min: number, max: number): number {
-    min = Math.ceil(min);   // Ensure min is treated as an integer boundary
-    max = Math.floor(max);  // Ensure max is treated as an integer boundary
-    
-    // The maximum is inclusive and the minimum is inclusive
-    // Math.random() * (max - min + 1) generates a number from [0, max - min + 1)
-    // Math.floor() truncates it to an integer from [0, max - min]
-    // Adding min shifts the range to [min, max]
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+// 1. Define the TrieNode
+class TrieNode {
+    // A map to store children nodes, where keys are characters and values are TrieNodes.
+    children: Map<string, TrieNode>;
+    // A boolean to mark if this node signifies the end of a valid word.
+    isEndOfWord: boolean;
+
+    constructor() {
+        this.children = new Map<string, TrieNode>();
+        this.isEndOfWord = false;
+    }
 }
 
-// --- Example Usage ---
-console.log("Random integer between 1 and 10 (inclusive):");
-console.log(getRandomIntInclusive(1, 10)); // e.g., 3, 7, 10, 1, 5
+// 2. Define the Trie data structure
+class Trie {
+    private root: TrieNode;
 
-// If you pass floats, they will be floored/ceiled for integer boundaries:
-console.log(getRandomIntInclusive(1.2, 9.8)); // Effectively between 2 and 9 inclusive
-
-// To get 0 or 1 (e.g., for a boolean random choice):
-console.log(getRandomIntInclusive(0, 1)); // 0 or 1
-/**
- * Generates a random floating-point number between min (inclusive) and max (exclusive).
- * The value is no lower than `min` and less than `max`.
- * @param min The lower bound (inclusive).
- * @param max The upper bound (exclusive).
- * @returns A random float within the specified range.
- */
-function getRandomFloat(min: number, max: number): number {
-    // The maximum is exclusive and the minimum is inclusive
-    // Math.random() * (max - min) generates a number from [0, max - min)
-    // Adding min shifts the range to [min, max)
-    return Math.random() * (max - min) + min;
-}
-
-// --- Example Usage ---
-console.log("Random float between 0 and 1 (exclusive of 1):");
-console.log(getRandomFloat(0, 1)); // This is essentially Math.random() itself
-
-console.log("Random float between 1.5 and 10.5 (exclusive of 10.5):");
-console.log(getRandomFloat(1.5, 10.5)); // e.g., 6.78, 1.5001, 10.499
-/**
- * Generates a random floating-point number between min (inclusive) and max (inclusive).
- * Note: Achieving true inclusivity of 'max' with standard Math.random() is numerically tricky
- * due to floating point precision and Math.random()'s [0, 1) range.
- * This function provides a practical approximation where the chance of hitting 'max' is very small
- * but technically possible by extending the range slightly.
- * @param min The lower bound (inclusive).
- * @param max The upper bound (inclusive).
- * @returns A random float within the specified range, attempting to include max.
- */
-function getRandomFloatInclusive(min: number, max: number): number {
-    // To make max inclusive, we can slightly extend the upper bound.
-    // A common, albeit imperfect, way is to add Number.EPSILON or a tiny amount.
-    // This makes the range effectively [min, max + epsilon).
-    // The chance of hitting max exactly is still very low but not strictly zero.
-    return Math.random() * (max - min + Number.EPSILON) + min; 
-}
-
-// --- Example Usage ---
-console.log("Random float between 1.0 and 5.0 (attempting inclusive of 5.0):");
-console.log(getRandomFloatInclusive(1.0, 5.0)); // e.g., 3.45, 1.0001, potentially 5.0 (extremely rare)
-/**
- * Generates a cryptographically secure random integer between min (inclusive) and max (inclusive).
- * @param min The lower bound (inclusive).
- * @param max The upper bound (inclusive).
- * @returns A cryptographically secure random integer within the specified range.
- * @throws {Error} If `window.crypto` is not available.
- */
-function getSecureRandomIntInclusive(min: number, max: number): number {
-    if (typeof window === 'undefined' || !window.crypto || !window.crypto.getRandomValues) {
-        throw new Error("window.crypto.getRandomValues is not available. This function requires a secure context.");
+    constructor() {
+        // Initialize the trie with an empty root node.
+        this.root = new TrieNode();
     }
 
-    min = Math.ceil(min);
-    max = Math.floor(max);
-
-    // Calculate the range size + 1 for inclusive max
-    const range = max - min + 1;
-
-    // To avoid modulo bias, we find the largest multiple of 'range' that fits into the maximum
-    // value of a 32-bit unsigned integer (2^32 - 1).
-    // This ensures all numbers within the range have an equal probability.
-    const maxUint32 = 0xFFFFFFFF; // 2^32 - 1
-    const numBytes = 4; // Use 4 bytes for a Uint32Array
-
-    // Find the largest number that is a multiple of 'range' and fits into maxUint32
-    // If range is large, max may be less than what can be stored in 32 bits,
-    // so it makes sense to work with the `range` itself.
-    // This is often simplified for small ranges:
-    let randomNumber: number;
-    let byteArray = new Uint32Array(1);
-
-    do {
-        window.crypto.getRandomValues(byteArray);
-        randomNumber = byteArray[0];
-        // Keep generating until we get a number within the "unbiased" range
-        // This avoids modulo bias if (maxUint32 + 1) % range != 0
-    } while (randomNumber >= Math.floor(maxUint32 / range) * range);
-
-    return (randomNumber % range) + min;
-}
-
-// --- Example Usage ---
-try {
-    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
-        console.log("\nCryptographically secure random integer between 1 and 100:");
-        console.log(getSecureRandomIntInclusive(1, 100));
-    } else {
-        console.warn("\nCryptographically secure random numbers not available in this environment.");
-    }
-} catch (error) {
-    console.error(error.message);
-}
-function getRandomIntInclusiveSafe(min: number, max: number): number {
-    if (min > max) {
-        // Option 1: Throw an error
-        // throw new Error("min cannot be greater than max.");
-
-        // Option 2: Swap min and max
-        [min, max] = [max, min]; 
+    /**
+     * Inserts a word into the trie.
+     * @param word The word to insert.
+     */
+    insert(word: string): void {
+        let currentNode = this.root;
+        for (const char of word) {
+            // If the character is not a child of the current node, create a new node.
+            if (!currentNode.children.has(char)) {
+                currentNode.children.set(char, new TrieNode());
+            }
+            // Move to the child node corresponding to the character.
+            currentNode = currentNode.children.get(char)!; // '!' asserts non-null
+        }
+        // Mark the last node as the end of a word.
+        currentNode.isEndOfWord = true;
     }
 
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+    /**
+     * Searches for a word in the trie.
+     * @param word The word to search for.
+     * @returns true if the word is found, false otherwise.
+     */
+    search(word: string): boolean {
+        let currentNode = this.root;
+        for (const char of word) {
+            // If the character is not a child, the word does not exist.
+            if (!currentNode.children.has(char)) {
+                return false;
+            }
+            // Move to the child node.
+            currentNode = currentNode.children.get(char)!;
+        }
+        // Return true only if the node marks the end of a word.
+        // This distinguishes between "app" (a word) and "appl" (just a prefix for "apple").
+        return currentNode.isEndOfWord;
+    }
+
+    /**
+     * Checks if there is any word in the trie that starts with the given prefix.
+     * @param prefix The prefix to search for.
+     * @returns true if any word starts with the prefix, false otherwise.
+     */
+    startsWith(prefix: string): boolean {
+        const node = this._traverse(prefix);
+        // If the traversal results in a node (meaning the prefix path exists), return true.
+        return node !== null;
+    }
+
+    /**
+     * Helper method to traverse the trie to the end of a given prefix/word.
+     * @param text The word or prefix to traverse.
+     * @returns The TrieNode at the end of the text, or null if the path does not exist.
+     */
+    private _traverse(text: string): TrieNode | null {
+        let currentNode = this.root;
+        for (const char of text) {
+            if (!currentNode.children.has(char)) {
+                return null; // Path does not exist
+            }
+            currentNode = currentNode.children.get(char)!;
+        }
+        return currentNode; // Return the node at the end of the text
+    }
+
+    /**
+     * Deletes a word from the trie.
+     * This implementation uses a recursive helper for cleaner logic.
+     * @param word The word to delete.
+     * @returns true if the word was successfully deleted, false if it wasn't found.
+     */
+    delete(word: string): boolean {
+        // Recursive helper function
+        const deleteHelper = (
+            currentNode: TrieNode,
+            word: string,
+            index: number
+        ): boolean => {
+            // Base case: end of the word
+            if (index === word.length) {
+                // If the current node is not marked as end of a word,
+                // then the word doesn't exist in the trie.
+                if (!currentNode.isEndOfWord) {
+                    return false; // Word not found to delete
+                }
+                // Unmark it as end of a word.
+                currentNode.isEndOfWord = false;
+                // Return true if this node has no children (meaning it can be removed).
+                return currentNode.children.size === 0;
+            }
+
+            const char = word[index];
+            const childNode = currentNode.children.get(char);
+
+            // If no child exists for this character, the word is not in the trie.
+            if (!childNode) {
+                return false;
+            }
+
+            // Recursively call for the next character.
+            const shouldDeleteChild = deleteHelper(childNode, word, index + 1);
+
+            // If the child node should be deleted (it has no more utility), remove it from children map.
+            if (shouldDeleteChild) {
+                currentNode.children.delete(char);
+                // Return true if the current node also has no children AND is not the end of another word.
+                return currentNode.children.size === 0 && !currentNode.isEndOfWord;
+            }
+
+            return false; // Child wasn't deleted, so this node also won't be
+        };
+
+        // Start the recursive deletion from the root.
+        return deleteHelper(this.root, word, 0);
+    }
+
+    /**
+     * Retrieves all words in the trie that start with a given prefix.
+     * @param prefix The prefix to search for.
+     * @returns An array of words that start with the prefix.
+     */
+    getWordsWithPrefix(prefix: string): string[] {
+        const results: string[] = [];
+        const prefixNode = this._traverse(prefix);
+
+        if (!prefixNode) {
+            return []; // No words found for this prefix
+        }
+
+        // Helper for Depth First Search (DFS) from a given node
+        const collectWords = (node: TrieNode, currentPath: string) => {
+            if (node.isEndOfWord) {
+                results.push(currentPath);
+            }
+
+            for (const [char, childNode] of node.children.entries()) {
+                collectWords(childNode, currentPath + char);
+            }
+        };
+
+        // Start collecting words from the node where the prefix ends.
+        collectWords(prefixNode, prefix);
+        return results;
+    }
 }
 
-// Example:
-console.log("\nUsing safe function:");
-console.log(getRandomIntInclusiveSafe(10, 1)); // Will swap and return between 1 and 10
-// console.log(getRandomIntInclusiveSafe(10, 1)); // If throwing error, this line would crash
-/**
- * Generates a random integer between min (inclusive) and max (inclusive).
- * @param min The lower bound (inclusive).
- * @param max The upper bound (inclusive).
- * @returns A random integer within the specified range.
- */
-function getRandomIntInclusive(min: number, max: number): number {
-    // Ensure min <= max. If not, swap them.
-    if (min > max) [min, max] = [max, min]; 
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+const trie = new Trie();
 
-/**
- * Generates a random floating-point number between min (inclusive) and max (exclusive).
- * @param min The lower bound (inclusive).
- * @param max The upper bound (exclusive).
- * @returns A random float within the specified range.
- */
-function getRandomFloat(min: number, max: number): number {
-    // Ensure min <= max. If not, swap them.
-    if (min > max) [min, max] = [max, min];
-    return Math.random() * (max - min) + min;
-}
+// --- Insert words ---
+console.log("--- Inserting words ---");
+trie.insert("apple");
+trie.insert("app");
+trie.insert("apricot");
+trie.insert("banana");
+trie.insert("band");
+trie.insert("cat");
+trie.insert("canada");
 
-// --- Example Usage ---
-console.log("\n--- Final Examples ---");
-console.log("Integer [1, 5]:", getRandomIntInclusive(1, 5));
-console.log("Float [0.0, 1.0):", getRandomFloat(0.0, 1.0));
-console.log("Integer [5, 1]: (swapped)", getRandomIntInclusive(5, 1)); // min and max are swapped internally
+// --- Search words ---
+console.log("\n--- Searching for words ---");
+console.log("Search 'apple':", trie.search("apple"));    // true
+console.log("Search 'app':", trie.search("app"));      // true
+console.log("Search 'ap':", trie.search("ap"));       // false (prefix, not a full word)
+console.log("Search 'apricot':", trie.search("apricot")); // true
+console.log("Search 'grape':", trie.search("grape"));   // false
+
+// --- Check for prefixes ---
+console.log("\n--- Checking for prefixes ---");
+console.log("Starts with 'app':", trie.startsWith("app"));   // true
+console.log("Starts with 'ban':", trie.startsWith("ban"));   // true
+console.log("Starts with 'ca':", trie.startsWith("ca"));    // true
+console.log("Starts with 'gra':", trie.startsWith("gra"));   // false
+
+// --- Get words with prefix ---
+console.log("\n--- Getting words with prefixes ---");
+console.log("Words with prefix 'ap':", trie.getWordsWithPrefix("ap")); // ['apple', 'app', 'apricot']
+console.log("Words with prefix 'ban':", trie.getWordsWithPrefix("ban")); // ['banana', 'band']
+console.log("Words with prefix 'c':", trie.getWordsWithPrefix("c"));   // ['cat', 'canada']
+console.log("Words with prefix 'g':", trie.getWordsWithPrefix("g"));   // []
+
+// --- Deleting words ---
+console.log("\n--- Deleting words ---");
+console.log("Delete 'app':", trie.delete("app"));      // true
+console.log("Search 'app' after delete:", trie.search("app")); // false
+console.log("Search 'apple' after deleting 'app':", trie.search("apple")); // true (apple still exists)
+console.log("Words with prefix 'ap' after deleting 'app':", trie.getWordsWithPrefix("ap")); // ['apple', 'apricot']
+
+console.log("Delete 'grape' (non-existent):", trie.delete("grape")); // false
+
+console.log("Delete 'apple':", trie.delete("apple"));  // true
+console.log("Search 'apple' after delete:", trie.search("apple")); // false
+console.log("Words with prefix 'ap' after deleting 'apple':", trie.getWordsWithPrefix("ap")); // ['apricot']
+
+console.log("Delete 'apricot':", trie.delete("apricot")); // true
+console.log("Words with prefix 'ap' after deleting 'apricot':", trie.getWordsWithPrefix("ap")); // []
