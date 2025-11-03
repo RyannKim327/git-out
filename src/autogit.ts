@@ -1,31 +1,30 @@
-function isPrime(n: number): boolean {
-  // Handle edge cases
-  if (n <= 1) return false;
-  if (n <= 3) return true;
-  if (n % 2 === 0 || n % 3 === 0) return false;
-  
-  // Check for factors from 5 up to sqrt(n)
-  for (let i = 5; i * i <= n; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) {
-      return false;
-    }
-  }
-  
-  return true;
+function findCommonElements<T>(array1: T[], array2: T[]): T[] {
+  return array1.filter(item => array2.includes(item));
 }
-console.log(isPrime(2));  // true
-console.log(isPrime(17)); // true
-console.log(isPrime(25)); // false
-console.log(isPrime(1));  // false
-console.log(isPrime(0));  // false
-function isPrimeSimple(n: number): boolean {
-  if (n <= 1) return false;
-  if (n === 2) return true;
-  if (n % 2 === 0) return false;
-  
-  for (let i = 3; i * i <= n; i += 2) {
-    if (n % i === 0) return false;
-  }
-  
-  return true;
+
+// Example usage:
+const arr1 = [1, 2, 3, 4];
+const arr2 = [3, 4, 5, 6];
+const common = findCommonElements(arr1, arr2); // Output: [3, 4]
+function findCommonElements<T>(array1: T[], array2: T[]): T[] {
+  const set2 = new Set(array2);
+  return array1.filter(item => set2.has(item));
 }
+
+// Example usage:
+// Same result as above but more efficient O(n + m)
+function findUniqueCommonElements<T>(array1: T[], array2: T[]): T[] {
+  const set1 = new Set(array1);
+  const set2 = new Set(array2);
+  return [...set1].filter(item => set2.has(item));
+}
+
+// Example: 
+// findUniqueCommonElements([2, 2, 3], [2, 3]) => [2, 3] (no duplicates)
+// Empty array checks
+const empty = findCommonElements([], [1, 2]); // Returns []
+
+// Mixed types (TypeScript will error if incompatible types are passed)
+const numbers = [1, 2, 3];
+const strings = ["1", "2"];
+findCommonElements(numbers, strings); // ❌ TypeScript compilation error
