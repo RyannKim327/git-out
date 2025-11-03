@@ -1,50 +1,85 @@
-/**
- * Performs binary search on a sorted array
- * 
- * @param array - The sorted array to search
- * @param target - The element to search for
- * @param comparator - Optional comparison function (default: numeric ascending)
- * @returns Index of the target if found, otherwise -1
- */
-function binarySearch<T>(
-  array: T[],
-  target: T,
-  comparator: (a: T, b: T) => number = (a, b) => Number(a) - Number(b)
-): number {
-  let low = 0;
-  let high = array.length - 1;
+function decimalToBinary(num: number): string {
+    if (num === 0) return '0';
+    return num.toString(2);
+}
 
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2);
-    const comparison = comparator(array[mid], target);
-
-    if (comparison === 0) {
-      return mid; // Target found
-    } else if (comparison < 0) {
-      low = mid + 1; // Search right half
-    } else {
-      high = mid - 1; // Search left half
+// Examples
+console.log(decimalToBinary(10)); // "1010"
+console.log(decimalToBinary(255)); // "11111111"
+console.log(decimalToBinary(0)); // "0"
+function decimalToBinary(num: number): string {
+    if (num === 0) return '0';
+    
+    if (num < 0) {
+        // For negative numbers, show the binary of the absolute value with a negative sign
+        return '-' + Math.abs(num).toString(2);
     }
-  }
-
-  return -1; // Target not found
-}
-const numbers = [1, 3, 5, 7, 9];
-console.log(binarySearch(numbers, 5)); // Output: 2 (index)
-console.log(binarySearch(numbers, 4)); // Output: -1 (not found)
-const fruits = ["apple", "banana", "cherry", "date"];
-const stringComparator = (a: string, b: string) => a.localeCompare(b);
-console.log(binarySearch(fruits, "cherry", stringComparator)); // Output: 2
-interface Person {
-  id: number;
-  name: string;
+    
+    return num.toString(2);
 }
 
-const people: Person[] = [
-  { id: 1, name: "Alice" },
-  { id: 3, name: "Bob" },
-  { id: 5, name: "Charlie" }
-];
+// Examples
+console.log(decimalToBinary(-10)); // "-1010"
+console.log(decimalToBinary(-5)); // "-101"
+function decimalToBinaryFixed(num: number, bits: number): string {
+    if (num === 0) return '0'.repeat(bits);
+    
+    // Handle negative numbers with two's complement
+    let binary = Math.abs(num).toString(2);
+    
+    if (num < 0) {
+        // Invert bits
+        const inverted = binary
+            .padStart(bits, '0')
+            .split('')
+            .map(bit => bit === '0' ? '1' : '0')
+            .join('');
+        
+        // Add 1
+        const complement = (parseInt(inverted, 2) + 1).toString(2);
+        binary = complement.padStart(bits, '0');
+    } else {
+        binary = binary.padStart(bits, '0');
+    }
+    
+    return binary;
+}
 
-const personComparator = (a: Person, b: Person) => a.id - b.id;
-console.log(binarySearch(people, { id: 3, name: '' }, personComparator)); // Output: 1
+// Examples (8-bit representation)
+console.log(decimalToBinaryFixed(10, 8));  // "00001010"
+console.log(decimalToBinaryFixed(-10, 8)); // "11110110"
+console.log(decimalToBinaryFixed(255, 8)); // "11111111"
+function decimalToBinaryManual(num: number): string {
+    if (num === 0) return '0';
+    
+    let binary = '';
+    let absoluteNum = Math.abs(num);
+    
+    while (absoluteNum > 0) {
+        binary = (absoluteNum % 2) + binary;
+        absoluteNum = Math.floor(absoluteNum / 2);
+    }
+    
+    return num < 0 ? '-' + binary : binary;
+}
+
+// Examples
+console.log(decimalToBinaryManual(10)); // "1010"
+console.log(decimalToBinaryManual(-13)); // "-1101"
+function decimalToBinarySafe(num: number): string {
+    if (!Number.isInteger(num) || !Number.isSafeInteger(num)) {
+        throw new Error('Input must be a safe integer');
+    }
+    
+    if (num === 0) return '0';
+    
+    return num.toString(2);
+}
+
+// Examples
+console.log(decimalToBinarySafe(42)); // "101010"
+try {
+    decimalToBinarySafe(3.14); // Throws error
+} catch (e) {
+    console.log(e.message); // "Input must be a safe integer"
+}
