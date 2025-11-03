@@ -1,74 +1,34 @@
-function isPalindrome(str: string): boolean {
-    // Convert to lowercase and remove non-alphanumeric characters
-    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
-    let left = 0;
-    let right = cleanStr.length - 1;
-    
-    while (left < right) {
-        if (cleanStr[left] !== cleanStr[right]) {
-            return false;
-        }
-        left++;
-        right--;
-    }
-    
-    return true;
+import cron from 'node-cron';
+
+// Schedule a task to run every 5 minutes
+const task = cron.schedule('*/5 * * * *', () => {
+  console.log(`Task executed at: ${new Date().toISOString()}`);
+  // Your logic here, e.g., API calls, database cleanup, etc.
+  performScheduledWork();
+});
+
+// Function that contains the actual work to be done
+function performScheduledWork() {
+  // Example: Log some data or perform some operation
+  const currentTime = new Date();
+  console.log(`Performing scheduled work at ${currentTime.toLocaleTimeString()}`);
+  
+  // Example: You could add API calls, file operations, etc. here
+  // fetchDataFromAPI();
+  // cleanupOldFiles();
 }
 
-// Usage
-console.log(isPalindrome("A man a plan a canal Panama")); // true
-console.log(isPalindrome("race a car")); // false
-console.log(isPalindrome("No 'x' in Nixon")); // true
-function isPalindrome(str: string): boolean {
-    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const reversed = cleanStr.split('').reverse().join('');
-    return cleanStr === reversed;
-}
+// Start the cron job
+console.log('Cron job started. Task will run every 5 minutes.');
 
-// Usage
-console.log(isPalindrome("Madam I'm Adam")); // true
-console.log(isPalindrome("hello")); // false
-function isPalindromeExact(str: string): boolean {
-    return str === str.split('').reverse().join('');
-}
+// Gracefully stop the cron job when the process is terminated
+process.on('SIGINT', () => {
+  console.log('Stopping cron job...');
+  task.stop();
+  process.exit(0);
+});
 
-// Usage
-console.log(isPalindromeExact("racecar")); // true
-console.log(isPalindromeExact("Racecar")); // false (case-sensitive)
-console.log(isPalindromeExact("race car")); // false (space matters)
-function isPalindromeFunctional(str: string): boolean {
-    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    return cleanStr === [...cleanStr].reverse().join('');
-}
-interface PalindromeChecker {
-    isPalindrome(input: string): boolean;
-    isPalindromeExact(input: string): boolean;
-}
-
-class PalindromeService implements PalindromeChecker {
-    isPalindrome(str: string): boolean {
-        const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-        let left = 0;
-        let right = cleanStr.length - 1;
-        
-        while (left < right) {
-            if (cleanStr[left] !== cleanStr[right]) {
-                return false;
-            }
-            left++;
-            right--;
-        }
-        return true;
-    }
-    
-    isPalindromeExact(str: string): boolean {
-        return str === str.split('').reverse().join('');
-    }
-}
-
-// Usage
-const checker = new PalindromeService();
-console.log(checker.isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(checker.isPalindromeExact("racecar")); // true
-console.log(checker.isPalindromeExact("Racecar")); // false
+// Optional: List all active jobs
+console.log(`Active cron jobs: ${cron.getTasks().size}`);
+npm install node-cron
+npm install --save-dev @types/node  # for TypeScript types
