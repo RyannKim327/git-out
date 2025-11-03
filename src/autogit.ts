@@ -1,104 +1,60 @@
-import axios, { AxiosResponse, AxiosError } from 'axios';
+class Stack<T> {
+    private items: T[];
 
-// Define interfaces for type safety
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  website: string;
-}
-
-interface ApiResponse {
-  data: User[];
-  status: number;
-}
-
-// Function to fetch users from JSONPlaceholder API
-async function fetchUsers(): Promise<void> {
-  try {
-    // Configure axios request
-    const response: AxiosResponse<ApiResponse> = await axios.get('https://jsonplaceholder.typicode.com/users', {
-      timeout: 5000, // 5 second timeout
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      }
-    });
-
-    const users: User[] = response.data.data;
-    
-    console.log('✅ Successfully fetched users:');
-    users.forEach((user: User) => {
-      console.log(`- ${user.name} (${user.email})`);
-    });
-
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError;
-      console.error('❌ Axios Error:', {
-        message: axiosError.message,
-        status: axiosError.response?.status,
-        statusText: axiosError.response?.statusText,
-        url: axiosError.config?.url
-      });
-    } else {
-      console.error('❌ Unexpected Error:', error);
+    constructor() {
+        this.items = [];
     }
-  }
+
+    // Push element onto the stack
+    push(element: T): void {
+        this.items.push(element);
+    }
+
+    // Remove and return top element
+    pop(): T {
+        if (this.isEmpty()) {
+            throw new Error("Stack underflow - Cannot pop from empty stack");
+        }
+        return this.items.pop() as T;
+    }
+
+    // View top element without removal
+    peek(): T {
+        if (this.isEmpty()) {
+            throw new Error("Stack is empty");
+        }
+        return this.items[this.items.length - 1];
+    }
+
+    // Check if stack is empty
+    isEmpty(): boolean {
+        return this.items.length === 0;
+    }
+
+    // Get stack size
+    size(): number {
+        return this.items.length;
+    }
+
+    // Clear the stack
+    clear(): void {
+        this.items = [];
+    }
+
+    // Print stack contents (optional)
+    print(): void {
+        console.log(this.items.toString());
+    }
 }
 
-// Function to post a new user (example with mock data)
-async function createUser(newUser: Partial<User>): Promise<void> {
-  try {
-    const response: AxiosResponse<User> = await axios.post('https://jsonplaceholder.typicode.com/users', newUser, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+// Example Usage
+const numberStack = new Stack<number>();
+numberStack.push(10);
+numberStack.push(20);
+numberStack.push(30);
 
-    console.log('✅ User created successfully:', response.data);
-
-  } catch (error) {
-    console.error('❌ Error creating user:', error);
-  }
-}
-
-// Usage examples
-async function main(): Promise<void> {
-  console.log('🔄 Fetching users...\n');
-  await fetchUsers();
-
-  console.log('\n🔄 Creating a new user...\n');
-  await createUser({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    website: 'johndoe.com'
-  });
-}
-
-// Run the example
-main().catch(console.error);
-
-// Optional: Create an axios instance for reuse
-const apiClient = axios.create({
-  baseURL: 'https://jsonplaceholder.typicode.com',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-// Example using the axios instance
-async function fetchUsersWithInstance(): Promise<void> {
-  try {
-    const response = await apiClient.get<User[]>('/users');
-    console.log('\n📊 Using axios instance - Total users:', response.data.length);
-  } catch (error) {
-    console.error('❌ Error with axios instance:', error);
-  }
-}
-
-// Uncomment to run the instance example
-// fetchUsersWithInstance();
-npm install axios
-npm install --save-dev @types/node typescript
+console.log(numberStack.peek());  // Output: 30
+console.log(numberStack.pop());   // Output: 30
+console.log(numberStack.size());  // Output: 2
+console.log(numberStack.isEmpty()); // Output: false
+numberStack.print();             // Output: 10,20
