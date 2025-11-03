@@ -1,158 +1,259 @@
-/**
- * Calculates the area of a triangle given its base and height.
- * @param base The length of the base of the triangle.
- * @param height The perpendicular height to that base.
- * @returns The area of the triangle.
- * @throws Error if base or height are non-positive.
- */
-function calculateAreaBaseHeight(base: number, height: number): number {
-    if (base <= 0 || height <= 0) {
-        throw new Error("Base and height must be positive numbers.");
-    }
-    return (base * height) / 2;
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null;
+  right: TreeNode<T> | null;
+
+  constructor(value: T) {
+    this.value = value;
+    this.left = null;
+    this.right = null;
+  }
 }
+class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
 
-// --- Usage ---
-console.log("--- Base and Height Method ---");
-try {
-    const area1 = calculateAreaBaseHeight(10, 5); // base = 10, height = 5
-    console.log(`Area (base=10, height=5): ${area1}`); // Expected: 25
+  // Insert a new value into the BST
+  insert(value: T): void {
+    this.root = this._insertRecursively(this.root, value);
+  }
 
-    const area2 = calculateAreaBaseHeight(7.5, 3.2);
-    console.log(`Area (base=7.5, height=3.2): ${area2}`); // Expected: 12
-
-    // console.log(calculateAreaBaseHeight(-5, 10)); // This would throw an error
-} catch (error: any) {
-    console.error(error.message);
-}
-console.log("\n");
-/**
- * Calculates the area of a triangle given its three side lengths using Heron's formula.
- * @param a Length of the first side.
- * @param b Length of the second side.
- * @param c Length of the third side.
- * @returns The area of the triangle.
- * @throws Error if any side length is non-positive or if the sides do not form a valid triangle.
- */
-function calculateAreaHerons(a: number, b: number, c: number): number {
-    if (a <= 0 || b <= 0 || c <= 0) {
-        throw new Error("Side lengths must be positive numbers.");
+  // Recursive insert helper method
+  private _insertRecursively(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
+    // If the tree is empty, create a new root node
+    if (node === null) {
+      return new TreeNode(value);
     }
 
-    // Triangle Inequality Theorem: The sum of the lengths of any two sides of a triangle
-    // must be greater than the length of the third side.
-    if (!(a + b > c && a + c > b && b + c > a)) {
-        throw new Error("The given side lengths do not form a valid triangle.");
+    // Compare values (assumes T is comparable)
+    if (this._compare(value, node.value) < 0) {
+      // Insert to the left subtree
+      node.left = this._insertRecursively(node.left, value);
+    } else if (this._compare(value, node.value) > 0) {
+      // Insert to the right subtree
+      node.right = this._insertRecursively(node.right, value);
+    }
+    // If equal, do nothing (no duplicates allowed)
+    return node;
+  }
+
+  // Search for a value in the BST
+  search(value: T): boolean {
+    return this._searchRecursively(this.root, value);
+  }
+
+  // Recursive search helper method
+  private _searchRecursively(node: TreeNode<T> | null, value: T): boolean {
+    // Base case: node doesn't exist or we've found the value
+    if (node === null || this._compare(value, node.value) === 0) {
+      return node !== null;
     }
 
-    const s = (a + b + c) / 2; // Semi-perimeter
-    const areaSquared = s * (s - a) * (s - b) * (s - c);
+    // Continue searching in the appropriate subtree
+    if (this._compare(value, node.value) < 0) {
+      return this._searchRecursively(node.left, value);
+    } else {
+      return this._searchRecursively(node.right, value);
+    }
+  }
 
-    // Due to floating point inaccuracies, areaSquared might be very slightly negative
-    // for degenerate triangles or near-degenerate ones. Math.max(0, ...) handles this.
-    return Math.sqrt(Math.max(0, areaSquared));
-}
+  // Delete a value from the BST
+  delete(value: T): void {
+    this.root = this._deleteRecursively(this.root, value);
+  }
 
-// --- Usage ---
-console.log("--- Heron's Formula (Three Sides) ---");
-try {
-    const area3 = calculateAreaHerons(3, 4, 5); // A common right-angled triangle
-    console.log(`Area (sides 3, 4, 5): ${area3}`); // Expected: 6
+  // Recursive delete helper method
+  private _deleteRecursively(
+    node: TreeNode<T> | null,
+    value: T
+  ): TreeNode<T> | null {
+    // Base case: node doesn't exist
+    if (node === null) {
+      return null;
+    }
 
-    const area4 = calculateAreaHerons(7, 8, 9);
-    console.log(`Area (sides 7, 8, 9): ${area4}`); // Expected: approx 26.83
+    // Find the node to delete
+    if (this._compare(value, node.value) < 0) {
+      node.left = this._deleteRecursively(node.left, value);
+    } else if (this._compare(value, node.value) > 0) {
+      node.right = this._deleteRecursively(node.right, value);
+    } else {
+      // Node to delete found
 
-    // console.log(calculateAreaHerons(1, 2, 5)); // This would throw an error (not a valid triangle)
-} catch (error: any) {
-    console.error(error.message);
-}
-console.log("\n");
-interface Point {
-    x: number;
-    y: number;
-}
+      // Case 1: Leaf node (no children)
+      if (node.left === null && node.right === null) {
+        return null;
+      }
+      // Case 2: Node with only one child
+      else if (node.left === null) {
+        return node.right;
+      } else if (node.right === null) {
+        return node.left;
+      }
+      // Case 3: Node with two children
+      else {
+        // Find the inorder successor (smallest in right subtree)
+        const successor = this._findMin(node.right);
+        node.value = successor.value;
+        // Delete the successor
+        node.right = this._deleteRecursively(node.right, successor.value);
+        return node;
+      }
+    }
 
-/**
- * Calculates the area of a triangle given the coordinates of its three vertices.
- * Uses the Shoelace formula (or determinant formula).
- * @param p1 The first vertex (Point object).
- * @param p2 The second vertex (Point object).
- * @param p3 The third vertex (Point object).
- * @returns The area of the triangle. Returns 0 if the points are collinear (degenerate triangle).
- */
-function calculateAreaCoordinates(p1: Point, p2: Point, p3: Point): number {
-    // The formula automatically handles positive/negative area based on vertex order,
-    // so we take the absolute value.
-    const area = 0.5 * Math.abs(
-        p1.x * (p2.y - p3.y) +
-        p2.x * (p3.y - p1.y) +
-        p3.x * (p1.y - p2.y)
+    return node;
+  }
+
+  // Find the minimum value node in a subtree
+  private _findMin(node: TreeNode<T>): TreeNode<T> {
+    while (node.left !== null) {
+      node = node.left;
+    }
+    return node;
+  }
+
+  // Get the height of the tree
+  getHeight(): number {
+    return this._getHeightRecursively(this.root);
+  }
+
+  private _getHeightRecursively(node: TreeNode<T> | null): number {
+    if (node === null) {
+      return 0;
+    }
+    const leftHeight = this._getHeightRecursively(node.left);
+    const rightHeight = this._getHeightRecursively(node.right);
+    return Math.max(leftHeight, rightHeight) + 1;
+  }
+
+  // Check if the tree is empty
+  isEmpty(): boolean {
+    return this.root === null;
+  }
+
+  // Get the size of the tree
+  getSize(): number {
+    return this._getSizeRecursively(this.root);
+  }
+
+  private _getSizeRecursively(node: TreeNode<T> | null): number {
+    if (node === null) {
+      return 0;
+    }
+    return (
+      1 + this._getSizeRecursively(node.left) + this._getSizeRecursively(node.right)
     );
-    return area;
-}
+  }
 
-// --- Usage ---
-console.log("--- Coordinates of Vertices Method ---");
-const pA: Point = { x: 0, y: 0 };
-const pB: Point = { x: 4, y: 0 };
-const pC: Point = { x: 0, y: 3 };
-const area5 = calculateAreaCoordinates(pA, pB, pC); // A right-angled triangle (base 4, height 3)
-console.log(`Area (0,0), (4,0), (0,3): ${area5}`); // Expected: 6
-
-const pD: Point = { x: 1, y: 1 };
-const pE: Point = { x: 5, y: 2 };
-const pF: Point = { x: 3, y: 6 };
-const area6 = calculateAreaCoordinates(pD, pE, pF);
-console.log(`Area (1,1), (5,2), (3,6): ${area6}`); // Expected: 10
-
-const pG: Point = { x: 1, y: 1 };
-const pH: Point = { x: 2, y: 2 };
-const pI: Point = { x: 3, y: 3 }; // Collinear points, degenerate triangle
-const area7 = calculateAreaCoordinates(pG, pH, pI);
-console.log(`Area (1,1), (2,2), (3,3) (collinear): ${area7}`); // Expected: 0
-console.log("\n");
-/**
- * Converts an angle from degrees to radians.
- * @param degrees The angle in degrees.
- * @returns The angle in radians.
- */
-function degreesToRadians(degrees: number): number {
-    return degrees * (Math.PI / 180);
-}
-
-/**
- * Calculates the area of a triangle given two side lengths and the included angle.
- * @param side1 The length of the first side.
- * @param side2 The length of the second side.
- * @param angleDegrees The angle between side1 and side2, in degrees.
- * @returns The area of the triangle.
- * @throws Error if side lengths are non-positive or angle is outside (0, 180) exclusive.
- */
-function calculateAreaSAS(side1: number, side2: number, angleDegrees: number): number {
-    if (side1 <= 0 || side2 <= 0) {
-        throw new Error("Side lengths must be positive numbers.");
+  // In-order traversal (Left -> Root -> Right)
+  inOrderTraversal(callback?: (value: T) => void): T[] {
+    const result: T[] = [];
+    this._inOrderRecursively(this.root, (value: T) => result.push(value));
+    if (callback) {
+      result.forEach(callback);
     }
-    // An angle of 0 or 180 degrees would result in a degenerate triangle (area 0),
-    // but typically we expect a proper triangle.
-    if (angleDegrees <= 0 || angleDegrees >= 180) {
-        throw new Error("Angle must be strictly between 0 and 180 degrees.");
+    return result;
+  }
+
+  private _inOrderRecursively(
+    node: TreeNode<T> | null,
+    callback: (value: T) => void
+  ): void {
+    if (node !== null) {
+      this._inOrderRecursively(node.left, callback);
+      callback(node.value);
+      this._inOrderRecursively(node.right, callback);
     }
+  }
 
-    const angleRadians = degreesToRadians(angleDegrees);
-    return 0.5 * side1 * side2 * Math.sin(angleRadians);
+  // Pre-order traversal (Root -> Left -> Right)
+  preOrderTraversal(callback?: (value: T) => void): T[] {
+    const result: T[] = [];
+    this._preOrderRecursively(this.root, (value: T) => result.push(value));
+    if (callback) {
+      result.forEach(callback);
+    }
+    return result;
+  }
+
+  private _preOrderRecursively(
+    node: TreeNode<T> | null,
+    callback: (value: T) => void
+  ): void {
+    if (node !== null) {
+      callback(node.value);
+      this._preOrderRecursively(node.left, callback);
+      this._preOrderRecursively(node.right, callback);
+    }
+  }
+
+  // Post-order traversal (Left -> Right -> Root)
+  postOrderTraversal(callback?: (value: T) => void): T[] {
+    const result: T[] = [];
+    this._postOrderRecursively(this.root, (value: T) => result.push(value));
+    if (callback) {
+      result.forEach(callback);
+    }
+    return result;
+  }
+
+  private _postOrderRecursively(
+    node: TreeNode<T> | null,
+    callback: (value: T) => void
+  ): void {
+    if (node !== null) {
+      this._postOrderRecursively(node.left, callback);
+      this._postOrderRecursively(node.right, callback);
+      callback(node.value);
+    }
+  }
+
+  // Comparison method - you may need to adjust this based on your data type
+  private _compare(a: T, b: T): number {
+    if (a instanceof Date && b instanceof Date) {
+      return a.getTime() - b.getTime();
+    }
+    if (typeof a === 'string' && typeof b === 'string') {
+      return a.localeCompare(b);
+    }
+    if (typeof a === 'number' && typeof b === 'number') {
+      return a - b;
+    }
+    // For other types, you might want to implement a custom comparator
+    throw new Error('Cannot compare values of type ' + typeof a);
+  }
 }
+// Example usage with numbers
+const bst = new BinarySearchTree<number>();
 
-// --- Usage ---
-console.log("--- Two Sides and Included Angle (SAS) Method ---");
-try {
-    const area8 = calculateAreaSAS(10, 5, 30); // side1=10, side2=5, angle=30 degrees
-    console.log(`Area (sides 10, 5, angle 30°): ${area8}`); // Expected: 12.5
+// Insert values
+bst.insert(50);
+bst.insert(30);
+bst.insert(70);
+bst.insert(20);
+bst.insert(40);
+bst.insert(60);
+bst.insert(80);
 
-    const area9 = calculateAreaSAS(6, 8, 90); // Right-angled triangle (base 6, height 8)
-    console.log(`Area (sides 6, 8, angle 90°): ${area9}`); // Expected: 24 (0.5 * 6 * 8 * sin(90) = 0.5 * 6 * 8 * 1)
+// Search for values
+console.log(bst.search(40)); // true
+console.log(bst.search(90)); // false
 
-    // console.log(calculateAreaSAS(7, 4, 180)); // This would throw an error
-} catch (error: any) {
-    console.error(error.message);
-}
-console.log("\n");
+// Tree traversals
+console.log('In-order:', bst.inOrderTraversal()); 
+// [20, 30, 40, 50, 60, 70, 80]
+
+console.log('Pre-order:', bst.preOrderTraversal());
+// [50, 30, 20, 40, 70, 60, 80]
+
+console.log('Post-order:', bst.postOrderTraversal());
+// [20, 40, 30, 60, 80, 70, 50]
+
+// Tree properties
+console.log('Height:', bst.getHeight()); // 3
+console.log('Size:', bst.getSize()); // 7
+console.log('Is empty:', bst.isEmpty()); // false
+
+// Delete a node
+bst.delete(30);
+console.log('After deleting 30:', bst.inOrderTraversal());
+// [20, 40, 50, 60, 70, 80]
