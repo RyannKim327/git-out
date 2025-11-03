@@ -1,87 +1,39 @@
-function getStringLength(str: string): number {
-    let count = 0;
-    for (let i = 0; i < str.length; i++) {  // Note: This still uses .length in the loop condition
-        count++;
-    }
-    return count;
-}
+function longestCommonSubstring(str1: string, str2: string): string {
+    if (str1.length === 0 || str2.length === 0) return '';
 
-// Better approach - using a while loop with charAt()
-function getStringLengthWithoutLength(str: string): number {
-    let count = 0;
-    let i = 0;
-    while (str.charAt(i) !== '') {
-        count++;
-        i++;
-    }
-    return count;
-}
+    const len1 = str1.length;
+    const len2 = str2.length;
+    let maxLength = 0;
+    let endIndex = 0;
 
-// Usage
-const text = "Hello World";
-console.log(getStringLengthWithoutLength(text)); // Output: 11
-function stringLength(str: string): number {
-    let length = 0;
-    let index = 0;
-    
-    // charAt(index) returns an empty string when index is out of bounds
-    while (str.charAt(index) !== '') {
-        length++;
-        index++;
-    }
-    
-    return length;
-}
-function recursiveStringLength(str: string, index: number = 0): number {
-    // Base case: if we've reached the end of the string
-    if (str.charAt(index) === '') {
-        return 0;
-    }
-    
-    // Recursive case: count current char + length of remaining string
-    return 1 + recursiveStringLength(str, index + 1);
-}
+    // Initialize previous row with zeros (size len2 + 1 for 0-based indexing)
+    let prevRow: number[] = new Array(len2 + 1).fill(0);
 
-// Usage
-const message = "TypeScript";
-console.log(recursiveStringLength(message)); // Output: 10
-function arrayMethodLength(str: string): number {
-    // Convert string to array of characters and get array length
-    // This technically uses array.length, but not string.length directly
-    return [...str].length;
-}
+    for (let i = 1; i <= len1; i++) {
+        const currRow: number[] = new Array(len2 + 1).fill(0);
 
-// Usage
-const phrase = "Hello TypeScript";
-console.log(arrayMethodLength(phrase)); // Output: 15
-function pureIterationLength(str: string): number {
-    let count = 0;
-    let index = 0;
-    
-    try {
-        while (true) {
-            // This will throw an error when index is out of bounds
-            void str.charAt(index);
-            count++;
-            index++;
+        for (let j = 1; j <= len2; j++) {
+            if (str1[i - 1] === str2[j - 1]) {
+                currRow[j] = prevRow[j - 1] + 1;
+
+                // Update maxLength and endIndex if a longer substring is found
+                if (currRow[j] > maxLength) {
+                    maxLength = currRow[j];
+                    endIndex = i - 1; // end index in str1 (0-based)
+                }
+            } else {
+                currRow[j] = 0; // No match, reset length
+            }
         }
-    } catch (e) {
-        return count;
-    }
-}
-function customStringLength(input: string): number {
-    let length = 0;
-    let position = 0;
-    
-    while (input.charAt(position) !== '') {
-        length++;
-        position++;
-    }
-    
-    return length;
-}
 
-// Test it
-const testString = "Hello, TypeScript!";
-console.log(customStringLength(testString)); // Output: 18
-console.log(testString.length); // Output: 18 (for comparison)
+        // Update previous row for the next iteration
+        prevRow = currRow;
+    }
+
+    return maxLength > 0
+        ? str1.substring(endIndex - maxLength + 1, endIndex + 1)
+        : '';
+}
+console.log(longestCommonSubstring("ABABC", "BABCA")); // Output: "BABC"
+console.log(longestCommonSubstring("XYZ", "XYZ"));     // Output: "XYZ"
+console.log(longestCommonSubstring("ABCD", "XYZ"));    // Output: ""
