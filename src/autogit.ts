@@ -1,36 +1,52 @@
-class ListNode<T> {
-    value: T;
-    next: ListNode<T> | null;
+function kmpSearch(text: string, pattern: string): number[] {
+    const m = pattern.length;
+    const n = text.length;
+    const lps = buildLPS(pattern); // Longest Prefix Suffix array
+    const result: number[] = [];
 
-    constructor(value: T, next?: ListNode<T> | null) {
-        this.value = value;
-        this.next = next ?? null;
+    let i = 0; // index for text
+    let j = 0; // index for pattern
+
+    while (i < n) {
+        if (pattern[j] === text[i]) {
+            i++;
+            j++;
+        }
+
+        if (j === m) {
+            result.push(i - j); // match found at i-j
+            j = lps[j - 1];
+        } else if (i < n && pattern[j] !== text[i]) {
+            if (j !== 0) {
+                j = lps[j - 1];
+            } else {
+                i++;
+            }
+        }
     }
+
+    return result;
 }
 
-function getIntersectionNode<T>(
-    headA: ListNode<T> | null,
-    headB: ListNode<T> | null
-): ListNode<T> | null {
-    if (!headA || !headB) return null;
+function buildLPS(pattern: string): number[] {
+    const lps: number[] = new Array(pattern.length).fill(0);
+    let len = 0; // length of the previous longest prefix suffix
+    let i = 1;
 
-    let ptrA: ListNode<T> | null = headA;
-    let ptrB: ListNode<T> | null = headB;
-
-    while (ptrA !== ptrB) {
-        ptrA = ptrA ? ptrA.next : headB;
-        ptrB = ptrB ? ptrB.next : headA;
+    while (i < pattern.length) {
+        if (pattern[i] === pattern[len]) {
+            len++;
+            lps[i] = len;
+            i++;
+        } else {
+            if (len !== 0) {
+                len = lps[len - 1];
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
     }
 
-    return ptrA;
+    return lps;
 }
-// List A: 1 -> 2 -> 3 -> 4
-const a4 = new ListNode(4);
-const a3 = new ListNode(3, a4);
-const a2 = new ListNode(2, a3);
-const a1 = new ListNode(1, a2);
-
-// List B: 9 -> 3 -> 4 (intersects at a3)
-const b1 = new ListNode(9, a3);
-
-const intersection = getIntersectionNode(a1, b1); // Returns node with value 3
