@@ -1,209 +1,36 @@
-// Simulating Android AsyncTask-like functionality in TypeScript
-class AsyncTask<T, Progress, Result> {
-  private onPreExecuteCallback?: () => void;
-  private onProgressUpdateCallback?: (progress: Progress) => void;
-  private onPostExecuteCallback?: (result: Result) => void;
-  private doInBackgroundCallback?: () => Promise<Result>;
+class ListNode<T> {
+    value: T;
+    next: ListNode<T> | null;
 
-  constructor() {
-    this.execute = this.execute.bind(this);
-  }
+    constructor(value: T, next?: ListNode<T> | null) {
+        this.value = value;
+        this.next = next ?? null;
+    }
+}
 
-  // Set the background task
-  doInBackground(task: () => Promise<Result>): this {
-    this.doInBackgroundCallback = task;
-    return this;
-  }
+function getIntersectionNode<T>(
+    headA: ListNode<T> | null,
+    headB: ListNode<T> | null
+): ListNode<T> | null {
+    if (!headA || !headB) return null;
 
-  // Called before background task starts
-  onPreExecute(callback: () => void): this {
-    this.onPreExecuteCallback = callback;
-    return this;
-  }
+    let ptrA: ListNode<T> | null = headA;
+    let ptrB: ListNode<T> | null = headB;
 
-  // Called when progress updates
-  onProgressUpdate(callback: (progress: Progress) => void): this {
-    this.onProgressUpdateCallback = callback;
-    return this;
-  }
-
-  // Called when background task completes
-  onPostExecute(callback: (result: Result) => void): this {
-    this.onPostExecuteCallback = callback;
-    return this;
-  }
-
-  // Execute the async task
-  async execute(): Promise<Result | null> {
-    if (!this.doInBackgroundCallback) {
-      throw new Error('doInBackground must be set before executing');
+    while (ptrA !== ptrB) {
+        ptrA = ptrA ? ptrA.next : headB;
+        ptrB = ptrB ? ptrB.next : headA;
     }
 
-    try {
-      // Pre-execute
-      if (this.onPreExecuteCallback) {
-        this.onPreExecuteCallback();
-      }
-
-      // Execute background task
-      const result = await this.doInBackgroundCallback();
-
-      // Post-execute
-      if (this.onPostExecuteCallback) {
-        this.onPostExecuteCallback(result);
-      }
-
-      return result;
-    } catch (error) {
-      console.error('AsyncTask failed:', error);
-      return null;
-    }
-  }
-
-  // Publish progress (call from doInBackground)
-  protected publishProgress(progress: Progress): void {
-    if (this.onProgressUpdateCallback) {
-      this.onProgressUpdateCallback(progress);
-    }
-  }
+    return ptrA;
 }
+// List A: 1 -> 2 -> 3 -> 4
+const a4 = new ListNode(4);
+const a3 = new ListNode(3, a4);
+const a2 = new ListNode(2, a3);
+const a1 = new ListNode(1, a2);
 
-// Example usage: Network API connection
-interface ApiResponse {
-  id: number;
-  name: string;
-  data: any;
-}
+// List B: 9 -> 3 -> 4 (intersects at a3)
+const b1 = new ListNode(9, a3);
 
-class ApiService {
-  private baseUrl = 'https://api.example.com';
-
-  // Simulate API connection through async task
-  async connectToApi(endpoint: string): Promise<ApiResponse | null> {
-    const asyncTask = new AsyncTask<string, number, ApiResponse>()
-      .doInBackground(() => this.fetchData(endpoint))
-      .onPreExecute(() => {
-        console.log('Starting API connection...');
-        // Could update UI to show loading spinner
-      })
-      .onProgressUpdate((progress) => {
-        console.log(`Connection progress: ${progress}%`);
-        // Could update progress bar in UI
-      })
-      .onPostExecute((result) => {
-        if (result) {
-          console.log('API connection successful:', result);
-        } else {
-          console.log('API connection failed');
-        }
-        // Could hide loading spinner and show results
-      });
-
-    return await asyncTask.execute();
-  }
-
-  private async fetchData(endpoint: string): Promise<ApiResponse> {
-    // Simulate network delay and progress
-    const totalSteps = 5;
-    let currentStep = 0;
-
-    // Step 1: DNS resolution
-    await this.delay(500);
-    currentStep++;
-    this.publishProgress((currentStep / totalSteps) * 100);
-
-    // Step 2: Connection establishment
-    await this.delay(300);
-    currentStep++;
-    this.publishProgress((currentStep / totalSteps) * 100);
-
-    // Step 3: Request sending
-    await this.delay(200);
-    currentStep++;
-    this.publishProgress((currentStep / totalSteps) * 100);
-
-    // Step 4: Waiting for response
-    await this.delay(800);
-    currentStep++;
-    this.publishProgress((currentStep / totalSteps) * 100);
-
-    // Step 5: Receiving and parsing response
-    await this.delay(400);
-    currentStep++;
-    this.publishProgress(100);
-
-    // Simulate API response
-    return {
-      id: Date.now(),
-      name: endpoint,
-      data: { message: 'Success', timestamp: new Date().toISOString() }
-    };
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  // Method to publish progress from within the task
-  private publishProgress(progress: number): void {
-    // This would need to be called from within the AsyncTask context
-    // In a real implementation, you'd use the task's publishProgress method
-  }
-}
-
-// Database connection example
-class DatabaseService {
-  async connectToDatabase(): Promise<boolean> {
-    const asyncTask = new AsyncTask<null, string, boolean>()
-      .doInBackground(async () => {
-        // Simulate database connection steps
-        await this.connectToServer();
-        await this.authenticate();
-        await this.openDatabase();
-        return true;
-      })
-      .onPreExecute(() => {
-        console.log('Initializing database connection...');
-      })
-      .onProgressUpdate((progress) => {
-        console.log(`Database progress: ${progress}`);
-      })
-      .onPostExecute((success) => {
-        if (success) {
-          console.log('Database connected successfully');
-        } else {
-          console.log('Database connection failed');
-        }
-      });
-
-    return await asyncTask.execute() || false;
-  }
-
-  private async connectToServer(): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  }
-
-  private async authenticate(): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 800));
-  }
-
-  private async openDatabase(): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 1200));
-  }
-}
-
-// Usage example
-async function demo() {
-  console.log('=== API Connection Demo ===');
-  const apiService = new ApiService();
-  const response = await apiService.connectToApi('/users');
-  console.log('Final result:', response);
-
-  console.log('\n=== Database Connection Demo ===');
-  const dbService = new DatabaseService();
-  const dbConnected = await dbService.connectToDatabase();
-  console.log('Database connected:', dbConnected);
-}
-
-// Run the demo
-demo().catch(console.error);
+const intersection = getIntersectionNode(a1, b1); // Returns node with value 3
