@@ -1,52 +1,33 @@
-function longestCommonPrefix(strings: string[]): string {
-    // 1. Handle edge cases:
-    // If the array is empty or null, there's no common prefix.
-    if (!strings || strings.length === 0) {
-        return "";
-    }
-
-    // If there's only one string, it is its own longest common prefix.
-    if (strings.length === 1) {
-        return strings[0];
-    }
-
-    // 2. Take the first string as a reference.
-    const firstString = strings[0];
-
-    // 3. Iterate through the characters of the first string.
-    for (let i = 0; i < firstString.length; i++) {
-        const char = firstString[i];
-
-        // 4. For each character, compare it with the corresponding character
-        //    in all other strings in the array.
-        //    Start from the second string (index 1) since the first is our reference.
-        for (let j = 1; j < strings.length; j++) {
-            const currentString = strings[j];
-
-            // 5. Check two conditions to determine if the prefix ends:
-            //    a) If the current string is shorter than the current character index `i`.
-            //    b) If the character at index `i` in the current string doesn't match `char`.
-            if (i >= currentString.length || currentString[i] !== char) {
-                // If either condition is true, we've found the end of the LCP.
-                // Return the substring of the first string from index 0 up to (but not including) `i`.
-                return firstString.substring(0, i);
-            }
-        }
-    }
-
-    // 6. If the loop completes, it means all characters of the first string
-    //    are common to all other strings. In this case, the first string itself
-    //    is the longest common prefix.
-    return firstString;
+function triangleAreaBaseHeight(base: number, height: number): number {
+  return (base * height) / 2;
 }
 
-// --- Examples ---
+// Example usage:
+const area = triangleAreaBaseHeight(10, 5); // Area = 25
+function triangleAreaHeron(a: number, b: number, c: number): number {
+  if (a <= 0 || b <= 0 || c <= 0) throw new Error("Sides must be positive");
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error("Invalid triangle: sides violate triangle inequality");
+  }
 
-console.log(longestCommonPrefix(["flower", "flow", "flight"])); // Output: "fl"
-console.log(longestCommonPrefix(["dog", "racecar", "car"]));    // Output: ""
-console.log(longestCommonPrefix(["apple", "apricot", "apply"])); // Output: "ap"
-console.log(longestCommonPrefix(["apple"]));                     // Output: "apple"
-console.log(longestCommonPrefix([]));                            // Output: ""
-console.log(longestCommonPrefix(["", "abc", "def"]));           // Output: ""
-console.log(longestCommonPrefix(["hello", "hell", "heaven"]));   // Output: "he"
-console.log(longestCommonPrefix(["aa", "a"]));                 // Output: "a"
+  const s = (a + b + c) / 2;
+  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+}
+
+// Example usage:
+const area = triangleAreaHeron(3, 4, 5); // Area = 6 (right triangle)
+type Point = { x: number; y: number };
+
+function triangleAreaShoelace(p1: Point, p2: Point, p3: Point): number {
+  const { x: x1, y: y1 } = p1;
+  const { x: x2, y: y2 } = p2;
+  const { x: x3, y: y3 } = p3;
+
+  return Math.abs(x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) / 2;
+}
+
+// Example usage:
+const pA = { x: 0, y: 0 };
+const pB = { x: 4, y: 0 };
+const pC = { x: 0, y: 3 };
+const area = triangleAreaShoelace(pA, pB, pC); // Area = 6 (right triangle)
