@@ -1,115 +1,68 @@
-function majorityElement(nums: number[]): number | null {
-    let candidate = nums[0];
-    let count = 1;
+type Graph = Map<number, number[]>; 
+// You can also use { [key: number]: number[] } if you prefer plain objects.
 
-    for (let i = 1; i < nums.length; i++) {
-        if (count === 0) {
-            candidate = nums[i];
-            count = 1;
-        } else if (nums[i] === candidate) {
-            count++;
-        } else {
-            count--;
+function tarjansSCC(graph: Graph): number[][] {
+    let index = 0;
+    const stack: number[] = [];
+    const onStack = new Set<number>();
+    const indices = new Map<number, number>();
+    const lowLink = new Map<number, number>();
+
+    const sccs: number[][] = [];
+
+    function strongConnect(v: number) {
+        // Set the depth index for v
+        indices.set(v, index);
+        lowLink.set(v, index);
+        index++;
+
+        stack.push(v);
+        onStack.add(v);
+
+        for (const w of graph.get(v) || []) {
+            if (!indices.has(w)) {
+                // Successor w has not yet been visited; recurse on it
+                strongConnect(w);
+                lowLink.set(v, Math.min(lowLink.get(v)!, lowLink.get(w)!));
+            } else if (onStack.has(w)) {
+                // Successor w is in the stack, so it's in the current SCC
+                lowLink.set(v, Math.min(lowLink.get(v)!, indices.get(w)!));
+            }
+        }
+
+        // If v is a root node, pop the stack and generate an SCC
+        if (lowLink.get(v) === indices.get(v)) {
+            const scc: number[] = [];
+            let w: number;
+            do {
+                w = stack.pop()!;
+                onStack.delete(w);
+                scc.push(w);
+            } while (w !== v);
+            sccs.push(scc);
         }
     }
 
-    // Verify if candidate is actually majority
-    const majorityThreshold = Math.floor(nums.length / 2);
-    const candidateCount = nums.filter(num => num === candidate).length;
-    
-    return candidateCount > majorityThreshold ? candidate : null;
-}
-
-// Usage
-const array = [2, 2, 1, 1, 1, 2, 2];
-console.log(majorityElement(array)); // Output: 2
-function majorityElementHashMap(nums: number[]): number | null {
-    const frequencyMap = new Map<number, number>();
-    const majorityThreshold = Math.floor(nums.length / 2);
-
-    for (const num of nums) {
-        const count = (frequencyMap.get(num) || 0) + 1;
-        frequencyMap.set(num, count);
-        
-        if (count > majorityThreshold) {
-            return num;
+    for (const v of graph.keys()) {
+        if (!indices.has(v)) {
+            strongConnect(v);
         }
     }
 
-    return null;
-}
-function majorityElementSorting(nums: number[]): number | null {
-    nums.sort();
-    const majorityThreshold = Math.floor(nums.length / 2);
-    const candidate = nums[majorityThreshold];
-    
-    // Verify candidate
-    const count = nums.filter(num => num === candidate).length;
-    return count > majorityThreshold ? candidate : null;
-}
-function findMajorityElement<T>(array: T[]): T | null {
-    if (array.length === 0) return null;
-    
-    let candidate = array[0];
-    let count = 1;
-
-    // Find potential candidate
-    for (let i = 1; i < array.length; i++) {
-        if (count === 0) {
-            candidate = array[i];
-            count = 1;
-        } else if (array[i] === candidate) {
-            count++;
-        } else {
-            count--;
-        }
-    }
-
-    // Verify candidate
-    const majorityThreshold = Math.floor(array.length / 2);
-    const candidateCount = array.filter(item => item === candidate).length;
-    
-    return candidateCount > majorityThreshold ? candidate : null;
+    return sccs;
 }
 
-// Generic version with custom equality check
-function findMajorityElementGeneric<T>(
-    array: T[],
-    equals: (a: T, b: T) => boolean = (a, b) => a === b
-): T | null {
-    if (array.length === 0) return null;
-    
-    let candidate = array[0];
-    let count = 1;
+// Example usage:
+const graph: Graph = new Map([
+    [0, [1]],
+    [1, [2, 3]],
+    [2, [0]],
+    [3, [4]],
+    [4, [5, 7]],
+    [5, [6]],
+    [6, [4]],
+    [7, []]
+]);
 
-    for (let i = 1; i < array.length; i++) {
-        if (count === 0) {
-            candidate = array[i];
-            count = 1;
-        } else if (equals(array[i], candidate)) {
-            count++;
-        } else {
-            count--;
-        }
-    }
-
-    // Verification
-    const majorityThreshold = Math.floor(array.length / 2);
-    const candidateCount = array.filter(item => equals(item, candidate)).length;
-    
-    return candidateCount > majorityThreshold ? candidate : null;
-}
-// Number array
-const numbers = [3, 2, 3];
-console.log(majorityElement(numbers)); // 3
-
-// String array
-const strings = ["apple", "banana", "apple", "apple"];
-console.log(findMajorityElement(strings)); // "apple"
-
-// Array with no majority
-const noMajority = [1, 2, 3, 4];
-console.log(majorityElement(noMajority)); // null
-
-// Empty array
-console.log(majorityElement([])); // null
+console.log(tarjansSCC(graph));
+// Example Output: [ [ 2, 1, 0 ], [ 6, 5, 4 ], [ 3 ], [ 7 ] ]
