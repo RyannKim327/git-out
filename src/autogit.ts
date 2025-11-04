@@ -1,88 +1,142 @@
-/**
- * Edge list representation of a directed weighted graph.
- * `edges[i] = { from, to, weight }`
- */
-type Edge = { from: number; to: number; weight: number };
+// Node class for the linked list
+class QueueNode<T> {
+  value: T;
+  next: QueueNode<T> | null;
 
-/**
- * Result object:
- *   dist[v]  – shortest distance from source to v (∞ if unreachable)
- *   prev[v]  – predecessor of v on the shortest path (undefined if unreachable)
- */
-type BFResult = { dist: number[]; prev: (number | undefined)[] };
+  constructor(value: T) {
+    this.value = value;
+    this.next = null;
+  }
+}
 
-/**
- * Bellman–Ford single-source shortest-path algorithm.
- * Returns the distance array and predecessor array.
- * Throws an Error if a negative-weight cycle reachable from source exists.
- *
- * @param n      number of vertices (vertices are 0..n-1)
- * @param edges  array of directed edges
- * @param source source vertex
- */
-function bellmanFord(n: number, edges: Edge[], source: number): BFResult {
-  const dist: number[] = Array(n).fill(Infinity);
-  const prev: (number | undefined)[] = Array(n).fill(undefined);
+// Queue class using linked list
+class Queue<T> {
+  private head: QueueNode<T> | null = null;
+  private tail: QueueNode<T> | null = null;
+  private size: number = 0;
 
-  dist[source] = 0;
+  // Add element to the end of the queue (enqueue)
+  enqueue(value: T): void {
+    const newNode = new QueueNode(value);
 
-  // Relax all edges |V| - 1 times
-  for (let i = 0; i < n - 1; i++) {
-    for (const { from, to, weight } of edges) {
-      if (dist[from] === Infinity) continue; // still unreachable
-      const newDist = dist[from] + weight;
-      if (newDist < dist[to]) {
-        dist[to] = newDist;
-        prev[to] = from;
+    if (this.isEmpty()) {
+      this.head = newNode;
+      this.tail = newNode;
+    } else {
+      // If tail exists, connect the new node
+      this.tail!.next = newNode;
+      this.tail = newNode;
+    }
+
+    this.size++;
+  }
+
+  // Remove and return the element from the front of the queue (dequeue)
+  dequeue(): T | undefined {
+    if (this.isEmpty()) {
+      return undefined;
+    }
+
+    const removedNode = this.head!;
+    this.head = this.head!.next;
+
+    // If queue becomes empty, also set tail to null
+    if (this.head === null) {
+      this.tail = null;
+    }
+
+    this.size--;
+    
+    // Remove the reference to the removed node to help with garbage collection
+    removedNode.next = null;
+    
+    return removedNode.value;
+  }
+
+  // Return the element at the front without removing it
+  peek(): T | undefined {
+    return this.head ? this.head.value : undefined;
+  }
+
+  // Check if the queue is empty
+  isEmpty(): boolean {
+    return this.size === 0;
+  }
+
+  // Get the current size of the queue
+  getSize(): number {
+    return this.size;
+  }
+
+  // Convert queue to array (from front to back)
+  toArray(): T[] {
+    const result: T[] = [];
+    let current = this.head;
+    
+    while (current) {
+      result.push(current.value);
+      current = current.next;
+    }
+    
+    return result;
+  }
+
+  // Clear the queue
+  clear(): void {
+    this.head = null;
+    this.tail = null;
+    this.size = 0;
+  }
+
+  // Check if queue contains a specific value
+  contains(value: T): boolean {
+    let current = this.head;
+    
+    while (current) {
+      if (current.value === value) {
+        return true;
       }
+      current = current.next;
     }
-  }
-
-  // Check for negative-weight cycles
-  for (const { from, to, weight } of edges) {
-    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-      throw new Error("Graph contains a negative-weight cycle reachable from source");
-    }
-  }
-
-  return { dist, prev };
-}
-
-/* ------------------------------------------------------------------ */
-/* Optional helper: reconstruct shortest path from source to target      */
-function pathTo(target: number, prev: (number | undefined)[]): number[] | null {
-  if (prev[target] === undefined && target !== 0) return null; // unreachable
-  const path: number[] = [];
-  let cur: number | undefined = target;
-  while (cur !== undefined) {
-    path.unshift(cur);
-    cur = prev[cur];
-  }
-  return path;
-}
-
-/* ------------------------------------------------------------------ */
-/* Example usage                                                       */
-if (require.main === module) {
-  const edges: Edge[] = [
-    { from: 0, to: 1, weight: -1 },
-    { from: 0, to: 2, weight: 4 },
-    { from: 1, to: 2, weight: 3 },
-    { from: 1, to: 3, weight: 2 },
-    { from: 1, to: 4, weight: 2 },
-    { from: 3, to: 2, weight: 5 },
-    { from: 3, to: 1, weight: 1 },
-    { from: 4, to: 3, weight: -3 },
-  ];
-
-  const n = 5;
-  const source = 0;
-
-  try {
-    const { dist, prev } = bellmanFord(n, edges, source);
-    console.log("Distances:", dist);
-    console.log("Path to 4:", pathTo(4, prev)); // → [0, 1, 4]
-  } catch (e) {
-    console.error(e.message);
+    
+    return false;
   }
 }
+
+// Usage example
+function demonstrateQueue() {
+  const queue = new Queue<string>();
+  
+  console.log("Queue is empty:", queue.isEmpty()); // true
+  console.log("Size:", queue.getSize()); // 0
+  
+  // Enqueue elements
+  queue.enqueue("First");
+  queue.enqueue("Second");
+  queue.enqueue("Third");
+  
+  console.log("After enqueuing:");
+  console.log("Queue contents:", queue.toArray()); // ["First", "Second", "Third"]
+  console.log("Peek:", queue.peek()); // "First"
+  console.log("Size:", queue.getSize()); // 3
+  
+  // Dequeue elements
+  console.log("Dequeue:", queue.dequeue()); // "First"
+  console.log("Dequeue:", queue.dequeue()); // "Second"
+  
+  console.log("After dequeuing two elements:");
+  console.log("Queue contents:", queue.toArray()); // ["Third"]
+  console.log("Peek:", queue.peek()); // "Third"
+  console.log("Size:", queue.getSize()); // 1
+  
+  // Check contains
+  console.log("Contains 'Third':", queue.contains("Third")); // true
+  console.log("Contains 'First':", queue.contains("First")); // false
+  
+  // Clear queue
+  queue.clear();
+  console.log("After clearing - is empty:", queue.isEmpty()); // true
+}
+
+// Run the demonstration
+demonstrateQueue();
