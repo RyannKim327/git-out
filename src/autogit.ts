@@ -1,17 +1,18 @@
-function findCommonElements<T>(array1: T[], array2: T[]): T[] {
-  return array1.filter(element => array2.includes(element));
-}
+const str = "Hello World!  How are you?";
+const result = str.replace(/\s/g, '');
+console.log(result); // Output: "HelloWorld!Howareyou?"
+const str = "Hello World!  How are you?";
+const result = str.replace(/ /g, '');
+console.log(result); // Output: "HelloWorld!Howareyou?"
+const str = "Hello World!";
+const result = str.split(' ').join('');
+console.log(result); // Output: "HelloWorld!"
+const removeSpaces = (input: string, removeAllWhitespace = true): string => {
+  return removeAllWhitespace 
+    ? input.replace(/\s/g, '')   // Remove all whitespace
+    : input.replace(/ /g, '');   // Remove only spaces
+};
 
-// Example Usage:
-const arr1 = [1, 2, 3, 4];
-const arr2 = [3, 4, 5, 6];
-const common = findCommonElements(arr1, arr2); // Result: [3, 4]
-function findCommonElements<T>(array1: T[], array2: T[]): T[] {
-  const set2 = new Set(array2);
-  return array1.filter(element => set2.has(element));
-}
-
-// Example Usage:
-const arrA = ['a', 'b', 'c', 'c'];
-const arrB = ['b', 'c', 'd'];
-const common = findCommonElements(arrA, arrB); // Result: ['b', 'c', 'c']
+// Usage
+console.log(removeSpaces("Hello\t\nWorld!")); // Output: "HelloWorld!"
+console.log(removeSpaces("Hello\t\nWorld!", false)); // Output: "Hello\t\nWorld!"
