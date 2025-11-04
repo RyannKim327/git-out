@@ -1,53 +1,33 @@
-function reverseWords(str: string): string {
-    return str.split(' ').reverse().join(' ');
+/**
+ * Bubble Sort (ascending order)
+ * @param arr Array of numbers to sort IN-PLACE
+ * @returns the same array reference, now sorted
+ */
+function bubbleSort(arr: number[]): number[] {
+  const n = arr.length;
+  let swapped: boolean;
+
+  do {
+    swapped = false;
+    for (let i = 0; i < n - 1; i++) {
+      if (arr[i] > arr[i + 1]) {
+        // swap
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+        swapped = true;
+      }
+    }
+    // After each pass, the largest element among the unsorted
+    // part is bubbled to the end, so we can shorten the loop.
+    // (Not shown here for clarity, but easy to add.)
+  } while (swapped);
+
+  return arr;
 }
 
-// Example usage
-const original = "Hello World TypeScript";
-const reversed = reverseWords(original);
-console.log(reversed); // "TypeScript World Hello"
-function reverseWordsAdvanced(str: string): string {
-    return str.trim().split(/\s+/).reverse().join(' ');
-}
-
-// Example usage
-const complexString = "  Hello   World  TypeScript  ";
-const reversedAdvanced = reverseWordsAdvanced(complexString);
-console.log(reversedAdvanced); // "TypeScript World Hello"
-function reverseWordsRegex(str: string): string {
-    return str.match(/\S+/g)?.reverse().join(' ') || '';
-}
-
-// Example usage
-const withExtraSpaces = "   Multiple    spaces   here   ";
-const reversedRegex = reverseWordsRegex(withExtraSpaces);
-console.log(reversedRegex); // "here spaces Multiple"
-function reverseWordsFunctional(str: string): string {
-    return str.split(' ')
-              .filter(word => word.length > 0)
-              .reverse()
-              .join(' ');
-}
-function reverseWords(str: string): string {
-    // Handle null/undefined input
-    if (!str) return '';
-    
-    // Split, reverse, and join
-    return str.trim().split(/\s+/).reverse().join(' ');
-}
-
-// Test cases
-const testCases = [
-    "Hello World",
-    "TypeScript is awesome",
-    "   Leading and trailing spaces   ",
-    "Multiple    spaces",
-    "",
-    "SingleWord"
-];
-
-testCases.forEach(test => {
-    console.log(`Original: "${test}"`);
-    console.log(`Reversed: "${reverseWords(test)}"`);
-    console.log('---');
-});
+/* ---------- Quick test ---------- */
+const data = [5, 3, 8, 4, 2];
+console.log("before:", data);
+bubbleSort(data);
+console.log("after: ", data); // [2, 3, 4, 5, 8]
+tsc bubble.ts
+node bubble.js
