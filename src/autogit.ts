@@ -1,334 +1,165 @@
-class SuffixTreeNode {
-    children: Map<string, SuffixTreeNode>;
-    start: number;
-    end: number | null; // null indicates the end of the string
-    suffixLink: SuffixTreeNode | null;
-    index: number; // starting index of suffix (for leaf nodes)
+class PriorityQueue<T> {
+  private heap: [T, number][] = []; // [item, priority] pairs
+  private size: number = 0;
 
-    constructor(start: number, end: number | null = null) {
-        this.children = new Map();
-        this.start = start;
-        this.end = end;
-        this.suffixLink = null;
-        this.index = -1;
+  constructor() {}
+
+  /**
+   * Insert an item with a given priority into the queue
+   * @param item - The item to insert
+   * @param priority - The priority (lower numbers = higher priority)
+   */
+  insert(item: T, priority: number): void {
+    this.heap[this.size] = [item, priority];
+    this.size++;
+    this._bubbleUp(this.size - 1);
+  }
+
+  /**
+   * Remove and return the item with the highest priority
+   * @returns The item with highest priority or undefined if empty
+   */
+  extractMin(): T | undefined {
+    if (this.size === 0) return undefined;
+
+    const min = this.heap[0][0];
+    this.size--;
+    
+    // Move last element to root
+    this.heap[0] = this.heap[this.size];
+    
+    // Heapify down
+    this._bubbleDown(0);
+    
+    return min;
+  }
+
+  /**
+   * Get the item with highest priority without removing it
+   * @returns The item with highest priority or undefined if empty
+   */
+  peek(): T | undefined {
+    return this.size > 0 ? this.heap[0][0] : undefined;
+  }
+
+  /**
+   * Check if the queue is empty
+   * @returns true if empty, false otherwise
+   */
+  isEmpty(): boolean {
+    return this.size === 0;
+  }
+
+  /**
+   * Get the current size of the queue
+   * @returns Number of items in queue
+   */
+  getSize(): number {
+    return this.size;
+  }
+
+  /**
+   * Bubble up the element at given index
+   * @private
+   */
+  private _bubbleUp(index: number): void {
+    const element = this.heap[index];
+    const parentIndex = Math.floor((index - 1) / 2);
+
+    // While not root and parent's priority is greater than current
+    while (index > 0 && this.heap[parentIndex][1] > element[1]) {
+      this.heap[index] = this.heap[parentIndex];
+      index = parentIndex;
+      parentIndex = Math.floor((index - 1) / 2);
     }
 
-    getEdgeLength(): number {
-        if (this.end === null) {
-            throw new Error("Cannot calculate edge length for node with null end");
-        }
-        return this.end - this.start + 1;
+    this.heap[index] = element;
+  }
+
+  /**
+   * Bubble down the element at given index
+   * @private
+   */
+  private _bubbleDown(index: number): void {
+    const element = this.heap[index];
+    let smallest = index;
+    const leftChild = 2 * index + 1;
+    const rightChild = 2 * index + 2;
+
+    // Check if left child exists and has smaller priority
+    if (leftChild < this.size && this.heap[leftChild][1] < this.heap[smallest][1]) {
+      smallest = leftChild;
     }
+
+    // Check if right child exists and has smaller priority
+    if (rightChild < this.size && this.heap[rightChild][1] < this.heap[smallest][1]) {
+      smallest = rightChild;
+    }
+
+    if (smallest !== index) {
+      // Swap with smallest child
+      this.heap[index] = this.heap[smallest];
+      this.heap[smallest] = element;
+      
+      // Continue bubbling down
+      this._bubbleDown(smallest);
+    }
+  }
+
+  /**
+   * Remove all elements from the queue
+   */
+  clear(): void {
+    this.heap = [];
+    this.size = 0;
+  }
+
+  /**
+   * Check if an item exists in the queue
+   * Note: This is O(n) operation
+   * @param item - The item to search for
+   * @param compareFn - Optional comparison function
+   * @returns true if item exists, false otherwise
+   */
+  contains(item: T, compareFn?: (a: T, b: T) => boolean): boolean {
+    if (compareFn) {
+      return this.heap.some(([heapItem]) => compareFn(heapItem, item));
+    }
+    
+    const itemStr = JSON.stringify(item);
+    return this.heap.some(([heapItem]) => JSON.stringify(heapItem) === itemStr);
+  }
 }
 
-class SuffixTree {
-    private root: SuffixTreeNode;
-    private text: string;
-    private activeNode: SuffixTreeNode;
-    private activeEdge: number;
-    private activeLength: number;
-    private remainingSuffixCount: number;
-    private leafEnd: number;
-    private size: number;
-
-    constructor(text: string) {
-        this.text = text + '$'; // Add termination character
-        this.size = this.text.length;
-        this.root = new SuffixTreeNode(-1, -1);
-        this.activeNode = this.root;
-        this.activeEdge = -1;
-        this.activeLength = 0;
-        this.remainingSuffixCount = 0;
-        this.leafEnd = -1;
-        
-        this.build();
-    }
-
-    private build(): void {
-        for (let i = 0; i < this.size; i++) {
-            this.extend(i);
-        }
-    }
-
-    private extend(pos: number): void {
-        this.leafEnd = pos;
-        this.remainingSuffixCount++;
-        let lastNewNode: SuffixTreeNode | null = null;
-
-        while (this.remainingSuffixCount > 0) {
-            if (this.activeLength === 0) {
-                this.activeEdge = pos;
-            }
-
-            const activeEdgeChar = this.text[this.activeEdge];
-
-            if (!this.activeNode.children.has(activeEdgeChar)) {
-                // Rule 2: Create new leaf
-                this.activeNode.children.set(
-                    activeEdgeChar,
-                    new SuffixTreeNode(pos, null)
-                );
-
-                if (lastNewNode !== null) {
-                    lastNewNode.suffixLink = this.activeNode;
-                    lastNewNode = null;
-                }
-            } else {
-                const nextNode = this.activeNode.children.get(activeEdgeChar)!;
-                const edgeLength = nextNode.getEdgeLength();
-
-                if (this.activeLength >= edgeLength) {
-                    this.activeEdge += edgeLength;
-                    this.activeLength -= edgeLength;
-                    this.activeNode = nextNode;
-                    continue;
-                }
-
-                // Rule 3: Character already exists
-                if (this.text[nextNode.start + this.activeLength] === this.text[pos]) {
-                    if (lastNewNode !== null && this.activeNode !== this.root) {
-                        lastNewNode.suffixLink = this.activeNode;
-                    }
-                    this.activeLength++;
-                    break;
-                }
-
-                // Rule 2: Split the edge
-                const splitEnd = nextNode.start + this.activeLength - 1;
-                const splitNode = new SuffixTreeNode(nextNode.start, splitEnd);
-                this.activeNode.children.set(activeEdgeChar, splitNode);
-
-                // New leaf for the new character
-                splitNode.children.set(
-                    this.text[pos],
-                    new SuffixTreeNode(pos, null)
-                );
-
-                // Update the original node
-                nextNode.start += this.activeLength;
-                splitNode.children.set(this.text[nextNode.start], nextNode);
-
-                if (lastNewNode !== null) {
-                    lastNewNode.suffixLink = splitNode;
-                }
-
-                lastNewNode = splitNode;
-            }
-
-            this.remainingSuffixCount--;
-
-            if (this.activeNode === this.root && this.activeLength > 0) {
-                this.activeLength--;
-                this.activeEdge = pos - this.remainingSuffixCount + 1;
-            } else if (this.activeNode !== this.root) {
-                this.activeNode = this.activeNode.suffixLink || this.root;
-            }
-        }
-    }
-
-    // Public API Methods
-
-    /**
-     * Check if the given substring exists in the text
-     */
-    contains(substring: string): boolean {
-        return this.findNode(substring) !== null;
-    }
-
-    /**
-     * Find all occurrences of a substring in the text
-     */
-    findAllOccurrences(substring: string): number[] {
-        const node = this.findNode(substring);
-        if (!node) return [];
-
-        const occurrences: number[] = [];
-        this.collectLeafIndices(node, occurrences);
-        return occurrences;
-    }
-
-    /**
-     * Find the longest repeating substring
-     */
-    findLongestRepeatingSubstring(): string {
-        let result = '';
-        let maxLength = 0;
-        
-        const dfs = (node: SuffixTreeNode, currentDepth: number): number => {
-            if (node.children.size === 0) {
-                return 1; // leaf node
-            }
-
-            let leafCount = 0;
-            for (const child of node.children.values()) {
-                const edgeLength = child.getEdgeLength();
-                const childLeafCount = dfs(child, currentDepth + edgeLength);
-                leafCount += childLeafCount;
-
-                if (childLeafCount > 1 && currentDepth + edgeLength > maxLength) {
-                    maxLength = currentDepth + edgeLength;
-                    
-                    // Reconstruct the substring
-                    let currentNode: SuffixTreeNode = child;
-                    const path: string[] = [];
-                    while (currentNode !== this.root) {
-                        // Find parent
-                        let parent: SuffixTreeNode | null = null;
-                        for (const [char, potentialParent] of this.root.children) {
-                            const found = this.findParent(potentialParent, currentNode);
-                            if (found) {
-                                parent = potentialParent;
-                                break;
-                            }
-                        }
-                        
-                        if (parent) {
-                            path.unshift(this.text.substring(parent.start, (parent.end || 0) + 1));
-                            currentNode = parent;
-                        } else {
-                            break;
-                        }
-                    }
-                    
-                    result = path.join('');
-                }
-            }
-            return leafCount;
-        };
-
-        dfs(this.root, 0);
-        return result;
-    }
-
-    /**
-     * Get all suffixes in the tree (for debugging/display)
-     */
-    getAllSuffixes(): string[] {
-        const suffixes: string[] = [];
-        
-        const traverse = (node: SuffixTreeNode, currentString: string) => {
-            if (node.children.size === 0) {
-                suffixes.push(currentString);
-                return;
-            }
-
-            for (const [char, child] of node.children) {
-                const edgeString = this.text.substring(child.start, (child.end || this.size - 1) + 1);
-                traverse(child, currentString + edgeString);
-            }
-        };
-
-        traverse(this.root, '');
-        return suffixes;
-    }
-
-    // Private helper methods
-
-    private findNode(pattern: string): SuffixTreeNode | null {
-        let currentNode = this.root;
-        let patternIndex = 0;
-
-        while (patternIndex < pattern.length) {
-            const currentChar = pattern[patternIndex];
-            
-            if (!currentNode.children.has(currentChar)) {
-                return null;
-            }
-
-            const nextNode = currentNode.children.get(currentChar)!;
-            const edgeLength = Math.min(
-                nextNode.getEdgeLength(),
-                pattern.length - patternIndex
-            );
-
-            // Compare the pattern with the edge label
-            for (let i = 0; i < edgeLength; i++) {
-                if (this.text[nextNode.start + i] !== pattern[patternIndex + i]) {
-                    return null;
-                }
-            }
-
-            patternIndex += edgeLength;
-            currentNode = nextNode;
-        }
-
-        return currentNode;
-    }
-
-    private collectLeafIndices(node: SuffixTreeNode, indices: number[]): void {
-        if (node.children.size === 0) {
-            indices.push(node.index);
-            return;
-        }
-
-        for (const child of node.children.values()) {
-            this.collectLeafIndices(child, indices);
-        }
-    }
-
-    private findParent(rootNode: SuffixTreeNode, target: SuffixTreeNode): boolean {
-        if (rootNode === target) return true;
-        
-        for (const child of rootNode.children.values()) {
-            if (this.findParent(child, target)) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
+// Usage example
+class Task {
+  constructor(public name: string, public duration: number) {}
+  
+  toString(): string {
+    return `${this.name} (${this.duration}s)`;
+  }
 }
 
-// Example usage and test cases
-function demonstrateSuffixTree(): void {
-    const text = "banana";
-    const suffixTree = new SuffixTree(text);
+// Example usage
+function demonstratePriorityQueue() {
+  const taskQueue = new PriorityQueue<Task>();
 
-    console.log("Text:", text);
-    console.log("All suffixes:", suffixTree.getAllSuffixes());
-    
-    // Test substring search
-    console.log("\nSubstring Search Tests:");
-    const testPatterns = ["ana", "nan", "ban", "xyz", "na"];
-    
-    for (const pattern of testPatterns) {
-        console.log(`"${pattern}": ${suffixTree.contains(pattern)}`);
-        console.log(`  Occurrences: ${suffixTree.findAllOccurrences(pattern)}`);
+  // Insert tasks with priorities (lower number = higher priority)
+  taskQueue.insert(new Task("Fix critical bug", 30), 1);    // High priority
+  taskQueue.insert(new Task("Update documentation", 15), 3); // Low priority
+  taskQueue.insert(new Task("Add new feature", 120), 2);    // Medium priority
+  taskQueue.insert(new Task("Review code", 45), 1);         // High priority
+
+  console.log("Queue size:", taskQueue.getSize()); // 4
+
+  // Process tasks in priority order
+  while (!taskQueue.isEmpty()) {
+    const nextTask = taskQueue.extractMin();
+    if (nextTask) {
+      console.log(`Processing: ${nextTask.toString()}`);
     }
-
-    // Test longest repeating substring
-    console.log("\nLongest repeating substring:", suffixTree.findLongestRepeatingSubstring());
-
-    // Additional test cases
-    console.log("\n--- Additional Tests ---");
-    
-    const testCases = [
-        "mississippi",
-        "abracadabra",
-        "abcabc"
-    ];
-
-    for (const testText of testCases) {
-        const tree = new SuffixTree(testText);
-        console.log(`Text: ${testText}`);
-        console.log(`Longest repeating substring: "${tree.findLongestRepeatingSubstring()}"`);
-        console.log(`Contains "iss": ${tree.contains("iss")}`);
-        console.log(`Occurrences of "iss": ${tree.findAllOccurrences("iss")}`);
-        console.log("---");
-    }
+  }
 }
 
 // Run the demonstration
-demonstrateSuffixTree();
-// Basic usage
-const tree = new SuffixTree("banana");
-
-// Check if substring exists
-console.log(tree.contains("ana")); // true
-console.log(tree.contains("xyz")); // false
-
-// Find all occurrences
-console.log(tree.findAllOccurrences("na")); // [2, 4]
-
-// Find longest repeating substring
-console.log(tree.findLongestRepeatingSubstring()); // "ana"
+demonstratePriorityQueue();
