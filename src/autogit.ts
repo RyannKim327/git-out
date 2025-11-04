@@ -1,34 +1,38 @@
-class ListNode {
-    val: number;
-    next: ListNode | null;
-    constructor(val?: number, next?: ListNode | null) {
-        this.val = (val === undefined ? 0 : val);
-        this.next = (next === undefined ? null : next);
-    }
+function removeVowels(str: string): string {
+  return str.replace(/[aeiouAEIOU]/g, '');
 }
 
-function findNthFromEnd(head: ListNode | null, n: number): ListNode | null {
-    if (!head || n <= 0) {
-        return null;
-    }
-
-    let fast: ListNode | null = head;
-    let slow: ListNode | null = head;
-
-    // Move fast pointer n nodes ahead
-    for (let i = 0; i < n; i++) {
-        if (!fast) {
-            // n is larger than list length
-            return null;
-        }
-        fast = fast.next;
-    }
-
-    // Move both pointers until fast reaches the end
-    while (fast !== null) {
-        fast = fast.next;
-        slow = slow!.next;
-    }
-
-    return slow;
+// Example usage
+const text = "Hello World!";
+console.log(removeVowels(text)); // Output: "Hll Wrld!"
+function removeVowels(str: string): string {
+  return str
+    .split('')
+    .filter(char => !/[aeiouAEIOU]/.test(char))
+    .join('');
 }
+
+// Example usage
+const text = "Hello World!";
+console.log(removeVowels(text)); // Output: "Hll Wrld!"
+function removeVowels(str: string): string {
+  const vowels = 'aeiouAEIOU';
+  return str.replace(new RegExp(`[${vowels}]`, 'g'), '');
+}
+
+// Example usage
+const text = "Hello World!";
+console.log(removeVowels(text)); // Output: "Hll Wrld!"
+interface StringUtils {
+  removeVowels(input: string): string;
+}
+
+const stringUtils: StringUtils = {
+  removeVowels(str: string): string {
+    return str.replace(/[aeiouAEIOU]/g, '');
+  }
+};
+
+// Usage
+const result = stringUtils.removeVowels("TypeScript is awesome!");
+console.log(result); // "TypScrpt s wsm!"
