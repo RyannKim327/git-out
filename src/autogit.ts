@@ -1,89 +1,64 @@
-function selectionSort(arr: number[]): number[] {
-    // Create a copy to avoid mutating the original array
-    const sortedArray = [...arr];
-    const n = sortedArray.length;
+function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+    // Ensure nums1 is the smaller array
+    if (nums1.length > nums2.length) {
+        return findMedianSortedArrays(nums2, nums1);
+    }
     
-    for (let i = 0; i < n - 1; i++) {
-        // Assume the current position has the minimum value
-        let minIndex = i;
+    const m = nums1.length;
+    const n = nums2.length;
+    let left = 0;
+    let right = m;
+    
+    // We need to find the partition such that:
+    // left part of nums1 + left part of nums2 = right part of nums1 + right part of nums2
+    // And max(left) <= min(right)
+    
+    while (left <= right) {
+        const partitionX = Math.floor((left + right) / 2);
+        const partitionY = Math.floor((m + n + 1) / 2) - partitionX;
         
-        // Find the index of the minimum element in the remaining unsorted portion
-        for (let j = i + 1; j < n; j++) {
-            if (sortedArray[j] < sortedArray[minIndex]) {
-                minIndex = j;
+        // Get the rightmost element of left part and leftmost of right part
+        const maxLeftX = partitionX === 0 ? Number.NEGATIVE_INFINITY : nums1[partitionX - 1];
+        const minRightX = partitionX === m ? Number.POSITIVE_INFINITY : nums1[partitionX];
+        
+        const maxLeftY = partitionY === 0 ? Number.NEGATIVE_INFINITY : nums2[partitionY - 1];
+        const minRightY = partitionY === n ? Number.POSITIVE_INFINITY : nums2[partitionY];
+        
+        // Check if we found the correct partition
+        if (maxLeftX <= minRightY && maxLeftY <= minRightX) {
+            // If total length is even, median is average of two middle elements
+            if ((m + n) % 2 === 0) {
+                return (Math.max(maxLeftX, maxLeftY) + Math.min(minRightX, minRightY)) / 2;
+            } else {
+                // If total length is odd, median is the middle element
+                return Math.max(maxLeftX, maxLeftY);
             }
-        }
-        
-        // Swap the found minimum element with the element at position i
-        if (minIndex !== i) {
-            const temp = sortedArray[i];
-            sortedArray[i] = sortedArray[minIndex];
-            sortedArray[minIndex] = temp;
+        } else if (maxLeftX > minRightY) {
+            // Move partition X to the left
+            right = partitionX - 1;
+        } else {
+            // Move partition X to the right
+            left = partitionX + 1;
         }
     }
     
-    return sortedArray;
+    throw new Error("Input arrays are not sorted");
 }
-function selectionSortGeneric<T>(
-    arr: T[], 
-    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
-): T[] {
-    const sortedArray = [...arr];
-    const n = sortedArray.length;
+
+// Example usage and tests
+console.log(findMedianSortedArrays([1, 3], [2])); // 2.0
+console.log(findMedianSortedArrays([1, 2], [3, 4])); // 2.5
+console.log(findMedianSortedArrays([0, 0], [0, 0])); // 0.0
+console.log(findMedianSortedArrays([], [1])); // 1.0
+console.log(findMedianSortedArrays([2], [])); // 2.0
+function findMedianSortedArraysSimple(nums1: number[], nums2: number[]): number {
+    const merged = [...nums1, ...nums2].sort((a, b) => a - b);
+    const totalLength = merged.length;
+    const mid = Math.floor(totalLength / 2);
     
-    for (let i = 0; i < n - 1; i++) {
-        let minIndex = i;
-        
-        for (let j = i + 1; j < n; j++) {
-            if (compareFn(sortedArray[j], sortedArray[minIndex]) < 0) {
-                minIndex = j;
-            }
-        }
-        
-        if (minIndex !== i) {
-            [sortedArray[i], sortedArray[minIndex]] = [sortedArray[minIndex], sortedArray[i]];
-        }
+    if (totalLength % 2 === 0) {
+        return (merged[mid - 1] + merged[mid]) / 2;
     }
     
-    return sortedArray;
+    return merged[mid];
 }
-function selectionSortInPlace(arr: number[]): void {
-    const n = arr.length;
-    
-    for (let i = 0; i < n - 1; i++) {
-        let minIndex = i;
-        
-        for (let j = i + 1; j < n; j++) {
-            if (arr[j] < arr[minIndex]) {
-                minIndex = j;
-            }
-        }
-        
-        if (minIndex !== i) {
-            // Using array destructuring for swapping
-            [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-        }
-    }
-}
-// Basic usage
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-console.log("Original:", numbers);
-console.log("Sorted:", selectionSort(numbers));
-
-// Generic usage with numbers
-const sortedNumbers = selectionSortGeneric(numbers);
-console.log("Generic sorted:", sortedNumbers);
-
-// Generic usage with strings
-const strings = ["banana", "apple", "cherry", "date"];
-const sortedStrings = selectionSortGeneric(strings);
-console.log("Sorted strings:", sortedStrings);
-
-// Generic with custom comparator (descending order)
-const descendingNumbers = selectionSortGeneric(numbers, (a, b) => b - a);
-console.log("Descending:", descendingNumbers);
-
-// In-place sorting
-const mutableArray = [64, 34, 25, 12, 22, 11, 90];
-selectionSortInPlace(mutableArray);
-console.log("In-place sorted:", mutableArray);
