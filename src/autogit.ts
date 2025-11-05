@@ -1,228 +1,158 @@
-interface HashTable<K, V> {
-  set(key: K, value: V): void;
-  get(key: K): V | undefined;
-  delete(key: K): boolean;
-  has(key: K): boolean;
+class ListNode<T> {
+    constructor(
+        public value: T,
+        public next: ListNode<T> | null = null
+    ) {}
 }
 
-class HashTable<K, V> implements HashTable<K, V> {
-  private buckets: Array<Array<[K, V]>>;
-  private size: number;
-  private count: number;
+class LinkedList<T> {
+    head: ListNode<T> | null = null;
 
-  constructor(size: number = 32) {
-    this.size = size;
-    this.count = 0;
-    this.buckets = new Array(size);
-    
-    for (let i = 0; i < size; i++) {
-      this.buckets[i] = [];
+    add(value: T): void {
+        const newNode = new ListNode(value);
+        if (!this.head) {
+            this.head = newNode;
+        } else {
+            let current = this.head;
+            while (current.next) {
+                current = current.next;
+            }
+            current.next = newNode;
+        }
     }
-  }
-
-  // Hash function
-  private hash(key: K): number {
-    const keyString = String(key);
-    let hash = 0;
-    
-    for (let i = 0; i < keyString.length; i++) {
-      hash = (hash << 5) - hash + keyString.charCodeAt(i);
-      hash |= 0; // Convert to 32-bit integer
-    }
-    
-    return Math.abs(hash) % this.size;
-  }
-
-  // Set key-value pair
-  set(key: K, value: V): void {
-    const index = this.hash(key);
-    const bucket = this.buckets[index];
-    
-    // Check if key already exists
-    const existingIndex = bucket.findIndex(([k]) => k === key);
-    
-    if (existingIndex >= 0) {
-      bucket[existingIndex][1] = value; // Update existing
-    } else {
-      bucket.push([key, value]); // Add new
-      this.count++;
-    }
-    
-    // Resize if load factor is too high
-    if (this.loadFactor() > 0.7) {
-      this.resize(this.size * 2);
-    }
-  }
-
-  // Get value by key
-  get(key: K): V | undefined {
-    const index = this.hash(key);
-    const bucket = this.buckets[index];
-    
-    const pair = bucket.find(([k]) => k === key);
-    return pair ? pair[1] : undefined;
-  }
-
-  // Delete key-value pair
-  delete(key: K): boolean {
-    const index = this.hash(key);
-    const bucket = this.buckets[index];
-    const pairIndex = bucket.findIndex(([k]) => k === key);
-    
-    if (pairIndex >= 0) {
-      bucket.splice(pairIndex, 1);
-      this.count--;
-      return true;
-    }
-    
-    return false;
-  }
-
-  // Check if key exists
-  has(key: K): boolean {
-    return this.get(key) !== undefined;
-  }
-
-  // Get current load factor
-  private loadFactor(): number {
-    return this.count / this.size;
-  }
-
-  // Resize the hash table
-  private resize(newSize: number): void {
-    const oldBuckets = this.buckets;
-    this.size = newSize;
-    this.count = 0;
-    this.buckets = new Array(newSize);
-    
-    for (let i = 0; i < newSize; i++) {
-      this.buckets[i] = [];
-    }
-    
-    // Rehash all existing entries
-    for (const bucket of oldBuckets) {
-      for (const [key, value] of bucket) {
-        this.set(key, value);
-      }
-    }
-  }
-
-  // Get all keys
-  keys(): K[] {
-    const keys: K[] = [];
-    
-    for (const bucket of this.buckets) {
-      for (const [key] of bucket) {
-        keys.push(key);
-      }
-    }
-    
-    return keys;
-  }
-
-  // Get all values
-  values(): V[] {
-    const values: V[] = [];
-    
-    for (const bucket of this.buckets) {
-      for (const [, value] of bucket) {
-        values.push(value);
-      }
-    }
-    
-    return values;
-  }
-
-  // Get entries (key-value pairs)
-  entries(): Array<[K, V]> {
-    const entries: Array<[K, V]> = [];
-    
-    for (const bucket of this.buckets) {
-      for (const entry of bucket) {
-        entries.push(entry);
-      }
-    }
-    
-    return entries;
-  }
-
-  // Clear the hash table
-  clear(): void {
-    this.buckets = new Array(this.size);
-    
-    for (let i = 0; i < this.size; i++) {
-      this.buckets[i] = [];
-    }
-    
-    this.count = 0;
-  }
-
-  // Get number of entries
-  get length(): number {
-    return this.count;
-  }
 }
-// Create a hash table
-const hashTable = new HashTable<string, number>();
+class LinkedList<T> {
+    // ... previous implementation
 
-// Set values
-hashTable.set("apple", 1);
-hashTable.set("banana", 2);
-hashTable.set("cherry", 3);
+    reverseIterative(): void {
+        let prev: ListNode<T> | null = null;
+        let current = this.head;
+        let next: ListNode<T> | null = null;
 
-// Get values
-console.log(hashTable.get("apple")); // 1
-console.log(hashTable.get("banana")); // 2
+        while (current !== null) {
+            // Store next node
+            next = current.next;
+            
+            // Reverse the link
+            current.next = prev;
+            
+            // Move pointers one step forward
+            prev = current;
+            current = next;
+        }
 
-// Check existence
-console.log(hashTable.has("cherry")); // true
-console.log(hashTable.has("date")); // false
-
-// Delete entry
-hashTable.delete("banana");
-console.log(hashTable.has("banana")); // false
-
-// Get all keys and values
-console.log(hashTable.keys()); // ["apple", "cherry"]
-console.log(hashTable.values()); // [1, 3]
-
-// Get size
-console.log(hashTable.length); // 2
-private hash(key: K): number {
-  if (typeof key === 'number') {
-    return Math.abs(key) % this.size;
-  }
-  
-  const keyString = String(key);
-  let hash = 5381;
-  
-  for (let i = 0; i < keyString.length; i++) {
-    hash = (hash * 33) ^ keyString.charCodeAt(i);
-  }
-  
-  return Math.abs(hash) % this.size;
+        this.head = prev;
+    }
 }
-class ObjectHashTable<V> {
-  private map: Map<string, V>;
+class LinkedList<T> {
+    // ... previous implementation
 
-  constructor() {
-    this.map = new Map();
-  }
+    reverseRecursive(): void {
+        this.head = this._reverseRecursive(this.head);
+    }
 
-  set(key: object, value: V): void {
-    const keyString = JSON.stringify(key);
-    this.map.set(keyString, value);
-  }
+    private _reverseRecursive(node: ListNode<T> | null): ListNode<T> | null {
+        if (!node || !node.next) {
+            return node;
+        }
 
-  get(key: object): V | undefined {
-    const keyString = JSON.stringify(key);
-    return this.map.get(keyString);
-  }
-
-  // ... other methods
+        const newHead = this._reverseRecursive(node.next);
+        node.next.next = node;
+        node.next = null;
+        
+        return newHead;
+    }
 }
+class LinkedList<T> {
+    // ... previous implementation
 
-// Usage with object keys
-const objTable = new ObjectHashTable<number>();
-objTable.set({ id: 1, name: "John" }, 100);
-console.log(objTable.get({ id: 1, name: "John" })); // 100
+    reverseUsingStack(): void {
+        if (!this.head) return;
+
+        const stack: ListNode<T>[] = [];
+        let current: ListNode<T> | null = this.head;
+
+        // Push all nodes to stack
+        while (current) {
+            stack.push(current);
+            current = current.next;
+        }
+
+        // Pop from stack to rebuild reversed list
+        this.head = stack.pop() || null;
+        current = this.head;
+
+        while (stack.length > 0) {
+            const node = stack.pop()!;
+            if (current) {
+                current.next = node;
+                current = current.next;
+            }
+        }
+
+        if (current) {
+            current.next = null;
+        }
+    }
+}
+class LinkedList<T> {
+    head: ListNode<T> | null = null;
+
+    add(value: T): void {
+        const newNode = new ListNode(value);
+        if (!this.head) {
+            this.head = newNode;
+        } else {
+            let current = this.head;
+            while (current.next) {
+                current = current.next;
+            }
+            current.next = newNode;
+        }
+    }
+
+    // Iterative reversal (preferred for performance)
+    reverse(): void {
+        let prev: ListNode<T> | null = null;
+        let current = this.head;
+
+        while (current) {
+            const next = current.next;
+            current.next = prev;
+            prev = current;
+            current = next;
+        }
+
+        this.head = prev;
+    }
+
+    // Print the list for debugging
+    toString(): string {
+        const values: T[] = [];
+        let current = this.head;
+        while (current) {
+            values.push(current.value);
+            current = current.next;
+        }
+        return values.join(' -> ');
+    }
+
+    // Create from array (helper method)
+    static fromArray<T>(arr: T[]): LinkedList<T> {
+        const list = new LinkedList<T>();
+        for (const item of arr) {
+            list.add(item);
+        }
+        return list;
+    }
+}
+// Create and reverse a linked list
+const list = LinkedList.fromArray([1, 2, 3, 4, 5]);
+console.log('Original:', list.toString()); // 1 -> 2 -> 3 -> 4 -> 5
+
+list.reverse();
+console.log('Reversed:', list.toString()); // 5 -> 4 -> 3 -> 2 -> 1
+
+// Or use iterative method directly
+list.reverseIterative();
+console.log('Reversed again:', list.toString()); // 1 -> 2 -> 3 -> 4 -> 5
