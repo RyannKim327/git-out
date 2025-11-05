@@ -1,38 +1,123 @@
-function isPalindrome(str: string): boolean {
-    let left = 0;
-    let right = str.length - 1;
+function binarySearchRecursive<T>(
+  sortedArray: T[],
+  target: T,
+  left: number = 0,
+  right: number = sortedArray.length - 1
+): number {
+  // Base case: search space is exhausted
+  if (left > right) {
+    return -1; // Element not found
+  }
 
-    while (left < right) {
-        if (str[left] !== str[right]) {
-            return false;
-        }
-        left++;
-        right--;
-    }
+  // Calculate middle index
+  const mid = Math.floor((left + right) / 2);
+  const midValue = sortedArray[mid];
 
-    return true;
+  // Found the target
+  if (midValue === target) {
+    return mid;
+  }
+
+  // Search in left half
+  if (target < midValue) {
+    return binarySearchRecursive(sortedArray, target, left, mid - 1);
+  }
+
+  // Search in right half
+  return binarySearchRecursive(sortedArray, target, mid + 1, right);
+}
+function binarySearchRecursiveGeneric<T>(
+  sortedArray: T[],
+  target: T,
+  compareFn: (a: T, b: T) => number = (a, b) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  },
+  left: number = 0,
+  right: number = sortedArray.length - 1
+): number {
+  if (left > right) {
+    return -1;
+  }
+
+  const mid = Math.floor((left + right) / 2);
+  const comparison = compareFn(target, sortedArray[mid]);
+
+  if (comparison === 0) {
+    return mid;
+  }
+
+  if (comparison < 0) {
+    return binarySearchRecursiveGeneric(
+      sortedArray, 
+      target, 
+      compareFn, 
+      left, 
+      mid - 1
+    );
+  }
+
+  return binarySearchRecursiveGeneric(
+    sortedArray, 
+    target, 
+    compareFn, 
+    mid + 1, 
+    right
+  );
+}
+// Example with numbers
+const numbers = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
+console.log(binarySearchRecursive(numbers, 7)); // Output: 3
+console.log(binarySearchRecursive(numbers, 10)); // Output: -1
+
+// Example with strings
+const words = ['apple', 'banana', 'cherry', 'date', 'elderberry'];
+console.log(binarySearchRecursive(words, 'cherry')); // Output: 2
+
+// Example with custom objects using comparator
+interface Person {
+  id: number;
+  name: string;
 }
 
-// Example
-console.log(isPalindrome("racecar")); // true
-console.log(isPalindrome("hello"));   // false
-function isPalindromeClean(str: string): boolean {
-    let left = 0;
-    let right = str.length - 1;
+const people: Person[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Charlie' },
+  { id: 4, name: 'Diana' },
+];
 
-    while (left < right) {
-        while (left < right && !/[a-zA-Z0-9]/.test(str[left])) left++;
-        while (left < right && !/[a-zA-Z0-9]/.test(str[right])) right--;
+const personIdComparator = (a: Person, b: Person) => a.id - b.id;
+console.log(binarySearchRecursiveGeneric(
+  people, 
+  { id: 3, name: 'Charlie' }, 
+  personIdComparator
+)); // Output: 2
+function binarySearchFirstOccurrence<T>(
+  sortedArray: T[],
+  target: T,
+  left: number = 0,
+  right: number = sortedArray.length - 1
+): number {
+  if (left > right) {
+    return -1;
+  }
 
-        if (str[left].toLowerCase() !== str[right].toLowerCase()) {
-            return false;
-        }
+  const mid = Math.floor((left + right) / 2);
 
-        left++;
-        right--;
+  if (sortedArray[mid] === target) {
+    // Check if this is the first occurrence
+    if (mid === 0 || sortedArray[mid - 1] !== target) {
+      return mid;
     }
+    // Continue searching left for earlier occurrence
+    return binarySearchFirstOccurrence(sortedArray, target, left, mid - 1);
+  }
 
-    return true;
+  if (target < sortedArray[mid]) {
+    return binarySearchFirstOccurrence(sortedArray, target, left, mid - 1);
+  }
+
+  return binarySearchFirstOccurrence(sortedArray, target, mid + 1, right);
 }
-
-console.log(isPalindromeClean("A man, a plan, a canal: Panama")); // true
