@@ -1,190 +1,92 @@
-class RabinKarp {
-    private readonly base: number;
-    private readonly modulus: number;
-
-    constructor(base: number = 256, modulus: number = 101) {
-        this.base = base;
-        this.modulus = modulus;
-    }
-
-    /**
-     * Search for pattern in text using Rabin-Karp algorithm
-     * @param text The text to search in
-     * @param pattern The pattern to search for
-     * @returns Array of starting indices where pattern is found
-     */
-    search(text: string, pattern: string): number[] {
-        const n = text.length;
-        const m = pattern.length;
-        const results: number[] = [];
-
-        if (m === 0 || n < m) {
-            return results;
-        }
-
-        // Calculate hash for pattern and first window of text
-        const patternHash = this.hashString(pattern);
-        let textHash = this.hashString(text.substring(0, m));
-
-        // Precompute base^(m-1) mod modulus for rolling hash
-        let highestPower = 1;
-        for (let i = 0; i < m - 1; i++) {
-            highestPower = (highestPower * this.base) % this.modulus;
-        }
-
-        // Slide the pattern over text one by one
-        for (let i = 0; i <= n - m; i++) {
-            // Check if hash values match
-            if (textHash === patternHash) {
-                // If hash matches, check character by character to avoid collisions
-                if (this.verifyMatch(text, pattern, i)) {
-                    results.push(i);
-                }
-            }
-
-            // Calculate hash for next window of text
-            if (i < n - m) {
-                // Remove leftmost character and add rightmost character
-                textHash = this.updateHash(
-                    textHash,
-                    text.charAt(i),
-                    text.charAt(i + m),
-                    highestPower,
-                    m
-                );
-            }
-        }
-
-        return results;
-    }
-
-    /**
-     * Calculate hash for a string
-     */
-    private hashString(str: string): number {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            hash = (hash * this.base + str.charCodeAt(i)) % this.modulus;
-        }
-        return hash;
-    }
-
-    /**
-     * Update rolling hash for next window
-     */
-    private updateHash(
-        currentHash: number,
-        leftChar: string,
-        rightChar: string,
-        highestPower: number,
-        patternLength: number
-    ): number {
-        // Remove leftmost character
-        let newHash = currentHash - (leftChar.charCodeAt(0) * highestPower) % this.modulus;
-        if (newHash < 0) {
-            newHash += this.modulus;
-        }
-
-        // Add rightmost character
-        newHash = (newHash * this.base + rightChar.charCodeAt(0)) % this.modulus;
-
-        return newHash;
-    }
-
-    /**
-     * Verify if pattern actually matches at given position
-     */
-    private verifyMatch(text: string, pattern: string, startIndex: number): boolean {
-        for (let i = 0; i < pattern.length; i++) {
-            if (text[startIndex + i] !== pattern[i]) {
-                return false;
-            }
-        }
-        return true;
-    }
+function areAnagrams(str1: string, str2: string): boolean {
+    // Remove spaces and convert to lowercase for case-insensitive comparison
+    const normalizedStr1 = str1.replace(/\s/g, '').toLowerCase();
+    const normalizedStr2 = str2.replace(/\s/g, '').toLowerCase();
+    
+    // Sort characters and compare
+    return normalizedStr1.split('').sort().join('') === 
+           normalizedStr2.split('').sort().join('');
 }
+
 // Example usage
-const rabinKarp = new RabinKarp();
-
-// Basic search
-const text = "abracadabra";
-const pattern = "abra";
-const results = rabinKarp.search(text, pattern);
-console.log(`Pattern found at indices: ${results}`); // Output: [0, 7]
-
-// Multiple patterns
-const text2 = "the quick brown fox jumps over the lazy dog";
-const pattern2 = "the";
-const results2 = rabinKarp.search(text2, pattern2);
-console.log(`Pattern found at indices: ${results2}`); // Output: [0, 31]
-
-// No match found
-const results3 = rabinKarp.search("hello world", "xyz");
-console.log(`Pattern found at indices: ${results3}`); // Output: []
-
-// Edge cases
-console.log(rabinKarp.search("", "test")); // []
-console.log(rabinKarp.search("test", "")); // []
-console.log(rabinKarp.search("a", "a")); // [0]
-class AdvancedRabinKarp {
-    private readonly base: number;
-    private readonly modulus: number;
-
-    constructor(base: number = 256, modulus: number = 1000000007) {
-        this.base = base;
-        this.modulus = modulus;
+console.log(areAnagrams('listen', 'silent')); // true
+console.log(areAnagrams('hello', 'world'));   // false
+function areAnagrams(str1: string, str2: string): boolean {
+    const normalizedStr1 = str1.replace(/\s/g, '').toLowerCase();
+    const normalizedStr2 = str2.replace(/\s/g, '').toLowerCase();
+    
+    if (normalizedStr1.length !== normalizedStr2.length) {
+        return false;
     }
-
-    /**
-     * Search for multiple patterns simultaneously
-     */
-    searchMultiplePatterns(text: string, patterns: string[]): Map<string, number[]> {
-        const results = new Map<string, number[]>();
-        
-        for (const pattern of patterns) {
-            const patternResults = this.search(text, pattern);
-            results.set(pattern, patternResults);
+    
+    const charCount: Record<string, number> = {};
+    
+    // Count characters in first string
+    for (const char of normalizedStr1) {
+        charCount[char] = (charCount[char] || 0) + 1;
+    }
+    
+    // Subtract counts using second string
+    for (const char of normalizedStr2) {
+        if (!charCount[char]) {
+            return false;
         }
-        
-        return results;
-    }
-
-    /**
-     * Search with custom hash parameters
-     */
-    searchWithParams(text: string, pattern: string, base: number, modulus: number): number[] {
-        const tempRabinKarp = new RabinKarp(base, modulus);
-        return tempRabinKarp.search(text, pattern);
-    }
-}
-
-// Usage of advanced implementation
-const advancedRK = new AdvancedRabinKarp();
-const multipleResults = advancedRK.searchMultiplePatterns(
-    "hello world hello universe", 
-    ["hello", "world", "universe"]
-);
-
-console.log("Multiple pattern results:", multipleResults);
-// Benchmark function
-function benchmarkRabinKarp(text: string, pattern: string, iterations: number = 1000): number {
-    const rabinKarp = new RabinKarp();
-    const start = performance.now();
-    
-    for (let i = 0; i < iterations; i++) {
-        rabinKarp.search(text, pattern);
+        charCount[char]--;
     }
     
-    const end = performance.now();
-    return end - start;
+    // Check if all counts are zero
+    return Object.values(charCount).every(count => count === 0);
 }
 
-// Compare with built-in string search
-const longText = "a".repeat(10000) + "pattern" + "b".repeat(10000);
-const pattern = "pattern";
-
-const rkTime = benchmarkRabinKarp(longText, pattern);
-const builtInTime = benchmarkBuiltInSearch(longText, pattern, 1000);
-
-console.log(`Rabin-Karp: ${rkTime}ms`);
-console.log(`Built-in: ${builtInTime}ms`);
+// Example usage
+console.log(areAnagrams('triangle', 'integral')); // true
+function areAnagrams(str1: string, str2: string): boolean {
+    const normalizeString = (str: string): string[] => {
+        return Array.from(str.replace(/\s/g, '').toLowerCase().normalize());
+    };
+    
+    const arr1 = normalizeString(str1);
+    const arr2 = normalizeString(str2);
+    
+    if (arr1.length !== arr2.length) return false;
+    
+    const charMap = new Map<string, number>();
+    
+    // Count characters
+    for (const char of arr1) {
+        charMap.set(char, (charMap.get(char) || 0) + 1);
+    }
+    
+    // Verify counts
+    for (const char of arr2) {
+        const count = charMap.get(char);
+        if (!count) return false;
+        charMap.set(char, count - 1);
+    }
+    
+    return true;
+}
+const areAnagrams = (a: string, b: string): boolean => 
+    a.replace(/\s/g, '').toLowerCase().split('').sort().join('') === 
+    b.replace(/\s/g, '').toLowerCase().split('').sort().join('');
+// Enhanced version with type checking and edge cases
+function areAnagrams(str1: string, str2: string, caseSensitive = false): boolean {
+    if (typeof str1 !== 'string' || typeof str2 !== 'string') {
+        throw new Error('Both inputs must be strings');
+    }
+    
+    let processedStr1 = str1.replace(/\s/g, '');
+    let processedStr2 = str2.replace(/\s/g, '');
+    
+    if (!caseSensitive) {
+        processedStr1 = processedStr1.toLowerCase();
+        processedStr2 = processedStr2.toLowerCase();
+    }
+    
+    if (processedStr1.length !== processedStr2.length) {
+        return false;
+    }
+    
+    return processedStr1.split('').sort().join('') === 
+           processedStr2.split('').sort().join('');
+}
