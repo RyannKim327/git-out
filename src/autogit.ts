@@ -1,24 +1,33 @@
-/**
- * Returns the longest common prefix among an array of strings.
- * If the array is empty, returns the empty string.
- */
-function longestCommonPrefix(strs: string[]): string {
-  if (!strs.length) return '';
+class ListNode<T> {
+    value: T;
+    next: ListNode<T> | null;
 
-  // Start by assuming the whole first string is the prefix
-  let prefix = strs[0];
-
-  // Trim the prefix until every string starts with it
-  for (let i = 1; i < strs.length; i++) {
-    while (!strs[i].startsWith(prefix)) {
-      prefix = prefix.slice(0, -1);
-      if (prefix === '') return ''; // Early exit
+    constructor(value: T) {
+        this.value = value;
+        this.next = null;
     }
-  }
-  return prefix;
 }
 
-/* ---------- Usage ---------- */
-console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // "fl"
-console.log(longestCommonPrefix(['dog', 'racecar', 'car']));     // ""
-console.log(longestCommonPrefix([]));                           // ""
+function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+    if (!head) return null;
+
+    let slow: ListNode<T> | null = head;
+    let fast: ListNode<T> | null = head;
+
+    while (fast !== null && fast.next !== null) {
+        slow = slow!.next;
+        fast = fast.next.next;
+    }
+
+    return slow;
+}
+
+// Example usage:
+const head = new ListNode(1);
+head.next = new ListNode(2);
+head.next.next = new ListNode(3);
+head.next.next.next = new ListNode(4);
+head.next.next.next.next = new ListNode(5);
+
+const middle = findMiddle(head);
+console.log(middle?.value); // Output: 3
