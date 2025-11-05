@@ -1,125 +1,135 @@
-function isPrime(n: number): boolean {
-    if (n <= 1) return false;
-    if (n <= 3) return true;
-    if (n % 2 === 0 || n % 3 === 0) return false;
-    
-    for (let i = 5; i * i <= n; i += 6) {
-        if (n % i === 0 || n % (i + 2) === 0) return false;
+class Stack<T> {
+    private items: T[];
+    private top: number;
+
+    constructor() {
+        this.items = [];
+        this.top = -1;
     }
-    return true;
+
+    // Push element onto the stack
+    push(element: T): void {
+        this.items[++this.top] = element;
+    }
+
+    // Remove and return top element
+    pop(): T | undefined {
+        if (this.isEmpty()) {
+            console.log("Stack Underflow");
+            return undefined;
+        }
+        return this.items[this.top--];
+    }
+
+    // Return top element without removing
+    peek(): T | undefined {
+        if (this.isEmpty()) {
+            console.log("Stack is empty");
+            return undefined;
+        }
+        return this.items[this.top];
+    }
+
+    // Check if stack is empty
+    isEmpty(): boolean {
+        return this.top === -1;
+    }
+
+    // Get stack size
+    size(): number {
+        return this.top + 1;
+    }
+
+    // Clear the stack
+    clear(): void {
+        this.items = [];
+        this.top = -1;
+    }
+
+    // Print stack contents
+    print(): void {
+        console.log(this.items.slice(0, this.top + 1));
+    }
+}
+class FixedSizeStack<T> {
+    private items: T[];
+    private top: number;
+    private readonly capacity: number;
+
+    constructor(capacity: number) {
+        this.capacity = capacity;
+        this.items = new Array<T>(capacity);
+        this.top = -1;
+    }
+
+    push(element: T): void {
+        if (this.isFull()) {
+            throw new Error("Stack Overflow: Cannot push to a full stack");
+        }
+        this.items[++this.top] = element;
+    }
+
+    pop(): T {
+        if (this.isEmpty()) {
+            throw new Error("Stack Underflow: Cannot pop from an empty stack");
+        }
+        return this.items[this.top--];
+    }
+
+    peek(): T {
+        if (this.isEmpty()) {
+            throw new Error("Stack is empty");
+        }
+        return this.items[this.top];
+    }
+
+    isEmpty(): boolean {
+        return this.top === -1;
+    }
+
+    isFull(): boolean {
+        return this.top === this.capacity - 1;
+    }
+
+    size(): number {
+        return this.top + 1;
+    }
+
+    clear(): void {
+        this.top = -1;
+    }
+
+    print(): void {
+        console.log(this.items.slice(0, this.top + 1));
+    }
+}
+// Using the basic stack
+const numberStack = new Stack<number>();
+numberStack.push(10);
+numberStack.push(20);
+numberStack.push(30);
+
+console.log(numberStack.peek()); // 30
+console.log(numberStack.pop());  // 30
+console.log(numberStack.size()); // 2
+
+// Using the fixed-size stack
+const stringStack = new FixedSizeStack<string>(3);
+stringStack.push("Hello");
+stringStack.push("World");
+stringStack.push("!");
+
+console.log(stringStack.isFull()); // true
+console.log(stringStack.pop());    // "!"
+
+// Stack with custom objects
+interface User {
+    id: number;
+    name: string;
 }
 
-function largestPrimeFactorBasic(n: number): number {
-    let largestFactor = 1;
-    
-    for (let i = 2; i <= n; i++) {
-        if (n % i === 0 && isPrime(i)) {
-            largestFactor = i;
-            n /= i; // Reduce n by the factor
-        }
-    }
-    
-    return largestFactor;
-}
+const userStack = new Stack<User>();
+userStack.push({ id: 1, name: "Alice" });
+userStack.push({ id: 2, name: "Bob" });
 
-// Example usage
-console.log(largestPrimeFactorBasic(13195)); // 29
-console.log(largestPrimeFactorBasic(600851475143)); // 6857
-function largestPrimeFactorOptimized(n: number): number {
-    let largestFactor = 1;
-    let divisor = 2;
-    
-    // Handle even numbers
-    while (n % divisor === 0) {
-        largestFactor = divisor;
-        n /= divisor;
-    }
-    
-    divisor = 3;
-    
-    // Handle odd numbers
-    while (n > 1) {
-        while (n % divisor === 0) {
-            largestFactor = divisor;
-            n /= divisor;
-        }
-        divisor += 2;
-        
-        // Optimization: Stop when divisor exceeds sqrt(n)
-        if (divisor * divisor > n && n > 1) {
-            largestFactor = n;
-            break;
-        }
-    }
-    
-    return largestFactor;
-}
-function largestPrimeFactor(n: number): number {
-    let largestFactor = 1;
-    
-    // Remove factors of 2
-    while (n % 2 === 0) {
-        largestFactor = 2;
-        n /= 2;
-    }
-    
-    // Check odd factors
-    for (let i = 3; i <= Math.sqrt(n); i += 2) {
-        while (n % i === 0) {
-            largestFactor = i;
-            n /= i;
-        }
-    }
-    
-    // If n is still greater than 2, it's prime
-    if (n > 2) {
-        largestFactor = n;
-    }
-    
-    return largestFactor;
-}
-class PrimeFactorFinder {
-    static largestPrimeFactor(n: number): number {
-        if (n <= 1) return 1;
-        
-        let largestFactor = 1;
-        
-        // Remove factors of 2
-        while (n % 2 === 0) {
-            largestFactor = 2;
-            n /= 2;
-        }
-        
-        // Check odd factors
-        for (let i = 3; i <= Math.sqrt(n); i += 2) {
-            while (n % i === 0) {
-                largestFactor = i;
-                n /= i;
-            }
-        }
-        
-        // If remaining n is prime and greater than current factor
-        if (n > 2 && n > largestFactor) {
-            largestFactor = n;
-        }
-        
-        return largestFactor;
-    }
-}
-
-// Test cases
-const testCases = [
-    { input: 10, expected: 5 },
-    { input: 17, expected: 17 },
-    { input: 13195, expected: 29 },
-    { input: 600851475143, expected: 6857 }
-];
-
-// Run tests
-testCases.forEach(test => {
-    const result = PrimeFactorFinder.largestPrimeFactor(test.input);
-    console.log(`Input: ${test.input}, Expected: ${test.expected}, Got: ${result}`);
-});
-const number = 600851475143;
-const result = PrimeFactorFinder.largestPrimeFactor(number);
-console.log(`Largest prime factor of ${number} is: ${result}`);
+console.log(userStack.peek()); // { id: 2, name: "Bob" }
