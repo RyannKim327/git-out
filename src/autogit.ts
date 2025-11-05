@@ -1,25 +1,25 @@
-/**
- * Returns true if n is a prime number, false otherwise.
- * Works for every 64-bit signed integer (–9_223_372_036_854_775_807 … 9_223_372_036_854_775_807).
- */
-function isPrime(n: number): boolean {
-  if (n !== Math.trunc(n)) return false;      // Reject non-integers
-  if (n < 2) return false;                    // 0, 1 and negatives are not prime
-  if (n % 2 === 0) return n === 2;            // 2 is the only even prime
-  if (n % 3 === 0) return n === 3;            // 3 is the only multiple-of-3 prime
-
-  const limit = Math.floor(Math.sqrt(n));
-  // All primes > 3 are of the form 6k ± 1
-  for (let i = 5; i <= limit; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
-  }
-  return true;
+function countWordOccurrences(text: string, word: string): number {
+  return text.split(word).length - 1;
 }
 
-/* ---------- quick sanity checks ---------- */
-console.log(isPrime(-7));  // false
-console.log(isPrime(0));   // false
-console.log(isPrime(1));   // false
-console.log(isPrime(2));   // true
-console.log(isPrime(97));  // true
-console.log(isPrime(1000000007)); // true
+// Example:
+const str = "apple banana apple orange apple";
+console.log(countWordOccurrences(str, "apple")); // 3
+function countWholeWordOccurrences(text: string, word: string): number {
+  const regex = new RegExp(`\\b${word}\\b`, 'gi'); // \b = word boundary
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
+}
+
+// Example:
+const str = "Apple banana apple orange pineapple APPLE";
+console.log(countWholeWordOccurrences(str, "apple")); // 3
+function countByReduce(text: string, word: string): number {
+  return text
+    .toLowerCase()
+    .split(/\s+/)
+    .reduce((count, current) => current === word.toLowerCase() ? count + 1 : count, 0);
+}
+
+const str = "Apple banana apple orange";
+console.log(countByReduce(str, "apple")); // 2
