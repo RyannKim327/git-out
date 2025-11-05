@@ -1,74 +1,107 @@
-function factorial(n: number): number {
-    if (n < 0) throw new Error("Factorial is not defined for negative numbers");
-    if (n === 0 || n === 1) return 1;
-    return n * factorial(n - 1);
-}
+class ListNode<T> {
+    value: T;
+    next: ListNode<T> | null;
 
-// Usage
-console.log(factorial(5)); // 120
-console.log(factorial(0)); // 1
-function factorialIterative(n: number): number {
-    if (n < 0) throw new Error("Factorial is not defined for negative numbers");
-    
-    let result = 1;
-    for (let i = 2; i <= n; i++) {
-        result *= i;
+    constructor(value: T, next: ListNode<T> | null = null) {
+        this.value = value;
+        this.next = next;
     }
-    return result;
 }
 
-// Usage
-console.log(factorialIterative(5)); // 120
-function factorialBigInt(n: number | bigint): bigint {
-    const num = BigInt(n);
-    if (num < 0n) throw new Error("Factorial is not defined for negative numbers");
-    if (num === 0n || num === 1n) return 1n;
-    
-    let result = 1n;
-    for (let i = 2n; i <= num; i++) {
-        result *= i;
-    }
-    return result;
+class LinkedList<T> {
+    head: ListNode<T> | null = null;
 }
-
-// Usage
-console.log(factorialBigInt(5)); // 120n
-console.log(factorialBigInt(20)); // 2432902008176640000n
-class FactorialCalculator {
-    private static cache: Map<number, number> = new Map();
+class LinkedList<T> {
+    // ... existing code
     
-    static calculate(n: number): number {
-        if (n < 0) throw new Error("Factorial is not defined for negative numbers");
-        if (n === 0 || n === 1) return 1;
+    getLength(): number {
+        let count = 0;
+        let current = this.head;
         
-        if (this.cache.has(n)) {
-            return this.cache.get(n)!;
+        while (current !== null) {
+            count++;
+            current = current.next;
         }
         
-        const result = n * this.calculate(n - 1);
-        this.cache.set(n, result);
-        return result;
+        return count;
+    }
+}
+class LinkedList<T> {
+    // ... existing code
+    
+    getLengthRecursive(node: ListNode<T> | null = this.head): number {
+        if (node === null) {
+            return 0;
+        }
+        return 1 + this.getLengthRecursive(node.next);
+    }
+}
+class LinkedList<T> {
+    head: ListNode<T> | null = null;
+
+    // Add node to the end
+    append(value: T): void {
+        const newNode = new ListNode(value);
+        if (!this.head) {
+            this.head = newNode;
+            return;
+        }
+        
+        let current = this.head;
+        while (current.next !== null) {
+            current = current.next;
+        }
+        current.next = newNode;
+    }
+
+    // Iterative length
+    getLength(): number {
+        let count = 0;
+        let current = this.head;
+        
+        while (current !== null) {
+            count++;
+            current = current.next;
+        }
+        
+        return count;
+    }
+
+    // Recursive length
+    getLengthRecursive(node: ListNode<T> | null = this.head): number {
+        if (node === null) {
+            return 0;
+        }
+        return 1 + this.getLengthRecursive(node.next);
     }
 }
 
 // Usage
-console.log(FactorialCalculator.calculate(5)); // 120
-// Type for non-negative integers
-type NonNegativeInteger<T extends number> = 
-    `${T}` extends `-${string}` | `${string}.${string}` 
-    ? never 
-    : T;
+const list = new LinkedList<number>();
+list.append(1);
+list.append(2);
+list.append(3);
 
-function factorialWithType<T extends number>(
-    n: NonNegativeInteger<T>
-): number {
-    let result = 1;
-    for (let i = 2; i <= n; i++) {
-        result *= i;
+console.log("Iterative length:", list.getLength()); // Output: 3
+console.log("Recursive length:", list.getLengthRecursive()); // Output: 3
+class OptimizedLinkedList<T> {
+    head: ListNode<T> | null = null;
+    tail: ListNode<T> | null = null;
+    private length: number = 0;
+
+    append(value: T): void {
+        const newNode = new ListNode(value);
+        if (!this.head) {
+            this.head = newNode;
+            this.tail = newNode;
+        } else {
+            this.tail!.next = newNode;
+            this.tail = newNode;
+        }
+        this.length++;
     }
-    return result;
-}
 
-// Usage (this won't compile with negative numbers)
-console.log(factorialWithType(5)); // 120
-// console.log(factorialWithType(-5)); // TypeScript error!
+    getLength(): number {
+        return this.length;
+    }
+}
