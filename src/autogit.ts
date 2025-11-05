@@ -1,43 +1,145 @@
-/**
- * Returns the maximum-sum contiguous sub-array.
- * @param nums input array (may contain negative numbers)
- * @returns {sum: number, left: number, right: number}
- *          sum  – the maximum sum
- *          left – inclusive start index of the best sub-array
- *          right– inclusive end   index of the best sub-array
- */
-function maxSubArray(nums: number[]): { sum: number; left: number; right: number } {
-  if (nums.length === 0) return { sum: 0, left: 0, right: -1 };
+import { Capacitor } from '@capacitor/core';
+import { Network } from '@capacitor/network';
 
-  let bestSum = nums[0];
-  let bestLeft = 0;
-  let bestRight = 0;
+interface ApiResponse {
+  data: any;
+  status: number;
+}
 
-  let curSum = nums[0];
-  let curLeft = 0;
+class AndroidAsyncService {
+  private readonly API_BASE_URL = 'https://api.example.com';
 
-  for (let i = 1; i < nums.length; i++) {
-    // Extend the current window or start a new one
-    if (curSum < 0) {
-      curSum = nums[i];
-      curLeft = i;
-    } else {
-      curSum += nums[i];
-    }
+  // Method to simulate async network call with Android compatibility
+  async fetchDataAsync(endpoint: string): Promise<ApiResponse> {
+    try {
+      // Check if running on Android
+      if (Capacitor.getPlatform() === 'android') {
+        console.log('Running on Android - using native compatible async operations');
+      }
 
-    // Record new best
-    if (curSum > bestSum) {
-      bestSum = curSum;
-      bestLeft = curLeft;
-      bestRight = i;
+      // Simulate async network request with timeout
+      const response = await Promise.race([
+        this.makeApiRequest(endpoint),
+        this.timeoutAfter(10000) // 10-second timeout
+      ]);
+
+      return response as ApiResponse;
+    } catch (error) {
+      console.error('Async task failed:', error);
+      throw new Error(`Network request failed: ${error.message}`);
     }
   }
 
-  return { sum: bestSum, left: bestLeft, right: bestRight };
+  private async makeApiRequest(endpoint: string): Promise<ApiResponse> {
+    const url = `${this.API_BASE_URL}/${endpoint}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Platform': Capacitor.getPlatform()
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    return {
+      data,
+      status: response.status
+    };
+  }
+
+  private timeoutAfter(ms: number): Promise<never> {
+    return new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Request timed out after ${ms}ms`));
+      }, ms);
+    });
+  }
+
+  // Android-specific network status check
+  async checkAndroidNetworkStatus(): Promise<{ connected: boolean; type?: string }> {
+    if (Capacitor.getPlatform() === 'android') {
+      const status = await Network.getStatus();
+      return {
+        connected: status.connected,
+        type: status.connectionType
+      };
+    }
+    
+    return { connected: navigator.onLine };
+  }
 }
 
-/* ---------- usage ---------- */
-const data = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
-const result = maxSubArray(data);
-console.log(`Max sum = ${result.sum}`);            // 6
-console.log(`Sub-array = [${data.slice(result.left, result.right + 1).join(', ')}]`); // [4, -1, 2, 1]
+// Usage example
+const service = new AndroidAsyncService();
+
+// Execute async task
+service.fetchDataAsync('users/123')
+  .then(response => {
+    console.log('Async task completed:', response.data);
+    
+    // Update UI or native Android component
+    if (Capacitor.isNativePlatform()) {
+      this.updateNativeAndroidUI(response.data);
+    }
+  })
+  .catch(error => {
+    console.error('Async task error:', error);
+    
+    // Handle Android-specific error reporting
+    if (Capacitor.getPlatform() === 'android') {
+      this.reportToAndroidCrashlytics(error);
+    }
+  });
+
+// Simulated native Android interactions
+declare const androidBridge: any;
+
+const updateNativeAndroidUI = (data: any) => {
+  if (typeof androidBridge !== 'undefined') {
+    androidBridge.updateUI(JSON.stringify(data));
+  }
+};
+
+const reportToAndroidCrashlytics = (error: Error) => {
+  if (typeof androidBridge !== 'undefined') {
+    androidBridge.logError(error.message);
+  }
+};
+
+// Additional utility for background async tasks
+class AndroidBackgroundTask {
+  static async executeInBackground<T>(
+    task: () => Promise<T>,
+    onProgress?: (progress: number) => void
+  ): Promise<T> {
+    if (Capacitor.getPlatform() === 'android') {
+      console.log('Executing in Android background context');
+    }
+
+    // Simulate progress updates
+    onProgress?.(0.3);
+    
+    const result = await task();
+    
+    onProgress?.(1.0);
+    return result;
+  }
+}
+
+// Example of background task execution
+AndroidBackgroundTask.executeInBackground(
+  () => service.fetchDataAsync('heavy-operation'),
+  (progress) => {
+    console.log(`Progress: ${progress * 100}%`);
+    if (Capacitor.isNativePlatform()) {
+      // Update Android progress bar
+      androidBridge?.updateProgress(progress);
+    }
+  }
+);
