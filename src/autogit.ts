@@ -1,102 +1,228 @@
-/**
- * Interpolation search for primitive arrays.
- * @param arr Sorted array of numbers (or values convertible to numbers).
- * @param key Value to locate.
- * @returns Index of key or -1 if not found.
- */
-export function interpolationSearch<T extends number | bigint>(
-  arr: readonly T[],
-  key: T
-): number {
-  let low = 0;
-  let high = arr.length - 1;
+interface HashTable<K, V> {
+  set(key: K, value: V): void;
+  get(key: K): V | undefined;
+  delete(key: K): boolean;
+  has(key: K): boolean;
+}
 
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    // Handle tiny slices with a simple linear scan to avoid division by zero
-    if (arr[low] === arr[high]) {
-      if (arr[low] === key) return low;
-      break;
+class HashTable<K, V> implements HashTable<K, V> {
+  private buckets: Array<Array<[K, V]>>;
+  private size: number;
+  private count: number;
+
+  constructor(size: number = 32) {
+    this.size = size;
+    this.count = 0;
+    this.buckets = new Array(size);
+    
+    for (let i = 0; i < size; i++) {
+      this.buckets[i] = [];
     }
-
-    // Estimate position by linear interpolation
-    const pos = low + Math.floor(
-      ((Number(key) - Number(arr[low])) * (high - low)) /
-      (Number(arr[high]) - Number(arr[low]))
-    );
-
-    // Bounds check (paranoid but safe)
-    if (pos < low || pos > high) break;
-
-    const value = arr[pos];
-
-    if (value === key) return pos;
-    if (value < key) low = pos + 1;
-    else high = pos - 1;
   }
 
-  return -1;
-}
-
-/* ---------- Quick sanity checks ---------- */
-if (import.meta.vitest) {
-  const { it, expect } = import.meta.vitest;
-
-  it('finds items in uniform arrays', () => {
-    const a = Array.from({ length: 1_000_000 }, (_, i) => i);
-    expect(interpolationSearch(a, 7)).toBe(7);
-    expect(interpolationSearch(a, 1_000_000)).toBe(-1);
-  });
-
-  it('handles duplicates', () => {
-    const a = [1, 2, 2, 2, 3, 4, 5];
-    const idx = interpolationSearch(a, 2);
-    expect(idx).toBeGreaterThanOrEqual(1);
-    expect(idx).toBeLessThanOrEqual(3);
-  });
-
-  it('handles non-uniform data (degrades gracefully)', () => {
-    const a = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1_000_000];
-    expect(interpolationSearch(a, 1_000_000)).toBe(9);
-  });
-}
-const data: number[] = [];
-for (let i = 0; i < 1e6; i++) data.push(i * 2);   // even numbers only
-
-const index = interpolationSearch(data, 123456);
-console.log(index); // 61728
-export function interpolationSearchBy<T, K extends number | bigint>(
-  arr: readonly T[],
-  key: K,
-  valueOf: (item: T) => K
-): number {
-  let low = 0;
-  let high = arr.length - 1;
-
-  while (low <= high && key >= valueOf(arr[low]) && key <= valueOf(arr[high])) {
-    const lowVal = valueOf(arr[low]);
-    const highVal = valueOf(arr[high]);
-
-    if (lowVal === highVal) {
-      if (lowVal === key) return low;
-      break;
+  // Hash function
+  private hash(key: K): number {
+    const keyString = String(key);
+    let hash = 0;
+    
+    for (let i = 0; i < keyString.length; i++) {
+      hash = (hash << 5) - hash + keyString.charCodeAt(i);
+      hash |= 0; // Convert to 32-bit integer
     }
-
-    const pos = low + Math.floor(
-      ((Number(key) - Number(lowVal)) * (high - low)) /
-      (Number(highVal) - Number(lowVal))
-    );
-
-    if (pos < low || pos > high) break;
-
-    const midVal = valueOf(arr[pos]);
-    if (midVal === key) return pos;
-    if (midVal < key) low = pos + 1;
-    else high = pos - 1;
+    
+    return Math.abs(hash) % this.size;
   }
-  return -1;
+
+  // Set key-value pair
+  set(key: K, value: V): void {
+    const index = this.hash(key);
+    const bucket = this.buckets[index];
+    
+    // Check if key already exists
+    const existingIndex = bucket.findIndex(([k]) => k === key);
+    
+    if (existingIndex >= 0) {
+      bucket[existingIndex][1] = value; // Update existing
+    } else {
+      bucket.push([key, value]); // Add new
+      this.count++;
+    }
+    
+    // Resize if load factor is too high
+    if (this.loadFactor() > 0.7) {
+      this.resize(this.size * 2);
+    }
+  }
+
+  // Get value by key
+  get(key: K): V | undefined {
+    const index = this.hash(key);
+    const bucket = this.buckets[index];
+    
+    const pair = bucket.find(([k]) => k === key);
+    return pair ? pair[1] : undefined;
+  }
+
+  // Delete key-value pair
+  delete(key: K): boolean {
+    const index = this.hash(key);
+    const bucket = this.buckets[index];
+    const pairIndex = bucket.findIndex(([k]) => k === key);
+    
+    if (pairIndex >= 0) {
+      bucket.splice(pairIndex, 1);
+      this.count--;
+      return true;
+    }
+    
+    return false;
+  }
+
+  // Check if key exists
+  has(key: K): boolean {
+    return this.get(key) !== undefined;
+  }
+
+  // Get current load factor
+  private loadFactor(): number {
+    return this.count / this.size;
+  }
+
+  // Resize the hash table
+  private resize(newSize: number): void {
+    const oldBuckets = this.buckets;
+    this.size = newSize;
+    this.count = 0;
+    this.buckets = new Array(newSize);
+    
+    for (let i = 0; i < newSize; i++) {
+      this.buckets[i] = [];
+    }
+    
+    // Rehash all existing entries
+    for (const bucket of oldBuckets) {
+      for (const [key, value] of bucket) {
+        this.set(key, value);
+      }
+    }
+  }
+
+  // Get all keys
+  keys(): K[] {
+    const keys: K[] = [];
+    
+    for (const bucket of this.buckets) {
+      for (const [key] of bucket) {
+        keys.push(key);
+      }
+    }
+    
+    return keys;
+  }
+
+  // Get all values
+  values(): V[] {
+    const values: V[] = [];
+    
+    for (const bucket of this.buckets) {
+      for (const [, value] of bucket) {
+        values.push(value);
+      }
+    }
+    
+    return values;
+  }
+
+  // Get entries (key-value pairs)
+  entries(): Array<[K, V]> {
+    const entries: Array<[K, V]> = [];
+    
+    for (const bucket of this.buckets) {
+      for (const entry of bucket) {
+        entries.push(entry);
+      }
+    }
+    
+    return entries;
+  }
+
+  // Clear the hash table
+  clear(): void {
+    this.buckets = new Array(this.size);
+    
+    for (let i = 0; i < this.size; i++) {
+      this.buckets[i] = [];
+    }
+    
+    this.count = 0;
+  }
+
+  // Get number of entries
+  get length(): number {
+    return this.count;
+  }
+}
+// Create a hash table
+const hashTable = new HashTable<string, number>();
+
+// Set values
+hashTable.set("apple", 1);
+hashTable.set("banana", 2);
+hashTable.set("cherry", 3);
+
+// Get values
+console.log(hashTable.get("apple")); // 1
+console.log(hashTable.get("banana")); // 2
+
+// Check existence
+console.log(hashTable.has("cherry")); // true
+console.log(hashTable.has("date")); // false
+
+// Delete entry
+hashTable.delete("banana");
+console.log(hashTable.has("banana")); // false
+
+// Get all keys and values
+console.log(hashTable.keys()); // ["apple", "cherry"]
+console.log(hashTable.values()); // [1, 3]
+
+// Get size
+console.log(hashTable.length); // 2
+private hash(key: K): number {
+  if (typeof key === 'number') {
+    return Math.abs(key) % this.size;
+  }
+  
+  const keyString = String(key);
+  let hash = 5381;
+  
+  for (let i = 0; i < keyString.length; i++) {
+    hash = (hash * 33) ^ keyString.charCodeAt(i);
+  }
+  
+  return Math.abs(hash) % this.size;
+}
+class ObjectHashTable<V> {
+  private map: Map<string, V>;
+
+  constructor() {
+    this.map = new Map();
+  }
+
+  set(key: object, value: V): void {
+    const keyString = JSON.stringify(key);
+    this.map.set(keyString, value);
+  }
+
+  get(key: object): V | undefined {
+    const keyString = JSON.stringify(key);
+    return this.map.get(keyString);
+  }
+
+  // ... other methods
 }
 
-/* example */
-interface User { id: number; name: string }
-const users: User[] = generateSortedUsers(); // sorted by id
-const idx = interpolationSearchBy(users, 42_123, u => u.id);
+// Usage with object keys
+const objTable = new ObjectHashTable<number>();
+objTable.set({ id: 1, name: "John" }, 100);
+console.log(objTable.get({ id: 1, name: "John" })); // 100
