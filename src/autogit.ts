@@ -1,81 +1,63 @@
-function isPalindrome(str: string): boolean {
-    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    return cleanStr === cleanStr.split('').reverse().join('');
-}
+/**
+ * Rabin–Karp substring search.
+ * @param text    The string to search in.
+ * @param pattern The substring to look for.
+ * @returns The start index of the first match, or -1 if not found.
+ */
+export function rabinKarp(text: string, pattern: string): number {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return 0; // empty pattern matches at once
+  if (m > n) return -1;
 
-// Examples
-console.log(isPalindrome("racecar")); // true
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("hello")); // false
-function isPalindromeTwoPointer(str: string): boolean {
-    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    let left = 0;
-    let right = cleanStr.length - 1;
-    
-    while (left < right) {
-        if (cleanStr[left] !== cleanStr[right]) {
-            return false;
-        }
-        left++;
-        right--;
+  /* --- Configurable hash parameters --- */
+  const base = 65521;            // largest 16-bit prime
+  const mod = 0x7fffffff;        // 2^31 - 1
+
+  /* --- Precompute base^(m-1) % mod --- */
+  let basePow = 1;               // base^(m-1)
+  for (let i = 1; i < m; ++i) basePow = (basePow * base) % mod;
+
+  /* --- Hash the pattern and first window --- */
+  let patHash = 0;
+  let currHash = 0;
+  for (let i = 0; i < m; ++i) {
+    const pC = pattern.charCodeAt(i);
+    const tC = text.charCodeAt(i);
+    patHash = (patHash * base + pC) % mod;
+    currHash = (currHash * base + tC) % mod;
+  }
+
+  /* --- Slide over the text --- */
+  for (let i = 0; i <= n - m; ++i) {
+    // If hash matches, confirm character-by-character (avoids spurious hits)
+    if (patHash === currHash) {
+      let j = 0;
+      while (j < m && text[i + j] === pattern[j]) ++j;
+      if (j === m) return i;
     }
-    return true;
-}
 
-// Examples
-console.log(isPalindromeTwoPointer("racecar")); // true
-console.log(isPalindromeTwoPointer("A man, a plan, a canal: Panama")); // true
-function isPalindromeRecursive(str: string): boolean {
-    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
-    function checkPalindrome(s: string, left: number, right: number): boolean {
-        if (left >= right) return true;
-        if (s[left] !== s[right]) return false;
-        return checkPalindrome(s, left + 1, right - 1);
+    // Roll the window (remove leftmost, add rightmost)
+    if (i < n - m) {
+      const leftChar = text.charCodeAt(i);
+      const rightChar = text.charCodeAt(i + m);
+      currHash =
+        (currHash - (leftChar * basePow) % mod + mod) % mod; // remove left
+      currHash = (currHash * base + rightChar) % mod;      // add right
     }
-    
-    return checkPalindrome(cleanStr, 0, cleanStr.length - 1);
-}
-function isPalindromeCaseSensitive(str: string): boolean {
-    const cleanStr = str.replace(/[^a-zA-Z0-9]/g, '');
-    return cleanStr === cleanStr.split('').reverse().join('');
+  }
+  return -1;
 }
 
-// Examples
-console.log(isPalindromeCaseSensitive("racecar")); // true
-console.log(isPalindromeCaseSensitive("Racecar")); // false (different case)
-function isPalindromeEvery(str: string): boolean {
-    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    return cleanStr.split('').every((char, index) => {
-        return char === cleanStr[cleanStr.length - 1 - index];
-    });
+/* ---------- Quick sanity checks ---------- */
+if (import.meta.vitest) {
+  const { it, expect } = import.meta.vitest;
+  it('finds needle in haystack', () => {
+    expect(rabinKarp('hello world', 'world')).toBe(6);
+    expect(rabinKarp('aaaaa', 'bba')).toBe(-1);
+    expect(rabinKarp('🚀🌟🚀🌟', '🌟🚀')).toBe(1);
+    expect(rabinKarp('abc', '')).toBe(0);
+  });
 }
-type PalindromeResult = {
-    isPalindrome: boolean;
-    original: string;
-    cleaned: string;
-};
-
-function checkPalindrome(str: string): PalindromeResult {
-    if (typeof str !== 'string') {
-        throw new Error('Input must be a string');
-    }
-    
-    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const result = cleanStr === cleanStr.split('').reverse().join('');
-    
-    return {
-        isPalindrome: result,
-        original: str,
-        cleaned: cleanStr
-    };
-}
-
-// Usage
-const test1 = checkPalindrome("A man, a plan, a canal: Panama");
-console.log(test1);
-// Output: { isPalindrome: true, original: "A man, a plan, a canal: Panama", cleaned: "amanaplanacanalpanama" }
-
-const test2 = checkPalindrome("hello world");
-console.log(test2);
-// Output: { isPalindrome: false, original: "hello world", cleaned: "helloworld" }
+const idx = rabinKarp('the quick brown fox', 'brown');
+console.log(idx); // 10
