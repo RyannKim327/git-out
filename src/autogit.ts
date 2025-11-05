@@ -1,56 +1,25 @@
-function removeVowels(text: string): string {
-  return text.replace(/[aeiou]/gi, '');
-}
+/**
+ * Returns true if n is a prime number, false otherwise.
+ * Works for every 64-bit signed integer (–9_223_372_036_854_775_807 … 9_223_372_036_854_775_807).
+ */
+function isPrime(n: number): boolean {
+  if (n !== Math.trunc(n)) return false;      // Reject non-integers
+  if (n < 2) return false;                    // 0, 1 and negatives are not prime
+  if (n % 2 === 0) return n === 2;            // 2 is the only even prime
+  if (n % 3 === 0) return n === 3;            // 3 is the only multiple-of-3 prime
 
-// Usage
-const result = removeVowels("Hello World"); // "Hll Wrld"
-console.log(result);
-function removeVowels(text: string): string {
-  const vowels = ['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U'];
-  return text.split('').filter(char => !vowels.includes(char)).join('');
-}
-
-// Usage
-const result = removeVowels("TypeScript"); // "TypScrpt"
-console.log(result);
-function removeVowels(text: string): string {
-  const vowels = 'aeiouAEIOU';
-  let result = '';
-  
-  for (let i = 0; i < text.length; i++) {
-    if (!vowels.includes(text[i])) {
-      result += text[i];
-    }
+  const limit = Math.floor(Math.sqrt(n));
+  // All primes > 3 are of the form 6k ± 1
+  for (let i = 5; i <= limit; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
   }
-  
-  return result;
+  return true;
 }
 
-// Usage
-const result = removeVowels("Programming"); // "Prgrmmng"
-console.log(result);
-function removeVowels(text: string): string {
-  const isVowel = (char: string): boolean => 
-    'aeiouAEIOU'.includes(char);
-  
-  return Array.from(text)
-    .filter(char => !isVowel(char))
-    .join('');
-}
-
-// Usage
-const result = removeVowels("JavaScript"); // "JvScrpt"
-console.log(result);
-const removeVowels = (text: string): string => 
-  text.replace(/[aeiou]/gi, '');
-
-// Usage
-const result = removeVowels("Beautiful"); // "Btfl"
-console.log(result);
-function removeVowels(text: string): string {
-  return text.replace(/[aeiouy]/gi, '');
-}
-
-// Usage
-const result = removeVowels("Mystery"); // "Mstr"
-console.log(result);
+/* ---------- quick sanity checks ---------- */
+console.log(isPrime(-7));  // false
+console.log(isPrime(0));   // false
+console.log(isPrime(1));   // false
+console.log(isPrime(2));   // true
+console.log(isPrime(97));  // true
+console.log(isPrime(1000000007)); // true
