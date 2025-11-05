@@ -1,163 +1,216 @@
-class SuffixTreeNode {
-    children: Map<string, SuffixTreeNode>;
-    start: number;
-    end: number | null; // null indicates the edge goes to end of string
-    suffixLink: SuffixTreeNode | null;
+function binarySearch<T>(arr: T[], target: T): number {
+    let left = 0;
+    let right = arr.length - 1;
 
-    constructor(start: number, end: number | null = null) {
-        this.children = new Map();
-        this.start = start;
-        this.end = end;
-        this.suffixLink = null;
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        
+        if (arr[mid] === target) {
+            return mid; // Found the target
+        } else if (arr[mid] < target) {
+            left = mid + 1; // Search right half
+        } else {
+            right = mid - 1; // Search left half
+        }
     }
+    
+    return -1; // Target not found
+}
 
-    getEdgeLength(position: number): number {
-        const end = this.end === null ? position : this.end;
-        return end - this.start + 1;
+// Usage examples
+const numbers = [1, 3, 5, 7, 9, 11, 13, 15];
+console.log(binarySearch(numbers, 7));  // Output: 3
+console.log(binarySearch(numbers, 10)); // Output: -1
+
+const strings = ["apple", "banana", "cherry", "date", "elderberry"];
+console.log(binarySearch(strings, "cherry")); // Output: 2
+function binarySearchRecursive<T>(
+    arr: T[], 
+    target: T, 
+    left: number = 0, 
+    right: number = arr.length - 1
+): number {
+    if (left > right) {
+        return -1; // Base case: target not found
+    }
+    
+    const mid = Math.floor((left + right) / 2);
+    
+    if (arr[mid] === target) {
+        return mid;
+    } else if (arr[mid] < target) {
+        return binarySearchRecursive(arr, target, mid + 1, right);
+    } else {
+        return binarySearchRecursive(arr, target, left, mid - 1);
     }
 }
 
-class SuffixTree {
-    private root: SuffixTreeNode;
-    private text: string;
-    private activeNode: SuffixTreeNode;
-    private activeEdge: number;
-    private activeLength: number;
-    private remaining: number;
-    private currentNode: SuffixTreeNode;
-    private position: number;
-    private lastInternalNode: SuffixTreeNode | null;
+// Usage
+console.log(binarySearchRecursive(numbers, 9)); // Output: 4
+function binarySearchWithComparator<T>(
+    arr: T[],
+    target: T,
+    comparator: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
+): number {
+    let left = 0;
+    let right = arr.length - 1;
 
-    constructor(text: string) {
-        this.text = text + '$'; // Add terminator
-        this.root = new SuffixTreeNode(-1, -1);
-        this.buildTree();
-    }
-
-    private buildTree(): void {
-        this.activeNode = this.root;
-        this.activeEdge = 0;
-        this.activeLength = 0;
-        this.remaining = 0;
-        this.position = -1;
-
-        for (let i = 0; i < this.text.length; i++) {
-            this.extendTree(i);
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        const comparison = comparator(arr[mid], target);
+        
+        if (comparison === 0) {
+            return mid;
+        } else if (comparison < 0) {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
         }
     }
+    
+    return -1;
+}
 
-    private extendTree(pos: number): void {
-        this.position = pos;
-        this.remaining++;
-        this.lastInternalNode = null;
+// Custom objects example
+interface Person {
+    id: number;
+    name: string;
+}
 
-        while (this.remaining > 0) {
-            if (this.activeLength === 0) {
-                this.activeEdge = pos;
-            }
+const people: Person[] = [
+    { id: 1, name: "Alice" },
+    { id: 3, name: "Bob" },
+    { id: 5, name: "Charlie" },
+    { id: 7, name: "Diana" }
+];
 
-            const activeChar = this.text[this.activeEdge];
-            if (!this.activeNode.children.has(activeChar)) {
-                // Rule 2: Insert new leaf node
-                const newNode = new SuffixTreeNode(pos);
-                this.activeNode.children.set(activeChar, newNode);
-                
-                if (this.lastInternalNode) {
-                    this.lastInternalNode.suffixLink = this.activeNode;
-                    this.lastInternalNode = null;
-                }
-            } else {
-                const nextNode = this.activeNode.children.get(activeChar)!;
-                const edgeLength = nextNode.getEdgeLength(this.position);
-
-                // Skip count
-                if (this.activeLength >= edgeLength) {
-                    this.activeEdge += edgeLength;
-                    this.activeLength -= edgeLength;
-                    this.activeNode = nextNode;
-                    continue;
-                }
-
-                // Rule 3: Current character exists on edge
-                if (this.text[nextNode.start + this.activeLength] === this.text[pos]) {
-                    this.activeLength++;
-                    if (this.lastInternalNode) {
-                        this.lastInternalNode.suffixLink = this.activeNode;
-                    }
-                    break;
-                }
-
-                // Rule 2: Split edge
-                const splitNode = new SuffixTreeNode(nextNode.start, nextNode.start + this.activeLength - 1);
-                const newNode = new SuffixTreeNode(pos);
-                nextNode.start += this.activeLength;
-                
-                this.activeNode.children.set(activeChar, splitNode);
-                splitNode.children.set(this.text[nextNode.start], nextNode);
-                splitNode.children.set(this.text[pos], newNode);
-
-                // Update suffix links
-                if (this.lastInternalNode) {
-                    this.lastInternalNode.suffixLink = splitNode;
-                }
-                this.lastInternalNode = splitNode;
-            }
-
-            this.remaining--;
-            if (this.activeNode === this.root && this.activeLength > 0) {
-                this.activeLength--;
-                this.activeEdge = pos - this.remaining + 1;
-            } else if (this.activeNode !== this.root) {
-                this.activeNode = this.activeNode.suffixLink || this.root;
-            }
+// Search by id
+const result = binarySearchWithComparator(
+    people, 
+    { id: 5, name: "" } as Person, 
+    (a, b) => a.id - b.id
+);
+console.log(result); // Output: 2
+function lowerBound<T>(arr: T[], target: T): number {
+    let left = 0;
+    let right = arr.length;
+    
+    while (left < right) {
+        const mid = Math.floor((left + right) / 2);
+        
+        if (arr[mid] < target) {
+            left = mid + 1;
+        } else {
+            right = mid;
         }
     }
+    
+    return left;
+}
 
-    public search(substring: string): boolean {
-        let currentNode = this.root;
-        let currentPosition = 0;
-
-        while (currentPosition < substring.length) {
-            const currentChar = substring[currentPosition];
-            const childNode = currentNode.children.get(currentChar);
-
-            if (!childNode) return false;
-
-            const edgeString = this.text.slice(
-                childNode.start,
-                childNode.end === null ? this.text.length : childNode.end + 1
-            );
-
-            for (let i = 0; i < edgeString.length && currentPosition < substring.length; i++) {
-                if (edgeString[i] !== substring[currentPosition]) return false;
-                currentPosition++;
-            }
-
-            currentNode = childNode;
+// Usage with duplicates
+const duplicates = [1, 2, 2, 2, 3, 4, 5];
+console.log(lowerBound(duplicates, 2)); // Output: 1 (first occurrence of 2)
+class BinarySearch<T> {
+    constructor(private arr: T[]) {
+        // Ensure array is sorted
+        if (!this.isSorted(arr)) {
+            throw new Error("Array must be sorted for binary search");
         }
-
+    }
+    
+    private isSorted(arr: T[]): boolean {
+        for (let i = 1; i < arr.length; i++) {
+            if (arr[i] < arr[i - 1]) {
+                return false;
+            }
+        }
         return true;
     }
-
-    public printTree(node: SuffixTreeNode = this.root, level: number = 0): void {
-        console.log(' '.repeat(level * 4) + `Node(${node.start}, ${node.end})`);
-        node.children.forEach((child, key) => {
-            const edge = this.text.slice(
-                child.start,
-                child.end === null ? this.text.length : child.end + 1
-            );
-            console.log(' '.repeat((level + 1) * 4) + `Edge: '${edge}'`);
-            this.printTree(child, level + 2);
-        });
+    
+    search(target: T): number {
+        return this.iterativeSearch(target);
+    }
+    
+    private iterativeSearch(target: T): number {
+        let left = 0;
+        let right = this.arr.length - 1;
+        
+        while (left <= right) {
+            const mid = Math.floor((left + right) / 2);
+            
+            if (this.arr[mid] === target) {
+                return mid;
+            } else if (this.arr[mid] < target) {
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+        
+        return -1;
+    }
+    
+    // Find insertion point for maintaining sorted order
+    findInsertionPoint(target: T): number {
+        let left = 0;
+        let right = this.arr.length;
+        
+        while (left < right) {
+            const mid = Math.floor((left + right) / 2);
+            
+            if (this.arr[mid] < target) {
+                left = mid + 1;
+            } else {
+                right = mid;
+            }
+        }
+        
+        return left;
     }
 }
 
-// Usage example
-const suffixTree = new SuffixTree('banana');
-console.log('Contains "ana":', suffixTree.search('ana')); // true
-console.log('Contains "ban":', suffixTree.search('ban')); // true
-console.log('Contains "nan":', suffixTree.search('nan')); // true
-console.log('Contains "ax":', suffixTree.search('ax'));   // false
+// Usage
+const searcher = new BinarySearch([1, 3, 5, 7, 9]);
+console.log(searcher.search(5)); // Output: 2
+console.log(searcher.findInsertionPoint(6)); // Output: 3
+type SearchResult = {
+    index: number;
+    found: boolean;
+    value?: any;
+};
 
-// Print the tree structure
-suffixTree.printTree();
+function binarySearchSafe<T>(
+    arr: T[],
+    target: T
+): SearchResult {
+    // Input validation
+    if (!Array.isArray(arr)) {
+        throw new Error("First argument must be an array");
+    }
+    
+    if (arr.length === 0) {
+        return { index: -1, found: false };
+    }
+    
+    let left = 0;
+    let right = arr.length - 1;
+    
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        
+        if (arr[mid] === target) {
+            return { 
+                index: mid, 
+                found: true, 
+                value: arr[mid] 
+            };
+        } else if (arr[mid] < target) {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+    
+    return { index: -1, found: false };
+}
