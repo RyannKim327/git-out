@@ -1,92 +1,114 @@
-function areAnagrams(str1: string, str2: string): boolean {
-    // Remove spaces and convert to lowercase for case-insensitive comparison
-    const normalizedStr1 = str1.replace(/\s/g, '').toLowerCase();
-    const normalizedStr2 = str2.replace(/\s/g, '').toLowerCase();
-    
-    // Sort characters and compare
-    return normalizedStr1.split('').sort().join('') === 
-           normalizedStr2.split('').sort().join('');
+class BTreeNode<K> {
+  keys: K[]
+  children: BTreeNode<K>[]
+  leaf: boolean
+
+  constructor(leaf: boolean) {
+    this.keys = []
+    this.children = []
+    this.leaf = leaf
+  }
 }
 
-// Example usage
-console.log(areAnagrams('listen', 'silent')); // true
-console.log(areAnagrams('hello', 'world'));   // false
-function areAnagrams(str1: string, str2: string): boolean {
-    const normalizedStr1 = str1.replace(/\s/g, '').toLowerCase();
-    const normalizedStr2 = str2.replace(/\s/g, '').toLowerCase();
-    
-    if (normalizedStr1.length !== normalizedStr2.length) {
-        return false;
-    }
-    
-    const charCount: Record<string, number> = {};
-    
-    // Count characters in first string
-    for (const char of normalizedStr1) {
-        charCount[char] = (charCount[char] || 0) + 1;
-    }
-    
-    // Subtract counts using second string
-    for (const char of normalizedStr2) {
-        if (!charCount[char]) {
-            return false;
-        }
-        charCount[char]--;
-    }
-    
-    // Check if all counts are zero
-    return Object.values(charCount).every(count => count === 0);
-}
+export class BTree<K> {
+  private root: BTreeNode<K>
+  private t: number
+  private compare: (a: K, b: K) => number
 
-// Example usage
-console.log(areAnagrams('triangle', 'integral')); // true
-function areAnagrams(str1: string, str2: string): boolean {
-    const normalizeString = (str: string): string[] => {
-        return Array.from(str.replace(/\s/g, '').toLowerCase().normalize());
-    };
-    
-    const arr1 = normalizeString(str1);
-    const arr2 = normalizeString(str2);
-    
-    if (arr1.length !== arr2.length) return false;
-    
-    const charMap = new Map<string, number>();
-    
-    // Count characters
-    for (const char of arr1) {
-        charMap.set(char, (charMap.get(char) || 0) + 1);
+  constructor(t: number, compareFn: (a: K, b: K) => number) {
+    if (t < 2) throw new Error("Minimum degree t must be at least 2")
+    this.root = new BTreeNode<K>(true)
+    this.t = t
+    this.compare = compareFn
+  }
+
+  search(key: K, node: BTreeNode<K> = this.root): BTreeNode<K> | null {
+    let i = 0
+    while (i < node.keys.length && this.compare(key, node.keys[i]) > 0) {
+      i++
     }
-    
-    // Verify counts
-    for (const char of arr2) {
-        const count = charMap.get(char);
-        if (!count) return false;
-        charMap.set(char, count - 1);
+    if (i < node.keys.length && this.compare(key, node.keys[i]) === 0) {
+      return node
     }
-    
-    return true;
+    if (node.leaf) {
+      return null
+    }
+    return this.search(key, node.children[i])
+  }
+
+  insert(key: K) {
+    const root = this.root
+    if (root.keys.length === 2 * this.t - 1) {
+      const newRoot = new BTreeNode<K>(false)
+      newRoot.children.push(root)
+      this.splitChild(newRoot, 0)
+      this.root = newRoot
+      this.insertNonFull(newRoot, key)
+    } else {
+      this.insertNonFull(root, key)
+    }
+  }
+
+  private insertNonFull(node: BTreeNode<K>, key: K) {
+    let i = node.keys.length - 1
+    if (node.leaf) {
+      node.keys.push(key)
+      node.keys.sort(this.compare)
+    } else {
+      while (i >= 0 && this.compare(key, node.keys[i]) < 0) i--
+      i++
+      if (node.children[i].keys.length === 2 * this.t - 1) {
+        this.splitChild(node, i)
+        if (this.compare(key, node.keys[i]) > 0) i++
+      }
+      this.insertNonFull(node.children[i], key)
+    }
+  }
+
+  private splitChild(parent: BTreeNode<K>, i: number) {
+    const t = this.t
+    const fullChild = parent.children[i]
+    const newChild = new BTreeNode<K>(fullChild.leaf)
+
+    // Mid key moves up
+    parent.keys.splice(i, 0, fullChild.keys[t - 1])
+
+    // Right half to new child
+    newChild.keys = fullChild.keys.splice(t, t - 1)
+
+    // If not a leaf, move child pointers
+    if (!fullChild.leaf) {
+      newChild.children = fullChild.children.splice(t, t)
+    }
+
+    // Insert new child pointer
+    parent.children.splice(i + 1, 0, newChild)
+
+    // Remove middle key from original child
+    fullChild.keys.length = t - 1
+  }
+
+  print(node: BTreeNode<K> = this.root, level: number = 0) {
+    console.log("Level", level, "Keys:", node.keys)
+    if (!node.leaf) {
+      node.children.forEach(child => this.print(child, level + 1))
+    }
+  }
 }
-const areAnagrams = (a: string, b: string): boolean => 
-    a.replace(/\s/g, '').toLowerCase().split('').sort().join('') === 
-    b.replace(/\s/g, '').toLowerCase().split('').sort().join('');
-// Enhanced version with type checking and edge cases
-function areAnagrams(str1: string, str2: string, caseSensitive = false): boolean {
-    if (typeof str1 !== 'string' || typeof str2 !== 'string') {
-        throw new Error('Both inputs must be strings');
-    }
-    
-    let processedStr1 = str1.replace(/\s/g, '');
-    let processedStr2 = str2.replace(/\s/g, '');
-    
-    if (!caseSensitive) {
-        processedStr1 = processedStr1.toLowerCase();
-        processedStr2 = processedStr2.toLowerCase();
-    }
-    
-    if (processedStr1.length !== processedStr2.length) {
-        return false;
-    }
-    
-    return processedStr1.split('').sort().join('') === 
-           processedStr2.split('').sort().join('');
-}
+const compareNumbers = (a: number, b: number) => a - b
+const btree = new BTree<number>(3, compareNumbers)
+
+btree.insert(10)
+btree.insert(20)
+btree.insert(5)
+btree.insert(6)
+btree.insert(12)
+btree.insert(30)
+btree.insert(7)
+btree.insert(17)
+
+btree.print()
+
+// Search for a key
+const found = btree.search(6)
+console.log("Found:", !!found)
