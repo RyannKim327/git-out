@@ -1,41 +1,24 @@
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+/**
+ * Returns the longest common prefix among an array of strings.
+ * If the array is empty, returns the empty string.
+ */
+function longestCommonPrefix(strs: string[]): string {
+  if (!strs.length) return '';
 
-// Android-compatible async network request using TypeScript
-async function fetchData(): Promise<void> {
-  const API_URL = 'https://jsonplaceholder.typicode.com/posts/1';
+  // Start by assuming the whole first string is the prefix
+  let prefix = strs[0];
 
-  try {
-    console.log('Starting async network request...');
-    
-    // Create an async task using promise-based fetch
-    const response = await fetch(API_URL);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+  // Trim the prefix until every string starts with it
+  for (let i = 1; i < strs.length; i++) {
+    while (!strs[i].startsWith(prefix)) {
+      prefix = prefix.slice(0, -1);
+      if (prefix === '') return ''; // Early exit
     }
-    
-    const data: Post = await response.json();
-    
-    console.log('Async task completed successfully!');
-    console.log('Received data:', data);
-    
-    // In a React Native app, you would typically update state here:
-    // this.setState({ postData: data });
-    
-  } catch (error) {
-    console.error('Error in async operation:', error.message);
-    
-    // Handle error (e.g., show alert in UI)
-    // In React Native: Alert.alert('Network Error', error.message);
   }
+  return prefix;
 }
 
-// Execute the async task
-fetchData().then(() => {
-  console.log('Async operation finished');
-});
+/* ---------- Usage ---------- */
+console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // "fl"
+console.log(longestCommonPrefix(['dog', 'racecar', 'car']));     // ""
+console.log(longestCommonPrefix([]));                           // ""
