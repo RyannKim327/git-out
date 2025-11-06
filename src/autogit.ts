@@ -1,8 +1,26 @@
-function factorial(n: number): number {
-    if (n < 0) throw new Error("Negative numbers have no factorial");
-    if (n === 0 || n === 1) return 1;
-    return n * factorial(n - 1);
+function isPalindrome(s: string): boolean {
+    let left = 0;
+    let right = s.length - 1;
+
+    while (left < right) {
+        // Move left pointer to the next alphanumeric character
+        while (left < right && !isAlphanumeric(s[left])) {
+            left++;
+        }
+        // Move right pointer to the previous alphanumeric character
+        while (left < right && !isAlphanumeric(s[right])) {
+            right--;
+        }
+        // Compare characters (case-insensitive)
+        if (s[left].toLowerCase() !== s[right].toLowerCase()) {
+            return false;
+        }
+        left++;
+        right--;
+    }
+    return true;
 }
 
-// Example usage:
-console.log(factorial(5)); // Outputs: 120
+function isAlphanumeric(char: string): boolean {
+    return /^[a-z0-9]$/i.test(char);
+}
