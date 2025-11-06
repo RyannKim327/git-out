@@ -1,16 +1,26 @@
-function getRandomInt(min: number, max: number): number {
-  const minCeil = Math.ceil(min);
-  const maxFloor = Math.floor(max);
-  return Math.floor(Math.random() * (maxFloor - minCeil + 1)) + minCeil;
+import axios from 'axios';
+
+interface JokeResponse {
+  id: string;
+  joke: string;
 }
 
-// Example usage:
-const num = getRandomInt(10, 20);
-console.log(num); // Could be anything from 10 to 20 inclusive
-function getRandomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min;
+async function getRandomJoke(): Promise<void> {
+  try {
+    const response = await axios.get<JokeResponse>('https://icanhazdadjoke.com/', {
+      headers: {
+        Accept: 'application/json'
+      }
+    });
+
+    console.log(`Here's a joke for you: ${response.data.joke}`);
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Failed to fetch joke:', error.message);
+    } else {
+      console.error('Unexpected error:', error);
+    }
+  }
 }
 
-// Example usage:
-const num = getRandomFloat(1.5, 4.2);
-console.log(num); // Between 1.5 and 4.2
+getRandomJoke();
