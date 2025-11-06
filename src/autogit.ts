@@ -1,56 +1,36 @@
 class ListNode {
   value: any;
-  next: ListNode | null;
-  constructor(value: any, next: ListNode | null = null) {
-    this.value = value;
-    this.next = next;
-  }
+  next: ListNode | null = null;
+  constructor(value: any) { this.value = value; }
 }
 
-function isPalindrome(head: ListNode | null): boolean {
-  // Step 1: Convert to array
-  const vals: any[] = [];
-  let curr = head;
-  while (curr) {
-    vals.push(curr.value);
-    curr = curr.next;
-  }
-  // Step 2: Check palindrome
-  let left = 0, right = vals.length - 1;
-  while (left < right) {
-    if (vals[left] !== vals[right]) return false;
-    left++;
-    right--;
-  }
-  return true;
-}
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true;
+/**
+ * Returns true if the linked list starting at `head` contains a cycle.
+ * O(n) time, O(1) extra space.
+ */
+function hasCycle(head: ListNode | null): boolean {
+  if (!head) return false;
 
-  // Step 1: Find middle of the list
-  let slow = head, fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+  let slow: ListNode | null = head;
+  let fast: ListNode | null = head;
+
+  while (fast && fast.next) {
+    slow = slow!.next;          // 1 step
+    fast = fast.next.next;      // 2 steps
+
+    if (slow === fast) return true; // pointers met ➜ cycle
   }
-  
-  // Step 2: Reverse second half
-  let prev: ListNode | null = null;
-  let curr = slow.next;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  
-  // Step 3: Compare both halves
-  let left = head;
-  let right = prev;
-  while (right) {
-    if (left.value !== right.value) return false;
-    left = left.next!;
-    right = right.next;
-  }
-  return true;
+  return false; // fast hit null ➜ no cycle
 }
+
+/* ---------- Usage example ---------- */
+const n1 = new ListNode(1);
+const n2 = new ListNode(2);
+const n3 = new ListNode(3);
+const n4 = new ListNode(4);
+n1.next = n2;
+n2.next = n3;
+n3.next = n4;
+n4.next = n2; // create a cycle
+
+console.log(hasCycle(n1)); // true
