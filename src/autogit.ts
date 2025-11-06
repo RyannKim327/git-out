@@ -1,39 +1,50 @@
-// src/utils/insultFetcher.ts
-import axios, { AxiosError } from 'axios';
+function mergeSortIterative<T>(arr: T[]): T[] {
+    const n = arr.length;
+    let temp = Array.from(arr); // working copy
 
-interface InsultResponse {
-  number: string;
-  language: string;
-  insult: string;
-  created: string;
-  shown: string;
-  createdby: string;
-  active: string;
-  comment: string;
+    for (let size = 1; size < n; size *= 2) {
+        for (let leftStart = 0; leftStart < n; leftStart += 2 * size) {
+            const mid = Math.min(leftStart + size, n);
+            const rightEnd = Math.min(leftStart + 2 * size, n);
+
+            merge(arr, temp, leftStart, mid, rightEnd);
+        }
+        // swap role of arr and temp
+        const swapped = arr;
+        arr = temp;
+        temp = swapped;
+    }
+
+    return arr;
 }
 
-/**
- * Fetches a random (mild) insult from a free API.
- */
-export async function getRandomInsult(): Promise<string> {
-  try {
-    const { data } = await axios.get<InsultResponse>(
-      'https://evilinsult.com/generate_insult.php?lang=en&type=json'
-    );
-    return data.insult;
-  } catch (err) {
-    const message = (err as AxiosError)?.message ?? 'Unknown error';
-    console.error('Could not retrieve insult:', message);
-    return 'You are absolutely wonderful (fallback because the insult API failed).';
-  }
+function merge<T>(
+    src: T[],
+    dest: T[],
+    leftStart: number,
+    mid: number,
+    rightEnd: number
+) {
+    let i = leftStart;
+    let j = mid;
+    let k = leftStart;
+
+    while (i < mid && j < rightEnd) {
+        if (src[i] <= src[j]) {
+            dest[k++] = src[i++];
+        } else {
+            dest[k++] = src[j++];
+        }
+    }
+    while (i < mid) {
+        dest[k++] = src[i++];
+    }
+    while (j < rightEnd) {
+        dest[k++] = src[j++];
+    }
 }
 
-/* ------------------------------------------------------------------ */
-/* ------------------------------ DEMO ------------------------------ */
-/* ------------------------------------------------------------------ */
-if (require.main === module) {
-  (async () => {
-    const insult = await getRandomInsult();
-    console.log(`Insult: ${insult}`);
-  })();
-}
+// Example:
+const unsorted = [38, 27, 43, 3, 9, 82, 10];
+const sorted = mergeSortIterative(unsorted);
+console.log(sorted); // [3, 9, 10, 27, 38, 43, 82]
