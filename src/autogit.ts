@@ -1,72 +1,58 @@
-// Node definition
-class TreeNode<T> {
-    value: T;
-    left: TreeNode<T> | null;
-    right: TreeNode<T> | null;
+function binarySearch<T>(array: T[], target: T): number {
+    let low = 0;
+    let high = array.length - 1;
 
-    constructor(value: T) {
-        this.value = value;
-        this.left = null;
-        this.right = null;
+    while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        const guess = array[mid];
+
+        if (guess === target) {
+            return mid; // Target found
+        }
+
+        if (guess < target) {
+            low = mid + 1; // Search right half
+        } else {
+            high = mid - 1; // Search left half
+        }
     }
+
+    return -1; // Target not found
 }
 
-// Binary Search Tree (BST) example
-class BinaryTree<T> {
-    root: TreeNode<T> | null = null;
+// Example usage:
+const numbers = [1, 3, 5, 7, 9];
+console.log(binarySearch(numbers, 3)); // Output: 1
+console.log(binarySearch(numbers, 10)); // Output: -1
 
-    insert(value: T): void {
-        const newNode = new TreeNode(value);
+const strings = ['apple', 'banana', 'orange'];
+console.log(binarySearch(strings, 'orange')); // Output: 2
+function binarySearchWithComparator<T>(
+    array: T[],
+    target: T,
+    comparator: (a: T, b: T) => number
+): number {
+    let low = 0;
+    let high = array.length - 1;
 
-        if (this.root === null) {
-            this.root = newNode;
-            return;
-        }
+    while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        const comparison = comparator(array[mid], target);
 
-        let current = this.root;
-        while (true) {
-            if (value < (current.value as unknown as number)) {
-                if (current.left === null) {
-                    current.left = newNode;
-                    return;
-                }
-                current = current.left;
-            } else {
-                if (current.right === null) {
-                    current.right = newNode;
-                    return;
-                }
-                current = current.right;
-            }
-        }
+        if (comparison === 0) return mid;
+        if (comparison < 0) low = mid + 1;
+        else high = mid - 1;
     }
 
-    // Simple inorder traversal
-    inOrderTraversal(node: TreeNode<T> | null = this.root): void {
-        if (!node) return;
-        this.inOrderTraversal(node.left);
-        console.log(node.value);
-        this.inOrderTraversal(node.right);
-    }
-
-    search(value: T): TreeNode<T> | null {
-        let current = this.root;
-        while (current) {
-            if (value === current.value) return current;
-            current = value < (current.value as unknown as number) 
-                ? current.left 
-                : current.right;
-        }
-        return null;
-    }
+    return -1;
 }
 
-// Example usage
-const tree = new BinaryTree<number>();
-tree.insert(5);
-tree.insert(3);
-tree.insert(7);
-tree.insert(4);
+// Example with custom comparator for objects:
+const users = [
+    { id: 1, name: 'Alice' },
+    { id: 3, name: 'Bob' },
+    { id: 5, name: 'Charlie' }
+];
 
-tree.inOrderTraversal(); // 3, 4, 5, 7
-console.log(tree.search(7)); // TreeNode with value 7
+const comparator = (a: { id: number }, b: { id: number }) => a.id - b.id;
+console.log(binarySearchWithComparator(users, { id: 3 }, comparator)); // Output: 1
