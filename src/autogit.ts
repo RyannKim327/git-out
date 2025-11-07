@@ -1,66 +1,69 @@
-function countCharacter(str: string, char: string): number {
-    return str.split(char).length - 1;
+function getRandomNumber(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-
-// Example usage
-const text = "hello world";
-const count = countCharacter(text, "l"); // Returns 3
-console.log(count);
-function countCharacterRegex(str: string, char: string): number {
-    const matches = str.match(new RegExp(char, "g"));
-    return matches ? matches.length : 0;
-}
-
-// Example usage
-const text = "hello world";
-const count = countCharacterRegex(text, "l"); // Returns 3
-console.log(count);
-function countCharacterLoop(str: string, char: string): number {
-    let count = 0;
-    for (let i = 0; i < str.length; i++) {
-        if (str[i] === char) {
-            count++;
-        }
-    }
-    return count;
-}
-
-// Example usage
-const text = "hello world";
-const count = countCharacterLoop(text, "l"); // Returns 3
-console.log(count);
-function countCharacterFilter(str: string, char: string): number {
-    return Array.from(str).filter(c => c === char).length;
-}
-
-// Example usage
-const text = "hello world";
-const count = countCharacterFilter(text, "l"); // Returns 3
-console.log(count);
-function countCharacterReduce(str: string, char: string): number {
-    return Array.from(str).reduce((count, c) => c === char ? count + 1 : count, 0);
-}
-
-// Example usage
-const text = "hello world";
-const count = countCharacterReduce(text, "l"); // Returns 3
-console.log(count);
-// Case insensitive counting
-function countCharacterCaseInsensitive(str: string, char: string): number {
-    return str.toLowerCase().split(char.toLowerCase()).length - 1;
-}
-
-// Multiple character sequences
-function countSubstring(str: string, substring: string): number {
-    return str.split(substring).length - 1;
-}
-
-// Example with multiple characters
-const text = "banana";
-const count = countSubstring(text, "na"); // Returns 2
-console.log(count);
-const countOccurrences = (str: string, char: string): number => 
-    str.split(char).length - 1;
 
 // Usage
-console.log(countOccurrences("mississippi", "s")); // Returns 4
+const randomNum = getRandomNumber(1, 10); // Returns random integer between 1-10
+function getRandomNumber(
+  min: number, 
+  max: number, 
+  inclusive: boolean = true
+): number {
+  if (min > max) {
+    throw new Error('Min cannot be greater than max');
+  }
+  
+  const range = inclusive ? (max - min + 1) : (max - min);
+  return Math.floor(Math.random() * range) + min;
+}
+
+// Usage
+const randomInt = getRandomNumber(5, 15); // 5-15 inclusive
+const randomExclusive = getRandomNumber(5, 15, false); // 5-14
+function getRandomFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min;
+}
+
+// Usage
+const randomFloat = getRandomFloat(1.5, 3.7); // Random float between 1.5-3.7
+class RandomNumberGenerator {
+  static integer(min: number, max: number): number {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+  
+  static float(min: number, max: number): number {
+    return Math.random() * (max - min) + min;
+  }
+  
+  static boolean(): boolean {
+    return Math.random() < 0.5;
+  }
+}
+
+// Usage
+const randomInt = RandomNumberGenerator.integer(1, 100);
+const randomFloat = RandomNumberGenerator.float(0, 1);
+const randomBool = RandomNumberGenerator.boolean();
+function getRandomNumbers(
+  count: number, 
+  min: number, 
+  max: number
+): number[] {
+  return Array.from({ length: count }, () => 
+    getRandomNumber(min, max)
+  );
+}
+
+// Usage
+const randomNumbers = getRandomNumbers(5, 1, 100); // [23, 45, 67, 12, 89]
+function getRandomNumberByStep(
+  min: number, 
+  max: number, 
+  step: number = 1
+): number {
+  const steps = Math.floor((max - min) / step);
+  return min + (Math.floor(Math.random() * (steps + 1)) * step);
+}
+
+// Usage
+const randomBy5 = getRandomNumberByStep(0, 100, 5); // 0, 5, 10, 15, ... 100
