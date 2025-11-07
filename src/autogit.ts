@@ -1,14 +1,12 @@
-function reverseString(str: string): string {
-  return str.split('').reverse().join('');
-}
+const str1: string = "Hello";
+const str2: string = " World";
+const result: string = str1 + str2; // "Hello World"
+const str1: string = "Hello";
+const str2: string = "World";
+const result: string = `${str1} ${str2}`; // "Hello World"
+const firstName: string = "Jane";
+const lastName: string = "Doe";
+const fullName: string = firstName + " " + lastName; // "Jane Doe"
 
-console.log(reverseString('hello')); // "olleh"
-function reverseStringManual(str: string): string {
-  let reversed = '';
-  for (let i = str.length - 1; i >= 0; i--) {
-    reversed += str[i];
-  }
-  return reversed;
-}
-
-console.log(reverseStringManual('TypeScript')); // "tpircSpeyT"
+// Or with template literals (cleaner for expressions):
+const greeting: string = `Hello, ${firstName} ${lastName}!`; // "Hello, Jane Doe!"
