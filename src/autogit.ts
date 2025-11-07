@@ -1,25 +1,53 @@
-const text: string = "Hello WORLD";
-const lowercaseText: string = text.toLowerCase();
-console.log(lowercaseText); // Output: "hello world"
-const stringArray: string[] = ["Apple", "BANANA", "Cherry"];
-const lowercaseArray: string[] = stringArray.map(str => str.toLowerCase());
-console.log(lowercaseArray); // Output: ["apple", "banana", "cherry"]
-function safeToLowercase(text: string | null | undefined): string {
-    return text?.toLowerCase() || '';
+function stringLength(str: string): number {
+    let count = 0;
+    for (let i = 0; str[i] !== undefined; i++) {
+        count++;
+    }
+    return count;
 }
 
-const result = safeToLowercase("TypeScript"); // "typescript"
-const result2 = safeToLowercase(null); // ""
-const name = "JOHN DOE";
-const greeting = `Hello ${name.toLowerCase()}`;
-console.log(greeting); // Output: "Hello john doe"
-interface User {
-    name: string;
-    email: string;
+// Usage
+const myString = "Hello, World!";
+console.log(stringLength(myString)); // Output: 13
+function stringLengthRecursive(str: string, index = 0): number {
+    if (str[index] === undefined) {
+        return index;
+    }
+    return stringLengthRecursive(str, index + 1);
 }
 
-const user: User = { name: "ALICE", email: "ALICE@EXAMPLE.COM" };
-const normalizedUser: User = {
-    name: user.name.toLowerCase(),
-    email: user.email.toLowerCase()
-};
+// Usage
+const myString = "Hello, World!";
+console.log(stringLengthRecursive(myString)); // Output: 13
+function stringLengthReduce(str: string): number {
+    return str.split('').reduce((count) => count + 1, 0);
+}
+
+// Usage
+const myString = "Hello, World!";
+console.log(stringLengthReduce(myString)); // Output: 13
+function stringLengthWhile(str: string): number {
+    let count = 0;
+    while (str[count] !== undefined) {
+        count++;
+    }
+    return count;
+}
+
+// Usage
+const myString = "Hello, World!";
+console.log(stringLengthWhile(myString)); // Output: 13
+function stringLengthArray(str: string): number {
+    return Array.from(str).length;
+}
+
+// Usage
+const myString = "Hello, World!";
+console.log(stringLengthArray(myString)); // Output: 13
+function getStringLength(str: string): number {
+    let length = 0;
+    while (str[length] !== undefined) {
+        length++;
+    }
+    return length;
+}
