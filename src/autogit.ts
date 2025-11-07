@@ -1,161 +1,124 @@
-// Define a type for node IDs (e.g., string or number)
-type NodeId = string;
+function mergeSort<T>(array: T[]): T[] {
+  // Base case: arrays with 0 or 1 element are already sorted
+  if (array.length <= 1) {
+    return array;
+  }
 
-// Define the adjacency list type
-type AdjacencyList = Map<NodeId, NodeId[]>;
+  // Find the middle point to divide the array into two halves
+  const middle = Math.floor(array.length / 2);
+  
+  // Divide the array into left and right halves
+  const left = array.slice(0, middle);
+  const right = array.slice(middle);
 
-// Example Graph:
-// A --- B
-// |     |
-// C --- D --- E
-//       |
-//       F
-const graph: AdjacencyList = new Map();
-graph.set('A', ['B', 'C']);
-graph.set('B', ['A', 'D']);
-graph.set('C', ['A', 'D']);
-graph.set('D', ['B', 'C', 'E', 'F']);
-graph.set('E', ['D']);
-graph.set('F', ['D']);
-// Add an isolated node for testing disconnected graphs
-graph.set('G', []);
-function dfsRecursive(graph: AdjacencyList, startNode: NodeId): NodeId[] {
-    const visited = new Set<NodeId>();
-    const traversalOrder: NodeId[] = [];
+  // Recursively sort both halves
+  const sortedLeft = mergeSort(left);
+  const sortedRight = mergeSort(right);
 
-    /**
-     * Helper function to perform the recursive exploration.
-     * @param node The current node being visited.
-     */
-    function explore(node: NodeId) {
-        // Base case: if the node has already been visited, stop exploring this path.
-        if (visited.has(node)) {
-            return;
-        }
-
-        // Mark the current node as visited.
-        visited.add(node);
-        // Add it to our traversal order (this is where you'd typically process the node).
-        traversalOrder.push(node);
-        console.log(`Visiting (recursive): ${node}`); // For demonstration
-
-        // Get the neighbors of the current node. If none, default to an empty array.
-        const neighbors = graph.get(node) || [];
-
-        // Recursively visit each unvisited neighbor.
-        for (const neighbor of neighbors) {
-            explore(neighbor);
-        }
-    }
-
-    // Start the exploration from the given startNode.
-    explore(startNode);
-
-    return traversalOrder;
+  // Merge the sorted halves
+  return merge(sortedLeft, sortedRight);
 }
 
-console.log("--- Recursive DFS from 'A' ---");
-const recursiveResult = dfsRecursive(graph, 'A');
-console.log("Recursive DFS Traversal Order:", recursiveResult);
-// Expected: A, B, D, C, E, F (order can vary slightly based on neighbor iteration)
+function merge<T>(left: T[], right: T[]): T[] {
+  const result: T[] = [];
+  let leftIndex = 0;
+  let rightIndex = 0;
 
-console.log("\n--- Recursive DFS from 'G' (isolated node) ---");
-const recursiveResultG = dfsRecursive(graph, 'G');
-console.log("Recursive DFS Traversal Order (G):", recursiveResultG);
-// Expected: G
-function dfsIterative(graph: AdjacencyList, startNode: NodeId): NodeId[] {
-    const stack: NodeId[] = []; // Explicit stack for DFS
-    const visited = new Set<NodeId>();
-    const traversalOrder: NodeId[] = [];
-
-    // Push the starting node onto the stack.
-    stack.push(startNode);
-
-    // Continue as long as there are nodes in the stack to visit.
-    while (stack.length > 0) {
-        // Pop the top node from the stack.
-        // The '!' is a non-null assertion operator, telling TypeScript that we know
-        // `stack.pop()` will not be undefined here because we checked `stack.length`.
-        const currentNode = stack.pop()!;
-
-        // If the current node has already been visited, skip it.
-        if (visited.has(currentNode)) {
-            continue;
-        }
-
-        // Mark the current node as visited.
-        visited.add(currentNode);
-        // Add it to our traversal order (this is where you'd typically process the node).
-        traversalOrder.push(currentNode);
-        console.log(`Visiting (iterative): ${currentNode}`); // For demonstration
-
-        // Get the neighbors of the current node. If none, default to an empty array.
-        const neighbors = graph.get(currentNode) || [];
-
-        // Push unvisited neighbors onto the stack.
-        // We push them in reverse order so that the "first" neighbor
-        // (e.g., the one at index 0 in the `neighbors` array) is processed first,
-        // mimicking the recursive behavior.
-        for (let i = neighbors.length - 1; i >= 0; i--) {
-            const neighbor = neighbors[i];
-            if (!visited.has(neighbor)) {
-                stack.push(neighbor);
-            }
-        }
+  // Compare elements from both arrays and add the smaller one to result
+  while (leftIndex < left.length && rightIndex < right.length) {
+    if (left[leftIndex] <= right[rightIndex]) {
+      result.push(left[leftIndex]);
+      leftIndex++;
+    } else {
+      result.push(right[rightIndex]);
+      rightIndex++;
     }
+  }
 
-    return traversalOrder;
+  // Add remaining elements from left array
+  while (leftIndex < left.length) {
+    result.push(left[leftIndex]);
+    leftIndex++;
+  }
+
+  // Add remaining elements from right array
+  while (rightIndex < right.length) {
+    result.push(right[rightIndex]);
+    rightIndex++;
+  }
+
+  return result;
+}
+// Example usage with numbers
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+const sortedNumbers = mergeSort(numbers);
+console.log(sortedNumbers); // [11, 12, 22, 25, 34, 64, 90]
+
+// Example usage with strings
+const strings = ["banana", "apple", "cherry", "date"];
+const sortedStrings = mergeSort(strings);
+console.log(sortedStrings); // ["apple", "banana", "cherry", "date"]
+
+// Example usage with custom objects
+interface Person {
+  name: string;
+  age: number;
 }
 
-console.log("\n--- Iterative DFS from 'A' ---");
-const iterativeResult = dfsIterative(graph, 'A');
-console.log("Iterative DFS Traversal Order:", iterativeResult);
-// Expected: A, C, D, F, E, B (order can vary slightly based on neighbor iteration)
+const people: Person[] = [
+  { name: "John", age: 30 },
+  { name: "Jane", age: 25 },
+  { name: "Bob", age: 35 }
+];
 
-console.log("\n--- Iterative DFS from 'G' (isolated node) ---");
-const iterativeResultG = dfsIterative(graph, 'G');
-console.log("Iterative DFS Traversal Order (G):", iterativeResultG);
-// Expected: G
-function dfsAllComponents(graph: AdjacencyList): NodeId[] {
-    const allVisited = new Set<NodeId>();
-    const fullTraversalOrder: NodeId[] = [];
+// Sort by age using a custom comparator
+const sortedPeople = mergeSort(people, (a, b) => a.age - b.age);
+console.log(sortedPeople);
+// [{ name: "Jane", age: 25 }, { name: "John", age: 30 }, { name: "Bob", age: 35 }]
+function mergeSort<T>(
+  array: T[],
+  comparator?: (a: T, b: T) => number
+): T[] {
+  if (array.length <= 1) {
+    return array;
+  }
 
-    for (const nodeId of graph.keys()) { // Iterate over all known nodes in the graph
-        if (!allVisited.has(nodeId)) {
-            // Start a new DFS from this unvisited node
-            // Note: We can reuse either dfsRecursive or dfsIterative here,
-            // but we need to pass a new `visited` set to ensure
-            // the inner DFS starts fresh for its component,
-            // and then merge its results into `allVisited` and `fullTraversalOrder`.
-            // For simplicity, let's just make a modified inner function.
+  const middle = Math.floor(array.length / 2);
+  const left = array.slice(0, middle);
+  const right = array.slice(middle);
 
-            const componentTraversal: NodeId[] = [];
-            const componentStack: NodeId[] = [nodeId];
+  const sortedLeft = mergeSort(left, comparator);
+  const sortedRight = mergeSort(right, comparator);
 
-            while (componentStack.length > 0) {
-                const currentNode = componentStack.pop()!;
-                if (allVisited.has(currentNode)) {
-                    continue;
-                }
-                allVisited.add(currentNode);
-                fullTraversalOrder.push(currentNode);
-                componentTraversal.push(currentNode); // For component-specific order if needed
-
-                const neighbors = graph.get(currentNode) || [];
-                for (let i = neighbors.length - 1; i >= 0; i--) {
-                    const neighbor = neighbors[i];
-                    if (!allVisited.has(neighbor)) {
-                        componentStack.push(neighbor);
-                    }
-                }
-            }
-            console.log(`Visited component starting with ${nodeId}:`, componentTraversal);
-        }
-    }
-    return fullTraversalOrder;
+  return mergeWithComparator(sortedLeft, sortedRight, comparator);
 }
 
-console.log("\n--- DFS All Components ---");
-const allNodesTraversal = dfsAllComponents(graph);
-console.log("Full Graph Traversal Order:", allNodesTraversal);
-// Expected: All nodes (A, B, C, D, E, F, G) in some DFS order.
+function mergeWithComparator<T>(
+  left: T[],
+  right: T[],
+  comparator?: (a: T, b: T) => number
+): T[] {
+  const result: T[] = [];
+  let leftIndex = 0;
+  let rightIndex = 0;
+
+  const compare = comparator || defaultComparator;
+
+  while (leftIndex < left.length && rightIndex < right.length) {
+    if (compare(left[leftIndex], right[rightIndex]) <= 0) {
+      result.push(left[leftIndex]);
+      leftIndex++;
+    } else {
+      result.push(right[rightIndex]);
+      rightIndex++;
+    }
+  }
+
+  return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
+}
+
+function defaultComparator<T>(a: T, b: T): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
