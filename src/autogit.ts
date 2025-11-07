@@ -1,69 +1,134 @@
-function getRandomNumber(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+// Define a generic ListNode class
+class ListNode<T> {
+    val: T;
+    next: ListNode<T> | null;
+
+    constructor(val: T, next: ListNode<T> | null = null) {
+        this.val = val;
+        this.next = next;
+    }
+}
+function findMiddleTwoPointers<T>(head: ListNode<T> | null): ListNode<T> | null {
+    if (!head) {
+        return null; // Empty list
+    }
+
+    let slow: ListNode<T> | null = head;
+    let fast: ListNode<T> | null = head;
+
+    // While fast and fast.next are not null, continue moving pointers
+    // This condition ensures fast.next.next is safe to access
+    while (fast && fast.next) {
+        slow = slow!.next; // slow moves one step
+        fast = fast.next.next; // fast moves two steps
+    }
+
+    return slow; // slow is now at the middle node
+}
+function findMiddleCountAndRetraverse<T>(head: ListNode<T> | null): ListNode<T> | null {
+    if (!head) {
+        return null; // Empty list
+    }
+
+    let count = 0;
+    let current: ListNode<T> | null = head;
+
+    // First pass: count the number of nodes
+    while (current) {
+        count++;
+        current = current.next;
+    }
+
+    // Calculate the middle index (0-indexed)
+    // Math.floor ensures we get the correct index for both odd and even counts
+    // For even counts, it gives the second of the two middle elements.
+    const middleIndex = Math.floor(count / 2);
+
+    // Second pass: traverse to the middle node
+    current = head;
+    for (let i = 0; i < middleIndex; i++) {
+        current = current!.next; // current won't be null here because middleIndex is valid
+    }
+
+    return current;
+}
+function findMiddleWithArray<T>(head: ListNode<T> | null): ListNode<T> | null {
+    if (!head) {
+        return null; // Empty list
+    }
+
+    const nodes: ListNode<T>[] = [];
+    let current: ListNode<T> | null = head;
+
+    // Traverse the list and store all nodes in an array
+    while (current) {
+        nodes.push(current);
+        current = current.next;
+    }
+
+    // Calculate the middle index
+    const middleIndex = Math.floor(nodes.length / 2);
+
+    return nodes[middleIndex];
+}
+// Helper function to create a linked list from an array
+function createLinkedList<T>(values: T[]): ListNode<T> | null {
+    if (values.length === 0) {
+        return null;
+    }
+    let head = new ListNode(values[0]);
+    let current = head;
+    for (let i = 1; i < values.length; i++) {
+        current.next = new ListNode(values[i]);
+        current = current.next;
+    }
+    return head;
 }
 
-// Usage
-const randomNum = getRandomNumber(1, 10); // Returns random integer between 1-10
-function getRandomNumber(
-  min: number, 
-  max: number, 
-  inclusive: boolean = true
-): number {
-  if (min > max) {
-    throw new Error('Min cannot be greater than max');
-  }
-  
-  const range = inclusive ? (max - min + 1) : (max - min);
-  return Math.floor(Math.random() * range) + min;
+// Helper function to print a linked list (for verification)
+function printLinkedList<T>(head: ListNode<T> | null): string {
+    let result = [];
+    let current = head;
+    while (current) {
+        result.push(current.val);
+        current = current.next;
+    }
+    return result.join(" -> ");
 }
 
-// Usage
-const randomInt = getRandomNumber(5, 15); // 5-15 inclusive
-const randomExclusive = getRandomNumber(5, 15, false); // 5-14
-function getRandomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min;
-}
+console.log("--- Test Cases ---");
 
-// Usage
-const randomFloat = getRandomFloat(1.5, 3.7); // Random float between 1.5-3.7
-class RandomNumberGenerator {
-  static integer(min: number, max: number): number {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-  
-  static float(min: number, max: number): number {
-    return Math.random() * (max - min) + min;
-  }
-  
-  static boolean(): boolean {
-    return Math.random() < 0.5;
-  }
-}
+// Test case 1: Empty list
+let list1 = createLinkedList<number>([]);
+console.log(`List: ${printLinkedList(list1)}`);
+console.log(`Middle (Two Pointers): ${findMiddleTwoPointers(list1)?.val}`);
+console.log(`Middle (Count & Retraverse): ${findMiddleCountAndRetraverse(list1)?.val}`);
+console.log(`Middle (Array): ${findMiddleWithArray(list1)?.val}\n`);
 
-// Usage
-const randomInt = RandomNumberGenerator.integer(1, 100);
-const randomFloat = RandomNumberGenerator.float(0, 1);
-const randomBool = RandomNumberGenerator.boolean();
-function getRandomNumbers(
-  count: number, 
-  min: number, 
-  max: number
-): number[] {
-  return Array.from({ length: count }, () => 
-    getRandomNumber(min, max)
-  );
-}
+// Test case 2: Single element
+let list2 = createLinkedList<number>([1]);
+console.log(`List: ${printLinkedList(list2)}`);
+console.log(`Middle (Two Pointers): ${findMiddleTwoPointers(list2)?.val}`); // Expected: 1
+console.log(`Middle (Count & Retraverse): ${findMiddleCountAndRetraverse(list2)?.val}`); // Expected: 1
+console.log(`Middle (Array): ${findMiddleWithArray(list2)?.val}\n`);
 
-// Usage
-const randomNumbers = getRandomNumbers(5, 1, 100); // [23, 45, 67, 12, 89]
-function getRandomNumberByStep(
-  min: number, 
-  max: number, 
-  step: number = 1
-): number {
-  const steps = Math.floor((max - min) / step);
-  return min + (Math.floor(Math.random() * (steps + 1)) * step);
-}
+// Test case 3: Odd number of elements
+let list3 = createLinkedList<number>([1, 2, 3, 4, 5]);
+console.log(`List: ${printLinkedList(list3)}`);
+console.log(`Middle (Two Pointers): ${findMiddleTwoPointers(list3)?.val}`); // Expected: 3
+console.log(`Middle (Count & Retraverse): ${findMiddleCountAndRetraverse(list3)?.val}`); // Expected: 3
+console.log(`Middle (Array): ${findMiddleWithArray(list3)?.val}\n`);
 
-// Usage
-const randomBy5 = getRandomNumberByStep(0, 100, 5); // 0, 5, 10, 15, ... 100
+// Test case 4: Even number of elements (standard behavior: second middle)
+let list4 = createLinkedList<number>([1, 2, 3, 4]);
+console.log(`List: ${printLinkedList(list4)}`);
+console.log(`Middle (Two Pointers): ${findMiddleTwoPointers(list4)?.val}`); // Expected: 3
+console.log(`Middle (Count & Retraverse): ${findMiddleCountAndRetraverse(list4)?.val}`); // Expected: 3
+console.log(`Middle (Array): ${findMiddleWithArray(list4)?.val}\n`);
+
+// Test case 5: Two elements
+let list5 = createLinkedList<number>([10, 20]);
+console.log(`List: ${printLinkedList(list5)}`);
+console.log(`Middle (Two Pointers): ${findMiddleTwoPointers(list5)?.val}`); // Expected: 20
+console.log(`Middle (Count & Retraverse): ${findMiddleCountAndRetraverse(list5)?.val}`); // Expected: 20
+console.log(`Middle (Array): ${findMiddleWithArray(list5)?.val}\n`);
