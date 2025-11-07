@@ -1,281 +1,76 @@
-class ListNode<T> {
-    constructor(
-        public value: T,
-        public next: ListNode<T> | null = null
-    ) {}
+import axios, { AxiosResponse, AxiosError } from 'axios';
+
+// Define interface for our post data
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
 
-class LinkedList<T> {
-    public head: ListNode<T> | null = null;
+async function fetchPosts(): Promise<void> {
+  try {
+    const response: AxiosResponse<Post[]> = await axios.get<Post[]>(
+      'https://jsonplaceholder.typicode.com/posts'
+    );
 
-    add(value: T): void {
-        const newNode = new ListNode(value);
-        if (!this.head) {
-            this.head = newNode;
-            return;
-        }
+    console.log('API call successful!');
+    console.log(`Status Code: ${response.status}`);
+    console.log('First 3 posts:');
+    
+    // Show first 3 posts
+    response.data.slice(0, 3).forEach(post => {
+      console.log(`\nID: ${post.id}`);
+      console.log(`Title: ${post.title}`);
+      console.log(`Body: ${post.body.substring(0, 50)}...`);
+    });
 
-        let current = this.head;
-        while (current.next) {
-            current = current.next;
-        }
-        current.next = newNode;
+    // You could return data here if needed:
+    // return response.data;
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    
+    if (axiosError.response) {
+      // Server responded with a status code outside 2xx range
+      console.error('Error response data:', axiosError.response.data);
+      console.error('Error status code:', axiosError.response.status);
+    } else if (axiosError.request) {
+      // Request was made but no response received
+      console.error('No response received:', axiosError.request);
+    } else {
+      // Something happened in setting up the request
+      console.error('Error message:', axiosError.message);
     }
-
-    // Method 1: Convert to array and use two pointers
-    isPalindromeArray(): boolean {
-        if (!this.head) return true;
-
-        const values: T[] = [];
-        let current: ListNode<T> | null = this.head;
-        
-        // Convert linked list to array
-        while (current) {
-            values.push(current.value);
-            current = current.next;
-        }
-
-        // Use two pointers to check palindrome
-        let left = 0;
-        let right = values.length - 1;
-
-        while (left < right) {
-            if (values[left] !== values[right]) {
-                return false;
-            }
-            left++;
-            right--;
-        }
-
-        return true;
-    }
+  }
 }
 
-// Example usage:
-const list1 = new LinkedList<number>();
-list1.add(1);
-list1.add(2);
-list1.add(2);
-list1.add(1);
-console.log(list1.isPalindromeArray()); // true
+// Execute the API call
+fetchPosts();
+npm install axios typescript @types/node
+npx tsc index.ts
+node index.js
+API call successful!
+Status Code: 200
+First 3 posts:
 
-const list2 = new LinkedList<string>();
-list2.add('a');
-list2.add('b');
-list2.add('c');
-console.log(list2.isPalindromeArray()); // false
-class LinkedList<T> {
-    // ... (previous methods)
+ID: 1
+Title: sunt aut facere repellat provident occaecati excepturi optio reprehenderit
+Body: quia et suscipit\nsuscipit recusandae consequuntur expedita...
 
-    // Method 2: Reverse second half and compare
-    isPalindromeReverse(): boolean {
-        if (!this.head || !this.head.next) return true;
+ID: 2
+Title: qui est esse
+Body: est rerum tempore vitae\nsequi sint nihil reprehenderit dolor...
 
-        // Find the middle using slow and fast pointers
-        let slow: ListNode<T> | null = this.head;
-        let fast: ListNode<T> | null = this.head;
-
-        while (fast && fast.next) {
-            slow = slow!.next;
-            fast = fast.next.next;
-        }
-
-        // Reverse the second half
-        let secondHalf = this.reverseList(slow);
-        let firstHalf: ListNode<T> | null = this.head;
-
-        // Compare both halves
-        let temp = secondHalf;
-        while (secondHalf) {
-            if (firstHalf!.value !== secondHalf.value) {
-                // Restore the list (optional)
-                this.reverseList(temp);
-                return false;
-            }
-            firstHalf = firstHalf!.next;
-            secondHalf = secondHalf.next;
-        }
-
-        // Restore the list (optional)
-        this.reverseList(temp);
-        return true;
-    }
-
-    private reverseList(head: ListNode<T> | null): ListNode<T> | null {
-        let prev: ListNode<T> | null = null;
-        let current: ListNode<T> | null = head;
-
-        while (current) {
-            const next = current.next;
-            current.next = prev;
-            prev = current;
-            current = next;
-        }
-
-        return prev;
-    }
+ID: 3
+Title: ea molestias quasi exercitationem repellat qui ipsa sit aut
+Body: et iusto sed quo iure\nvoluptatem occaecati omnis eligendi aut...
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true
+  },
+  "include": ["**/*.ts"]
 }
-class LinkedList<T> {
-    // ... (previous methods)
-
-    // Method 3: Recursive approach
-    isPalindromeRecursive(): boolean {
-        let frontPointer: ListNode<T> | null = this.head;
-        
-        const recursivelyCheck = (currentNode: ListNode<T> | null): boolean => {
-            if (currentNode !== null) {
-                if (!recursivelyCheck(currentNode.next)) return false;
-                if (currentNode.value !== frontPointer!.value) return false;
-                frontPointer = frontPointer!.next;
-            }
-            return true;
-        };
-
-        return recursivelyCheck(this.head);
-    }
-}
-class ListNode<T> {
-    constructor(
-        public value: T,
-        public next: ListNode<T> | null = null
-    ) {}
-}
-
-class LinkedList<T> {
-    public head: ListNode<T> | null = null;
-
-    add(value: T): void {
-        const newNode = new ListNode(value);
-        if (!this.head) {
-            this.head = newNode;
-            return;
-        }
-
-        let current = this.head;
-        while (current.next) {
-            current = current.next;
-        }
-        current.next = newNode;
-    }
-
-    toString(): string {
-        const values: T[] = [];
-        let current = this.head;
-        while (current) {
-            values.push(current.value);
-            current = current.next;
-        }
-        return values.join(' -> ');
-    }
-
-    // Method 1: Array conversion (O(n) time, O(n) space)
-    isPalindromeArray(): boolean {
-        if (!this.head) return true;
-
-        const values: T[] = [];
-        let current: ListNode<T> | null = this.head;
-        
-        while (current) {
-            values.push(current.value);
-            current = current.next;
-        }
-
-        let left = 0;
-        let right = values.length - 1;
-        while (left < right) {
-            if (values[left] !== values[right]) {
-                return false;
-            }
-            left++;
-            right--;
-        }
-        return true;
-    }
-
-    // Method 2: Reverse second half (O(n) time, O(1) space)
-    isPalindromeReverse(): boolean {
-        if (!this.head || !this.head.next) return true;
-
-        let slow: ListNode<T> | null = this.head;
-        let fast: ListNode<T> | null = this.head;
-
-        // Find middle
-        while (fast && fast.next) {
-            slow = slow!.next;
-            fast = fast.next.next;
-        }
-
-        // Reverse second half
-        let secondHalf = this.reverseList(slow);
-        let firstHalf: ListNode<T> | null = this.head;
-        let temp = secondHalf;
-
-        // Compare halves
-        while (secondHalf) {
-            if (firstHalf!.value !== secondHalf.value) {
-                this.reverseList(temp);
-                return false;
-            }
-            firstHalf = firstHalf!.next;
-            secondHalf = secondHalf.next;
-        }
-
-        this.reverseList(temp);
-        return true;
-    }
-
-    private reverseList(head: ListNode<T> | null): ListNode<T> | null {
-        let prev: ListNode<T> | null = null;
-        let current: ListNode<T> | null = head;
-
-        while (current) {
-            const next = current.next;
-            current.next = prev;
-            prev = current;
-            current = next;
-        }
-        return prev;
-    }
-
-    // Method 3: Recursive (O(n) time, O(n) space due to recursion stack)
-    isPalindromeRecursive(): boolean {
-        let frontPointer: ListNode<T> | null = this.head;
-        
-        const recursivelyCheck = (currentNode: ListNode<T> | null): boolean => {
-            if (currentNode !== null) {
-                if (!recursivelyCheck(currentNode.next)) return false;
-                if (currentNode.value !== frontPointer!.value) return false;
-                frontPointer = frontPointer!.next;
-            }
-            return true;
-        };
-
-        return recursivelyCheck(this.head);
-    }
-}
-
-// Test all methods
-function testPalindrome() {
-    const testCases = [
-        [1, 2, 3, 2, 1],    // true
-        [1, 2, 2, 1],       // true
-        [1, 2, 3],          // false
-        [1],                 // true
-        [],                  // true (empty list)
-        ['a', 'b', 'a'],    // true
-        ['a', 'b', 'c']     // false
-    ];
-
-    for (const testCase of testCases) {
-        const list = new LinkedList<number | string>();
-        testCase.forEach(val => list.add(val));
-        
-        console.log(`List: ${list.toString()}`);
-        console.log(`Array method: ${list.isPalindromeArray()}`);
-        console.log(`Reverse method: ${list.isPalindromeReverse()}`);
-        console.log(`Recursive method: ${list.isPalindromeRecursive()}`);
-        console.log('---');
-    }
-}
-
-testPalindrome();
