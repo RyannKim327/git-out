@@ -1,144 +1,260 @@
-// 1. Define a Comparator type for flexibility
-type Comparator<T> = (a: T, b: T) => number;
+interface PriorityQueueItem<T> {
+  priority: number;
+  data: T;
+}
 
-// 2. Default Comparator for primitive types (numbers, strings)
-//    Returns -1 if a < b, 0 if a === b, 1 if a > b
-const defaultComparator = <T>(a: T, b: T): number => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-};
+class PriorityQueue<T> {
+  private heap: PriorityQueueItem<T>[] = [];
+  private isMinHeap: boolean;
 
-/**
- * Merges two already sorted arrays into a single sorted array.
- * @param left The left sorted array.
- * @param right The right sorted array.
- * @param comparator An optional comparison function. Defaults to comparing primitives directly.
- * @returns A new array containing all elements from left and right, sorted.
- */
-function merge<T>(
-    left: T[],
-    right: T[],
-    comparator: Comparator<T> = defaultComparator
-): T[] {
-    const result: T[] = [];
-    let leftIndex = 0;
-    let rightIndex = 0;
+  constructor(isMinHeap: boolean = true) {
+    this.isMinHeap = isMinHeap;
+  }
 
-    // Compare elements from both arrays and add the smaller one to the result
-    while (leftIndex < left.length && rightIndex < right.length) {
-        if (comparator(left[leftIndex], right[rightIndex]) <= 0) {
-            // Using <= 0 makes the sort stable (maintains relative order of equal elements)
-            result.push(left[leftIndex]);
-            leftIndex++;
-        } else {
-            result.push(right[rightIndex]);
-            rightIndex++;
+  // Add element to the queue
+  enqueue(data: T, priority: number): void {
+    const item: PriorityQueueItem<T> = { priority, data };
+    this.heap.push(item);
+    this.bubbleUp(this.heap.length - 1);
+  }
+
+  // Remove and return highest priority element
+  dequeue(): T | null {
+    if (this.isEmpty()) return null;
+    
+    const root = this.heap[0];
+    const last = this.heap.pop()!;
+    
+    if (this.heap.length > 0) {
+      this.heap[0] = last;
+      this.sinkDown(0);
+    }
+    
+    return root.data;
+  }
+
+  // Get highest priority element without removing
+  peek(): T | null {
+    return this.isEmpty() ? null : this.heap[0].data;
+  }
+
+  // Check if queue is empty
+  isEmpty(): boolean {
+    return this.heap.length === 0;
+  }
+
+  // Get queue size
+  size(): number {
+    return this.heap.length;
+  }
+
+  // Clear the queue
+  clear(): void {
+    this.heap = [];
+  }
+
+  // Helper methods for heap operations
+  private bubbleUp(index: number): void {
+    const element = this.heap[index];
+    
+    while (index > 0) {
+      const parentIndex = Math.floor((index - 1) / 2);
+      const parent = this.heap[parentIndex];
+      
+      if (this.shouldSwap(element.priority, parent.priority)) {
+        this.swap(index, parentIndex);
+        index = parentIndex;
+      } else {
+        break;
+      }
+    }
+  }
+
+  private sinkDown(index: number): void {
+    const length = this.heap.length;
+    const element = this.heap[index];
+    
+    while (true) {
+      let leftChildIndex = 2 * index + 1;
+      let rightChildIndex = 2 * index + 2;
+      let swapIndex = -1;
+      
+      if (leftChildIndex < length) {
+        const leftChild = this.heap[leftChildIndex];
+        if (this.shouldSwap(leftChild.priority, element.priority)) {
+          swapIndex = leftChildIndex;
         }
+      }
+      
+      if (rightChildIndex < length) {
+        const rightChild = this.heap[rightChildIndex];
+        if (this.shouldSwap(rightChild.priority, 
+            (swapIndex === -1 ? element.priority : this.heap[leftChildIndex].priority))) {
+          swapIndex = rightChildIndex;
+        }
+      }
+      
+      if (swapIndex === -1) break;
+      
+      this.swap(index, swapIndex);
+      index = swapIndex;
     }
+  }
 
-    // Add any remaining elements from the left array (if any)
-    while (leftIndex < left.length) {
-        result.push(left[leftIndex]);
-        leftIndex++;
+  private swap(i: number, j: number): void {
+    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+  }
+
+  private shouldSwap(childPriority: number, parentPriority: number): boolean {
+    return this.isMinHeap 
+      ? childPriority < parentPriority 
+      : childPriority > parentPriority;
+  }
+}
+abstract class BinaryHeap<T> {
+  protected heap: { priority: number; data: T }[] = [];
+
+  constructor(items?: { priority: number; data: T }[]) {
+    if (items) {
+      this.heap = [...items];
+      this.buildHeap();
     }
+  }
 
-    // Add any remaining elements from the right array (if any)
-    while (rightIndex < right.length) {
-        result.push(right[rightIndex]);
-        rightIndex++;
+  abstract shouldSwap(childPriority: number, parentPriority: number): boolean;
+
+  enqueue(data: T, priority: number): void {
+    this.heap.push({ priority, data });
+    this.bubbleUp(this.heap.length - 1);
+  }
+
+  dequeue(): T | null {
+    if (this.isEmpty()) return null;
+    
+    const root = this.heap[0];
+    const last = this.heap.pop()!;
+    
+    if (this.heap.length > 0) {
+      this.heap[0] = last;
+      this.sinkDown(0);
     }
+    
+    return root.data;
+  }
 
-    // A more concise alternative for adding remaining elements using concat:
-    // return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
-    // While concise, the multiple `concat` calls can create intermediate arrays.
-    // The explicit loops above avoid this, though modern JS engines optimize `concat` well.
+  peek(): T | null {
+    return this.isEmpty() ? null : this.heap[0].data;
+  }
 
-    return result;
+  isEmpty(): boolean {
+    return this.heap.length === 0;
+  }
+
+  size(): number {
+    return this.heap.length;
+  }
+
+  clear(): void {
+    this.heap = [];
+  }
+
+  private bubbleUp(index: number): void {
+    while (index > 0) {
+      const parentIndex = Math.floor((index - 1) / 2);
+      if (this.shouldSwap(this.heap[index].priority, this.heap[parentIndex].priority)) {
+        this.swap(index, parentIndex);
+        index = parentIndex;
+      } else {
+        break;
+      }
+    }
+  }
+
+  private sinkDown(index: number): void {
+    const length = this.heap.length;
+    
+    while (true) {
+      let leftChildIndex = 2 * index + 1;
+      let rightChildIndex = 2 * index + 2;
+      let swapIndex = -1;
+      
+      if (leftChildIndex < length) {
+        if (this.shouldSwap(this.heap[leftChildIndex].priority, this.heap[index].priority)) {
+          swapIndex = leftChildIndex;
+        }
+      }
+      
+      if (rightChildIndex < length) {
+        const comparePriority = swapIndex === -1 
+          ? this.heap[index].priority 
+          : this.heap[leftChildIndex].priority;
+        
+        if (this.shouldSwap(this.heap[rightChildIndex].priority, comparePriority)) {
+          swapIndex = rightChildIndex;
+        }
+      }
+      
+      if (swapIndex === -1) break;
+      
+      this.swap(index, swapIndex);
+      index = swapIndex;
+    }
+  }
+
+  private swap(i: number, j: number): void {
+    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+  }
+
+  private buildHeap(): void {
+    for (let i = Math.floor(this.heap.length / 2); i >= 0; i--) {
+      this.sinkDown(i);
+    }
+  }
 }
 
-/**
- * Implements the Merge Sort algorithm to sort an array.
- * @param arr The array to be sorted.
- * @param comparator An optional comparison function. Defaults to comparing primitives directly.
- * @returns A new sorted array. The original array is not modified.
- */
-export function mergeSort<T>(
-    arr: T[],
-    comparator: Comparator<T> = defaultComparator
-): T[] {
-    // Base case: an array with 0 or 1 element is already sorted
-    if (arr.length <= 1) {
-        return arr;
-    }
-
-    // Find the middle point
-    const mid = Math.floor(arr.length / 2);
-
-    // Divide the array into two halves
-    const left = arr.slice(0, mid);
-    const right = arr.slice(mid);
-
-    // Recursively sort the two halves
-    const sortedLeft = mergeSort(left, comparator);
-    const sortedRight = mergeSort(right, comparator);
-
-    // Merge the sorted halves
-    return merge(sortedLeft, sortedRight, comparator);
-}
-const numbers = [38, 27, 43, 3, 9, 82, 10];
-const sortedNumbers = mergeSort(numbers);
-console.log("Original numbers:", numbers); // [38, 27, 43, 3, 9, 82, 10]
-console.log("Sorted numbers:", sortedNumbers); // [3, 9, 10, 27, 38, 43, 82]
-
-const emptyArray: number[] = [];
-console.log("Sorted empty:", mergeSort(emptyArray)); // []
-
-const singleElement = [5];
-console.log("Sorted single element:", mergeSort(singleElement)); // [5]
-const strings = ["banana", "apple", "grape", "cherry"];
-const sortedStrings = mergeSort(strings);
-console.log("Original strings:", strings); // ["banana", "apple", "grape", "cherry"]
-console.log("Sorted strings:", sortedStrings); // ["apple", "banana", "cherry", "grape"]
-interface Person {
-    name: string;
-    age: number;
+class MinHeap<T> extends BinaryHeap<T> {
+  shouldSwap(childPriority: number, parentPriority: number): boolean {
+    return childPriority < parentPriority;
+  }
 }
 
-const people: Person[] = [
-    { name: "Alice", age: 30 },
-    { name: "Bob", age: 25 },
-    { name: "Charlie", age: 35 },
-    { name: "David", age: 25 },
-    { name: "Eve", age: 30 },
-];
+class MaxHeap<T> extends BinaryHeap<T> {
+  shouldSwap(childPriority: number, parentPriority: number): boolean {
+    return childPriority > parentPriority;
+  }
+}
+// Using the generic priority queue
+const minQueue = new PriorityQueue<number>(true); // Min-heap
+minQueue.enqueue(10, 10);
+minQueue.enqueue(20, 5);
+minQueue.enqueue(30, 15);
 
-// Custom comparator for Person objects
-const personComparator: Comparator<Person> = (p1, p2) => {
-    // Sort primarily by age
-    if (p1.age !== p2.age) {
-        return p1.age - p2.age; // For ascending age
-    }
-    // If ages are the same, sort secondarily by name
-    return p1.name.localeCompare(p2.name); // For ascending name
-};
+console.log(minQueue.dequeue()); // 20 (priority 5)
+console.log(minQueue.dequeue()); // 10 (priority 10)
 
-const sortedPeople = mergeSort(people, personComparator);
-console.log("Original people:", people);
-console.log("Sorted people:", sortedPeople);
-/*
-[
-  { name: 'Bob', age: 25 },
-  { name: 'David', age: 25 },
-  { name: 'Alice', age: 30 },
-  { name: 'Eve', age: 30 },
-  { name: 'Charlie', age: 35 }
-]
-*/
-const numbersDesc = [38, 27, 43, 3, 9, 82, 10];
-const descendingComparator: Comparator<number> = (a, b) => {
-    return b - a; // Swapping a and b in the subtraction reverses the order
-};
+// Using specialized heaps
+const maxHeap = new MaxHeap<string>();
+maxHeap.enqueue("Task A", 3);
+maxHeap.enqueue("Task B", 1);
+maxHeap.enqueue("Task C", 5);
 
-const sortedNumbersDesc = mergeSort(numbersDesc, descendingComparator);
-console.log("Sorted numbers (descending):", sortedNumbersDesc); // [82, 43, 38, 27, 10, 9, 3]
+console.log(maxHeap.dequeue()); // "Task C" (priority 5)
+console.log(maxHeap.dequeue()); // "Task A" (priority 3)
+
+// Custom object example
+interface Task {
+  name: string;
+  description: string;
+}
+
+const taskQueue = new PriorityQueue<Task>();
+taskQueue.enqueue(
+  { name: "Urgent", description: "Fix critical bug" },
+  1
+);
+taskQueue.enqueue(
+  { name: "Normal", description: "Write documentation" },
+  3
+);
+
+console.log(taskQueue.dequeue()); // { name: "Urgent", ... }
