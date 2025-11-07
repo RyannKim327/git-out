@@ -1,34 +1,25 @@
-class TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
-
-  constructor(val: number = 0, left: TreeNode | null = null, right: TreeNode | null = null) {
-    this.val = val;
-    this.left = left;
-    this.right = right;
-  }
+const text: string = "Hello WORLD";
+const lowercaseText: string = text.toLowerCase();
+console.log(lowercaseText); // Output: "hello world"
+const stringArray: string[] = ["Apple", "BANANA", "Cherry"];
+const lowercaseArray: string[] = stringArray.map(str => str.toLowerCase());
+console.log(lowercaseArray); // Output: ["apple", "banana", "cherry"]
+function safeToLowercase(text: string | null | undefined): string {
+    return text?.toLowerCase() || '';
 }
 
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;
-
-  function height(node: TreeNode | null): number {
-    if (!node) return 0;
-
-    const leftHeight = height(node.left);
-    const rightHeight = height(node.right);
-
-    // Update diameter
-    maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
-
-    return 1 + Math.max(leftHeight, rightHeight);
-  }
-
-  height(root);
-  return maxDiameter;
+const result = safeToLowercase("TypeScript"); // "typescript"
+const result2 = safeToLowercase(null); // ""
+const name = "JOHN DOE";
+const greeting = `Hello ${name.toLowerCase()}`;
+console.log(greeting); // Output: "Hello john doe"
+interface User {
+    name: string;
+    email: string;
 }
 
-// Example usage:
-// const tree = new TreeNode(1, new TreeNode(2, new TreeNode(4), new TreeNode(5)), new TreeNode(3));
-// console.log(diameterOfBinaryTree(tree)); // Output: 3
+const user: User = { name: "ALICE", email: "ALICE@EXAMPLE.COM" };
+const normalizedUser: User = {
+    name: user.name.toLowerCase(),
+    email: user.email.toLowerCase()
+};
