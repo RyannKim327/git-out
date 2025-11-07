@@ -1,260 +1,107 @@
-interface PriorityQueueItem<T> {
-  priority: number;
-  data: T;
+function isPalindrome(str: string): boolean {
+    // Remove non-alphanumeric characters and convert to lowercase
+    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    let left = 0;
+    let right = cleanStr.length - 1;
+    
+    while (left < right) {
+        if (cleanStr[left] !== cleanStr[right]) {
+            return false;
+        }
+        left++;
+        right--;
+    }
+    
+    return true;
 }
 
-class PriorityQueue<T> {
-  private heap: PriorityQueueItem<T>[] = [];
-  private isMinHeap: boolean;
-
-  constructor(isMinHeap: boolean = true) {
-    this.isMinHeap = isMinHeap;
-  }
-
-  // Add element to the queue
-  enqueue(data: T, priority: number): void {
-    const item: PriorityQueueItem<T> = { priority, data };
-    this.heap.push(item);
-    this.bubbleUp(this.heap.length - 1);
-  }
-
-  // Remove and return highest priority element
-  dequeue(): T | null {
-    if (this.isEmpty()) return null;
-    
-    const root = this.heap[0];
-    const last = this.heap.pop()!;
-    
-    if (this.heap.length > 0) {
-      this.heap[0] = last;
-      this.sinkDown(0);
-    }
-    
-    return root.data;
-  }
-
-  // Get highest priority element without removing
-  peek(): T | null {
-    return this.isEmpty() ? null : this.heap[0].data;
-  }
-
-  // Check if queue is empty
-  isEmpty(): boolean {
-    return this.heap.length === 0;
-  }
-
-  // Get queue size
-  size(): number {
-    return this.heap.length;
-  }
-
-  // Clear the queue
-  clear(): void {
-    this.heap = [];
-  }
-
-  // Helper methods for heap operations
-  private bubbleUp(index: number): void {
-    const element = this.heap[index];
-    
-    while (index > 0) {
-      const parentIndex = Math.floor((index - 1) / 2);
-      const parent = this.heap[parentIndex];
-      
-      if (this.shouldSwap(element.priority, parent.priority)) {
-        this.swap(index, parentIndex);
-        index = parentIndex;
-      } else {
-        break;
-      }
-    }
-  }
-
-  private sinkDown(index: number): void {
-    const length = this.heap.length;
-    const element = this.heap[index];
-    
-    while (true) {
-      let leftChildIndex = 2 * index + 1;
-      let rightChildIndex = 2 * index + 2;
-      let swapIndex = -1;
-      
-      if (leftChildIndex < length) {
-        const leftChild = this.heap[leftChildIndex];
-        if (this.shouldSwap(leftChild.priority, element.priority)) {
-          swapIndex = leftChildIndex;
-        }
-      }
-      
-      if (rightChildIndex < length) {
-        const rightChild = this.heap[rightChildIndex];
-        if (this.shouldSwap(rightChild.priority, 
-            (swapIndex === -1 ? element.priority : this.heap[leftChildIndex].priority))) {
-          swapIndex = rightChildIndex;
-        }
-      }
-      
-      if (swapIndex === -1) break;
-      
-      this.swap(index, swapIndex);
-      index = swapIndex;
-    }
-  }
-
-  private swap(i: number, j: number): void {
-    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
-  }
-
-  private shouldSwap(childPriority: number, parentPriority: number): boolean {
-    return this.isMinHeap 
-      ? childPriority < parentPriority 
-      : childPriority > parentPriority;
-  }
+// Test cases
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("race a car")); // false
+console.log(isPalindrome(" ")); // true
+function isPalindromeSimple(str: string): boolean {
+    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return cleanStr === cleanStr.split('').reverse().join('');
 }
-abstract class BinaryHeap<T> {
-  protected heap: { priority: number; data: T }[] = [];
-
-  constructor(items?: { priority: number; data: T }[]) {
-    if (items) {
-      this.heap = [...items];
-      this.buildHeap();
-    }
-  }
-
-  abstract shouldSwap(childPriority: number, parentPriority: number): boolean;
-
-  enqueue(data: T, priority: number): void {
-    this.heap.push({ priority, data });
-    this.bubbleUp(this.heap.length - 1);
-  }
-
-  dequeue(): T | null {
-    if (this.isEmpty()) return null;
+function isPalindromeRecursive(str: string): boolean {
+    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
     
-    const root = this.heap[0];
-    const last = this.heap.pop()!;
-    
-    if (this.heap.length > 0) {
-      this.heap[0] = last;
-      this.sinkDown(0);
+    function checkPalindrome(s: string): boolean {
+        if (s.length <= 1) return true;
+        if (s[0] !== s[s.length - 1]) return false;
+        return checkPalindrome(s.substring(1, s.length - 1));
     }
     
-    return root.data;
-  }
-
-  peek(): T | null {
-    return this.isEmpty() ? null : this.heap[0].data;
-  }
-
-  isEmpty(): boolean {
-    return this.heap.length === 0;
-  }
-
-  size(): number {
-    return this.heap.length;
-  }
-
-  clear(): void {
-    this.heap = [];
-  }
-
-  private bubbleUp(index: number): void {
-    while (index > 0) {
-      const parentIndex = Math.floor((index - 1) / 2);
-      if (this.shouldSwap(this.heap[index].priority, this.heap[parentIndex].priority)) {
-        this.swap(index, parentIndex);
-        index = parentIndex;
-      } else {
-        break;
-      }
-    }
-  }
-
-  private sinkDown(index: number): void {
-    const length = this.heap.length;
+    return checkPalindrome(cleanStr);
+}
+function isPalindromeCaseSensitive(str: string): boolean {
+    // Keep original case, only remove non-alphanumeric
+    const cleanStr = str.replace(/[^a-zA-Z0-9]/g, '');
     
-    while (true) {
-      let leftChildIndex = 2 * index + 1;
-      let rightChildIndex = 2 * index + 2;
-      let swapIndex = -1;
-      
-      if (leftChildIndex < length) {
-        if (this.shouldSwap(this.heap[leftChildIndex].priority, this.heap[index].priority)) {
-          swapIndex = leftChildIndex;
+    let left = 0;
+    let right = cleanStr.length - 1;
+    
+    while (left < right) {
+        if (cleanStr[left] !== cleanStr[right]) {
+            return false;
         }
-      }
-      
-      if (rightChildIndex < length) {
-        const comparePriority = swapIndex === -1 
-          ? this.heap[index].priority 
-          : this.heap[leftChildIndex].priority;
+        left++;
+        right--;
+    }
+    
+    return true;
+}
+class PalindromeChecker {
+    static isPalindrome(str: string): boolean {
+        if (typeof str !== 'string') {
+            throw new Error('Input must be a string');
+        }
         
-        if (this.shouldSwap(this.heap[rightChildIndex].priority, comparePriority)) {
-          swapIndex = rightChildIndex;
+        const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+        
+        // Handle empty string or single character
+        if (cleanStr.length <= 1) return true;
+        
+        let left = 0;
+        let right = cleanStr.length - 1;
+        
+        while (left < right) {
+            if (cleanStr[left] !== cleanStr[right]) {
+                return false;
+            }
+            left++;
+            right--;
         }
-      }
-      
-      if (swapIndex === -1) break;
-      
-      this.swap(index, swapIndex);
-      index = swapIndex;
+        
+        return true;
     }
-  }
-
-  private swap(i: number, j: number): void {
-    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
-  }
-
-  private buildHeap(): void {
-    for (let i = Math.floor(this.heap.length / 2); i >= 0; i--) {
-      this.sinkDown(i);
+    
+    // More lenient version that ignores spaces and punctuation by default
+    static isPalindromeLenient(str: string): boolean {
+        const cleanStr = str.toLowerCase().replace(/[\W_]/g, '');
+        return cleanStr === cleanStr.split('').reverse().join('');
     }
-  }
 }
 
-class MinHeap<T> extends BinaryHeap<T> {
-  shouldSwap(childPriority: number, parentPriority: number): boolean {
-    return childPriority < parentPriority;
-  }
-}
+// Usage examples
+console.log(PalindromeChecker.isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(PalindromeChecker.isPalindrome("racecar")); // true
+console.log(PalindromeChecker.isPalindrome("hello")); // false
+// Test the implementation
+const testCases: { input: string; expected: boolean }[] = [
+    { input: "A man, a plan, a canal: Panama", expected: true },
+    { input: "race a car", expected: false },
+    { input: "racecar", expected: true },
+    { input: "hello", expected: false },
+    { input: "a", expected: true },
+    { input: "", expected: true },
+    { input: " ", expected: true },
+    { input: "Was it a car or a cat I saw?", expected: true },
+    { input: "No 'x' in Nixon", expected: true }
+];
 
-class MaxHeap<T> extends BinaryHeap<T> {
-  shouldSwap(childPriority: number, parentPriority: number): boolean {
-    return childPriority > parentPriority;
-  }
-}
-// Using the generic priority queue
-const minQueue = new PriorityQueue<number>(true); // Min-heap
-minQueue.enqueue(10, 10);
-minQueue.enqueue(20, 5);
-minQueue.enqueue(30, 15);
-
-console.log(minQueue.dequeue()); // 20 (priority 5)
-console.log(minQueue.dequeue()); // 10 (priority 10)
-
-// Using specialized heaps
-const maxHeap = new MaxHeap<string>();
-maxHeap.enqueue("Task A", 3);
-maxHeap.enqueue("Task B", 1);
-maxHeap.enqueue("Task C", 5);
-
-console.log(maxHeap.dequeue()); // "Task C" (priority 5)
-console.log(maxHeap.dequeue()); // "Task A" (priority 3)
-
-// Custom object example
-interface Task {
-  name: string;
-  description: string;
-}
-
-const taskQueue = new PriorityQueue<Task>();
-taskQueue.enqueue(
-  { name: "Urgent", description: "Fix critical bug" },
-  1
-);
-taskQueue.enqueue(
-  { name: "Normal", description: "Write documentation" },
-  3
-);
-
-console.log(taskQueue.dequeue()); // { name: "Urgent", ... }
+testCases.forEach(({ input, expected }) => {
+    const result = PalindromeChecker.isPalindrome(input);
+    console.log(`"${input}" -> ${result} (${result === expected ? '✓' : '✗'})`);
+});
