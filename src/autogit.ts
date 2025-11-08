@@ -1,87 +1,40 @@
-interface TreeNode<T> {
-    val: T;
-    left: TreeNode<T> | null;
-    right: TreeNode<T> | null;
+/**
+ * Sorts an array using the Shell Sort algorithm.
+ * This is an in-place sort that uses decreasing gaps to improve on insertion sort.
+ * @param arr - The array of numbers to be sorted.
+ * @returns The sorted array (in-place).
+ */
+function shellSort(arr: number[]): number[] {
+    const n = arr.length;
+
+    // Start with a large gap (half the array length) and reduce it by half each iteration
+    for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+        // Perform insertion sort for elements at each gap interval
+        for (let i = gap; i < n; i++) {
+            // Store the current element to be inserted
+            const temp = arr[i];
+            let j: number;
+
+            // Shift earlier gap-sorted elements up until correct position is found
+            for (
+                j = i;
+                j >= gap && arr[j - gap] > temp;
+                j -= gap
+            ) {
+                arr[j] = arr[j - gap];
+            }
+
+            // Insert the stored element at its correct position
+            arr[j] = temp;
+        }
+    }
+    
+    return arr;
 }
 
-function maxDepth<T>(root: TreeNode<T> | null): number {
-    if (root === null) {
-        return 0;
-    }
-    
-    const leftDepth = maxDepth(root.left);
-    const rightDepth = maxDepth(root.right);
-    
-    return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthBFS<T>(root: TreeNode<T> | null): number {
-    if (root === null) return 0;
-    
-    let depth = 0;
-    const queue: TreeNode<T>[] = [root];
-    
-    while (queue.length > 0) {
-        const levelSize = queue.length;
-        
-        for (let i = 0; i < levelSize; i++) {
-            const currentNode = queue.shift()!;
-            
-            if (currentNode.left !== null) {
-                queue.push(currentNode.left);
-            }
-            if (currentNode.right !== null) {
-                queue.push(currentNode.right);
-            }
-        }
-        
-        depth++;
-    }
-    
-    return depth;
-}
-function maxDepthDFS<T>(root: TreeNode<T> | null): number {
-    if (root === null) return 0;
-    
-    const stack: [TreeNode<T>, number][] = [[root, 1]];
-    let maxDepth = 0;
-    
-    while (stack.length > 0) {
-        const [node, depth] = stack.pop()!;
-        maxDepth = Math.max(maxDepth, depth);
-        
-        if (node.right !== null) {
-            stack.push([node.right, depth + 1]);
-        }
-        if (node.left !== null) {
-            stack.push([node.left, depth + 1]);
-        }
-    }
-    
-    return maxDepth;
-}
-// Create a binary tree
-const tree: TreeNode<number> = {
-    val: 3,
-    left: {
-        val: 9,
-        left: null,
-        right: null
-    },
-    right: {
-        val: 20,
-        left: {
-            val: 15,
-            left: null,
-            right: null
-        },
-        right: {
-            val: 7,
-            left: null,
-            right: null
-        }
-    }
-};
-
-console.log(maxDepth(tree)); // Output: 3
-console.log(maxDepthBFS(tree)); // Output: 3
-console.log(maxDepthDFS(tree)); // Output: 3
+// Example usage:
+const unsortedArray = [64, 34, 25, 12, 22, 11, 90];
+console.log("Unsorted array:", unsortedArray);
+console.log("Sorted array:", shellSort(unsortedArray));
+Unsorted array: [64, 34, 25, 12, 22, 11, 90]
+Sorted array: [11, 12, 22, 25, 34, 64, 90]
