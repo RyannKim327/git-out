@@ -1,70 +1,39 @@
-function getRandomNumber(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+function interpolationSearch(arr: number[], target: number): number {
+    let low = 0;
+    let high = arr.length - 1;
 
-// Example: Generate random number between 1 and 10
-const randomNum = getRandomNumber(1, 10);
-console.log(randomNum);
-function getRandomNumber(
-  min: number, 
-  max: number, 
-  inclusive: boolean = true
-): number {
-  if (inclusive) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  } else {
-    return Math.floor(Math.random() * (max - min)) + min;
-  }
-}
+    while (low <= high && target >= arr[low] && target <= arr[high]) {
+        // If all elements in the current range are identical
+        if (arr[low] === arr[high]) {
+            return arr[low] === target ? low : -1;
+        }
 
-// Examples
-const inclusiveRandom = getRandomNumber(1, 10, true); // 1-10 inclusive
-const exclusiveRandom = getRandomNumber(1, 10, false); // 1-9
-class RandomNumberGenerator {
-  static getInteger(min: number, max: number): number {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
+        // Calculate probe position using interpolation formula
+        const pos = low + Math.floor(
+            ((target - arr[low]) * (high - low)) / (arr[high] - arr[low])
+        );
 
-  static getFloat(min: number, max: number): number {
-    return Math.random() * (max - min) + min;
-  }
-}
+        // Prevent out-of-bounds access (due to potential rounding errors)
+        if (pos < low || pos > high) break;
 
-// Usage
-const randomInt = RandomNumberGenerator.getInteger(1, 100);
-const randomFloat = RandomNumberGenerator.getFloat(1.5, 9.5);
-function getValidatedRandomNumber(min: number, max: number): number {
-  if (min > max) {
-    throw new Error("Minimum value cannot be greater than maximum value");
-  }
-  
-  if (!Number.isInteger(min) || !Number.isInteger(max)) {
-    throw new Error("Both min and max must be integers");
-  }
-  
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+        // Check if we found the target
+        if (arr[pos] === target) return pos;
 
-// Usage
-try {
-  const randomNum = getValidatedRandomNumber(5, 15);
-  console.log(`Random number: ${randomNum}`);
-} catch (error) {
-  console.error(error.message);
-}
-function getMultipleRandomNumbers(
-  min: number, 
-  max: number, 
-  count: number
-): number[] {
-  const numbers: number[] = [];
-  
-  for (let i = 0; i < count; i++) {
-    numbers.push(Math.floor(Math.random() * (max - min + 1)) + min);
-  }
-  
-  return numbers;
-}
+        // Narrow the search range
+        if (arr[pos] < target) {
+            low = pos + 1;
+        } else {
+            high = pos - 1;
+        }
+    }
 
-// Generate 5 random numbers between 1 and 100
-const randomNumbers = getMultipleRandomNumbers(1, 100, 5);
+    return -1; // Target not found
+}
+const sortedArray = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+const target = 70;
+
+console.log(interpolationSearch(sortedArray, target)); // Output: 6
+
+// Edge case: Element not found
+console.log(interpolationSearch(sortedArray, 42));    // Output: -1
+console.log(interpolationSearch([], 42));             // Output: -1
