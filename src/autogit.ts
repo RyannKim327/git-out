@@ -1,110 +1,56 @@
-class ListNode<T> {
-    value: T;
-    next: ListNode<T> | null;
+function stringToIntegerParseInt(str: string): number | typeof NaN {
+    const num = parseInt(str, 10); // Always specify radix 10 for decimal integers
 
-    constructor(value: T, next: ListNode<T> | null = null) {
-        this.value = value;
-        this.next = next;
+    if (isNaN(num)) {
+        console.warn(`"${str}" could not be converted to a valid integer.`);
+        // You might throw an error, return a default value, or handle it otherwise.
+        return NaN; // Or throw new Error("Invalid integer string");
     }
-}
-
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-    if (!head || !head.next) return false;
-    
-    let slow: ListNode<T> | null = head;
-    let fast: ListNode<T> | null = head;
-    
-    while (fast && fast.next) {
-        slow = slow!.next;
-        fast = fast.next.next;
-        
-        if (slow === fast) {
-            return true;
-        }
-    }
-    
-    return false;
-}
-function hasCycleUsingSet<T>(head: ListNode<T> | null): boolean {
-    const visited = new Set<ListNode<T>>();
-    let current = head;
-    
-    while (current) {
-        if (visited.has(current)) {
-            return true;
-        }
-        visited.add(current);
-        current = current.next;
-    }
-    
-    return false;
-}
-function hasCycleUsingMarker<T>(head: ListNode<T> | null): boolean {
-    let current = head;
-    
-    while (current) {
-        if ((current as any).visited) {
-            return true;
-        }
-        (current as any).visited = true;
-        current = current.next;
-    }
-    
-    return false;
-}
-class ListNode<T> {
-    value: T;
-    next: ListNode<T> | null;
-
-    constructor(value: T, next: ListNode<T> | null = null) {
-        this.value = value;
-        this.next = next;
-    }
+    return num;
 }
 
-// Floyd's Algorithm Implementation
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-    if (!head || !head.next) return false;
-    
-    let slow: ListNode<T> | null = head;
-    let fast: ListNode<T> | null = head;
-    
-    while (fast && fast.next) {
-        slow = slow!.next;
-        fast = fast.next.next;
-        
-        if (slow === fast) {
-            return true;
-        }
+console.log(stringToIntegerParseInt("123"));       // Output: 123 (number)
+console.log(stringToIntegerParseInt("  456  "));   // Output: 456
+console.log(stringToIntegerParseInt("789abc"));    // Output: 789
+console.log(stringToIntegerParseInt("3.14"));      // Output: 3 (truncates decimals)
+console.log(stringToIntegerParseInt("-100"));      // Output: -100
+console.log(stringToIntegerParseInt(""));          // Output: NaN (with warning)
+console.log(stringToIntegerParseInt("hello"));     // Output: NaN (with warning)
+console.log(stringToIntegerParseInt("0xFF"));      // Output: 255 (if radix 10 is specified, it treats it as 0. If radix 16 is specified it would be 255. Be careful.)
+console.log(parseInt("0xFF", 10)); // Output: 0
+console.log(parseInt("0xFF", 16)); // Output: 255 (correct for hex)
+function stringToIntegerNumber(str: string): number | typeof NaN {
+    const num = Number(str);
+
+    if (isNaN(num)) {
+        console.warn(`"${str}" could not be converted to a valid number.`);
+        return NaN;
     }
-    
-    return false;
+    // If you specifically need an integer and the input might be a float
+    return Math.trunc(num); // Use Math.trunc() to get the integer part
+                             // (removes fractional digits without rounding)
+                             // Other options: Math.floor(), Math.ceil(), Math.round()
 }
 
-// Test Cases
-function testCycleDetection() {
-    // Create a list without cycle: 1 -> 2 -> 3 -> null
-    const node1 = new ListNode(1);
-    const node2 = new ListNode(2);
-    const node3 = new ListNode(3);
-    
-    node1.next = node2;
-    node2.next = node3;
-    
-    console.log("No cycle:", hasCycle(node1)); // false
-    
-    // Create a cycle: 1 -> 2 -> 3 -> 2 (cycle)
-    node3.next = node2;
-    
-    console.log("With cycle:", hasCycle(node1)); // true
-    
-    // Single node without cycle
-    const singleNode = new ListNode(1);
-    console.log("Single node:", hasCycle(singleNode)); // false
-    
-    // Single node with cycle (pointing to itself)
-    singleNode.next = singleNode;
-    console.log("Self-cycle:", hasCycle(singleNode)); // true
+console.log(stringToIntegerNumber("123"));       // Output: 123
+console.log(stringToIntegerNumber("  456  "));   // Output: 456
+console.log(stringToIntegerNumber("789abc"));    // Output: NaN (with warning) - entire string must be numeric
+console.log(stringToIntegerNumber("3.14"));      // Output: 3 (because of Math.trunc) - without it, it would be 3.14
+console.log(stringToIntegerNumber("-100"));      // Output: -100
+console.log(stringToIntegerNumber(""));          // Output: 0
+console.log(stringToIntegerNumber(" "));          // Output: 0
+console.log(stringToIntegerNumber("hello"));     // Output: NaN (with warning)
+function stringToIntegerUnaryPlus(str: string): number | typeof NaN {
+    const num = +str; // Same as Number(str)
+
+    if (isNaN(num)) {
+        console.warn(`"${str}" could not be converted to a valid number.`);
+        return NaN;
+    }
+    return Math.trunc(num); // Again, if you need an integer from potential floats
 }
 
-testCycleDetection();
+console.log(stringToIntegerUnaryPlus("123"));       // Output: 123
+console.log(stringToIntegerUnaryPlus("3.14"));      // Output: 3 (because of Math.trunc)
+console.log(stringToIntegerUnaryPlus(""));          // Output: 0
+console.log(stringToIntegerUnaryPlus("hello"));     // Output: NaN (with warning)
