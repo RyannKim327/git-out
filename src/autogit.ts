@@ -1,39 +1,105 @@
-function interpolationSearch(arr: number[], target: number): number {
-    let low = 0;
-    let high = arr.length - 1;
-
-    while (low <= high && target >= arr[low] && target <= arr[high]) {
-        // If all elements in the current range are identical
-        if (arr[low] === arr[high]) {
-            return arr[low] === target ? low : -1;
-        }
-
-        // Calculate probe position using interpolation formula
-        const pos = low + Math.floor(
-            ((target - arr[low]) * (high - low)) / (arr[high] - arr[low])
-        );
-
-        // Prevent out-of-bounds access (due to potential rounding errors)
-        if (pos < low || pos > high) break;
-
-        // Check if we found the target
-        if (arr[pos] === target) return pos;
-
-        // Narrow the search range
-        if (arr[pos] < target) {
-            low = pos + 1;
-        } else {
-            high = pos - 1;
-        }
-    }
-
-    return -1; // Target not found
+// Interface to define the structure of weather data
+interface WeatherData {
+  main: {
+    temp: number;
+    humidity: number;
+    pressure: number;
+  };
+  weather: Array<{
+    main: string;
+    description: string;
+  }>;
+  name: string;
 }
-const sortedArray = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-const target = 70;
 
-console.log(interpolationSearch(sortedArray, target)); // Output: 6
+// Function to fetch weather data
+async function fetchWeather(city: string): Promise<WeatherData> {
+  const apiKey = 'your-api-key-here'; // Replace with actual API key
+  const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
 
-// Edge case: Element not found
-console.log(interpolationSearch(sortedArray, 42));    // Output: -1
-console.log(interpolationSearch([], 42));             // Output: -1
+  try {
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data: WeatherData = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching weather data:', error);
+    throw error;
+  }
+}
+
+// Function to display weather information
+function displayWeather(weather: WeatherData): void {
+  console.log(`Weather in ${weather.name}:`);
+  console.log(`Temperature: ${weather.main.temp}°C`);
+  console.log(`Humidity: ${weather.main.humidity}%`);
+  console.log(`Pressure: ${weather.main.pressure} hPa`);
+  console.log(`Condition: ${weather.weather[0].description}`);
+}
+
+// Usage example
+async function main() {
+  try {
+    const city = 'London';
+    console.log(`Fetching weather for ${city}...`);
+    
+    const weather = await fetchWeather(city);
+    displayWeather(weather);
+    
+  } catch (error) {
+    console.error('Failed to get weather data:', error);
+  }
+}
+
+// Alternative example with error handling and timeout
+async function fetchWithTimeout(url: string, timeout = 5000): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
+
+// Example with POST request
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+async function createUser(userData: Omit<User, 'id'>): Promise<User> {
+  const response = await fetch('https://jsonplaceholder.typicode.com/users', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(userData),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to create user');
+  }
+
+  return await response.json();
+}
+
+// Run the main function
+main();
+
+// Example of using the POST function
+createUser({
+  name: 'John Doe',
+  email: 'john@example.com'
+})
+  .then(user => console.log('Created user:', user))
+  .catch(error => console.error('Error creating user:', error));
