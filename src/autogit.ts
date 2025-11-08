@@ -1,157 +1,134 @@
-class BTreeNode<T> {
-    keys: T[] = [];
-    children: BTreeNode<T>[] = [];
-    leaf: boolean = true;
-
-    constructor(
-        readonly t: number,
-        leaf?: boolean
-    ) {
-        if (leaf !== undefined) this.leaf = leaf;
+function longestCommonPrefix(strs: string[]): string {
+    if (strs.length === 0) return '';
+    
+    let prefix = strs[0];
+    
+    for (let i = 1; i < strs.length; i++) {
+        while (strs[i].indexOf(prefix) !== 0) {
+            prefix = prefix.substring(0, prefix.length - 1);
+            if (prefix === '') return '';
+        }
     }
-
-    get isFull(): boolean {
-        return this.keys.length === 2 * this.t - 1;
-    }
+    
+    return prefix;
 }
 
-class BTree<T> {
-    private root: BTreeNode<T> | null = null;
-
-    constructor(
-        private readonly t: number,
-        private readonly compare: (a: T, b: T) => number
-    ) {
-        if (t < 2) throw new Error("Minimum degree must be at least 2");
-    }
-
-    insert(key: T): void {
-        if (this.root === null) {
-            this.root = new BTreeNode<T>(this.t, true);
-            this.root.keys.push(key);
-            return;
-        }
-
-        if (this.root.isFull) {
-            const newRoot = new BTreeNode<T>(this.t, false);
-            newRoot.children.push(this.root);
-            this.splitChild(newRoot, 0);
-            this.root = newRoot;
-        }
-
-        this.insertNonFull(this.root, key);
-    }
-
-    search(key: T): BTreeNode<T> | null {
-        return this.searchNode(this.root, key);
-    }
-
-    private splitChild(parent: BTreeNode<T>, index: number): void {
-        const t = this.t;
-        const fullChild = parent.children[index];
-        const newChild = new BTreeNode<T>(t, fullChild.leaf);
-
-        // Move keys to new child
-        newChild.keys = fullChild.keys.splice(t, t - 1);
-
-        // Move children if not leaf
-        if (!fullChild.leaf) {
-            newChild.children = fullChild.children.splice(t, t);
-        }
-
-        // Add new child to parent
-        parent.children.splice(index + 1, 0, newChild);
-        parent.keys.splice(index, 0, fullChild.keys[t - 1]);
-
-        // Remove the promoted key from full child
-        fullChild.keys.pop();
-    }
-
-    private insertNonFull(node: BTreeNode<T>, key: T): void {
-        let i = node.keys.length - 1;
-
-        if (node.leaf) {
-            // Find insertion position and insert
-            while (i >= 0 && this.compare(key, node.keys[i]) < 0) {
-                i--;
+// Example usage
+const strings = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(strings)); // Output: "fl"
+function longestCommonPrefixVertical(strs: string[]): string {
+    if (strs.length === 0) return '';
+    
+    for (let i = 0; i < strs[0].length; i++) {
+        const char = strs[0][i];
+        for (let j = 1; j < strs.length; j++) {
+            if (i === strs[j].length || strs[j][i] !== char) {
+                return strs[0].substring(0, i);
             }
-            node.keys.splice(i + 1, 0, key);
-        } else {
-            // Find appropriate child
-            while (i >= 0 && this.compare(key, node.keys[i]) < 0) {
-                i--;
-            }
-            i++;
-
-            // Check if child is full
-            if (node.children[i].isFull) {
-                this.splitChild(node, i);
-                if (this.compare(key, node.keys[i]) > 0) {
-                    i++;
-                }
-            }
-
-            this.insertNonFull(node.children[i], key);
         }
     }
+    
+    return strs[0];
+}
 
-    private searchNode(node: BTreeNode<T> | null, key: T): BTreeNode<T> | null {
-        if (!node) return null;
-
+// Example usage
+const strings = ["flower", "flow", "flight"];
+console.log(longestCommonPrefixVertical(strings)); // Output: "fl"
+function longestCommonPrefixReduce(strs: string[]): string {
+    if (strs.length === 0) return '';
+    
+    return strs.reduce((prev, current) => {
         let i = 0;
-        // Find first key >= target
-        while (i < node.keys.length && this.compare(key, node.keys[i]) > 0) {
+        while (i < prev.length && i < current.length && prev[i] === current[i]) {
             i++;
         }
-
-        // Found exact match
-        if (i < node.keys.length && this.compare(key, node.keys[i]) === 0) {
-            return node;
-        }
-
-        // Recurse or return null for leaf node
-        return node.leaf ? null : this.searchNode(node.children[i], key);
-    }
-
-    // Utility method for printing the tree (for debugging)
-    print(): string {
-        return this.printNode(this.root, 0);
-    }
-
-    private printNode(node: BTreeNode<T> | null, level: number): string {
-        if (!node) return "";
-        let result = "";
-        
-        for (let i = 0; i < node.keys.length; i++) {
-            if (!node.leaf) {
-                result += this.printNode(node.children[i], level + 1);
-            }
-            result += `${" ".repeat(level * 4)}${node.keys[i]}\n`;
-        }
-
-        if (!node.leaf) {
-            result += this.printNode(node.children[node.keys.length], level + 1);
-        }
-
-        return result;
-    }
+        return prev.substring(0, i);
+    });
 }
-// Create B-tree with minimum degree 3
-const btree = new BTree<number>(3, (a, b) => a - b);
 
-// Insert some values
-btree.insert(10);
-btree.insert(20);
-btree.insert(5);
-btree.insert(6);
-btree.insert(12);
-btree.insert(30);
-btree.insert(7);
-btree.insert(17);
+// Example usage
+const strings = ["flower", "flow", "flight"];
+console.log(longestCommonPrefixReduce(strings)); // Output: "fl"
+function longestCommonPrefixDivide(strs: string[]): string {
+    if (strs.length === 0) return '';
+    
+    function commonPrefix(left: string, right: string): string {
+        const minLength = Math.min(left.length, right.length);
+        for (let i = 0; i < minLength; i++) {
+            if (left[i] !== right[i]) {
+                return left.substring(0, i);
+            }
+        }
+        return left.substring(0, minLength);
+    }
+    
+    function lcp(strs: string[], left: number, right: number): string {
+        if (left === right) return strs[left];
+        
+        const mid = Math.floor((left + right) / 2);
+        const lcpLeft = lcp(strs, left, mid);
+        const lcpRight = lcp(strs, mid + 1, right);
+        
+        return commonPrefix(lcpLeft, lcpRight);
+    }
+    
+    return lcp(strs, 0, strs.length - 1);
+}
 
-// Search for values
-console.log(btree.search(6)); // Returns node containing 6
-console.log(btree.search(99)); // Returns null
+// Example usage
+const strings = ["flower", "flow", "flight"];
+console.log(longestCommonPrefixDivide(strings)); // Output: "fl"
+function longestCommonPrefixBinary(strs: string[]): string {
+    if (strs.length === 0) return '';
+    
+    function isCommonPrefix(strs: string[], length: number): boolean {
+        const str1 = strs[0].substring(0, length);
+        for (let i = 1; i < strs.length; i++) {
+            if (!strs[i].startsWith(str1)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    let minLen = Math.min(...strs.map(str => str.length));
+    let low = 1;
+    let high = minLen;
+    
+    while (low <= high) {
+        const middle = Math.floor((low + high) / 2);
+        if (isCommonPrefix(strs, middle)) {
+            low = middle + 1;
+        } else {
+            high = middle - 1;
+        }
+    }
+    
+    return strs[0].substring(0, Math.floor((low + high) / 2));
+}
 
-// Print the tree structure
-console.log(btree.print());
+// Example usage
+const strings = ["flower", "flow", "flight"];
+console.log(longestCommonPrefixBinary(strings)); // Output: "fl"
+function longestCommonPrefixOneLiner(strs: string[]): string {
+    return strs.reduce((prefix, str) => 
+        str.substring(0, prefix.length) === prefix ? prefix 
+        : longestCommonPrefixOneLiner([prefix, str.slice(0, -1)])
+    );
+}
+
+// Example usage
+const strings = ["flower", "flow", "flight"];
+console.log(longestCommonPrefixOneLiner(strings)); // Output: "fl"
+function longestCommonPrefixSafe(strs: string[]): string {
+    // Handle empty array
+    if (strs.length === 0) return '';
+    
+    // Handle single string case
+    if (strs.length === 1) return strs[0];
+    
+    // Handle empty strings
+    if (strs.some(str => str.length === 0)) return '';
+    
+    return longestCommonPrefix(strs); // Use any of the above methods
+}
