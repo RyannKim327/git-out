@@ -1,190 +1,102 @@
-class ListNode<T> {
-    constructor(
-        public value: T,
-        public next: ListNode<T> | null = null
-    ) {}
+function selectionSort(arr: number[]): number[] {
+    const array = [...arr]; // Create a copy to avoid mutating the original
+    
+    for (let i = 0; i < array.length - 1; i++) {
+        let minIndex = i;
+        
+        // Find the minimum element in the remaining unsorted portion
+        for (let j = i + 1; j < array.length; j++) {
+            if (array[j] < array[minIndex]) {
+                minIndex = j;
+            }
+        }
+        
+        // Swap the found minimum element with the first element
+        if (minIndex !== i) {
+            [array[i], array[minIndex]] = [array[minIndex], array[i]];
+        }
+    }
+    
+    return array;
 }
-
-function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-    if (!head) return null;
+function selectionSortGeneric<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
+    const array = [...arr];
+    const compare = compareFn || ((a: T, b: T) => a < b ? -1 : a > b ? 1 : 0);
     
-    let slow: ListNode<T> | null = head;
-    let fast: ListNode<T> | null = head;
-    
-    while (fast && fast.next) {
-        slow = slow!.next;
-        fast = fast.next.next;
+    for (let i = 0; i < array.length - 1; i++) {
+        let minIndex = i;
+        
+        for (let j = i + 1; j < array.length; j++) {
+            if (compare(array[j], array[minIndex]) < 0) {
+                minIndex = j;
+            }
+        }
+        
+        if (minIndex !== i) {
+            [array[i], array[minIndex]] = [array[minIndex], array[i]];
+        }
     }
     
-    return slow;
+    return array;
 }
-class ListNode<T> {
-    constructor(
-        public value: T,
-        public next: ListNode<T> | null = null
-    ) {}
-}
-
-class LinkedList<T> {
-    private head: ListNode<T> | null = null;
-    
-    // Add elements to the list
-    add(value: T): void {
-        const newNode = new ListNode(value);
-        if (!this.head) {
-            this.head = newNode;
-            return;
-        }
-        
-        let current = this.head;
-        while (current.next) {
-            current = current.next;
-        }
-        current.next = newNode;
+class SelectionSort {
+    static sort(arr: number[]): number[] {
+        return selectionSort(arr);
     }
     
-    // Find middle element using two-pointer technique
-    findMiddle(): T | null {
-        if (!this.head) return null;
-        
-        let slow: ListNode<T> | null = this.head;
-        let fast: ListNode<T> | null = this.head;
-        
-        while (fast && fast.next) {
-            slow = slow!.next;
-            fast = fast.next.next;
-        }
-        
-        return slow!.value;
-    }
-    
-    // Alternative: Find middle using length calculation
-    findMiddleWithLength(): T | null {
-        if (!this.head) return null;
-        
-        let length = 0;
-        let current: ListNode<T> | null = this.head;
-        
-        // First pass: calculate length
-        while (current) {
-            length++;
-            current = current.next;
-        }
-        
-        // Second pass: find middle
-        const middleIndex = Math.floor(length / 2);
-        current = this.head;
-        for (let i = 0; i < middleIndex; i++) {
-            current = current!.next;
-        }
-        
-        return current!.value;
-    }
-    
-    // Print the list for debugging
-    print(): void {
-        let current = this.head;
-        const values: T[] = [];
-        while (current) {
-            values.push(current.value);
-            current = current.next;
-        }
-        console.log(values.join(' -> '));
+    static sortGeneric<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
+        return selectionSortGeneric(arr, compareFn);
     }
 }
-interface LinkedListNode<T> {
-    value: T;
-    next: LinkedListNode<T> | null;
-}
+// Basic usage
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log("Original:", numbers);
+console.log("Sorted:", selectionSort(numbers));
 
-class MiddleFinder<T> {
-    // Two-pointer approach (most efficient - O(n) time, O(1) space)
-    static twoPointer<T>(head: LinkedListNode<T> | null): LinkedListNode<T> | null {
-        if (!head) return null;
+// Generic usage
+const strings = ["banana", "apple", "cherry", "date"];
+console.log("Strings:", selectionSortGeneric(strings));
+
+// With custom comparator
+const people = [
+    { name: "John", age: 30 },
+    { name: "Alice", age: 25 },
+    { name: "Bob", age: 35 }
+];
+
+const sortedByAge = selectionSortGeneric(people, (a, b) => a.age - b.age);
+console.log("People by age:", sortedByAge);
+function selectionSort(arr: number[]): number[] {
+    const array = [...arr];
+    
+    for (let i = 0; i < array.length - 1; i++) {
+        let minIndex = i;
         
-        let slow: LinkedListNode<T> | null = head;
-        let fast: LinkedListNode<T> | null = head;
-        
-        while (fast && fast.next) {
-            slow = slow!.next;
-            fast = fast.next.next;
+        for (let j = i + 1; j < array.length; j++) {
+            if (array[j] < array[minIndex]) {
+                minIndex = j;
+            }
         }
         
-        return slow;
+        // ES6 destructuring swap
+        [array[i], array[minIndex]] = [array[minIndex], array[i]];
     }
     
-    // Array-based approach (simpler but uses O(n) space)
-    static arrayApproach<T>(head: LinkedListNode<T> | null): LinkedListNode<T> | null {
-        if (!head) return null;
-        
-        const nodes: LinkedListNode<T>[] = [];
-        let current: LinkedListNode<T> | null = head;
-        
-        while (current) {
-            nodes.push(current);
-            current = current.next;
-        }
-        
-        const middleIndex = Math.floor(nodes.length / 2);
-        return nodes[middleIndex];
-    }
-    
-    // Length-based approach
-    static lengthBased<T>(head: LinkedListNode<T> | null): LinkedListNode<T> | null {
-        if (!head) return null;
-        
-        let length = 0;
-        let current: LinkedListNode<T> | null = head;
-        
-        // Calculate length
-        while (current) {
-            length++;
-            current = current.next;
-        }
-        
-        // Find middle
-        const middleIndex = Math.floor(length / 2);
-        current = head;
-        for (let i = 0; i < middleIndex; i++) {
-            current = current!.next;
-        }
-        
-        return current;
-    }
+    return array;
 }
-// Create a linked list: 1 -> 2 -> 3 -> 4 -> 5
-const list = new LinkedList<number>();
-list.add(1);
-list.add(2);
-list.add(3);
-list.add(4);
-list.add(5);
 
-console.log("List:");
-list.print(); // 1 -> 2 -> 3 -> 4 -> 5
+// Test the implementation
+const testArrays = [
+    [5, 2, 4, 6, 1, 3],
+    [1],
+    [],
+    [3, 1, 2],
+    [9, 8, 7, 6, 5, 4, 3, 2, 1]
+];
 
-console.log("Middle element (two-pointer):", list.findMiddle()); // 3
-console.log("Middle element (length-based):", list.findMiddleWithLength()); // 3
-
-// Even number of elements
-const evenList = new LinkedList<number>();
-evenList.add(1);
-evenList.add(2);
-evenList.add(3);
-evenList.add(4);
-
-console.log("\nEven length list:");
-evenList.print(); // 1 -> 2 -> 3 -> 4
-console.log("Middle element:", evenList.findMiddle()); // 3 (second middle)
-// Test edge cases
-const emptyList = new LinkedList<number>();
-console.log("Empty list middle:", emptyList.findMiddle()); // null
-
-const singleElementList = new LinkedList<number>();
-singleElementList.add(42);
-console.log("Single element middle:", singleElementList.findMiddle()); // 42
-
-const twoElementList = new LinkedList<number>();
-twoElementList.add(10);
-twoElementList.add(20);
-console.log("Two elements middle:", twoElementList.findMiddle()); // 20
+testArrays.forEach((arr, index) => {
+    console.log(`Test ${index + 1}:`);
+    console.log(`Input: [${arr}]`);
+    console.log(`Output: [${selectionSort(arr)}]`);
+    console.log('---');
+});
