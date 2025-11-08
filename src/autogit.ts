@@ -1,110 +1,57 @@
-// ------------- Types -------------
-type Node = string | number;
-type Edge = [Node, number];          // [neighbor, weight]
-type Graph = Map<Node, Edge[]>;
+// Remove all whitespace characters
+const str: string = "  Hello   World  ";
+const noWhitespace = str.replace(/\s/g, "");
+console.log(noWhitespace); // "HelloWorld"
 
-// ------------- Result types -------------
-interface DijkstraResult {
-  dist: Map<Node, number>;          // shortest distance from start
-  prev: Map<Node, Node | undefined>; // predecessor for path reconstruction
+// Remove only spaces (not all whitespace)
+const noSpaces = str.replace(/ /g, "");
+console.log(noSpaces); // "HelloWorld"
+const text: string = "  Hello\tWorld\n  ";
+
+// Remove tabs only
+const noTabs = text.replace(/\t/g, "");
+console.log(noTabs); // "  HelloWorld\n  "
+
+// Remove newlines only
+const noNewlines = text.replace(/\n/g, "");
+console.log(noNewlines); // "  Hello\tWorld  "
+const str: string = "  Hello World  ";
+
+// Trim from both ends
+const trimmed = str.trim();
+console.log(trimmed); // "Hello World"
+
+// Trim from start only
+const trimmedStart = str.trimStart();
+console.log(trimmedStart); // "Hello World  "
+
+// Trim from end only
+const trimmedEnd = str.trimEnd();
+console.log(trimmedEnd); // "  Hello World"
+const str: string = "Hello     World    Today";
+const singleSpaced = str.replace(/\s+/g, " ");
+console.log(singleSpaced); // "Hello World Today"
+// Remove all whitespace
+function removeAllWhitespace(text: string): string {
+    return text.replace(/\s/g, "");
 }
 
-// ------------- Min-heap (binary) -------------
-class MinHeap<T> {
-  private data: { key: T; priority: number }[] = [];
-
-  get length() { return this.data.length; }
-
-  enqueue(key: T, priority: number) {
-    this.data.push({ key, priority });
-    this.bubbleUp(this.data.length - 1);
-  }
-
-  dequeue(): { key: T; priority: number } | undefined {
-    if (this.data.length === 0) return undefined;
-    const min = this.data[0];
-    const end = this.data.pop()!;
-    if (this.data.length > 0) {
-      this.data[0] = end;
-      this.bubbleDown(0);
-    }
-    return min;
-  }
-
-  private bubbleUp(idx: number) {
-    while (idx > 0) {
-      const parent = (idx - 1) >> 1;
-      if (this.data[parent].priority <= this.data[idx].priority) break;
-      [this.data[parent], this.data[idx]] = [this.data[idx], this.data[parent]];
-      idx = parent;
-    }
-  }
-
-  private bubbleDown(idx: number) {
-    const n = this.data.length;
-    while (true) {
-      let min = idx;
-      const left = 2 * idx + 1;
-      const right = 2 * idx + 2;
-      if (left < n && this.data[left].priority < this.data[min].priority) min = left;
-      if (right < n && this.data[right].priority < this.data[min].priority) min = right;
-      if (min === idx) break;
-      [this.data[min], this.data[idx]] = [this.data[idx], this.data[min]];
-      idx = min;
-    }
-  }
+// Remove whitespace but keep single spaces between words
+function normalizeSpaces(text: string): string {
+    return text.trim().replace(/\s+/g, " ");
 }
 
-// ------------- Dijkstra -------------
-function dijkstra(graph: Graph, start: Node): DijkstraResult {
-  const dist = new Map<Node, number>();
-  const prev = new Map<Node, Node | undefined>();
-  const heap = new MinHeap<Node>();
-
-  // init
-  for (const v of graph.keys()) {
-    dist.set(v, Infinity);
-    prev.set(v, undefined);
-  }
-  dist.set(start, 0);
-  heap.enqueue(start, 0);
-
-  while (heap.length > 0) {
-    const { key: u } = heap.dequeue()!;
-    for (const [v, w] of graph.get(u) ?? []) {
-      const alt = dist.get(u)! + w;
-      if (alt < dist.get(v)!) {
-        dist.set(v, alt);
-        prev.set(v, u);
-        heap.enqueue(v, alt); // allow duplicates; handled by dist check
-      }
-    }
-  }
-  return { dist, prev };
+// Remove specific whitespace characters
+function removeSpecificWhitespace(text: string, charsToRemove: string[]): string {
+    let result = text;
+    charsToRemove.forEach(char => {
+        result = result.replace(new RegExp(char, "g"), "");
+    });
+    return result;
 }
 
-// ------------- Path reconstruction -------------
-function buildPath(prev: Map<Node, Node | undefined>, target: Node): Node[] {
-  const path: Node[] = [];
-  let curr: Node | undefined = target;
-  while (curr !== undefined) {
-    path.unshift(curr);
-    curr = prev.get(curr);
-  }
-  return path.length === 1 && path[0] !== target ? [] : path;
-}
-
-// ------------- Usage example -------------
-if (import.meta.vitest === undefined) { // guard so tests can import this file
-  const g: Graph = new Map([
-    ['A', [['B', 4], ['C', 2]]],
-    ['B', [['C', 1], ['D', 5]]],
-    ['C', [['D', 8], ['E', 10]]],
-    ['D', [['E', 2]]],
-    ['E', []],
-  ]);
-
-  const { dist, prev } = dijkstra(g, 'A');
-  console.log('Distance map:', [...dist.entries()]);
-  console.log('Shortest path A→E:', buildPath(prev, 'E'));
-}
+// Usage examples
+const example = "  Hello\tWorld\n  ";
+console.log(removeAllWhitespace(example)); // "HelloWorld"
+console.log(normalizeSpaces(example)); // "Hello World"
+console.log(removeSpecificWhitespace(example, ["\t", "\n"])); // "  HelloWorld  "
