@@ -1,136 +1,154 @@
-/**
- * Swaps two elements in an array.
- * @param arr The array.
- * @param i Index of the first element.
- * @param j Index of the second element.
- */
-function swap<T>(arr: T[], i: number, j: number): void {
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-}
-
-/**
- * Implements the Shell Sort algorithm using Knuth's gap sequence.
- *
- * Shell Sort is an in-place comparison sort that is an optimization of insertion sort.
- * It sorts elements that are far apart and then progressively reduces the gap
- * between elements to be sorted.
- *
- * @param arr The array to be sorted.
- * @param comparator An optional function that defines the sort order.
- *                   It should return a negative value if a comes before b,
- *                   a positive value if b comes before a, and 0 if they are equal.
- *                   Defaults to a standard numeric/string comparison if not provided.
- * @returns The sorted array.
- */
-function shellSort<T>(
-    arr: T[],
-    comparator?: (a: T, b: T) => number
-): T[] {
-    const n = arr.length;
-
-    // Default comparator for numbers and strings
-    if (!comparator) {
-        comparator = (a, b) => {
-            if (typeof a === 'number' && typeof b === 'number') {
-                return a - b;
-            }
-            if (typeof a === 'string' && typeof b === 'string') {
-                return a.localeCompare(b);
-            }
-            // Fallback for other types or mixed types (might not be meaningful)
-            if (String(a) < String(b)) return -1;
-            if (String(a) > String(b)) return 1;
-            return 0;
-        };
+function longestIncreasingSubsequenceDP(nums: number[]): number[] {
+    if (nums.length === 0) return [];
+    
+    const dp: number[] = new Array(nums.length).fill(1);
+    const sequences: number[][] = new Array(nums.length);
+    
+    // Initialize each position with its own value
+    for (let i = 0; i < nums.length; i++) {
+        sequences[i] = [nums[i]];
     }
-
-    // Determine initial gap (Knuth's sequence: 1, 4, 13, 40, ...)
-    let h = 1;
-    while (h < n / 3) {
-        h = h * 3 + 1;
-    }
-
-    // Loop with decreasing gaps
-    while (h >= 1) {
-        // h-sort the array using an insertion sort-like approach
-        for (let i = h; i < n; i++) {
-            // Store arr[i] temporarily, as elements might be shifted
-            let temp = arr[i];
-            let j = i;
-
-            // Shift elements of the h-sorted sublist to the right
-            // until the correct position for temp is found
-            while (j >= h && comparator(arr[j - h], temp) > 0) {
-                arr[j] = arr[j - h];
-                j -= h;
+    
+    // Build DP table and track sequences
+    for (let i = 1; i < nums.length; i++) {
+        for (let j = 0; j < i; j++) {
+            if (nums[i] > nums[j] && dp[i] < dp[j] + 1) {
+                dp[i] = dp[j] + 1;
+                sequences[i] = [...sequences[j], nums[i]];
             }
-            // Place temp (the original arr[i]) in its correct position
-            arr[j] = temp;
         }
-        // Reduce the gap for the next pass
-        h = Math.floor(h / 3);
     }
-
-    return arr;
+    
+    // Find the longest sequence
+    const maxLength = Math.max(...dp);
+    const maxIndex = dp.findIndex(length => length === maxLength);
+    
+    return sequences[maxIndex];
 }
 
-// --- Usage Examples ---
-
-// 1. Sorting an array of numbers
-const numbers = [99, 44, 6, 2, 1, 5, 63, 87, 283, 4, 0];
-console.log("Original Numbers:", [...numbers]);
-shellSort(numbers);
-console.log("Sorted Numbers:", numbers); // Expected: [0, 1, 2, 4, 5, 6, 44, 63, 87, 99, 283]
-
-// 2. Sorting an array of strings
-const strings = ["banana", "apple", "grape", "orange", "kiwi"];
-console.log("\nOriginal Strings:", [...strings]);
-shellSort(strings);
-console.log("Sorted Strings:", strings); // Expected: ["apple", "banana", "grape", "kiwi", "orange"]
-
-// 3. Sorting an array of custom objects using a custom comparator
-interface Person {
-    name: string;
-    age: number;
+// Example usage
+const arr = [10, 22, 9, 33, 21, 50, 41, 60, 80];
+console.log(longestIncreasingSubsequenceDP(arr)); // [10, 22, 33, 50, 60, 80]
+function longestIncreasingSubsequenceOptimal(nums: number[]): number[] {
+    if (nums.length === 0) return [];
+    
+    const tails: number[] = [];
+    const sequences: number[][] = [];
+    
+    for (const num of nums) {
+        // Binary search to find where to place the current number
+        let left = 0;
+        let right = tails.length;
+        
+        while (left < right) {
+            const mid = Math.floor((left + right) / 2);
+            if (tails[mid] < num) {
+                left = mid + 1;
+            } else {
+                right = mid;
+            }
+        }
+        
+        // Update tails array
+        if (left === tails.length) {
+            tails.push(num);
+            // Build the sequence
+            if (left === 0) {
+                sequences.push([num]);
+            } else {
+                sequences.push([...sequences[left - 1], num]);
+            }
+        } else {
+            tails[left] = num;
+            if (left === 0) {
+                sequences[left] = [num];
+            } else {
+                sequences[left] = [...sequences[left - 1], num];
+            }
+        }
+    }
+    
+    return sequences[tails.length - 1];
+}
+function lisLength(nums: number[]): number {
+    if (nums.length === 0) return 0;
+    
+    const dp: number[] = new Array(nums.length).fill(1);
+    
+    for (let i = 1; i < nums.length; i++) {
+        for (let j = 0; j < i; j++) {
+            if (nums[i] > nums[j]) {
+                dp[i] = Math.max(dp[i], dp[j] + 1);
+            }
+        }
+    }
+    
+    return Math.max(...dp);
+}
+interface LISResult {
+    length: number;
+    sequence: number[];
+    indices: number[];
 }
 
-const people: Person[] = [
-    { name: "Alice", age: 30 },
-    { name: "Bob", age: 25 },
-    { name: "Charlie", age: 35 },
-    { name: "David", age: 25 },
-    { name: "Eve", age: 28 },
-];
-
-console.log("\nOriginal People (by age):", JSON.stringify(people, null, 2));
-
-// Sort by age, then by name for ties
-shellSort(people, (a, b) => {
-    if (a.age !== b.age) {
-        return a.age - b.age; // Sort by age ascending
+function longestIncreasingSubsequenceDetailed(nums: number[]): LISResult {
+    if (nums.length === 0) {
+        return { length: 0, sequence: [], indices: [] };
     }
-    return a.name.localeCompare(b.name); // Then by name ascending for ties
-});
+    
+    const dp: number[] = new Array(nums.length).fill(1);
+    const parent: number[] = new Array(nums.length).fill(-1);
+    const sequences: number[][] = new Array(nums.length);
+    
+    for (let i = 0; i < nums.length; i++) {
+        sequences[i] = [nums[i]];
+    }
+    
+    for (let i = 1; i < nums.length; i++) {
+        for (let j = 0; j < i; j++) {
+            if (nums[i] > nums[j] && dp[i] < dp[j] + 1) {
+                dp[i] = dp[j] + 1;
+                parent[i] = j;
+                sequences[i] = [...sequences[j], nums[i]];
+            }
+        }
+    }
+    
+    const maxLength = Math.max(...dp);
+    const maxIndex = dp.findIndex(length => length === maxLength);
+    
+    // Reconstruct indices
+    const indices: number[] = [];
+    let current = maxIndex;
+    while (current !== -1) {
+        indices.unshift(current);
+        current = parent[current];
+    }
+    
+    return {
+        length: maxLength,
+        sequence: sequences[maxIndex],
+        indices
+    };
+}
+function testLIS() {
+    const testCases = [
+        { input: [10, 22, 9, 33, 21, 50, 41, 60, 80], expected: [10, 22, 33, 50, 60, 80] },
+        { input: [3, 2, 6, 4, 5, 1], expected: [2, 4, 5] },
+        { input: [0, 8, 4, 12, 2, 10, 6, 14, 1, 9], expected: [0, 4, 6, 9] },
+        { input: [1, 2, 3, 4, 5], expected: [1, 2, 3, 4, 5] },
+        { input: [5, 4, 3, 2, 1], expected: [5] }
+    ];
+    
+    testCases.forEach((testCase, index) => {
+        const result = longestIncreasingSubsequenceDP(testCase.input);
+        console.log(`Test ${index + 1}:`);
+        console.log(`Input: [${testCase.input}]`);
+        console.log(`Expected: [${testCase.expected}]`);
+        console.log(`Got: [${result}]`);
+        console.log(`Pass: ${JSON.stringify(result) === JSON.stringify(testCase.expected)}`);
+        console.log('---');
+    });
+}
 
-console.log("Sorted People (by age, then name):", JSON.stringify(people, null, 2));
-/* Expected:
-[
-  { "name": "Bob", "age": 25 },
-  { "name": "David", "age": 25 },
-  { "name": "Eve", "age": 28 },
-  { "name": "Alice", "age": 30 },
-  { "name": "Charlie", "age": 35 }
-]
-*/
-
-// 4. Empty array
-const emptyArray: number[] = [];
-console.log("\nOriginal Empty Array:", [...emptyArray]);
-shellSort(emptyArray);
-console.log("Sorted Empty Array:", emptyArray); // Expected: []
-
-// 5. Single element array
-const singleElementArray = [42];
-console.log("\nOriginal Single Element Array:", [...singleElementArray]);
-shellSort(singleElementArray);
-console.log("Sorted Single Element Array:", singleElementArray); // Expected: [42]
+testLIS();
