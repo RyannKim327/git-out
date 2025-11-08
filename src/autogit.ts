@@ -1,214 +1,152 @@
-class BurrowsWheelerTransform {
-  /**
-   * Encode a string using Burrows-Wheeler Transform
-   */
-  static encode(input: string): { transformed: string; index: number } {
-    if (!input.length) return { transformed: '', index: -1 };
+function longestCommonSubstring(str1: string, str2: string): string {
+    let longest = '';
     
-    const rotations = this.generateRotations(input);
-    const sortedRotations = [...rotations].sort();
-    
-    const lastColumn = sortedRotations.map(rotation => 
-      rotation[rotation.length - 1]
-    ).join('');
-    
-    const originalIndex = sortedRotations.indexOf(input);
-    
-    return {
-      transformed: lastColumn,
-      index: originalIndex
-    };
-  }
-
-  /**
-   * Decode a BWT-transformed string
-   */
-  static decode(transformed: string, index: number): string {
-    if (!transformed.length || index === -1) return '';
-    
-    const table: string[] = Array(transformed.length).fill('');
-    
-    // Reconstruct the original string through multiple passes
-    for (let i = 0; i < transformed.length; i++) {
-      for (let j = 0; j < transformed.length; j++) {
-        table[j] = transformed[j] + table[j];
-      }
-      table.sort();
+    // Compare all possible substrings of str1 with str2
+    for (let i = 0; i < str1.length; i++) {
+        for (let j = i + 1; j <= str1.length; j++) {
+            const substring = str1.substring(i, j);
+            
+            // If this substring exists in str2 and it's longer than current longest
+            if (str2.includes(substring) && substring.length > longest.length) {
+                longest = substring;
+            }
+        }
     }
     
-    return table[index];
-  }
-
-  /**
-   * Generate all rotations of the input string
-   */
-  private static generateRotations(input: string): string[] {
-    const rotations: string[] = [];
-    const len = input.length;
-    
-    for (let i = 0; i < len; i++) {
-      rotations.push(input.slice(i) + input.slice(0, i));
-    }
-    
-    return rotations;
-  }
+    return longest;
 }
-class OptimizedBWT {
-  /**
-   * Optimized BWT encoding using cyclic shifts
-   */
-  static encode(input: string): { transformed: string; index: number } {
-    const len = input.length;
-    if (len === 0) return { transformed: '', index: -1 };
-    
-    // Create cyclic shifts with their indices
-    const shifts = Array.from({ length: len }, (_, i) => ({
-      string: input.slice(i) + input.slice(0, i),
-      originalIndex: i
-    }));
-    
-    // Sort lexicographically
-    shifts.sort((a, b) => a.string.localeCompare(b.string));
-    
-    // Extract last column and find original index
-    const transformed = shifts.map(shift => 
-      shift.string.charAt(len - 1)
-    ).join('');
-    
-    const index = shifts.findIndex(shift => shift.originalIndex === 0);
-    
-    return { transformed, index };
-  }
 
-  /**
-   * Efficient decoding using the LF mapping property
-   */
-  static decode(transformed: string, index: number): string {
-    const len = transformed.length;
-    if (len === 0 || index < 0) return '';
-    
-    // Build the decoding table
-    const table: string[][] = Array(len);
-    for (let i = 0; i < len; i++) {
-      table[i] = [];
-    }
-    
-    // Multiple passes to reconstruct
-    for (let pass = 0; pass < len; pass++) {
-      for (let i = 0; i < len; i++) {
-        table[i].unshift(transformed[i]);
-      }
-      table.sort((a, b) => {
-        const aStr = a.join('');
-        const bStr = b.join('');
-        return aStr.localeCompare(bStr);
-      });
-    }
-    
-    return table[index].join('');
-  }
-}
 // Example usage
-const testString = "banana";
-console.log("Original:", testString);
+const result1 = longestCommonSubstring("ABABC", "BABCA");
+console.log(result1); // "BABC"
 
-// Basic implementation
-const basicResult = BurrowsWheelerTransform.encode(testString);
-console.log("BWT encoded:", basicResult.transformed);
-console.log("BWT index:", basicResult.index);
-const decodedBasic = BurrowsWheelerTransform.decode(
-  basicResult.transformed, 
-  basicResult.index
-);
-console.log("Decoded:", decodedBasic);
-
-// Optimized implementation
-const optimizedResult = OptimizedBWT.encode(testString);
-console.log("Optimized BWT:", optimizedResult.transformed);
-const decodedOptimized = OptimizedBWT.decode(
-  optimizedResult.transformed, 
-  optimizedResult.index
-);
-console.log("Optimized decoded:", decodedOptimized);
-class BWT {
-  private static readonly EOF = '$'; // End-of-file marker (optional)
-
-  /**
-   * Encode with optional EOF marker
-   */
-  static encode(input: string, useEOF: boolean = false): { transformed: string; index: number } {
-    let workingString = input;
-    if (useEOF && !input.includes(this.EOF)) {
-      workingString = input + this.EOF;
+const result2 = longestCommonSubstring("hello world", "world peace");
+console.log(result2); // "world"
+function longestCommonSubstringDP(str1: string, str2: string): string {
+    const m = str1.length;
+    const n = str2.length;
+    
+    // Create a 2D array to store lengths of common substrings
+    const dp: number[][] = Array(m + 1)
+        .fill(0)
+        .map(() => Array(n + 1).fill(0));
+    
+    let longestLength = 0;
+    let endIndex = 0;
+    
+    // Fill the DP table
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            if (str1[i - 1] === str2[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
+                
+                if (dp[i][j] > longestLength) {
+                    longestLength = dp[i][j];
+                    endIndex = i - 1;
+                }
+            } else {
+                dp[i][j] = 0;
+            }
+        }
     }
     
-    const len = workingString.length;
-    const rotations: string[] = [];
-    
-    for (let i = 0; i < len; i++) {
-      rotations.push(workingString.slice(i) + workingString.slice(0, i));
+    // Extract the longest common substring
+    if (longestLength === 0) {
+        return '';
     }
     
-    rotations.sort();
-    
-    const transformed = rotations.map(rot => rot.charAt(len - 1)).join('');
-    const index = rotations.indexOf(workingString);
-    
-    return { transformed, index };
-  }
-
-  /**
-   * Decode with optional EOF handling
-   */
-  static decode(transformed: string, index: number, hadEOF: boolean = false): string {
-    if (transformed.length === 0) return '';
-    
-    let table = Array(transformed.length).fill('');
-    
-    for (let i = 0; i < transformed.length; i++) {
-      for (let j = 0; j < transformed.length; j++) {
-        table[j] = transformed[j] + table[j];
-      }
-      table.sort();
-    }
-    
-    const result = table[index];
-    return hadEOF ? result.replace(this.EOF, '') : result;
-  }
-
-  /**
-   * Calculate compression ratio (theoretical)
-   */
-  static calculateCompressionRatio(original: string, transformed: string): number {
-    const originalEntropy = this.calculateEntropy(original);
-    const transformedEntropy = this.calculateEntropy(transformed);
-    return transformedEntropy / originalEntropy;
-  }
-
-  /**
-   * Simple entropy calculation for comparison
-   */
-  private static calculateEntropy(str: string): number {
-    const len = str.length;
-    const freq: Map<string, number> = new Map();
-    
-    for (const char of str) {
-      freq.set(char, (freq.get(char) || 0) + 1);
-    }
-    
-    let entropy = 0;
-    for (const [char, count] of freq) {
-      const probability = count / len;
-      entropy -= probability * Math.log2(probability);
-    }
-    
-    return entropy;
-  }
+    return str1.substring(endIndex - longestLength + 1, endIndex + 1);
 }
 
-// Example with compression analysis
-const text = "abracadabra";
-const result = BWT.encode(text, true);
-console.log(`Original: ${text}`);
-console.log(`BWT: ${result.transformed}`);
-console.log(`Compression ratio: ${BWT.calculateCompressionRatio(text, result.transformed)}`);
+// Example usage
+console.log(longestCommonSubstringDP("ABABC", "BABCA")); // "BABC"
+console.log(longestCommonSubstringDP("hello world", "world peace")); // "world"
+interface LCSResult {
+    substring: string;
+    length: number;
+    positions: {
+        str1: { start: number; end: number };
+        str2: { start: number; end: number };
+    };
+}
+
+function findLongestCommonSubstrings(
+    str1: string, 
+    str2: string, 
+    findAll: boolean = false
+): LCSResult[] {
+    const m = str1.length;
+    const n = str2.length;
+    
+    const dp: number[][] = Array(m + 1)
+        .fill(0)
+        .map(() => Array(n + 1).fill(0));
+    
+    let maxLength = 0;
+    const results: LCSResult[] = [];
+    
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            if (str1[i - 1] === str2[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
+                
+                if (dp[i][j] > maxLength) {
+                    maxLength = dp[i][j];
+                    if (!findAll) {
+                        // Clear previous results if we only want the longest
+                        results.length = 0;
+                    }
+                }
+                
+                if (dp[i][j] === maxLength && maxLength > 0) {
+                    const start1 = i - maxLength;
+                    const end1 = i - 1;
+                    const substring = str1.substring(start1, end1 + 1);
+                    
+                    // Find position in str2
+                    const start2 = j - maxLength;
+                    const end2 = j - 1;
+                    
+                    results.push({
+                        substring,
+                        length: maxLength,
+                        positions: {
+                            str1: { start: start1, end: end1 },
+                            str2: { start: start2, end: end2 }
+                        }
+                    });
+                }
+            } else {
+                dp[i][j] = 0;
+            }
+        }
+    }
+    
+    // Remove duplicates and return
+    return results.filter((result, index, self) => 
+        index === self.findIndex(r => r.substring === result.substring)
+    );
+}
+
+// Example usage
+const singleResult = findLongestCommonSubstrings("ABABC", "BABCA");
+console.log(singleResult[0].substring); // "BABC"
+
+const allResults = findLongestCommonSubstrings("ABCABC", "ABC", true);
+console.log(allResults.map(r => r.substring)); // ["ABC", "ABC"]
+// Performance test function
+function measurePerformance(str1: string, str2: string): void {
+    console.time('Basic Method');
+    const basicResult = longestCommonSubstring(str1, str2);
+    console.timeEnd('Basic Method');
+    
+    console.time('DP Method');
+    const dpResult = longestCommonSubstringDP(str1, str2);
+    console.timeEnd('DP Method');
+    
+    console.log(`Basic: "${basicResult}", DP: "${dpResult}"`);
+}
+
+// Test with different string sizes
+measurePerformance("short", "shorter");
+measurePerformance("this is a longer test string", "another longer test example");
