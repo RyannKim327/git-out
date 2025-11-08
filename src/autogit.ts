@@ -1,154 +1,46 @@
-function longestIncreasingSubsequenceDP(nums: number[]): number[] {
-    if (nums.length === 0) return [];
-    
-    const dp: number[] = new Array(nums.length).fill(1);
-    const sequences: number[][] = new Array(nums.length);
-    
-    // Initialize each position with its own value
-    for (let i = 0; i < nums.length; i++) {
-        sequences[i] = [nums[i]];
+/**
+ * Generates a random integer between min (inclusive) and max (inclusive).
+ * The value is no lower than `min` and no greater than `max`.
+ * If min or max are floats, they are floored/ceiled to define the integer range correctly.
+ * @param min The minimum integer value (inclusive).
+ * @param max The maximum integer value (inclusive).
+ * @returns A random integer within the specified range.
+ */
+function getRandomIntInclusive(min: number, max: number): number {
+    // Ensure min and max are integers to define the integer range
+    // For example, if min=3.5, it becomes 4. If max=9.8, it becomes 9.
+    min = Math.ceil(min);
+    max = Math.floor(max);
+
+    // Swap min and max if min is greater than max to ensure correct range
+    if (min > max) {
+        [min, max] = [max, min];
     }
-    
-    // Build DP table and track sequences
-    for (let i = 1; i < nums.length; i++) {
-        for (let j = 0; j < i; j++) {
-            if (nums[i] > nums[j] && dp[i] < dp[j] + 1) {
-                dp[i] = dp[j] + 1;
-                sequences[i] = [...sequences[j], nums[i]];
-            }
-        }
-    }
-    
-    // Find the longest sequence
-    const maxLength = Math.max(...dp);
-    const maxIndex = dp.findIndex(length => length === maxLength);
-    
-    return sequences[maxIndex];
+
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// Example usage
-const arr = [10, 22, 9, 33, 21, 50, 41, 60, 80];
-console.log(longestIncreasingSubsequenceDP(arr)); // [10, 22, 33, 50, 60, 80]
-function longestIncreasingSubsequenceOptimal(nums: number[]): number[] {
-    if (nums.length === 0) return [];
-    
-    const tails: number[] = [];
-    const sequences: number[][] = [];
-    
-    for (const num of nums) {
-        // Binary search to find where to place the current number
-        let left = 0;
-        let right = tails.length;
-        
-        while (left < right) {
-            const mid = Math.floor((left + right) / 2);
-            if (tails[mid] < num) {
-                left = mid + 1;
-            } else {
-                right = mid;
-            }
-        }
-        
-        // Update tails array
-        if (left === tails.length) {
-            tails.push(num);
-            // Build the sequence
-            if (left === 0) {
-                sequences.push([num]);
-            } else {
-                sequences.push([...sequences[left - 1], num]);
-            }
-        } else {
-            tails[left] = num;
-            if (left === 0) {
-                sequences[left] = [num];
-            } else {
-                sequences[left] = [...sequences[left - 1], num];
-            }
-        }
+// --- Usage Examples ---
+console.log("Random integer between 1 and 10 (inclusive):", getRandomIntInclusive(1, 10)); // e.g., 5, 1, 10
+console.log("Random integer between -5 and 5 (inclusive):", getRandomIntInclusive(-5, 5)); // e.g., -2, 0, 4
+console.log("Random integer between 100 and 100 (inclusive):", getRandomIntInclusive(100, 100)); // Always 100
+console.log("Random integer between 3.5 and 9.8 (inclusive):", getRandomIntInclusive(3.5, 9.8)); // Will be between 4 and 9
+/**
+ * Generates a random floating-point number between min (inclusive) and max (exclusive).
+ * The value is no lower than `min` and is less than `max`.
+ * @param min The minimum float value (inclusive).
+ * @param max The maximum float value (exclusive).
+ * @returns A random float within the specified range.
+ */
+function getRandomFloat(min: number, max: number): number {
+    // Swap min and max if min is greater than max to ensure correct range
+    if (min > max) {
+        [min, max] = [max, min];
     }
-    
-    return sequences[tails.length - 1];
-}
-function lisLength(nums: number[]): number {
-    if (nums.length === 0) return 0;
-    
-    const dp: number[] = new Array(nums.length).fill(1);
-    
-    for (let i = 1; i < nums.length; i++) {
-        for (let j = 0; j < i; j++) {
-            if (nums[i] > nums[j]) {
-                dp[i] = Math.max(dp[i], dp[j] + 1);
-            }
-        }
-    }
-    
-    return Math.max(...dp);
-}
-interface LISResult {
-    length: number;
-    sequence: number[];
-    indices: number[];
+    return Math.random() * (max - min) + min;
 }
 
-function longestIncreasingSubsequenceDetailed(nums: number[]): LISResult {
-    if (nums.length === 0) {
-        return { length: 0, sequence: [], indices: [] };
-    }
-    
-    const dp: number[] = new Array(nums.length).fill(1);
-    const parent: number[] = new Array(nums.length).fill(-1);
-    const sequences: number[][] = new Array(nums.length);
-    
-    for (let i = 0; i < nums.length; i++) {
-        sequences[i] = [nums[i]];
-    }
-    
-    for (let i = 1; i < nums.length; i++) {
-        for (let j = 0; j < i; j++) {
-            if (nums[i] > nums[j] && dp[i] < dp[j] + 1) {
-                dp[i] = dp[j] + 1;
-                parent[i] = j;
-                sequences[i] = [...sequences[j], nums[i]];
-            }
-        }
-    }
-    
-    const maxLength = Math.max(...dp);
-    const maxIndex = dp.findIndex(length => length === maxLength);
-    
-    // Reconstruct indices
-    const indices: number[] = [];
-    let current = maxIndex;
-    while (current !== -1) {
-        indices.unshift(current);
-        current = parent[current];
-    }
-    
-    return {
-        length: maxLength,
-        sequence: sequences[maxIndex],
-        indices
-    };
-}
-function testLIS() {
-    const testCases = [
-        { input: [10, 22, 9, 33, 21, 50, 41, 60, 80], expected: [10, 22, 33, 50, 60, 80] },
-        { input: [3, 2, 6, 4, 5, 1], expected: [2, 4, 5] },
-        { input: [0, 8, 4, 12, 2, 10, 6, 14, 1, 9], expected: [0, 4, 6, 9] },
-        { input: [1, 2, 3, 4, 5], expected: [1, 2, 3, 4, 5] },
-        { input: [5, 4, 3, 2, 1], expected: [5] }
-    ];
-    
-    testCases.forEach((testCase, index) => {
-        const result = longestIncreasingSubsequenceDP(testCase.input);
-        console.log(`Test ${index + 1}:`);
-        console.log(`Input: [${testCase.input}]`);
-        console.log(`Expected: [${testCase.expected}]`);
-        console.log(`Got: [${result}]`);
-        console.log(`Pass: ${JSON.stringify(result) === JSON.stringify(testCase.expected)}`);
-        console.log('---');
-    });
-}
-
-testLIS();
+// --- Usage Examples ---
+console.log("Random float between 0 and 1 (exclusive of 1):", getRandomFloat(0, 1)); // e.g., 0.12345, 0.998
+console.log("Random float between 1.5 and 3.5 (exclusive of 3.5):", getRandomFloat(1.5, 3.5)); // e.g., 2.12, 3.499
+console.log("Random float between -10 and 0 (exclusive of 0):", getRandomFloat(-10, 0)); // e.g., -5.3, -0.001
