@@ -1,95 +1,192 @@
-// First, define the TreeNode class, which is standard for binary tree problems.
-// If you're working in a LeetCode-like environment, this might be provided.
-class TreeNode {
-    val: number;
-    left: TreeNode | null;
-    right: TreeNode | null;
-    constructor(val?: number, left?: TreeNode | null, right?: TreeNode | null) {
-        this.val = (val === undefined ? 0 : val);
-        this.left = (left === undefined ? null : left);
-        this.right = (right === undefined ? null : right);
+function naiveSearch(text: string, pattern: string): number[] {
+  const indices: number[] = [];
+  const n = text.length;
+  const m = pattern.length;
+
+  for (let i = 0; i <= n - m; i++) {
+    let j = 0;
+    while (j < m && text[i + j] === pattern[j]) {
+      j++;
     }
+    if (j === m) {
+      indices.push(i);
+    }
+  }
+
+  return indices;
+}
+function boyerMooreHorspool(text: string, pattern: string): number[] {
+  const indices: number[] = [];
+  const n = text.length;
+  const m = pattern.length;
+  
+  if (m === 0) return indices;
+
+  // Preprocessing: create bad character table
+  const badCharTable: Record<string, number> = {};
+  for (let i = 0; i < m - 1; i++) {
+    badCharTable[pattern[i]] = m - i - 1;
+  }
+
+  let i = 0;
+  while (i <= n - m) {
+    let j = m - 1;
+    
+    // Compare from right to left
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
+    }
+    
+    if (j < 0) {
+      indices.push(i);
+      i++;
+    } else {
+      // Use the bad character table to shift
+      const shift = badCharTable[text[i + m - 1]] || m;
+      i += shift;
+    }
+  }
+
+  return indices;
+}
+function kmpSearch(text: string, pattern: string): number[] {
+  const indices: number[] = [];
+  const n = text.length;
+  const m = pattern.length;
+  
+  if (m === 0) return indices;
+
+  // Precompute prefix function (longest proper prefix which is also suffix)
+  const prefixTable: number[] = new Array(m).fill(0);
+  let k = 0;
+  
+  for (let i = 1; i < m; i++) {
+    while (k > 0 && pattern[k] !== pattern[i]) {
+      k = prefixTable[k - 1];
+    }
+    if (pattern[k] === pattern[i]) {
+      k++;
+    }
+    prefixTable[i] = k;
+  }
+
+  // Search phase
+  let j = 0;
+  for (let i = 0; i < n; i++) {
+    while (j > 0 && pattern[j] !== text[i]) {
+      j = prefixTable[j - 1];
+    }
+    if (pattern[j] === text[i]) {
+      j++;
+    }
+    if (j === m) {
+      indices.push(i - m + 1);
+      j = prefixTable[j - 1];
+    }
+  }
+
+  return indices;
+}
+function rabinKarpSearch(text: string, pattern: string): number[] {
+  const indices: number[] = [];
+  const n = text.length;
+  const m = pattern.length;
+  
+  if (m === 0 || n < m) return indices;
+
+  const base = 256; // Base for ASCII
+  const mod = 997; // Large prime modulus to avoid overflow
+
+  // Compute pattern hash and initial text window hash
+  let patternHash = 0;
+  let textHash = 0;
+  let h = 1;
+
+  // Compute h = base^(m-1) mod mod
+  for (let i = 0; i < m - 1; i++) {
+    h = (h * base) % mod;
+  }
+
+  for (let i = 0; i < m; i++) {
+    patternHash = (base * patternHash + pattern.charCodeAt(i)) % mod;
+    textHash = (base * textHash + text.charCodeAt(i)) % mod;
+  }
+
+  for (let i = 0; i <= n - m; i++) {
+    // Check hash first, then verify actual string
+    if (textHash === patternHash) {
+      let j = 0;
+      while (j < m && text[i + j] === pattern[j]) {
+        j++;
+      }
+      if (j === m) {
+        indices.push(i);
+      }
+    }
+
+    // Update rolling hash for next window
+    if (i < n - m) {
+      textHash = (base * (textHash - text.charCodeAt(i) * h) + 
+                 text.charCodeAt(i + m)) % mod;
+      
+      // Handle negative hash values
+      if (textHash < 0) {
+        textHash += mod;
+      }
+    }
+  }
+
+  return indices;
+}
+// Test the algorithms
+const text = "ababcababcabcabc";
+const pattern = "abc";
+
+console.log("Naive:", naiveSearch(text, pattern));
+console.log("Boyer-Moore-Horspool:", boyerMooreHorspool(text, pattern));
+console.log("KMP:", kmpSearch(text, pattern));
+console.log("Rabin-Karp:", rabinKarpSearch(text, pattern));
+
+// Performance comparison
+function benchmark(text: string, pattern: string, iterations: number = 1000) {
+  const algorithms = {
+    naive: naiveSearch,
+    horspool: boyerMooreHorspool,
+    kmp: kmpSearch,
+    rabinKarp: rabinKarpSearch
+  };
+
+  for (const [name, fn] of Object.entries(algorithms)) {
+    const start = performance.now();
+    for (let i = 0; i < iterations; i++) {
+      fn(text, pattern);
+    }
+    const time = performance.now() - start;
+    console.log(`${name}: ${time.toFixed(2)}ms`);
+  }
 }
 
-function diameterOfBinaryTree(root: TreeNode | null): number {
-    let maxDiameter = 0; // This variable will store the global maximum diameter found.
+benchmark(text.repeat(10), pattern);
+class StringMatcher {
+  private algorithms = {
+    naive: this.naiveSearch,
+    horspool: this.boyerMooreHorspool,
+    kmp: this.kmpSearch,
+    rabinKarp: this.rabinKarpSearch
+  };
 
-    /**
-     * Helper function to calculate the height of a subtree rooted at 'node'.
-     * While calculating height, it also updates the 'maxDiameter' if a longer
-     * path is found that passes through the current 'node'.
-     *
-     * @param node The current node to process.
-     * @returns The height of the subtree rooted at 'node' (number of edges from 'node' to its deepest leaf).
-     */
-    function calculateHeightAndDiameter(node: TreeNode | null): number {
-        // Base case: If the node is null, its height is -1 (no edges).
-        if (!node) {
-            return -1;
-        }
+  search(text: string, pattern: string, algorithm: keyof typeof this.algorithms = 'horspool'): number[] {
+    return this.algorithms[algorithm](text, pattern);
+  }
 
-        // Recursively calculate the height of the left and right subtrees.
-        const leftHeight = calculateHeightAndDiameter(node.left);
-        const rightHeight = calculateHeightAndDiameter(node.right);
+  // Implement all the algorithms as methods...
+  private naiveSearch(text: string, pattern: string): number[] {
+    // Implementation from above
+  }
 
-        // Calculate the diameter passing through the current 'node'.
-        // This is: (height of left subtree + 1 for edge to left child)
-        //          + (height of right subtree + 1 for edge to right child)
-        // Note: If a subtree is null, its height is -1, so (-1 + 1) effectively adds 0 to that side, which is correct.
-        const currentPathThroughNode = (leftHeight + 1) + (rightHeight + 1);
-
-        // Update the global maximum diameter found so far.
-        maxDiameter = Math.max(maxDiameter, currentPathThroughNode);
-
-        // Return the height of the current subtree for its parent node.
-        // Height of current node is 1 (for the edge to its tallest child) + max height of its children.
-        return 1 + Math.max(leftHeight, rightHeight);
-    }
-
-    // Start the recursive process from the root.
-    // The return value of this initial call is the height of the entire tree,
-    // which we don't directly need for the diameter, but the side effect
-    // of updating 'maxDiameter' is what we're after.
-    calculateHeightAndDiameter(root);
-
-    // After traversing the entire tree, maxDiameter will hold the longest path.
-    return maxDiameter;
+  // ...other algorithm implementations
 }
 
-// --- Example Usage ---
-
-// Example 1: Basic tree
-//     1
-//    / \
-//   2   3
-//  / \
-// 4   5
-const root1 = new TreeNode(1,
-    new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-    new TreeNode(3)
-);
-console.log("Diameter of Example 1:", diameterOfBinaryTree(root1)); // Expected: 3 (Path: 4-2-1-3 or 5-2-1-3)
-
-// Example 2: Single node
-const root2 = new TreeNode(1);
-console.log("Diameter of Example 2:", diameterOfBinaryTree(root2)); // Expected: 0
-
-// Example 3: Two nodes
-const root3 = new TreeNode(1, new TreeNode(2));
-console.log("Diameter of Example 3:", diameterOfBinaryTree(root3)); // Expected: 1
-
-// Example 4: Longest path does not pass through root
-//      1
-//     /
-//    2
-//   / \
-//  3   4
-//     / \
-//    5   6
-const root4 = new TreeNode(1,
-    new TreeNode(2,
-        new TreeNode(3),
-        new TreeNode(4, new TreeNode(5), new TreeNode(6))
-    )
-);
-console.log("Diameter of Example 4:", diameterOfBinaryTree(root4)); // Expected: 4 (Path: 3-2-4-5 or 3-2-4-6 or 5-4-2-3 or 6-4-2-3)
+// Usage
+const matcher = new StringMatcher();
+const results = matcher.search("hello world", "world", "kmp");
