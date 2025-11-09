@@ -1,43 +1,63 @@
-function isAnagram(str1: string, str2: string): boolean {
-  // Clean strings (remove non-alphanumeric characters and lowercase)
-  const clean = (s: string) => s.replace(/[^a-z0-9]/gi, '').toLowerCase();
-  const cleanedStr1 = clean(str1);
-  const cleanedStr2 = clean(str2);
+// A vertex can be any hashable value (string, number, object with id, …)
+type Vertex<V> = V;
 
-  // Early exit if lengths differ
-  if (cleanedStr1.length !== cleanedStr2.length) return false;
-
-  // Sort and compare
-  return (
-    cleanedStr1.split('').sort().join('') ===
-    cleanedStr2.split('').sort().join('')
-  );
+// Graph abstraction: for every vertex give me its neighbours
+interface Graph<V> {
+  neighbours(v: Vertex<V>): Iterable<Vertex<V>>;
 }
-function isAnagram(str1: string, str2: string): boolean {
-  // Clean strings (remove non-alphanumeric characters and lowercase)
-  const clean = (s: string) => s.replace(/[^a-z0-9]/gi, '').toLowerCase();
-  const cleanedStr1 = clean(str1);
-  const cleanedStr2 = clean(str2);
+/**
+ * Breadth-first search.
+ * @param graph     the graph to search
+ * @param start     starting vertex
+ * @param goal      optional predicate; when it returns true the search stops
+ *                  and the path is returned. If omitted the entire component is visited.
+ * @returns         shortest path (start … goal) or undefined if not found.
+ *                  If no goal given → returns undefined but visited every node.
+ */
+export function bfs<V>(
+  graph: Graph<V>,
+  start: Vertex<V>,
+  goal?: (v: Vertex<V>) => boolean
+): Vertex<V>[] | undefined {
+  const visited = new Set<Vertex<V>>();
+  const queue: Vertex<V>[][] = []; // each queue element is a *path*
 
-  // Early exit if lengths differ
-  if (cleanedStr1.length !== cleanedStr2.length) return false;
+  queue.push([start]);
 
-  // Create a frequency map
-  const charCount: Record<string, number> = {};
+  while (queue.length) {
+    const path = queue.shift()!;
+    const last = path[path.length - 1];
 
-  // Increment counts for str1
-  for (const char of cleanedStr1) {
-    charCount[char] = (charCount[char] || 0) + 1;
+    if (visited.has(last)) continue;
+    visited.add(last);
+
+    if (goal && goal(last)) return path; // found!
+
+    for (const n of graph.neighbours(last)) {
+      if (!visited.has(n)) queue.push([...path, n]);
+    }
+  }
+  return undefined; // no path found
+}
+class AdjacencyList<V> implements Graph<V> {
+  private readonly edges = new Map<Vertex<V>, Vertex<V>[]>();
+
+  addEdge(from: Vertex<V>, to: Vertex<V>): void {
+    if (!this.edges.has(from)) this.edges.set(from, []);
+    this.edges.get(from)!.push(to);
   }
 
-  // Decrement counts for str2 and check for mismatches
-  for (const char of cleanedStr2) {
-    if (!charCount[char]) return false; // Character not present or count is zero
-    charCount[char]--;
+  neighbours(v: Vertex<V>): Iterable<Vertex<V>> {
+    return this.edges.get(v) ?? [];
   }
-
-  return true;
 }
-console.log(isAnagram('listen', 'silent')); // true
-console.log(isAnagram('Debit card', 'Bad credit')); // true
-console.log(isAnagram('hello', 'world')); // false
+
+/* ---------- demo ---------- */
+const g = new AdjacencyList<string>();
+["A B", "A C", "B D", "C D", "D E"].forEach(e => {
+  const [f, t] = e.split(" ");
+  g.addEdge(f, t);
+  g.addEdge(t, f); // undirected
+});
+
+console.log(bfs(g, "A", v => v === "E")); // → [ 'A', 'C', 'D', 'E' ]
