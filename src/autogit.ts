@@ -1,63 +1,91 @@
-// A vertex can be any hashable value (string, number, object with id, …)
-type Vertex<V> = V;
-
-// Graph abstraction: for every vertex give me its neighbours
-interface Graph<V> {
-  neighbours(v: Vertex<V>): Iterable<Vertex<V>>;
-}
-/**
- * Breadth-first search.
- * @param graph     the graph to search
- * @param start     starting vertex
- * @param goal      optional predicate; when it returns true the search stops
- *                  and the path is returned. If omitted the entire component is visited.
- * @returns         shortest path (start … goal) or undefined if not found.
- *                  If no goal given → returns undefined but visited every node.
- */
-export function bfs<V>(
-  graph: Graph<V>,
-  start: Vertex<V>,
-  goal?: (v: Vertex<V>) => boolean
-): Vertex<V>[] | undefined {
-  const visited = new Set<Vertex<V>>();
-  const queue: Vertex<V>[][] = []; // each queue element is a *path*
-
-  queue.push([start]);
-
-  while (queue.length) {
-    const path = queue.shift()!;
-    const last = path[path.length - 1];
-
-    if (visited.has(last)) continue;
-    visited.add(last);
-
-    if (goal && goal(last)) return path; // found!
-
-    for (const n of graph.neighbours(last)) {
-      if (!visited.has(n)) queue.push([...path, n]);
+function firstRepeatedCharacter(str: string): string | null {
+    const seen = new Set<string>();
+    
+    for (const char of str) {
+        if (seen.has(char)) {
+            return char;
+        }
+        seen.add(char);
     }
-  }
-  return undefined; // no path found
-}
-class AdjacencyList<V> implements Graph<V> {
-  private readonly edges = new Map<Vertex<V>, Vertex<V>[]>();
-
-  addEdge(from: Vertex<V>, to: Vertex<V>): void {
-    if (!this.edges.has(from)) this.edges.set(from, []);
-    this.edges.get(from)!.push(to);
-  }
-
-  neighbours(v: Vertex<V>): Iterable<Vertex<V>> {
-    return this.edges.get(v) ?? [];
-  }
+    
+    return null; // No repeated characters found
 }
 
-/* ---------- demo ---------- */
-const g = new AdjacencyList<string>();
-["A B", "A C", "B D", "C D", "D E"].forEach(e => {
-  const [f, t] = e.split(" ");
-  g.addEdge(f, t);
-  g.addEdge(t, f); // undirected
-});
+// Example usage
+console.log(firstRepeatedCharacter("abcdefa")); // "a"
+console.log(firstRepeatedCharacter("hello"));   // "l"
+console.log(firstRepeatedCharacter("world"));   // null
+function firstRepeatedCharacter(str: string): string | null {
+    const charCount: { [key: string]: number } = {};
+    
+    for (const char of str) {
+        if (charCount[char]) {
+            return char;
+        }
+        charCount[char] = 1;
+    }
+    
+    return null;
+}
+function firstRepeatedCharacter(str: string): string | null {
+    for (let i = 0; i < str.length; i++) {
+        if (str.indexOf(str[i]) !== i) {
+            return str[i];
+        }
+    }
+    return null;
+}
+function firstRepeatedCharacterWithPosition(str: string): 
+{ character: string, firstIndex: number, secondIndex: number } | null {
+    const charMap = new Map<string, number>();
+    
+    for (let i = 0; i < str.length; i++) {
+        const char = str[i];
+        if (charMap.has(char)) {
+            return {
+                character: char,
+                firstIndex: charMap.get(char)!,
+                secondIndex: i
+            };
+        }
+        charMap.set(char, i);
+    }
+    
+    return null;
+}
 
-console.log(bfs(g, "A", v => v === "E")); // → [ 'A', 'C', 'D', 'E' ]
+// Example usage
+console.log(firstRepeatedCharacterWithPosition("programming"));
+// Output: { character: "r", firstIndex: 1, secondIndex: 4 }
+function firstRepeatedCharacter(str: string): string | null {
+    const repeatedChar = str.split('').find((char, index, array) => 
+        array.indexOf(char) !== index
+    );
+    
+    return repeatedChar || null;
+}
+function firstRepeatedCharacter<T extends string>(
+    str: T
+): string | null {
+    const seen = new Set<string>();
+    
+    for (const char of str) {
+        if (seen.has(char)) {
+            return char;
+        }
+        seen.add(char);
+    }
+    
+    return null;
+}
+// Best practice solution
+function firstRepeatedCharacter(str: string): string | null {
+    const seen = new Set<string>();
+    
+    for (const char of str) {
+        if (seen.has(char)) return char;
+        seen.add(char);
+    }
+    
+    return null;
+}
