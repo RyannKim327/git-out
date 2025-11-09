@@ -1,64 +1,144 @@
-function binarySearchRecursive<T>(
-  array: T[],
-  target: T,
-  left: number = 0,
-  right: number = array.length - 1
-): number {
-  // Base case: search range is invalid
-  if (left > right) {
-    return -1;
-  }
+class SkipListNode<T> {
+    value: T | null;       // null for the head sentinel
+    forwards: Array<SkipListNode<T> | null>;
 
-  // Calculate middle index
-  const mid = Math.floor((left + right) / 2);
-
-  // Found the target
-  if (array[mid] === target) {
-    return mid;
-  }
-  
-  // Search left half
-  if (array[mid] > target) {
-    return binarySearchRecursive(array, target, left, mid - 1);
-  }
-  
-  // Search right half
-  return binarySearchRecursive(array, target, mid + 1, right);
-}
-
-// Example usage with type safety
-const numbers = [1, 3, 5, 7, 9, 11, 13, 15];
-const strings = ["apple", "banana", "cherry", "date", "elderberry"];
-
-// Number search
-const targetNumber = 7;
-const result1 = binarySearchRecursive(numbers, targetNumber);
-console.log(`Found ${targetNumber} at index: ${result1}`); // Output: Found 7 at index: 3
-
-// String search
-const targetString = "cherry";
-const result2 = binarySearchRecursive(strings, targetString);
-console.log(`Found "${targetString}" at index: ${result2}`); // Output: Found "cherry" at index: 2
-
-// Not found case
-const notFound = binarySearchRecursive(numbers, 20);
-console.log(`Result for non-existent value: ${notFound}`); // Output: Result for non-existent value: -1
-function isSorted<T>(array: T[]): boolean {
-  for (let i = 1; i < array.length; i++) {
-    if (array[i] < array[i - 1]) {
-      return false;
+    constructor(value: T | null, level: number) {
+        this.value = value;
+        this.forwards = new Array(level).fill(null);
     }
-  }
-  return true;
 }
 
-// Usage check
-if (!isSorted(numbers)) {
-  console.error("Array must be sorted for binary search!");
-}
-function binarySearch<T>(array: T[], target: T): number {
-  return binarySearchRecursive(array, target, 0, array.length - 1);
+class SkipList<T> {
+    private readonly MAX_LEVEL: number;
+    private readonly P: number;
+    private level: number; // Current max level in the list
+    private head: SkipListNode<T>;
+    private compare: (a: T, b: T) => number;
+
+    constructor(maxLevel: number = 16, p: number = 0.5, compareFn?: (a: T, b: T) => number) {
+        this.MAX_LEVEL = maxLevel;
+        this.P = p;
+        this.level = 0;
+        this.head = new SkipListNode<T>(null, this.MAX_LEVEL);
+        this.compare = compareFn ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    }
+
+    private randomLevel(): number {
+        let lvl = 1;
+        while (Math.random() < this.P && lvl < this.MAX_LEVEL) {
+            lvl++;
+        }
+        return lvl;
+    }
+
+    search(value: T): T | null {
+        let current = this.head;
+        for (let i = this.level - 1; i >= 0; i--) {
+            while (current.forwards[i] && this.compare(current.forwards[i]!.value!, value) < 0) {
+                current = current.forwards[i]!;
+            }
+        }
+        current = current.forwards[0]!;
+        if (current && this.compare(current.value!, value) === 0) {
+            return current.value!;
+        }
+        return null;
+    }
+
+    insert(value: T): void {
+        let update = new Array<SkipListNode<T>>(this.MAX_LEVEL);
+        let current = this.head;
+
+        // Step 1: Find the path
+        for (let i = this.level - 1; i >= 0; i--) {
+            while (current.forwards[i] && this.compare(current.forwards[i]!.value!, value) < 0) {
+                current = current.forwards[i]!;
+            }
+            update[i] = current;
+        }
+
+        current = current.forwards[0]!;
+        if (current && this.compare(current.value!, value) === 0) {
+            return; // Value already exists; no duplicates
+        }
+
+        // Step 2: Choose random level for new node
+        let newLevel = this.randomLevel();
+        if (newLevel > this.level) {
+            for (let i = this.level; i < newLevel; i++) {
+                update[i] = this.head;
+            }
+            this.level = newLevel;
+        }
+
+        // Step 3: Insert new node
+        let newNode = new SkipListNode<T>(value, newLevel);
+        for (let i = 0; i < newLevel; i++) {
+            newNode.forwards[i] = update[i].forwards[i];
+            update[i].forwards[i] = newNode;
+        }
+    }
+
+    delete(value: T): boolean {
+        let update = new Array<SkipListNode<T>>(this.MAX_LEVEL);
+        let current = this.head;
+
+        for (let i = this.level - 1; i >= 0; i--) {
+            while (current.forwards[i] && this.compare(current.forwards[i]!.value!, value) < 0) {
+                current = current.forwards[i]!;
+            }
+            update[i] = current;
+        }
+
+        current = current.forwards[0]!;
+
+        if (!current || this.compare(current.value!, value) !== 0) {
+            return false; // Not found
+        }
+
+        for (let i = 0; i < this.level; i++) {
+            if (update[i].forwards[i] !== current) {
+                break;
+            }
+            update[i].forwards[i] = current.forwards[i];
+        }
+
+        // Adjust current level of list if needed
+        while (this.level > 0 && !this.head.forwards[this.level - 1]) {
+            this.level--;
+        }
+
+        return true;
+    }
+
+    print(): void {
+        for (let i = this.level - 1; i >= 0; i--) {
+            let line = `Level ${i}: `;
+            let current = this.head.forwards[i];
+            while (current) {
+                line += current.value + " ";
+                current = current.forwards[i];
+            }
+            console.log(line);
+        }
+    }
 }
 
-// Now users only need to provide array and target
-const result = binarySearch(numbers, 7);
+// Example usage:
+const sl = new SkipList<number>();
+sl.insert(3);
+sl.insert(6);
+sl.insert(7);
+sl.insert(9);
+sl.insert(12);
+sl.insert(19);
+sl.insert(17);
+sl.insert(26);
+sl.insert(21);
+sl.insert(25);
+
+sl.print();
+
+console.log("Search 19:", sl.search(19));
+console.log("Delete 19:", sl.delete(19));
+sl.print();
