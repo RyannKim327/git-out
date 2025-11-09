@@ -1,21 +1,20 @@
-function isPalindrome(s: string): boolean {
-    // Clean the string: remove non-alphanumeric chars and convert to lowercase
-    const cleaned = s.replace(/[^a-z0-9]/gi, '').toLowerCase();
-    // Reverse the cleaned string and compare
-    return cleaned === cleaned.split('').reverse().join('');
+const idx = arr.indexOf(valueToRemove);
+if (idx !== -1) arr.splice(idx, 1);
+const idx = arr.findIndex(n => n % 2 === 0);
+if (idx !== -1) arr.splice(idx, 1);
+const newArr = arr.filter(x => x !== valueToRemove);
+const newArr = (() => {
+  const idx = arr.indexOf(valueToRemove);
+  return idx === -1 ? arr : [...arr.slice(0, idx), ...arr.slice(idx + 1)];
+})();
+// mutable
+function removeInPlace<T>(arr: T[], predicate: (x: T) => boolean): T | undefined {
+  const idx = arr.findIndex(predicate);
+  return idx === -1 ? undefined : arr.splice(idx, 1)[0];
 }
-function isPalindrome(s: string): boolean {
-    const cleaned = s.replace(/[^a-z0-9]/gi, '').toLowerCase();
-    let left = 0;
-    let right = cleaned.length - 1;
-    
-    while (left < right) {
-        if (cleaned[left] !== cleaned[right]) return false;
-        left++;
-        right--;
-    }
-    return true;
+
+// immutable
+function removeFirst<T>(arr: readonly T[], predicate: (x: T) => boolean): T[] {
+  const idx = arr.findIndex(predicate);
+  return idx === -1 ? [...arr] : [...arr.slice(0, idx), ...arr.slice(idx + 1)];
 }
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("race a car")); // false
-console.log(isPalindrome("")); // true (edge case)
