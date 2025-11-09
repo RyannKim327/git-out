@@ -1,26 +1,58 @@
-const myString: string = "HELLO WORLD";
-const lowerCaseString: string = myString.toLowerCase();
-console.log(lowerCaseString); // "hello world"
-const myString: string = "İSTANBUL";
-const lowerCaseString: string = myString.toLocaleLowerCase('tr-TR');
-console.log(lowerCaseString); // "istanbul" (handles Turkish 'i' correctly)
-const stringArray: string[] = ["APPLE", "BANANA", "CHERRY"];
-const lowerCaseArray: string[] = stringArray.map(str => str.toLowerCase());
-console.log(lowerCaseArray); // ["apple", "banana", "cherry"]
-interface User {
-  name: string;
-  email: string;
+class TrieNode {
+  children: Map<string, TrieNode>;
+  isEndOfWord: boolean;
+
+  constructor() {
+    this.children = new Map();
+    this.isEndOfWord = false;
+  }
 }
+class Trie {
+  private root: TrieNode;
 
-const user: User = {
-  name: "JOHN DOE",
-  email: "JOHN@EXAMPLE.COM"
-};
+  constructor() {
+    this.root = new TrieNode();
+  }
 
-const normalizedUser: User = {
-  name: user.name.toLowerCase(),
-  email: user.email.toLowerCase()
-};
-const upperCase: string = "HELLO TYPESCRIPT";
-const lowerCase: string = `${upperCase}`.toLowerCase();
-console.log(lowerCase); // "hello typescript"
+  insert(word: string): void {
+    let node = this.root;
+    for (const char of word) {
+      if (!node.children.has(char)) {
+        node.children.set(char, new TrieNode());
+      }
+      node = node.children.get(char)!;
+    }
+    node.isEndOfWord = true;
+  }
+
+  search(word: string): boolean {
+    let node = this.root;
+    for (const char of word) {
+      if (!node.children.has(char)) {
+        return false;
+      }
+      node = node.children.get(char)!;
+    }
+    return node.isEndOfWord;
+  }
+
+  startsWith(prefix: string): boolean {
+    let node = this.root;
+    for (const char of prefix) {
+      if (!node.children.has(char)) {
+        return false;
+      }
+      node = node.children.get(char)!;
+    }
+    return true;
+  }
+}
+const trie = new Trie();
+trie.insert("apple");
+trie.insert("app");
+
+console.log(trie.search("apple"));    // true
+console.log(trie.search("app"));      // true
+console.log(trie.search("appl"));     // false
+console.log(trie.startsWith("appl")); // true
+console.log(trie.startsWith("bat"));  // false
