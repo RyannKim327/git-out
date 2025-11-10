@@ -1,192 +1,226 @@
-/**
- * Represents an edge in the graph.
- * `from`: The starting node of the edge.
- * `to`: The ending node of the edge.
- * `weight`: The cost of traversing the edge.
- */
-export interface Edge {
-    from: number;
-    to: number;
-    weight: number;
-}
+class RabinKarp {
+    private readonly base: number;
+    private readonly modulus: number;
 
-/**
- * The result of the Bellman-Ford algorithm.
- * `distances`: An array where `distances[i]` is the shortest distance from the source to node `i`.
- *             `Number.POSITIVE_INFINITY` if unreachable.
- * `predecessors`: An array where `predecessors[i]` is the node that comes before `i` in the
- *                 shortest path from the source. `null` if no predecessor (e.g., source or unreachable).
- * `hasNegativeCycle`: A boolean indicating whether a negative cycle was detected.
- */
-export interface BellmanFordResult {
-    distances: number[];
-    predecessors: (number | null)[];
-    hasNegativeCycle: boolean;
-}
-/**
- * Implements the Bellman-Ford algorithm to find shortest paths from a source node
- * to all other nodes in a graph, handling negative edge weights and detecting negative cycles.
- *
- * @param numNodes The total number of nodes in the graph (0-indexed).
- * @param edges An array of Edge objects representing the graph.
- * @param sourceNode The starting node for shortest path calculations.
- * @returns A `BellmanFordResult` object containing distances, predecessors, and negative cycle detection status.
- */
-export function bellmanFord(
-    numNodes: number,
-    edges: Edge[],
-    sourceNode: number
-): BellmanFordResult {
-    // 1. Initialize distances and predecessors
-    const distances: number[] = new Array(numNodes).fill(Number.POSITIVE_INFINITY);
-    const predecessors: (number | null)[] = new Array(numNodes).fill(null);
-    let hasNegativeCycle = false;
+    constructor(base: number = 256, modulus: number = 101) {
+        this.base = base;
+        this.modulus = modulus;
+    }
 
-    // Distance to the source node itself is 0
-    distances[sourceNode] = 0;
+    /**
+     * Search for pattern in text using Rabin-Karp algorithm
+     * @param text - The text to search in
+     * @param pattern - The pattern to search for
+     * @returns Array of indices where pattern starts
+     */
+    search(text: string, pattern: string): number[] {
+        const n = text.length;
+        const m = pattern.length;
+        const results: number[] = [];
 
-    // 2. Relax all edges V-1 times
-    // V iterations guarantee that shortest paths are found if no negative cycle exists.
-    // Each iteration potentially finds a shorter path involving one more edge.
-    for (let i = 0; i < numNodes - 1; i++) {
-        let relaxedInThisIteration = false; // Optimization: If no edge is relaxed, we can stop early
+        if (m === 0 || n < m) {
+            return results;
+        }
 
-        for (const edge of edges) {
-            const { from, to, weight } = edge;
+        // Precompute base^(m-1) % modulus
+        let power = 1;
+        for (let i = 0; i < m - 1; i++) {
+            power = (power * this.base) % this.modulus;
+        }
 
-            // Only relax if the 'from' node is reachable
-            if (distances[from] !== Number.POSITIVE_INFINITY) {
-                if (distances[from] + weight < distances[to]) {
-                    distances[to] = distances[from] + weight;
-                    predecessors[to] = from;
-                    relaxedInThisIteration = true;
+        // Compute hash for pattern and first window of text
+        let patternHash = 0;
+        let textHash = 0;
+
+        for (let i = 0; i < m; i++) {
+            patternHash = (this.base * patternHash + pattern.charCodeAt(i)) % this.modulus;
+            textHash = (this.base * textHash + text.charCodeAt(i)) % this.modulus;
+        }
+
+        // Slide the pattern over text one by one
+        for (let i = 0; i <= n - m; i++) {
+            // Check if hash values match
+            if (patternHash === textHash) {
+                // If hash matches, check characters one by one
+                let match = true;
+                for (let j = 0; j < m; j++) {
+                    if (text[i + j] !== pattern[j]) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    results.push(i);
+                }
+            }
+
+            // Calculate hash for next window
+            if (i < n - m) {
+                textHash = (this.base * (textHash - text.charCodeAt(i) * power) + text.charCodeAt(i + m)) % this.modulus;
+                
+                // Ensure hash is positive
+                if (textHash < 0) {
+                    textHash += this.modulus;
                 }
             }
         }
 
-        // If no distances were updated in this iteration, we've found all shortest paths
-        // and can terminate early (unless there's a negative cycle, which the next step will catch).
-        if (!relaxedInThisIteration) {
-            break;
-        }
+        return results;
+    }
+}
+interface SearchResult {
+    pattern: string;
+    indices: number[];
+}
+
+class EnhancedRabinKarp {
+    private readonly base: number;
+    private readonly modulus: number;
+
+    constructor(base: number = 256, modulus: number = 101) {
+        this.base = base;
+        this.modulus = modulus;
     }
 
-    // 3. Check for negative cycles
-    // One more iteration through all edges. If any distance can still be shortened,
-    // it means there's a negative cycle reachable from the source.
-    for (const edge of edges) {
-        const { from, to, weight } = edge;
+    /**
+     * Search for multiple patterns in text
+     */
+    searchMultiple(text: string, patterns: string[]): SearchResult[] {
+        const results: SearchResult[] = [];
 
-        if (distances[from] !== Number.POSITIVE_INFINITY) {
-            if (distances[from] + weight < distances[to]) {
-                hasNegativeCycle = true;
-                // If a negative cycle is detected, the shortest paths are undefined for
-                // nodes reachable from the cycle. We can stop checking for cycles and return.
-                break;
+        for (const pattern of patterns) {
+            const indices = this.search(text, pattern);
+            results.push({ pattern, indices });
+        }
+
+        return results;
+    }
+
+    /**
+     * Case-insensitive search
+     */
+    searchCaseInsensitive(text: string, pattern: string): number[] {
+        return this.search(text.toLowerCase(), pattern.toLowerCase());
+    }
+
+    private search(text: string, pattern: string): number[] {
+        const n = text.length;
+        const m = pattern.length;
+        const results: number[] = [];
+
+        if (m === 0 || n < m) {
+            return results;
+        }
+
+        let power = 1;
+        for (let i = 0; i < m - 1; i++) {
+            power = (power * this.base) % this.modulus;
+        }
+
+        let patternHash = 0;
+        let textHash = 0;
+
+        for (let i = 0; i < m; i++) {
+            patternHash = (this.base * patternHash + pattern.charCodeAt(i)) % this.modulus;
+            textHash = (this.base * textHash + text.charCodeAt(i)) % this.modulus;
+        }
+
+        for (let i = 0; i <= n - m; i++) {
+            if (patternHash === textHash) {
+                if (this.verifyMatch(text, pattern, i)) {
+                    results.push(i);
+                }
+            }
+
+            if (i < n - m) {
+                textHash = this.calculateNextHash(textHash, text, i, m, power);
             }
         }
+
+        return results;
     }
 
-    return {
-        distances,
-        predecessors,
-        hasNegativeCycle,
-    };
-}
-/**
- * Reconstructs the shortest path from the source to a destination node
- * using the predecessors array generated by Bellman-Ford.
- *
- * @param source The starting node.
- * @param destination The target node.
- * @param predecessors The predecessors array from the Bellman-Ford result.
- * @returns An array of node numbers representing the path, or `null` if the destination is unreachable.
- */
-export function reconstructPath(
-    source: number,
-    destination: number,
-    predecessors: (number | null)[]
-): number[] | null {
-    const path: number[] = [];
-    let currentNode: number | null = destination;
-
-    // Trace back from destination to source
-    while (currentNode !== null && currentNode !== source) {
-        path.unshift(currentNode); // Add to the beginning of the path
-        currentNode = predecessors[currentNode];
+    private verifyMatch(text: string, pattern: string, startIndex: number): boolean {
+        for (let j = 0; j < pattern.length; j++) {
+            if (text[startIndex + j] !== pattern[j]) {
+                return false;
+            }
+        }
+        return true;
     }
 
-    // If currentNode is the source, it means a path was found
-    if (currentNode === source) {
-        path.unshift(source);
-        return path;
-    } else {
-        // If currentNode became null before reaching the source, the destination was unreachable
-        return null;
+    private calculateNextHash(currentHash: number, text: string, currentIndex: number, patternLength: number, power: number): number {
+        let hash = (this.base * (currentHash - text.charCodeAt(currentIndex) * power) + text.charCodeAt(currentIndex + patternLength)) % this.modulus;
+        return hash < 0 ? hash + this.modulus : hash;
     }
 }
-// --- Scenario 1: Simple Graph (no negative weights, no negative cycles) ---
-console.log("--- Scenario 1: Simple Graph ---");
-const numNodes1 = 5;
-const edges1: Edge[] = [
-    { from: 0, to: 1, weight: 6 },
-    { from: 0, to: 2, weight: 7 },
-    { from: 1, to: 3, weight: 5 },
-    { from: 1, to: 2, weight: 8 },
-    { from: 1, to: 4, weight: -4 },
-    { from: 2, to: 3, weight: -3 },
-    { from: 2, to: 4, weight: 9 },
-    { from: 3, to: 1, weight: -2 },
-    { from: 4, to: 0, weight: 2 },
-    { from: 4, to: 3, weight: 7 },
-];
-const source1 = 0;
+// Basic usage
+const rk = new RabinKarp();
+const text = "ABABDABACDABABCABAB";
+const pattern = "ABABC";
 
-const result1 = bellmanFord(numNodes1, edges1, source1);
-console.log("Distances:", result1.distances); // Expected: [0, 4, 7, 4, 2] (approx)
-console.log("Predecessors:", result1.predecessors);
-console.log("Has Negative Cycle:", result1.hasNegativeCycle); // Expected: false
+const results = rk.search(text, pattern);
+console.log("Pattern found at indices:", results); // [10]
 
-// Reconstruct path to node 3
-const path1 = reconstructPath(source1, 3, result1.predecessors);
-console.log("Path 0 -> 3:", path1); // Expected: [0, 2, 3] or [0, 1, 3] depending on tie-breaking/order
+// Enhanced usage
+const enhancedRK = new EnhancedRabinKarp();
 
+// Multiple patterns
+const multipleResults = enhancedRK.searchMultiple(
+    "The quick brown fox jumps over the lazy dog",
+    ["quick", "fox", "lazy"]
+);
+console.log("Multiple patterns:", multipleResults);
 
-// --- Scenario 2: Graph with Negative Cycle ---
-console.log("\n--- Scenario 2: Graph with Negative Cycle ---");
-const numNodes2 = 4;
-const edges2: Edge[] = [
-    { from: 0, to: 1, weight: 1 },
-    { from: 1, to: 2, weight: -1 },
-    { from: 2, to: 3, weight: -1 },
-    { from: 3, to: 1, weight: -1 }, // This creates a negative cycle: 1 -> 2 -> 3 -> 1 (total weight -3)
-    { from: 0, to: 3, weight: 10 },
-];
-const source2 = 0;
+// Case insensitive search
+const caseInsensitiveResults = enhancedRK.searchCaseInsensitive(
+    "Hello World hello WORLD",
+    "hello"
+);
+console.log("Case insensitive:", caseInsensitiveResults); // [0, 12]
+class OptimizedRabinKarp extends EnhancedRabinKarp {
+    constructor() {
+        // Use a larger prime number to reduce hash collisions
+        super(256, 1000000007);
+    }
 
-const result2 = bellmanFord(numNodes2, edges2, source2);
-console.log("Distances:", result2.distances); // Will likely show highly negative numbers for nodes on/reachable from cycle
-console.log("Predecessors:", result2.predecessors);
-console.log("Has Negative Cycle:", result2.hasNegativeCycle); // Expected: true
+    /**
+     * Find all occurrences with minimal hash collisions
+     */
+    searchOptimized(text: string, pattern: string): number[] {
+        const results: number[] = [];
+        const n = text.length;
+        const m = pattern.length;
 
-// Reconstruct path to node 3 (will be null or incorrect if negative cycle exists)
-const path2 = reconstructPath(source2, 3, result2.predecessors);
-console.log("Path 0 -> 3:", path2); // May be null or misleading due to negative cycle
+        if (m === 0 || n < m) return results;
 
+        // Precompute powers
+        const powers = new Array(m);
+        powers[0] = 1;
+        for (let i = 1; i < m; i++) {
+            powers[i] = (powers[i - 1] * this.base) % this.modulus;
+        }
 
-// --- Scenario 3: Disconnected Graph / Unreachable Node ---
-console.log("\n--- Scenario 3: Disconnected Graph / Unreachable Node ---");
-const numNodes3 = 3;
-const edges3: Edge[] = [
-    { from: 0, to: 1, weight: 5 }
-    // Node 2 is unreachable from source 0
-];
-const source3 = 0;
+        // Compute hashes
+        let patternHash = 0;
+        let textHash = 0;
 
-const result3 = bellmanFord(numNodes3, edges3, source3);
-console.log("Distances:", result3.distances); // Expected: [0, 5, Infinity]
-console.log("Predecessors:", result3.predecessors);
-console.log("Has Negative Cycle:", result3.hasNegativeCycle); // Expected: false
+        for (let i = 0; i < m; i++) {
+            patternHash = (patternHash + pattern.charCodeAt(i) * powers[m - 1 - i]) % this.modulus;
+            textHash = (textHash + text.charCodeAt(i) * powers[m - 1 - i]) % this.modulus;
+        }
 
-const path3 = reconstructPath(source3, 2, result3.predecessors);
-console.log("Path 0 -> 2:", path3); // Expected: null
+        for (let i = 0; i <= n - m; i++) {
+            if (patternHash === textHash && this.verifyMatch(text, pattern, i)) {
+                results.push(i);
+            }
+
+            if (i < n - m) {
+                textHash = (this.base * (textHash - text.charCodeAt(i) * powers[m - 1]) + text.charCodeAt(i + m)) % this.modulus;
+                if (textHash < 0) textHash += this.modulus;
+            }
+        }
+
+        return results;
+    }
+}
