@@ -1,17 +1,39 @@
-function isPalindrome(str: string): boolean {
-  const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-  return cleaned === [...cleaned].reverse().join('');
-}
+const myString = "  Hello World   ";
+const trimmedString = myString.trim();
 
-/* ---- usage ---- */
-console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
-console.log(isPalindrome('race a car'));                    // false
-function isPalindrome(str: string): boolean {
-  const s = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-  let left = 0, right = s.length - 1;
-  while (left < right) {
-    if (s[left] !== s[right]) return false;
-    left++; right--;
-  }
-  return true;
-}
+console.log(`Original: '${myString}'`);      // Output: '  Hello World   '
+console.log(`Trimmed:  '${trimmedString}'`); // Output: 'Hello World'
+const str = "  Hello World  ";
+console.log(`Trim Start: '${str.trimStart()}'`); // Output: 'Hello World  '
+console.log(`Trim End:   '${str.trimEnd()}'`);   // Output: '  Hello World'
+const myString = "  Hello \t World \n from \r TypeScript!  ";
+const noWhitespaceString = myString.replace(/\s/g, '');
+
+console.log(`Original: '${myString}'`);
+// Output: '  Hello    World 
+// from 
+// TypeScript!  '
+console.log(`No Whitespace: '${noWhitespaceString}'`);
+// Output: 'HelloWorldfromTypeScript!'
+const myString = "  Hello   \t World \n again  ";
+const collapsedString = myString.trim().replace(/\s+/g, ' ');
+
+console.log(`Original: '${myString}'`);      // Output: '  Hello    World 
+                                              // again  '
+console.log(`Collapsed: '${collapsedString}'`); // Output: 'Hello World again'
+const myString = "Line 1\nLine 2\twith tab\r\nLine 3";
+
+// Remove only newlines (\n and \r)
+const noNewlines = myString.replace(/[\n\r]/g, '');
+console.log(`No Newlines: '${noNewlines}'`); // Output: 'Line 1Line 2	with tabLine 3'
+
+// Remove only tabs (\t)
+const noTabs = myString.replace(/\t/g, '');
+console.log(`No Tabs: '${noTabs}'`);         // Output: 'Line 1
+                                              // Line 2with tab
+                                              // Line 3'
+
+// Remove non-breaking spaces (U+00A0), which \s usually doesn't catch
+const withNbsp = "This is\u00A0a non-breaking\u00A0space.";
+const noNbsp = withNbsp.replace(/\xA0/g, ' '); // Replace with regular space
+console.log(`No NB-Space: '${noNbsp}'`);       // Output: 'This is a non-breaking space.'
