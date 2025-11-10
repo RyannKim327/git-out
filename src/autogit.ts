@@ -1,28 +1,63 @@
-class TreeNode {
-    val: number;
-    left: TreeNode | null;
-    right: TreeNode | null;
+class Node<T> {
+    value: T;
+    next: Node<T> | null = null;
 
-    constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
-        this.val = val;
-        this.left = left;
-        this.right = right;
+    constructor(value: T) {
+        this.value = value;
     }
 }
-function maxDepth(root: TreeNode | null): number {
-    if (root === null) {
-        return 0;
-    }
-    const leftDepth = maxDepth(root.left);
-    const rightDepth = maxDepth(root.right);
-    return Math.max(leftDepth, rightDepth) + 1;
-}
-const root = new TreeNode(1,
-    new TreeNode(2,
-        new TreeNode(4),
-        null
-    ),
-    new TreeNode(3)
-);
+class Queue<T> {
+    private head: Node<T> | null = null;
+    private tail: Node<T> | null = null;
+    private length: number = 0;
 
-console.log(maxDepth(root)); // Outputs: 3
+    // Add item to the end (enqueue)
+    enqueue(value: T): void {
+        const node = new Node(value);
+        if (!this.tail) { // queue is empty
+            this.head = node;
+            this.tail = node;
+        } else {
+            this.tail.next = node;
+            this.tail = node;
+        }
+        this.length++;
+    }
+
+    // Remove item from front (dequeue)
+    dequeue(): T | undefined {
+        if (!this.head) return undefined;
+        const value = this.head.value;
+        this.head = this.head.next;
+        if (!this.head) { // queue is now empty
+            this.tail = null;
+        }
+        this.length--;
+        return value;
+    }
+
+    // Peek at front item
+    peek(): T | undefined {
+        return this.head?.value;
+    }
+
+    // Get current size
+    size(): number {
+        return this.length;
+    }
+
+    // Check if empty
+    isEmpty(): boolean {
+        return this.length === 0;
+    }
+}
+const queue = new Queue<number>();
+
+queue.enqueue(10);
+queue.enqueue(20);
+queue.enqueue(30);
+
+console.log(queue.dequeue()); // 10
+console.log(queue.peek());    // 20
+console.log(queue.size());    // 2
+console.log(queue.isEmpty()); // false
