@@ -1,208 +1,192 @@
-class ListNode<T> {
-    value: T;
-    next: ListNode<T> | null;
-
-    constructor(value: T) {
-        this.value = value;
-        this.next = null;
-    }
+/**
+ * Represents an edge in the graph.
+ * `from`: The starting node of the edge.
+ * `to`: The ending node of the edge.
+ * `weight`: The cost of traversing the edge.
+ */
+export interface Edge {
+    from: number;
+    to: number;
+    weight: number;
 }
 
-class LinkedListQueue<T> {
-    private front: ListNode<T> | null;
-    private rear: ListNode<T> | null;
-    private _size: number;
+/**
+ * The result of the Bellman-Ford algorithm.
+ * `distances`: An array where `distances[i]` is the shortest distance from the source to node `i`.
+ *             `Number.POSITIVE_INFINITY` if unreachable.
+ * `predecessors`: An array where `predecessors[i]` is the node that comes before `i` in the
+ *                 shortest path from the source. `null` if no predecessor (e.g., source or unreachable).
+ * `hasNegativeCycle`: A boolean indicating whether a negative cycle was detected.
+ */
+export interface BellmanFordResult {
+    distances: number[];
+    predecessors: (number | null)[];
+    hasNegativeCycle: boolean;
+}
+/**
+ * Implements the Bellman-Ford algorithm to find shortest paths from a source node
+ * to all other nodes in a graph, handling negative edge weights and detecting negative cycles.
+ *
+ * @param numNodes The total number of nodes in the graph (0-indexed).
+ * @param edges An array of Edge objects representing the graph.
+ * @param sourceNode The starting node for shortest path calculations.
+ * @returns A `BellmanFordResult` object containing distances, predecessors, and negative cycle detection status.
+ */
+export function bellmanFord(
+    numNodes: number,
+    edges: Edge[],
+    sourceNode: number
+): BellmanFordResult {
+    // 1. Initialize distances and predecessors
+    const distances: number[] = new Array(numNodes).fill(Number.POSITIVE_INFINITY);
+    const predecessors: (number | null)[] = new Array(numNodes).fill(null);
+    let hasNegativeCycle = false;
 
-    constructor() {
-        this.front = null;
-        this.rear = null;
-        this._size = 0;
-    }
+    // Distance to the source node itself is 0
+    distances[sourceNode] = 0;
 
-    // Add element to the end of the queue
-    enqueue(value: T): void {
-        const newNode = new ListNode(value);
+    // 2. Relax all edges V-1 times
+    // V iterations guarantee that shortest paths are found if no negative cycle exists.
+    // Each iteration potentially finds a shorter path involving one more edge.
+    for (let i = 0; i < numNodes - 1; i++) {
+        let relaxedInThisIteration = false; // Optimization: If no edge is relaxed, we can stop early
 
-        if (this.isEmpty()) {
-            // If queue is empty, both front and rear point to new node
-            this.front = newNode;
-            this.rear = newNode;
-        } else {
-            // Add new node at the end and update rear
-            this.rear!.next = newNode;
-            this.rear = newNode;
+        for (const edge of edges) {
+            const { from, to, weight } = edge;
+
+            // Only relax if the 'from' node is reachable
+            if (distances[from] !== Number.POSITIVE_INFINITY) {
+                if (distances[from] + weight < distances[to]) {
+                    distances[to] = distances[from] + weight;
+                    predecessors[to] = from;
+                    relaxedInThisIteration = true;
+                }
+            }
         }
 
-        this._size++;
-    }
-
-    // Remove and return element from the front of the queue
-    dequeue(): T | null {
-        if (this.isEmpty()) {
-            return null;
+        // If no distances were updated in this iteration, we've found all shortest paths
+        // and can terminate early (unless there's a negative cycle, which the next step will catch).
+        if (!relaxedInThisIteration) {
+            break;
         }
+    }
 
-        // Store front node to return later
-        const removedNode = this.front!;
-        
-        // Move front to the next node
-        this.front = this.front!.next;
+    // 3. Check for negative cycles
+    // One more iteration through all edges. If any distance can still be shortened,
+    // it means there's a negative cycle reachable from the source.
+    for (const edge of edges) {
+        const { from, to, weight } = edge;
 
-        // If front becomes null, then rear should also become null
-        if (this.front === null) {
-            this.rear = null;
+        if (distances[from] !== Number.POSITIVE_INFINITY) {
+            if (distances[from] + weight < distances[to]) {
+                hasNegativeCycle = true;
+                // If a negative cycle is detected, the shortest paths are undefined for
+                // nodes reachable from the cycle. We can stop checking for cycles and return.
+                break;
+            }
         }
-
-        this._size--;
-        return removedNode.value;
     }
 
-    // View the front element without removing it
-    peek(): T | null {
-        return this.front?.value ?? null;
+    return {
+        distances,
+        predecessors,
+        hasNegativeCycle,
+    };
+}
+/**
+ * Reconstructs the shortest path from the source to a destination node
+ * using the predecessors array generated by Bellman-Ford.
+ *
+ * @param source The starting node.
+ * @param destination The target node.
+ * @param predecessors The predecessors array from the Bellman-Ford result.
+ * @returns An array of node numbers representing the path, or `null` if the destination is unreachable.
+ */
+export function reconstructPath(
+    source: number,
+    destination: number,
+    predecessors: (number | null)[]
+): number[] | null {
+    const path: number[] = [];
+    let currentNode: number | null = destination;
+
+    // Trace back from destination to source
+    while (currentNode !== null && currentNode !== source) {
+        path.unshift(currentNode); // Add to the beginning of the path
+        currentNode = predecessors[currentNode];
     }
 
-    // Check if queue is empty
-    isEmpty(): boolean {
-        return this.front === null;
-    }
-
-    // Get the size of the queue
-    get size(): number {
-        return this._size;
-    }
-
-    // Convert queue to array (for debugging/display)
-    toArray(): T[] {
-        const result: T[] = [];
-        let current = this.front;
-        
-        while (current !== null) {
-            result.push(current.value);
-            current = current.next;
-        }
-        
-        return result;
-    }
-
-    // Clear the queue
-    clear(): void {
-        this.front = null;
-        this.rear = null;
-        this._size = 0;
+    // If currentNode is the source, it means a path was found
+    if (currentNode === source) {
+        path.unshift(source);
+        return path;
+    } else {
+        // If currentNode became null before reaching the source, the destination was unreachable
+        return null;
     }
 }
-class LinkedListQueueEnhanced<T> {
-    private front: ListNode<T> | null;
-    private rear: ListNode<T> | null;
-    private _size: number;
+// --- Scenario 1: Simple Graph (no negative weights, no negative cycles) ---
+console.log("--- Scenario 1: Simple Graph ---");
+const numNodes1 = 5;
+const edges1: Edge[] = [
+    { from: 0, to: 1, weight: 6 },
+    { from: 0, to: 2, weight: 7 },
+    { from: 1, to: 3, weight: 5 },
+    { from: 1, to: 2, weight: 8 },
+    { from: 1, to: 4, weight: -4 },
+    { from: 2, to: 3, weight: -3 },
+    { from: 2, to: 4, weight: 9 },
+    { from: 3, to: 1, weight: -2 },
+    { from: 4, to: 0, weight: 2 },
+    { from: 4, to: 3, weight: 7 },
+];
+const source1 = 0;
 
-    constructor() {
-        this.front = null;
-        this.rear = null;
-        this._size = 0;
-    }
+const result1 = bellmanFord(numNodes1, edges1, source1);
+console.log("Distances:", result1.distances); // Expected: [0, 4, 7, 4, 2] (approx)
+console.log("Predecessors:", result1.predecessors);
+console.log("Has Negative Cycle:", result1.hasNegativeCycle); // Expected: false
 
-    enqueue(value: T): void {
-        const newNode = new ListNode(value);
+// Reconstruct path to node 3
+const path1 = reconstructPath(source1, 3, result1.predecessors);
+console.log("Path 0 -> 3:", path1); // Expected: [0, 2, 3] or [0, 1, 3] depending on tie-breaking/order
 
-        if (this.isEmpty()) {
-            this.front = newNode;
-            this.rear = newNode;
-        } else {
-            this.rear!.next = newNode;
-            this.rear = newNode;
-        }
 
-        this._size++;
-    }
+// --- Scenario 2: Graph with Negative Cycle ---
+console.log("\n--- Scenario 2: Graph with Negative Cycle ---");
+const numNodes2 = 4;
+const edges2: Edge[] = [
+    { from: 0, to: 1, weight: 1 },
+    { from: 1, to: 2, weight: -1 },
+    { from: 2, to: 3, weight: -1 },
+    { from: 3, to: 1, weight: -1 }, // This creates a negative cycle: 1 -> 2 -> 3 -> 1 (total weight -3)
+    { from: 0, to: 3, weight: 10 },
+];
+const source2 = 0;
 
-    dequeue(): T {
-        if (this.isEmpty()) {
-            throw new Error("Queue is empty. Cannot dequeue.");
-        }
+const result2 = bellmanFord(numNodes2, edges2, source2);
+console.log("Distances:", result2.distances); // Will likely show highly negative numbers for nodes on/reachable from cycle
+console.log("Predecessors:", result2.predecessors);
+console.log("Has Negative Cycle:", result2.hasNegativeCycle); // Expected: true
 
-        const removedNode = this.front!;
-        this.front = this.front!.next;
+// Reconstruct path to node 3 (will be null or incorrect if negative cycle exists)
+const path2 = reconstructPath(source2, 3, result2.predecessors);
+console.log("Path 0 -> 3:", path2); // May be null or misleading due to negative cycle
 
-        if (this.front === null) {
-            this.rear = null;
-        }
 
-        this._size--;
-        return removedNode.value;
-    }
+// --- Scenario 3: Disconnected Graph / Unreachable Node ---
+console.log("\n--- Scenario 3: Disconnected Graph / Unreachable Node ---");
+const numNodes3 = 3;
+const edges3: Edge[] = [
+    { from: 0, to: 1, weight: 5 }
+    // Node 2 is unreachable from source 0
+];
+const source3 = 0;
 
-    peek(): T {
-        if (this.isEmpty()) {
-            throw new Error("Queue is empty. Cannot peek.");
-        }
-        return this.front!.value;
-    }
+const result3 = bellmanFord(numNodes3, edges3, source3);
+console.log("Distances:", result3.distances); // Expected: [0, 5, Infinity]
+console.log("Predecessors:", result3.predecessors);
+console.log("Has Negative Cycle:", result3.hasNegativeCycle); // Expected: false
 
-    isEmpty(): boolean {
-        return this.front === null;
-    }
-
-    get size(): number {
-        return this._size;
-    }
-
-    toArray(): T[] {
-        const result: T[] = [];
-        let current = this.front;
-        
-        while (current !== null) {
-            result.push(current.value);
-            current = current.next;
-        }
-        
-        return result;
-    }
-
-    clear(): void {
-        this.front = null;
-        this.rear = null;
-        this._size = 0;
-    }
-
-    *[Symbol.iterator](): IterableIterator<T> {
-        let current = this.front;
-        while (current !== null) {
-            yield current.value;
-            current = current.next;
-        }
-    }
-}
-// Basic usage
-const queue = new LinkedListQueue<number>();
-
-// Enqueue elements
-queue.enqueue(1);
-queue.enqueue(2);
-queue.enqueue(3);
-
-console.log(queue.toArray()); // [1, 2, 3]
-console.log(queue.peek());    // 1
-console.log(queue.size);      // 3
-
-// Dequeue elements
-console.log(queue.dequeue()); // 1
-console.log(queue.dequeue()); // 2
-console.log(queue.isEmpty()); // false
-
-// String queue
-const stringQueue = new LinkedListQueue<string>();
-stringQueue.enqueue("hello");
-stringQueue.enqueue("world");
-console.log(stringQueue.dequeue()); // "hello"
-
-// Using iterator (enhanced version)
-const enhancedQueue = new LinkedListQueueEnhanced<number>();
-enhancedQueue.enqueue(10);
-enhancedQueue.enqueue(20);
-enhancedQueue.enqueue(30);
-
-for (const item of enhancedQueue) {
-    console.log(item); // 10, 20, 30
-}
+const path3 = reconstructPath(source3, 2, result3.predecessors);
+console.log("Path 0 -> 2:", path3); // Expected: null
