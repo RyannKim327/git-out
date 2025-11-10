@@ -1,144 +1,131 @@
-class SkipListNode<T> {
-    value: T | null;       // null for the head sentinel
-    forwards: Array<SkipListNode<T> | null>;
+// suffix-tree.ts
+export class SuffixTree {
+  private readonly text: string;
+  private readonly root: Node;
+  private activeNode: Node;
+  private activeEdge = 0;   // index into text
+  private activeLen = 0;
+  private remaining = 0;    // # suffixes left to insert in current phase
+  private end = -1;           // global “pointer” shared by all leaves
 
-    constructor(value: T | null, level: number) {
-        this.value = value;
-        this.forwards = new Array(level).fill(null);
+  constructor(str: string) {
+    this.text = str;
+    this.root = new Node(null, -1);
+    this.activeNode = this.root;
+    this.build();
+  }
+
+  /* ---------- public query helpers (optional) ---------- */
+
+  /** Returns true if `pat` occurs as substring. */
+  contains(pat: string): boolean {
+    let cur = this.root;
+    let i = 0;
+    while (i < pat.length) {
+      const edge = cur.children.get(pat[i]);
+      if (!edge) return false;
+      const edgeLen = edge.len();
+      const cmpLen = Math.min(edgeLen, pat.length - i);
+      const seg1 = this.text.substring(edge.from, edge.from + cmpLen);
+      const seg2 = pat.substring(i, i + cmpLen);
+      if (seg1 !== seg2) return false;
+      i += cmpLen;
+      if (i < pat.length) cur = edge.target;
     }
+    return true;
+  }
+
+  /* ---------- internal construction ---------- */
+
+  private build(): void {
+    for (let i = 0; i < this.text.length; i++) {
+      this.end = i;
+      this.remaining++;
+      let lastNewNode: Node | null = null;
+
+      while (this.remaining > 0) {
+        if (this.activeLen === 0) this.activeEdge = i;
+
+        const ch = this.text[this.activeEdge];
+        let edge = this.activeNode.children.get(ch);
+
+        if (!edge) {
+          // extension rule 2: new leaf
+          const leaf = new Node(this.activeNode, i);
+          this.activeNode.children.set(ch, new Edge(i, this.end, leaf));
+          if (lastNewNode) {
+            lastNewNode.suffixLink = this.activeNode;
+            lastNewNode = null;
+          }
+        } else {
+          const edgeLen = edge.len();
+          if (this.activeLen >= edgeLen) {
+            // walk down
+            this.activeEdge += edgeLen;
+            this.activeLen -= edgeLen;
+            this.activeNode = edge.target;
+            continue;
+          }
+          // compare next character
+          if (this.text[edge.from + this.activeLen] === this.text[i]) {
+            // match: APCFERY skip trick
+            if (lastNewNode) {
+              lastNewNode.suffixLink = this.activeNode;
+              lastNewNode = null;
+            }
+            this.activeLen++;
+            break;
+          }
+          // split edge
+          const splitEnd = edge.from + this.activeLen - 1;
+          const splitNode = new Node(null, -1);
+          const leaf = new Node(splitNode, i);
+          splitNode.children.set(this.text[i], new Edge(i, this.end, leaf));
+          splitNode.children.set(
+            this.text[edge.from + this.activeLen],
+            new Edge(edge.from + this.activeLen, edge.to, edge.target)
+          );
+          edge.target = splitNode;
+          edge.to = splitEnd;
+          if (lastNewNode) lastNewNode.suffixLink = splitNode;
+          lastNewNode = splitNode;
+        }
+
+        this.remaining--;
+        if (this.activeNode === this.root && this.activeLen > 0) {
+          this.activeLen--;
+          this.activeEdge = i - this.remaining + 1;
+        } else {
+          this.activeNode = this.activeNode.suffixLink ?? this.root;
+        }
+      }
+    }
+  }
 }
 
-class SkipList<T> {
-    private readonly MAX_LEVEL: number;
-    private readonly P: number;
-    private level: number; // Current max level in the list
-    private head: SkipListNode<T>;
-    private compare: (a: T, b: T) => number;
+/* ---------- internal classes ---------- */
 
-    constructor(maxLevel: number = 16, p: number = 0.5, compareFn?: (a: T, b: T) => number) {
-        this.MAX_LEVEL = maxLevel;
-        this.P = p;
-        this.level = 0;
-        this.head = new SkipListNode<T>(null, this.MAX_LEVEL);
-        this.compare = compareFn ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-    }
-
-    private randomLevel(): number {
-        let lvl = 1;
-        while (Math.random() < this.P && lvl < this.MAX_LEVEL) {
-            lvl++;
-        }
-        return lvl;
-    }
-
-    search(value: T): T | null {
-        let current = this.head;
-        for (let i = this.level - 1; i >= 0; i--) {
-            while (current.forwards[i] && this.compare(current.forwards[i]!.value!, value) < 0) {
-                current = current.forwards[i]!;
-            }
-        }
-        current = current.forwards[0]!;
-        if (current && this.compare(current.value!, value) === 0) {
-            return current.value!;
-        }
-        return null;
-    }
-
-    insert(value: T): void {
-        let update = new Array<SkipListNode<T>>(this.MAX_LEVEL);
-        let current = this.head;
-
-        // Step 1: Find the path
-        for (let i = this.level - 1; i >= 0; i--) {
-            while (current.forwards[i] && this.compare(current.forwards[i]!.value!, value) < 0) {
-                current = current.forwards[i]!;
-            }
-            update[i] = current;
-        }
-
-        current = current.forwards[0]!;
-        if (current && this.compare(current.value!, value) === 0) {
-            return; // Value already exists; no duplicates
-        }
-
-        // Step 2: Choose random level for new node
-        let newLevel = this.randomLevel();
-        if (newLevel > this.level) {
-            for (let i = this.level; i < newLevel; i++) {
-                update[i] = this.head;
-            }
-            this.level = newLevel;
-        }
-
-        // Step 3: Insert new node
-        let newNode = new SkipListNode<T>(value, newLevel);
-        for (let i = 0; i < newLevel; i++) {
-            newNode.forwards[i] = update[i].forwards[i];
-            update[i].forwards[i] = newNode;
-        }
-    }
-
-    delete(value: T): boolean {
-        let update = new Array<SkipListNode<T>>(this.MAX_LEVEL);
-        let current = this.head;
-
-        for (let i = this.level - 1; i >= 0; i--) {
-            while (current.forwards[i] && this.compare(current.forwards[i]!.value!, value) < 0) {
-                current = current.forwards[i]!;
-            }
-            update[i] = current;
-        }
-
-        current = current.forwards[0]!;
-
-        if (!current || this.compare(current.value!, value) !== 0) {
-            return false; // Not found
-        }
-
-        for (let i = 0; i < this.level; i++) {
-            if (update[i].forwards[i] !== current) {
-                break;
-            }
-            update[i].forwards[i] = current.forwards[i];
-        }
-
-        // Adjust current level of list if needed
-        while (this.level > 0 && !this.head.forwards[this.level - 1]) {
-            this.level--;
-        }
-
-        return true;
-    }
-
-    print(): void {
-        for (let i = this.level - 1; i >= 0; i--) {
-            let line = `Level ${i}: `;
-            let current = this.head.forwards[i];
-            while (current) {
-                line += current.value + " ";
-                current = current.forwards[i];
-            }
-            console.log(line);
-        }
-    }
+class Node {
+  children = new Map<string, Edge>();
+  suffixLink: Node | null = null;
+  constructor(
+    readonly parent: Node | null,
+    readonly start: number // for leaves: index into text where suffix starts
+  ) {}
 }
 
-// Example usage:
-const sl = new SkipList<number>();
-sl.insert(3);
-sl.insert(6);
-sl.insert(7);
-sl.insert(9);
-sl.insert(12);
-sl.insert(19);
-sl.insert(17);
-sl.insert(26);
-sl.insert(21);
-sl.insert(25);
+class Edge {
+  constructor(
+    public from: number,
+    public to: number,
+    public target: Node
+  ) {}
+  len(): number {
+    return this.to - this.from + 1;
+  }
+}
+import { SuffixTree } from "./suffix-tree";
 
-sl.print();
-
-console.log("Search 19:", sl.search(19));
-console.log("Delete 19:", sl.delete(19));
-sl.print();
+const st = new SuffixTree("banana");
+console.log(st.contains("ana")); // true
+console.log(st.contains("band"));  // false
