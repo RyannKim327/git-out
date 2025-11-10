@@ -1,25 +1,72 @@
-function isPrime(num: number): boolean {
-  if (num <= 1) return false; 
-  if (num <= 3) return true; // 2 and 3 are prime
+// Node definition
+class TreeNode<T> {
+    value: T;
+    left: TreeNode<T> | null;
+    right: TreeNode<T> | null;
 
-  if (num % 2 === 0 || num % 3 === 0) return false; // quick elimination
-
-  const limit = Math.floor(Math.sqrt(num));
-  for (let i = 5; i <= limit; i += 6) {
-    if (num % i === 0 || num % (i + 2) === 0) return false;
-  }
-
-  return true;
+    constructor(value: T) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+    }
 }
 
-// Examples:
-console.log(isPrime(2));  // true
-console.log(isPrime(15)); // false
-console.log(isPrime(17)); // true
-function isPrimeBasic(num: number): boolean {
-  if (num <= 1) return false;
-  for (let i = 2; i < num; i++) {
-    if (num % i === 0) return false;
-  }
-  return true;
+// Binary Search Tree (BST) example
+class BinaryTree<T> {
+    root: TreeNode<T> | null = null;
+
+    insert(value: T): void {
+        const newNode = new TreeNode(value);
+
+        if (this.root === null) {
+            this.root = newNode;
+            return;
+        }
+
+        let current = this.root;
+        while (true) {
+            if (value < (current.value as unknown as number)) {
+                if (current.left === null) {
+                    current.left = newNode;
+                    return;
+                }
+                current = current.left;
+            } else {
+                if (current.right === null) {
+                    current.right = newNode;
+                    return;
+                }
+                current = current.right;
+            }
+        }
+    }
+
+    // Simple inorder traversal
+    inOrderTraversal(node: TreeNode<T> | null = this.root): void {
+        if (!node) return;
+        this.inOrderTraversal(node.left);
+        console.log(node.value);
+        this.inOrderTraversal(node.right);
+    }
+
+    search(value: T): TreeNode<T> | null {
+        let current = this.root;
+        while (current) {
+            if (value === current.value) return current;
+            current = value < (current.value as unknown as number) 
+                ? current.left 
+                : current.right;
+        }
+        return null;
+    }
 }
+
+// Example usage
+const tree = new BinaryTree<number>();
+tree.insert(5);
+tree.insert(3);
+tree.insert(7);
+tree.insert(4);
+
+tree.inOrderTraversal(); // 3, 4, 5, 7
+console.log(tree.search(7)); // TreeNode with value 7
