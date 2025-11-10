@@ -1,131 +1,122 @@
-// suffix-tree.ts
-export class SuffixTree {
-  private readonly text: string;
-  private readonly root: Node;
-  private activeNode: Node;
-  private activeEdge = 0;   // index into text
-  private activeLen = 0;
-  private remaining = 0;    // # suffixes left to insert in current phase
-  private end = -1;           // global “pointer” shared by all leaves
+class ListNode<T> {
+    value: T;
+    next: ListNode<T> | null;
 
-  constructor(str: string) {
-    this.text = str;
-    this.root = new Node(null, -1);
-    this.activeNode = this.root;
-    this.build();
-  }
-
-  /* ---------- public query helpers (optional) ---------- */
-
-  /** Returns true if `pat` occurs as substring. */
-  contains(pat: string): boolean {
-    let cur = this.root;
-    let i = 0;
-    while (i < pat.length) {
-      const edge = cur.children.get(pat[i]);
-      if (!edge) return false;
-      const edgeLen = edge.len();
-      const cmpLen = Math.min(edgeLen, pat.length - i);
-      const seg1 = this.text.substring(edge.from, edge.from + cmpLen);
-      const seg2 = pat.substring(i, i + cmpLen);
-      if (seg1 !== seg2) return false;
-      i += cmpLen;
-      if (i < pat.length) cur = edge.target;
+    constructor(value: T, next: ListNode<T> | null = null) {
+        this.value = value;
+        this.next = next;
     }
-    return true;
-  }
-
-  /* ---------- internal construction ---------- */
-
-  private build(): void {
-    for (let i = 0; i < this.text.length; i++) {
-      this.end = i;
-      this.remaining++;
-      let lastNewNode: Node | null = null;
-
-      while (this.remaining > 0) {
-        if (this.activeLen === 0) this.activeEdge = i;
-
-        const ch = this.text[this.activeEdge];
-        let edge = this.activeNode.children.get(ch);
-
-        if (!edge) {
-          // extension rule 2: new leaf
-          const leaf = new Node(this.activeNode, i);
-          this.activeNode.children.set(ch, new Edge(i, this.end, leaf));
-          if (lastNewNode) {
-            lastNewNode.suffixLink = this.activeNode;
-            lastNewNode = null;
-          }
-        } else {
-          const edgeLen = edge.len();
-          if (this.activeLen >= edgeLen) {
-            // walk down
-            this.activeEdge += edgeLen;
-            this.activeLen -= edgeLen;
-            this.activeNode = edge.target;
-            continue;
-          }
-          // compare next character
-          if (this.text[edge.from + this.activeLen] === this.text[i]) {
-            // match: APCFERY skip trick
-            if (lastNewNode) {
-              lastNewNode.suffixLink = this.activeNode;
-              lastNewNode = null;
-            }
-            this.activeLen++;
-            break;
-          }
-          // split edge
-          const splitEnd = edge.from + this.activeLen - 1;
-          const splitNode = new Node(null, -1);
-          const leaf = new Node(splitNode, i);
-          splitNode.children.set(this.text[i], new Edge(i, this.end, leaf));
-          splitNode.children.set(
-            this.text[edge.from + this.activeLen],
-            new Edge(edge.from + this.activeLen, edge.to, edge.target)
-          );
-          edge.target = splitNode;
-          edge.to = splitEnd;
-          if (lastNewNode) lastNewNode.suffixLink = splitNode;
-          lastNewNode = splitNode;
-        }
-
-        this.remaining--;
-        if (this.activeNode === this.root && this.activeLen > 0) {
-          this.activeLen--;
-          this.activeEdge = i - this.remaining + 1;
-        } else {
-          this.activeNode = this.activeNode.suffixLink ?? this.root;
-        }
-      }
+}
+function findMiddleElement<T>(head: ListNode<T> | null): ListNode<T> | null {
+    if (!head) {
+        return null; // Empty list
     }
-  }
+
+    let slow: ListNode<T> | null = head;
+    let fast: ListNode<T> | null = head;
+
+    // The loop continues as long as fast and fast.next are valid
+    // This ensures fast.next.next won't throw an error.
+    while (fast !== null && fast.next !== null) {
+        slow = slow!.next; // slow moves one step
+        fast = fast.next.next; // fast moves two steps
+    }
+
+    return slow; // slow is now at the middle element
 }
 
-/* ---------- internal classes ---------- */
+// --- Example Usage ---
 
-class Node {
-  children = new Map<string, Edge>();
-  suffixLink: Node | null = null;
-  constructor(
-    readonly parent: Node | null,
-    readonly start: number // for leaves: index into text where suffix starts
-  ) {}
+// Helper to create a list from an array
+function createLinkedList<T>(arr: T[]): ListNode<T> | null {
+    if (arr.length === 0) {
+        return null;
+    }
+    let head = new ListNode(arr[0]);
+    let current = head;
+    for (let i = 1; i < arr.length; i++) {
+        current.next = new ListNode(arr[i]);
+        current = current.next;
+    }
+    return head;
 }
 
-class Edge {
-  constructor(
-    public from: number,
-    public to: number,
-    public target: Node
-  ) {}
-  len(): number {
-    return this.to - this.from + 1;
-  }
-}
-import { SuffixTree } from "./suffix-tree";
+// Test cases
+let list1 = createLinkedList([1, 2, 3, 4, 5]); // Odd length
+console.log("List: 1 -> 2 -> 3 -> 4 -> 5");
+console.log("Middle element:", findMiddleElement(list1)?.value); // Expected: 3
 
-const st = new SuffixTree("banana");
-console.log(st.contains("ana")); // true
-console.log(st.contains("band"));  // false
+let list2 = createLinkedList([1, 2, 3, 4]); // Even length
+console.log("List: 1 -> 2 -> 3 -> 4");
+console.log("Middle element:", findMiddleElement(list2)?.value); // Expected: 3 (second middle)
+
+let list3 = createLinkedList([1]); // Single element
+console.log("List: 1");
+console.log("Middle element:", findMiddleElement(list3)?.value); // Expected: 1
+
+let list4 = createLinkedList([]); // Empty list
+console.log("List: (empty)");
+console.log("Middle element:", findMiddleElement(list4)?.value); // Expected: undefined (null)
+
+let list5 = createLinkedList([1, 2]); // Two elements
+console.log("List: 1 -> 2");
+console.log("Middle element:", findMiddleElement(list5)?.value); // Expected: 2
+function findMiddleElementTwoPass<T>(head: ListNode<T> | null): ListNode<T> | null {
+    if (!head) {
+        return null; // Empty list
+    }
+
+    // Pass 1: Count the number of nodes
+    let count = 0;
+    let current: ListNode<T> | null = head;
+    while (current !== null) {
+        count++;
+        current = current.next;
+    }
+
+    // Pass 2: Traverse to the middle
+    let middleIndex = Math.floor(count / 2); // For 1,2,3,4,5 -> index 2 (value 3)
+                                          // For 1,2,3,4   -> index 2 (value 3 - second middle)
+
+    current = head;
+    for (let i = 0; i < middleIndex; i++) {
+        current = current!.next;
+    }
+
+    return current;
+}
+
+// Example usage (same as above, just swap function call)
+console.log("\n--- Two-Pass Approach ---");
+let list6 = createLinkedList([1, 2, 3, 4, 5]);
+console.log("List: 1 -> 2 -> 3 -> 4 -> 5");
+console.log("Middle element:", findMiddleElementTwoPass(list6)?.value); // Expected: 3
+
+let list7 = createLinkedList([1, 2, 3, 4]);
+console.log("List: 1 -> 2 -> 3 -> 4");
+console.log("Middle element:", findMiddleElementTwoPass(list7)?.value); // Expected: 3
+function findFirstMiddleElementEven<T>(head: ListNode<T> | null): ListNode<T> | null {
+    if (!head) {
+        return null;
+    }
+
+    let slow: ListNode<T> | null = head;
+    let fast: ListNode<T> | null = head.next; // Start fast one step ahead!
+
+    while (fast !== null && fast.next !== null) {
+        slow = slow!.next;
+        fast = fast.next.next;
+    }
+
+    return slow; // Now for 1->2->3->4, slow stops at 2
+}
+
+// Test cases
+console.log("\n--- First Middle Element for Even Lists ---");
+let list8 = createLinkedList([1, 2, 3, 4, 5]); // Odd length (no change)
+console.log("List: 1 -> 2 -> 3 -> 4 -> 5");
+console.log("Middle element:", findFirstMiddleElementEven(list8)?.value); // Expected: 3
+
+let list9 = createLinkedList([1, 2, 3, 4]); // Even length (now gets first middle)
+console.log("List: 1 -> 2 -> 3 -> 4");
+console.log("Middle element:", findFirstMiddleElementEven(list9)?.value); // Expected: 2
