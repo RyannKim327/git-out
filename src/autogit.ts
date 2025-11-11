@@ -1,9 +1,1 @@
-const str1: string = "Hello";
-const str2: string = " World!";
-const result: string = str1 + str2; // "Hello World!"
-const str1: string = "Hello";
-const str2: string = "World!";
-const result: string = `${str1} ${str2}`; // "Hello World!"
-const str1: string = "Hello";
-const str2: string = "World!";
-const result: string = str1.concat(" ", str2); // "Hello World!"
+// May error sa API
