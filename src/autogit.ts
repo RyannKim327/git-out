@@ -1,85 +1,34 @@
-type QueueItem<T> = [node: T, depth: number];
+function areAnagrams(str1: string, str2: string): boolean {
+  const normalize = (str: string) =>
+    str
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '') // remove non-alphanumeric
+      .split('')
+      .sort()
+      .join('');
 
-/**
- * Performs a breadth-limited search starting from a given node
- * @param startNode The starting node for the search
- * @param getNeighbors Function that returns the neighbors of a node
- * @param depthLimit Maximum depth to explore (inclusive)
- * @param getKey Optional function to get unique identifier for nodes (defaults to object reference)
- * @returns Array of visited nodes in BFS order up to the depth limit
- */
-function breadthLimitedSearch<T>(
-  startNode: T,
-  getNeighbors: (node: T) => T[],
-  depthLimit: number,
-  getKey: (node: T) => unknown = (node) => node
-): T[] {
-  const visited = new Set<unknown>(); // Track visited node keys
-  const result: T[] = []; // Store the search result
-  const queue: QueueItem<T>[] = []; // Initialize queue with start node and depth 0
-  
-  queue.push([startNode, 0]);
+  return normalize(str1) === normalize(str2);
+}
 
-  while (queue.length > 0) {
-    const [currentNode, currentDepth] = queue.shift()!;
-    const nodeKey = getKey(currentNode);
+// Usage
+console.log(areAnagrams('listen', 'silent')); // true
+console.log(areAnagrams('Hello', 'Olelh!'));   // true
+console.log(areAnagrams('apple', 'pale'));    // false
+function areAnagramsLinear(str1: string, str2: string): boolean {
+  const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    // Skip processing if already visited or exceeds depth limit
-    if (visited.has(nodeKey) || currentDepth > depthLimit) {
-      continue;
-    }
+  const s1 = clean(str1);
+  const s2 = clean(str2);
 
-    // Mark as visited and add to result
-    visited.add(nodeKey);
-    result.push(currentNode);
+  if (s1.length !== s2.length) return false;
 
-    // Enqueue neighbors if within depth limit
-    if (currentDepth < depthLimit) {
-      const neighbors = getNeighbors(currentNode);
-      for (const neighbor of neighbors) {
-        const neighborKey = getKey(neighbor);
-        if (!visited.has(neighborKey)) {
-          queue.push([neighbor, currentDepth + 1]);
-        }
-      }
-    }
+  const freq: Record<string, number> = {};
+
+  for (const char of s1) freq[char] = (freq[char] || 0) + 1;
+  for (const char of s2) {
+    if (!freq[char]) return false;
+    freq[char]--;
   }
 
-  return result;
+  return true;
 }
-// Define a simple node type
-interface TreeNode {
-  id: string;
-  children: TreeNode[];
-}
-
-// Sample tree structure
-const tree: TreeNode = {
-  id: "A",
-  children: [
-    {
-      id: "B",
-      children: [
-        { id: "D", children: [] },
-        { id: "E", children: [] }
-      ]
-    },
-    {
-      id: "C",
-      children: [
-        { id: "F", children: [] }
-      ]
-    }
-  ]
-};
-
-// Run breadth-limited search
-const result = breadthLimitedSearch(
-  tree,
-  node => node.children,
-  1, // Depth limit
-  node => node.id // Use 'id' as unique key
-);
-
-console.log(result.map(node => node.id)); 
-// Output: ["A", "B", "C"] (nodes at depth 0 and 1)
