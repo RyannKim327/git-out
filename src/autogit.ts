@@ -1,109 +1,67 @@
-function findMaxWithSpread(arr: number[]): number | undefined {
-  if (arr.length === 0) {
-    return undefined; // Or throw an error, or return null, depending on desired behavior for empty arrays
-  }
-  return Math.max(...arr);
-}
+/**
+ * Longest-Prefix-Suffix table (a.k.a. failure function).
+ * lps[i] = length of the longest proper prefix of pat[0..i]
+ *          which is also a suffix of pat[0..i].
+ */
+function buildLPS(pat: string): number[] {
+  const m = pat.length;
+  const lps = new Array<number>(m).fill(0);
+  let len = 0;          // length of the previous longest prefix suffix
+  let i = 1;
 
-// Example usage:
-const numbers1 = [10, 5, 20, 8, 15];
-console.log("Max (spread):", findMaxWithSpread(numbers1)); // Output: Max (spread): 20
-
-const numbers2 = [-1, -5, -2];
-console.log("Max (spread, negative):", findMaxWithSpread(numbers2)); // Output: Max (spread, negative): -1
-
-const emptyArray: number[] = [];
-console.log("Max (spread, empty):", findMaxWithSpread(emptyArray)); // Output: Max (spread, empty): undefined
-function findMaxWithReduce(arr: number[]): number | undefined {
-  if (arr.length === 0) {
-    return undefined;
-  }
-  // The first element `arr[0]` is used as the initial `max` value
-  return arr.reduce((max, current) => Math.max(max, current));
-}
-
-// Example usage:
-const numbers3 = [10, 5, 20, 8, 15];
-console.log("Max (reduce):", findMaxWithReduce(numbers3)); // Output: Max (reduce): 20
-
-const emptyArray2: number[] = [];
-console.log("Max (reduce, empty):", findMaxWithReduce(emptyArray2)); // Output: Max (reduce, empty): undefined
-function findMaxWithLoop(arr: number[]): number | undefined {
-  if (arr.length === 0) {
-    return undefined;
-  }
-
-  let max = arr[0]; // Initialize max with the first element
-
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] > max) {
-      max = arr[i];
+  while (i < m) {
+    if (pat[i] === pat[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else if (len !== 0) {
+      len = lps[len - 1]; // fallback
+    } else {
+      lps[i] = 0;
+      i++;
     }
   }
-  return max;
+  return lps;
 }
 
-// Example usage:
-const numbers4 = [10, 5, 20, 8, 15];
-console.log("Max (loop):", findMaxWithLoop(numbers4)); // Output: Max (loop): 20
+/**
+ * Returns an array with all starting indices of `pattern` in `text`.
+ * Runs in O(n + m) time and O(m) extra space.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [];          // empty pattern
+  if (m > n) return [];            // impossible
 
-const emptyArray3: number[] = [];
-console.log("Max (loop, empty):", findMaxWithLoop(emptyArray3)); // Output: Max (loop, empty): undefined
-interface Product {
-  id: number;
-  price: number;
-  name: string;
-}
+  const lps = buildLPS(pattern);
+  const hits: number[] = [];
 
-function findMaxObjectProperty<T>(
-  arr: T[],
-  selector: (item: T) => number // A function that returns the number to compare
-): T | undefined {
-  if (arr.length === 0) {
-    return undefined;
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < n) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === m) {               // full match
+        hits.push(i - j);
+        j = lps[j - 1];              // allow overlapping matches
+      }
+    } else if (j !== 0) {
+      j = lps[j - 1];                // fallback in pattern
+    } else {
+      i++;                           // advance in text
+    }
   }
-
-  return arr.reduce((maxItem, currentItem) => {
-    return selector(currentItem) > selector(maxItem) ? currentItem : maxItem;
-  });
+  return hits;
 }
 
-// Example usage:
-const products: Product[] = [
-  { id: 1, name: "Laptop", price: 1200 },
-  { id: 2, name: "Mouse", price: 25 },
-  { id: 3, name: "Keyboard", price: 75 },
-  { id: 4, name: "Monitor", price: 300 },
-];
-
-const mostExpensiveProduct = findMaxObjectProperty(products, (p) => p.price);
-console.log("Most expensive product:", mostExpensiveProduct);
-// Output: Most expensive product: { id: 1, name: 'Laptop', price: 1200 }
-
-const productWithLongestName = findMaxObjectProperty(products, (p) => p.name.length);
-console.log("Product with longest name:", productWithLongestName);
-// Output: Product with longest name: { id: 3, name: 'Keyboard', price: 75 } (or 'Laptop' if lengths were equal and it came first)
-
-const emptyProducts: Product[] = [];
-console.log("Max product (empty):", findMaxObjectProperty(emptyProducts, (p) => p.price));
-// Output: Max product (empty): undefined
-function findMaxIgnoringNullUndefined(
-  arr: (number | null | undefined)[]
-): number | undefined {
-  const numbersOnly = arr.filter(
-    (item): item is number => typeof item === "number" && item !== null
-  );
-
-  if (numbersOnly.length === 0) {
-    return undefined;
-  }
-
-  return Math.max(...numbersOnly);
+/* ---------- Usage example ---------- */
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const text = "ababcabcababcabc";
+  const pattern = "ababc";
+  console.log(kmpSearch(text, pattern)); // → [0, 7]
 }
-
-// Example usage:
-const mixedNumbers = [10, null, 5, undefined, 20, 8, null, 15];
-console.log("Max (mixed, filtered):", findMaxIgnoringNullUndefined(mixedNumbers)); // Output: Max (mixed, filtered): 20
-
-const onlyNullUndefined = [null, undefined];
-console.log("Max (only null/undefined):", findMaxIgnoringNullUndefined(onlyNullUndefined)); // Output: Max (only null/undefined): undefined
+npx ts-node kmp.ts
+# [0, 7]
