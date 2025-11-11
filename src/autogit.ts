@@ -1,182 +1,85 @@
-class RabinKarp {
-    private readonly base: number;
-    private readonly modulus: number;
+type QueueItem<T> = [node: T, depth: number];
 
-    constructor(base: number = 256, modulus: number = 101) {
-        this.base = base;
-        this.modulus = modulus;
+/**
+ * Performs a breadth-limited search starting from a given node
+ * @param startNode The starting node for the search
+ * @param getNeighbors Function that returns the neighbors of a node
+ * @param depthLimit Maximum depth to explore (inclusive)
+ * @param getKey Optional function to get unique identifier for nodes (defaults to object reference)
+ * @returns Array of visited nodes in BFS order up to the depth limit
+ */
+function breadthLimitedSearch<T>(
+  startNode: T,
+  getNeighbors: (node: T) => T[],
+  depthLimit: number,
+  getKey: (node: T) => unknown = (node) => node
+): T[] {
+  const visited = new Set<unknown>(); // Track visited node keys
+  const result: T[] = []; // Store the search result
+  const queue: QueueItem<T>[] = []; // Initialize queue with start node and depth 0
+  
+  queue.push([startNode, 0]);
+
+  while (queue.length > 0) {
+    const [currentNode, currentDepth] = queue.shift()!;
+    const nodeKey = getKey(currentNode);
+
+    // Skip processing if already visited or exceeds depth limit
+    if (visited.has(nodeKey) || currentDepth > depthLimit) {
+      continue;
     }
 
-    /**
-     * Searches for pattern in text using Rabin-Karp algorithm
-     * @param text - The text to search in
-     * @param pattern - The pattern to search for
-     * @returns Array of starting indices where pattern is found
-     */
-    search(text: string, pattern: string): number[] {
-        const n = text.length;
-        const m = pattern.length;
-        const results: number[] = [];
+    // Mark as visited and add to result
+    visited.add(nodeKey);
+    result.push(currentNode);
 
-        if (m === 0 || n < m) {
-            return results;
+    // Enqueue neighbors if within depth limit
+    if (currentDepth < depthLimit) {
+      const neighbors = getNeighbors(currentNode);
+      for (const neighbor of neighbors) {
+        const neighborKey = getKey(neighbor);
+        if (!visited.has(neighborKey)) {
+          queue.push([neighbor, currentDepth + 1]);
         }
-
-        // Calculate the hash value for pattern and first window of text
-        let patternHash = 0;
-        let textHash = 0;
-        let h = 1;
-
-        // The value of h would be "pow(base, m-1) % modulus"
-        for (let i = 0; i < m - 1; i++) {
-            h = (h * this.base) % this.modulus;
-        }
-
-        // Calculate initial hash values
-        for (let i = 0; i < m; i++) {
-            patternHash = (this.base * patternHash + pattern.charCodeAt(i)) % this.modulus;
-            textHash = (this.base * textHash + text.charCodeAt(i)) % this.modulus;
-        }
-
-        // Slide the pattern over text one by one
-        for (let i = 0; i <= n - m; i++) {
-            // Check the hash values of current window of text and pattern
-            if (patternHash === textHash) {
-                // If hash values match, check character by character
-                let j = 0;
-                for (j = 0; j < m; j++) {
-                    if (text[i + j] !== pattern[j]) {
-                        break;
-                    }
-                }
-
-                if (j === m) {
-                    results.push(i);
-                }
-            }
-
-            // Calculate hash value for next window of text
-            if (i < n - m) {
-                textHash = (this.base * (textHash - text.charCodeAt(i) * h) + text.charCodeAt(i + m)) % this.modulus;
-
-                // Handle negative hash values
-                if (textHash < 0) {
-                    textHash += this.modulus;
-                }
-            }
-        }
-
-        return results;
+      }
     }
+  }
 
-    /**
-     * Case-insensitive search with optional multiple patterns
-     */
-    searchCaseInsensitive(text: string, pattern: string): number[] {
-        return this.search(text.toLowerCase(), pattern.toLowerCase());
-    }
-
-    /**
-     * Search for multiple patterns simultaneously
-     */
-    searchMultiplePatterns(text: string, patterns: string[]): Map<string, number[]> {
-        const results = new Map<string, number[]>();
-        
-        for (const pattern of patterns) {
-            const patternResults = this.search(text, pattern);
-            if (patternResults.length > 0) {
-                results.set(pattern, patternResults);
-            }
-        }
-        
-        return results;
-    }
+  return result;
 }
-// Basic usage
-const rk = new RabinKarp();
+// Define a simple node type
+interface TreeNode {
+  id: string;
+  children: TreeNode[];
+}
 
-const text = "This is a sample text for testing Rabin-Karp algorithm";
-const pattern = "sample";
+// Sample tree structure
+const tree: TreeNode = {
+  id: "A",
+  children: [
+    {
+      id: "B",
+      children: [
+        { id: "D", children: [] },
+        { id: "E", children: [] }
+      ]
+    },
+    {
+      id: "C",
+      children: [
+        { id: "F", children: [] }
+      ]
+    }
+  ]
+};
 
-const results = rk.search(text, pattern);
-console.log(`Pattern found at indices: ${results}`);
-
-// Case-insensitive search
-const caseInsensitiveResults = rk.searchCaseInsensitive("Hello World", "world");
-console.log(`Case-insensitive results: ${caseInsensitiveResults}`);
-
-// Multiple patterns search
-const multipleResults = rk.searchMultiplePatterns(
-    "The quick brown fox jumps over the lazy dog",
-    ["quick", "fox", "dog"]
+// Run breadth-limited search
+const result = breadthLimitedSearch(
+  tree,
+  node => node.children,
+  1, // Depth limit
+  node => node.id // Use 'id' as unique key
 );
-console.log("Multiple patterns:", multipleResults);
 
-// Performance test
-const longText = "A".repeat(1000000) + "PATTERN" + "B".repeat(1000000);
-console.time("RabinKarp Search");
-const perfResults = rk.search(longText, "PATTERN");
-console.timeEnd("RabinKarp Search");
-console.log(`Found pattern at: ${perfResults}`);
-class RabinKarpOptimized {
-    private readonly base: number;
-    private readonly modulus: number;
-
-    constructor(base: number = 256, modulus: number = 101) {
-        this.base = base;
-        this.modulus = modulus;
-    }
-
-    private computeHash(str: string, start: number, end: number): number {
-        let hash = 0;
-        for (let i = start; i < end; i++) {
-            hash = (this.base * hash + str.charCodeAt(i)) % this.modulus;
-        }
-        return hash;
-    }
-
-    search(text: string, pattern: string): number[] {
-        const n = text.length;
-        const m = pattern.length;
-        const results: number[] = [];
-
-        if (m === 0 || n < m) return results;
-
-        const patternHash = this.computeHash(pattern, 0, m);
-        let textHash = this.computeHash(text, 0, m);
-
-        // Precompute base^(m-1) mod modulus
-        let highestPower = 1;
-        for (let i = 0; i < m - 1; i++) {
-            highestPower = (highestPower * this.base) % this.modulus;
-        }
-
-        for (let i = 0; i <= n - m; i++) {
-            if (textHash === patternHash) {
-                // Verify potential match character by character
-                let match = true;
-                for (let j = 0; j < m; j++) {
-                    if (text[i + j] !== pattern[j]) {
-                        match = false;
-                        break;
-                    }
-                }
-                if (match) {
-                    results.push(i);
-                }
-            }
-
-            // Roll the hash for the next window
-            if (i < n - m) {
-                textHash = (this.base * (textHash - text.charCodeAt(i) * highestPower) 
-                           + text.charCodeAt(i + m)) % this.modulus;
-                
-                if (textHash < 0) {
-                    textHash += this.modulus;
-                }
-            }
-        }
-
-        return results;
-    }
-}
+console.log(result.map(node => node.id)); 
+// Output: ["A", "B", "C"] (nodes at depth 0 and 1)
