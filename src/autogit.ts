@@ -1,246 +1,190 @@
-interface ListNode<T> {
-    value: T;
-    next: ListNode<T> | null;
-}
-
-class LinkedList<T> {
-    private head: ListNode<T> | null;
-    private tail: ListNode<T> | null;
-    private length: number;
-
-    constructor() {
-        this.head = null;
-        this.tail = null;
-        this.length = 0;
-    }
-
-    // Append to end of list
-    append(value: T): void {
-        const newNode: ListNode<T> = { value, next: null };
-        
-        if (!this.head) {
-            this.head = newNode;
-            this.tail = newNode;
-        } else {
-            this.tail!.next = newNode;
-            this.tail = newNode;
-        }
-        
-        this.length++;
-    }
-
-    // Prepend to beginning of list
-    prepend(value: T): void {
-        const newNode: ListNode<T> = { value, next: this.head };
-        this.head = newNode;
-        
-        if (!this.tail) {
-            this.tail = newNode;
-        }
-        
-        this.length++;
-    }
-
-    // Insert at specific index
-    insertAt(index: number, value: T): void {
-        if (index < 0 || index > this.length) {
-            throw new Error("Index out of bounds");
-        }
-
-        if (index === 0) {
-            this.prepend(value);
-            return;
-        }
-
-        if (index === this.length) {
-            this.append(value);
-            return;
-        }
-
-        const newNode: ListNode<T> = { value, next: null };
-        const prevNode = this.getNodeAt(index - 1);
-        newNode.next = prevNode!.next;
-        prevNode!.next = newNode;
-        
-        this.length++;
-    }
-
-    // Get node at specific index
-    private getNodeAt(index: number): ListNode<T> | null {
-        if (index < 0 || index >= this.length) return null;
-        
-        let current = this.head;
-        for (let i = 0; i < index; i++) {
-            current = current!.next;
-        }
-        return current;
-    }
-
-    // Get value at specific index
-    getAt(index: number): T | undefined {
-        const node = this.getNodeAt(index);
-        return node ? node.value : undefined;
-    }
-
-    // Remove from end
-    removeLast(): T | undefined {
-        if (!this.head) return undefined;
-
-        if (this.length === 1) {
-            const value = this.head.value;
-            this.head = null;
-            this.tail = null;
-            this.length = 0;
-            return value;
-        }
-
-        const prevNode = this.getNodeAt(this.length - 2);
-        const value = this.tail!.value;
-        prevNode!.next = null;
-        this.tail = prevNode;
-        this.length--;
-        
-        return value;
-    }
-
-    // Remove from beginning
-    removeFirst(): T | undefined {
-        if (!this.head) return undefined;
-
-        const value = this.head.value;
-        this.head = this.head.next;
-        
-        if (!this.head) {
-            this.tail = null;
-        }
-        
-        this.length--;
-        return value;
-    }
-
-    // Remove at specific index
-    removeAt(index: number): T | undefined {
-        if (index < 0 || index >= this.length) return undefined;
-
-        if (index === 0) return this.removeFirst();
-        if (index === this.length - 1) return this.removeLast();
-
-        const prevNode = this.getNodeAt(index - 1);
-        const nodeToRemove = prevNode!.next;
-        prevNode!.next = nodeToRemove!.next;
-        this.length--;
-        
-        return nodeToRemove!.value;
-    }
-
-    // Check if list contains value
-    contains(value: T): boolean {
-        let current = this.head;
-        while (current) {
-            if (current.value === value) return true;
-            current = current.next;
-        }
-        return false;
-    }
-
-    // Get size of list
-    size(): number {
-        return this.length;
-    }
-
-    // Convert to array
-    toArray(): T[] {
-        const array: T[] = [];
-        let current = this.head;
-        
-        while (current) {
-            array.push(current.value);
-            current = current.next;
-        }
-        
+function mergeSort<T>(array: T[]): T[] {
+    // Base case: arrays with 0 or 1 element are already sorted
+    if (array.length <= 1) {
         return array;
     }
-
-    // Clear the list
-    clear(): void {
-        this.head = null;
-        this.tail = null;
-        this.length = 0;
-    }
-
-    // Iterate through list (forEach implementation)
-    forEach(callback: (value: T, index: number) => void): void {
-        let current = this.head;
-        let index = 0;
-        
-        while (current) {
-            callback(current.value, index);
-            current = current.next;
-            index++;
-        }
-    }
-
-    // Find first occurrence that matches predicate
-    find(predicate: (value: T) => boolean): T | undefined {
-        let current = this.head;
-        
-        while (current) {
-            if (predicate(current.value)) {
-                return current.value;
-            }
-            current = current.next;
-        }
-        
-        return undefined;
-    }
-}
-// Create a new linked list
-const list = new LinkedList<number>();
-
-// Add elements
-list.append(10);
-list.append(20);
-list.prepend(5);
-list.insertAt(1, 15);
-
-console.log(list.toArray()); // [5, 15, 10, 20]
-
-// Access elements
-console.log(list.getAt(2)); // 10
-
-// Remove elements
-list.removeAt(1);
-console.log(list.toArray()); // [5, 10, 20]
-
-list.removeFirst();
-console.log(list.toArray()); // [10, 20]
-
-// Check properties
-console.log(list.contains(10)); // true
-console.log(list.size()); // 2
-
-// Iterate
-list.forEach((value, index) => {
-    console.log(`Index ${index}: ${value}`);
-});
-
-// Find element
-const found = list.find(val => val > 15);
-console.log(found); // 20
-// Optional: Make it iterable
-class LinkedList<T> implements Iterable<T> {
-    // ... previous code
     
-    *[Symbol.iterator](): Iterator<T> {
-        let current = this.head;
-        while (current) {
-            yield current.value;
-            current = current.next;
-        }
-    }
+    // Find the middle point to divide the array into two halves
+    const middle = Math.floor(array.length / 2);
+    
+    // Divide the array into left and right halves
+    const leftHalf = array.slice(0, middle);
+    const rightHalf = array.slice(middle);
+    
+    // Recursively sort both halves
+    const sortedLeft = mergeSort(leftHalf);
+    const sortedRight = mergeSort(rightHalf);
+    
+    // Merge the sorted halves
+    return merge(sortedLeft, sortedRight);
 }
 
-// Now you can use for...of loops
-for (const value of list) {
-    console.log(value);
+function merge<T>(left: T[], right: T[]): T[] {
+    const result: T[] = [];
+    let leftIndex = 0;
+    let rightIndex = 0;
+    
+    // Compare elements from both arrays and add the smaller one to result
+    while (leftIndex < left.length && rightIndex < right.length) {
+        if (left[leftIndex] <= right[rightIndex]) {
+            result.push(left[leftIndex]);
+            leftIndex++;
+        } else {
+            result.push(right[rightIndex]);
+            rightIndex++;
+        }
+    }
+    
+    // Add remaining elements from left array (if any)
+    while (leftIndex < left.length) {
+        result.push(left[leftIndex]);
+        leftIndex++;
+    }
+    
+    // Add remaining elements from right array (if any)
+    while (rightIndex < right.length) {
+        result.push(right[rightIndex]);
+        rightIndex++;
+    }
+    
+    return result;
 }
+function mergeSort<T>(
+    array: T[], 
+    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
+): T[] {
+    if (array.length <= 1) {
+        return array;
+    }
+    
+    const middle = Math.floor(array.length / 2);
+    const leftHalf = array.slice(0, middle);
+    const rightHalf = array.slice(middle);
+    
+    const sortedLeft = mergeSort(leftHalf, compareFn);
+    const sortedRight = mergeSort(rightHalf, compareFn);
+    
+    return mergeWithComparator(sortedLeft, sortedRight, compareFn);
+}
+
+function mergeWithComparator<T>(
+    left: T[], 
+    right: T[], 
+    compareFn: (a: T, b: T) => number
+): T[] {
+    const result: T[] = [];
+    let leftIndex = 0;
+    let rightIndex = 0;
+    
+    while (leftIndex < left.length && rightIndex < right.length) {
+        if (compareFn(left[leftIndex], right[rightIndex]) <= 0) {
+            result.push(left[leftIndex]);
+            leftIndex++;
+        } else {
+            result.push(right[rightIndex]);
+            rightIndex++;
+        }
+    }
+    
+    // Add remaining elements
+    return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
+}
+function mergeSortInPlace<T>(array: T[]): void {
+    const tempArray = new Array(array.length);
+    mergeSortHelper(array, tempArray, 0, array.length - 1);
+}
+
+function mergeSortHelper<T>(
+    array: T[], 
+    tempArray: T[], 
+    left: number, 
+    right: number
+): void {
+    if (left >= right) {
+        return;
+    }
+    
+    const middle = Math.floor((left + right) / 2);
+    
+    // Recursively sort both halves
+    mergeSortHelper(array, tempArray, left, middle);
+    mergeSortHelper(array, tempArray, middle + 1, right);
+    
+    // Merge the sorted halves
+    mergeInPlace(array, tempArray, left, middle, right);
+}
+
+function mergeInPlace<T>(
+    array: T[], 
+    tempArray: T[], 
+    left: number, 
+    middle: number, 
+    right: number
+): void {
+    // Copy both halves into the temporary array
+    for (let i = left; i <= right; i++) {
+        tempArray[i] = array[i];
+    }
+    
+    let leftIndex = left;
+    let rightIndex = middle + 1;
+    let current = left;
+    
+    // Merge the two halves back into the original array
+    while (leftIndex <= middle && rightIndex <= right) {
+        if (tempArray[leftIndex] <= tempArray[rightIndex]) {
+            array[current] = tempArray[leftIndex];
+            leftIndex++;
+        } else {
+            array[current] = tempArray[rightIndex];
+            rightIndex++;
+        }
+        current++;
+    }
+    
+    // Copy the remaining elements of left half
+    while (leftIndex <= middle) {
+        array[current] = tempArray[leftIndex];
+        current++;
+        leftIndex++;
+    }
+}
+// Example 1: Sorting numbers
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log("Original:", numbers);
+console.log("Sorted:", mergeSort(numbers));
+// Output: [11, 12, 22, 25, 34, 64, 90]
+
+// Example 2: Sorting strings
+const fruits = ["banana", "apple", "cherry", "date"];
+console.log("Original:", fruits);
+console.log("Sorted:", mergeSort(fruits));
+// Output: ["apple", "banana", "cherry", "date"]
+
+// Example 3: Using custom comparator (descending order)
+const scores = [85, 92, 78, 96, 88];
+const descendingSort = mergeSort(scores, (a, b) => b - a);
+console.log("Descending:", descendingSort);
+// Output: [96, 92, 88, 85, 78]
+
+// Example 4: Sorting objects
+interface Person {
+    name: string;
+    age: number;
+}
+
+const people: Person[] = [
+    { name: "Alice", age: 30 },
+    { name: "Bob", age: 25 },
+    { name: "Charlie", age: 35 }
+];
+
+const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
+console.log("Sorted by age:", sortedByAge);
+// Output: [{name: "Bob", age: 25}, {name: "Alice", age: 30}, {name: "Charlie", age: 35}]
+
+// Example 5: In-place sorting
+const mutableArray = [5, 2, 8, 1, 9];
+console.log("Before in-place:", mutableArray);
+mergeSortInPlace(mutableArray);
+console.log("After in-place:", mutableArray);
