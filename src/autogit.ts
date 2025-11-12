@@ -1,57 +1,89 @@
-function isPalindrome(s: string): boolean {
-    // Remove non-alphanumeric characters and convert to lowercase
-    const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
-    let left = 0;
-    let right = cleaned.length - 1;
-    
-    while (left < right) {
-        if (cleaned[left] !== cleaned[right]) {
-            return false;
-        }
-        left++;
-        right--;
-    }
-    return true;
+function isPalindrome(str: string): boolean {
+    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const reversedStr = cleanStr.split('').reverse().join('');
+    return cleanStr === reversedStr;
 }
-function isPalindrome(s: string): boolean {
-    const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
-    return cleaned === cleaned.split('').reverse().join('');
-}
-function isValidPalindrome(str: string): boolean {
-    if (str.length === 0) return true;
-    
-    // Clean the string: remove non-alphanumeric chars and lowercase
-    const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
-    // Use two pointers to check from both ends
-    let left = 0;
-    let right = cleaned.length - 1;
-    
-    while (left < right) {
-        if (cleaned[left] !== cleaned[right]) {
-            return false;
-        }
-        left++;
-        right--;
-    }
-    
-    return true;
-}
-function isPalindromeRecursive(s: string): boolean {
-    const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
-    function checkPalindrome(str: string, start: number, end: number): boolean {
-        if (start >= end) return true;
-        if (str[start] !== str[end]) return false;
-        return checkPalindrome(str, start + 1, end - 1);
-    }
-    
-    return checkPalindrome(cleaned, 0, cleaned.length - 1);
-}
-// Test cases
+
+// Usage
+console.log(isPalindrome("racecar")); // true
+console.log(isPalindrome("hello"));   // false
 console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("race a car")); // false
-console.log(isPalindrome(" ")); // true
-console.log(isPalindrome("0P")); // false
-console.log(isPalindrome("madam")); // true
+function isPalindrome(str: string): boolean {
+    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    let left = 0;
+    let right = cleanStr.length - 1;
+
+    while (left < right) {
+        if (cleanStr[left] !== cleanStr[right]) {
+            return false;
+        }
+        left++;
+        right--;
+    }
+    return true;
+}
+function isPalindromeCaseSensitive(str: string): boolean {
+    const cleanStr = str.replace(/[^a-zA-Z0-9]/g, '');
+    return cleanStr === cleanStr.split('').reverse().join('');
+}
+
+// Usage
+console.log(isPalindromeCaseSensitive("Racecar")); // false (case-sensitive)
+console.log(isPalindromeCaseSensitive("racecar")); // true
+function isPalindromeRecursive(str: string): boolean {
+    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    if (cleanStr.length <= 1) return true;
+    if (cleanStr[0] !== cleanStr[cleanStr.length - 1]) return false;
+    
+    return isPalindromeRecursive(cleanStr.substring(1, cleanStr.length - 1));
+}
+function isPalindrome(str: string): boolean {
+    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return cleanStr.split('').every((char, index) => 
+        char === cleanStr[cleanStr.length - 1 - index]
+    );
+}
+class PalindromeChecker {
+    static isPalindrome(str: string): boolean {
+        const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const reversedStr = cleanStr.split('').reverse().join('');
+        return cleanStr === reversedStr;
+    }
+
+    // Alternative two-pointer method
+    static isPalindromeEfficient(str: string): boolean {
+        const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+        let left = 0;
+        let right = cleanStr.length - 1;
+
+        while (left < right) {
+            if (cleanStr[left] !== cleanStr[right]) {
+                return false;
+            }
+            left++;
+            right--;
+        }
+        return true;
+    }
+}
+
+// Test cases
+const testCases = [
+    "racecar",
+    "hello",
+    "A man, a plan, a canal: Panama",
+    "Madam",
+    "12321",
+    "not a palindrome"
+];
+
+testCases.forEach(test => {
+    console.log(`"${test}" is palindrome: ${PalindromeChecker.isPalindrome(test)}`);
+});
+"racecar" is palindrome: true
+"hello" is palindrome: false
+"A man, a plan, a canal: Panama" is palindrome: true
+"Madam" is palindrome: true
+"12321" is palindrome: true
+"not a palindrome" is palindrome: false
