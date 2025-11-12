@@ -1,82 +1,109 @@
-interface ListNode<T> {
-    value: T;
-    next: ListNode<T> | null;
+function findFirstRepeatedChar(str: string): string | null {
+    const seen = new Set<string>();
+    
+    for (const char of str) {
+        if (seen.has(char)) {
+            return char;
+        }
+        seen.add(char);
+    }
+    
+    return null;
 }
 
-function getLengthIterative(head: ListNode<any> | null): number {
-    let length = 0;
-    let current = head;
+// Example usage
+console.log(findFirstRepeatedChar("typescript")); // "p"
+console.log(findFirstRepeatedChar("hello"));      // "l"
+console.log(findFirstRepeatedChar("world"));      // null
+function findFirstRepeatedChar(str: string): string | null {
+    const charCount: { [key: string]: number } = {};
     
-    while (current !== null) {
-        length++;
-        current = current.next;
+    for (const char of str) {
+        if (charCount[char]) {
+            return char;
+        }
+        charCount[char] = 1;
     }
     
-    return length;
+    return null;
 }
-function getLengthRecursive(head: ListNode<any> | null): number {
-    if (head === null) {
-        return 0;
-    }
-    return 1 + getLengthRecursive(head.next);
-}
-class LinkedListNode<T> {
-    value: T;
-    next: LinkedListNode<T> | null;
+function findFirstRepeatedChar(str: string): string | null {
+    const chars = str.split('');
     
-    constructor(value: T, next: LinkedListNode<T> | null = null) {
-        this.value = value;
-        this.next = next;
+    for (let i = 0; i < chars.length; i++) {
+        if (chars.indexOf(chars[i]) !== i) {
+            return chars[i];
+        }
     }
+    
+    return null;
+}
+function findFirstRepeatedChar(str: string): string | null {
+    if (typeof str !== 'string' || str.length === 0) {
+        return null;
+    }
+    
+    const seen = new Set<string>();
+    
+    for (const char of str) {
+        if (seen.has(char)) {
+            return char;
+        }
+        seen.add(char);
+    }
+    
+    return null;
 }
 
-class LinkedList<T> {
-    head: LinkedListNode<T> | null;
+// With additional information
+interface RepeatedCharResult {
+    char: string;
+    position: number;
+    firstOccurrence: number;
+}
+
+function findFirstRepeatedCharWithDetails(str: string): RepeatedCharResult | null {
+    const charPositions: { [key: string]: number } = {};
     
-    constructor() {
-        this.head = null;
-    }
-    
-    getLength(): number {
-        let length = 0;
-        let current = this.head;
+    for (let i = 0; i < str.length; i++) {
+        const char = str[i];
         
-        while (current !== null) {
-            length++;
-            current = current.next;
+        if (charPositions[char] !== undefined) {
+            return {
+                char: char,
+                position: i,
+                firstOccurrence: charPositions[char]
+            };
         }
         
-        return length;
+        charPositions[char] = i;
     }
     
-    // Alternative recursive implementation
-    getLengthRecursive(node: LinkedListNode<T> | null = this.head): number {
-        if (node === null) {
-            return 0;
-        }
-        return 1 + this.getLengthRecursive(node.next);
-    }
+    return null;
 }
-// Create a linked list: 1 -> 2 -> 3 -> null
-const node1 = { value: 1, next: null };
-const node2 = { value: 2, next: null };
-const node3 = { value: 3, next: null };
 
-node1.next = node2;
-node2.next = node3;
+// Example with details
+const result = findFirstRepeatedCharWithDetails("programming");
+console.log(result); 
+// { char: "r", position: 2, firstOccurrence: 1 }
+const findFirstRepeatedChar = (str: string): string | null => 
+    str.split('').find((char, index, arr) => arr.indexOf(char) !== index) || null;
+// Test function
+function testFindFirstRepeatedChar(): void {
+    const testCases = [
+        { input: "hello", expected: "l" },
+        { input: "typescript", expected: "p" },
+        { input: "world", expected: null },
+        { input: "aabbcc", expected: "a" },
+        { input: "abcde", expected: null },
+        { input: "", expected: null },
+    ];
+    
+    testCases.forEach(({ input, expected }, index) => {
+        const result = findFirstRepeatedChar(input);
+        console.log(`Test ${index + 1}: ${result === expected ? 'PASS' : 'FAIL'}`);
+        console.log(`  Input: "${input}", Expected: ${expected}, Got: ${result}`);
+    });
+}
 
-// Test the functions
-console.log(getLengthIterative(node1)); // Output: 3
-console.log(getLengthRecursive(node1)); // Output: 3
-
-// Using the LinkedList class
-const list = new LinkedList<number>();
-list.head = node1;
-console.log(list.getLength()); // Output: 3
-console.log(list.getLengthRecursive()); // Output: 3
-// Empty list
-console.log(getLengthIterative(null)); // Output: 0
-
-// Single node list
-const singleNode = { value: 1, next: null };
-console.log(getLengthIterative(singleNode)); // Output: 1
+testFindFirstRepeatedChar();
