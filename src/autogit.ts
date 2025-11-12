@@ -1,259 +1,267 @@
-enum Color {
-  RED = 'RED',
-  BLACK = 'BLACK'
-}
+type HashTableEntry<K, V> = {
+  key: K;
+  value: V;
+};
 
-class RBNode<T> {
-  data: T;
-  color: Color;
-  left: RBNode<T> | null;
-  right: RBNode<T> | null;
-  parent: RBNode<T> | null;
+class HashTable<K, V> {
+  private buckets: Array<Array<HashTableEntry<K, V>>>;
+  private size: number;
+  private capacity: number;
+  private readonly loadFactor: number = 0.75;
 
-  constructor(data: T) {
-    this.data = data;
-    this.color = Color.RED; // New nodes are always red initially
-    this.left = null;
-    this.right = null;
-    this.parent = null;
-  }
-}
-
-class RedBlackTree<T> {
-  private root: RBNode<T> | null;
-  private comparator: (a: T, b: T) => number;
-
-  constructor(comparator: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0) {
-    this.root = null;
-    this.comparator = comparator;
-  }
-
-  // Public methods
-  public insert(data: T): void {
-    const newNode = new RBNode(data);
+  constructor(initialCapacity: number = 16) {
+    this.capacity = initialCapacity;
+    this.size = 0;
+    this.buckets = new Array(this.capacity);
     
-    if (this.root === null) {
-      this.root = newNode;
-      this.root.color = Color.BLACK; // Root is always black
-      return;
+    // Initialize empty arrays for each bucket
+    for (let i = 0; i < this.capacity; i++) {
+      this.buckets[i] = [];
     }
-
-    this.insertNode(this.root, newNode);
-    this.fixViolation(newNode);
   }
 
-  public search(data: T): boolean {
-    return this.searchNode(this.root, data);
+  /**
+   * Simple hash function - can be customized based on key type
+   */
+  private hash(key: K): number {
+    const keyString = String(key);
+    let hash = 0;
+    
+    for (let i = 0; i < keyString.length; i++) {
+      hash = ((hash << 5) - hash) + keyString.charCodeAt(i);
+      hash |= 0; // Convert to 32-bit integer
+    }
+    
+    return Math.abs(hash) % this.capacity;
   }
 
-  public inOrderTraversal(callback: (data: T) => void): void {
-    this.inOrder(this.root, callback);
-  }
-
-  // Private methods
-  private insertNode(root: RBNode<T>, newNode: RBNode<T>): void {
-    if (this.comparator(newNode.data, root.data) < 0) {
-      if (root.left === null) {
-        root.left = newNode;
-        newNode.parent = root;
-      } else {
-        this.insertNode(root.left, newNode);
-      }
-    } else {
-      if (root.right === null) {
-        root.right = newNode;
-        newNode.parent = root;
-      } else {
-        this.insertNode(root.right, newNode);
+  /**
+   * Insert or update a key-value pair
+   */
+  set(key: K, value: V): void {
+    const index = this.hash(key);
+    const bucket = this.buckets[index];
+    
+    // Check if key already exists
+    for (let i = 0; i < bucket.length; i++) {
+      if (bucket[i].key === key) {
+        bucket[i].value = value;
+        return;
       }
     }
-  }
-
-  private searchNode(node: RBNode<T> | null, data: T): boolean {
-    if (node === null) return false;
-
-    const comparison = this.comparator(data, node.data);
     
-    if (comparison === 0) return true;
-    if (comparison < 0) return this.searchNode(node.left, data);
-    return this.searchNode(node.right, data);
+    // Key doesn't exist, add new entry
+    bucket.push({ key, value });
+    this.size++;
+    
+    // Resize if needed
+    if (this.size / this.capacity > this.loadFactor) {
+      this.resize();
+    }
   }
 
-  private fixViolation(node: RBNode<T>): void {
-    let currentNode = node;
-    let parent = node.parent;
-
-    while (parent !== null && parent.color === Color.RED) {
-      const grandParent = parent.parent!;
-      
-      if (parent === grandParent.left) {
-        const uncle = grandParent.right;
-        
-        if (uncle !== null && uncle.color === Color.RED) {
-          // Case 1: Uncle is red
-          grandParent.color = Color.RED;
-          parent.color = Color.BLACK;
-          uncle.color = Color.BLACK;
-          currentNode = grandParent;
-        } else {
-          // Case 2: Uncle is black and node is right child
-          if (currentNode === parent.right) {
-            this.rotateLeft(parent);
-            currentNode = parent;
-            parent = currentNode.parent!;
-          }
-          
-          // Case 3: Uncle is black and node is left child
-          parent.color = Color.BLACK;
-          grandParent.color = Color.RED;
-          this.rotateRight(grandParent);
-        }
-      } else {
-        const uncle = grandParent.left;
-        
-        if (uncle !== null && uncle.color === Color.RED) {
-          // Case 1: Uncle is red (mirror case)
-          grandParent.color = Color.RED;
-          parent.color = Color.BLACK;
-          uncle.color = Color.BLACK;
-          currentNode = grandParent;
-        } else {
-          // Case 2: Uncle is black and node is left child (mirror case)
-          if (currentNode === parent.left) {
-            this.rotateRight(parent);
-            currentNode = parent;
-            parent = currentNode.parent!;
-          }
-          
-          // Case 3: Uncle is black and node is right child (mirror case)
-          parent.color = Color.BLACK;
-          grandParent.color = Color.RED;
-          this.rotateLeft(grandParent);
-        }
+  /**
+   * Get value by key
+   */
+  get(key: K): V | undefined {
+    const index = this.hash(key);
+    const bucket = this.buckets[index];
+    
+    for (const entry of bucket) {
+      if (entry.key === key) {
+        return entry.value;
       }
-      
-      parent = currentNode.parent;
     }
     
-    // Ensure root is always black
-    if (this.root !== null) {
-      this.root.color = Color.BLACK;
-    }
+    return undefined;
   }
 
-  private rotateLeft(node: RBNode<T>): void {
-    const rightChild = node.right!;
-    node.right = rightChild.left;
-
-    if (rightChild.left !== null) {
-      rightChild.left.parent = node;
-    }
-
-    rightChild.parent = node.parent;
-
-    if (node.parent === null) {
-      this.root = rightChild;
-    } else if (node === node.parent.left) {
-      node.parent.left = rightChild;
-    } else {
-      node.parent.right = rightChild;
-    }
-
-    rightChild.left = node;
-    node.parent = rightChild;
+  /**
+   * Check if key exists
+   */
+  has(key: K): boolean {
+    return this.get(key) !== undefined;
   }
 
-  private rotateRight(node: RBNode<T>): void {
-    const leftChild = node.left!;
-    node.left = leftChild.right;
-
-    if (leftChild.right !== null) {
-      leftChild.right.parent = node;
-    }
-
-    leftChild.parent = node.parent;
-
-    if (node.parent === null) {
-      this.root = leftChild;
-    } else if (node === node.parent.right) {
-      node.parent.right = leftChild;
-    } else {
-      node.parent.left = leftChild;
-    }
-
-    leftChild.right = node;
-    node.parent = leftChild;
-  }
-
-  private inOrder(node: RBNode<T> | null, callback: (data: T) => void): void {
-    if (node !== null) {
-      this.inOrder(node.left, callback);
-      callback(node.data);
-      this.inOrder(node.right, callback);
-    }
-  }
-
-  // Utility methods
-  public getHeight(): number {
-    return this.calculateHeight(this.root);
-  }
-
-  private calculateHeight(node: RBNode<T> | null): number {
-    if (node === null) return 0;
-    return 1 + Math.max(
-      this.calculateHeight(node.left),
-      this.calculateHeight(node.right)
-    );
-  }
-
-  public printTree(): void {
-    this.printNode(this.root, 0);
-  }
-
-  private printNode(node: RBNode<T> | null, depth: number): void {
-    if (node === null) return;
+  /**
+   * Remove key-value pair
+   */
+  delete(key: K): boolean {
+    const index = this.hash(key);
+    const bucket = this.buckets[index];
     
-    this.printNode(node.right, depth + 1);
+    for (let i = 0; i < bucket.length; i++) {
+      if (bucket[i].key === key) {
+        bucket.splice(i, 1);
+        this.size--;
+        return true;
+      }
+    }
     
-    const indent = ' '.repeat(depth * 4);
-    const colorStr = node.color === Color.RED ? 'R' : 'B';
-    console.log(`${indent}${node.data} (${colorStr})`);
+    return false;
+  }
+
+  /**
+   * Get all keys
+   */
+  keys(): K[] {
+    const keys: K[] = [];
     
-    this.printNode(node.left, depth + 1);
+    for (const bucket of this.buckets) {
+      for (const entry of bucket) {
+        keys.push(entry.key);
+      }
+    }
+    
+    return keys;
+  }
+
+  /**
+   * Get all values
+   */
+  values(): V[] {
+    const values: V[] = [];
+    
+    for (const bucket of this.buckets) {
+      for (const entry of bucket) {
+        values.push(entry.value);
+      }
+    }
+    
+    return values;
+  }
+
+  /**
+   * Get all entries
+   */
+  entries(): Array<[K, V]> {
+    const entries: Array<[K, V]> = [];
+    
+    for (const bucket of this.buckets) {
+      for (const entry of bucket) {
+        entries.push([entry.key, entry.value]);
+      }
+    }
+    
+    return entries;
+  }
+
+  /**
+   * Clear the hash table
+   */
+  clear(): void {
+    this.buckets = new Array(this.capacity);
+    for (let i = 0; i < this.capacity; i++) {
+      this.buckets[i] = [];
+    }
+    this.size = 0;
+  }
+
+  /**
+   * Get current size
+   */
+  getSize(): number {
+    return this.size;
+  }
+
+  /**
+   * Resize the buckets array when load factor is exceeded
+   */
+  private resize(): void {
+    const oldBuckets = this.buckets;
+    this.capacity *= 2;
+    this.buckets = new Array(this.capacity);
+    this.size = 0;
+    
+    // Initialize new buckets
+    for (let i = 0; i < this.capacity; i++) {
+      this.buckets[i] = [];
+    }
+    
+    // Rehash all entries
+    for (const bucket of oldBuckets) {
+      for (const entry of bucket) {
+        this.set(entry.key, entry.value);
+      }
+    }
   }
 }
-// Example usage with numbers
-const numberTree = new RedBlackTree<number>((a, b) => a - b);
+class AdvancedHashTable<K, V> extends HashTable<K, V> {
+  /**
+   * Improved hash function that handles different types better
+   */
+  protected hash(key: K): number {
+    if (typeof key === 'number') {
+      return this.hashNumber(key);
+    } else if (typeof key === 'string') {
+      return this.hashString(key);
+    } else if (typeof key === 'object') {
+      return this.hashObject(key);
+    }
+    
+    return this.hashString(String(key));
+  }
 
-numberTree.insert(10);
-numberTree.insert(20);
-numberTree.insert(30);
-numberTree.insert(15);
-numberTree.insert(25);
-numberTree.insert(5);
+  private hashString(str: string): number {
+    let hash = 5381;
+    
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) + hash) + str.charCodeAt(i);
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    
+    return Math.abs(hash) % this.capacity;
+  }
 
-console.log('In-order traversal:');
-numberTree.inOrderTraversal(data => console.log(data));
-// Output: 5, 10, 15, 20, 25, 30
+  private hashNumber(num: number): number {
+    // Using multiplication method for better distribution
+    const A = 0.6180339887; // Golden ratio
+    return Math.floor(this.capacity * ((num * A) % 1));
+  }
 
-console.log('Tree structure:');
-numberTree.printTree();
+  private hashObject(obj: any): number {
+    // Create a string representation of the object
+    const objString = JSON.stringify(obj);
+    return this.hashString(objString);
+  }
+}
+// Basic usage
+const hashTable = new HashTable<string, number>();
 
-console.log('Search for 15:', numberTree.search(15)); // true
-console.log('Search for 100:', numberTree.search(100)); // false
-console.log('Tree height:', numberTree.getHeight());
+// Set values
+hashTable.set('apple', 10);
+hashTable.set('banana', 20);
+hashTable.set('cherry', 30);
 
-// Example with custom objects
-interface Person {
+// Get values
+console.log(hashTable.get('apple')); // 10
+console.log(hashTable.get('banana')); // 20
+
+// Check existence
+console.log(hashTable.has('cherry')); // true
+console.log(hashTable.has('date')); // false
+
+// Delete
+hashTable.delete('banana');
+console.log(hashTable.has('banana')); // false
+
+// Get all keys and values
+console.log(hashTable.keys()); // ['apple', 'cherry']
+console.log(hashTable.values()); // [10, 30]
+console.log(hashTable.entries()); // [['apple', 10], ['cherry', 30]]
+
+// With custom objects as keys
+interface User {
   id: number;
   name: string;
 }
 
-const personTree = new RedBlackTree<Person>((a, b) => a.id - b.id);
+const userTable = new AdvancedHashTable<User, string>();
 
-personTree.insert({ id: 3, name: 'Charlie' });
-personTree.insert({ id: 1, name: 'Alice' });
-personTree.insert({ id: 2, name: 'Bob' });
+const user1: User = { id: 1, name: 'Alice' };
+const user2: User = { id: 2, name: 'Bob' };
 
-console.log('People in order:');
-personTree.inOrderTraversal(person => console.log(`${person.id}: ${person.name}`));
+userTable.set(user1, 'admin');
+userTable.set(user2, 'user');
+
+console.log(userTable.get(user1)); // 'admin'
