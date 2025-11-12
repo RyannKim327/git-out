@@ -1,65 +1,84 @@
-function isPalindrome(s: string): boolean {
-    let left = 0;
-    let right = s.length - 1;
+function findSecondLargest(arr: number[]): number | null {
+    if (arr.length < 2) return null;
     
-    while (left < right) {
-        // Skip non-alphanumeric characters from left
-        while (left < right && !isAlphanumeric(s[left])) {
-            left++;
-        }
-        
-        // Skip non-alphanumeric characters from right
-        while (left < right && !isAlphanumeric(s[right])) {
-            right--;
-        }
-        
-        // Compare characters (case-insensitive)
-        if (s[left].toLowerCase() !== s[right].toLowerCase()) {
-            return false;
-        }
-        
-        left++;
-        right--;
-    }
-    
-    return true;
+    const sorted = [...arr].sort((a, b) => b - a);
+    return sorted[1];
 }
 
-function isAlphanumeric(char: string): boolean {
-    const code = char.charCodeAt(0);
-    return (code >= 48 && code <= 57) || // numeric (0-9)
-           (code >= 65 && code <= 90) || // uppercase A-Z
-           (code >= 97 && code <= 122);  // lowercase a-z
-}
-function isPalindrome(s: string): boolean {
-    const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
-    let left = 0;
-    let right = cleaned.length - 1;
+// Example usage
+const numbers = [10, 5, 8, 20, 15];
+console.log(findSecondLargest(numbers)); // Output: 15
+function findSecondLargestEfficient(arr: number[]): number | null {
+    if (arr.length < 2) return null;
     
-    while (left < right) {
-        if (cleaned[left] !== cleaned[right]) {
-            return false;
+    let largest = -Infinity;
+    let secondLargest = -Infinity;
+    
+    for (const num of arr) {
+        if (num > largest) {
+            secondLargest = largest;
+            largest = num;
+        } else if (num > secondLargest && num !== largest) {
+            secondLargest = num;
         }
-        left++;
-        right--;
     }
     
-    return true;
+    return secondLargest !== -Infinity ? secondLargest : null;
 }
-function isPalindrome(s: string, left: number = 0, right: number = s.length - 1): boolean {
-    // Skip non-alphanumeric characters
-    while (left < right && !isAlphanumeric(s[left])) left++;
-    while (left < right && !isAlphanumeric(s[right])) right--;
+
+// Example usage
+console.log(findSecondLargestEfficient(numbers)); // Output: 15
+function findSecondLargestUnique(arr: number[]): number | null {
+    const uniqueSorted = [...new Set(arr)].sort((a, b) => b - a);
+    return uniqueSorted.length >= 2 ? uniqueSorted[1] : null;
+}
+
+// Example with duplicates
+const numbersWithDuplicates = [10, 10, 8, 20, 15, 20];
+console.log(findSecondLargestUnique(numbersWithDuplicates)); // Output: 15
+function findSecondLargestReduce(arr: number[]): number | null {
+    if (arr.length < 2) return null;
     
-    if (left >= right) return true;
+    const result = arr.reduce((acc, curr) => {
+        if (curr > acc.largest) {
+            acc.secondLargest = acc.largest;
+            acc.largest = curr;
+        } else if (curr > acc.secondLargest && curr !== acc.largest) {
+            acc.secondLargest = curr;
+        }
+        return acc;
+    }, { largest: -Infinity, secondLargest: -Infinity });
     
-    if (s[left].toLowerCase() !== s[right].toLowerCase()) {
-        return false;
+    return result.secondLargest !== -Infinity ? result.secondLargest : null;
+}
+function findSecondLargestSafe(arr: number[]): number | null {
+    // Validate input
+    if (!Array.isArray(arr)) {
+        throw new Error('Input must be an array');
     }
     
-    return isPalindrome(s, left + 1, right - 1);
+    if (arr.length < 2) {
+        return null;
+    }
+    
+    // Handle non-number values
+    const numericArray = arr.filter(item => typeof item === 'number');
+    
+    if (numericArray.length < 2) {
+        return null;
+    }
+    
+    let largest = -Infinity;
+    let secondLargest = -Infinity;
+    
+    for (const num of numericArray) {
+        if (num > largest) {
+            secondLargest = largest;
+            largest = num;
+        } else if (num > secondLargest && num !== largest) {
+            secondLargest = num;
+        }
+    }
+    
+    return secondLargest !== -Infinity ? secondLargest : null;
 }
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("race a car")); // false
-console.log(isPalindrome(" ")); // true
-console.log(isPalindrome("0P")); // false
