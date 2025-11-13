@@ -1,54 +1,25 @@
-/**
- * Tarjan's SCC algorithm.
- * Returns an array of SCCs, each SCC is an array of vertex indices.
- * Vertices are assumed to be 0-based integers.
- */
-export function tarjanSCC(adj: number[][]): number[][] {
-  const n = adj.length;
-  const idx = new Array<number>(n).fill(-1);
-  const low = new Array<number>(n).fill(-1);
-  const onStack = new Array<boolean>(n).fill(false);
-  const stack: number[] = [];
-  const sccs: number[][] = [];
-  let id = 0;
-
-  function dfs(v: number) {
-    idx[v] = low[v] = id++;
-    stack.push(v);
-    onStack[v] = true;
-
-    for (const w of adj[v]) {
-      if (idx[w] === -1) {
-        // Tree edge
-        dfs(w);
-        low[v] = Math.min(low[v], low[w]);
-      } else if (onStack[w]) {
-        // Back or cross edge to current SCC
-        low[v] = Math.min(low[v], idx[w]);
-      }
-    }
-
-    // Root of an SCC
-    if (low[v] === idx[v]) {
-      const scc: number[] = [];
-      let w: number;
-      do {
-        w = stack.pop()!;
-        onStack[w] = false;
-        scc.push(w);
-      } while (w !== v);
-      sccs.push(scc);
-    }
-  }
-
-  for (let i = 0; i < n; i++) if (idx[i] === -1) dfs(i);
-  return sccs;
+const text: string = "Hello WORLD!";
+const lowercaseText: string = text.toLowerCase();
+console.log(lowercaseText); // Output: "hello world!"
+function toLowerCaseSafe(input: string): string {
+    return input.toLowerCase();
 }
 
-/* ---------- Usage example ---------- */
-if (require.main === module) {
-  // Graph: 0 → 1 → 2 → 0, 1 → 3 → 4 → 3
-  const g: number[][] = [[1], [2, 3], [0], [4], [3]];
-  console.log(tarjanSCC(g)); // [ [ 4, 3 ], [ 2, 0, 1 ] ]
+const result = toLowerCaseSafe("TYPE Script"); // "type script"
+function safeToLowerCase(input: string | null | undefined): string {
+    if (input == null) {
+        return "";
+    }
+    return input.toLowerCase();
 }
-npx ts-node tarjan.ts
+
+// Usage
+const text1 = safeToLowerCase("HELLO"); // "hello"
+const text2 = safeToLowerCase(null); // ""
+const text3 = safeToLowerCase(undefined); // ""
+const name: string = "JOHN DOE";
+const greeting = `Hello, ${name.toLowerCase()}!`;
+console.log(greeting); // "Hello, john doe!"
+const names: string[] = ["ALICE", "BOB", "CHARLIE"];
+const lowercaseNames = names.map(name => name.toLowerCase());
+console.log(lowercaseNames); // ["alice", "bob", "charlie"]
