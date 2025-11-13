@@ -1,40 +1,48 @@
-function longestCommonSubsequence(text1: string, text2: string): string {
-    const m = text1.length;
-    const n = text2.length;
-    
-    // Create DP table with (m+1) x (n+1) dimensions initialized to 0
-    const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+hash(S) = (S[0]*base^(m-1) + S[1]*base^(m-2) + ... + S[m-1]*base^0) mod prime
+function rabinKarp(text: string, pattern: string): number[] {
+    const result: number[] = [];
+    const n = text.length;
+    const m = pattern.length;
+    if (m > n) return result;
 
-    // Build DP table
-    for (let i = 1; i <= m; i++) {
-        for (let j = 1; j <= n; j++) {
-            if (text1[i - 1] === text2[j - 1]) {
-                dp[i][j] = dp[i - 1][j - 1] + 1;
-            } else {
-                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+    const base = 256; // number of possible chars
+    const prime = 101; // a prime modulus for hashing
+
+    let patternHash = 0;
+    let textHash = 0;
+    let h = 1;
+
+    // h = base^(m-1) % prime
+    for (let i = 0; i < m - 1; i++) {
+        h = (h * base) % prime;
+    }
+
+    // Calculate initial hashes
+    for (let i = 0; i < m; i++) {
+        patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
+        textHash = (base * textHash + text.charCodeAt(i)) % prime;
+    }
+
+    // Slide through the text
+    for (let i = 0; i <= n - m; i++) {
+        // If hashes match, check actual substring
+        if (patternHash === textHash) {
+            if (text.substr(i, m) === pattern) {
+                result.push(i);
+            }
+        }
+
+        // Roll the hash forward
+        if (i < n - m) {
+            textHash = (base * (textHash - text.charCodeAt(i) * h) + text.charCodeAt(i + m)) % prime;
+            // handle negative hash
+            if (textHash < 0) {
+                textHash += prime;
             }
         }
     }
-
-    // Reconstruct LCS from DP table
-    let i = m;
-    let j = n;
-    const lcsChars: string[] = [];
-
-    while (i > 0 && j > 0) {
-        if (text1[i - 1] === text2[j - 1]) {
-            lcsChars.unshift(text1[i - 1]);
-            i--;
-            j--;
-        } else if (dp[i - 1][j] > dp[i][j - 1]) {
-            i--;
-        } else {
-            j--;
-        }
-    }
-
-    return lcsChars.join('');
+    return result;
 }
-console.log(longestCommonSubsequence("ABCBDAB", "BDCAB"));  // Outputs "BCAB" (or "BDAB")
-console.log(longestCommonSubsequence("abcde", "ace"));     // Outputs "ace"
-console.log(longestCommonSubsequence("abc", "def"));       // Outputs ""
+
+// Example usage:
+console.log(rabinKarp("abracadabra", "abra")); // Output: [0, 7]
