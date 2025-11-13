@@ -1,58 +1,174 @@
-const numbers: number[] = [5, 2, 8, 1, 9, 3];
+function mergeSort<T>(array: T[]): T[] {
+    // Base case: arrays with 0 or 1 element are already sorted
+    if (array.length <= 1) {
+        return array;
+    }
 
-// Ascending order (default)
-const ascending = [...numbers].sort((a, b) => a - b);
-console.log(ascending); // [1, 2, 3, 5, 8, 9]
+    // Find the middle point to divide the array into two halves
+    const middle = Math.floor(array.length / 2);
+    
+    // Divide the array into left and right halves
+    const left = array.slice(0, middle);
+    const right = array.slice(middle);
 
-// Descending order
-const descending = [...numbers].sort((a, b) => b - a);
-console.log(descending); // [9, 8, 5, 3, 2, 1]
-const numbers: number[] = [5, 2, 8, 1, 9, 3];
-
-// Ascending with explicit typing
-const ascending = numbers.sort((a: number, b: number): number => a - b);
-
-// Descending with explicit typing
-const descending = numbers.sort((a: number, b: number): number => b - a);
-const originalNumbers: number[] = [5, 2, 8, 1, 9, 3];
-
-// Create a new sorted array without modifying original
-const sortedNumbers = [...originalNumbers].sort((a, b) => a - b);
-
-console.log(originalNumbers); // [5, 2, 8, 1, 9, 3] (unchanged)
-console.log(sortedNumbers);    // [1, 2, 3, 5, 8, 9]
-type SortOrder = 'asc' | 'desc';
-
-function sortNumbers(numbers: number[], order: SortOrder = 'asc'): number[] {
-    return [...numbers].sort((a, b) => {
-        return order === 'asc' ? a - b : b - a;
-    });
+    // Recursively sort both halves and merge them
+    return merge(mergeSort(left), mergeSort(right));
 }
 
-const numbers: number[] = [5, 2, 8, 1, 9, 3];
+function merge<T>(left: T[], right: T[]): T[] {
+    const result: T[] = [];
+    let leftIndex = 0;
+    let rightIndex = 0;
 
-console.log(sortNumbers(numbers));           // [1, 2, 3, 5, 8, 9]
-console.log(sortNumbers(numbers, 'desc'));   // [9, 8, 5, 3, 2, 1]
-function sortArray<T extends number>(
-    arr: T[], 
-    compareFn?: (a: T, b: T) => number
+    // Compare elements from both arrays and add the smaller one to result
+    while (leftIndex < left.length && rightIndex < right.length) {
+        if (left[leftIndex] < right[rightIndex]) {
+            result.push(left[leftIndex]);
+            leftIndex++;
+        } else {
+            result.push(right[rightIndex]);
+            rightIndex++;
+        }
+    }
+
+    // Add remaining elements from left array
+    while (leftIndex < left.length) {
+        result.push(left[leftIndex]);
+        leftIndex++;
+    }
+
+    // Add remaining elements from right array
+    while (rightIndex < right.length) {
+        result.push(right[rightIndex]);
+        rightIndex++;
+    }
+
+    return result;
+}
+// Example usage with numbers
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+const sortedNumbers = mergeSort(numbers);
+console.log(sortedNumbers); // [11, 12, 22, 25, 34, 64, 90]
+
+// Example usage with strings
+const strings = ["banana", "apple", "cherry", "date"];
+const sortedStrings = mergeSort(strings);
+console.log(sortedStrings); // ["apple", "banana", "cherry", "date"]
+function mergeSortWithComparator<T>(
+    array: T[], 
+    comparator: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
 ): T[] {
-    return [...arr].sort(compareFn);
+    if (array.length <= 1) {
+        return array;
+    }
+
+    const middle = Math.floor(array.length / 2);
+    const left = array.slice(0, middle);
+    const right = array.slice(middle);
+
+    return mergeWithComparator(
+        mergeSortWithComparator(left, comparator),
+        mergeSortWithComparator(right, comparator),
+        comparator
+    );
 }
 
-const numbers = [5, 2, 8, 1, 9, 3];
-const sorted = sortArray(numbers, (a, b) => a - b);
-function safeSortNumbers(numbers: number[]): number[] {
-    if (!Array.isArray(numbers)) {
-        throw new Error('Input must be an array');
+function mergeWithComparator<T>(
+    left: T[], 
+    right: T[], 
+    comparator: (a: T, b: T) => number
+): T[] {
+    const result: T[] = [];
+    let leftIndex = 0;
+    let rightIndex = 0;
+
+    while (leftIndex < left.length && rightIndex < right.length) {
+        if (comparator(left[leftIndex], right[rightIndex]) <= 0) {
+            result.push(left[leftIndex]);
+            leftIndex++;
+        } else {
+            result.push(right[rightIndex]);
+            rightIndex++;
+        }
     }
+
+    return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
+}
+// Custom comparator for descending order
+const descendingComparator = (a: number, b: number) => b - a;
+const descendingSorted = mergeSortWithComparator(numbers, descendingComparator);
+console.log(descendingSorted); // [90, 64, 34, 25, 22, 12, 11]
+
+// Custom comparator for objects
+interface Person {
+    name: string;
+    age: number;
+}
+
+const people: Person[] = [
+    { name: "Alice", age: 25 },
+    { name: "Bob", age: 30 },
+    { name: "Charlie", age: 20 }
+];
+
+const sortedByAge = mergeSortWithComparator(
+    people, 
+    (a, b) => a.age - b.age
+);
+console.log(sortedByAge); // Sorted by age ascending
+function mergeSortInPlace<T>(array: T[]): T[] {
+    if (array.length <= 1) return array;
+
+    const auxiliaryArray = [...array];
+    mergeSortHelper(array, 0, array.length - 1, auxiliaryArray);
+    return array;
+}
+
+function mergeSortHelper<T>(
+    mainArray: T[],
+    startIdx: number,
+    endIdx: number,
+    auxiliaryArray: T[]
+): void {
+    if (startIdx === endIdx) return;
     
-    if (numbers.length <= 1) {
-        return [...numbers];
+    const middleIdx = Math.floor((startIdx + endIdx) / 2);
+    mergeSortHelper(auxiliaryArray, startIdx, middleIdx, mainArray);
+    mergeSortHelper(auxiliaryArray, middleIdx + 1, endIdx, mainArray);
+    mergeInPlace(mainArray, startIdx, middleIdx, endIdx, auxiliaryArray);
+}
+
+function mergeInPlace<T>(
+    mainArray: T[],
+    startIdx: number,
+    middleIdx: number,
+    endIdx: number,
+    auxiliaryArray: T[]
+): void {
+    let k = startIdx;
+    let i = startIdx;
+    let j = middleIdx + 1;
+
+    while (i <= middleIdx && j <= endIdx) {
+        if (auxiliaryArray[i] <= auxiliaryArray[j]) {
+            mainArray[k] = auxiliaryArray[i];
+            i++;
+        } else {
+            mainArray[k] = auxiliaryArray[j];
+            j++;
+        }
+        k++;
     }
-    
-    // Handle potential NaN values
-    const validNumbers = numbers.filter(n => !isNaN(n));
-    
-    return [...validNumbers].sort((a, b) => a - b);
+
+    while (i <= middleIdx) {
+        mainArray[k] = auxiliaryArray[i];
+        i++;
+        k++;
+    }
+
+    while (j <= endIdx) {
+        mainArray[k] = auxiliaryArray[j];
+        j++;
+        k++;
+    }
 }
