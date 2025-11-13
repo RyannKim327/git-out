@@ -1,205 +1,54 @@
-interface Node {
-  id: string;
-  children?: Node[];
-  // Add any other properties your nodes need
-}
+/**
+ * Tarjan's SCC algorithm.
+ * Returns an array of SCCs, each SCC is an array of vertex indices.
+ * Vertices are assumed to be 0-based integers.
+ */
+export function tarjanSCC(adj: number[][]): number[][] {
+  const n = adj.length;
+  const idx = new Array<number>(n).fill(-1);
+  const low = new Array<number>(n).fill(-1);
+  const onStack = new Array<boolean>(n).fill(false);
+  const stack: number[] = [];
+  const sccs: number[][] = [];
+  let id = 0;
 
-class DepthLimitedSearch {
-  /**
-   * Perform depth-limited search
-   * @param root Starting node
-   * @param targetId Node ID to search for
-   * @param maxDepth Maximum depth to search
-   * @returns Found node or null if not found
-   */
-  search(root: Node, targetId: string, maxDepth: number): Node | null {
-    return this.dlsRecursive(root, targetId, maxDepth, 0);
-  }
+  function dfs(v: number) {
+    idx[v] = low[v] = id++;
+    stack.push(v);
+    onStack[v] = true;
 
-  /**
-   * Recursive helper function for DLS
-   */
-  private dlsRecursive(node: Node, targetId: string, maxDepth: number, currentDepth: number): Node | null {
-    // Base case: found the target
-    if (node.id === targetId) {
-      return node;
-    }
-
-    // Base case: reached depth limit
-    if (currentDepth >= maxDepth) {
-      return null;
-    }
-
-    // Recursively search children
-    if (node.children) {
-      for (const child of node.children) {
-        const result = this.dlsRecursive(child, targetId, maxDepth, currentDepth + 1);
-        if (result !== null) {
-          return result;
-        }
+    for (const w of adj[v]) {
+      if (idx[w] === -1) {
+        // Tree edge
+        dfs(w);
+        low[v] = Math.min(low[v], low[w]);
+      } else if (onStack[w]) {
+        // Back or cross edge to current SCC
+        low[v] = Math.min(low[v], idx[w]);
       }
     }
 
-    return null;
-  }
-}
-interface GraphNode {
-  id: string;
-  value: number; // Example property
-  neighbors: GraphNode[];
-  visited?: boolean;
-}
-
-class GraphDepthLimitedSearch {
-  /**
-   * DLS for graph structures (prevents cycles)
-   */
-  searchGraph(
-    startNode: GraphNode,
-    targetId: string,
-    maxDepth: number
-  ): GraphNode | null {
-    // Reset visited state for a clean search
-    this.resetVisited(startNode);
-    return this.dlsGraphRecursive(startNode, targetId, maxDepth, 0);
-  }
-
-  private dlsGraphRecursive(
-    node: GraphNode,
-    targetId: string,
-    maxDepth: number,
-    currentDepth: number
-  ): GraphNode | null {
-    // Mark as visited to prevent cycles
-    node.visited = true;
-
-    if (node.id === targetId) {
-      return node;
-    }
-
-    if (currentDepth >= maxDepth) {
-      return null;
-    }
-
-    for (const neighbor of node.neighbors) {
-      if (!neighbor.visited) {
-        const result = this.dlsGraphRecursive(
-          neighbor,
-          targetId,
-          maxDepth,
-          currentDepth + 1
-        );
-        if (result !== null) {
-          return result;
-        }
-      }
-    }
-
-    return null;
-  }
-
-  private resetVisited(startNode: GraphNode): void {
-    const visitedNodes = new Set<GraphNode>();
-    this.resetRecursive(startNode, visitedNodes);
-  }
-
-  private resetRecursive(node: GraphNode, visitedNodes: Set<GraphNode>): void {
-    if (visitedNodes.has(node)) return;
-    
-    visitedNodes.add(node);
-    node.visited = false;
-    
-    for (const neighbor of node.neighbors) {
-      this.resetRecursive(neighbor, visitedNodes);
+    // Root of an SCC
+    if (low[v] === idx[v]) {
+      const scc: number[] = [];
+      let w: number;
+      do {
+        w = stack.pop()!;
+        onStack[w] = false;
+        scc.push(w);
+      } while (w !== v);
+      sccs.push(scc);
     }
   }
-}
-// Example 1: Tree structure
-const tree: Node = {
-  id: "A",
-  children: [
-    {
-      id: "B",
-      children: [
-        { id: "D", children: [] },
-        { id: "E", children: [] }
-      ]
-    },
-    {
-      id: "C",
-      children: [
-        { id: "F", children: [] },
-        { id: "G", children: [] }
-      ]
-    }
-  ]
-};
 
-const dls = new DepthLimitedSearch();
-const result = dls.search(tree, "G", 3);
-console.log(result?.id); // "G"
-
-// Example 2: Graph structure
-const nodeA: GraphNode = { id: "A", value: 1, neighbors: [], visited: false };
-const nodeB: GraphNode = { id: "B", value: 2, neighbors: [], visited: false };
-const nodeC: GraphNode = { id: "C", value: 3, neighbors: [], visited: false };
-
-// Create a cyclic graph
-nodeA.neighbors = [nodeB];
-nodeB.neighbors = [nodeC, nodeA]; // Cycle back to A
-nodeC.neighbors = [nodeB];
-
-const graphDLS = new GraphDepthLimitedSearch();
-const graphResult = graphDLS.searchGraph(nodeA, "C", 3);
-console.log(graphResult?.id); // "C"
-interface SearchResult {
-  node: Node | null;
-  path: string[];
+  for (let i = 0; i < n; i++) if (idx[i] === -1) dfs(i);
+  return sccs;
 }
 
-class AdvancedDLS {
-  searchWithPath(root: Node, targetId: string, maxDepth: number): SearchResult {
-    return this.dlsWithPath(root, targetId, maxDepth, 0, []);
-  }
-
-  private dlsWithPath(
-    node: Node,
-    targetId: string,
-    maxDepth: number,
-    currentDepth: number,
-    currentPath: string[]
-  ): SearchResult {
-    const newPath = [...currentPath, node.id];
-
-    if (node.id === targetId) {
-      return { node, path: newPath };
-    }
-
-    if (currentDepth >= maxDepth) {
-      return { node: null, path: newPath };
-    }
-
-    if (node.children) {
-      for (const child of node.children) {
-        const result = this.dlsWithPath(
-          child,
-          targetId,
-          maxDepth,
-          currentDepth + 1,
-          newPath
-        );
-        if (result.node !== null) {
-          return result;
-        }
-      }
-    }
-
-    return { node: null, path: newPath };
-  }
+/* ---------- Usage example ---------- */
+if (require.main === module) {
+  // Graph: 0 → 1 → 2 → 0, 1 → 3 → 4 → 3
+  const g: number[][] = [[1], [2, 3], [0], [4], [3]];
+  console.log(tarjanSCC(g)); // [ [ 4, 3 ], [ 2, 0, 1 ] ]
 }
-
-// Usage
-const advancedDLS = new AdvancedDLS();
-const resultWithPath = advancedDLS.searchWithPath(tree, "G", 3);
-console.log("Found:", resultWithPath.node?.id);
-console.log("Path:", resultWithPath.path);
+npx ts-node tarjan.ts
