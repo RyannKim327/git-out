@@ -1,9 +1,14 @@
-function areAnagrams(str1: string, str2: string): boolean {
-  const normalize = (str: string) =>
-    str.replace(/\s+/g, '').toLowerCase().split('').sort().join('');
-  
-  return normalize(str1) === normalize(str2);
+function getRandomInt(min: number, max: number): number {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-console.log(areAnagrams('listen', 'silent')); // true
-console.log(areAnagrams('rail safety', 'fairy tales')); // true
-console.log(areAnagrams('hello', 'world')); // false
+
+// Example: Random integer between 1 (inclusive) and 10 (inclusive)
+const randomInt = getRandomInt(1, 10);
+function getRandomFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min;
+}
+
+// Example: Random float between 1.0 (inclusive) and 10.0 (exclusive)
+const randomFloat = getRandomFloat(1.0, 10.0);
