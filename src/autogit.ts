@@ -1,113 +1,130 @@
-interface ListNode {
-    val: number;
-    next: ListNode | null;
-}
-
-function isPalindrome(head: ListNode | null): boolean {
-    if (!head || !head.next) return true;
+function radixSort(arr: number[]): number[] {
+    if (arr.length <= 1) return arr;
     
-    let slow: ListNode | null = head;
-    let fast: ListNode | null = head;
-    const stack: number[] = [];
+    // Find the maximum number to know number of digits
+    const maxNum = Math.max(...arr);
+    const maxDigits = maxNum.toString().length;
     
-    // Find middle using slow/fast pointers
-    while (fast && fast.next) {
-        stack.push(slow!.val);
-        slow = slow!.next;
-        fast = fast.next.next;
-    }
+    let sortedArray = [...arr];
     
-    // Handle odd length case
-    if (fast !== null) {
-        slow = slow!.next;
-    }
-    
-    // Compare remaining half with stack
-    while (slow !== null) {
-        if (stack.pop() !== slow.val) {
-            return false;
+    // Perform counting sort for every digit
+    for (let digit = 0; digit < maxDigits; digit++) {
+        // Create 10 buckets (0-9)
+        const buckets: number[][] = Array.from({ length: 10 }, () => []);
+        
+        // Place numbers in buckets based on current digit
+        for (let i = 0; i < sortedArray.length; i++) {
+            const num = sortedArray[i];
+            const digitValue = getDigit(num, digit);
+            buckets[digitValue].push(num);
         }
-        slow = slow.next;
+        
+        // Flatten buckets back into array
+        sortedArray = ([] as number[]).concat(...buckets);
     }
     
-    return true;
+    return sortedArray;
 }
-function isPalindromeReverse(head: ListNode | null): boolean {
-    if (!head || !head.next) return true;
+
+// Helper function to get digit at specific position
+function getDigit(num: number, place: number): number {
+    return Math.floor(Math.abs(num) / Math.pow(10, place)) % 10;
+}
+function radixSortEfficient(arr: number[]): number[] {
+    if (arr.length <= 1) return arr;
     
-    // Find middle
-    let slow = head;
-    let fast = head;
-    while (fast && fast.next) {
-        slow = slow.next!;
-        fast = fast.next.next!;
-    }
+    const maxNum = Math.max(...arr);
+    const maxDigits = Math.floor(Math.log10(maxNum)) + 1;
     
-    // Reverse second half
-    let prev: ListNode | null = null;
-    let current: ListNode | null = slow;
-    while (current) {
-        const next = current.next;
-        current.next = prev;
-        prev = current;
-        current = next;
-    }
+    let sortedArray = [...arr];
     
-    // Compare first half with reversed second half
-    let left = head;
-    let right = prev;
-    while (right !== null) {
-        if (left.val !== right.val) {
-            return false;
+    for (let digit = 0; digit < maxDigits; digit++) {
+        const count = new Array(10).fill(0);
+        const output = new Array(arr.length);
+        
+        // Count occurrences of each digit
+        for (let i = 0; i < sortedArray.length; i++) {
+            const digitValue = getDigit(sortedArray[i], digit);
+            count[digitValue]++;
         }
-        left = left.next!;
-        right = right.next;
-    }
-    
-    return true;
-}
-function isPalindromeRecursive(head: ListNode | null): boolean {
-    let frontPointer = head;
-    
-    function recursivelyCheck(current: ListNode | null): boolean {
-        if (current !== null) {
-            if (!recursivelyCheck(current.next)) return false;
-            if (current.val !== frontPointer!.val) return false;
-            frontPointer = frontPointer!.next;
+        
+        // Calculate cumulative count
+        for (let i = 1; i < 10; i++) {
+            count[i] += count[i - 1];
         }
-        return true;
+        
+        // Build output array
+        for (let i = sortedArray.length - 1; i >= 0; i--) {
+            const digitValue = getDigit(sortedArray[i], digit);
+            output[count[digitValue] - 1] = sortedArray[i];
+            count[digitValue]--;
+        }
+        
+        sortedArray = output;
     }
     
-    return recursivelyCheck(head);
+    return sortedArray;
 }
-class ListNode {
-    val: number;
-    next: ListNode | null;
+function radixSortWithNegatives(arr: number[]): number[] {
+    // Separate positive and negative numbers
+    const negatives = arr.filter(num => num < 0);
+    const positives = arr.filter(num => num >= 0);
     
-    constructor(val: number, next: ListNode | null = null) {
-        this.val = val;
-        this.next = next;
+    // Reverse negatives to make them positive and sort
+    const reversedNegatives = negatives.map(num => Math.abs(num));
+    const sortedNegatives = radixSortEfficient(reversedNegatives)
+        .reverse()
+        .map(num => -num);
+    
+    // Sort positives normally
+    const sortedPositives = radixSortEfficient(positives);
+    
+    return [...sortedNegatives, ...sortedPositives];
+}
+// Helper function to get digit at specific position
+function getDigit(num: number, place: number): number {
+    return Math.floor(Math.abs(num) / Math.pow(10, place)) % 10;
+}
+
+// Main radix sort implementation
+function radixSort(arr: number[]): number[] {
+    if (arr.length <= 1) return arr;
+    
+    const maxNum = Math.max(...arr.map(Math.abs));
+    const maxDigits = Math.floor(Math.log10(maxNum)) + 1;
+    
+    let sortedArray = [...arr];
+    
+    for (let digit = 0; digit < maxDigits; digit++) {
+        const buckets: number[][] = Array.from({ length: 10 }, () => []);
+        
+        for (let i = 0; i < sortedArray.length; i++) {
+            const digitValue = getDigit(sortedArray[i], digit);
+            buckets[digitValue].push(sortedArray[i]);
+        }
+        
+        sortedArray = ([] as number[]).concat(...buckets);
     }
+    
+    return sortedArray;
 }
 
-// Helper function to create linked list from array
-function createLinkedList(arr: number[]): ListNode | null {
-    if (arr.length === 0) return null;
-    
-    const head = new ListNode(arr[0]);
-    let current = head;
-    
-    for (let i = 1; i < arr.length; i++) {
-        current.next = new ListNode(arr[i]);
-        current = current.next;
-    }
-    
-    return head;
-}
+// Test the implementation
+const testArrays = [
+    [170, 45, 75, 90, 802, 24, 2, 66],
+    [3, 7, 1, 9, 2, 8, 5, 4, 6],
+    [100, 10, 1, 1000],
+    [5, 4, 3, 2, 1],
+    [1],
+    []
+];
 
-// Test the function
-const list1 = createLinkedList([1, 2, 3, 2, 1]);
-const list2 = createLinkedList([1, 2, 3, 4, 5]);
-
-console.log(isPalindrome(list1)); // true
-console.log(isPalindrome(list2)); // false
+testArrays.forEach((arr, index) => {
+    console.log(`Test ${index + 1}:`);
+    console.log(`Input:  [${arr.join(', ')}]`);
+    console.log(`Sorted: [${radixSort(arr).join(', ')}]`);
+    console.log('---');
+});
+const numbers = [170, 45, 75, 90, 802, 24, 2, 66];
+const sorted = radixSort(numbers);
+console.log(sorted); // [2, 24, 45, 66, 75, 90, 170, 802]
