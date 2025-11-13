@@ -1,84 +1,113 @@
-type Graph<T> = Map<T, T[]>;
-
-function depthLimitedSearch<T>(
-  graph: Graph<T>,
-  startNode: T,
-  goalNode: T,
-  limit: number
-): T | null {
-  // Create a stack to keep track of nodes to visit along with their depth
-  const stack: { node: T; depth: number }[] = [];
-  stack.push({ node: startNode, depth: 0 });
-
-  while (stack.length > 0) {
-    // Pop the last element from the stack (LIFO behavior)
-    const { node, depth } = stack.pop()!;
-
-    // Check if we've found the goal node
-    if (node === goalNode) {
-      return node;
+function countingSort(arr: number[]): number[] {
+    if (arr.length === 0) return [];
+    
+    // Find min and max values
+    const min = Math.min(...arr);
+    const max = Math.max(...arr);
+    const range = max - min + 1;
+    
+    // Initialize count array
+    const count: number[] = new Array(range).fill(0);
+    
+    // Count occurrences of each value
+    for (const num of arr) {
+        count[num - min]++;
     }
-
-    // Only explore neighbors if we're within the depth limit
-    if (depth < limit) {
-      // Get neighbors (empty array if node isn't in graph)
-      const neighbors = graph.get(node) || [];
-
-      // Push neighbors to stack with incremented depth
-      for (const neighbor of neighbors) {
-        stack.push({ node: neighbor, depth: depth + 1 });
-      }
+    
+    // Build sorted array
+    const sorted: number[] = [];
+    for (let i = 0; i < range; i++) {
+        for (let j = 0; j < count[i]; j++) {
+            sorted.push(i + min);
+        }
     }
-  }
-
-  // Goal not found within depth limit
-  return null;
+    
+    return sorted;
 }
-// Create a sample graph
-const graph = new Map<string, string[]>([
-  ['A', ['B', 'C']],
-  ['B', ['D', 'E']],
-  ['C', ['F', 'G']],
-  ['D', []],
-  ['E', []],
-  ['F', []],
-  ['G', ['H']],
-]);
 
-// Search from 'A' to 'H' with depth limit 3
-const result = depthLimitedSearch(graph, 'A', 'H', 3);
-console.log(result); // Outputs: H
-
-// If we limit depth to 2
-const limitedResult = depthLimitedSearch(graph, 'A', 'H', 2);
-console.log(limitedResult); // Outputs: null
-function depthLimitedSearchWithPath<T>(
-  graph: Graph<T>,
-  startNode: T,
-  goalNode: T,
-  limit: number
-): T[] | null {
-  const stack: { path: T[]; depth: number }[] = [];
-  stack.push({ path: [startNode], depth: 0 });
-
-  while (stack.length > 0) {
-    const { path, depth } = stack.pop()!;
-    const currentNode = path[path.length - 1];
-
-    if (currentNode === goalNode) {
-      return path;
+// Example usage:
+const unsorted = [4, 2, 2, 8, 3, 3, 1];
+const sorted = countingSort(unsorted);
+console.log(sorted); // [1, 2, 2, 3, 3, 4, 8]
+function countingSortOptimized(arr: number[]): number[] {
+    if (arr.length === 0) return [];
+    
+    const min = Math.min(...arr);
+    const max = Math.max(...arr);
+    const range = max - min + 1;
+    
+    const count: number[] = new Array(range).fill(0);
+    const output: number[] = new Array(arr.length);
+    
+    // Count occurrences
+    for (const num of arr) {
+        count[num - min]++;
     }
-
-    if (depth < limit) {
-      const neighbors = graph.get(currentNode) || [];
-      for (const neighbor of neighbors.reverse()) { // Reverse to maintain DFS order
-        stack.push({
-          path: [...path, neighbor],
-          depth: depth + 1,
-        });
-      }
+    
+    // Calculate cumulative counts
+    for (let i = 1; i < range; i++) {
+        count[i] += count[i - 1];
     }
-  }
-
-  return null;
+    
+    // Build output array in reverse for stability
+    for (let i = arr.length - 1; i >= 0; i--) {
+        const num = arr[i];
+        const index = count[num - min] - 1;
+        output[index] = num;
+        count[num - min]--;
+    }
+    
+    return output;
 }
+interface SortableObject {
+    id: number;
+    // other properties...
+}
+
+function countingSortObjects(
+    arr: SortableObject[], 
+    keyExtractor: (obj: SortableObject) => number
+): SortableObject[] {
+    if (arr.length === 0) return [];
+    
+    // Extract keys
+    const keys = arr.map(keyExtractor);
+    const min = Math.min(...keys);
+    const max = Math.max(...keys);
+    const range = max - min + 1;
+    
+    const count: number[] = new Array(range).fill(0);
+    const output: SortableObject[] = new Array(arr.length);
+    
+    // Count occurrences
+    for (const key of keys) {
+        count[key - min]++;
+    }
+    
+    // Calculate cumulative counts
+    for (let i = 1; i < range; i++) {
+        count[i] += count[i - 1];
+    }
+    
+    // Build output array (stable sort)
+    for (let i = arr.length - 1; i >= 0; i--) {
+        const obj = arr[i];
+        const key = keyExtractor(obj);
+        const index = count[key - min] - 1;
+        output[index] = obj;
+        count[key - min]--;
+    }
+    
+    return output;
+}
+
+// Example usage with objects:
+const objects = [
+    { id: 3, name: "Charlie" },
+    { id: 1, name: "Alice" },
+    { id: 2, name: "Bob" },
+    { id: 1, name: "Anna" }
+];
+
+const sortedObjects = countingSortObjects(objects, obj => obj.id);
+console.log(sortedObjects);
