@@ -1,189 +1,200 @@
-class BWT {
-    private readonly END_MARKER: string;
+class TrieNode {
+    // A Map to store children nodes, where the key is the character
+    // and the value is the TrieNode for that character.
+    children: Map<string, TrieNode>;
+    
+    // A boolean flag to indicate if a word ends at this node.
+    isEndOfWord: boolean;
 
-    /**
-     * Creates a BWT instance.
-     * @param endMarker A unique character not present in the input strings. Default is '$'.
-     */
-    constructor(endMarker: string = '$') {
-        if (endMarker.length !== 1) {
-            throw new Error("End marker must be a single character.");
-        }
-        this.END_MARKER = endMarker;
-    }
-
-    /**
-     * Encodes a string using the Burrows-Wheeler Transform.
-     * @param text The input string to encode.
-     * @returns An object containing the BWT string and the primary index.
-     * @throws Error if the input text contains the END_MARKER.
-     */
-    encode(text: string): { bwt: string; primaryIndex: number } {
-        if (!text) {
-            return { bwt: "", primaryIndex: -1 };
-        }
-        if (text.includes(this.END_MARKER)) {
-            throw new Error(`Input text must not contain the end marker '${this.END_MARKER}'`);
-        }
-
-        const fullText = text + this.END_MARKER;
-        const n = fullText.length;
-        const rotations: string[] = [];
-
-        // 1. Generate all cyclic rotations
-        for (let i = 0; i < n; i++) {
-            rotations.push(fullText.substring(i) + fullText.substring(0, i));
-        }
-
-        // 2. Sort rotations alphabetically
-        rotations.sort();
-
-        let bwt = "";
-        let primaryIndex = -1;
-
-        // 3. Extract the last character of each sorted rotation to form the BWT string
-        // 4. Find the primaryIndex (where the original string is in the sorted list)
-        for (let i = 0; i < n; i++) {
-            bwt += rotations[i][n - 1]; // Last character of current rotation
-            if (rotations[i] === fullText) {
-                primaryIndex = i;
-            }
-        }
-
-        return { bwt, primaryIndex };
-    }
-
-    /**
-     * Decodes a BWT string back to its original form.
-     * @param bwt The BWT string (last column).
-     * @param primaryIndex The primary index returned by the encode function.
-     * @returns The decoded original string.
-     */
-    decode(bwt: string, primaryIndex: number): string {
-        if (!bwt || primaryIndex === -1) {
-            return "";
-        }
-
-        const n = bwt.length;
-
-        // 1. Create the first column (F) by sorting the BWT string (L)
-        const firstColumnChars = bwt.split('').sort();
-
-        // 2. Build the Last-to-First (LF) mapping
-        // This map LF[i] tells us, if we are at position `i` in L,
-        // which position in F corresponds to the same character occurrence.
-        // E.g., if L[i] is the k-th 'a', LF[i] is the index of the k-th 'a' in F.
-
-        // charToFirstIndexInF: Stores the starting index of each character in the sorted firstColumnChars
-        const charToFirstIndexInF: { [char: string]: number } = {};
-        for (let i = 0; i < n; i++) {
-            const char = firstColumnChars[i];
-            if (!(char in charToFirstIndexInF)) {
-                charToFirstIndexInF[char] = i;
-            }
-        }
-
-        // lfMap: Stores the mapping from an index in L to an index in F
-        const lfMap: number[] = new Array(n);
-        const bwtCharCounts: { [char: string]: number } = {}; // Counts for characters encountered in bwt (L)
-
-        for (let i = 0; i < n; i++) {
-            const char = bwt[i];
-            bwtCharCounts[char] = (bwtCharCounts[char] || 0) + 1;
-            const count = bwtCharCounts[char]; // This is the k-th occurrence of 'char' in bwt up to index i
-
-            // The (count)-th occurrence of 'char' in F is at:
-            // charToFirstIndexInF[char] + (count - 1)
-            lfMap[i] = charToFirstIndexInF[char] + (count - 1);
-        }
-
-        // 3. Reconstruct the string using the LF-mapping
-        const decodedChars: string[] = [];
-        let currentLFIndex = primaryIndex; // Start at the primary index (row of original string)
-
-        // The reconstruction proceeds by repeatedly taking the character from BWT[currentLFIndex]
-        // and then using the LF-map to find the position of the character that preceded it in the original string.
-        // This effectively builds the string in reverse order (S_N-1, S_N-2, ..., S_0)
-        for (let i = 0; i < n; i++) {
-            decodedChars.push(bwt[currentLFIndex]);
-            currentLFIndex = lfMap[currentLFIndex];
-        }
-
-        // The characters are collected in reverse order, so reverse them and remove the end marker.
-        const fullDecoded = decodedChars.reverse().join('');
-        return fullDecoded.slice(0, fullDecoded.length - 1); // Remove the END_MARKER
+    constructor() {
+        this.children = new Map<string, TrieNode>();
+        this.isEndOfWord = false;
     }
 }
+class Trie {
+    private root: TrieNode;
 
-// --- Example Usage ---
-const bwtTransformer = new BWT(); // Using default '$' end marker
-
-try {
-    const originalText1 = "banana";
-    console.log(`Original: "${originalText1}"`);
-    const encoded1 = bwtTransformer.encode(originalText1);
-    console.log("Encoded:", encoded1); // Expected: { bwt: "annb$aa", primaryIndex: 4 }
-    const decoded1 = bwtTransformer.decode(encoded1.bwt, encoded1.primaryIndex);
-    console.log(`Decoded: "${decoded1}"`); // Expected: "banana"
-    console.log("Match:", originalText1 === decoded1);
-    console.log("---");
-
-    const originalText2 = "abracadabra";
-    console.log(`Original: "${originalText2}"`);
-    const encoded2 = bwtTransformer.encode(originalText2);
-    console.log("Encoded:", encoded2); // Expected: { bwt: "ard$rcaaabb", primaryIndex: 3 }
-    const decoded2 = bwtTransformer.decode(encoded2.bwt, encoded2.primaryIndex);
-    console.log(`Decoded: "${decoded2}"`); // Expected: "abracadabra"
-    console.log("Match:", originalText2 === decoded2);
-    console.log("---");
-
-    const originalText3 = "Mississippi";
-    console.log(`Original: "${originalText3}"`);
-    const encoded3 = bwtTransformer.encode(originalText3);
-    console.log("Encoded:", encoded3); // Expected: { bwt: "pssm$iipii", primaryIndex: 0 }
-    const decoded3 = bwtTransformer.decode(encoded3.bwt, encoded3.primaryIndex);
-    console.log(`Decoded: "${decoded3}"`); // Expected: "Mississippi"
-    console.log("Match:", originalText3 === decoded3);
-    console.log("---");
-
-    const originalText4 = "a";
-    console.log(`Original: "${originalText4}"`);
-    const encoded4 = bwtTransformer.encode(originalText4);
-    console.log("Encoded:", encoded4); // Expected: { bwt: "$a", primaryIndex: 1 }
-    const decoded4 = bwtTransformer.decode(encoded4.bwt, encoded4.primaryIndex);
-    console.log(`Decoded: "${decoded4}"`); // Expected: "a"
-    console.log("Match:", originalText4 === decoded4);
-    console.log("---");
-
-    const originalText5 = ""; // Empty string
-    console.log(`Original: "${originalText5}"`);
-    const encoded5 = bwtTransformer.encode(originalText5);
-    console.log("Encoded:", encoded5); // Expected: { bwt: "", primaryIndex: -1 }
-    const decoded5 = bwtTransformer.decode(encoded5.bwt, encoded5.primaryIndex);
-    console.log(`Decoded: "${decoded5}"`); // Expected: ""
-    console.log("Match:", originalText5 === decoded5);
-    console.log("---");
-
-    // Example with custom end marker if '$' might be in text
-    const customBWT = new BWT('\0'); // Using null character as end marker
-    const originalText6 = "hello$world";
-    console.log(`Original: "${originalText6}"`);
-    const encoded6 = customBWT.encode(originalText6);
-    console.log("Encoded:", encoded6);
-    const decoded6 = customBWT.decode(encoded6.bwt, encoded6.primaryIndex);
-    console.log(`Decoded: "${decoded6}"`);
-    console.log("Match:", originalText6 === decoded6);
-    console.log("---");
-
-    // Error case
-    const badText = "hello$world";
-    try {
-        console.log(`Trying to encode: "${badText}" with default '$' marker`);
-        bwtTransformer.encode(badText);
-    } catch (e: any) {
-        console.error("Error caught:", e.message);
+    constructor() {
+        // The root node doesn't represent any character, it's just the starting point.
+        this.root = new TrieNode();
     }
 
-} catch (e: any) {
-    console.error("An unexpected error occurred:", e.message);
+    /**
+     * Inserts a word into the trie.
+     * @param word The word to insert.
+     */
+    insert(word: string): void {
+        let currentNode = this.root;
+        for (const char of word) {
+            // If the character is not a child of the current node, create a new node.
+            if (!currentNode.children.has(char)) {
+                currentNode.children.set(char, new TrieNode());
+            }
+            // Move to the next node (the child corresponding to the current character).
+            currentNode = currentNode.children.get(char)!; // '!' asserts non-null
+        }
+        // Mark the last node as the end of a word.
+        currentNode.isEndOfWord = true;
+    }
+
+    /**
+     * Searches for a word in the trie.
+     * @param word The word to search for.
+     * @returns True if the word is found, false otherwise.
+     */
+    search(word: string): boolean {
+        let currentNode = this.root;
+        for (const char of word) {
+            // If the character path doesn't exist, the word is not in the trie.
+            if (!currentNode.children.has(char)) {
+                return false;
+            }
+            // Move to the next node.
+            currentNode = currentNode.children.get(char)!;
+        }
+        // A word is found only if the last node is marked as an end-of-word.
+        return currentNode.isEndOfWord;
+    }
+
+    /**
+     * Checks if there is any word in the trie that starts with the given prefix.
+     * @param prefix The prefix to check.
+     * @returns True if any word starts with the prefix, false otherwise.
+     */
+    startsWith(prefix: string): boolean {
+        let currentNode = this.root;
+        for (const char of prefix) {
+            // If the character path doesn't exist, no word starts with this prefix.
+            if (!currentNode.children.has(char)) {
+                return false;
+            }
+            // Move to the next node.
+            currentNode = currentNode.children.get(char)!;
+        }
+        // If we successfully traversed all characters of the prefix,
+        // it means at least one word starts with this prefix.
+        return true;
+    }
+
+    /**
+     * Deletes a word from the trie.
+     * This implementation uses a recursive approach to safely remove nodes
+     * that are no longer part of any other words or prefixes.
+     * @param word The word to delete.
+     * @returns True if the word was successfully deleted, false if it wasn't found.
+     */
+    delete(word: string): boolean {
+        return this.deleteRecursive(this.root, word, 0);
+    }
+
+    private deleteRecursive(currentNode: TrieNode, word: string, index: number): boolean {
+        // Base case: If we've reached the end of the word.
+        if (index === word.length) {
+            // If this node isn't marked as the end of a word, the word wasn't truly in the trie.
+            if (!currentNode.isEndOfWord) {
+                return false;
+            }
+            // Unmark this node as the end of a word.
+            currentNode.isEndOfWord = false;
+            // Return true if this node has no other children, meaning it can be safely removed.
+            return currentNode.children.size === 0;
+        }
+
+        const char = word[index];
+        const childNode = currentNode.children.get(char);
+
+        // If the child doesn't exist, the word is not in the trie.
+        if (!childNode) {
+            return false;
+        }
+
+        // Recursively call delete on the child node.
+        const shouldDeleteChild = this.deleteRecursive(childNode, word, index + 1);
+
+        // If the recursive call indicates that the child node should be deleted...
+        if (shouldDeleteChild) {
+            currentNode.children.delete(char); // Remove the child from the current node's children.
+            // Return true if the current node can also be deleted
+            // (i.e., it now has no children AND it's not the end of another word).
+            return currentNode.children.size === 0 && !currentNode.isEndOfWord;
+        }
+
+        return false; // Child couldn't be deleted, or current node has other children/is end of word.
+    }
+
+    /**
+     * Collects all words in the trie that start with a given prefix.
+     * @param prefix The prefix to search for. Defaults to an empty string to get all words.
+     * @returns An array of words.
+     */
+    getWordsWithPrefix(prefix: string = ""): string[] {
+        let currentNode = this.root;
+        // Traverse to the node representing the end of the prefix
+        for (const char of prefix) {
+            if (!currentNode.children.has(char)) {
+                return []; // Prefix not found, no words start with it
+            }
+            currentNode = currentNode.children.get(char)!;
+        }
+
+        const words: string[] = [];
+        // Start collecting words from the node where the prefix ends
+        this.collectWords(currentNode, prefix, words);
+        return words;
+    }
+
+    // Helper function for getWordsWithPrefix to recursively collect words
+    private collectWords(node: TrieNode, currentPrefix: string, words: string[]): void {
+        // If this node marks the end of a word, add the currentPrefix to the list
+        if (node.isEndOfWord) {
+            words.push(currentPrefix);
+        }
+
+        // Recursively call for all children
+        for (const [char, childNode] of node.children.entries()) {
+            this.collectWords(childNode, currentPrefix + char, words);
+        }
+    }
 }
+// Create a new Trie
+const trie = new Trie();
+
+// Insert some words
+trie.insert("apple");
+trie.insert("app");
+trie.insert("apricot");
+trie.insert("apply");
+trie.insert("banana");
+trie.insert("band");
+
+console.log("--- Search ---");
+console.log("Search 'apple':", trie.search("apple"));    // true
+console.log("Search 'app':", trie.search("app"));        // true
+console.log("Search 'apl':", trie.search("apl"));        // false (prefix exists, but not a full word)
+console.log("Search 'orange':", trie.search("orange"));  // false
+
+console.log("\n--- Starts With ---");
+console.log("Starts with 'ap':", trie.startsWith("ap"));    // true
+console.log("Starts with 'app':", trie.startsWith("app"));  // true
+console.log("Starts with 'ban':", trie.startsWith("ban"));  // true
+console.log("Starts with 'ora':", trie.startsWith("ora"));  // false
+
+console.log("\n--- Get Words with Prefix ---");
+console.log("Words with prefix 'ap':", trie.getWordsWithPrefix("ap"));     // ["apple", "app", "apricot", "apply"]
+console.log("Words with prefix 'ban':", trie.getWordsWithPrefix("ban"));   // ["banana", "band"]
+console.log("Words with prefix 'a':", trie.getWordsWithPrefix("a"));       // ["apple", "app", "apricot", "apply"]
+console.log("Words with prefix '':", trie.getWordsWithPrefix(""));         // ["apple", "app", "apricot", "apply", "banana", "band"]
+console.log("Words with prefix 'xyz':", trie.getWordsWithPrefix("xyz"));   // []
+
+console.log("\n--- Delete ---");
+console.log("Delete 'app':", trie.delete("app"));      // true
+console.log("Search 'app' after delete:", trie.search("app")); // false
+console.log("Search 'apple' after delete 'app':", trie.search("apple")); // true (apple still exists)
+console.log("Words with prefix 'ap' after deleting 'app':", trie.getWordsWithPrefix("ap")); // ["apple", "apricot", "apply"]
+
+console.log("Delete 'orange':", trie.delete("orange")); // false (was never inserted)
+console.log("Delete 'apple':", trie.delete("apple"));   // true
+console.log("Search 'apple' after delete:", trie.search("apple")); // false
+console.log("Starts with 'app' after deleting 'apple' and 'app':", trie.startsWith("app")); // true (because 'apricot', 'apply' still use 'ap' prefix)
+console.log("Words with prefix 'ap' after deleting 'apple':", trie.getWordsWithPrefix("ap")); // ["apricot", "apply"]
+
