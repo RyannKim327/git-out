@@ -1,140 +1,91 @@
-class TreeNode<T> {
+interface ListNode<T> {
     value: T;
-    left: TreeNode<T> | null;
-    right: TreeNode<T> | null;
-
-    constructor(value: T) {
-        this.value = value;
-        this.left = null;
-        this.right = null;
-    }
+    next: ListNode<T> | null;
 }
 
-function countLeafNodes<T>(root: TreeNode<T> | null): number {
-    if (root === null) {
+function getLengthIterative(head: ListNode<any> | null): number {
+    let length = 0;
+    let current = head;
+    
+    while (current !== null) {
+        length++;
+        current = current.next;
+    }
+    
+    return length;
+}
+function getLengthRecursive(node: ListNode<any> | null): number {
+    if (node === null) {
         return 0;
     }
-    
-    // If both children are null, it's a leaf node
-    if (root.left === null && root.right === null) {
-        return 1;
-    }
-    
-    // Recursively count leaf nodes in left and right subtrees
-    return countLeafNodes(root.left) + countLeafNodes(root.right);
+    return 1 + getLengthRecursive(node.next);
 }
-function countLeafNodesIterative<T>(root: TreeNode<T> | null): number {
-    if (root === null) return 0;
-    
-    let count = 0;
-    const queue: TreeNode<T>[] = [root];
-    
-    while (queue.length > 0) {
-        const currentNode = queue.shift()!;
-        
-        // If it's a leaf node, increment count
-        if (currentNode.left === null && currentNode.right === null) {
-            count++;
-        }
-        
-        // Add children to queue
-        if (currentNode.left !== null) {
-            queue.push(currentNode.left);
-        }
-        if (currentNode.right !== null) {
-            queue.push(currentNode.right);
-        }
-    }
-    
-    return count;
-}
-function countLeafNodesDFS<T>(root: TreeNode<T> | null): number {
-    if (root === null) return 0;
-    
-    let count = 0;
-    const stack: TreeNode<T>[] = [root];
-    
-    while (stack.length > 0) {
-        const currentNode = stack.pop()!;
-        
-        // If it's a leaf node, increment count
-        if (currentNode.left === null && currentNode.right === null) {
-            count++;
-        }
-        
-        // Add children to stack (right first, then left for proper order)
-        if (currentNode.right !== null) {
-            stack.push(currentNode.right);
-        }
-        if (currentNode.left !== null) {
-            stack.push(currentNode.left);
-        }
-    }
-    
-    return count;
-}
-// Complete implementation with usage example
-class BinaryTree<T> {
-    root: TreeNode<T> | null;
-
-    constructor() {
-        this.root = null;
-    }
-
-    // Method to count leaf nodes (using recursive approach)
-    countLeafNodes(): number {
-        return this.countLeavesRecursive(this.root);
-    }
-
-    private countLeavesRecursive(node: TreeNode<T> | null): number {
-        if (node === null) {
-            return 0;
-        }
-        
-        if (node.left === null && node.right === null) {
-            return 1;
-        }
-        
-        return this.countLeavesRecursive(node.left) + this.countLeavesRecursive(node.right);
-    }
-}
-
-// Usage example
-const tree = new BinaryTree<number>();
-tree.root = new TreeNode(1);
-tree.root.left = new TreeNode(2);
-tree.root.right = new TreeNode(3);
-tree.root.left.left = new TreeNode(4);
-tree.root.left.right = new TreeNode(5);
-tree.root.right.right = new TreeNode(6);
-
-console.log("Number of leaf nodes:", tree.countLeafNodes()); // Output: 3
-class TreeNode<T> {
+class LinkedListNode<T> {
     value: T;
-    left: TreeNode<T> | null;
-    right: TreeNode<T> | null;
+    next: LinkedListNode<T> | null;
 
     constructor(value: T) {
         this.value = value;
-        this.left = null;
-        this.right = null;
-    }
-
-    // Instance method to count leaf nodes in subtree
-    countLeafNodesInSubtree(): number {
-        if (this.left === null && this.right === null) {
-            return 1;
-        }
-        
-        const leftCount = this.left ? this.left.countLeafNodesInSubtree() : 0;
-        const rightCount = this.right ? this.right.countLeafNodesInSubtree() : 0;
-        
-        return leftCount + rightCount;
+        this.next = null;
     }
 }
 
-// Usage
-const root = new TreeNode(1);
-root.left = new TreeNode(2);
-root.right = new TreeNode(3);
-console.log(root.countLeafNodesInSubtree()); // Output: 2
+class LinkedList<T> {
+    head: LinkedListNode<T> | null;
+    private _size: number = 0;
+
+    constructor() {
+        this.head = null;
+    }
+
+    // Add this method to get length
+    getLength(): number {
+        let count = 0;
+        let current = this.head;
+        
+        while (current !== null) {
+            count++;
+            current = current.next;
+        }
+        
+        return count;
+    }
+
+    // Alternative: Maintain size internally
+    add(value: T): void {
+        const newNode = new LinkedListNode(value);
+        if (!this.head) {
+            this.head = newNode;
+        } else {
+            let current = this.head;
+            while (current.next !== null) {
+                current = current.next;
+            }
+            current.next = newNode;
+        }
+        this._size++;
+    }
+
+    getSize(): number {
+        return this._size;
+    }
+}
+// Create a linked list
+const node1 = { value: 1, next: null };
+const node2 = { value: 2, next: null };
+const node3 = { value: 3, next: null };
+
+node1.next = node2;
+node2.next = node3;
+
+// Get length
+console.log(getLengthIterative(node1)); // Output: 3
+console.log(getLengthRecursive(node1)); // Output: 3
+
+// Using the class approach
+const list = new LinkedList<number>();
+list.add(1);
+list.add(2);
+list.add(3);
+console.log(list.getLength()); // Output: 3
+console.log(list.getSize());   // Output: 3
