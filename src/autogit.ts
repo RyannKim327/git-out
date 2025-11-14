@@ -1,32 +1,49 @@
-const stringWithSpaces = "Hello World TypeScript";
-const stringWithoutSpaces = stringWithSpaces.replace(/\s/g, '');
-console.log(stringWithoutSpaces); // "HelloWorldTypeScript"
-const stringWithSpaces = "Hello World TypeScript";
-const stringWithoutSpaces = stringWithSpaces.replaceAll(' ', '');
-console.log(stringWithoutSpaces); // "HelloWorldTypeScript"
+function boyerMooreSearch(text: string, pattern: string): number[] {
+    const m = pattern.length;
+    const n = text.length;
+    const matches: number[] = [];
 
-// Or using regex with replaceAll
-const stringWithoutAnyWhitespace = stringWithSpaces.replaceAll(/\s/g, '');
-console.log(stringWithoutAnyWhitespace); // "HelloWorldTypeScript"
-const stringWithSpaces = "Hello World TypeScript";
-const stringWithoutSpaces = stringWithSpaces.split(' ').join('');
-console.log(stringWithoutSpaces); // "HelloWorldTypeScript"
+    if (m === 0 || n === 0 || m > n) {
+        return matches;
+    }
 
-// For all whitespace characters
-const stringWithoutAnyWhitespace = stringWithSpaces.split(/\s/).join('');
-console.log(stringWithoutAnyWhitespace); // "HelloWorldTypeScript"
-const text = "Hello World\tTypeScript\nCode";
-const withoutSpaces = text.replace(/ /g, '');
-console.log(withoutSpaces); // "HelloWorld\tTypeScript\nCode"
-function removeSpaces(text: string): string {
-    return text.replace(/\s/g, '');
+    // Build bad character table
+    const badCharShift: Record<string, number> = {};
+    const ALPHABET_SIZE = 256; // ASCII range
+
+    // Initialize with m (pattern length)
+    for (let i = 0; i < ALPHABET_SIZE; i++) {
+        badCharShift[String.fromCharCode(i)] = m;
+    }
+
+    // Set actual shifts based on pattern chars
+    for (let i = 0; i < m - 1; i++) {
+        badCharShift[pattern[i]] = m - i - 1;
+    }
+
+    // Search
+    let skip = 0;
+    while (skip <= n - m) {
+        let j = m - 1;
+
+        // Compare pattern backwards
+        while (j >= 0 && pattern[j] === text[skip + j]) {
+            j--;
+        }
+
+        if (j < 0) {
+            matches.push(skip);
+            skip += m; // or shift more intelligently using good-suffix (optional)
+        } else {
+            const badChar = text[skip + j];
+            skip += badCharShift[badChar] || m;
+        }
+    }
+
+    return matches;
 }
 
-// Or as an arrow function
-const removeSpaces = (text: string): string => text.replace(/\s/g, '');
-
-// Usage
-const result: string = removeSpaces("Hello World TypeScript");
-const text = "Hello World\tTypeScript\nCode";
-const result = text.replace(/\s/g, '');
-console.log(result); // "HelloWorldTypeScriptCode"
+// Example usage:
+const text = "HERE IS A SIMPLE EXAMPLE";
+const pattern = "EXAMPLE";
+console.log(boyerMooreSearch(text, pattern)); // Output: [17]
