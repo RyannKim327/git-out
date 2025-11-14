@@ -1,52 +1,34 @@
-function topologicalSort<T>(edges: [T, T][]): T[] {
-    // Step 1: Build the adjacency list and in-degree map
-    const adjList = new Map<T, T[]>();
-    const inDegree = new Map<T, number>();
-
-    for (const [from, to] of edges) {
-        if (!adjList.has(from)) adjList.set(from, []);
-        if (!adjList.has(to)) adjList.set(to, []);
-        adjList.get(from)!.push(to);
-
-        inDegree.set(to, (inDegree.get(to) || 0) + 1);
-        if (!inDegree.has(from)) inDegree.set(from, 0);
-    }
-
-    // Step 2: Find all nodes with in-degree 0
-    const queue: T[] = [];
-    for (const [node, degree] of inDegree.entries()) {
-        if (degree === 0) queue.push(node);
-    }
-
-    // Step 3: Process the queue
-    const sorted: T[] = [];
-    while (queue.length > 0) {
-        const node = queue.shift()!;
-        sorted.push(node);
-
-        for (const neighbor of adjList.get(node) || []) {
-            inDegree.set(neighbor, inDegree.get(neighbor)! - 1);
-            if (inDegree.get(neighbor) === 0) {
-                queue.push(neighbor);
-            }
-        }
-    }
-
-    // Step 4: Detect cycle
-    if (sorted.length !== adjList.size) {
-        throw new Error("Graph has at least one cycle, topological sort not possible.");
-    }
-
-    return sorted;
+function countCharOccurrences(str: string, char: string): number {
+  if (char.length !== 1) {
+    throw new Error('Input must be a single character.');
+  }
+  let count = 0;
+  for (const c of str) {
+    if (c === char) count++;
+  }
+  return count;
 }
 
-// Example Usage:
-const edges: [string, string][] = [
-    ["A", "C"],
-    ["B", "C"],
-    ["C", "D"],
-    ["D", "E"]
-];
+// Example usage
+console.log(countCharOccurrences("hello", "l")); // Output: 2
+function countCharOccurrences(str: string, char: string): number {
+  if (char.length !== 1) {
+    throw new Error('Input must be a single character.');
+  }
+  return str.split(char).length - 1;
+}
 
-console.log(topologicalSort(edges)); 
-// Possible output: ["A", "B", "C", "D", "E"]
+// Example usage
+console.log(countCharOccurrences("apple", "p")); // Output: 2
+function countCharOccurrences(str: string, char: string): number {
+  if (char.length !== 1) {
+    throw new Error('Input must be a single character.');
+  }
+  const escapedChar = char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex special chars
+  const regex = new RegExp(escapedChar, 'g'); // Global regex
+  const matches = str.match(regex);
+  return matches ? matches.length : 0;
+}
+
+// Example usage
+console.log(countCharOccurrences("banana", "a")); // Output: 3
