@@ -1,34 +1,58 @@
-function countCharOccurrences(str: string, char: string): number {
-  if (char.length !== 1) {
-    throw new Error('Input must be a single character.');
-  }
-  let count = 0;
-  for (const c of str) {
-    if (c === char) count++;
-  }
-  return count;
-}
+class TrieNode {
+  children: Map<string, TrieNode>;
+  isEndOfWord: boolean;
 
-// Example usage
-console.log(countCharOccurrences("hello", "l")); // Output: 2
-function countCharOccurrences(str: string, char: string): number {
-  if (char.length !== 1) {
-    throw new Error('Input must be a single character.');
+  constructor() {
+    this.children = new Map();
+    this.isEndOfWord = false;
   }
-  return str.split(char).length - 1;
 }
+class Trie {
+  private root: TrieNode;
 
-// Example usage
-console.log(countCharOccurrences("apple", "p")); // Output: 2
-function countCharOccurrences(str: string, char: string): number {
-  if (char.length !== 1) {
-    throw new Error('Input must be a single character.');
+  constructor() {
+    this.root = new TrieNode();
   }
-  const escapedChar = char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex special chars
-  const regex = new RegExp(escapedChar, 'g'); // Global regex
-  const matches = str.match(regex);
-  return matches ? matches.length : 0;
-}
 
-// Example usage
-console.log(countCharOccurrences("banana", "a")); // Output: 3
+  insert(word: string): void {
+    let node = this.root;
+    for (const char of word) {
+      if (!node.children.has(char)) {
+        node.children.set(char, new TrieNode());
+      }
+      node = node.children.get(char)!;
+    }
+    node.isEndOfWord = true;
+  }
+
+  search(word: string): boolean {
+    let node = this.root;
+    for (const char of word) {
+      if (!node.children.has(char)) {
+        return false;
+      }
+      node = node.children.get(char)!;
+    }
+    return node.isEndOfWord;
+  }
+
+  startsWith(prefix: string): boolean {
+    let node = this.root;
+    for (const char of prefix) {
+      if (!node.children.has(char)) {
+        return false;
+      }
+      node = node.children.get(char)!;
+    }
+    return true;
+  }
+}
+const trie = new Trie();
+trie.insert("apple");
+trie.insert("app");
+
+console.log(trie.search("apple"));    // true
+console.log(trie.search("app"));      // true
+console.log(trie.search("appl"));     // false
+console.log(trie.startsWith("appl")); // true
+console.log(trie.startsWith("bat"));  // false
