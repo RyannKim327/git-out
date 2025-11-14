@@ -1,71 +1,140 @@
-const table = new Map<string, number>();
+class TreeNode<T> {
+    value: T;
+    left: TreeNode<T> | null;
+    right: TreeNode<T> | null;
 
-table.set("apple", 5);
-table.set("banana", 2);
-
-console.log(table.get("apple")); // 5
-console.log(table.has("banana")); // true
-table.delete("banana");
-class HashTable<V> {
-  private buckets: [string, V][][]; // array of arrays of key-value pairs
-  private size: number;
-
-  constructor(size: number = 16) {
-    this.size = size;
-    this.buckets = Array.from({ length: size }, () => []);
-  }
-
-  private hash(key: string): number {
-    let hashValue = 0;
-    for (let i = 0; i < key.length; i++) {
-      hashValue = (hashValue + key.charCodeAt(i) * i) % this.size;
+    constructor(value: T) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
     }
-    return hashValue;
-  }
-
-  set(key: string, value: V): void {
-    const index = this.hash(key);
-    const bucket = this.buckets[index];
-
-    for (let i = 0; i < bucket.length; i++) {
-      if (bucket[i][0] === key) {
-        bucket[i][1] = value; // Update
-        return;
-      }
-    }
-
-    bucket.push([key, value]);
-  }
-
-  get(key: string): V | undefined {
-    const index = this.hash(key);
-    const bucket = this.buckets[index];
-
-    for (const [k, v] of bucket) {
-      if (k === key) return v;
-    }
-    return undefined;
-  }
-
-  remove(key: string): boolean {
-    const index = this.hash(key);
-    const bucket = this.buckets[index];
-
-    for (let i = 0; i < bucket.length; i++) {
-      if (bucket[i][0] === key) {
-        bucket.splice(i, 1);
-        return true;
-      }
-    }
-    return false;
-  }
 }
 
-// Usage:
-const table = new HashTable<number>();
-table.set("apple", 5);
-table.set("banana", 2);
+function countLeafNodes<T>(root: TreeNode<T> | null): number {
+    if (root === null) {
+        return 0;
+    }
+    
+    // If both children are null, it's a leaf node
+    if (root.left === null && root.right === null) {
+        return 1;
+    }
+    
+    // Recursively count leaf nodes in left and right subtrees
+    return countLeafNodes(root.left) + countLeafNodes(root.right);
+}
+function countLeafNodesIterative<T>(root: TreeNode<T> | null): number {
+    if (root === null) return 0;
+    
+    let count = 0;
+    const queue: TreeNode<T>[] = [root];
+    
+    while (queue.length > 0) {
+        const currentNode = queue.shift()!;
+        
+        // If it's a leaf node, increment count
+        if (currentNode.left === null && currentNode.right === null) {
+            count++;
+        }
+        
+        // Add children to queue
+        if (currentNode.left !== null) {
+            queue.push(currentNode.left);
+        }
+        if (currentNode.right !== null) {
+            queue.push(currentNode.right);
+        }
+    }
+    
+    return count;
+}
+function countLeafNodesDFS<T>(root: TreeNode<T> | null): number {
+    if (root === null) return 0;
+    
+    let count = 0;
+    const stack: TreeNode<T>[] = [root];
+    
+    while (stack.length > 0) {
+        const currentNode = stack.pop()!;
+        
+        // If it's a leaf node, increment count
+        if (currentNode.left === null && currentNode.right === null) {
+            count++;
+        }
+        
+        // Add children to stack (right first, then left for proper order)
+        if (currentNode.right !== null) {
+            stack.push(currentNode.right);
+        }
+        if (currentNode.left !== null) {
+            stack.push(currentNode.left);
+        }
+    }
+    
+    return count;
+}
+// Complete implementation with usage example
+class BinaryTree<T> {
+    root: TreeNode<T> | null;
 
-console.log(table.get("apple")); // 5
-table.remove("banana");
-console.log(table.get("banana")); // undefined
+    constructor() {
+        this.root = null;
+    }
+
+    // Method to count leaf nodes (using recursive approach)
+    countLeafNodes(): number {
+        return this.countLeavesRecursive(this.root);
+    }
+
+    private countLeavesRecursive(node: TreeNode<T> | null): number {
+        if (node === null) {
+            return 0;
+        }
+        
+        if (node.left === null && node.right === null) {
+            return 1;
+        }
+        
+        return this.countLeavesRecursive(node.left) + this.countLeavesRecursive(node.right);
+    }
+}
+
+// Usage example
+const tree = new BinaryTree<number>();
+tree.root = new TreeNode(1);
+tree.root.left = new TreeNode(2);
+tree.root.right = new TreeNode(3);
+tree.root.left.left = new TreeNode(4);
+tree.root.left.right = new TreeNode(5);
+tree.root.right.right = new TreeNode(6);
+
+console.log("Number of leaf nodes:", tree.countLeafNodes()); // Output: 3
+class TreeNode<T> {
+    value: T;
+    left: TreeNode<T> | null;
+    right: TreeNode<T> | null;
+
+    constructor(value: T) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+    }
+
+    // Instance method to count leaf nodes in subtree
+    countLeafNodesInSubtree(): number {
+        if (this.left === null && this.right === null) {
+            return 1;
+        }
+        
+        const leftCount = this.left ? this.left.countLeafNodesInSubtree() : 0;
+        const rightCount = this.right ? this.right.countLeafNodesInSubtree() : 0;
+        
+        return leftCount + rightCount;
+    }
+}
+
+// Usage
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+console.log(root.countLeafNodesInSubtree()); // Output: 2
