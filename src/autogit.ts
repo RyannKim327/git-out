@@ -1,58 +1,64 @@
-class TrieNode {
-  children: Map<string, TrieNode>;
-  isEndOfWord: boolean;
-
-  constructor() {
-    this.children = new Map();
-    this.isEndOfWord = false;
-  }
-}
-class Trie {
-  private root: TrieNode;
-
-  constructor() {
-    this.root = new TrieNode();
-  }
-
-  insert(word: string): void {
-    let node = this.root;
-    for (const char of word) {
-      if (!node.children.has(char)) {
-        node.children.set(char, new TrieNode());
-      }
-      node = node.children.get(char)!;
-    }
-    node.isEndOfWord = true;
-  }
-
-  search(word: string): boolean {
-    let node = this.root;
-    for (const char of word) {
-      if (!node.children.has(char)) {
-        return false;
-      }
-      node = node.children.get(char)!;
-    }
-    return node.isEndOfWord;
-  }
-
-  startsWith(prefix: string): boolean {
-    let node = this.root;
-    for (const char of prefix) {
-      if (!node.children.has(char)) {
-        return false;
-      }
-      node = node.children.get(char)!;
+function isPalindrome(s: string): boolean {
+    const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    let left = 0;
+    let right = cleaned.length - 1;
+    
+    while (left < right) {
+        if (cleaned[left] !== cleaned[right]) {
+            return false;
+        }
+        left++;
+        right--;
     }
     return true;
-  }
 }
-const trie = new Trie();
-trie.insert("apple");
-trie.insert("app");
+function isPalindrome(s: string): boolean {
+    const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return cleaned === cleaned.split('').reverse().join('');
+}
+function isPalindrome(s: string): boolean {
+    const alphanumeric = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return isPalindromeHelper(alphanumeric);
+}
 
-console.log(trie.search("apple"));    // true
-console.log(trie.search("app"));      // true
-console.log(trie.search("appl"));     // false
-console.log(trie.startsWith("appl")); // true
-console.log(trie.startsWith("bat"));  // false
+function isPalindromeHelper(s: string): boolean {
+    for (let i = 0; i < Math.floor(s.length / 2); i++) {
+        if (s[i] !== s[s.length - 1 - i]) {
+            return false;
+        }
+    }
+    return true;
+}
+function isValidPalindrome(input: string): boolean {
+    if (typeof input !== 'string') {
+        throw new Error('Input must be a string');
+    }
+    
+    // Remove non-alphanumeric characters and convert to lowercase
+    const cleaned = input.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    // Check if empty or single character
+    if (cleaned.length <= 1) {
+        return true;
+    }
+    
+    // Two-pointer approach
+    let left = 0;
+    let right = cleaned.length - 1;
+    
+    while (left < right) {
+        if (cleaned[left] !== cleaned[right]) {
+            return false;
+        }
+        left++;
+        right--;
+    }
+    
+    return true;
+}
+// Test cases
+console.log(isValidPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isValidPalindrome("race a car")); // false
+console.log(isValidPalindrome(" ")); // true
+console.log(isValidPalindrome("0P")); // false
+console.log(isValidPalindrome("madam")); // true
