@@ -1,58 +1,130 @@
-// For regular arrays
-const numbers: number[] = [1, 2, 3, 4, 5];
-numbers.reverse();
-console.log(numbers); // [5, 4, 3, 2, 1]
-
-// For string arrays
-const fruits: string[] = ['apple', 'banana', 'cherry'];
-fruits.reverse();
-console.log(fruits); // ['cherry', 'banana', 'apple']
-
-// For mixed types (using generics or union types)
-const mixed: (string | number)[] = ['hello', 42, 'world', 99];
-mixed.reverse();
-console.log(mixed); // [99, 'world', 42, 'hello']
-const numbers: number[] = [1, 2, 3, 4, 5];
-
-// Method 1: Spread operator + reverse()
-const reversed1 = [...numbers].reverse();
-
-// Method 2: slice() + reverse()
-const reversed2 = numbers.slice().reverse();
-
-// Method 3: Array.from() + reverse()
-const reversed3 = Array.from(numbers).reverse();
-
-console.log(numbers);    // [1, 2, 3, 4, 5] (unchanged)
-console.log(reversed1);  // [5, 4, 3, 2, 1]
-console.log(reversed2);  // [5, 4, 3, 2, 1]
-console.log(reversed3);  // [5, 4, 3, 2, 1]
-function reverseArray<T>(arr: T[]): T[] {
-    const reversed: T[] = [];
-    for (let i = arr.length - 1; i >= 0; i--) {
-        reversed.push(arr[i]);
+class BurrowsWheelerTransform {
+  /**
+   * Applies the Burrows-Wheeler Transform to a string
+   * @param input The input string to transform
+   * @returns The transformed string and the original index
+   */
+  static encode(input: string): { transformed: string; index: number } {
+    if (input.length === 0) {
+      return { transformed: '', index: -1 };
     }
-    return reversed;
+
+    // Create all rotations
+    const rotations: string[] = [];
+    for (let i = 0; i < input.length; i++) {
+      rotations.push(input.slice(i) + input.slice(0, i));
+    }
+
+    // Sort rotations lexicographically
+    rotations.sort();
+
+    // Find the original string index
+    const index = rotations.indexOf(input);
+
+    // Extract last characters
+    const transformed = rotations.map(rotation => rotation.charAt(rotation.length - 1)).join('');
+
+    return { transformed, index };
+  }
+
+  /**
+   * Reverses the Burrows-Wheeler Transform
+   * @param transformed The transformed string
+   * @param index The original index
+   * @returns The original string
+   */
+  static decode(transformed: string, index: number): string {
+    if (transformed.length === 0) {
+      return '';
+    }
+
+    // Initialize table with empty strings
+    let table: string[] = new Array(transformed.length).fill('');
+
+    // Reconstruct by repeatedly inserting transformed chars and sorting
+    for (let i = 0; i < transformed.length; i++) {
+      for (let j = 0; j < transformed.length; j++) {
+        table[j] = transformed.charAt(j) + table[j];
+      }
+      table.sort();
+    }
+
+    return table[index];
+  }
+
+  /**
+   * Optimized decode using the LF mapping property
+   * @param transformed The transformed string
+   * @param index The original index
+   * @returns The original string
+   */
+  static decodeOptimized(transformed: string, index: number): string {
+    if (transformed.length === 0) {
+      return '';
+    }
+
+    // Create frequency table and next pointers
+    const chars = transformed.split('');
+    const sortedChars = [...chars].sort();
+    
+    // Build the next pointer array
+    const next: number[] = new Array(chars.length);
+    const used: boolean[] = new Array(chars.length).fill(false);
+    
+    for (let i = 0; i < chars.length; i++) {
+      const char = sortedChars[i];
+      for (let j = 0; j < chars.length; j++) {
+        if (chars[j] === char && !used[j]) {
+          next[i] = j;
+          used[j] = true;
+          break;
+        }
+      }
+    }
+    
+    // Reconstruct the original string
+    let result = '';
+    let ptr = index;
+    
+    for (let i = 0; i < chars.length; i++) {
+      result = transformed.charAt(ptr) + result;
+      ptr = next[ptr];
+    }
+    
+    return result;
+  }
 }
 
-// Usage
-const numbers = [1, 2, 3, 4, 5];
-const strings = ['a', 'b', 'c'];
-const reversedNumbers = reverseArray(numbers);
-const reversedStrings = reverseArray(strings);
+// Usage Examples
+const examples = () => {
+  // Test with different strings
+  const testStrings = ['banana', 'typescript', 'mississippi', 'a', ''];
 
-console.log(reversedNumbers); // [5, 4, 3, 2, 1]
-console.log(reversedStrings); // ['c', 'b', 'a']
-function reverseArray<T>(arr: T[]): T[] {
-    return arr.reduce<T[]>((acc, current) => [current, ...acc], []);
-}
+  testStrings.forEach(input => {
+    console.log(`Original: "${input}"`);
+    
+    const encoded = BurrowsWheelerTransform.encode(input);
+    console.log(`Encoded: "${encoded.transformed}" (index: ${encoded.index})`);
+    
+    const decoded = BurrowsWheelerTransform.decode(encoded.transformed, encoded.index);
+    console.log(`Decoded: "${decoded}"`);
+    
+    const decodedOptimized = BurrowsWheelerTransform.decodeOptimized(encoded.transformed, encoded.index);
+    console.log(`Optimized Decode: "${decodedOptimized}"`);
+    
+    console.log('---');
+  });
+};
 
-const numbers = [1, 2, 3, 4, 5];
-const reversed = reverseArray(numbers);
-console.log(reversed); // [5, 4, 3, 2, 1]
-// If you have a readonly array
-const readonlyArray: readonly number[] = [1, 2, 3, 4, 5];
+// Run examples
+examples();
 
-// You'll need to create a new array
-const reversed = [...readonlyArray].reverse();
-console.log(reversed); // [5, 4, 3, 2, 1]
+// Export for use in other modules
+export { BurrowsWheelerTransform };
+// Simple usage
+const input = "banana";
+const encoded = BurrowsWheelerTransform.encode(input);
+console.log(encoded); // { transformed: "nnbaaa", index: 3 }
+
+const decoded = BurrowsWheelerTransform.decode(encoded.transformed, encoded.index);
+console.log(decoded); // "banana"
