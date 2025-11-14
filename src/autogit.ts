@@ -1,64 +1,58 @@
-function quickSort(arr: number[]): number[] {
-    // Base case: arrays with 0 or 1 element are already "sorted"
-    if (arr.length <= 1) {
-        return arr;
+// For regular arrays
+const numbers: number[] = [1, 2, 3, 4, 5];
+numbers.reverse();
+console.log(numbers); // [5, 4, 3, 2, 1]
+
+// For string arrays
+const fruits: string[] = ['apple', 'banana', 'cherry'];
+fruits.reverse();
+console.log(fruits); // ['cherry', 'banana', 'apple']
+
+// For mixed types (using generics or union types)
+const mixed: (string | number)[] = ['hello', 42, 'world', 99];
+mixed.reverse();
+console.log(mixed); // [99, 'world', 42, 'hello']
+const numbers: number[] = [1, 2, 3, 4, 5];
+
+// Method 1: Spread operator + reverse()
+const reversed1 = [...numbers].reverse();
+
+// Method 2: slice() + reverse()
+const reversed2 = numbers.slice().reverse();
+
+// Method 3: Array.from() + reverse()
+const reversed3 = Array.from(numbers).reverse();
+
+console.log(numbers);    // [1, 2, 3, 4, 5] (unchanged)
+console.log(reversed1);  // [5, 4, 3, 2, 1]
+console.log(reversed2);  // [5, 4, 3, 2, 1]
+console.log(reversed3);  // [5, 4, 3, 2, 1]
+function reverseArray<T>(arr: T[]): T[] {
+    const reversed: T[] = [];
+    for (let i = arr.length - 1; i >= 0; i--) {
+        reversed.push(arr[i]);
     }
-
-    // Select a pivot element (middle element in this implementation)
-    const pivotIndex = Math.floor(arr.length / 2);
-    const pivot = arr[pivotIndex];
-
-    // Partition the array into three sub-arrays
-    const less: number[] = [];
-    const equal: number[] = [];
-    const greater: number[] = [];
-
-    for (const element of arr) {
-        if (element < pivot) {
-            less.push(element);
-        } else if (element === pivot) {
-            equal.push(element);
-        } else {
-            greater.push(element);
-        }
-    }
-
-    // Recursively sort the partitions and combine results
-    return [...quickSort(less), ...equal, ...quickSort(greater)];
+    return reversed;
 }
 
-// Example usage:
-const unsortedArray = [9, 3, 7, 4, 6, 1, 2, 8, 5];
-const sortedArray = quickSort(unsortedArray);
+// Usage
+const numbers = [1, 2, 3, 4, 5];
+const strings = ['a', 'b', 'c'];
+const reversedNumbers = reverseArray(numbers);
+const reversedStrings = reverseArray(strings);
 
-console.log(sortedArray); // [1, 2, 3, 4, 5, 6, 7, 8, 9]
-function genericQuickSort<T>(arr: T[], compare: (a: T, b: T) => number): T[] {
-    if (arr.length <= 1) return arr;
-    
-    const pivot = arr[Math.floor(arr.length / 2)];
-    const less: T[] = [];
-    const equal: T[] = [];
-    const greater: T[] = [];
-    
-    for (const element of arr) {
-        const cmp = compare(element, pivot);
-        if (cmp < 0) less.push(element);
-        else if (cmp === 0) equal.push(element);
-        else greater.push(element);
-    }
-    
-    return [
-        ...genericQuickSort(less, compare),
-        ...equal,
-        ...genericQuickSort(greater, compare)
-    ];
+console.log(reversedNumbers); // [5, 4, 3, 2, 1]
+console.log(reversedStrings); // ['c', 'b', 'a']
+function reverseArray<T>(arr: T[]): T[] {
+    return arr.reduce<T[]>((acc, current) => [current, ...acc], []);
 }
 
-// Example usage with numbers:
-genericQuickSort([3, 1, 4, 1, 5], (a, b) => a - b);
+const numbers = [1, 2, 3, 4, 5];
+const reversed = reverseArray(numbers);
+console.log(reversed); // [5, 4, 3, 2, 1]
+// If you have a readonly array
+const readonlyArray: readonly number[] = [1, 2, 3, 4, 5];
 
-// Example usage with custom objects:
-genericQuickSort(
-    [{age: 30}, {age: 20}, {age: 25}], 
-    (a, b) => a.age - b.age
-);
+// You'll need to create a new array
+const reversed = [...readonlyArray].reverse();
+console.log(reversed); // [5, 4, 3, 2, 1]
