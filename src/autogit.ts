@@ -1,101 +1,153 @@
-interface BeamSearchState<T> {
-    sequence: T[];       // Current sequence of elements
-    score: number;       // Cumulative score (log probability)
-    isTerminal?: boolean; // Whether this state is a terminal/end state
-}
-
-type NextStatesFn<T> = (currentState: BeamSearchState<T>) => BeamSearchState<T>[];
-type ScoreComparator<T> = (a: BeamSearchState<T>, b: BeamSearchState<T>) => number;
-
-/**
- * Beam Search Algorithm Implementation
- * 
- * @param initialStates Initial states to start the search from
- * @param beamWidth Number of candidates to keep at each step
- * @param maxSteps Maximum steps to execute (sequence length limit)
- * @param getNextStates Function to generate next possible states
- * @param compareScores Function to compare states for ordering (higher scores first)
- * @returns Best found state (highest scoring complete sequence)
- */
-function beamSearch<T>(
-    initialStates: BeamSearchState<T>[],
-    beamWidth: number,
-    maxSteps: number,
-    getNextStates: NextStatesFn<T>,
-    compareScores: ScoreComparator<T> = (a, b) => b.score - a.score
-): BeamSearchState<T> {
-    let beam: BeamSearchState<T>[] = [...initialStates];
-
-    for (let step = 0; step < maxSteps; step++) {
-        // Generate all possible next states from current beam
-        const allCandidates: BeamSearchState<T>[] = [];
+class HeapSort {
+    public static sort<T>(array: T[]): T[] {
+        const n = array.length;
         
-        for (const state of beam) {
-            // Skip expansion if we're in a terminal state
-            if (state.isTerminal) {
-                allCandidates.push(state);
-                continue;
-            }
-
-            // Generate and add next states
-            const nextStates = getNextStates(state);
-            allCandidates.push(...nextStates);
+        // Build max heap
+        for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+            HeapSort.heapify(array, n, i);
         }
-
-        // Filter out any invalid states
-        const validCandidates = allCandidates.filter(s => s !== undefined);
-
-        // Sort candidates by score and select top-k (beamWidth)
-        validCandidates.sort(compareScores);
-        beam = validCandidates.slice(0, beamWidth);
-
-        // Early exit if all states are terminal
-        if (beam.every(state => state.isTerminal)) {
-            break;
+        
+        // Extract elements from heap one by one
+        for (let i = n - 1; i > 0; i--) {
+            // Move current root to end
+            [array[0], array[i]] = [array[i], array[0]];
+            
+            // Call heapify on the reduced heap
+            HeapSort.heapify(array, i, 0);
+        }
+        
+        return array;
+    }
+    
+    private static heapify<T>(array: T[], n: number, i: number): void {
+        let largest = i; // Initialize largest as root
+        const left = 2 * i + 1; // Left child
+        const right = 2 * i + 2; // Right child
+        
+        // If left child is larger than root
+        if (left < n && array[left] > array[largest]) {
+            largest = left;
+        }
+        
+        // If right child is larger than largest so far
+        if (right < n && array[right] > array[largest]) {
+            largest = right;
+        }
+        
+        // If largest is not root
+        if (largest !== i) {
+            [array[i], array[largest]] = [array[largest], array[i]];
+            
+            // Recursively heapify the affected sub-tree
+            HeapSort.heapify(array, n, largest);
         }
     }
-
-    // Return the best state from the final beam
-    return beam.sort(compareScores)[0];
 }
 
-// Example Usage: Sequence generation with word fragments
-interface WordState extends BeamSearchState<string> {
-    // Additional properties could be added here
+// Generic version with comparator
+class HeapSortGeneric {
+    public static sort<T>(
+        array: T[], 
+        comparator: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
+    ): T[] {
+        const n = array.length;
+        
+        // Build max heap
+        for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+            HeapSortGeneric.heapify(array, n, i, comparator);
+        }
+        
+        // Extract elements from heap
+        for (let i = n - 1; i > 0; i--) {
+            [array[0], array[i]] = [array[i], array[0]];
+            HeapSortGeneric.heapify(array, i, 0, comparator);
+        }
+        
+        return array;
+    }
+    
+    private static heapify<T>(
+        array: T[], 
+        n: number, 
+        i: number, 
+        comparator: (a: T, b: T) => number
+    ): void {
+        let largest = i;
+        const left = 2 * i + 1;
+        const right = 2 * i + 2;
+        
+        if (left < n && comparator(array[left], array[largest]) > 0) {
+            largest = left;
+        }
+        
+        if (right < n && comparator(array[right], array[largest]) > 0) {
+            largest = right;
+        }
+        
+        if (largest !== i) {
+            [array[i], array[largest]] = [array[largest], array[i]];
+            HeapSortGeneric.heapify(array, n, largest, comparator);
+        }
+    }
 }
 
-// Create initial state
-const initialState: WordState = {
-    sequence: [],
-    score: 0,
-    isTerminal: false
-};
-
-// Define how to generate next states
-const getNextWordFragments: NextStatesFn<string> = (currentState) => {
-    // In a real implementation, this would generate plausible next tokens
-    // Here's a simplified example with probabilities
-    const candidates = [
-        {token: "The", score: currentState.score + Math.log(0.6)},
-        {token: "A", score: currentState.score + Math.log(0.3)},
-        {token: "This", score: currentState.score + Math.log(0.1)},
+// Example usage and testing
+function testHeapSort() {
+    // Test with numbers
+    const numbers = [64, 34, 25, 12, 22, 11, 90];
+    console.log("Original array:", numbers);
+    console.log("Sorted array:", HeapSort.sort(numbers));
+    
+    // Test with strings
+    const strings = ["banana", "apple", "cherry", "date"];
+    console.log("Original strings:", strings);
+    console.log("Sorted strings:", HeapSort.sort(strings));
+    
+    // Test with custom comparator (descending order)
+    const descendingComparator = (a: number, b: number) => b - a;
+    const numbersDesc = [64, 34, 25, 12, 22, 11, 90];
+    console.log("Descending sorted:", HeapSortGeneric.sort(numbersDesc, descendingComparator));
+    
+    // Test with custom objects
+    interface Person {
+        name: string;
+        age: number;
+    }
+    
+    const people: Person[] = [
+        { name: "John", age: 30 },
+        { name: "Jane", age: 25 },
+        { name: "Bob", age: 35 }
     ];
+    
+    const ageComparator = (a: Person, b: Person) => a.age - b.age;
+    console.log("Sorted by age:", HeapSortGeneric.sort(people, ageComparator));
+}
 
-    return candidates.map(c => ({
-        sequence: [...currentState.sequence, c.token],
-        score: c.score,
-        // End when we have 3 words
-        isTerminal: currentState.sequence.length >= 2
-    }));
-};
+// Run tests
+testHeapSort();
+// Basic usage with numbers
+const sortedNumbers = HeapSort.sort([3, 1, 4, 1, 5, 9, 2, 6]);
 
-// Run beam search
-const bestState = beamSearch<string>(
-    [initialState],
-    3,  // Beam width
-    3,  // Max length
-    getNextWordFragments
+// Custom comparator for descending order
+const descending = HeapSortGeneric.sort(
+    [3, 1, 4, 1, 5, 9, 2, 6],
+    (a, b) => b - a
 );
 
-console.log("Best sequence:", bestState.sequence.join(" "));
-console.log("Score:", bestState.score);
+// Sorting custom objects
+interface Product {
+    name: string;
+    price: number;
+}
+
+const products: Product[] = [
+    { name: "Laptop", price: 1000 },
+    { name: "Phone", price: 500 },
+    { name: "Tablet", price: 300 }
+];
+
+const sortedByPrice = HeapSortGeneric.sort(
+    products,
+    (a, b) => a.price - b.price
+);
