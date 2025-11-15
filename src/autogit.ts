@@ -1,52 +1,62 @@
-function findFirstRepeatedCharacter(inputString: string): string | null {
-    // A Set to store characters we've encountered so far
-    const seenChars = new Set<string>();
+/**
+ * In-place heap sort (ascending by default).
+ * @param arr        Array to sort.
+ * @param compareFn  Optional comparator. Defaults to ascending for numbers.
+ * @returns          The same array instance, now sorted.
+ */
+export function heapSort<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
+): T[] {
+  const n = arr.length;
 
-    // Iterate through each character of the string
-    for (let i = 0; i < inputString.length; i++) {
-        const char = inputString[i];
+  /* ---------- helpers ---------- */
+  const parent = (i: number) => ((i - 1) >> 1) >>> 0;
+  const left   = (i: number) => (i * 2 + 1) >>> 0;
+  const right  = (i: number) => (i * 2 + 2) >>> 0;
 
-        // If the character is already in our Set, it means we've seen it before,
-        // so this is the first repeated character.
-        if (seenChars.has(char)) {
-            return char; // Return the repeated character
-        }
+  const swap = (i: number, j: number) => [arr[i], arr[j]] = [arr[j], arr[i]];
 
-        // If the character is not in our Set, add it so we can track it.
-        seenChars.add(char);
+  // Establish max-heap property (for ascending order)
+  const heapify = (end: number, i: number) => {
+    let largest = i;
+    const l = left(i);
+    const r = right(i);
+
+    if (l < end && compareFn(arr[l], arr[largest]) > 0) largest = l;
+    if (r < end && compareFn(arr[r], arr[largest]) > 0) largest = r;
+
+    if (largest !== i) {
+      swap(i, largest);
+      heapify(end, largest);
     }
+  };
 
-    // If the loop finishes, it means no character was repeated.
-    return null; // Or you could return an empty string, or throw an error, etc.
+  /* ---------- build max-heap ---------- */
+  for (let i = parent(n - 1); i >= 0; --i) heapify(n, i);
+
+  /* ---------- extract elements ---------- */
+  for (let end = n - 1; end > 0; --end) {
+    swap(0, end);          // move current max to final position
+    heapify(end, 0);         // restore heap on remaining [0..end-1]
+  }
+
+  return arr;
 }
 
-// --- Examples ---
-console.log(`"abracadabra": ${findFirstRepeatedCharacter("abracadabra")}`); // Output: "a"
-console.log(`"hello": ${findFirstRepeatedCharacter("hello")}`);           // Output: "l"
-console.log(`"typescript": ${findFirstRepeatedCharacter("typescript")}`); // Output: "t"
-console.log(`"apple": ${findFirstRepeatedCharacter("apple")}`);           // Output: "p"
-console.log(`"javascript": ${findFirstRepeatedCharacter("javascript")}`); // Output: "a"
-console.log(`"unique": ${findFirstRepeatedCharacter("unique")}`);         // Output: null
-console.log(`"": ${findFirstRepeatedCharacter("")}`);                     // Output: null
-console.log(`"Aba": ${findFirstRepeatedCharacter("Aba")}`);               // Output: "a" (case-sensitive)
-console.log(`"Racecar": ${findFirstRepeatedCharacter("Racecar")}`);       // Output: "a" (case-sensitive)
-function findFirstRepeatedCharacterCaseInsensitive(inputString: string): string | null {
-    const seenChars = new Set<string>();
+/* ---------- quick demo ---------- */
+if (require.main === module) {
+  const nums = [5, 3, 6, 2, 9, 1];
+  console.log("original:", nums);
+  heapSort(nums);
+  console.log("sorted:  ", nums);
 
-    for (let i = 0; i < inputString.length; i++) {
-        const originalChar = inputString[i];
-        const lowerChar = originalChar.toLowerCase(); // Convert to lowercase
-
-        if (seenChars.has(lowerChar)) {
-            // Note: This returns the character *as it appears* in the string,
-            // not its lowercase version. If you want the lowercase version, return `lowerChar`.
-            return originalChar; 
-        }
-
-        seenChars.add(lowerChar);
-    }
-    return null;
+  // Descending order example
+  const words = ["pear", "apple", "banana"];
+  heapSort(words, (a, b) => b.localeCompare(a));
+  console.log("words ↓:", words);
 }
-
-console.log(`"Racecar" (case-insensitive): ${findFirstRepeatedCharacterCaseInsensitive("Racecar")}`); // Output: "e" (because 'e' is seen, then 'c' then 'a' then 'r' then 'c' again)
-console.log(`"Aba" (case-insensitive): ${findFirstRepeatedCharacterCaseInsensitive("Aba")}`);       // Output: "a" (because 'A' is seen, then 'b', then 'a' (lowercase 'a') is repeated)
+npx ts-node heapSort.ts
+original: [ 5, 3, 6, 2, 9, 1 ]
+sorted:   [ 1, 2, 3, 5, 6, 9 ]
+words ↓: [ 'pear', 'banana', 'apple' ]
