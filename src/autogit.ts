@@ -1,144 +1,122 @@
-interface PriorityQueueItem<T> {
-    item: T;
-    priority: number;
+export interface Graph<T> {
+  key(node: T): string;          // unique id for a node
+  neighbors(node: T): Iterable<T>;
+}
+/**
+ * Bidirectional Breadth-First Search
+ * ------------------------------------
+ * Returns the shortest path (array of nodes) from start to goal.
+ * Works on any object type T as long as you supply a Graph<T>.
+ */
+export function biBFS<T>(
+  graph: Graph<T>,
+  start: T,
+  goal: T
+): T[] | null {
+  if (graph.key(start) === graph.key(goal)) return [start];
+
+  // ---- front 0 (start -> goal) ----
+  const queue0: T[] = [start];
+  const parent0 = new Map<string, T>();        // key -> predecessor
+  parent0.set(graph.key(start), null as any);
+
+  // ---- front 1 (goal -> start) ----
+  const queue1: T[] = [goal];
+  const parent1 = new Map<string, T>();
+  parent1.set(graph.key(goal), null as any);
+
+  // ---- visited sets ----
+  const visited0 = new Set<string>([graph.key(start)]);
+  const visited1 = new Set<string>([graph.key(goal)]);
+
+  // ---- alternately expand fronts ----
+  let expand0 = true;                          // toggle direction
+  while (queue0.length && queue1.length) {
+    const currentExpand0 = expand0;
+    expand0 = !expand0;
+
+    const [currentQueue, currentVisited, otherVisited, currentParent] =
+      currentExpand0
+        ? [queue0, visited0, visited1, parent0]
+        : [queue1, visited1, visited0, parent1];
+
+    const levelSize = currentQueue.length;
+    for (let i = 0; i < levelSize; i++) {
+      const node = currentQueue.shift()!;
+
+      for (const neighbor of graph.neighbors(node)) {
+        const k = graph.key(neighbor);
+
+        if (currentVisited.has(k)) continue;
+        currentVisited.add(k);
+        currentParent.set(k, node);
+        currentQueue.push(neighbor);
+
+        // ----- collision? -----
+        if (otherVisited.has(k)) {
+          return reconstructPath(
+            graph,
+            parent0,
+            parent1,
+            currentExpand0 ? neighbor : start,
+            currentExpand0 ? goal : neighbor
+          );
+        }
+      }
+    }
+  }
+
+  return null; // no path
 }
 
-class PriorityQueue<T> {
-    private heap: PriorityQueueItem<T>[] = [];
-    private readonly isMinHeap: boolean;
+/* -------------------------------------------------------------- */
+/* helpers                                                        */
+/* -------------------------------------------------------------- */
+function reconstructPath<T>(
+  graph: Graph<T>,
+  parent0: Map<string, T>,
+  parent1: Map<string, T>,
+  touch0: T,
+  touch1: T
+): T[] {
+  const key0 = graph.key(touch0);
+  const key1 = graph.key(touch1);
 
-    constructor(isMinHeap: boolean = true) {
-        this.isMinHeap = isMinHeap;
-    }
+  // path from start to meeting point
+  const left: T[] = [];
+  let n: T | null = touch0;
+  while (n !== null) {
+    left.push(n);
+    n = parent0.get(graph.key(n))!;
+  }
+  left.reverse();
 
-    // Add an item with priority
-    enqueue(item: T, priority: number): void {
-        const newItem: PriorityQueueItem<T> = { item, priority };
-        this.heap.push(newItem);
-        this.bubbleUp(this.heap.length - 1);
-    }
+  // path from meeting point to goal
+  const right: T[] = [];
+  n = touch1;
+  while (n !== null) {
+    right.push(n);
+    n = parent1.get(graph.key(n))!;
+  }
 
-    // Remove and return the highest priority item
-    dequeue(): T | null {
-        if (this.isEmpty()) return null;
-        
-        const root = this.heap[0];
-        const last = this.heap.pop()!;
-        
-        if (this.heap.length > 0) {
-            this.heap[0] = last;
-            this.sinkDown(0);
-        }
-        
-        return root.item;
-    }
-
-    // Peek at the highest priority item without removing it
-    peek(): T | null {
-        return this.isEmpty() ? null : this.heap[0].item;
-    }
-
-    // Check if queue is empty
-    isEmpty(): boolean {
-        return this.heap.length === 0;
-    }
-
-    // Get queue size
-    size(): number {
-        return this.heap.length;
-    }
-
-    // Clear the queue
-    clear(): void {
-        this.heap = [];
-    }
-
-    // Convert to array for debugging/inspection
-    toArray(): PriorityQueueItem<T>[] {
-        return [...this.heap];
-    }
-
-    // Private helper methods
-    private compare(priority1: number, priority2: number): boolean {
-        return this.isMinHeap ? priority1 < priority2 : priority1 > priority2;
-    }
-
-    private bubbleUp(index: number): void {
-        const element = this.heap[index];
-        
-        while (index > 0) {
-            const parentIndex = Math.floor((index - 1) / 2);
-            const parent = this.heap[parentIndex];
-            
-            if (!this.compare(element.priority, parent.priority)) break;
-            
-            this.heap[parentIndex] = element;
-            this.heap[index] = parent;
-            index = parentIndex;
-        }
-    }
-
-    private sinkDown(index: number): void {
-        const length = this.heap.length;
-        const element = this.heap[index];
-        
-        while (true) {
-            let leftChildIndex = 2 * index + 1;
-            let rightChildIndex = 2 * index + 2;
-            let swapIndex = null;
-            
-            if (leftChildIndex < length) {
-                if (this.compare(this.heap[leftChildIndex].priority, element.priority)) {
-                    swapIndex = leftChildIndex;
-                }
-            }
-            
-            if (rightChildIndex < length) {
-                if (
-                    (swapIndex === null && this.compare(this.heap[rightChildIndex].priority, element.priority)) ||
-                    (swapIndex !== null && this.compare(this.heap[rightChildIndex].priority, this.heap[leftChildIndex].priority))
-                ) {
-                    swapIndex = rightChildIndex;
-                }
-            }
-            
-            if (swapIndex === null) break;
-            
-            this.heap[index] = this.heap[swapIndex];
-            this.heap[swapIndex] = element;
-            index = swapIndex;
-        }
-    }
+  // stitch together (touch0 and touch1 are the same node)
+  return left.concat(right.slice(1));
 }
-// Min-heap (default) - lower numbers = higher priority
-const minQueue = new PriorityQueue<number>(true);
-minQueue.enqueue("Task A", 3);
-minQueue.enqueue("Task B", 1);
-minQueue.enqueue("Task C", 2);
+// ---------- a tiny un-directed graph ----------
+const edges: Record<string, string[]> = {
+  A: ["B", "C"],
+  B: ["A", "D", "E"],
+  C: ["A", "F"],
+  D: ["B"],
+  E: ["B", "F"],
+  F: ["C", "E", "G"],
+  G: ["F"],
+};
 
-console.log(minQueue.dequeue()); // "Task B" (priority 1)
-console.log(minQueue.dequeue()); // "Task C" (priority 2)
-console.log(minQueue.dequeue()); // "Task A" (priority 3)
+const graph: Graph<string> = {
+  key: (n) => n,
+  neighbors: (n) => edges[n] || [],
+};
 
-// Max-heap - higher numbers = higher priority
-const maxQueue = new PriorityQueue<string>(false);
-maxQueue.enqueue("Low Priority", 1);
-maxQueue.enqueue("High Priority", 10);
-maxQueue.enqueue("Medium Priority", 5);
-
-console.log(maxQueue.dequeue()); // "High Priority" (priority 10)
-console.log(maxQueue.dequeue()); // "Medium Priority" (priority 5)
-console.log(maxQueue.dequeue()); // "Low Priority" (priority 1)
-
-// Custom object example
-interface Task {
-    name: string;
-    description: string;
-}
-
-const taskQueue = new PriorityQueue<Task>();
-taskQueue.enqueue({ name: "Bug Fix", description: "Fix critical bug" }, 1);
-taskQueue.enqueue({ name: "Feature", description: "Implement new feature" }, 3);
-taskQueue.enqueue({ name: "Refactor", description: "Code cleanup" }, 2);
-
-console.log(taskQueue.dequeue()); // Bug Fix task
+const path = biBFS(graph, "A", "G");
+console.log(path); // -> [ 'A', 'C', 'F', 'G' ]
