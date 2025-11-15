@@ -1,40 +1,45 @@
-function longestCommonSubsequence(str1: string, str2: string): string {
-    const m = str1.length;
-    const n = str2.length;
+function isAnagram(str1: string, str2: string): boolean {
+    // Normalize strings: lowercase, remove non-letters, sort characters
+    const normalize = (str: string): string => {
+        return str
+            .toLowerCase()
+            .replace(/[^a-z]/g, '')   // Remove non-alphabetic characters
+            .split('')
+            .sort()
+            .join('');
+    };
 
-    // Initialize DP table with (m+1) rows and (n+1) columns filled with 0s
-    const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-
-    // Fill the DP table
-    for (let i = 1; i <= m; i++) {
-        for (let j = 1; j <= n; j++) {
-            if (str1[i - 1] === str2[j - 1]) {
-                dp[i][j] = dp[i - 1][j - 1] + 1;
-            } else {
-                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-            }
-        }
-    }
-
-    // Backtrack to reconstruct the LCS
-    let i = m;
-    let j = n;
-    const lcsChars: string[] = [];
-
-    while (i > 0 && j > 0) {
-        if (str1[i - 1] === str2[j - 1]) {
-            lcsChars.push(str1[i - 1]);
-            i--;
-            j--;
-        } else if (dp[i - 1][j] > dp[i][j - 1]) {
-            i--;
-        } else {
-            j--;
-        }
-    }
-
-    return lcsChars.reverse().join('');
+    return normalize(str1) === normalize(str2);
 }
-console.log(longestCommonSubsequence("ABCBDAB", "BDCAB")); // Outputs "BCAB" or "BDAB"
-console.log(longestCommonSubsequence("abcde", "ace")); // Outputs "ace"
-console.log(longestCommonSubsequence("", "abc")); // Outputs ""
+function isAnagram(str1: string, str2: string): boolean {
+    // Normalize strings: lowercase and remove non-letters
+    const normalize = (str: string): string => {
+        return str.toLowerCase().replace(/[^a-z]/g, '');
+    };
+
+    const normalizedStr1 = normalize(str1);
+    const normalizedStr2 = normalize(str2);
+
+    // Early exit if lengths differ
+    if (normalizedStr1.length !== normalizedStr2.length) return false;
+
+    // Count character frequencies
+    const charCount = new Map<string, number>();
+
+    // Increment counts for str1
+    for (const char of normalizedStr1) {
+        charCount.set(char, (charCount.get(char) || 0) + 1);
+    }
+
+    // Decrement counts for str2
+    for (const char of normalizedStr2) {
+        const count = charCount.get(char) || 0;
+        if (count === 0) return false;  // Character not present or already exhausted
+        charCount.set(char, count - 1);
+    }
+
+    return true;
+}
+console.log(isAnagram('listen', 'silent'));  // true
+console.log(isAnagram('rail safety', 'fairy tales')); // true
+console.log(isAnagram('Hello', 'World'));    // false
