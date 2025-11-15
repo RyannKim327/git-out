@@ -1,83 +1,127 @@
-function countingSort(arr: number[]): number[] {
-    // 1. Handle edge cases: empty or single-element array is already sorted
-    if (arr.length <= 1) {
-        return [...arr]; // Return a copy to maintain immutability
+function insertionSort(arr: number[]): number[] {
+    // Create a copy to avoid mutating the original array
+    const sortedArray = [...arr];
+    
+    for (let i = 1; i < sortedArray.length; i++) {
+        const current = sortedArray[i];
+        let j = i - 1;
+        
+        // Shift elements greater than current to the right
+        while (j >= 0 && sortedArray[j] > current) {
+            sortedArray[j + 1] = sortedArray[j];
+            j--;
+        }
+        
+        // Insert current in correct position
+        sortedArray[j + 1] = current;
     }
+    
+    return sortedArray;
+}
+function insertionSortGeneric<T>(
+    arr: T[], 
+    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
+): T[] {
+    const sortedArray = [...arr];
+    
+    for (let i = 1; i < sortedArray.length; i++) {
+        const current = sortedArray[i];
+        let j = i - 1;
+        
+        while (j >= 0 && compareFn(sortedArray[j], current) > 0) {
+            sortedArray[j + 1] = sortedArray[j];
+            j--;
+        }
+        
+        sortedArray[j + 1] = current;
+    }
+    
+    return sortedArray;
+}
+// Basic number sorting
+function insertionSort(arr: number[]): number[] {
+    const sortedArray = [...arr];
+    
+    for (let i = 1; i < sortedArray.length; i++) {
+        const current = sortedArray[i];
+        let j = i - 1;
+        
+        while (j >= 0 && sortedArray[j] > current) {
+            sortedArray[j + 1] = sortedArray[j];
+            j--;
+        }
+        
+        sortedArray[j + 1] = current;
+    }
+    
+    return sortedArray;
+}
 
-    // 2. Find the maximum element in the input array.
-    // This determines the size of our 'count' array.
-    let max = arr[0];
+// Generic version for any comparable type
+function insertionSortGeneric<T>(
+    arr: T[], 
+    compareFn: (a: T, b: T) => number
+): T[] {
+    const sortedArray = [...arr];
+    
+    for (let i = 1; i < sortedArray.length; i++) {
+        const current = sortedArray[i];
+        let j = i - 1;
+        
+        while (j >= 0 && compareFn(sortedArray[j], current) > 0) {
+            sortedArray[j + 1] = sortedArray[j];
+            j--;
+        }
+        
+        sortedArray[j + 1] = current;
+    }
+    
+    return sortedArray;
+}
+
+// Usage examples
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log('Original:', numbers);
+console.log('Sorted:', insertionSort(numbers));
+
+// Using generic version with numbers
+const sortedNumbers = insertionSortGeneric(numbers, (a, b) => a - b);
+console.log('Generic sorted:', sortedNumbers);
+
+// Using with strings
+const strings = ['banana', 'apple', 'cherry', 'date'];
+const sortedStrings = insertionSortGeneric(strings, (a, b) => a.localeCompare(b));
+console.log('Sorted strings:', sortedStrings);
+
+// Using with custom objects
+interface Person {
+    name: string;
+    age: number;
+}
+
+const people: Person[] = [
+    { name: 'Alice', age: 30 },
+    { name: 'Bob', age: 25 },
+    { name: 'Charlie', age: 35 }
+];
+
+const sortedByAge = insertionSortGeneric(people, (a, b) => a.age - b.age);
+console.log('Sorted by age:', sortedByAge);
+function insertionSortInPlace(arr: number[]): void {
     for (let i = 1; i < arr.length; i++) {
-        if (arr[i] < 0) {
-            // Counting sort typically assumes non-negative integers.
-            // For negative numbers, you'd need to adapt by finding min and shifting.
-            throw new Error("Counting sort as implemented here does not support negative numbers.");
+        const current = arr[i];
+        let j = i - 1;
+        
+        while (j >= 0 && arr[j] > current) {
+            arr[j + 1] = arr[j];
+            j--;
         }
-        if (arr[i] > max) {
-            max = arr[i];
-        }
+        
+        arr[j + 1] = current;
     }
-
-    // 3. Create a 'count' array (frequency array) and initialize with zeros.
-    // Its size will be (max + 1) to accommodate numbers from 0 to max.
-    const countArray: number[] = new Array(max + 1).fill(0);
-
-    // 4. Populate the 'count' array.
-    // For each number in the input array, increment its corresponding count.
-    for (const num of arr) {
-        countArray[num]++;
-    }
-
-    // 5. Modify the 'count' array to store cumulative sums.
-    // This step is crucial. After this, countArray[i] will store the actual position
-    // (index + 1) of the last occurrence of number 'i' in the sorted output array.
-    for (let i = 1; i < countArray.length; i++) {
-        countArray[i] += countArray[i - 1];
-    }
-
-    // 6. Create an 'output' array to store the sorted elements.
-    // It will have the same length as the input array.
-    const outputArray: number[] = new Array(arr.length);
-
-    // 7. Populate the 'output' array.
-    // Iterate through the input array in reverse order to ensure stability
-    // (elements with the same value maintain their relative order).
-    for (let i = arr.length - 1; i >= 0; i--) {
-        const num = arr[i];
-        // The sorted position for 'num' is countArray[num] - 1.
-        // We subtract 1 because array indices are 0-based.
-        outputArray[countArray[num] - 1] = num;
-        // Decrement the count for 'num' as we've placed one instance of it.
-        countArray[num]--;
-    }
-
-    // 8. Return the sorted output array.
-    return outputArray;
 }
 
-// --- Example Usage ---
-
-const unsortedArray1 = [4, 2, 2, 8, 3, 3, 1];
-console.log("Original array 1:", unsortedArray1);
-console.log("Sorted array 1:", countingSort(unsortedArray1)); // Expected: [1, 2, 2, 3, 3, 4, 8]
-
-const unsortedArray2 = [10, 4, 1, 4, 1, 7, 5, 0, 9];
-console.log("Original array 2:", unsortedArray2);
-console.log("Sorted array 2:", countingSort(unsortedArray2)); // Expected: [0, 1, 1, 4, 4, 5, 7, 9, 10]
-
-const unsortedArray3 = [5];
-console.log("Original array 3:", unsortedArray3);
-console.log("Sorted array 3:", countingSort(unsortedArray3)); // Expected: [5]
-
-const unsortedArray4: number[] = [];
-console.log("Original array 4:", unsortedArray4);
-console.log("Sorted array 4:", countingSort(unsortedArray4)); // Expected: []
-
-// Example with negative numbers (will throw an error as per implementation)
-try {
-    const unsortedArrayNegative = [3, 1, -5, 2];
-    console.log("Original array (with negative):", unsortedArrayNegative);
-    console.log("Sorted array (with negative):", countingSort(unsortedArrayNegative));
-} catch (error: any) {
-    console.error("Error for negative numbers:", error.message);
-}
+// Usage
+const mutableArray = [64, 34, 25, 12, 22, 11, 90];
+insertionSortInPlace(mutableArray);
+console.log('In-place sorted:', mutableArray); // Original array is modified
