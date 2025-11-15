@@ -1,16 +1,90 @@
-/**
- * Returns a random integer N such that min ≤ N ≤ max.
- * Both bounds are inclusive.
- */
-function randomInt(min: number, max: number): number {
-  const lo = Math.ceil(min);
-  const hi = Math.floor(max);
-  return Math.floor(Math.random() * (hi - lo + 1)) + lo;
+function getStringLength(str: string): number {
+    let count = 0;
+    for (let i = 0; str[i] !== undefined; i++) {
+        count++;
+    }
+    return count;
 }
 
-// examples
-console.log(randomInt(1, 6));   // dice: 1..6
-console.log(randomInt(10, 10)); // always 10
-function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min; // min ≤ x < max
+// Usage
+const myString = "Hello, TypeScript!";
+console.log(getStringLength(myString)); // Output: 18
+function getStringLengthWhile(str: string): number {
+    let count = 0;
+    while (str[count] !== undefined) {
+        count++;
+    }
+    return count;
+}
+
+// Usage
+const text = "Programming";
+console.log(getStringLengthWhile(text)); // Output: 11
+function getStringLengthArray(str: string): number {
+    let count = 0;
+    const arr = Array.from(str);
+    for (const char of arr) {
+        count++;
+    }
+    return count;
+}
+
+// Or more simply:
+function getStringLengthSpread(str: string): number {
+    return [...str].reduce(count => count + 1, 0);
+}
+
+// Usage
+const example = "TypeScript";
+console.log(getStringLengthArray(example)); // Output: 10
+console.log(getStringLengthSpread(example)); // Output: 10
+function getStringLengthRecursive(str: string, index: number = 0): number {
+    if (str[index] === undefined) {
+        return index;
+    }
+    return getStringLengthRecursive(str, index + 1);
+}
+
+// Usage
+const recursiveTest = "Recursion";
+console.log(getStringLengthRecursive(recursiveTest)); // Output: 9
+function getStringLengthIterator(str: string): number {
+    let count = 0;
+    const iterator = str[Symbol.iterator]();
+    let result = iterator.next();
+    
+    while (!result.done) {
+        count++;
+        result = iterator.next();
+    }
+    return count;
+}
+
+// Usage
+const iteratorTest = "Iterator";
+console.log(getStringLengthIterator(iteratorTest)); // Output: 8
+function findStringLength(input: unknown): number {
+    // Type guard to ensure input is a string
+    if (typeof input !== 'string') {
+        throw new Error('Input must be a string');
+    }
+    
+    let length = 0;
+    const str = input as string;
+    
+    for (let i = 0; str[i] !== undefined; i++) {
+        length++;
+    }
+    
+    return length;
+}
+
+// Usage examples
+try {
+    console.log(findStringLength("Hello")); // 5
+    console.log(findStringLength("")); // 0
+    console.log(findStringLength("👋🌍")); // 2 (handles emojis correctly)
+    // console.log(findStringLength(123)); // Error: Input must be a string
+} catch (error) {
+    console.error(error.message);
 }
