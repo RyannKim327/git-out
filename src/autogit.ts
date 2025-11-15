@@ -1,52 +1,25 @@
-const str = "  Hello   World\n\t!  ";
-const result = str.replace(/\s/g, '');
-console.log(result); // "HelloWorld!"
-const str = "   Hello World   ";
-const result = str.replace(/^\s+/, '');
-console.log(result); // "Hello World   "
-const str = "   Hello World   ";
-const result = str.replace(/\s+$/, '');
-console.log(result); // "   Hello World"
-const str = "   Hello World   ";
-const result = str.trim();
-console.log(result); // "Hello World"
-const str = "  Hello   World\n\t!  ";
-const result = str.replace(/\s+/g, ' ').trim();
-console.log(result); // "Hello World !"
-// Remove all whitespace
-const removeAllWhitespace = (input: string): string => {
-    return input.replace(/\s/g, '');
-};
-
-// Remove extra whitespace (keep single spaces)
-const normalizeWhitespace = (input: string): string => {
-    return input.replace(/\s+/g, ' ').trim();
-};
-function removeSpecificWhitespace(
-    input: string, 
-    options: { 
-        removeSpaces?: boolean; 
-        removeTabs?: boolean; 
-        removeNewlines?: boolean 
-    } = {}
-): string {
-    let pattern = '';
+function selectionSort(arr: number[]): number[] {
+  let n = arr.length;
+  
+  for (let i = 0; i < n - 1; i++) {
+    let minIndex = i;
     
-    if (options.removeSpaces) pattern += ' ';
-    if (options.removeTabs) pattern += '\\t';
-    if (options.removeNewlines) pattern += '\\n\\r';
-    
-    if (pattern) {
-        const regex = new RegExp(`[${pattern}]`, 'g');
-        return input.replace(regex, '');
+    // Find the minimum element in unsorted portion
+    for (let j = i + 1; j < n; j++) {
+      if (arr[j] < arr[minIndex]) {
+        minIndex = j;
+      }
     }
     
-    return input;
+    // Swap the found minimum element with the first element
+    if (minIndex !== i) {
+      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+    }
+  }
+  
+  return arr;
 }
 
-// Example usage
-const result = removeSpecificWhitespace("Hello\nWorld\t!", {
-    removeNewlines: true,
-    removeTabs: true
-});
-console.log(result); // "HelloWorld!"
+// Example usage:
+const nums = [64, 25, 12, 22, 11];
+console.log(selectionSort(nums)); // Output: [11, 12, 22, 25, 64]
