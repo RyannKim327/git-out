@@ -1,45 +1,16 @@
-function isAnagram(str1: string, str2: string): boolean {
-    // Normalize strings: lowercase, remove non-letters, sort characters
-    const normalize = (str: string): string => {
-        return str
-            .toLowerCase()
-            .replace(/[^a-z]/g, '')   // Remove non-alphabetic characters
-            .split('')
-            .sort()
-            .join('');
-    };
-
-    return normalize(str1) === normalize(str2);
+/**
+ * Returns a random integer N such that min ≤ N ≤ max.
+ * Both bounds are inclusive.
+ */
+function randomInt(min: number, max: number): number {
+  const lo = Math.ceil(min);
+  const hi = Math.floor(max);
+  return Math.floor(Math.random() * (hi - lo + 1)) + lo;
 }
-function isAnagram(str1: string, str2: string): boolean {
-    // Normalize strings: lowercase and remove non-letters
-    const normalize = (str: string): string => {
-        return str.toLowerCase().replace(/[^a-z]/g, '');
-    };
 
-    const normalizedStr1 = normalize(str1);
-    const normalizedStr2 = normalize(str2);
-
-    // Early exit if lengths differ
-    if (normalizedStr1.length !== normalizedStr2.length) return false;
-
-    // Count character frequencies
-    const charCount = new Map<string, number>();
-
-    // Increment counts for str1
-    for (const char of normalizedStr1) {
-        charCount.set(char, (charCount.get(char) || 0) + 1);
-    }
-
-    // Decrement counts for str2
-    for (const char of normalizedStr2) {
-        const count = charCount.get(char) || 0;
-        if (count === 0) return false;  // Character not present or already exhausted
-        charCount.set(char, count - 1);
-    }
-
-    return true;
+// examples
+console.log(randomInt(1, 6));   // dice: 1..6
+console.log(randomInt(10, 10)); // always 10
+function randomFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min; // min ≤ x < max
 }
-console.log(isAnagram('listen', 'silent'));  // true
-console.log(isAnagram('rail safety', 'fairy tales')); // true
-console.log(isAnagram('Hello', 'World'));    // false
