@@ -1,157 +1,168 @@
-interface GraphNode {
-    id: number;
-    neighbors: GraphNode[];
+/**
+ * Represents a graph using an adjacency list.
+ * Keys are nodes, values are arrays of neighboring nodes.
+ */
+type Graph<T> = Map<T, T[]>;
+
+/**
+ * Reconstructs the path from a parent map.
+ * Given a parent map (child -> parent), a start node, and an end node,
+ * it builds the path from start to end.
+ *
+ * @param parents The parent map (child -> parent).
+ * @param startNode The actual start node of the segment being reconstructed.
+ * @param endNode The actual end node of the segment being reconstructed.
+ * @returns An array representing the path from startNode to endNode.
+ */
+function reconstructPathSegment<T>(
+  parents: Map<T, T | undefined>,
+  startNode: T, // Note: This is the 'source' for the path segment
+  endNode: T    // Note: This is the 'destination' for the path segment
+): T[] {
+  const path: T[] = [];
+  let current: T | undefined = endNode;
+
+  while (current !== undefined) {
+    path.push(current);
+    // Move to the parent
+    current = parents.get(current);
+  }
+  // The path is currently from end to start, so reverse it
+  return path.reverse();
 }
 
-class TarjanSCC {
-    private graph: GraphNode[];
-    private index: number = 0;
-    private stack: GraphNode[] = [];
-    private indices: Map<GraphNode, number> = new Map();
-    private lowlinks: Map<GraphNode, number> = new Map();
-    private onStack: Set<GraphNode> = new Set();
-    private sccs: GraphNode[][] = [];
+/**
+ * Implements a bi-directional search algorithm to find the shortest path
+ * between a start node and an end node in an unweighted graph.
+ *
+ * @param graph The graph represented as an adjacency list.
+ * @param start The starting node.
+ * @param end The target node.
+ * @returns An array of nodes representing the shortest path, or null if no path exists.
+ */
+function bidirectionalSearch<T>(graph: Graph<T>, start: T, end: T): T[] | null {
+  // Handle edge case: start and end are the same
+  if (start === end) {
+    return [start];
+  }
 
-    constructor(graph: GraphNode[]) {
-        this.graph = graph;
+  // --- Initialize Forward Search (from start) ---
+  const queueA: T[] = [start];
+  const visitedA: Set<T> = new Set();
+  const parentsA: Map<T, T | undefined> = new Map(); // child -> parent
+  visitedA.add(start);
+  parentsA.set(start, undefined); // Start node has no parent
+
+  // --- Initialize Backward Search (from end) ---
+  const queueB: T[] = [end];
+  const visitedB: Set<T> = new Set();
+  const parentsB: Map<T, T | undefined> = new Map(); // child -> parent
+  visitedB.add(end);
+  parentsB.set(end, undefined); // End node has no parent
+
+  let meetingNode: T | null = null;
+
+  // Main loop: continue as long as both queues have elements
+  while (queueA.length > 0 && queueB.length > 0) {
+
+    // --- Expand from the 'start' side (queueA) ---
+    const currentNodeA = queueA.shift()!; // Using ! because we checked length
+
+    // Check if the current node from search A has been visited by search B
+    if (visitedB.has(currentNodeA)) {
+      meetingNode = currentNodeA;
+      break; // Path found!
     }
 
-    findSCCs(): GraphNode[][] {
-        // Reset state for each run
-        this.index = 0;
-        this.stack = [];
-        this.indices.clear();
-        this.lowlinks.clear();
-        this.onStack.clear();
-        this.sccs = [];
-
-        // Process each node that hasn't been visited
-        for (const node of this.graph) {
-            if (!this.indices.has(node)) {
-                this.strongConnect(node);
-            }
-        }
-
-        return this.sccs;
+    const neighborsA = graph.get(currentNodeA) || [];
+    for (const neighbor of neighborsA) {
+      if (!visitedA.has(neighbor)) {
+        visitedA.add(neighbor);
+        parentsA.set(neighbor, currentNodeA);
+        queueA.push(neighbor);
+      }
     }
 
-    private strongConnect(node: GraphNode): void {
-        this.indices.set(node, this.index);
-        this.lowlinks.set(node, this.index);
-        this.index++;
-        this.stack.push(node);
-        this.onStack.add(node);
+    // --- Expand from the 'end' side (queueB) ---
+    const currentNodeB = queueB.shift()!; // Using ! because we checked length
 
-        // Process all neighbors
-        for (const neighbor of node.neighbors) {
-            if (!this.indices.has(neighbor)) {
-                // Neighbor hasn't been visited yet
-                this.strongConnect(neighbor);
-                this.lowlinks.set(node, Math.min(
-                    this.lowlinks.get(node)!,
-                    this.lowlinks.get(neighbor)!
-                ));
-            } else if (this.onStack.has(neighbor)) {
-                // Neighbor is in the current SCC
-                this.lowlinks.set(node, Math.min(
-                    this.lowlinks.get(node)!,
-                    this.indices.get(neighbor)!
-                ));
-            }
-        }
-
-        // If node is a root node, pop the stack and generate an SCC
-        if (this.lowlinks.get(node) === this.indices.get(node)) {
-            const scc: GraphNode[] = [];
-            let top: GraphNode;
-            
-            do {
-                top = this.stack.pop()!;
-                this.onStack.delete(top);
-                scc.push(top);
-            } while (top !== node);
-
-            this.sccs.push(scc);
-        }
+    // Check if the current node from search B has been visited by search A
+    if (visitedA.has(currentNodeB)) {
+      meetingNode = currentNodeB;
+      break; // Path found!
     }
+
+    const neighborsB = graph.get(currentNodeB) || [];
+    for (const neighbor of neighborsB) {
+      if (!visitedB.has(neighbor)) {
+        visitedB.add(neighbor);
+        parentsB.set(neighbor, currentNodeB);
+        queueB.push(neighbor);
+      }
+    }
+  }
+
+  // If no meeting node was found, no path exists
+  if (meetingNode === null) {
+    return null;
+  }
+
+  // --- Path Reconstruction ---
+  // The path from 'start' to 'meetingNode' using parentsA
+  const pathToMeetingFromStart = reconstructPathSegment(parentsA, start, meetingNode);
+
+  // The path from 'end' to 'meetingNode' using parentsB
+  // Note: parentsB stores (child -> parent) for the backward search.
+  // When we reconstruct, we're essentially going from meetingNode BACK to end.
+  const pathToMeetingFromEnd = reconstructPathSegment(parentsB, end, meetingNode);
+  // This path is currently [end, ..., meetingNode]. We need to reverse it to [meetingNode, ..., end].
+  const pathFromMeetingToEnd = pathToMeetingFromEnd.reverse();
+
+  // Combine the two paths.
+  // pathToMeetingFromStart is [start, ..., meetingNode]
+  // pathFromMeetingToEnd is [meetingNode, ..., end]
+  // We need to remove the duplicate 'meetingNode' from the second path's start.
+  return pathToMeetingFromStart.concat(pathFromMeetingToEnd.slice(1));
 }
 
-// Utility function to create a graph node
-function createNode(id: number, neighborIds: number[] = []): GraphNode {
-    return {
-        id,
-        neighbors: neighborIds.map(id => ({ id, neighbors: [] } as GraphNode))
-    };
-}
 
-// Example usage and test
-function testTarjanAlgorithm(): void {
-    // Create a sample graph
-    const nodes = [
-        createNode(0, [1]),
-        createNode(1, [2]),
-        createNode(2, [0, 3]),
-        createNode(3, [4]),
-        createNode(4, [5, 7]),
-        createNode(5, [6]),
-        createNode(6, [4, 7]),
-        createNode(7, [])
-    ];
+// --- Example Usage ---
 
-    // Fix neighbor references to point to actual nodes
-    nodes.forEach(node => {
-        node.neighbors = node.neighbors.map(neighbor => 
-            nodes.find(n => n.id === neighbor.id)!
-        );
-    });
+// Create a graph (e.g., representing cities or web pages)
+const cityGraph: Graph<string> = new Map();
 
-    const tarjan = new TarjanSCC(nodes);
-    const sccs = tarjan.findSCCs();
+cityGraph.set("A", ["B", "D"]);
+cityGraph.set("B", ["A", "C", "E"]);
+cityGraph.set("C", ["B", "F"]);
+cityGraph.set("D", ["A", "E", "G"]);
+cityGraph.set("E", ["B", "D", "F", "H"]);
+cityGraph.set("F", ["C", "E", "I"]);
+cityGraph.set("G", ["D", "H"]);
+cityGraph.set("H", ["E", "G", "I"]);
+cityGraph.set("I", ["F", "H"]);
 
-    console.log("Strongly Connected Components:");
-    sccs.forEach((scc, index) => {
-        console.log(`SCC ${index + 1}: [${scc.map(node => node.id).join(', ')}]`);
-    });
-}
+console.log("Graph:");
+cityGraph.forEach((neighbors, node) => console.log(`${node}: ${neighbors.join(", ")}`));
+console.log("\n--- Bi-directional Search ---");
 
-// Run the test
-testTarjanAlgorithm();
-SCC 1: [7]
-SCC 2: [4, 5, 6]
-SCC 3: [3]
-SCC 4: [0, 1, 2]
-// Helper to create a graph from an adjacency list
-function createGraphFromAdjacencyList(adjacencyList: number[][]): GraphNode[] {
-    const nodes: GraphNode[] = [];
-    
-    // Create nodes first
-    for (let i = 0; i < adjacencyList.length; i++) {
-        nodes.push({ id: i, neighbors: [] });
-    }
-    
-    // Then set up neighbors
-    for (let i = 0; i < adjacencyList.length; i++) {
-        const neighbors = adjacencyList[i].map(targetId => 
-            nodes.find(node => node.id === targetId)!
-        );
-        nodes[i].neighbors = neighbors.filter(n => n !== undefined);
-    }
-    
-    return nodes;
-}
+// Test Case 1: Short path
+const path1 = bidirectionalSearch(cityGraph, "A", "I");
+console.log("Path from A to I:", path1 ? path1.join(" -> ") : "No path found"); // Expected: A -> D -> E -> H -> I (or similar)
 
-// Example using adjacency list
-const adjacencyList = [
-    [1],           // node 0 -> node 1
-    [2],           // node 1 -> node 2
-    [0, 3],        // node 2 -> nodes 0, 3
-    [4],           // node 3 -> node 4
-    [5, 7],        // node 4 -> nodes 5, 7
-    [6],           // node 5 -> node 6
-    [4, 7],        // node 6 -> nodes 4, 7
-    []             // node 7 -> no outgoing edges
-];
+// Test Case 2: Direct connection
+const path2 = bidirectionalSearch(cityGraph, "A", "B");
+console.log("Path from A to B:", path2 ? path2.join(" -> ") : "No path found"); // Expected: A -> B
 
-const graphNodes = createGraphFromAdjacencyList(adjacencyList);
-const tarjan = new TarjanSCC(graphNodes);
-const result = tarjan.findSCCs();
+// Test Case 3: Start === End
+const path3 = bidirectionalSearch(cityGraph, "C", "C");
+console.log("Path from C to C:", path3 ? path3.join(" -> ") : "No path found"); // Expected: C
+
+// Test Case 4: No path (if graph were disconnected, this would be null)
+const disconnectedGraph: Graph<string> = new Map();
+disconnectedGraph.set("X", ["Y"]);
+disconnectedGraph.set("Y", ["X"]);
+disconnectedGraph.set("Z", ["W"]);
+disconnectedGraph.set("W", ["Z"]);
+
+const path4 = bidirectionalSearch(disconnectedGraph, "X", "Z");
+console.log("Path from X to Z (disconnected):", path4 ? path4.join(" -> ") : "No path found"); // Expected: No path found
