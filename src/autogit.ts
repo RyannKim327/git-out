@@ -1,161 +1,162 @@
-function mergeSort(arr: number[]): number[] {
-    if (arr.length <= 1) {
-        return arr;
+// 1. Define the Node structure
+class Node<T> {
+    value: T;
+    next: Node<T> | null; // next can be another Node or null if it's the last
+
+    constructor(value: T) {
+        this.value = value;
+        this.next = null;
     }
-    
-    const middle = Math.floor(arr.length / 2);
-    const left = arr.slice(0, middle);
-    const right = arr.slice(middle);
-    
-    return merge(mergeSort(left), mergeSort(right));
 }
 
-function merge(left: number[], right: number[]): number[] {
-    const result: number[] = [];
-    let leftIndex = 0;
-    let rightIndex = 0;
-    
-    while (leftIndex < left.length && rightIndex < right.length) {
-        if (left[leftIndex] < right[rightIndex]) {
-            result.push(left[leftIndex]);
-            leftIndex++;
+// 2. Define the LinkedList structure
+class LinkedList<T> {
+    head: Node<T> | null;
+
+    constructor() {
+        this.head = null;
+    }
+
+    // Helper method to add elements for demonstration
+    append(value: T): void {
+        const newNode = new Node(value);
+        if (!this.head) {
+            this.head = newNode;
         } else {
-            result.push(right[rightIndex]);
-            rightIndex++;
+            let current = this.head;
+            while (current.next) {
+                current = current.next;
+            }
+            current.next = newNode;
         }
     }
-    
-    return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
-}
 
-// Usage
-const unsortedArray = [64, 34, 25, 12, 22, 11, 90];
-const sortedArray = mergeSort(unsortedArray);
-console.log(sortedArray); // [11, 12, 22, 25, 34, 64, 90]
-function mergeSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
-    if (arr.length <= 1) {
-        return arr;
-    }
-    
-    const middle = Math.floor(arr.length / 2);
-    const left = arr.slice(0, middle);
-    const right = arr.slice(middle);
-    
-    return merge(
-        mergeSort(left, compareFn),
-        mergeSort(right, compareFn),
-        compareFn
-    );
+    // You would typically add other methods like prepend, delete, etc.
 }
+class LinkedList<T> {
+    head: Node<T> | null;
+    // ... (constructor and append method as above) ...
 
-function merge<T>(
-    left: T[], 
-    right: T[], 
-    compareFn?: (a: T, b: T) => number
-): T[] {
-    const result: T[] = [];
-    let leftIndex = 0;
-    let rightIndex = 0;
-    
-    // Default comparison function if none provided
-    const compare = compareFn || ((a: T, b: T) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    });
-    
-    while (leftIndex < left.length && rightIndex < right.length) {
-        if (compare(left[leftIndex], right[rightIndex]) <= 0) {
-            result.push(left[leftIndex]);
-            leftIndex++;
-        } else {
-            result.push(right[rightIndex]);
-            rightIndex++;
+    getLengthIterative(): number {
+        let count = 0;
+        let current = this.head; // Start from the head of the list
+
+        while (current !== null) { // While there are still nodes to visit
+            count++;             // Increment the counter
+            current = current.next; // Move to the next node
         }
+        return count;
     }
-    
-    return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
 }
 
-// Usage examples
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-const sortedNumbers = mergeSort(numbers);
-console.log(sortedNumbers);
+// --- Usage Example ---
+const myList1 = new LinkedList<number>();
+console.log("Length of empty list:", myList1.getLengthIterative()); // Output: 0
 
-const strings = ["banana", "apple", "cherry", "date"];
-const sortedStrings = mergeSort(strings);
-console.log(sortedStrings);
+myList1.append(10);
+myList1.append(20);
+myList1.append(30);
+console.log("Length of list [10, 20, 30]:", myList1.getLengthIterative()); // Output: 3
 
-// With custom comparator
-const objects = [
-    { name: "John", age: 25 },
-    { name: "Jane", age: 30 },
-    { name: "Bob", age: 20 }
-];
+myList1.append(40);
+console.log("Length of list [10, 20, 30, 40]:", myList1.getLengthIterative()); // Output: 4
+class LinkedList<T> {
+    head: Node<T> | null;
+    // ... (constructor and append method as above) ...
 
-const sortedByAge = mergeSort(objects, (a, b) => a.age - b.age);
-console.log(sortedByAge);
-function mergeSortInPlace<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
-    if (arr.length <= 1) return arr;
-    
-    const compare = compareFn || ((a: T, b: T) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    });
-    
-    const aux: T[] = [...arr];
-    mergeSortHelper(arr, 0, arr.length - 1, aux, compare);
-    return arr;
-}
-
-function mergeSortHelper<T>(
-    arr: T[], 
-    start: number, 
-    end: number, 
-    aux: T[], 
-    compare: (a: T, b: T) => number
-): void {
-    if (start >= end) return;
-    
-    const mid = Math.floor((start + end) / 2);
-    mergeSortHelper(aux, start, mid, arr, compare);
-    mergeSortHelper(aux, mid + 1, end, arr, compare);
-    mergeInPlace(arr, start, mid, end, aux, compare);
-}
-
-function mergeInPlace<T>(
-    arr: T[], 
-    start: number, 
-    mid: number, 
-    end: number, 
-    aux: T[], 
-    compare: (a: T, b: T) => number
-): void {
-    let i = start;
-    let j = mid + 1;
-    let k = start;
-    
-    while (i <= mid && j <= end) {
-        if (compare(aux[i], aux[j]) <= 0) {
-            arr[k] = aux[i];
-            i++;
-        } else {
-            arr[k] = aux[j];
-            j++;
+    private getLengthRecursiveHelper(node: Node<T> | null): number {
+        if (node === null) {
+            return 0; // Base case: an empty list (or end of list) has length 0
         }
-        k++;
+        return 1 + this.getLengthRecursiveHelper(node.next); // 1 (current node) + length of the rest
     }
-    
-    while (i <= mid) {
-        arr[k] = aux[i];
-        i++;
-        k++;
-    }
-    
-    while (j <= end) {
-        arr[k] = aux[j];
-        j++;
-        k++;
+
+    getLengthRecursive(): number {
+        return this.getLengthRecursiveHelper(this.head);
     }
 }
+
+// --- Usage Example ---
+const myList2 = new LinkedList<string>();
+console.log("Length of empty list (recursive):", myList2.getLengthRecursive()); // Output: 0
+
+myList2.append("apple");
+myList2.append("banana");
+console.log("Length of list ['apple', 'banana'] (recursive):", myList2.getLengthRecursive()); // Output: 2
+class LinkedList<T> {
+    head: Node<T> | null;
+    private _size: number; // Private property to store the current size
+
+    constructor() {
+        this.head = null;
+        this._size = 0; // Initialize size
+    }
+
+    append(value: T): void {
+        const newNode = new Node(value);
+        if (!this.head) {
+            this.head = newNode;
+        } else {
+            let current = this.head;
+            while (current.next) {
+                current = current.next;
+            }
+            current.next = newNode;
+        }
+        this._size++; // Increment size when a node is added
+    }
+
+    // You would also need to update _size in other methods:
+    prepend(value: T): void {
+        const newNode = new Node(value);
+        newNode.next = this.head;
+        this.head = newNode;
+        this._size++; // Increment size
+    }
+
+    delete(value: T): boolean {
+        if (!this.head) {
+            return false;
+        }
+
+        if (this.head.value === value) {
+            this.head = this.head.next;
+            this._size--; // Decrement size
+            return true;
+        }
+
+        let current = this.head;
+        while (current.next && current.next.value !== value) {
+            current = current.next;
+        }
+
+        if (current.next) {
+            current.next = current.next.next;
+            this._size--; // Decrement size
+            return true;
+        }
+        return false;
+    }
+
+    // O(1) operation to get the length
+    getLength(): number {
+        return this._size;
+    }
+}
+
+// --- Usage Example ---
+const myList3 = new LinkedList<string>();
+console.log("\nLength of empty list (stored property):", myList3.getLength()); // Output: 0
+
+myList3.append("Alpha");
+console.log("Length after append 'Alpha':", myList3.getLength()); // Output: 1
+
+myList3.append("Beta");
+myList3.prepend("Gamma"); // Assuming you implement prepend
+console.log("Length after append 'Beta' and prepend 'Gamma':", myList3.getLength()); // Output: 3
+
+myList3.delete("Beta"); // Assuming you implement delete
+console.log("Length after deleting 'Beta':", myList3.getLength()); // Output: 2
+
+myList3.delete("Zeta"); // Not found
+console.log("Length after trying to delete 'Zeta' (not found):", myList3.getLength()); // Output: 2
