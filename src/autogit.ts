@@ -1,40 +1,103 @@
-const numbers: number[] = [5, 2, 9, 1, 7];
-const max = Math.max(...numbers);
-console.log(max); // Output: 9
-const numbers: number[] = [5, 2, 9, 1, 7];
-const max = Math.max.apply(null, numbers);
-console.log(max); // Output: 9
-const numbers: number[] = [5, 2, 9, 1, 7];
-const max = numbers.reduce((a, b) => Math.max(a, b));
-console.log(max); // Output: 9
-function findMax(arr: number[]): number | null {
-    if (arr.length === 0) return null;
-    return Math.max(...arr);
+interface ListNode<T> {
+    value: T;
+    next: ListNode<T> | null;
 }
 
-const numbers: number[] = [5, 2, 9, 1, 7];
-const max = findMax(numbers);
-console.log(max); // Output: 9
-
-const emptyArray: number[] = [];
-console.log(findMax(emptyArray)); // Output: null
-interface Item {
-    value: number;
-    name: string;
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+    if (!head || !head.next) return false;
+    
+    let slow: ListNode<T> | null = head;
+    let fast: ListNode<T> | null = head.next;
+    
+    while (slow !== fast) {
+        if (!fast || !fast.next) return false;
+        
+        slow = slow!.next;
+        fast = fast.next.next;
+    }
+    
+    return true;
+}
+function hasCycleUsingSet<T>(head: ListNode<T> | null): boolean {
+    const visited = new Set<ListNode<T>>();
+    let current: ListNode<T> | null = head;
+    
+    while (current) {
+        if (visited.has(current)) {
+            return true;
+        }
+        visited.add(current);
+        current = current.next;
+    }
+    
+    return false;
+}
+function hasCycleWithMarking<T>(head: ListNode<T> | null): boolean {
+    let current: ListNode<T> | null = head;
+    
+    while (current) {
+        if ((current as any).visited) {
+            return true;
+        }
+        (current as any).visited = true;
+        current = current.next;
+    }
+    
+    return false;
+}
+class LinkedListNode<T> {
+    value: T;
+    next: LinkedListNode<T> | null;
+    
+    constructor(value: T) {
+        this.value = value;
+        this.next = null;
+    }
 }
 
-const items: Item[] = [
-    { value: 5, name: "A" },
-    { value: 9, name: "B" },
-    { value: 3, name: "C" }
-];
+class LinkedList<T> {
+    head: LinkedListNode<T> | null;
+    
+    constructor() {
+        this.head = null;
+    }
+    
+    // Add methods to create cycles for testing
+    createCycle(): void {
+        if (!this.head || !this.head.next) return;
+        
+        let current: LinkedListNode<T> | null = this.head;
+        while (current.next) {
+            current = current.next;
+        }
+        current.next = this.head; // Create cycle
+    }
+    
+    // Check for cycle using Floyd's algorithm
+    hasCycle(): boolean {
+        if (!this.head || !this.head.next) return false;
+        
+        let slow: LinkedListNode<T> | null = this.head;
+        let fast: LinkedListNode<T> | null = this.head.next;
+        
+        while (slow !== fast) {
+            if (!fast || !fast.next) return false;
+            
+            slow = slow!.next;
+            fast = fast.next.next;
+        }
+        
+        return true;
+    }
+}
 
-// Find max value
-const maxValue = Math.max(...items.map(item => item.value));
-console.log(maxValue); // Output: 9
+// Usage example
+const list = new LinkedList<number>();
+list.head = new LinkedListNode(1);
+list.head.next = new LinkedListNode(2);
+list.head.next.next = new LinkedListNode(3);
 
-// Find object with max value
-const maxObject = items.reduce((max, item) => 
-    item.value > max.value ? item : max
-);
-console.log(maxObject); // Output: { value: 9, name: "B" }
+console.log(list.hasCycle()); // false
+
+list.createCycle(); // Create cycle
+console.log(list.hasCycle()); // true
