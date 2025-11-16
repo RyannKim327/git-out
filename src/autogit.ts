@@ -1,10 +1,24 @@
-const str = 'Hello world';
-const needle = 'world';
+class ListNode {
+    value: any;
+    next: ListNode | null;
 
-if (str.includes(needle)) {
-  console.log('Found!');
+    constructor(value: any) {
+        this.value = value;
+        this.next = null;
+    }
 }
-if (str.indexOf(needle) !== -1) {
-  console.log('Found!');
+
+function hasCycle(head: ListNode | null): boolean {
+    let slow = head;
+    let fast = head;
+
+    while (fast !== null && fast.next !== null) {
+        slow = slow.next;
+        fast = fast.next.next;
+
+        if (slow === fast) {
+            return true;
+        }
+    }
+    return false;
 }
-const found = /world/i.test(str);   // i = ignore case
