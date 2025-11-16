@@ -1,223 +1,112 @@
-function interpolationSearch(
-    sortedArray: number[],
-    target: number
-): number {
-    let low = 0;
-    let high = sortedArray.length - 1;
+// Define a type for node IDs (can be string or number)
+type NodeId = string;
 
-    while (low <= high && target >= sortedArray[low] && target <= sortedArray[high]) {
-        // Prevent division by zero
-        if (sortedArray[high] === sortedArray[low]) {
-            if (sortedArray[low] === target) {
-                return low;
+// Define a type for our adjacency list graph
+type AdjacencyList = Map<NodeId, NodeId[]>;
+
+// Example graph:
+// A -- B -- E
+// |    |
+// C -- D
+const graph: AdjacencyList = new Map<NodeId, NodeId[]>();
+graph.set('A', ['B', 'C']);
+graph.set('B', ['A', 'D', 'E']);
+graph.set('C', ['A', 'D']);
+graph.set('D', ['B', 'C']);
+graph.set('E', ['B']);
+graph.set('F', []); // Node F is isolated
+function bfsTraversal(graph: AdjacencyList, startNode: NodeId): NodeId[] {
+    const queue: NodeId[] = []; // Stores nodes to visit
+    const visited = new Set<NodeId>(); // Stores visited nodes
+    const traversalOrder: NodeId[] = []; // Stores the order of visited nodes
+
+    // 1. Enqueue the start node and mark as visited
+    queue.push(startNode);
+    visited.add(startNode);
+
+    // 2. While the queue is not empty
+    while (queue.length > 0) {
+        // a. Dequeue a node
+        const currentNode = queue.shift()!; // '!' asserts that shift() will not return undefined
+
+        // b. Process the current node
+        traversalOrder.push(currentNode);
+        console.log(`Visiting node: ${currentNode}`);
+
+        // c. For each unvisited neighbor of the current node
+        const neighbors = graph.get(currentNode) || []; // Get neighbors, or empty array if node doesn't exist
+        for (const neighbor of neighbors) {
+            if (!visited.has(neighbor)) {
+                visited.add(neighbor); // Mark as visited
+                queue.push(neighbor);  // Enqueue it
             }
-            return -1;
-        }
-
-        // Calculate the probe position using interpolation formula
-        const position = low + Math.floor(
-            ((target - sortedArray[low]) * (high - low)) / 
-            (sortedArray[high] - sortedArray[low])
-        );
-
-        // Check if position is within bounds
-        if (position < low || position > high) {
-            return -1;
-        }
-
-        if (sortedArray[position] === target) {
-            return position;
-        }
-
-        if (sortedArray[position] < target) {
-            low = position + 1;
-        } else {
-            high = position - 1;
         }
     }
 
-    return -1;
+    return traversalOrder;
 }
-function interpolationSearchGeneric<T>(
-    sortedArray: T[],
-    target: T,
-    getValue: (item: T) => number = (item) => item as number
-): number {
-    let low = 0;
-    let high = sortedArray.length - 1;
 
-    const targetValue = getValue(target);
-    const lowValue = getValue(sortedArray[low]);
-    const highValue = getValue(sortedArray[high]);
+console.log("\n--- BFS Traversal from 'A' ---");
+const order = bfsTraversal(graph, 'A');
+console.log("Traversal Order:", order); // Expected: [ 'A', 'B', 'C', 'D', 'E' ] (order of B,C and D,E might vary based on Map iteration or array order)
 
-    while (low <= high && targetValue >= lowValue && targetValue <= highValue) {
-        if (highValue === lowValue) {
-            if (getValue(sortedArray[low]) === targetValue) {
-                return low;
+console.log("\n--- BFS Traversal from 'F' (isolated) ---");
+const isolatedOrder = bfsTraversal(graph, 'F');
+console.log("Traversal Order:", isolatedOrder); // Expected: [ 'F' ]
+/**
+ * Performs a BFS to find the shortest path from a start node to a target node.
+ * @param graph The adjacency list representation of the graph.
+ * @param startNode The starting node.
+ * @param targetNode The node to find a path to.
+ * @returns An array of NodeIds representing the path, or null if no path exists.
+ */
+function bfsShortestPath(
+    graph: AdjacencyList,
+    startNode: NodeId,
+    targetNode: NodeId
+): NodeId[] | null {
+    const queue: NodeId[] = [];
+    const visited = new Set<NodeId>();
+    const parentMap = new Map<NodeId, NodeId | null>(); // To reconstruct the path
+
+    // Initialize for start node
+    queue.push(startNode);
+    visited.add(startNode);
+    parentMap.set(startNode, null); // Start node has no parent
+
+    while (queue.length > 0) {
+        const currentNode = queue.shift()!;
+
+        // If we found the target, reconstruct and return the path
+        if (currentNode === targetNode) {
+            const path: NodeId[] = [];
+            let backtrackNode: NodeId | null = targetNode;
+            while (backtrackNode !== null) {
+                path.unshift(backtrackNode); // Add to the beginning to get correct order
+                backtrackNode = parentMap.get(backtrackNode) || null;
             }
-            return -1;
+            return path;
         }
 
-        const position = low + Math.floor(
-            ((targetValue - lowValue) * (high - low)) / 
-            (highValue - lowValue)
-        );
-
-        if (position < low || position > high) {
-            return -1;
-        }
-
-        const positionValue = getValue(sortedArray[position]);
-        
-        if (positionValue === targetValue) {
-            return position;
-        }
-
-        if (positionValue < targetValue) {
-            low = position + 1;
-        } else {
-            high = position - 1;
+        const neighbors = graph.get(currentNode) || [];
+        for (const neighbor of neighbors) {
+            if (!visited.has(neighbor)) {
+                visited.add(neighbor);
+                parentMap.set(neighbor, currentNode); // Record parent for path reconstruction
+                queue.push(neighbor);
+            }
         }
     }
 
-    return -1;
-}
-class InterpolationSearch {
-    /**
-     * Performs interpolation search on a sorted array
-     * @param sortedArray The sorted array to search
-     * @param target The value to search for
-     * @returns The index of the target, or -1 if not found
-     */
-    static search(sortedArray: number[], target: number): number {
-        // Input validation
-        if (!Array.isArray(sortedArray) || sortedArray.length === 0) {
-            return -1;
-        }
-
-        let low = 0;
-        let high = sortedArray.length - 1;
-
-        while (low <= high && 
-               target >= sortedArray[low] && 
-               target <= sortedArray[high]) {
-            
-            // Handle arrays with uniform values
-            if (sortedArray[low] === sortedArray[high]) {
-                return sortedArray[low] === target ? low : -1;
-            }
-
-            // Calculate probe position using interpolation formula
-            const position = low + Math.floor(
-                ((target - sortedArray[low]) * (high - low)) / 
-                (sortedArray[high] - sortedArray[low])
-            );
-
-            // Safety check for position bounds
-            if (position < low || position > high) {
-                break;
-            }
-
-            const currentValue = sortedArray[position];
-
-            if (currentValue === target) {
-                return position;
-            } else if (currentValue < target) {
-                low = position + 1;
-            } else {
-                high = position - 1;
-            }
-        }
-
-        return -1;
-    }
-
-    /**
-     * Performs interpolation search with additional statistics
-     */
-    static searchWithStats(
-        sortedArray: number[], 
-        target: number
-    ): { index: number; iterations: number; comparisons: number } {
-        let iterations = 0;
-        let comparisons = 0;
-        let low = 0;
-        let high = sortedArray.length - 1;
-
-        while (low <= high && 
-               target >= sortedArray[low] && 
-               target <= sortedArray[high]) {
-            
-            iterations++;
-            
-            if (sortedArray[low] === sortedArray[high]) {
-                comparisons++;
-                return { 
-                    index: sortedArray[low] === target ? low : -1, 
-                    iterations, 
-                    comparisons 
-                };
-            }
-
-            const position = low + Math.floor(
-                ((target - sortedArray[low]) * (high - low)) / 
-                (sortedArray[high] - sortedArray[low])
-            );
-
-            comparisons++;
-            if (position < low || position > high) {
-                break;
-            }
-
-            comparisons++;
-            if (sortedArray[position] === target) {
-                return { index: position, iterations, comparisons };
-            }
-
-            comparisons++;
-            if (sortedArray[position] < target) {
-                low = position + 1;
-            } else {
-                high = position - 1;
-            }
-        }
-
-        return { index: -1, iterations, comparisons };
-    }
+    return null; // No path found
 }
 
-// Example usage
-const numbers = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
-const target = 13;
+console.log("\n--- BFS Shortest Path ---");
+const pathAtoE = bfsShortestPath(graph, 'A', 'E');
+console.log("Path from A to E:", pathAtoE); // Expected: [ 'A', 'B', 'E' ]
 
-// Basic search
-const result1 = InterpolationSearch.search(numbers, target);
-console.log(`Found ${target} at index: ${result1}`);
+const pathAtoD = bfsShortestPath(graph, 'A', 'D');
+console.log("Path from A to D:", pathAtoD); // Expected: [ 'A', 'C', 'D' ] or [ 'A', 'B', 'D' ] (both are length 2)
 
-// Search with statistics
-const result2 = InterpolationSearch.searchWithStats(numbers, target);
-console.log(`Found at index: ${result2.index}, Iterations: ${result2.iterations}, Comparisons: ${result2.comparisons}`);
-
-// Searching for non-existent value
-const missingResult = InterpolationSearch.search(numbers, 8);
-console.log(`Search for 8: ${missingResult}`);
-
-// Using generic version with custom objects
-interface Person {
-    id: number;
-    name: string;
-}
-
-const people: Person[] = [
-    { id: 1, name: "Alice" },
-    { id: 3, name: "Bob" },
-    { id: 5, name: "Charlie" },
-    { id: 7, name: "Diana" },
-];
-
-const personIndex = interpolationSearchGeneric(
-    people, 
-    { id: 5, name: "Charlie" } as Person, 
-    (person: Person) => person.id
-);
-console.log(`Found person at index: ${personIndex}`);
+const pathAtoF = bfsShortestPath(graph, 'A', 'F');
+console.log("Path from A to F:", pathAtoF); // Expected: null
