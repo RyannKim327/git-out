@@ -1,63 +1,31 @@
-function factorial(n: number): number {
-    // Base case: factorial of 0 or 1 is 1
-    if (n <= 1) {
-        return 1;
-    }
-    // Recursive case: n! = n × (n-1)!
-    return n * factorial(n - 1);
+interface TreeNode {
+    value: number;
+    left: TreeNode | null;
+    right: TreeNode | null;
 }
+function countLeaves(root: TreeNode | null): number {
+    if (root === null) {
+        return 0; // Base case: empty node
+    }
+    if (root.left === null && root.right === null) {
+        return 1; // Node is a leaf
+    }
+    // Recurse on left and right subtrees
+    return countLeaves(root.left) + countLeaves(root.right);
+}
+// Create a sample binary tree
+const root: TreeNode = {
+    value: 1,
+    left: {
+        value: 2,
+        left: { value: 4, left: null, right: null },
+        right: { value: 5, left: null, right: null },
+    },
+    right: { 
+        value: 3,
+        left: null,
+        right: { value: 6, left: null, right: null },
+    },
+};
 
-// Example usage
-console.log(factorial(5)); // Output: 120
-console.log(factorial(0)); // Output: 1
-function factorial(n: number): number {
-    // Handle negative numbers
-    if (n < 0) {
-        throw new Error("Factorial is not defined for negative numbers");
-    }
-    
-    // Handle non-integer numbers
-    if (!Number.isInteger(n)) {
-        throw new Error("Factorial is only defined for integers");
-    }
-    
-    // Base case
-    if (n <= 1) {
-        return 1;
-    }
-    
-    // Recursive case
-    return n * factorial(n - 1);
-}
-
-// Example usage
-try {
-    console.log(factorial(5));  // 120
-    console.log(factorial(0));  // 1
-    console.log(factorial(1));  // 1
-    // console.log(factorial(-1)); // Throws error
-    // console.log(factorial(3.5)); // Throws error
-} catch (error) {
-    console.error(error.message);
-}
-function factorialIterative(n: number): number {
-    if (n < 0) throw new Error("Negative numbers not allowed");
-    if (!Number.isInteger(n)) throw new Error("Only integers allowed");
-    
-    let result = 1;
-    for (let i = 2; i <= n; i++) {
-        result *= i;
-    }
-    return result;
-}
-function factorialBigInt(n: bigint): bigint {
-    if (n < 0) throw new Error("Negative numbers not allowed");
-    
-    if (n <= 1) {
-        return 1n;
-    }
-    return n * factorialBigInt(n - 1n);
-}
-
-// Usage with BigInt
-console.log(factorialBigInt(20n).toString()); // 2432902008176640000
+console.log(countLeaves(root)); // Output: 3 (nodes: 4, 5, 6)
