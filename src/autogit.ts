@@ -1,127 +1,181 @@
-import { Capacitor } from '@capacitor/core';
-import { AndroidService } from '@capacitor/android';
+class KMP {
+    /**
+     * Builds the partial match table (also known as failure function or LPS array)
+     * for the given pattern
+     */
+    private static buildPartialMatchTable(pattern: string): number[] {
+        const table: number[] = new Array(pattern.length).fill(0);
+        let length = 0; // length of the previous longest prefix suffix
+        let i = 1;
 
-// Define interface for the Android service response
-interface AndroidResponse {
-  success: boolean;
-  data?: any;
-  error?: string;
-}
+        // table[0] is always 0
+        while (i < pattern.length) {
+            if (pattern[i] === pattern[length]) {
+                length++;
+                table[i] = length;
+                i++;
+            } else {
+                if (length !== 0) {
+                    length = table[length - 1];
+                } else {
+                    table[i] = 0;
+                    i++;
+                }
+            }
+        }
 
-// Async function to connect to Android service
-async function connectToAndroidService(): Promise<AndroidResponse> {
-  try {
-    // Check if running on Android
-    if (Capacitor.getPlatform() !== 'android') {
-      throw new Error('This feature is only available on Android');
+        return table;
     }
 
-    // Execute Android-specific async task
-    const result = await AndroidService.executeAsyncTask({
-      action: 'CONNECT_TO_SERVICE',
-      parameters: {
-        serviceName: 'MyBackgroundService',
-        timeout: 5000
-      }
-    });
+    /**
+     * Searches for all occurrences of pattern in text using KMP algorithm
+     * @returns Array of indices where pattern starts in text
+     */
+    static search(text: string, pattern: string): number[] {
+        if (pattern.length === 0) return [];
+        if (text.length < pattern.length) return [];
 
-    return {
-      success: true,
-      data: result
-    };
-  } catch (error) {
-    console.error('Android service connection failed:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-}
+        const indices: number[] = [];
+        const table = this.buildPartialMatchTable(pattern);
+        
+        let i = 0; // index for text
+        let j = 0; // index for pattern
 
-// Example usage with error handling
-async function performAndroidOperation() {
-  const response = await connectToAndroidService();
-  
-  if (response.success) {
-    console.log('Android service connected successfully:', response.data);
-    // Proceed with Android-specific operations
-  } else {
-    console.error('Failed to connect:', response.error);
-    // Fallback to web implementation
-  }
-}
+        while (i < text.length) {
+            if (pattern[j] === text[i]) {
+                i++;
+                j++;
+            }
 
-// Additional utility functions
-class AndroidConnector {
-  private isConnected = false;
+            if (j === pattern.length) {
+                indices.push(i - j);
+                j = table[j - 1];
+            } else if (i < text.length && pattern[j] !== text[i]) {
+                if (j !== 0) {
+                    j = table[j - 1];
+                } else {
+                    i++;
+                }
+            }
+        }
 
-  async initialize(): Promise<void> {
-    try {
-      const result = await connectToAndroidService();
-      this.isConnected = result.success;
-      
-      if (this.isConnected) {
-        this.setupListeners();
-      }
-    } catch (error) {
-      this.isConnected = false;
-    }
-  }
-
-  private setupListeners(): void {
-    // Setup Android event listeners
-    AndroidService.addListener('serviceEvent', (data: any) => {
-      console.log('Received event from Android service:', data);
-    });
-  }
-
-  async sendDataToAndroid(payload: any): Promise<void> {
-    if (!this.isConnected) {
-      throw new Error('Not connected to Android service');
+        return indices;
     }
 
-    await AndroidService.sendData({
-      payload: JSON.stringify(payload)
-    });
-  }
+    /**
+     * Checks if pattern exists in text using KMP algorithm
+     * @returns Boolean indicating if pattern was found
+     */
+    static contains(text: string, pattern: string): boolean {
+        return this.search(text, pattern).length > 0;
+    }
+
+    /**
+     * Finds the first occurrence of pattern in text
+     * @returns Index of first occurrence, or -1 if not found
+     */
+    static findFirst(text: string, pattern: string): number {
+        const result = this.search(text, pattern);
+        return result.length > 0 ? result[0] : -1;
+    }
+}
+// Example usage
+const text = "ABABDABACDABABCABAB";
+const pattern = "ABABCABAB";
+
+console.log("Text:", text);
+console.log("Pattern:", pattern);
+
+// Find all occurrences
+const occurrences = KMP.search(text, pattern);
+console.log("All occurrences:", occurrences); // [10]
+
+// Check if pattern exists
+const exists = KMP.contains(text, pattern);
+console.log("Pattern exists:", exists); // true
+
+// Find first occurrence
+const firstIndex = KMP.findFirst(text, pattern);
+console.log("First occurrence at:", firstIndex); // 10
+
+// Edge cases
+console.log("Empty pattern:", KMP.search("hello", "")); // []
+console.log("Pattern longer than text:", KMP.search("hi", "hello")); // []
+console.log("No match:", KMP.search("hello world", "xyz")); // []
+console.log("Multiple matches:", KMP.search("abababab", "ab")); // [0, 2, 4, 6]
+class KMPStringMatcher {
+    private pattern: string;
+    private table: number[];
+
+    constructor(pattern: string) {
+        this.pattern = pattern;
+        this.table = this.buildPartialMatchTable(pattern);
+    }
+
+    private buildPartialMatchTable(pattern: string): number[] {
+        const table: number[] = new Array(pattern.length).fill(0);
+        let length = 0;
+        let i = 1;
+
+        while (i < pattern.length) {
+            if (pattern[i] === pattern[length]) {
+                length++;
+                table[i] = length;
+                i++;
+            } else {
+                if (length !== 0) {
+                    length = table[length - 1];
+                } else {
+                    table[i] = 0;
+                    i++;
+                }
+            }
+        }
+
+        return table;
+    }
+
+    search(text: string): number[] {
+        if (this.pattern.length === 0) return [];
+        if (text.length < this.pattern.length) return [];
+
+        const indices: number[] = [];
+        let i = 0;
+        let j = 0;
+
+        while (i < text.length) {
+            if (this.pattern[j] === text[i]) {
+                i++;
+                j++;
+            }
+
+            if (j === this.pattern.length) {
+                indices.push(i - j);
+                j = this.table[j - 1];
+            } else if (i < text.length && this.pattern[j] !== text[i]) {
+                if (j !== 0) {
+                    j = this.table[j - 1];
+                } else {
+                    i++;
+                }
+            }
+        }
+
+        return indices;
+    }
+
+    contains(text: string): boolean {
+        return this.search(text).length > 0;
+    }
+
+    findFirst(text: string): number {
+        const result = this.search(text);
+        return result.length > 0 ? result[0] : -1;
+    }
 }
 
-// Create and use the connector
-const androidConnector = new AndroidConnector();
-
-// Initialize connection
-androidConnector.initialize().then(() => {
-  console.log('Android connector initialized');
-});
-
-// Example data sending
-async function sendUserData(userData: { id: string; name: string }) {
-  try {
-    await androidConnector.sendDataToAndroid(userData);
-    console.log('Data sent successfully to Android');
-  } catch (error) {
-    console.error('Failed to send data:', error);
-  }
-}
-
-// Mock Android service for development/testing
-const mockAndroidService = {
-  executeAsyncTask: async (options: any): Promise<any> => {
-    // Simulate async delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    return {
-      status: 'SUCCESS',
-      message: 'Connected to mock Android service',
-      timestamp: Date.now()
-    };
-  }
-};
-
-// Export for use in other modules
-export {
-  connectToAndroidService,
-  AndroidConnector,
-  sendUserData,
-  mockAndroidService
-};
+// Usage
+const matcher = new KMPStringMatcher("ABABCABAB");
+const text = "ABABDABACDABABCABAB";
+console.log("Occurrences:", matcher.search(text)); // [10]
+console.log("Contains:", matcher.contains(text)); // true
