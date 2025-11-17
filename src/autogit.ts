@@ -1,70 +1,78 @@
-class TrieNode {
-    children: Map<string, TrieNode>;
-    isEndOfWord: boolean;
+class TreeNode {
+    val: number;
+    left: TreeNode | null;
+    right: TreeNode | null;
 
-    constructor() {
-        this.children = new Map();
-        this.isEndOfWord = false;
+    constructor(val?: number, left?: TreeNode | null, right?: TreeNode | null) {
+        this.val = (val === undefined ? 0 : val);
+        this.left = (left === undefined ? null : left);
+        this.right = (right === undefined ? null : right);
     }
 }
 
-class Trie {
-    private root: TrieNode;
-
-    constructor() {
-        this.root = new TrieNode();
+function maxDepth(root: TreeNode | null): number {
+    if (root === null) {
+        return 0;
     }
-
-    // Insert a word into the trie
-    insert(word: string): void {
-        let currentNode = this.root;
-        
-        for (const char of word) {
-            if (!currentNode.children.has(char)) {
-                currentNode.children.set(char, new TrieNode());
-            }
-            currentNode = currentNode.children.get(char)!;
-        }
-        
-        currentNode.isEndOfWord = true;
-    }
-
-    // Search for a complete word in the trie
-    search(word: string): boolean {
-        let currentNode = this.root;
-        
-        for (const char of word) {
-            if (!currentNode.children.has(char)) {
-                return false;
-            }
-            currentNode = currentNode.children.get(char)!;
-        }
-        
-        return currentNode.isEndOfWord;
-    }
-
-    // Check if any word in the trie starts with the given prefix
-    startsWith(prefix: string): boolean {
-        let currentNode = this.root;
-        
-        for (const char of prefix) {
-            if (!currentNode.children.has(char)) {
-                return false;
-            }
-            currentNode = currentNode.children.get(char)!;
-        }
-        
-        return true;
-    }
+    
+    const leftDepth = maxDepth(root.left);
+    const rightDepth = maxDepth(root.right);
+    
+    return Math.max(leftDepth, rightDepth) + 1;
 }
+function maxDepthBFS(root: TreeNode | null): number {
+    if (root === null) return 0;
+    
+    let depth = 0;
+    const queue: TreeNode[] = [root];
+    
+    while (queue.length > 0) {
+        const levelSize = queue.length;
+        
+        for (let i = 0; i < levelSize; i++) {
+            const currentNode = queue.shift()!;
+            
+            if (currentNode.left !== null) {
+                queue.push(currentNode.left);
+            }
+            if (currentNode.right !== null) {
+                queue.push(currentNode.right);
+            }
+        }
+        
+        depth++;
+    }
+    
+    return depth;
+}
+function maxDepthIterative(root: TreeNode | null): number {
+    if (root === null) return 0;
+    
+    const stack: [TreeNode, number][] = [[root, 1]];
+    let maxDepth = 0;
+    
+    while (stack.length > 0) {
+        const [node, depth] = stack.pop()!;
+        
+        maxDepth = Math.max(maxDepth, depth);
+        
+        if (node.right !== null) {
+            stack.push([node.right, depth + 1]);
+        }
+        if (node.left !== null) {
+            stack.push([node.left, depth + 1]);
+        }
+    }
+    
+    return maxDepth;
+}
+// Create a binary tree
+const root = new TreeNode(3);
+root.left = new TreeNode(9);
+root.right = new TreeNode(20);
+root.right.left = new TreeNode(15);
+root.right.right = new TreeNode(7);
 
-// Example usage
-const trie = new Trie();
-
-trie.insert("apple");
-console.log(trie.search("apple"));     // true
-console.log(trie.search("app"));       // false
-console.log(trie.startsWith("app"));   // true
-
-trie.insert("app");
-console.log(trie.search("app"));       // true
+console.log(maxDepth(root)); // Output: 3
+console.log(maxDepthBFS(root)); // Output: 3
+console.log(maxDepthIterative(root)); // Output: 3
