@@ -1,72 +1,35 @@
-// Node definition
-class TreeNode<T> {
-    value: T;
-    left: TreeNode<T> | null;
-    right: TreeNode<T> | null;
+// Define the structure of a tree node
+class TreeNode {
+  value: number;
+  left: TreeNode | null = null;
+  right: TreeNode | null = null;
 
-    constructor(value: T) {
-        this.value = value;
-        this.left = null;
-        this.right = null;
-    }
+  constructor(value: number) {
+    this.value = value;
+  }
 }
 
-// Binary Search Tree (BST) example
-class BinaryTree<T> {
-    root: TreeNode<T> | null = null;
+// Function to count leaf nodes
+function countLeafNodes(root: TreeNode | null): number {
+  if (root === null) return 0;
 
-    insert(value: T): void {
-        const newNode = new TreeNode(value);
+  // If both left and right are null, it's a leaf
+  if (root.left === null && root.right === null) return 1;
 
-        if (this.root === null) {
-            this.root = newNode;
-            return;
-        }
-
-        let current = this.root;
-        while (true) {
-            if (value < (current.value as unknown as number)) {
-                if (current.left === null) {
-                    current.left = newNode;
-                    return;
-                }
-                current = current.left;
-            } else {
-                if (current.right === null) {
-                    current.right = newNode;
-                    return;
-                }
-                current = current.right;
-            }
-        }
-    }
-
-    // Simple inorder traversal
-    inOrderTraversal(node: TreeNode<T> | null = this.root): void {
-        if (!node) return;
-        this.inOrderTraversal(node.left);
-        console.log(node.value);
-        this.inOrderTraversal(node.right);
-    }
-
-    search(value: T): TreeNode<T> | null {
-        let current = this.root;
-        while (current) {
-            if (value === current.value) return current;
-            current = value < (current.value as unknown as number) 
-                ? current.left 
-                : current.right;
-        }
-        return null;
-    }
+  // Recurse on left and right subtrees
+  return countLeafNodes(root.left) + countLeafNodes(root.right);
 }
 
-// Example usage
-const tree = new BinaryTree<number>();
-tree.insert(5);
-tree.insert(3);
-tree.insert(7);
-tree.insert(4);
+// ✅ Example usage
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4);
+root.left.right = new TreeNode(5);
 
-tree.inOrderTraversal(); // 3, 4, 5, 7
-console.log(tree.search(7)); // TreeNode with value 7
+console.log("Number of leaf nodes:", countLeafNodes(root)); // Output: 3
+      1
+     / \
+    2   3
+   / \
+  4   5
