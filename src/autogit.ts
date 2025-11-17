@@ -1,38 +1,210 @@
-/**
- * Returns the longest common *substring* of s and t.
- * If several substrings have the same maximum length the first one
- * encountered in `s` is returned.
- */
-function longestCommonSubstring(s: string, t: string): string {
-  if (s.length === 0 || t.length === 0) return '';
-
-  // Ensure t is the shorter string to minimise memory
-  if (t.length > s.length) [s, t] = [t, s];
-
-  const m = t.length;
-  // prev[j] = length of the longest suffix ending at s[i-1] and t[j-1]
-  const prev: number[] = new Array(m + 1).fill(0);
-  let maxLen = 0;
-  let endPosS = 0; // 1-based index in s where the best substring ends
-
-  for (let i = 1; i <= s.length; ++i) {
-    const curr: number[] = new Array(m + 1).fill(0);
-    for (let j = 1; j <= m; ++j) {
-      if (s[i - 1] === t[j - 1]) {
-        curr[j] = prev[j - 1] + 1;
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          endPosS = i; // current char is at i-1, substring ends at i
-        }
-      }
-      // else curr[j] stays 0
-    }
-    prev.splice(0, m + 1, ...curr); // copy curr into prev
-  }
-  return maxLen ? s.slice(endPosS - maxLen, endPosS) : '';
+interface Graph {
+  [node: string]: string[];
 }
 
-/* ---------- demo ---------- */
-const a = 'ABABC';
-const b = 'BABCA';
-console.log(longestCommonSubstring(a, b)); // → "BABC"
+function depthLimitedSearch(
+  graph: Graph,
+  start: string,
+  target: string,
+  depthLimit: number
+): boolean {
+  return dlsRecursive(graph, start, target, depthLimit, new Set<string>());
+}
+
+function dlsRecursive(
+  graph: Graph,
+  current: string,
+  target: string,
+  remainingDepth: number,
+  visited: Set<string>
+): boolean {
+  // Base case: found the target
+  if (current === target) {
+    return true;
+  }
+
+  // Base case: depth limit reached
+  if (remainingDepth === 0) {
+    return false;
+  }
+
+  visited.add(current);
+
+  // Explore neighbors
+  for (const neighbor of graph[current] || []) {
+    if (!visited.has(neighbor)) {
+      const found = dlsRecursive(
+        graph,
+        neighbor,
+        target,
+        remainingDepth - 1,
+        visited
+      );
+      if (found) {
+        return true;
+      }
+    }
+  }
+
+  visited.delete(current);
+  return false;
+}
+interface SearchResult {
+  found: boolean;
+  path: string[];
+}
+
+function depthLimitedSearchWithPath(
+  graph: Graph,
+  start: string,
+  target: string,
+  depthLimit: number
+): SearchResult {
+  const visited = new Set<string>();
+  const path: string[] = [start];
+  
+  const result = dlsRecursiveWithPath(
+    graph,
+    start,
+    target,
+    depthLimit,
+    visited,
+    path
+  );
+  
+  return {
+    found: result,
+    path: result ? path : []
+  };
+}
+
+function dlsRecursiveWithPath(
+  graph: Graph,
+  current: string,
+  target: string,
+  remainingDepth: number,
+  visited: Set<string>,
+  path: string[]
+): boolean {
+  if (current === target) {
+    return true;
+  }
+
+  if (remainingDepth === 0) {
+    return false;
+  }
+
+  visited.add(current);
+
+  for (const neighbor of graph[current] || []) {
+    if (!visited.has(neighbor)) {
+      path.push(neighbor);
+      
+      const found = dlsRecursiveWithPath(
+        graph,
+        neighbor,
+        target,
+        remainingDepth - 1,
+        visited,
+        path
+      );
+      
+      if (found) {
+        return true;
+      }
+      
+      path.pop();
+    }
+  }
+
+  visited.delete(current);
+  return false;
+}
+// Example graph
+const graph: Graph = {
+  'A': ['B', 'C'],
+  'B': ['D', 'E'],
+  'C': ['F'],
+  'D': ['G'],
+  'E': ['H'],
+  'F': ['I'],
+  'G': [],
+  'H': [],
+  'I': []
+};
+
+// Example usage
+const result1 = depthLimitedSearch(graph, 'A', 'G', 3);
+console.log('Found with depth limit 3:', result1); // true
+
+const result2 = depthLimitedSearch(graph, 'A', 'G', 2);
+console.log('Found with depth limit 2:', result2); // false
+
+const result3 = depthLimitedSearchWithPath(graph, 'A', 'G', 3);
+console.log('Path found:', result3); // { found: true, path: ['A', 'B', 'D', 'G'] }
+function iterativeDepthLimitedSearch(
+  graph: Graph,
+  start: string,
+  target: string,
+  depthLimit: number
+): boolean {
+  const stack: { node: string; depth: number }[] = [{ node: start, depth: 0 }];
+  const visited = new Set<string>();
+
+  while (stack.length > 0) {
+    const { node, depth } = stack.pop()!;
+
+    if (node === target) {
+      return true;
+    }
+
+    if (depth >= depthLimit) {
+      continue;
+    }
+
+    if (!visited.has(node)) {
+      visited.add(node);
+      
+      for (const neighbor of graph[node] || []) {
+        stack.push({ node: neighbor, depth: depth + 1 });
+      }
+    }
+  }
+
+  return false;
+}
+// Check if a path exists within depth limit
+function isReachableWithinDepth(
+  graph: Graph,
+  start: string,
+  target: string,
+  depthLimit: number
+): boolean {
+  return depthLimitedSearch(graph, start, target, depthLimit);
+}
+
+// Find all nodes reachable within depth limit
+function findReachableNodes(
+  graph: Graph,
+  start: string,
+  depthLimit: number
+): string[] {
+  const reachable: string[] = [];
+  const visited = new Set<string>();
+  
+  function dfs(current: string, depth: number) {
+    if (depth > depthLimit) return;
+    
+    reachable.push(current);
+    visited.add(current);
+    
+    for (const neighbor of graph[current] || []) {
+      if (!visited.has(neighbor)) {
+        dfs(neighbor, depth + 1);
+      }
+    }
+  }
+  
+  dfs(start, 0);
+  return reachable;
+}
