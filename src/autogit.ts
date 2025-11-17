@@ -1,156 +1,71 @@
-class ListNode {
-    constructor(public val: number, public next: ListNode | null = null) {}
-}
+const table = new Map<string, number>();
 
-function isPalindromeStack(head: ListNode | null): boolean {
-    if (!head || !head.next) return true;
-    
-    const stack: number[] = [];
-    let slow: ListNode | null = head;
-    let fast: ListNode | null = head;
-    
-    // Find middle using slow and fast pointers
-    while (fast && fast.next) {
-        stack.push(slow!.val);
-        slow = slow!.next;
-        fast = fast.next.next;
-    }
-    
-    // Handle odd length lists
-    if (fast) {
-        slow = slow!.next;
-    }
-    
-    // Compare second half with stack
-    while (slow) {
-        if (stack.pop() !== slow.val) {
-            return false;
-        }
-        slow = slow.next;
-    }
-    
-    return true;
-}
-function isPalindromeReverse(head: ListNode | null): boolean {
-    if (!head || !head.next) return true;
-    
-    let slow: ListNode | null = head;
-    let fast: ListNode | null = head;
-    
-    // Find middle
-    while (fast && fast.next) {
-        slow = slow!.next;
-        fast = fast.next.next;
-    }
-    
-    // Reverse second half
-    let secondHalf = reverseList(slow);
-    let firstHalf: ListNode | null = head;
-    let secondHalfCopy = secondHalf;
-    
-    // Compare both halves
-    let result = true;
-    while (secondHalf) {
-        if (firstHalf!.val !== secondHalf.val) {
-            result = false;
-            break;
-        }
-        firstHalf = firstHalf!.next;
-        secondHalf = secondHalf.next;
-    }
-    
-    // Restore the original list
-    reverseList(secondHalfCopy);
-    
-    return result;
-}
+table.set("apple", 5);
+table.set("banana", 2);
 
-function reverseList(head: ListNode | null): ListNode | null {
-    let prev: ListNode | null = null;
-    let current: ListNode | null = head;
-    
-    while (current) {
-        const next = current.next;
-        current.next = prev;
-        prev = current;
-        current = next;
+console.log(table.get("apple")); // 5
+console.log(table.has("banana")); // true
+table.delete("banana");
+class HashTable<V> {
+  private buckets: [string, V][][]; // array of arrays of key-value pairs
+  private size: number;
+
+  constructor(size: number = 16) {
+    this.size = size;
+    this.buckets = Array.from({ length: size }, () => []);
+  }
+
+  private hash(key: string): number {
+    let hashValue = 0;
+    for (let i = 0; i < key.length; i++) {
+      hashValue = (hashValue + key.charCodeAt(i) * i) % this.size;
     }
-    
-    return prev;
-}
-function isPalindromeRecursive(head: ListNode | null): boolean {
-    let frontPointer: ListNode | null = head;
-    
-    function recursivelyCheck(currentNode: ListNode | null): boolean {
-        if (currentNode) {
-            if (!recursivelyCheck(currentNode.next)) return false;
-            if (currentNode.val !== frontPointer!.val) return false;
-            frontPointer = frontPointer!.next;
-        }
+    return hashValue;
+  }
+
+  set(key: string, value: V): void {
+    const index = this.hash(key);
+    const bucket = this.buckets[index];
+
+    for (let i = 0; i < bucket.length; i++) {
+      if (bucket[i][0] === key) {
+        bucket[i][1] = value; // Update
+        return;
+      }
+    }
+
+    bucket.push([key, value]);
+  }
+
+  get(key: string): V | undefined {
+    const index = this.hash(key);
+    const bucket = this.buckets[index];
+
+    for (const [k, v] of bucket) {
+      if (k === key) return v;
+    }
+    return undefined;
+  }
+
+  remove(key: string): boolean {
+    const index = this.hash(key);
+    const bucket = this.buckets[index];
+
+    for (let i = 0; i < bucket.length; i++) {
+      if (bucket[i][0] === key) {
+        bucket.splice(i, 1);
         return true;
+      }
     }
-    
-    return recursivelyCheck(head);
-}
-// ListNode class
-class ListNode {
-    constructor(public val: number, public next: ListNode | null = null) {}
+    return false;
+  }
 }
 
-// Create linked list from array
-function createLinkedList(arr: number[]): ListNode | null {
-    if (arr.length === 0) return null;
-    
-    const head = new ListNode(arr[0]);
-    let current = head;
-    
-    for (let i = 1; i < arr.length; i++) {
-        current.next = new ListNode(arr[i]);
-        current = current.next;
-    }
-    
-    return head;
-}
+// Usage:
+const table = new HashTable<number>();
+table.set("apple", 5);
+table.set("banana", 2);
 
-// Print linked list (for debugging)
-function printLinkedList(head: ListNode | null): string {
-    const values: number[] = [];
-    let current = head;
-    
-    while (current) {
-        values.push(current.val);
-        current = current.next;
-    }
-    
-    return values.join(' -> ');
-}
-
-// Test function
-function testPalindrome() {
-    // Test cases
-    const testCases = [
-        [1, 2, 3, 2, 1],    // true
-        [1, 2, 2, 1],       // true
-        [1, 2, 3],          // false
-        [1],                 // true
-        [1, 1],              // true
-        [1, 2],              // false
-    ];
-    
-    console.log("Testing Palindrome Checker:\n");
-    
-    for (const testCase of testCases) {
-        const list = createLinkedList(testCase);
-        const stackResult = isPalindromeStack(list);
-        const reverseResult = isPalindromeReverse(list);
-        
-        console.log(`List: ${printLinkedList(createLinkedList(testCase))}`);
-        console.log(`Stack Method: ${stackResult}`);
-        console.log(`Reverse Method: ${reverseResult}`);
-        console.log(`Expected: ${stackResult === reverseResult ? '✓' : '✗'}`);
-        console.log('---');
-    }
-}
-
-// Run tests
-testPalindrome();
+console.log(table.get("apple")); // 5
+table.remove("banana");
+console.log(table.get("banana")); // undefined
