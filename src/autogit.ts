@@ -1,106 +1,129 @@
-type NodeId = string | number; // Allow both string and number node identifiers
-
-interface Edge {
-    to: NodeId;
-    weight: number;
+class ListNode<T> {
+    constructor(
+        public value: T,
+        public next: ListNode<T> | null = null
+    ) {}
 }
 
-interface Graph {
-    [key: NodeId]: Edge[]; // Adjacency list representation
+function findMiddleNode<T>(head: ListNode<T> | null): ListNode<T> | null {
+    if (!head) return null;
+    
+    let slow: ListNode<T> | null = head;
+    let fast: ListNode<T> | null = head;
+    
+    while (fast && fast.next) {
+        slow = slow!.next;
+        fast = fast.next.next;
+    }
+    
+    return slow;
 }
-
-interface DijkstraResult {
-    distances: Record<NodeId, number>;
-    previous: Record<NodeId, NodeId | null>;
+function findMiddleNodeTwoPass<T>(head: ListNode<T> | null): ListNode<T> | null {
+    if (!head) return null;
+    
+    // First pass: count nodes
+    let current: ListNode<T> | null = head;
+    let count = 0;
+    
+    while (current) {
+        count++;
+        current = current.next;
+    }
+    
+    // Second pass: go to middle
+    const middleIndex = Math.floor(count / 2);
+    current = head;
+    
+    for (let i = 0; i < middleIndex; i++) {
+        current = current!.next;
+    }
+    
+    return current;
 }
-
-/**
- * Finds shortest paths from startNode to all other nodes in the graph
- * @param graph - The graph in adjacency list format
- * @param startNode - Starting node for path calculations
- * @returns Object containing distances and previous node information
- */
-function dijkstra(graph: Graph, startNode: NodeId): DijkstraResult {
-    // Initialize distances with Infinity and previous nodes as null
-    const distances: Record<NodeId, number> = {};
-    const previous: Record<NodeId, NodeId | null> = {};
-    const queue: [NodeId, number][] = []; // [node, currentDistance]
-
-    // Initialize data structures
-    Object.keys(graph).forEach(node => {
-        distances[node] = Infinity;
-        previous[node] = null;
-    });
-    distances[startNode] = 0;
-    queue.push([startNode, 0]);
-
-    while (queue.length > 0) {
-        // Sort queue by distance (ascending) - simplest priority queue implementation
-        queue.sort((a, b) => a[1] - b[1]);
-        const [currentNode] = queue.shift()!;
-
-        // Visit each neighbor of the current node
-        for (const edge of graph[currentNode]) {
-            const newDistance = distances[currentNode] + edge.weight;
-
-            // If found shorter path to neighbor
-            if (newDistance < distances[edge.to]) {
-                distances[edge.to] = newDistance;
-                previous[edge.to] = currentNode;
-                queue.push([edge.to, newDistance]);
+class LinkedList<T> {
+    head: ListNode<T> | null = null;
+    
+    add(value: T): void {
+        const newNode = new ListNode(value);
+        if (!this.head) {
+            this.head = newNode;
+        } else {
+            let current = this.head;
+            while (current.next) {
+                current = current.next;
             }
+            current.next = newNode;
         }
     }
-
-    return { distances, previous };
+    
+    findMiddle(): ListNode<T> | null {
+        if (!this.head) return null;
+        
+        let slow: ListNode<T> | null = this.head;
+        let fast: ListNode<T> | null = this.head;
+        
+        while (fast && fast.next) {
+            slow = slow!.next;
+            fast = fast.next.next;
+        }
+        
+        return slow;
+    }
+    
+    findMiddleValue(): T | null {
+        const middleNode = this.findMiddle();
+        return middleNode ? middleNode.value : null;
+    }
+    
+    print(): void {
+        let current = this.head;
+        const values: T[] = [];
+        while (current) {
+            values.push(current.value);
+            current = current.next;
+        }
+        console.log(values.join(' -> '));
+    }
 }
 
-/**
- * Reconstructs shortest path from startNode to endNode
- * @param previous - Previous node dictionary from Dijkstra's result
- * @param endNode - Target node to find path to
- * @returns Array of nodes representing the path
- */
-function getPath(
-    previous: Record<NodeId, NodeId | null>, 
-    endNode: NodeId
-): NodeId[] {
-    const path: NodeId[] = [];
-    let current: NodeId | null = endNode;
+// Usage Example
+const list = new LinkedList<number>();
+list.add(1);
+list.add(2);
+list.add(3);
+list.add(4);
+list.add(5);
 
-    while (current !== null) {
-        path.unshift(current);
-        current = previous[current];
+list.print(); // 1 -> 2 -> 3 -> 4 -> 5
+console.log('Middle element:', list.findMiddleValue()); // 3
+
+list.add(6);
+list.print(); // 1 -> 2 -> 3 -> 4 -> 5 -> 6
+console.log('Middle element:', list.findMiddleValue()); // 4 (second middle when even length)
+function findMiddleEnhanced<T>(head: ListNode<T> | null): {
+    node: ListNode<T> | null;
+    value: T | null;
+    isEvenLength: boolean;
+} {
+    if (!head) {
+        return { node: null, value: null, isEvenLength: true };
     }
-
-    // If no path exists
-    if (path.length === 1 && path[0] !== endNode) {
-        return [];
+    
+    let slow: ListNode<T> | null = head;
+    let fast: ListNode<T> | null = head;
+    let isEvenLength = false;
+    
+    while (fast && fast.next) {
+        slow = slow!.next;
+        if (fast.next.next === null) {
+            isEvenLength = true;
+        }
+        fast = fast.next.next;
     }
-
-    return path;
+    
+    return {
+        node: slow,
+        value: slow ? slow.value : null,
+        isEvenLength
+    };
 }
-
-// Example usage
-const graph: Graph = {
-    A: [
-        { to: 'B', weight: 4 },
-        { to: 'C', weight: 2 }
-    ],
-    B: [
-        { to: 'D', weight: 3 }
-    ],
-    C: [
-        { to: 'B', weight: 1 },
-        { to: 'D', weight: 5 }
-    ],
-    D: []
-};
-
-const startNode = 'A';
-const { distances, previous } = dijkstra(graph, startNode);
-
-console.log("Shortest distances:", distances);
-console.log("Path to D:", getPath(previous, 'D'));
-Shortest distances: { A: 0, B: 3, C: 2, D: 6 }
-Path to D: [ 'A', 'C', 'B', 'D' ]
