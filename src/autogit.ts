@@ -1,78 +1,49 @@
-class TreeNode {
-    val: number;
-    left: TreeNode | null;
-    right: TreeNode | null;
-
-    constructor(val?: number, left?: TreeNode | null, right?: TreeNode | null) {
-        this.val = (val === undefined ? 0 : val);
-        this.left = (left === undefined ? null : left);
-        this.right = (right === undefined ? null : right);
-    }
+function triangleAreaBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error("Base and height must be positive numbers.");
+  }
+  return (base * height) / 2;
 }
 
-function maxDepth(root: TreeNode | null): number {
-    if (root === null) {
-        return 0;
-    }
-    
-    const leftDepth = maxDepth(root.left);
-    const rightDepth = maxDepth(root.right);
-    
-    return Math.max(leftDepth, rightDepth) + 1;
+// Usage:
+const area = triangleAreaBaseHeight(4, 3); // Returns 6
+function triangleAreaHeron(a: number, b: number, c: number): number {
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw new Error("All sides must be positive numbers.");
+  }
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error("Invalid triangle sides: sum of any two sides must be greater than the third.");
+  }
+  const s = (a + b + c) / 2;
+  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
 }
-function maxDepthBFS(root: TreeNode | null): number {
-    if (root === null) return 0;
-    
-    let depth = 0;
-    const queue: TreeNode[] = [root];
-    
-    while (queue.length > 0) {
-        const levelSize = queue.length;
-        
-        for (let i = 0; i < levelSize; i++) {
-            const currentNode = queue.shift()!;
-            
-            if (currentNode.left !== null) {
-                queue.push(currentNode.left);
-            }
-            if (currentNode.right !== null) {
-                queue.push(currentNode.right);
-            }
-        }
-        
-        depth++;
-    }
-    
-    return depth;
-}
-function maxDepthIterative(root: TreeNode | null): number {
-    if (root === null) return 0;
-    
-    const stack: [TreeNode, number][] = [[root, 1]];
-    let maxDepth = 0;
-    
-    while (stack.length > 0) {
-        const [node, depth] = stack.pop()!;
-        
-        maxDepth = Math.max(maxDepth, depth);
-        
-        if (node.right !== null) {
-            stack.push([node.right, depth + 1]);
-        }
-        if (node.left !== null) {
-            stack.push([node.left, depth + 1]);
-        }
-    }
-    
-    return maxDepth;
-}
-// Create a binary tree
-const root = new TreeNode(3);
-root.left = new TreeNode(9);
-root.right = new TreeNode(20);
-root.right.left = new TreeNode(15);
-root.right.right = new TreeNode(7);
 
-console.log(maxDepth(root)); // Output: 3
-console.log(maxDepthBFS(root)); // Output: 3
-console.log(maxDepthIterative(root)); // Output: 3
+// Usage:
+const area = triangleAreaHeron(3, 4, 5); // Returns 6
+type Point = { x: number; y: number };
+
+function triangleAreaCoordinates(p1: Point, p2: Point, p3: Point): number {
+  const area = Math.abs(
+    (p1.x * (p2.y - p3.y) + p2.x * (p3.y - p1.y) + p3.x * (p1.y - p2.y)) / 2
+  );
+  return area;
+}
+
+// Usage:
+const area = triangleAreaCoordinates(
+  { x: 0, y: 0 },
+  { x: 4, y: 0 },
+  { x: 0, y: 3 }
+); // Returns 6
+// Base/Height
+console.log(triangleAreaBaseHeight(4, 3)); // 6
+
+// Heron (3,4,5 right triangle)
+console.log(triangleAreaHeron(3, 4, 5)); // 6
+
+// Coordinates (0,0; 4,0; 0,3)
+console.log(triangleAreaCoordinates(
+  { x: 0, y: 0 },
+  { x: 4, y: 0 },
+  { x: 0, y: 3 }
+)); // 6
