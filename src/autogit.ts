@@ -1,153 +1,144 @@
-// 1. Helper Function: Get the maximum value in an array
-//    Used to determine the number of passes (digits) needed.
-function getMax(arr: number[]): number {
-    if (arr.length === 0) {
-        return 0; // Or throw an error, depending on desired behavior for empty array
-    }
-    let max = arr[0];
-    for (let i = 1; i < arr.length; i++) {
-        if (arr[i] > max) {
-            max = arr[i];
-        }
-    }
-    return max;
+type Graph = Record<string, string[]>;
+type ParentMap = Map<string, string | null>;
+
+enum Direction {
+    FORWARD = 'FORWARD',
+    BACKWARD = 'BACKWARD',
 }
 
-// 2. Helper Function: Counting Sort for a specific digit place
-//    This is a stable sort required by Radix Sort.
-function countingSort(arr: number[], exp: number): void {
-    const n = arr.length;
-    const output = new Array<number>(n); // The output array that will hold the sorted elements
-    const count = new Array<number>(10).fill(0); // Count array for digits 0-9
+/**
+ * Performs a bidirectional BFS to find the shortest path between start and end.
+ * @param start - Starting node
+ * @param end - Target node
+ * @param graph - Graph represented as an adjacency list
+ * @returns Shortest path as an array of nodes, or null if no path exists
+ */
+function bidirectionalBFS(
+    start: string,
+    end: string,
+    graph: Graph
+): string[] | null {
+    if (start === end) return [start];
 
-    // Store count of occurrences in count[]
-    // For a given 'exp' (e.g., 1, 10, 100), this extracts the relevant digit.
-    // Example: For num=170, exp=1: (170/1)%10 = 0
-    //          For num=170, exp=10: (170/10)%10 = 7
-    //          For num=170, exp=100: (170/100)%10 = 1
-    for (let i = 0; i < n; i++) {
-        count[Math.floor(arr[i] / exp) % 10]++;
+    // Initialize queues and visited maps for both directions
+    let forwardQueue: string[] = [start];
+    let backwardQueue: string[] = [end];
+    let forwardVisited = new Map<string, string | null>([[start, null]]);
+    let backwardVisited = new Map<string, string | null>([[end, null]]);
+
+    while (forwardQueue.length && backwardQueue.length) {
+        // Alternate between forward and backward BFS
+        let result = expandLevel(forwardQueue, forwardVisited, backwardVisited, graph, Direction.FORWARD);
+        if (result) return result;
+
+        result = expandLevel(backwardQueue, backwardVisited, forwardVisited, graph, Direction.BACKWARD);
+        if (result) return result;
     }
 
-    // Change count[i] so that count[i] now contains the actual
-    // position of this digit in output[] (cumulative sum)
-    for (let i = 1; i < 10; i++) {
-        count[i] += count[i - 1];
-    }
-
-    // Build the output array.
-    // We iterate backwards to ensure stability (elements with the same digit
-    // maintain their relative order from the previous pass).
-    for (let i = n - 1; i >= 0; i--) {
-        const digit = Math.floor(arr[i] / exp) % 10;
-        // The correct position for arr[i] in the output array is count[digit] - 1
-        // because count stores cumulative sums and is 1-indexed for counts.
-        output[count[digit] - 1] = arr[i];
-        count[digit]--; // Decrement count for this digit
-    }
-
-    // Copy the output array to arr[], so that arr[] now
-    // contains sorted numbers according to the current digit
-    for (let i = 0; i < n; i++) {
-        arr[i] = output[i];
-    }
+    return null; // No path exists
 }
 
-// 3. Main Function: Radix Sort
-function radixSort(arr: number[]): number[] {
-    const n = arr.length;
+/**
+ * Expands one level of BFS and checks for collisions with the opposite search
+ * @param queue - Current queue (will be modified)
+ * @param currentVisited - Visited map for current direction
+ * @param oppositeVisited - Visited map for opposite direction
+ * @param graph - Graph represented as an adjacency list
+ * @param direction - Search direction (FORWARD/BACKWARD)
+ * @returns Combined path if collision found, otherwise null
+ */
+function expandLevel(
+    queue: string[],
+    currentVisited: ParentMap,
+    oppositeVisited: ParentMap,
+    graph: Graph,
+    direction: Direction
+): string[] | null {
+    const levelSize = queue.length;
+    for (let i = 0; i < levelSize; i++) {
+        const currentNode = queue.shift()!;
 
-    if (n <= 1) {
-        return arr; // Already sorted or nothing to sort
-    }
+        for (const neighbor of graph[currentNode] || []) {
+            if (currentVisited.has(neighbor)) continue;
 
-    // --- Handle Negative Numbers ---
-    const negatives: number[] = [];
-    const positives: number[] = [];
-    const zeros: number[] = []; // Store zeros separately to maintain their position
+            currentVisited.set(neighbor, currentNode);
+            queue.push(neighbor);
 
-    for (const num of arr) {
-        if (num < 0) {
-            negatives.push(num);
-        } else if (num > 0) {
-            positives.push(num);
-        } else {
-            zeros.push(num);
+            // Check if neighbor has been visited by opposite search
+            if (oppositeVisited.has(neighbor)) {
+                return constructPath(
+                    direction === Direction.FORWARD ? neighbor : oppositeVisited.get(neighbor)!,
+                    direction === Direction.FORWARD ? oppositeVisited.get(neighbor)! : neighbor,
+                    currentVisited,
+                    oppositeVisited,
+                    direction
+                );
+            }
         }
     }
-
-    // Sort positive numbers
-    if (positives.length > 0) {
-        let maxPos = getMax(positives);
-        // exp is 1 for units place, 10 for tens, 100 for hundreds, etc.
-        for (let exp = 1; Math.floor(maxPos / exp) > 0; exp *= 10) {
-            countingSort(positives, exp);
-        }
-    }
-
-    // Sort negative numbers by their absolute values
-    if (negatives.length > 0) {
-        const absNegatives = negatives.map(num => Math.abs(num));
-        let maxAbsNeg = getMax(absNegatives);
-
-        for (let exp = 1; Math.floor(maxAbsNeg / exp) > 0; exp *= 10) {
-            countingSort(absNegatives, exp);
-        }
-
-        // Revert to original negative numbers and reverse their order.
-        // When we sort absolute values (e.g., -90, -45 -> 45, 90),
-        // the smallest absolute value comes first.
-        // To get the correct sorted order for negatives (e.g., -90, -45),
-        // we need to reverse the sorted absolute values and make them negative again.
-        for (let i = 0; i < negatives.length; i++) {
-            negatives[i] = -absNegatives[negatives.length - 1 - i];
-        }
-    }
-
-    // Combine sorted negatives, zeros, and positives
-    return [...negatives, ...zeros, ...positives];
+    return null;
 }
 
-// --- Example Usage ---
+/**
+ * Constructs the full path by merging both search directions
+ * @param meetingNodeForward - Meeting node from forward search perspective
+ * @param meetingNodeBackward - Meeting node from backward search perspective
+ * @param forwardParents - Parent map for forward search
+ * @param backwardParents - Parent map for backward search
+ * @param direction - Which search discovered the collision
+ * @returns Complete path from start to end
+ */
+function constructPath(
+    meetingNodeForward: string,
+    meetingNodeBackward: string,
+    forwardParents: ParentMap,
+    backwardParents: ParentMap,
+    direction: Direction
+): string[] {
+    // Build forward path (start -> meeting point)
+    const forwardPath = getPath(meetingNodeForward, forwardParents);
 
-// Test case 1: Positive numbers
-const numbers1 = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log("Original array 1:", numbers1);
-console.log("Sorted array 1:", radixSort(numbers1));
-// Expected: [2, 24, 45, 66, 75, 90, 170, 802]
+    // Build backward path (end -> meeting point) and reverse it
+    const backwardPath = getPath(meetingNodeBackward, backwardParents).reverse();
 
-// Test case 2: Mixed positive, negative, and zero
-const numbers2 = [170, -45, 75, -90, 802, -24, 2, -66, 0, 10];
-console.log("\nOriginal array 2:", numbers2);
-console.log("Sorted array 2:", radixSort(numbers2));
-// Expected: [-90, -66, -45, -24, 0, 2, 10, 75, 170, 802]
+    // Handle special case when paths meet exactly at one node
+    if (meetingNodeForward === meetingNodeBackward) {
+        return direction === Direction.FORWARD 
+            ? [...forwardPath, ...backwardPath.slice(1)]
+            : [...backwardPath, ...forwardPath.slice(1)];
+    }
 
-// Test case 3: All negative numbers
-const numbers3 = [-170, -45, -75, -90, -802, -24, -2, -66];
-console.log("\nOriginal array 3:", numbers3);
-console.log("Sorted array 3:", radixSort(numbers3));
-// Expected: [-802, -170, -90, -75, -66, -45, -24, -2]
+    // Merge paths based on discovery direction
+    return direction === Direction.FORWARD
+        ? [...forwardPath, ...backwardPath]
+        : [...backwardPath, ...forwardPath];
+}
 
-// Test case 4: Single element array
-const singleElement = [42];
-console.log("\nOriginal single element array:", singleElement);
-console.log("Sorted single element array:", radixSort(singleElement));
-// Expected: [42]
+/**
+ * Builds path using parent pointers
+ * @param node - Node to start backtracking from
+ * @param parents - Map containing parent-child relationships
+ * @returns Path from origin to specified node
+ */
+function getPath(node: string, parents: ParentMap): string[] {
+    const path: string[] = [];
+    let current: string | null | undefined = node;
+    while (current) {
+        path.unshift(current);
+        current = parents.get(current);
+    }
+    return path;
+}
+// Create a sample graph
+const graph: Graph = {
+    'A': ['B', 'C'],
+    'B': ['A', 'D', 'E'],
+    'C': ['A', 'F'],
+    'D': ['B'],
+    'E': ['B', 'F'],
+    'F': ['C', 'E']
+};
 
-// Test case 5: Empty array
-const emptyArray: number[] = [];
-console.log("\nOriginal empty array:", emptyArray);
-console.log("Sorted empty array:", radixSort(emptyArray));
-// Expected: []
-
-// Test case 6: Array with zeros only
-const zerosOnly = [0, 0, 0];
-console.log("\nOriginal zeros only array:", zerosOnly);
-console.log("Sorted zeros only array:", radixSort(zerosOnly));
-// Expected: [0, 0, 0]
-
-// Test case 7: Large numbers
-const largeNumbers = [98765, 12345, 54321, 100000, 1];
-console.log("\nOriginal large numbers:", largeNumbers);
-console.log("Sorted large numbers:", radixSort(largeNumbers));
-// Expected: [1, 12345, 54321, 98765, 100000]
+// Find path from 'A' to 'F'
+const path = bidirectionalBFS('A', 'F', graph);
+console.log(path); // Output: ['A', 'C', 'F'] or ['A', 'B', 'E', 'F']
