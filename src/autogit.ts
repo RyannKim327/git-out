@@ -1,133 +1,69 @@
-function longestCommonPrefix(strings: string[]): string {
-    if (strings.length === 0) return '';
-    if (strings.length === 1) return strings[0];
-    
-    let prefix = strings[0];
-    
-    for (let i = 1; i < strings.length; i++) {
-        const current = strings[i];
-        let j = 0;
-        
-        // Compare each character until mismatch
-        while (j < prefix.length && j < current.length && prefix[j] === current[j]) {
-            j++;
+type Node<T> = T;          // your domain-specific state
+type Expand<T> = (n: Node<T>) => Iterable<Node<T>>;
+/**
+ * Breadth-limited search
+ * @param start      initial state
+ * @param expand     neighbour generator
+ * @param isGoal     goal test
+ * @param maxDepth   depth limit (0 = start, 1 = children of start, …)
+ * @returns the goal node or null
+ */
+export function breadthLimitedSearch<T>(
+  start: T,
+  expand: (n: T) => Iterable<T>,
+  isGoal: (n: T) => boolean,
+  maxDepth: number
+): T | null {
+  interface Entry { node: T; depth: number }
+
+  const queue: Entry[] = [{ node: start, depth: 0 }];
+  const seen = new Set([start]);
+
+  while (queue.length) {
+    const { node, depth } = queue.shift()!;
+
+    if (isGoal(node)) return node;
+
+    if (depth < maxDepth) {
+      for (const child of expand(node)) {
+        if (!seen.has(child)) {
+          seen.add(child);
+          queue.push({ node: child, depth: depth + 1 });
         }
-        
-        prefix = prefix.substring(0, j);
-        
-        // Early exit if no common prefix
-        if (prefix === '') return '';
+      }
     }
-    
-    return prefix;
+  }
+  return null;
+}
+type Board = number[][];          // 0 = blank
+const GOAL: Board = [[1,2,3],[4,5,6],[7,8,0]];
+
+function isGoal(b: Board) {
+  return JSON.stringify(b) === JSON.stringify(GOAL);
 }
 
-// Example usage
-const strings = ['flower', 'flow', 'flight'];
-console.log(longestCommonPrefix(strings)); // Output: "fl"
-function longestCommonPrefix(strings: string[]): string {
-    if (strings.length === 0) return '';
-    
-    return strings.reduce((prefix, current) => {
-        let i = 0;
-        while (i < prefix.length && i < current.length && prefix[i] === current[i]) {
-            i++;
-        }
-        return prefix.substring(0, i);
-    });
+function expand(b: Board): Board[] {
+  const [y, x] = findBlank(b);
+  const moves: Board[] = [];
+  for (const [dy, dx] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+    const ny = y + dy, nx = x + dx;
+    if (ny < 0 || ny > 2 || nx < 0 || nx > 2) continue;
+    const next = b.map(r => r.slice());
+    [next[y][x], next[ny][nx]] = [next[ny][nx], next[y][x]];
+    moves.push(next);
+  }
+  return moves;
 }
 
-// Example usage
-const strings = ['dog', 'racecar', 'car'];
-console.log(longestCommonPrefix(strings)); // Output: ""
-function longestCommonPrefix(strings: string[]): string {
-    if (strings.length === 0) return '';
-    
-    // Sort the array to compare only first and last elements
-    strings.sort();
-    const first = strings[0];
-    const last = strings[strings.length - 1];
-    
-    let i = 0;
-    while (i < first.length && i < last.length && first[i] === last[i]) {
-        i++;
-    }
-    
-    return first.substring(0, i);
+function findBlank(b: Board): [number, number] {
+  for (let i = 0; i < 3; i++)
+    for (let j = 0; j < 3; j++)
+      if (b[i][j] === 0) return [i, j];
+  throw new Error('no blank');
 }
 
-// Example usage
-const strings = ['interspecies', 'interstellar', 'interstate'];
-console.log(longestCommonPrefix(strings)); // Output: "inters"
-function longestCommonPrefix(strings: string[]): string {
-    // Handle edge cases
-    if (!strings || strings.length === 0) return '';
-    if (strings.length === 1) return strings[0];
-    
-    // Find the shortest string to limit comparisons
-    const minLength = Math.min(...strings.map(s => s.length));
-    
-    for (let i = 0; i < minLength; i++) {
-        const char = strings[0][i];
-        
-        // Check if all strings have the same character at position i
-        for (let j = 1; j < strings.length; j++) {
-            if (strings[j][i] !== char) {
-                return strings[0].substring(0, i);
-            }
-        }
-    }
-    
-    return strings[0].substring(0, minLength);
-}
-
-// Example usage
-const testCases = [
-    ['flower', 'flow', 'flight'],
-    ['dog', 'racecar', 'car'],
-    [''],
-    ['single'],
-    ['prefix', 'prefix', 'prefix']
-];
-
-testCases.forEach(test => {
-    console.log(`${test} -> "${longestCommonPrefix(test)}"`);
-});
-const longestCommonPrefix = (strings: string[]): string => {
-    if (strings.length === 0) return '';
-    
-    const [first, ...rest] = strings;
-    let prefix = first;
-    
-    for (const str of rest) {
-        while (!str.startsWith(prefix)) {
-            prefix = prefix.slice(0, -1);
-            if (prefix === '') return '';
-        }
-    }
-    
-    return prefix;
-};
-
-// Example usage
-console.log(longestCommonPrefix(['typescript', 'type', 'typing'])); // "ty"
-function findLongestCommonPrefix(strings: readonly string[]): string {
-    // Use readonly to prevent mutation if needed
-    if (strings.length === 0) return '';
-    
-    let prefix = strings[0];
-    
-    for (let i = 1; i < strings.length; i++) {
-        const current = strings[i];
-        let j = 0;
-        
-        while (j < prefix.length && j < current.length && prefix[j] === current[j]) {
-            j++;
-        }
-        
-        prefix = prefix.substring(0, j);
-        if (prefix === '') break;
-    }
-    
-    return prefix;
-}
+// search up to depth 10
+const solution = breadthLimitedSearch(
+  [[1,2,3],[4,0,6],[7,5,8]], expand, isGoal, 10
+);
+console.log(solution);
