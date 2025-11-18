@@ -1,51 +1,39 @@
-const arrayWithDuplicates = [1, 2, 2, 3, 4, 4, 5];
-const uniqueArray = [...new Set(arrayWithDuplicates)];
-// Result: [1, 2, 3, 4, 5]
+class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 
-// With TypeScript types
-const numbers: number[] = [1, 2, 2, 3, 4, 4, 5];
-const uniqueNumbers: number[] = [...new Set(numbers)];
-const arrayWithDuplicates = [1, 2, 2, 3, 4, 4, 5];
-const uniqueArray = arrayWithDuplicates.filter((item, index) => 
-  arrayWithDuplicates.indexOf(item) === index
-);
-const arrayWithDuplicates = [1, 2, 2, 3, 4, 4, 5];
-const uniqueArray = arrayWithDuplicates.reduce((accumulator, current) => {
-  if (!accumulator.includes(current)) {
-    accumulator.push(current);
+  constructor(value: T) {
+    this.value = value;
+    this.next = null;
   }
-  return accumulator;
-}, [] as number[]);
-interface User {
-  id: number;
-  name: string;
 }
 
-const users: User[] = [
-  { id: 1, name: "John" },
-  { id: 2, name: "Jane" },
-  { id: 1, name: "John" }, // duplicate
-  { id: 3, name: "Bob" }
-];
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  if (!head) return false;
 
-// Remove duplicates based on id property
-const uniqueUsers = users.filter((user, index, self) => 
-  index === self.findIndex(u => u.id === user.id)
-);
+  let tortoise: ListNode<T> | null = head;
+  let hare: ListNode<T> | null = head;
 
-// Alternative using Set with JSON (for simple objects)
-const uniqueUsersByString = [...new Set(users.map(user => JSON.stringify(user)))].map(str => JSON.parse(str));
-function removeDuplicates<T>(array: T[]): T[] {
-  return [...new Set(array)];
+  while (hare !== null && hare.next !== null) {
+    tortoise = tortoise!.next;       // Tortoise moves 1 step
+    hare = hare.next.next;           // Hare moves 2 steps
+
+    if (tortoise === hare) return true; // Cycle detected
+  }
+
+  return false; // No cycle found
 }
+// Create a linked list with a cycle: 1 -> 2 -> 3 -> 2 -> 3 -> ...
+const node1 = new ListNode(1);
+const node2 = new ListNode(2);
+const node3 = new ListNode(3);
+node1.next = node2;
+node2.next = node3;
+node3.next = node2; // Creates a cycle
 
-// Or with custom comparison for objects
-function removeDuplicatesByKey<T>(array: T[], key: keyof T): T[] {
-  return array.filter((item, index, self) => 
-    index === self.findIndex(i => i[key] === item[key])
-  );
-}
+console.log(hasCycle(node1)); // true
 
-// Usage
-const numbers = removeDuplicates([1, 2, 2, 3, 4]);
-const uniqueUsers = removeDuplicatesByKey(users, 'id');
+// Create a linked list without a cycle: 4 -> 5
+const node4 = new ListNode(4);
+node4.next = new ListNode(5);
+console.log(hasCycle(node4)); // false
