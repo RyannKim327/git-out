@@ -1,78 +1,100 @@
-function isSorted(arr: number[]): boolean {
-    for (let i = 0; i < arr.length - 1; i++) {
-        if (arr[i] > arr[i + 1]) {
-            return false;
-        }
+// beam-search.ts
+export type BeamNode<T> = {
+  state: T;              // user-defined state
+  score: number;         // maximisable score (higher is better)
+  path: T[];             // sequence of states that led here
+};
+
+export type ExpandFn<T> = (node: BeamNode<T>) => BeamNode<T>[];
+export type ScoreFn<T>  = (state: T) => number;   // heuristic
+
+/**
+ * Beam search.
+ * @param initial   initial state
+ * @param expand    successor generator
+ * @param score     scoring heuristic (higher => better)
+ * @param beamWidth k (how many nodes are kept per layer)
+ * @param maxDepth  optional safety cap
+ * @returns best node found (highest score) or undefined if search failed
+ */
+export function beamSearch<T>(
+  initial: T,
+  expand: ExpandFn<T>,
+  score: ScoreFn<T>,
+  beamWidth: number,
+  maxDepth = 100
+): BeamNode<T> | undefined {
+
+  // helper to create a BeamNode from a raw state
+  const makeNode = (state: T, path: T[] = []): BeamNode<T> => ({
+    state,
+    score: score(state),
+    path: [...path, state],
+  });
+
+  let beam: BeamNode<T>[] = [makeNode(initial)];
+
+  for (let depth = 0; depth < maxDepth && beam.length > 0; depth++) {
+    // 1. expand every node in the current beam
+    const candidates: BeamNode<T>[] = [];
+    for (const node of beam) {
+      candidates.push(...expand(node));
     }
-    return true;
+
+    // 2. nothing left to explore
+    if (candidates.length === 0) break;
+
+    // 3. keep the k best unique states (optional deduplication)
+    const seen = new Set<string>();
+    beam = candidates
+      .sort((a, b) => b.score - a.score) // descending
+      .filter(n => {
+        const key = JSON.stringify(n.state); // cheap uniqueness key
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, beamWidth);
+  }
+
+  // best node encountered anywhere in the search
+  return beam.length ? beam[0] : undefined;
 }
+import { beamSearch, BeamNode } from './beam-search';
 
-// Usage
-console.log(isSorted([1, 2, 3, 4, 5])); // true
-console.log(isSorted([1, 3, 2, 4, 5])); // false
-console.log(isSorted([])); // true (edge case)
-function isSorted(arr: number[]): boolean {
-    return arr.every((value, index, array) => 
-        index === 0 || value >= array[index - 1]
-    );
+type StrState = string;
+
+const vocab = ['a','b','c','d','e','f','g','h','i','j','k','l','m',
+               'n','o','p','q','r','s','t','u','v','w','x','y','z',' '];
+
+// very naive “language model”
+const lmScore = (s: string): number => {
+  let score = 0;
+  for (let i = 0; i < s.length - 1; i++) {
+    const pair = s.slice(i, i + 2);
+    // reward vowels after consonants
+    if (/[aeiou][bcdfghjklmnpqrstvwxyz]/.test(pair)) score += 2;
+    if (/[bcdfghjklmnpqrstvwxyz][aeiou]/.test(pair)) score += 1;
+  }
+  return score;
+};
+
+const expandString = (node: BeamNode<StrState>): BeamNode<StrState>[] =>
+  vocab.map(ch => ({
+    state: node.state + ch,
+    score: 0, // will be re-computed inside makeNode
+    path: [...node.path, node.state],
+  }));
+
+const result = beamSearch<StrState>(
+  '',                // start from empty string
+  expandString,
+  lmScore,
+  10                 // beam width
+);
+
+if (result) {
+  console.log('Best string:', result.state);
+  console.log('Score:', result.score);
+  console.log('Full path:', result.path);
 }
-
-// Usage
-console.log(isSorted([1, 2, 3, 4, 5])); // true
-console.log(isSorted([1, 3, 2, 4, 5])); // false
-function isSorted<T>(arr: T[]): boolean {
-    for (let i = 0; i < arr.length - 1; i++) {
-        if (arr[i] > arr[i + 1]) {
-            return false;
-        }
-    }
-    return true;
-}
-
-// Usage with numbers
-console.log(isSorted([1, 2, 3, 4, 5])); // true
-
-// Usage with strings
-console.log(isSorted(['a', 'b', 'c'])); // true
-console.log(isSorted(['c', 'a', 'b'])); // false
-function isSorted<T>(
-    arr: T[], 
-    compare: (a: T, b: T) => number = (a, b) => a > b ? 1 : a < b ? -1 : 0
-): boolean {
-    for (let i = 0; i < arr.length - 1; i++) {
-        if (compare(arr[i], arr[i + 1]) > 0) {
-            return false;
-        }
-    }
-    return true;
-}
-
-// Usage with default comparator (numbers)
-console.log(isSorted([1, 2, 3, 4, 5])); // true
-
-// Usage with custom comparator (descending order check)
-console.log(isSorted([5, 4, 3, 2, 1], (a, b) => b - a)); // true
-const isSorted = (arr: number[]): boolean => 
-    arr.slice(1).every((value, index) => value >= arr[index]);
-
-// Usage
-console.log(isSorted([1, 2, 3, 4, 5])); // true
-console.log(isSorted([1, 3, 2, 4, 5])); // false
-function isSorted(arr: number[]): boolean {
-    // Handle empty array and single element array
-    if (arr.length <= 1) return true;
-    
-    // Handle arrays with duplicate values
-    for (let i = 0; i < arr.length - 1; i++) {
-        if (arr[i] > arr[i + 1]) {
-            return false;
-        }
-    }
-    return true;
-}
-
-// Edge case tests
-console.log(isSorted([])); // true
-console.log(isSorted([1])); // true
-console.log(isSorted([1, 1, 1])); // true (duplicates allowed in ascending order)
-console.log(isSorted([1, 2, 2, 3])); // true
