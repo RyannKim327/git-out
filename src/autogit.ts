@@ -1,100 +1,133 @@
-// priority-queue.ts
-export class PriorityQueue<T> {
-  private heap: T[] = [];
-
-  constructor(
-    private compare: (a: T, b: T) => number
-  ) {}
-
-  /* ---- public API ---- */
-  size(): number {
-    return this.heap.length;
-  }
-
-  isEmpty(): boolean {
-    return this.heap.length === 0;
-  }
-
-  peek(): T | undefined {
-    return this.heap[0];
-  }
-
-  push(item: T): void {
-    this.heap.push(item);
-    this._siftUp(this.heap.length - 1);
-  }
-
-  pop(): T | undefined {
-    if (this.heap.length === 0) return undefined;
-    const min = this.heap[0];
-    const last = this.heap.pop()!;
-    if (this.heap.length > 0) {
-      this.heap[0] = last;
-      this._siftDown(0);
+function longestCommonPrefix(strings: string[]): string {
+    if (strings.length === 0) return '';
+    if (strings.length === 1) return strings[0];
+    
+    let prefix = strings[0];
+    
+    for (let i = 1; i < strings.length; i++) {
+        const current = strings[i];
+        let j = 0;
+        
+        // Compare each character until mismatch
+        while (j < prefix.length && j < current.length && prefix[j] === current[j]) {
+            j++;
+        }
+        
+        prefix = prefix.substring(0, j);
+        
+        // Early exit if no common prefix
+        if (prefix === '') return '';
     }
-    return min;
-  }
-
-  /* ---- helpers ---- */
-  private _parent(i: number) {
-    return Math.floor((i - 1) / 2);
-  }
-  private _left(i: number) {
-    return 2 * i + 1;
-  }
-  private _right(i: number) {
-    return 2 * i + 2;
-  }
-
-  private _siftUp(idx: number) {
-    while (idx > 0) {
-      const p = this._parent(idx);
-      if (this.compare(this.heap[idx], this.heap[p]) >= 0) break;
-      [this.heap[idx], this.heap[p]] = [this.heap[p], this.heap[idx]];
-      idx = p;
-    }
-  }
-
-  private _siftDown(idx: number) {
-    while (true) {
-      const l = this._left(idx);
-      const r = this._right(idx);
-      let smallest = idx;
-      if (l < this.heap.length && this.compare(this.heap[l], this.heap[smallest]) < 0)
-        smallest = l;
-      if (r < this.heap.length && this.compare(this.heap[r], this.heap[smallest]) < 0)
-        smallest = r;
-      if (smallest === idx) break;
-      [this.heap[idx], this.heap[smallest]] = [this.heap[smallest], this.heap[idx]];
-      idx = smallest;
-    }
-  }
+    
+    return prefix;
 }
 
-/* ---------- convenience factories ---------- */
-export function MinPQ<T>(compareFn?: (a: T, b: T) => number): PriorityQueue<T> {
-  return new PriorityQueue<T>(compareFn || ((a, b) => (a as any) - (b as any)));
+// Example usage
+const strings = ['flower', 'flow', 'flight'];
+console.log(longestCommonPrefix(strings)); // Output: "fl"
+function longestCommonPrefix(strings: string[]): string {
+    if (strings.length === 0) return '';
+    
+    return strings.reduce((prefix, current) => {
+        let i = 0;
+        while (i < prefix.length && i < current.length && prefix[i] === current[i]) {
+            i++;
+        }
+        return prefix.substring(0, i);
+    });
 }
 
-export function MaxPQ<T>(compareFn?: (a: T, b: T) => number): PriorityQueue<T> {
-  const cmp = compareFn || ((a, b) => (a as any) - (b as any));
-  return new PriorityQueue<T>((a, b) => -cmp(a, b));
+// Example usage
+const strings = ['dog', 'racecar', 'car'];
+console.log(longestCommonPrefix(strings)); // Output: ""
+function longestCommonPrefix(strings: string[]): string {
+    if (strings.length === 0) return '';
+    
+    // Sort the array to compare only first and last elements
+    strings.sort();
+    const first = strings[0];
+    const last = strings[strings.length - 1];
+    
+    let i = 0;
+    while (i < first.length && i < last.length && first[i] === last[i]) {
+        i++;
+    }
+    
+    return first.substring(0, i);
 }
-import { MinPQ, MaxPQ } from './priority-queue';
 
-// 1. numbers – ascending
-const pq = MinPQ<number>();
-[5, 3, 9, 1, 2].forEach(n => pq.push(n));
-while (!pq.isEmpty()) console.log(pq.pop()); // 1 2 3 5 9
+// Example usage
+const strings = ['interspecies', 'interstellar', 'interstate'];
+console.log(longestCommonPrefix(strings)); // Output: "inters"
+function longestCommonPrefix(strings: string[]): string {
+    // Handle edge cases
+    if (!strings || strings.length === 0) return '';
+    if (strings.length === 1) return strings[0];
+    
+    // Find the shortest string to limit comparisons
+    const minLength = Math.min(...strings.map(s => s.length));
+    
+    for (let i = 0; i < minLength; i++) {
+        const char = strings[0][i];
+        
+        // Check if all strings have the same character at position i
+        for (let j = 1; j < strings.length; j++) {
+            if (strings[j][i] !== char) {
+                return strings[0].substring(0, i);
+            }
+        }
+    }
+    
+    return strings[0].substring(0, minLength);
+}
 
-// 2. strings – descending by length
-const maxPQ = MaxPQ<string>((a, b) => a.length - b.length);
-['apple', 'pear', 'banana', 'kiwi'].forEach(s => maxPQ.push(s));
-console.log(maxPQ.pop()); // banana
+// Example usage
+const testCases = [
+    ['flower', 'flow', 'flight'],
+    ['dog', 'racecar', 'car'],
+    [''],
+    ['single'],
+    ['prefix', 'prefix', 'prefix']
+];
 
-// 3. custom objects
-interface Task { name: string; priority: number; }
-const taskQueue = MinPQ<Task>((a, b) => a.priority - b.priority);
-taskQueue.push({ name: 'fix bug', priority: 3 });
-taskQueue.push({ name: 'deploy', priority: 1 });
-console.log(taskQueue.pop()?.name); // deploy
+testCases.forEach(test => {
+    console.log(`${test} -> "${longestCommonPrefix(test)}"`);
+});
+const longestCommonPrefix = (strings: string[]): string => {
+    if (strings.length === 0) return '';
+    
+    const [first, ...rest] = strings;
+    let prefix = first;
+    
+    for (const str of rest) {
+        while (!str.startsWith(prefix)) {
+            prefix = prefix.slice(0, -1);
+            if (prefix === '') return '';
+        }
+    }
+    
+    return prefix;
+};
+
+// Example usage
+console.log(longestCommonPrefix(['typescript', 'type', 'typing'])); // "ty"
+function findLongestCommonPrefix(strings: readonly string[]): string {
+    // Use readonly to prevent mutation if needed
+    if (strings.length === 0) return '';
+    
+    let prefix = strings[0];
+    
+    for (let i = 1; i < strings.length; i++) {
+        const current = strings[i];
+        let j = 0;
+        
+        while (j < prefix.length && j < current.length && prefix[j] === current[j]) {
+            j++;
+        }
+        
+        prefix = prefix.substring(0, j);
+        if (prefix === '') break;
+    }
+    
+    return prefix;
+}
