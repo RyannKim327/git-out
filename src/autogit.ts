@@ -1,39 +1,48 @@
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-
-  constructor(value: T) {
-    this.value = value;
-    this.next = null;
-  }
+interface TreeNode {
+    value: number;
+    left: TreeNode | null;
+    right: TreeNode | null;
 }
-
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  if (!head) return false;
-
-  let tortoise: ListNode<T> | null = head;
-  let hare: ListNode<T> | null = head;
-
-  while (hare !== null && hare.next !== null) {
-    tortoise = tortoise!.next;       // Tortoise moves 1 step
-    hare = hare.next.next;           // Hare moves 2 steps
-
-    if (tortoise === hare) return true; // Cycle detected
-  }
-
-  return false; // No cycle found
+function countLeavesRecursive(root: TreeNode | null): number {
+    if (root === null) return 0;
+    // Check if current node is a leaf
+    if (root.left === null && root.right === null) return 1;
+    // Recurse on left and right subtrees
+    return countLeavesRecursive(root.left) + countLeavesRecursive(root.right);
 }
-// Create a linked list with a cycle: 1 -> 2 -> 3 -> 2 -> 3 -> ...
-const node1 = new ListNode(1);
-const node2 = new ListNode(2);
-const node3 = new ListNode(3);
-node1.next = node2;
-node2.next = node3;
-node3.next = node2; // Creates a cycle
+function countLeavesIterative(root: TreeNode | null): number {
+    if (root === null) return 0;
+    let count = 0;
+    const queue: TreeNode[] = [root];
 
-console.log(hasCycle(node1)); // true
+    while (queue.length > 0) {
+        const node = queue.shift()!;
+        // Check if node is a leaf
+        if (node.left === null && node.right === null) {
+            count++;
+        } else {
+            // Add children to the queue
+            if (node.left) queue.push(node.left);
+            if (node.right) queue.push(node.right);
+        }
+    }
+    return count;
+}
+// Construct a sample tree:
+//       1
+//      / \
+//     2   3
+//    / \
+//   4   5
+const tree: TreeNode = {
+    value: 1,
+    left: {
+        value: 2,
+        left: { value: 4, left: null, right: null },
+        right: { value: 5, left: null, right: null }
+    },
+    right: { value: 3, left: null, right: null }
+};
 
-// Create a linked list without a cycle: 4 -> 5
-const node4 = new ListNode(4);
-node4.next = new ListNode(5);
-console.log(hasCycle(node4)); // false
+console.log(countLeavesRecursive(tree)); // Output: 3
+console.log(countLeavesIterative(tree)); // Output: 3
