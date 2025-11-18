@@ -1,42 +1,91 @@
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
+/**
+ * Interface defining the parameters needed for depth-limited search
+ */
+interface DepthLimitedSearchParams<T> {
+    startNode: T;
+    isGoal: (node: T) => boolean;
+    getChildren: (node: T) => T[];
+    depthLimit: number;
 }
 
-async function fetchPosts(): Promise<Post[]> {
-  try {
-    const response = await fetch('https://jsonplaceholder.typicode.com/posts');
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+/**
+ * Depth-Limited Search implementation
+ * @returns True if goal is found within depth limit, false otherwise
+ */
+function depthLimitedSearch<T>(params: DepthLimitedSearchParams<T>): boolean {
+    const { startNode, isGoal, getChildren, depthLimit } = params;
+
+    // Internal recursive function with current depth tracking
+    function dls(node: T, depth: number): boolean {
+        console.log(`Visiting node: ${node} at depth: ${depth}`); // Optional logging
+        
+        // Found the goal node
+        if (isGoal(node)) {
+            return true;
+        }
+
+        // Reached depth limit - stop searching deeper
+        if (depth === 0) {
+            return false;
+        }
+
+        // Recursively search children with reduced depth limit
+        for (const child of getChildren(node)) {
+            if (dls(child, depth - 1)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    return await response.json() as Post[];
-  } catch (error) {
-    console.error('Error fetching data:', error);
-    return [];
-  }
+    return dls(startNode, depthLimit);
 }
 
-// Using the fetch function
-fetchPosts()
-  .then(posts => {
-    console.log('Fetched posts:');
-    posts.slice(0, 3).forEach(post => {
-      console.log(`\nTitle: ${post.title}`);
-      console.log(`Body: ${post.body.substr(0, 50)}...`);
-    });
-  })
-  .catch(error => console.error('Error:', error.message));
-Fetched posts:
+// Example Usage: Tree Search
+interface TreeNode {
+    id: string;
+    children: TreeNode[];
+}
 
-Title: sunt aut facere repellat provident occaati excepturi optio reprehenderit
-Body: quia et suscipit\nsuscipit recusandae consequuntur expedi...
+// Example tree structure
+const tree: TreeNode = {
+    id: 'A',
+    children: [
+        {
+            id: 'B',
+            children: [
+                { id: 'D', children: [] },
+                { id: 'E', children: [] },
+            ],
+        },
+        {
+            id: 'C',
+            children: [
+                { id: 'F', children: [] },
+                { id: 'G', children: [] },
+            ],
+        },
+    ],
+};
 
-Title: qui est esse
-Body: est rerum tempore vitae\nsequi sint nihil reprehenderit do...
+// Search parameters
+const result = depthLimitedSearch<TreeNode>({
+    startNode: tree,
+    isGoal: (node) => node.id === 'G',
+    getChildren: (node) => node.children,
+    depthLimit: 3,
+});
 
-Title: ea molestias quasi exercitationem repellat qui ipsa sit aut
-Body: et iusto sed quo iure\nvoluptatem occaecati omnis eligend...
+console.log('Goal found:', result); // Output: Goal found: true
+function depthLimitedSearchWithVisited<T>(params: DepthLimitedSearchParams<T> & { 
+    visited?: Set<T> 
+}): boolean {
+    // ... existing code with visited check ...
+    const visited = params.visited || new Set<T>();
+    
+    if (visited.has(node)) return false;
+    visited.add(node);
+
+    // ... rest of the dls function ...
+}
