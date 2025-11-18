@@ -1,41 +1,48 @@
-function insertionSort(arr: number[]): number[] {
-  // Start from the second element (index 1)
-  for (let i = 1; i < arr.length; i++) {
-    const current = arr[i]; // Current element to be inserted
-    let j = i - 1; // Start comparing with previous element
+const stringValue = "123";
+const numberValue = parseInt(stringValue);
 
-    // Move elements of arr[0..i-1] that are greater than current
-    // to one position ahead of their current position
-    while (j >= 0 && arr[j] > current) {
-      arr[j + 1] = arr[j]; // Shift element to the right
-      j--;
-    }
+console.log(numberValue); // 123
+console.log(typeof numberValue); // "number"
+const stringValue: string = "123";
+const numberValue: number = parseInt(stringValue);
+// Always specify the radix (base) to avoid unexpected behavior
+const decimalValue = parseInt("123", 10); // Base 10
+const hexValue = parseInt("FF", 16); // Base 16
+const stringValue = "123";
+const numberValue = Number(stringValue);
 
-    // Insert current element at correct position
-    arr[j + 1] = current;
-  }
-  
-  return arr;
+console.log(numberValue); // 123
+const stringValue = "123";
+const numberValue = +stringValue;
+
+console.log(numberValue); // 123
+const stringValue = "123.45";
+const numberValue = Math.floor(Number(stringValue));
+
+console.log(numberValue); // 123
+console.log(parseInt("123abc")); // 123
+console.log(Number("123abc")); // NaN
+console.log(+"123abc"); // NaN
+// Dealing with potential NaN
+const stringValue = "123";
+const parsedValue = parseInt(stringValue, 10);
+
+if (isNaN(parsedValue)) {
+    console.log("Invalid number");
+} else {
+    console.log(parsedValue); // 123
 }
-// Test the function
-const unsortedArray = [9, 5, 1, 4, 3];
-console.log('Original array:', unsortedArray);
-console.log('Sorted array:', insertionSort(unsortedArray));
-
-// Output:
-// Original array: [9, 5, 1, 4, 3]
-// Sorted array: [1, 3, 4, 5, 9]
-function insertionSortNonMutating(arr: number[]): number[] {
-  const sorted = [...arr];
-  for (let i = 1; i < sorted.length; i++) {
-    const current = sorted[i];
-    let j = i - 1;
-    
-    while (j >= 0 && sorted[j] > current) {
-      sorted[j + 1] = sorted[j];
-      j--;
+function safeParseInt(str: string): number {
+    const result = parseInt(str, 10);
+    if (isNaN(result)) {
+        throw new Error(`Invalid number: ${str}`);
     }
-    sorted[j + 1] = current;
-  }
-  return sorted;
+    return result;
+}
+
+try {
+    const validNumber = safeParseInt("123");
+    const invalidNumber = safeParseInt("abc"); // Throws error
+} catch (error) {
+    console.error(error.message);
 }
