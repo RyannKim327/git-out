@@ -1,49 +1,38 @@
-function removeVowels(str: string): string {
-    return str.replace(/[aeiou]/gi, '');
-}
+function isPalindrome(str: string): boolean {
+    let left = 0;
+    let right = str.length - 1;
 
-// Usage
-const result = removeVowels("Hello World");
-console.log(result); // "Hll Wrld"
-function removeVowels(str: string): string {
-    const vowels = ['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U'];
-    return str.split('').filter(char => !vowels.includes(char)).join('');
-}
-
-// Usage
-const result = removeVowels("TypeScript");
-console.log(result); // "TypScrpt"
-function removeVowels(str: string): string {
-    const vowels = /[aeiou]/i;
-    return Array.from(str).filter(char => !vowels.test(char)).join('');
-}
-
-// Usage
-const result = removeVowels("Programming");
-console.log(result); // "Prgrmmng"
-function removeVowels(str: string): string {
-    const vowels = 'aeiouAEIOU';
-    let result = '';
-    
-    for (let i = 0; i < str.length; i++) {
-        if (!vowels.includes(str[i])) {
-            result += str[i];
+    while (left < right) {
+        if (str[left] !== str[right]) {
+            return false;
         }
+        left++;
+        right--;
     }
-    
-    return result;
+
+    return true;
 }
 
-// Usage
-const result = removeVowels("JavaScript");
-console.log(result); // "JvScrpt"
-const removeVowels = (str: string): string => str.replace(/[aeiou]/gi, '');
+// Example
+console.log(isPalindrome("racecar")); // true
+console.log(isPalindrome("hello"));   // false
+function isPalindromeClean(str: string): boolean {
+    let left = 0;
+    let right = str.length - 1;
 
-// Usage
-const result = removeVowels("Hello TypeScript");
-console.log(result); // "Hll TypScrpt"
-// Remove only lowercase vowels
-const removeLowercaseVowels = (str: string): string => str.replace(/[aeiou]/g, '');
+    while (left < right) {
+        while (left < right && !/[a-zA-Z0-9]/.test(str[left])) left++;
+        while (left < right && !/[a-zA-Z0-9]/.test(str[right])) right--;
 
-// Remove only uppercase vowels  
-const removeUppercaseVowels = (str: string): string => str.replace(/[AEIOU]/g, '');
+        if (str[left].toLowerCase() !== str[right].toLowerCase()) {
+            return false;
+        }
+
+        left++;
+        right--;
+    }
+
+    return true;
+}
+
+console.log(isPalindromeClean("A man, a plan, a canal: Panama")); // true
