@@ -1,39 +1,39 @@
-function lengthOfLIS(nums: number[]): number {
-    const n = nums.length;
-    const dp = new Array(n).fill(1);
-
-    for (let i = 1; i < n; i++) {
-        for (let j = 0; j < i; j++) {
-            if (nums[i] > nums[j]) {
-                dp[i] = Math.max(dp[i], dp[j] + 1);
-            }
-        }
-    }
-
-    return Math.max(...dp);
+const str = "  Hello  World  ";
+const result = str.replace(/\s/g, "");
+console.log(result); // "HelloWorld"
+const str = "  Hello  World  ";
+const result = str.trim();
+console.log(result); // "Hello  World"
+const str = "  Hello  World  ";
+const result = str.trimStart();
+console.log(result); // "Hello  World  "
+const str = "  Hello  World  ";
+const result = str.trimEnd();
+console.log(result); // "  Hello  World"
+const str = "  Hello     World  ";
+const result = str.replace(/\s+/g, " ");
+console.log(result); // " Hello World "
+const str = "  Hello\tWorld\n";
+const result = str.replace(/\s/g, "");
+console.log(result); // "HelloWorld"
+// Remove all whitespace
+function removeAllWhitespace(str: string): string {
+    return str.replace(/\s/g, "");
 }
 
-console.log(lengthOfLIS([10, 9, 2, 5, 3, 7, 101, 18])); // 4
-function lengthOfLIS(nums: number[]): number {
-    const sub: number[] = [];
-
-    for (let num of nums) {
-        let left = 0;
-        let right = sub.length;
-        
-        while (left < right) {
-            const mid = Math.floor((left + right) / 2);
-            if (sub[mid] < num) {
-                left = mid + 1;
-            } else {
-                right = mid;
-            }
-        }
-
-        sub[left] = num;
-    }
-
-    return sub.length;
+// Remove extra spaces (multiple spaces → single space)
+function normalizeSpaces(str: string): string {
+    return str.replace(/\s+/g, " ").trim();
 }
 
-console.log(lengthOfLIS([10, 9, 2, 5, 3, 7, 101, 18])); // 4
+// Usage
+const input = "  Hello   World\t!\n";
+console.log(removeAllWhitespace(input)); // "HelloWorld!"
+console.log(normalizeSpaces(input));     // "Hello World !"
+function removeWhitespace(str: string | null | undefined): string {
+    if (!str) return "";
+    return str.replace(/\s/g, "");
+}
+
+// Handles null/undefined safely
+const result = removeWhitespace(somePossiblyNullString);
