@@ -1,24 +1,31 @@
-function countWordOccurrences(text: string, word: string, caseSensitive: boolean = false): number {
-    if (!text || !word) return 0;
+function factorial(n: number): number {
+  if (n < 0 || !Number.isInteger(n)) {
+    throw new Error("Factorial is only defined for non-negative integers.");
+  }
 
-    // Escape special regex characters in the word
-    const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    
-    // Create regex pattern with word boundaries and flags
-    const flags = caseSensitive ? 'g' : 'gi';
-    const pattern = new RegExp(`\\b${escapedWord}\\b`, flags);
-    
-    // Find matches and count occurrences
-    const matches = text.match(pattern);
-    return matches ? matches.length : 0;
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
 }
 
-// Example usage:
-const text = "Hello world, hello universe. HELLO is everywhere! Shello?";
-console.log(countWordOccurrences(text, "hello"));          // 3 (case-insensitive)
-console.log(countWordOccurrences(text, "hello", true));    // 1 (case-sensitive)
-console.log(countWordOccurrences(text, "world"));          // 1
-function simpleWordCount(text: string, word: string): number {
-    return text.split(/\s+/).filter(w => w === word).length;
+// Usage
+console.log(factorial(5)); // 120
+console.log(factorial(0)); // 1 (base case)
+function factorialRecursive(n: number): number {
+  if (n < 0 || !Number.isInteger(n)) {
+    throw new Error("Factorial is only defined for non-negative integers.");
+  }
+  return n === 0 ? 1 : n * factorialRecursive(n - 1);
 }
-// Note: Doesn't handle punctuation, case differences, or sub-word matches
+
+// Usage
+console.log(factorialRecursive(5)); // 120
+function factorialBigInt(n: bigint): bigint {
+  if (n < 0n) throw new Error("Factorial is only defined for non-negative integers.");
+  return n === 0n ? 1n : n * factorialBigInt(n - 1n);
+}
+
+// Usage (append 'n' to denote BigInt literals)
+console.log(factorialBigInt(25n).toString()); // 15511210043330985984000000
