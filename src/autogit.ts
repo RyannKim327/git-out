@@ -1,41 +1,72 @@
-function longestCommonSubsequence(a: string, b: string): string {
-    const m = a.length;
-    const n = b.length;
-
-    // dp[i][j] = length of LCS of a[0..i-1], b[0..j-1]
-    const dp: number[][] = Array.from({ length: m + 1 }, () =>
-        Array(n + 1).fill(0)
-    );
-
-    // Fill DP table
-    for (let i = 1; i <= m; i++) {
-        for (let j = 1; j <= n; j++) {
-            if (a[i - 1] === b[j - 1]) {
-                dp[i][j] = dp[i - 1][j - 1] + 1;
-            } else {
-                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-            }
+function findFirstRepeatedChar(str: string): string | null {
+    const seen = new Set<string>();
+    
+    for (const char of str) {
+        if (seen.has(char)) {
+            return char;
         }
+        seen.add(char);
     }
-
-    // Backtrack to find sequence
-    let i = m, j = n;
-    const lcsChars: string[] = [];
-
-    while (i > 0 && j > 0) {
-        if (a[i - 1] === b[j - 1]) {
-            lcsChars.push(a[i - 1]);
-            i--;
-            j--;
-        } else if (dp[i - 1][j] > dp[i][j - 1]) {
-            i--;
-        } else {
-            j--;
-        }
-    }
-
-    return lcsChars.reverse().join('');
+    
+    return null; // No repeated character found
 }
 
-// Example:
-console.log(longestCommonSubsequence("ACDBE", "ABCDE")); // Output: "ACDE"
+// Example usage
+console.log(findFirstRepeatedChar("typescript")); // "t"
+console.log(findFirstRepeatedChar("hello"));      // "l"
+console.log(findFirstRepeatedChar("abc"));        // null
+function findFirstRepeatedChar(str: string): string | null {
+    const charCount: Record<string, number> = {};
+    
+    for (const char of str) {
+        if (charCount[char]) {
+            return char;
+        }
+        charCount[char] = 1;
+    }
+    
+    return null;
+}
+function findFirstRepeatedChar(str: string): string | null {
+    for (let i = 0; i < str.length; i++) {
+        if (str.indexOf(str[i], i + 1) !== -1) {
+            return str[i];
+        }
+    }
+    return null;
+}
+function findFirstRepeatedChar(str: string): string | null {
+    const result = str.split('').find((char, index) => 
+        str.includes(char, index + 1)
+    );
+    return result || null;
+}
+function findFirstRepeatedChar(str: string): string | null {
+    // Handle empty string
+    if (str.length === 0) return null;
+    
+    const seen = new Set<string>();
+    
+    for (const char of str) {
+        if (seen.has(char)) {
+            return char;
+        }
+        seen.add(char);
+    }
+    
+    return null;
+}
+
+// Test cases
+const testCases = [
+    { input: "typescript", expected: "t" },
+    { input: "hello", expected: "l" },
+    { input: "abc", expected: null },
+    { input: "", expected: null },
+    { input: "aabbcc", expected: "a" }
+];
+
+testCases.forEach(({ input, expected }) => {
+    const result = findFirstRepeatedChar(input);
+    console.log(`Input: "${input}" -> Result: ${result}, Expected: ${expected}`);
+});
