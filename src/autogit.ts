@@ -1,72 +1,24 @@
-function findFirstRepeatedChar(str: string): string | null {
-    const seen = new Set<string>();
-    
-    for (const char of str) {
-        if (seen.has(char)) {
-            return char;
+function insertionSort(arr: number[]): void {
+    // Iterate through the array starting from the second element
+    for (let i = 1; i < arr.length; i++) {
+        const current = arr[i];  // Current element to be inserted
+        let j = i - 1;  // Start comparing with previous element
+        
+        // Shift elements greater than 'current' to the right
+        while (j >= 0 && arr[j] > current) {
+            arr[j + 1] = arr[j];  // Shift element to the right
+            j--;
         }
-        seen.add(char);
+        
+        // Insert 'current' at the correct position
+        arr[j + 1] = current;
     }
-    
-    return null; // No repeated character found
 }
-
-// Example usage
-console.log(findFirstRepeatedChar("typescript")); // "t"
-console.log(findFirstRepeatedChar("hello"));      // "l"
-console.log(findFirstRepeatedChar("abc"));        // null
-function findFirstRepeatedChar(str: string): string | null {
-    const charCount: Record<string, number> = {};
-    
-    for (const char of str) {
-        if (charCount[char]) {
-            return char;
-        }
-        charCount[char] = 1;
-    }
-    
-    return null;
-}
-function findFirstRepeatedChar(str: string): string | null {
-    for (let i = 0; i < str.length; i++) {
-        if (str.indexOf(str[i], i + 1) !== -1) {
-            return str[i];
-        }
-    }
-    return null;
-}
-function findFirstRepeatedChar(str: string): string | null {
-    const result = str.split('').find((char, index) => 
-        str.includes(char, index + 1)
-    );
-    return result || null;
-}
-function findFirstRepeatedChar(str: string): string | null {
-    // Handle empty string
-    if (str.length === 0) return null;
-    
-    const seen = new Set<string>();
-    
-    for (const char of str) {
-        if (seen.has(char)) {
-            return char;
-        }
-        seen.add(char);
-    }
-    
-    return null;
-}
-
-// Test cases
-const testCases = [
-    { input: "typescript", expected: "t" },
-    { input: "hello", expected: "l" },
-    { input: "abc", expected: null },
-    { input: "", expected: null },
-    { input: "aabbcc", expected: "a" }
-];
-
-testCases.forEach(({ input, expected }) => {
-    const result = findFirstRepeatedChar(input);
-    console.log(`Input: "${input}" -> Result: ${result}, Expected: ${expected}`);
-});
+const array = [5, 2, 4, 6, 1, 3];
+insertionSort(array);
+console.log(array);  // Output: [1, 2, 3, 4, 5, 6]
+[5|2,4,6,1,3] → current=2 → [2,5|4,6,1,3]
+[2,5|4,6,1,3] → current=4 → [2,4,5|6,1,3]
+[2,4,5|6,1,3] → current=6 → [2,4,5,6|1,3]
+[2,4,5,6|1,3] → current=1 → [1,2,4,5,6|3]
+[1,2,4,5,6|3] → current=3 → [1,2,3,4,5,6]
