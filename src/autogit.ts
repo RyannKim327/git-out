@@ -1,233 +1,106 @@
-// 1. Define Interfaces for better type safety and readability
-
-/**
- * Represents an edge in the graph.
- */
-interface Edge {
-    from: number;
-    to: number;
-    weight: number;
-}
-
-/**
- * The result returned by the Bellman-Ford algorithm.
- */
-interface ShortestPathResult {
-    /**
-     * An array where distances[i] is the shortest distance from the source to vertex i.
-     * `Infinity` if unreachable, `0` for the source.
-     */
-    distances: number[];
-    /**
-     * An array where predecessors[i] is the vertex immediately preceding vertex i
-     * in the shortest path from the source. `null` if no predecessor (e.g., source, or unreachable).
-     */
-    predecessors: (number | null)[];
-    /**
-     * True if a negative cycle was detected, indicating that shortest paths are not well-defined.
-     */
-    hasNegativeCycle: boolean;
-}
-
-// 2. Implement the Bellman-Ford Algorithm
-
-/**
- * Implements the Bellman-Ford algorithm to find shortest paths from a single source
- * in a graph that may contain negative edge weights. It can also detect negative cycles.
- *
- * @param numVertices The total number of vertices in the graph (0-indexed).
- * @param edges An array of Edge objects representing the graph.
- * @param source The starting vertex for shortest path calculation.
- * @returns A ShortestPathResult object containing distances, predecessors, and a flag for negative cycles.
- */
-function bellmanFord(
-    numVertices: number,
-    edges: Edge[],
-    source: number
-): ShortestPathResult {
-    // 1. Initialization
-    // Initialize distances: all to infinity, source to 0.
-    // Initialize predecessors: all to null.
-    const distances: number[] = new Array(numVertices).fill(Number.POSITIVE_INFINITY);
-    const predecessors: (number | null)[] = new Array(numVertices).fill(null);
-    distances[source] = 0;
-
-    // 2. Relax Edges V - 1 Times
-    // A path can have at most V-1 edges. So, after V-1 iterations,
-    // all shortest paths should be found if no negative cycles exist.
-    for (let i = 0; i < numVertices - 1; i++) {
-        let changed = false; // Optimization: If no distance changes in an iteration, we can stop early.
-        for (const edge of edges) {
-            const { from, to, weight } = edge;
-
-            // Only relax if the 'from' node is reachable (not Infinity)
-            // and if a shorter path to 'to' is found.
-            if (distances[from] !== Number.POSITIVE_INFINITY && distances[from] + weight < distances[to]) {
-                distances[to] = distances[from] + weight;
-                predecessors[to] = from;
-                changed = true;
-            }
-        }
-        if (!changed) {
-            // No changes occurred in this iteration, meaning paths are stable.
-            // Further iterations won't change anything, so we can break early.
-            break;
+function firstNonRepeatingChar(str: string): string | null {
+    const charCount: Map<string, number> = new Map();
+    
+    // First pass: count character occurrences
+    for (const char of str) {
+        charCount.set(char, (charCount.get(char) || 0) + 1);
+    }
+    
+    // Second pass: find first character with count = 1
+    for (const char of str) {
+        if (charCount.get(char) === 1) {
+            return char;
         }
     }
+    
+    return null; // No non-repeating character found
+}
 
-    // 3. Detect Negative Cycles
-    // After V-1 iterations, if we can still relax any edge, it means
-    // there's a negative cycle reachable from the source.
-    let hasNegativeCycle = false;
-    for (const edge of edges) {
-        const { from, to, weight } = edge;
-        if (distances[from] !== Number.POSITIVE_INFINITY && distances[from] + weight < distances[to]) {
-            hasNegativeCycle = true;
-            // For nodes involved in or reachable from a negative cycle,
-            // their distances are effectively -Infinity, but Bellman-Ford typically
-            // just reports the cycle. We could optionally propagate -Infinity here.
-            // For simplicity, we just set the flag and break.
-            break;
+// Example usage
+console.log(firstNonRepeatingChar("swiss")); // "w"
+console.log(firstNonRepeatingChar("aabbcc")); // null
+console.log(firstNonRepeatingChar("typescript")); // "t"
+function firstNonRepeatingCharObj(str: string): string | null {
+    const charCount: Record<string, number> = {};
+    
+    // Count character occurrences
+    for (const char of str) {
+        charCount[char] = (charCount[char] || 0) + 1;
+    }
+    
+    // Find first non-repeating character
+    for (const char of str) {
+        if (charCount[char] === 1) {
+            return char;
         }
     }
-
-    return { distances, predecessors, hasNegativeCycle };
+    
+    return null;
 }
-
-// 3. Helper Function for Path Reconstruction
-
-/**
- * Reconstructs the shortest path from the source to a target vertex
- * using the predecessors array generated by Bellman-Ford.
- *
- * @param predecessors The predecessors array from the Bellman-Ford result.
- * @param source The source vertex.
- * @param target The target vertex.
- * @returns An array of vertex numbers representing the path, or null if no path exists.
- */
-function reconstructPath(
-    predecessors: (number | null)[],
-    source: number,
-    target: number
-): number[] | null {
-    // If target is unreachable or part of a negative cycle (if not handled by caller)
-    if (predecessors[target] === null && target !== source) {
-        return null;
-    }
-
-    const path: number[] = [];
-    let currentNode: number | null = target;
-
-    // Traverse back from the target to the source using predecessors
-    while (currentNode !== null && currentNode !== undefined) {
-        path.unshift(currentNode); // Add to the beginning of the path
-        if (currentNode === source) {
-            break; // Reached the source
+const firstNonRepeatingChar = (str: string): string | null => {
+    const frequency: Map<string, number> = new Map();
+    
+    // Build frequency map
+    str.split('').forEach(char => {
+        frequency.set(char, (frequency.get(char) || 0) + 1);
+    });
+    
+    // Return first character with frequency 1
+    return str.split('').find(char => frequency.get(char) === 1) || null;
+};
+function firstNonRepeatingCharEnhanced(str: string): string | null {
+    if (!str || str.length === 0) return null;
+    
+    const charCount = new Map<string, number>();
+    const charOrder: string[] = [];
+    
+    // Single pass to track count and order
+    for (const char of str) {
+        if (!charCount.has(char)) {
+            charCount.set(char, 1);
+            charOrder.push(char);
+        } else {
+            charCount.set(char, charCount.get(char)! + 1);
         }
-        currentNode = predecessors[currentNode];
     }
-
-    // If the path doesn't start at the source, it means the target was unreachable
-    // (e.g., if predecessors[source] was somehow set incorrectly or initial conditions were off)
-    if (path.length === 0 || path[0] !== source) {
-        return null;
+    
+    // Find first non-repeating character from ordered list
+    for (const char of charOrder) {
+        if (charCount.get(char) === 1) {
+            return char;
+        }
     }
-
-    return path;
+    
+    return null;
+}
+function firstNonRepeatingChar(str: string): string | null {
+    const charCount: Map<string, number> = new Map();
+    
+    for (const char of str) {
+        charCount.set(char, (charCount.get(char) || 0) + 1);
+    }
+    
+    for (const char of str) {
+        if (charCount.get(char) === 1) {
+            return char;
+        }
+    }
+    
+    return null;
 }
 
-
-// 4. Example Usage
-
-// Example 1: Simple Graph (no negative weights)
-console.log("--- Example 1: Simple Graph ---");
-const numVertices1 = 5;
-const edges1: Edge[] = [
-    { from: 0, to: 1, weight: 10 },
-    { from: 0, to: 4, weight: 3 },
-    { from: 1, to: 2, weight: 2 },
-    { from: 1, to: 4, weight: 6 },
-    { from: 2, to: 3, weight: 7 },
-    { from: 3, to: 2, weight: 9 }, // Cycle, but not negative
-    { from: 4, to: 1, weight: 4 },
-    { from: 4, to: 2, weight: 8 },
-    { from: 4, to: 3, weight: 2 },
+// Test cases
+const testCases = [
+    { input: "swiss", expected: "w" },
+    { input: "typescript", expected: "t" },
+    { input: "aabbcc", expected: null },
+    { input: "hello", expected: "h" },
+    { input: "", expected: null },
+    { input: "a", expected: "a" },
+    { input: "aabbccd", expected: "d" }
 ];
-const source1 = 0;
-const result1 = bellmanFord(numVertices1, edges1, source1);
 
-console.log("Distances:", result1.distances); // Expected: [0, 7, 9, 5, 3]
-console.log("Predecessors:", result1.predecessors); // Expected: [null, 4, 1, 4, 0]
-console.log("Has Negative Cycle:", result1.hasNegativeCycle); // Expected: false
-
-if (!result1.hasNegativeCycle) {
-    console.log("Path from 0 to 3:", reconstructPath(result1.predecessors, source1, 3)); // Expected: [0, 4, 3]
-    console.log("Path from 0 to 2:", reconstructPath(result1.predecessors, source1, 2)); // Expected: [0, 4, 1, 2]
-    console.log("Path from 0 to 0:", reconstructPath(result1.predecessors, source1, 0)); // Expected: [0]
-}
-
-
-// Example 2: Graph with Negative Weights (no negative cycle)
-console.log("\n--- Example 2: Negative Weights (no cycle) ---");
-const numVertices2 = 5;
-const edges2: Edge[] = [
-    { from: 0, to: 1, weight: 4 },
-    { from: 0, to: 2, weight: 2 },
-    { from: 1, to: 3, weight: 2 },
-    { from: 1, to: 4, weight: 3 },
-    { from: 2, to: 1, weight: 1 },
-    { from: 2, to: 3, weight: -2 },
-    { from: 3, to: 4, weight: 1 }
-];
-const source2 = 0;
-const result2 = bellmanFord(numVertices2, edges2, source2);
-
-console.log("Distances:", result2.distances); // Expected: [0, 3, 2, 0, 1]
-console.log("Predecessors:", result2.predecessors); // Expected: [null, 2, 0, 2, 3]
-console.log("Has Negative Cycle:", result2.hasNegativeCycle); // Expected: false
-
-if (!result2.hasNegativeCycle) {
-    console.log("Path from 0 to 4:", reconstructPath(result2.predecessors, source2, 4)); // Expected: [0, 2, 3, 4]
-    console.log("Path from 0 to 1:", reconstructPath(result2.predecessors, source2, 1)); // Expected: [0, 2, 1]
-}
-
-
-// Example 3: Graph with a Negative Cycle
-console.log("\n--- Example 3: Negative Cycle ---");
-const numVertices3 = 4;
-const edges3: Edge[] = [
-    { from: 0, to: 1, weight: 1 },
-    { from: 1, to: 2, weight: -1 },
-    { from: 2, to: 3, weight: -1 },
-    { from: 3, to: 1, weight: -1 } // This creates a negative cycle: 1 -> 2 -> 3 -> 1 with total weight -3
-];
-const source3 = 0;
-const result3 = bellmanFord(numVertices3, edges3, source3);
-
-console.log("Distances:", result3.distances); // Will show potentially oscillating/decreased values
-console.log("Predecessors:", result3.predecessors); // May show cyclic predecessors
-console.log("Has Negative Cycle:", result3.hasNegativeCycle); // Expected: true
-
-if (result3.hasNegativeCycle) {
-    console.log("Shortest paths are undefined due to a negative cycle.");
-    // Path reconstruction from a negative cycle is generally not meaningful.
-    console.log("Attempting path from 0 to 3 (may be misleading):", reconstructPath(result3.predecessors, source3, 3));
-}
-
-// Example 4: Graph with unreachable nodes
-console.log("\n--- Example 4: Unreachable Nodes ---");
-const numVertices4 = 4;
-const edges4: Edge[] = [
-    { from: 0, to: 1, weight: 5 }
-];
-const source4 = 0;
-const result4 = bellmanFord(numVertices4, edges4, source4);
-
-console.log("Distances:", result4.distances); // Expected: [0, 5, Infinity, Infinity]
-console.log("Predecessors:", result4.predecessors); // Expected: [null, 0, null, null]
-console.log("Has Negative Cycle:", result4.hasNegativeCycle); // Expected: false
-
-if (!result4.hasNegativeCycle) {
-    console.log("Path from 0 to 1:", reconstructPath(result4.predecessors, source4, 1)); // Expected: [0, 1]
-    console.log("Path from 0 to 2:", reconstructPath(result4.predecessors, source4, 2)); // Expected: null
-}
+testCases.forEach(({ input, expected }) => {
+    const result = firstNonRepeatingChar(input);
+    console.log(`Input: "${input}" -> Expected: ${expected}, Got: ${result}`);
+});
