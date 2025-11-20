@@ -1,77 +1,44 @@
-// A simple TypeScript program that demonstrates user input and type safety
-import * as readline from 'readline';
+function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+    if (nums1.length > nums2.length) {
+        [nums1, nums2] = [nums2, nums1]; // Ensure nums1 is the smaller array
+    }
 
-// Define interface for user data
-interface UserData {
-    name: string;
-    age: number;
-    height: number;
-}
+    const m = nums1.length;
+    const n = nums2.length;
+    const halfLen = Math.floor((m + n + 1) / 2);
 
-// Create readline interface
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+    let left = 0;
+    let right = m;
 
-// Function to process user input with type validation
-const processUserInput = (): void => {
-    let user: UserData = {
-        name: '',
-        age: 0,
-        height: 0
-    };
+    while (left <= right) {
+        const i = Math.floor((left + right) / 2);
+        const j = halfLen - i;
 
-    const askName = () => {
-        rl.question('Enter your name: ', (nameInput) => {
-            user.name = nameInput;
-            askAge();
-        });
-    };
+        const maxLeft1 = i === 0 ? -Infinity : nums1[i - 1];
+        const minRight1 = i === m ? Infinity : nums1[i];
 
-    const askAge = () => {
-        rl.question('Enter your age: ', (ageInput) => {
-            const age = parseInt(ageInput);
-            if (isNaN(age)) {
-                console.log('Please enter a valid number for age!');
-                askAge();
+        const maxLeft2 = j === 0 ? -Infinity : nums2[j - 1];
+        const minRight2 = j === n ? Infinity : nums2[j];
+
+        if (maxLeft1 <= minRight2 && maxLeft2 <= minRight1) {
+            // Found the correct partition
+            if ((m + n) % 2 === 1) {
+                return Math.max(maxLeft1, maxLeft2);
             } else {
-                user.age = age;
-                askHeight();
+                return (
+                    (Math.max(maxLeft1, maxLeft2) +
+                        Math.min(minRight1, minRight2)) /
+                    2
+                );
             }
-        });
-    };
-
-    const askHeight = () => {
-        rl.question('Enter your height in cm: ', (heightInput) => {
-            const height = parseFloat(heightInput);
-            if (isNaN(height)) {
-                console.log('Please enter a valid number for height!');
-                askHeight();
-            } else {
-                user.height = height;
-                displayUserData(user);
-                rl.close();
-            }
-        });
-    };
-
-    const displayUserData = (user: UserData): void => {
-        console.log('\n--- User Profile ---');
-        console.log(`Name: ${user.name.toUpperCase()}`);
-        console.log(`Age: ${user.age}`);
-        console.log(`Height: ${user.height} cm`);
-        
-        // Type-guarding example
-        if (user.age >= 18) {
-            console.log('Status: Adult user');
+        } else if (maxLeft1 > minRight2) {
+            right = i - 1;
         } else {
-            console.log('Status: Minor user');
+            left = i + 1;
         }
-    };
+    }
 
-    askName();
-};
-
-// Start the input process
-processUserInput();
+    throw new Error("Input arrays are not sorted.");
+}
+console.log(findMedianSortedArrays([1, 3], [2])); // Output: 2
+console.log(findMedianSortedArrays([1, 2], [3, 4])); // Output: 2.5
