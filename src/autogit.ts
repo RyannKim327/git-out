@@ -1,38 +1,29 @@
-class LinkedListNode<T> {
-  value: T;
-  next: LinkedListNode<T> | null = null;
+let originalArray: number[] = [1, 2, 3, 4, 5];
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
-function reverseLinkedList<T>(head: LinkedListNode<T> | null): LinkedListNode<T> | null {
-  let prev: LinkedListNode<T> | null = null;
-  let current = head;
+console.log("Original array before reverse:", originalArray); // Output: [1, 2, 3, 4, 5]
 
-  while (current) {
-    const nextNode = current.next; // temporarily store next node
-    current.next = prev;           // reverse pointer
-    prev = current;                // move prev forward
-    current = nextNode;            // move current forward
-  }
+originalArray.reverse(); // This modifies originalArray directly
 
-  return prev;
-}
-function reverseLinkedListRecursive<T>(
-  node: LinkedListNode<T> | null,
-  prev: LinkedListNode<T> | null = null
-): LinkedListNode<T> | null {
-  if (!node) return prev;
-  const nextNode = node.next;
-  node.next = prev;
-  return reverseLinkedListRecursive(nextNode, node);
-}
-// Construct: 1 -> 2 -> 3
-const head = new LinkedListNode(1);
-head.next = new LinkedListNode(2);
-head.next.next = new LinkedListNode(3);
+console.log("Original array after reverse:", originalArray);  // Output: [5, 4, 3, 2, 1]
 
-// Reverse
-const reversedHead = reverseLinkedList(head);
-// Now: 3 -> 2 -> 1
+let stringArray: string[] = ["apple", "banana", "cherry"];
+stringArray.reverse();
+console.log("Reversed string array:", stringArray); // Output: ["cherry", "banana", "apple"]
+let originalArray: number[] = [10, 20, 30, 40, 50];
+
+console.log("Original array before non-mutating reverse:", originalArray); // Output: [10, 20, 30, 40, 50]
+
+// Create a copy first, then reverse the copy
+let newReversedArray: number[] = originalArray.slice().reverse();
+
+console.log("Original array after non-mutating reverse:", originalArray);  // Output: [10, 20, 30, 40, 50] (Unchanged!)
+console.log("New reversed array:", newReversedArray);                      // Output: [50, 40, 30, 20, 10]
+let originalArray: string[] = ["a", "b", "c", "d"];
+
+console.log("Original array before non-mutating reverse:", originalArray); // Output: ["a", "b", "c", "d"]
+
+// Create a copy using spread syntax, then reverse the copy
+let newReversedArray: string[] = [...originalArray].reverse();
+
+console.log("Original array after non-mutating reverse:", originalArray);  // Output: ["a", "b", "c", "d"] (Unchanged!)
+console.log("New reversed array:", newReversedArray);                      // Output: ["d", "c", "b", "a"]
