@@ -1,26 +1,62 @@
 /**
- * Returns the majority element if it exists, otherwise `undefined`.
- * @param nums array of numbers
+ * Rabin–Karp string search
+ * @param text    string to search in
+ * @param pattern string to search for
+ * @returns index of first match, or -1
  */
-function majorityElement(nums: number[]): number | undefined {
-  // 1. Voting phase – find a candidate
-  let candidate: number | undefined;
-  let count = 0;
+export function rabinKarp(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;
+  if (pattern.length > text.length) return -1;
 
-  for (const n of nums) {
-    if (count === 0) candidate = n;
-    count += (n === candidate) ? 1 : -1;
+  const base = 256;               // alphabet size (extended ASCII)
+  const prime = 2_147_483_647;    // large prime < 2³¹
+
+  const m = pattern.length;
+  const n = text.length;
+
+  let patternHash = 0;            // hash of the pattern
+  let currentHash = 0;            // hash of current window
+  let highOrder = 1;                // base^(m-1) % prime
+
+  // Pre-compute base^(m-1) % prime
+  for (let i = 1; i < m; ++i) {
+    highOrder = (highOrder * base) % prime;
   }
 
-  // 2. Verification phase – make sure it really is the majority
-  if (candidate === undefined) return undefined;
+  // Initial hashes
+  for (let i = 0; i < m; ++i) {
+    patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
+    currentHash = (base * currentHash + text.charCodeAt(i)) % prime;
+  }
 
-  let freq = 0;
-  for (const n of nums) if (n === candidate) ++freq;
+  // Slide over the text
+  for (let i = 0; i <= n - m; ++i) {
+    // Hash match ⇒ compare characters to avoid false positives
+    if (patternHash === currentHash) {
+      let j = 0;
+      while (j < m && text[i + j] === pattern[j]) ++j;
+      if (j === m) return i;
+    }
 
-  return freq > Math.floor(nums.length / 2) ? candidate : undefined;
+    // Roll hash one step to the right (unless at last window)
+    if (i < n - m) {
+      currentHash =
+        (base *
+          (currentHash -
+            text.charCodeAt(i) * highOrder) +
+          text.charCodeAt(i + m)) %
+        prime;
+
+      // Handle negative modulo
+      if (currentHash < 0) currentHash += prime;
+    }
+  }
+  return -1;
 }
 
-/* ---------- Usage ---------- */
-const arr = [2, 2, 1, 1, 1, 2, 2];
-console.log(majorityElement(arr)); // → 2
+/* ---------- Example usage ---------- */
+if (require.main === module) {
+  const t = "abracadabra";
+  const p = "cada";
+  console.log(rabinKarp(t, p)); // → 4
+}
