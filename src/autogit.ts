@@ -1,37 +1,40 @@
-type Node = string;
-type Graph = { [key: string]: Node[] };
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 
-function depthLimitedSearch(
-    graph: Graph,
-    current: Node,
-    goal: Node,
-    limit: number
-): boolean {
-    if (current === goal) {
-        return true; // Found!
-    }
-    if (limit <= 0) {
-        return false; // Reached depth limit
-    }
-    for (const neighbor of graph[current] || []) {
-        if (depthLimitedSearch(graph, neighbor, goal, limit - 1)) {
-            return true;
-        }
-    }
-    return false;
+  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
+  }
 }
+function sumTree(root: TreeNode | null): number {
+  if (root === null) return 0;
+  return root.val + sumTree(root.left) + sumTree(root.right);
+}
+const tree = new TreeNode(1,
+  new TreeNode(2,
+    new TreeNode(4),
+    new TreeNode(5)
+  ),
+  new TreeNode(3)
+);
 
-// Example graph
-const demoGraph: Graph = {
-    A: ["B", "C"],
-    B: ["D", "E"],
-    C: ["F"],
-    D: [],
-    E: ["G"],
-    F: [],
-    G: []
-};
+console.log(sumTree(tree)); // Output: 15
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
 
-// Usage
-const found = depthLimitedSearch(demoGraph, "A", "G", 3);
-console.log("Found:", found); // Output: Found: true
+  const stack: TreeNode[] = [root];
+  let sum = 0;
+
+  while (stack.length > 0) {
+    const node = stack.pop()!;
+    sum += node.val;
+
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
+  }
+
+  return sum;
+}
