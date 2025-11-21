@@ -1,67 +1,72 @@
-/**
- * Calculates the mean (average) of a list of numbers.
- *
- * @param numbers An array of numbers.
- * @returns The mean of the numbers, or NaN if the array is empty.
- */
-function calculateMean(numbers: number[]): number {
-  if (numbers.length === 0) {
-    // Returning NaN (Not-a-Number) is a common practice for
-    // mathematically undefined operations like division by zero,
-    // which effectively happens here.
-    // Alternatively, you could throw an error: throw new Error("Cannot calculate mean of an empty array.");
-    // Or return 0 if that's acceptable in your specific context (less mathematically correct).
-    return NaN;
-  }
+function bwt(input: string): { transformed: string, index: number } {
+    const n = input.length;
+    const rotations: string[] = [];
 
-  // Use reduce to sum all numbers in the array
-  const sum = numbers.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+    // Generate all rotations
+    for (let i = 0; i < n; i++) {
+        rotations.push(input.slice(i) + input.slice(0, i));
+    }
 
-  // Divide the sum by the count of numbers
-  return sum / numbers.length;
+    // Sort rotations lexicographically
+    const sorted = rotations.slice().sort();
+
+    // Get the last column
+    const lastColumn = sorted.map(row => row[n - 1]).join('');
+
+    // Find the index of the original string in sorted rotations
+    const index = sorted.indexOf(input);
+
+    return { transformed: lastColumn, index };
 }
 
-// --- Examples ---
+// Example
+const result = bwt("banana$"); // '$' as a terminator symbol
+console.log(result.transformed); // "annb$aa"
+console.log(result.index);       // position of original string in sorted rotations
+function inverseBwt(lastColumn: string, index: number): string {
+    const n = lastColumn.length;
 
-const myNumbers1 = [10, 20, 30, 40, 50];
-const mean1 = calculateMean(myNumbers1);
-console.log(`Mean of [${myNumbers1}]: ${mean1}`); // Output: Mean of [10,20,30,40,50]: 30
+    // First column is just the sorted chars of lastColumn
+    const firstColumn = lastColumn.split('').sort();
 
-const myNumbers2 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-const mean2 = calculateMean(myNumbers2);
-console.log(`Mean of [${myNumbers2}]: ${mean2}`); // Output: Mean of [1,2,3,4,5,6,7,8,9,10]: 5.5
+    // Map from character occurrence to row mapping
+    const rankLast: number[] = [];
+    const occurrenceMapLast: Record<string, number> = {};
+    for (const char of lastColumn) {
+        occurrenceMapLast[char] = (occurrenceMapLast[char] ?? 0) + 1;
+        rankLast.push(occurrenceMapLast[char]);
+    }
 
-const singleNumber = [7];
-const meanSingle = calculateMean(singleNumber);
-console.log(`Mean of [${singleNumber}]: ${meanSingle}`); // Output: Mean of [7]: 7
+    const occurrenceMapFirst: Record<string, number> = {};
+    const firstColumnRank: number[] = [];
+    for (const char of firstColumn) {
+        occurrenceMapFirst[char] = (occurrenceMapFirst[char] ?? 0) + 1;
+        firstColumnRank.push(occurrenceMapFirst[char]);
+    }
 
-const emptyArray: number[] = [];
-const meanEmpty = calculateMean(emptyArray);
-console.log(`Mean of []: ${meanEmpty}`); // Output: Mean of []: NaN
+    // Link last column to first column rows
+    const rowMapping: number[] = [];
+    for (let i = 0; i < n; i++) {
+        const char = lastColumn[i];
+        const rank = rankLast[i];
+        // Find position of (char, rank) in firstColumn
+        const position = firstColumnRank.findIndex((r, idx) =>
+            firstColumn[idx] === char && r === rank
+        );
+        rowMapping[i] = position;
+    }
 
-const negativeNumbers = [-5, -10, 0, 5];
-const meanNegative = calculateMean(negativeNumbers);
-console.log(`Mean of [${negativeNumbers}]: ${meanNegative}`); // Output: Mean of [-5,-10,0,5]: -2.5
-/**
- * Calculates the mean (average) of a list of numbers using a for loop.
- *
- * @param numbers An array of numbers.
- * @returns The mean of the numbers, or NaN if the array is empty.
- */
-function calculateMeanWithForLoop(numbers: number[]): number {
-  if (numbers.length === 0) {
-    return NaN;
-  }
+    // Rebuild the string
+    let row = index;
+    let original = '';
+    for (let i = 0; i < n; i++) {
+        original += lastColumn[row];
+        row = rowMapping[row];
+    }
 
-  let sum = 0;
-  for (let i = 0; i < numbers.length; i++) {
-    sum += numbers[i];
-  }
-
-  return sum / numbers.length;
+    return original;
 }
 
-// --- Example ---
-const myNumbersLoop = [10, 20, 30];
-const meanLoop = calculateMeanWithForLoop(myNumbersLoop);
-console.log(`Mean (for loop) of [${myNumbersLoop}]: ${meanLoop}`); // Output: Mean (for loop) of [10,20,30]: 20
+// Example
+const restored = inverseBwt("annb$aa", 3);
+console.log(restored); // "banana$"
