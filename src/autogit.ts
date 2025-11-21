@@ -1,79 +1,99 @@
-export class Stack<T> {
-  private items: T[];
-
-  /**
-   * Creates a new Stack instance.
-   * @param initialItems Optional initial items to populate the stack.
-   * Can be a single item or an array of items.
-   */
-  constructor(initialItems?: T | T[]) {
-    if (Array.isArray(initialItems)) {
-      this.items = [...initialItems];
-    } else if (initialItems !== undefined) {
-      this.items = [initialItems];
-    } else {
-      this.items = [];
+function insertionSort<T>(array: T[]): T[] {
+  const result = [...array]; // Create a copy to avoid mutating original
+  
+  for (let i = 1; i < result.length; i++) {
+    const current = result[i];
+    let j = i - 1;
+    
+    // Move elements that are greater than current
+    // one position ahead of their current position
+    while (j >= 0 && result[j] > current) {
+      result[j + 1] = result[j];
+      j--;
     }
+    
+    result[j + 1] = current;
   }
-
-  /**
-   * Adds an item to the top of the stack.
-   * @param item The item to push onto the stack
-   */
-  push(item: T): void {
-    this.items.push(item);
-  }
-
-  /**
-   * Removes and returns the top item from the stack.
-   * @returns The top item or undefined if the stack is empty
-   */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  /**
-   * Returns the top item without removing it.
-   * @returns The top item or undefined if the stack is empty
-   */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /**
-   * Checks if the stack is empty.
-   * @returns True if the stack is empty, false otherwise
-   */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /**
-   * Gets the current number of items in the stack.
-   */
-  get size(): number {
-    return this.items.length;
-  }
-
-  /**
-   * Removes all items from the stack.
-   */
-  clear(): void {
-    this.items = [];
-  }
+  
+  return result;
 }
 
-// Example Usage
-const numberStack = new Stack<number>([1, 2, 3]);
-numberStack.push(4);          // [1, 2, 3, 4]
-console.log(numberStack.pop()); // 4
-console.log(numberStack.peek()); // 3
-console.log(numberStack.size);   // 3
+// Example usage
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+const sortedNumbers = insertionSort(numbers);
+console.log(sortedNumbers); // [11, 12, 22, 25, 34, 64, 90]
+function insertionSort<T>(
+  array: T[],
+  comparator: (a: T, b: T) => number = (a, b) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  }
+): T[] {
+  const result = [...array];
+  
+  for (let i = 1; i < result.length; i++) {
+    const current = result[i];
+    let j = i - 1;
+    
+    while (j >= 0 && comparator(result[j], current) > 0) {
+      result[j + 1] = result[j];
+      j--;
+    }
+    
+    result[j + 1] = current;
+  }
+  
+  return result;
+}
 
-const stringStack = new Stack<string>();
-stringStack.push("Hello");
-stringStack.push("World");
-console.log(stringStack.pop()); // "World"
-console.log(stringStack.isEmpty()); // false
-stringStack.clear();
-console.log(stringStack.isEmpty()); // true
+// Example usage with custom comparator
+const descendingComparator = (a: number, b: number) => b - a;
+const descendingSorted = insertionSort([3, 1, 4, 1, 5], descendingComparator);
+console.log(descendingSorted); // [5, 4, 3, 1, 1]
+
+// Sorting objects
+interface Person {
+  name: string;
+  age: number;
+}
+
+const people: Person[] = [
+  { name: "Alice", age: 30 },
+  { name: "Bob", age: 25 },
+  { name: "Charlie", age: 35 }
+];
+
+const sortedByAge = insertionSort(people, (a, b) => a.age - b.age);
+console.log(sortedByAge);
+function insertionSortInPlace<T>(array: T[]): T[] {
+  for (let i = 1; i < array.length; i++) {
+    const current = array[i];
+    let j = i - 1;
+    
+    while (j >= 0 && array[j] > current) {
+      array[j + 1] = array[j];
+      j--;
+    }
+    
+    array[j + 1] = current;
+  }
+  
+  return array;
+}
+
+// Usage
+const mutableArray = [5, 2, 8, 1, 9];
+insertionSortInPlace(mutableArray);
+console.log(mutableArray); // [1, 2, 5, 8, 9] - original array is modified
+// Test with various data types
+const testCases = [
+  [5, 2, 4, 6, 1, 3],
+  ['banana', 'apple', 'date', 'cherry'],
+  [3.14, 1.41, 2.71, 0.577]
+];
+
+testCases.forEach(testCase => {
+  console.log(`Original: ${testCase}`);
+  console.log(`Sorted: ${insertionSort(testCase)}`);
+});
