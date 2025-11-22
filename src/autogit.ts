@@ -1,132 +1,49 @@
-function countingSort(arr: number[]): number[] {
-    if (arr.length === 0) return [];
-    
-    // Find min and max values
-    const min = Math.min(...arr);
-    const max = Math.max(...arr);
-    
-    // Create count array
-    const range = max - min + 1;
-    const count = new Array(range).fill(0);
-    
-    // Count occurrences
-    for (const num of arr) {
-        count[num - min]++;
-    }
-    
-    // Reconstruct sorted array
-    const sorted: number[] = [];
-    for (let i = 0; i < range; i++) {
-        while (count[i] > 0) {
-            sorted.push(i + min);
-            count[i]--;
-        }
-    }
-    
-    return sorted;
-}
+const firstName: string = "John";
+const lastName: string = "Doe";
 
-// Example usage
-const numbers = [4, 2, 2, 8, 3, 3, 1];
-const sorted = countingSort(numbers);
-console.log(sorted); // [1, 2, 2, 3, 3, 4, 8]
-function countingSort<T>(
-    arr: T[],
-    getKey: (item: T) => number,
-    min?: number,
-    max?: number
-): T[] {
-    if (arr.length === 0) return [];
-    
-    // Calculate min/max if not provided
-    const actualMin = min ?? Math.min(...arr.map(getKey));
-    const actualMax = max ?? Math.max(...arr.map(getKey));
-    
-    const range = actualMax - actualMin + 1;
-    const count = new Array(range).fill(0);
-    const output: T[] = new Array(arr.length);
-    
-    // Count occurrences
-    for (const item of arr) {
-        count[getKey(item) - actualMin]++;
-    }
-    
-    // Calculate cumulative counts
-    for (let i = 1; i < range; i++) {
-        count[i] += count[i - 1];
-    }
-    
-    // Build output array (stable sort)
-    for (let i = arr.length - 1; i >= 0; i--) {
-        const key = getKey(arr[i]);
-        output[count[key - actualMin] - 1] = arr[i];
-        count[key - actualMin]--;
-    }
-    
-    return output;
-}
+// Concatenating two strings with a space in between
+const fullName: string = `${firstName} ${lastName}`;
+console.log(fullName); // Output: John Doe
 
-// Example usage with objects
-interface Person {
-    name: string;
-    age: number;
-}
+const greeting: string = `Hello, ${firstName}! Welcome to TypeScript.`;
+console.log(greeting); // Output: Hello, John! Welcome to TypeScript.
 
-const people: Person[] = [
-    { name: "John", age: 25 },
-    { name: "Jane", age: 20 },
-    { name: "Bob", age: 25 },
-    { name: "Alice", age: 20 }
-];
+// Template literals also support multi-line strings
+const multiLineMessage: string = `
+  This is a message
+  across multiple lines.
+  It's very convenient!
+`;
+console.log(multiLineMessage);
+const city: string = "New York";
+const country: string = "USA";
 
-const sortedByAge = countingSort(
-    people,
-    (person) => person.age
-);
+// Concatenating two strings directly
+const location: string = city + ", " + country;
+console.log(location); // Output: New York, USA
 
-console.log(sortedByAge);
-// [
-//   { name: "Jane", age: 20 },
-//   { name: "Alice", age: 20 },
-//   { name: "John", age: 25 },
-//   { name: "Bob", age: 25 }
-// ]
-function countingSortOptimized(arr: number[]): number[] {
-    if (arr.length === 0) return [];
-    
-    const min = Math.min(...arr);
-    const max = Math.max(...arr);
-    const range = max - min + 1;
-    
-    const count = new Array(range).fill(0);
-    
-    // Count occurrences
-    for (const num of arr) {
-        count[num - min]++;
-    }
-    
-    // Calculate starting positions
-    for (let i = 1; i < range; i++) {
-        count[i] += count[i - 1];
-    }
-    
-    const sorted = new Array(arr.length);
-    
-    // Build sorted array (backwards for stability)
-    for (let i = arr.length - 1; i >= 0; i--) {
-        const num = arr[i];
-        sorted[count[num - min] - 1] = num;
-        count[num - min]--;
-    }
-    
-    return sorted;
-}
-// For better performance with large arrays
-function countingSortWithPrecomputedRange(
-    arr: number[],
-    knownMin: number,
-    knownMax: number
-): number[] {
-    // Implementation similar to basic version
-    // But uses provided min/max to avoid expensive Math.min/Math.max calls
-}
+const item: string = "Laptop";
+const price: number = 1200;
+// When a string is involved, the + operator will convert other types to string
+const productInfo: string = "Product: " + item + ", Price: $" + price;
+console.log(productInfo); // Output: Product: Laptop, Price: $1200
+const part1: string = "The quick brown";
+const part2: string = "fox";
+const part3: string = "jumps over the lazy dog.";
+
+// Concatenating two strings
+const sentence1: string = part1.concat(" ", part2);
+console.log(sentence1); // Output: The quick brown fox
+
+// Concatenating multiple strings
+const sentence2: string = part1.concat(" ", part2, " ", part3);
+console.log(sentence2); // Output: The quick brown fox jumps over the lazy dog.
+const words: string[] = ["Hello", "TypeScript", "World"];
+
+// Join with a space
+const phrase: string = words.join(" ");
+console.log(phrase); // Output: Hello TypeScript World
+
+// Join with no separator
+const combined: string = words.join("");
+console.log(combined); // Output: HelloTypeScriptWorld
