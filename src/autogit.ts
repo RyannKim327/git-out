@@ -1,146 +1,132 @@
-function selectionSortNumbers(arr: number[]): void {
-    const n = arr.length;
-
-    // One by one move boundary of unsorted subarray
-    for (let i = 0; i < n - 1; i++) {
-        // Find the minimum element in the remaining unsorted array
-        let minIndex = i;
-        for (let j = i + 1; j < n; j++) {
-            if (arr[j] < arr[minIndex]) {
-                minIndex = j;
-            }
-        }
-
-        // Swap the found minimum element with the first element of the unsorted part
-        // Only swap if the minimum element is not already in its correct position
-        if (minIndex !== i) {
-            const temp = arr[i];
-            arr[i] = arr[minIndex];
-            arr[minIndex] = temp;
+function countingSort(arr: number[]): number[] {
+    if (arr.length === 0) return [];
+    
+    // Find min and max values
+    const min = Math.min(...arr);
+    const max = Math.max(...arr);
+    
+    // Create count array
+    const range = max - min + 1;
+    const count = new Array(range).fill(0);
+    
+    // Count occurrences
+    for (const num of arr) {
+        count[num - min]++;
+    }
+    
+    // Reconstruct sorted array
+    const sorted: number[] = [];
+    for (let i = 0; i < range; i++) {
+        while (count[i] > 0) {
+            sorted.push(i + min);
+            count[i]--;
         }
     }
+    
+    return sorted;
 }
 
-// Example Usage:
-const numbers = [64, 25, 12, 22, 11];
-console.log("Original numbers:", numbers);
-selectionSortNumbers(numbers);
-console.log("Sorted numbers:", numbers); // Output: [11, 12, 22, 25, 64]
-
-const emptyArray: number[] = [];
-selectionSortNumbers(emptyArray);
-console.log("Sorted empty array:", emptyArray); // Output: []
-
-const singleElementArray = [7];
-selectionSortNumbers(singleElementArray);
-console.log("Sorted single element array:", singleElementArray); // Output: [7]
-
-const alreadySorted = [1, 2, 3, 4, 5];
-selectionSortNumbers(alreadySorted);
-console.log("Already sorted array:", alreadySorted); // Output: [1, 2, 3, 4, 5]
-// Helper function for swapping elements (optional, but good practice)
-function swap<T>(arr: T[], i: number, j: number): void {
-    const temp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = temp;
-}
-
-// Default comparator for primitive types (numbers, strings)
-// This will work for types that support '<' and '>' operators
-const defaultComparator = <T>(a: T, b: T): number => {
-    if (a < b) return -1; // a comes before b
-    if (a > b) return 1;  // a comes after b
-    return 0;             // a and b are equal
-};
-
-function selectionSort<T>(
+// Example usage
+const numbers = [4, 2, 2, 8, 3, 3, 1];
+const sorted = countingSort(numbers);
+console.log(sorted); // [1, 2, 2, 3, 3, 4, 8]
+function countingSort<T>(
     arr: T[],
-    comparator: (a: T, b: T) => number = defaultComparator
-): void {
-    const n = arr.length;
-
-    // One by one move boundary of unsorted subarray
-    for (let i = 0; i < n - 1; i++) {
-        // Find the minimum element's index in the remaining unsorted array
-        let minIndex = i;
-        for (let j = i + 1; j < n; j++) {
-            // Use the comparator function to determine order
-            if (comparator(arr[j], arr[minIndex]) < 0) { // if arr[j] is "less than" arr[minIndex]
-                minIndex = j;
-            }
-        }
-
-        // Swap the found minimum element with the first element of the unsorted part
-        // Only swap if the minimum element is not already in its correct position
-        if (minIndex !== i) {
-            swap(arr, i, minIndex);
-        }
+    getKey: (item: T) => number,
+    min?: number,
+    max?: number
+): T[] {
+    if (arr.length === 0) return [];
+    
+    // Calculate min/max if not provided
+    const actualMin = min ?? Math.min(...arr.map(getKey));
+    const actualMax = max ?? Math.max(...arr.map(getKey));
+    
+    const range = actualMax - actualMin + 1;
+    const count = new Array(range).fill(0);
+    const output: T[] = new Array(arr.length);
+    
+    // Count occurrences
+    for (const item of arr) {
+        count[getKey(item) - actualMin]++;
     }
+    
+    // Calculate cumulative counts
+    for (let i = 1; i < range; i++) {
+        count[i] += count[i - 1];
+    }
+    
+    // Build output array (stable sort)
+    for (let i = arr.length - 1; i >= 0; i--) {
+        const key = getKey(arr[i]);
+        output[count[key - actualMin] - 1] = arr[i];
+        count[key - actualMin]--;
+    }
+    
+    return output;
 }
 
-// --- Example Usage with Generic Version ---
-
-// 1. Numbers (using default comparator)
-const genericNumbers = [64, 25, 12, 22, 11];
-console.log("\nOriginal generic numbers:", genericNumbers);
-selectionSort(genericNumbers);
-console.log("Sorted generic numbers:", genericNumbers); // Output: [11, 12, 22, 25, 64]
-
-// 2. Strings (using default comparator)
-const strings = ["banana", "apple", "cherry", "date"];
-console.log("\nOriginal strings:", strings);
-selectionSort(strings);
-console.log("Sorted strings:", strings); // Output: ["apple", "banana", "cherry", "date"]
-
-// 3. Custom Objects (requiring a specific comparator)
+// Example usage with objects
 interface Person {
     name: string;
     age: number;
 }
 
 const people: Person[] = [
-    { name: "Alice", age: 30 },
+    { name: "John", age: 25 },
+    { name: "Jane", age: 20 },
     { name: "Bob", age: 25 },
-    { name: "Charlie", age: 35 },
-    { name: "David", age: 25 },
+    { name: "Alice", age: 20 }
 ];
 
-// Comparator to sort by age in ascending order
-const sortByAgeAsc = (a: Person, b: Person): number => a.age - b.age;
+const sortedByAge = countingSort(
+    people,
+    (person) => person.age
+);
 
-console.log("\nOriginal people:", people);
-selectionSort(people, sortByAgeAsc);
-console.log("Sorted people by age (asc):", people);
-/* Output:
-[
-  { name: 'Bob', age: 25 },
-  { name: 'David', age: 25 },
-  { name: 'Alice', age: 30 },
-  { name: 'Charlie', age: 35 }
-]
-*/
-
-// Comparator to sort by name in descending order
-const sortByNameDesc = (a: Person, b: Person): number => {
-    if (a.name > b.name) return -1; // b comes before a
-    if (a.name < b.name) return 1;  // b comes after a
-    return 0;
-};
-
-const people2: Person[] = [
-    { name: "Alice", age: 30 },
-    { name: "Bob", age: 25 },
-    { name: "Charlie", age: 35 },
-    { name: "David", age: 25 },
-];
-console.log("\nOriginal people2:", people2);
-selectionSort(people2, sortByNameDesc);
-console.log("Sorted people2 by name (desc):", people2);
-/* Output:
-[
-  { name: 'David', age: 25 },
-  { name: 'Charlie', age: 35 },
-  { name: 'Bob', age: 25 },
-  { name: 'Alice', age: 30 }
-]
-*/
+console.log(sortedByAge);
+// [
+//   { name: "Jane", age: 20 },
+//   { name: "Alice", age: 20 },
+//   { name: "John", age: 25 },
+//   { name: "Bob", age: 25 }
+// ]
+function countingSortOptimized(arr: number[]): number[] {
+    if (arr.length === 0) return [];
+    
+    const min = Math.min(...arr);
+    const max = Math.max(...arr);
+    const range = max - min + 1;
+    
+    const count = new Array(range).fill(0);
+    
+    // Count occurrences
+    for (const num of arr) {
+        count[num - min]++;
+    }
+    
+    // Calculate starting positions
+    for (let i = 1; i < range; i++) {
+        count[i] += count[i - 1];
+    }
+    
+    const sorted = new Array(arr.length);
+    
+    // Build sorted array (backwards for stability)
+    for (let i = arr.length - 1; i >= 0; i--) {
+        const num = arr[i];
+        sorted[count[num - min] - 1] = num;
+        count[num - min]--;
+    }
+    
+    return sorted;
+}
+// For better performance with large arrays
+function countingSortWithPrecomputedRange(
+    arr: number[],
+    knownMin: number,
+    knownMax: number
+): number[] {
+    // Implementation similar to basic version
+    // But uses provided min/max to avoid expensive Math.min/Math.max calls
+}
