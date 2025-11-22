@@ -1,49 +1,134 @@
-/**
- * In-place quicksort (ascending).
- * @param arr  Array of numbers (or any type that supports `<` and `>`).
- * @param left  Left index (inclusive).  Defaults to 0.
- * @param right Right index (inclusive). Defaults to arr.length-1.
- */
-function quickSort<T>(
-  arr: T[],
-  left = 0,
-  right = arr.length - 1,
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  if (left >= right) return arr;
+// HashTable.ts
+type Entry<K, V> = { key: K; value: V };
 
-  const pivot = partition(arr, left, right, compare);
-  quickSort(arr, left, pivot - 1, compare);
-  quickSort(arr, pivot + 1, right, compare);
-  return arr;
-}
+export default class HashTable<K, V> {
+  private buckets: Array<Array<Entry<K, V>> | undefined> = [];
+  private _size = 0;
+  private capacity: number;
+  private loadFactor: number;
 
-/** Lomuto partition scheme. */
-function partition<T>(
-  arr: T[],
-  left: number,
-  right: number,
-  compare: (a: T, b: T) => number
-): number {
-  const pivotVal = arr[right];
-  let i = left;
+  constructor(initialCapacity = 16, loadFactor = 0.75) {
+    this.capacity = Math.max(initialCapacity, 2);
+    this.loadFactor = loadFactor;
+    this.buckets = new Array(this.capacity);
+  }
 
-  for (let j = left; j < right; j++) {
-    if (compare(arr[j], pivotVal) < 0) {
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
+  /* ---------- public API ---------- */
+
+  size(): number {
+    return this._size;
+  }
+
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  set(key: K, value: V): this {
+    this.resizeIfNeeded();
+
+    const idx = this.indexFor(key);
+    let bucket = this.buckets[idx];
+    if (!bucket) {
+      this.buckets[idx] = bucket = [];
+    }
+
+    const existing = bucket.find(e => e.key === key);
+    if (existing) {
+      existing.value = value; // update
+    } else {
+      bucket.push({ key, value });
+      this._size++;
+    }
+    return this;
+  }
+
+  get(key: K): V | undefined {
+    const bucket = this.buckets[this.indexFor(key)];
+    return bucket?.find(e => e.key === key)?.value;
+  }
+
+  has(key: K): boolean {
+    return this.get(key) !== undefined;
+  }
+
+  delete(key: K): boolean {
+    const idx = this.indexFor(key);
+    const bucket = this.buckets[idx];
+    if (!bucket) return false;
+
+    const i = bucket.findIndex(e => e.key === key);
+    if (i < 0) return false;
+
+    bucket.splice(i, 1);
+    this._size--;
+    if (bucket.length === 0) this.buckets[idx] = undefined;
+    return true;
+  }
+
+  clear(): void {
+    this.buckets = new Array(this.capacity);
+    this._size = 0;
+  }
+
+  keys(): K[] {
+    const out: K[] = [];
+    for (const bucket of this.buckets) {
+      if (bucket) out.push(...bucket.map(e => e.key));
+    }
+    return out;
+  }
+
+  values(): V[] {
+    const out: V[] = [];
+    for (const bucket of this.buckets) {
+      if (bucket) out.push(...bucket.map(e => e.value));
+    }
+    return out;
+  }
+
+  entries(): Array<[K, V]> {
+    const out: Array<[K, V]> = [];
+    for (const bucket of this.buckets) {
+      if (bucket) out.push(...bucket.map(e => [e.key, e.value] as [K, V]));
+    }
+    return out;
+  }
+
+  /* ---------- private ---------- */
+
+  private indexFor(key: K): number {
+    return this.hash(key) & (this.capacity - 1); // fast mod power-of-two
+  }
+
+  private hash(key: K): number {
+    if (typeof key === "number") return key | 0;
+    const str = String(key);
+    let h = 0;
+    for (let i = 0; i < str.length; i++) {
+      h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+    }
+    return h;
+  }
+
+  private resizeIfNeeded(): void {
+    if (this._size < this.capacity * this.loadFactor) return;
+
+    const oldBuckets = this.buckets;
+    this.capacity *= 2;
+    this.buckets = new Array(this.capacity);
+    this._size = 0;
+
+    for (const bucket of oldBuckets) {
+      if (bucket) for (const { key, value } of bucket) this.set(key, value);
     }
   }
-  [arr[i], arr[right]] = [arr[right], arr[i]];
-  return i;
 }
+import HashTable from "./HashTable";
 
-/* ---------- Usage ---------- */
-const nums = [3, 7, 2, 9, 1, 5, 4, 8, 6];
-quickSort(nums);
-console.log(nums); // [1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-// With custom comparator (descending):
-const strs = ['pear', 'banana', 'apple'];
-quickSort(strs, 0, strs.length - 1, (a, b) => b.localeCompare(a));
-console.log(strs); // ["pear", "banana", "apple"]
+const ht = new HashTable<string, number>();
+ht.set("apple", 5).set("banana", 7);
+console.log(ht.get("apple"));   // 5
+console.log(ht.has("pear"));    // false
+ht.delete("apple");
+console.log(ht.size());         // 1
+console.log([...ht.entries()]); // [ [ 'banana', 7 ] ]
