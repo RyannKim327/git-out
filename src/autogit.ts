@@ -1,135 +1,61 @@
-interface PriorityQueueItem<T> {
-  value: T;
-  priority: number;
-}
+/**
+ * Iterative binary search.
+ * Runs in O(log n) time and O(1) space.
+ */
+export function binarySearch(arr: number[], target: number): number {
+  let lo = 0;
+  let hi = arr.length - 1;
 
-class PriorityQueue<T> {
-  private heap: PriorityQueueItem<T>[] = [];
+  while (lo <= hi) {
+    // Same as (lo + hi) >>> 1, but avoids overflow
+    const mid = lo + Math.floor((hi - lo) / 2);
+    const value = arr[mid];
 
-  constructor(private comparator: (a: PriorityQueueItem<T>, b: PriorityQueueItem<T>) => number = 
-    (a, b) => a.priority - b.priority
-  ) {}
-
-  // Public methods
-  enqueue(value: T, priority: number): void {
-    this.heap.push({ value, priority });
-    this.bubbleUp(this.heap.length - 1);
-  }
-
-  dequeue(): T | null {
-    if (this.isEmpty()) return null;
-    
-    const min = this.heap[0];
-    const end = this.heap.pop()!;
-    
-    if (this.heap.length > 0) {
-      this.heap[0] = end;
-      this.sinkDown(0);
-    }
-    
-    return min.value;
-  }
-
-  peek(): T | null {
-    return this.isEmpty() ? null : this.heap[0].value;
-  }
-
-  isEmpty(): boolean {
-    return this.heap.length === 0;
-  }
-
-  size(): number {
-    return this.heap.length;
-  }
-
-  // Heap maintenance methods
-  private bubbleUp(index: number): void {
-    const element = this.heap[index];
-    
-    while (index > 0) {
-      const parentIndex = Math.floor((index - 1) / 2);
-      const parent = this.heap[parentIndex];
-      
-      if (this.comparator(element, parent) >= 0) break;
-      
-      this.heap[parentIndex] = element;
-      this.heap[index] = parent;
-      index = parentIndex;
+    if (value === target) return mid;
+    if (value < target) {
+      lo = mid + 1;        // Search right half
+    } else {
+      hi = mid - 1;        // Search left half
     }
   }
-
-  private sinkDown(index: number): void {
-    const length = this.heap.length;
-    const element = this.heap[index];
-    
-    while (true) {
-      let leftChildIndex = 2 * index + 1;
-      let rightChildIndex = 2 * index + 2;
-      let swap: number | null = null;
-      let leftChild: PriorityQueueItem<T>;
-      let rightChild: PriorityQueueItem<T>;
-      
-      if (leftChildIndex < length) {
-        leftChild = this.heap[leftChildIndex];
-        if (this.comparator(leftChild, element) < 0) {
-          swap = leftChildIndex;
-        }
-      }
-      
-      if (rightChildIndex < length) {
-        rightChild = this.heap[rightChildIndex];
-        if (
-          (swap === null && this.comparator(rightChild, element) < 0) ||
-          (swap !== null && this.comparator(rightChild, leftChild!) < 0)
-        ) {
-          swap = rightChildIndex;
-        }
-      }
-      
-      if (swap === null) break;
-      
-      this.heap[index] = this.heap[swap];
-      this.heap[swap] = element;
-      index = swap;
-    }
-  }
-}
-// Example 1: Basic usage with default comparator (min-heap)
-const pq = new PriorityQueue<number>();
-pq.enqueue("Task A", 3);
-pq.enqueue("Task B", 1);
-pq.enqueue("Task C", 2);
-
-console.log(pq.dequeue()); // "Task B" (highest priority)
-console.log(pq.dequeue()); // "Task C"
-console.log(pq.dequeue()); // "Task A"
-
-// Example 2: Max-heap using custom comparator
-const maxHeap = new PriorityQueue<string>((a, b) => b.priority - a.priority);
-maxHeap.enqueue("Low Priority", 1);
-maxHeap.enqueue("High Priority", 3);
-maxHeap.enqueue("Medium Priority", 2);
-
-console.log(maxHeap.dequeue()); // "High Priority"
-
-// Example 3: Complex objects
-interface Patient {
-  name: string;
-  condition: 'critical' | 'urgent' | 'stable';
+  return -1;               // Not found
 }
 
-const hospitalQueue = new PriorityQueue<Patient>((a, b) => {
-  const priorityMap = { critical: 0, urgent: 1, stable: 2 };
-  return priorityMap[a.priority] - priorityMap[b.priority];
-});
+/**
+ * Recursive binary search (tail-recursive, but JS/TS
+ * engines don’t guarantee TCO, so iterative is preferred).
+ */
+export function binarySearchRecursive(
+  arr: number[],
+  target: number,
+  lo = 0,
+  hi = arr.length - 1
+): number {
+  if (lo > hi) return -1;
 
-hospitalQueue.enqueue(
-  { name: "John", condition: "stable" }, 
-  "stable"
-);
-hospitalQueue.enqueue(
-  { name: "Sarah", condition: "critical" }, 
-  "critical"
-);
+  const mid = lo + Math.floor((hi - lo) / 2);
+  const value = arr[mid];
 
-console.log(hospitalQueue.dequeue()?.name); // "Sarah"
+  if (value === target) return mid;
+  return value < target
+    ? binarySearchRecursive(arr, target, mid + 1, hi)
+    : binarySearchRecursive(arr, target, lo, mid - 1);
+}
+
+/* ---------- Usage example ---------- */
+if (import.meta.vitest) {
+  const { describe, expect, it } = import.meta.vitest;
+
+  describe('binarySearch', () => {
+    const data = [-10, -3, 0, 5, 9, 12, 42, 100];
+    it('finds existing items', () => {
+      expect(binarySearch(data, 9)).toBe(4);
+      expect(binarySearch(data, -10)).toBe(0);
+      expect(binarySearch(data, 100)).toBe(7);
+    });
+    it('returns -1 for missing items', () => {
+      expect(binarySearch(data, 4)).toBe(-1);
+      expect(binarySearch(data, 101)).toBe(-1);
+    });
+  });
+}
