@@ -1,46 +1,77 @@
-function findFirstRepeatedChar(str: string): string | undefined {
-    // A Set to store characters we've encountered so far.
-    // Set operations (add, has) are very efficient (average O(1) time complexity).
-    const seenChars = new Set<string>();
+class ListNode<T> {
+    value: T;
+    next: ListNode<T> | null;
 
-    for (const char of str) {
-        // If the character is already in our set, it means we've seen it before.
-        // Since we're iterating from left to right, this is the first repeated character.
-        if (seenChars.has(char)) {
-            return char;
+    constructor(value: T) {
+        this.value = value;
+        this.next = null;
+    }
+}
+class LinkedList<T> {
+    head: ListNode<T> | null = null;
+
+    // Add to end (append)
+    append(value: T): void {
+        const newNode = new ListNode(value);
+        if (!this.head) {
+            this.head = newNode;
+            return;
         }
-        // If the character is not in our set, add it for future checks.
-        seenChars.add(char);
+        let curr = this.head;
+        while (curr.next) {
+            curr = curr.next;
+        }
+        curr.next = newNode;
     }
 
-    // If the loop completes, it means no character was repeated.
-    return undefined;
-}
-
-// --- Examples ---
-console.log(`"hello": ${findFirstRepeatedChar("hello")}`);            // Expected: "l"
-console.log(`"programming": ${findFirstRepeatedChar("programming")}`); // Expected: "r"
-console.log(`"abcdefg": ${findFirstRepeatedChar("abcdefg")}`);        // Expected: undefined
-console.log(`"banana": ${findFirstRepeatedChar("banana")}`);          // Expected: "a"
-console.log(`"": ${findFirstRepeatedChar("")}`);                      // Expected: undefined
-console.log(`"a": ${findFirstRepeatedChar("a")}`);                    // Expected: undefined
-console.log(`"abacaba": ${findFirstRepeatedChar("abacaba")}`);        // Expected: "a" (first repeat encountered is 'a' at index 2)
-console.log(`"Hello World": ${findFirstRepeatedChar("Hello World")}`); // Expected: "l" (case-sensitive)
-console.log(`"TypeScript": ${findFirstRepeatedChar("TypeScript")}`); // Expected: "t" (case-sensitive)
-function findFirstRepeatedCharCaseInsensitive(str: string): string | undefined {
-    const seenChars = new Set<string>();
-
-    for (const char of str) {
-        const lowerChar = char.toLowerCase(); // Convert to lowercase for comparison
-        if (seenChars.has(lowerChar)) {
-            return char; // Return the *original* character
-        }
-        seenChars.add(lowerChar);
+    // Add to beginning (prepend)
+    prepend(value: T): void {
+        const newNode = new ListNode(value);
+        newNode.next = this.head;
+        this.head = newNode;
     }
-    return undefined;
-}
 
-console.log(`\n--- Case-Insensitive Examples ---`);
-console.log(`"Hello World": ${findFirstRepeatedCharCaseInsensitive("Hello World")}`); // Expected: "l" or "L" depending on strictness. Here it would be "l" (first instance of 'l' or 'L' repeating)
-console.log(`"TypeScript": ${findFirstRepeatedCharCaseInsensitive("TypeScript")}`); // Expected: "t" or "T". Here it would be "T" if 'T' is considered a repeat of 't'.
-console.log(`"Mississippi": ${findFirstRepeatedCharCaseInsensitive("Mississippi")}`); // Expected: "i"
+    // Remove by value (first occurrence)
+    remove(value: T): void {
+        if (!this.head) return;
+        if (this.head.value === value) {
+            this.head = this.head.next;
+            return;
+        }
+        let curr = this.head;
+        while (curr.next && curr.next.value !== value) {
+            curr = curr.next;
+        }
+        if (curr.next) {
+            curr.next = curr.next.next;
+        }
+    }
+
+    // Find node by value
+    find(value: T): ListNode<T> | null {
+        let curr = this.head;
+        while (curr) {
+            if (curr.value === value) {
+                return curr;
+            }
+            curr = curr.next;
+        }
+        return null;
+    }
+
+    // Convert to array for debugging or printing
+    toArray(): T[] {
+        const result: T[] = [];
+        let curr = this.head;
+        while (curr) {
+            result.push(curr.value);
+            curr = curr.next;
+        }
+        return result;
+    }
+}
+const list = new LinkedList<number>();
+list.append(1);
+list.append(2);
+list.prepend(0);
+console.log(list.toArray()); // [0, 
