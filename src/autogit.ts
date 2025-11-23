@@ -1,72 +1,27 @@
-// Node definition
-class TreeNode<T> {
-    value: T;
-    left: TreeNode<T> | null;
-    right: TreeNode<T> | null;
+/**
+ * Returns the majority element (if any) in O(n) time and O(1) space.
+ * If no majority exists → undefined.
+ */
+function majorityElement<T>(nums: T[]): T | undefined {
+  /* ---------- 1. Voting phase ---------- */
+  let candidate: T | undefined;
+  let count = 0;
 
-    constructor(value: T) {
-        this.value = value;
-        this.left = null;
-        this.right = null;
-    }
+  for (const val of nums) {
+    if (count === 0) candidate = val;   // pick new candidate
+    count += (val === candidate) ? 1 : -1;
+  }
+
+  /* ---------- 2. Verification phase ---------- */
+  if (candidate === undefined) return undefined;
+
+  let occurs = 0;
+  for (const val of nums) if (val === candidate) ++occurs;
+
+  return occurs > Math.floor(nums.length / 2) ? candidate : undefined;
 }
 
-// Binary Search Tree (BST) example
-class BinaryTree<T> {
-    root: TreeNode<T> | null = null;
-
-    insert(value: T): void {
-        const newNode = new TreeNode(value);
-
-        if (this.root === null) {
-            this.root = newNode;
-            return;
-        }
-
-        let current = this.root;
-        while (true) {
-            if (value < (current.value as unknown as number)) {
-                if (current.left === null) {
-                    current.left = newNode;
-                    return;
-                }
-                current = current.left;
-            } else {
-                if (current.right === null) {
-                    current.right = newNode;
-                    return;
-                }
-                current = current.right;
-            }
-        }
-    }
-
-    // Simple inorder traversal
-    inOrderTraversal(node: TreeNode<T> | null = this.root): void {
-        if (!node) return;
-        this.inOrderTraversal(node.left);
-        console.log(node.value);
-        this.inOrderTraversal(node.right);
-    }
-
-    search(value: T): TreeNode<T> | null {
-        let current = this.root;
-        while (current) {
-            if (value === current.value) return current;
-            current = value < (current.value as unknown as number) 
-                ? current.left 
-                : current.right;
-        }
-        return null;
-    }
-}
-
-// Example usage
-const tree = new BinaryTree<number>();
-tree.insert(5);
-tree.insert(3);
-tree.insert(7);
-tree.insert(4);
-
-tree.inOrderTraversal(); // 3, 4, 5, 7
-console.log(tree.search(7)); // TreeNode with value 7
+/* ---------- 3. Quick checks ---------- */
+console.log(majorityElement([2, 2, 1, 2, 2])); // 2
+console.log(majorityElement([3, 3, 4, 2, 4, 4, 2, 4, 4])); // 4
+console.log(majorityElement([1, 2, 3]));        // undefined
