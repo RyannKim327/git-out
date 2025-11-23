@@ -1,38 +1,63 @@
-function isPalindrome(str: string): boolean {
-    let left = 0;
-    let right = str.length - 1;
+class Node<T> {
+    value: T;
+    next: Node<T> | null = null;
 
-    while (left < right) {
-        if (str[left] !== str[right]) {
-            return false;
+    constructor(value: T) {
+        this.value = value;
+    }
+}
+class Queue<T> {
+    private head: Node<T> | null = null;
+    private tail: Node<T> | null = null;
+    private length: number = 0;
+
+    // Add item to the end (enqueue)
+    enqueue(value: T): void {
+        const node = new Node(value);
+        if (!this.tail) { // queue is empty
+            this.head = node;
+            this.tail = node;
+        } else {
+            this.tail.next = node;
+            this.tail = node;
         }
-        left++;
-        right--;
+        this.length++;
     }
 
-    return true;
-}
-
-// Example
-console.log(isPalindrome("racecar")); // true
-console.log(isPalindrome("hello"));   // false
-function isPalindromeClean(str: string): boolean {
-    let left = 0;
-    let right = str.length - 1;
-
-    while (left < right) {
-        while (left < right && !/[a-zA-Z0-9]/.test(str[left])) left++;
-        while (left < right && !/[a-zA-Z0-9]/.test(str[right])) right--;
-
-        if (str[left].toLowerCase() !== str[right].toLowerCase()) {
-            return false;
+    // Remove item from front (dequeue)
+    dequeue(): T | undefined {
+        if (!this.head) return undefined;
+        const value = this.head.value;
+        this.head = this.head.next;
+        if (!this.head) { // queue is now empty
+            this.tail = null;
         }
-
-        left++;
-        right--;
+        this.length--;
+        return value;
     }
 
-    return true;
-}
+    // Peek at front item
+    peek(): T | undefined {
+        return this.head?.value;
+    }
 
-console.log(isPalindromeClean("A man, a plan, a canal: Panama")); // true
+    // Get current size
+    size(): number {
+        return this.length;
+    }
+
+    // Check if empty
+    isEmpty(): boolean {
+        return this.length === 0;
+    }
+}
+const queue = new Queue<number>();
+
+queue.enqueue(10);
+queue.enqueue(20);
+queue.enqueue(30);
+
+console.log(queue.dequeue()); // 10
+console.log(queue.peek());    // 20
+console.log(queue.size());    // 2
+console.log(queue.isEmpty()); // false
