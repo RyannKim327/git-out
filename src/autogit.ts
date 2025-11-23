@@ -1,39 +1,48 @@
-class ListNode {
-    value: number;
-    next: ListNode | null;
+const numbers: number[] = [3, 1, 4, 1, 5, 9, 2, 6, 5];
 
-    constructor(value: number) {
-        this.value = value;
-        this.next = null;
-    }
+// Ascending order
+const sortedAscending = numbers.sort((a, b) => a - b);
+console.log(sortedAscending); // [1, 1, 2, 3, 4, 5, 5, 6, 9]
+
+// Descending order
+const sortedDescending = numbers.sort((a, b) => b - a);
+console.log(sortedDescending); // [9, 6, 5, 5, 4, 3, 2, 1, 1]
+const numbers: number[] = [3, 1, 4, 1, 5, 9, 2, 6, 5];
+
+// Immutable ascending sort (original array unchanged)
+const sortedAscending = [...numbers].sort((a, b) => a - b);
+
+// Immutable descending sort
+const sortedDescending = [...numbers].sort((a, b) => b - a);
+// Sort even numbers first, then odd numbers
+const customSorted = numbers.sort((a, b) => {
+    if (a % 2 === 0 && b % 2 !== 0) return -1;
+    if (a % 2 !== 0 && b % 2 === 0) return 1;
+    return a - b;
+});
+function sortNumbers(arr: number[], descending = false): number[] {
+    return [...arr].sort((a, b) => descending ? b - a : a - b);
 }
 
-function findNthFromEnd(head: ListNode | null, n: number): ListNode | null {
-    if (!head || n <= 0) return null;
-
-    let fast: ListNode | null = head;
-    let slow: ListNode | null = head;
-
-    // Move fast n steps ahead
-    for (let i = 0; i < n; i++) {
-        if (!fast) return null; // n is greater than list length
-        fast = fast.next;
+const numbers: number[] = [3, 1, 4, 1, 5, 9, 2, 6, 5];
+const sorted = sortNumbers(numbers); // Ascending
+const reversed = sortNumbers(numbers, true); // Descending
+function safeSort(arr: number[]): number[] {
+    if (!Array.isArray(arr)) {
+        throw new Error('Input must be an array');
     }
-
-    // Move both until fast reaches the end
-    while (fast) {
-        slow = slow!.next;
-        fast = fast.next;
-    }
-
-    return slow;
+    if (arr.length === 0) return [];
+    
+    return [...arr].sort((a, b) => a - b);
 }
 
-// Example usage:
-const head = new ListNode(1);
-head.next = new ListNode(2);
-head.next.next = new ListNode(3);
-head.next.next.next = new ListNode(4);
+// Usage
+const emptyArray: number[] = [];
+const sortedEmpty = safeSort(emptyArray); // []
+const numbers: number[] = [64, 34, 25, 12, 22, 11, 90];
 
-const result = findNthFromEnd(head, 2); // Should return node with value 3
-console.log(result?.value); // Output: 3
+// Sort with type annotations
+const sortedNumbers: number[] = [...numbers].sort((a: number, b: number) => a - b);
+
+console.log('Original:', numbers); // Unchanged
+console.log('Sorted:', sortedNumbers); // [11, 12, 22, 25, 34, 64, 90]
