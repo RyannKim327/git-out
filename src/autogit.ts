@@ -1,157 +1,165 @@
-/**
- * Generic skip-list implementation.
- * K = key type, V = value type.
- * Comparator must return:
- *   < 0  if a < b
- *   0    if a == b
- *   > 0  if a > b
- */
-export class SkipList<K, V> implements Iterable<[K, V]> {
-  private head: Node<K, V>;
-  private level: number;               // current max level (1-based)
-  private _size: number;
-  private readonly maxLevel: number;
-  private readonly p: number;          // probability to increase level (1/p)
-  private readonly comparator: (a: K, b: K) => number;
+function findMedianSortedArraysBruteForce(nums1: number[], nums2: number[]): number {
+    const m = nums1.length;
+    const n = nums2.length;
+    const merged: number[] = [];
+    let i = 0; // Pointer for nums1
+    let j = 0; // Pointer for nums2
 
-  constructor(
-    comparator: (a: K, b: K) => number,
-    maxLevel = 32,
-    p = 2
-  ) {
-    this.comparator = comparator;
-    this.maxLevel = maxLevel;
-    this.p = p;
-    this.level = 1;
-    this._size = 0;
-    this.head = this.newNode(undefined as any, undefined as any, maxLevel);
-  }
-
-  /* ---------- public API ---------- */
-
-  get size(): number { return this._size; }
-
-  insert(key: K, value: V): void {
-    const update: Node<K, V>[] = [];
-    let x = this.head;
-
-    // find position & build update vector
-    for (let i = this.level - 1; i >= 0; i--) {
-      while (x.forward[i] && this.comparator(x.forward[i]!.key, key) < 0) {
-        x = x.forward[i]!;
-      }
-      update[i] = x;
+    // Merge the two arrays
+    while (i < m && j < n) {
+        if (nums1[i] <= nums2[j]) {
+            merged.push(nums1[i]);
+            i++;
+        } else {
+            merged.push(nums2[j]);
+            j++;
+        }
     }
 
-    x = x.forward[0]!;
-    if (x !== this.head && this.comparator(x.key, key) === 0) {
-      x.value = value;                 // update existing key
-      return;
+    // Add remaining elements from nums1
+    while (i < m) {
+        merged.push(nums1[i]);
+        i++;
     }
 
-    const newLevel = this.randomLevel();
-    if (newLevel > this.level) {
-      for (let i = this.level; i < newLevel; i++) update[i] = this.head;
-      this.level = newLevel;
+    // Add remaining elements from nums2
+    while (j < n) {
+        merged.push(nums2[j]);
+        j++;
     }
 
-    const newNode = this.newNode(key, value, newLevel);
-    for (let i = 0; i < newLevel; i++) {
-      newNode.forward[i] = update[i].forward[i];
-      update[i].forward[i] = newNode;
+    const totalLength = merged.length;
+    if (totalLength % 2 === 1) {
+        // Odd number of elements
+        return merged[Math.floor(totalLength / 2)];
+    } else {
+        // Even number of elements
+        const mid1 = totalLength / 2 - 1;
+        const mid2 = totalLength / 2;
+        return (merged[mid1] + merged[mid2]) / 2;
     }
-    this._size++;
-  }
-
-  search(key: K): V | undefined {
-    let x = this.head;
-    for (let i = this.level - 1; i >= 0; i--) {
-      while (x.forward[i] && this.comparator(x.forward[i]!.key, key) < 0) {
-        x = x.forward[i]!;
-      }
-    }
-    x = x.forward[0]!;
-    if (x !== this.head && this.comparator(x.key, key) === 0) return x.value;
-    return undefined;
-  }
-
-  delete(key: K): boolean {
-    const update: Node<K, V>[] = [];
-    let x = this.head;
-    for (let i = this.level - 1; i >= 0; i--) {
-      while (x.forward[i] && this.comparator(x.forward[i]!.key, key) < 0) {
-        x = x.forward[i]!;
-      }
-      update[i] = x;
-    }
-    x = x.forward[0]!;
-    if (x === this.head || this.comparator(x.key, key) !== 0) return false;
-
-    for (let i = 0; i < this.level; i++) {
-      if (update[i].forward[i] !== x) break;
-      update[i].forward[i] = x.forward[i];
-    }
-    while (this.level > 1 && this.head.forward[this.level - 1] === this.head) {
-      this.level--;
-    }
-    this._size--;
-    return true;
-  }
-
-  min(): [K, V] | undefined {
-    const first = this.head.forward[0];
-    return first === this.head ? undefined : [first!.key, first!.value];
-  }
-
-  max(): [K, V] | undefined {
-    let x = this.head;
-    for (let i = this.level - 1; i >= 0; i--) {
-      while (x.forward[i] !== this.head) x = x.forward[i]!;
-    }
-    return x === this.head ? undefined : [x.key, x.value];
-  }
-
-  /* ---------- iterator ---------- */
-  *[Symbol.iterator](): Iterator<[K, V]> {
-    let curr = this.head.forward[0];
-    while (curr !== this.head) {
-      yield [curr.key, curr.value];
-      curr = curr.forward[0];
-    }
-  }
-
-  /* ---------- internal helpers ---------- */
-  private newNode(key: K, value: V, level: number): Node<K, V> {
-    return new Node(key, value, level);
-  }
-
-  private randomLevel(): number {
-    let lvl = 1;
-    while (Math.random() < 1 / this.p && lvl < this.maxLevel) lvl++;
-    return lvl;
-  }
 }
 
-/* ---------- node ---------- */
-class Node<K, V> {
-  key: K;
-  value: V;
-  forward: (Node<K, V> | null)[];
+// Example Usage:
+console.log("Brute Force:");
+console.log(findMedianSortedArraysBruteForce([1, 3], [2]));       // Output: 2.0
+console.log(findMedianSortedArraysBruteForce([1, 2], [3, 4]));     // Output: 2.5
+console.log(findMedianSortedArraysBruteForce([], [1]));           // Output: 1.0
+console.log(findMedianSortedArraysBruteForce([1], []));           // Output: 1.0
+console.log(findMedianSortedArraysBruteForce([2, 2, 4, 4], [2, 2, 4, 4])); // Output: 3.0
+function findMedianSortedArraysOptimizedSpace(nums1: number[], nums2: number[]): number {
+    const m = nums1.length;
+    const n = nums2.length;
+    const totalLength = m + n;
 
-  constructor(key: K, value: V, level: number) {
-    this.key = key;
-    this.value = value;
-    this.forward = new Array(level).fill(null);
-  }
+    // We need to find the element(s) at these indices
+    const medianIndex1 = Math.floor((totalLength - 1) / 2); // For odd totalLength, this is the median index
+    const medianIndex2 = Math.floor(totalLength / 2);       // For even totalLength, this is the second median index
+
+    let i = 0; // Pointer for nums1
+    let j = 0; // Pointer for nums2
+    let count = 0; // Current element count in the virtual merged array
+    let median1 = 0; // Stores the element at medianIndex1
+    let median2 = 0; // Stores the element at medianIndex2
+
+    while (count <= medianIndex2) {
+        let currentElement: number;
+
+        if (i < m && (j >= n || nums1[i] <= nums2[j])) {
+            currentElement = nums1[i];
+            i++;
+        } else {
+            currentElement = nums2[j];
+            j++;
+        }
+
+        if (count === medianIndex1) {
+            median1 = currentElement;
+        }
+        if (count === medianIndex2) {
+            median2 = currentElement;
+        }
+        count++;
+    }
+
+    if (totalLength % 2 === 1) {
+        return median1; // Odd length, median is median1
+    } else {
+        return (median1 + median2) / 2; // Even length, average of median1 and median2
+    }
 }
-const sl = new SkipList<number, string>((a, b) => a - b);
 
-sl.insert(10, 'ten');
-sl.insert(5, 'five');
-sl.insert(20, 'twenty');
+// Example Usage:
+console.log("\nOptimized Space:");
+console.log(findMedianSortedArraysOptimizedSpace([1, 3], [2]));       // Output: 2.0
+console.log(findMedianSortedArraysOptimizedSpace([1, 2], [3, 4]));     // Output: 2.5
+console.log(findMedianSortedArraysOptimizedSpace([], [1]));           // Output: 1.0
+console.log(findMedianSortedArraysOptimizedSpace([1], []));           // Output: 1.0
+console.log(findMedianSortedArraysOptimizedSpace([2, 2, 4, 4], [2, 2, 4, 4])); // Output: 3.0
+function findMedianSortedArraysOptimal(nums1: number[], nums2: number[]): number {
+    // Ensure nums1 is the shorter array to optimize binary search range
+    if (nums1.length > nums2.length) {
+        [nums1, nums2] = [nums2, nums1]; // Swap arrays
+    }
 
-console.log(sl.search(5));   // 'five'
-console.log([...sl]);        // [[5,'five'],[10,'ten'],[20,'twenty']]
+    const m = nums1.length;
+    const n = nums2.length;
+    let low = 0;
+    let high = m; // Binary search range for partitionX (number of elements to the left of the cut in nums1)
 
-sl.delete(10);
-console.log([...sl]);        // [[5,'five'],[20,'twenty']]
+    // halfLen represents the total number of elements in the left partition of the combined sorted array
+    // The +1 handles both odd and even total lengths correctly for the left partition size.
+    const halfLen = Math.floor((m + n + 1) / 2);
+
+    while (low <= high) {
+        const partitionX = Math.floor((low + high) / 2); // Cut point in nums1
+        const partitionY = halfLen - partitionX;         // Cut point in nums2
+
+        // Determine the values around the partitions:
+        // - maxLeftX: largest element in the left part of nums1
+        // - minRightX: smallest element in the right part of nums1
+        // (Similar for Y in nums2)
+
+        // Use Number.MIN_SAFE_INTEGER and Number.MAX_SAFE_INTEGER as sentinels
+        // if a partition is at the beginning or end of an array.
+        const maxLeftX = (partitionX === 0) ? Number.MIN_SAFE_INTEGER : nums1[partitionX - 1];
+        const minRightX = (partitionX === m) ? Number.MAX_SAFE_INTEGER : nums1[partitionX];
+
+        const maxLeftY = (partitionY === 0) ? Number.MIN_SAFE_INTEGER : nums2[partitionY - 1];
+        const minRightY = (partitionY === n) ? Number.MAX_SAFE_INTEGER : nums2[partitionY];
+
+        // Check if we found the correct partition:
+        // (maxLeft of X <= minRight of Y) AND (maxLeft of Y <= minRight of X)
+        if (maxLeftX <= minRightY && maxLeftY <= minRightX) {
+            // Correct partition found!
+            if ((m + n) % 2 === 1) {
+                // Odd total length: median is the maximum of the left partition's largest elements
+                return Math.max(maxLeftX, maxLeftY);
+            } else {
+                // Even total length: median is the average of the two middle elements
+                // (max of left partition + min of right partition) / 2
+                return (Math.max(maxLeftX, maxLeftY) + Math.min(minRightX, minRightY)) / 2;
+            }
+        } else if (maxLeftX > minRightY) {
+            // partitionX is too far right, move left in nums1
+            high = partitionX - 1;
+        } else { // maxLeftY > minRightX
+            // partitionX is too far left, move right in nums1
+            low = partitionX + 1;
+        }
+    }
+
+    // This line should technically not be reached if inputs are valid sorted arrays,
+    // as a solution always exists.
+    throw new Error("Input arrays are not sorted or invalid state encountered.");
+}
+
+// Example Usage:
+console.log("\nOptimal (Binary Search):");
+console.log(findMedianSortedArraysOptimal([1, 3], [2]));       // Output: 2.0
+console.log(findMedianSortedArraysOptimal([1, 2], [3, 4]));     // Output: 2.5
+console.log(findMedianSortedArraysOptimal([], [1]));           // Output: 1.0
+console.log(findMedianSortedArraysOptimal([1], []));           // Output: 1.0
+console.log(findMedianSortedArraysOptimal([2, 2, 4, 4], [2, 2, 4, 4])); // Output: 3.0
+console.log(findMedianSortedArraysOptimal([1, 3, 5, 7, 9], [2, 4, 6, 8, 10])); // Output: 5.5
+console.log(findMedianSortedArraysOptimal([1, 2, 3], [4, 5, 6, 7])); // Output: 4.0
