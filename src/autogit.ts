@@ -1,42 +1,36 @@
-function factorialRecursive(n: number): number {
-  // Validate input
-  if (n < 0 || !Number.isInteger(n)) {
-    throw new Error("Input must be a non-negative integer.");
-  }
+const array1 = [1, 2, 3, 4];
+const array2 = [3, 4, 5, 6];
 
-  // Base case: 0! = 1 and 1! = 1
-  if (n === 0 || n === 1) {
-    return 1;
-  }
-  
-  // Recursive call
-  return n * factorialRecursive(n - 1);
-}
+const common = array1.filter(item => array2.includes(item));
 
-// Example usage
-console.log(factorialRecursive(5)); // Output: 120
-console.log(factorialRecursive(0)); // Output: 1
-function factorialIterative(n: number): number {
-  // Validate input
-  if (n < 0 || !Number.isInteger(n)) {
-    throw new Error("Input must be a non-negative integer.");
-  }
+console.log(common); // [3, 4]
+const array1 = [1, 2, 3, 4];
+const array2 = [3, 4, 5, 6];
 
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
-}
+const set2 = new Set(array2);
+const common = array1.filter(item => set2.has(item));
 
-// Example usage
-console.log(factorialIterative(6)); // Output: 720
-console.log(factorialIterative(1)); // Output: 1
-function factorialBigInt(n: bigint): bigint {
-  if (n < 0n) throw new Error("BigInt input must be non-negative.");
-  if (n === 0n || n === 1n) return 1n;
-  return n * factorialBigInt(n - 1n);
-}
+console.log(common); // [3, 4]
+type User = { id: number; name: string };
 
-// Example usage
-console.log(factorialBigInt(20n)); // Output: 2432902008176640000n (exact)
+const users1: User[] = [
+  { id: 1, name: "Alice" },
+  { id: 2, name: "Bob" }
+];
+const users2: User[] = [
+  { id: 2, name: "Bob" },
+  { id: 3, name: "Charlie" }
+];
+
+const ids2 = new Set(users2.map(u => u.id));
+const common = users1.filter(user => ids2.has(user.id));
+
+console.log(common); // [{ id: 2, name: "Bob" }]
+import _ from "lodash";
+
+const array1 = [1, 2, 3, 4];
+const array2 = [3, 4, 5, 6];
+
+const common = _.intersection(array1, array2);
+
+console.log(common); // [3, 4]
