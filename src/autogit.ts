@@ -1,50 +1,43 @@
-/**
- * Bogo Sort (also known as Stupid Sort or Monkey Sort)
- * Randomly shuffles the array until it's sorted.
- * Time Complexity: O(n!) average case, O(1) best case
- */
-function bogoSort(arr: number[]): number[] {
-    // Helper function to check if array is sorted
-    const isSorted = (arr: number[]): boolean => {
-        for (let i = 1; i < arr.length; i++) {
-            if (arr[i - 1] > arr[i]) return false;
-        }
-        return true;
-    };
-
-    // Fisher-Yates shuffle algorithm
-    const shuffle = (arr: number[]): number[] => {
-        for (let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        return arr;
-    };
-
-    // Keep shuffling until sorted (with a safety limit)
-    let attempts = 0;
-    const maxAttempts = 100_000; // Prevent infinite loops
-    
-    while (!isSorted(arr)) {
-        arr = shuffle([...arr]);
-        attempts++;
-        
-        // Safety check for practical use
-        if (attempts > maxAttempts) {
-            throw new Error(`BogoSort failed after ${maxAttempts} attempts`);
-        }
-    }
-
-    return arr;
+const arrayWithDuplicates = [1, 2, 2, 3, 4, 4, 5];
+const uniqueArray = [...new Set(arrayWithDuplicates)];
+// Result: [1, 2, 3, 4, 5]
+const arrayWithDuplicates = [1, 2, 2, 3, 4, 4, 5];
+const uniqueArray = arrayWithDuplicates.filter((item, index) => 
+  arrayWithDuplicates.indexOf(item) === index
+);
+// Result: [1, 2, 3, 4, 5]
+const arrayWithDuplicates = [1, 2, 2, 3, 4, 4, 5];
+const uniqueArray = arrayWithDuplicates.reduce((acc: number[], current) => {
+  if (!acc.includes(current)) {
+    acc.push(current);
+  }
+  return acc;
+}, []);
+// Result: [1, 2, 3, 4, 5]
+interface User {
+  id: number;
+  name: string;
 }
 
-// Example usage
-const unsortedArray = [3, 1, 4, 1, 5, 9, 2, 6];
-console.log('Unsorted:', unsortedArray);
+const users: User[] = [
+  { id: 1, name: "John" },
+  { id: 2, name: "Jane" },
+  { id: 1, name: "John" }, // duplicate
+];
 
-try {
-    const sortedArray = bogoSort(unsortedArray);
-    console.log('Sorted:', sortedArray);
-} catch (error) {
-    console.error(error.message);
+// Remove duplicates based on ID
+const uniqueUsers = users.filter((user, index, self) =>
+  index === self.findIndex((u) => u.id === user.id)
+);
+
+// Alternative using Set with map
+const uniqueUsers2 = Array.from(
+  new Map(users.map(user => [user.id, user])).values()
+);
+function removeDuplicates<T>(array: T[]): T[] {
+  return [...new Set(array)];
 }
+
+// Usage
+const numbers = removeDuplicates([1, 2, 2, 3, 4]);
+const strings = removeDuplicates(["a", "b", "b", "c"]);
