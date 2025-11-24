@@ -1,50 +1,51 @@
-const originalArray = [1, 2, 3, 4, 5];
-const elementToRemove = 3;
+// Definition for a singly-linked list node
+class ListNode<T> {
+    value: T;
+    next: ListNode<T> | null;
 
-const newArray = originalArray.filter(item => item !== elementToRemove);
-console.log(newArray); // [1, 2, 4, 5]
-const array = [1, 2, 3, 4, 5];
-const elementToRemove = 3;
-
-const index = array.indexOf(elementToRemove);
-if (index > -1) {
-    array.splice(index, 1);
-}
-console.log(array); // [1, 2, 4, 5]
-const array = [1, 2, 3, 3, 4, 5];
-const elementToRemove = 3;
-
-let index = array.indexOf(elementToRemove);
-while (index > -1) {
-    array.splice(index, 1);
-    index = array.indexOf(elementToRemove);
-}
-console.log(array); // [1, 2, 4, 5]
-function removeElement<T>(array: T[], element: T): T[] {
-    return array.filter(item => item !== element);
+    constructor(value: T, next: ListNode<T> | null = null) {
+        this.value = value;
+        this.next = next;
+    }
 }
 
-// Usage
-const numbers = [1, 2, 3, 4, 5];
-const result = removeElement(numbers, 3);
-const array = [1, 2, 3, 4, 5];
-const indexToRemove = 2;
-
-// Using slice (immutable)
-const newArray = [...array.slice(0, indexToRemove), ...array.slice(indexToRemove + 1)];
-
-// Using splice (mutable)
-array.splice(indexToRemove, 1);
-interface User {
-    id: number;
-    name: string;
+// Function to reverse a linked list iteratively
+function reverseLinkedList<T>(head: ListNode<T> | null): ListNode<T> | null {
+    let prev: ListNode<T> | null = null;
+    let current: ListNode<T> | null = head;
+    
+    while (current !== null) {
+        // Save next node before overwriting current.next
+        const nextTemp: ListNode<T> | null = current.next;
+        
+        // Reverse the pointer
+        current.next = prev;
+        
+        // Move pointers forward
+        prev = current;
+        current = nextTemp;
+    }
+    
+    // Prev is now pointing to the new head
+    return prev;
 }
+// Create linked list: 1 -> 2 -> 3
+const node3 = new ListNode(3);
+const node2 = new ListNode(2, node3);
+const node1 = new ListNode(1, node2);
 
-const users: User[] = [
-    {id: 1, name: 'Alice'},
-    {id: 2, name: 'Bob'},
-    {id: 3, name: 'Charlie'}
-];
+// Reverse the list
+const reversedHead = reverseLinkedList(node1);
 
-// Remove user with id 2
-const filteredUsers = users.filter(user => user.id !== 2);
+// The list is now 3 -> 2 -> 1
+function reverseLinkedListRecursive<T>(head: ListNode<T> | null): ListNode<T> | null {
+    if (head === null || head.next === null) {
+        return head;
+    }
+    
+    const reversed = reverseLinkedListRecursive(head.next);
+    head.next.next = head;
+    head.next = null;
+    
+    return reversed;
+}
