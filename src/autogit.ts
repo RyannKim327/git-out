@@ -1,68 +1,44 @@
-// 1. Graph representation
-type Graph = Record<string, string[]>; // adjacency list: vertex → neighbors
+/**
+ * In-place insertion sort.
+ * Default: ascending order for primitive types.
+ * O(n²) time, O(1) space.
+ */
+function insertionSort<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a > b ? 1 : a < b ? -1 : 0)
+): T[] {
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-// -------------------------------------------------
-// 2. Iterative DFS (stack)
-// -------------------------------------------------
-function dfsIterative(
-  graph: Graph,
-  start: string,
-  onVisit: (v: string) => void
-): void {
-  const visited = new Set<string>();
-  const stack: string[] = [start];
-
-  while (stack.length) {
-    const v = stack.pop()!;
-    if (visited.has(v)) continue;
-
-    visited.add(v);
-    onVisit(v); // callback lets caller collect path, print, etc.
-
-    // Push neighbors in reverse so that left-most is popped first
-    const neighbors = graph[v] ?? [];
-    for (let i = neighbors.length - 1; i >= 0; i--) {
-      const n = neighbors[i];
-      if (!visited.has(n)) stack.push(n);
+    while (j >= 0 && compare(arr[j], key) > 0) {
+      arr[j + 1] = arr[j]; // shift right
+      j--;
     }
+    arr[j + 1] = key;
   }
+  return arr;
 }
 
-// -------------------------------------------------
-// 3. Recursive DFS
-// -------------------------------------------------
-function dfsRecursive(
-  graph: Graph,
-  start: string,
-  visited = new Set<string>(),
-  onVisit: (v: string) => void
-): void {
-  if (visited.has(start)) return;
-  visited.add(start);
-  onVisit(start);
-  for (const n of graph[start] ?? []) {
-    dfsRecursive(graph, n, visited, onVisit);
-  }
-}
+/* ---------- Usage examples ---------- */
 
-// -------------------------------------------------
-// 4. Quick sanity check
-// -------------------------------------------------
-if (import.meta.vitest === undefined) {
-  const g: Graph = {
-    A: ["B", "C"],
-    B: ["D", "E"],
-    C: ["F"],
-    D: [],
-    E: ["F"],
-    F: [],
-  };
+// 1. Numbers (ascending)
+const nums = [5, 2, 9, 1, 5, 6];
+console.log(insertionSort(nums)); // [1, 2, 5, 5, 6, 9]
 
-  const order: string[] = [];
-  dfsIterative(g, "A", v => order.push(v));
-  console.log("Iterative DFS order:", order.join(" ")); // A B E F C D  (or similar depending on neighbor order)
+// 2. Strings (descending)
+const words = ['pear', 'apple', 'orange'];
+console.log(insertionSort(words, (a, b) => b.localeCompare(a)));
+// ["pear", "orange", "apple"]
 
-  order.length = 0;
-  dfsRecursive(g, "A", undefined, v => order.push(v));
-  console.log("Recursive DFS order:", order.join(" "));
-}
+// 3. Objects by property
+interface Person { name: string; age: number; }
+const people: Person[] = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob', age: 22 },
+  { name: 'Eve', age: 25 }
+];
+insertionSort(people, (a, b) => a.age - b.age);
+console.log(people); // ordered by ascending age
+tsc insertion.ts
+node insertion.js
