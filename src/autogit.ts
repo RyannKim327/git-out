@@ -1,63 +1,81 @@
-function reverseWords(str: string): string {
-  return str
-    .split(' ')           // Split into array of words
-    .reverse()            // Reverse the array order
-    .join(' ');           // Join back into a string
+type Graph<T> = Map<T, T[]>;
+
+function bfs<T>(graph: Graph<T>, start: T, target: T): boolean {
+    // Check if start node exists in the graph
+    if (!graph.has(start)) {
+        return false;
+    }
+
+    const visited = new Set<T>();
+    const queue: T[] = [start];
+    visited.add(start);
+
+    while (queue.length > 0) {
+        // Dequeue the front node
+        const currentNode = queue.shift()!;
+
+        // Check if current node is the target
+        if (currentNode === target) {
+            return true;
+        }
+
+        // Get all adjacent nodes of the current node
+        const neighbors = graph.get(currentNode) || [];
+
+        for (const neighbor of neighbors) {
+            if (!visited.has(neighbor)) {
+                visited.add(neighbor);
+                queue.push(neighbor);
+            }
+        }
+    }
+
+    // Target node not found
+    return false;
 }
 
-// Example usage
-const input = "Hello World TypeScript";
-const reversed = reverseWords(input);
-console.log(reversed); // "TypeScript World Hello"
-function reverseWordsAdvanced(str: string): string {
-  return str
-    .trim()                    // Remove leading/trailing spaces
-    .split(/\s+/)              // Split on one or more whitespace characters
-    .reverse()
-    .join(' ');
-}
+// Example Usage:
+const graph = new Map<number, number[]>();
+graph.set(0, [1, 2]);
+graph.set(1, [2]);
+graph.set(2, [0, 3]);
+graph.set(3, [3]); // Self-loop
 
-// Examples
-console.log(reverseWordsAdvanced("  Hello   World  ")); // "World Hello"
-console.log(reverseWordsAdvanced("TypeScript"));        // "TypeScript"
-console.log(reverseWordsAdvanced(""));                  // ""
-function reverseWordsRegex(str: string): string {
-  return str
-    .match(/\S+/g)             // Match all non-whitespace sequences
-    ?.reverse()                // Reverse the array (optional chaining)
-    .join(' ') || '';          // Handle null case
-}
+console.log(bfs(graph, 0, 3)); // true
+console.log(bfs(graph, 3, 0)); // false (no reverse path)
+console.log(bfs(graph, 1, 4)); // false (non-existent node)
+function bfsShortestPath<T>(graph: Graph<T>, start: T, target: T): number {
+    if (!graph.has(start)) return -1;
 
-console.log(reverseWordsRegex("  Hello   World  ")); // "World Hello"
-function reverseWordsReduce(str: string): string {
-  return str
-    .split(' ')
-    .reduce((acc, word) => word ? [word, ...acc] : acc, [] as string[])
-    .join(' ');
-}
-function reverseWordsSafe(str: string): string {
-  if (!str || typeof str !== 'string') {
-    return '';
-  }
-  
-  return str
-    .trim()
-    .split(/\s+/)
-    .filter(word => word.length > 0)  // Remove empty strings
-    .reverse()
-    .join(' ');
-}
+    const visited = new Map<T, number>(); // Stores node -> distance
+    const queue: T[] = [start];
+    visited.set(start, 0);
 
-// Test cases
-const testCases = [
-  "Hello World TypeScript",
-  "  Multiple   Spaces   ",
-  "SingleWord",
-  "",
-  "   ",
-  "a b c d e"
-];
+    while (queue.length > 0) {
+        const currentNode = queue.shift()!;
+        const currentDistance = visited.get(currentNode)!;
 
-testCases.forEach(test => {
-  console.log(`"${test}" -> "${reverseWordsSafe(test)}"`);
-});
+        if (currentNode === target) {
+            return currentDistance;
+        }
+
+        const neighbors = graph.get(currentNode) || [];
+        
+        for (const neighbor of neighbors) {
+            if (!visited.has(neighbor)) {
+                visited.set(neighbor, currentDistance + 1);
+                queue.push(neighbor);
+            }
+        }
+    }
+    
+    return -1; // Target unreachable
+}
+// String-based graph example
+const wordGraph = new Map<string, string[]>([
+    ['apple', ['orange', 'banana']],
+    ['orange', ['grape']],
+    ['banana', ['pear']]
+]);
+
+console.log(bfs(wordGraph, 'apple', 'grape')); // true
