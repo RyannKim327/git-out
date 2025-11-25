@@ -1,35 +1,31 @@
-diameter = max(left_height + right_height) across all nodes
-class TreeNode {
+class ListNode {
   val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
-  constructor(val?: number, left?: TreeNode | null, right?: TreeNode | null) {
-    this.val = val === undefined ? 0 : val;
-    this.left = left === undefined ? null : left;
-    this.right = right === undefined ? null : right;
+  next: ListNode | null;
+  constructor(val?: number, next?: ListNode | null) {
+    this.val = (val === undefined ? 0 : val);
+    this.next = (next === undefined ? null : next);
   }
 }
 
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  if (!headA || !headB) return null;
 
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;
+  let pA: ListNode | null = headA;
+  let pB: ListNode | null = headB;
 
-    const leftHeight = dfs(node.left);
-    const rightHeight = dfs(node.right);
-
-    // Update diameter
-    maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
-
-    // Return height of this subtree
-    return 1 + Math.max(leftHeight, rightHeight);
+  while (pA !== pB) {
+    pA = pA === null ? headB : pA.next;
+    pB = pB === null ? headA : pB.next;
   }
 
-  dfs(root);
-  return maxDiameter;
+  return pA;
 }
+// Construct linked lists with an intersection at node 'c3'
+const c3 = new ListNode(3, new ListNode(4));
+const headA = new ListNode(1, new ListNode(2, c3));
+const headB = new ListNode(5, c3);
 
-// Example usage:
-// const tree = new TreeNode(1, new TreeNode(2, new TreeNode(4), new TreeNode(5)), new TreeNode(3));
-// console.log(diameterOfBinaryTree(tree)); // Output: 3
+console.log(getIntersectionNode(headA, headB)?.val); // Output: 3
