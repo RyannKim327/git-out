@@ -1,194 +1,202 @@
-class BurrowsWheelerTransform {
-  /**
-   * Applies the Burrows-Wheeler Transform to a string
-   * @param input The input string to transform
-   * @returns The transformed string and the original index
-   */
-  static transform(input: string): { output: string; index: number } {
-    if (input.length === 0) return { output: '', index: -1 };
-    
-    // Add EOF marker if not present
-    const eof = '$';
-    let text = input;
-    if (!input.includes(eof)) {
-      text = input + eof;
-    }
-
-    // Generate all rotations
-    const rotations: string[] = [];
-    for (let i = 0; i < text.length; i++) {
-      rotations.push(text.slice(i) + text.slice(0, i));
-    }
-
-    // Sort rotations lexicographically
-    rotations.sort();
-
-    // Extract last characters and find original index
-    let originalIndex = -1;
-    const output = rotations.map((rotation, idx) => {
-      if (rotation === text) originalIndex = idx;
-      return rotation.charAt(rotation.length - 1);
-    }).join('');
-
-    return { output, index: originalIndex };
-  }
-
-  /**
-   * Inverse Burrows-Wheeler Transform
-   * @param transformed The transformed string
-   * @param index The original index of the input string
-   * @returns The original string
-   */
-  static inverseTransform(transformed: string, index: number): string {
-    if (transformed.length === 0) return '';
-    if (index < 0 || index >= transformed.length) {
-      throw new Error('Invalid index');
-    }
-
-    // Initialize table with empty strings
-    const table: string[] = Array(transformed.length).fill('');
-    
-    // Reconstruct through multiple passes
-    for (let i = 0; i < transformed.length; i++) {
-      for (let j = 0; j < transformed.length; j++) {
-        table[j] = transformed.charAt(j) + table[j];
-      }
-      table.sort();
-    }
-
-    // Find and return the original string (remove EOF marker)
-    const result = table[index];
-    return result.endsWith('$') ? result.slice(0, -1) : result;
-  }
-}
-class OptimizedBWT {
-  /**
-   * More efficient BWT implementation using cyclic rotations
-   */
-  static transform(input: string): { output: string; index: number } {
-    const eof = '$';
-    const text = input.includes(eof) ? input : input + eof;
-    const n = text.length;
-
-    // Create array of indices and sort based on rotations
-    const indices = Array.from({ length: n }, (_, i) => i);
-    
-    indices.sort((i, j) => {
-      for (let k = 0; k < n; k++) {
-        const charI = text.charAt((i + k) % n);
-        const charJ = text.charAt((j + k) % n);
-        if (charI !== charJ) return charI.localeCompare(charJ);
-      }
-      return 0;
-    });
-
-    // Find original index and build output
-    let originalIndex = -1;
-    const outputChars: string[] = [];
-    
-    indices.forEach((idx, pos) => {
-      if (idx === 0) originalIndex = pos;
-      outputChars.push(text.charAt((idx + n - 1) % n));
-    });
-
-    return { output: outputChars.join(''), index: originalIndex };
-  }
-
-  /**
-   * Efficient inverse transform using the LF mapping
-   */
-  static inverseTransform(transformed: string, index: number): string {
-    const n = transformed.length;
-    
-    // Create frequency table and cumulative counts
-    const freq: Map<string, number> = new Map();
-    const firstOccurrence: Map<string, number> = new Map();
-    const counts: number[] = [];
-    
-    // Count frequencies and record first occurrences
-    let total = 0;
-    for (let i = 0; i < n; i++) {
-      const char = transformed.charAt(i);
-      if (!freq.has(char)) {
-        freq.set(char, 0);
-        firstOccurrence.set(char, i);
-      }
-      freq.set(char, freq.get(char)! + 1);
-      counts[i] = total++;
-    }
-
-    // Build the LF mapping
-    const lfMap: number[] = Array(n);
-    const charCounts: Map<string, number> = new Map();
-    
-    for (let i = 0; i < n; i++) {
-      const char = transformed.charAt(i);
-      const count = charCounts.get(char) || 0;
-      lfMap[i] = firstOccurrence.get(char)! + count;
-      charCounts.set(char, count + 1);
-    }
-
-    // Reconstruct the original string
-    let result = '';
-    let current = index;
-    
-    for (let i = 0; i < n - 1; i++) { // -1 to exclude EOF
-      const char = transformed.charAt(current);
-      result = char + result;
-      current = lfMap[current];
-    }
-
-    return result;
-  }
-}
-// Basic usage
-const testString = "banana";
-const result = BurrowsWheelerTransform.transform(testString);
-console.log(`Original: ${testString}`);
-console.log(`BWT: ${result.output}`);
-console.log(`Index: ${result.index}`);
-
-const reconstructed = BurrowsWheelerTransform.inverseTransform(result.output, result.index);
-console.log(`Reconstructed: ${reconstructed}`);
-
-// Optimized version
-const optimizedResult = OptimizedBWT.transform(testString);
-console.log(`Optimized BWT: ${optimizedResult.output}`);
-
-const optimizedReconstructed = OptimizedBWT.inverseTransform(optimizedResult.output, optimizedResult.index);
-console.log(`Optimized Reconstructed: ${optimizedReconstructed}`);
-function testBWT(): void {
-  const testCases = [
-    "banana",
-    "mississippi",
-    "abracadabra",
-    "hello world",
-    "a",
-    ""
-  ];
-
-  testCases.forEach(testCase => {
-    console.log(`\nTesting: "${testCase}"`);
-    
-    // Test basic implementation
-    const basicResult = BurrowsWheelerTransform.transform(testCase);
-    const basicReconstructed = BurrowsWheelerTransform.inverseTransform(
-      basicResult.output, 
-      basicResult.index
-    );
-    
-    console.log(`Basic - Match: ${testCase === basicReconstructed}`);
-    
-    // Test optimized implementation
-    const optimizedResult = OptimizedBWT.transform(testCase);
-    const optimizedReconstructed = OptimizedBWT.inverseTransform(
-      optimizedResult.output,
-      optimizedResult.index
-    );
-    
-    console.log(`Optimized - Match: ${testCase === optimizedReconstructed}`);
-  });
+interface TreeNode<T> {
+    value: T;
+    children: TreeNode<T>[];
 }
 
-// Run tests
-testBWT();
+function breadthLimitedTreeSearch<T>(
+    root: TreeNode<T>,
+    maxDepth: number,
+    targetValue: T
+): TreeNode<T> | null {
+    if (maxDepth < 0) return null;
+    
+    const queue: { node: TreeNode<T>; depth: number }[] = [];
+    queue.push({ node: root, depth: 0 });
+
+    while (queue.length > 0) {
+        const { node, depth } = queue.shift()!;
+        
+        // Check if current node is the target
+        if (node.value === targetValue) {
+            return node;
+        }
+
+        // Only process children if we haven't reached max depth
+        if (depth < maxDepth) {
+            for (const child of node.children) {
+                queue.push({ node: child, depth: depth + 1 });
+            }
+        }
+    }
+
+    return null;
+}
+interface GraphNode<T> {
+    value: T;
+    neighbors: GraphNode<T>[];
+}
+
+function breadthLimitedGraphSearch<T>(
+    start: GraphNode<T>,
+    maxDepth: number,
+    targetValue: T,
+    isDirected: boolean = false
+): GraphNode<T> | null {
+    if (maxDepth < 0) return null;
+    
+    const queue: { node: GraphNode<T>; depth: number }[] = [];
+    const visited = new Set<GraphNode<T>>();
+    
+    queue.push({ node: start, depth: 0 });
+    visited.add(start);
+
+    while (queue.length > 0) {
+        const { node, depth } = queue.shift()!;
+        
+        if (node.value === targetValue) {
+            return node;
+        }
+
+        if (depth < maxDepth) {
+            for (const neighbor of node.neighbors) {
+                if (!visited.has(neighbor)) {
+                    visited.add(neighbor);
+                    queue.push({ node: neighbor, depth: depth + 1 });
+                }
+            }
+        }
+    }
+
+    return null;
+}
+interface SearchResult<T> {
+    node: TreeNode<T> | GraphNode<T>;
+    depth: number;
+    path: T[];
+}
+
+function breadthLimitedSearchWithPath<T>(
+    start: TreeNode<T> | GraphNode<T>,
+    maxDepth: number,
+    targetValue: T,
+    isGraph: boolean = false
+): SearchResult<T> | null {
+    if (maxDepth < 0) return null;
+    
+    const visited = isGraph ? new Set<GraphNode<T>>() : undefined;
+    const queue: { 
+        node: TreeNode<T> | GraphNode<T>; 
+        depth: number; 
+        path: T[] 
+    }[] = [];
+    
+    queue.push({ node: start, depth: 0, path: [start.value] });
+    if (isGraph) visited!.add(start as GraphNode<T>);
+
+    while (queue.length > 0) {
+        const { node, depth, path } = queue.shift()!;
+        
+        if (node.value === targetValue) {
+            return { node, depth, path };
+        }
+
+        if (depth < maxDepth) {
+            const neighbors = isGraph 
+                ? (node as GraphNode<T>).neighbors 
+                : (node as TreeNode<T>).children;
+            
+            for (const neighbor of neighbors) {
+                // For graphs, check if already visited
+                if (isGraph && visited!.has(neighbor as GraphNode<T>)) {
+                    continue;
+                }
+                
+                const newPath = [...path, neighbor.value];
+                queue.push({ 
+                    node: neighbor, 
+                    depth: depth + 1, 
+                    path: newPath 
+                });
+                
+                if (isGraph) {
+                    visited!.add(neighbor as GraphNode<T>);
+                }
+            }
+        }
+    }
+
+    return null;
+}
+// Example 1: Tree Search
+const tree: TreeNode<number> = {
+    value: 1,
+    children: [
+        {
+            value: 2,
+            children: [
+                { value: 4, children: [] },
+                { value: 5, children: [] }
+            ]
+        },
+        {
+            value: 3,
+            children: [
+                { value: 6, children: [] },
+                { value: 7, children: [] }
+            ]
+        }
+    ]
+};
+
+const result1 = breadthLimitedTreeSearch(tree, 2, 5);
+console.log(result1?.value); // 5
+
+// Example 2: Graph Search
+const nodeA: GraphNode<string> = { value: 'A', neighbors: [] };
+const nodeB: GraphNode<string> = { value: 'B', neighbors: [] };
+const nodeC: GraphNode<string> = { value: 'C', neighbors: [] };
+
+nodeA.neighbors = [nodeB, nodeC];
+nodeB.neighbors = [nodeA];
+nodeC.neighbors = [nodeA];
+
+const result2 = breadthLimitedGraphSearch(nodeA, 2, 'C');
+console.log(result2?.value); // 'C'
+
+// Example 3: With Path Tracking
+const result3 = breadthLimitedSearchWithPath(tree, 2, 5, false);
+console.log(result3?.path); // [1, 2, 5]
+class BreadthLimitedSearch<T> {
+    constructor(private maxDepth: number) {}
+    
+    searchTree(
+        root: TreeNode<T>,
+        targetValue: T,
+        predicate?: (node: TreeNode<T>) => boolean
+    ): TreeNode<T> | null {
+        const queue: { node: TreeNode<T>; depth: number }[] = [];
+        queue.push({ node: root, depth: 0 });
+
+        while (queue.length > 0) {
+            const { node, depth } = queue.shift()!;
+            
+            const matches = predicate ? predicate(node) : node.value === targetValue;
+            if (matches) {
+                return node;
+            }
+
+            if (depth < this.maxDepth) {
+                for (const child of node.children) {
+                    queue.push({ node: child, depth: depth + 1 });
+                }
+            }
+        }
+
+        return null;
+    }
+}
+
+// Usage
+const searcher = new BreadthLimitedSearch<number>(3);
+const result = searcher.searchTree(tree, 7);
+console.log(result?.value); // 7
