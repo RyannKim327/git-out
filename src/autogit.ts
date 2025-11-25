@@ -1,31 +1,63 @@
-const stringValue: string = "123";
-const numberValue: number = parseInt(stringValue);
-console.log(numberValue); // 123
-const result: number = parseInt(stringValue, 10);
-if (!isNaN(result)) {
-    console.log(result);
-} else {
-    console.log("Invalid number");
-}
-const stringValue: string = "456";
-const numberValue: number = Number(stringValue);
-console.log(numberValue); // 456
-const stringValue: string = "789";
-const numberValue: number = +stringValue;
-console.log(numberValue); // 789
-const stringValue: string = "123.99";
-const intValue: number = Math.floor(parseInt(stringValue));
-console.log(intValue); // 123
-function safeParseInt(value: string): number | null {
-    const parsed = parseInt(value, 10);
-    return isNaN(parsed) ? null : parsed;
+function reverseWords(str: string): string {
+  return str
+    .split(' ')           // Split into array of words
+    .reverse()            // Reverse the array order
+    .join(' ');           // Join back into a string
 }
 
-const result = safeParseInt("abc");
-if (result !== null) {
-    console.log(result);
-} else {
-    console.log("Invalid input");
+// Example usage
+const input = "Hello World TypeScript";
+const reversed = reverseWords(input);
+console.log(reversed); // "TypeScript World Hello"
+function reverseWordsAdvanced(str: string): string {
+  return str
+    .trim()                    // Remove leading/trailing spaces
+    .split(/\s+/)              // Split on one or more whitespace characters
+    .reverse()
+    .join(' ');
 }
-const stringValue: string = "123";
-const numberValue: number = parseInt(stringValue) as number;
+
+// Examples
+console.log(reverseWordsAdvanced("  Hello   World  ")); // "World Hello"
+console.log(reverseWordsAdvanced("TypeScript"));        // "TypeScript"
+console.log(reverseWordsAdvanced(""));                  // ""
+function reverseWordsRegex(str: string): string {
+  return str
+    .match(/\S+/g)             // Match all non-whitespace sequences
+    ?.reverse()                // Reverse the array (optional chaining)
+    .join(' ') || '';          // Handle null case
+}
+
+console.log(reverseWordsRegex("  Hello   World  ")); // "World Hello"
+function reverseWordsReduce(str: string): string {
+  return str
+    .split(' ')
+    .reduce((acc, word) => word ? [word, ...acc] : acc, [] as string[])
+    .join(' ');
+}
+function reverseWordsSafe(str: string): string {
+  if (!str || typeof str !== 'string') {
+    return '';
+  }
+  
+  return str
+    .trim()
+    .split(/\s+/)
+    .filter(word => word.length > 0)  // Remove empty strings
+    .reverse()
+    .join(' ');
+}
+
+// Test cases
+const testCases = [
+  "Hello World TypeScript",
+  "  Multiple   Spaces   ",
+  "SingleWord",
+  "",
+  "   ",
+  "a b c d e"
+];
+
+testCases.forEach(test => {
+  console.log(`"${test}" -> "${reverseWordsSafe(test)}"`);
+});
