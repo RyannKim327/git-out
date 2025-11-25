@@ -1,48 +1,33 @@
-hash(S) = (S[0]*base^(m-1) + S[1]*base^(m-2) + ... + S[m-1]*base^0) mod prime
-function rabinKarp(text: string, pattern: string): number[] {
-    const result: number[] = [];
-    const n = text.length;
-    const m = pattern.length;
-    if (m > n) return result;
+function getDigit(num: number, place: number): number {
+    return Math.floor(Math.abs(num) / Math.pow(10, place)) % 10;
+}
 
-    const base = 256; // number of possible chars
-    const prime = 101; // a prime modulus for hashing
+function digitCount(num: number): number {
+    if (num === 0) return 1;
+    return Math.floor(Math.log10(Math.abs(num))) + 1;
+}
 
-    let patternHash = 0;
-    let textHash = 0;
-    let h = 1;
+function mostDigits(nums: number[]): number {
+    return nums.reduce((max, num) => Math.max(max, digitCount(num)), 0);
+}
 
-    // h = base^(m-1) % prime
-    for (let i = 0; i < m - 1; i++) {
-        h = (h * base) % prime;
-    }
+function radixSort(nums: number[]): number[] {
+    const maxDigitCount = mostDigits(nums);
 
-    // Calculate initial hashes
-    for (let i = 0; i < m; i++) {
-        patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
-        textHash = (base * textHash + text.charCodeAt(i)) % prime;
-    }
+    for (let k = 0; k < maxDigitCount; k++) {
+        const buckets: number[][] = Array.from({ length: 10 }, () => []);
 
-    // Slide through the text
-    for (let i = 0; i <= n - m; i++) {
-        // If hashes match, check actual substring
-        if (patternHash === textHash) {
-            if (text.substr(i, m) === pattern) {
-                result.push(i);
-            }
+        for (const num of nums) {
+            const digit = getDigit(num, k);
+            buckets[digit].push(num);
         }
 
-        // Roll the hash forward
-        if (i < n - m) {
-            textHash = (base * (textHash - text.charCodeAt(i) * h) + text.charCodeAt(i + m)) % prime;
-            // handle negative hash
-            if (textHash < 0) {
-                textHash += prime;
-            }
-        }
+        nums = ([] as number[]).concat(...buckets);
     }
-    return result;
+
+    return nums;
 }
 
 // Example usage:
-console.log(rabinKarp("abracadabra", "abra")); // Output: [0, 7]
+const arr = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log(radixSort(arr)); // [2, 24, 45, 66, 75, 90, 170, 802]
