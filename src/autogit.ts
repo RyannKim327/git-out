@@ -1,71 +1,56 @@
-const table = new Map<string, number>();
-
-table.set("apple", 5);
-table.set("banana", 2);
-
-console.log(table.get("apple")); // 5
-console.log(table.has("banana")); // true
-table.delete("banana");
-class HashTable<V> {
-  private buckets: [string, V][][]; // array of arrays of key-value pairs
-  private size: number;
-
-  constructor(size: number = 16) {
-    this.size = size;
-    this.buckets = Array.from({ length: size }, () => []);
-  }
-
-  private hash(key: string): number {
-    let hashValue = 0;
-    for (let i = 0; i < key.length; i++) {
-      hashValue = (hashValue + key.charCodeAt(i) * i) % this.size;
-    }
-    return hashValue;
-  }
-
-  set(key: string, value: V): void {
-    const index = this.hash(key);
-    const bucket = this.buckets[index];
-
-    for (let i = 0; i < bucket.length; i++) {
-      if (bucket[i][0] === key) {
-        bucket[i][1] = value; // Update
-        return;
-      }
-    }
-
-    bucket.push([key, value]);
-  }
-
-  get(key: string): V | undefined {
-    const index = this.hash(key);
-    const bucket = this.buckets[index];
-
-    for (const [k, v] of bucket) {
-      if (k === key) return v;
-    }
-    return undefined;
-  }
-
-  remove(key: string): boolean {
-    const index = this.hash(key);
-    const bucket = this.buckets[index];
-
-    for (let i = 0; i < bucket.length; i++) {
-      if (bucket[i][0] === key) {
-        bucket.splice(i, 1);
-        return true;
-      }
-    }
-    return false;
+class ListNode {
+  value: any;
+  next: ListNode | null;
+  constructor(value: any, next: ListNode | null = null) {
+    this.value = value;
+    this.next = next;
   }
 }
 
-// Usage:
-const table = new HashTable<number>();
-table.set("apple", 5);
-table.set("banana", 2);
+function isPalindrome(head: ListNode | null): boolean {
+  // Step 1: Convert to array
+  const vals: any[] = [];
+  let curr = head;
+  while (curr) {
+    vals.push(curr.value);
+    curr = curr.next;
+  }
+  // Step 2: Check palindrome
+  let left = 0, right = vals.length - 1;
+  while (left < right) {
+    if (vals[left] !== vals[right]) return false;
+    left++;
+    right--;
+  }
+  return true;
+}
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true;
 
-console.log(table.get("apple")); // 5
-table.remove("banana");
-console.log(table.get("banana")); // undefined
+  // Step 1: Find middle of the list
+  let slow = head, fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
+  }
+  
+  // Step 2: Reverse second half
+  let prev: ListNode | null = null;
+  let curr = slow.next;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  
+  // Step 3: Compare both halves
+  let left = head;
+  let right = prev;
+  while (right) {
+    if (left.value !== right.value) return false;
+    left = left.next!;
+    right = right.next;
+  }
+  return true;
+}
