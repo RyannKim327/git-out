@@ -1,113 +1,125 @@
-function radixSort(arr: number[]): number[] {
-    if (arr.length <= 1) return arr;
+function longestCommonPrefix(strs: string[]): string {
+    if (strs.length === 0) return '';
+    if (strs.length === 1) return strs[0];
     
-    // Find the maximum number to know number of digits
-    const maxNum = Math.max(...arr);
+    let prefix = strs[0];
     
-    // Do counting sort for every digit
-    let exp = 1;
-    const result = [...arr];
-    
-    while (Math.floor(maxNum / exp) > 0) {
-        countingSortByDigit(result, exp);
-        exp *= 10;
-    }
-    
-    return result;
-}
-
-function countingSortByDigit(arr: number[], exp: number): void {
-    const n = arr.length;
-    const output: number[] = new Array(n);
-    const count: number[] = new Array(10).fill(0);
-    
-    // Store count of occurrences
-    for (let i = 0; i < n; i++) {
-        const digit = Math.floor(arr[i] / exp) % 10;
-        count[digit]++;
-    }
-    
-    // Change count[i] so that it contains actual position
-    for (let i = 1; i < 10; i++) {
-        count[i] += count[i - 1];
-    }
-    
-    // Build the output array
-    for (let i = n - 1; i >= 0; i--) {
-        const digit = Math.floor(arr[i] / exp) % 10;
-        output[count[digit] - 1] = arr[i];
-        count[digit]--;
-    }
-    
-    // Copy the output array to arr[]
-    for (let i = 0; i < n; i++) {
-        arr[i] = output[i];
-    }
-}
-
-// Alternative implementation using buckets (more intuitive approach)
-function radixSortWithBuckets(arr: number[]): number[] {
-    if (arr.length <= 1) return arr;
-    
-    const maxNum = Math.max(...arr);
-    let exp = 1;
-    
-    while (Math.floor(maxNum / exp) > 0) {
-        const buckets: number[][] = Array.from({ length: 10 }, () => []);
-        
-        // Place numbers in buckets based on current digit
-        for (const num of arr) {
-            const digit = Math.floor(num / exp) % 10;
-            buckets[digit].push(num);
+    for (let i = 1; i < strs.length; i++) {
+        while (strs[i].indexOf(prefix) !== 0) {
+            prefix = prefix.substring(0, prefix.length - 1);
+            if (prefix === '') return '';
         }
-        
-        // Flatten buckets back into array
-        arr = ([] as number[]).concat(...buckets);
-        exp *= 10;
     }
     
-    return arr;
+    return prefix;
 }
 
-// Generic version with custom radix (base)
-function radixSortGeneric(arr: number[], radix: number = 10): number[] {
-    if (arr.length <= 1) return arr;
+// Example usage
+const strings = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(strings)); // "fl"
+function longestCommonPrefix(strs: string[]): string {
+    if (strs.length === 0) return '';
     
-    const maxNum = Math.max(...arr);
-    let exp = 1;
-    
-    while (Math.floor(maxNum / exp) > 0) {
-        const buckets: number[][] = Array.from({ length: radix }, () => []);
-        
-        for (const num of arr) {
-            const digit = Math.floor(num / exp) % radix;
-            buckets[digit].push(num);
+    for (let i = 0; i < strs[0].length; i++) {
+        const char = strs[0][i];
+        for (let j = 1; j < strs.length; j++) {
+            if (i === strs[j].length || strs[j][i] !== char) {
+                return strs[0].substring(0, i);
+            }
         }
-        
-        arr = ([] as number[]).concat(...buckets);
-        exp *= radix;
     }
     
-    return arr;
+    return strs[0];
 }
 
-// Example usage and testing
-const testArray = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log("Original array:", testArray);
-console.log("Sorted (counting sort):", radixSort(testArray));
-console.log("Sorted (bucket method):", radixSortWithBuckets(testArray));
-console.log("Sorted (generic radix 10):", radixSortGeneric(testArray));
-
-// For negative numbers (extended version)
-function radixSortWithNegatives(arr: number[]): number[] {
-    const negatives = arr.filter(n => n < 0).map(n => -n);
-    const positives = arr.filter(n => n >= 0);
+// Example usage
+const strings = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(strings)); // "fl"
+function longestCommonPrefix(strs: string[]): string {
+    if (strs.length === 0) return '';
     
-    return [
-        ...radixSort(negatives).reverse().map(n => -n),
-        ...radixSort(positives)
-    ];
+    return strs.reduce((prev, current) => {
+        let i = 0;
+        while (i < prev.length && i < current.length && prev[i] === current[i]) {
+            i++;
+        }
+        return prev.substring(0, i);
+    });
 }
 
-const testWithNegatives = [170, -45, 75, -90, 802, 24, -2, 66];
-console.log("With negatives:", radixSortWithNegatives(testWithNegatives));
+// Example usage
+const strings = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(strings)); // "fl"
+function longestCommonPrefix(strs: string[]): string {
+    if (strs.length === 0) return '';
+    return divideAndConquer(strs, 0, strs.length - 1);
+}
+
+function divideAndConquer(strs: string[], left: number, right: number): string {
+    if (left === right) {
+        return strs[left];
+    }
+    
+    const mid = Math.floor((left + right) / 2);
+    const leftPrefix = divideAndConquer(strs, left, mid);
+    const rightPrefix = divideAndConquer(strs, mid + 1, right);
+    
+    return commonPrefix(leftPrefix, rightPrefix);
+}
+
+function commonPrefix(left: string, right: string): string {
+    const minLength = Math.min(left.length, right.length);
+    for (let i = 0; i < minLength; i++) {
+        if (left[i] !== right[i]) {
+            return left.substring(0, i);
+        }
+    }
+    return left.substring(0, minLength);
+}
+
+// Example usage
+const strings = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(strings)); // "fl"
+function longestCommonPrefix(strs: string[]): string {
+    return strs.reduce((prefix, current) => 
+        current.slice(0, prefix.length === current.length ? 
+            [...prefix].findIndex((char, i) => char !== current[i]) : 
+            [...current].findIndex((char, i) => i >= prefix.length || char !== prefix[i])
+        )
+    , strs[0] || '');
+}
+
+// More readable version of the one-liner
+function longestCommonPrefixReadable(strs: string[]): string {
+    if (strs.length === 0) return '';
+    
+    return strs.reduce((prefix, current) => {
+        let i = 0;
+        while (i < prefix.length && i < current.length && prefix[i] === current[i]) {
+            i++;
+        }
+        return prefix.substring(0, i);
+    }, strs[0]);
+}
+function longestCommonPrefixSafe(strs: string[]): string {
+    // Handle empty array
+    if (strs.length === 0) return '';
+    
+    // Handle array with empty strings
+    if (strs.some(str => str.length === 0)) return '';
+    
+    // Handle single element array
+    if (strs.length === 1) return strs[0];
+    
+    // Main logic (using vertical scanning)
+    for (let i = 0; i < strs[0].length; i++) {
+        const char = strs[0][i];
+        for (let j = 1; j < strs.length; j++) {
+            if (i >= strs[j].length || strs[j][i] !== char) {
+                return strs[0].substring(0, i);
+            }
+        }
+    }
+    
+    return strs[0];
+}
