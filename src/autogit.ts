@@ -1,125 +1,178 @@
-function longestCommonPrefix(strs: string[]): string {
-    if (strs.length === 0) return '';
-    if (strs.length === 1) return strs[0];
-    
-    let prefix = strs[0];
-    
-    for (let i = 1; i < strs.length; i++) {
-        while (strs[i].indexOf(prefix) !== 0) {
-            prefix = prefix.substring(0, prefix.length - 1);
-            if (prefix === '') return '';
-        }
-    }
-    
-    return prefix;
+// A generic interface for nodes in our graph/tree
+interface Node<T> {
+    id: string; // Unique identifier for the node
+    value: T;    // The actual data/value stored in the node
+    // Potentially other properties like 'parent', 'children' etc.
 }
 
-// Example usage
-const strings = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(strings)); // "fl"
-function longestCommonPrefix(strs: string[]): string {
-    if (strs.length === 0) return '';
-    
-    for (let i = 0; i < strs[0].length; i++) {
-        const char = strs[0][i];
-        for (let j = 1; j < strs.length; j++) {
-            if (i === strs[j].length || strs[j][i] !== char) {
-                return strs[0].substring(0, i);
+// A helper type for items stored in our queue, including depth
+interface QueueItem<T> {
+    node: Node<T>;
+    depth: number;
+}
+/**
+ * Performs a Breadth-Limited Search on a graph or tree.
+ *
+ * @param startNode The starting node for the search.
+ * @param getNeighbors A function that returns an array of neighbor nodes for a given node.
+ * @param maxDepth The maximum depth to explore. Nodes at maxDepth will be checked, but their children will not be added to the queue.
+ * @param isGoal An optional function to check if a node is the target goal. If provided, the search stops when the goal is found.
+ *               If not provided, the function will return all reachable nodes within the depth limit.
+ * @returns The goal node if `isGoal` is provided and found, otherwise null.
+ *          If `isGoal` is not provided, returns an array of all visited nodes within the depth limit.
+ */
+function breadthLimitedSearch<T>(
+    startNode: Node<T>,
+    getNeighbors: (node: Node<T>) => Node<T>[],
+    maxDepth: number,
+    isGoal?: (node: Node<T>) => boolean
+): Node<T> | null | Node<T>[] {
+    const queue: QueueItem<T>[] = [{ node: startNode, depth: 0 }];
+    const visited = new Set<string>(); // To keep track of visited node IDs
+    const reachableNodes: Node<T>[] = []; // To store all nodes reached within limits (if no goal)
+
+    // Add the start node to visited and (if no goal) to reachable nodes
+    visited.add(startNode.id);
+    if (!isGoal) {
+        reachableNodes.push(startNode);
+    }
+
+    while (queue.length > 0) {
+        const { node, depth } = queue.shift()!; // Dequeue the next item
+
+        // Check if this node is the goal (if a goal condition is provided)
+        if (isGoal && isGoal(node)) {
+            return node; // Goal found!
+        }
+
+        // If we've reached the maximum depth, we cannot explore its children
+        // We still *process* the node at maxDepth, but don't add its neighbors.
+        if (depth >= maxDepth) {
+            continue;
+        }
+
+        // Get neighbors and enqueue unvisited ones
+        const neighbors = getNeighbors(node);
+        for (const neighbor of neighbors) {
+            if (!visited.has(neighbor.id)) {
+                visited.add(neighbor.id);
+
+                // Add to reachable nodes if no specific goal
+                if (!isGoal) {
+                    reachableNodes.push(neighbor);
+                }
+
+                queue.push({ node: neighbor, depth: depth + 1 });
             }
         }
     }
-    
-    return strs[0];
-}
 
-// Example usage
-const strings = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(strings)); // "fl"
-function longestCommonPrefix(strs: string[]): string {
-    if (strs.length === 0) return '';
-    
-    return strs.reduce((prev, current) => {
-        let i = 0;
-        while (i < prev.length && i < current.length && prev[i] === current[i]) {
-            i++;
-        }
-        return prev.substring(0, i);
-    });
-}
-
-// Example usage
-const strings = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(strings)); // "fl"
-function longestCommonPrefix(strs: string[]): string {
-    if (strs.length === 0) return '';
-    return divideAndConquer(strs, 0, strs.length - 1);
-}
-
-function divideAndConquer(strs: string[], left: number, right: number): string {
-    if (left === right) {
-        return strs[left];
+    // If a goal was specified but not found
+    if (isGoal) {
+        return null;
+    } else {
+        // If no goal was specified, return all nodes reached within the depth limit
+        return reachableNodes;
     }
-    
-    const mid = Math.floor((left + right) / 2);
-    const leftPrefix = divideAndConquer(strs, left, mid);
-    const rightPrefix = divideAndConquer(strs, mid + 1, right);
-    
-    return commonPrefix(leftPrefix, rightPrefix);
+}
+// --- Example Data ---
+
+// A simple graph node structure
+interface GraphNode extends Node<string> {
+    // No extra properties needed for this example, 'id' and 'value' suffice
 }
 
-function commonPrefix(left: string, right: string): string {
-    const minLength = Math.min(left.length, right.length);
-    for (let i = 0; i < minLength; i++) {
-        if (left[i] !== right[i]) {
-            return left.substring(0, i);
-        }
-    }
-    return left.substring(0, minLength);
+// Represent our graph using an adjacency list
+const graph: { [id: string]: string[] } = {
+    'A': ['B', 'C'],
+    'B': ['D', 'E'],
+    'C': ['F'],
+    'D': [],
+    'E': ['G', 'H'],
+    'F': [],
+    'G': [],
+    'H': []
+};
+
+// Helper to create a GraphNode from an ID
+function createGraphNode(id: string): GraphNode {
+    return { id: id, value: `Node ${id}` };
 }
 
-// Example usage
-const strings = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(strings)); // "fl"
-function longestCommonPrefix(strs: string[]): string {
-    return strs.reduce((prefix, current) => 
-        current.slice(0, prefix.length === current.length ? 
-            [...prefix].findIndex((char, i) => char !== current[i]) : 
-            [...current].findIndex((char, i) => i >= prefix.length || char !== prefix[i])
-        )
-    , strs[0] || '');
-}
+// Implement getNeighbors for our graph structure
+const getGraphNeighbors = (node: GraphNode): GraphNode[] => {
+    const neighborIds = graph[node.id];
+    if (!neighborIds) return [];
+    return neighborIds.map(createGraphNode);
+};
 
-// More readable version of the one-liner
-function longestCommonPrefixReadable(strs: string[]): string {
-    if (strs.length === 0) return '';
-    
-    return strs.reduce((prefix, current) => {
-        let i = 0;
-        while (i < prefix.length && i < current.length && prefix[i] === current[i]) {
-            i++;
-        }
-        return prefix.substring(0, i);
-    }, strs[0]);
-}
-function longestCommonPrefixSafe(strs: string[]): string {
-    // Handle empty array
-    if (strs.length === 0) return '';
-    
-    // Handle array with empty strings
-    if (strs.some(str => str.length === 0)) return '';
-    
-    // Handle single element array
-    if (strs.length === 1) return strs[0];
-    
-    // Main logic (using vertical scanning)
-    for (let i = 0; i < strs[0].length; i++) {
-        const char = strs[0][i];
-        for (let j = 1; j < strs.length; j++) {
-            if (i >= strs[j].length || strs[j][i] !== char) {
-                return strs[0].substring(0, i);
-            }
-        }
-    }
-    
-    return strs[0];
-}
+// --- Test Cases ---
+
+console.log("--- Breadth-Limited Search Examples ---");
+
+// Example 1: Find Node 'G' with max depth 2
+console.log("\nSearching for 'G' with maxDepth = 2:");
+const startNode1 = createGraphNode('A');
+const goalNode1 = breadthLimitedSearch(
+    startNode1,
+    getGraphNeighbors,
+    2, // maxDepth
+    (node: GraphNode) => node.id === 'G'
+);
+console.log(`Goal 'G' found (maxDepth=2): ${goalNode1 ? goalNode1.id : 'Not found'}`);
+// Expected: Node 'G' is at depth 3 (A->B->E->G). maxDepth 2 only explores up to C,D,E,F. So 'G' should NOT be found.
+// Output: Not found
+
+
+// Example 2: Find Node 'G' with max depth 3
+console.log("\nSearching for 'G' with maxDepth = 3:");
+const startNode2 = createGraphNode('A');
+const goalNode2 = breadthLimitedSearch(
+    startNode2,
+    getGraphNeighbors,
+    3, // maxDepth
+    (node: GraphNode) => node.id === 'G'
+);
+console.log(`Goal 'G' found (maxDepth=3): ${goalNode2 ? goalNode2.id : 'Not found'}`);
+// Expected: 'G' should be found as it's at depth 3.
+// Output: G
+
+
+// Example 3: Get all reachable nodes with max depth 1
+console.log("\nGetting all reachable nodes with maxDepth = 1:");
+const startNode3 = createGraphNode('A');
+const reachableNodes1 = breadthLimitedSearch(
+    startNode3,
+    getGraphNeighbors,
+    1 // maxDepth
+) as GraphNode[]; // Cast to GraphNode[] as we know isGoal is not provided
+console.log("Reachable nodes (maxDepth=1):", reachableNodes1.map(n => n.id).join(', '));
+// Expected: A, B, C (Nodes A and its direct children B, C are reachable)
+// Output: A, B, C
+
+
+// Example 4: Get all reachable nodes with max depth 2
+console.log("\nGetting all reachable nodes with maxDepth = 2:");
+const startNode4 = createGraphNode('A');
+const reachableNodes2 = breadthLimitedSearch(
+    startNode4,
+    getGraphNeighbors,
+    2 // maxDepth
+) as GraphNode[];
+console.log("Reachable nodes (maxDepth=2):", reachableNodes2.map(n => n.id).join(', '));
+// Expected: A, B, C, D, E, F (Nodes A, B, C, and their children D, E, F are reachable)
+// Output: A, B, C, D, E, F
+
+// Example 5: Start at 'B', max depth 1, find 'E'
+console.log("\nSearching for 'E' starting from 'B' with maxDepth = 1:");
+const startNode5 = createGraphNode('B');
+const goalNode5 = breadthLimitedSearch(
+    startNode5,
+    getGraphNeighbors,
+    1, // maxDepth
+    (node: GraphNode) => node.id === 'E'
+);
+console.log(`Goal 'E' found (maxDepth=1, start B): ${goalNode5 ? goalNode5.id : 'Not found'}`);
+// Expected: E (B is depth 0, E is depth 1)
+// Output: E
+
