@@ -1,48 +1,28 @@
-enum Color { RED, BLACK }
+function longestCommonSubstring(a: string, b: string): string {
+    const m = a.length;
+    const n = b.length;
+    const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+    let maxLen = 0;
+    let endIndex = 0; // End index of the longest common substring in `a`
 
-class RBNode<T> {
-    value: T;
-    color: Color;
-    left: RBNode<T> | null = null;
-    right: RBNode<T> | null = null;
-    parent: RBNode<T> | null = null;
-
-    constructor(value: T, color: Color = Color.RED) {
-        this.value = value;
-        this.color = color;
-    }
-}
-class RBTree<T> {
-    root: RBNode<T> | null = null;
-
-    // Insert value
-    insert(value: T) {
-        const newNode = new RBNode(value);
-        this.root = this._bstInsert(this.root, newNode);
-        this.fixInsert(newNode);
-    }
-
-    // Basic BST insert
-    private _bstInsert(root: RBNode<T> | null, node: RBNode<T>): RBNode<T> {
-        if (!root) return node;
-
-        if (node.value < root.value) {
-            root.left = this._bstInsert(root.left, node);
-            root.left.parent = root;
-        } else if (node.value > root.value) {
-            root.right = this._bstInsert(root.right, node);
-            root.right.parent = root;
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            if (a[i - 1] === b[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
+                if (dp[i][j] > maxLen) {
+                    maxLen = dp[i][j];
+                    endIndex = i;
+                }
+            } else {
+                dp[i][j] = 0;
+            }
         }
-        // Ignore duplicate values for simplicity
-        return root;
     }
 
-    // Balancing after insertion
-    private fixInsert(node: RBNode<T>) {
-        while (node !== this.root && node.parent.color === Color.RED) {
-            let parent = node.parent;
-            let grandparent = parent.parent;
-            if (!grandparent) break;
+    return a.slice(endIndex - maxLen, endIndex);
+}
 
-            // Parent is left child
-           
+// Example usage:
+const str1 = "ABABC";
+const str2 = "BABCA";
+console.log(longestCommonSubstring(str1, str2)); // Output: "BABC"
