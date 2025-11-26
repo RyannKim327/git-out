@@ -1,149 +1,144 @@
-/**
- * Shell Sort algorithm implementation in TypeScript
- * 
- * Shell Sort is an optimization of Insertion Sort that allows the exchange of items 
- * that are far apart. It works by comparing elements separated by a gap of several positions.
- * 
- * Time Complexity: O(n^2) worst-case, but can be better with optimal gap sequences
- * Space Complexity: O(1)
- */
-function shellSort<T>(array: T[], compareFn?: (a: T, b: T) => number): T[] {
-    // Create a copy to avoid mutating the original array
-    const sortedArray = [...array];
-    const n = sortedArray.length;
-    
-    // Default comparison function if not provided
-    const compare = compareFn || ((a: T, b: T) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    });
+class SkipListNode<T> {
+    value: T | null;       // null for the head sentinel
+    forwards: Array<SkipListNode<T> | null>;
 
-    // Start with a large gap, then reduce the gap
-    let gap = Math.floor(n / 2);
-    
-    while (gap > 0) {
-        // Do a gapped insertion sort for this gap size
-        for (let i = gap; i < n; i++) {
-            // Save the current element
-            const temp = sortedArray[i];
-            let j = i;
-            
-            // Shift earlier gap-sorted elements up until the correct location for a[i] is found
-            while (j >= gap && compare(sortedArray[j - gap], temp) > 0) {
-                sortedArray[j] = sortedArray[j - gap];
-                j -= gap;
+    constructor(value: T | null, level: number) {
+        this.value = value;
+        this.forwards = new Array(level).fill(null);
+    }
+}
+
+class SkipList<T> {
+    private readonly MAX_LEVEL: number;
+    private readonly P: number;
+    private level: number; // Current max level in the list
+    private head: SkipListNode<T>;
+    private compare: (a: T, b: T) => number;
+
+    constructor(maxLevel: number = 16, p: number = 0.5, compareFn?: (a: T, b: T) => number) {
+        this.MAX_LEVEL = maxLevel;
+        this.P = p;
+        this.level = 0;
+        this.head = new SkipListNode<T>(null, this.MAX_LEVEL);
+        this.compare = compareFn ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    }
+
+    private randomLevel(): number {
+        let lvl = 1;
+        while (Math.random() < this.P && lvl < this.MAX_LEVEL) {
+            lvl++;
+        }
+        return lvl;
+    }
+
+    search(value: T): T | null {
+        let current = this.head;
+        for (let i = this.level - 1; i >= 0; i--) {
+            while (current.forwards[i] && this.compare(current.forwards[i]!.value!, value) < 0) {
+                current = current.forwards[i]!;
             }
-            
-            // Put temp (the original a[i]) in its correct location
-            sortedArray[j] = temp;
         }
-        
-        // Reduce the gap for the next iteration
-        gap = Math.floor(gap / 2);
+        current = current.forwards[0]!;
+        if (current && this.compare(current.value!, value) === 0) {
+            return current.value!;
+        }
+        return null;
     }
-    
-    return sortedArray;
-}
 
-// Alternative implementation with optimized gap sequence (Knuth's sequence)
-function shellSortOptimized<T>(array: T[], compareFn?: (a: T, b: T) => number): T[] {
-    const sortedArray = [...array];
-    const n = sortedArray.length;
-    
-    const compare = compareFn || ((a: T, b: T) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    });
+    insert(value: T): void {
+        let update = new Array<SkipListNode<T>>(this.MAX_LEVEL);
+        let current = this.head;
 
-    // Generate Knuth's gap sequence: 1, 4, 13, 40, 121, ...
-    let gap = 1;
-    const gaps: number[] = [];
-    while (gap < n) {
-        gaps.push(gap);
-        gap = gap * 3 + 1;
-    }
-    
-    // Use gaps in reverse order (largest to smallest)
-    for (let g = gaps.length - 1; g >= 0; g--) {
-        const currentGap = gaps[g];
-        
-        for (let i = currentGap; i < n; i++) {
-            const temp = sortedArray[i];
-            let j = i;
-            
-            while (j >= currentGap && compare(sortedArray[j - currentGap], temp) > 0) {
-                sortedArray[j] = sortedArray[j - currentGap];
-                j -= currentGap;
+        // Step 1: Find the path
+        for (let i = this.level - 1; i >= 0; i--) {
+            while (current.forwards[i] && this.compare(current.forwards[i]!.value!, value) < 0) {
+                current = current.forwards[i]!;
             }
-            
-            sortedArray[j] = temp;
+            update[i] = current;
+        }
+
+        current = current.forwards[0]!;
+        if (current && this.compare(current.value!, value) === 0) {
+            return; // Value already exists; no duplicates
+        }
+
+        // Step 2: Choose random level for new node
+        let newLevel = this.randomLevel();
+        if (newLevel > this.level) {
+            for (let i = this.level; i < newLevel; i++) {
+                update[i] = this.head;
+            }
+            this.level = newLevel;
+        }
+
+        // Step 3: Insert new node
+        let newNode = new SkipListNode<T>(value, newLevel);
+        for (let i = 0; i < newLevel; i++) {
+            newNode.forwards[i] = update[i].forwards[i];
+            update[i].forwards[i] = newNode;
         }
     }
-    
-    return sortedArray;
-}
-// Example 1: Sorting numbers
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-console.log('Original:', numbers);
-console.log('Sorted:', shellSort(numbers));
-console.log('Optimized:', shellSortOptimized(numbers));
 
-// Example 2: Sorting strings
-const strings = ['banana', 'apple', 'cherry', 'date'];
-console.log('Original:', strings);
-console.log('Sorted:', shellSort(strings));
+    delete(value: T): boolean {
+        let update = new Array<SkipListNode<T>>(this.MAX_LEVEL);
+        let current = this.head;
 
-// Example 3: Custom comparison function
-interface Person {
-    name: string;
-    age: number;
-}
-
-const people: Person[] = [
-    { name: 'John', age: 30 },
-    { name: 'Jane', age: 25 },
-    { name: 'Bob', age: 35 }
-];
-
-const sortedByAge = shellSort(people, (a, b) => a.age - b.age);
-console.log('Sorted by age:', sortedByAge);
-
-const sortedByName = shellSort(people, (a, b) => a.name.localeCompare(b.name));
-console.log('Sorted by name:', sortedByName);
-
-// Example 4: Performance comparison
-const largeArray = Array.from({ length: 10000 }, () => Math.random());
-console.time('Standard Shell Sort');
-shellSort(largeArray);
-console.timeEnd('Standard Shell Sort');
-
-console.time('Optimized Shell Sort');
-shellSortOptimized(largeArray);
-console.timeEnd('Optimized Shell Sort');
-// Test function to verify sorting works correctly
-function testShellSort() {
-    const testCases = [
-        [5, 2, 8, 1, 9],
-        [1, 2, 3, 4, 5], // already sorted
-        [5, 4, 3, 2, 1], // reverse sorted
-        [3, 3, 3, 3, 3], // all equal
-        [1], // single element
-        []   // empty array
-    ];
-
-    testCases.forEach((testCase, index) => {
-        const sorted = shellSort(testCase);
-        const expected = [...testCase].sort((a, b) => a - b);
-        const isCorrect = JSON.stringify(sorted) === JSON.stringify(expected);
-        
-        console.log(`Test ${index + 1}: ${isCorrect ? 'PASS' : 'FAIL'}`);
-        if (!isCorrect) {
-            console.log('Expected:', expected);
-            console.log('Got:', sorted);
+        for (let i = this.level - 1; i >= 0; i--) {
+            while (current.forwards[i] && this.compare(current.forwards[i]!.value!, value) < 0) {
+                current = current.forwards[i]!;
+            }
+            update[i] = current;
         }
-    });
+
+        current = current.forwards[0]!;
+
+        if (!current || this.compare(current.value!, value) !== 0) {
+            return false; // Not found
+        }
+
+        for (let i = 0; i < this.level; i++) {
+            if (update[i].forwards[i] !== current) {
+                break;
+            }
+            update[i].forwards[i] = current.forwards[i];
+        }
+
+        // Adjust current level of list if needed
+        while (this.level > 0 && !this.head.forwards[this.level - 1]) {
+            this.level--;
+        }
+
+        return true;
+    }
+
+    print(): void {
+        for (let i = this.level - 1; i >= 0; i--) {
+            let line = `Level ${i}: `;
+            let current = this.head.forwards[i];
+            while (current) {
+                line += current.value + " ";
+                current = current.forwards[i];
+            }
+            console.log(line);
+        }
+    }
 }
 
-testShellSort();
+// Example usage:
+const sl = new SkipList<number>();
+sl.insert(3);
+sl.insert(6);
+sl.insert(7);
+sl.insert(9);
+sl.insert(12);
+sl.insert(19);
+sl.insert(17);
+sl.insert(26);
+sl.insert(21);
+sl.insert(25);
+
+sl.print();
+
+console.log("Search 19:", sl.search(19));
+console.log("Delete 19:", sl.delete(19));
+sl.print();
