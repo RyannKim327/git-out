@@ -1,108 +1,145 @@
-class ListNode {
-  val: number;
-  next: ListNode | null;
-  
-  constructor(val: number, next: ListNode | null = null) {
-    this.val = val;
-    this.next = next;
-  }
+import axios, { AxiosResponse } from 'axios';
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  username: string;
 }
 
-function findMiddle(head: ListNode | null): ListNode | null {
-  if (!head) return null;
-  
-  let slow: ListNode | null = head;
-  let fast: ListNode | null = head;
-  
-  while (fast && fast.next) {
-    slow = slow!.next;
-    fast = fast.next.next;
+interface Post {
+  id: number;
+  userId: number;
+  title: string;
+  body: string;
+}
+
+// Create axios instance with default configuration
+const apiClient = axios.create({
+  baseURL: 'https://jsonplaceholder.typicode.com',
+  timeout: 5000,
+  headers: {
+    'Content-Type': 'application/json',
   }
-  
-  return slow;
+});
+
+class ApiService {
+  // Fetch user by ID
+  async getUserById(id: number): Promise<User> {
+    try {
+      const response: AxiosResponse<User> = await apiClient.get(`/users/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      throw new Error('Failed to fetch user');
+    }
+  }
+
+  // Fetch posts by user ID
+  async getPostsByUserId(userId: number): Promise<Post[]> {
+    try {
+      const response: AxiosResponse<Post[]> = await apiClient.get(`/posts?userId=${userId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      throw new Error('Failed to fetch posts');
+    }
+  }
+
+  // Create a new post
+  async createPost(postData: Omit<Post, 'id'>): Promise<Post> {
+    try {
+      const response: AxiosResponse<Post> = await apiClient.post('/posts', postData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating post:', error);
+      throw new Error('Failed to create post');
+    }
+  }
+
+  // Update an existing post
+  async updatePost(id: number, postData: Partial<Post>): Promise<Post> {
+    try {
+      const response: AxiosResponse<Post> = await apiClient.patch(`/posts/${id}`, postData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating post:', error);
+      throw new Error('Failed to update post');
+    }
+  }
+
+  // Delete a post
+  async deletePost(id: number): Promise<void> {
+    try {
+      await apiClient.delete(`/posts/${id}`);
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      throw new Error('Failed to delete post');
+    }
+  }
 }
 
 // Usage example
-const list = new ListNode(1, new ListNode(2, new ListNode(3, new ListNode(4, new ListNode(5)))));
-console.log(findMiddle(list)?.val); // Output: 3
-function findMiddleWithCount(head: ListNode | null): ListNode | null {
-  if (!head) return null;
-  
-  let count = 0;
-  let current: ListNode | null = head;
-  
-  // Count total nodes
-  while (current) {
-    count++;
-    current = current.next;
-  }
-  
-  // Find middle position
-  const middlePos = Math.floor(count / 2);
-  
-  // Traverse to middle
-  current = head;
-  for (let i = 0; i < middlePos; i++) {
-    current = current!.next;
-  }
-  
-  return current;
-}
-function findMiddleWithArray(head: ListNode | null): ListNode | null {
-  if (!head) return null;
-  
-  const nodes: ListNode[] = [];
-  let current: ListNode | null = head;
-  
-  while (current) {
-    nodes.push(current);
-    current = current.next;
-  }
-  
-  return nodes[Math.floor(nodes.length / 2)];
-}
-class LinkedList {
-  head: ListNode | null = null;
-  
-  add(val: number): void {
-    const newNode = new ListNode(val);
-    if (!this.head) {
-      this.head = newNode;
-    } else {
-      let current = this.head;
-      while (current.next) {
-        current = current.next;
-      }
-      current.next = newNode;
-    }
-  }
-  
-  findMiddle(): ListNode | null {
-    if (!this.head) return null;
-    
-    let slow = this.head;
-    let fast = this.head;
-    
-    while (fast && fast.next) {
-      slow = slow!.next!;
-      fast = fast.next.next!;
-    }
-    
-    return slow;
+async function demonstrateApiUsage() {
+  const apiService = new ApiService();
+
+  try {
+    // Get user data
+    const user = await apiService.getUserById(1);
+    console.log('User:', user);
+
+    // Get user's posts
+    const posts = await apiService.getPostsByUserId(user.id);
+    console.log('User posts:', posts);
+
+    // Create a new post
+    const newPost = await apiService.createPost({
+      userId: user.id,
+      title: 'Random TypeScript Post',
+      body: 'This post was created using axios in TypeScript!'
+    });
+    console.log('Created post:', newPost);
+
+    // Update the post
+    const updatedPost = await apiService.updatePost(newPost.id, {
+      title: 'Updated Random TypeScript Post'
+    });
+    console.log('Updated post:', updatedPost);
+
+    // Delete the post
+    await apiService.deletePost(updatedPost.id);
+    console.log('Post deleted successfully');
+
+  } catch (error) {
+    console.error('API demonstration failed:', error.message);
   }
 }
 
-// Test cases
-const list1 = new LinkedList(); // Empty list
-console.log(list1.findMiddle()); // null
+// Run the demonstration
+demonstrateApiUsage();
 
-const list2 = new LinkedList(); // Single element
-list2.add(1);
-console.log(list2.findMiddle()?.val); // 1
+// Utility function to make multiple requests concurrently
+async function fetchMultipleUsers(ids: number[]): Promise<User[]> {
+  try {
+    const requests = ids.map(id => apiClient.get<User>(`/users/${id}`));
+    const responses = await Promise.all(requests);
+    return responses.map(response => response.data);
+  } catch (error) {
+    console.error('Error fetching multiple users:', error);
+    throw new Error('Failed to fetch multiple users');
+  }
+}
 
-const list3 = new LinkedList(); // Even number of elements
-list3.add(1);
-list3.add(2);
-list3.add(3);
-list3.add(4);
-console.log(list3.findMiddle()?.val); // 3 (second middle for even lists)
+// Example of using the utility function
+async function fetchUsersDemo() {
+  try {
+    const users = await fetchMultipleUsers([1, 2, 3]);
+    console.log('Multiple users:', users);
+  } catch (error) {
+    console.error('Failed to fetch multiple users:', error.message);
+  }
+}
+
+fetchUsersDemo();
+npm install axios
+npm install -D typescript @types/node ts-node
