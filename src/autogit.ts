@@ -1,55 +1,113 @@
-function isPalindromeStringReversal(str: string): boolean {
-    // 1. Clean the string:
-    //    - Convert to lowercase
-    //    - Remove all non-alphanumeric characters (using a regex)
-    const cleanedStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-    // 2. Reverse the cleaned string
-    const reversedStr = cleanedStr.split('').reverse().join('');
-
-    // 3. Compare the cleaned string with its reversed version
-    return cleanedStr === reversedStr;
-}
-
-// --- Usage Examples ---
-console.log("--- String Reversal Method ---");
-console.log(`"madam" is a palindrome: ${isPalindromeStringReversal("madam")}`); // true
-console.log(`"Madam" is a palindrome: ${isPalindromeStringReversal("Madam")}`); // true (case-insensitive)
-console.log(`"A man, a plan, a canal: Panama" is a palindrome: ${isPalindromeStringReversal("A man, a plan, a canal: Panama")}`); // true (ignores spaces and punctuation)
-console.log(`"Racecar" is a palindrome: ${isPalindromeStringReversal("Racecar")}`); // true
-console.log(`"hello" is a palindrome: ${isPalindromeStringReversal("hello")}`); // false
-console.log(`"Was it a car or a cat I saw?" is a palindrome: ${isPalindromeStringReversal("Was it a car or a cat I saw?")}`); // true
-console.log(`"" (empty string) is a palindrome: ${isPalindromeStringReversal("")}`); // true (often considered a palindrome)
-console.log(`"a" (single char) is a palindrome: ${isPalindromeStringReversal("a")}`); // true
-function isPalindromeTwoPointers(str: string): boolean {
-    // 1. Clean the string (same as above)
-    const cleanedStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-    let left = 0; // Pointer starting from the beginning
-    let right = cleanedStr.length - 1; // Pointer starting from the end
-
-    // 2. Iterate while the left pointer is less than the right pointer
-    while (left < right) {
-        // If characters at the pointers don't match, it's not a palindrome
-        if (cleanedStr[left] !== cleanedStr[right]) {
-            return false;
-        }
-        // Move pointers inwards
-        left++;
-        right--;
+function radixSort(arr: number[]): number[] {
+    if (arr.length <= 1) return arr;
+    
+    // Find the maximum number to know number of digits
+    const maxNum = Math.max(...arr);
+    
+    // Do counting sort for every digit
+    let exp = 1;
+    const result = [...arr];
+    
+    while (Math.floor(maxNum / exp) > 0) {
+        countingSortByDigit(result, exp);
+        exp *= 10;
     }
-
-    // If the loop completes, all characters matched, so it's a palindrome
-    return true;
+    
+    return result;
 }
 
-// --- Usage Examples ---
-console.log("\n--- Two Pointers Method ---");
-console.log(`"madam" is a palindrome: ${isPalindromeTwoPointers("madam")}`); // true
-console.log(`"Madam" is a palindrome: ${isPalindromeTwoPointers("Madam")}`); // true
-console.log(`"A man, a plan, a canal: Panama" is a palindrome: ${isPalindromeTwoPointers("A man, a plan, a canal: Panama")}`); // true
-console.log(`"Racecar" is a palindrome: ${isPalindromeTwoPointers("Racecar")}`); // true
-console.log(`"hello" is a palindrome: ${isPalindromeTwoPointers("hello")}`); // false
-console.log(`"Was it a car or a cat I saw?" is a palindrome: ${isPalindromeTwoPointers("Was it a car or a cat I saw?")}`); // true
-console.log(`"" (empty string) is a palindrome: ${isPalindromeTwoPointers("")}`); // true
-console.log(`"a" (single char) is a palindrome: ${isPalindromeTwoPointers("a")}`); // true
+function countingSortByDigit(arr: number[], exp: number): void {
+    const n = arr.length;
+    const output: number[] = new Array(n);
+    const count: number[] = new Array(10).fill(0);
+    
+    // Store count of occurrences
+    for (let i = 0; i < n; i++) {
+        const digit = Math.floor(arr[i] / exp) % 10;
+        count[digit]++;
+    }
+    
+    // Change count[i] so that it contains actual position
+    for (let i = 1; i < 10; i++) {
+        count[i] += count[i - 1];
+    }
+    
+    // Build the output array
+    for (let i = n - 1; i >= 0; i--) {
+        const digit = Math.floor(arr[i] / exp) % 10;
+        output[count[digit] - 1] = arr[i];
+        count[digit]--;
+    }
+    
+    // Copy the output array to arr[]
+    for (let i = 0; i < n; i++) {
+        arr[i] = output[i];
+    }
+}
+
+// Alternative implementation using buckets (more intuitive approach)
+function radixSortWithBuckets(arr: number[]): number[] {
+    if (arr.length <= 1) return arr;
+    
+    const maxNum = Math.max(...arr);
+    let exp = 1;
+    
+    while (Math.floor(maxNum / exp) > 0) {
+        const buckets: number[][] = Array.from({ length: 10 }, () => []);
+        
+        // Place numbers in buckets based on current digit
+        for (const num of arr) {
+            const digit = Math.floor(num / exp) % 10;
+            buckets[digit].push(num);
+        }
+        
+        // Flatten buckets back into array
+        arr = ([] as number[]).concat(...buckets);
+        exp *= 10;
+    }
+    
+    return arr;
+}
+
+// Generic version with custom radix (base)
+function radixSortGeneric(arr: number[], radix: number = 10): number[] {
+    if (arr.length <= 1) return arr;
+    
+    const maxNum = Math.max(...arr);
+    let exp = 1;
+    
+    while (Math.floor(maxNum / exp) > 0) {
+        const buckets: number[][] = Array.from({ length: radix }, () => []);
+        
+        for (const num of arr) {
+            const digit = Math.floor(num / exp) % radix;
+            buckets[digit].push(num);
+        }
+        
+        arr = ([] as number[]).concat(...buckets);
+        exp *= radix;
+    }
+    
+    return arr;
+}
+
+// Example usage and testing
+const testArray = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log("Original array:", testArray);
+console.log("Sorted (counting sort):", radixSort(testArray));
+console.log("Sorted (bucket method):", radixSortWithBuckets(testArray));
+console.log("Sorted (generic radix 10):", radixSortGeneric(testArray));
+
+// For negative numbers (extended version)
+function radixSortWithNegatives(arr: number[]): number[] {
+    const negatives = arr.filter(n => n < 0).map(n => -n);
+    const positives = arr.filter(n => n >= 0);
+    
+    return [
+        ...radixSort(negatives).reverse().map(n => -n),
+        ...radixSort(positives)
+    ];
+}
+
+const testWithNegatives = [170, -45, 75, -90, 802, 24, -2, 66];
+console.log("With negatives:", radixSortWithNegatives(testWithNegatives));
