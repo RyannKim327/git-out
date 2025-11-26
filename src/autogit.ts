@@ -1,72 +1,79 @@
-/**
- * Merge two sorted arrays into one sorted array
- * @param left Left sorted array
- * @param right Right sorted array
- * @returns Merged sorted array
- */
-function merge(left: number[], right: number[]): number[] {
-    let result: number[] = [];
-    let leftIndex = 0;
-    let rightIndex = 0;
+function shellSort(array: number[]): number[] {
+    // Get the length of the array
+    const n = array.length;
+    let gap = Math.floor(n / 2);  // Initial gap size
 
-    // Compare elements and add the smaller one to the result
-    while (leftIndex < left.length && rightIndex < right.length) {
-        if (left[leftIndex] < right[rightIndex]) {
-            result.push(left[leftIndex]);
-            leftIndex++;
-        } else {
-            result.push(right[rightIndex]);
-            rightIndex++;
+    // Reduce gap until it becomes 0
+    while (gap > 0) {
+        // Perform insertion sort for the current gap
+        for (let i = gap; i < n; i++) {
+            const temp = array[i];  // Store current element
+            let j = i;
+
+            // Shift earlier |gap|-sorted elements until correct position is found
+            while (j >= gap && array[j - gap] > temp) {
+                array[j] = array[j - gap];  // Shift element
+                j -= gap;
+            }
+
+            // Insert the stored element at its correct position
+            array[j] = temp;
         }
+        
+        // Reduce gap size (common strategy: halve it)
+        gap = Math.floor(gap / 2);
     }
 
-    // Add remaining elements from left array
-    while (leftIndex < left.length) {
-        result.push(left[leftIndex]);
-        leftIndex++;
+    return array;
+}
+function shellSortGeneric<T>(
+    array: T[],
+    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : (a > b ? 1 : 0)
+): T[] {
+    const n = array.length;
+    let gap = Math.floor(n / 2);
+
+    while (gap > 0) {
+        for (let i = gap; i < n; i++) {
+            const current = array[i];
+            let j = i;
+            
+            // Use comparator function instead of direct comparison
+            while (j >= gap && compareFn(array[j - gap], current) > 0) {
+                array[j] = array[j - gap];
+                j -= gap;
+            }
+            array[j] = current;
+        }
+        gap = Math.floor(gap / 2);
     }
+    
+    return array;
+}
+// Example with numbers
+const numbers = [12, 34, 54, 2, 3];
+console.log(shellSort(numbers));  // [2, 3, 12, 34, 54]
 
-    // Add remaining elements from right array
-    while (rightIndex < right.length) {
-        result.push(right[rightIndex]);
-        rightIndex++;
-    }
+// Example with strings (using generic version)
+const strings = ['apple', 'Banana', 'cherry', 'date'];
+console.log(
+    shellSortGeneric(strings, (a, b) => a.localeCompare(b))
+);
+// ['apple', 'Banana', 'cherry', 'date']
 
-    return result;
+// Example with custom objects
+interface Person {
+    name: string;
+    age: number;
 }
 
-/**
- * Recursive merge sort implementation
- * @param array Array to be sorted
- * @returns Sorted array
- */
-function mergeSort(array: number[]): number[] {
-    // Base case: arrays with 0-1 elements are already sorted
-    if (array.length <= 1) {
-        return array;
-    }
+const people: Person[] = [
+    { name: 'John', age: 30 },
+    { name: 'Alice', age: 25 },
+    { name: 'Bob', age: 35 }
+];
 
-    // Split array into two halves
-    const middle = Math.floor(array.length / 2);
-    const left = array.slice(0, middle);
-    const right = array.slice(middle);
-
-    // Recursively sort and merge
-    return merge(
-        mergeSort(left),
-        mergeSort(right)
-    );
-}
-
-// Example usage:
-const unsortedArray = [7, 2, 5, 3, 7, 13, 1, 6];
-const sortedArray = mergeSort(unsortedArray);
-console.log(sortedArray); 
-// Output: [1, 2, 3, 5, 6, 7, 7, 13]
-function merge<T>(left: T[], right: T[]): T[] {
-    // ... (add comparison logic for type T)
-}
-
-function mergeSort<T>(array: T[]): T[] {
-    // ... same logic with generic type
-}
+console.log(
+    shellSortGeneric(people, (a, b) => a.age - b.age)
+);
+// Sorted by age (youngest to oldest)
