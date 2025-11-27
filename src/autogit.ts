@@ -1,159 +1,122 @@
-type HashTableEntry<K, V> = { key: K; value: V };
-
-class HashTable<K, V> {
-    private buckets: Array<Array<HashTableEntry<K, V>>>;
-    private count: number = 0;
-    private loadFactor: number = 0.75;
-    private initialCapacity: number = 16;
-
-    constructor(
-        initialCapacity: number = 16,
-        loadFactor: number = 0.75
-    ) {
-        this.initialCapacity = initialCapacity;
-        this.loadFactor = loadFactor;
-        this.buckets = new Array(initialCapacity);
-        for (let i = 0; i < initialCapacity; i++) {
-            this.buckets[i] = [];
-        }
-    }
-
-    // Basic Operations
-    public set(key: K, value: V): void {
-        this.maybeResize();
-        const index = this.getBucketIndex(key);
-        const bucket = this.buckets[index];
-
-        // Check for existing key
-        for (const entry of bucket) {
-            if (this.keysEqual(entry.key, key)) {
-                entry.value = value; // Update existing
-                return;
-            }
-        }
-
-        // Add new entry
-        bucket.push({ key, value });
-        this.count++;
-    }
-
-    public get(key: K): V | undefined {
-        const bucket = this.buckets[this.getBucketIndex(key)];
-        for (const entry of bucket) {
-            if (this.keysEqual(entry.key, key)) {
-                return entry.value;
-            }
-        }
-        return undefined;
-    }
-
-    public delete(key: K): boolean {
-        const index = this.getBucketIndex(key);
-        const bucket = this.buckets[index];
-        const initialLength = bucket.length;
-
-        // Filter out the entry to delete
-        this.buckets[index] = bucket.filter(entry => !this.keysEqual(entry.key, key));
-        
-        if (this.buckets[index].length !== initialLength) {
-            this.count--;
-            return true;
-        }
+function areAnagrams(str1: string, str2: string): boolean {
+    // Normalize strings: remove spaces, convert to lowercase
+    const normalizedStr1 = str1.replace(/\s/g, '').toLowerCase();
+    const normalizedStr2 = str2.replace(/\s/g, '').toLowerCase();
+    
+    // If lengths differ, they can't be anagrams
+    if (normalizedStr1.length !== normalizedStr2.length) {
         return false;
     }
-
-    // Utility Methods
-    private hash(key: K): number {
-        const keyString = String(key);
-        let hash = 0;
-        const prime = 31;
-
-        for (let i = 0; i < keyString.length; i++) {
-            hash = prime * hash + keyString.charCodeAt(i);
-            hash = hash & hash; // Convert to 32-bit integer
-        }
-        return hash;
-    }
-
-    private getBucketIndex(key: K): number {
-        let hashValue = this.hash(key);
-        if (hashValue < 0) hashValue = -hashValue; // Ensure non-negative
-        return hashValue % this.buckets.length;
-    }
-
-    private keysEqual(key1: K, key2: K): boolean {
-        // Use SameValueZero algorithm (similar to === but handles NaN)
-        return key1 === key2 || (key1 !== key1 && key2 !== key2);
-    }
-
-    // Resize Management
-    private maybeResize(): void {
-        if (this.count / this.buckets.length > this.loadFactor) {
-            this.resize(this.buckets.length * 2);
-        }
-    }
-
-    private resize(newCapacity: number): void {
-        const oldBuckets = this.buckets;
-        this.buckets = new Array(newCapacity);
-        this.count = 0;
-
-        for (let i = 0; i < newCapacity; i++) {
-            this.buckets[i] = [];
-        }
-
-        for (const bucket of oldBuckets) {
-            for (const entry of bucket) {
-                this.set(entry.key, entry.value);
-            }
-        }
-    }
-
-    // Additional Helpers
-    public size(): number {
-        return this.count;
-    }
-
-    public contains(key: K): boolean {
-        return this.get(key) !== undefined;
-    }
-
-    public getCapacity(): number {
-        return this.buckets.length;
-    }
-}
-const hashTable = new HashTable<string, number>();
-
-// Set values
-hashTable.set("apple", 10);
-hashTable.set("banana", 5);
-hashTable.set("orange", 8);
-
-// Get values
-console.log(hashTable.get("apple"));    // 10
-console.log(hashTable.get("grape"));    // undefined
-
-// Update value
-hashTable.set("apple", 15);
-console.log(hashTable.get("apple"));    // 15
-
-// Delete value
-hashTable.delete("banana");
-console.log(hashTable.get("banana"));   // undefined
-
-// Check size
-console.log(hashTable.size());          // 2
-interface CustomKey {
-    id: number;
-    name: string;
+    
+    // Sort characters and compare
+    const sortedStr1 = normalizedStr1.split('').sort().join('');
+    const sortedStr2 = normalizedStr2.split('').sort().join('');
+    
+    return sortedStr1 === sortedStr2;
 }
 
-// Create hash table with custom key handling
-const objTable = new HashTable<CustomKey, string>(
-    16,
-    0.75,
-    {
-        hash: (key) => key.id, // Simple ID-based hash
-        keysEqual: (a, b) => a.id === b.id && a.name === b.name
+// Example usage
+console.log(areAnagrams("listen", "silent")); // true
+console.log(areAnagrams("hello", "world"));   // false
+console.log(areAnagrams("Debit card", "Bad credit")); // true
+function areAnagrams(str1: string, str2: string): boolean {
+    const normalizedStr1 = str1.replace(/\s/g, '').toLowerCase();
+    const normalizedStr2 = str2.replace(/\s/g, '').toLowerCase();
+    
+    if (normalizedStr1.length !== normalizedStr2.length) {
+        return false;
     }
-);
+    
+    // Create frequency maps
+    const frequencyMap1 = createFrequencyMap(normalizedStr1);
+    const frequencyMap2 = createFrequencyMap(normalizedStr2);
+    
+    // Compare frequency maps
+    for (const char in frequencyMap1) {
+        if (frequencyMap1[char] !== frequencyMap2[char]) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+function createFrequencyMap(str: string): Record<string, number> {
+    const frequencyMap: Record<string, number> = {};
+    
+    for (const char of str) {
+        frequencyMap[char] = (frequencyMap[char] || 0) + 1;
+    }
+    
+    return frequencyMap;
+}
+function areAnagrams(str1: string, str2: string): boolean {
+    const normalizedStr1 = str1.replace(/\s/g, '').toLowerCase();
+    const normalizedStr2 = str2.replace(/\s/g, '').toLowerCase();
+    
+    if (normalizedStr1.length !== normalizedStr2.length) {
+        return false;
+    }
+    
+    const frequencyMap1 = normalizedStr1.split('').reduce((acc, char) => {
+        acc[char] = (acc[char] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+    
+    const frequencyMap2 = normalizedStr2.split('').reduce((acc, char) => {
+        acc[char] = (acc[char] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+    
+    // Compare the two frequency maps
+    return Object.keys(frequencyMap1).every(char => 
+        frequencyMap1[char] === frequencyMap2[char]
+    );
+}
+function areAnagrams(str1: string, str2: string): boolean {
+    const normalizedStr1 = str1.replace(/\s/g, '').toLowerCase();
+    const normalizedStr2 = str2.replace(/\s/g, '').toLowerCase();
+    
+    if (normalizedStr1.length !== normalizedStr2.length) {
+        return false;
+    }
+    
+    const charMap = new Map<string, number>();
+    
+    // Count characters in first string
+    for (const char of normalizedStr1) {
+        charMap.set(char, (charMap.get(char) || 0) + 1);
+    }
+    
+    // Subtract counts for second string
+    for (const char of normalizedStr2) {
+        const count = charMap.get(char);
+        if (!count) return false; // Character doesn't exist
+        charMap.set(char, count - 1);
+    }
+    
+    // Check if all counts are zero
+    return Array.from(charMap.values()).every(count => count === 0);
+}
+// Case-sensitive version (no .toLowerCase())
+function areAnagramsCaseSensitive(str1: string, str2: string): boolean {
+    // Remove only spaces but preserve case
+    const processedStr1 = str1.replace(/\s/g, '');
+    const processedStr2 = str2.replace(/\s/g, '');
+    
+    if (processedStr1.length !== processedStr2.length) {
+        return false;
+    }
+    
+    return processedStr1.split('').sort().join('') === 
+           processedStr2.split('').sort().join('');
+}
+
+// With punctuation handling
+function areAnagramsWithPunctuation(str1: string, str2: string): boolean {
+    const normalizedStr1 = str1.replace(/[^\w]/g, '').toLowerCase();
+    const normalizedStr2 = str2.replace(/[^\w]/g, '').toLowerCase();
+    
+    return normalizedStr1.split('').sort().join('') === 
+           normalizedStr2.split('').sort().join('');
+}
