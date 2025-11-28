@@ -1,91 +1,63 @@
-function areAnagramsSorting(s1: string, s2: string): boolean {
-  // Helper function to clean and sort a string
-  const cleanAndSort = (str: string): string => {
-    return str
-      .toLowerCase()        // Convert to lowercase
-      .replace(/[^a-z0-9]/g, '') // Remove non-alphanumeric characters
-      .split('')            // Split into an array of characters
-      .sort()               // Sort the characters alphabetically
-      .join('');            // Join back into a string
-  };
+/**
+ * Checks if two strings are anagrams by processing and comparing sorted characters.
+ * @param str1 First input string
+ * @param str2 Second input string
+ * @returns `true` if the strings are anagrams, otherwise `false`
+ */
+function isAnagramSort(str1: string, str2: string): boolean {
+  // Process strings: lowercase and remove non-alphabetic characters
+  const process = (str: string): string => 
+    str.toLowerCase().replace(/[^a-z]/g, '');
 
-  const cleanedS1 = cleanAndSort(s1);
-  const cleanedS2 = cleanAndSort(s2);
+  const cleanStr1 = process(str1);
+  const cleanStr2 = process(str2);
 
-  // Anagrams must have the same length after cleaning
-  if (cleanedS1.length !== cleanedS2.length) {
-    return false;
-  }
+  // Early exit if lengths differ
+  if (cleanStr1.length !== cleanStr2.length) return false;
 
-  // If the sorted strings are identical, they are anagrams
-  return cleanedS1 === cleanedS2;
+  // Sort and compare
+  return (
+    cleanStr1.split('').sort().join('') === 
+    cleanStr2.split('').sort().join('')
+  );
 }
+/**
+ * Checks if two strings are anagrams using a character frequency map.
+ * @param str1 First input string
+ * @param str2 Second input string
+ * @returns `true` if the strings are anagrams, otherwise `false`
+ */
+function isAnagramFrequency(str1: string, str2: string): boolean {
+  // Process strings: lowercase and remove non-alphabetic characters
+  const process = (str: string): string => 
+    str.toLowerCase().replace(/[^a-z]/g, '');
 
-// --- Examples ---
-console.log("--- Sorting Approach ---");
-console.log(areAnagramsSorting("listen", "silent"));              // true
-console.log(areAnagramsSorting("Listen", "silent"));              // true (case-insensitive)
-console.log(areAnagramsSorting("hello", "world"));                // false
-console.log(areAnagramsSorting("Anagram", "Nag a ram"));          // true (ignores spaces and case)
-console.log(areAnagramsSorting("A gentleman", "Elegant man"));    // true (ignores spaces and case)
-console.log(areAnagramsSorting("Dormitory", "Dirty room"));       // true
-console.log(areAnagramsSorting("The quick brown fox", "fox brown quick The")); // true
-console.log(areAnagramsSorting("", ""));                           // true
-console.log(areAnagramsSorting("a", "b"));                         // false
-console.log(areAnagramsSorting("abc", "ab"));                      // false
-function areAnagramsCounting(s1: string, s2: string): boolean {
-  // Helper function to clean a string
-  const cleanString = (str: string): string => {
-    return str
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '');
-  };
+  const cleanStr1 = process(str1);
+  const cleanStr2 = process(str2);
 
-  const cleanedS1 = cleanString(s1);
-  const cleanedS2 = cleanString(s2);
+  // Early exit if lengths differ
+  if (cleanStr1.length !== cleanStr2.length) return false;
 
-  // Anagrams must have the same length after cleaning
-  if (cleanedS1.length !== cleanedS2.length) {
-    return false;
+  // Create a frequency map for characters in cleanStr1
+  const charCount: Record<string, number> = {};
+
+  for (const char of cleanStr1) {
+    charCount[char] = (charCount[char] || 0) + 1;
   }
 
-  // Use a Map to store character frequencies
-  const charFrequencies = new Map<string, number>();
-
-  // Count characters in the first string
-  for (const char of cleanedS1) {
-    charFrequencies.set(char, (charFrequencies.get(char) || 0) + 1);
+  // Decrement counts using cleanStr2 and check for mismatches
+  for (const char of cleanStr2) {
+    if (!charCount[char]) return false; // Character not present or count already zero
+    charCount[char]--;
   }
 
-  // Decrement counts for characters in the second string
-  for (const char of cleanedS2) {
-    const count = charFrequencies.get(char);
-
-    // If character is not found or its count is already zero, not an anagram
-    if (count === undefined || count === 0) {
-      return false;
-    }
-
-    charFrequencies.set(char, count - 1);
-  }
-
-  // If all counts are zero, they are anagrams.
-  // We don't need to explicitly check if all map values are zero
-  // because the initial length check and decrementing logic already cover it.
-  // If the lengths were equal and we successfully decremented every char from s2,
-  // then all counts must be zero.
   return true;
 }
+// Test cases
+console.log(isAnagramSort('listen', 'silent'));    // true
+console.log(isAnagramSort('hello', 'world'));      // false
+console.log(isAnagramSort('Rail safety', 'fairy tales')); // true
 
-// --- Examples ---
-console.log("\n--- Counting Approach ---");
-console.log(areAnagramsCounting("listen", "silent"));              // true
-console.log(areAnagramsCounting("Listen", "silent"));              // true
-console.log(areAnagramsCounting("hello", "world"));                // false
-console.log(areAnagramsCounting("Anagram", "Nag a ram"));          // true
-console.log(areAnagramsCounting("A gentleman", "Elegant man"));    // true
-console.log(areAnagramsCounting("Dormitory", "Dirty room"));       // true
-console.log(areAnagramsCounting("The quick brown fox", "fox brown quick The")); // true
-console.log(areAnagramsCounting("", ""));                           // true
-console.log(areAnagramsCounting("a", "b"));                         // false
-console.log(areAnagramsCounting("abc", "ab"));                      // false
+console.log(isAnagramFrequency('listen', 'silent')); // true
+console.log(isAnagramFrequency('Dormitory', 'dirty room')); // true
+console.log(isAnagramFrequency('test', 'tests'));    // false (length mismatch)
