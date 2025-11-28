@@ -1,288 +1,158 @@
-interface Node {
-    x: number;
-    y: number;
-    gCost: number; // Cost from start to this node
-    hCost: number; // Heuristic cost from this node to end
-    fCost: number; // gCost + hCost
-    parent: Node | null; // To reconstruct path
-    isWall: boolean; // Is this node an obstacle?
-    id: string; // Unique identifier for map/set lookups (e.g., "x,y")
+/**
+ * Merges two sorted sub-arrays into a single sorted sub-array.
+ * This is a standard merge operation, crucial for both recursive and iterative merge sort.
+ *
+ * @param arr The array containing the sub-arrays to be merged.
+ * @param left The starting index of the left sub-array.
+ * @param mid The ending index of the left sub-array (and mid + 1 is the start of the right sub-array).
+ * @param right The ending index of the right sub-array.
+ * @param compare A comparison function to determine the order of elements.
+ */
+function merge<T>(
+    arr: T[],
+    left: number,
+    mid: number,
+    right: number,
+    compare: (a: T, b: T) => number
+): void {
+    // Create a temporary array to store the merged result
+    const temp: T[] = new Array(right - left + 1);
+    let i = left;      // Pointer for the left sub-array (arr[left...mid])
+    let j = mid + 1;   // Pointer for the right sub-array (arr[mid+1...right])
+    let k = 0;         // Pointer for the temporary array
+
+    // Compare elements from both sub-arrays and place the smaller one into temp
+    while (i <= mid && j <= right) {
+        if (compare(arr[i], arr[j]) <= 0) {
+            temp[k] = arr[i];
+            i++;
+        } else {
+            temp[k] = arr[j];
+            j++;
+        }
+        k++;
+    }
+
+    // Copy any remaining elements from the left sub-array
+    while (i <= mid) {
+        temp[k] = arr[i];
+        i++;
+        k++;
+    }
+
+    // Copy any remaining elements from the right sub-array
+    while (j <= right) {
+        temp[k] = arr[j];
+        j++;
+        k++;
+    }
+
+    // Copy the merged elements from the temp array back to the original array
+    for (let l = 0; l < temp.length; l++) {
+        arr[left + l] = temp[l];
+    }
 }
-function manhattanDistance(nodeA: Node, nodeB: Node): number {
-    return Math.abs(nodeA.x - nodeB.x) + Math.abs(nodeA.y - nodeB.y);
-}
-class PriorityQueue<T> {
-    private heap: T[] = [];
-    private compare: (a: T, b: T) => number; // Function to compare elements (e.g., a.fCost - b.fCost)
 
-    constructor(compareFn: (a: T, b: T) => number) {
-        this.compare = compareFn;
+/**
+ * Implements the iterative merge sort algorithm.
+ * Sorts an array in-place using a bottom-up approach.
+ *
+ * @param arr The array to be sorted.
+ * @param compare An optional comparison function. Defaults to a numeric comparison.
+ * @returns The sorted array.
+ */
+function mergeSortIterative<T>(
+    arr: T[],
+    compare: (a: T, b: T) => number = (a, b) => {
+        if (typeof a === 'number' && typeof b === 'number') {
+            return a - b;
+        }
+        // Fallback for non-numeric types if no custom comparator is provided
+        // This might not work as expected for all T without a proper comparator
+        if (String(a) < String(b)) return -1;
+        if (String(a) > String(b)) return 1;
+        return 0;
+    }
+): T[] {
+    const n = arr.length;
+
+    // An array with 0 or 1 element is already sorted
+    if (n <= 1) {
+        return arr;
     }
 
-    enqueue(item: T): void {
-        this.heap.push(item);
-        this.bubbleUp();
-    }
+    // currentMergeSize: Controls the size of the sub-arrays to be merged.
+    // It starts at 1 (merging individual elements) and doubles in each iteration.
+    for (let currentMergeSize = 1; currentMergeSize < n; currentMergeSize *= 2) {
+        // leftStart: Iterates through the array, marking the start of the left sub-array
+        // for each merge operation. It advances by 2 * currentMergeSize each time.
+        for (let leftStart = 0; leftStart < n - currentMergeSize; leftStart += 2 * currentMergeSize) {
+            const mid = leftStart + currentMergeSize - 1;
+            // Calculate the end of the right sub-array, ensuring it doesn't go beyond array bounds.
+            const rightEnd = Math.min(leftStart + 2 * currentMergeSize - 1, n - 1);
 
-    dequeue(): T | undefined {
-        if (this.isEmpty()) return undefined;
-        if (this.heap.length === 1) return this.heap.pop();
-
-        const item = this.heap[0];
-        this.heap[0] = this.heap.pop()!;
-        this.sinkDown();
-        return item;
-    }
-
-    peek(): T | undefined {
-        return this.heap.length > 0 ? this.heap[0] : undefined;
-    }
-
-    isEmpty(): boolean {
-        return this.heap.length === 0;
-    }
-
-    size(): number {
-        return this.heap.length;
-    }
-
-    private bubbleUp(): void {
-        let index = this.heap.length - 1;
-        const element = this.heap[index];
-
-        while (index > 0) {
-            let parentIndex = Math.floor((index - 1) / 2);
-            let parent = this.heap[parentIndex];
-
-            if (this.compare(element, parent) >= 0) break; // If element has higher or equal priority, stop
-
-            this.heap[parentIndex] = element;
-            this.heap[index] = parent;
-            index = parentIndex;
+            // Perform the merge operation for the current pair of sub-arrays
+            merge(arr, leftStart, mid, rightEnd, compare);
         }
     }
 
-    private sinkDown(): void {
-        let index = 0;
-        const length = this.heap.length;
-        const element = this.heap[0];
-
-        while (true) {
-            let leftChildIndex = 2 * index + 1;
-            let rightChildIndex = 2 * index + 2;
-            let leftChild, rightChild;
-            let swapIndex: number | null = null;
-
-            if (leftChildIndex < length) {
-                leftChild = this.heap[leftChildIndex];
-                if (this.compare(leftChild, element) < 0) {
-                    swapIndex = leftChildIndex;
-                }
-            }
-
-            if (rightChildIndex < length) {
-                rightChild = this.heap[rightChildIndex];
-                if (
-                    (swapIndex === null && this.compare(rightChild, element) < 0) ||
-                    (swapIndex !== null && this.compare(rightChild, leftChild!) < 0)
-                ) {
-                    swapIndex = rightChildIndex;
-                }
-            }
-
-            if (swapIndex === null) break;
-
-            this.heap[index] = this.heap[swapIndex];
-            this.heap[swapIndex] = element;
-            index = swapIndex;
-        }
-    }
-}
-// Helper to reconstruct the path from endNode back to startNode
-function reconstructPath(currentNode: Node): Node[] {
-    const path: Node[] = [];
-    let temp: Node | null = currentNode;
-    while (temp !== null) {
-        path.push(temp);
-        temp = temp.parent;
-    }
-    return path.reverse(); // Reverse to get path from start to end
+    return arr;
 }
 
-// Helper to get valid neighbors (4-directional for this example)
-function getNeighbors(node: Node, grid: Node[][]): Node[] {
-    const neighbors: Node[] = [];
-    const { x, y } = node;
-    const rows = grid.length;
-    const cols = grid[0].length;
+// --- Example Usage ---
 
-    // Possible moves: up, down, left, right
-    const possibleMoves = [
-        { dx: 0, dy: -1 }, // Up
-        { dx: 0, dy: 1 },  // Down
-        { dx: -1, dy: 0 }, // Left
-        { dx: 1, dy: 0 }   // Right
-    ];
+// 1. Sorting an array of numbers
+const numbers = [38, 27, 43, 3, 9, 82, 10];
+console.log("Original numbers:", numbers);
+mergeSortIterative(numbers);
+console.log("Sorted numbers (iterative):", numbers); // Output: [3, 9, 10, 27, 38, 43, 82]
 
-    for (const move of possibleMoves) {
-        const newX = x + move.dx;
-        const newY = y + move.dy;
+// 2. Sorting an array of strings (using default comparator, which will convert to string)
+const strings = ["banana", "apple", "cherry", "date"];
+console.log("Original strings:", strings);
+mergeSortIterative(strings);
+console.log("Sorted strings (iterative):", strings); // Output: ["apple", "banana", "cherry", "date"]
 
-        // Check grid boundaries
-        if (newX >= 0 && newX < rows && newY >= 0 && newY < cols) {
-            neighbors.push(grid[newX][newY]);
-        }
-    }
-    return neighbors;
+// 3. Sorting an array of objects with a custom comparator
+interface Person {
+    name: string;
+    age: number;
 }
 
-function aStarSearch(grid: Node[][], startNode: Node, endNode: Node): Node[] | null {
-    // Check if start/end are walls
-    if (startNode.isWall || endNode.isWall) {
-        console.error("Start or end node is a wall!");
-        return null;
+const people: Person[] = [
+    { name: "Alice", age: 30 },
+    { name: "Bob", age: 25 },
+    { name: "Charlie", age: 35 },
+    { name: "David", age: 25 },
+];
+
+console.log("Original people:", people);
+
+// Sort by age, then by name for ties
+mergeSortIterative(people, (a, b) => {
+    if (a.age !== b.age) {
+        return a.age - b.age;
     }
-    // Check if start/end are the same
-    if (startNode.id === endNode.id) {
-        return [startNode];
-    }
+    return a.name.localeCompare(b.name);
+});
+console.log("Sorted people (iterative, by age then name):", people);
+/* Output:
+[
+  { name: 'Bob', age: 25 },
+  { name: 'David', age: 25 },
+  { name: 'Alice', age: 30 },
+  { name: 'Charlie', age: 35 }
+]
+*/
 
-    // Initialize costs for the start node
-    startNode.gCost = 0;
-    startNode.hCost = manhattanDistance(startNode, endNode);
-    startNode.fCost = startNode.hCost;
-    startNode.parent = null;
+// 4. Test with an empty array
+const emptyArray: number[] = [];
+console.log("Original empty array:", emptyArray);
+mergeSortIterative(emptyArray);
+console.log("Sorted empty array:", emptyArray); // Output: []
 
-    // Use a PriorityQueue for the open set
-    const openSet = new PriorityQueue<Node>((a, b) => a.fCost - b.fCost);
-    // Use a Map to quickly check if a node is already in the open set and to update it
-    const openSetMap = new Map<string, Node>();
-
-    // Use a Set for the closed set (stores node IDs for faster lookup)
-    const closedSet = new Set<string>();
-
-    openSet.enqueue(startNode);
-    openSetMap.set(startNode.id, startNode);
-
-    while (!openSet.isEmpty()) {
-        const currentNode = openSet.dequeue()!; // ! asserts it's not undefined
-
-        // If we reached the end node, reconstruct and return the path
-        if (currentNode.id === endNode.id) {
-            return reconstructPath(currentNode);
-        }
-
-        // Move current node from open set to closed set
-        openSetMap.delete(currentNode.id);
-        closedSet.add(currentNode.id);
-
-        const neighbors = getNeighbors(currentNode, grid);
-
-        for (const neighbor of neighbors) {
-            // Skip if neighbor is a wall or already evaluated
-            if (neighbor.isWall || closedSet.has(neighbor.id)) {
-                continue;
-            }
-
-            // Cost from start to neighbor through current
-            // Assuming uniform cost of 1 for moving between adjacent grid cells
-            const tentativeGCost = currentNode.gCost + 1;
-
-            // If a better path to neighbor is found OR neighbor is not yet in open set
-            if (tentativeGCost < neighbor.gCost || !openSetMap.has(neighbor.id)) {
-                neighbor.parent = currentNode;
-                neighbor.gCost = tentativeGCost;
-                neighbor.hCost = manhattanDistance(neighbor, endNode);
-                neighbor.fCost = neighbor.gCost + neighbor.hCost;
-
-                if (!openSetMap.has(neighbor.id)) {
-                    openSet.enqueue(neighbor);
-                    openSetMap.set(neighbor.id, neighbor);
-                }
-                // If neighbor is already in openSet but we found a better path,
-                // the original entry with a worse gCost might still be in the PQ.
-                // When that old entry is dequeued later, the `closedSet.has()` check or
-                // `tentativeGCost < neighbor.gCost` check for the *already updated* node
-                // will correctly prevent processing the worse path.
-                // A more optimized PQ could have an `updatePriority` method.
-            }
-        }
-    }
-
-    // No path found
-    return null;
-}
-// Helper to create the grid and initialize nodes
-function createGrid(rows: number, cols: number): Node[][] {
-    const grid: Node[][] = [];
-    for (let i = 0; i < rows; i++) {
-        grid[i] = [];
-        for (let j = 0; j < cols; j++) {
-            grid[i][j] = {
-                x: i,
-                y: j,
-                gCost: Infinity, // Initialize with infinity
-                hCost: Infinity,
-                fCost: Infinity,
-                parent: null,
-                isWall: false,
-                id: `${i},${j}`
-            };
-        }
-    }
-    return grid;
-}
-
-// Main execution
-const rows = 10;
-const cols = 10;
-const grid = createGrid(rows, cols);
-
-// Set some walls
-grid[2][2].isWall = true;
-grid[2][3].isWall = true;
-grid[2][4].isWall = true;
-grid[2][5].isWall = true;
-grid[3][5].isWall = true;
-grid[4][5].isWall = true;
-grid[5][5].isWall = true;
-grid[6][5].isWall = true;
-grid[7][5].isWall = true;
-grid[7][4].isWall = true;
-grid[7][3].isWall = true;
-grid[7][2].isWall = true;
-
-const startNode = grid[0][0];
-const endNode = grid[9][9];
-
-console.log("Starting A* search...");
-const path = aStarSearch(grid, startNode, endNode);
-
-if (path) {
-    console.log("Path found!");
-    console.log(path.map(node => `(${node.x},${node.y})`).join(" -> "));
-
-    // Optional: Visualize the path
-    const pathSet = new Set<string>(path.map(node => node.id));
-    console.log("\nGrid Visualization:");
-    for (let i = 0; i < rows; i++) {
-        let rowStr = "";
-        for (let j = 0; j < cols; j++) {
-            if (grid[i][j].isWall) {
-                rowStr += "█ "; // Wall
-            } else if (grid[i][j].id === startNode.id) {
-                rowStr += "S "; // Start
-            } else if (grid[i][j].id === endNode.id) {
-                rowStr += "E "; // End
-            } else if (pathSet.has(grid[i][j].id)) {
-                rowStr += "• "; // Path
-            } else {
-                rowStr += ". "; // Empty
-            }
-        }
-        console.log(rowStr);
-    }
-
-} else {
-    console.log("No path found!");
-}
+// 5. Test with a single-element array
+const singleElementArray = [42];
+console.log("Original single-element array:", singleElementArray);
+mergeSortIterative(singleElementArray);
+console.log("Sorted single-element array:", singleElementArray); // Output: [42]
