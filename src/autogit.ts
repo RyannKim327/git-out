@@ -1,83 +1,47 @@
-// Node.ts
-export interface Node<T> {
-  state: T;
-  parent: Node<T> | null;
-  depth: number;
-}
-
-// utils.ts
-export function node<T>(
-  state: T,
-  parent: Node<T> | null = null,
-  depth: number = 0
-): Node<T> {
-  return { state, parent, depth };
-}
-
-export function reconstructPath<T>(n: Node<T>): T[] {
-  const path: T[] = [];
-  let curr: Node<T> | null = n;
-  while (curr) {
-    path.push(curr.state);
-    curr = curr.parent;
-  }
-  return path.reverse();
-}
-
-// dls.ts
-export interface Problem<T> {
-  initialState: T;
-  isGoal: (s: T) => boolean;
-  expand: (s: T) => T[];
-}
-
-export function depthLimitedSearch<T>(
-  problem: Problem<T>,
-  limit: number
-): Node<T> | null {
-  function recursiveDLS(current: Node<T>, remaining: number): Node<T> | null {
-    if (problem.isGoal(current.state)) return current;
-    if (remaining <= 0) return null; // depth limit reached
-
-    for (const nextState of problem.expand(current.state)) {
-      const nextNode = node(nextState, current, current.depth + 1);
-      const found = recursiveDLS(nextNode, remaining - 1);
-      if (found) return found; // propagate success
+function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+    // Ensure nums1 is the shorter array to minimize binary search steps
+    if (nums1.length > nums2.length) {
+        [nums1, nums2] = [nums2, nums1];
     }
-    return null; // failure
-  }
 
-  return recursiveDLS(node(problem.initialState), limit);
-}
-import { Problem, depthLimitedSearch, reconstructPath } from "./dls";
+    const m = nums1.length;
+    const n = nums2.length;
+    const totalLength = m + n;
+    const half = Math.floor((totalLength + 1) / 2); // Midpoint for left partition
 
-type Vertex = "A" | "B" | "C" | "D" | "E";
+    let low = 0;
+    let high = m;
 
-const graph: Record<Vertex, Vertex[]> = {
-  A: ["B", "C"],
-  B: ["D", "E"],
-  C: ["A"],
-  D: [],
-  E: [],
-};
+    while (low <= high) {
+        const i = Math.floor((low + high) / 2); // Partition index in nums1
+        const j = half - i; // Corresponding partition index in nums2
 
-const problem: Problem<Vertex> = {
-  initialState: "A",
-  isGoal: (v) => v === "E",
-  expand: (v) => graph[v],
-};
+        // Handle edge cases where partition is at the start/end of arrays
+        const aLeft = i === 0 ? -Infinity : nums1[i - 1];
+        const aRight = i === m ? Infinity : nums1[i];
+        const bLeft = j === 0 ? -Infinity : nums2[j - 1];
+        const bRight = j === n ? Infinity : nums2[j];
 
-const limit = 3;
-const solutionNode = depthLimitedSearch(problem, limit);
+        if (aLeft <= bRight && bLeft <= aRight) {
+            // Correct partition found
+            if (totalLength % 2 === 0) {
+                // Even length: average of max left and min right
+                const maxLeft = Math.max(aLeft, bLeft);
+                const minRight = Math.min(aRight, bRight);
+                return (maxLeft + minRight) / 2;
+            } else {
+                // Odd length: max of left partitions
+                return Math.max(aLeft, bLeft);
+            }
+        } else if (aLeft > bRight) {
+            // Move partition left in nums1
+            high = i - 1;
+        } else {
+            // Move partition right in nums1
+            low = i + 1;
+        }
+    }
 
-if (solutionNode) {
-  console.log("Found path:", reconstructPath(solutionNode)); // ["A","B","E"]
-} else {
-  console.log("No solution within depth", limit);
-}
-export function iterativeDeepening<T>(problem: Problem<T>): T[] | null {
-  for (let d = 0; ; ++d) {
-    const node = depthLimitedSearch(problem, d);
-    if (node) return reconstructPath(node);
-  }
+    // Input arrays are sorted, so median always exists
+    throw new Error("No solution found");
 }
