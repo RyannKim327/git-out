@@ -1,38 +1,20 @@
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
+function triangleArea(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error("Base and height must be positive numbers");
+  }
+  return 0.5 * base * height;
 }
 
-async function fetchPosts(): Promise<Post[]> {
-  try {
-    const response = await fetch('https://jsonplaceholder.typicode.com/posts');
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data: Post[] = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Failed to fetch posts:', error instanceof Error ? error.message : error);
-    return [];
+// usage
+console.log(triangleArea(10, 4)); // 20
+function triangleAreaHeron(a: number, b: number, c: number): number {
+  // basic triangle inequality
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error("Invalid triangle sides");
   }
+  const s = (a + b + c) / 2;        // semi-perimeter
+  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
 }
 
-// Execute and process the fetched data
-(async () => {
-  const posts = await fetchPosts();
-  
-  if (posts.length > 0) {
-    console.log(`Successfully fetched ${posts.length} posts`);
-    console.log('First post:', {
-      id: posts[0].id,
-      title: posts[0].title,
-      body: posts[0].body.slice(0, 20) + '...' // Truncate long text
-    });
-  } else {
-    console.log('No posts retrieved');
-  }
-})();
+// usage
+console.log(triangleAreaHeron(7, 8, 9)); // ≈ 26.8328
