@@ -1,42 +1,89 @@
-function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-    // Ensure nums1 is the shorter array to minimize binary search range
-    if (nums1.length > nums2.length) {
-        [nums1, nums2] = [nums2, nums1];
-    }
-
-    const m = nums1.length;
-    const n = nums2.length;
-    let low = 0;
-    let high = m;
-
-    while (low <= high) {
-        const partitionX = Math.floor((low + high) / 2);
-        const partitionY = Math.floor((m + n + 1) / 2) - partitionX;
-
-        // Handle edge cases where partition is at the boundaries
-        const maxLeftX = partitionX === 0 ? -Infinity : nums1[partitionX - 1];
-        const minRightX = partitionX === m ? Infinity : nums1[partitionX];
-        const maxLeftY = partitionY === 0 ? -Infinity : nums2[partitionY - 1];
-        const minRightY = partitionY === n ? Infinity : nums2[partitionY];
-
-        if (maxLeftX <= minRightY && maxLeftY <= minRightX) {
-            if ((m + n) % 2 === 0) {
-                // Even total length: average of two middle numbers
-                return (Math.max(maxLeftX, maxLeftY) + Math.min(minRightX, minRightY)) / 2;
-            } else {
-                // Odd total length: middle number
-                return Math.max(maxLeftX, maxLeftY);
-            }
-        } else if (maxLeftX > minRightY) {
-            high = partitionX - 1;
-        } else {
-            low = partitionX + 1;
-        }
-    }
-
-    throw new Error("Input arrays are not sorted or invalid.");
+/**
+ * Checks if a character is alphanumeric (a-z, A-Z, 0-9).
+ * This helper function uses a regular expression which is concise.
+ * While regex engines might involve some internal state, it's generally
+ * considered constant space for a fixed pattern like this, not dependent
+ * on the input string's length.
+ */
+function isAlphaNumeric(char: string): boolean {
+    // Regex to match a single character that is a letter (case-insensitive) or a digit
+    return /^[a-zA-Z0-9]$/.test(char);
 }
-console.log(findMedianSortedArrays([1, 3], [2]));       // Output: 2
-console.log(findMedianSortedArrays([1, 2], [3, 4]));    // Output: 2.5
-console.log(findMedianSortedArrays([], [1]));           // Output: 1
-console.log(findMedianSortedArrays([0, 0], [0, 0]));    // Output: 0
+
+/**
+ * Checks if a string is a valid palindrome, ignoring non-alphanumeric characters
+ * and case, without using extra space proportional to the input string length.
+ *
+ * @param s The input string.
+ * @returns True if the string is a palindrome, false otherwise.
+ */
+function isPalindromeNoExtraSpace(s: string): boolean {
+    // Handle edge cases: empty string or single character string is a palindrome
+    if (!s || s.length < 2) {
+        return true;
+    }
+
+    let left = 0;
+    let right = s.length - 1;
+
+    while (left < right) {
+        // Move left pointer inward until an alphanumeric character is found
+        // Ensure left < right to prevent out-of-bounds access if all remaining chars are non-alphanumeric
+        while (left < right && !isAlphaNumeric(s[left])) {
+            left++;
+        }
+
+        // Move right pointer inward until an alphanumeric character is found
+        // Ensure left < right for the same reason
+        while (left < right && !isAlphaNumeric(s[right])) {
+            right--;
+        }
+
+        // If pointers have crossed or met, all valid characters have been checked
+        // or the string has no valid characters (e.g., ".,,," which is a palindrome)
+        if (left >= right) {
+            break;
+        }
+
+        // Compare the characters, ignoring case
+        // Convert to lowercase for case-insensitive comparison
+        if (s[left].toLowerCase() !== s[right].toLowerCase()) {
+            return false; // Mismatch found, not a palindrome
+        }
+
+        // Move pointers inward for the next comparison
+        left++;
+        right--;
+    }
+
+    return true; // All valid characters matched, it's a palindrome
+}
+
+// --- Test Cases ---
+console.log("--- Test Cases ---");
+console.log("1. 'A man, a plan, a canal: Panama'");
+console.log(`Expected: true, Actual: ${isPalindromeNoExtraSpace("A man, a plan, a canal: Panama")}`); // true
+
+console.log("\n2. 'race a car'");
+console.log(`Expected: false, Actual: ${isPalindromeNoExtraSpace("race a car")}`); // false
+
+console.log("\n3. ' ' (empty string)");
+console.log(`Expected: true, Actual: ${isPalindromeNoExtraSpace(" ")}`); // true (after trimming/skipping space, effectively empty)
+
+console.log("\n4. 'a'");
+console.log(`Expected: true, Actual: ${isPalindromeNoExtraSpace("a")}`); // true
+
+console.log("\n5. 'ab_a'");
+console.log(`Expected: true, Actual: ${isPalindromeNoExtraSpace("ab_a")}`); // true
+
+console.log("\n6. '0P'");
+console.log(`Expected: false, Actual: ${isPalindromeNoExtraSpace("0P")}`); // false
+
+console.log("\n7. 'Madam'");
+console.log(`Expected: true, Actual: ${isPalindromeNoExtraSpace("Madam")}`); // true
+
+console.log("\n8. 'Live not on evil'");
+console.log(`Expected: true, Actual: ${isPalindromeNoExtraSpace("Live not on evil")}`); // true
+
+console.log("\n9. ',,.,,'");
+console.log(`Expected: true, Actual: ${isPalindromeNoExtraSpace(",,.,,")}`); // true (all non-alphanumeric, effectively empty)
