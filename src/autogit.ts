@@ -1,93 +1,55 @@
-class TreeNode<T> {
-    value: T;
-    left: TreeNode<T> | null;
-    right: TreeNode<T> | null;
+function longestCommonSubsequence(s1: string, s2: string): string {
+    const m = s1.length;
+    const n = s2.length;
 
-    constructor(value: T) {
-        this.value = value;
-        this.left = null;
-        this.right = null;
-    }
-}
-function countLeafNodes<T>(root: TreeNode<T> | null): number {
-    // Base Case 1: If the tree is empty (root is null), there are no leaves.
-    if (root === null) {
-        return 0;
-    }
+    // Step 1: Build the DP table to store lengths
+    // dp[i][j] stores the length of LCS of s1[0...i-1] and s2[0...j-1]
+    // The table size is (m+1) x (n+1) because we include a base case for empty prefixes (index 0).
+    const dp: number[][] = Array(m + 1).fill(0).map(() => Array(n + 1).fill(0));
 
-    // Base Case 2: If the current node is a leaf (no left or right children), count it as 1.
-    if (root.left === null && root.right === null) {
-        return 1;
-    }
-
-    // Recursive Step: If it's not a leaf, sum the leaf counts from its left and right subtrees.
-    return countLeafNodes(root.left) + countLeafNodes(root.right);
-}
-class TreeNode<T> {
-    value: T;
-    left: TreeNode<T> | null;
-    right: TreeNode<T> | null;
-
-    constructor(value: T) {
-        this.value = value;
-        this.left = null;
-        this.right = null;
-    }
-}
-
-function countLeafNodes<T>(root: TreeNode<T> | null): number {
-    if (root === null) {
-        return 0;
+    // Fill the dp table
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            // If characters match, add 1 to the diagonal element (LCS of previous prefixes)
+            if (s1[i - 1] === s2[j - 1]) {
+                dp[i][j] = 1 + dp[i - 1][j - 1];
+            } else {
+                // If characters don't match, take the maximum from the cell above or to the left
+                // (representing dropping a char from s1 or s2 respectively)
+                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+            }
+        }
     }
 
-    if (root.left === null && root.right === null) {
-        return 1;
+    // Step 2: Reconstruct the LCS string from the DP table
+    const lcsChars: string[] = []; // To store the characters of the LCS
+    let i = m; // Start from the bottom-right corner of the DP table
+    let j = n;
+
+    while (i > 0 && j > 0) {
+        // If the current characters in s1 and s2 match, they are part of the LCS
+        if (s1[i - 1] === s2[j - 1]) {
+            lcsChars.push(s1[i - 1]); // Add the character
+            i--; // Move diagonally up-left
+            j--;
+        } else if (dp[i - 1][j] > dp[i][j - 1]) {
+            // If the value came from the cell above (dp[i-1][j]), it means s1[i-1] was not included
+            i--; // Move up
+        } else {
+            // If the value came from the cell to the left (dp[i][j-1]), it means s2[j-1] was not included
+            j--; // Move left
+        }
     }
 
-    return countLeafNodes(root.left) + countLeafNodes(root.right);
+    // The characters were added in reverse order, so reverse and join them
+    return lcsChars.reverse().join('');
 }
 
 // --- Example Usage ---
-
-// 1. Empty tree
-const tree1 = null;
-console.log("Leaves in empty tree:", countLeafNodes(tree1)); // Expected: 0
-
-// 2. Single node tree (which is a leaf)
-const tree2 = new TreeNode(1);
-console.log("Leaves in single node tree:", countLeafNodes(tree2)); // Expected: 1
-
-// 3. Simple tree:
-//      10
-//     /  \
-//    5    15
-//   / \
-//  3   7
-const tree3 = new TreeNode(10);
-tree3.left = new TreeNode(5);
-tree3.right = new TreeNode(15);
-tree3.left.left = new TreeNode(3);
-tree3.left.right = new TreeNode(7);
-
-console.log("Leaves in tree3:", countLeafNodes(tree3)); // Expected: 3 (nodes 3, 7, 15)
-
-
-// 4. More complex tree:
-//         10
-//        /  \
-//       5    15
-//      / \     \
-//     3   7     18
-//    /     \
-//   2       8
-const tree4 = new TreeNode(10);
-tree4.left = new TreeNode(5);
-tree4.right = new TreeNode(15);
-tree4.left.left = new TreeNode(3);
-tree4.left.right = new TreeNode(7);
-tree4.right.right = new TreeNode(18);
-tree4.left.left.left = new TreeNode(2);
-tree4.left.right.right = new TreeNode(8);
-
-console.log("Leaves in tree4:", countLeafNodes(tree4)); // Expected: 3 (nodes 2, 8, 18)
-
+console.log(`LCS of "ABCDGH" and "AEDFHR": "${longestCommonSubsequence("ABCDGH", "AEDFHR")}"`); // Expected: "ADH"
+console.log(`LCS of "AGGTAB" and "GXTXAYB": "${longestCommonSubsequence("AGGTAB", "GXTXAYB")}"`); // Expected: "GTAB"
+console.log(`LCS of "ABC" and "ACB": "${longestCommonSubsequence("ABC", "ACB")}"`); // Expected: "AB" or "AC" (depends on path, but length is 2)
+console.log(`LCS of "ABC" and "DEF": "${longestCommonSubsequence("ABC", "DEF")}"`); // Expected: ""
+console.log(`LCS of "A" and "A": "${longestCommonSubsequence("A", "A")}"`); // Expected: "A"
+console.log(`LCS of "" and "ABC": "${longestCommonSubsequence("", "ABC")}"`); // Expected: ""
+console.log(`LCS of "ABC" and "": "${longestCommonSubsequence("ABC", "")}"`); // Expected: ""
