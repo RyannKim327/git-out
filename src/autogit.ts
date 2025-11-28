@@ -1,73 +1,83 @@
-function isSortedAscending<T>(arr: T[]): boolean {
-    for (let i = 1; i < arr.length; i++) {
-        if (arr[i - 1] > arr[i]) {
-            return false;
-        }
+// Node.ts
+export interface Node<T> {
+  state: T;
+  parent: Node<T> | null;
+  depth: number;
+}
+
+// utils.ts
+export function node<T>(
+  state: T,
+  parent: Node<T> | null = null,
+  depth: number = 0
+): Node<T> {
+  return { state, parent, depth };
+}
+
+export function reconstructPath<T>(n: Node<T>): T[] {
+  const path: T[] = [];
+  let curr: Node<T> | null = n;
+  while (curr) {
+    path.push(curr.state);
+    curr = curr.parent;
+  }
+  return path.reverse();
+}
+
+// dls.ts
+export interface Problem<T> {
+  initialState: T;
+  isGoal: (s: T) => boolean;
+  expand: (s: T) => T[];
+}
+
+export function depthLimitedSearch<T>(
+  problem: Problem<T>,
+  limit: number
+): Node<T> | null {
+  function recursiveDLS(current: Node<T>, remaining: number): Node<T> | null {
+    if (problem.isGoal(current.state)) return current;
+    if (remaining <= 0) return null; // depth limit reached
+
+    for (const nextState of problem.expand(current.state)) {
+      const nextNode = node(nextState, current, current.depth + 1);
+      const found = recursiveDLS(nextNode, remaining - 1);
+      if (found) return found; // propagate success
     }
-    return true;
+    return null; // failure
+  }
+
+  return recursiveDLS(node(problem.initialState), limit);
 }
+import { Problem, depthLimitedSearch, reconstructPath } from "./dls";
 
-// Usage
-const numbers = [1, 2, 3, 4, 5];
-const mixed = [1, 3, 2, 4, 5];
+type Vertex = "A" | "B" | "C" | "D" | "E";
 
-console.log(isSortedAscending(numbers)); // true
-console.log(isSortedAscending(mixed));   // false
-function isSortedAscending<T>(arr: T[]): boolean {
-    return arr.every((value, index, array) => 
-        index === 0 || array[index - 1] <= value
-    );
+const graph: Record<Vertex, Vertex[]> = {
+  A: ["B", "C"],
+  B: ["D", "E"],
+  C: ["A"],
+  D: [],
+  E: [],
+};
+
+const problem: Problem<Vertex> = {
+  initialState: "A",
+  isGoal: (v) => v === "E",
+  expand: (v) => graph[v],
+};
+
+const limit = 3;
+const solutionNode = depthLimitedSearch(problem, limit);
+
+if (solutionNode) {
+  console.log("Found path:", reconstructPath(solutionNode)); // ["A","B","E"]
+} else {
+  console.log("No solution within depth", limit);
 }
-
-// Usage
-console.log(isSortedAscending([1, 2, 3, 4, 5])); // true
-console.log(isSortedAscending([1, 3, 2, 4, 5])); // false
-function isSortedAscending<T>(
-    arr: T[], 
-    compare: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
-): boolean {
-    for (let i = 1; i < arr.length; i++) {
-        if (compare(arr[i - 1], arr[i]) > 0) {
-            return false;
-        }
-    }
-    return true;
+export function iterativeDeepening<T>(problem: Problem<T>): T[] | null {
+  for (let d = 0; ; ++d) {
+    const node = depthLimitedSearch(problem, d);
+    if (node) return reconstructPath(node);
+  }
 }
-
-// Usage with numbers
-console.log(isSortedAscending([1, 2, 3, 4, 5])); // true
-
-// Usage with custom objects
-interface Person {
-    name: string;
-    age: number;
-}
-
-const people: Person[] = [
-    { name: "Alice", age: 25 },
-    { name: "Bob", age: 30 },
-    { name: "Charlie", age: 35 }
-];
-
-console.log(isSortedAscending(people, (a, b) => a.age - b.age)); // true
-const isSortedAscending = <T>(arr: T[]): boolean => 
-    arr.slice(1).every((item, i) => arr[i] <= item);
-
-// Usage
-console.log(isSortedAscending([1, 2, 3, 4, 5])); // true
-console.log(isSortedAscending([5, 4, 3, 2, 1])); // false
-function isSortedAscending<T>(arr: T[]): boolean {
-    if (arr.length <= 1) return true; // Empty or single-element arrays are sorted
-    
-    for (let i = 1; i < arr.length; i++) {
-        if (arr[i - 1] > arr[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-
-// Test cases
-console.log(isSortedAscending([]));           // true
-console.log(isSortedAscending([1]));          // true
-console.log(isSortedAscending([1, 1, 1, 1])); // true (equal values are considered sorted)
