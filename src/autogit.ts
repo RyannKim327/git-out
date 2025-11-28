@@ -1,56 +1,22 @@
-function decimalToBinary(decimal: number): string {
-    return decimal.toString(2);
-}
+// original array
+const numbers = [3, 5, 3, 7, 5, 3, 9];
 
-// Usage
-const binary = decimalToBinary(42); // Returns "101010"
-console.log(binary);
-function decimalToBinaryManual(decimal: number): string {
-    if (decimal === 0) return "0";
-    
-    let binary = "";
-    let num = decimal;
-    
-    while (num > 0) {
-        binary = (num % 2) + binary;
-        num = Math.floor(num / 2);
-    }
-    
-    return binary;
-}
+// remove duplicates
+const unique = [...new Set(numbers)];
 
-// Usage
-const binaryManual = decimalToBinaryManual(42); // Returns "101010"
-console.log(binaryManual);
-function decimalToBinaryPadded(decimal: number, bits: number = 8): string {
-    return (decimal >>> 0).toString(2).padStart(bits, '0');
-}
+console.log(unique); // [3, 5, 7, 9]
+type Item = { id: number; name: string };
 
-// Usage
-const binaryPadded = decimalToBinaryPadded(42, 8); // Returns "00101010"
-console.log(binaryPadded);
-function decimalToBinary32Bit(decimal: number): string {
-    // Convert to 32-bit unsigned integer representation
-    return (decimal >>> 0).toString(2);
-}
+const items: Item[] = [
+  { id: 1, name: 'A' },
+  { id: 2, name: 'B' },
+  { id: 1, name: 'A' },   // duplicate id
+];
 
-// Usage
-const negativeBinary = decimalToBinary32Bit(-42); // Returns "11111111111111111111111111010110"
-console.log(negativeBinary);
-function decimalToBinarySafe(decimal: number): string {
-    if (!Number.isInteger(decimal)) {
-        throw new Error("Input must be an integer");
-    }
-    
-    if (decimal < 0) {
-        // Handle negative numbers using 32-bit representation
-        return (decimal >>> 0).toString(2);
-    }
-    
-    return decimal.toString(2);
-}
+// keep first occurrence of each id
+const uniqueById = Array.from(
+  new Map(items.map(i => [i.id, i])).values()
+);
 
-// Usage examples
-console.log(decimalToBinarySafe(42));    // "101010"
-console.log(decimalToBinarySafe(-42));   // "11111111111111111111111111010110"
-console.log(decimalToBinarySafe(0));     // "0"
+console.log(uniqueById); // [{id:1,name:'A'}, {id:2,name:'B'}]
+const unique = numbers.filter((v, idx, arr) => arr.indexOf(v) === idx);
