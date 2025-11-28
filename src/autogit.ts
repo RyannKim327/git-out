@@ -1,123 +1,42 @@
-// Define interfaces for the expected data structure
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  website?: string;
-}
-
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
-
-// Function to fetch user data
-async function fetchUserData(userId: number): Promise<User> {
-  try {
-    const response = await fetch(`https://jsonplaceholder.typicode.com/users/${userId}`);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-    
-    const userData: User = await response.json();
-    return userData;
-  } catch (error) {
-    console.error('Error fetching user data:', error);
-    throw error;
-  }
-}
-
-// Function to fetch posts with error handling and retry logic
-async function fetchPostsWithRetry(retries = 3): Promise<Post[]> {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      const posts: Post[] = await response.json();
-      return posts;
-    } catch (error) {
-      console.warn(`Attempt ${attempt} failed:`, error);
-      if (attempt === retries) {
-        throw new Error(`Failed after ${retries} attempts: ${error.message}`);
-      }
-      // Wait before retrying (exponential backoff)
-      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-    }
-  }
-  throw new Error('Unexpected error in fetchPostsWithRetry');
-}
-
-// Function to demonstrate parallel requests
-async function fetchUserAndPosts(userId: number) {
-  try {
-    const [user, posts] = await Promise.all([
-      fetchUserData(userId),
-      fetchPostsWithRetry()
-    ]);
-
-    console.log('User:', user);
-    console.log(`Found ${posts.length} posts`);
-    
-    // Filter posts for this user
-    const userPosts = posts.filter(post => post.userId === userId);
-    console.log(`User ${user.name} has ${userPosts.length} posts`);
-    
-    return { user, posts: userPosts };
-  } catch (error) {
-    console.error('Failed to fetch user and posts:', error);
-    throw error;
-  }
-}
-
-// Example usage
-(async () => {
-  try {
-    const result = await fetchUserAndPosts(1);
-    console.log('Final result:', result);
-  } catch (error) {
-    console.error('Application error:', error);
-  }
-})();
-
-// Bonus: POST example
-async function createNewPost(postData: Partial<Post>) {
-  try {
-    const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(postData)
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+    // Ensure nums1 is the shorter array to minimize binary search range
+    if (nums1.length > nums2.length) {
+        [nums1, nums2] = [nums2, nums1];
     }
 
-    const newPost: Post = await response.json();
-    console.log('Created post:', newPost);
-    return newPost;
-  } catch (error) {
-    console.error('Error creating post:', error);
-    throw error;
-  }
-}
+    const m = nums1.length;
+    const n = nums2.length;
+    let low = 0;
+    let high = m;
 
-// Example of creating a new post
-createNewPost({
-  userId: 1,
-  title: 'Test Post',
-  body: 'This is a test post created with fetch API'
-});
+    while (low <= high) {
+        const partitionX = Math.floor((low + high) / 2);
+        const partitionY = Math.floor((m + n + 1) / 2) - partitionX;
+
+        // Handle edge cases where partition is at the boundaries
+        const maxLeftX = partitionX === 0 ? -Infinity : nums1[partitionX - 1];
+        const minRightX = partitionX === m ? Infinity : nums1[partitionX];
+        const maxLeftY = partitionY === 0 ? -Infinity : nums2[partitionY - 1];
+        const minRightY = partitionY === n ? Infinity : nums2[partitionY];
+
+        if (maxLeftX <= minRightY && maxLeftY <= minRightX) {
+            if ((m + n) % 2 === 0) {
+                // Even total length: average of two middle numbers
+                return (Math.max(maxLeftX, maxLeftY) + Math.min(minRightX, minRightY)) / 2;
+            } else {
+                // Odd total length: middle number
+                return Math.max(maxLeftX, maxLeftY);
+            }
+        } else if (maxLeftX > minRightY) {
+            high = partitionX - 1;
+        } else {
+            low = partitionX + 1;
+        }
+    }
+
+    throw new Error("Input arrays are not sorted or invalid.");
+}
+console.log(findMedianSortedArrays([1, 3], [2]));       // Output: 2
+console.log(findMedianSortedArrays([1, 2], [3, 4]));    // Output: 2.5
+console.log(findMedianSortedArrays([], [1]));           // Output: 1
+console.log(findMedianSortedArrays([0, 0], [0, 0]));    // Output: 0
