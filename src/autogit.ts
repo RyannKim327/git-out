@@ -1,144 +1,182 @@
-interface Edge {
-    from: number;
-    to: number;
-    weight: number;
+function quicksort(arr: number[]): number[] {
+    if (arr.length <= 1) {
+        return arr;
+    }
+
+    const pivot = arr[0];
+    const left: number[] = [];
+    const right: number[] = [];
+
+    for (let i = 1; i < arr.length; i++) {
+        if (arr[i] < pivot) {
+            left.push(arr[i]);
+        } else {
+            right.push(arr[i]);
+        }
+    }
+
+    return [...quicksort(left), pivot, ...quicksort(right)];
 }
 
-interface Graph {
-    vertices: number;
-    edges: Edge[];
+// Usage
+const numbers = [3, 6, 8, 10, 1, 2, 1];
+const sorted = quicksort(numbers);
+console.log(sorted); // [1, 1, 2, 3, 6, 8, 10]
+function quicksortGeneric<T>(arr: T[]): T[] {
+    if (arr.length <= 1) {
+        return arr;
+    }
+
+    const pivot = arr[0];
+    const left: T[] = [];
+    const right: T[] = [];
+
+    for (let i = 1; i < arr.length; i++) {
+        if (arr[i] < pivot) {
+            left.push(arr[i]);
+        } else {
+            right.push(arr[i]);
+        }
+    }
+
+    return [...quicksortGeneric(left), pivot, ...quicksortGeneric(right)];
 }
 
-interface ShortestPathResult {
-    distances: number[];
-    predecessors: number[];
-    hasNegativeCycle: boolean;
+// Usage with strings
+const strings = ['banana', 'apple', 'cherry', 'date'];
+const sortedStrings = quicksortGeneric(strings);
+console.log(sortedStrings); // ['apple', 'banana', 'cherry', 'date']
+function quicksortInPlace(arr: number[], low: number = 0, high: number = arr.length - 1): void {
+    if (low < high) {
+        const pivotIndex = partition(arr, low, high);
+        quicksortInPlace(arr, low, pivotIndex - 1);
+        quicksortInPlace(arr, pivotIndex + 1, high);
+    }
 }
 
-class BellmanFord {
-    static findShortestPaths(graph: Graph, source: number): ShortestPathResult {
-        const { vertices, edges } = graph;
-        
-        // Initialize distances and predecessors
-        const distances: number[] = new Array(vertices).fill(Infinity);
-        const predecessors: number[] = new Array(vertices).fill(-1);
-        
-        // Set source distance to 0
-        distances[source] = 0;
-        
-        // Relax edges repeatedly
-        for (let i = 0; i < vertices - 1; i++) {
-            for (const edge of edges) {
-                if (distances[edge.from] !== Infinity && 
-                    distances[edge.from] + edge.weight < distances[edge.to]) {
-                    distances[edge.to] = distances[edge.from] + edge.weight;
-                    predecessors[edge.to] = edge.from;
-                }
+function partition(arr: number[], low: number, high: number): number {
+    const pivot = arr[high];
+    let i = low - 1;
+
+    for (let j = low; j < high; j++) {
+        if (arr[j] <= pivot) {
+            i++;
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+    }
+
+    [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
+    return i + 1;
+}
+
+// Usage
+const numbers = [3, 6, 8, 10, 1, 2, 1];
+quicksortInPlace(numbers);
+console.log(numbers); // [1, 1, 2, 3, 6, 8, 10]
+function quicksortWithComparator<T>(
+    arr: T[], 
+    comparator: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
+): T[] {
+    if (arr.length <= 1) {
+        return arr;
+    }
+
+    const pivot = arr[0];
+    const left: T[] = [];
+    const right: T[] = [];
+
+    for (let i = 1; i < arr.length; i++) {
+        if (comparator(arr[i], pivot) < 0) {
+            left.push(arr[i]);
+        } else {
+            right.push(arr[i]);
+        }
+    }
+
+    return [
+        ...quicksortWithComparator(left, comparator),
+        pivot,
+        ...quicksortWithComparator(right, comparator)
+    ];
+}
+
+// Usage with descending order
+const numbers = [3, 6, 8, 10, 1, 2, 1];
+const descendingComparator = (a: number, b: number) => b - a;
+const sortedDescending = quicksortWithComparator(numbers, descendingComparator);
+console.log(sortedDescending); // [10, 8, 6, 3, 2, 1, 1]
+
+// Usage with custom objects
+interface Person {
+    name: string;
+    age: number;
+}
+
+const people: Person[] = [
+    { name: 'John', age: 25 },
+    { name: 'Jane', age: 30 },
+    { name: 'Bob', age: 20 }
+];
+
+const sortedByAge = quicksortWithComparator(people, (a, b) => a.age - b.age);
+console.log(sortedByAge);
+class QuickSorter<T> {
+    private comparator: (a: T, b: T) => number;
+
+    constructor(comparator?: (a: T, b: T) => number) {
+        this.comparator = comparator || ((a, b) => a < b ? -1 : a > b ? 1 : 0);
+    }
+
+    sort(arr: T[]): T[] {
+        if (arr.length <= 1) {
+            return arr;
+        }
+
+        const pivot = arr[0];
+        const left: T[] = [];
+        const right: T[] = [];
+
+        for (let i = 1; i < arr.length; i++) {
+            if (this.comparator(arr[i], pivot) < 0) {
+                left.push(arr[i]);
+            } else {
+                right.push(arr[i]);
             }
         }
-        
-        // Check for negative cycles
-        let hasNegativeCycle = false;
-        for (const edge of edges) {
-            if (distances[edge.from] !== Infinity && 
-                distances[edge.from] + edge.weight < distances[edge.to]) {
-                hasNegativeCycle = true;
-                break;
+
+        return [...this.sort(left), pivot, ...this.sort(right)];
+    }
+
+    sortInPlace(arr: T[], low: number = 0, high: number = arr.length - 1): void {
+        if (low < high) {
+            const pivotIndex = this.partition(arr, low, high);
+            this.sortInPlace(arr, low, pivotIndex - 1);
+            this.sortInPlace(arr, pivotIndex + 1, high);
+        }
+    }
+
+    private partition(arr: T[], low: number, high: number): number {
+        const pivot = arr[high];
+        let i = low - 1;
+
+        for (let j = low; j < high; j++) {
+            if (this.comparator(arr[j], pivot) <= 0) {
+                i++;
+                [arr[i], arr[j]] = [arr[j], arr[i]];
             }
         }
-        
-        return { distances, predecessors, hasNegativeCycle };
-    }
-    
-    // Utility method to reconstruct paths
-    static getPath(predecessors: number[], target: number): number[] {
-        const path: number[] = [];
-        let current = target;
-        
-        while (current !== -1) {
-            path.unshift(current);
-            current = predecessors[current];
-        }
-        
-        return path;
+
+        [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
+        return i + 1;
     }
 }
 
-// Example usage and test
-function exampleUsage() {
-    // Create a graph with 5 vertices
-    const graph: Graph = {
-        vertices: 5,
-        edges: [
-            { from: 0, to: 1, weight: 6 },
-            { from: 0, to: 2, weight: 7 },
-            { from: 1, to: 2, weight: 8 },
-            { from: 1, to: 3, weight: 5 },
-            { from: 1, to: 4, weight: -4 },
-            { from: 2, to: 3, weight: -3 },
-            { from: 2, to: 4, weight: 9 },
-            { from: 3, to: 1, weight: -2 },
-            { from: 4, to: 0, weight: 2 },
-            { from: 4, to: 3, weight: 7 }
-        ]
-    };
-    
-    const source = 0;
-    const result = BellmanFord.findShortestPaths(graph, source);
-    
-    console.log("Shortest distances from vertex", source);
-    console.log(result.distances);
-    
-    console.log("\nPredecessors array:");
-    console.log(result.predecessors);
-    
-    console.log("\nNegative cycle detected:", result.hasNegativeCycle);
-    
-    // Show paths to all vertices
-    for (let i = 0; i < graph.vertices; i++) {
-        const path = BellmanFord.getPath(result.predecessors, i);
-        console.log(`Path to ${i}:`, path.join(" → "));
-    }
-}
+// Usage
+const sorter = new QuickSorter<number>();
+const numbers = [3, 6, 8, 10, 1, 2, 1];
+const sorted = sorter.sort(numbers);
+console.log(sorted);
 
-// Run the example
-exampleUsage();
-class Graph {
-    private vertices: number;
-    private edges: Edge[];
-    
-    constructor(vertices: number) {
-        this.vertices = vertices;
-        this.edges = [];
-    }
-    
-    addEdge(from: number, to: number, weight: number): void {
-        this.edges.push({ from, to, weight });
-    }
-    
-    findShortestPaths(source: number): ShortestPathResult {
-        return BellmanFord.findShortestPaths({
-            vertices: this.vertices,
-            edges: this.edges
-        }, source);
-    }
-}
-
-// Usage example with class-based approach
-function classBasedExample() {
-    const graph = new Graph(5);
-    
-    graph.addEdge(0, 1, 6);
-    graph.addEdge(0, 2, 7);
-    graph.addEdge(1, 2, 8);
-    graph.addEdge(1, 3, 5);
-    graph.addEdge(1, 4, -4);
-    graph.addEdge(2, 3, -3);
-    graph.addEdge(2, 4, 9);
-    graph.addEdge(3, 1, -2);
-    graph.addEdge(4, 0, 2);
-    graph.addEdge(4, 3, 7);
-    
-    const result = graph.findShortestPaths(0);
-    console.log("Distances:", result.distances);
-}
+// Or in-place sorting
+sorter.sortInPlace(numbers);
+console.log(numbers);
