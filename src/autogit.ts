@@ -1,125 +1,130 @@
-class ListNode {
-    val: number
-    next: ListNode | null
+function areAnagrams_sorting(s1: string, s2: string): boolean {
+    const cleanAndSort = (str: string): string => {
+        return str
+            .toLowerCase()                 // Convert to lowercase
+            .replace(/[^a-z0-9]/g, '')     // Remove non-alphanumeric characters (spaces, punctuation, etc.)
+            .split('')                     // Convert string to array of characters
+            .sort()                        // Sort the characters
+            .join('');                     // Join back into a string
+    };
 
-    constructor(val?: number, next?: ListNode | null) {
-        this.val = (val === undefined ? 0 : val)
-        this.next = (next === undefined ? null : next)
-    }
+    const cleanS1 = cleanAndSort(s1);
+    const cleanS2 = cleanAndSort(s2);
+
+    return cleanS1 === cleanS2;
 }
-function hasCycleHashSet(head: ListNode | null): boolean {
-    if (!head) {
-        return false; // An empty list cannot have a cycle
-    }
 
-    const seenNodes = new Set<ListNode>();
-    let current: ListNode | null = head;
+// --- Examples ---
+console.log("--- Sorting Method ---");
+console.log("'listen' and 'silent':", areAnagrams_sorting('listen', 'silent')); // true
+console.log("'hello' and 'world':", areAnagrams_sorting('hello', 'world')); // false
+console.log("'Debit card' and 'Bad credit':", areAnagrams_sorting('Debit card', 'Bad credit')); // true
+console.log("'A gentleman' and 'Elegant man':", areAnagrams_sorting('A gentleman', 'Elegant man')); // true
+console.log("'anagram' and 'nagaram':", areAnagrams_sorting('anagram', 'nagaram')); // true
+console.log("'rat' and 'car':", areAnagrams_sorting('rat', 'car')); // false
+console.log("'' and '':", areAnagrams_sorting('', '')); // true
+console.log("'a' and 'b':", areAnagrams_sorting('a', 'b')); // false
+console.log("'a' and 'A':", areAnagrams_sorting('a', 'A')); // true (due to toLowerCase)
+function areAnagrams_counting(s1: string, s2: string): boolean {
+    const cleanString = (str: string): string => {
+        return str
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '');
+    };
 
-    while (current !== null) {
-        if (seenNodes.has(current)) {
-            return true; // Cycle detected! We've seen this node before.
-        }
-        seenNodes.add(current);
-        current = current.next;
-    }
+    const cleanedS1 = cleanString(s1);
+    const cleanedS2 = cleanString(s2);
 
-    return false; // Reached the end of the list without finding a cycle
-}
-function hasCycleFloyd(head: ListNode | null): boolean {
-    if (!head || !head.next) {
-        // An empty list or a list with only one node cannot have a cycle.
+    // If lengths differ after cleaning, they cannot be anagrams
+    if (cleanedS1.length !== cleanedS2.length) {
         return false;
     }
 
-    let slow: ListNode | null = head;
-    let fast: ListNode | null = head;
+    const charCounts = new Map<string, number>();
 
-    while (fast !== null && fast.next !== null) {
-        slow = slow!.next;          // Slow pointer moves one step
-        fast = fast.next.next;      // Fast pointer moves two steps
+    // Populate charCounts for the first string
+    for (const char of cleanedS1) {
+        charCounts.set(char, (charCounts.get(char) || 0) + 1);
+    }
 
-        if (slow === fast) {
-            return true; // Pointers met, a cycle is detected!
+    // Decrement counts for characters in the second string
+    for (const char of cleanedS2) {
+        const count = charCounts.get(char);
+        if (count === undefined || count === 0) {
+            // Character not found or its count has already reached zero
+            return false;
         }
+        charCounts.set(char, count - 1);
     }
 
-    return false; // Fast pointer reached the end, no cycle
-}
-// --- Helper to create a linked list with an optional cycle ---
-function createLinkedList(arr: number[], cyclePos: number = -1): ListNode | null {
-    if (arr.length === 0) {
-        return null;
-    }
-
-    let head: ListNode | null = null;
-    let current: ListNode | null = null;
-    let cycleNode: ListNode | null = null; // Node where the cycle should point to
-
-    const nodes: ListNode[] = []; // To keep track of created nodes
-
-    for (let i = 0; i < arr.length; i++) {
-        const newNode = new ListNode(arr[i]);
-        nodes.push(newNode);
-
-        if (head === null) {
-            head = newNode;
-            current = newNode;
-        } else {
-            current!.next = newNode;
-            current = newNode;
-        }
-
-        if (i === cyclePos) {
-            cycleNode = newNode;
-        }
-    }
-
-    // Create the cycle if cyclePos is valid
-    if (cyclePos !== -1 && current !== null && cycleNode !== null) {
-        current.next = cycleNode;
-    }
-
-    return head;
+    // If we reach here, and lengths were equal, all counts must be zero.
+    // (No need for an explicit loop to check if all map values are 0 because
+    // the length check and decrement logic already guarantee this).
+    return true;
 }
 
-console.log("--- Test Cases (HashSet Method) ---");
+// --- Examples ---
+console.log("\n--- Counting Method ---");
+console.log("'listen' and 'silent':", areAnagrams_counting('listen', 'silent')); // true
+console.log("'hello' and 'world':", areAnagrams_counting('hello', 'world')); // false
+console.log("'Debit card' and 'Bad credit':", areAnagrams_counting('Debit card', 'Bad credit')); // true
+console.log("'A gentleman' and 'Elegant man':", areAnagrams_counting('A gentleman', 'Elegant man')); // true
+console.log("'anagram' and 'nagaram':", areAnagrams_counting('anagram', 'nagaram')); // true
+console.log("'rat' and 'car':", areAnagrams_counting('rat', 'car')); // false
+console.log("'' and '':", areAnagrams_counting('', '')); // true
+console.log("'a' and 'b':", areAnagrams_counting('a', 'b')); // false
+console.log("'a' and 'A':", areAnagrams_counting('a', 'A')); // true
+interface AnagramOptions {
+    caseSensitive?: boolean;             // Default: false
+    ignoreNonAlphanumeric?: boolean;     // Default: true (includes spaces, punctuation, symbols)
+    // You could add more granular options like ignoreSpaces only, ignorePunctuation only etc.
+    // but ignoreNonAlphanumeric covers the most common use case.
+}
 
-// Test Case 1: No cycle
-let list1 = createLinkedList([1, 2, 3, 4, 5]);
-console.log("List 1 (no cycle):", hasCycleHashSet(list1)); // Expected: false
+function areAnagrams(s1: string, s2: string, options?: AnagramOptions): boolean {
+    const defaultOptions: Required<AnagramOptions> = {
+        caseSensitive: false,
+        ignoreNonAlphanumeric: true,
+    };
+    const mergedOptions = { ...defaultOptions, ...options };
 
-// Test Case 2: Cycle (5 -> 2)
-let list2 = createLinkedList([1, 2, 3, 4, 5], 1); // Cycle points to node at index 1 (value 2)
-console.log("List 2 (cycle 5->2):", hasCycleHashSet(list2)); // Expected: true
+    const cleanString = (str: string): string => {
+        let processed = str;
 
-// Test Case 3: Single node, no cycle
-let list3 = createLinkedList([1]);
-console.log("List 3 (single node, no cycle):", hasCycleHashSet(list3)); // Expected: false
+        if (!mergedOptions.caseSensitive) {
+            processed = processed.toLowerCase();
+        }
 
-// Test Case 4: Single node, cycle (1 -> 1)
-let list4 = createLinkedList([1], 0); // Cycle points to node at index 0 (value 1)
-console.log("List 4 (single node, cycle 1->1):", hasCycleHashSet(list4)); // Expected: true
+        if (mergedOptions.ignoreNonAlphanumeric) {
+            processed = processed.replace(/[^a-z0-9]/g, ''); // Removes anything not a-z or 0-9
+        }
+        // If you wanted to ignore only spaces if ignoreNonAlphanumeric is false:
+        // else if (mergedOptions.ignoreSpaces) {
+        //     processed = processed.replace(/\s/g, '');
+        // }
 
-// Test Case 5: Empty list
-let list5 = createLinkedList([]);
-console.log("List 5 (empty):", hasCycleHashSet(list5)); // Expected: false
+        return processed.split('').sort().join('');
+    };
 
-// Test Case 6: Two nodes, no cycle
-let list6 = createLinkedList([1, 2]);
-console.log("List 6 (two nodes, no cycle):", hasCycleHashSet(list6)); // Expected: false
+    const cleanedS1 = cleanString(s1);
+    const cleanedS2 = cleanString(s2);
 
-// Test Case 7: Two nodes, cycle (2 -> 1)
-let list7 = createLinkedList([1, 2], 0); // Cycle points to node at index 0 (value 1)
-console.log("List 7 (two nodes, cycle 2->1):", hasCycleHashSet(list7)); // Expected: true
+    return cleanedS1 === cleanedS2;
+}
 
+// --- Examples ---
+console.log("\n--- Configurable Method ---");
 
-console.log("\n--- Test Cases (Floyd's Tortoise and Hare Method) ---");
+// Default behavior (ignore case, ignore non-alphanumeric)
+console.log("Default: 'Listen' and 'Silent':", areAnagrams('Listen', 'Silent')); // true
+console.log("Default: 'Debit card' and 'Bad credit':", areAnagrams('Debit card', 'Bad credit')); // true
 
-// Re-using lists for Floyd's algorithm
-console.log("List 1 (no cycle):", hasCycleFloyd(list1)); // Expected: false
-console.log("List 2 (cycle 5->2):", hasCycleFloyd(list2)); // Expected: true
-console.log("List 3 (single node, no cycle):", hasCycleFloyd(list3)); // Expected: false
-console.log("List 4 (single node, cycle 1->1):", hasCycleFloyd(list4)); // Expected: true
-console.log("List 5 (empty):", hasCycleFloyd(list5)); // Expected: false
-console.log("List 6 (two nodes, no cycle):", hasCycleFloyd(list6)); // Expected: false
-console.log("List 7 (two nodes, cycle 2->1):", hasCycleFloyd(list7)); // Expected: true
+// Case-sensitive check
+console.log("Case-sensitive: 'Listen' and 'silent':", areAnagrams('Listen', 'silent', { caseSensitive: true })); // false
+console.log("Case-sensitive: 'abc' and 'bca':", areAnagrams('abc', 'bca', { caseSensitive: true })); // true
+
+// Don't ignore non-alphanumeric (spaces, punctuation now matter)
+console.log("Include spaces: 'hello world' and 'world hello':", areAnagrams('hello world', 'world hello', { ignoreNonAlphanumeric: false })); // true
+console.log("Include spaces: 'hello world' and 'helloworld':", areAnagrams('hello world', 'helloworld', { ignoreNonAlphanumeric: false })); // false
+console.log("Include punctuation: 'hello!' and 'hello':", areAnagrams('hello!', 'hello', { ignoreNonAlphanumeric: false })); // false
+console.log("Include punctuation: 'a.b' and 'b.a':", areAnagrams('a.b', 'b.a', { ignoreNonAlphanumeric: false })); // true
