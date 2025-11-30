@@ -1,27 +1,40 @@
-/**
- * BogoSort (a.k.a. permutation sort, stupid sort, slow sort, shotgun sort)
- * Keeps shuffling the array until it happens to be sorted.
- * Expected time-complexity: O((n+1)!) — delightfully awful.
- */
-function bogoSort<T>(arr: T[]): T[] {
-  const isSorted = (a: T[]): boolean => {
-    for (let i = 1; i < a.length; i++) if (a[i - 1] > a[i]) return false;
-    return true;
-  };
+class AVLNode {
+    value: number;
+    left: AVLNode | null;
+    right: AVLNode | null;
+    height: number;
 
-  const shuffle = (a: T[]): void => {
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
+    constructor(value: number) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+        this.height = 1;
     }
-  };
-
-  const copy = [...arr];
-  while (!isSorted(copy)) shuffle(copy);
-  return copy;
 }
 
-/* quick demo */
-const nums = [3, 1, 4, 1, 5, 9, 2, 6];
-console.log("original:", nums);
-console.log("bogo’d:  ", bogoSort(nums));
+class AVLTree {
+    private root: AVLNode | null;
+
+    constructor() {
+        this.root = null;
+    }
+
+    // Get height of a node (helper function)
+    private getHeight(node: AVLNode | null): number {
+        return node ? node.height : 0;
+    }
+
+    // Update node height based on children's heights
+    private updateHeight(node: AVLNode): void {
+        node.height = 1 + Math.max(
+            this.getHeight(node.left),
+            this.getHeight(node.right)
+        );
+    }
+
+    // Get balance factor (difference between left and right subtree heights)
+    private getBalance(node: AVLNode): number {
+        return this.getHeight(node.left) - this.getHeight(node.right);
+    }
+
+
