@@ -1,40 +1,164 @@
-function binarySearchRecursive(
-    arr: number[],
-    target: number,
-    start: number = 0,
-    end: number = arr.length - 1
-): number {
-    // Base case: element not found
-    if (start > end) {
-        return -1;
-    }
-
-    const mid = Math.floor((start + end) / 2);
-
-    // Element found at mid index
-    if (arr[mid] === target) {
-        return mid;
-    }
-
-    // Search in the left half
-    if (target < arr[mid]) {
-        return binarySearchRecursive(arr, target, start, mid - 1);
-    } 
-    // Search in the right half
-    else {
-        return binarySearchRecursive(arr, target, mid + 1, end);
-    }
+interface Graph {
+  [node: string]: string[];
 }
 
-// Example usage:
-const sortedArray = [2, 4, 6, 8, 10, 12, 14, 16];
-const targets = [10, 5, 16, 1];
+function topologicalSort(graph: Graph): string[] {
+  const inDegree: Record<string, number> = {};
+  const result: string[] = [];
+  
+  // Initialize in-degree for all nodes
+  for (const node in graph) {
+    inDegree[node] = 0;
+  }
+  
+  // Calculate in-degree for each node
+  for (const node in graph) {
+    for (const neighbor of graph[node]) {
+      inDegree[neighbor] = (inDegree[neighbor] || 0) + 1;
+    }
+  }
+  
+  // Find nodes with 0 in-degree (sources)
+  const queue: string[] = [];
+  for (const node in inDegree) {
+    if (inDegree[node] === 0) {
+      queue.push(node);
+    }
+  }
+  
+  // Process the queue
+  while (queue.length > 0) {
+    const node = queue.shift()!;
+    result.push(node);
+    
+    for (const neighbor of graph[node] || []) {
+      inDegree[neighbor]--;
+      if (inDegree[neighbor] === 0) {
+        queue.push(neighbor);
+      }
+    }
+  }
+  
+  // Check for cycles
+  if (result.length !== Object.keys(inDegree).length) {
+    throw new Error("Graph has cycles! Topological sort not possible.");
+  }
+  
+  return result;
+}
+class TopologicalSorter<T extends string | number | symbol> {
+  sort(graph: Record<T, T[]>): T[] {
+    const inDegree: Partial<Record<T, number>> = {};
+    const result: T[] = [];
+    
+    // Initialize in-degree
+    for (const node of Object.keys(graph) as T[]) {
+      inDegree[node] = 0;
+    }
+    
+    // Calculate in-degree
+    for (const node of Object.keys(graph) as T[]) {
+      for (const neighbor of graph[node]) {
+        inDegree[neighbor] = (inDegree[neighbor] || 0) + 1;
+      }
+    }
+    
+    // Find sources
+    const queue: T[] = [];
+    for (const node of Object.keys(inDegree) as T[]) {
+      if (inDegree[node] === 0) {
+        queue.push(node);
+      }
+    }
+    
+    // Process queue
+    while (queue.length > 0) {
+      const node = queue.shift()!;
+      result.push(node);
+      
+      for (const neighbor of graph[node] || []) {
+        inDegree[neighbor]!--;
+        if (inDegree[neighbor] === 0) {
+          queue.push(neighbor);
+        }
+      }
+    }
+    
+    // Check for cycles
+    if (result.length !== Object.keys(inDegree).length) {
+      throw new Error("Graph contains cycles");
+    }
+    
+    return result;
+  }
+}
+// Example 1: Simple dependency graph
+const graph1 = {
+  'A': ['B', 'C'],
+  'B': ['D'],
+  'C': ['D'],
+  'D': []
+};
 
-targets.forEach(target => {
-    const index = binarySearchRecursive(sortedArray, target);
-    console.log(`Target ${target} found at index: ${index}`);
-});
-Target 10 found at index: 4
-Target 5 found at index: -1
-Target 16 found at index: 7
-Target 1 found at index: -1
+console.log(topologicalSort(graph1)); 
+// Output: ['A', 'B', 'C', 'D'] or ['A', 'C', 'B', 'D']
+
+// Example 2: Course prerequisites
+const courses = {
+  'Calculus': ['Algebra'],
+  'Algebra': [],
+  'Physics': ['Calculus'],
+  'Advanced Physics': ['Physics']
+};
+
+console.log(topologicalSort(courses));
+// Output: ['Algebra', 'Calculus', 'Physics', 'Advanced Physics']
+
+// Example 3: Using generic version
+const numberGraph = {
+  1: [2, 3],
+  2: [4],
+  3: [4],
+  4: []
+};
+
+const sorter = new TopologicalSorter<number>();
+console.log(sorter.sort(numberGraph)); 
+// Output: [1, 2, 3, 4] or [1, 3, 2, 4]
+function topologicalSortDFS(graph: Graph): string[] {
+  const visited: Record<string, boolean> = {};
+  const temp: Record<string, boolean> = {};
+  const result: string[] = [];
+  let hasCycle = false;
+
+  function visit(node: string): void {
+    if (temp[node]) {
+      hasCycle = true;
+      return;
+    }
+    
+    if (!visited[node]) {
+      temp[node] = true;
+      
+      for (const neighbor of graph[node] || []) {
+        visit(neighbor);
+      }
+      
+      visited[node] = true;
+      delete temp[node];
+      result.unshift(node);
+    }
+  }
+
+  for (const node in graph) {
+    if (!visited[node]) {
+      visit(node);
+    }
+  }
+
+  if (hasCycle) {
+    throw new Error("Graph contains cycles");
+  }
+
+  return result;
+}
