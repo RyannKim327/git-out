@@ -1,92 +1,73 @@
-type Graph<T> = Map<T, T[]>;
+function selectionSort<T>(array: T[], compareFn?: (a: T, b: T) => number): T[] {
+    const arr = [...array]; // Create a copy to avoid mutating original array
+    const n = arr.length;
+    const comparator = compareFn || ((a: T, b: T) => a < b ? -1 : (a > b ? 1 : 0));
 
-/**
- * DFS Implementation (Recursive)
- * @param graph - Graph represented as adjacency list (Map)
- * @param start - Starting node
- * @param callback - Optional processing function for each node
- * @returns Array of nodes in DFS order
- */
-function dfsRecursive<T>(
-  graph: Graph<T>,
-  start: T,
-  callback?: (node: T) => void
-): T[] {
-  const visited = new Set<T>();
-  const result: T[] = [];
-  
-  function dfs(node: T) {
-    if (!graph.has(node) || visited.has(node)) return;
-    
-    visited.add(node);
-    result.push(node);
-    if (callback) callback(node);
-    
-    const neighbors = graph.get(node) || [];
-    for (const neighbor of neighbors) {
-      if (!visited.has(neighbor)) {
-        dfs(neighbor);
-      }
-    }
-  }
-  
-  dfs(start);
-  return result;
-}
-
-/**
- * DFS Implementation (Iterative)
- * @param graph - Graph represented as adjacency list (Map)
- * @param start - Starting node
- * @param callback - Optional processing function for each node
- * @returns Array of nodes in DFS order
- */
-function dfsIterative<T>(
-  graph: Graph<T>,
-  start: T,
-  callback?: (node: T) => void
-): T[] {
-  if (!graph.has(start)) return [];
-  
-  const visited = new Set<T>();
-  const stack: T[] = [start];
-  const result: T[] = [];
-  
-  while (stack.length > 0) {
-    const current = stack.pop()!;
-    
-    if (!visited.has(current)) {
-      visited.add(current);
-      result.push(current);
-      if (callback) callback(current);
-      
-      const neighbors = graph.get(current) || [];
-      // Reverse to maintain same order as recursive version
-      for (const neighbor of neighbors.reverse()) {
-        if (!visited.has(neighbor)) {
-          stack.push(neighbor);
+    for (let i = 0; i < n - 1; i++) {
+        // Find the minimum element in the unsorted part
+        let minIndex = i;
+        
+        for (let j = i + 1; j < n; j++) {
+            if (comparator(arr[j], arr[minIndex]) < 0) {
+                minIndex = j;
+            }
         }
-      }
+
+        // Swap the found minimum element with the first element of unsorted part
+        if (minIndex !== i) {
+            [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+        }
     }
-  }
-  
-  return result;
+    
+    return arr;
 }
-// Create a sample graph
-const graph = new Map<number, number[]>([
-  [1, [2, 4]],
-  [2, [1, 3, 5]],
-  [3, [2, 6]],
-  [4, [1, 5]],
-  [5, [2, 4, 6]],
-  [6, [3, 5]],
-]);
+// Sorting numbers (default comparator)
+const numbers = [64, 25, 12, 22, 11];
+const sortedNumbers = selectionSort(numbers);
+console.log(sortedNumbers); // [11, 12, 22, 25, 64]
 
-console.log('Recursive DFS:', dfsRecursive(graph, 1));
-// Output: [1, 2, 3, 6, 5, 4]
+// Sorting strings (default comparator)
+const strings = ["banana", "apple", "cherry", "date"];
+const sortedStrings = selectionSort(strings);
+console.log(sortedStrings); // ["apple", "banana", "cherry", "date"]
 
-console.log('Iterative DFS:', dfsIterative(graph, 1));
-// Output: [1, 2, 3, 6, 5, 4]
+// Custom comparator for descending order
+const descendingNumbers = selectionSort(numbers, (a, b) => b - a);
+console.log(descendingNumbers); // [64, 25, 22, 12, 11]
 
-// With callback
-dfsIterative(graph, 1, node => console.log(`Visited ${node}`));
+// Custom objects with custom comparator
+interface Person {
+    name: string;
+    age: number;
+}
+
+const people: Person[] = [
+    { name: "John", age: 30 },
+    { name: "Alice", age: 25 },
+    { name: "Bob", age: 35 }
+];
+
+const sortedByAge = selectionSort(people, (a, b) => a.age - b.age);
+console.log(sortedByAge);
+// [{ name: "Alice", age: 25 }, { name: "John", age: 30 }, { name: "Bob", age: 35 }]
+function selectionSortInPlace<T>(
+    array: T[], 
+    compareFn?: (a: T, b: T) => number
+): void {
+    const n = array.length;
+    const comparator = compareFn || ((a: T, b: T) => a < b ? -1 : (a > b ? 1 : 0));
+
+    for (let i = 0; i < n - 1; i++) {
+        let minIndex = i;
+        
+        for (let j = i + 1; j < n; j++) {
+            if (comparator(array[j], array[minIndex]) < 0) {
+                minIndex = j;
+            }
+        }
+
+        if (minIndex !== i) {
+            [array[i], array[minIndex]] = [array[minIndex], array[i]];
+        }
+    }
+}
