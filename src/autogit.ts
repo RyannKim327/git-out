@@ -1,42 +1,66 @@
-/**
- * Randomized QuickSort implementation in TypeScript
- * Sorts an array of numbers in ascending order
- * Average time complexity: O(n log n), Worst-case: O(n²) (but rare with randomization)
- */
-function quickSort(arr: number[]): number[] {
-    // Base case: arrays with 0 or 1 element are already sorted
-    if (arr.length <= 1) {
-        return arr;
-    }
-
-    // Random pivot selection to avoid worst-case performance
-    const pivotIndex = Math.floor(Math.random() * arr.length);
-    const pivot = arr[pivotIndex];
-
-    const left: number[] = [];
-    const right: number[] = [];
-    const equal: number[] = [];
-
-    // Partition the array into three parts
-    for (const num of arr) {
-        if (num < pivot) {
-            left.push(num);
-        } else if (num > pivot) {
-            right.push(num);
-        } else {
-            equal.push(num);
-        }
-    }
-
-    // Recursively sort left and right partitions
-    return [...quickSort(left), ...equal, ...quickSort(right)];
+interface User {
+  name: string;
+  age: number;
+  email: string;
 }
 
-// Example usage:
-const unsortedArray = [9, 3, 7, 4, 6, 1, 2, 8, 5];
-const sortedArray = quickSort(unsortedArray);
+class UserManager {
+  private users: User[] = [];
 
-console.log("Original array:", unsortedArray);
-console.log("Sorted array:  ", sortedArray);
-Original array: [9, 3, 7, 4, 6, 1, 2, 8, 5]
-Sorted array:   [1, 2, 3, 4, 5, 6, 7, 8, 9]
+  // Method to collect user input (simulated)
+  public addUserFromInput(): void {
+    const name: string = this.getInput("Enter your name: ");
+    const age: number = parseInt(this.getInput("Enter your age: "));
+    const email: string = this.getInput("Enter your email: ");
+
+    const newUser: User = { name, age, email };
+    
+    if (this.validateUser(newUser)) {
+      this.users.push(newUser);
+      console.log("User added successfully!");
+      this.displayUser(newUser);
+    } else {
+      console.log("Invalid user data. Please check your input.");
+    }
+  }
+
+  // Simulated input function (would use readline in Node.js)
+  private getInput(prompt: string): string {
+    // In a real environment, you'd use:
+    // const readline = require('readline').createInterface(...)
+    // For demonstration, we'll simulate with Math.random()
+    const simulatedInputs: string[] = ["Alice", "25", "alice@example.com"];
+    console.log(prompt);
+    return simulatedInputs[Math.floor(Math.random() * simulatedInputs.length)];
+  }
+
+  private validateUser(user: User): boolean {
+    return (
+      user.name.length > 0 &&
+      user.age >= 0 &&
+      user.email.includes('@')
+    );
+  }
+
+  private displayUser(user: User): void {
+    console.log(`
+      User Details:
+      Name: ${user.name}
+      Age: ${user.age}
+      Email: ${user.email}
+    `);
+  }
+
+  public getAllUsers(): User[] {
+    return this.users;
+  }
+}
+
+// Usage example
+const userManager = new UserManager();
+userManager.addUserFromInput();
+
+// In a real Node.js environment, you might use:
+// import * as readline from 'readline';
+// const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+// rl.question('Input: ', (answer) => { ... });
