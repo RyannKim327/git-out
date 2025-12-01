@@ -1,73 +1,61 @@
-function selectionSort<T>(array: T[], compareFn?: (a: T, b: T) => number): T[] {
-    const arr = [...array]; // Create a copy to avoid mutating original array
-    const n = arr.length;
-    const comparator = compareFn || ((a: T, b: T) => a < b ? -1 : (a > b ? 1 : 0));
+class ListNode {
+  val: number;
+  next: ListNode | null = null;
 
-    for (let i = 0; i < n - 1; i++) {
-        // Find the minimum element in the unsorted part
-        let minIndex = i;
-        
-        for (let j = i + 1; j < n; j++) {
-            if (comparator(arr[j], arr[minIndex]) < 0) {
-                minIndex = j;
-            }
-        }
+  constructor(val: number) {
+    this.val = val;
+  }
+}
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true;
 
-        // Swap the found minimum element with the first element of unsorted part
-        if (minIndex !== i) {
-            [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-        }
+  // Step 1: Find the middle using fast/slow pointers
+  let slow = head;
+  let fast = head;
+  while (fast && fast.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
+  }
+
+  // Step 2: Reverse the second half
+  let prev: ListNode | null = null;
+  let curr: ListNode | null = slow;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+
+  // Step 3: Compare first and reversed second half
+  let left = head;
+  let right = prev;
+  let result = true;
+  while (right) {
+    if (left!.val !== right.val) {
+      result = false;
+      break;
     }
-    
-    return arr;
+    left = left!.next;
+    right = right.next;
+  }
+
+  // Optional: Restore the list (if needed)
+  // Reverse the second half back
+  curr = prev;
+  prev = null;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+
+  return result;
 }
-// Sorting numbers (default comparator)
-const numbers = [64, 25, 12, 22, 11];
-const sortedNumbers = selectionSort(numbers);
-console.log(sortedNumbers); // [11, 12, 22, 25, 64]
+const head = new ListNode(1);
+head.next = new ListNode(2);
+head.next.next = new ListNode(2);
+head.next.next.next = new ListNode(1);
 
-// Sorting strings (default comparator)
-const strings = ["banana", "apple", "cherry", "date"];
-const sortedStrings = selectionSort(strings);
-console.log(sortedStrings); // ["apple", "banana", "cherry", "date"]
-
-// Custom comparator for descending order
-const descendingNumbers = selectionSort(numbers, (a, b) => b - a);
-console.log(descendingNumbers); // [64, 25, 22, 12, 11]
-
-// Custom objects with custom comparator
-interface Person {
-    name: string;
-    age: number;
-}
-
-const people: Person[] = [
-    { name: "John", age: 30 },
-    { name: "Alice", age: 25 },
-    { name: "Bob", age: 35 }
-];
-
-const sortedByAge = selectionSort(people, (a, b) => a.age - b.age);
-console.log(sortedByAge);
-// [{ name: "Alice", age: 25 }, { name: "John", age: 30 }, { name: "Bob", age: 35 }]
-function selectionSortInPlace<T>(
-    array: T[], 
-    compareFn?: (a: T, b: T) => number
-): void {
-    const n = array.length;
-    const comparator = compareFn || ((a: T, b: T) => a < b ? -1 : (a > b ? 1 : 0));
-
-    for (let i = 0; i < n - 1; i++) {
-        let minIndex = i;
-        
-        for (let j = i + 1; j < n; j++) {
-            if (comparator(array[j], array[minIndex]) < 0) {
-                minIndex = j;
-            }
-        }
-
-        if (minIndex !== i) {
-            [array[i], array[minIndex]] = [array[minIndex], array[i]];
-        }
-    }
-}
+console.log(isPalindrome(head)); // true
