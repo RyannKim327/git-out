@@ -1,107 +1,46 @@
-function maxSubarraySum(arr: number[]): [number, number[]] {
-    if (arr.length === 0) return [0, []];
-    
-    let maxEndingHere = arr[0];
-    let maxSoFar = arr[0];
-    let start = 0;
-    let end = 0;
-    let tempStart = 0;
+let firstName: string = "John";
+let lastName: string = "Doe";
 
-    for (let i = 1; i < arr.length; i++) {
-        if (maxEndingHere + arr[i] < arr[i]) {
-            maxEndingHere = arr[i];
-            tempStart = i;
-        } else {
-            maxEndingHere += arr[i];
-        }
+// Concatenate with a space in between
+let fullName: string = firstName + " " + lastName;
 
-        if (maxSoFar < maxEndingHere) {
-            maxSoFar = maxEndingHere;
-            start = tempStart;
-            end = i;
-        }
-    }
+console.log(fullName); // Output: John Doe
 
-    const subarray = arr.slice(start, end + 1);
-    return [maxSoFar, subarray];
-}
+let greeting: string = "Hello";
+let message: string = greeting + ", world!";
+console.log(message); // Output: Hello, world!
+let product: string = "Laptop";
+let price: number = 1200;
+let currency: string = "USD";
 
-// Example usage
-const array = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
-const [maxSum, subarray] = maxSubarraySum(array);
+// Using template literals to embed variables directly
+let productInfo: string = `The ${product} costs $${price} ${currency}.`;
 
-console.log("Maximum sum:", maxSum); // 6
-console.log("Subarray:", subarray); // [4, -1, 2, 1]
-function maxSubarraySumSimple(arr: number[]): number {
-    let maxCurrent = arr[0];
-    let maxGlobal = arr[0];
+console.log(productInfo); // Output: The Laptop costs $1200 USD.
 
-    for (let i = 1; i < arr.length; i++) {
-        maxCurrent = Math.max(arr[i], maxCurrent + arr[i]);
-        maxGlobal = Math.max(maxGlobal, maxCurrent);
-    }
+let city: string = "New York";
+let country: string = "USA";
 
-    return maxGlobal;
-}
+// Template literals can also handle multi-line strings
+let address: string = `
+  Location: ${city},
+  Country: ${country}
+`;
 
-// Example usage
-console.log("Maximum sum:", maxSubarraySumSimple(array)); // 6
-function maxSubarraySumSafe(arr: number[]): [number, number[]] {
-    if (arr.length === 0) {
-        return [0, []];
-    }
-    
-    if (arr.length === 1) {
-        return [arr[0], [arr[0]]];
-    }
+console.log(address);
+/* Output:
+  Location: New York,
+  Country: USA
+*/
+let part1: string = "Hello";
+let part2: string = "World";
+let part3: string = "!";
 
-    // Rest of Kadane's algorithm implementation...
-    return maxSubarraySum(arr); // Reuse the first implementation
-}
-interface MaxSubarrayResult {
-    sum: number;
-    subarray: number[];
-    indices: [number, number];
-}
+let fullString: string = part1.concat(" ", part2, part3);
 
-function findMaxSubarray(arr: number[]): MaxSubarrayResult {
-    if (!Array.isArray(arr)) {
-        throw new Error("Input must be an array");
-    }
+console.log(fullString); // Output: Hello World!
 
-    if (arr.length === 0) {
-        return { sum: 0, subarray: [], indices: [0, 0] };
-    }
-
-    let maxCurrent = arr[0];
-    let maxGlobal = arr[0];
-    let start = 0;
-    let end = 0;
-    let tempStart = 0;
-
-    for (let i = 1; i < arr.length; i++) {
-        if (maxCurrent + arr[i] < arr[i]) {
-            maxCurrent = arr[i];
-            tempStart = i;
-        } else {
-            maxCurrent += arr[i];
-        }
-
-        if (maxCurrent > maxGlobal) {
-            maxGlobal = maxCurrent;
-            start = tempStart;
-            end = i;
-        }
-    }
-
-    return {
-        sum: maxGlobal,
-        subarray: arr.slice(start, end + 1),
-        indices: [start, end]
-    };
-}
-
-// Usage example
-const result = findMaxSubarray([-2, 1, -3, 4, -1, 2, 1, -5, 4]);
-console.log(result);
-// Output: { sum: 6, subarray: [4, -1, 2, 1], indices: [3, 6] }
+let firstNameAgain: string = "Jane";
+let lastNameAgain: string = "Doe";
+let welcomeMessage: string = "Welcome, ".concat(firstNameAgain, " ", lastNameAgain, "!");
+console.log(welcomeMessage); // Output: Welcome, Jane Doe!
