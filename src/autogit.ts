@@ -1,31 +1,33 @@
-function removeVowelsRegex(inputString: string): string {
-  // The regular expression /[aeiou]/gi does the following:
-  // - `[aeiou]`: Matches any single character that is 'a', 'e', 'i', 'o', or 'u'.
-  // - `g` (global flag): Ensures that ALL occurrences of vowels are matched and replaced,
-  //                     not just the first one.
-  // - `i` (case-insensitive flag): Ensures that both lowercase (a, e, i, o, u)
-  //                                and uppercase (A, E, I, O, U) vowels are matched.
-  return inputString.replace(/[aeiou]/gi, '');
+function majorityElement(nums: number[]): number {
+    let count = 0;
+    let candidate: number | null = null;
+
+    for (const num of nums) {
+        if (count === 0) {
+            candidate = num;
+        }
+        count += (num === candidate) ? 1 : -1;
+    }
+
+    return candidate!;
 }
 
-// --- Examples ---
-console.log(removeVowelsRegex("Hello World"));           // Hll Wrld
-console.log(removeVowelsRegex("TypeScript Programming")); // TypScrpt Prgrmmng
-console.log(removeVowelsRegex("AEIOUaeiou"));           //
-console.log(removeVowelsRegex("Rhythm"));                // Rhythm (no standard vowels removed)
-console.log(removeVowelsRegex(""));                     //
-function removeVowelsFilter(inputString: string): string {
-  const vowels = ['a', 'e', 'i', 'o', 'u'];
+// Example:
+console.log(majorityElement([2,2,1,1,1,2,2])); // Output: 2
+function majorityElementSafe(nums: number[]): number | null {
+    let count = 0;
+    let candidate: number | null = null;
 
-  return inputString
-    .split('') // 1. Split the string into an array of individual characters
-    .filter(char => !vowels.includes(char.toLowerCase())) // 2. Filter out vowels
-    .join(''); // 3. Join the remaining characters back into a string
+    for (const num of nums) {
+        if (count === 0) {
+            candidate = num;
+        }
+        count += (num === candidate) ? 1 : -1;
+    }
+
+    // Verify
+    count = nums.filter(n => n === candidate).length;
+    return count > nums.length / 2 ? candidate : null;
 }
 
-// --- Examples ---
-console.log(removeVowelsFilter("Hello World"));           // Hll Wrld
-console.log(removeVowelsFilter("TypeScript Programming")); // TypScrpt Prgrmmng
-console.log(removeVowelsFilter("AEIOUaeiou"));           //
-console.log(removeVowelsFilter("Rhythm"));                // Rhythm
-console.log(removeVowelsFilter(""));                     //
+console.log(majorityElementSafe([3,3,4])); // null
