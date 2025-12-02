@@ -1,32 +1,21 @@
-/**
- * Performs topological sort on a directed acyclic graph (DAG) using Kahn's algorithm.
- * @param graph A Map representing the adjacency list where keys are nodes and values are their outgoing edges.
- * @returns An array of nodes in topological order.
- * @throws If the graph contains a cycle.
- */
-function topologicalSort<T>(graph: Map<T, T[]>): T[] {
-    // Collect all nodes from graph keys and their adjacency lists
-    const nodes = new Set<T>();
-    graph.forEach((neighbors, node) => {
-        nodes.add(node);
-        neighbors.forEach(neighbor => nodes.add(neighbor));
-    });
+function isPalindrome(str: string): boolean {
+    // Clean the string (remove non-alphanumeric characters and lowercase)
+    const cleaned = str.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+    // Reverse the cleaned string and compare
+    return cleaned === [...cleaned].reverse().join('');
+}
+function isPalindrome(str: string): boolean {
+    const cleaned = str.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+    let left = 0;
+    let right = cleaned.length - 1;
 
-    // Calculate in-degrees for each node
-    const inDegree = new Map<T, number>();
-    nodes.forEach(node => inDegree.set(node, 0)); // Initialize to 0
-    
-    graph.forEach(neighbors => {
-        neighbors.forEach(neighbor => {
-            inDegree.set(neighbor, (inDegree.get(neighbor) || 0) + 1);
-        });
-    });
-
-    // Initialize queue with nodes having 0 in-degree
-    const queue: T[] = [];
-    inDegree.forEach((degree, node) => {
-        if (degree === 0) queue.push(node);
-    });
-
-    const sorted: T[] = [];
-
+    while (left < right) {
+        if (cleaned[left] !== cleaned[right]) return false;
+        left++;
+        right--;
+    }
+    return true;
+}
+console.log(isPalindrome("A man, a plan, a canal: Panama"));  // true
+console.log(isPalindrome("racecar"));                         // true
+console.log(isPalindrome("hello"));                           // false
