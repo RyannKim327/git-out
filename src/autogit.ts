@@ -1,126 +1,82 @@
-function findMajorityElementMap<T>(arr: T[]): T | undefined {
-    const n = arr.length;
-    if (n === 0) {
-        return undefined;
-    }
-    if (n === 1) {
-        return arr[0];
-    }
+// async-demo.ts
+import { Plugins } from '@capacitor/core';
+const { AsyncDemo } = Plugins;
 
-    const counts = new Map<T, number>();
-    const threshold = Math.floor(n / 2); // Calculate n/2
-
-    for (const item of arr) {
-        counts.set(item, (counts.get(item) || 0) + 1);
-        // Optimization: If a count exceeds threshold early, we can return
-        // This only works if a majority element is GUARANTEED to exist
-        // or if we're certain no other element could possibly catch up.
-        // For robustness, it's safer to check after all counts are tallied.
-    }
-
-    // Now, iterate through the map to find the majority element
-    for (const [element, count] of counts.entries()) {
-        if (count > threshold) {
-            return element;
-        }
-    }
-
-    return undefined; // No majority element found
+/**
+ * Fire-and-forget example
+ */
+(async () => {
+  try {
+    const { hash, size } = await AsyncDemo.doSomethingRandom({
+      url: 'https://httpbin.org/json',
+      algorithm: 'SHA-256'
+    });
+    console.log('Native async task finished!');
+    console.log('SHA-256 =', hash);
+    console.log('Payload size =', size, 'bytes');
+  } catch (e) {
+    console.error('Async task failed', e);
+  }
+})();
+// definitions.ts
+declare module '@capacitor/core' {
+  interface PluginRegistry {
+    AsyncDemo: {
+      doSomethingRandom(options: {
+        url: string;
+        algorithm: 'SHA-1' | 'SHA-256' | 'MD5';
+      }): Promise<{ hash: string; size: number }>;
+    };
+  }
 }
+package com.yourpackage.asyncdemo
 
-// --- Examples ---
-console.log("--- Using Hash Map ---");
-console.log("Numbers:", findMajorityElementMap([3, 2, 3])); // Output: 3
-console.log("Numbers:", findMajorityElementMap([2, 2, 1, 1, 1, 2, 2])); // Output: 2
-console.log("Numbers:", findMajorityElementMap([1, 2, 3])); // Output: undefined
-console.log("Numbers:", findMajorityElementMap([])); // Output: undefined
-console.log("Numbers:", findMajorityElementMap([7])); // Output: 7
-console.log("Strings:", findMajorityElementMap(["apple", "banana", "apple", "apple", "orange"])); // Output: apple
-function findMajorityElementBoyerMoore<T>(arr: T[]): T | undefined {
-    const n = arr.length;
-    if (n === 0) {
-        return undefined;
-    }
-    if (n === 1) {
-        return arr[0];
+import android.os.AsyncTask
+import com.getcapacitor.*
+import java.net.URL
+import java.security.MessageDigest
+import javax.xml.bind.DatatypeConverter
+
+@CapacitorPlugin(name = "AsyncDemo")
+class AsyncDemoPlugin : Plugin() {
+
+    @PluginMethod(returnType = PluginMethod.RETURN_PROMISE)
+    fun doSomethingRandom(call: PluginCall) {
+        val url = call.getString("url") ?: return call.reject("URL required")
+        val algo = call.getString("algorithm") ?: "SHA-256"
+
+        // AsyncTask is deprecated but still works; swap for coroutines if you wish
+        object : AsyncTask<Void, Void, Result>() {
+            override fun doInBackground(vararg params: Void?): Result? {
+                return try {
+                    val bytes = URL(url).readBytes()
+                    val digest = MessageDigest.getInstance(algo).digest(bytes)
+                    val hash = DatatypeConverter.printHexBinary(digest).lowercase()
+                    Result(hash, bytes.size)
+                } catch (t: Throwable) {
+                    null
+                }
+            }
+
+            override fun onPostExecute(result: Result?) {
+                result
+                    ?.let {
+                        val ret = JSObject()
+                        ret.put("hash", it.hash)
+                        ret.put("size", it.size)
+                        call.resolve(ret)
+                    }
+                    ?: call.reject("Async task failed")
+            }
+        }.execute()
     }
 
-    let candidate: T | undefined = undefined;
-    let count = 0;
-
-    // First pass: Find a potential candidate
-    for (const item of arr) {
-        if (count === 0) {
-            candidate = item;
-            count = 1;
-        } else if (item === candidate) { // Use '===' for strict equality
-            count++;
-        } else {
-            count--;
-        }
-    }
-
-    // Second pass: Verify if the candidate is indeed the majority element
-    // This step is necessary if the problem doesn't guarantee a majority element exists.
-    let actualCount = 0;
-    for (const item of arr) {
-        if (item === candidate) {
-            actualCount++;
-        }
-    }
-
-    if (actualCount > Math.floor(n / 2)) {
-        return candidate;
-    } else {
-        return undefined; // No majority element found or candidate wasn't truly majority
-    }
+    private data class Result(val hash: String, val size: Int)
 }
-
-// --- Examples ---
-console.log("\n--- Using Boyer-Moore Voting Algorithm ---");
-console.log("Numbers:", findMajorityElementBoyerMoore([3, 2, 3])); // Output: 3
-console.log("Numbers:", findMajorityElementBoyerMoore([2, 2, 1, 1, 1, 2, 2])); // Output: 2
-console.log("Numbers:", findMajorityElementBoyerMoore([1, 2, 3])); // Output: undefined
-console.log("Numbers:", findMajorityElementBoyerMoore([])); // Output: undefined
-console.log("Numbers:", findMajorityElementBoyerMoore([7])); // Output: 7
-console.log("Strings:", findMajorityElementBoyerMoore(["apple", "banana", "apple", "apple", "orange"])); // Output: apple
-function findMajorityElementSorting<T>(arr: T[]): T | undefined {
-    const n = arr.length;
-    if (n === 0) {
-        return undefined;
-    }
-    if (n === 1) {
-        return arr[0];
-    }
-
-    // Create a shallow copy to avoid modifying the original array
-    // .sort() works for numbers directly if they are primitives.
-    // For custom objects or complex sorting, a compare function is needed.
-    const sortedArr = [...arr].sort();
-
-    // The element at the middle index will be the majority element if one exists.
-    const candidate = sortedArr[Math.floor(n / 2)];
-
-    // Verification step (crucial if a majority element isn't guaranteed)
-    let actualCount = 0;
-    for (const item of arr) { // Iterate through the original array or sortedArr
-        if (item === candidate) {
-            actualCount++;
-        }
-    }
-
-    if (actualCount > Math.floor(n / 2)) {
-        return candidate;
-    } else {
-        return undefined; // No majority element found
-    }
-}
-
-// --- Examples ---
-console.log("\n--- Using Sorting ---");
-console.log("Numbers:", findMajorityElementSorting([3, 2, 3])); // Output: 3
-console.log("Numbers:", findMajorityElementSorting([2, 2, 1, 1, 1, 2, 2])); // Output: 2
-console.log("Numbers:", findMajorityElementSorting([1, 2, 3])); // Output: undefined
-console.log("Numbers:", findMajorityElementSorting([])); // Output: undefined
-console.log("Numbers:", findMajorityElementSorting([7])); // Output: 7
-console.log("Strings:", findMajorityElementSorting(["apple", "banana", "apple", "apple", "orange"])); // Output: apple
+import com.yourpackage.asyncdemo.AsyncDemoPlugin;
+// ...
+add(AsyncDemoPlugin.class);
+npm install
+npx cap sync android
+npm run build
+npx cap run android
