@@ -1,27 +1,44 @@
-// Define the node structure
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
+function isAnagram(str1: string, str2: string): boolean {
+    // Normalize the strings: lowercase and remove non-alphabetic characters
+    const normalize = (str: string): string => 
+        str.toLowerCase().replace(/[^a-z]/g, '');
+    
+    const cleanedStr1 = normalize(str1);
+    const cleanedStr2 = normalize(str2);
 
-  constructor(value: T) {
-    this.value = value;
-  }
+    // Early exit if lengths differ
+    if (cleanedStr1.length !== cleanedStr2.length) return false;
+
+    // Sort and compare
+    return (
+        cleanedStr1.split('').sort().join('') === 
+        cleanedStr2.split('').sort().join('')
+    );
 }
+function isAnagram(str1: string, str2: string): boolean {
+    const normalize = (str: string): string => 
+        str.toLowerCase().replace(/[^a-z]/g, '');
+    
+    const cleanedStr1 = normalize(str1);
+    const cleanedStr2 = normalize(str2);
 
-// Utility function to compute the length
-function getLength<T>(head: ListNode<T> | null): number {
-  let count = 0;
-  let current = head;
-  while (current) {
-    count++;
-    current = current.next;
-  }
-  return count;
+    if (cleanedStr1.length !== cleanedStr2.length) return false;
+
+    const charCount: Record<string, number> = {};
+
+    // Count characters in str1
+    for (const char of cleanedStr1) {
+        charCount[char] = (charCount[char] || 0) + 1;
+    }
+
+    // Decrement counts using str2
+    for (const char of cleanedStr2) {
+        if (!charCount[char]) return false; // Character not present or count is zero
+        charCount[char]--;
+    }
+
+    return true;
 }
-
-/* ---------- Usage demo ---------- */
-const head = new ListNode(1);
-head.next = new ListNode(2);
-head.next.next = new ListNode(3);
-
-console.log(getLength(head)); // 3
+console.log(isAnagram("listen", "silent"));       // true
+console.log(isAnagram("Dormitory", "dirty room"));// true
+console.log(isAnagram("hello", "world"));         // false
