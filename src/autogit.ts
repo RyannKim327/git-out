@@ -1,105 +1,81 @@
-class Stack<T> {
-    private elements: T[] = [];
-    private readonly capacity: number;
-
-    /**
-     * Creates a new Stack instance.
-     * @param capacity Optional maximum size of the stack (default = Infinity)
-     */
-    constructor(capacity: number = Infinity) {
-        this.capacity = capacity;
-    }
-
-    /**
-     * Adds an element to the top of the stack
-     * @param element Element to add
-     * @throws {Error} If stack is full
-     */
-    push(element: T): void {
-        if (this.isFull()) {
-            throw new Error("Stack overflow: Cannot push to a full stack");
-        }
-        this.elements.push(element);
-    }
-
-    /**
-     * Removes and returns the top element of the stack
-     * @returns Top element or undefined if empty
-     * @throws {Error} If stack is empty
-     */
-    pop(): T {
-        if (this.isEmpty()) {
-            throw new Error("Stack underflow: Cannot pop from an empty stack");
-        }
-        return this.elements.pop()!;
-    }
-
-    /**
-     * Returns the top element without removing it
-     * @returns Top element or undefined if empty
-     */
-    peek(): T | undefined {
-        return this.elements[this.elements.length - 1];
-    }
-
-    /**
-     * Checks if the stack is empty
-     * @returns True if stack is empty, false otherwise
-     */
-    isEmpty(): boolean {
-        return this.elements.length === 0;
-    }
-
-    /**
-     * Checks if the stack is full
-     * @returns True if stack is full, false otherwise
-     */
-    isFull(): boolean {
-        return this.elements.length >= this.capacity;
-    }
-
-    /**
-     * Gets the current number of elements in the stack
-     * @returns Number of elements
-     */
-    size(): number {
-        return this.elements.length;
-    }
-
-    /**
-     * Removes all elements from the stack
-     */
-    clear(): void {
-        this.elements = [];
-    }
-}
-// Create a number stack with capacity 3
-const numberStack = new Stack<number>(3);
-
-// Push elements
-numberStack.push(1);
-numberStack.push(2);
-numberStack.push(3);
-
-console.log(numberStack.peek());  // 3
-console.log(numberStack.size());  // 3
-console.log(numberStack.isFull()); // true
-
-try {
-    numberStack.push(4); // Throws "Stack overflow" error
-} catch (e) {
-    console.error(e.message);
+export interface Edge {
+  from: number;
+  to: number;
+  weight: number;
 }
 
-console.log(numberStack.pop()); // 3
-console.log(numberStack.pop()); // 2
-console.log(numberStack.isEmpty()); // false
+export interface ShortestPaths {
+  dist: number[];      // dist[v] = shortest distance from source to v
+  pred: number[];        // pred[v] = predecessor of v on that path (-1 = none)
+  hasNegativeCycle: boolean;
+}
 
-numberStack.clear();
-console.log(numberStack.isEmpty()); // true
-const stringStack = new Stack<string>();
-stringStack.push("Hello");
-stringStack.push("World");
+/**
+ * Bellman-Ford from a single source.
+ *  - n: number of vertices (labelled 0 … n-1)
+ *  - edges: list of directed edges
+ *  - src: source vertex
+ *
+ * Complexity: O(V·E)
+ */
+export function bellmanFord(
+  n: number,
+  edges: Edge[],
+  src: number
+): ShortestPaths {
+  const dist = Array(n).fill(Infinity);
+  const pred = Array(n).fill(-1);
+  dist[src] = 0;
 
-console.log(stringStack.pop()); // "World"
-console.log(stringStack.peek()); // "Hello"
+  // Relax all edges up to V-1 times
+  for (let i = 0; i < n - 1; i++) {
+    let updated = false;
+    for (const { from, to, weight } of edges) {
+      const nd = dist[from] + weight;
+      if (dist[from] !== Infinity && nd < dist[to]) {
+        dist[to] = nd;
+        pred[to] = from;
+        updated = true;
+      }
+    }
+    if (!updated) break; // early exit if no relaxations happened
+  }
+
+  // Check for negative-weight cycles
+  let hasNegativeCycle = false;
+  for (const { from, to, weight } of edges) {
+    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+      hasNegativeCycle = true;
+      break;
+    }
+  }
+
+  return { dist, pred, hasNegativeCycle };
+}
+
+/* ------------------------------------------------------------------ */
+/* Helper: reconstruct path from src to target                          */
+/* ------------------------------------------------------------------ */
+export function buildPath(pred: number[], src: number, target: number): number[] {
+  const path: number[] = [];
+  for (let v = target; v !== -1; v = pred[v]) path.unshift(v);
+  return path[0] === src ? path : []; // empty if unreachable
+}
+const edges: Edge[] = [
+  { from: 0, to: 1, weight: -1 },
+  { from: 0, to: 2, weight: 4 },
+  { from: 1, to: 2, weight: 3 },
+  { from: 1, to: 3, weight: 2 },
+  { from: 1, to: 4, weight: 2 },
+  { from: 3, to: 2, weight: 5 },
+  { from: 3, to: 1, weight: 1 },
+  { from: 4, to: 3, weight: -3 },
+];
+
+const { dist, pred, hasNegativeCycle } = bellmanFord(5, edges, 0);
+
+console.log('Distances:', dist); // [0, -1, 2, -2, 1]
+console.log('Path 0→4:', buildPath(pred, 0, 4)); // [0, 1, 4]
+console.log('Negative cycle?', hasNegativeCycle); // false
+npx tsc bellmanFord.ts
+node bellmanFord.js
