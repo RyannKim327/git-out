@@ -1,8 +1,1 @@
-const str1: string = "Hello";
-const str2: string = " World!";
-const result: string = str1 + str2; // "Hello World!"
-const name: string = "Alice";
-const greeting: string = `Hello, ${name}!`; // "Hello, Alice!"
-const part1: string = "Type";
-const part2: string = "Script";
-const full: string = part1.concat(part2); // "TypeScript"
+// May error sa API
