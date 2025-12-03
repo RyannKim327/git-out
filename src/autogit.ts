@@ -1,30 +1,30 @@
-const array: number[] = [1, 2, 3, 4, 5];
-array.reverse();
-console.log(array); // [5, 4, 3, 2, 1]
-const original: string[] = ['a', 'b', 'c', 'd'];
-const reversed = [...original].reverse();
-console.log(reversed); // ['d', 'c', 'b', 'a']
-console.log(original); // ['a', 'b', 'c', 'd'] (unchanged)
-function reverseArray<T>(arr: T[]): T[] {
-    const reversed: T[] = [];
-    for (let i = arr.length - 1; i >= 0; i--) {
-        reversed.push(arr[i]);
+class ListNode {
+    val: number;
+    next: ListNode | null;
+    constructor(val: number, next: ListNode | null = null) {
+        this.val = val;
+        this.next = next;
     }
-    return reversed;
 }
+function getNthFromEnd(head: ListNode | null, n: number): ListNode | null {
+    let first: ListNode | null = head;
+    let second: ListNode | null = head;
 
-const numbers = [1, 2, 3, 4];
-const reversedNumbers = reverseArray(numbers);
-const array: number[] = [1, 2, 3, 4];
-const reversed = array.reduce((acc, current) => [current, ...acc], [] as number[]);
-console.log(reversed); // [4, 3, 2, 1]
-function reverseArray<T>(arr: T[]): T[] {
-    return [...arr].reverse();
+    // Move first pointer n steps ahead
+    for (let i = 0; i < n; i++) {
+        if (!first) return null; // n is larger than list length
+        first = first.next;
+    }
+
+    // Move both pointers until first reaches the end
+    while (first) {
+        first = first.next;
+        second = second!.next;
+    }
+
+    // second now points to the nth node from the end
+    return second;
 }
-
-// Usage examples:
-const numbers = reverseArray([1, 2, 3, 4]); // number[]
-const strings = reverseArray(['a', 'b', 'c']); // string[]
-const mixed = reverseArray([1, 'two', true]); // (number | string | boolean)[]
-const readonlyArray: readonly number[] = [1, 2, 3];
-const reversed = [...readonlyArray].reverse();
+const head = new ListNode(1, new ListNode(2, new ListNode(3, new ListNode(4))));
+const node = getNthFromEnd(head, 2); // Should give the node with val=3
+console.log(node?.val); // Output: 3
