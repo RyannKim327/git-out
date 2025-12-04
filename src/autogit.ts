@@ -1,49 +1,67 @@
-type NodeId = string; // or number, depending on your graph
+/**
+ * Fibonacci Search in a sorted array.
+ * @param arr Sorted array of numbers
+ * @param target Value to search for
+ * @returns Index of target, or -1 if not found
+ */
+export function fibonacciSearch(arr: number[], target: number): number {
+  const n = arr.length;
+  if (n === 0) return -1;
 
-interface QueueItem {
-  node: NodeId;
-  depth: number;
-}
+  // 1. Find the smallest Fibonacci number >= n
+  let fibMm2 = 0;               // F(m-2)
+  let fibMm1 = 1;               // F(m-1)
+  let fibM   = fibMm1 + fibMm2; // F(m)
 
-function breadthLimitedSearch(
-  startNode: NodeId,
-  getNeighbors: (node: NodeId) => NodeId[],
-  maxDepth: number
-): NodeId[] {
-  const visited = new Set<NodeId>();
-  const result: NodeId[] = [];
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm1 + fibMm2;
+  }
 
-  const queue: QueueItem[] = [{ node: startNode, depth: 0 }];
+  // 2. Initialize the offset that marks the eliminated range
+  let offset = -1;
 
-  visited.add(startNode);
+  // 3. Main comparison loop
+  while (fibM > 1) {
+    // Index of the current probing position
+    const i = Math.min(offset + fibMm2, n - 1);
 
-  while (queue.length > 0) {
-    const { node, depth } = queue.shift()!; // get the front of the queue
-
-    result.push(node);
-
-    if (depth < maxDepth) {
-      const neighbors = getNeighbors(node);
-
-      for (const neighbor of neighbors) {
-        if (!visited.has(neighbor)) {
-          visited.add(neighbor);
-          queue.push({ node: neighbor, depth: depth + 1 });
-        }
-      }
+    if (arr[i] < target) {
+      // Target is in the upper part
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else if (arr[i] > target) {
+      // Target is in the lower part
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
+    } else {
+      // Found
+      return i;
     }
   }
 
-  return result;
-}
-const graph: Record<NodeId, NodeId[]> = {
-  A: ["B", "C"],
-  B: ["D", "E"],
-  C: ["F"],
-  D: [],
-  E: ["F"],
-  F: []
-};
+  // 4. Check the last remaining element
+  if (fibMm1 === 1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
+  }
 
-const nodesReached = breadthLimitedSearch("A", node => graph[node] || [], 2);
-console.log(nodesReached); // should show nodes within depth 2 of A
+  // Not found
+  return -1;
+}
+
+/* ---------- Usage example ---------- */
+if (import.meta.vitest) {
+  const { test, expect } = import.meta.vitest;
+
+  test('fibonacciSearch', () => {
+    const data = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
+    expect(fibonacciSearch(data, 7)).toBe(3);
+    expect(fibonacciSearch(data, 2)).toBe(-1);
+    expect(fibonacciSearch([], 5)).toBe(-1);
+    expect(fibonacciSearch([5], 5)).toBe(0);
+  });
+}
