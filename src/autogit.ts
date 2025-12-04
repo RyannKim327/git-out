@@ -1,17 +1,25 @@
-function factorial(n: number): number {
-  if (n < 0) throw new Error("Negative numbers don't have factorials.");
-  if (n === 0 || n === 1) return 1;
-  return n * factorial(n - 1);
+function binarySearch(arr: number[], target: number): number {
+    let low = 0;
+    let high = arr.length - 1;
+
+    while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+
+        if (arr[mid] === target) {
+            return mid; // Found it!
+        }
+
+        if (arr[mid] < target) {
+            low = mid + 1; // Search right half
+        } else {
+            high = mid - 1; // Search left half
+        }
+    }
+
+    return -1; // Not found
 }
 
-console.log(factorial(5)); // prints 120
-function factorial(n: number): number {
-  if (n < 0) throw new Error("Negative numbers don't have factorials.");
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
-}
-
-console.log(factorial(5)); // prints 120
+// Example usage:
+const numbers = [1, 3, 5, 7, 9, 11];
+console.log(binarySearch(numbers, 7));  // Output: 3
+console.log(binarySearch(numbers, 4));  // Output: -1
