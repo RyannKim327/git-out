@@ -1,160 +1,158 @@
-function mergeSortIterative<T>(array: T[]): T[] {
-    if (array.length <= 1) {
-        return array;
-    }
-
-    const result = [...array];
-    const temp = new Array(array.length);
+function radixSortLSD(arr: number[]): number[] {
+    if (arr.length <= 1) return arr;
     
-    // Start with subarrays of size 1 and double each time
-    for (let size = 1; size < result.length; size *= 2) {
-        for (let left = 0; left < result.length; left += 2 * size) {
-            const mid = Math.min(left + size, result.length);
-            const right = Math.min(left + 2 * size, result.length);
-            
-            merge(result, temp, left, mid, right);
-        }
+    // Get maximum number to determine number of digits
+    const maxNum = Math.max(...arr.map(num => Math.abs(num)));
+    const maxDigits = Math.floor(Math.log10(maxNum)) + 1;
+    
+    let result = [...arr];
+    
+    // Perform counting sort for each digit
+    for (let digitPlace = 0; digitPlace < maxDigits; digitPlace++) {
+        result = countingSortByDigit(result, digitPlace);
     }
     
     return result;
 }
 
-function merge<T>(
-    array: T[], 
-    temp: T[], 
-    left: number, 
-    mid: number, 
-    right: number
-): void {
-    let i = left;
-    let j = mid;
-    let k = left;
+function countingSortByDigit(arr: number[], digitPlace: number): number[] {
+    const count = new Array(10).fill(0);
+    const output = new Array(arr.length);
+    const digitBase = Math.pow(10, digitPlace);
     
-    // Copy the current segment to temporary array
-    for (let index = left; index < right; index++) {
-        temp[index] = array[index];
+    // Count occurrences of each digit
+    for (const num of arr) {
+        const digit = Math.floor(Math.abs(num) / digitBase) % 10;
+        count[digit]++;
     }
     
-    // Merge the two sorted halves
-    while (i < mid && j < right) {
-        if (temp[i] <= temp[j]) {
-            array[k++] = temp[i++];
-        } else {
-            array[k++] = temp[j++];
-        }
+    // Calculate cumulative counts
+    for (let i = 1; i < 10; i++) {
+        count[i] += count[i - 1];
     }
     
-    // Copy remaining elements from left half
-    while (i < mid) {
-        array[k++] = temp[i++];
+    // Build output array
+    for (let i = arr.length - 1; i >= 0; i--) {
+        const digit = Math.floor(Math.abs(arr[i]) / digitBase) % 10;
+        output[count[digit] - 1] = arr[i];
+        count[digit]--;
     }
     
-    // Copy remaining elements from right half
-    while (j < right) {
-        array[k++] = temp[j++];
+    return output;
+}
+function radixSort(arr: number[]): number[] {
+    if (arr.length <= 1) return arr;
+    
+    // Separate positive and negative numbers
+    const negatives = arr.filter(num => num < 0).map(num => Math.abs(num));
+    const positives = arr.filter(num => num >= 0);
+    
+    // Sort both parts
+    const sortedNegatives = radixSortLSD(negatives).reverse().map(num => -num);
+    const sortedPositives = radixSortLSD(positives);
+    
+    return [...sortedNegatives, ...sortedPositives];
+}
+function radixSortGeneric(
+    arr: number[], 
+    radix: number = 10, 
+    signed: boolean = true
+): number[] {
+    if (arr.length <= 1) return arr;
+    
+    if (signed) {
+        const negatives = arr.filter(num => num < 0).map(num => Math.abs(num));
+        const positives = arr.filter(num => num >= 0);
+        
+        const sortedNegatives = radixSortLSDGeneric(negatives, radix)
+            .reverse()
+            .map(num => -num);
+        const sortedPositives = radixSortLSDGeneric(positives, radix);
+        
+        return [...sortedNegatives, ...sortedPositives];
     }
+    
+    return radixSortLSDGeneric(arr, radix);
 }
 
-// Generic version with comparator
-function mergeSortIterativeWithComparator<T>(
-    array: T[], 
-    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
-): T[] {
-    if (array.length <= 1) {
-        return array;
-    }
-
-    const result = [...array];
-    const temp = new Array(array.length);
+function radixSortLSDGeneric(arr: number[], radix: number = 10): number[] {
+    if (arr.length <= 1) return arr;
     
-    for (let size = 1; size < result.length; size *= 2) {
-        for (let left = 0; left < result.length; left += 2 * size) {
-            const mid = Math.min(left + size, result.length);
-            const right = Math.min(left + 2 * size, result.length);
-            
-            mergeWithComparator(result, temp, left, mid, right, compareFn);
-        }
+    const maxNum = Math.max(...arr);
+    let maxDigits = 0;
+    let temp = maxNum;
+    
+    while (temp > 0) {
+        maxDigits++;
+        temp = Math.floor(temp / radix);
+    }
+    
+    let result = [...arr];
+    
+    for (let digitPlace = 0; digitPlace < maxDigits; digitPlace++) {
+        result = countingSortByDigitGeneric(result, digitPlace, radix);
     }
     
     return result;
 }
 
-function mergeWithComparator<T>(
-    array: T[], 
-    temp: T[], 
-    left: number, 
-    mid: number, 
-    right: number,
-    compareFn: (a: T, b: T) => number
+function countingSortByDigitGeneric(
+    arr: number[], 
+    digitPlace: number, 
+    radix: number
+): number[] {
+    const count = new Array(radix).fill(0);
+    const output = new Array(arr.length);
+    const digitBase = Math.pow(radix, digitPlace);
+    
+    for (const num of arr) {
+        const digit = Math.floor(num / digitBase) % radix;
+        count[digit]++;
+    }
+    
+    for (let i = 1; i < radix; i++) {
+        count[i] += count[i - 1];
+    }
+    
+    for (let i = arr.length - 1; i >= 0; i--) {
+        const digit = Math.floor(arr[i] / digitBase) % radix;
+        output[count[digit] - 1] = arr[i];
+        count[digit]--;
+    }
+    
+    return output;
+}
+// Test the implementations
+const testArray = [170, 45, 75, -90, 802, 24, 2, -66, 0];
+const testArray2 = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5];
+
+console.log("Original array:", testArray);
+console.log("LSD Radix Sort:", radixSortLSD([...testArray]));
+console.log("Full Radix Sort:", radixSort([...testArray]));
+console.log("Generic Radix Sort:", radixSortGeneric([...testArray], 10, true));
+
+console.log("\nTest array 2:", testArray2);
+console.log("Generic Radix Sort (radix 16):", radixSortGeneric([...testArray2], 16, false));
+// Utility function to measure performance
+function measurePerformance(
+    sortFunction: (arr: number[]) => number[], 
+    arr: number[], 
+    name: string
 ): void {
-    let i = left;
-    let j = mid;
-    let k = left;
-    
-    for (let index = left; index < right; index++) {
-        temp[index] = array[index];
-    }
-    
-    while (i < mid && j < right) {
-        if (compareFn(temp[i], temp[j]) <= 0) {
-            array[k++] = temp[i++];
-        } else {
-            array[k++] = temp[j++];
-        }
-    }
-    
-    while (i < mid) {
-        array[k++] = temp[i++];
-    }
-    
-    while (j < right) {
-        array[k++] = temp[j++];
-    }
-}
-// Basic usage
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-const sortedNumbers = mergeSortIterative(numbers);
-console.log(sortedNumbers); // [11, 12, 22, 25, 34, 64, 90]
-
-// With custom comparator
-const strings = ["banana", "apple", "cherry", "date"];
-const sortedStrings = mergeSortIterativeWithComparator(
-    strings, 
-    (a, b) => a.localeCompare(b)
-);
-console.log(sortedStrings); // ["apple", "banana", "cherry", "date"]
-
-// Complex objects
-interface Person {
-    name: string;
-    age: number;
-}
-
-const people: Person[] = [
-    { name: "Alice", age: 30 },
-    { name: "Bob", age: 25 },
-    { name: "Charlie", age: 35 }
-];
-
-const sortedByAge = mergeSortIterativeWithComparator(
-    people,
-    (a, b) => a.age - b.age
-);
-console.log(sortedByAge);
-// [{name: "Bob", age: 25}, {name: "Alice", age: 30}, {name: "Charlie", age: 35}]
-// Performance test utility
-function testPerformance<T>(array: T[], sortFn: (arr: T[]) => T[]): void {
     const start = performance.now();
-    const sorted = sortFn(array);
+    const result = sortFunction([...arr]);
     const end = performance.now();
     
-    console.log(`Sorted ${array.length} elements in ${(end - start).toFixed(2)}ms`);
-    console.log(`First 10 elements: ${sorted.slice(0, 10).join(', ')}`);
+    console.log(`${name}: ${(end - start).toFixed(3)}ms`);
+    console.log("Sorted:", result.slice(0, 10), "...");
 }
 
-// Test with large array
+// Performance comparison
 const largeArray = Array.from({ length: 10000 }, () => 
-    Math.floor(Math.random() * 1000000)
+    Math.floor(Math.random() * 1000000) - 500000
 );
 
-testPerformance(largeArray, mergeSortIterative);
+console.log("Performance Comparison:");
+measurePerformance(radixSortLSD, largeArray, "LSD Only");
+measurePerformance(radixSort, largeArray, "Full Radix Sort");
+measurePerformance((arr) => [...arr].sort((a, b) => a - b), largeArray, "Native Sort");
