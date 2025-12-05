@@ -1,142 +1,84 @@
-type Graph = Record<string, Record<string, number>>;
-type DistanceMap = Record<string, number>;
-type PreviousMap = Record<string, string | null>;
+type Graph<T> = Map<T, T[]>;
 
-function dijkstra(
-    graph: Graph,
-    startNode: string,
-    endNode?: string
-): { distances: DistanceMap; path: string[] } {
-    // Initialize distances with Infinity and previous nodes with null
-    const distances: DistanceMap = {};
-    const previous: PreviousMap = {};
-    const priorityQueue: [string, number][] = [];
+function bidirectionalSearch<T>(
+  graph: Graph<T>,
+  start: T,
+  end: T
+): number | null {
+  if (start === end) return 0;
 
-    // Set initial distances and add nodes to priority queue
-    for (const node in graph) {
-        distances[node] = node === startNode ? 0 : Infinity;
-        previous[node] = null;
-        priorityQueue.push([node, distances[node]]);
-    }
+  // Forward and backward queues
+  const queueForward: T[] = [start];
+  const queueBackward: T[] = [end];
 
-    while (priorityQueue.length > 0) {
-        // Sort queue by distance and get the node with smallest distance
-        priorityQueue.sort((a, b) => a[1] - b[1]);
-        const [currentNode] = priorityQueue.shift()!;
+  // Visited nodes with their distances from start/end
+  const visitedForward = new Map<T, number>([[start, 0]]);
+  const visitedBackward = new Map<T, number>([[end, 0]]);
 
-        // Early exit if we've reached the target node
-        if (endNode && currentNode === endNode) break;
+  // Alternate between forward and backward searches
+  while (queueForward.length > 0 && queueBackward.length > 0) {
+    // Check forward search
+    const resultForward = expandLevel(
+      graph,
+      queueForward,
+      visitedForward,
+      visitedBackward
+    );
+    if (resultForward !== null) return resultForward;
 
-        // Explore neighbors
-        for (const neighbor in graph[currentNode]) {
-            const edgeWeight = graph[currentNode][neighbor];
-            const tentativeDistance = distances[currentNode] + edgeWeight;
+    // Check backward search
+    const resultBackward = expandLevel(
+      graph,
+      queueBackward,
+      visitedBackward,
+      visitedForward
+    );
+    if (resultBackward !== null) return resultBackward;
+  }
 
-            if (tentativeDistance < distances[neighbor]) {
-                // Update distance and previous node
-                distances[neighbor] = tentativeDistance;
-                previous[neighbor] = currentNode;
-                
-                // Add updated node to queue (inefficient but simple)
-                priorityQueue.push([neighbor, tentativeDistance]);
-            }
-        }
-    }
-
-    return {
-        distances,
-        path: endNode ? reconstructPath(previous, endNode) : []
-    };
+  return null; // No path exists
 }
 
-function reconstructPath(previous: PreviousMap, endNode: string): string[] {
-    const path: string[] = [];
-    let currentNode: string | null = endNode;
+function expandLevel<T>(
+  graph: Graph<T>,
+  queue: T[],
+  visitedFromHere: Map<T, number>,
+  visitedFromOther: Map<T, number>
+): number | null {
+  const levelSize = queue.length;
+  
+  for (let i = 0; i < levelSize; i++) {
+    const current = queue.shift()!;
+    const currentDistance = visitedFromHere.get(current)!;
 
-    if (previous[currentNode] === null && currentNode !== startNode) {
-        return []; // No path exists
+    for (const neighbor of graph.get(current) || []) {
+      // Skip already visited nodes in this direction
+      if (visitedFromHere.has(neighbor)) continue;
+
+      // Check if this node has been visited from the other direction
+      if (visitedFromOther.has(neighbor)) {
+        return currentDistance + 1 + visitedFromOther.get(neighbor)!;
+      }
+
+      // Mark as visited and add to queue
+      visitedFromHere.set(neighbor, currentDistance + 1);
+      queue.push(neighbor);
     }
+  }
 
-    while (currentNode !== null) {
-        path.unshift(currentNode);
-        currentNode = previous[currentNode];
-    }
-
-    return path;
+  return null; // No intersection in this level
 }
+// Create an undirected graph
+const graph = new Map<number, number[]>([
+  [0, [1, 2]],
+  [1, [0, 3]],
+  [2, [0, 4]],
+  [3, [1, 4, 5]],
+  [4, [2, 3, 6]],
+  [5, [3, 6]],
+  [6, [4, 5]],
+]);
 
-// Example usage:
-const graph: Graph = {
-    A: { B: 1, C: 4 },
-    B: { A: 1, C: 2, D: 5 },
-    C: { A: 4, B: 2, D: 1 },
-    D: { B: 5, C: 1 },
-};
-
-const startNode = 'A';
-const endNode = 'D';
-
-const result = dijkstra(graph, startNode, endNode);
-console.log('Shortest distances:', result.distances);
-console.log('Shortest path:', result.path);
-Shortest distances: { A: 0, B: 1, C: 3, D: 4 }
-Shortest path: [ 'A', 'B', 'C', 'D' ]
-class PriorityQueue<T> {
-    private heap: T[];
-    private compare: (a: T, b: T) => number;
-
-    constructor(comparator = (a: T, b: T) => a > b) {
-        this.heap = [];
-        this.compare = (a, b) => comparator(a, b);
-    }
-
-    enqueue(item: T) {
-        this.heap.push(item);
-        this.bubbleUp();
-    }
-
-    dequeue(): T | undefined {
-        const first = this.heap[0];
-        const last = this.heap.pop();
-        if (this.heap.length > 0 && last !== undefined) {
-            this.heap[0] = last;
-            this.sinkDown();
-        }
-        return first;
-    }
-
-    isEmpty(): boolean {
-        return this.heap.length === 0;
-    }
-
-    private bubbleUp() {
-        let index = this.heap.length - 1;
-        while (index > 0) {
-            const parent = Math.floor((index - 1) / 2);
-            if (this.compare(this.heap[parent], this.heap[index])) break;
-            [this.heap[parent], this.heap[index]] = [this.heap[index], this.heap[parent]];
-            index = parent;
-        }
-    }
-
-    private sinkDown() {
-        let index = 0;
-        while (true) {
-            const left = 2 * index + 1;
-            const right = 2 * index + 2;
-            let largest = index;
-            
-            if (left < this.heap.length && !this.compare(this.heap[largest], this.heap[left])) {
-                largest = left;
-            }
-            
-            if (right < this.heap.length && !this.compare(this.heap[largest], this.heap[right])) {
-                largest = right;
-            }
-            
-            if (index === largest) break;
-            [this.heap[index], this.heap[largest]] = [this.heap[largest], this.heap[index]];
-            index = largest;
-        }
-    }
-}
+// Find shortest path
+const shortestPath = bidirectionalSearch(graph, 0, 6);
+console.log(shortestPath); // Output: 3 (Path: 0-2-4-6)
