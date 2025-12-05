@@ -1,43 +1,27 @@
-class Stack<T> {
-  private items: T[] = [];
-
-  // Add an item to the top (push)
-  push(element: T): void {
-    this.items.push(element);
-  }
-
-  // Remove and return the top item (pop)
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  // Look at the top item without removing it
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  // Check if stack is empty
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  // Get the size of the stack
-  size(): number {
-    return this.items.length;
-  }
-
-  // Optional: clear the stack
-  clear(): void {
-    this.items = [];
-  }
+const str: string = "123";
+const num: number = parseInt(str, 10); // Always specify radix (base)
+console.log(num); // 123
+const str: string = "123";
+const num: number = Number(str);
+console.log(num); // 123
+const str: string = "123";
+const num: number = +str;
+console.log(num); // 123
+function safeParseInt(str: string): number | null {
+    const num = parseInt(str, 10);
+    return isNaN(num) ? null : num;
 }
-const stack = new Stack<number>();
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.pop());  // 20
-console.log(stack.isEmpty()); // false
+// Usage
+const result1 = safeParseInt("123"); // 123
+const result2 = safeParseInt("abc"); // null
+const result3 = safeParseInt("123.45"); // 123 (decimal part truncated)
+const str: string = "123";
+const num: number = parseInt(str, 10) as number;
+function convertToInt(input: string): number {
+    const result = parseInt(input, 10);
+    if (isNaN(result)) {
+        throw new Error(`Invalid number: ${input}`);
+    }
+    return result;
+}
