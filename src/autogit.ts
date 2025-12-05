@@ -1,169 +1,50 @@
-function mergeSort<T>(array: T[]): T[] {
-    if (array.length <= 1) {
-        return array;
+/**
+ * Radix sort (LSD, base-256) for non-negative 32-bit integers.
+ * Runs in O(n) time and O(n) extra space.
+ * @param arr  Array of non-negative integers
+ * @returns    New sorted array (original stays unchanged)
+ */
+export function radixSort(arr: number[]): number[] {
+  if (arr.length < 2) return arr.slice();          // trivial case
+
+  const output = arr.slice();                      // copy to avoid mutation
+  const temp   = new Array<number>(output.length); // working buffer
+
+  // Process 4 bytes (0xFF masks) per 32-bit number
+  for (let shift = 0; shift < 32; shift += 8) {
+    const count = new Uint32Array(256);              // byte histogram
+
+    // 1. Count occurrences of each byte value
+    for (let i = 0; i < output.length; i++) {
+      const byte = (output[i] >>> shift) & 0xFF;   // unsigned right shift
+      count[byte]++;
     }
 
-    const middle = Math.floor(array.length / 2);
-    const left = array.slice(0, middle);
-    const right = array.slice(middle);
+    // 2. Convert counts to cumulative indices
+    for (let i = 1; i < 256; i++) count[i] += count[i - 1];
 
-    return merge(mergeSort(left), mergeSort(right));
+    // 3. Stable scatter into temp
+    for (let i = output.length - 1; i >= 0; i--) {
+      const byte = (output[i] >>> shift) & 0xFF;
+      temp[--count[byte]] = output[i];
+    }
+
+    // 4. Swap roles for next digit
+    temp.forEach((v, i) => (output[i] = v));
+  }
+  return output;
 }
 
-function merge<T>(left: T[], right: T[]): T[] {
-    const result: T[] = [];
-    let leftIndex = 0;
-    let rightIndex = 0;
-
-    while (leftIndex < left.length && rightIndex < right.length) {
-        if (left[leftIndex] <= right[rightIndex]) {
-            result.push(left[leftIndex]);
-            leftIndex++;
-        } else {
-            result.push(right[rightIndex]);
-            rightIndex++;
-        }
-    }
-
-    // Add remaining elements
-    return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
+/* ---------- small sanity check ---------- */
+if (import.meta.vitest) {
+  const { it, expect } = import.meta.vitest;
+  it('radixSort', () => {
+    const data = [170, 45, 75, 90, 2, 802, 2, 66, 99999];
+    expect(radixSort(data)).toStrictEqual([2, 2, 45, 66, 75, 90, 170, 802, 99999]);
+  });
 }
-function mergeSort<T>(
-    array: T[],
-    comparator: (a: T, b: T) => number = (a, b) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    }
-): T[] {
-    if (array.length <= 1) {
-        return array;
-    }
+import { radixSort } from './radixSort';
 
-    const middle = Math.floor(array.length / 2);
-    const left = array.slice(0, middle);
-    const right = array.slice(middle);
-
-    return merge(
-        mergeSort(left, comparator),
-        mergeSort(right, comparator),
-        comparator
-    );
-}
-
-function merge<T>(
-    left: T[],
-    right: T[],
-    comparator: (a: T, b: T) => number
-): T[] {
-    const result: T[] = [];
-    let leftIndex = 0;
-    let rightIndex = 0;
-
-    while (leftIndex < left.length && rightIndex < right.length) {
-        if (comparator(left[leftIndex], right[rightIndex]) <= 0) {
-            result.push(left[leftIndex]);
-            leftIndex++;
-        } else {
-            result.push(right[rightIndex]);
-            rightIndex++;
-        }
-    }
-
-    return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
-}
-function mergeSortInPlace<T>(
-    array: T[],
-    comparator: (a: T, b: T) => number = (a, b) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    }
-): void {
-    if (array.length <= 1) return;
-
-    const temp = [...array];
-    mergeSortHelper(array, temp, 0, array.length - 1, comparator);
-}
-
-function mergeSortHelper<T>(
-    array: T[],
-    temp: T[],
-    left: number,
-    right: number,
-    comparator: (a: T, b: T) => number
-): void {
-    if (left >= right) return;
-
-    const middle = Math.floor((left + right) / 2);
-    
-    mergeSortHelper(array, temp, left, middle, comparator);
-    mergeSortHelper(array, temp, middle + 1, right, comparator);
-    mergeInPlace(array, temp, left, middle, right, comparator);
-}
-
-function mergeInPlace<T>(
-    array: T[],
-    temp: T[],
-    left: number,
-    middle: number,
-    right: number,
-    comparator: (a: T, b, T) => number
-): void {
-    // Copy both halves to temp array
-    for (let i = left; i <= right; i++) {
-        temp[i] = array[i];
-    }
-
-    let i = left;
-    let j = middle + 1;
-    let k = left;
-
-    while (i <= middle && j <= right) {
-        if (comparator(temp[i], temp[j]) <= 0) {
-            array[k] = temp[i];
-            i++;
-        } else {
-            array[k] = temp[j];
-            j++;
-        }
-        k++;
-    }
-
-    // Copy remaining left elements
-    while (i <= middle) {
-        array[k] = temp[i];
-        i++;
-        k++;
-    }
-}
-// Basic usage
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-const sortedNumbers = mergeSort(numbers);
-console.log(sortedNumbers); // [11, 12, 22, 25, 34, 64, 90]
-
-// With custom comparator
-const strings = ["banana", "apple", "cherry"];
-const sortedStrings = mergeSort(strings, (a, b) => a.localeCompare(b));
-console.log(sortedStrings); // ["apple", "banana", "cherry"]
-
-// With objects
-interface Person {
-    name: string;
-    age: number;
-}
-
-const people: Person[] = [
-    { name: "John", age: 30 },
-    { name: "Alice", age: 25 },
-    { name: "Bob", age: 35 }
-];
-
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
-console.log(sortedByAge);
-// [{name: "Alice", age: 25}, {name: "John", age: 30}, {name: "Bob", age: 35}]
-
-// In-place sorting
-const numbersToSort = [64, 34, 25, 12, 22, 11, 90];
-mergeSortInPlace(numbersToSort);
-console.log(numbersToSort); // [11, 12, 22, 25, 34, 64, 90]
+const nums = [3, 1000, 7, 1, 3, 0, 42];
+const sorted = radixSort(nums);
+console.log(sorted); // [0, 1, 3, 3, 7, 42, 1000]
