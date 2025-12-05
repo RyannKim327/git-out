@@ -1,33 +1,34 @@
-function majorityElement(nums: number[]): number {
-    let count = 0;
-    let candidate: number | null = null;
-
-    for (const num of nums) {
-        if (count === 0) {
-            candidate = num;
-        }
-        count += (num === candidate) ? 1 : -1;
+function factorialRecursive(n: number): number {
+    if (n < 0) {
+        throw new Error("Factorial is not defined for negative numbers.");
     }
-
-    return candidate!;
+    // Base case: 0! = 1 and 1! = 1
+    if (n <= 1) {
+        return 1;
+    }
+    // Recursive step
+    return n * factorialRecursive(n - 1);
+}
+function factorialIterative(n: number): number {
+    if (n < 0) {
+        throw new Error("Factorial is not defined for negative numbers.");
+    }
+    let result = 1;
+    // Multiply result by all integers from 2 to n
+    for (let i = 2; i <= n; i++) {
+        result *= i;
+    }
+    return result;
+}
+function factorialBigInt(n: number): bigint {
+    if (n < 0) {
+        throw new Error("Factorial is not defined for negative numbers.");
+    }
+    let result = 1n; // 'n' suffix denotes a BigInt literal
+    for (let i = 2; i <= n; i++) {
+        result *= BigInt(i);
+    }
+    return result;
 }
 
-// Example:
-console.log(majorityElement([2,2,1,1,1,2,2])); // Output: 2
-function majorityElementSafe(nums: number[]): number | null {
-    let count = 0;
-    let candidate: number | null = null;
-
-    for (const num of nums) {
-        if (count === 0) {
-            candidate = num;
-        }
-        count += (num === candidate) ? 1 : -1;
-    }
-
-    // Verify
-    count = nums.filter(n => n === candidate).length;
-    return count > nums.length / 2 ? candidate : null;
-}
-
-console.log(majorityElementSafe([3,3,4])); // null
+const hugeFactorial = factorialBigInt(25); // 15511210043330985984000000n (accurate!)
