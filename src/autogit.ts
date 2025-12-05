@@ -1,60 +1,82 @@
-class TreeNode {
-    val: number;
-    left: TreeNode | null;
-    right: TreeNode | null;
+function isPrime(num: number): boolean {
+    if (num <= 1) return false;
+    if (num <= 3) return true;
+    if (num % 2 === 0 || num % 3 === 0) return false;
+    
+    for (let i = 5; i * i <= num; i += 6) {
+        if (num % i === 0 || num % (i + 2) === 0) return false;
+    }
+    
+    return true;
+}
 
-    constructor(val?: number, left?: TreeNode | null, right?: TreeNode | null) {
-        this.val = (val === undefined ? 0 : val);
-        this.left = (left === undefined ? null : left);
-        this.right = (right === undefined ? null : right);
+// Usage
+console.log(isPrime(17)); // true
+console.log(isPrime(15)); // false
+console.log(isPrime(2));  // true
+function isPrimeSimple(num: number): boolean {
+    if (num <= 1) return false;
+    if (num === 2) return true;
+    if (num % 2 === 0) return false;
+    
+    const sqrt = Math.sqrt(num);
+    for (let i = 3; i <= sqrt; i += 2) {
+        if (num % i === 0) return false;
+    }
+    
+    return true;
+}
+function isPrimeWithValidation(num: number): boolean {
+    // Input validation
+    if (!Number.isInteger(num)) {
+        throw new Error('Input must be an integer');
+    }
+    
+    if (num <= 1) return false;
+    if (num <= 3) return true;
+    if (num % 2 === 0 || num % 3 === 0) return false;
+    
+    for (let i = 5; i * i <= num; i += 6) {
+        if (num % i === 0 || num % (i + 2) === 0) return false;
+    }
+    
+    return true;
+}
+class PrimeChecker {
+    static isPrime(num: number): boolean {
+        if (num <= 1) return false;
+        if (num <= 3) return true;
+        if (num % 2 === 0 || num % 3 === 0) return false;
+        
+        for (let i = 5; i * i <= num; i += 6) {
+            if (num % i === 0 || num % (i + 2) === 0) return false;
+        }
+        
+        return true;
+    }
+    
+    static getPrimesUpTo(limit: number): number[] {
+        const primes: number[] = [];
+        for (let i = 2; i <= limit; i++) {
+            if (this.isPrime(i)) {
+                primes.push(i);
+            }
+        }
+        return primes;
     }
 }
-function sumNodesRecursive(root: TreeNode | null): number {
-    if (!root) return 0;
-    return root.val + sumNodesRecursive(root.left) + sumNodesRecursive(root.right);
+
+// Usage
+console.log(PrimeChecker.isPrime(29)); // true
+console.log(PrimeChecker.getPrimesUpTo(20)); // [2, 3, 5, 7, 11, 13, 17, 19]
+// Test the performance
+function testPerformance() {
+    const testNumbers = [2, 3, 17, 97, 100, 997, 1000, 7919];
+    
+    console.log('Prime Check Results:');
+    testNumbers.forEach(num => {
+        console.log(`${num}: ${isPrime(num)}`);
+    });
 }
-function sumNodesIterativeDFS(root: TreeNode | null): number {
-    if (!root) return 0;
-    let sum = 0;
-    const stack: TreeNode[] = [root];
 
-    while (stack.length > 0) {
-        const node = stack.pop()!;
-        sum += node.val;
-
-        if (node.right) stack.push(node.right);
-        if (node.left) stack.push(node.left);
-    }
-
-    return sum;
-}
-function sumNodesIterativeBFS(root: TreeNode | null): number {
-    if (!root) return 0;
-    let sum = 0;
-    const queue: TreeNode[] = [root];
-
-    while (queue.length > 0) {
-        const node = queue.shift()!;
-        sum += node.val;
-
-        if (node.left) queue.push(node.left);
-        if (node.right) queue.push(node.right);
-    }
-
-    return sum;
-}
-// Create a sample tree:
-//       1
-//      / \
-//     2   3
-//    / \
-//   4   5
-const root = new TreeNode(1);
-root.left = new TreeNode(2);
-root.right = new TreeNode(3);
-root.left.left = new TreeNode(4);
-root.left.right = new TreeNode(5);
-
-console.log(sumNodesRecursive(root));   // 15 (1+2+3+4+5)
-console.log(sumNodesIterativeDFS(root));// 15
-console.log(sumNodesIterativeBFS(root));// 15
+testPerformance();
