@@ -1,15 +1,33 @@
-function isValidEmail(email: string): boolean {
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  return emailRegex.test(email);
+function majorityElement(nums: number[]): number {
+    let count = 0;
+    let candidate: number | null = null;
+
+    for (const num of nums) {
+        if (count === 0) {
+            candidate = num;
+        }
+        count += (num === candidate) ? 1 : -1;
+    }
+
+    return candidate!;
 }
 
-// Usage
-console.log(isValidEmail('test@example.com'));       // true
-console.log(isValidEmail('user.name+tag@sub.domain.co.uk')); // true
-console.log(isValidEmail('invalid.email@'));         // false
-console.log(isValidEmail('no@domain'));              // false
-function isValidEmailInternational(email: string): boolean {
-  // Allows international characters via \u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF
-  const emailRegex = /^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
-  return emailRegex.test(email);
+// Example:
+console.log(majorityElement([2,2,1,1,1,2,2])); // Output: 2
+function majorityElementSafe(nums: number[]): number | null {
+    let count = 0;
+    let candidate: number | null = null;
+
+    for (const num of nums) {
+        if (count === 0) {
+            candidate = num;
+        }
+        count += (num === candidate) ? 1 : -1;
+    }
+
+    // Verify
+    count = nums.filter(n => n === candidate).length;
+    return count > nums.length / 2 ? candidate : null;
 }
+
+console.log(majorityElementSafe([3,3,4])); // null
