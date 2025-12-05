@@ -1,91 +1,109 @@
-// breadth-limited-search.ts
+class ListNode<T> {
+    val: T;
+    next: ListNode<T> | null;
 
-export interface Problem<S> {
-  initialState: S;
-  expand: (state: S) => S[];
-  isGoal: (state: S) => boolean;
-}
-
-export interface Node<S> {
-  state: S;
-  depth: number;
-  path: S[];      // only if you need to reconstruct the path
-}
-
-export function breadthLimitedSearch<S>(
-  problem: Problem<S>,
-  maxDepth: number
-): S[] | null {
-  const { initialState, expand, isGoal } = problem;
-
-  const root: Node<S> = {
-    state: initialState,
-    depth: 0,
-    path: [initialState],
-  };
-
-  if (isGoal(initialState)) return root.path;
-
-  const queue: Node<S>[] = [root];
-  const visited = new Set<string>();          // optional pruning
-  const key = (s: S) => JSON.stringify(s);  // or custom hash
-
-  while (queue.length) {
-    const node = queue.shift()!;
-
-    if (node.depth >= maxDepth) continue;   // the “breadth-limited” part
-
-    for (const childState of expand(node.state)) {
-      if (visited.has(key(childState))) continue;
-      visited.add(key(childState));
-
-      const child: Node<S> = {
-        state: childState,
-        depth: node.depth + 1,
-        path: [...node.path, childState],
-      };
-
-      if (isGoal(childState)) return child.path;
-      queue.push(child);
+    constructor(val: T, next: ListNode<T> | null = null) {
+        this.val = val;
+        this.next = next;
     }
-  }
-  return null; // no solution within depth limit
 }
-type Board = number[][];   // 0 represents the blank tile
+function findNthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+    // Edge case 1: Empty list
+    if (!head) {
+        console.warn("The list is empty.");
+        return null;
+    }
 
-const problem: Problem<Board> = {
-  initialState: [
-    [1, 2, 3],
-    [4, 0, 6],
-    [7, 5, 8],
-  ],
-  isGoal: b => JSON.stringify(b) === JSON.stringify([[1, 2, 3], [4, 5, 6], [7, 8, 0]]),
-  expand: b => neighbors(b),   // implement slide moves
-};
+    // Edge case 2: n must be a positive integer
+    if (n <= 0) {
+        console.warn("n must be a positive integer.");
+        return null;
+    }
 
-function neighbors(b: Board): Board[] {
-  const res: Board[] = [];
-  let [x, y] = [0, 0];
-  // find blank
-  b.forEach((row, i) => row.forEach((v, j) => { if (v === 0) { x = i; y = j; } }));
-  const moves = [
-    [x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]
-  ];
-  for (const [nx, ny] of moves) {
-    if (nx < 0 || ny < 0 || nx > 2 || ny > 2) continue;
-    const copy = b.map(r => r.slice());
-    copy[x][y] = copy[nx][ny];
-    copy[nx][ny] = 0;
-    res.push(copy);
-  }
-  return res;
+    let slow: ListNode<T> | null = head;
+    let fast: ListNode<T> | null = head;
+
+    // Step 1: Move fast pointer n steps ahead
+    for (let i = 0; i < n; i++) {
+        // If fast becomes null here, it means n is greater than the list's length
+        if (fast === null) {
+            console.warn(`Error: n (${n}) is greater than the length of the list.`);
+            return null;
+        }
+        fast = fast.next;
+    }
+
+    // Step 2: Move both pointers until fast reaches the end
+    // When fast becomes null, slow will be at the nth node from the end
+    while (fast !== null) {
+        // We can safely use the non-null assertion operator `!` here for `slow`
+        // because if `fast` is not null, `slow` cannot be null (they started together
+        // and `slow` never moves beyond `fast`).
+        slow = slow!.next;
+        fast = fast.next;
+    }
+
+    // Step 3: slow is now at the nth node from the end
+    return slow;
+}
+// Helper function to create a linked list from an array
+function createLinkedList<T>(arr: T[]): ListNode<T> | null {
+    if (arr.length === 0) {
+        return null;
+    }
+    const head = new ListNode(arr[0]);
+    let current = head;
+    for (let i = 1; i < arr.length; i++) {
+        current.next = new ListNode(arr[i]);
+        current = current.next;
+    }
+    return head;
 }
 
-const solution = breadthLimitedSearch(problem, 5);
-console.log(solution ?? "No solution within depth limit");
-function iterativeDeepening<S>(p: Problem<S>): S[] | null {
-  for (let d = 0; ; ++d) {
-    const res = breadthLimitedSearch(p, d);
-    if (res) return res;
-  }
+// Helper function to print a linked list (for verification)
+function printList<T>(head: ListNode<T> | null): string {
+    let result = [];
+    let current = head;
+    while (current !== null) {
+        result.push(current.val);
+        current = current.next;
+    }
+    return result.join(" -> ");
 }
+
+// Create a list: 1 -> 2 -> 3 -> 4 -> 5
+const head = createLinkedList([1, 2, 3, 4, 5]);
+console.log("Original List:", printList(head));
+
+// Test Cases
+console.log("\n--- Test Cases ---");
+
+// Case 1: 2nd node from the end (should be 4)
+const node2ndFromEnd = findNthFromEnd(head, 2);
+console.log("2nd node from end:", node2ndFromEnd ? node2ndFromEnd.val : "Not Found"); // Output: 4
+
+// Case 2: 1st node from the end (should be 5)
+const node1stFromEnd = findNthFromEnd(head, 1);
+console.log("1st node from end:", node1stFromEnd ? node1stFromEnd.val : "Not Found"); // Output: 5
+
+// Case 3: 5th node from the end (should be 1)
+const node5thFromEnd = findNthFromEnd(head, 5);
+console.log("5th node from end:", node5thFromEnd ? node5thFromEnd.val : "Not Found"); // Output: 1
+
+// Case 4: n is greater than list length (should return null and warn)
+const node6thFromEnd = findNthFromEnd(head, 6);
+console.log("6th node from end:", node6thFromEnd ? node6thFromEnd.val : "Not Found"); // Output: Not Found (with warning)
+
+// Case 5: n is 0 or negative (should return null and warn)
+const node0thFromEnd = findNthFromEnd(head, 0);
+console.log("0th node from end:", node0thFromEnd ? node0thFromEnd.val : "Not Found"); // Output: Not Found (with warning)
+
+// Case 6: Empty list
+const emptyList = createLinkedList([]);
+const nodeFromEmpty = findNthFromEnd(emptyList, 1);
+console.log("Node from empty list:", nodeFromEmpty ? nodeFromEmpty.val : "Not Found"); // Output: Not Found (with warning)
+
+// Case 7: Single node list
+const singleNodeList = createLinkedList(['A']);
+const node1stFromSingle = findNthFromEnd(singleNodeList, 1);
+console.log("1st node from single list:", node1stFromSingle ? node1stFromSingle.val : "Not Found"); // Output: A
