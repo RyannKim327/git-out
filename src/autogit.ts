@@ -1,19 +1,43 @@
-function isPalindrome(s: string): boolean {
-    const cleaned = s.toLowerCase().replace(/[\W_]/g, '');
-    return cleaned === cleaned.split('').reverse().join('');
+class Stack<T> {
+  private items: T[] = [];
+
+  // Add an item to the top (push)
+  push(element: T): void {
+    this.items.push(element);
+  }
+
+  // Remove and return the top item (pop)
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  // Look at the top item without removing it
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  // Check if stack is empty
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  // Get the size of the stack
+  size(): number {
+    return this.items.length;
+  }
+
+  // Optional: clear the stack
+  clear(): void {
+    this.items = [];
+  }
 }
-function isPalindrome(s: string): boolean {
-    const cleaned = s.toLowerCase().replace(/[\W_]/g, '');
-    let left = 0;
-    let right = cleaned.length - 1;
-    
-    while (left < right) {
-        if (cleaned[left] !== cleaned[right]) return false;
-        left++;
-        right--;
-    }
-    return true;
-}
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("race a car")); // false
-console.log(isPalindrome(" ")); // true (empty string is a palindrome)
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.pop());  // 20
+console.log(stack.isEmpty()); // false
