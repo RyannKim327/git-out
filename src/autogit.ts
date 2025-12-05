@@ -1,23 +1,42 @@
-function secondLargest(arr: number[]): number | undefined {
-    if (arr.length < 2) return undefined;
-    // Remove duplicates for a "true" second largest, else skip this line
-    const uniqueArr = Array.from(new Set(arr));
-    uniqueArr.sort((a, b) => b - a); // Sort descending
-    return uniqueArr[1];
-}
-function secondLargest(arr: number[]): number | undefined {
-    let first = -Infinity;
-    let second = -Infinity;
+function merge(left: number[], right: number[]): number[] {
+    let result: number[] = [];
+    let leftIndex = 0;
+    let rightIndex = 0;
 
-    for (const num of arr) {
-        if (num > first) {
-            second = first;
-            first = num;
-        } else if (num > second && num < first) {
-            second = num;
+    // Compare elements and merge
+    while (leftIndex < left.length && rightIndex < right.length) {
+        if (left[leftIndex] < right[rightIndex]) {
+            result.push(left[leftIndex]);
+            leftIndex++;
+        } else {
+            result.push(right[rightIndex]);
+            rightIndex++;
         }
     }
 
-    // Handles arrays with fewer than 2 unique values
-    return second > -Infinity ? second : undefined;
+    // Concatenate remaining elements (if any)
+    return result.concat(left.slice(leftIndex), right.slice(rightIndex));
 }
+
+function mergeSort(arr: number[]): number[] {
+    // Base case: array is empty or single element
+    if (arr.length <= 1) {
+        return arr;
+    }
+
+    // Split array into two halves
+    const mid = Math.floor(arr.length / 2);
+    const left = arr.slice(0, mid);
+    const right = arr.slice(mid);
+
+    // Recursively sort and merge
+    return merge(mergeSort(left), mergeSort(right));
+}
+const unsortedArray = [38, 27, 43, 3, 9, 82, 10];
+const sortedArray = mergeSort(unsortedArray);
+console.log(sortedArray); // [3, 9, 10, 27, 38, 43, 82]
+function merge<T>(left: T[], right: T[], compare: (a: T, b: T) => boolean): T[] {
+    /* ...use compare(a, b) instead of a < b... */
+}
+
+function mergeSort<T>(arr: T[], compare = (a: T, b: T) => a < b): T[] { ... }
