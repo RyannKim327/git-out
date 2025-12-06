@@ -1,202 +1,118 @@
-function quickSort<T>(array: T[]): T[] {
-    if (array.length <= 1) {
-        return array;
+function binarySearchRecursive<T>(
+    arr: T[],
+    target: T,
+    low: number = 0,
+    high: number = arr.length - 1
+): number {
+    // Base case: element not found
+    if (low > high) {
+        return -1;
     }
 
-    const pivot = array[0];
-    const left: T[] = [];
-    const right: T[] = [];
+    // Calculate middle index
+    const mid = Math.floor((low + high) / 2);
 
-    for (let i = 1; i < array.length; i++) {
-        if (array[i] < pivot) {
-            left.push(array[i]);
-        } else {
-            right.push(array[i]);
-        }
+    // Base case: element found
+    if (arr[mid] === target) {
+        return mid;
     }
 
-    return [...quickSort(left), pivot, ...quickSort(right)];
+    // Recursive cases
+    if (arr[mid] < target) {
+        // Search right half
+        return binarySearchRecursive(arr, target, mid + 1, high);
+    } else {
+        // Search left half
+        return binarySearchRecursive(arr, target, low, mid - 1);
+    }
 }
-
-// Usage
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-const sortedNumbers = quickSort(numbers);
-console.log(sortedNumbers); // [11, 12, 22, 25, 34, 64, 90]
-
-const strings = ["banana", "apple", "cherry", "date"];
-const sortedStrings = quickSort(strings);
-console.log(sortedStrings); // ["apple", "banana", "cherry", "date"]
-function quickSortInPlace<T>(array: T[], left: number = 0, right: number = array.length - 1): T[] {
-    if (left < right) {
-        const pivotIndex = partition(array, left, right);
-        quickSortInPlace(array, left, pivotIndex - 1);
-        quickSortInPlace(array, pivotIndex + 1, right);
+function binarySearchRecursive<T>(
+    arr: T[],
+    target: T,
+    comparator: (a: T, b: T) => number = (a, b) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+    },
+    low: number = 0,
+    high: number = arr.length - 1
+): number {
+    if (low > high) {
+        return -1;
     }
-    return array;
+
+    const mid = Math.floor((low + high) / 2);
+    const comparison = comparator(arr[mid], target);
+
+    if (comparison === 0) {
+        return mid;
+    } else if (comparison < 0) {
+        return binarySearchRecursive(arr, target, comparator, mid + 1, high);
+    } else {
+        return binarySearchRecursive(arr, target, comparator, low, mid - 1);
+    }
 }
+// Example usage with numbers
+const numbers = [1, 3, 5, 7, 9, 11, 13, 15];
+console.log(binarySearchRecursive(numbers, 7)); // Output: 3
+console.log(binarySearchRecursive(numbers, 10)); // Output: -1
 
-function partition<T>(array: T[], left: number, right: number): number {
-    const pivot = array[right];
-    let i = left - 1;
+// Example usage with strings
+const strings = ['apple', 'banana', 'cherry', 'date', 'elderberry'];
+console.log(binarySearchRecursive(strings, 'cherry')); // Output: 2
 
-    for (let j = left; j < right; j++) {
-        if (array[j] <= pivot) {
-            i++;
-            [array[i], array[j]] = [array[j], array[i]];
-        }
-    }
-
-    [array[i + 1], array[right]] = [array[right], array[i + 1]];
-    return i + 1;
-}
-
-// Usage
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-quickSortInPlace(numbers);
-console.log(numbers); // [11, 12, 22, 25, 34, 64, 90]
-function quickSortGeneric<T>(
-    array: T[],
-    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
-): T[] {
-    if (array.length <= 1) {
-        return array;
-    }
-
-    const pivot = array[0];
-    const left: T[] = [];
-    const right: T[] = [];
-
-    for (let i = 1; i < array.length; i++) {
-        if (compareFn(array[i], pivot) < 0) {
-            left.push(array[i]);
-        } else {
-            right.push(array[i]);
-        }
-    }
-
-    return [...quickSortGeneric(left, compareFn), pivot, ...quickSortGeneric(right, compareFn)];
-}
-
-// Usage examples
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-const sortedNumbers = quickSortGeneric(numbers);
-console.log(sortedNumbers);
-
-// Custom comparator for descending order
-const descendingNumbers = quickSortGeneric(numbers, (a, b) => b - a);
-console.log(descendingNumbers); // [90, 64, 34, 25, 22, 12, 11]
-
-// Sorting objects
+// Example with custom comparator for objects
 interface Person {
+    id: number;
     name: string;
-    age: number;
 }
 
 const people: Person[] = [
-    { name: "Alice", age: 30 },
-    { name: "Bob", age: 25 },
-    { name: "Charlie", age: 35 }
+    { id: 1, name: 'Alice' },
+    { id: 2, name: 'Bob' },
+    { id: 3, name: 'Charlie' },
+    { id: 4, name: 'Diana' },
 ];
 
-const sortedByAge = quickSortGeneric(people, (a, b) => a.age - b.age);
-console.log(sortedByAge);
-function quickSortOptimized<T>(
-    array: T[],
-    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
-): T[] {
-    const stack: [number, number][] = [];
-    let left = 0;
-    let right = array.length - 1;
-    
-    stack.push([left, right]);
-    
-    while (stack.length) {
-        [left, right] = stack.pop()!;
-        
-        if (left >= right) continue;
-        
-        const pivotIndex = partitionOptimized(array, left, right, compareFn);
-        
-        // Push the larger partition first to minimize stack depth
-        if (pivotIndex - left > right - pivotIndex) {
-            stack.push([left, pivotIndex - 1]);
-            stack.push([pivotIndex + 1, right]);
-        } else {
-            stack.push([pivotIndex + 1, right]);
-            stack.push([left, pivotIndex - 1]);
-        }
-    }
-    
-    return array;
-}
+// Search by id
+const result = binarySearchRecursive(
+    people,
+    { id: 3 } as Person, // Target object
+    (a, b) => a.id - b.id // Comparator function
+);
+console.log(result); // Output: 2
 
-function partitionOptimized<T>(
-    array: T[],
-    left: number,
-    right: number,
-    compareFn: (a: T, b: T) => number
+// Search by name
+const resultByName = binarySearchRecursive(
+    people.sort((a, b) => a.name.localeCompare(b.name)), // Sort first!
+    { name: 'Bob' } as Person,
+    (a, b) => a.name.localeCompare(b.name)
+);
+console.log(resultByName); // Output: 1
+function binarySearchRecursive<T>(
+    arr: T[],
+    target: T,
+    low: number = 0,
+    high: number = arr.length - 1
 ): number {
-    const pivot = array[Math.floor((left + right) / 2)]; // Middle element as pivot
-    let i = left;
-    let j = right;
-    
-    while (i <= j) {
-        while (compareFn(array[i], pivot) < 0) i++;
-        while (compareFn(array[j], pivot) > 0) j--;
-        
-        if (i <= j) {
-            [array[i], array[j]] = [array[j], array[i]];
-            i++;
-            j--;
-        }
+    // Early return for empty array
+    if (arr.length === 0) {
+        return -1;
     }
-    
-    return i - 1;
-}
-class QuickSorter<T> {
-    private compareFn: (a: T, b: T) => number;
-    
-    constructor(compareFn?: (a: T, b: T) => number) {
-        this.compareFn = compareFn || ((a, b) => a < b ? -1 : a > b ? 1 : 0);
-    }
-    
-    sort(array: T[]): T[] {
-        if (!Array.isArray(array)) {
-            throw new Error('Input must be an array');
-        }
-        
-        if (array.length <= 1) {
-            return [...array]; // Return a copy
-        }
-        
-        return this.quickSortRecursive([...array]); // Work on a copy
-    }
-    
-    private quickSortRecursive(array: T[]): T[] {
-        if (array.length <= 1) return array;
-        
-        const pivot = array[0];
-        const left: T[] = [];
-        const right: T[] = [];
-        
-        for (let i = 1; i < array.length; i++) {
-            if (this.compareFn(array[i], pivot) < 0) {
-                left.push(array[i]);
-            } else {
-                right.push(array[i]);
-            }
-        }
-        
-        return [
-            ...this.quickSortRecursive(left),
-            pivot,
-            ...this.quickSortRecursive(right)
-        ];
-    }
-}
 
-// Usage
-const sorter = new QuickSorter<number>();
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-const sorted = sorter.sort(numbers);
-console.log(sorted);
+    const mid = Math.floor((low + high) / 2);
+
+    if (arr[mid] === target) {
+        return mid;
+    }
+
+    if (low >= high) {
+        return -1;
+    }
+
+    if (arr[mid] < target) {
+        return binarySearchRecursive(arr, target, mid + 1, high);
+    } else {
+        return binarySearchRecursive(arr, target, low, mid - 1);
+    }
+}
