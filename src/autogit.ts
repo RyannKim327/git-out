@@ -1,41 +1,28 @@
-function longestCommonSubsequence(a: string, b: string): string {
-    const m = a.length;
-    const n = b.length;
-
-    // dp[i][j] = length of LCS of a[0..i-1], b[0..j-1]
-    const dp: number[][] = Array.from({ length: m + 1 }, () =>
-        Array(n + 1).fill(0)
-    );
-
-    // Fill DP table
-    for (let i = 1; i <= m; i++) {
-        for (let j = 1; j <= n; j++) {
-            if (a[i - 1] === b[j - 1]) {
-                dp[i][j] = dp[i - 1][j - 1] + 1;
-            } else {
-                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-            }
-        }
+function binarySearchRecursive(
+    arr: number[],
+    target: number,
+    low: number = 0,
+    high: number = arr.length - 1
+): number {
+    // base case: not found
+    if (low > high) {
+        return -1;
     }
 
-    // Backtrack to find sequence
-    let i = m, j = n;
-    const lcsChars: string[] = [];
+    const mid = Math.floor((low + high) / 2);
 
-    while (i > 0 && j > 0) {
-        if (a[i - 1] === b[j - 1]) {
-            lcsChars.push(a[i - 1]);
-            i--;
-            j--;
-        } else if (dp[i - 1][j] > dp[i][j - 1]) {
-            i--;
-        } else {
-            j--;
-        }
+    if (arr[mid] === target) {
+        return mid;
+    } else if (arr[mid] > target) {
+        // search in left half
+        return binarySearchRecursive(arr, target, low, mid - 1);
+    } else {
+        // search in right half
+        return binarySearchRecursive(arr, target, mid + 1, high);
     }
-
-    return lcsChars.reverse().join('');
 }
 
-// Example:
-console.log(longestCommonSubsequence("ACDBE", "ABCDE")); // Output: "ACDE"
+// Example usage:
+const sortedArray = [1, 3, 5, 7, 9, 11];
+console.log(binarySearchRecursive(sortedArray, 7)); // Output: 3
+console.log(binarySearchRecursive(sortedArray, 4)); // Output: -1
