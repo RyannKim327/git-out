@@ -1,49 +1,47 @@
-class ListNode {
-  value: any;
-  next: ListNode | null;
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 
-  constructor(value: any) {
-    this.value = value;
-    this.next = null;
+  constructor(val?: number, left?: TreeNode | null, right?: TreeNode | null) {
+    this.val = val ?? 0; // Default to 0 if `val` is not provided
+    this.left = left ?? null;
+    this.right = right ?? null;
   }
 }
-
-class LinkedList {
-  head: ListNode | null;
-
-  constructor() {
-    this.head = null;
-  }
-
-  // Add a node to the end
-  append(value: any): void {
-    const newNode = new ListNode(value);
-    if (!this.head) {
-      this.head = newNode;
-      return;
-    }
-
-    let current = this.head;
-    while (current.next) {
-      current = current.next;
-    }
-    current.next = newNode;
-  }
-
-  // Get the length of the list
-  getLength(): number {
-    let count = 0;
-    let current = this.head;
-    while (current) {
-      count++;
-      current = current.next;
-    }
-    return count;
-  }
+function countLeafNodesRecursive(root: TreeNode | null): number {
+  if (!root) return 0; // Base case: empty node
+  if (!root.left && !root.right) return 1; // Current node is a leaf
+  return countLeafNodesRecursive(root.left) + countLeafNodesRecursive(root.right);
 }
-const list = new LinkedList();
-list.append(10);
-list.append(20);
-list.append(30);
+function countLeafNodesIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  const queue: TreeNode[] = [root];
+  let count = 0;
 
-console.log("Length:", list.getLength()); // Output: 3
+  while (queue.length > 0) {
+    const node = queue.shift()!;
+    if (!node.left && !node.right) count++; // Check if leaf
+    if (node.left) queue.push(node.left);   // Add left child to queue
+    if (node.right) queue.push(node.right); // Add right child to queue
+  }
+
+  return count;
+}
+// Example Tree:
+//       1
+//      / \
+//     2   3
+//    / \
+//   4   5 (leaves: 4, 5, 3)
+
+const root = new TreeNode(1,
+  new TreeNode(2,
+    new TreeNode(4),
+    new TreeNode(5)
+  ),
+  new TreeNode(3)
+);
+
+console.log(countLeafNodesRecursive(root)); // Output: 3
+console.log(countLeafNodesIterative(root)); // Output: 3
