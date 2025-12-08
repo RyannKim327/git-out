@@ -1,72 +1,84 @@
-/**
- * Sorts an array using Bubble Sort algorithm.
- * @param array - The array to be sorted.
- * @returns A sorted copy of the input array (does not mutate the original).
- */
-function bubbleSort(array: number[]): number[] {
-  // Create a copy to avoid mutating the original array
-  const arr = [...array];
-  const n = arr.length;
-
-  for (let i = 0; i < n; i++) {
-    // Track if any swaps occurred in this pass
-    let swapped = false;
-
-    // Last i elements are already in place
-    for (let j = 0; j < n - 1 - i; j++) {
-      // Compare adjacent elements
-      if (arr[j] > arr[j + 1]) {
-        // Swap elements
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
-    }
-
-    // Early termination if array is already sorted
-    if (!swapped) break;
-  }
-
-  return arr;
+function isPalindrome(str: string): boolean {
+    const cleanedStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return cleanedStr === cleanedStr.split('').reverse().join('');
 }
 
-// Example Usage
-const unsortedArray = [64, 34, 25, 12, 22, 11, 90];
-const sortedArray = bubbleSort(unsortedArray);
-
-console.log(sortedArray); // Output: [11, 12, 22, 25, 34, 64, 90]
-console.log(unsortedArray); // Original array remains unchanged: [64, 34, 25, 12, 22, 11, 90]
-/**
- * Generic Bubble Sort with custom comparator.
- * @param array - Array to sort.
- * @param comparator - Function to compare elements (default: ascending order).
- * @returns Sorted array copy.
- */
-function genericBubbleSort<T>(
-  array: T[],
-  comparator: (a: T, b: T) => boolean = (a, b) => a > b
-): T[] {
-  const arr = [...array];
-  const n = arr.length;
-
-  for (let i = 0; i < n; i++) {
-    let swapped = false;
-    for (let j = 0; j < n - 1 - i; j++) {
-      if (comparator(arr[j], arr[j + 1])) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
+// Usage
+console.log(isPalindrome("racecar")); // true
+console.log(isPalindrome("hello"));   // false
+console.log(isPalindrome("A man, a plan, a canal, Panama")); // true
+function isPalindrome(str: string): boolean {
+    const cleanedStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    let left = 0;
+    let right = cleanedStr.length - 1;
+    
+    while (left < right) {
+        if (cleanedStr[left] !== cleanedStr[right]) {
+            return false;
+        }
+        left++;
+        right--;
     }
-    if (!swapped) break;
-  }
-
-  return arr;
+    return true;
+}
+function isPalindrome(str: string): boolean {
+    const cleanedStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    function checkPalindrome(s: string, start: number, end: number): boolean {
+        if (start >= end) return true;
+        if (s[start] !== s[end]) return false;
+        return checkPalindrome(s, start + 1, end - 1);
+    }
+    
+    return checkPalindrome(cleanedStr, 0, cleanedStr.length - 1);
+}
+function isPalindrome(str: string): boolean {
+    const cleanedStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return cleanedStr.split('').every((char, index) => {
+        return char === cleanedStr[cleanedStr.length - 1 - index];
+    });
+}
+function isPalindromeCaseSensitive(str: string): boolean {
+    const cleanedStr = str.replace(/[^a-zA-Z0-9]/g, '');
+    return cleanedStr === cleanedStr.split('').reverse().join('');
 }
 
-// Example Usage with Strings
-const strings = ["banana", "apple", "date", "cherry"];
-const sortedStrings = genericBubbleSort(strings);
-console.log(sortedStrings); // ["apple", "banana", "cherry", "date"]
+// Usage
+console.log(isPalindromeCaseSensitive("Racecar")); // false (because 'R' != 'r')
+class PalindromeChecker {
+    static isPalindrome(str: string, caseSensitive: boolean = false): boolean {
+        let cleanedStr: string;
+        
+        if (caseSensitive) {
+            cleanedStr = str.replace(/[^a-zA-Z0-9]/g, '');
+        } else {
+            cleanedStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+        }
+        
+        // Use two-pointer technique for efficiency
+        let left = 0;
+        let right = cleanedStr.length - 1;
+        
+        while (left < right) {
+            if (cleanedStr[left] !== cleanedStr[right]) {
+                return false;
+            }
+            left++;
+            right--;
+        }
+        return true;
+    }
+}
 
-// Example with Custom Comparator (Descending Order)
-const descendingSort = genericBubbleSort([4, 2, 7, 1], (a, b) => a < b);
-console.log(descendingSort); // [7, 4, 2, 1]
+// Test cases
+const testCases = [
+    "racecar",
+    "A man, a plan, a canal, Panama",
+    "hello",
+    "12321",
+    "No 'x' in Nixon"
+];
+
+testCases.forEach(test => {
+    console.log(`"${test}" -> ${PalindromeChecker.isPalindrome(test)}`);
+});
