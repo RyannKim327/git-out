@@ -1,25 +1,26 @@
-function isPrime(num: number): boolean {
-  if (num <= 1) return false; 
-  if (num <= 3) return true; // 2 and 3 are prime
+function longestCommonSubstring(a: string, b: string): string {
+    // Table: dp[i][j] = length of longest common substring ending at a[i-1], b[j-1]
+    const dp: number[][] = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+    let maxLength = 0;
+    let endIndexInA = 0;
 
-  if (num % 2 === 0 || num % 3 === 0) return false; // quick elimination
+    for (let i = 1; i <= a.length; i++) {
+        for (let j = 1; j <= b.length; j++) {
+            if (a[i - 1] === b[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
 
-  const limit = Math.floor(Math.sqrt(num));
-  for (let i = 5; i <= limit; i += 6) {
-    if (num % i === 0 || num % (i + 2) === 0) return false;
-  }
+                if (dp[i][j] > maxLength) {
+                    maxLength = dp[i][j];
+                    endIndexInA = i;
+                }
+            } else {
+                dp[i][j] = 0; // no match at these positions
+            }
+        }
+    }
 
-  return true;
+    return a.slice(endIndexInA - maxLength, endIndexInA);
 }
 
-// Examples:
-console.log(isPrime(2));  // true
-console.log(isPrime(15)); // false
-console.log(isPrime(17)); // true
-function isPrimeBasic(num: number): boolean {
-  if (num <= 1) return false;
-  for (let i = 2; i < num; i++) {
-    if (num % i === 0) return false;
-  }
-  return true;
-}
+// Example usage:
+console.log(longestCommonSubstring("abcdef", "zabcf"));
