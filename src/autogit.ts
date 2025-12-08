@@ -1,75 +1,100 @@
-function isPalindrome(s: string): boolean {
-    let left = 0;
-    let right = s.length - 1;
-    
-    while (left < right) {
-        // Skip non-alphanumeric characters from left
-        while (left < right && !isAlphanumeric(s[left])) {
-            left++;
-        }
-        
-        // Skip non-alphanumeric characters from right
-        while (left < right && !isAlphanumeric(s[right])) {
-            right--;
-        }
-        
-        // Compare characters (case-insensitive)
-        if (s[left].toLowerCase() !== s[right].toLowerCase()) {
-            return false;
-        }
-        
-        left++;
-        right--;
-    }
-    
-    return true;
+class ListNode<T> {
+    constructor(
+        public value: T,
+        public next: ListNode<T> | null = null
+    ) {}
 }
 
-function isAlphanumeric(char: string): boolean {
-    return /[a-zA-Z0-9]/.test(char);
-}
-
-// Usage
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("race a car")); // false
-console.log(isPalindrome(" ")); // true
-function isPalindrome(s: string): boolean {
-    let left = 0;
-    let right = s.length - 1;
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+    if (!head || !head.next) return false;
     
-    while (left < right) {
-        const leftChar = s[left].toLowerCase();
-        const rightChar = s[right].toLowerCase();
+    let slow: ListNode<T> | null = head;
+    let fast: ListNode<T> | null = head;
+    
+    while (fast && fast.next) {
+        slow = slow!.next;
+        fast = fast.next.next;
         
-        if (!/[a-z0-9]/.test(leftChar)) {
-            left++;
-        } else if (!/[a-z0-9]/.test(rightChar)) {
-            right--;
-        } else if (leftChar !== rightChar) {
-            return false;
-        } else {
-            left++;
-            right--;
+        if (slow === fast) {
+            return true;
         }
     }
     
-    return true;
+    return false;
 }
-function isPalindrome(s: string): boolean {
-    let left = 0;
-    let right = s.length - 1;
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+    const visited = new Set<ListNode<T>>();
+    let current = head;
     
-    while (left < right) {
-        if (s[left] !== s[right]) {
-            return false;
+    while (current) {
+        if (visited.has(current)) {
+            return true;
         }
-        left++;
-        right--;
+        visited.add(current);
+        current = current.next;
     }
     
-    return true;
+    return false;
+}
+function hasCycleWithMarking<T>(head: ListNode<T> | null): boolean {
+    let current = head;
+    
+    while (current) {
+        if ((current as any).visited) {
+            return true;
+        }
+        (current as any).visited = true;
+        current = current.next;
+    }
+    
+    return false;
+}
+class ListNode<T> {
+    constructor(
+        public value: T,
+        public next: ListNode<T> | null = null
+    ) {}
 }
 
-// Usage - only works for strings without spaces/special chars
-console.log(isPalindrome("racecar")); // true
-console.log(isPalindrome("hello")); // false
+function createLinkedListWithCycle<T>(values: T[], cycleStartIndex: number = -1): ListNode<T> | null {
+    if (values.length === 0) return null;
+    
+    const nodes: ListNode<T>[] = [];
+    const head = new ListNode(values[0]);
+    nodes.push(head);
+    
+    let current = head;
+    for (let i = 1; i < values.length; i++) {
+        current.next = new ListNode(values[i]);
+        current = current.next;
+        nodes.push(current);
+    }
+    
+    // Create cycle if specified
+    if (cycleStartIndex >= 0 && cycleStartIndex < nodes.length) {
+        current.next = nodes[cycleStartIndex];
+    }
+    
+    return head;
+}
+
+// Test the implementation
+function testCycleDetection() {
+    // Test case 1: No cycle
+    const list1 = createLinkedListWithCycle([1, 2, 3, 4, 5]);
+    console.log('List 1 (no cycle):', hasCycle(list1)); // false
+    
+    // Test case 2: Cycle exists
+    const list2 = createLinkedListWithCycle([1, 2, 3, 4, 5], 2);
+    console.log('List 2 (cycle at index 2):', hasCycle(list2)); // true
+    
+    // Test case 3: Empty list
+    const list3 = createLinkedListWithCycle([]);
+    console.log('List 3 (empty):', hasCycle(list3)); // false
+    
+    // Test case 4: Single node with cycle to itself
+    const list4 = createLinkedListWithCycle([1], 0);
+    console.log('List 4 (self cycle):', hasCycle(list4)); // true
+}
+
+testCycleDetection();
