@@ -1,38 +1,45 @@
-function isPalindrome(str: string): boolean {
-    let left = 0;
-    let right = str.length - 1;
-
-    while (left < right) {
-        if (str[left] !== str[right]) {
-            return false;
-        }
-        left++;
-        right--;
-    }
-
-    return true;
+class ListNode {
+  val: number;
+  next: ListNode | null;
+  constructor(val?: number, next?: ListNode | null) {
+    this.val = val === undefined ? 0 : val;
+    this.next = next === undefined ? null : next;
+  }
 }
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true;
 
-// Example
-console.log(isPalindrome("racecar")); // true
-console.log(isPalindrome("hello"));   // false
-function isPalindromeClean(str: string): boolean {
-    let left = 0;
-    let right = str.length - 1;
+  // Step 1: Find the middle using slow/fast pointers
+  let slow = head;
+  let fast = head;
 
-    while (left < right) {
-        while (left < right && !/[a-zA-Z0-9]/.test(str[left])) left++;
-        while (left < right && !/[a-zA-Z0-9]/.test(str[right])) right--;
+  while (fast && fast.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
+  }
 
-        if (str[left].toLowerCase() !== str[right].toLowerCase()) {
-            return false;
-        }
+  // Step 2: Reverse the second half
+  let prev: ListNode | null = null;
+  let curr: ListNode | null = slow;
 
-        left++;
-        right--;
-    }
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
 
-    return true;
+  // Step 3: Compare first and reversed second half
+  let left = head;
+  let right = prev;
+
+  while (right) {
+    if (left!.val !== right.val) return false;
+    left = left!.next;
+    right = right.next;
+  }
+
+  return true;
 }
-
-console.log(isPalindromeClean("A man, a plan, a canal: Panama")); // true
+const list = new ListNode(1, new ListNode(2, new ListNode(2, new ListNode(1))));
+console.log(isPalindrome(list)); // true
