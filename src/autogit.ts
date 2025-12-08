@@ -1,20 +1,17 @@
-const str = "Hello, world!";
-const search = "world";
-
-if (str.includes(search)) {
-  console.log("Found!");
-} else {
-  console.log("Not found.");
+function gnomeSort(arr: number[]): number[] {
+    let i = 0;
+    while (i < arr.length) {
+        if (i === 0 || arr[i] >= arr[i - 1]) {
+            i++;
+        } else {
+            // Swap arr[i] and arr[i - 1]
+            [arr[i], arr[i - 1]] = [arr[i - 1], arr[i]];
+            i--;
+        }
+    }
+    return arr;
 }
-const str = "Hello, world!";
-const search = "world";
 
-if (str.indexOf(search) !== -1) {
-  console.log("Found!");
-}
-const str = "Hello, world!";
-const pattern = /world/i; // case-insensitive
-
-if (pattern.test(str)) {
-  console.log("Found via regex!");
-}
+// Example usage:
+const example = [5, 2, 9, 1, 5, 6];
+console.log(gnomeSort(example)); // Output: [1, 2, 5, 5, 6, 9]
