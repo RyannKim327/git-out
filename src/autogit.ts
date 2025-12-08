@@ -1,45 +1,48 @@
-class ListNode {
-  val: number;
-  next: ListNode | null;
-  constructor(val?: number, next?: ListNode | null) {
-    this.val = val === undefined ? 0 : val;
-    this.next = next === undefined ? null : next;
-  }
+import cron from 'node-cron';
+
+// Task 1: Runs every minute
+const task1 = cron.schedule('* * * * *', () => {
+  console.log('Running task every minute:', new Date().toLocaleTimeString());
+});
+
+// Task 2: Runs every day at 10:30 AM
+const task2 = cron.schedule('30 10 * * *', () => {
+  console.log('Running daily task at 10:30 AM');
+  sendDailyReport(); // You would implement this function
+});
+
+// Task 3: Runs every weekday (Mon-Fri) at 8:00 AM
+const task3 = cron.schedule('0 8 * * 1-5', () => {
+  console.log('Running weekday morning task');
+  startDailyMeeting(); // Example function
+});
+
+// Handle graceful shutdown
+process.on('SIGINT', () => {
+  console.log('Stopping cron jobs...');
+  task1.stop();
+  task2.stop();
+  task3.stop();
+  process.exit();
+});
+
+console.log('Cron jobs started. Press Ctrl+C to exit.');
+
+// Example functions (implement these as needed)
+function sendDailyReport() {
+  // Email logic or API call
 }
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true;
 
-  // Step 1: Find the middle using slow/fast pointers
-  let slow = head;
-  let fast = head;
-
-  while (fast && fast.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  // Step 2: Reverse the second half
-  let prev: ListNode | null = null;
-  let curr: ListNode | null = slow;
-
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-
-  // Step 3: Compare first and reversed second half
-  let left = head;
-  let right = prev;
-
-  while (right) {
-    if (left!.val !== right.val) return false;
-    left = left!.next;
-    right = right.next;
-  }
-
-  return true;
+function startDailyMeeting() {
+  // Notify team or trigger meeting
 }
-const list = new ListNode(1, new ListNode(2, new ListNode(2, new ListNode(1))));
-console.log(isPalindrome(list)); // true
+npm install node-cron @types/node typescript ts-node
+npx ts-node cron-example.ts
+* * * * * *
+| | | | | |
+| | | | | day of week (0 - 7) (0 and 7 are Sunday)
+| | | | month (1 - 12)
+| | | day of month (1 - 31)
+| | hour (0 - 23)
+| minute (0 - 59)
+second (0 - 59) [optional]
