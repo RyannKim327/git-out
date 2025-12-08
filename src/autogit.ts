@@ -1,152 +1,143 @@
-// Node class represents individual elements in the linked list
-class Node<T> {
-  constructor(
-    public value: T,
-    public next: Node<T> | null = null
-  ) {}
+function countingSort(arr: number[]): number[] {
+    if (arr.length <= 1) return [...arr];
+    
+    // Find the maximum value to determine the range
+    const max = Math.max(...arr);
+    const min = Math.min(...arr);
+    const range = max - min + 1;
+    
+    // Initialize count array
+    const count = new Array(range).fill(0);
+    
+    // Count occurrences of each element
+    for (const num of arr) {
+        count[num - min]++;
+    }
+    
+    // Calculate cumulative counts
+    for (let i = 1; i < range; i++) {
+        count[i] += count[i - 1];
+    }
+    
+    // Build the sorted array
+    const sorted = new Array(arr.length);
+    for (let i = arr.length - 1; i >= 0; i--) {
+        const num = arr[i];
+        sorted[count[num - min] - 1] = num;
+        count[num - min]--;
+    }
+    
+    return sorted;
+}
+interface CountingSortOptions<T> {
+    keyExtractor?: (item: T) => number;
+    min?: number;
+    max?: number;
 }
 
-// Linked list implementation
-class LinkedList<T> {
-  private head: Node<T> | null = null;
-  private size: number = 0;
-
-  // Get current size of the list
-  get length(): number {
-    return this.size;
-  }
-
-  // Add element to the beginning of the list
-  prepend(value: T): void {
-    const newNode = new Node(value);
-    newNode.next = this.head;
-    this.head = newNode;
-    this.size++;
-  }
-
-  // Add element to the end of the list
-  append(value: T): void {
-    const newNode = new Node(value);
+function countingSortGeneric<T>(
+    arr: T[],
+    options: CountingSortOptions<T> = {}
+): T[] {
+    if (arr.length <= 1) return [...arr];
     
-    if (!this.head) {
-      this.head = newNode;
-    } else {
-      let current = this.head;
-      while (current.next) {
-        current = current.next;
-      }
-      current.next = newNode;
-    }
-    this.size++;
-  }
-
-  // Insert element at specific index
-  insertAt(value: T, index: number): void {
-    if (index < 0 || index > this.size) {
-      throw new Error("Index out of bounds");
-    }
-
-    if (index === 0) {
-      this.prepend(value);
-      return;
-    }
-
-    const newNode = new Node(value);
-    let current = this.head;
-    let previous: Node<T> | null = null;
-    let count = 0;
-
-    while (count < index) {
-      previous = current;
-      current = current!.next;
-      count++;
-    }
-
-    newNode.next = current;
-    previous!.next = newNode;
-    this.size++;
-  }
-
-  // Remove element at specific index
-  removeAt(index: number): T | null {
-    if (index < 0 || index >= this.size || !this.head) {
-      throw new Error("Index out of bounds");
-    }
-
-    let current = this.head;
-    if (index === 0) {
-      this.head = current.next;
-    } else {
-      let previous: Node<T> | null = null;
-      let count = 0;
-
-      while (count < index) {
-        previous = current;
-        current = current.next!;
-        count++;
-      }
-
-      previous!.next = current.next;
-    }
-
-    this.size--;
-    return current.value;
-  }
-
-  // Get element at specific index
-  get(index: number): T | null {
-    if (index < 0 || index >= this.size || !this.head) {
-      return null;
-    }
-
-    let current = this.head;
-    let count = 0;
-
-    while (count < index) {
-      current = current.next!;
-      count++;
-    }
-
-    return current.value;
-  }
-
-  // Convert linked list to array
-  toArray(): T[] {
-    const result: T[] = [];
-    let current = this.head;
-
-    while (current) {
-      result.push(current.value);
-      current = current.next;
-    }
-
-    return result;
-  }
-
-  // Print the linked list (for debugging)
-  print(): void {
-    let current = this.head;
-    const values: string[] = [];
+    const { keyExtractor = (x: T) => x as unknown as number, min, max } = options;
     
-    while (current) {
-      values.push(String(current.value));
-      current = current.next;
+    // Determine range
+    let actualMin = min ?? Infinity;
+    let actualMax = max ?? -Infinity;
+    
+    if (min === undefined || max === undefined) {
+        for (const item of arr) {
+            const key = keyExtractor(item);
+            actualMin = Math.min(actualMin, key);
+            actualMax = Math.max(actualMax, key);
+        }
     }
     
-    console.log(values.join(" -> ") + " -> null");
-  }
+    const range = actualMax - actualMin + 1;
+    
+    // Initialize count array
+    const count = new Array(range).fill(0);
+    const originalItems: T[] = new Array(range);
+    
+    // Count occurrences and store original items
+    for (const item of arr) {
+        const key = keyExtractor(item);
+        const index = key - actualMin;
+        count[index]++;
+        originalItems[index] = item; // Store one instance for reconstruction
+    }
+    
+    // Calculate cumulative counts
+    for (let i = 1; i < range; i++) {
+        count[i] += count[i - 1];
+    }
+    
+    // Build the sorted array
+    const sorted = new Array(arr.length);
+    for (let i = arr.length - 1; i >= 0; i--) {
+        const item = arr[i];
+        const key = keyExtractor(item);
+        const index = key - actualMin;
+        sorted[count[index] - 1] = item;
+        count[index]--;
+    }
+    
+    return sorted;
 }
-// Create a linked list of numbers
-const list = new LinkedList<number>();
+// Basic usage
+const numbers = [4, 2, 2, 8, 3, 3, 1];
+const sortedNumbers = countingSort(numbers);
+console.log(sortedNumbers); // [1, 2, 2, 3, 3, 4, 8]
 
-list.append(10);
-list.prepend(5);
-list.append(20);
-list.insertAt(15, 2);
+// Sorting objects by numeric property
+interface Person {
+    name: string;
+    age: number;
+}
 
-console.log(list.length); // 4
-list.print(); // 5 -> 10 -> 15 -> 20 -> null
+const people: Person[] = [
+    { name: "Alice", age: 25 },
+    { name: "Bob", age: 20 },
+    { name: "Charlie", age: 25 },
+    { name: "David", age: 18 }
+];
 
-list.removeAt(1);
-console.log(list.get(1)); // 15
-console.log(list.toArray()); // [5, 15, 20]
+const sortedPeople = countingSortGeneric(people, {
+    keyExtractor: (person) => person.age
+});
+
+console.log(sortedPeople);
+// [
+//     { name: "David", age: 18 },
+//     { name: "Bob", age: 20 },
+//     { name: "Alice", age: 25 },
+//     { name: "Charlie", age: 25 }
+// ]
+// Optimized version for better performance
+function optimizedCountingSort(arr: number[]): number[] {
+    if (arr.length <= 1) return [...arr];
+    
+    const max = Math.max(...arr);
+    const min = Math.min(...arr);
+    const range = max - min + 1;
+    
+    const count = new Array(range).fill(0);
+    
+    // Count elements
+    for (let i = 0; i < arr.length; i++) {
+        count[arr[i] - min]++;
+    }
+    
+    // Reconstruct sorted array directly
+    let index = 0;
+    for (let i = 0; i < range; i++) {
+        while (count[i] > 0) {
+            arr[index++] = i + min;
+            count[i]--;
+        }
+    }
+    
+    return arr;
+}
