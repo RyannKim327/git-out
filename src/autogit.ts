@@ -1,52 +1,64 @@
-function fibonacciSearch<T>(arr: T[], target: T): number {
-    if (arr.length === 0) return -1;
+type Graph = Record<string, string[]>;
 
-    // Initialize Fibonacci numbers
-    let fibMMm2 = 0; // F(m-2)
-    let fibMMm1 = 1; // F(m-1)
-    let fibM = fibMMm2 + fibMMm1; // F(m)
+function bfs(graph: Graph, startNode: string): string[] {
+    const visited: Set<string> = new Set();
+    const result: string[] = [];
+    const queue: string[] = [startNode];
 
-    // Find the smallest Fibonacci number >= arr.length
-    while (fibM < arr.length) {
-        fibMMm2 = fibMMm1;
-        fibMMm1 = fibM;
-        fibM = fibMMm2 + fibMMm1;
-    }
+    visited.add(startNode);
 
-    let offset = -1;
+    while (queue.length > 0) {
+        const currentNode = queue.shift()!;
+        result.push(currentNode);
 
-    while (fibM > 1) {
-        // Check if fibMMm2 is a valid index
-        const i = Math.min(offset + fibMMm2, arr.length - 1);
-
-        if (arr[i] < target) {
-            // Move the Fibonacci window down
-            fibM = fibMMm1;
-            fibMMm1 = fibMMm2;
-            fibMMm2 = fibM - fibMMm1;
-            offset = i;
-        } else if (arr[i] > target) {
-            // Move the Fibonacci window down twice
-            fibM = fibMMm2;
-            fibMMm1 -= fibMMm2;
-            fibMMm2 = fibM - fibMMm1;
-        } else {
-            return i;
+        for (const neighbor of graph[currentNode] || []) {
+            if (!visited.has(neighbor)) {
+                visited.add(neighbor);
+                queue.push(neighbor);
+            }
         }
     }
 
-    // Check last element
-    if (fibMMm1 && arr[offset + 1] === target) {
-        return offset + 1;
+    return result;
+}
+
+// Example usage
+const graph: Graph = {
+    'A': ['B', 'C'],
+    'B': ['A', 'D', 'E'],
+    'C': ['A', 'F'],
+    'D': ['B'],
+    'E': ['B', 'F'],
+    'F': ['C', 'E']
+};
+
+console.log(bfs(graph, 'A')); // Output: ["A", "B", "C", "D", "E", "F"]
+function bfsShortestPath(graph: Graph, start: string, target: string): string[] | null {
+    const previous: Record<string, string | null> = { [start]: null };
+    const queue: string[] = [start];
+
+    while (queue.length > 0) {
+        const current = queue.shift()!;
+        if (current === target) break;
+
+        for (const neighbor of graph[current] || []) {
+            if (!(neighbor in previous)) {
+                previous[neighbor] = current;
+                queue.push(neighbor);
+            }
+        }
     }
 
-    return -1;
-}
-// Sorted array is required
-const sortedArray = [10, 22, 35, 40, 45, 50, 80, 82, 85, 90, 100];
-const targets = [10, 22, 100, 50, 95]; 
+    if (!(target in previous)) return null;
 
-targets.forEach(target => {
-    const index = fibonacciSearch(sortedArray, target);
-    console.log(`Index of ${target}: ${index}`);
-});
+    const path: string[] = [];
+    let current: string | null = target;
+    while (current) {
+        path.unshift(current);
+        current = previous[current];
+    }
+    return path;
+}
+
+// Usage
+console.log(bfsShortestPath(graph, 'A', 'F')); // Output: ["A", "C", "F"]
