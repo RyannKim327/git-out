@@ -1,70 +1,53 @@
-const firstName: string = "John";
-const lastName: string = "Doe";
+/**
+ * Simplified Boyer-Moore string search algorithm using only the bad character rule.
+ * Returns the index of the first occurrence of `pattern` in `text`, or -1 if not found.
+ * @param text - The text to search within
+ * @param pattern - The pattern to search for
+ */
+function boyerMooreSearch(text: string, pattern: string): number {
+    // Edge case: empty pattern
+    if (pattern.length === 0) return 0;
+    // Edge case: pattern longer than text
+    if (text.length < pattern.length) return -1;
 
-// Concatenate two strings
-const fullName: string = firstName + " " + lastName;
-console.log(fullName); // Output: John Doe
+    // Preprocess: Create bad character table
+    // Records the last occurrence index of each character in the pattern
+    const badCharTable: Record<string, number> = {};
+    for (let i = 0; i < pattern.length; i++) {
+        badCharTable[pattern[i]] = i;
+    }
 
-// Concatenate multiple strings and variables
-const greeting: string = "Hello, " + firstName + "! Welcome.";
-console.log(greeting); // Output: Hello, John! Welcome.
+    const textLength = text.length;
+    const patternLength = pattern.length;
+    let shift = 0; // Current shift position
 
-// With numbers (type coercion to string happens)
-const age: number = 30;
-const message: string = "My name is " + firstName + " and I am " + age + " years old.";
-console.log(message); // Output: My name is John and I am 30 years old.
-const firstName: string = "Jane";
-const lastName: string = "Smith";
-const age: number = 25;
-const city: string = "New York";
+    while (shift <= textLength - patternLength) {
+        let j = patternLength - 1;
 
-// Simple concatenation
-const fullName: string = `${firstName} ${lastName}`;
-console.log(fullName); // Output: Jane Smith
+        // Compare from end of pattern to start
+        while (j >= 0 && pattern[j] === text[shift + j]) {
+            j--;
+        }
 
-// Embedding multiple variables and expressions
-const greeting: string = `Hello, my name is ${firstName} ${lastName}. I am ${age} years old and live in ${city}.`;
-console.log(greeting);
-// Output: Hello, my name is Jane Smith. I am 25 years old and live in New York.
+        // If all characters matched
+        if (j < 0) {
+            return shift;
+        } else {
+            // Calculate shift using bad character rule
+            const char = text[shift + j]; // Mismatched character in text
+            const badCharShift = j - (badCharTable[char] ?? -1);
+            // Use shift if positive, otherwise shift by 1
+            shift += Math.max(1, badCharShift);
+        }
+    }
 
-// Multi-line strings are also easy
-const multiLineMessage: string = `
-  This is a message
-  that spans multiple lines.
-  It includes the name: ${fullName}.
-`;
-console.log(multiLineMessage);
-/* Output:
-  This is a message
-  that spans multiple lines.
-  It includes the name: Jane Smith.
-*/
+    return -1; // Not found
+}
+// Example usage
+const text = "ABAAABCD";
+const pattern = "ABC";
+console.log(boyerMooreSearch(text, pattern));  // Output: 4
 
-// You can even include function calls or operations
-const sum: number = 10 + 5;
-const calculationMessage: string = `The sum of 10 and 5 is ${sum}.`;
-console.log(calculationMessage); // Output: The sum of 10 and 5 is 15.
-const part1: string = "Hello";
-const part2: string = "World";
-const part3: string = "!";
-
-// Concatenate two strings
-const result1: string = part1.concat(" ", part2);
-console.log(result1); // Output: Hello World
-
-// Concatenate multiple strings
-const result2: string = part1.concat(" ", part2, part3, " How are you?");
-console.log(result2); // Output: Hello World! How are you?
-const words: string[] = ["TypeScript", "is", "awesome"];
-
-// Join with a space as a separator
-const sentence: string = words.join(" ");
-console.log(sentence); // Output: TypeScript is awesome
-
-// Join with an empty string (no separator)
-const combined: string = words.join("");
-console.log(combined); // Output: TypeScriptisawesome
-
-// Join with a different separator
-const csvRow: string = ["data1", "data2", "data3"].join(",");
-console.log(csvRow); // Output: data1,data2,data3
+const longText = "This is a test text for searching with Boyer-Moore";
+const searchPattern = "Boyer-Moore";
+console.log(boyerMooreSearch(longText, searchPattern));  // Output: 38
