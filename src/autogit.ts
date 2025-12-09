@@ -1,62 +1,72 @@
-/**
- * Performs a Fibonacci search on a sorted array.
- * 
- * @param arr - The sorted array to search in (ascending order)
- * @param key - The value to search for
- * @returns The index of the key if found, otherwise -1
- */
-function fibonacciSearch(arr: number[], key: number): number {
-    const n = arr.length;
-    
-    // Initialize Fibonacci numbers
-    let fib2 = 0;          // (k-2)th Fibonacci number
-    let fib1 = 1;          // (k-1)th Fibonacci number
-    let fibM = fib2 + fib1; // kth Fibonacci number (smallest Fibonacci >= n)
+function bwt(input: string): { transformed: string, index: number } {
+    const n = input.length;
+    const rotations: string[] = [];
 
-    // Find the smallest Fibonacci number greater than or equal to n
-    while (fibM < n) {
-        fib2 = fib1;
-        fib1 = fibM;
-        fibM = fib2 + fib1;
+    // Generate all rotations
+    for (let i = 0; i < n; i++) {
+        rotations.push(input.slice(i) + input.slice(0, i));
     }
 
-    let offset = -1; // Marks the start of the eliminated range
+    // Sort rotations lexicographically
+    const sorted = rotations.slice().sort();
 
-    while (fibM > 1) {
-        // Check if fib2 is a valid index
-        const i = Math.min(offset + fib2, n - 1);
+    // Get the last column
+    const lastColumn = sorted.map(row => row[n - 1]).join('');
 
-        if (arr[i] < key) {
-            // Move the search range to right subarray (1 Fibonacci down)
-            fibM = fib1;
-            fib1 = fib2;
-            fib2 = fibM - fib1;
-            offset = i;
-        } else if (arr[i] > key) {
-            // Move the search range to left subarray (2 Fibonacci down)
-            fibM = fib2;
-            fib1 = fib1 - fib2;
-            fib2 = fibM - fib1;
-        } else {
-            return i; // Found at index i
-        }
-    }
+    // Find the index of the original string in sorted rotations
+    const index = sorted.indexOf(input);
 
-    // Compare the last element with remaining Fibonacci number 1
-    if (fib1 === 1 && arr[offset + 1] === key) {
-        return offset + 1;
-    }
-
-    return -1; // Key not found
+    return { transformed: lastColumn, index };
 }
-const sortedArray = [10, 22, 35, 40, 45, 50, 80, 82, 85, 90, 100];
-const target = 85;
 
-const result = fibonacciSearch(sortedArray, target);
-console.log(result); // Output: 8
+// Example
+const result = bwt("banana$"); // '$' as a terminator symbol
+console.log(result.transformed); // "annb$aa"
+console.log(result.index);       // position of original string in sorted rotations
+function inverseBwt(lastColumn: string, index: number): string {
+    const n = lastColumn.length;
 
-// Edge case examples
-console.log(fibonacciSearch(sortedArray, 10));    // 0 (first element)
-console.log(fibonacciSearch(sortedArray, 100));   // 10 (last element)
-console.log(fibonacciSearch([], 42));             // -1 (empty array)
-console.log(fib
+    // First column is just the sorted chars of lastColumn
+    const firstColumn = lastColumn.split('').sort();
+
+    // Map from character occurrence to row mapping
+    const rankLast: number[] = [];
+    const occurrenceMapLast: Record<string, number> = {};
+    for (const char of lastColumn) {
+        occurrenceMapLast[char] = (occurrenceMapLast[char] ?? 0) + 1;
+        rankLast.push(occurrenceMapLast[char]);
+    }
+
+    const occurrenceMapFirst: Record<string, number> = {};
+    const firstColumnRank: number[] = [];
+    for (const char of firstColumn) {
+        occurrenceMapFirst[char] = (occurrenceMapFirst[char] ?? 0) + 1;
+        firstColumnRank.push(occurrenceMapFirst[char]);
+    }
+
+    // Link last column to first column rows
+    const rowMapping: number[] = [];
+    for (let i = 0; i < n; i++) {
+        const char = lastColumn[i];
+        const rank = rankLast[i];
+        // Find position of (char, rank) in firstColumn
+        const position = firstColumnRank.findIndex((r, idx) =>
+            firstColumn[idx] === char && r === rank
+        );
+        rowMapping[i] = position;
+    }
+
+    // Rebuild the string
+    let row = index;
+    let original = '';
+    for (let i = 0; i < n; i++) {
+        original += lastColumn[row];
+        row = rowMapping[row];
+    }
+
+    return original;
+}
+
+// Example
+const restored = inverseBwt("annb$aa", 3);
+console.log(restored); // "banana$"
