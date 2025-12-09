@@ -1,181 +1,276 @@
-/**
- * Skip list in TypeScript
- *  – Keys must be comparable via `<` / `>` (numbers, strings, Dates, …).
- *  – Duplicate keys are overwritten (set-like behaviour).
- *  – Average O(log n) time, O(log n) memory per node.
- */
-export class SkipList<K, V> implements Iterable<[K, V]> {
-  private head: Node<K, V>;
-  private lvl: number;                 // current max level (1-based)
-  private n: number;                   // #keys stored
-  private readonly maxLvl: number;
-  private readonly p: number;            // 1/p = probability to go up one level
+enum Color {
+  RED = 'RED',
+  BLACK = 'BLACK'
+}
 
-  constructor(maxLvl = 32, p = 2) {
-    this.maxLvl = maxLvl;
-    this.p = p;
-    this.lvl = 1;
-    this.n = 0;
-    this.head = new Node<K, V>(undefined as any, undefined as any, maxLvl);
-  }
+class RBNode<T> {
+  value: T;
+  color: Color;
+  left: RBNode<T> | null;
+  right: RBNode<T> | null;
+  parent: RBNode<T> | null;
 
-  /* ---------------- public API ---------------- */
-
-  get size(): number { return this.n; }
-
-  insert(key: K, value: V): void {
-    const update: Node<K, V>[] = [];
-    let x: Node<K, V> = this.head;
-
-    /* 1. find position & build update vector */
-    for (let i = this.lvl - 1; i >= 0; --i) {
-      while (x.next[i] && cmp(x.next[i]!.key, key) < 0) {
-        x = x.next[i]!;
-      }
-      update[i] = x;
-    }
-
-    const lvl = this.randomLevel();
-    if (lvl > this.lvl) {
-      for (let i = this.lvl; i < lvl; ++i) update[i] = this.head;
-      this.lvl = lvl;
-    }
-
-    const newNode = new Node(key, value, lvl);
-    for (let i = 0; i < lvl; ++i) {
-      newNode.next[i] = update[i].next[i];
-      update[i].next[i] = newNode;
-    }
-    this.n++;
-  }
-
-  search(key: K): V | undefined {
-    let x: Node<K, V> = this.head;
-    for (let i = this.lvl - 1; i >= 0; --i) {
-      while (x.next[i] && cmp(x.next[i]!.key, key) < 0) {
-        x = x.next[i]!;
-      }
-    }
-    x = x.next[0];
-    return x && cmp(x.key, key) === 0 ? x.value : undefined;
-  }
-
-  remove(key: K): boolean {
-    const update: Node<K, V>[] = [];
-    let x: Node<K, V> = this.head;
-    for (let i = this.lvl - 1; i >= 0; --i) {
-      while (x.next[i] && cmp(x.next[i]!.key, key) < 0) {
-        x = x.next[i]!;
-      }
-      update[i] = x;
-    }
-    x = x.next[0];
-    if (!x || cmp(x.key, key) !== 0) return false;
-
-    for (let i = 0; i < this.lvl; ++i) {
-      if (update[i].next[i] !== x) break;
-      update[i].next[i] = x.next[i];
-    }
-    while (this.lvl > 1 && !this.head.next[this.lvl - 1]) this.lvl--;
-    this.n--;
-    return true;
-  }
-
-  min(): [K, V] | undefined {
-    const f = this.head.next[0];
-    return f ? [f.key, f.value] : undefined;
-  }
-
-  max(): [K, V] | undefined {
-    let x: Node<K, V> = this.head;
-    for (let i = this.lvl - 1; i >= 0; --i) {
-      while (x.next[i]) x = x.next[i]!;
-    }
-    return x !== this.head ? [x.key, x.value] : undefined;
-  }
-
-  /** 0-based index; O(log n) */
-  at(index: number): [K, V] | undefined {
-    if (index < 0 || index >= this.n) return undefined;
-    let x: Node<K, V> = this.head;
-    let seen = -1;
-    for (let i = this.lvl - 1; i >= 0; --i) {
-      while (x.next[i] && seen + x.span[i] <= index) {
-        seen += x.span[i];
-        x = x.next[i]!;
-      }
-    }
-    return [x.next[0]!.key, x.next[0]!.value];
-  }
-
-  forEach(fn: (value: V, key: K, list: this) => void): void {
-    let cur = this.head.next[0];
-    while (cur) {
-      fn(cur.value, cur.key, this);
-      cur = cur.next[0];
-    }
-  }
-
-  *keys(): IterableIterator<K> {
-    let cur = this.head.next[0];
-    while (cur) {
-      yield cur.key;
-      cur = cur.next[0];
-    }
-  }
-
-  *values(): IterableIterator<V> {
-    let cur = this.head.next[0];
-    while (cur) {
-      yield cur.value;
-      cur = cur.next[0];
-    }
-  }
-
-  *entries(): IterableIterator<[K, V]> {
-    let cur = this.head.next[0];
-    while (cur) {
-      yield [cur.key, cur.value];
-      cur = cur.next[0];
-    }
-  }
-
-  [Symbol.iterator](): IterableIterator<[K, V]> {
-    return this.entries();
-  }
-
-  /* ---------------- internals ---------------- */
-
-  private randomLevel(): number {
-    let lvl = 1;
-    while (lvl < this.maxLvl && Math.random() * this.p < 1) lvl++;
-    return lvl;
+  constructor(value: T, color: Color = Color.RED) {
+    this.value = value;
+    this.color = color;
+    this.left = null;
+    this.right = null;
+    this.parent = null;
   }
 }
 
-/* ---------- helpers ---------- */
+class RedBlackTree<T> {
+  private root: RBNode<T> | null;
+  private compare: (a: T, b: T) => number;
 
-class Node<K, V> {
-  next: (Node<K, V> | null)[];
-  span: number[]; // only needed for .at(index) – remove if you don’t need it
-  constructor(
-    public key: K,
-    public value: V,
-    lvl: number
-  ) {
-    this.next = Array(lvl).fill(null);
-    this.span = Array(lvl).fill(0);
+  constructor(compareFn?: (a: T, b: T) => number) {
+    this.root = null;
+    this.compare = compareFn || ((a: T, b: T) => {
+      if (a < b) return -1;
+      if (a > b) return 1;
+      return 0;
+    });
+  }
+
+  // Public insert method
+  insert(value: T): void {
+    const newNode = new RBNode(value);
+    this.root = this.insertNode(this.root, newNode);
+    this.fixInsert(newNode);
+  }
+
+  // Private insert helper
+  private insertNode(root: RBNode<T> | null, node: RBNode<T>): RBNode<T> {
+    if (root === null) {
+      return node;
+    }
+
+    if (this.compare(node.value, root.value) < 0) {
+      root.left = this.insertNode(root.left, node);
+      root.left.parent = root;
+    } else {
+      root.right = this.insertNode(root.right, node);
+      root.right.parent = root;
+    }
+
+    return root;
+  }
+
+  // Fix violations after insertion
+  private fixInsert(node: RBNode<T>): void {
+    while (node !== this.root && node.parent?.color === Color.RED) {
+      let parent = node.parent!;
+      let grandparent = parent.parent!;
+
+      // Case A: Parent is left child of grandparent
+      if (parent === grandparent.left) {
+        const uncle = grandparent.right;
+
+        // Case 1: Uncle is red
+        if (uncle?.color === Color.RED) {
+          parent.color = Color.BLACK;
+          uncle.color = Color.BLACK;
+          grandparent.color = Color.RED;
+          node = grandparent;
+        } else {
+          // Case 2: Node is right child
+          if (node === parent.right) {
+            this.rotateLeft(parent);
+            node = parent;
+            parent = node.parent!;
+          }
+
+          // Case 3: Node is left child
+          this.rotateRight(grandparent);
+          this.swapColors(parent, grandparent);
+          node = parent;
+        }
+      } 
+      // Case B: Parent is right child of grandparent
+      else {
+        const uncle = grandparent.left;
+
+        // Case 1: Uncle is red
+        if (uncle?.color === Color.RED) {
+          parent.color = Color.BLACK;
+          uncle.color = Color.BLACK;
+          grandparent.color = Color.RED;
+          node = grandparent;
+        } else {
+          // Case 2: Node is left child
+          if (node === parent.left) {
+            this.rotateRight(parent);
+            node = parent;
+            parent = node.parent!;
+          }
+
+          // Case 3: Node is right child
+          this.rotateLeft(grandparent);
+          this.swapColors(parent, grandparent);
+          node = parent;
+        }
+      }
+    }
+
+    // Ensure root is black
+    if (this.root) {
+      this.root.color = Color.BLACK;
+    }
+  }
+
+  // Rotation methods
+  private rotateLeft(node: RBNode<T>): void {
+    const rightChild = node.right!;
+    node.right = rightChild.left;
+
+    if (rightChild.left !== null) {
+      rightChild.left.parent = node;
+    }
+
+    rightChild.parent = node.parent;
+
+    if (node.parent === null) {
+      this.root = rightChild;
+    } else if (node === node.parent.left) {
+      node.parent.left = rightChild;
+    } else {
+      node.parent.right = rightChild;
+    }
+
+    rightChild.left = node;
+    node.parent = rightChild;
+  }
+
+  private rotateRight(node: RBNode<T>): void {
+    const leftChild = node.left!;
+    node.left = leftChild.right;
+
+    if (leftChild.right !== null) {
+      leftChild.right.parent = node;
+    }
+
+    leftChild.parent = node.parent;
+
+    if (node.parent === null) {
+      this.root = leftChild;
+    } else if (node === node.parent.right) {
+      node.parent.right = leftChild;
+    } else {
+      node.parent.left = leftChild;
+    }
+
+    leftChild.right = node;
+    node.parent = leftChild;
+  }
+
+  private swapColors(node1: RBNode<T>, node2: RBNode<T>): void {
+    const temp = node1.color;
+    node1.color = node2.color;
+    node2.color = temp;
+  }
+
+  // Search method
+  search(value: T): RBNode<T> | null {
+    return this.searchNode(this.root, value);
+  }
+
+  private searchNode(node: RBNode<T> | null, value: T): RBNode<T> | null {
+    if (node === null) return null;
+
+    const comparison = this.compare(value, node.value);
+
+    if (comparison === 0) return node;
+    if (comparison < 0) return this.searchNode(node.left, value);
+    return this.searchNode(node.right, value);
+  }
+
+  // In-order traversal for testing
+  inOrderTraversal(): T[] {
+    const result: T[] = [];
+    this.inOrder(this.root, result);
+    return result;
+  }
+
+  private inOrder(node: RBNode<T> | null, result: T[]): void {
+    if (node !== null) {
+      this.inOrder(node.left, result);
+      result.push(node.value);
+      this.inOrder(node.right, result);
+    }
+  }
+
+  // Get height for testing balance
+  getHeight(): number {
+    return this.calculateHeight(this.root);
+  }
+
+  private calculateHeight(node: RBNode<T> | null): number {
+    if (node === null) return 0;
+    return 1 + Math.max(
+      this.calculateHeight(node.left),
+      this.calculateHeight(node.right)
+    );
+  }
+
+  // Check if tree is valid (for testing)
+  isValid(): boolean {
+    return this.validateRBTree(this.root);
+  }
+
+  private validateRBTree(node: RBNode<T> | null): boolean {
+    if (node === null) return true;
+
+    // Check red node properties
+    if (node.color === Color.RED) {
+      if (node.left?.color === Color.RED || node.right?.color === Color.RED) {
+        return false;
+      }
+    }
+
+    // Check black height
+    const leftBlackHeight = this.getBlackHeight(node.left);
+    const rightBlackHeight = this.getBlackHeight(node.right);
+
+    return leftBlackHeight === rightBlackHeight && 
+           this.validateRBTree(node.left) && 
+           this.validateRBTree(node.right);
+  }
+
+  private getBlackHeight(node: RBNode<T> | null): number {
+    if (node === null) return 1;
+    
+    const height = this.getBlackHeight(node.left);
+    return height + (node.color === Color.BLACK ? 1 : 0);
   }
 }
 
-function cmp<K>(a: K, b: K): number {
-  return a < b ? -1 : a > b ? 1 : 0;
+// Example usage and testing
+function exampleUsage(): void {
+  // Create a red-black tree for numbers
+  const tree = new RedBlackTree<number>();
+
+  // Insert values
+  const values = [10, 20, 30, 15, 25, 5, 35];
+  values.forEach(value => tree.insert(value));
+
+  // Test search
+  console.log('Search 15:', tree.search(15) !== null);
+  console.log('Search 100:', tree.search(100) !== null);
+
+  // Test traversal (should be sorted)
+  console.log('In-order traversal:', tree.inOrderTraversal());
+
+  // Test properties
+  console.log('Tree height:', tree.getHeight());
+  console.log('Is valid RB tree:', tree.isValid());
+
+  // Example with custom comparator
+  const stringTree = new RedBlackTree<string>((a, b) => a.localeCompare(b));
+  stringTree.insert('apple');
+  stringTree.insert('banana');
+  stringTree.insert('cherry');
+  console.log('String tree traversal:', stringTree.inOrderTraversal());
 }
-const sl = new SkipList<number, string>();
-sl.insert(10, 'ten');
-sl.insert(5, 'five');
-sl.insert(20, 'twenty');
-console.log([...sl.entries()]); // [ [5,'five'], [10,'ten'], [20,'twenty'] ]
-console.log(sl.search(10));     // 'ten'
-sl.remove(10);
-console.log(sl.size);           // 2
+
+// Run the example
+exampleUsage();
