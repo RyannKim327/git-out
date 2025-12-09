@@ -1,38 +1,39 @@
-function isPalindrome(str: string): boolean {
-    let left = 0;
-    let right = str.length - 1;
+function lengthOfLIS(nums: number[]): number {
+    const n = nums.length;
+    const dp = new Array(n).fill(1);
 
-    while (left < right) {
-        if (str[left] !== str[right]) {
-            return false;
+    for (let i = 1; i < n; i++) {
+        for (let j = 0; j < i; j++) {
+            if (nums[i] > nums[j]) {
+                dp[i] = Math.max(dp[i], dp[j] + 1);
+            }
         }
-        left++;
-        right--;
     }
 
-    return true;
+    return Math.max(...dp);
 }
 
-// Example
-console.log(isPalindrome("racecar")); // true
-console.log(isPalindrome("hello"));   // false
-function isPalindromeClean(str: string): boolean {
-    let left = 0;
-    let right = str.length - 1;
+console.log(lengthOfLIS([10, 9, 2, 5, 3, 7, 101, 18])); // 4
+function lengthOfLIS(nums: number[]): number {
+    const sub: number[] = [];
 
-    while (left < right) {
-        while (left < right && !/[a-zA-Z0-9]/.test(str[left])) left++;
-        while (left < right && !/[a-zA-Z0-9]/.test(str[right])) right--;
-
-        if (str[left].toLowerCase() !== str[right].toLowerCase()) {
-            return false;
+    for (let num of nums) {
+        let left = 0;
+        let right = sub.length;
+        
+        while (left < right) {
+            const mid = Math.floor((left + right) / 2);
+            if (sub[mid] < num) {
+                left = mid + 1;
+            } else {
+                right = mid;
+            }
         }
 
-        left++;
-        right--;
+        sub[left] = num;
     }
 
-    return true;
+    return sub.length;
 }
 
-console.log(isPalindromeClean("A man, a plan, a canal: Panama")); // true
+console.log(lengthOfLIS([10, 9, 2, 5, 3, 7, 101, 18])); // 4
