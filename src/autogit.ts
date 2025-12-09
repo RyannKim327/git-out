@@ -1,43 +1,70 @@
-function mergeSort(array: number[]): number[] {
-    // Base case: arrays with 0 or 1 element are already sorted
-    if (array.length <= 1) return array;
+/**
+ * Binary search on a sorted array.
+ * Returns the index of `target` if found, otherwise `-1`.
+ * Time-complexity:  O(log n)
+ * Space-complexity: O(1)  (iterative)  |  O(log n)  (recursive)
+ */
+export function binarySearchIterative<T>(
+  arr: readonly T[],
+  target: T,
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): number {
+  let lo = 0;
+  let hi = arr.length - 1;
 
-    // Split the array into two halves
-    const middle = Math.floor(array.length / 2);
-    const left = array.slice(0, middle);
-    const right = array.slice(middle);
+  while (lo <= hi) {
+    // Faster than (lo+hi)/2; avoids overflow in other languages
+    const mid = Math.trunc(lo + (hi - lo) / 2);
+    const cmp = compare(arr[mid], target);
 
-    // Recursively sort and merge
-    return merge(mergeSort(left), mergeSort(right));
+    if (cmp === 0) return mid;
+    else if (cmp < 0) lo = mid + 1; // right half
+    else hi = mid - 1;            // left half
+  }
+  return -1; // not found
 }
 
-// Helper function to merge two sorted arrays
-function merge(left: number[], right: number[]): number[] {
-    let result: number[] = [];
-    let leftIndex = 0;
-    let rightIndex = 0;
+// ----------------------------------------------------------
+// Recursive flavour (same contract)
+// ----------------------------------------------------------
+export function binarySearchRecursive<T>(
+  arr: readonly T[],
+  target: T,
+  compare: (a: T, b) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0),
+  lo = 0,
+  hi = arr.length - 1
+): number {
+  if (lo > hi) return -1;
 
-    // Compare elements and merge
-    while (leftIndex < left.length && rightIndex < right.length) {
-        if (left[leftIndex] < right[rightIndex]) {
-            result.push(left[leftIndex]);
-            leftIndex++;
-        } else {
-            result.push(right[rightIndex]);
-            rightIndex++;
-        }
-    }
+  const mid = Math.trunc(lo + (hi - lo) / 2);
+  const cmp = compare(arr[mid], target);
 
-    // Append remaining elements from either array
-    return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
-}
-const unsortedArray = [9, 3, 7, 5, 6, 4, 8, 2];
-const sortedArray = mergeSort(unsortedArray);
-console.log(sortedArray); // Output: [2, 3, 4, 5, 6, 7, 8, 9]
-function genericMergeSort<T>(array: T[], comparator: (a: T, b: T) => number): T[] {
-    // ... same implementation using comparator instead of < operator
+  if (cmp === 0) return mid;
+  if (cmp < 0) return binarySearchRecursive(arr, target, compare, mid + 1, hi);
+  return binarySearchRecursive(arr, target, compare, lo, mid - 1);
 }
 
-// Example usage with objects:
-const users = [{ age: 25 }, { age: 30 }, { age: 20 }];
-const sortedUsers = genericMergeSort(users, (a, b) => a.age - b.age);
+// ----------------------------------------------------------
+// Usage
+// ----------------------------------------------------------
+if (import.meta.vitest) {
+  const { test, expect } = import.meta.vitest;
+
+  test('binary search on numbers', () => {
+    const nums = [-10, -3, 0, 5, 9, 12, 42];
+    expect(binarySearchIterative(nums, 9)).toBe(4);
+    expect(binarySearchIterative(nums, 2)).toBe(-1);
+  });
+
+  test('binary search on strings', () => {
+    const words = ['apple', 'banana', 'kiwi', 'pear'];
+    expect(binarySearchRecursive(words, 'kiwi')).toBe(2);
+    expect(binarySearchRecursive(words, 'orange')).toBe(-1);
+  });
+
+  test('custom comparator (descending order)', () => {
+    const desc = [100, 90, 80, 70, 60];
+    const cmp = (a: number, b: number) => b - a; // reversed
+    expect(binarySearchIterative(desc, 80, cmp)).toBe(2);
+  });
+}
