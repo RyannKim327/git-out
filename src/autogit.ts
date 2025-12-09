@@ -1,51 +1,31 @@
-/**
- * Binary search on a sorted numeric array.
- * @param arr Sorted array of numbers (ascending).
- * @param target Value to locate.
- * @returns Index of target, or -1 if not found.
- */
-function binarySearch(arr: number[], target: number): number {
-  let left = 0;
-  let right = arr.length - 1;
+// xkcd.ts
+import fetch from 'node-fetch';
 
-  while (left <= right) {
-    // Faster than (left + right) / 2; avoids overflow in other languages
-    const mid = left + Math.floor((right - left) / 2);
-
-    if (arr[mid] === target) return mid;
-    if (arr[mid] < target) {
-      left = mid + 1;
-    } else {
-      right = mid - 1;
-    }
-  }
-  return -1;
+interface XkcdComic {
+  num: number;
+  title: string;
+  img: string;
+  alt: string;
 }
 
-/* ---- Usage ---- */
-const nums = [1, 3, 4, 7, 9, 15];
-console.log(binarySearch(nums, 7));  // → 3
-console.log(binarySearch(nums, 2));  // → -1
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  compare: (a: T, b: T) => number
-): number {
-  let left = 0;
-  let right = arr.length - 1;
+async function getRandomXkcd(): Promise<XkcdComic> {
+  // 1. get the latest comic to learn the max number
+  const latest = await fetch('https://xkcd.com/info.0.json').then(r => r.json() as Promise<XkcdComic>);
+  const maxNum = latest.num;
 
-  while (left <= right) {
-    const mid = left + Math.floor((right - left) / 2);
-    const cmp = compare(arr[mid], target);
+  // 2. pick a random comic id
+  const randomId = Math.floor(Math.random() * maxNum) + 1;
 
-    if (cmp === 0) return mid;
-    if (cmp < 0) {
-      left = mid + 1;
-    } else {
-      right = mid - 1;
-    }
-  }
-  return -1;
+  // 3. fetch that comic
+  return fetch(`https://xkcd.com/${randomId}/info.0.json`).then(r => r.json() as Promise<XkcdComic>);
 }
-const words = ['apple', 'banana', 'cherry'];
-console.log(binarySearch(words, 'banana', (a, b) => a.localeCompare(b))); // → 1
+
+(async () => {
+  try {
+    const comic = await getRandomXkcd();
+    console.log(`#${comic.num} — ${comic.title}`);
+    console.log(comic.img);
+  } catch (err) {
+    console.error('Failed to fetch comic:', err);
+  }
+})();
