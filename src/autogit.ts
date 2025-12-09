@@ -1,38 +1,23 @@
-function quickSort<T>(array: T[]): T[] {
-    if (array.length <= 1) {
-        return array;
-    }
+function secondLargest(arr: number[]): number | undefined {
+    if (arr.length < 2) return undefined;
+    // Remove duplicates for a "true" second largest, else skip this line
+    const uniqueArr = Array.from(new Set(arr));
+    uniqueArr.sort((a, b) => b - a); // Sort descending
+    return uniqueArr[1];
+}
+function secondLargest(arr: number[]): number | undefined {
+    let first = -Infinity;
+    let second = -Infinity;
 
-    // Random pivot selection to avoid worst-case scenarios
-    const pivotIndex = Math.floor(Math.random() * array.length);
-    const pivot = array[pivotIndex];
-
-    const less: T[] = [];
-    const equal: T[] = [];
-    const greater: T[] = [];
-
-    // Partition elements around the pivot
-    for (const element of array) {
-        if (element < pivot) {
-            less.push(element);
-        } else if (element === pivot) {
-            equal.push(element);
-        } else {
-            greater.push(element);
+    for (const num of arr) {
+        if (num > first) {
+            second = first;
+            first = num;
+        } else if (num > second && num < first) {
+            second = num;
         }
     }
 
-    // Recursively sort sub-arrays and combine results
-    return [
-        ...quickSort(less),
-        ...equal,
-        ...quickSort(greater)
-    ];
+    // Handles arrays with fewer than 2 unique values
+    return second > -Infinity ? second : undefined;
 }
-
-// Example usage:
-const unsortedArray = [9, 3, 7, 4, 6, 1, 2, 8, 5];
-const sortedArray = quickSort(unsortedArray);
-
-console.log("Unsorted Array:", unsortedArray);
-console.log("Sorted Array:  ", sortedArray);
