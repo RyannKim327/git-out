@@ -1,72 +1,51 @@
-function bwt(input: string): { transformed: string, index: number } {
-    const n = input.length;
-    const rotations: string[] = [];
+/**
+ * Binary search on a sorted numeric array.
+ * @param arr Sorted array of numbers (ascending).
+ * @param target Value to locate.
+ * @returns Index of target, or -1 if not found.
+ */
+function binarySearch(arr: number[], target: number): number {
+  let left = 0;
+  let right = arr.length - 1;
 
-    // Generate all rotations
-    for (let i = 0; i < n; i++) {
-        rotations.push(input.slice(i) + input.slice(0, i));
+  while (left <= right) {
+    // Faster than (left + right) / 2; avoids overflow in other languages
+    const mid = left + Math.floor((right - left) / 2);
+
+    if (arr[mid] === target) return mid;
+    if (arr[mid] < target) {
+      left = mid + 1;
+    } else {
+      right = mid - 1;
     }
-
-    // Sort rotations lexicographically
-    const sorted = rotations.slice().sort();
-
-    // Get the last column
-    const lastColumn = sorted.map(row => row[n - 1]).join('');
-
-    // Find the index of the original string in sorted rotations
-    const index = sorted.indexOf(input);
-
-    return { transformed: lastColumn, index };
+  }
+  return -1;
 }
 
-// Example
-const result = bwt("banana$"); // '$' as a terminator symbol
-console.log(result.transformed); // "annb$aa"
-console.log(result.index);       // position of original string in sorted rotations
-function inverseBwt(lastColumn: string, index: number): string {
-    const n = lastColumn.length;
+/* ---- Usage ---- */
+const nums = [1, 3, 4, 7, 9, 15];
+console.log(binarySearch(nums, 7));  // → 3
+console.log(binarySearch(nums, 2));  // → -1
+function binarySearch<T>(
+  arr: T[],
+  target: T,
+  compare: (a: T, b: T) => number
+): number {
+  let left = 0;
+  let right = arr.length - 1;
 
-    // First column is just the sorted chars of lastColumn
-    const firstColumn = lastColumn.split('').sort();
+  while (left <= right) {
+    const mid = left + Math.floor((right - left) / 2);
+    const cmp = compare(arr[mid], target);
 
-    // Map from character occurrence to row mapping
-    const rankLast: number[] = [];
-    const occurrenceMapLast: Record<string, number> = {};
-    for (const char of lastColumn) {
-        occurrenceMapLast[char] = (occurrenceMapLast[char] ?? 0) + 1;
-        rankLast.push(occurrenceMapLast[char]);
+    if (cmp === 0) return mid;
+    if (cmp < 0) {
+      left = mid + 1;
+    } else {
+      right = mid - 1;
     }
-
-    const occurrenceMapFirst: Record<string, number> = {};
-    const firstColumnRank: number[] = [];
-    for (const char of firstColumn) {
-        occurrenceMapFirst[char] = (occurrenceMapFirst[char] ?? 0) + 1;
-        firstColumnRank.push(occurrenceMapFirst[char]);
-    }
-
-    // Link last column to first column rows
-    const rowMapping: number[] = [];
-    for (let i = 0; i < n; i++) {
-        const char = lastColumn[i];
-        const rank = rankLast[i];
-        // Find position of (char, rank) in firstColumn
-        const position = firstColumnRank.findIndex((r, idx) =>
-            firstColumn[idx] === char && r === rank
-        );
-        rowMapping[i] = position;
-    }
-
-    // Rebuild the string
-    let row = index;
-    let original = '';
-    for (let i = 0; i < n; i++) {
-        original += lastColumn[row];
-        row = rowMapping[row];
-    }
-
-    return original;
+  }
+  return -1;
 }
-
-// Example
-const restored = inverseBwt("annb$aa", 3);
-console.log(restored); // "banana$"
+const words = ['apple', 'banana', 'cherry'];
+console.log(binarySearch(words, 'banana', (a, b) => a.localeCompare(b))); // → 1
