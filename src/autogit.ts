@@ -1,209 +1,83 @@
-function longestCommonSubsequence(text1: string, text2: string): string {
-    const m = text1.length;
-    const n = text2.length;
-    
-    // Create DP table
-    const dp: number[][] = Array(m + 1)
-        .fill(0)
-        .map(() => Array(n + 1).fill(0));
-    
-    // Fill DP table
-    for (let i = 1; i <= m; i++) {
-        for (let j = 1; j <= n; j++) {
-            if (text1[i - 1] === text2[j - 1]) {
-                dp[i][j] = dp[i - 1][j - 1] + 1;
-            } else {
-                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-            }
-        }
+function isSortedAscending<T>(array: T[]): boolean {
+  // Handle edge cases: empty or single-element arrays are always sorted
+  if (array.length <= 1) {
+    return true;
+  }
+
+  // Start from the second element (index 1) and compare with the previous one
+  for (let i = 1; i < array.length; i++) {
+    if (array[i - 1] > array[i]) {
+      return false; // Found an element that's smaller than the previous one
     }
-    
-    // Backtrack to find the actual LCS string
-    let lcs = '';
-    let i = m, j = n;
-    
-    while (i > 0 && j > 0) {
-        if (text1[i - 1] === text2[j - 1]) {
-            lcs = text1[i - 1] + lcs;
-            i--;
-            j--;
-        } else if (dp[i - 1][j] > dp[i][j - 1]) {
-            i--;
-        } else {
-            j--;
-        }
-    }
-    
-    return lcs;
+  }
+  return true; // All elements were in order
 }
 
-// Example usage
-const str1 = "ABCDGH";
-const str2 = "AEDFHR";
-const result = longestCommonSubsequence(str1, str2);
-console.log(`LCS of "${str1}" and "${str2}": "${result}"`); // Output: "ADH"
-interface LCSResult {
-    length: number;
-    sequence: string;
+// Usage Examples:
+const sortedNumbers = [1, 2, 3, 4, 5];
+const unsortedNumbers = [5, 2, 8, 1, 3];
+const singleElement = [42];
+const emptyArray: number[] = [];
+
+console.log(isSortedAscending(sortedNumbers)); // Output: true
+console.log(isSortedAscending(unsortedNumbers)); // Output: false
+console.log(isSortedAscending(singleElement)); // Output: true
+console.log(isSortedAscending(emptyArray)); // Output: true
+function isSortedAscending<T>(array: T[]): boolean {
+  // For every element starting at index 1, check if it's >= the previous element.
+  // The first element (i=0) has no previous element, so we skip it.
+  return array.every((value, index) => index === 0 || array[index - 1] <= value);
 }
 
-function findLCS(text1: string, text2: string): LCSResult {
-    const m = text1.length;
-    const n = text2.length;
-    
-    // Create DP table for lengths
-    const dp: number[][] = Array(m + 1)
-        .fill(0)
-        .map(() => Array(n + 1).fill(0));
-    
-    // Fill DP table
-    for (let i = 1; i <= m; i++) {
-        for (let j = 1; j <= n; j++) {
-            if (text1[i - 1] === text2[j - 1]) {
-                dp[i][j] = dp[i - 1][j - 1] + 1;
-            } else {
-                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-            }
-        }
-    }
-    
-    // Backtrack to find the actual LCS
-    let sequence = '';
-    let i = m, j = n;
-    
-    while (i > 0 && j > 0) {
-        if (text1[i - 1] === text2[j - 1]) {
-            sequence = text1[i - 1] + sequence;
-            i--;
-            j--;
-        } else if (dp[i - 1][j] > dp[i][j - 1]) {
-            i--;
-        } else {
-            j--;
-        }
-    }
-    
-    return {
-        length: dp[m][n],
-        sequence: sequence
-    };
+// Usage is the same as above
+function isSortedAscending<T>(array: T[]): boolean {
+  // Create a sorted copy of the array and compare it to the original
+  const sortedCopy = [...array].sort((a, b) => (a > b ? 1 : -1));
+  // Compare every element. This is also O(n), making the whole function O(n log n)
+  return JSON.stringify(array) === JSON.stringify(sortedCopy); 
 }
 
-// Example usage
-const result = findLCS("ABCDGH", "AEDFHR");
-console.log(`Length: ${result.length}, Sequence: "${result.sequence}"`);
-// Output: Length: 3, Sequence: "ADH"
-function optimizedLCS(text1: string, text2: string): string {
-    if (text1.length < text2.length) {
-        // Make sure text1 is the longer string for optimization
-        [text1, text2] = [text2, text1];
-    }
-    
-    const m = text1.length;
-    const n = text2.length;
-    
-    // Use only two rows for DP to save space
-    let prev = new Array(n + 1).fill(0);
-    let curr = new Array(n + 1).fill(0);
-    
-    // Store the DP table for backtracking
-    const dpTable: number[][] = [];
-    
-    for (let i = 1; i <= m; i++) {
-        for (let j = 1; j <= n; j++) {
-            if (text1[i - 1] === text2[j - 1]) {
-                curr[j] = prev[j - 1] + 1;
-            } else {
-                curr[j] = Math.max(prev[j], curr[j - 1]);
-            }
-        }
-        
-        // Store current row and prepare for next iteration
-        dpTable.push([...curr]);
-        [prev, curr] = [curr, prev];
-        curr.fill(0);
-    }
-    
-    // Reconstruct the LCS using the stored DP table
-    let lcs = '';
-    let i = m, j = n;
-    
-    while (i > 0 && j > 0) {
-        const currentRow = dpTable[i - 1];
-        const prevRow = i > 1 ? dpTable[i - 2] : new Array(n + 1).fill(0);
-        
-        if (text1[i - 1] === text2[j - 1]) {
-            lcs = text1[i - 1] + lcs;
-            i--;
-            j--;
-        } else if (i > 1 && prevRow[j] > currentRow[j - 1]) {
-            i--;
-        } else {
-            j--;
-        }
-    }
-    
-    return lcs;
-}
-class LCSFinder {
-    static findLCS(text1: string, text2: string): string {
-        const m = text1.length;
-        const n = text2.length;
-        
-        const dp: number[][] = Array(m + 1)
-            .fill(0)
-            .map(() => Array(n + 1).fill(0));
-        
-        // Build DP table
-        for (let i = 1; i <= m; i++) {
-            for (let j = 1; j <= n; j++) {
-                if (text1[i - 1] === text2[j - 1]) {
-                    dp[i][j] = dp[i - 1][j - 1] + 1;
-                } else {
-                    dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-                }
-            }
-        }
-        
-        // Backtrack
-        let result = '';
-        let i = m, j = n;
-        
-        while (i > 0 && j > 0) {
-            if (text1[i - 1] === text2[j - 1]) {
-                result = text1[i - 1] + result;
-                i--;
-                j--;
-            } else if (dp[i - 1][j] > dp[i][j - 1]) {
-                i--;
-            } else {
-                j--;
-            }
-        }
-        
-        return result;
-    }
-    
-    static findLCSLength(text1: string, text2: string): number {
-        return this.findLCS(text1, text2).length;
-    }
+// WARNING: This method is inefficient and can have issues with complex objects.
+// Define an interface for your object
+interface Person {
+  name: string;
+  age: number;
 }
 
-// Test cases
-const testCases = [
-    { text1: "ABCDGH", text2: "AEDFHR", expected: "ADH" },
-    { text1: "AGGTAB", text2: "GXTXAYB", expected: "GTAB" },
-    { text1: "abc", text2: "abc", expected: "abc" },
-    { text1: "abc", text2: "def", expected: "" },
-    { text1: "", text2: "abc", expected: "" },
+// The function now takes a custom comparator
+function isSortedAscending<T>(
+  array: T[],
+  comparator: (a: T, b: T) => number
+): boolean {
+  if (array.length <= 1) {
+    return true;
+  }
+
+  for (let i = 1; i < array.length; i++) {
+    // Use the comparator. For ascending order, a previous element (a)
+    // should not be GREATER than the current element (b).
+    if (comparator(array[i - 1], array[i]) > 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Usage with custom objects:
+const people: Person[] = [
+  { name: "Alice", age: 25 },
+  { name: "Bob", age: 30 },
+  { name: "Charlie", age: 35 }
 ];
 
-// Run tests
-testCases.forEach((testCase, index) => {
-    const result = LCSFinder.findLCS(testCase.text1, testCase.text2);
-    const passed = result === testCase.expected;
-    console.log(`Test ${index + 1}: ${passed ? 'PASS' : 'FAIL'}`);
-    console.log(`  Input: "${testCase.text1}", "${testCase.text2}"`);
-    console.log(`  Expected: "${testCase.expected}"`);
-    console.log(`  Got: "${result}"\n`);
-});
+const unsortedPeople: Person[] = [
+  { name: "Bob", age: 30 },
+  { name: "Alice", age: 25 },
+  { name: "Charlie", age: 35 }
+];
+
+// Create a comparator function for the 'age' property
+const ageComparator = (a: Person, b: Person) => a.age - b.age;
+
+console.log(isSortedAscending(people, ageComparator)); // Output: true
+console.log(isSortedAscending(unsortedPeople, ageComparator)); // Output: false
