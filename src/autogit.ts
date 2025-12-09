@@ -1,53 +1,56 @@
-/**
- * Simplified Boyer-Moore string search algorithm using only the bad character rule.
- * Returns the index of the first occurrence of `pattern` in `text`, or -1 if not found.
- * @param text - The text to search within
- * @param pattern - The pattern to search for
- */
-function boyerMooreSearch(text: string, pattern: string): number {
-    // Edge case: empty pattern
-    if (pattern.length === 0) return 0;
-    // Edge case: pattern longer than text
-    if (text.length < pattern.length) return -1;
+function binarySearchRecursive(
+  arr: number[],
+  target: number,
+  left: number = 0,
+  right: number = arr.length - 1
+): number {
+  // Base case: element not found
+  if (left > right) {
+    return -1;
+  }
 
-    // Preprocess: Create bad character table
-    // Records the last occurrence index of each character in the pattern
-    const badCharTable: Record<string, number> = {};
-    for (let i = 0; i < pattern.length; i++) {
-        badCharTable[pattern[i]] = i;
-    }
+  // Calculate middle index
+  const mid = Math.floor((left + right) / 2);
 
-    const textLength = text.length;
-    const patternLength = pattern.length;
-    let shift = 0; // Current shift position
+  // Check if element is at mid
+  if (arr[mid] === target) {
+    return mid;
+  }
 
-    while (shift <= textLength - patternLength) {
-        let j = patternLength - 1;
+  // If element is smaller than mid, search left half
+  if (target < arr[mid]) {
+    return binarySearchRecursive(arr, target, left, mid - 1);
+  }
 
-        // Compare from end of pattern to start
-        while (j >= 0 && pattern[j] === text[shift + j]) {
-            j--;
-        }
-
-        // If all characters matched
-        if (j < 0) {
-            return shift;
-        } else {
-            // Calculate shift using bad character rule
-            const char = text[shift + j]; // Mismatched character in text
-            const badCharShift = j - (badCharTable[char] ?? -1);
-            // Use shift if positive, otherwise shift by 1
-            shift += Math.max(1, badCharShift);
-        }
-    }
-
-    return -1; // Not found
+  // Otherwise search right half
+  return binarySearchRecursive(arr, target, mid + 1, right);
 }
-// Example usage
-const text = "ABAAABCD";
-const pattern = "ABC";
-console.log(boyerMooreSearch(text, pattern));  // Output: 4
 
-const longText = "This is a test text for searching with Boyer-Moore";
-const searchPattern = "Boyer-Moore";
-console.log(boyerMooreSearch(longText, searchPattern));  // Output: 38
+// Example usage:
+const sortedArray = [1, 3, 5, 7, 9, 11, 13, 15];
+console.log(binarySearchRecursive(sortedArray, 7));  // Output: 3
+console.log(binarySearchRecursive(sortedArray, 10)); // Output: -1
+function binarySearchRecursiveGeneric<T>(
+  arr: T[],
+  target: T,
+  left: number = 0,
+  right: number = arr.length - 1,
+  compare: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
+): number {
+  if (left > right) {
+    return -1;
+  }
+
+  const mid = Math.floor((left + right) / 2);
+  const comparison = compare(arr[mid], target);
+
+  if (comparison === 0) {
+    return mid;
+  }
+
+  if (comparison > 0) {
+    return binarySearchRecursiveGeneric(arr, target, left, mid - 1, compare);
+  }
+
+  return binarySearchRecursiveGeneric(arr, target, mid + 1, right, compare);
+}
