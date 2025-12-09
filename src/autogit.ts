@@ -1,59 +1,62 @@
-// ---------- Graph representation ----------
-// Adjacency list:  nodeId -> array of neighbor nodeIds
-type Graph = Record<string, string[]>;
-
-// ---------- BFS ----------
 /**
- * Breadth-first search that returns the *shortest* path from `start` to `goal`.
- * If you only need to visit nodes in BFS order, replace the path-reconstruction
- * part with a simple callback or queue processing.
+ * Performs a Fibonacci search on a sorted array.
+ * 
+ * @param arr - The sorted array to search in (ascending order)
+ * @param key - The value to search for
+ * @returns The index of the key if found, otherwise -1
  */
-export function bfs(
-  graph: Graph,
-  start: string,
-  goal: string
-): string[] | null {
-  if (start === goal) return [start];
+function fibonacciSearch(arr: number[], key: number): number {
+    const n = arr.length;
+    
+    // Initialize Fibonacci numbers
+    let fib2 = 0;          // (k-2)th Fibonacci number
+    let fib1 = 1;          // (k-1)th Fibonacci number
+    let fibM = fib2 + fib1; // kth Fibonacci number (smallest Fibonacci >= n)
 
-  const queue: string[] = [start];          // frontier
-  const visited = new Set<string>([start]); // closed set
-  const prev = new Map<string, string>();   // to reconstruct path
-
-  while (queue.length) {
-    const node = queue.shift()!;
-
-    for (const neighbor of graph[node] ?? []) {
-      if (visited.has(neighbor)) continue;
-
-      visited.add(neighbor);
-      prev.set(neighbor, node);
-      queue.push(neighbor);
-
-      if (neighbor === goal) {
-        // Reconstruct path
-        const path: string[] = [];
-        let cur: string | undefined = goal;
-        while (cur !== undefined) {
-          path.unshift(cur);
-          cur = prev.get(cur);
-        }
-        return path;
-      }
+    // Find the smallest Fibonacci number greater than or equal to n
+    while (fibM < n) {
+        fib2 = fib1;
+        fib1 = fibM;
+        fibM = fib2 + fib1;
     }
-  }
-  return null; // no path
-}
 
-// ---------- Example usage ----------
-if (import.meta.vitest) {
-  const g: Graph = {
-    A: ['B', 'C'],
-    B: ['D', 'E'],
-    C: ['F'],
-    D: [],
-    E: ['F'],
-    F: [],
-  };
+    let offset = -1; // Marks the start of the eliminated range
 
-  console.log(bfs(g, 'A', 'F')); // → ['A', 'C', 'F']
+    while (fibM > 1) {
+        // Check if fib2 is a valid index
+        const i = Math.min(offset + fib2, n - 1);
+
+        if (arr[i] < key) {
+            // Move the search range to right subarray (1 Fibonacci down)
+            fibM = fib1;
+            fib1 = fib2;
+            fib2 = fibM - fib1;
+            offset = i;
+        } else if (arr[i] > key) {
+            // Move the search range to left subarray (2 Fibonacci down)
+            fibM = fib2;
+            fib1 = fib1 - fib2;
+            fib2 = fibM - fib1;
+        } else {
+            return i; // Found at index i
+        }
+    }
+
+    // Compare the last element with remaining Fibonacci number 1
+    if (fib1 === 1 && arr[offset + 1] === key) {
+        return offset + 1;
+    }
+
+    return -1; // Key not found
 }
+const sortedArray = [10, 22, 35, 40, 45, 50, 80, 82, 85, 90, 100];
+const target = 85;
+
+const result = fibonacciSearch(sortedArray, target);
+console.log(result); // Output: 8
+
+// Edge case examples
+console.log(fibonacciSearch(sortedArray, 10));    // 0 (first element)
+console.log(fibonacciSearch(sortedArray, 100));   // 10 (last element)
+console.log(fibonacciSearch([], 42));             // -1 (empty array)
+console.log(fib
