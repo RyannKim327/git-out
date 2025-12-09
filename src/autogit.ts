@@ -1,46 +1,41 @@
-class MainActivity : AppCompatActivity() {
-    private lateinit var webView: WebView
+function longestCommonSubsequence(a: string, b: string): string {
+    const m = a.length;
+    const n = b.length;
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    // dp[i][j] = length of LCS of a[0..i-1], b[0..j-1]
+    const dp: number[][] = Array.from({ length: m + 1 }, () =>
+        Array(n + 1).fill(0)
+    );
 
-        webView = WebView(this)
-        setContentView(webView)
-        webView.settings.javaScriptEnabled = true
-
-        // Add JS interface so TypeScript can call Android
-        webView.addJavascriptInterface(AndroidBridge(), "AndroidBridge")
-
-        // Load your local TypeScript-compiled JS
-        webView.loadUrl("file:///android_asset/index.html")
-    }
-
-    inner class AndroidBridge {
-        @JavascriptInterface
-        fun fetchData(request: String) {
-            AsyncTask.execute {
-                val result = "Fetched data for: $request" // Simulate fetching
-                runOnUiThread {
-                    webView.evaluateJavascript("window.onAndroidResult('$result');", null)
-                }
+    // Fill DP table
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            if (a[i - 1] === b[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
+            } else {
+                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
             }
         }
     }
-}
-// Assume this code is compiled to JS and included in index.html
 
-// Ask Android to do an async task
-function requestDataFromAndroid(request: string) {
-    // "AndroidBridge" is the name we used above
-    // This will call the Kotlin method
-    (window as any).AndroidBridge.fetchData(request);
+    // Backtrack to find sequence
+    let i = m, j = n;
+    const lcsChars: string[] = [];
+
+    while (i > 0 && j > 0) {
+        if (a[i - 1] === b[j - 1]) {
+            lcsChars.push(a[i - 1]);
+            i--;
+            j--;
+        } else if (dp[i - 1][j] > dp[i][j - 1]) {
+            i--;
+        } else {
+            j--;
+        }
+    }
+
+    return lcsChars.reverse().join('');
 }
 
-// Callback for Android to send back result
-(window as any).onAndroidResult = (result: string) => {
-    console.log("Received from Android:", result);
-    // Handle the result however you want
-}
-
-// Fire off a request
-requestDataFromAndroid("example query");
+// Example:
+console.log(longestCommonSubsequence("ACDBE", "ABCDE")); // Output: "ACDE"
