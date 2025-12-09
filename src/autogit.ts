@@ -1,71 +1,72 @@
-class TreeNode {
-    val: number;
-    left: TreeNode | null;
-    right: TreeNode | null;
-    
-    constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
-        this.val = val;
-        this.left = left;
-        this.right = right;
+function bwt(input: string): { transformed: string, index: number } {
+    const n = input.length;
+    const rotations: string[] = [];
+
+    // Generate all rotations
+    for (let i = 0; i < n; i++) {
+        rotations.push(input.slice(i) + input.slice(0, i));
     }
+
+    // Sort rotations lexicographically
+    const sorted = rotations.slice().sort();
+
+    // Get the last column
+    const lastColumn = sorted.map(row => row[n - 1]).join('');
+
+    // Find the index of the original string in sorted rotations
+    const index = sorted.indexOf(input);
+
+    return { transformed: lastColumn, index };
 }
 
-function diameterOfBinaryTree(root: TreeNode | null): number {
-    let diameter = 0;
-    
-    function dfs(node: TreeNode | null): number {
-        if (!node) return 0;
-        
-        // Recursively get the height of left and right subtrees
-        const leftHeight = dfs(node.left);
-        const rightHeight = dfs(node.right);
-        
-        // Update the diameter - the longest path through this node
-        diameter = Math.max(diameter, leftHeight + rightHeight);
-        
-        // Return the height of the current node
-        return Math.max(leftHeight, rightHeight) + 1;
-    }
-    
-    dfs(root);
-    return diameter;
-}
-// Create a binary tree:
-//       1
-//      / \
-//     2   3
-//    / \
-//   4   5
+// Example
+const result = bwt("banana$"); // '$' as a terminator symbol
+console.log(result.transformed); // "annb$aa"
+console.log(result.index);       // position of original string in sorted rotations
+function inverseBwt(lastColumn: string, index: number): string {
+    const n = lastColumn.length;
 
-const root = new TreeNode(1);
-root.left = new TreeNode(2);
-root.right = new TreeNode(3);
-root.left.left = new TreeNode(4);
-root.left.right = new TreeNode(5);
+    // First column is just the sorted chars of lastColumn
+    const firstColumn = lastColumn.split('').sort();
 
-console.log(diameterOfBinaryTree(root)); // Output: 3 (path from 4 to 3 or 5 to 3)
-class BinaryTree {
-    root: TreeNode | null;
-    
-    constructor(root: TreeNode | null = null) {
-        this.root = root;
+    // Map from character occurrence to row mapping
+    const rankLast: number[] = [];
+    const occurrenceMapLast: Record<string, number> = {};
+    for (const char of lastColumn) {
+        occurrenceMapLast[char] = (occurrenceMapLast[char] ?? 0) + 1;
+        rankLast.push(occurrenceMapLast[char]);
     }
-    
-    diameter(): number {
-        let maxDiameter = 0;
-        
-        const getHeight = (node: TreeNode | null): number => {
-            if (!node) return 0;
-            
-            const leftHeight = getHeight(node.left);
-            const rightHeight = getHeight(node.right);
-            
-            maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
-            
-            return Math.max(leftHeight, rightHeight) + 1;
-        };
-        
-        getHeight(this.root);
-        return maxDiameter;
+
+    const occurrenceMapFirst: Record<string, number> = {};
+    const firstColumnRank: number[] = [];
+    for (const char of firstColumn) {
+        occurrenceMapFirst[char] = (occurrenceMapFirst[char] ?? 0) + 1;
+        firstColumnRank.push(occurrenceMapFirst[char]);
     }
+
+    // Link last column to first column rows
+    const rowMapping: number[] = [];
+    for (let i = 0; i < n; i++) {
+        const char = lastColumn[i];
+        const rank = rankLast[i];
+        // Find position of (char, rank) in firstColumn
+        const position = firstColumnRank.findIndex((r, idx) =>
+            firstColumn[idx] === char && r === rank
+        );
+        rowMapping[i] = position;
+    }
+
+    // Rebuild the string
+    let row = index;
+    let original = '';
+    for (let i = 0; i < n; i++) {
+        original += lastColumn[row];
+        row = rowMapping[row];
+    }
+
+    return original;
 }
+
+// Example
+const restored = inverseBwt("annb$aa", 3);
+console.log(restored); // "banana$"
