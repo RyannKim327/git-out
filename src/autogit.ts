@@ -1,83 +1,203 @@
-function isSortedAscending<T>(array: T[]): boolean {
-  // Handle edge cases: empty or single-element arrays are always sorted
-  if (array.length <= 1) {
-    return true;
-  }
+class TrieNode {
+    children: Map<string, TrieNode>;
+    isEndOfWord: boolean;
 
-  // Start from the second element (index 1) and compare with the previous one
-  for (let i = 1; i < array.length; i++) {
-    if (array[i - 1] > array[i]) {
-      return false; // Found an element that's smaller than the previous one
+    constructor() {
+        this.children = new Map();
+        this.isEndOfWord = false;
     }
-  }
-  return true; // All elements were in order
 }
 
-// Usage Examples:
-const sortedNumbers = [1, 2, 3, 4, 5];
-const unsortedNumbers = [5, 2, 8, 1, 3];
-const singleElement = [42];
-const emptyArray: number[] = [];
+class Trie {
+    private root: TrieNode;
 
-console.log(isSortedAscending(sortedNumbers)); // Output: true
-console.log(isSortedAscending(unsortedNumbers)); // Output: false
-console.log(isSortedAscending(singleElement)); // Output: true
-console.log(isSortedAscending(emptyArray)); // Output: true
-function isSortedAscending<T>(array: T[]): boolean {
-  // For every element starting at index 1, check if it's >= the previous element.
-  // The first element (i=0) has no previous element, so we skip it.
-  return array.every((value, index) => index === 0 || array[index - 1] <= value);
-}
-
-// Usage is the same as above
-function isSortedAscending<T>(array: T[]): boolean {
-  // Create a sorted copy of the array and compare it to the original
-  const sortedCopy = [...array].sort((a, b) => (a > b ? 1 : -1));
-  // Compare every element. This is also O(n), making the whole function O(n log n)
-  return JSON.stringify(array) === JSON.stringify(sortedCopy); 
-}
-
-// WARNING: This method is inefficient and can have issues with complex objects.
-// Define an interface for your object
-interface Person {
-  name: string;
-  age: number;
-}
-
-// The function now takes a custom comparator
-function isSortedAscending<T>(
-  array: T[],
-  comparator: (a: T, b: T) => number
-): boolean {
-  if (array.length <= 1) {
-    return true;
-  }
-
-  for (let i = 1; i < array.length; i++) {
-    // Use the comparator. For ascending order, a previous element (a)
-    // should not be GREATER than the current element (b).
-    if (comparator(array[i - 1], array[i]) > 0) {
-      return false;
+    constructor() {
+        this.root = new TrieNode();
     }
-  }
-  return true;
+
+    // Insert a word into the trie
+    insert(word: string): void {
+        let currentNode = this.root;
+        
+        for (const char of word) {
+            if (!currentNode.children.has(char)) {
+                currentNode.children.set(char, new TrieNode());
+            }
+            currentNode = currentNode.children.get(char)!;
+        }
+        
+        currentNode.isEndOfWord = true;
+    }
+
+    // Search for a complete word
+    search(word: string): boolean {
+        let currentNode = this.root;
+        
+        for (const char of word) {
+            if (!currentNode.children.has(char)) {
+                return false;
+            }
+            currentNode = currentNode.children.get(char)!;
+        }
+        
+        return currentNode.isEndOfWord;
+    }
+
+    // Check if any word starts with the prefix
+    startsWith(prefix: string): boolean {
+        let currentNode = this.root;
+        
+        for (const char of prefix) {
+            if (!currentNode.children.has(char)) {
+                return false;
+            }
+            currentNode = currentNode.children.get(char)!;
+        }
+        
+        return true;
+    }
+
+    // Get all words with a given prefix
+    getWordsWithPrefix(prefix: string): string[] {
+        let currentNode = this.root;
+        const results: string[] = [];
+        
+        // Navigate to the prefix node
+        for (const char of prefix) {
+            if (!currentNode.children.has(char)) {
+                return results; // Empty array if prefix doesn't exist
+            }
+            currentNode = currentNode.children.get(char)!;
+        }
+        
+        // Collect all words from this node
+        this.collectWords(currentNode, prefix, results);
+        return results;
+    }
+
+    private collectWords(node: TrieNode, currentWord: string, results: string[]): void {
+        if (node.isEndOfWord) {
+            results.push(currentWord);
+        }
+        
+        for (const [char, childNode] of node.children) {
+            this.collectWords(childNode, currentWord + char, results);
+        }
+    }
+
+    // Delete a word from the trie
+    delete(word: string): boolean {
+        return this.deleteRecursive(this.root, word, 0);
+    }
+
+    private deleteRecursive(node: TrieNode, word: string, index: number): boolean {
+        if (index === word.length) {
+            if (!node.isEndOfWord) {
+                return false; // Word doesn't exist
+            }
+            node.isEndOfWord = false;
+            return node.children.size === 0;
+        }
+
+        const char = word[index];
+        if (!node.children.has(char)) {
+            return false; // Word doesn't exist
+        }
+
+        const childNode = node.children.get(char)!;
+        const shouldDeleteChild = this.deleteRecursive(childNode, word, index + 1);
+
+        if (shouldDeleteChild) {
+            node.children.delete(char);
+            return node.children.size === 0 && !node.isEndOfWord;
+        }
+
+        return false;
+    }
+
+    // Get the total number of words in the trie
+    getWordCount(): number {
+        return this.countWords(this.root);
+    }
+
+    private countWords(node: TrieNode): number {
+        let count = node.isEndOfWord ? 1 : 0;
+        
+        for (const childNode of node.children.values()) {
+            count += this.countWords(childNode);
+        }
+        
+        return count;
+    }
+}
+// Create a new trie
+const trie = new Trie();
+
+// Insert words
+trie.insert("apple");
+trie.insert("app");
+trie.insert("application");
+trie.insert("banana");
+trie.insert("bat");
+
+// Search for words
+console.log(trie.search("apple")); // true
+console.log(trie.search("app"));   // true
+console.log(trie.search("appl"));  // false (not a complete word)
+
+// Check prefixes
+console.log(trie.startsWith("app")); // true
+console.log(trie.startsWith("ba"));  // true
+
+// Get words with prefix
+console.log(trie.getWordsWithPrefix("app")); 
+// ["app", "apple", "application"]
+
+// Delete a word
+trie.delete("app");
+console.log(trie.search("app"));     // false
+console.log(trie.search("apple"));   // true (still exists)
+
+// Get word count
+console.log(trie.getWordCount()); // 4
+class EnhancedTrie extends Trie {
+    // Get the longest common prefix
+    longestCommonPrefix(): string {
+        let currentNode = this.root;
+        let prefix = "";
+        
+        while (currentNode.children.size === 1 && !currentNode.isEndOfWord) {
+            const [char, childNode] = Array.from(currentNode.children)[0];
+            prefix += char;
+            currentNode = childNode;
+        }
+        
+        return prefix;
+    }
+
+    // Check if the trie is empty
+    isEmpty(): boolean {
+        return this.root.children.size === 0;
+    }
+
+    // Get all words in the trie
+    getAllWords(): string[] {
+        return this.getWordsWithPrefix("");
+    }
+
+    // Auto-complete with a maximum number of results
+    autocomplete(prefix: string, maxResults: number = 10): string[] {
+        return this.getWordsWithPrefix(prefix).slice(0, maxResults);
+    }
 }
 
-// Usage with custom objects:
-const people: Person[] = [
-  { name: "Alice", age: 25 },
-  { name: "Bob", age: 30 },
-  { name: "Charlie", age: 35 }
-];
+// Usage of enhanced trie
+const enhancedTrie = new EnhancedTrie();
+enhancedTrie.insert("cat");
+enhancedTrie.insert("car");
+enhancedTrie.insert("card");
+enhancedTrie.insert("care");
 
-const unsortedPeople: Person[] = [
-  { name: "Bob", age: 30 },
-  { name: "Alice", age: 25 },
-  { name: "Charlie", age: 35 }
-];
-
-// Create a comparator function for the 'age' property
-const ageComparator = (a: Person, b: Person) => a.age - b.age;
-
-console.log(isSortedAscending(people, ageComparator)); // Output: true
-console.log(isSortedAscending(unsortedPeople, ageComparator)); // Output: false
+console.log(enhancedTrie.longestCommonPrefix()); // "ca"
+console.log(enhancedTrie.autocomplete("car", 2)); // ["car", "card"]
+console.log(enhancedTrie.getAllWords()); // ["cat", "car", "card", "care"]
