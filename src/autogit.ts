@@ -1,301 +1,218 @@
-interface Graph {
-  [key: string]: string[];
+interface TreeNode<T> {
+    value: T;
+    children: TreeNode<T>[];
 }
 
-interface QueueItem {
-  node: string;
-  path: string[];
-}
-
-interface BidirectionalSearchResult {
-  path: string[];
-  iterations: number;
-  visited: Set<string>;
-}
-
-class BidirectionalSearch {
-  private graph: Graph;
-  
-  constructor(graph: Graph) {
-    this.graph = graph;
-  }
-
-  search(start: string, goal: string): BidirectionalSearchResult | null {
-    if (start === goal) {
-      return {
-        path: [start],
-        iterations: 0,
-        visited: new Set([start])
-      };
-    }
-
-    // Forward BFS from start
-    const forwardQueue: QueueItem[] = [{ node: start, path: [start] }];
-    const forwardVisited = new Map<string, string[]>(); // node -> path
-    forwardVisited.set(start, [start]);
-
-    // Backward BFS from goal
-    const backwardQueue: QueueItem[] = [{ node: goal, path: [goal] }];
-    const backwardVisited = new Map<string, string[]>(); // node -> path
-    backwardVisited.set(goal, [goal]);
-
-    const allVisited = new Set<string>([start, goal]);
-    let iterations = 0;
-
-    while (forwardQueue.length > 0 && backwardQueue.length > 0) {
-      iterations++;
-
-      // Expand forward search
-      const forwardSize = forwardQueue.length;
-      for (let i = 0; i < forwardSize; i++) {
-        const current = forwardQueue.shift()!;
+class TreeDFS<T> {
+    // Pre-order traversal (Root -> Left -> Right)
+    preOrder(root: TreeNode<T> | null): T[] {
+        const result: T[] = [];
         
-        // Check if current node is visited by backward search
-        if (backwardVisited.has(current.node)) {
-          const forwardPath = current.path;
-          const backwardPath = [...backwardVisited.get(current.node)!].reverse();
-          
-          // Remove duplicate middle node
-          backwardPath.shift();
-          
-          return {
-            path: [...forwardPath, ...backwardPath],
-            iterations,
-            visited: allVisited
-          };
-        }
-
-        const neighbors = this.graph[current.node] || [];
-        for (const neighbor of neighbors) {
-          if (!forwardVisited.has(neighbor)) {
-            const newPath = [...current.path, neighbor];
-            forwardVisited.set(neighbor, newPath);
-            forwardQueue.push({ node: neighbor, path: newPath });
-            allVisited.add(neighbor);
-          }
-        }
-      }
-
-      // Expand backward search
-      const backwardSize = backwardQueue.length;
-      for (let i = 0; i < backwardSize; i++) {
-        const current = backwardQueue.shift()!;
-        
-        // Check if current node is visited by forward search
-        if (forwardVisited.has(current.node)) {
-          const forwardPath = forwardVisited.get(current.node)!;
-          const backwardPath = [...current.path].reverse();
-          
-          // Remove duplicate middle node
-          backwardPath.shift();
-          
-          return {
-            path: [...forwardPath, ...backwardPath],
-            iterations,
-            visited: allVisited
-          };
-        }
-
-        const neighbors = this.graph[current.node] || [];
-        for (const neighbor of neighbors) {
-          if (!backwardVisited.has(neighbor)) {
-            const newPath = [...current.path, neighbor];
-            backwardVisited.set(neighbor, newPath);
-            backwardQueue.push({ node: neighbor, path: newPath });
-            allVisited.add(neighbor);
-          }
-        }
-      }
-    }
-
-    return null; // No path found
-  }
-}
-interface WeightedGraph {
-  [key: string]: { [neighbor: string]: number };
-}
-
-interface PriorityQueueItem {
-  node: string;
-  cost: number;
-  path: string[];
-}
-
-class PriorityBidirectionalSearch {
-  private graph: WeightedGraph;
-  
-  constructor(graph: WeightedGraph) {
-    this.graph = graph;
-  }
-
-  private heuristic(node: string, goal: string): number {
-    // Simple heuristic - can be customized based on your domain
-    return 0; // For uniform cost search
-  }
-
-  search(start: string, goal: string): BidirectionalSearchResult | null {
-    if (start === goal) {
-      return { path: [start], iterations: 0, visited: new Set([start]) };
-    }
-
-    // Priority queues (min-heap simulation using arrays)
-    const forwardQueue: PriorityQueueItem[] = [
-      { node: start, cost: 0, path: [start] }
-    ];
-    const backwardQueue: PriorityQueueItem[] = [
-      { node: goal, cost: 0, path: [goal] }
-    ];
-
-    const forwardCosts = new Map<string, number>([[start, 0]]);
-    const backwardCosts = new Map<string, number>([[goal, 0]]);
-    
-    const forwardPaths = new Map<string, string[]>([[start, [start]]]);
-    const backwardPaths = new Map<string, string[]>([[goal, [goal]]]);
-
-    const allVisited = new Set<string>([start, goal]);
-    let iterations = 0;
-    let bestCost = Infinity;
-    let meetingNode: string | null = null;
-
-    while (forwardQueue.length > 0 && backwardQueue.length > 0) {
-      iterations++;
-
-      // Sort queues by cost (simple priority queue implementation)
-      forwardQueue.sort((a, b) => a.cost - b.cost);
-      backwardQueue.sort((a, b) => a.cost - b.cost);
-
-      // Expand forward search
-      if (forwardQueue.length > 0) {
-        const current = forwardQueue.shift()!;
-        
-        // Check if this node is in backward search
-        if (backwardCosts.has(current.node)) {
-          const totalCost = current.cost + backwardCosts.get(current.node)!;
-          if (totalCost < bestCost) {
-            bestCost = totalCost;
-            meetingNode = current.node;
-          }
-        }
-
-        const neighbors = this.graph[current.node] || {};
-        for (const [neighbor, cost] of Object.entries(neighbors)) {
-          const newCost = current.cost + cost;
-          if (!forwardCosts.has(neighbor) || newCost < forwardCosts.get(neighbor)!) {
-            forwardCosts.set(neighbor, newCost);
-            const newPath = [...current.path, neighbor];
-            forwardPaths.set(neighbor, newPath);
-            forwardQueue.push({
-              node: neighbor,
-              cost: newCost,
-              path: newPath
-            });
-            allVisited.add(neighbor);
-          }
-        }
-      }
-
-      // Expand backward search
-      if (backwardQueue.length > 0) {
-        const current = backwardQueue.shift()!;
-        
-        // Check if this node is in forward search
-        if (forwardCosts.has(current.node)) {
-          const totalCost = current.cost + forwardCosts.get(current.node)!;
-          if (totalCost < bestCost) {
-            bestCost = totalCost;
-            meetingNode = current.node;
-          }
-        }
-
-        const neighbors = this.graph[current.node] || {};
-        for (const [neighbor, cost] of Object.entries(neighbors)) {
-          const newCost = current.cost + cost;
-          if (!backwardCosts.has(neighbor) || newCost < backwardCosts.get(neighbor)!) {
-            backwardCosts.set(neighbor, newCost);
-            const newPath = [...current.path, neighbor];
-            backwardPaths.set(neighbor, newPath);
-            backwardQueue.push({
-              node: neighbor,
-              cost: newCost,
-              path: newPath
-            });
-            allVisited.add(neighbor);
-          }
-        }
-      }
-
-      // If we found a meeting point and no better path is possible
-      if (meetingNode && this.shouldTerminate(forwardQueue, backwardQueue, bestCost)) {
-        const forwardPath = forwardPaths.get(meetingNode)!;
-        const backwardPath = [...backwardPaths.get(meetingNode)!].reverse();
-        backwardPath.shift(); // Remove duplicate meeting node
-        
-        return {
-          path: [...forwardPath, ...backwardPath],
-          iterations,
-          visited: allVisited
+        const traverse = (node: TreeNode<T> | null) => {
+            if (!node) return;
+            result.push(node.value);
+            node.children.forEach(child => traverse(child));
         };
-      }
+        
+        traverse(root);
+        return result;
     }
 
-    return meetingNode ? {
-      path: [
-        ...forwardPaths.get(meetingNode)!,
-        ...[...backwardPaths.get(meetingNode)!].reverse().slice(1)
-      ],
-      iterations,
-      visited: allVisited
-    } : null;
-  }
+    // Post-order traversal (Left -> Right -> Root)
+    postOrder(root: TreeNode<T> | null): T[] {
+        const result: T[] = [];
+        
+        const traverse = (node: TreeNode<T> | null) => {
+            if (!node) return;
+            node.children.forEach(child => traverse(child));
+            result.push(node.value);
+        };
+        
+        traverse(root);
+        return result;
+    }
 
-  private shouldTerminate(
-    forwardQueue: PriorityQueueItem[], 
-    backwardQueue: PriorityQueueItem[], 
-    bestCost: number
-  ): boolean {
-    const minForwardCost = forwardQueue.length > 0 ? forwardQueue[0].cost : Infinity;
-    const minBackwardCost = backwardQueue.length > 0 ? backwardQueue[0].cost : Infinity;
-    return bestCost <= minForwardCost + minBackwardCost;
-  }
+    // Iterative DFS using stack
+    iterativeDFS(root: TreeNode<T> | null): T[] {
+        if (!root) return [];
+        
+        const result: T[] = [];
+        const stack: TreeNode<T>[] = [root];
+        
+        while (stack.length > 0) {
+            const node = stack.pop()!;
+            result.push(node.value);
+            
+            // Push children in reverse order for pre-order traversal
+            for (let i = node.children.length - 1; i >= 0; i--) {
+                stack.push(node.children[i]);
+            }
+        }
+        
+        return result;
+    }
 }
-// Example graph
+interface Graph {
+    [node: string]: string[];
+}
+
+class GraphDFS {
+    // Recursive DFS for graph
+    recursiveDFS(graph: Graph, start: string): string[] {
+        const result: string[] = [];
+        const visited: Set<string> = new Set();
+        
+        const dfs = (node: string) => {
+            if (visited.has(node)) return;
+            
+            visited.add(node);
+            result.push(node);
+            
+            for (const neighbor of graph[node] || []) {
+                dfs(neighbor);
+            }
+        };
+        
+        dfs(start);
+        return result;
+    }
+
+    // Iterative DFS for graph using stack
+    iterativeDFS(graph: Graph, start: string): string[] {
+        const result: string[] = [];
+        const visited: Set<string> = new Set();
+        const stack: string[] = [start];
+        
+        while (stack.length > 0) {
+            const node = stack.pop()!;
+            
+            if (!visited.has(node)) {
+                visited.add(node);
+                result.push(node);
+                
+                // Add neighbors in reverse order
+                const neighbors = graph[node] || [];
+                for (let i = neighbors.length - 1; i >= 0; i--) {
+                    if (!visited.has(neighbors[i])) {
+                        stack.push(neighbors[i]);
+                    }
+                }
+            }
+        }
+        
+        return result;
+    }
+
+    // DFS with path tracking
+    findPath(graph: Graph, start: string, end: string): string[] | null {
+        const stack: { node: string; path: string[] }[] = [{ node: start, path: [start] }];
+        const visited: Set<string> = new Set([start]);
+        
+        while (stack.length > 0) {
+            const { node, path } = stack.pop()!;
+            
+            if (node === end) {
+                return path;
+            }
+            
+            for (const neighbor of graph[node] || []) {
+                if (!visited.has(neighbor)) {
+                    visited.add(neighbor);
+                    stack.push({
+                        node: neighbor,
+                        path: [...path, neighbor]
+                    });
+                }
+            }
+        }
+        
+        return null;
+    }
+}
+// Tree example
+const tree: TreeNode<number> = {
+    value: 1,
+    children: [
+        {
+            value: 2,
+            children: [
+                { value: 4, children: [] },
+                { value: 5, children: [] }
+            ]
+        },
+        {
+            value: 3,
+            children: [
+                { value: 6, children: [] },
+                { value: 7, children: [] }
+            ]
+        }
+    ]
+};
+
+const treeDFS = new TreeDFS<number>();
+console.log('Pre-order:', treeDFS.preOrder(tree)); // [1, 2, 4, 5, 3, 6, 7]
+console.log('Post-order:', treeDFS.postOrder(tree)); // [4, 5, 2, 6, 7, 3, 1]
+console.log('Iterative:', treeDFS.iterativeDFS(tree)); // [1, 3, 7, 6, 2, 5, 4]
+
+// Graph example
 const graph: Graph = {
-  'A': ['B', 'C'],
-  'B': ['A', 'D', 'E'],
-  'C': ['A', 'F'],
-  'D': ['B'],
-  'E': ['B', 'F'],
-  'F': ['C', 'E', 'G'],
-  'G': ['F']
+    'A': ['B', 'C'],
+    'B': ['D', 'E'],
+    'C': ['F'],
+    'D': [],
+    'E': ['F'],
+    'F': []
 };
 
-const weightedGraph: WeightedGraph = {
-  'A': { 'B': 1, 'C': 4 },
-  'B': { 'A': 1, 'D': 2, 'E': 5 },
-  'C': { 'A': 4, 'F': 3 },
-  'D': { 'B': 2 },
-  'E': { 'B': 5, 'F': 1 },
-  'F': { 'C': 3, 'E': 1, 'G': 2 },
-  'G': { 'F': 2 }
-};
+const graphDFS = new GraphDFS();
+console.log('Recursive DFS:', graphDFS.recursiveDFS(graph, 'A')); // ['A', 'B', 'D', 'E', 'F', 'C']
+console.log('Iterative DFS:', graphDFS.iterativeDFS(graph, 'A')); // ['A', 'C', 'F', 'B', 'E', 'D']
+console.log('Path A->F:', graphDFS.findPath(graph, 'A', 'F')); // ['A', 'C', 'F']
+class GenericDFS<T> {
+    // Generic DFS with callback functions
+    traverse(
+        start: T,
+        getNeighbors: (node: T) => T[],
+        onVisit?: (node: T) => void,
+        onComplete?: () => void
+    ): void {
+        const visited: Set<T> = new Set();
+        
+        const dfs = (node: T) => {
+            if (visited.has(node)) return;
+            
+            visited.add(node);
+            onVisit?.(node);
+            
+            const neighbors = getNeighbors(node);
+            for (const neighbor of neighbors) {
+                dfs(neighbor);
+            }
+        };
+        
+        dfs(start);
+        onComplete?.();
+    }
 
-// Using basic bidirectional search
-const search = new BidirectionalSearch(graph);
-const result = search.search('A', 'G');
-
-if (result) {
-  console.log('Path found:', result.path.join(' → '));
-  console.log('Iterations:', result.iterations);
-  console.log('Visited nodes:', result.visited.size);
-} else {
-  console.log('No path found');
+    // DFS that returns all visited nodes
+    getAllNodes(start: T, getNeighbors: (node: T) => T[]): T[] {
+        const result: T[] = [];
+        
+        this.traverse(
+            start,
+            getNeighbors,
+            (node) => result.push(node)
+        );
+        
+        return result;
+    }
 }
 
-// Using weighted bidirectional search
-const weightedSearch = new PriorityBidirectionalSearch(weightedGraph);
-const weightedResult = weightedSearch.search('A', 'G');
-
-if (weightedResult) {
-  console.log('Weighted path found:', weightedResult.path.join(' → '));
-  console.log('Iterations:', weightedResult.iterations);
-}
+// Usage example
+const genericDFS = new GenericDFS<string>();
+const nodes = genericDFS.getAllNodes(
+    'A',
+    (node) => graph[node] || []
+);
+console.log('All nodes:', nodes);
