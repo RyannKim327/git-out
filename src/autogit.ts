@@ -1,26 +1,85 @@
-function factorial(n: number): number {
-  if (!Number.isInteger(n)) throw new TypeError('n must be an integer');
-  if (n < 0) throw new RangeError('n must be non-negative');
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+// Usage
+console.log(validateEmail("test@example.com")); // true
+console.log(validateEmail("invalid-email")); // false
+const validateEmailStrict = (email: string): boolean => {
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+  return emailRegex.test(email);
+};
+class EmailValidator {
+  private static emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  
+  static validate(email: string): { isValid: boolean; error?: string } {
+    if (!email) {
+      return { isValid: false, error: "Email is required" };
+    }
+    
+    if (!this.emailRegex.test(email)) {
+      return { isValid: false, error: "Invalid email format" };
+    }
+    
+    return { isValid: true };
   }
-  return result;
 }
 
-// Examples
-console.log(factorial(5)); // 120
-console.log(factorial(0)); // 1
-function factorialBigInt(n: number): bigint {
-  if (!Number.isInteger(n)) throw new TypeError('n must be an integer');
-  if (n < 0) throw new RangeError('n must be non-negative');
-  let result = 1n;
-  for (let i = 2; i <= n; i++) {
-    result *= BigInt(i);
-  }
-  return result;
+// Usage
+const result = EmailValidator.validate("user@example.com");
+if (result.isValid) {
+  console.log("Email is valid");
+} else {
+  console.log(`Error: ${result.error}`);
+}
+const validateEmailRFC5322 = (email: string): boolean => {
+  const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  return emailRegex.test(email);
+};
+interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
 }
 
-// Examples
-console.log(factorialBigInt(20).toString()); // "2432902008176640000"
-console.log(factorialBigInt(0).toString());  // "1"
+class EmailValidationService {
+  static validate(email: string): ValidationResult {
+    const errors: string[] = [];
+    
+    // Basic format check
+    const basicRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!basicRegex.test(email)) {
+      errors.push("Invalid email format");
+    }
+    
+    // Check length
+    if (email.length > 254) {
+      errors.push("Email is too long");
+    }
+    
+    // Check local part length
+    const atIndex = email.indexOf('@');
+    if (atIndex > 64) {
+      errors.push("Local part of email is too long");
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+}
+
+// Usage
+const validation = EmailValidationService.validate("test@example.com");
+if (!validation.isValid) {
+  console.log("Validation errors:", validation.errors);
+}
+const isValidEmail = (email: string): boolean => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
+// Type guard for TypeScript
+const isEmail = (value: unknown): value is string => {
+  return typeof value === 'string' && isValidEmail(value);
+};
