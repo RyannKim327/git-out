@@ -1,106 +1,169 @@
-function insertionSort<T>(array: T[], comparator?: (a: T, b: T) => number): T[] {
-    // Create a copy to avoid mutating the original array
-    const sortedArray = [...array];
-    
-    for (let i = 1; i < sortedArray.length; i++) {
-        const currentElement = sortedArray[i];
-        let j = i - 1;
-        
-        // Move elements that are greater than currentElement one position ahead
-        while (j >= 0 && (
-            comparator 
-                ? comparator(sortedArray[j], currentElement) > 0
-                : sortedArray[j] > currentElement
-        )) {
-            sortedArray[j + 1] = sortedArray[j];
-            j--;
-        }
-        
-        // Insert currentElement at the correct position
-        sortedArray[j + 1] = currentElement;
-    }
-    
-    return sortedArray;
+// Internal node type (not exported)
+class Node<T> {
+  value: T;
+  next?: Node<T>;
+
+  constructor(value: T, next?: Node<T>) {
+    this.value = value;
+    this.next = next;
+  }
 }
 
-// Example usage with numbers
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-console.log("Original:", numbers);
-console.log("Sorted:", insertionSort(numbers));
+export class LinkedList<T> implements Iterable<T> {
+  private head?: Node<T>;
+  private tail?: Node<T>;
+  private _length: number = 0;
 
-// Example usage with strings
-const strings = ["banana", "apple", "cherry", "date"];
-console.log("Original:", strings);
-console.log("Sorted:", insertionSort(strings));
-
-// Example with custom comparator (sorting by length)
-const words = ["apple", "banana", "kiwi", "grapefruit"];
-console.log("Original:", words);
-console.log("Sorted by length:", insertionSort(words, (a, b) => a.length - b.length));
-
-// In-place version (modifies the original array)
-function insertionSortInPlace<T>(array: T[], comparator?: (a: T, b: T) => number): void {
-    for (let i = 1; i < array.length; i++) {
-        const currentElement = array[i];
-        let j = i - 1;
-        
-        while (j >= 0 && (
-            comparator 
-                ? comparator(array[j], currentElement) > 0
-                : array[j] > currentElement
-        )) {
-            array[j + 1] = array[j];
-            j--;
-        }
-        
-        array[j + 1] = currentElement;
+  constructor(iterable?: Iterable<T>) {
+    if (iterable) {
+      for (const item of iterable) this.append(item);
     }
+  }
+
+  get length(): number {
+    return this._length;
+  }
+
+  isEmpty(): boolean {
+    return this._length === 0;
+  }
+
+  // Add to end
+  append(value: T): void {
+    const node = new Node<T>(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else if (this.tail) {
+      this.tail.next = node;
+      this.tail = node;
+    }
+    this._length++;
+  }
+
+  // Add to start
+  prepend(value: T): void {
+    const node = new Node<T>(value, this.head);
+    this.head = node;
+    if (!this.tail) this.tail = node;
+    this._length++;
+  }
+
+  // Insert at index (0-based). If index <= 0, prepend; if >= length, append.
+  insert(value: T, index: number): boolean {
+    if (index <= 0) {
+      this.prepend(value);
+      return true;
+    }
+    if (index >= this._length) {
+      this.append(value);
+      return true;
+    }
+
+    // Traverse to the node just before the insertion point
+    let prev = this.head;
+    for (let i = 0; i < index - 1; i++) {
+      if (!prev) return false;
+      prev = prev.next;
+    }
+    if (!prev) return false;
+
+    const node = new Node<T>(value, prev.next);
+    prev.next = node;
+    this._length++;
+    return true;
+  }
+
+  // Remove at index and return the value
+  removeAt(index: number): T | undefined {
+    if (index < 0 || index >= this._length || !this.head) return undefined;
+
+    if (index === 0) {
+      const value = this.head.value;
+      this.head = this.head.next;
+      if (!this.head) this.tail = undefined;
+      this._length--;
+      return value;
+    }
+
+    // Traverse to node just before the one we remove
+    let prev = this.head;
+    for (let i = 0; i < index - 1; i++) {
+      if (!prev) return undefined;
+      prev = prev.next;
+    }
+    if (!prev || !prev.next) return undefined;
+
+    const toRemove = prev.next;
+    prev.next = toRemove.next;
+    if (toRemove === this.tail) this.tail = prev;
+    this._length--;
+    return toRemove.value;
+  }
+
+  // Get value at index
+  get(index: number): T | undefined {
+    if (index < 0 || index >= this._length) return undefined;
+    let current = this.head;
+    for (let i = 0; i < index; i++) {
+      if (!current) return undefined;
+      current = current.next;
+    }
+    return current?.value;
+  }
+
+  // Set value at index
+  set(index: number, value: T): boolean {
+    const node = this.getNode(index);
+    if (!node) return false;
+    node.value = value;
+    return true;
+  }
+
+  private getNode(index: number): Node<T> | undefined {
+    if (index < 0 || index >= this._length || !this.head) return undefined;
+    let current = this.head;
+    for (let i = 0; i < index; i++) {
+      current = current.next!;
+    }
+    return current;
+  }
+
+  // Convert to array
+  toArray(): T[] {
+    const arr: T[] = [];
+    for (const v of this) arr.push(v);
+    return arr;
+  }
+
+  // Convenience: build from array
+  static fromArray<U>(values: U[]): LinkedList<U> {
+    const list = new LinkedList<U>();
+    for (const v of values) list.append(v);
+    return list;
+  }
+
+  // Iteration support
+  [Symbol.iterator](): Iterator<T> {
+    let current = this.head;
+    return {
+      next(): IteratorResult<T> {
+        if (!current) return { value: undefined as any, done: true };
+        const value = current.value;
+        current = current.next;
+        return { value, done: false };
+      },
+    };
+  }
+
+  // Optional: forEach helper
+  forEach(callback: (value: T, index: number) => void): void {
+    let idx = 0;
+    for (const v of this) callback(v, idx++);
+  }
+
+  clear(): void {
+    this.head = undefined;
+    this.tail = undefined;
+    this._length = 0;
+  }
 }
-
-// Example with in-place sorting
-const numbersToSort = [64, 34, 25, 12, 22, 11, 90];
-console.log("Before in-place sort:", numbersToSort);
-insertionSortInPlace(numbersToSort);
-console.log("After in-place sort:", numbersToSort);
-
-// Generic interface version
-interface Sortable<T> {
-    sort(comparator?: (a: T, b: T) => number): void;
-    getArray(): T[];
-}
-
-class InsertionSortArray<T> implements Sortable<T> {
-    private array: T[];
-    
-    constructor(array: T[]) {
-        this.array = [...array];
-    }
-    
-    sort(comparator?: (a: T, b: T) => number): void {
-        for (let i = 1; i < this.array.length; i++) {
-            const currentElement = this.array[i];
-            let j = i - 1;
-            
-            while (j >= 0 && (
-                comparator 
-                    ? comparator(this.array[j], currentElement) > 0
-                    : this.array[j] > currentElement
-            )) {
-                this.array[j + 1] = this.array[j];
-                j--;
-            }
-            
-            this.array[j + 1] = currentElement;
-        }
-    }
-    
-    getArray(): T[] {
-        return [...this.array];
-    }
-}
-
-// Example with class-based approach
-const sortableNumbers = new InsertionSortArray([64, 34, 25, 12, 22, 11, 90]);
-console.log("Before class sort:", sortableNumbers.getArray());
-sortableNumbers.sort();
-console.log("After class sort:", sortableNumbers.getArray());
