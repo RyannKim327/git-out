@@ -1,18 +1,29 @@
-// random.ts
-// A tiny CLI that asks for your name and prints a random emoji greeting.
+// Define the structure of a binary tree node
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 
-import * as readline from 'readline';
+  constructor(val?: number, left?: TreeNode | null, right?: TreeNode | null) {
+    this.val = val ?? 0;
+    this.left = left ?? null;
+    this.right = right ?? null;
+  }
+}
 
-const emojis = ['🦄', '🐉', '🎲', '🌈', '🚀', '🔮', '🧩', '🎯'];
+// Function to compute maximum depth
+function maxDepth(root: TreeNode | null): number {
+  if (root === null) return 0;
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+  const leftDepth = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
 
-rl.question('What is your name? ', (name: string) => {
-  const pick = emojis[Math.floor(Math.random() * emojis.length)];
-  console.log(`\n${pick}  Hello, ${name.trim()}! Your lucky emoji is ${pick}`);
-  rl.close();
-});
-npx ts-node random.ts
+  return Math.max(leftDepth, rightDepth) + 1;
+}
+
+// Example usage:
+// const tree = new TreeNode(3,
+//   new TreeNode(9),
+//   new TreeNode(20, new TreeNode(15), new TreeNode(7))
+// );
+// console.log(maxDepth(tree)); // Output: 3
