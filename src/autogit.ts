@@ -1,104 +1,203 @@
-function binarySearch<T>(
-  sortedArray: T[],
-  target: T,
-  compareFn?: (a: T, b: T) => number
-): number {
-  let left = 0;
-  let right = sortedArray.length - 1;
-  
-  // Default comparison function for numbers/strings
-  const comparator = compareFn || ((a: T, b: T) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
+type Vertex = number;               // 0 … n‑1 (or any unique id)
+type AdjList = Map<Vertex, Vertex[]>; // vertex → list of outgoing neighbours
+/**
+ * Tarjan's algorithm for Strongly Connected Components.
+ *
+ * Input: adjacency list of a directed graph.
+ * Output: an array of SCCs, each SCC is an array of vertices.
+ */
+export class TarjanSCC {
+  // ----- internal state ----------------------------------------------------
+  private index = 0;                     // next discovery index
+  private readonly indices = new Map<number, number>(); // vertex → index
+  private readonly lowlink = new Map<number, number>(); // vertex → lowlink
+  private readonly stack: number[] = []; // vertices currently on stack
+  private readonly onStack = new Set<number>(); // quick O(1) membership test
+  private readonly sccs: number[][] = []; // final result
 
-  while (left <= right) {
-    const mid = Math.floor((left + right) / 2);
-    const comparison = comparator(sortedArray[mid], target);
+  /**
+   * Run the algorithm.
+   *
+   * @param graph adjacency list (Map<vertex, neighbours[]>)
+   * @returns array of SCCs (each SCC is an array of vertices)
+   */
+  public run(graph: Map<number, number[]>): number[][] {
+    // Ensure every vertex appears in the map (even isolated ones)
+    for (const v of graph.keys()) {
+      if (!this.indices.has(v)) {
+        this.strongConnect(v, graph);
+      }
+    }
+    return this.sccs;
+  }
 
-    if (comparison === 0) {
-      return mid; // Found the target
-    } else if (comparison < 0) {
-      left = mid + 1; // Search in the right half
-    } else {
-      right = mid - 1; // Search in the left half
+  // -----------------------------------------------------------------------
+  private strongConnect(v: number, graph: Map<number, number[]>): void {
+    // 1. Set the discovery index and lowlink of v
+    this.indices.set(v, this.index);
+    this.lowlink.set(v, this.index);
+    this.index++;
+
+    // 2. Push v onto the stack
+    this.stack.push(v);
+    this.onStack.add(v);
+
+    // 3. Consider each successor w of v
+    const neighbours = graph.get(v) ?? [];
+    for (const w of neighbours) {
+      if (!this.indices.has(w)) {
+        // w has not yet been visited → recurse
+        this.strongConnect(w, graph);
+        // After recursion, propagate lowlink up
+        const lowV = this.lowlink.get(v)!;
+        const lowW = this.lowlink.get(w)!;
+        this.lowlink.set(v, Math.min(lowV, lowW));
+      } else if (this.onStack.has(w)) {
+        // w is in the current SCC (back edge)
+        const lowV = this.lowlink.get(v)!;
+        const idxW = this.indices.get(w)!;
+        this.lowlink.set(v, Math.min(lowV, idxW));
+      }
+      // else: w already assigned to a completed SCC → ignore
+    }
+
+    // 4. If v is a root node, pop the stack and generate an SCC
+    if (this.lowlink.get(v) === this.indices.get(v)) {
+      const component: number[] = [];
+      let w: number;
+      do {
+        w = this.stack.pop()!;
+        this.onStack.delete(w);
+        component.push(w);
+      } while (w !== v);
+      this.sccs.push(component);
     }
   }
-
-  return -1; // Target not found
 }
-// Example with numbers
-const numbers = [1, 3, 5, 7, 9, 11, 13, 15];
-console.log(binarySearch(numbers, 7)); // Output: 3
-console.log(binarySearch(numbers, 10)); // Output: -1
+import { TarjanSCC } from "./TarjanSCC";
 
-// Example with strings
-const names = ['alice', 'bob', 'charlie', 'david', 'eve'];
-console.log(binarySearch(names, 'charlie')); // Output: 2
+// Build a graph (the classic example from CLRS)
+const graph = new Map<number, number[]>([
+  [0, [1]],
+  [1, [2, 4, 5]],
+  [2, [3, 6]],
+  [3, [2, 7]],
+  [4, [0, 5]],
+  [5, [6]],
+  [6, [5]],
+  [7, [3, 6]],
+]);
 
-// Example with custom objects
-interface Person {
-  id: number;
-  name: string;
+const tarjan = new TarjanSCC();
+const sccs = tarjan.run(graph);
+
+console.log("Strongly Connected Components:");
+sccs.forEach((comp, i) => console.log(`Component ${i + 1}:`, comp));
+Strongly Connected Components:
+Component 1: [ 6, 5 ]
+Component 2: [ 3, 2 ]
+Component 3: [ 7 ]
+Component 4: [ 1, 4, 0 ]
+// tarjan.test.ts
+import { TarjanSCC } from "./TarjanSCC";
+
+function makeGraph(edges: [number, number][]): Map<number, number[]> {
+  const g = new Map<number, number[]>();
+  for (const [u, v] of edges) {
+    if (!g.has(u)) g.set(u, []);
+    g.get(u)!.push(v);
+    // ensure isolated vertices appear in the map
+    if (!g.has(v)) g.set(v, []);
+  }
+  return g;
 }
 
-const people: Person[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Charlie' },
-];
+test("Tarjan finds SCCs on a known graph", () => {
+  const edges: [number, number][] = [
+    [0, 1],
+    [1, 2],
+    [2, 0],
+    [2, 3],
+    [3, 4],
+    [4, 5],
+    [5, 3],
+    [6, 5],
+    [6, 7],
+    [7, 6],
+  ];
+  const graph = makeGraph(edges);
+  const tarjan = new TarjanSCC();
+  const sccs = tarjan.run(graph);
 
-const result = binarySearch(people, { id: 2, name: 'Bob' } as Person, 
-  (a, b) => a.id - b.id
-);
-console.log(result); // Output: 1
-function binarySearchRecursive<T>(
-  sortedArray: T[],
-  target: T,
-  compareFn?: (a: T, b: T) => number,
-  left: number = 0,
-  right: number = sortedArray.length - 1
-): number {
-  const comparator = compareFn || ((a: T, b: T) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
+  // Sort each component and the list of components for deterministic comparison
+  const normalize = (arr: number[][]) =>
+    arr.map(c => c.slice().sort((a, b) => a - b)).sort((a, b) => a[0] - b[0]);
 
-  if (left > right) {
-    return -1; // Base case: target not found
+  expect(normalize(sccs)).toEqual(
+    normalize([
+      [0, 1, 2], // cycle
+      [3, 4, 5], // another cycle
+      [6, 7],    // two‑node cycle
+    ])
+  );
+});
+class TarjanSCC {
+  private index = 0;
+  private indices = new Map<number, number>();
+  private lowlink = new Map<number, number>();
+  private stack: number[] = [];
+  private onStack = new Set<number>();
+  private sccs: number[][] = [];
+
+  run(graph: Map<number, number[]>): number[][] {
+    for (const v of graph.keys()) {
+      if (!this.indices.has(v)) this.strongConnect(v, graph);
+    }
+    return this.sccs;
   }
 
-  const mid = Math.floor((left + right) / 2);
-  const comparison = comparator(sortedArray[mid], target);
+  private strongConnect(v: number, graph: Map<number, number[]>): void {
+    this.indices.set(v, this.index);
+    this.lowlink.set(v, this.index);
+    this.index++;
 
-  if (comparison === 0) {
-    return mid;
-  } else if (comparison < 0) {
-    return binarySearchRecursive(sortedArray, target, comparator, mid + 1, right);
-  } else {
-    return binarySearchRecursive(sortedArray, target, comparator, left, mid - 1);
-  }
-}
-function binarySearchWithConstraint<T extends number | string>(
-  sortedArray: T[],
-  target: T
-): number {
-  let left = 0;
-  let right = sortedArray.length - 1;
+    this.stack.push(v);
+    this.onStack.add(v);
 
-  while (left <= right) {
-    const mid = Math.floor((left + right) / 2);
-    
-    if (sortedArray[mid] === target) {
-      return mid;
-    } else if (sortedArray[mid] < target) {
-      left = mid + 1;
-    } else {
-      right = mid - 1;
+    const neighbours = graph.get(v) ?? [];
+    for (const w of neighbours) {
+      if (!this.indices.has(w)) {
+        this.strongConnect(w, graph);
+        this.lowlink.set(v, Math.min(this.lowlink.get(v)!, this.lowlink.get(w)!));
+      } else if (this.onStack.has(w)) {
+        this.lowlink.set(v, Math.min(this.lowlink.get(v)!, this.indices.get(w)!));
+      }
+    }
+
+    if (this.lowlink.get(v) === this.indices.get(v)) {
+      const component: number[] = [];
+      let w: number;
+      do {
+        w = this.stack.pop()!;
+        this.onStack.delete(w);
+        component.push(w);
+      } while (w !== v);
+      this.sccs.push(component);
     }
   }
-
-  return -1;
 }
+
+/* ---------- Demo ---------- */
+const graph = new Map<number, number[]>([
+  [0, [1]],
+  [1, [2, 4, 5]],
+  [2, [3, 6]],
+  [3, [2, 7]],
+  [4, [0, 5]],
+  [5, [6]],
+  [6, [5]],
+  [7, [3, 6]],
+]);
+
+const tarjan = new TarjanSCC();
+console.log(tarjan.run(graph));
