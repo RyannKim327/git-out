@@ -1,122 +1,126 @@
-class ListNode {
-    val: number;
-    next: ListNode | null;
-    
-    constructor(val: number) {
-        this.val = val;
-        this.next = null;
-    }
-}
+/**
+ * Returns the longest common substring of two strings.
+ *
+ * @param a - First string
+ * @param b - Second string
+ * @returns An object containing:
+ *   - substring: the longest common substring (empty string if none)
+ *   - length:    its length (0 if none)
+ *   - indices:   { aStart, aEnd, bStart, bEnd } positions in the original strings
+ */
+export function longestCommonSubstring(
+  a: string,
+  b: string
+): {
+  substring: string;
+  length: number;
+  indices: { aStart: number; aEnd: number; bStart: number; bEnd: number };
+} {
+  // Edge cases – empty inputs
+  if (!a.length || !b.length) {
+    return {
+      substring: '',
+      length: 0,
+      indices: { aStart: -1, aEnd: -1, bStart: -1, bEnd: -1 },
+    };
+  }
 
-function getIntersectionNode(headA: ListNode | null, headB: ListNode | null): ListNode | null {
-    const visited = new Set<ListNode>();
-    
-    // Traverse first list and store all nodes
-    let currentA = headA;
-    while (currentA !== null) {
-        visited.add(currentA);
-        currentA = currentA.next;
-    }
-    
-    // Traverse second list and check for intersection
-    let currentB = headB;
-    while (currentB !== null) {
-        if (visited.has(currentB)) {
-            return currentB; // Intersection found
+  // Ensure we allocate the smaller DP array (space O(min(n,m)))
+  const [shorter, longer, swap] = a.length < b.length ? [a, b, false] : [b, a, true];
+  const n = longer.length;
+  const m = shorter.length;
+
+  // DP rows: previous and current
+  let prev = new Uint16Array(m + 1); // Uint16 is enough for lengths up to 65535; use Uint32Array for longer strings
+  let curr = new Uint16Array(m + 1);
+
+  let maxLen = 0;      // length of the best substring found so far
+  let endIdxLong = 0;  // index *after* the substring in the longer string
+  let endIdxShort = 0; // same for the shorter string (used only for indices)
+
+  for (let i = 1; i <= n; i++) {
+    const chLong = longer.charAt(i - 1);
+    // Reset first column (j = 0) – it stays 0 automatically because Uint16Array is zero‑filled
+    for (let j = 1; j <= m; j++) {
+      if (chLong === shorter.charAt(j - 1)) {
+        // Extend the previous diagonal value
+        curr[j] = (prev[j - 1] + 1) as unknown as number;
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          endIdxLong = i;          // i is 1‑based, so this is the index *after* the substring
+          endIdxShort = j;
         }
-        currentB = currentB.next;
+      } else {
+        curr[j] = 0;
+      }
     }
-    
-    return null; // No intersection
-}
-function getIntersectionNodeTwoPointers(headA: ListNode | null, headB: ListNode | null): ListNode | null {
-    if (headA === null || headB === null) return null;
-    
-    let pointerA: ListNode | null = headA;
-    let pointerB: ListNode | null = headB;
-    
-    // When a pointer reaches the end of a list, redirect it to the head of the other list
-    while (pointerA !== pointerB) {
-        pointerA = pointerA === null ? headB : pointerA.next;
-        pointerB = pointerB === null ? headA : pointerB.next;
-    }
-    
-    return pointerA; // Either intersection point or null if no intersection
-}
-function getIntersectionNodeLength(headA: ListNode | null, headB: ListNode | null): ListNode | null {
-    if (headA === null || headB === null) return null;
-    
-    // Get lengths of both lists
-    const lengthA = getListLength(headA);
-    const lengthB = getListLength(headB);
-    
-    // Move the longer list pointer ahead by the difference
-    let longer = lengthA >= lengthB ? headA : headB;
-    let shorter = lengthA >= lengthB ? headB : headA;
-    
-    let diff = Math.abs(lengthA - lengthB);
-    
-    while (diff > 0) {
-        longer = longer!.next;
-        diff--;
-    }
-    
-    // Now move both pointers together
-    while (longer !== shorter) {
-        longer = longer!.next;
-        shorter = shorter!.next;
-    }
-    
-    return longer;
-}
+    // Swap rows for next iteration
+    const tmp = prev;
+    prev = curr;
+    curr = tmp;
+  }
 
-function getListLength(head: ListNode | null): number {
-    let length = 0;
-    let current = head;
-    
-    while (current !== null) {
-        length++;
-        current = current.next;
-    }
-    
-    return length;
-}
-// Helper function to create linked lists
-function createLinkedList(values: number[]): ListNode | null {
-    if (values.length === 0) return null;
-    
-    const head = new ListNode(values[0]);
-    let current = head;
-    
-    for (let i = 1; i < values.length; i++) {
-        current.next = new ListNode(values[i]);
-        current = current.next;
-    }
-    
-    return head;
-}
+  // Recover the substring from the original strings (respect original order)
+  const substring = longer.slice(endIdxLong - maxLen, endIdxLong);
 
-// Example usage
-function testIntersection(): void {
-    // Create lists: 1→2→3→4→5 and 9→8→4→5 (intersecting at node with value 4)
-    const common = createLinkedList([4, 5]);
-    
-    const listAHead = new ListNode(1);
-    listAHead.next = new ListNode(2);
-    listAHead.next.next = new ListNode(3);
-    listAHead.next.next.next = common;
-    
-    const listBHead = new ListNode(9);
-    listBHead.next = new ListNode(8);
-    listBHead.next.next = common;
-    
-    const intersection = getIntersectionNodeTwoPointers(listAHead, listBHead);
-    
-    if (intersection) {
-        console.log(`Intersection found at node with value: ${intersection.val}`);
-    } else {
-        console.log("No intersection found");
-    }
-}
+  // Translate indices back to the original argument order
+  const result = swap
+    ? {
+        // we swapped a ↔ b, so swap back the indices
+        aStart: endIdxShort - maxLen,
+        aEnd: endIdxShort,
+        bStart: endIdxLong - maxLen,
+        bEnd: endIdxLong,
+      }
+    : {
+        aStart: endIdxLong - maxLen,
+        aEnd: endIdxLong,
+        bStart: endIdxShort - maxLen,
+        bEnd: endIdxShort,
+      };
 
-testIntersection();
+  return {
+    substring,
+    length: maxLen,
+    indices: result,
+  };
+}
+import { longestCommonSubstring } from './lcs';
+
+const s1 = 'abracadabra';
+const s2 = 'ecadadabrc';
+
+const result = longestCommonSubstring(s1, s2);
+
+console.log('Longest common substring:', result.substring); // "cad"
+console.log('Length:', result.length);                       // 3
+console.log('Indices in s1:', result.indices.aStart, result.indices.aEnd); // 4 7
+console.log('Indices in s2:', result.indices.bStart, result.indices.bEnd); // 2 5
+// 1. Simple match
+console.assert(longestCommonSubstring('hello', 'yellow').substring === 'ello');
+
+// 2. No common substring
+console.assert(longestCommonSubstring('abc', 'def').length === 0);
+
+// 3. Whole string match
+console.assert(longestCommonSubstring('same', 'same').substring === 'same');
+
+// 4. Multiple equal‑length candidates – returns the first found
+console.assert(
+  longestCommonSubstring('abXYZcdXYZef', '12XYZ34XYZ56').substring === 'XYZ'
+);
+function lcs(a: string, b: string) {
+  const n = a.length, m = b.length;
+  const dp = new Uint16Array(m + 1);
+  let max = 0, end = 0;
+  for (let i = 1; i <= n; i++) {
+    let prev = 0;
+    for (let j = 1; j <= m; j++) {
+      const cur = dp[j];
+      dp[j] = a[i - 1] === b[j - 1] ? prev + 1 : 0;
+      if (dp[j] > max) { max = dp[j]; end = i; }
+      prev = cur;
+    }
+  }
+  return a.slice(end - max, end);
+}
