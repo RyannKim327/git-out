@@ -1,96 +1,26 @@
-/**
- * Recursively searches for `target` in a sorted array.
- *
- * @param arr    The sorted array to search.
- * @param target The value we are looking for.
- * @param compareFn Optional comparator (a‑b) => number.
- *                 Return <0 if a < b, 0 if equal, >0 if a > b.
- * @returns The index of `target` in `arr`, or -1 if not found.
- */
-export function binarySearchRecursive<T>(
-  arr: readonly T[],
-  target: T,
-  compareFn: (a: T, b: T) => number = defaultCompare
-): number {
-  // Helper that carries the current low/high bounds.
-  function search(low: number, high: number): number {
-    if (low > high) {
-      // Base case: interval empty → not found
-      return -1;
-    }
-
-    const mid = Math.floor((low + high) / 2);
-    const cmp = compareFn(arr[mid], target);
-
-    if (cmp === 0) {
-      // Found!
-      return mid;
-    } else if (cmp < 0) {
-      // arr[mid] < target → search right half
-      return search(mid + 1, high);
-    } else {
-      // arr[mid] > target → search left half
-      return search(low, mid - 1);
-    }
+function factorial(n: number): number {
+  if (!Number.isInteger(n)) throw new TypeError('n must be an integer');
+  if (n < 0) throw new RangeError('n must be non-negative');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-
-  return search(0, arr.length - 1);
+  return result;
 }
 
-/** Default comparator works for numbers and strings. */
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-const numbers = [1, 3, 5, 7, 9, 12, 15];
-console.log(binarySearchRecursive(numbers, 7));   // → 3
-console.log(binarySearchRecursive(numbers, 2));   // → -1
-const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
-console.log(binarySearchRecursive(words, 'date')); // → 3
-type User = { id: number; name: string };
-
-const users: User[] = [
-  { id: 1, name: 'Ada' },
-  { id: 3, name: 'Bob' },
-  { id: 5, name: 'Cara' },
-  { id: 7, name: 'Dan' },
-];
-
-// Comparator that looks at the `id` field
-const byId = (a: User, b: User) => a.id - b.id;
-
-const target: User = { id: 5, name: '' }; // name irrelevant for search
-console.log(binarySearchRecursive(users, target, byId)); // → 2
-// binarySearchRecursive.ts
-export function binarySearchRecursive<T>(
-  arr: readonly T[],
-  target: T,
-  compareFn: (a: T, b: T) => number = defaultCompare
-): number {
-  function search(low: number, high: number): number {
-    if (low > high) return -1;
-
-    const mid = Math.floor((low + high) / 2);
-    const cmp = compareFn(arr[mid], target);
-
-    if (cmp === 0) return mid;
-    if (cmp < 0) return search(mid + 1, high);
-    return search(low, mid - 1);
+// Examples
+console.log(factorial(5)); // 120
+console.log(factorial(0)); // 1
+function factorialBigInt(n: number): bigint {
+  if (!Number.isInteger(n)) throw new TypeError('n must be an integer');
+  if (n < 0) throw new RangeError('n must be non-negative');
+  let result = 1n;
+  for (let i = 2; i <= n; i++) {
+    result *= BigInt(i);
   }
-
-  return search(0, arr.length - 1);
+  return result;
 }
 
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-
-/* -------------------------------------------------
-   Example usage (uncomment to test in a Node/TS env)
-------------------------------------------------- */
-// const nums = [2, 4, 6, 8, 10, 12];
-// console.log(binarySearchRecursive(nums, 8)); // 3
-// console.log(binarySearchRecursive(nums, 5)); // -1
+// Examples
+console.log(factorialBigInt(20).toString()); // "2432902008176640000"
+console.log(factorialBigInt(0).toString());  // "1"
