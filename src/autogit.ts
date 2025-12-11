@@ -1,141 +1,166 @@
-function longestCommonPrefix(strs: string[]): string {
-    if (strs.length === 0) return "";
-    
-    let prefix = strs[0];
-    
-    for (let i = 1; i < strs.length; i++) {
-        while (strs[i].indexOf(prefix) !== 0) {
-            prefix = prefix.substring(0, prefix.length - 1);
-            if (prefix === "") return "";
+// Generic adjacency list: each vertex maps to an array of its neighbours.
+type AdjList<T> = Map<T, T[]>;
+/**
+ * Breadth‑First Search
+ *
+ * @param graph          The adjacency list representing the graph.
+ * @param start          The vertex from which the search begins.
+ * @param visit          Optional callback invoked for each visited vertex.
+ * @param trackPredecessors  If true, the function also returns a map of each vertex's predecessor.
+ *
+ * @returns An object containing:
+ *   - order: an array of vertices in the order they were visited.
+ *   - predecessors (optional): a map where `predecessors.get(v)` is the vertex that discovered `v`.
+ */
+function bfs<T>(
+  graph: AdjList<T>,
+  start: T,
+  visit?: (v: T) => void,
+  trackPredecessors: boolean = false
+): { order: T[]; predecessors?: Map<T, T> } {
+  const visited = new Set<T>();
+  const queue: T[] = [];
+  const order: T[] = [];
+  const predecessors = trackPredecessors ? new Map<T, T>() : undefined;
+
+  // Initialise
+  visited.add(start);
+  queue.push(start);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!; // `!` because we know queue is non‑empty
+    order.push(current);
+    if (visit) visit(current);
+
+    // Get neighbours (if a vertex has no entry in the map we treat it as having 0 neighbours)
+    const neighbours = graph.get(current) ?? [];
+
+    for (const next of neighbours) {
+      if (!visited.has(next)) {
+        visited.add(next);
+        queue.push(next);
+        if (trackPredecessors) {
+          // `current` discovered `next`
+          predecessors!.set(next, current);
         }
+      }
     }
-    
-    return prefix;
+  }
+
+  return trackPredecessors
+    ? { order, predecessors: predecessors! }
+    : { order };
+}
+/**
+ * Reconstructs the shortest path from `start` to `target` using the predecessor map.
+ *
+ * @param predecessors Map produced by bfs(..., true)
+ * @param start        The source vertex used for the BFS.
+ * @param target       The destination vertex.
+ *
+ * @returns An array of vertices from start → target, or `null` if target is unreachable.
+ */
+function reconstructPath<T>(
+  predecessors: Map<T, T>,
+  start: T,
+  target: T
+): T[] | null {
+  const path: T[] = [];
+  let cur: T | undefined = target;
+
+  while (cur !== undefined) {
+    path.push(cur);
+    if (cur === start) {
+      path.reverse();
+      return path;
+    }
+    cur = predecessors.get(cur);
+  }
+
+  // If we exited the loop without hitting `start`, the target is unreachable.
+  return null;
+}
+// 1️⃣ Build the graph
+const graph: AdjList<string> = new Map([
+  ['A', ['B', 'C']],
+  ['B', ['A', 'D', 'E']],
+  ['C', ['A', 'F']],
+  ['D', ['B']],
+  ['E', ['B', 'F']],
+  ['F', ['C', 'E']],
+]);
+
+// 2️⃣ Run BFS from 'A' and track predecessors
+const { order, predecessors } = bfs(graph, 'A', undefined, true);
+console.log('Visit order:', order); // → A B C D E F
+
+// 3️⃣ Reconstruct shortest path from A to F
+if (predecessors) {
+  const path = reconstructPath(predecessors, 'A', 'F');
+  console.log('Shortest path A → F:', path); // → [ 'A', 'C', 'F' ]
+}
+Visit order: [ 'A', 'B', 'C', 'D', 'E', 'F' ]
+Shortest path A → F: [ 'A', 'C', 'F' ]
+class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
 
-// Example usage
-console.log(longestCommonPrefix(["flower", "flow", "flight"])); // "fl"
-console.log(longestCommonPrefix(["dog", "racecar", "car"]));    // ""
-function longestCommonPrefixVertical(strs: string[]): string {
-    if (strs.length === 0) return "";
-    
-    for (let i = 0; i < strs[0].length; i++) {
-        const char = strs[0][i];
-        
-        for (let j = 1; j < strs.length; j++) {
-            if (i === strs[j].length || strs[j][i] !== char) {
-                return strs[0].substring(0, i);
-            }
-        }
+// Helper to convert a binary tree into an adjacency list (optional)
+function treeToAdjList<T>(root: TreeNode<T> | null): AdjList<TreeNode<T>> {
+  const map = new Map<TreeNode<T>, TreeNode<T>[]>();
+  const queue: (TreeNode<T> | null)[] = [root];
+
+  while (queue.length) {
+    const node = queue.shift();
+    if (!node) continue;
+
+    const neighbours: TreeNode<T>[] = [];
+    if (node.left) {
+      neighbours.push(node.left);
+      queue.push(node.left);
     }
-    
-    return strs[0];
-}
-function longestCommonPrefixDivideConquer(strs: string[]): string {
-    if (strs.length === 0) return "";
-    
-    return divideAndConquer(strs, 0, strs.length - 1);
-    
-    function divideAndConquer(strs: string[], left: number, right: number): string {
-        if (left === right) {
-            return strs[left];
-        }
-        
-        const mid = Math.floor((left + right) / 2);
-        const leftPrefix = divideAndConquer(strs, left, mid);
-        const rightPrefix = divideAndConquer(strs, mid + 1, right);
-        
-        return commonPrefix(leftPrefix, rightPrefix);
+    if (node.right) {
+      neighbours.push(node.right);
+      queue.push(node.right);
     }
-    
-    function commonPrefix(left: string, right: string): string {
-        const minLength = Math.min(left.length, right.length);
-        for (let i = 0; i < minLength; i++) {
-            if (left[i] !== right[i]) {
-                return left.substring(0, i);
-            }
-        }
-        return left.substring(0, minLength);
-    }
-}
-function longestCommonPrefixFunctional(strs: string[]): string {
-    if (strs.length === 0) return "";
-    
-    const shortest = strs.reduce((a, b) => a.length <= b.length ? a : b);
-    
-    return shortest.split('')
-        .map((char, index) => ({ char, index }))
-        .takeWhile(({ char, index }) => 
-            strs.every(str => str[index] === char)
-        )
-        .map(({ char }) => char)
-        .join('');
+    map.set(node, neighbours);
+  }
+  return map;
 }
 
-// Add takeWhile polyfill for TypeScript
-declare global {
-    interface Array<T> {
-        takeWhile(predicate: (value: T, index: number, array: T[]) => boolean): T[];
-    }
-}
+// Build a small tree
+const tree = new TreeNode<number>(1,
+  new TreeNode<number>(2,
+    new TreeNode<number>(4),
+    new TreeNode<number>(5)
+  ),
+  new TreeNode<number>(3,
+    null,
+    new TreeNode<number>(6)
+  )
+);
 
-Array.prototype.takeWhile = function<T>(predicate: (value: T, index: number, array: T[]) => boolean): T[] {
-    const result: T[] = [];
-    for (let i = 0; i < this.length; i++) {
-        if (!predicate(this[i], i, this)) break;
-        result.push(this[i]);
-    }
-    return result;
-};
-function longestCommonPrefixReduce(strs: string[]): string {
-    return strs.reduce((prefix, current) => {
-        let i = 0;
-        while (i < prefix.length && i < current.length && prefix[i] === current[i]) {
-            i++;
-        }
-        return prefix.substring(0, i);
-    }, strs[0] || "");
-}
-function longestCommonPrefixSafe(strs: string[]): string {
-    // Input validation
-    if (!Array.isArray(strs)) {
-        throw new Error("Input must be an array of strings");
-    }
-    
-    if (strs.length === 0) {
-        return "";
-    }
-    
-    if (strs.some(str => typeof str !== 'string')) {
-        throw new Error("All elements must be strings");
-    }
-    
-    // Handle empty strings in array
-    if (strs.some(str => str.length === 0)) {
-        return "";
-    }
-    
-    let prefix = strs[0];
-    
-    for (let i = 1; i < strs.length; i++) {
-        while (strs[i].indexOf(prefix) !== 0) {
-            prefix = prefix.substring(0, prefix.length - 1);
-            if (prefix === "") return "";
-        }
-    }
-    
-    return prefix;
-}
-// Test cases
-const testCases = [
-    ["flower", "flow", "flight"],     // "fl"
-    ["dog", "racecar", "car"],        // ""
-    ["interspecies", "interstellar", "interstate"], // "inters"
-    ["prefix", "prefix", "prefix"],   // "prefix"
-    [""],                             // ""
-    []                                // ""
-];
+// Convert to adjacency list and run BFS
+const treeAdj = treeToAdjList(tree);
+const { order: levelOrder } = bfs(treeAdj, tree);
+console.log('Level‑order:', levelOrder.map(n => n.value));
+// → Level‑order: [ 1, 2, 3, 4, 5, 6 ]
+function bfsSimple<T>(g: AdjList<T>, s: T): T[] {
+  const visited = new Set<T>([s]);
+  const q: T[] = [s];
+  const out: T[] = [];
 
-testCases.forEach((test, i) => {
-    console.log(`Test ${i + 1}:`, longestCommonPrefix(test));
-});
+  while (q.length) {
+    const v = q.shift()!;
+    out.push(v);
+    for (const n of g.get(v) ?? []) if (!visited.has(n)) {
+      visited.add(n);
+      q.push(n);
+    }
+  }
+  return out;
+}
