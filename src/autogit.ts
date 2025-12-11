@@ -1,95 +1,211 @@
-/**
- * Count occurrences of a single character.
- *
- * @param source   The string to search.
- * @param char     The character to count (must be a single‑character string).
- * @returns        Number of times `char` appears in `source`.
- */
-export function countCharSplit(source: string, char: string): number {
-  if (char.length !== 1) {
-    throw new Error('`char` must be a single character');
-  }
-  // Splitting on the character creates N+1 pieces, where N is the count.
-  return source.split(char).length - 1;
+interface Edge {
+  from: number;   // source vertex id
+  to: number;     // destination vertex id
+  weight: number; // edge weight (can be negative)
 }
-/**
- * Count occurrences of a single character using a simple loop.
- *
- * This version works on raw UTF‑16 code units, which is what JavaScript strings are.
- * If you need true Unicode code‑point counting (e.g., for emojis that are
- * represented by surrogate pairs), see the “code‑point version” later.
- */
-export function countCharLoop(source: string, char: string): number {
-  if (char.length !== 1) {
-    throw new Error('`char` must be a single character');
-  }
-
-  let count = 0;
-  for (let i = 0; i < source.length; i++) {
-    if (source[i] === char) count++;
-  }
-  return count;
+// ------------------------------------------------------------
+// Types
+// ------------------------------------------------------------
+export interface Edge {
+  /** Source vertex index (0‑based) */
+  from: number;
+  /** Destination vertex index (0‑based) */
+  to: number;
+  /** Edge weight – can be negative */
+  weight: number;
 }
-export const countCharReduce = (source: string, char: string): number => {
-  if (char.length !== 1) {
-    throw new Error('`char` must be a single character');
-  }
 
-  return [...source].reduce((acc, cur) => (cur === char ? acc + 1 : acc), 0);
-};
+/** Result of Bellman‑Ford */
+export interface BFResult {
+  /** Shortest distance from source to each vertex (Infinity if unreachable) */
+  distance: number[];
+  /** Predecessor of each vertex on the shortest path (‑1 if none) */
+  predecessor: number[];
+  /** True if a negative‑weight cycle reachable from the source exists */
+  hasNegativeCycle: boolean;
+}
+
 /**
- * Count occurrences of a Unicode character (code point) in a string.
+ * Bellman‑Ford shortest‑path algorithm.
  *
- * @param source   The string to search.
- * @param char     The character to count – can be any length (emoji, etc.).
- * @returns        Number of times `char` appears.
+ * @param V          Number of vertices in the graph.
+ * @param edges      Array of all directed edges.
+ * @param source     Index of the source vertex (0‑based).
+ * @returns          An object containing distances, predecessors and a flag for negative cycles.
  */
-export function countUnicodeChar(source: string, char: string): number {
-  if (char.length === 0) {
-    throw new Error('`char` must not be empty');
-  }
+export function bellmanFord(
+  V: number,
+  edges: Edge[],
+  source: number = 0
+): BFResult {
+  // ------------------------------------------------------------
+  // 1️⃣ Initialise
+  // ------------------------------------------------------------
+  const distance = new Array<number>(V).fill(Infinity);
+  const predecessor = new Array<number>(V).fill(-1);
 
-  // Turn the source into an array of code points.
-  const sourcePoints = Array.from(source); // or [...source]
+  distance[source] = 0;
 
-  // For a multi‑code‑point search (e.g., "👩‍💻") we need a sliding window.
-  const targetPoints = Array.from(char);
-  const targetLen = targetPoints.length;
+  // ------------------------------------------------------------
+  // 2️⃣ Relax edges V‑1 times
+  // ------------------------------------------------------------
+  for (let i = 0; i < V - 1; i++) {
+    let anyChange = false;
 
-  let count = 0;
-  for (let i = 0; i <= sourcePoints.length - targetLen; i++) {
-    // Compare slices of the same length.
-    let match = true;
-    for (let j = 0; j < targetLen; j++) {
-      if (sourcePoints[i + j] !== targetPoints[j]) {
-        match = false;
-        break;
+    for (const { from, to, weight } of edges) {
+      if (distance[from] !== Infinity && distance[from] + weight < distance[to]) {
+        distance[to] = distance[from] + weight;
+        predecessor[to] = from;
+        anyChange = true;
       }
     }
-    if (match) count++;
+
+    // Early exit: if no edge relaxed in this pass, we are done.
+    if (!anyChange) break;
   }
-  return count;
-}
-export const countCharRegex = (source: string, char: string): number => {
-  if (char.length !== 1) {
-    throw new Error('`char` must be a single character');
+
+  // ------------------------------------------------------------
+  // 3️⃣ Detect negative‑weight cycles
+  // ------------------------------------------------------------
+  let hasNegativeCycle = false;
+  for (const { from, to, weight } of edges) {
+    if (distance[from] !== Infinity && distance[from] + weight < distance[to]) {
+      hasNegativeCycle = true;
+      // Optional: you could also mark vertices that belong to or are reachable
+      // from a negative cycle for later processing.
+      break;
+    }
   }
-  // Escape characters that have special meaning in regex (e.g., . * + ? ^ $ \)
-  const escaped = char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const matches = source.match(new RegExp(escaped, 'g'));
-  return matches ? matches.length : 0;
-};
-// utils/stringCount.ts
-export function countChar(source: string, char: string): number {
-  // Choose the implementation you prefer.
-  // Here we default to the fast loop version.
-  return countCharLoop(source, char);
+
+  return { distance, predecessor, hasNegativeCycle };
 }
 
-/* ---- implementations (exported for testing) ---- */
-export { countCharSplit, countCharLoop, countCharReduce, countUnicodeChar, countCharRegex };
-import { countChar } from './utils/stringCount';
+/**
+ * Reconstruct the shortest path from `source` to `target` using the predecessor array.
+ *
+ * @param predecessor  Array returned by `bellmanFord`.
+ * @param source       Source vertex index.
+ * @param target       Target vertex index.
+ * @returns            Array of vertex indices representing the path (empty if unreachable).
+ */
+export function reconstructPath(
+  predecessor: number[],
+  source: number,
+  target: number
+): number[] {
+  const path: number[] = [];
+  let cur = target;
 
-const text = 'abracadabra';
-console.log(countChar(text, 'a')); // 5
-const occurrences = (s: string, c: string) => s.split(c).length - 1;
+  while (cur !== -1) {
+    path.push(cur);
+    if (cur === source) break;
+    cur = predecessor[cur];
+  }
+
+  // If we stopped before reaching the source, there is no path.
+  if (path[path.length - 1] !== source) return [];
+
+  return path.reverse(); // from source → target
+}
+import { bellmanFord, reconstructPath, Edge } from "./bellmanFord";
+
+// ------------------------------------------------------------
+// Build a graph (example from CLRS, p. 673)
+// ------------------------------------------------------------
+const V = 5; // vertices 0 … 4
+const edges: Edge[] = [
+  { from: 0, to: 1, weight: 6 },
+  { from: 0, to: 2, weight: 7 },
+  { from: 1, to: 2, weight: 8 },
+  { from: 1, to: 3, weight: 5 },
+  { from: 1, to: 4, weight: -4 },
+  { from: 2, to: 3, weight: -3 },
+  { from: 2, to: 4, weight: 9 },
+  { from: 3, to: 1, weight: -2 },
+  { from: 4, to: 0, weight: 2 },
+  { from: 4, to: 3, weight: 7 },
+];
+
+const source = 0;
+const result = bellmanFord(V, edges, source);
+
+if (result.hasNegativeCycle) {
+  console.error("Graph contains a reachable negative‑weight cycle!");
+} else {
+  console.log("Shortest distances from source:", result.distance);
+  // Print a path to vertex 3 as an example
+  const path = reconstructPath(result.predecessor, source, 3);
+  console.log("Path 0 → 3 :", path.join(" → "));
+}
+Shortest distances from source: [ 0, 2, 7, 4, -2 ]
+Path 0 → 3 : 0 → 2 → 3
+function adjacencyListToEdgeArray(
+  adj: Map<number, { to: number; weight: number }[]>
+): Edge[] {
+  const edges: Edge[] = [];
+  for (const [from, list] of adj.entries()) {
+    for (const { to, weight } of list) {
+      edges.push({ from, to, weight });
+    }
+  }
+  return edges;
+}
+// bellmanFord.ts ---------------------------------------------------------
+
+export interface Edge {
+  from: number;
+  to: number;
+  weight: number;
+}
+
+export interface BFResult {
+  distance: number[];
+  predecessor: number[];
+  hasNegativeCycle: boolean;
+}
+
+/**
+ * Bellman‑Ford shortest‑path algorithm.
+ */
+export function bellmanFord(V: number, edges: Edge[], source = 0): BFResult {
+  const distance = new Array<number>(V).fill(Infinity);
+  const predecessor = new Array<number>(V).fill(-1);
+  distance[source] = 0;
+
+  for (let i = 0; i < V - 1; i++) {
+    let changed = false;
+    for (const { from, to, weight } of edges) {
+      if (distance[from] !== Infinity && distance[from] + weight < distance[to]) {
+        distance[to] = distance[from] + weight;
+        predecessor[to] = from;
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+
+  let hasNegativeCycle = false;
+  for (const { from, to, weight } of edges) {
+    if (distance[from] !== Infinity && distance[from] + weight < distance[to]) {
+      hasNegativeCycle = true;
+      break;
+    }
+  }
+
+  return { distance, predecessor, hasNegativeCycle };
+}
+
+/**
+ * Reconstruct a path from the predecessor array.
+ */
+export function reconstructPath(predecessor: number[], source: number, target: number): number[] {
+  const path: number[] = [];
+  let cur = target;
+  while (cur !== -1) {
+    path.push(cur);
+    if (cur === source) break;
+    cur = predecessor[cur];
+  }
+  if (path[path.length - 1] !== source) return []; // unreachable
+  return path.reverse();
+}
