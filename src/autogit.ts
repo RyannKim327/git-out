@@ -1,83 +1,69 @@
-type Edge = { from: number; to: number; weight: number };
+/**
+ * Boyer-Moore exact pattern search (bad-character + simplified good-suffix).
+ * Returns the index of the first occurrence of `pat` in `txt`, or -1 if not found.
+ */
+export function boyerMoore(txt: string, pat: string): number {
+  if (pat.length === 0) return 0;
+  if (pat.length > txt.length) return -1;
 
-function bellmanFord(
-  n: number,          // number of vertices (0 .. n-1)
-  edges: Edge[],      // list of directed edges
-  source: number        // source vertex
-): { dist: number[]; prev: (number|null)[]; hasNegCycle: boolean } {
-  const dist = Array<number>(n).fill(Infinity);
-  const prev = Array<(number|null)>(n).fill(null);
-  dist[source] = 0;
+  // 1. Bad-character table (Unicode-safe)
+  const bad: Map<string, number> = new Map();
+  for (let i = 0; i < pat.length - 1; ++i) {
+    bad.set(pat[i], pat.length - 1 - i);
+  }
 
-  // Relax edges up to n-1 times
-  for (let i = 0; i < n - 1; i++) {
-    let updated = false;
-    for (const e of edges) {
-      const { from: u, to: v, weight: w } = e;
-      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-        dist[v] = dist[u] + w;
-        prev[v] = u;
-        updated = true;
+  // 2. Good-suffix table (simplified: only the whole-suffix case)
+  const suffixLen = suffixLength(pat);
+  const goodShift = pat.length - suffixLen;
+
+  // 3. Search
+  let i = pat.length - 1; // alignment of end of pattern in text
+  while (i < txt.length) {
+    let j = pat.length - 1; // position in pattern
+    let k = i;            // position in text
+    while (j >= 0 && txt[k] === pat[j]) {
+      --j;
+      --k;
+    }
+    if (j < 0) return k + 1; // match found
+
+    const bcShift = bad.get(txt[i]) ?? pat.length;
+    const shift = Math.max(bcShift, goodShift);
+    i += shift;
+  }
+  return -1;
+}
+
+/**
+ * Returns the length of the longest suffix that is also a prefix.
+ * This gives a safe shift for the good-suffix heuristic.
+ */
+function suffixLength(pat: string): number {
+  const n = pat.length;
+  for (let len = n - 1; len > 0; --len) {
+    let match = true;
+    for (let i = 0; i < len; ++i) {
+      if (pat[i] !== pat[n - len + i]) {
+        match = false;
+        break;
       }
     }
-    if (!updated) break; // early exit
+    if (match) return len;
   }
-
-  // Check for negative-weight cycles reachable from source
-  let hasNegCycle = false;
-  for (const e of edges) {
-    const { from: u, to: v, weight: w } = e;
-    if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-      hasNegCycle = true;
-      break;
-    }
-  }
-
-  return { dist, prev, hasNegCycle };
+  return 0;
 }
-function reconstructPath(
-  source: number,
-  target: number,
-  prev: (number|null)[]
-): number[] | null {
-  const path: number[] = [];
-  let at: number | null = target;
-  const seen = new Set<number>();
 
-  while (at !== null) {
-    path.push(at);
-    if (at === source) break;
-    const p = prev[at];
-    if (p === null || seen.has(at)) {
-      // no path exists
-      return null;
-    }
-    seen.add(at);
-    at = p;
-  }
-
-  path.reverse();
-  if (path[0] !== source) return null;
-  return path;
+/* ------------------- Usage example ------------------- */
+if (import.meta.vitest) {
+  const { expect, it } = import.meta.vitest;
+  it('finds needle', () => {
+    expect(boyerMoore('aabaacaadaabaaba', 'aabaaba')).toBe(9);
+    expect(boyerMoore('abczabcyabcxabcw', 'abcw')).toBe(12);
+    expect(boyerMoore('aaaaaaa', 'aaa')).toBe(0);
+    expect(boyerMoore('xyz', 'abc')).toBe(-1);
+  });
 }
-const edges: Edge[] = [
-  { from: 0, to: 1, weight: 5 },
-  { from: 0, to: 2, weight: 4 },
-  { from: 1, to: 2, weight: -6 },
-  { from: 1, to: 3, weight: 2 },
-  { from: 2, to: 3, weight: 3 },
-];
+import { boyerMoore } from './boyerMoore';
 
-const n = 4;
-const source = 0;
-
-const result = bellmanFord(n, edges, source);
-
-console.log('Distances from source:', result.dist);
-console.log('Has negative cycle reachable from source?', result.hasNegCycle);
-
-if (!result.hasNegCycle) {
-  const target = 3;
-  const path = reconstructPath(source, target, result.prev);
-  console.log(`Path from ${source} to ${target}:`, path ?? 'no path');
-}
+const idx = boyerMoore('the quick brown fox', 'brown');
+console.log(idx); // 10
