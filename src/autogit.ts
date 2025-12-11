@@ -1,75 +1,83 @@
-function isPalindrome(s: string): boolean {
-    // Convert to lowercase and remove non-alphanumeric characters
-    const cleanStr = s.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
-    let left = 0;
-    let right = cleanStr.length - 1;
-    
-    while (left < right) {
-        if (cleanStr[left] !== cleanStr[right]) {
-            return false;
-        }
-        left++;
-        right--;
+// Tarjan's algorithm: find SCCs in a directed graph
+// Graph is a Map<V, V[]> adjacency list.
+// Returns an array of SCCs, each SCC is an array of vertices.
+
+export function tarjanSCC<V>(graph: Map<V, V[]>): V[][] {
+  const indexMap = new Map<V, number>();  // index of each node when first discovered
+  const lowlink = new Map<V, number>();   // smallest index reachable from the node
+  const onStack = new Map<V, boolean>();  // is the node on the stack?
+  const stack: V[] = [];                   // stack of nodes
+  const sccs: V[][] = [];                   // result: list of SCCs
+  let index = 0;
+
+  const neighbors = (v: V) => graph.get(v) ?? [];
+
+  function strongconnect(v: V) {
+    indexMap.set(v, index);
+    lowlink.set(v, index);
+    index++;
+    stack.push(v);
+    onStack.set(v, true);
+
+    for (const w of neighbors(v)) {
+      if (!indexMap.has(w)) {
+        // Successor not yet visited
+        strongconnect(w);
+        // Update lowlink after returning
+        lowlink.set(v, Math.min(lowlink.get(v)!, lowlink.get(w)!));
+      } else if (onStack.get(w)) {
+        // Successor already on stack: update lowlink
+        lowlink.set(v, Math.min(lowlink.get(v)!, indexMap.get(w)!));
+      }
     }
-    
-    return true;
-}
-function isPalindromeReverse(s: string): boolean {
-    const cleanStr = s.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const reversed = cleanStr.split('').reverse().join('');
-    return cleanStr === reversed;
-}
-function isPalindromeRecursive(s: string): boolean {
-    const cleanStr = s.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
-    function checkPalindrome(str: string, start: number, end: number): boolean {
-        if (start >= end) return true;
-        if (str[start] !== str[end]) return false;
-        return checkPalindrome(str, start + 1, end - 1);
+
+    // If v is a root node, pop the stack to form an SCC
+    if (lowlink.get(v) === indexMap.get(v)) {
+      const scc: V[] = [];
+      let w: V;
+      do {
+        w = stack.pop()!;
+        onStack.set(w, false);
+        scc.push(w);
+      } while (w !== v);
+      sccs.push(scc);
     }
-    
-    return checkPalindrome(cleanStr, 0, cleanStr.length - 1);
+  }
+
+  // Include nodes that might only appear as neighbors (not as keys)
+  const allNodes = new Set<V>();
+  for (const [v, nbrs] of graph) {
+    allNodes.add(v);
+    for (const w of nbrs) allNodes.add(w);
+  }
+
+  for (const v of allNodes) {
+    if (!indexMap.has(v)) strongconnect(v);
+  }
+
+  return sccs;
 }
-function isPalindromeCaseSensitive(s: string): boolean {
-    const cleanStr = s.replace(/[^a-zA-Z0-9]/g, '');
-    let left = 0;
-    let right = cleanStr.length - 1;
-    
-    while (left < right) {
-        if (cleanStr[left] !== cleanStr[right]) {
-            return false;
-        }
-        left++;
-        right--;
-    }
-    
-    return true;
-}
-function isPalindromeSafe(s: unknown): boolean {
-    if (typeof s !== 'string') return false;
-    
-    const cleanStr = s.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
-    // Handle empty string and single character cases
-    if (cleanStr.length <= 1) return true;
-    
-    let left = 0;
-    let right = cleanStr.length - 1;
-    
-    while (left < right) {
-        if (cleanStr[left] !== cleanStr[right]) {
-            return false;
-        }
-        left++;
-        right--;
-    }
-    
-    return true;
-}
-// Test cases
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("race a car")); // false
-console.log(isPalindrome(" ")); // true
-console.log(isPalindrome("Able was I ere I saw Elba")); // true
-console.log(isPalindrome("hello")); // false
+type Node = string;
+
+// Build a graph:
+// A -> B
+// B -> C, D
+// C -> A
+// D -> E
+// E -> F
+// F -> D, G
+// G -> F
+const g = new Map<Node, Node[]>([
+  ["A", ["B"]],
+  ["B", ["C", "D"]],
+  ["C", ["A"]],
+  ["D", ["E"]],
+  ["E", ["F"]],
+  ["F", ["D", "G"]],
+  ["G", ["F"]],
+]);
+
+const components = tarjanSCC(g);
+console.log(components);
+// Example output (order of components and nodes within components may vary):
+// [ [ 'A', 'C', 'B' ], [ 'D', 'G', 'F', 'E' ] ]
