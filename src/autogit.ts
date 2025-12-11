@@ -1,64 +1,59 @@
-/**
- * Returns the starting index of the first occurrence of `pattern` in `text`,
- * or -1 if the pattern is not found.
- */
-export function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;                // empty pattern is always at start
-  if (pattern.length > text.length) return -1;     // impossible to match
-
-  const lps = buildLps(pattern);
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) return i - j; // full match
-    } else {
-      if (j > 0) {
-        j = lps[j - 1]; // fallback in pattern
-      } else {
-        i++;          // no match at text[i]
-      }
-    }
-  }
-  return -1;
+function countWordOccurrences(text: string, targetWord: string): number {
+    const words = text.split(/\s+/); // Split by whitespace
+    return words.filter(word => word.toLowerCase() === targetWord.toLowerCase()).length;
 }
 
-/**
- * Builds the LPS array for the pattern.
- * lps[i] = length of the longest proper prefix of pattern[0..i]
- *          which is also a suffix of that substring.
- */
-function buildLps(pattern: string): number[] {
-  const lps = new Array<number>(pattern.length).fill(0);
-  let len = 0; // length of the previous longest prefix suffix
-  let i = 1;
-
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      if (len > 0) {
-        len = lps[len - 1]; // fallback
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
+// Usage
+const text = "Hello world hello TypeScript hello";
+const count = countWordOccurrences(text, "hello");
+console.log(count); // Output: 3
+function countWordOccurrencesRegex(text: string, targetWord: string): number {
+    const regex = new RegExp(`\\b${targetWord}\\b`, 'gi');
+    const matches = text.match(regex);
+    return matches ? matches.length : 0;
 }
 
-/* ---------- Usage example ---------- */
-if (import.meta.vitest) {
-  const { test, expect } = import.meta.vitest;
-  test('kmpSearch', () => {
-    expect(kmpSearch('ababcabcab', 'abc')).toBe(2);
-    expect(kmpSearch('aaaaa', 'bba')).toBe(-1);
-    expect(kmpSearch('hello', '')).toBe(0);
-  });
+// Usage
+const text = "Hello world hello TypeScript hello";
+const count = countWordOccurrencesRegex(text, "hello");
+console.log(count); // Output: 3
+function countWordOccurrencesRobust(text: string, targetWord: string): number {
+    // Remove punctuation and split into words
+    const cleanText = text.replace(/[^\w\s]/g, '');
+    const words = cleanText.toLowerCase().split(/\s+/);
+    const normalizedTarget = targetWord.toLowerCase();
+    
+    return words.filter(word => word === normalizedTarget).length;
 }
+
+// Usage
+const text = "Hello, world! Hello TypeScript. Hello?";
+const count = countWordOccurrencesRobust(text, "hello");
+console.log(count); // Output: 3
+function countAllWords(text: string): Record<string, number> {
+    const cleanText = text.replace(/[^\w\s]/g, '').toLowerCase();
+    const words = cleanText.split(/\s+/).filter(word => word.length > 0);
+    
+    const frequencyMap: Record<string, number> = {};
+    
+    words.forEach(word => {
+        frequencyMap[word] = (frequencyMap[word] || 0) + 1;
+    });
+    
+    return frequencyMap;
+}
+
+// Usage
+const text = "Hello world hello TypeScript hello";
+const frequencyMap = countAllWords(text);
+console.log(frequencyMap.hello); // Output: 3
+console.log(frequencyMap.world); // Output: 1
+function countWordOccurrencesCaseSensitive(text: string, targetWord: string): number {
+    const words = text.split(/\s+/);
+    return words.filter(word => word === targetWord).length;
+}
+
+// Usage
+const text = "Hello world hello TypeScript Hello";
+const count = countWordOccurrencesCaseSensitive(text, "Hello");
+console.log(count); // Output: 2
