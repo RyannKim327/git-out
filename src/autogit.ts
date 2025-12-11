@@ -1,103 +1,194 @@
-|left| = |right|   (or |left| = |right| + 1 when total length is odd)
-max(left) ≤ min(right)
-A[0 … i‑1]  +  B[0 … j‑1]
-A[i … m‑1]  +  B[j … n‑1]
-i + j = (m + n + 1) / 2          // integer division, works for odd/even
-A[i‑1] ≤ B[j]   &&   B[j‑1] ≤ A[i]
-/**
- * Returns the median of two sorted numeric arrays.
- * Runs in O(log(min(m, n))) time and O(1) extra space.
- *
- * @param nums1 - first sorted array (any length, can be empty)
- * @param nums2 - second sorted array (any length, can be empty)
- * @throws Error if both arrays are empty
- */
-export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Ensure nums1 is the shorter array (helps keep the binary search range small)
-  if (nums1.length > nums2.length) {
-    return findMedianSortedArrays(nums2, nums1);
-  }
-
-  const m = nums1.length;
-  const n = nums2.length;
-
-  if (m === 0 && n === 0) {
-    throw new Error('Both input arrays are empty');
-  }
-
-  let low = 0;
-  let high = m; // we can cut after any element of nums1, including before the first (0) and after the last (m)
-
-  const halfLen = Math.floor((m + n + 1) / 2); // number of elements that must be on the left side
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2); // partition of nums1
-    const j = halfLen - i;                  // partition of nums2 (derived from i)
-
-    // Edge values: use -Infinity / +Infinity when the partition touches an array border
-    const Aleft  = i === 0 ? -Infinity : nums1[i - 1];
-    const Aright = i === m ?  Infinity : nums1[i];
-    const Bleft  = j === 0 ? -Infinity : nums2[j - 1];
-    const Bright = j === n ?  Infinity : nums2[j];
-
-    // Check if we have found the correct partition
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // Correct partition
-      if ((m + n) % 2 === 1) {
-        // Odd total length → median is the max of left side
-        return Math.max(Aleft, Bleft);
-      } else {
-        // Even total length → median is average of max left and min right
-        return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
-      }
-    } else if (Aleft > Bright) {
-      // A's left part is too big → move partition i left
-      high = i - 1;
-    } else {
-      // B's left part is too big → move partition i right
-      low = i + 1;
+class BoyerMoore {
+    /**
+     * Preprocess the pattern to create bad character table
+     * The table contains the last occurrence of each character in the pattern
+     */
+    private static preprocessBadCharacter(pattern: string): Map<string, number> {
+        const badCharTable = new Map<string, number>();
+        
+        for (let i = 0; i < pattern.length; i++) {
+            badCharTable.set(pattern[i], i);
+        }
+        
+        return badCharTable;
     }
-  }
 
-  // If we exit the loop something went wrong (should never happen with valid input)
-  throw new Error('Unable to find median – check that input arrays are sorted');
-}
-function test(nums1: number[], nums2: number[], expected: number) {
-  const result = findMedianSortedArrays(nums1, nums2);
-  const ok = Math.abs(result - expected) < 1e-9;
-  console.log(
-    `nums1=${JSON.stringify(nums1)}  nums2=${JSON.stringify(nums2)} → ${result} ` +
-    (ok ? '✅' : `❌ (expected ${expected})`)
-  );
-}
-
-// Basic cases
-test([1, 3], [2], 2);                     // odd total length
-test([1, 2], [3, 4], 2.5);                // even total length
-test([], [5], 5);                         // one empty array
-test([2], [], 2);                         // the other empty array
-test([1, 3, 8, 9, 15], [7, 11, 18, 19, 21, 25], 11); // larger arrays
-
-// Edge cases
-test([1], [1], 1);
-test([1, 2, 3, 4, 5, 6], [7, 8, 9, 10, 11, 12], 6.5);
-test([1, 2, 3], [4, 5, 6, 7, 8, 9], 5);
-export function findMedianSortedArraysLinear(nums1: number[], nums2: number[]): number {
-  const total = nums1.length + nums2.length;
-  const mid = Math.floor(total / 2);
-  let i = 0, j = 0, count = 0;
-  let left = 0, right = 0; // keep the two middle values
-
-  while (count <= mid) {
-    left = right;
-    if (i < nums1.length && (j >= nums2.length || nums1[i] <= nums2[j])) {
-      right = nums1[i++];
-    } else {
-      right = nums2[j++];
+    /**
+     * Preprocess the pattern to create good suffix table
+     * This helps determine how far we can shift when a suffix matches
+     */
+    private static preprocessGoodSuffix(pattern: string): number[] {
+        const m = pattern.length;
+        const goodSuffixTable = new Array(m).fill(0);
+        const suffix = new Array(m).fill(0);
+        
+        // Case 1: Suffix exists elsewhere in pattern
+        suffix[m - 1] = m;
+        let g = m - 1;
+        let f = 0;
+        
+        for (let i = m - 2; i >= 0; i--) {
+            if (i > g && suffix[i + m - 1 - f] < i - g) {
+                suffix[i] = suffix[i + m - 1 - f];
+            } else {
+                g = Math.min(g, i);
+                f = i;
+                
+                while (g >= 0 && pattern[g] === pattern[g + m - 1 - f]) {
+                    g--;
+                }
+                
+                suffix[i] = f - g;
+            }
+        }
+        
+        for (let i = 0; i < m; i++) {
+            goodSuffixTable[i] = m;
+        }
+        
+        let j = 0;
+        for (let i = m - 1; i >= 0; i--) {
+            if (suffix[i] === i + 1) {
+                for (; j < m - 1 - i; j++) {
+                    if (goodSuffixTable[j] === m) {
+                        goodSuffixTable[j] = m - 1 - i;
+                    }
+                }
+            }
+        }
+        
+        for (let i = 0; i <= m - 2; i++) {
+            goodSuffixTable[m - 1 - suffix[i]] = m - 1 - i;
+        }
+        
+        return goodSuffixTable;
     }
-    count++;
-  }
 
-  return total % 2 === 0 ? (left + right) / 2 : right;
+    /**
+     * Find all occurrences of pattern in text using Boyer-Moore algorithm
+     */
+    public static search(text: string, pattern: string): number[] {
+        const n = text.length;
+        const m = pattern.length;
+        const results: number[] = [];
+        
+        if (m === 0) return results;
+        if (n < m) return results;
+        
+        const badCharTable = this.preprocessBadCharacter(pattern);
+        const goodSuffixTable = this.preprocessGoodSuffix(pattern);
+        
+        let s = 0; // shift of pattern with respect to text
+        
+        while (s <= n - m) {
+            let j = m - 1;
+            
+            // Compare pattern from right to left
+            while (j >= 0 && pattern[j] === text[s + j]) {
+                j--;
+            }
+            
+            if (j < 0) {
+                // Pattern found
+                results.push(s);
+                
+                // Shift pattern by good suffix rule
+                s += (s + m < n) ? goodSuffixTable[0] : 1;
+            } else {
+                // Use the maximum shift from bad character and good suffix rules
+                const badCharShift = j - (badCharTable.get(text[s + j]) || -1);
+                const goodSuffixShift = goodSuffixTable[j];
+                
+                s += Math.max(1, Math.max(badCharShift, goodSuffixShift));
+            }
+        }
+        
+        return results;
+    }
+
+    /**
+     * Simplified version using only bad character rule
+     * More efficient for most practical cases
+     */
+    public static searchSimple(text: string, pattern: string): number[] {
+        const n = text.length;
+        const m = pattern.length;
+        const results: number[] = [];
+        
+        if (m === 0) return results;
+        if (n < m) return results;
+        
+        const badCharTable = this.preprocessBadCharacter(pattern);
+        
+        let s = 0;
+        
+        while (s <= n - m) {
+            let j = m - 1;
+            
+            while (j >= 0 && pattern[j] === text[s + j]) {
+                j--;
+            }
+            
+            if (j < 0) {
+                results.push(s);
+                s += 1; // Move to next position
+            } else {
+                const badCharShift = Math.max(1, j - (badCharTable.get(text[s + j]) || -1));
+                s += badCharShift;
+            }
+        }
+        
+        return results;
+    }
 }
-const median = findMedianSortedArrays([1, 3, 8], [7, 9, 10, 11]); // → 8
+
+// Example usage and test cases
+function testBoyerMoore() {
+    const testCases = [
+        { text: "ABAAABCD", pattern: "ABC", expected: [4] },
+        { text: "hello world", pattern: "world", expected: [6] },
+        { text: "abababab", pattern: "aba", expected: [0, 2, 4] },
+        { text: "mississippi", pattern: "issi", expected: [1, 4] },
+        { text: "abc", pattern: "d", expected: [] },
+        { text: "", pattern: "abc", expected: [] },
+        { text: "abc", pattern: "", expected: [] },
+    ];
+
+    console.log("Testing Boyer-Moore Algorithm:");
+    console.log("==============================");
+
+    for (const testCase of testCases) {
+        const result = BoyerMoore.search(testCase.text, testCase.pattern);
+        const simpleResult = BoyerMoore.searchSimple(testCase.text, testCase.pattern);
+        
+        console.log(`Text: "${testCase.text}"`);
+        console.log(`Pattern: "${testCase.pattern}"`);
+        console.log(`Full algorithm result: [${result.join(', ')}]`);
+        console.log(`Simple algorithm result: [${simpleResult.join(', ')}]`);
+        console.log(`Expected: [${testCase.expected.join(', ')}]`);
+        console.log(`Full algorithm ${arraysEqual(result, testCase.expected) ? '✓' : '✗'}`);
+        console.log(`Simple algorithm ${arraysEqual(simpleResult, testCase.expected) ? '✓' : '✗'}`);
+        console.log("---");
+    }
+}
+
+function arraysEqual(a: number[], b: number[]): boolean {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+    }
+    return true;
+}
+
+// Run tests
+testBoyerMoore();
+
+// Export for use in other modules
+export { BoyerMoore };
+// Find all occurrences
+const positions = BoyerMoore.search("hello world hello", "hello");
+console.log(positions); // [0, 12]
+
+// Or use the simple version
+const simplePositions = BoyerMoore.searchSimple("hello world hello", "hello");
+console.log(simplePositions); // [0, 12]
