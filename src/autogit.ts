@@ -1,203 +1,160 @@
 /**
- * Generic QuickSort that returns a new sorted array.
+ * Normalises a string for anagram comparison:
+ *   - converts to lower‑case,
+ *   - removes characters that you don’t want to consider (by default everything
+ *     that isn’t a letter is stripped).
  *
- * @param arr        The array to sort.
- * @param compareFn  Optional comparator (a, b) => number.
- *                   Should return <0 if a < b, 0 if equal, >0 if a > b.
- * @returns          A new array containing the sorted elements.
+ * You can pass a custom RegExp to keep other characters (e.g. digits).
  */
-export function quickSort<T>(
-  arr: readonly T[],
-  compareFn: (a: T, b: T) => number = defaultCompare
-): T[] {
-  // Base case: arrays of length 0 or 1 are already sorted.
-  if (arr.length <= 1) {
-    return Array.from(arr);
+function normalise(
+  str: string,
+  keepPattern: RegExp = /[a-z]/g   // keep only letters a‑z after lower‑casing
+): string {
+  // Lower‑case first, then extract the characters we care about.
+  // Using match() returns an array of the kept characters (or null).
+  const matches = str.toLowerCase().match(keepPattern);
+  return matches ? matches.join('') : '';
+}
+/**
+ * Returns true if `a` and `b` are anagrams of each other.
+ * Uses the classic “sort the characters and compare” technique.
+ */
+export function areAnagramsSort(a: string, b: string): boolean {
+  const normA = normalise(a);
+  const normB = normalise(b);
+
+  // Quick length check – if the normalised strings differ in length they can’t be anagrams.
+  if (normA.length !== normB.length) return false;
+
+  // Split → sort → join gives a canonical representation.
+  const sortedA = normA.split('').sort().join('');
+  const sortedB = normB.split('').sort().join('');
+
+  return sortedA === sortedB;
+}
+/**
+ * Returns true if `a` and `b` are anagrams of each other.
+ * Uses a character‑frequency map for O(n) time.
+ */
+export function areAnagramsFreq(a: string, b: string): boolean {
+  const normA = normalise(a);
+  const normB = normalise(b);
+
+  if (normA.length !== normB.length) return false;
+
+  // Build a frequency map for the first string.
+  const freq = new Map<string, number>();
+
+  for (const ch of normA) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  // Choose a pivot – here we pick the middle element for simplicity.
-  const pivotIndex = Math.floor(arr.length / 2);
-  const pivot = arr[pivotIndex];
-
-  // Partition the rest of the array.
-  const left: T[] = [];
-  const right: T[] = [];
-
-  for (let i = 0; i < arr.length; i++) {
-    if (i === pivotIndex) continue; // skip the pivot itself
-
-    const cmp = compareFn(arr[i], pivot);
-    if (cmp <= 0) {
-      left.push(arr[i]);
+  // Decrease the count while scanning the second string.
+  for (const ch of normB) {
+    const count = freq.get(ch);
+    if (count === undefined) {
+      // Character not present in the first string.
+      return false;
+    }
+    if (count === 1) {
+      freq.delete(ch); // optional – keeps the map small
     } else {
-      right.push(arr[i]);
+      freq.set(ch, count - 1);
     }
   }
 
-  // Recursively sort sub‑arrays and concatenate.
-  return [...quickSort(left, compareFn), pivot, ...quickSort(right, compareFn)];
+  // If the map is empty, every character matched perfectly.
+  return freq.size === 0;
 }
+// demo.ts
+import { areAnagramsSort, areAnagramsFreq } from "./anagram";
 
-/**
- * Default comparator that works for numbers and strings.
- */
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-// Numbers
-const nums = [9, -3, 5, 2, 6, 8, -6, 1, 3];
-const sortedNums = quickSort(nums);
-console.log(sortedNums); // [-6, -3, 1, 2, 3, 5, 6, 8, 9]
-
-// Strings
-const words = ['pear', 'apple', 'orange', 'banana'];
-const sortedWords = quickSort(words);
-console.log(sortedWords); // ['apple', 'banana', 'orange', 'pear']
-
-// Custom objects – supply a comparator
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: 'Alice', age: 32 },
-  { name: 'Bob', age: 24 },
-  { name: 'Carol', age: 29 },
+const pairs: [string, string][] = [
+  ["listen", "silent"],
+  ["Triangle", "Integral"],
+  ["Apple", "Pabble"],          // false
+  ["Dormitory", "Dirty room!"], // true (ignores spaces & punctuation)
+  ["12345", "54321"],           // true if you keep digits
+  ["aabbcc", "abcabc"],         // true
 ];
 
-const sortedByAge = quickSort(people, (a, b) => a.age - b.age);
-console.log(sortedByAge);
-// [{name:'Bob',age:24}, {name:'Carol',age:29}, {name:'Alice',age:32}]
+for (const [s1, s2] of pairs) {
+  console.log(`"${s1}" ↔ "${s2}"`);
+  console.log("  sort  :", areAnagramsSort(s1, s2));
+  console.log("  freq  :", areAnagramsFreq(s1, s2));
+  console.log("---");
+}
+$ ts-node demo.ts
+"listen" ↔ "silent"
+  sort  : true
+  freq  : true
+---
+"Triangle" ↔ "Integral"
+  sort  : true
+  freq  : true
+---
+"Apple" ↔ "Pabble"
+  sort  : false
+  freq  : false
+---
+"Dormitory" ↔ "Dirty room!"
+  sort  : true
+  freq  : true
+---
+"12345" ↔ "54321"
+  sort  : true
+  freq  : true
+---
+"aabbcc" ↔ "abcabc"
+  sort  : true
+  freq  : true
+---
+// anagram.ts
 /**
- * In‑place QuickSort.
- *
- * @param arr        The array to sort (will be mutated).
- * @param compareFn  Optional comparator.
- * @param low        Starting index (default 0).
- * @param high       Ending index (default arr.length - 1).
+ * Normalises a string for anagram comparison.
+ * By default it keeps only the letters a‑z (case‑insensitive).
  */
-export function quickSortInPlace<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number = defaultCompare,
-  low: number = 0,
-  high: number = arr.length - 1
-): void {
-  if (low < high) {
-    const pivotIdx = partition(arr, compareFn, low, high);
-    quickSortInPlace(arr, compareFn, low, pivotIdx - 1);
-    quickSortInPlace(arr, compareFn, pivotIdx + 1, high);
-  }
+export function normalise(
+  str: string,
+  keepPattern: RegExp = /[a-z]/g
+): string {
+  const matches = str.toLowerCase().match(keepPattern);
+  return matches ? matches.join('') : '';
 }
 
 /**
- * Partition routine – moves elements < pivot to the left,
- * > pivot to the right, and returns the final pivot index.
+ * Sort‑and‑compare version – O(n log n) time.
  */
-function partition<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number,
-  low: number,
-  high: number
-): number {
-  // Choose the last element as pivot (simple, but you can randomize)
-  const pivot = arr[high];
-  let i = low - 1; // index of smaller element
+export function areAnagramsSort(a: string, b: string): boolean {
+  const normA = normalise(a);
+  const normB = normalise(b);
+  if (normA.length !== normB.length) return false;
+  return normA.split('').sort().join('') === normB.split('').sort().join('');
+}
 
-  for (let j = low; j < high; j++) {
-    if (compareFn(arr[j], pivot) <= 0) {
-      i++;
-      [arr[i], arr[j]] = [arr[j], arr[i]]; // swap
-    }
+/**
+ * Frequency‑map version – O(n) time, O(1) extra space for ASCII.
+ */
+export function areAnagramsFreq(a: string, b: string): boolean {
+  const normA = normalise(a);
+  const normB = normalise(b);
+  if (normA.length !== normB.length) return false;
+
+  const freq = new Map<string, number>();
+  for (const ch of normA) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  // Place pivot after the last smaller element
-  [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
-  return i + 1;
-}
-const numbers = [33, 10, 55, 71, 29, 3];
-quickSortInPlace(numbers);
-console.log(numbers); // [3, 10, 29, 33, 55, 71]
-
-// With a custom comparator (e.g., descending order)
-quickSortInPlace(numbers, (a, b) => b - a);
-console.log(numbers); // [71, 55, 33, 29, 10, 3]
-function randomPivotPartition<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number,
-  low: number,
-  high: number
-): number {
-  const randIdx = low + Math.floor(Math.random() * (high - low + 1));
-  [arr[randIdx], arr[high]] = [arr[high], arr[randIdx]]; // swap with last
-  return partition(arr, compareFn, low, high);
-}
-
-// Then call quickSortInPlace using randomPivotPartition instead of partition.
-// quicksort.ts --------------------------------------------------------------
-
-export function quickSort<T>(
-  arr: readonly T[],
-  compareFn: (a: T, b: T) => number = defaultCompare
-): T[] {
-  if (arr.length <= 1) return Array.from(arr);
-
-  const pivotIdx = Math.floor(arr.length / 2);
-  const pivot = arr[pivotIdx];
-  const left: T[] = [];
-  const right: T[] = [];
-
-  for (let i = 0; i < arr.length; i++) {
-    if (i === pivotIdx) continue;
-    const cmp = compareFn(arr[i], pivot);
-    if (cmp <= 0) left.push(arr[i]);
-    else right.push(arr[i]);
+  for (const ch of normB) {
+    const count = freq.get(ch);
+    if (count === undefined) return false;
+    if (count === 1) freq.delete(ch);
+    else freq.set(ch, count - 1);
   }
 
-  return [...quickSort(left, compareFn), pivot, ...quickSort(right, compareFn)];
+  return freq.size === 0;
 }
+import { areAnagramsSort, areAnagramsFreq } from "./anagram";
 
-export function quickSortInPlace<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number = defaultCompare,
-  low: number = 0,
-  high: number = arr.length - 1
-): void {
-  if (low < high) {
-    const pi = partition(arr, compareFn, low, high);
-    quickSortInPlace(arr, compareFn, low, pi - 1);
-    quickSortInPlace(arr, compareFn, pi + 1, high);
-  }
-}
-
-/* ---------- helpers ---------- */
-
-function partition<T>(arr: T[], compareFn: (a: T, b: T) => number, low: number, high: number): number {
-  const pivot = arr[high];
-  let i = low - 1;
-  for (let j = low; j < high; j++) {
-    if (compareFn(arr[j], pivot) <= 0) {
-      i++;
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-  }
-  [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
-  return i + 1;
-}
-
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-
-// ---------------------------------------------------------------------------
-
-// demo.ts (or just paste into a REPL)
-
-import { quickSort, quickSortInPlace } from './quicksort';
-
-const nums = [5, 2, 9, 1, 5, 6];
-console.log('functional:', quickSort(nums)); // [1,2,5,5,6,9]
-
-const mutable = [...nums];
-quickSortInPlace(mutable);
-console.log('in‑place:', mutable); // [1,2,5,5,6,9]
+console.log(areAnagramsSort("Listen", "Silent")); // true
+console.log(areAnagramsFreq("Dormitory", "Dirty room!")); // true
