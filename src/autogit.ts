@@ -1,67 +1,87 @@
-const numbers: number[] = [1, 5, 3, 9, 2, 8];
+class TreeNode<T> {
+    value: T;
+    left: TreeNode<T> | null;
+    right: TreeNode<T> | null;
 
-// Find maximum value
-const max: number = Math.max(...numbers);
-console.log(max); // Output: 9
-const numbers: number[] = [1, 5, 3, 9, 2, 8];
-
-// Find maximum value
-const max: number = Math.max.apply(null, numbers);
-console.log(max); // Output: 9
-const numbers: number[] = [1, 5, 3, 9, 2, 8];
-
-// Find maximum value
-const max: number = numbers.reduce((a, b) => Math.max(a, b));
-console.log(max); // Output: 9
-
-// Or more explicitly:
-const max2: number = numbers.reduce((max, current) => {
-    return current > max ? current : max;
-}, -Infinity);
-console.log(max2); // Output: 9
-const numbers: number[] = [1, 5, 3, 9, 2, 8];
-
-function findMax(arr: number[]): number {
-    let max = -Infinity;
-    for (let i = 0; i < arr.length; i++) {
-        if (arr[i] > max) {
-            max = arr[i];
-        }
+    constructor(value: T) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
     }
-    return max;
+}
+function sumBinaryTreeRecursive(node: TreeNode<number> | null): number {
+    if (node === null) {
+        return 0;
+    }
+    
+    return node.value + 
+           sumBinaryTreeRecursive(node.left) + 
+           sumBinaryTreeRecursive(node.right);
+}
+function sumBinaryTreeIterativeDFS(root: TreeNode<number> | null): number {
+    if (root === null) return 0;
+    
+    let sum = 0;
+    const stack: TreeNode<number>[] = [root];
+    
+    while (stack.length > 0) {
+        const node = stack.pop()!;
+        sum += node.value;
+        
+        if (node.right) stack.push(node.right);
+        if (node.left) stack.push(node.left);
+    }
+    
+    return sum;
+}
+function sumBinaryTreeIterativeBFS(root: TreeNode<number> | null): number {
+    if (root === null) return 0;
+    
+    let sum = 0;
+    const queue: TreeNode<number>[] = [root];
+    
+    while (queue.length > 0) {
+        const node = queue.shift()!;
+        sum += node.value;
+        
+        if (node.left) queue.push(node.left);
+        if (node.right) queue.push(node.right);
+    }
+    
+    return sum;
+}
+class TreeNode<T> {
+    value: T;
+    left: TreeNode<T> | null;
+    right: TreeNode<T> | null;
+
+    constructor(value: T) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+    }
 }
 
-const max: number = findMax(numbers);
-console.log(max); // Output: 9
-function safeMax(arr: number[]): number | null {
-    if (arr.length === 0) return null;
-    return Math.max(...arr);
+// All the sum functions from above...
+
+// Create a sample binary tree
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4);
+root.left.right = new TreeNode(5);
+root.right.left = new TreeNode(6);
+
+// Test all methods
+console.log("Recursive sum:", sumBinaryTreeRecursive(root)); // 21
+console.log("DFS Iterative sum:", sumBinaryTreeIterativeDFS(root)); // 21
+console.log("BFS Iterative sum:", sumBinaryTreeIterativeBFS(root)); // 21
+function sumBinaryTreeGeneric<T extends number>(node: TreeNode<T> | null): number {
+    if (node === null) {
+        return 0;
+    }
+    
+    return Number(node.value) + 
+           sumBinaryTreeGeneric(node.left) + 
+           sumBinaryTreeGeneric(node.right);
 }
-
-const emptyArray: number[] = [];
-const numbers: number[] = [1, 5, 3, 9, 2, 8];
-
-console.log(safeMax(emptyArray)); // Output: null
-console.log(safeMax(numbers));    // Output: 9
-interface Product {
-    id: number;
-    price: number;
-    name: string;
-}
-
-const products: Product[] = [
-    { id: 1, price: 10, name: "Item A" },
-    { id: 2, price: 25, name: "Item B" },
-    { id: 3, price: 15, name: "Item C" }
-];
-
-// Find maximum price
-const maxPrice: number = Math.max(...products.map(p => p.price));
-console.log(maxPrice); // Output: 25
-
-// Or find the object with maximum price
-const productWithMaxPrice: Product = products.reduce((max, product) => 
-    product.price > max.price ? product : max
-);
-console.log(productWithMaxPrice); // Output: { id: 2, price: 25, name: "Item B" }
-const max = Math.max(...yourArray);
