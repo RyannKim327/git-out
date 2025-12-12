@@ -1,68 +1,272 @@
-const numbers: number[] = [3, 1, 4, 1, 5, 9, 2, 6];
-numbers.sort((a, b) => a - b);
-console.log(numbers); // [1, 1, 2, 3, 4, 5, 6, 9]
-const numbers: number[] = [3, 1, 4, 1, 5, 9, 2, 6];
-numbers.sort((a, b) => b - a);
-console.log(numbers); // [9, 6, 5, 4, 3, 2, 1, 1]
-function sortNumbersAscending(arr: number[]): number[] {
-    return [...arr].sort((a, b) => a - b); // Creates a new array
+interface Edge {
+  to: string;
+  weight: number;
 }
 
-function sortNumbersDescending(arr: number[]): number[] {
-    return [...arr].sort((a, b) => b - a);
+interface Graph {
+  [node: string]: Edge[];
 }
 
-const numbers: number[] = [3, 1, 4, 1, 5, 9, 2, 6];
-const sortedAsc = sortNumbersAscending(numbers);
-const sortedDesc = sortNumbersDescending(numbers);
-function sortArray<T>(
-    arr: T[], 
-    compareFn: (a: T, b: T) => number,
-    descending: boolean = false
-): T[] {
-    const result = [...arr];
-    if (descending) {
-        return result.sort((a, b) => compareFn(b, a));
-    }
-    return result.sort(compareFn);
+interface DistanceMap {
+  [node: string]: number;
 }
 
-// Usage
-const numbers = [3, 1, 4, 1, 5, 9, 2, 6];
-const sortedNumbers = sortArray(numbers, (a, b) => a - b, true);
-interface SortableNumberArray {
-    numbers: number[];
-    sort(ascending?: boolean): number[];
+interface PreviousNodeMap {
+  [node: string]: string | null;
 }
 
-class NumberSorter implements SortableNumberArray {
-    constructor(public numbers: number[]) {}
+class DijkstraAlgorithm {
+  private graph: Graph;
+  
+  constructor(graph: Graph) {
+    this.graph = graph;
+  }
+
+  /**
+   * Finds the shortest path from startNode to endNode
+   */
+  findShortestPath(startNode: string, endNode: string): {
+    path: string[];
+    distance: number;
+  } {
+    // Initialize distances and previous nodes
+    const distances: DistanceMap = {};
+    const previous: PreviousNodeMap = {};
+    const unvisited: Set<string> = new Set();
     
-    sort(ascending: boolean = true): number[] {
-        const result = [...this.numbers];
-        if (ascending) {
-            return result.sort((a, b) => a - b);
+    // Initialize all distances to Infinity and previous nodes to null
+    for (const node in this.graph) {
+      distances[node] = Infinity;
+      previous[node] = null;
+      unvisited.add(node);
+    }
+    
+    // Set start node distance to 0
+    distances[startNode] = 0;
+    
+    while (unvisited.size > 0) {
+      // Find the unvisited node with the smallest distance
+      const currentNode = this.getMinDistanceNode(unvisited, distances);
+      
+      // If we reached the end node or no more nodes to process
+      if (currentNode === endNode || distances[currentNode] === Infinity) {
+        break;
+      }
+      
+      unvisited.delete(currentNode);
+      
+      // Process all neighbors of the current node
+      for (const edge of this.graph[currentNode]) {
+        if (!unvisited.has(edge.to)) continue;
+        
+        const newDistance = distances[currentNode] + edge.weight;
+        
+        if (newDistance < distances[edge.to]) {
+          distances[edge.to] = newDistance;
+          previous[edge.to] = currentNode;
         }
-        return result.sort((a, b) => b - a);
+      }
     }
+    
+    return {
+      path: this.reconstructPath(previous, endNode),
+      distance: distances[endNode]
+    };
+  }
+  
+  /**
+   * Gets the unvisited node with the smallest distance
+   */
+  private getMinDistanceNode(unvisited: Set<string>, distances: DistanceMap): string {
+    let minNode = '';
+    let minDistance = Infinity;
+    
+    for (const node of unvisited) {
+      if (distances[node] < minDistance) {
+        minDistance = distances[node];
+        minNode = node;
+      }
+    }
+    
+    return minNode;
+  }
+  
+  /**
+   * Reconstructs the path from endNode to startNode
+   */
+  private reconstructPath(previous: PreviousNodeMap, endNode: string): string[] {
+    const path: string[] = [];
+    let currentNode: string | null = endNode;
+    
+    while (currentNode !== null) {
+      path.unshift(currentNode);
+      currentNode = previous[currentNode];
+    }
+    
+    return path;
+  }
+  
+  /**
+   * Gets all shortest paths from startNode to all other nodes
+   */
+  getAllShortestPaths(startNode: string): {
+    distances: DistanceMap;
+    paths: { [node: string]: string[] };
+  } {
+    const distances: DistanceMap = {};
+    const previous: PreviousNodeMap = {};
+    const unvisited: Set<string> = new Set();
+    
+    for (const node in this.graph) {
+      distances[node] = Infinity;
+      previous[node] = null;
+      unvisited.add(node);
+    }
+    
+    distances[startNode] = 0;
+    
+    while (unvisited.size > 0) {
+      const currentNode = this.getMinDistanceNode(unvisited, distances);
+      
+      if (distances[currentNode] === Infinity) break;
+      
+      unvisited.delete(currentNode);
+      
+      for (const edge of this.graph[currentNode]) {
+        if (!unvisited.has(edge.to)) continue;
+        
+        const newDistance = distances[currentNode] + edge.weight;
+        
+        if (newDistance < distances[edge.to]) {
+          distances[edge.to] = newDistance;
+          previous[edge.to] = currentNode;
+        }
+      }
+    }
+    
+    const paths: { [node: string]: string[] } = {};
+    for (const node in this.graph) {
+      paths[node] = this.reconstructPath(previous, node);
+    }
+    
+    return { distances, paths };
+  }
+}
+interface PriorityQueueItem {
+  node: string;
+  priority: number;
 }
 
-// Usage
-const sorter = new NumberSorter([3, 1, 4, 1, 5, 9, 2, 6]);
-console.log(sorter.sort());      // Ascending
-console.log(sorter.sort(false)); // Descending
-// Sort by absolute value
-const numbers = [-3, 1, -4, 1, 5, -9, 2, 6];
-numbers.sort((a, b) => Math.abs(a) - Math.abs(b));
-console.log(numbers); // [1, 1, 2, -3, -4, 5, 6, -9]
+class PriorityQueue {
+  private items: PriorityQueueItem[] = [];
+  
+  enqueue(node: string, priority: number): void {
+    this.items.push({ node, priority });
+    this.items.sort((a, b) => a.priority - b.priority);
+  }
+  
+  dequeue(): string | null {
+    return this.items.shift()?.node || null;
+  }
+  
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+}
 
-// Sort by even/odd then value
-numbers.sort((a, b) => {
-    const aEven = a % 2 === 0;
-    const bEven = b % 2 === 0;
+class OptimizedDijkstraAlgorithm {
+  private graph: Graph;
+  
+  constructor(graph: Graph) {
+    this.graph = graph;
+  }
+  
+  findShortestPath(startNode: string, endNode: string): {
+    path: string[];
+    distance: number;
+  } {
+    const distances: DistanceMap = {};
+    const previous: PreviousNodeMap = {};
+    const pq = new PriorityQueue();
     
-    if (aEven !== bEven) {
-        return aEven ? -1 : 1; // Even numbers first
+    // Initialize
+    for (const node in this.graph) {
+      distances[node] = Infinity;
+      previous[node] = null;
     }
-    return a - b; // Then sort by value
-});
+    distances[startNode] = 0;
+    pq.enqueue(startNode, 0);
+    
+    while (!pq.isEmpty()) {
+      const currentNode = pq.dequeue();
+      
+      if (!currentNode || currentNode === endNode) break;
+      
+      for (const edge of this.graph[currentNode]) {
+        const newDistance = distances[currentNode] + edge.weight;
+        
+        if (newDistance < distances[edge.to]) {
+          distances[edge.to] = newDistance;
+          previous[edge.to] = currentNode;
+          pq.enqueue(edge.to, newDistance);
+        }
+      }
+    }
+    
+    return {
+      path: this.reconstructPath(previous, endNode),
+      distance: distances[endNode]
+    };
+  }
+  
+  private reconstructPath(previous: PreviousNodeMap, endNode: string): string[] {
+    const path: string[] = [];
+    let currentNode: string | null = endNode;
+    
+    while (currentNode !== null) {
+      path.unshift(currentNode);
+      currentNode = previous[currentNode];
+    }
+    
+    return path;
+  }
+}
+// Create a sample graph
+const graph: Graph = {
+  'A': [{ to: 'B', weight: 4 }, { to: 'C', weight: 2 }],
+  'B': [{ to: 'D', weight: 5 }, { to: 'E', weight: 3 }],
+  'C': [{ to: 'B', weight: 1 }, { to: 'D', weight: 8 }],
+  'D': [{ to: 'E', weight: 2 }],
+  'E': []
+};
+
+// Using the algorithm
+const dijkstra = new DijkstraAlgorithm(graph);
+const result = dijkstra.findShortestPath('A', 'E');
+
+console.log('Shortest path:', result.path.join(' -> '));
+console.log('Total distance:', result.distance);
+
+// Get all shortest paths from 'A'
+const allPaths = dijkstra.getAllShortestPaths('A');
+console.log('All distances:', allPaths.distances);
+// Test function
+function testDijkstra() {
+  const testGraph: Graph = {
+    'A': [{ to: 'B', weight: 1 }, { to: 'C', weight: 4 }],
+    'B': [{ to: 'C', weight: 2 }, { to: 'D', weight: 5 }],
+    'C': [{ to: 'D', weight: 1 }],
+    'D': []
+  };
+  
+  const dijkstra = new DijkstraAlgorithm(testGraph);
+  const result = dijkstra.findShortestPath('A', 'D');
+  
+  // Expected: A -> B -> C -> D with distance 4 (1 + 2 + 1)
+  console.assert(result.path.join(',') === 'A,B,C,D', 'Path incorrect');
+  console.assert(result.distance === 4, 'Distance incorrect');
+  
+  console.log('All tests passed!');
+}
+
+testDijkstra();
