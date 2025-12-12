@@ -1,130 +1,73 @@
-interface ListNode<T> {
-    value: T;
-    next: ListNode<T> | null;
+interface TreeNode {
+    val: number;
+    left: TreeNode | null;
+    right: TreeNode | null;
 }
-function reverseLinkedList<T>(head: ListNode<T> | null): ListNode<T> | null {
-    let prev: ListNode<T> | null = null;
-    let current: ListNode<T> | null = head;
-    let next: ListNode<T> | null = null;
+
+function maxDepth(root: TreeNode | null): number {
+    if (!root) return 0;
     
-    while (current !== null) {
-        // Store next node
-        next = current.next;
+    const leftDepth = maxDepth(root.left);
+    const rightDepth = maxDepth(root.right);
+    
+    return Math.max(leftDepth, rightDepth) + 1;
+}
+function maxDepthBFS(root: TreeNode | null): number {
+    if (!root) return 0;
+    
+    let depth = 0;
+    const queue: TreeNode[] = [root];
+    
+    while (queue.length > 0) {
+        depth++;
+        const levelSize = queue.length;
         
-        // Reverse the pointer
-        current.next = prev;
-        
-        // Move pointers forward
-        prev = current;
-        current = next;
+        for (let i = 0; i < levelSize; i++) {
+            const node = queue.shift()!;
+            
+            if (node.left) queue.push(node.left);
+            if (node.right) queue.push(node.right);
+        }
     }
     
-    return prev;
+    return depth;
 }
-function reverseLinkedListRecursive<T>(head: ListNode<T> | null): ListNode<T> | null {
-    if (head === null || head.next === null) {
-        return head;
+function maxDepthDFS(root: TreeNode | null): number {
+    if (!root) return 0;
+    
+    const stack: [TreeNode, number][] = [[root, 1]];
+    let maxDepth = 0;
+    
+    while (stack.length > 0) {
+        const [node, depth] = stack.pop()!;
+        maxDepth = Math.max(maxDepth, depth);
+        
+        if (node.right) stack.push([node.right, depth + 1]);
+        if (node.left) stack.push([node.left, depth + 1]);
     }
     
-    const reversedHead = reverseLinkedListRecursive(head.next);
-    head.next.next = head;
-    head.next = null;
-    
-    return reversedHead;
+    return maxDepth;
 }
-class LinkedListNode<T> {
+class TreeNode {
     constructor(
-        public value: T,
-        public next: LinkedListNode<T> | null = null
+        public val: number,
+        public left: TreeNode | null = null,
+        public right: TreeNode | null = null
     ) {}
 }
 
-class LinkedList<T> {
-    private head: LinkedListNode<T> | null = null;
-    
-    // Add node to the end
-    append(value: T): void {
-        const newNode = new LinkedListNode(value);
-        if (!this.head) {
-            this.head = newNode;
-            return;
-        }
-        
-        let current = this.head;
-        while (current.next) {
-            current = current.next;
-        }
-        current.next = newNode;
-    }
-    
-    // Reverse the linked list
-    reverse(): void {
-        this.head = this.reverseIterative(this.head);
-    }
-    
-    private reverseIterative(head: LinkedListNode<T> | null): LinkedListNode<T> | null {
-        let prev: LinkedListNode<T> | null = null;
-        let current: LinkedListNode<T> | null = head;
-        let next: LinkedListNode<T> | null = null;
-        
-        while (current !== null) {
-            next = current.next;
-            current.next = prev;
-            prev = current;
-            current = next;
-        }
-        
-        return prev;
-    }
-    
-    // Print the linked list
-    print(): void {
-        let current = this.head;
-        const values: T[] = [];
-        while (current) {
-            values.push(current.value);
-            current = current.next;
-        }
-        console.log(values.join(' → '));
-    }
-}
+// Example usage
+const tree = new TreeNode(3);
+tree.left = new TreeNode(9);
+tree.right = new TreeNode(20);
+tree.right.left = new TreeNode(15);
+tree.right.right = new TreeNode(7);
 
-// Usage example
-const list = new LinkedList<number>();
-list.append(1);
-list.append(2);
-list.append(3);
-list.append(4);
-
-console.log("Original list:");
-list.print(); // 1 → 2 → 3 → 4
-
-list.reverse();
-console.log("Reversed list:");
-list.print(); // 4 → 3 → 2 → 1
-function reverseLinkedListStack<T>(head: ListNode<T> | null): ListNode<T> | null {
-    if (!head) return null;
-    
-    const stack: ListNode<T>[] = [];
-    let current: ListNode<T> | null = head;
-    
-    // Push all nodes to stack
-    while (current) {
-        stack.push(current);
-        current = current.next;
-    }
-    
-    // Set new head
-    const newHead = stack.pop()!;
-    current = newHead;
-    
-    // Pop nodes from stack and build reversed list
-    while (stack.length > 0) {
-        current.next = stack.pop()!;
-        current = current.next;
-    }
-    
-    current.next = null; // Important: set last node's next to null
-    
-    return newHead;
-}
+console.log("Recursive DFS depth:", maxDepth(tree)); // Output: 3
+console.log("BFS depth:", maxDepthBFS(tree)); // Output: 3
+console.log("DFS iterative depth:", maxDepthDFS(tree)); // Output: 3
+// Test cases
+console.log(maxDepth(null)); // Empty tree: 0
+console.log(maxDepth(new TreeNode(1))); // Single node: 1
+console.log(maxDepth(new TreeNode(1, new TreeNode(2)))); // Left child only: 2
+console.log(maxDepth(new TreeNode(1, null, new TreeNode(2)))); // Right child only: 2
