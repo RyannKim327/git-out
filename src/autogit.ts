@@ -1,65 +1,133 @@
-function getRandomNumber(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+function kthSmallestSorting(arr: number[], k: number): number {
+    if (k <= 0 || k > arr.length) {
+        throw new Error("k is out of bounds");
+    }
+    
+    const sorted = [...arr].sort((a, b) => a - b);
+    return sorted[k - 1];
+}
+function kthSmallestQuickSelect(arr: number[], k: number): number {
+    if (k <= 0 || k > arr.length) {
+        throw new Error("k is out of bounds");
+    }
+    
+    return quickSelect([...arr], 0, arr.length - 1, k - 1);
 }
 
-// Usage
-const randomNum = getRandomNumber(1, 10); // Random integer between 1-10
-function getRandomInRange(
-  min: number, 
-  max: number, 
-  options?: { inclusive?: boolean; integer?: boolean }
-): number {
-  const inclusive = options?.inclusive ?? true;
-  const integer = options?.integer ?? true;
-  
-  const range = max - min + (inclusive ? 1 : 0);
-  const random = Math.random() * range + min;
-  
-  return integer ? Math.floor(random) : random;
+function quickSelect(arr: number[], left: number, right: number, k: number): number {
+    if (left === right) {
+        return arr[left];
+    }
+    
+    const pivotIndex = partition(arr, left, right);
+    
+    if (k === pivotIndex) {
+        return arr[k];
+    } else if (k < pivotIndex) {
+        return quickSelect(arr, left, pivotIndex - 1, k);
+    } else {
+        return quickSelect(arr, pivotIndex + 1, right, k);
+    }
 }
 
-// Usage examples
-const randomInt = getRandomInRange(1, 10); // Integer between 1-10
-const randomFloat = getRandomInRange(1, 10, { integer: false }); // Float between 1-10
-const randomExclusive = getRandomInRange(1, 10, { inclusive: false }); // 1-9
-class RandomNumberGenerator {
-  constructor(
-    private min: number,
-    private max: number,
-    private integer: boolean = true
-  ) {}
-  
-  generate(): number {
-    const range = this.max - this.min + 1;
-    const random = Math.random() * range + this.min;
-    return this.integer ? Math.floor(random) : random;
-  }
+function partition(arr: number[], left: number, right: number): number {
+    const pivot = arr[right];
+    let i = left;
+    
+    for (let j = left; j < right; j++) {
+        if (arr[j] <= pivot) {
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+            i++;
+        }
+    }
+    
+    [arr[i], arr[right]] = [arr[right], arr[i]];
+    return i;
+}
+function kthSmallestMaxHeap(arr: number[], k: number): number {
+    if (k <= 0 || k > arr.length) {
+        throw new Error("k is out of bounds");
+    }
+    
+    const maxHeap: number[] = [];
+    
+    for (let i = 0; i < arr.length; i++) {
+        if (maxHeap.length < k) {
+            maxHeap.push(arr[i]);
+            heapifyUp(maxHeap);
+        } else if (arr[i] < maxHeap[0]) {
+            maxHeap[0] = arr[i];
+            heapifyDown(maxHeap, 0);
+        }
+    }
+    
+    return maxHeap[0];
 }
 
-// Usage
-const diceRoll = new RandomNumberGenerator(1, 6);
-console.log(diceRoll.generate()); // Random number 1-6
-function getRandomDecimal(min: number, max: number, decimals: number = 2): number {
-  const random = Math.random() * (max - min) + min;
-  return Number(random.toFixed(decimals));
+function heapifyUp(heap: number[]): void {
+    let index = heap.length - 1;
+    while (index > 0) {
+        const parent = Math.floor((index - 1) / 2);
+        if (heap[index] <= heap[parent]) break;
+        [heap[index], heap[parent]] = [heap[parent], heap[index]];
+        index = parent;
+    }
 }
 
-// Usage
-const randomDecimal = getRandomDecimal(1, 5, 2); // e.g., 3.45
-function getSecureRandomInRange(min: number, max: number): number {
-  const array = new Uint32Array(1);
-  window.crypto.getRandomValues(array);
-  const random = array[0] / (0xffffffff + 1);
-  return Math.floor(random * (max - min + 1)) + min;
+function heapifyDown(heap: number[], index: number): void {
+    const length = heap.length;
+    while (true) {
+        let largest = index;
+        const left = 2 * index + 1;
+        const right = 2 * index + 2;
+        
+        if (left < length && heap[left] > heap[largest]) {
+            largest = left;
+        }
+        
+        if (right < length && heap[right] > heap[largest]) {
+            largest = right;
+        }
+        
+        if (largest === index) break;
+        
+        [heap[index], heap[largest]] = [heap[largest], heap[index]];
+        index = largest;
+    }
+}
+function kthSmallest<T>(arr: T[], k: number, comparator?: (a: T, b: T) => number): T {
+    if (k <= 0 || k > arr.length) {
+        throw new Error("k is out of bounds");
+    }
+    
+    const compare = comparator || ((a: T, b: T) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+    });
+    
+    const sorted = [...arr].sort(compare);
+    return sorted[k - 1];
 }
 
-// Usage (only in browser environments)
-const secureRandom = getSecureRandomInRange(1, 100);
-// Generate random age between 18-65
-const randomAge = getRandomNumber(18, 65);
+// Usage with custom comparator
+const numbers = [3, 1, 4, 1, 5, 9, 2, 6];
+console.log(kthSmallest(numbers, 3)); // 2
 
-// Generate random percentage (0-100)
-const randomPercentage = getRandomNumber(0, 100);
+const strings = ["banana", "apple", "cherry"];
+console.log(kthSmallest(strings, 2)); // "banana"
 
-// Generate random price between 10.00-99.99
-const randomPrice = getRandomDecimal(10, 100, 2);
+const objects = [{ value: 3 }, { value: 1 }, { value: 2 }];
+console.log(kthSmallest(objects, 2, (a, b) => a.value - b.value)); // { value: 2 }
+const array = [3, 1, 4, 1, 5, 9, 2, 6];
+
+console.log(kthSmallestSorting(array, 3));    // 2
+console.log(kthSmallestQuickSelect(array, 3)); // 2
+console.log(kthSmallestMaxHeap(array, 3));     // 2
+
+// Handle errors
+try {
+    console.log(kthSmallestSorting(array, 10)); // Throws error
+} catch (error) {
+    console.log(error.message); // "k is out of bounds"
+}
