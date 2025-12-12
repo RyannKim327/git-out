@@ -1,57 +1,108 @@
+const numbers = [4, 8, 15, 16, 23, 42];
+const mean = numbers.reduce((sum, n) => sum + n, 0) / numbers.length;
+
+console.log(mean); // 18
 /**
- * Random sort (Bogosort) implementation in TypeScript.
+ * Returns the arithmetic mean of a numeric array.
  *
- * WARNING: This algorithm has factorial time complexity (O(n!)) and
- * should only be used for demonstration or tiny arrays.
+ * @param values - An array of numbers.
+ * @returns The mean value.
+ * @throws If the array is empty.
  */
+export function mean(values: readonly number[]): number {
+  if (values.length === 0) {
+    throw new Error('Cannot compute the mean of an empty array.');
+  }
 
-/**
- * Returns a new array that is a random permutation of the input.
- */
-function shuffle<T>(arr: T[]): T[] {
-    const copy = [...arr];
-    for (let i = copy.length - 1; i > 0; i--) {
-        // Pick a random index from 0..i
-        const j = Math.floor(Math.random() * (i + 1));
-        // Swap copy[i] and copy[j]
-        [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy;
+  // Using a typed accumulator to avoid accidental `any` inference.
+  const sum = values.reduce((acc: number, cur: number) => acc + cur, 0);
+  return sum / values.length;
 }
+import { mean } from './math-utils';
 
+const data = [10, 20, 30, 40];
+console.log(mean(data)); // 25
 /**
- * Checks whether an array is sorted in non‑decreasing order.
- */
-function isSorted(arr: number[]): boolean {
-    for (let i = 1; i < arr.length; i++) {
-        if (arr[i - 1] > arr[i]) return false;
-    }
-    return true;
-}
-
-/**
- * Randomly sorts the given numeric array using Bogosort.
- * Returns a new sorted array and the number of shuffles performed.
+ * Compute the mean of a numeric property extracted by `selector`.
  *
- * @param input The array to sort (will not be mutated).
- * @returns An object containing the sorted array and shuffle count.
+ * @param items   - Array of any type.
+ * @param selector - Function that extracts a number from each item.
+ * @returns The arithmetic mean.
+ * @throws If the array is empty or selector returns NaN.
  */
-function bogosort(input: number[]): { sorted: number[]; attempts: number } {
-    let attempts = 0;
-    let candidate = [...input];
+export function meanBy<T>(items: readonly T[], selector: (item: T) => number): number {
+  if (items.length === 0) {
+    throw new Error('Cannot compute the mean of an empty array.');
+  }
 
-    while (!isSorted(candidate)) {
-        candidate = shuffle(candidate);
-        attempts++;
+  const sum = items.reduce((acc, item) => {
+    const value = selector(item);
+    if (!Number.isFinite(value)) {
+      throw new Error(`Selector returned a non‑finite number: ${value}`);
     }
+    return acc + value;
+  }, 0);
 
-    return { sorted: candidate, attempts };
+  return sum / items.length;
+}
+interface Person {
+  name: string;
+  age: number;
 }
 
-/* ------------------- Example usage ------------------- */
-const unsorted = [3, 1, 4, 2];
-console.log('Original:', unsorted);
+const people: Person[] = [
+  { name: 'Alice', age: 28 },
+  { name: 'Bob',   age: 34 },
+  { name: 'Cara',  age: 22 },
+];
 
-const { sorted, attempts } = bogosort(unsorted);
-console.log('Sorted:', sorted);
-console.log('Shuffles performed:', attempts);
+const averageAge = meanBy(people, p => p.age);
+console.log(averageAge); // 28
+export function meanBigInt(values: readonly bigint[]): bigint {
+  if (values.length === 0) {
+    throw new Error('Cannot compute the mean of an empty array.');
+  }
+
+  const sum = values.reduce((acc, cur) => acc + cur, 0n);
+  return sum / BigInt(values.length); // integer division
+}
+// src/utils/math.ts
+export function mean(values: readonly number[]): number {
+  if (values.length === 0) {
+    throw new Error('Cannot compute the mean of an empty array.');
+  }
+  const sum = values.reduce((a, b) => a + b, 0);
+  return sum / values.length;
+}
+
+export function meanBy<T>(items: readonly T[], selector: (item: T) => number): number {
+  if (items.length === 0) {
+    throw new Error('Cannot compute the mean of an empty array.');
+  }
+  const sum = items.reduce((a, item) => {
+    const v = selector(item);
+    if (!Number.isFinite(v)) {
+      throw new Error(`Selector returned a non‑finite number: ${v}`);
+    }
+    return a + v;
+  }, 0);
+  return sum / items.length;
+}
+
+export function meanBigInt(values: readonly bigint[]): bigint {
+  if (values.length === 0) {
+    throw new Error('Cannot compute the mean of an empty array.');
+  }
+  const sum = values.reduce((a, b) => a + b, 0n);
+  return sum / BigInt(values.length);
+}
+import { mean, meanBy, meanBigInt } from '@/utils/math';
+
+console.log(mean([1, 2, 3]));               // 2
+console.log(meanBy([{v: 5}, {v: 15}], x => x.v)); // 10
+console.log(meanBigInt([10n, 20n, 30n]));   // 20n
+export function mean(nums: readonly number[]): number {
+  if (nums.length === 0) throw new Error('Empty array');
+  return nums.reduce((s, n) => s + n, 0) / nums.length;
+}
+const avg = mean([2, 4, 6, 8]); // 5
