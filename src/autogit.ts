@@ -1,145 +1,64 @@
-function binarySearch<T>(arr: T[], target: T): number {
-    let left = 0;
-    let right = arr.length - 1;
+/**
+ * Returns the starting index of the first occurrence of `pattern` in `text`,
+ * or `-1` if the pattern is not found.
+ * Runs in O(n + m) time and O(m) extra space.
+ */
+export function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;                // empty pattern ⇒ trivial match
+  if (pattern.length > text.length) return -1;   // impossible to match
 
-    while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        const midValue = arr[mid];
+  const lps = buildLpsTable(pattern);
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-        if (midValue === target) {
-            return mid;
-        } else if (midValue < target) {
-            left = mid + 1;
-        } else {
-            right = mid - 1;
-        }
-    }
-
-    return -1; // Not found
-}
-interface BinarySearchResult {
-    index: number;
-    found: boolean;
-}
-
-function binarySearch<T>(
-    arr: T[], 
-    target: T, 
-    compareFn?: (a: T, b: T) => number
-): BinarySearchResult {
-    if (arr.length === 0) {
-        return { index: -1, found: false };
-    }
-
-    let left = 0;
-    let right = arr.length - 1;
-    const comparator = compareFn || defaultComparator;
-
-    while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        const comparison = comparator(arr[mid], target);
-
-        if (comparison === 0) {
-            return { index: mid, found: true };
-        } else if (comparison < 0) {
-            left = mid + 1;
-        } else {
-            right = mid - 1;
-        }
-    }
-
-    return { index: -1, found: false };
-}
-
-function defaultComparator<T>(a: T, b: T): number {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-}
-function binarySearchRecursive<T>(
-    arr: T[], 
-    target: T, 
-    left: number = 0, 
-    right: number = arr.length - 1,
-    compareFn?: (a: T, b: T) => number
-): number {
-    if (left > right) return -1;
-
-    const comparator = compareFn || defaultComparator;
-    const mid = Math.floor((left + right) / 2);
-    const comparison = comparator(arr[mid], target);
-
-    if (comparison === 0) {
-        return mid;
-    } else if (comparison < 0) {
-        return binarySearchRecursive(arr, target, mid + 1, right, comparator);
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) return i - j;      // full match
+    } else if (j > 0) {
+      j = lps[j - 1];                              // fallback in pattern
     } else {
-        return binarySearchRecursive(arr, target, left, mid - 1, comparator);
+      i++;                                         // no match, advance text
     }
-}
-// Example with numbers
-const numbers = [1, 3, 5, 7, 9, 11, 13, 15];
-console.log(binarySearch(numbers, 7)); // { index: 3, found: true }
-console.log(binarySearch(numbers, 8)); // { index: -1, found: false }
-
-// Example with strings
-const strings = ['apple', 'banana', 'cherry', 'date'];
-console.log(binarySearch(strings, 'cherry')); // { index: 2, found: true }
-
-// Example with custom comparator
-interface Person {
-    name: string;
-    age: number;
+  }
+  return -1;
 }
 
-const people: Person[] = [
-    { name: 'Alice', age: 25 },
-    { name: 'Bob', age: 30 },
-    { name: 'Charlie', age: 35 }
-];
+/**
+ * Builds the Longest Prefix Suffix (LPS) table for the pattern.
+ * lps[i] = length of the longest proper prefix of pattern[0..i]
+ *          which is also a suffix of that substring.
+ */
+function buildLpsTable(pattern: string): number[] {
+  const lps = new Array<number>(pattern.length).fill(0);
+  let len = 0; // length of the previous longest prefix suffix
+  let i = 1;
 
-const personComparator = (a: Person, b: Person) => a.age - b.age;
-console.log(binarySearch(people, { age: 30 }, personComparator)); // { index: 1, found: true }
-class BinarySearch<T> {
-    private arr: T[];
-    private compareFn: (a: T, b: T) => number;
-
-    constructor(arr: T[], compareFn?: (a: T, b: T) => number) {
-        this.arr = arr;
-        this.compareFn = compareFn || defaultComparator;
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else if (len > 0) {
+      len = lps[len - 1]; // fallback
+    } else {
+      lps[i] = 0;
+      i++;
     }
-
-    search(target: T): number {
-        let left = 0;
-        let right = this.arr.length - 1;
-
-        while (left <= right) {
-            const mid = Math.floor((left + right) / 2);
-            const comparison = this.compareFn(this.arr[mid], target);
-
-            if (comparison === 0) {
-                return mid;
-            } else if (comparison < 0) {
-                left = mid + 1;
-            } else {
-                right = mid - 1;
-            }
-        }
-
-        return -1;
-    }
-
-    // Additional utility methods
-    exists(target: T): boolean {
-        return this.search(target) !== -1;
-    }
-
-    getIndex(target: T): number {
-        return this.search(target);
-    }
+  }
+  return lps;
 }
 
-// Usage
-const searchInstance = new BinarySearch(numbers);
-console.log(searchInstance.search(7)); // 3
-console.log(searchInstance.exists(8)); // false
+/* ------------------ Usage example ------------------ */
+if (import.meta.vitest) {
+  const { test, expect } = import.meta.vitest;
+
+  test('kmpSearch', () => {
+    expect(kmpSearch('ababcababa', 'ababa')).toBe(5);
+    expect(kmpSearch('hello world', 'world')).toBe(6);
+    expect(kmpSearch('aaaaa', 'aab')).toBe(-1);
+    expect(kmpSearch('aaaaa', '')).toBe(0);
+    expect(kmpSearch('', 'abc')).toBe(-1);
+  });
+}
