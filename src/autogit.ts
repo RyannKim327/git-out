@@ -1,92 +1,65 @@
-function isPrime(num: number): boolean {
-    if (num <= 1) return false;
-    if (num <= 3) return true;
-    if (num % 2 === 0 || num % 3 === 0) return false;
-    
-    for (let i = 5; i * i <= num; i += 6) {
-        if (num % i === 0 || num % (i + 2) === 0) {
-            return false;
-        }
-    }
-    return true;
+function getRandomNumber(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 // Usage
-console.log(isPrime(7));    // true
-console.log(isPrime(10));   // false
-console.log(isPrime(17));   // true
-function isPrimeSimple(num: number): boolean {
-    if (num <= 1) return false;
-    if (num <= 3) return true;
-    
-    for (let i = 2; i <= Math.sqrt(num); i++) {
-        if (num % i === 0) {
-            return false;
-        }
-    }
-    return true;
+const randomNum = getRandomNumber(1, 10); // Random integer between 1-10
+function getRandomInRange(
+  min: number, 
+  max: number, 
+  options?: { inclusive?: boolean; integer?: boolean }
+): number {
+  const inclusive = options?.inclusive ?? true;
+  const integer = options?.integer ?? true;
+  
+  const range = max - min + (inclusive ? 1 : 0);
+  const random = Math.random() * range + min;
+  
+  return integer ? Math.floor(random) : random;
 }
-function isPrimeOptimized(num: number): boolean {
-    // Handle edge cases
-    if (num <= 1) return false;
-    if (num <= 3) return true;
-    if (num % 2 === 0 || num % 3 === 0) return false;
-    
-    // Check divisibility by numbers of form 6k ± 1
-    for (let i = 5; i * i <= num; i += 6) {
-        if (num % i === 0 || num % (i + 2) === 0) {
-            return false;
-        }
-    }
-    return true;
-}
-class PrimeChecker {
-    static isPrime(num: number): boolean {
-        if (!Number.isInteger(num) || num <= 1) return false;
-        if (num <= 3) return true;
-        if (num % 2 === 0 || num % 3 === 0) return false;
-        
-        for (let i = 5; i * i <= num; i += 6) {
-            if (num % i === 0 || num % (i + 2) === 0) {
-                return false;
-            }
-        }
-        return true;
-    }
-    
-    // Bonus: Generate first n prime numbers
-    static generatePrimes(count: number): number[] {
-        const primes: number[] = [];
-        let num = 2;
-        
-        while (primes.length < count) {
-            if (this.isPrime(num)) {
-                primes.push(num);
-            }
-            num++;
-        }
-        return primes;
-    }
+
+// Usage examples
+const randomInt = getRandomInRange(1, 10); // Integer between 1-10
+const randomFloat = getRandomInRange(1, 10, { integer: false }); // Float between 1-10
+const randomExclusive = getRandomInRange(1, 10, { inclusive: false }); // 1-9
+class RandomNumberGenerator {
+  constructor(
+    private min: number,
+    private max: number,
+    private integer: boolean = true
+  ) {}
+  
+  generate(): number {
+    const range = this.max - this.min + 1;
+    const random = Math.random() * range + this.min;
+    return this.integer ? Math.floor(random) : random;
+  }
 }
 
 // Usage
-console.log(PrimeChecker.isPrime(29));          // true
-console.log(PrimeChecker.generatePrimes(10));   // [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]
-// Test performance
-function testPerformance() {
-    const testNumbers = [2, 3, 17, 97, 100, 7919, 104729];
-    
-    console.time('Method 1');
-    testNumbers.forEach(n => isPrime(n));
-    console.timeEnd('Method 1');
-    
-    console.time('Method 2');
-    testNumbers.forEach(n => isPrimeSimple(n));
-    console.timeEnd('Method 2');
-    
-    console.time('Method 3');
-    testNumbers.forEach(n => isPrimeOptimized(n));
-    console.timeEnd('Method 3');
+const diceRoll = new RandomNumberGenerator(1, 6);
+console.log(diceRoll.generate()); // Random number 1-6
+function getRandomDecimal(min: number, max: number, decimals: number = 2): number {
+  const random = Math.random() * (max - min) + min;
+  return Number(random.toFixed(decimals));
 }
 
-testPerformance();
+// Usage
+const randomDecimal = getRandomDecimal(1, 5, 2); // e.g., 3.45
+function getSecureRandomInRange(min: number, max: number): number {
+  const array = new Uint32Array(1);
+  window.crypto.getRandomValues(array);
+  const random = array[0] / (0xffffffff + 1);
+  return Math.floor(random * (max - min + 1)) + min;
+}
+
+// Usage (only in browser environments)
+const secureRandom = getSecureRandomInRange(1, 100);
+// Generate random age between 18-65
+const randomAge = getRandomNumber(18, 65);
+
+// Generate random percentage (0-100)
+const randomPercentage = getRandomNumber(0, 100);
+
+// Generate random price between 10.00-99.99
+const randomPrice = getRandomDecimal(10, 100, 2);
