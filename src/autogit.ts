@@ -1,242 +1,99 @@
-/**
- * Normalises a string for anagram comparison.
- *
- * @param s               The raw string.
- * @param ignoreSpaces    If true, removes all whitespace characters.
- * @param ignorePunctuation If true, removes any character that is not a letter or a digit.
- * @returns               A lower‑cased, NFC‑normalised string ready for comparison.
- */
-function normalise(
-  s: string,
-  ignoreSpaces = true,
-  ignorePunctuation = true
-): string {
-  // 1️⃣ Unicode normalisation (NFC = canonical composition)
-  let result = s.normalize('NFC').toLowerCase();
-
-  // 2️⃣ Remove spaces if requested
-  if (ignoreSpaces) {
-    // \s matches any whitespace (space, tab, newline, etc.)
-    result = result.replace(/\s+/g, '');
-  }
-
-  // 3️⃣ Remove punctuation / symbols if requested
-  if (ignorePunctuation) {
-    // Keep only letters (including Unicode letters) and digits.
-    // \p{L} = any kind of letter, \p{N} = any kind of numeric digit.
-    // The 'u' flag enables Unicode property escapes (ES2018+).
-    result = result.replace(/[^\p{L}\p{N}]/gu, '');
-  }
-
-  return result;
-}
-/**
- * Returns true if `a` and `b` are anagrams (ignoring case, spaces, punctuation).
- *
- * This implementation sorts the characters of each string and then checks equality.
- *
- * @param a First string.
- * @param b Second string.
- * @returns  Boolean indicating anagram status.
- */
-export function areAnagramsSort(
-  a: string,
-  b: string,
-  options?: {
-    ignoreSpaces?: boolean;
-    ignorePunctuation?: boolean;
-  }
-): boolean {
-  const { ignoreSpaces = true, ignorePunctuation = true } = options ?? {};
-
-  const normA = normalise(a, ignoreSpaces, ignorePunctuation);
-  const normB = normalise(b, ignoreSpaces, ignorePunctuation);
-
-  // Quick length check – if lengths differ they cannot be anagrams.
-  if (normA.length !== normB.length) return false;
-
-  // Convert to array, sort, and join back.
-  const sortedA = [...normA].sort().join('');
-  const sortedB = [...normB].sort().join('');
-
-  return sortedA === sortedB;
-}
-/**
- * Returns true if `a` and `b` are anagrams (ignoring case, spaces, punctuation).
- *
- * This implementation builds a character‑frequency map for the first string
- * and then decrements it while scanning the second string.
- *
- * @param a First string.
- * @param b Second string.
- * @returns  Boolean indicating anagram status.
- */
-export function areAnagramsCount(
-  a: string,
-  b: string,
-  options?: {
-    ignoreSpaces?: boolean;
-    ignorePunctuation?: boolean;
-  }
-): boolean {
-  const { ignoreSpaces = true, ignorePunctuation = true } = options ?? {};
-
-  const normA = normalise(a, ignoreSpaces, ignorePunctuation);
-  const normB = normalise(b, ignoreSpaces, ignorePunctuation);
-
-  // Early length check.
-  if (normA.length !== normB.length) return false;
-
-  // Map from character → count.
-  const freq = new Map<string, number>();
-
-  // 1️⃣ Count characters in the first string.
-  for (const ch of normA) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
-
-  // 2️⃣ Decrease counts while scanning the second string.
-  for (const ch of normB) {
-    const current = freq.get(ch);
-    // If the character never appeared or we already used up all of them → not an anagram.
-    if (current === undefined || current === 0) return false;
-    freq.set(ch, current - 1);
-  }
-
-  // 3️⃣ If we get here, every count must be zero.
-  // (We could skip this loop because the early length check + decrement guarantees it,
-  // but it’s a nice safety net if the algorithm changes later.)
-  for (const count of freq.values()) {
-    if (count !== 0) return false;
-  }
-
-  return true;
-}
-import { areAnagramsSort, areAnagramsCount } from './anagram';
-
-const pairs: [string, string][] = [
-  ['listen', 'silent'],
-  ['Dormitory', 'Dirty room!!'],
-  ['Conversation', 'Voices rant on'],
-  ['Astronomer', 'Moon starer'],
-  ['The eyes', 'They see'],
-  ['A decimal point', "I'm a dot in place"],
-  ['hello', 'billion'], // not an anagram
-];
-
-// Choose whichever implementation you prefer:
-const check = areAnagramsCount; // or areAnagramsSort
-
-for (const [a, b] of pairs) {
-  console.log(`"${a}" ↔ "${b}" → ${check(a, b) ? '✅' : '❌'}`);
-}
-"listen" ↔ "silent" → ✅
-"Dormitory" ↔ "Dirty room!!" → ✅
-"Conversation" ↔ "Voices rant on" → ✅
-"Astronomer" ↔ "Moon starer" → ✅
-"The eyes" ↔ "They see" → ✅
-"A decimal point" ↔ "I'm a dot in place" → ✅
-"hello" ↔ "billion" → ❌
-import { areAnagramsSort, areAnagramsCount } from './anagram';
-
-const implementations = {
-  sort: areAnagramsSort,
-  count: areAnagramsCount,
-};
-
-type ImplKey = keyof typeof implementations;
-
-describe.each(Object.entries(implementations) as [ImplKey, typeof areAnagramsSort][])(
-  'areAnagrams (%s implementation)',
-  (implName, fn) => {
-    test('basic positive cases', () => {
-      expect(fn('listen', 'silent')).toBe(true);
-      expect(fn('Dormitory', 'Dirty room')).toBe(true);
-      expect(fn('Conversation', 'Voices rant on')).toBe(true);
-    });
-
-    test('ignores case, spaces and punctuation by default', () => {
-      expect(fn('A decimal point', "I'm a dot in place")).toBe(true);
-    });
-
-    test('detects non‑anagrams', () => {
-      expect(fn('hello', 'world')).toBe(false);
-      expect(fn('test', 'tost')).toBe(false);
-    });
-
-    test('custom options – keep spaces', () => {
-      expect(fn('a b', 'ab', { ignoreSpaces: false })).toBe(false);
-      expect(fn('a b', 'a b', { ignoreSpaces: false })).toBe(true);
-    });
-
-    test('custom options – keep punctuation', () => {
-      expect(fn('a!b', 'ba', { ignorePunctuation: false })).toBe(false);
-      expect(fn('a!b', 'b!a', { ignorePunctuation: false })).toBe(true);
-    });
-
-    test('Unicode handling', () => {
-      // é can be represented as U+00E9 or as 'e' + COMBINING ACUTE ACCENT (U+0301)
-      const composed = 'café';
-      const decomposed = 'cafe\u0301';
-      expect(fn(composed, decomposed)).toBe(true);
-    });
-  }
-);
-npm test   # assuming jest is set up
-// anagram.ts
-export function normalise(
-  s: string,
-  ignoreSpaces = true,
-  ignorePunctuation = true
-): string {
-  let result = s.normalize('NFC').toLowerCase();
-  if (ignoreSpaces) result = result.replace(/\s+/g, '');
-  if (ignorePunctuation) result = result.replace(/[^\p{L}\p{N}]/gu, '');
-  return result;
-}
+// Boyer-Moore in TypeScript
+// ----------------------------------------------
 
 /**
- * Sort‑based anagram check.
+ * Returns the index of the first occurrence of `pat` inside `txt`,
+ * or -1 if not found.
  */
-export function areAnagramsSort(
-  a: string,
-  b: string,
-  options?: { ignoreSpaces?: boolean; ignorePunctuation?: boolean }
-): boolean {
-  const { ignoreSpaces = true, ignorePunctuation = true } = options ?? {};
-  const normA = normalise(a, ignoreSpaces, ignorePunctuation);
-  const normB = normalise(b, ignoreSpaces, ignorePunctuation);
-  if (normA.length !== normB.length) return false;
-  return [...normA].sort().join('') === [...normB].sort().join('');
-}
+export function boyerMoore(pat: string, txt: string): number {
+  if (pat.length === 0) return 0;
+  if (pat.length > txt.length) return -1;
 
-/**
- * Linear‑time frequency‑map anagram check.
- */
-export function areAnagramsCount(
-  a: string,
-  b: string,
-  options?: { ignoreSpaces?: boolean; ignorePunctuation?: boolean }
-): boolean {
-  const { ignoreSpaces = true, ignorePunctuation = true } = options ?? {};
-  const normA = normalise(a, ignoreSpaces, ignorePunctuation);
-  const normB = normalise(b, ignoreSpaces, ignorePunctuation);
-  if (normA.length !== normB.length) return false;
+  const badChar = makeBadCharTable(pat);
+  const goodSuffix = makeGoodSuffixTable(pat);
 
-  const freq = new Map<string, number>();
-  for (const ch of normA) freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  for (const ch of normB) {
-    const cur = freq.get(ch);
-    if (!cur) return false;
-    freq.set(ch, cur - 1);
+  let shift = 0;
+  const last = pat.length - 1;
+
+  while (shift <= txt.length - pat.length) {
+    let i = last;
+
+    // Compare from right to left
+    while (i >= 0 && pat[i] === txt[shift + i]) --i;
+
+    if (i < 0) return shift;               // full match
+    const bcShift = badChar[txt.charCodeAt(shift + i)] ?? -1;
+    const gsShift = goodSuffix[i];
+
+    shift += Math.max(i - bcShift, gsShift);
   }
-  // All counts are zero at this point.
-  return true;
+  return -1;
 }
-const areAnagrams = (a: string, b: string) =>
-  [...a.replace(/\s+/g, '').toLowerCase()]
-    .sort()
-    .join('') ===
-  [...b.replace(/\s+/g, '').toLowerCase()]
-    .sort()
-    .join('');
+
+// ------------------------------------------------
+// 1. Bad-character heuristic
+// ------------------------------------------------
+function makeBadCharTable(pat: string): number[] {
+  const table = new Array<number>(65536).fill(-1); // 16-bit Unicode
+  for (let i = 0; i < pat.length; ++i) {
+    table[pat.charCodeAt(i)] = i;
+  }
+  return table;
+}
+
+// ------------------------------------------------
+// 2. Good-suffix heuristic (simplified Galil rule)
+// ------------------------------------------------
+function makeGoodSuffixTable(pat: string): number[] {
+  const m = pat.length;
+  const table = new Array<number>(m + 1).fill(m);
+  const suffix = computeSuffix(pat);
+
+  // Case 1: a suffix matches, then slide to the rightmost such suffix
+  let j = 0;
+  for (let i = m - 1; i >= -1; --i) {
+    if (i === -1 || suffix[i] === i + 1) {
+      for (; j < m - 1 - i; ++j) {
+        if (table[j] === m) table[j] = m - 1 - i;
+      }
+    }
+  }
+
+  // Case 2: a prefix matches
+  for (let i = 0; i < m - 1; ++i) {
+    const shift = m - 1 - suffix[i];
+    if (table[shift] > shift) table[shift] = shift;
+  }
+
+  return table;
+}
+
+// Helper: length of the longest suffix that is also a suffix of pat[0..k]
+function computeSuffix(pat: string): number[] {
+  const m = pat.length;
+  const suffix = new Array<number>(m).fill(0);
+  let g = m - 1;
+
+  suffix[m - 1] = m;
+  let f = 0;
+
+  for (let i = m - 2; i >= 0; --i) {
+    if (i > g && suffix[i + m - 1 - f] < i - g) {
+      suffix[i] = suffix[i + m - 1 - f];
+    } else {
+      if (i < g) g = i;
+      f = i;
+      while (g >= 0 && pat[g] === pat[g + m - 1 - f]) --g;
+      suffix[i] = f - g;
+    }
+  }
+  return suffix;
+}
+
+// ------------------------------------------------
+// Quick sanity check
+// ------------------------------------------------
+if (require.main === module) {
+  console.log(boyerMoore("EXAMPLE", "HERE IS A SIMPLE EXAMPLE")); // → 17
+  console.log(boyerMoore("AAAC", "AAAAACCCAAAAAAAC"));            // → 9
+}
