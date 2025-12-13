@@ -1,90 +1,99 @@
 /**
- * In‑place insertion sort.
- *
- * @param arr   The array to sort. It will be mutated.
- * @param compareFn Optional comparator. Should return:
- *                  - a negative number if a < b
- *                  - zero if a === b
- *                  - a positive number if a > b
- *                If omitted, the < and > operators are used (works for numbers & strings).
- * @returns The same array reference, now sorted.
+ * A tiny utility that fetches JSON data from a given URL.
+ * It demonstrates:
+ *   • async/await
+ *   • proper error handling
+ *   • generic typing for the response payload
+ *   • aborting a request after a timeout
  */
-export function insertionSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number
-): T[] {
-  // Default comparator works for numbers, strings, and any type that defines < and >.
-  const cmp = compareFn ?? ((a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0));
 
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+type JsonResponse<T> = {
+  ok: true;
+  data: T;
+} | {
+  ok: false;
+  error: string;
+};
 
-    // Shift elements that are greater than `key` to the right.
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
+/**
+ * Fetch JSON from `url` and parse it into the generic type `T`.
+ *
+ * @param url   The endpoint to request.
+ * @param timeoutMs Optional timeout in milliseconds (default: 5000).
+ * @returns A promise that resolves to a `JsonResponse<T>`.
+ */
+async function fetchJson<T>(url: string, timeoutMs = 5_000): Promise<JsonResponse<T>> {
+  // Create an AbortController so we can cancel the request on timeout.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      signal: controller.signal,
+      headers: {
+        // Ask the server to give us JSON (most APIs respect this)
+        'Accept': 'application/json',
+      },
+    });
+
+    // Clear the timeout once we have a response.
+    clearTimeout(timeout);
+
+    // HTTP status check – treat anything outside 200‑299 as an error.
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: `HTTP ${response.status} – ${response.statusText}`,
+      };
     }
 
-    // Insert the key into its correct position.
-    arr[j + 1] = key;
-  }
+    // Parse the body as JSON. If the JSON is malformed, this will throw.
+    const data = (await response.json()) as T;
 
-  return arr;
-}
-import { insertionSort } from "./insertionSort";
-
-const nums = [5, 2, 9, 1, 5, 6];
-console.log(insertionSort(nums)); // → [1, 2, 5, 5, 6, 9]
-const words = ["banana", "apple", "cherry"];
-console.log(insertionSort(words)); // → ["apple", "banana", "cherry"]
-interface Person {
-  name: string;
-  age: number;
-}
-
-const people: Person[] = [
-  { name: "Alice", age: 32 },
-  { name: "Bob",   age: 24 },
-  { name: "Carol", age: 29 },
-];
-
-// Sort by age ascending
-insertionSort(people, (a, b) => a.age - b.age);
-
-console.log(people);
-// → [{name:"Bob",age:24}, {name:"Carol",age:29}, {name:"Alice",age:32}]
-function test() {
-  const cases: Array<[any[], any[]]> = [
-    [[3, 1, 2], [1, 2, 3]],
-    [["c", "a", "b"], ["a", "b", "c"]],
-    [[5], [5]],
-    [[], []],
-    [[2, 2, 1], [1, 2, 2]],
-  ];
-
-  for (const [input, expected] of cases) {
-    const copy = [...input];
-    insertionSort(copy);
-    console.assert(
-      JSON.stringify(copy) === JSON.stringify(expected),
-      `Failed on ${JSON.stringify(input)} → got ${JSON.stringify(copy)}`
-    );
-  }
-  console.log("All tests passed!");
-}
-
-test();
-function insertionSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
-  const cmp = compareFn ?? ((a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0));
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
+    return { ok: true, data };
+  } catch (err) {
+    // Distinguish between aborts and other network errors.
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      return { ok: false, error: `Request timed out after ${timeoutMs} ms` };
     }
-    arr[j + 1] = key;
+
+    // Anything else (network down, CORS, etc.)
+    return { ok: false, error: (err as Error).message };
   }
-  return arr;
 }
+
+/* -------------------------------------------------------------
+   Example usage
+------------------------------------------------------------- */
+
+interface GithubUser {
+  login: string;
+  id: number;
+  avatar_url: string;
+  html_url: string;
+  public_repos: number;
+}
+
+/**
+ * Fetch a GitHub user profile and log the result.
+ */
+async function showGithubUser(username: string) {
+  const url = `https://api.github.com/users/${encodeURIComponent(username)}`;
+
+  const result = await fetchJson<GithubUser>(url, 8_000);
+
+  if (result.ok) {
+    const user = result.data;
+    console.log('✅ User fetched:', {
+      login: user.login,
+      repos: user.public_repos,
+      profile: user.html_url,
+    });
+  } else {
+    console.error('❌ Failed to fetch user:', result.error);
+  }
+}
+
+// Run the demo (you can replace "octocat" with any GitHub handle)
+showGithubUser('octocat');
