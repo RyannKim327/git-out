@@ -1,202 +1,157 @@
-class FibonacciSearch {
-    /**
-     * Generates Fibonacci numbers up to a given value
-     */
-    private generateFibonacci(n: number): number[] {
-        const fib: number[] = [0, 1];
-        
-        while (fib[fib.length - 1] < n) {
-            fib.push(fib[fib.length - 1] + fib[fib.length - 2]);
-        }
-        
-        return fib;
-    }
+class TreeNode<T> {
+    value: T;
+    left: TreeNode<T> | null;
+    right: TreeNode<T> | null;
 
-    /**
-     * Performs Fibonacci search on a sorted array
-     * @param arr Sorted array to search
-     * @param target Value to find
-     * @returns Index of the target or -1 if not found
-     */
-    search<T>(arr: T[], target: T): number {
-        if (arr.length === 0) return -1;
-
-        const n = arr.length;
-        const fib = this.generateFibonacci(n);
-        
-        let fibM2 = fib[fib.length - 3]; // (m-2)'th Fibonacci number
-        let fibM1 = fib[fib.length - 2]; // (m-1)'th Fibonacci number
-        let fibM = fib[fib.length - 1];  // m'th Fibonacci number
-        
-        let offset = -1;
-        let i = 0;
-
-        while (fibM > 1) {
-            // Prevent index out of bounds
-            i = Math.min(offset + fibM2, n - 1);
-
-            if (arr[i] < target) {
-                // Target is in the right subarray
-                fibM = fibM1;
-                fibM1 = fibM2;
-                fibM2 = fibM - fibM1;
-                offset = i;
-            } else if (arr[i] > target) {
-                // Target is in the left subarray
-                fibM = fibM2;
-                fibM1 = fibM1 - fibM2;
-                fibM2 = fibM - fibM1;
-            } else {
-                // Target found
-                return i;
-            }
-        }
-
-        // Check last element
-        if (fibM1 && arr[offset + 1] === target) {
-            return offset + 1;
-        }
-
-        return -1;
-    }
-
-    /**
-     * Alternative implementation with more detailed logging
-     */
-    searchWithLogging<T>(arr: T[], target: T): number {
-        console.log(`Searching for ${target} in array:`, arr);
-        
-        if (arr.length === 0) {
-            console.log("Array is empty");
-            return -1;
-        }
-
-        const n = arr.length;
-        const fib = this.generateFibonacci(n);
-        console.log(`Fibonacci sequence: ${fib}`);
-        
-        let fibM2 = fib[fib.length - 3];
-        let fibM1 = fib[fib.length - 2];
-        let fibM = fib[fib.length - 1];
-        let offset = -1;
-        let i = 0;
-        let steps = 0;
-
-        while (fibM > 1) {
-            steps++;
-            i = Math.min(offset + fibM2, n - 1);
-            
-            console.log(`Step ${steps}: offset=${offset}, i=${i}, fibM2=${fibM2}, arr[${i}]=${arr[i]}`);
-
-            if (arr[i] < target) {
-                console.log(`  ${arr[i]} < ${target} - searching right subarray`);
-                fibM = fibM1;
-                fibM1 = fibM2;
-                fibM2 = fibM - fibM1;
-                offset = i;
-            } else if (arr[i] > target) {
-                console.log(`  ${arr[i]} > ${target} - searching left subarray`);
-                fibM = fibM2;
-                fibM1 = fibM1 - fibM2;
-                fibM2 = fibM - fibM1;
-            } else {
-                console.log(`  Found at index ${i} in ${steps} steps`);
-                return i;
-            }
-        }
-
-        if (fibM1 && offset + 1 < n && arr[offset + 1] === target) {
-            console.log(`Found at index ${offset + 1} in ${steps + 1} steps`);
-            return offset + 1;
-        }
-
-        console.log(`Not found after ${steps} steps`);
-        return -1;
+    constructor(value: T) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
     }
 }
 
-// Function-based implementation (alternative approach)
-function fibonacciSearch<T>(arr: T[], target: T): number {
-    if (arr.length === 0) return -1;
-
-    // Generate Fibonacci numbers
-    let fibM2 = 0; // (m-2)'th Fibonacci number
-    let fibM1 = 1; // (m-1)'th Fibonacci number
-    let fibM = fibM2 + fibM1; // m'th Fibonacci number
-
-    // Find the smallest Fibonacci number greater than or equal to array length
-    while (fibM < arr.length) {
-        fibM2 = fibM1;
-        fibM1 = fibM;
-        fibM = fibM2 + fibM1;
+function countLeafNodes<T>(root: TreeNode<T> | null): number {
+    if (root === null) {
+        return 0;
     }
-
-    let offset = -1;
-
-    while (fibM > 1) {
-        const i = Math.min(offset + fibM2, arr.length - 1);
-
-        if (arr[i] < target) {
-            fibM = fibM1;
-            fibM1 = fibM2;
-            fibM2 = fibM - fibM1;
-            offset = i;
-        } else if (arr[i] > target) {
-            fibM = fibM2;
-            fibM1 = fibM1 - fibM2;
-            fibM2 = fibM - fibM1;
-        } else {
-            return i;
-        }
-    }
-
-    // Compare the last element
-    if (fibM1 && arr[offset + 1] === target) {
-        return offset + 1;
-    }
-
-    return -1;
-}
-
-// Example usage and testing
-function testFibonacciSearch(): void {
-    const searcher = new FibonacciSearch();
     
-    // Test cases
-    const testArrays = [
-        [1, 3, 5, 7, 9, 11, 13, 15, 17, 19],
-        [2, 4, 6, 8, 10],
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-        [100],
-        []
-    ];
-
-    console.log("=== Fibonacci Search Tests ===\n");
-
-    for (const arr of testArrays) {
-        console.log(`Array: [${arr.join(', ')}]`);
-        
-        // Test existing elements
-        for (let i = 0; i < Math.min(3, arr.length); i++) {
-            const target = arr[i];
-            const result = searcher.search(arr, target);
-            console.log(`  Search for ${target}: index ${result} (expected ${i})`);
-        }
-
-        // Test non-existing element
-        const nonExisting = arr.length > 0 ? arr[arr.length - 1] + 1 : 999;
-        const result = searcher.search(arr, nonExisting);
-        console.log(`  Search for ${nonExisting}: index ${result} (expected -1)`);
-        console.log();
+    // If both children are null, it's a leaf node
+    if (root.left === null && root.right === null) {
+        return 1;
     }
+    
+    // Recursively count leaf nodes in left and right subtrees
+    return countLeafNodes(root.left) + countLeafNodes(root.right);
+}
+function countLeafNodesIterative<T>(root: TreeNode<T> | null): number {
+    if (root === null) {
+        return 0;
+    }
+    
+    let count = 0;
+    const stack: TreeNode<T>[] = [root];
+    
+    while (stack.length > 0) {
+        const node = stack.pop()!;
+        
+        if (node.left === null && node.right === null) {
+            count++;
+        }
+        
+        if (node.right !== null) {
+            stack.push(node.right);
+        }
+        
+        if (node.left !== null) {
+            stack.push(node.left);
+        }
+    }
+    
+    return count;
+}
+function countLeafNodesBFS<T>(root: TreeNode<T> | null): number {
+    if (root === null) {
+        return 0;
+    }
+    
+    let count = 0;
+    const queue: TreeNode<T>[] = [root];
+    
+    while (queue.length > 0) {
+        const node = queue.shift()!;
+        
+        if (node.left === null && node.right === null) {
+            count++;
+        }
+        
+        if (node.left !== null) {
+            queue.push(node.left);
+        }
+        
+        if (node.right !== null) {
+            queue.push(node.right);
+        }
+    }
+    
+    return count;
+}
+class TreeNode<T> {
+    value: T;
+    left: TreeNode<T> | null;
+    right: TreeNode<T> | null;
 
-    // Demonstration with logging
-    console.log("=== Search with Logging ===");
-    const demoArray = [10, 22, 35, 40, 45, 50, 80, 82, 85, 90, 100];
-    searcher.searchWithLogging(demoArray, 85);
+    constructor(value: T) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+    }
 }
 
-// Run tests
-testFibonacciSearch();
+// Leaf counting function (using recursive approach)
+function countLeafNodes<T>(root: TreeNode<T> | null): number {
+    if (root === null) return 0;
+    if (root.left === null && root.right === null) return 1;
+    return countLeafNodes(root.left) + countLeafNodes(root.right);
+}
 
-export { FibonacciSearch, fibonacciSearch };
+// Create a sample binary tree
+/*
+        1
+       / \
+      2   3
+     / \   \
+    4   5   6
+   /
+  7
+*/
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4);
+root.left.right = new TreeNode(5);
+root.right.right = new TreeNode(6);
+root.left.left.left = new TreeNode(7);
+
+// Test the function
+console.log("Number of leaf nodes:", countLeafNodes(root)); // Output: 3 (nodes 5, 7, 6)
+interface IBinaryTree<T> {
+    countLeafNodes(): number;
+}
+
+class BinaryTree<T> implements IBinaryTree<T> {
+    private root: TreeNode<T> | null;
+
+    constructor(rootValue?: T) {
+        this.root = rootValue ? new TreeNode(rootValue) : null;
+    }
+
+    private countLeafNodesRecursive(node: TreeNode<T> | null): number {
+        if (node === null) return 0;
+        if (node.left === null && node.right === null) return 1;
+        return this.countLeafNodesRecursive(node.left) + this.countLeafNodesRecursive(node.right);
+    }
+
+    countLeafNodes(): number {
+        return this.countLeafNodesRecursive(this.root);
+    }
+
+    // Additional utility methods
+    setRoot(value: T): void {
+        this.root = new TreeNode(value);
+    }
+
+    getRoot(): TreeNode<T> | null {
+        return this.root;
+    }
+}
+
+// Usage
+const tree = new BinaryTree<number>(1);
+const rootNode = tree.getRoot();
+if (rootNode) {
+    rootNode.left = new TreeNode(2);
+    rootNode.right = new TreeNode(3);
+    rootNode.left.right = new TreeNode(4);
+}
+
+console.log("Leaf count:", tree.countLeafNodes()); // Output: 2
