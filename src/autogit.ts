@@ -1,92 +1,73 @@
-export type Successor<S, A> = { state: S; action?: A };
-export type SuccessorsFn<S, A> = (s: S) => Array<Successor<S, A>>;
-
-export function depthLimitedSearchRecursive<S, A>(
-  start: S,
-  limit: number,
-  successors: SuccessorsFn<S, A>,
-  goalTest: (s: S) => boolean,
-  equals?: (a: S, b: S) => boolean
-): S[] | null {
-  const pathContains = (path: S[], s: S) => {
-    if (!equals) return path.includes(s);
-    return path.some((p) => equals(p, s));
-  };
-
-  const dfs = (
-    current: S,
-    depth: number,
-    path: S[]
-  ): S[] | null => {
-    if (goalTest(current)) return path;
-    if (depth >= limit) return null;
-
-    for (const step of successors(current)) {
-      const next = step.state;
-      if (pathContains(path, next)) continue; // avoid cycles in current path
-      const result = dfs(next, depth + 1, path.concat([next]));
-      if (result) return result;
-    }
-    return null;
-  };
-
-  return dfs(start, 0, [start]);
+function decimalToBinary(num: number): string {
+    return num.toString(2);
 }
-export function depthLimitedSearchIterative<S, A>(
-  start: S,
-  limit: number,
-  successors: (s: S) => Array<{ state: S; action?: A }>,
-  goalTest: (s: S) => boolean,
-  equals?: (a: S, b: S) => boolean
-): S[] | null {
-  const pathContains = (path: S[], s: S) => {
-    if (!equals) return path.includes(s);
-    return path.some((p) => equals(p, s));
-  };
 
-  type Frame = { state: S; depth: number; path: S[] };
-  const stack: Frame[] = [{ state: start, depth: 0, path: [start] }];
-
-  while (stack.length > 0) {
-    const frame = stack.pop()!;
-    const s = frame.state;
-
-    if (goalTest(s)) return frame.path;
-    if (frame.depth >= limit) continue;
-
-    for (const succ of successors(s)) {
-      const nxt = succ.state;
-      if (pathContains(frame.path, nxt)) continue;
-      stack.push({ state: nxt, depth: frame.depth + 1, path: frame.path.concat([nxt]) });
+// Example usage
+console.log(decimalToBinary(10));  // "1010"
+console.log(decimalToBinary(42));  // "101010"
+console.log(decimalToBinary(255)); // "11111111"
+function decimalToBinaryManual(num: number): string {
+    if (num === 0) return "0";
+    
+    let binary = "";
+    let n = num;
+    
+    while (n > 0) {
+        binary = (n % 2) + binary;
+        n = Math.floor(n / 2);
     }
-  }
-
-  return null;
+    
+    return binary;
 }
-type Node = string;
-type Action = string;
 
-const graph: Record<string, string[]> = {
-  A: ['B', 'C'],
-  B: ['D', 'E'],
-  C: ['F'],
-  D: [],
-  E: ['G'],
-  F: [],
-  G: [],
-};
+// Example usage
+console.log(decimalToBinaryManual(10));  // "1010"
+function decimalToBinaryBitwise(num: number): string {
+    if (num === 0) return "0";
+    
+    let binary = "";
+    let n = num;
+    
+    while (n > 0) {
+        binary = (n & 1) + binary;
+        n = n >>> 1;  // Unsigned right shift
+    }
+    
+    return binary;
+}
 
-// Successors function
-const succ = (n: string) =>
-  graph[n]?.map((s): { state: string; action?: Action } => ({ state: s })) ?? [];
+// Example usage
+console.log(decimalToBinaryBitwise(10));  // "1010"
+function decimalToBinaryRecursive(num: number): string {
+    if (num === 0) return "0";
+    if (num === 1) return "1";
+    
+    return decimalToBinaryRecursive(Math.floor(num / 2)) + (num % 2).toString();
+}
 
-// Goal test
-const isGoal = (n: string) => n === 'G';
+// Example usage
+console.log(decimalToBinaryRecursive(10));  // "1010"
+function decimalToBinaryPadded(num: number, bits: number = 8): string {
+    const binary = num.toString(2);
+    return binary.padStart(bits, '0');
+}
 
-// Run recursive DLS with limit 3
-const path1 = depthLimitedSearchRecursive<string, Action>('A', 3, succ, isGoal);
-console.log(path1); // e.g., ['A', 'B', 'E', 'G']
+// Example usage
+console.log(decimalToBinaryPadded(10));     // "00001010"
+console.log(decimalToBinaryPadded(10, 4));  // "1010"
+console.log(decimalToBinaryPadded(10, 16)); // "0000000000001010"
+function safeDecimalToBinary(num: number): string {
+    if (!Number.isInteger(num) || num < 0) {
+        throw new Error("Input must be a non-negative integer");
+    }
+    
+    return num.toString(2);
+}
 
-// Or run iterative DLS
-const path2 = depthLimitedSearchIterative<string, Action>('A', 3, succ, isGoal);
-console.log(path2); // same idea
+// Example usage
+try {
+    console.log(safeDecimalToBinary(10));    // "1010"
+    console.log(safeDecimalToBinary(-5));    // Error
+} catch (error) {
+    console.error(error.message);
+}
