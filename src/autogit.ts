@@ -1,144 +1,169 @@
-import axios, { AxiosResponse } from 'axios';
-
-// Interface for the expected API response
-interface User {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-  phone: string;
-  website: string;
+interface SearchResult {
+    index: number;
+    pattern: string;
 }
 
-// Function to fetch users from JSONPlaceholder API
-async function fetchUsers(): Promise<User[]> {
-  try {
-    const response: AxiosResponse<User[]> = await axios.get<User[]>(
-      'https://jsonplaceholder.typicode.com/users',
-      {
-        timeout: 5000,
-        headers: {
-          'Content-Type': 'application/json',
+class BoyerMooreHorspool {
+    /**
+     * Preprocesses the pattern to create the bad-character shift table
+     * @param pattern The pattern to search for
+     * @returns A map containing the shift values for each character
+     */
+    private static preprocessPattern(pattern: string): Map<string, number> {
+        const patternLength = pattern.length;
+        const shiftTable = new Map<string, number>();
+        
+        // For all characters except the last one, set shift = patternLength - index - 1
+        for (let i = 0; i < patternLength - 1; i++) {
+            const char = pattern[i];
+            shiftTable.set(char, patternLength - i - 1);
         }
-      }
-    );
-    
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.error('Axios error:', error.message);
-      if (error.response) {
-        console.error('Status:', error.response.status);
-        console.error('Response data:', error.response.data);
-      }
-    } else {
-      console.error('Unexpected error:', error);
+        
+        return shiftTable;
     }
-    throw error;
-  }
-}
 
-// Function to display users in a formatted way
-function displayUsers(users: User[]): void {
-  console.log('\n=== User List ===');
-  users.forEach((user, index) => {
-    console.log(`${index + 1}. ${user.name} (@${user.username})`);
-    console.log(`   Email: ${user.email}`);
-    console.log(`   Phone: ${user.phone}`);
-    console.log(`   Website: ${user.website}`);
-    console.log('---');
-  });
-}
-
-// Function to find a user by ID
-function findUserById(users: User[], id: number): User | undefined {
-  return users.find(user => user.id === id);
-}
-
-// Main function to run the example
-async function main(): Promise<void> {
-  console.log('Fetching users from API...');
-  
-  try {
-    const users = await fetchUsers();
-    console.log(`Successfully fetched ${users.length} users`);
-    
-    displayUsers(users);
-    
-    // Find and display a specific user
-    const targetUserId = 3;
-    const targetUser = findUserById(users, targetUserId);
-    
-    if (targetUser) {
-      console.log(`\nDetails for user ID ${targetUserId}:`);
-      console.log(JSON.stringify(targetUser, null, 2));
-    } else {
-      console.log(`\nUser with ID ${targetUserId} not found`);
-    }
-    
-  } catch (error) {
-    console.error('Failed to fetch users:', error);
-  }
-}
-
-// Run the main function
-main();
-
-// Alternative: Using axios with promises instead of async/await
-function fetchUsersWithPromises(): Promise<User[]> {
-  return axios.get<User[]>('https://jsonplaceholder.typicode.com/users')
-    .then((response: AxiosResponse<User[]>) => response.data)
-    .catch((error) => {
-      console.error('Promise error:', error.message);
-      throw error;
-    });
-}
-
-// Example of POST request
-async function createUser(newUser: Partial<User>): Promise<User> {
-  try {
-    const response = await axios.post<User>(
-      'https://jsonplaceholder.typicode.com/users',
-      newUser,
-      {
-        headers: {
-          'Content-Type': 'application/json',
+    /**
+     * Searches for all occurrences of pattern in text using Boyer-Moore-Horspool algorithm
+     * @param text The text to search in
+     * @param pattern The pattern to search for
+     * @returns Array of search results with indices and matched patterns
+     */
+    static search(text: string, pattern: string): SearchResult[] {
+        const results: SearchResult[] = [];
+        const textLength = text.length;
+        const patternLength = pattern.length;
+        
+        if (patternLength === 0 || textLength === 0 || patternLength > textLength) {
+            return results;
         }
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error('Failed to create user:', error);
-    throw error;
-  }
+
+        const shiftTable = this.preprocessPattern(pattern);
+        const defaultShift = patternLength;
+
+        let i = 0;
+        while (i <= textLength - patternLength) {
+            let j = patternLength - 1;
+
+            // Compare pattern from right to left
+            while (j >= 0 && pattern[j] === text[i + j]) {
+                j--;
+            }
+
+            if (j < 0) {
+                // Pattern found
+                results.push({
+                    index: i,
+                    pattern: text.substring(i, i + patternLength)
+                });
+                i += defaultShift;
+            } else {
+                // Get shift value for the mismatched character
+                const mismatchedChar = text[i + patternLength - 1];
+                const shift = shiftTable.get(mismatchedChar) || defaultShift;
+                i += shift;
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * Searches for the first occurrence of pattern in text
+     * @param text The text to search in
+     * @param pattern The pattern to search for
+     * @returns The index of first occurrence or -1 if not found
+     */
+    static searchFirst(text: string, pattern: string): number {
+        const results = this.search(text, pattern);
+        return results.length > 0 ? results[0].index : -1;
+    }
+
+    /**
+     * Checks if pattern exists in text
+     * @param text The text to search in
+     * @param pattern The pattern to search for
+     * @returns Boolean indicating if pattern was found
+     */
+    static contains(text: string, pattern: string): boolean {
+        return this.searchFirst(text, pattern) !== -1;
+    }
 }
 
-// Example usage of POST
-async function examplePost(): Promise<void> {
-  try {
-    const createdUser = await createUser({
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      phone: '555-1234'
+// Example usage and test cases
+function testBoyerMooreHorspool() {
+    const testCases = [
+        {
+            text: "ABABDABACDABABCABAB",
+            pattern: "ABABCABAB",
+            expected: [10]
+        },
+        {
+            text: "hello world hello there",
+            pattern: "hello",
+            expected: [0, 12]
+        },
+        {
+            text: "abcdefghijk",
+            pattern: "xyz",
+            expected: []
+        },
+        {
+            text: "mississippi",
+            pattern: "iss",
+            expected: [1, 4]
+        },
+        {
+            text: "aaaaaa",
+            pattern: "aa",
+            expected: [0, 1, 2, 3, 4]
+        }
+    ];
+
+    console.log("Testing Boyer-Moore-Horspool Algorithm:\n");
+
+    testCases.forEach((testCase, index) => {
+        const results = BoyerMooreHorspool.search(testCase.text, testCase.pattern);
+        const foundIndices = results.map(r => r.index);
+        
+        console.log(`Test ${index + 1}:`);
+        console.log(`Text: "${testCase.text}"`);
+        console.log(`Pattern: "${testCase.pattern}"`);
+        console.log(`Expected indices: [${testCase.expected.join(', ')}]`);
+        console.log(`Found indices: [${foundIndices.join(', ')}]`);
+        console.log(`Pass: ${JSON.stringify(foundIndices) === JSON.stringify(testCase.expected)}`);
+        console.log("---");
     });
-    console.log('Created user:', createdUser);
-  } catch (error) {
-    console.error('Post example failed:', error);
-  }
+
+    // Additional usage examples
+    console.log("Additional Examples:");
+    
+    const text = "The quick brown fox jumps over the lazy dog";
+    const pattern = "fox";
+    
+    console.log(`\nText: "${text}"`);
+    console.log(`Pattern: "${pattern}"`);
+    console.log(`First occurrence: ${BoyerMooreHorspool.searchFirst(text, pattern)}`);
+    console.log(`Contains pattern: ${BoyerMooreHorspool.contains(text, pattern)}`);
+    console.log(`All occurrences:`, BoyerMooreHorspool.search(text, pattern));
 }
-npm install axios
-npm install -D typescript @types/node ts-node
-{
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules"]
-}
+
+// Run the tests
+testBoyerMooreHorspool();
+
+// Export for use in other modules
+export { BoyerMooreHorspool, SearchResult };
+// Basic usage
+const text = "hello world hello there";
+const pattern = "hello";
+
+// Find all occurrences
+const allResults = BoyerMooreHorspool.search(text, pattern);
+console.log(allResults); // [{index: 0, pattern: "hello"}, {index: 12, pattern: "hello"}]
+
+// Find first occurrence
+const firstIndex = BoyerMooreHorspool.searchFirst(text, pattern);
+console.log(firstIndex); // 0
+
+// Check if pattern exists
+const containsPattern = BoyerMooreHorspool.contains(text, pattern);
+console.log(containsPattern); // true
