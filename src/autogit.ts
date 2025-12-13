@@ -1,95 +1,178 @@
-interface TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
+import axios, { AxiosResponse, AxiosError } from 'axios';
+
+// Define interfaces for our data models
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  username: string;
 }
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let diameter = 0;
-  
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;
-    
-    const left = dfs(node.left);
-    const right = dfs(node.right);
-    
-    // Update the diameter if the path through current node is longer
-    diameter = Math.max(diameter, left + right);
-    
-    // Return the maximum depth from this node
-    return Math.max(left, right) + 1;
+
+interface Post {
+  id: number;
+  userId: number;
+  title: string;
+  body: string;
+}
+
+interface CreateUserRequest {
+  name: string;
+  email: string;
+  username: string;
+}
+
+// Create axios instance with default config
+const apiClient = axios.create({
+  baseURL: 'https://jsonplaceholder.typicode.com',
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+class ApiService {
+  // GET request with typed response
+  async getUsers(): Promise<User[]> {
+    try {
+      const response: AxiosResponse<User[]> = await apiClient.get('/users');
+      return response.data;
+    } catch (error) {
+      this.handleError(error as AxiosError);
+      throw error;
+    }
   }
-  
-  dfs(root);
-  return diameter;
-}
-class TreeNode {
-  constructor(
-    public val: number,
-    public left: TreeNode | null = null,
-    public right: TreeNode | null = null
-  ) {}
-}
 
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let diameter = 0;
-  
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;
-    
-    const leftDepth = dfs(node.left);
-    const rightDepth = dfs(node.right);
-    
-    // Update diameter if path through current node is longer
-    diameter = Math.max(diameter, leftDepth + rightDepth);
-    
-    // Return the maximum depth from this node
-    return Math.max(leftDepth, rightDepth) + 1;
+  // GET request with query parameters
+  async getUserPosts(userId: number): Promise<Post[]> {
+    try {
+      const response: AxiosResponse<Post[]> = await apiClient.get('/posts', {
+        params: { userId }
+      });
+      return response.data;
+    } catch (error) {
+      this.handleError(error as AxiosError);
+      throw error;
+    }
   }
-  
-  dfs(root);
-  return diameter;
-}
 
-// Example usage:
-// Create a sample binary tree:
-//       1
-//      / \
-//     2   3
-//    / \
-//   4   5
-
-const root = new TreeNode(1);
-root.left = new TreeNode(2);
-root.right = new TreeNode(3);
-root.left.left = new TreeNode(4);
-root.left.right = new TreeNode(5);
-
-console.log(diameterOfBinaryTree(root)); // Output: 3 (path 4-2-1-3 or 4-2-5)
-class BinaryTree {
-  root: TreeNode | null = null;
-  
-  constructor(root: TreeNode | null = null) {
-    this.root = root;
+  // POST request with typed request body
+  async createUser(userData: CreateUserRequest): Promise<User> {
+    try {
+      const response: AxiosResponse<User> = await apiClient.post('/users', userData);
+      return response.data;
+    } catch (error) {
+      this.handleError(error as AxiosError);
+      throw error;
+    }
   }
-  
-  getDiameter(): number {
-    let diameter = 0;
-    
-    const dfs = (node: TreeNode | null): number => {
-      if (!node) return 0;
-      
-      const left = dfs(node.left);
-      const right = dfs(node.right);
-      
-      diameter = Math.max(diameter, left + right);
-      return Math.max(left, right) + 1;
-    };
-    
-    dfs(this.root);
-    return diameter;
+
+  // PUT request example
+  async updateUser(userId: number, userData: Partial<User>): Promise<User> {
+    try {
+      const response: AxiosResponse<User> = await apiClient.put(`/users/${userId}`, userData);
+      return response.data;
+    } catch (error) {
+      this.handleError(error as AxiosError);
+      throw error;
+    }
+  }
+
+  // DELETE request example
+  async deleteUser(userId: number): Promise<void> {
+    try {
+      await apiClient.delete(`/users/${userId}`);
+    } catch (error) {
+      this.handleError(error as AxiosError);
+      throw error;
+    }
+  }
+
+  // Error handling utility
+  private handleError(error: AxiosError): void {
+    if (error.response) {
+      // Server responded with error status
+      console.error('Response error:', {
+        status: error.response.status,
+        data: error.response.data,
+      });
+    } else if (error.request) {
+      // Request was made but no response received
+      console.error('Request error:', error.request);
+    } else {
+      // Something else happened
+      console.error('Error:', error.message);
+    }
   }
 }
 
-// Usage
-const tree = new BinaryTree(root);
-console.log(tree.getDiameter()); // Output: 3
+// Usage example
+async function demonstrateApiUsage() {
+  const apiService = new ApiService();
+
+  try {
+    // Get all users
+    const users = await apiService.getUsers();
+    console.log('Users:', users.slice(0, 3)); // Show first 3 users
+
+    // Get posts for first user
+    if (users.length > 0) {
+      const posts = await apiService.getUserPosts(users[0].id);
+      console.log(`Posts for user ${users[0].name}:`, posts.slice(0, 2));
+    }
+
+    // Create a new user
+    const newUser = await apiService.createUser({
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      username: 'johndoe',
+    });
+    console.log('Created user:', newUser);
+
+  } catch (error) {
+    console.error('API demonstration failed:', error);
+  }
+}
+
+// Run the demonstration
+demonstrateApiUsage().catch(console.error);
+
+// Example of using axios directly with interceptors
+apiClient.interceptors.request.use(
+  (config) => {
+    console.log(`Making ${config.method?.toUpperCase()} request to: ${config.url}`);
+    // You could add auth tokens here
+    // config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+apiClient.interceptors.response.use(
+  (response) => {
+    console.log(`Received response with status: ${response.status}`);
+    return response;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+npm install axios
+npm install -D typescript @types/node ts-node
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
