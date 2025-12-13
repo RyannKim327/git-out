@@ -1,96 +1,209 @@
-// 1. Simple in‑place sort (mutates the original array)
-function sortInPlace(nums: number[]): void {
-  nums.sort((a, b) => a - b); // ascending
+interface GraphNode {
+    id: string;
+    children?: GraphNode[];
+    // Add any additional properties your nodes need
 }
 
-// 2. Immutable version – returns a new sorted array
-function sortImmutable(nums: readonly number[]): number[] {
-  // Spread into a new array first, then sort
-  return [...nums].sort((a, b) => a - b);
+class DepthLimitedSearch {
+    private visited: Set<string> = new Set();
+    
+    /**
+     * Perform depth-limited search
+     * @param startNode - The starting node
+     * @param targetId - The ID of the node to search for
+     * @param depthLimit - Maximum depth to search
+     * @returns The target node if found, null otherwise
+     */
+    search(
+        startNode: GraphNode, 
+        targetId: string, 
+        depthLimit: number
+    ): GraphNode | null {
+        this.visited.clear();
+        return this.dlsRecursive(startNode, targetId, depthLimit, 0);
+    }
+    
+    private dlsRecursive(
+        currentNode: GraphNode,
+        targetId: string,
+        depthLimit: number,
+        currentDepth: number
+    ): GraphNode | null {
+        // Mark node as visited
+        this.visited.add(currentNode.id);
+        
+        // Check if current node is the target
+        if (currentNode.id === targetId) {
+            return currentNode;
+        }
+        
+        // Check depth limit
+        if (currentDepth >= depthLimit) {
+            return null;
+        }
+        
+        // Search children
+        if (currentNode.children) {
+            for (const child of currentNode.children) {
+                // Skip already visited nodes to avoid cycles
+                if (!this.visited.has(child.id)) {
+                    const result = this.dlsRecursive(child, targetId, depthLimit, currentDepth + 1);
+                    if (result !== null) {
+                        return result;
+                    }
+                }
+            }
+        }
+        
+        return null;
+    }
+}
+interface SearchResult {
+    node: GraphNode | null;
+    path: string[];
 }
 
-// Usage
-const original = [42, 7, 19, 3, 15];
-
-sortInPlace(original);
-console.log(original); // [3, 7, 15, 19, 42]
-
-const immutableSorted = sortImmutable([42, 7, 19, 3, 15]);
-console.log(immutableSorted); // [3, 7, 15, 19, 42]
-nums.sort((a, b) => b - a); // descending
-// utils/sortNumbers.ts
-export function sortNumbers<T extends number>(
-  arr: readonly T[],
-  order: 'asc' | 'desc' = 'asc'
-): T[] {
-  const sorted = [...arr];
-  sorted.sort((a, b) => (order === 'asc' ? a - b : b - a));
-  return sorted;
+class EnhancedDepthLimitedSearch {
+    /**
+     * Perform depth-limited search with path tracking
+     */
+    searchWithPath(
+        startNode: GraphNode,
+        targetId: string,
+        depthLimit: number
+    ): SearchResult {
+        const visited: Set<string> = new Set();
+        return this.dlsWithPath(startNode, targetId, depthLimit, 0, [], visited);
+    }
+    
+    private dlsWithPath(
+        currentNode: GraphNode,
+        targetId: string,
+        depthLimit: number,
+        currentDepth: number,
+        currentPath: string[],
+        visited: Set<string>
+    ): SearchResult {
+        visited.add(currentNode.id);
+        const newPath = [...currentPath, currentNode.id];
+        
+        // Check if current node is the target
+        if (currentNode.id === targetId) {
+            return { node: currentNode, path: newPath };
+        }
+        
+        // Check depth limit
+        if (currentDepth >= depthLimit) {
+            return { node: null, path: newPath };
+        }
+        
+        // Search children
+        if (currentNode.children) {
+            for (const child of currentNode.children) {
+                if (!visited.has(child.id)) {
+                    const result = this.dlsWithPath(
+                        child, 
+                        targetId, 
+                        depthLimit, 
+                        currentDepth + 1, 
+                        newPath, 
+                        visited
+                    );
+                    if (result.node !== null) {
+                        return result;
+                    }
+                }
+            }
+        }
+        
+        return { node: null, path: newPath };
+    }
 }
-import { sortNumbers } from './utils/sortNumbers';
+// Example graph structure
+const graph: GraphNode = {
+    id: 'A',
+    children: [
+        {
+            id: 'B',
+            children: [
+                { id: 'D', children: [{ id: 'G' }] },
+                { id: 'E' }
+            ]
+        },
+        {
+            id: 'C',
+            children: [
+                { id: 'F', children: [{ id: 'H' }, { id: 'I' }] }
+            ]
+        }
+    ]
+};
 
-const data = [5, 2, 9, 1];
-const asc = sortNumbers(data);               // [1, 2, 5, 9]
-const desc = sortNumbers(data, 'desc');      // [9, 5, 2, 1]
-function sortPure(nums: readonly number[]): number[] {
-  return Array.from(nums).sort((a, b) => a - b);
+// Using the DLS algorithm
+const dls = new DepthLimitedSearch();
+
+// Search for node 'H' with depth limit 3
+const result1 = dls.search(graph, 'H', 3);
+console.log('Found node:', result1?.id); // Output: H
+
+// Search for node 'I' with depth limit 2 (should fail)
+const result2 = dls.search(graph, 'I', 2);
+console.log('Found node:', result2?.id); // Output: null
+
+// Using enhanced version with path tracking
+const enhancedDls = new EnhancedDepthLimitedSearch();
+const result3 = enhancedDls.searchWithPath(graph, 'G', 3);
+console.log('Found node:', result3.node?.id); // Output: G
+console.log('Path:', result3.path); // Output: ['A', 'B', 'D', 'G']
+interface SearchableNode<T> {
+    id: string;
+    getNeighbors(): SearchableNode<T>[];
+    data?: T;
 }
-// Example of a manual merge sort (pure functional, O(n log n) stable)
-function mergeSort(arr: readonly number[]): number[] {
-  if (arr.length <= 1) return [...arr];
 
-  const mid = Math.floor(arr.length / 2);
-  const left = mergeSort(arr.slice(0, mid));
-  const right = mergeSort(arr.slice(mid));
-
-  const merged: number[] = [];
-  let i = 0,
-    j = 0;
-  while (i < left.length && j < right.length) {
-    if (left[i] <= right[j]) merged.push(left[i++]);
-    else merged.push(right[j++]);
-  }
-  return merged.concat(left.slice(i)).concat(right.slice(j));
+class GenericDepthLimitedSearch<T> {
+    search(
+        startNode: SearchableNode<T>,
+        targetId: string,
+        depthLimit: number
+    ): SearchableNode<T> | null {
+        const visited: Set<string> = new Set();
+        return this.dlsRecursive(startNode, targetId, depthLimit, 0, visited);
+    }
+    
+    private dlsRecursive(
+        currentNode: SearchableNode<T>,
+        targetId: string,
+        depthLimit: number,
+        currentDepth: number,
+        visited: Set<string>
+    ): SearchableNode<T> | null {
+        visited.add(currentNode.id);
+        
+        if (currentNode.id === targetId) {
+            return currentNode;
+        }
+        
+        if (currentDepth >= depthLimit) {
+            return null;
+        }
+        
+        const neighbors = currentNode.getNeighbors();
+        for (const neighbor of neighbors) {
+            if (!visited.has(neighbor.id)) {
+                const result = this.dlsRecursive(
+                    neighbor, 
+                    targetId, 
+                    depthLimit, 
+                    currentDepth + 1, 
+                    visited
+                );
+                if (result !== null) {
+                    return result;
+                }
+            }
+        }
+        
+        return null;
+    }
 }
-function sortIfNumbers<T>(arr: T[]): T[] {
-  // Compile‑time guard – will error if T is not assignable to number
-  // (the `as unknown as number[]` cast is only needed for runtime, not for typing)
-  if (typeof arr[0] !== 'number') {
-    throw new Error('Array must contain numbers');
-  }
-  return (arr as unknown as number[]).sort((a, b) => a - b) as unknown as T[];
-}
-function sortReadOnly(nums: readonly number[]): number[] {
-  // The spread operator creates a mutable copy, leaving the original untouched.
-  return [...nums].sort((a, b) => a - b);
-}
-src/
-├─ utils/
-│  └─ sortNumbers.ts
-├─ models/
-│  └─ types.ts          // (optional) define numeric tuple types, etc.
-└─ index.ts
-export type SortOrder = 'asc' | 'desc';
-
-export function sortNumbers<T extends number>(
-  arr: readonly T[],
-  order: SortOrder = 'asc'
-): T[] {
-  const copy = [...arr];
-  copy.sort((a, b) => (order === 'asc' ? a - b : b - a));
-  return copy;
-}
-import { sortNumbers } from './utils/sortNumbers';
-
-const unsorted = [12, 4, 7, 1, 9] as const;
-
-const asc = sortNumbers(unsorted);          // [1, 4, 7, 9, 12]
-const desc = sortNumbers(unsorted, 'desc'); // [12, 9, 7, 4, 1]
-
-console.log('ascending →', asc);
-console.log('descending →', desc);
-$ npx ts-node src/index.ts
-ascending → [ 1, 4, 7, 9, 12 ]
-descending → [ 12, 9, 7, 4, 1 ]
-// simplest, type‑safe, immutable version
-const sorted = [...myNumbers].sort((a, b) => a - b);
