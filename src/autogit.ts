@@ -1,115 +1,95 @@
-function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
-  
-  // Find the maximum value in the array
-  const max = Math.max(...arr);
-  
-  // Initialize count array
-  const count = new Array(max + 1).fill(0);
-  
-  // Count occurrences of each number
-  for (const num of arr) {
-    count[num]++;
-  }
-  
-  // Build the sorted array
-  const sorted: number[] = [];
-  for (let i = 0; i <= max; i++) {
-    for (let j = 0; j < count[i]; j++) {
-      sorted.push(i);
-    }
-  }
-  
-  return sorted;
+interface TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 }
-function countingSortEfficient(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let diameter = 0;
   
-  const max = Math.max(...arr);
-  const min = Math.min(...arr);
-  const range = max - min + 1;
-  
-  // Initialize count array
-  const count = new Array(range).fill(0);
-  const output = new Array(arr.length);
-  
-  // Count occurrences
-  for (const num of arr) {
-    count[num - min]++;
+  function dfs(node: TreeNode | null): number {
+    if (!node) return 0;
+    
+    const left = dfs(node.left);
+    const right = dfs(node.right);
+    
+    // Update the diameter if the path through current node is longer
+    diameter = Math.max(diameter, left + right);
+    
+    // Return the maximum depth from this node
+    return Math.max(left, right) + 1;
   }
   
-  // Calculate cumulative counts
-  for (let i = 1; i < range; i++) {
-    count[i] += count[i - 1];
-  }
-  
-  // Build the output array
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const num = arr[i];
-    output[count[num - min] - 1] = num;
-    count[num - min]--;
-  }
-  
-  return output;
+  dfs(root);
+  return diameter;
 }
-interface CountingSortOptions {
-  min?: number;
-  max?: number;
+class TreeNode {
+  constructor(
+    public val: number,
+    public left: TreeNode | null = null,
+    public right: TreeNode | null = null
+  ) {}
 }
 
-function countingSortGeneric(
-  arr: number[], 
-  options?: CountingSortOptions
-): number[] {
-  if (arr.length === 0) return [];
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let diameter = 0;
   
-  // Determine min and max values
-  const min = options?.min ?? Math.min(...arr);
-  const max = options?.max ?? Math.max(...arr);
-  const range = max - min + 1;
-  
-  // Validate input
-  if (min > max) {
-    throw new Error("Minimum cannot be greater than maximum");
+  function dfs(node: TreeNode | null): number {
+    if (!node) return 0;
+    
+    const leftDepth = dfs(node.left);
+    const rightDepth = dfs(node.right);
+    
+    // Update diameter if path through current node is longer
+    diameter = Math.max(diameter, leftDepth + rightDepth);
+    
+    // Return the maximum depth from this node
+    return Math.max(leftDepth, rightDepth) + 1;
   }
   
-  // Initialize count array
-  const count = new Array(range).fill(0);
-  
-  // Count occurrences
-  for (const num of arr) {
-    if (num < min || num > max) {
-      throw new Error(`Value ${num} is outside the specified range [${min}, ${max}]`);
-    }
-    count[num - min]++;
-  }
-  
-  // Build sorted array
-  const sorted: number[] = [];
-  for (let i = 0; i < range; i++) {
-    for (let j = 0; j < count[i]; j++) {
-      sorted.push(i + min);
-    }
-  }
-  
-  return sorted;
+  dfs(root);
+  return diameter;
 }
-// Example usage
-const numbers = [4, 2, 2, 8, 3, 3, 1];
 
-console.log("Original array:", numbers);
-console.log("Sorted (basic):", countingSort(numbers));
-console.log("Sorted (efficient):", countingSortEfficient(numbers));
-console.log("Sorted (generic):", countingSortGeneric(numbers));
+// Example usage:
+// Create a sample binary tree:
+//       1
+//      / \
+//     2   3
+//    / \
+//   4   5
 
-// With custom range
-console.log("Sorted with custom range:", countingSortGeneric(numbers, { min: 1, max: 8 }));
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4);
+root.left.right = new TreeNode(5);
 
-// Performance test
-const largeArray = Array.from({ length: 10000 }, () => 
-  Math.floor(Math.random() * 100)
-);
+console.log(diameterOfBinaryTree(root)); // Output: 3 (path 4-2-1-3 or 4-2-5)
+class BinaryTree {
+  root: TreeNode | null = null;
+  
+  constructor(root: TreeNode | null = null) {
+    this.root = root;
+  }
+  
+  getDiameter(): number {
+    let diameter = 0;
+    
+    const dfs = (node: TreeNode | null): number => {
+      if (!node) return 0;
+      
+      const left = dfs(node.left);
+      const right = dfs(node.right);
+      
+      diameter = Math.max(diameter, left + right);
+      return Math.max(left, right) + 1;
+    };
+    
+    dfs(this.root);
+    return diameter;
+  }
+}
 
-console.time("Counting Sort");
-const sortedLarge = countingSortEfficient(largeArray);
-console.timeEnd("Counting Sort");
+// Usage
+const tree = new BinaryTree(root);
+console.log(tree.getDiameter()); // Output: 3
