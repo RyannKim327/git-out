@@ -1,163 +1,306 @@
-function mergeSort<T>(array: T[]): T[] {
-    if (array.length <= 1) {
-        return array;
-    }
-    
-    const middle = Math.floor(array.length / 2);
-    const left = array.slice(0, middle);
-    const right = array.slice(middle);
-    
-    return merge(mergeSort(left), mergeSort(right));
+interface SuffixTreeNode {
+  children: Map<string, SuffixTreeNode>;
+  start?: number;
+  end?: number;
+  suffixLink?: SuffixTreeNode;
 }
 
-function merge<T>(left: T[], right: T[]): T[] {
-    const result: T[] = [];
-    let leftIndex = 0;
-    let rightIndex = 0;
-    
-    while (leftIndex < left.length && rightIndex < right.length) {
-        if (left[leftIndex] < right[rightIndex]) {
-            result.push(left[leftIndex]);
-            leftIndex++;
-        } else {
-            result.push(right[rightIndex]);
-            rightIndex++;
-        }
-    }
-    
-    return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
-}
-function mergeSort<T>(
-    array: T[], 
-    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
-): T[] {
-    if (array.length <= 1) {
-        return array;
-    }
-    
-    const middle = Math.floor(array.length / 2);
-    const left = array.slice(0, middle);
-    const right = array.slice(middle);
-    
-    return merge(
-        mergeSort(left, compareFn), 
-        mergeSort(right, compareFn), 
-        compareFn
-    );
-}
+class SuffixTree {
+  private root: SuffixTreeNode;
+  private text: string;
+  private remainingSuffixCount: number = 0;
+  private lastNewNode: SuffixTreeNode | null = null;
+  private activeNode: SuffixTreeNode;
+  private activeEdge: number = -1;
+  private activeLength: number = 0;
 
-function merge<T>(
-    left: T[], 
-    right: T[], 
-    compareFn: (a: T, b: T) => number
-): T[] {
-    const result: T[] = [];
-    let leftIndex = 0;
-    let rightIndex = 0;
-    
-    while (leftIndex < left.length && rightIndex < right.length) {
-        if (compareFn(left[leftIndex], right[rightIndex]) <= 0) {
-            result.push(left[leftIndex]);
-            leftIndex++;
-        } else {
-            result.push(right[rightIndex]);
-            rightIndex++;
-        }
-    }
-    
-    return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
-}
-function mergeSortInPlace<T>(
-    array: T[], 
-    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
-): void {
-    const tempArray = new Array(array.length);
-    mergeSortHelper(array, tempArray, 0, array.length - 1, compareFn);
-}
+  constructor(text: string) {
+    this.text = text + '$'; // Add terminal character
+    this.root = this.createNode();
+    this.activeNode = this.root;
+    this.build();
+  }
 
-function mergeSortHelper<T>(
-    array: T[], 
-    tempArray: T[], 
-    start: number, 
-    end: number, 
-    compareFn: (a: T, b: T) => number
-): void {
-    if (start < end) {
-        const middle = Math.floor((start + end) / 2);
+  private createNode(start?: number, end?: number): SuffixTreeNode {
+    return {
+      children: new Map(),
+      start,
+      end,
+      suffixLink: undefined
+    };
+  }
+
+  private edgeLength(node: SuffixTreeNode): number {
+    if (node.end === undefined || node.start === undefined) return 0;
+    return Math.min(node.end, this.text.length) - node.start;
+  }
+
+  private walkDown(currentNode: SuffixTreeNode): boolean {
+    const edgeLen = this.edgeLength(currentNode);
+    
+    if (this.activeLength >= edgeLen) {
+      this.activeEdge += edgeLen;
+      this.activeLength -= edgeLen;
+      this.activeNode = currentNode;
+      return true;
+    }
+    return false;
+  }
+
+  private extend(pos: number): void {
+    this.lastNewNode = null;
+    this.remainingSuffixCount++;
+    
+    while (this.remainingSuffixCount > 0) {
+      if (this.activeLength === 0) {
+        this.activeEdge = pos;
+      }
+      
+      const currentChar = this.text[this.activeEdge];
+      let nextNode = this.activeNode.children.get(currentChar);
+      
+      if (!nextNode) {
+        // Create new leaf node
+        nextNode = this.createNode(pos, Infinity);
+        this.activeNode.children.set(currentChar, nextNode);
         
-        mergeSortHelper(array, tempArray, start, middle, compareFn);
-        mergeSortHelper(array, tempArray, middle + 1, end, compareFn);
-        mergeInPlace(array, tempArray, start, middle, end, compareFn);
-    }
-}
-
-function mergeInPlace<T>(
-    array: T[], 
-    tempArray: T[], 
-    start: number, 
-    middle: number, 
-    end: number, 
-    compareFn: (a: T, b: T) => number
-): void {
-    let leftIndex = start;
-    let rightIndex = middle + 1;
-    let tempIndex = start;
-    
-    while (leftIndex <= middle && rightIndex <= end) {
-        if (compareFn(array[leftIndex], array[rightIndex]) <= 0) {
-            tempArray[tempIndex] = array[leftIndex];
-            leftIndex++;
-        } else {
-            tempArray[tempIndex] = array[rightIndex];
-            rightIndex++;
+        if (this.lastNewNode) {
+          this.lastNewNode.suffixLink = this.activeNode;
+          this.lastNewNode = null;
         }
-        tempIndex++;
+      } else {
+        if (this.walkDown(nextNode)) {
+          continue;
+        }
+        
+        const nextChar = this.text[nextNode.start! + this.activeLength];
+        if (nextChar === this.text[pos]) {
+          if (this.lastNewNode && this.activeNode !== this.root) {
+            this.lastNewNode.suffixLink = this.activeNode;
+            this.lastNewNode = null;
+          }
+          this.activeLength++;
+          break;
+        }
+        
+        // Split the node
+        const splitEnd = nextNode.start! + this.activeLength;
+        const splitNode = this.createNode(nextNode.start!, splitEnd);
+        this.activeNode.children.set(currentChar, splitNode);
+        
+        // Create new leaf node
+        const leafNode = this.createNode(pos, Infinity);
+        splitNode.children.set(this.text[pos], leafNode);
+        
+        // Update the existing node
+        nextNode.start = splitEnd;
+        splitNode.children.set(this.text[splitEnd], nextNode);
+        
+        if (this.lastNewNode) {
+          this.lastNewNode.suffixLink = splitNode;
+        }
+        
+        this.lastNewNode = splitNode;
+      }
+      
+      this.remainingSuffixCount--;
+      
+      if (this.activeNode === this.root && this.activeLength > 0) {
+        this.activeLength--;
+        this.activeEdge = pos - this.remainingSuffixCount + 1;
+      } else if (this.activeNode !== this.root) {
+        this.activeNode = this.activeNode.suffixLink || this.root;
+      }
+    }
+  }
+
+  private build(): void {
+    for (let i = 0; i < this.text.length; i++) {
+      this.extend(i);
+    }
+  }
+
+  // Search for a pattern in the suffix tree
+  search(pattern: string): boolean {
+    let currentNode = this.root;
+    let patternIndex = 0;
+    
+    while (patternIndex < pattern.length) {
+      const currentChar = pattern[patternIndex];
+      const nextNode = currentNode.children.get(currentChar);
+      
+      if (!nextNode) {
+        return false;
+      }
+      
+      // Check the edge label
+      const edgeStart = nextNode.start!;
+      const edgeEnd = Math.min(nextNode.end!, this.text.length);
+      const edgeLength = edgeEnd - edgeStart;
+      
+      for (let i = 0; i < edgeLength && patternIndex < pattern.length; i++) {
+        if (this.text[edgeStart + i] !== pattern[patternIndex]) {
+          return false;
+        }
+        patternIndex++;
+      }
+      
+      currentNode = nextNode;
     }
     
-    while (leftIndex <= middle) {
-        tempArray[tempIndex] = array[leftIndex];
-        leftIndex++;
-        tempIndex++;
+    return true;
+  }
+
+  // Get all occurrences of a pattern
+  findAllOccurrences(pattern: string): number[] {
+    const occurrences: number[] = [];
+    this.findAllOccurrencesHelper(this.root, pattern, 0, 0, occurrences);
+    return occurrences;
+  }
+
+  private findAllOccurrencesHelper(
+    node: SuffixTreeNode, 
+    pattern: string, 
+    patternIndex: number, 
+    lengthSoFar: number,
+    occurrences: number[]
+  ): void {
+    if (patternIndex === pattern.length) {
+      // Found the pattern, now collect all leaf nodes
+      this.collectLeafIndices(node, lengthSoFar, occurrences);
+      return;
     }
     
-    while (rightIndex <= end) {
-        tempArray[tempIndex] = array[rightIndex];
-        rightIndex++;
-        tempIndex++;
+    const currentChar = pattern[patternIndex];
+    const nextNode = node.children.get(currentChar);
+    
+    if (!nextNode) return;
+    
+    const edgeStart = nextNode.start!;
+    const edgeEnd = Math.min(nextNode.end!, this.text.length);
+    const edgeLength = edgeEnd - edgeStart;
+    
+    for (let i = 0; i < edgeLength && patternIndex < pattern.length; i++) {
+      if (this.text[edgeStart + i] !== pattern[patternIndex]) {
+        return;
+      }
+      patternIndex++;
+      lengthSoFar++;
     }
     
-    for (let i = start; i <= end; i++) {
-        array[i] = tempArray[i];
+    this.findAllOccurrencesHelper(nextNode, pattern, patternIndex, lengthSoFar, occurrences);
+  }
+
+  private collectLeafIndices(node: SuffixTreeNode, length: number, occurrences: number[]): void {
+    if (node.children.size === 0) {
+      // Leaf node
+      occurrences.push(this.text.length - length);
     }
+    
+    for (const child of node.children.values()) {
+      const edgeLength = Math.min(child.end!, this.text.length) - child.start!;
+      this.collectLeafIndices(child, length + edgeLength, occurrences);
+    }
+  }
+
+  // Visualize the suffix tree (for debugging)
+  visualize(): string {
+    return this.visualizeHelper(this.root, 0);
+  }
+
+  private visualizeHelper(node: SuffixTreeNode, depth: number): string {
+    let result = '';
+    const indent = '  '.repeat(depth);
+    
+    for (const [char, child] of node.children) {
+      const edgeLabel = this.text.substring(child.start!, Math.min(child.end!, this.text.length));
+      result += `${indent}${char}: "${edgeLabel}"\n`;
+      result += this.visualizeHelper(child, depth + 1);
+    }
+    
+    return result;
+  }
 }
-// Basic usage with numbers
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-console.log(mergeSort(numbers)); // [11, 12, 22, 25, 34, 64, 90]
+// Example usage
+const text = "banana";
+const suffixTree = new SuffixTree(text);
 
-// Usage with strings
-const strings = ["banana", "apple", "cherry", "date"];
-console.log(mergeSort(strings)); // ["apple", "banana", "cherry", "date"]
+console.log("Suffix Tree Visualization:");
+console.log(suffixTree.visualize());
 
-// Custom comparator for descending order
-const descendingNumbers = [64, 34, 25, 12, 22, 11, 90];
-console.log(mergeSort(descendingNumbers, (a, b) => b - a)); // [90, 64, 34, 25, 22, 12, 11]
+console.log("\nSearch Results:");
+console.log("Contains 'ana':", suffixTree.search("ana")); // true
+console.log("Contains 'nan':", suffixTree.search("nan")); // true
+console.log("Contains 'apple':", suffixTree.search("apple")); // false
 
-// Custom comparator for objects
-interface Person {
-    name: string;
-    age: number;
+console.log("\nAll occurrences of 'na':", suffixTree.findAllOccurrences("na"));
+// Output: [4, 2] (positions where 'na' occurs)
+interface EnhancedSuffixTreeNode extends SuffixTreeNode {
+  index?: number; // For leaf nodes, stores the starting index
 }
 
-const people: Person[] = [
-    { name: "Alice", age: 30 },
-    { name: "Bob", age: 25 },
-    { name: "Charlie", age: 35 }
-];
+class EnhancedSuffixTree extends SuffixTree {
+  private leafCount: number = 0;
 
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
-console.log(sortedByAge); // Sorted by age ascending
+  private createEnhancedNode(start?: number, end?: number): EnhancedSuffixTreeNode {
+    return {
+      ...this.createNode(start, end),
+      index: undefined
+    };
+  }
 
-// In-place sorting
-const arrayToSort = [64, 34, 25, 12, 22, 11, 90];
-mergeSortInPlace(arrayToSort);
-console.log(arrayToSort); // Original array is now sorted
+  // Override extend to handle leaf indexing
+  private enhancedExtend(pos: number): void {
+    // Similar to extend but with leaf indexing
+    // Implementation would track leaf nodes with their starting indices
+  }
+
+  // Find longest repeated substring
+  findLongestRepeatedSubstring(): string {
+    let longest = '';
+    let maxLength = 0;
+    
+    const traverse = (node: SuffixTreeNode, currentString: string) => {
+      if (node.children.size > 1 && currentString.length > maxLength) {
+        longest = currentString;
+        maxLength = currentString.length;
+      }
+      
+      for (const [char, child] of node.children) {
+        const edgeLabel = this.text.substring(child.start!, Math.min(child.end!, this.text.length));
+        traverse(child, currentString + edgeLabel);
+      }
+    };
+    
+    traverse(this.root, '');
+    return longest;
+  }
+
+  // Find longest common substring between two strings
+  static findLongestCommonSubstring(str1: string, str2: string): string {
+    const combined = str1 + '#' + str2 + '$';
+    const tree = new EnhancedSuffixTree(combined);
+    return tree.findLongestRepeatedSubstring();
+  }
+}
+
+// Additional utility functions
+class SuffixTreeUtils {
+  // Build suffix array from suffix tree
+  static buildSuffixArray(tree: SuffixTree): number[] {
+    const suffixes: number[] = [];
+    const traverse = (node: SuffixTreeNode, length: number) => {
+      if (node.children.size === 0) {
+        suffixes.push(tree.text.length - length);
+      }
+      
+      for (const child of node.children.values()) {
+        const edgeLength = Math.min(child.end!, tree.text.length) - child.start!;
+        traverse(child, length + edgeLength);
+      }
+    };
+    
+    traverse(tree.root, 0);
+    return suffixes.sort((a, b) => a - b);
+  }
+}
