@@ -1,174 +1,83 @@
-class Stack<T> {
-    private items: T[];
-    private top: number;
+class ListNode<T> {
+    value: T;
+    next: ListNode<T> | null;
+    
+    constructor(value: T) {
+        this.value = value;
+        this.next = null;
+    }
+}
 
+function findLengthIterative<T>(head: ListNode<T> | null): number {
+    let count = 0;
+    let current = head;
+    
+    while (current !== null) {
+        count++;
+        current = current.next;
+    }
+    
+    return count;
+}
+function findLengthRecursive<T>(head: ListNode<T> | null): number {
+    if (head === null) {
+        return 0;
+    }
+    
+    return 1 + findLengthRecursive(head.next);
+}
+class LinkedList<T> {
+    head: ListNode<T> | null;
+    
     constructor() {
-        this.items = [];
-        this.top = -1;
+        this.head = null;
     }
-
-    // Push element onto the stack
-    push(element: T): void {
-        this.top++;
-        this.items[this.top] = element;
+    
+    // Add this method to your LinkedList class
+    getLength(): number {
+        return this.findLength();
     }
-
-    // Pop element from the stack
-    pop(): T | undefined {
-        if (this.isEmpty()) {
-            return undefined;
+    
+    private findLength(): number {
+        let count = 0;
+        let current = this.head;
+        
+        while (current !== null) {
+            count++;
+            current = current.next;
         }
-        const element = this.items[this.top];
-        this.top--;
-        return element;
+        
+        return count;
     }
-
-    // Peek at the top element without removing it
-    peek(): T | undefined {
-        if (this.isEmpty()) {
-            return undefined;
+    
+    // Optional: Recursive version as method
+    getLengthRecursive(): number {
+        return this.findLengthRecursiveHelper(this.head);
+    }
+    
+    private findLengthRecursiveHelper(node: ListNode<T> | null): number {
+        if (node === null) {
+            return 0;
         }
-        return this.items[this.top];
-    }
-
-    // Check if stack is empty
-    isEmpty(): boolean {
-        return this.top === -1;
-    }
-
-    // Get the size of the stack
-    size(): number {
-        return this.top + 1;
-    }
-
-    // Clear the stack
-    clear(): void {
-        this.items = [];
-        this.top = -1;
-    }
-
-    // Print stack contents (for debugging)
-    print(): void {
-        console.log(this.items.slice(0, this.top + 1));
+        
+        return 1 + this.findLengthRecursiveHelper(node.next);
     }
 }
-class SimpleStack<T> {
-    private items: T[];
+// Create a linked list: 1 -> 2 -> 3 -> 4
+const node1 = new ListNode(1);
+const node2 = new ListNode(2);
+const node3 = new ListNode(3);
+const node4 = new ListNode(4);
 
-    constructor() {
-        this.items = [];
-    }
+node1.next = node2;
+node2.next = node3;
+node3.next = node4;
 
-    push(element: T): void {
-        this.items.push(element);
-    }
+// Test the functions
+console.log("Iterative length:", findLengthIterative(node1)); // Output: 4
+console.log("Recursive length:", findLengthRecursive(node1)); // Output: 4
 
-    pop(): T | undefined {
-        return this.items.pop();
-    }
-
-    peek(): T | undefined {
-        return this.items.length > 0 ? this.items[this.items.length - 1] : undefined;
-    }
-
-    isEmpty(): boolean {
-        return this.items.length === 0;
-    }
-
-    size(): number {
-        return this.items.length;
-    }
-
-    clear(): void {
-        this.items = [];
-    }
-
-    print(): void {
-        console.log(this.items);
-    }
-}
-class FixedCapacityStack<T> {
-    private items: T[];
-    private capacity: number;
-    private top: number;
-
-    constructor(capacity: number) {
-        this.items = new Array<T>(capacity);
-        this.capacity = capacity;
-        this.top = -1;
-    }
-
-    push(element: T): boolean {
-        if (this.isFull()) {
-            console.warn("Stack is full. Cannot push element.");
-            return false;
-        }
-        this.top++;
-        this.items[this.top] = element;
-        return true;
-    }
-
-    pop(): T | undefined {
-        if (this.isEmpty()) {
-            return undefined;
-        }
-        const element = this.items[this.top];
-        this.top--;
-        return element;
-    }
-
-    peek(): T | undefined {
-        if (this.isEmpty()) {
-            return undefined;
-        }
-        return this.items[this.top];
-    }
-
-    isEmpty(): boolean {
-        return this.top === -1;
-    }
-
-    isFull(): boolean {
-        return this.top === this.capacity - 1;
-    }
-
-    size(): number {
-        return this.top + 1;
-    }
-
-    clear(): void {
-        this.top = -1;
-    }
-}
-// Example usage
-const stack = new Stack<number>();
-
-// Push elements
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.peek()); // 30
-console.log(stack.size()); // 3
-
-// Pop elements
-console.log(stack.pop()); // 30
-console.log(stack.pop()); // 20
-
-console.log(stack.isEmpty()); // false
-console.log(stack.size()); // 1
-
-stack.print(); // [10]
-
-// String stack example
-const stringStack = new Stack<string>();
-stringStack.push("Hello");
-stringStack.push("World");
-console.log(stringStack.pop()); // "World"
-
-// Fixed capacity example
-const fixedStack = new FixedCapacityStack<number>(3);
-fixedStack.push(1);
-fixedStack.push(2);
-fixedStack.push(3);
-console.log(fixedStack.push(4)); // false (stack is full)
+// Using class-based approach
+const list = new LinkedList<number>();
+list.head = node1;
+console.log("Class-based length:", list.getLength()); // Output: 4
