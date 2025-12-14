@@ -1,84 +1,44 @@
-function areaWithBaseHeight(base: number, height: number): number {
-    return (base * height) / 2;
+// ---------- 1.  Node definition  ----------
+class ListNode<T> {
+  constructor(
+    public data: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
 
-// Example usage
-const area = areaWithBaseHeight(10, 5); // Returns 25
-function areaWithThreeSides(a: number, b: number, c: number): number {
-    const s = (a + b + c) / 2; // Semi-perimeter
-    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+// ---------- 2.  In-place reversal ----------
+function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let curr = head;
+
+  while (curr) {
+    const next = curr.next; // save pointer
+    curr.next = prev;       // flip
+    prev = curr;            // advance prev
+    curr = next;            // advance curr
+  }
+  return prev;              // new head
 }
 
-// Example usage
-const area = areaWithThreeSides(3, 4, 5); // Returns 6
-function areaWithSidesAndAngle(
-    side1: number, 
-    side2: number, 
-    angleInDegrees: number
-): number {
-    const angleInRadians = (angleInDegrees * Math.PI) / 180;
-    return (side1 * side2 * Math.sin(angleInRadians)) / 2;
+// ---------- 3.  Helpers (optional) ----------
+function fromArray<T>(arr: T[]): ListNode<T> | null {
+  if (arr.length === 0) return null;
+  const head = new ListNode(arr[0]);
+  let tail = head;
+  for (let i = 1; i < arr.length; ++i) {
+    tail.next = new ListNode(arr[i]);
+    tail = tail.next;
+  }
+  return head;
 }
 
-// Example usage
-const area = areaWithSidesAndAngle(5, 7, 45); // Returns approximately 12.37
-interface Point {
-    x: number;
-    y: number;
+function toArray<T>(head: ListNode<T> | null): T[] {
+  const out: T[] = [];
+  for (let node = head; node; node = node.next) out.push(node.data);
+  return out;
 }
 
-function areaWithCoordinates(A: Point, B: Point, C: Point): number {
-    return Math.abs(
-        (A.x * (B.y - C.y) + B.x * (C.y - A.y) + C.x * (A.y - B.y)) / 2
-    );
-}
-
-// Example usage
-const area = areaWithCoordinates(
-    { x: 0, y: 0 },
-    { x: 4, y: 0 },
-    { x: 0, y: 3 }
-); // Returns 6
-class TriangleCalculator {
-    // Using base and height
-    static areaWithBaseHeight(base: number, height: number): number {
-        if (base <= 0 || height <= 0) {
-            throw new Error("Base and height must be positive numbers");
-        }
-        return (base * height) / 2;
-    }
-
-    // Using three sides (Heron's formula)
-    static areaWithThreeSides(a: number, b: number, c: number): number {
-        if (a <= 0 || b <= 0 || c <= 0) {
-            throw new Error("All sides must be positive numbers");
-        }
-        
-        if (a + b <= c || a + c <= b || b + c <= a) {
-            throw new Error("These sides cannot form a valid triangle");
-        }
-        
-        const s = (a + b + c) / 2;
-        return Math.sqrt(s * (s - a) * (s - b) * (s - c));
-    }
-
-    // Using coordinates
-    static areaWithCoordinates(A: Point, B: Point, C: Point): number {
-        return Math.abs(
-            (A.x * (B.y - C.y) + B.x * (C.y - A.y) + C.x * (A.y - B.y)) / 2
-        );
-    }
-}
-
-// Usage examples
-try {
-    console.log(TriangleCalculator.areaWithBaseHeight(8, 6)); // 24
-    console.log(TriangleCalculator.areaWithThreeSides(5, 6, 7)); // ~14.7
-    console.log(TriangleCalculator.areaWithCoordinates(
-        { x: 1, y: 1 },
-        { x: 4, y: 1 },
-        { x: 1, y: 5 }
-    )); // 6
-} catch (error) {
-    console.error("Error:", error.message);
-}
+// ---------- 4.  Quick sanity check ----------
+const list = fromArray([1, 2, 3, 4, 5]);
+console.log("original :", toArray(list));          // [1,2,3,4,5]
+console.log("reversed :", toArray(reverseList(list))); // [5,4,3,2,1]
