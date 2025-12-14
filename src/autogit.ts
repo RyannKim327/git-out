@@ -1,80 +1,244 @@
-function reverseWords(str: string): string {
-    return str.split(' ').reverse().join(' ');
+// Define the node interface
+interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
 
-// Example usage
-const original = "Hello World TypeScript";
-const reversed = reverseWords(original);
-console.log(reversed); // "TypeScript World Hello"
-function reverseWordsRobust(str: string): string {
-    // Split on one or more spaces to handle multiple spaces
-    return str.trim().split(/\s+/).reverse().join(' ');
-}
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private length: number = 0;
 
-// Example usage
-const text = "   Hello    World   TypeScript   ";
-console.log(reverseWordsRobust(text)); // "TypeScript World Hello"
-function reverseWordsRegex(str: string): string {
-    // Match words (excluding punctuation from words)
-    const words = str.match(/\b\w+\b/g) || [];
-    return words.reverse().join(' ');
-}
+  // Add to the end of the list
+  append(value: T): void {
+    const newNode: ListNode<T> = { value, next: null };
 
-// Example usage
-const sentence = "Hello, World! How are you?";
-console.log(reverseWordsRegex(sentence)); // "you are How World Hello"
-function reverseWordsPreservePunctuation(str: string): string {
-    // Split on word boundaries to preserve punctuation
-    const parts = str.split(/(\W+)/);
-    const words = parts.filter(part => /\w+/.test(part));
-    const nonWords = parts.filter(part => !/\w+/.test(part));
-    
-    let result = '';
-    let wordIndex = words.length - 1;
-    let nonWordIndex = 0;
-    
-    for (let i = 0; i < parts.length; i++) {
-        if (i % 2 === 0) {
-            // Word position
-            result += wordIndex >= 0 ? words[wordIndex--] : '';
-        } else {
-            // Non-word position (spaces, punctuation)
-            result += nonWordIndex < nonWords.length ? nonWords[nonWordIndex++] : '';
-        }
-    }
-    
-    return result;
-}
-
-// Example usage
-const textWithPunctuation = "Hello, World! How are you?";
-console.log(reverseWordsPreservePunctuation(textWithPunctuation)); 
-// "you, are! How World Hello?"
-interface ReverseWordsOptions {
-    preservePunctuation?: boolean;
-    trimSpaces?: boolean;
-}
-
-function reverseWordsAdvanced(
-    str: string, 
-    options: ReverseWordsOptions = {}
-): string {
-    const { preservePunctuation = false, trimSpaces = true } = options;
-    
-    if (trimSpaces) {
-        str = str.trim();
-    }
-    
-    if (preservePunctuation) {
-        return reverseWordsPreservePunctuation(str);
+    if (!this.head) {
+      this.head = newNode;
+      this.tail = newNode;
     } else {
-        return str.split(/\s+/).reverse().join(' ');
+      this.tail!.next = newNode;
+      this.tail = newNode;
     }
+
+    this.length++;
+  }
+
+  // Add to the beginning of the list
+  prepend(value: T): void {
+    const newNode: ListNode<T> = { value, next: this.head };
+
+    if (!this.head) {
+      this.tail = newNode;
+    }
+
+    this.head = newNode;
+    this.length++;
+  }
+
+  // Insert at a specific position
+  insertAt(value: T, position: number): void {
+    if (position < 0 || position > this.length) {
+      throw new Error('Position out of bounds');
+    }
+
+    if (position === 0) {
+      this.prepend(value);
+      return;
+    }
+
+    if (position === this.length) {
+      this.append(value);
+      return;
+    }
+
+    const newNode: ListNode<T> = { value, next: null };
+    let current = this.head;
+    let previous: ListNode<T> | null = null;
+    let index = 0;
+
+    while (index < position) {
+      previous = current;
+      current = current!.next;
+      index++;
+    }
+
+    newNode.next = current;
+    previous!.next = newNode;
+    this.length++;
+  }
+
+  // Remove by value
+  remove(value: T): boolean {
+    if (!this.head) return false;
+
+    if (this.head.value === value) {
+      this.head = this.head.next;
+      if (this.length === 1) {
+        this.tail = null;
+      }
+      this.length--;
+      return true;
+    }
+
+    let current = this.head;
+    while (current.next) {
+      if (current.next.value === value) {
+        current.next = current.next.next;
+        
+        if (!current.next) {
+          this.tail = current;
+        }
+        
+        this.length--;
+        return true;
+      }
+      current = current.next;
+    }
+
+    return false;
+  }
+
+  // Remove at specific position
+  removeAt(position: number): T | null {
+    if (position < 0 || position >= this.length || !this.head) {
+      return null;
+    }
+
+    if (position === 0) {
+      const removedValue = this.head.value;
+      this.head = this.head.next;
+      if (this.length === 1) {
+        this.tail = null;
+      }
+      this.length--;
+      return removedValue;
+    }
+
+    let current = this.head;
+    let previous: ListNode<T> | null = null;
+    let index = 0;
+
+    while (index < position) {
+      previous = current;
+      current = current.next!;
+      index++;
+    }
+
+    previous!.next = current.next;
+    
+    if (!current.next) {
+      this.tail = previous;
+    }
+    
+    this.length--;
+    return current.value;
+  }
+
+  // Find a value
+  find(value: T): ListNode<T> | null {
+    let current = this.head;
+
+    while (current) {
+      if (current.value === value) {
+        return current;
+      }
+      current = current.next;
+    }
+
+    return null;
+  }
+
+  // Get value at position
+  getAt(position: number): T | null {
+    if (position < 0 || position >= this.length) return null;
+
+    let current = this.head;
+    let index = 0;
+
+    while (index < position) {
+      current = current!.next;
+      index++;
+    }
+
+    return current!.value;
+  }
+
+  // Check if list is empty
+  isEmpty(): boolean {
+    return this.length === 0;
+  }
+
+  // Get size
+  size(): number {
+    return this.length;
+  }
+
+  // Convert to array
+  toArray(): T[] {
+    const result: T[] = [];
+    let current = this.head;
+
+    while (current) {
+      result.push(current.value);
+      current = current.next;
+    }
+
+    return result;
+  }
+
+  // Clear the list
+  clear(): void {
+    this.head = null;
+    this.tail = null;
+    this.length = 0;
+  }
+
+  // Print the list (for debugging)
+  print(): void {
+    let current = this.head;
+    let output = '';
+
+    while (current) {
+      output += `${current.value} -> `;
+      current = current.next;
+    }
+    output += 'null';
+    console.log(output);
+  }
+}
+// Create a linked list of numbers
+const list = new LinkedList<number>();
+
+list.append(1);
+list.append(2);
+list.append(3);
+list.prepend(0);
+
+console.log(list.toArray()); // [0, 1, 2, 3]
+
+list.insertAt(1.5, 2);
+console.log(list.toArray()); // [0, 1, 1.5, 2, 3]
+
+list.remove(1.5);
+console.log(list.toArray()); // [0, 1, 2, 3]
+
+console.log(list.find(2)); // Returns the node with value 2
+console.log(list.size()); // 4
+console.log(list.getAt(1)); // 1
+
+list.print(); // 0 -> 1 -> 2 -> 3 -> null
+// String linked list
+const stringList = new LinkedList<string>();
+stringList.append('hello');
+stringList.append('world');
+
+// Custom object linked list
+interface Person {
+  name: string;
+  age: number;
 }
 
-// Example usage
-console.log(reverseWordsAdvanced("Hello World TypeScript")); 
-// "TypeScript World Hello"
-
-console.log(reverseWordsAdvanced("Hello, World! How are you?", { preservePunctuation: true }));
-// "you, are! How World Hello?"
+const personList = new LinkedList<Person>();
+personList.append({ name: 'Alice', age: 25 });
+personList.append({ name: 'Bob', age: 30 });
