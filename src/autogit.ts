@@ -1,252 +1,174 @@
-// Edge from `to` with a numeric weight.
-export interface Edge {
-  to: number;      // destination vertex id
-  weight: number;  // non‑negative edge weight
+function decToBin(num: number): string {
+  if (!Number.isFinite(num) || !Number.isInteger(num)) {
+    throw new Error('Input must be a finite integer.');
+  }
+  // The built‑in toString(radix) does the heavy lifting.
+  return (num >>> 0).toString(2);
 }
-
-// The whole graph: an array where index = vertex id.
-export type Graph = Edge[][];
+console.log(decToBin(10));   // "1010"
+console.log(decToBin(255));  // "11111111"
+console.log(decToBin(-5));   // "11111111111111111111111111111011"
 /**
- * Simple binary min‑heap for (priority, value) pairs.
- * The heap stores objects of shape { key: number, value: T }.
- */
-export class MinHeap<T> {
-  private heap: { key: number; value: T }[] = [];
-
-  /** Insert a new element with the given priority (key). */
-  push(key: number, value: T): void {
-    this.heap.push({ key, value });
-    this.bubbleUp(this.heap.length - 1);
-  }
-
-  /** Remove and return the element with the smallest key. */
-  pop(): { key: number; value: T } | undefined {
-    if (this.heap.length === 0) return undefined;
-    const min = this.heap[0];
-    const end = this.heap.pop()!;
-    if (this.heap.length > 0) {
-      this.heap[0] = end;
-      this.sinkDown(0);
-    }
-    return min;
-  }
-
-  /** Return true if the heap is empty. */
-  isEmpty(): boolean {
-    return this.heap.length === 0;
-  }
-
-  /** Decrease the key of an existing element (optional, not used here). */
-  // If you need a decrease‑key operation you can keep a map from value → index.
-  // For simplicity we just push a new entry; the algorithm will ignore stale ones.
-
-  private bubbleUp(idx: number): void {
-    const element = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      const parent = this.heap[parentIdx];
-      if (element.key >= parent.key) break;
-      this.heap[parentIdx] = element;
-      this.heap[idx] = parent;
-      idx = parentIdx;
-    }
-  }
-
-  private sinkDown(idx: number): void {
-    const length = this.heap.length;
-    const element = this.heap[idx];
-
-    while (true) {
-      const leftIdx = 2 * idx + 1;
-      const rightIdx = 2 * idx + 2;
-      let smallest = idx;
-
-      if (leftIdx < length && this.heap[leftIdx].key < this.heap[smallest].key) {
-        smallest = leftIdx;
-      }
-      if (rightIdx < length && this.heap[rightIdx].key < this.heap[smallest].key) {
-        smallest = rightIdx;
-      }
-      if (smallest === idx) break;
-
-      this.heap[idx] = this.heap[smallest];
-      this.heap[smallest] = element;
-      idx = smallest;
-    }
-  }
-}
-/**
- * Compute shortest distances from `source` to every vertex in `graph`.
+ * Convert a decimal integer (Number or BigInt) to a binary string.
  *
- * @param graph   adjacency list representation (see type Graph above)
- * @param source  index of the start vertex (0‑based)
- * @returns       an array `dist` where dist[v] = shortest distance from source to v,
- *                or Infinity if v is unreachable.
+ * @param value          The decimal value to convert.
+ * @param options        Optional configuration.
+ * @returns              Binary representation (e.g., "-1010", "001010").
  */
-export function dijkstra(graph: Graph, source: number): number[] {
-  const n = graph.length;
-  const dist = new Array<number>(n).fill(Infinity);
-  const visited = new Array<boolean>(n).fill(false);
-  const heap = new MinHeap<number>();
+export function decimalToBinary(
+  value: number | bigint,
+  options?: {
+    /** Minimum number of bits; pads with leading zeros if needed. */
+    padLength?: number;
+    /** If true, keep the sign (`-`) for negative numbers. */
+    signed?: boolean;
+    /** If true, treat the number as an unsigned 32‑bit integer (default for Number). */
+    unsigned?: boolean;
+  }
+): string {
+  const { padLength = 0, signed = false, unsigned = typeof value === 'number' } = options ?? {};
 
-  dist[source] = 0;
-  heap.push(0, source);
+  // ---------- 1️⃣ Normalise input ----------
+  let binary: string;
+  let isNegative = false;
 
-  while (!heap.isEmpty()) {
-    const { key: curDist, value: u } = heap.pop()!;
+  if (typeof value === 'bigint') {
+    // BigInt has its own toString(radix) that works for arbitrarily large integers.
+    if (value < 0n) {
+      isNegative = true;
+      value = -value;
+    }
+    binary = value.toString(2);
+  } else {
+    // ----- Number path -----
+    if (!Number.isFinite(value) || !Number.isInteger(value)) {
+      throw new Error('Number input must be a finite integer.');
+    }
 
-    // If we already processed a better distance for `u`, skip this stale entry.
-    if (visited[u]) continue;
-    visited[u] = true; // we now know the final shortest distance for u
-
-    // Relax all outgoing edges (u → v)
-    for (const { to: v, weight } of graph[u]) {
-      if (weight < 0) {
-        throw new Error('Dijkstra does not support negative edge weights');
+    if (unsigned) {
+      // Force unsigned 32‑bit representation.
+      binary = (value >>> 0).toString(2);
+    } else {
+      // Signed handling.
+      if (value < 0) {
+        isNegative = true;
+        value = -value;
       }
-      const newDist = curDist + weight;
-      if (newDist < dist[v]) {
-        dist[v] = newDist;
-        heap.push(newDist, v);
-      }
+      binary = value.toString(2);
     }
   }
 
-  return dist;
-}
-// ---------------------------------------------------------------
-// Example graph (undirected for illustration, but stored as directed)
-// ---------------------------------------------------------------
-function buildUndirectedGraph(edges: [number, number, number][], vertexCount: number): Graph {
-  const g: Graph = Array.from({ length: vertexCount }, () => []);
-  for (const [a, b, w] of edges) {
-    g[a].push({ to: b, weight: w });
-    g[b].push({ to: a, weight: w }); // because it’s undirected
+  // ---------- 2️⃣ Pad if requested ----------
+  if (padLength > binary.length) {
+    binary = binary.padStart(padLength, '0');
   }
-  return g;
-}
 
-// Define a simple graph:
-//   0 --1--> 1
-//   0 --4--> 2
-//   1 --2--> 2
-//   1 --5--> 3
-//   2 --1--> 3
-const edges: [number, number, number][] = [
-  [0, 1, 1],
-  [0, 2, 4],
-  [1, 2, 2],
-  [1, 3, 5],
-  [2, 3, 1],
-];
-const vertexCount = 4;
-const graph = buildUndirectedGraph(edges, vertexCount);
-
-// Run Dijkstra from vertex 0
-const distances = dijkstra(graph, 0);
-console.log('Shortest distances from vertex 0:', distances);
-// Expected output: [0, 1, 3, 4]
-
-/* -------------------------------------------------------------
-   If you also need the actual path (not just the distance),
-   keep a `prev` array while relaxing edges:
-
-   const prev = new Array<number>(n).fill(-1);
-   if (newDist < dist[v]) {
-       dist[v] = newDist;
-       prev[v] = u;          // remember predecessor
-       heap.push(newDist, v);
-   }
-
-   After the algorithm you can reconstruct the path to any
-   target by walking backwards from target → prev[target] …
-   ------------------------------------------------------------- */
-# If you have ts-node installed:
-npx ts-node dijkstra.ts
-# Output:
-# Shortest distances from vertex 0: [ 0, 1, 3, 4 ]
-// dijkstra.ts ----------------------------------------------------
-export interface Edge { to: number; weight: number; }
-export type Graph = Edge[][];
-
-export class MinHeap<T> {
-  private heap: { key: number; value: T }[] = [];
-  push(key: number, value: T) { this.heap.push({ key, value }); this.bubbleUp(this.heap.length - 1); }
-  pop(): { key: number; value: T } | undefined {
-    if (!this.heap.length) return undefined;
-    const min = this.heap[0];
-    const end = this.heap.pop()!;
-    if (this.heap.length) { this.heap[0] = end; this.sinkDown(0); }
-    return min;
+  // ---------- 3️⃣ Add sign if needed ----------
+  if (signed && isNegative) {
+    binary = '-' + binary;
   }
-  isEmpty() { return this.heap.length === 0; }
-  private bubbleUp(i: number) {
-    const el = this.heap[i];
-    while (i > 0) {
-      const p = (i - 1) >> 1;
-      if (el.key >= this.heap[p].key) break;
-      this.heap[i] = this.heap[p];
-      this.heap[p] = el;
-      i = p;
+
+  return binary;
+}
+// Simple unsigned conversion
+console.log(decimalToBinary(13));                     // "1101"
+
+// Signed conversion (keeps the minus sign)
+console.log(decimalToBinary(-13, { signed: true })); // "-1101"
+
+// Pad to 8 bits (useful for byte‑level work)
+console.log(decimalToBinary(5, { padLength: 8 }));    // "00000101"
+
+// Unsigned 32‑bit view of a negative number
+console.log(decimalToBinary(-5, { unsigned: true })); // "11111111111111111111111111111011"
+
+// BigInt support (no overflow worries)
+const huge = 123456789012345678901234567890n;
+console.log(decimalToBinary(huge));                  // long binary string
+/**
+ * Manual decimal → binary conversion using repeated division.
+ * Works for positive integers only (Number or BigInt).
+ */
+export function manualDecToBin(value: number | bigint): string {
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
+      throw new Error('Number input must be a non‑negative integer.');
+    }
+    // Fast path for zero.
+    if (value === 0) return '0';
+  } else {
+    if (value < 0n) {
+      throw new Error('BigInt input must be non‑negative.');
+    }
+    if (value === 0n) return '0';
+  }
+
+  const bits: string[] = [];
+
+  // Use a while‑loop that repeatedly divides by 2.
+  while (value > 0) {
+    // For Number we can use `% 2` and `/ 2`; for BigInt we must use the BigInt operators.
+    const remainder = typeof value === 'bigint' ? (value % 2n) : (value % 2);
+    bits.push(remainder.toString()); // remainder is 0 or 1
+    value = typeof value === 'bigint' ? (value / 2n) : Math.floor(value / 2);
+  }
+
+  // Bits were collected LSB → MSB, so reverse them.
+  return bits.reverse().join('');
+}
+console.log(manualDecToBin(10));               // "1010"
+console.log(manualDecToBin(0));                // "0"
+console.log(manualDecToBin(123456789n));       // "111010110111100110100010101"
+/**
+ * Convert a floating‑point decimal number to binary string.
+ * Returns a string like "101.011" (integer part . fractional part).
+ *
+ * @param num          The decimal number (must be finite).
+ * @param fracBits     Number of bits after the point (default 52, same as IEEE‑754 mantissa).
+ */
+export function floatToBinary(num: number, fracBits = 52): string {
+  if (!Number.isFinite(num)) {
+    throw new Error('Input must be a finite number.');
+  }
+
+  const sign = num < 0 ? '-' : '';
+  num = Math.abs(num);
+
+  const intPart = Math.floor(num);
+  let fracPart = num - intPart;
+
+  const intBinary = intPart.toString(2);
+
+  // Build fractional bits by repeated multiplication by 2.
+  let fracBinary = '';
+  for (let i = 0; i < fracBits && fracPart > 0; i++) {
+    fracPart *= 2;
+    if (fracPart >= 1) {
+      fracBinary += '1';
+      fracPart -= 1;
+    } else {
+      fracBinary += '0';
     }
   }
-  private sinkDown(i: number) {
-    const n = this.heap.length;
-    const el = this.heap[i];
-    while (true) {
-      let left = i * 2 + 1, right = left + 1, smallest = i;
-      if (left < n && this.heap[left].key < this.heap[smallest].key) smallest = left;
-      if (right < n && this.heap[right].key < this.heap[smallest].key) smallest = right;
-      if (smallest === i) break;
-      this.heap[i] = this.heap[smallest];
-      this.heap[smallest] = el;
-      i = smallest;
-    }
-  }
+
+  // Trim trailing zeros for a cleaner output (optional).
+  fracBinary = fracBinary.replace(/0+$/g, '');
+
+  return sign + (fracBinary ? `${intBinary}.${fracBinary}` : intBinary);
 }
+console.log(floatToBinary(10.625)); // "1010.101"
+console.log(floatToBinary(-0.1, 30)); // "-0.000110011001100110011001100110"
+// 1 million conversions
+const nums = Array.from({ length: 1e6 }, (_, i) => i);
+console.time('builtin');
+for (const n of nums) n.toString(2);
+console.timeEnd('builtin');   // ≈ 30‑40 ms
 
-export function dijkstra(graph: Graph, source: number): number[] {
-  const n = graph.length;
-  const dist = new Array<number>(n).fill(Infinity);
-  const visited = new Array<boolean>(n).fill(false);
-  const heap = new MinHeap<number>();
+console.time('manual');
+for (const n of nums) manualDecToBin(n);
+console.timeEnd('manual');    // ≈ 150‑200 ms (≈5× slower)
+// Simple, production‑ready conversion (unsigned 32‑bit)
+export const toBinary = (n: number): string => (n >>> 0).toString(2);
 
-  dist[source] = 0;
-  heap.push(0, source);
-
-  while (!heap.isEmpty()) {
-    const { key: d, value: u } = heap.pop()!;
-    if (visited[u]) continue;
-    visited[u] = true;
-
-    for (const { to: v, weight } of graph[u]) {
-      if (weight < 0) throw new Error('Negative weight not allowed');
-      const nd = d + weight;
-      if (nd < dist[v]) {
-        dist[v] = nd;
-        heap.push(nd, v);
-      }
-    }
-  }
-  return dist;
-}
-
-/* ------------------- test ------------------- */
-function buildUndirectedGraph(edges: [number, number, number][], n: number): Graph {
-  const g: Graph = Array.from({ length: n }, () => []);
-  for (const [a, b, w] of edges) {
-    g[a].push({ to: b, weight: w });
-    g[b].push({ to: a, weight: w });
-  }
-  return g;
-}
-const edges: [number, number, number][] = [
-  [0, 1, 1],
-  [0, 2, 4],
-  [1, 2, 2],
-  [1, 3, 5],
-  [2, 3, 1],
-];
-const graph = buildUndirectedGraph(edges, 4);
-console.log(dijkstra(graph, 0)); // → [ 0, 1, 3, 4 ]
-// --------------------------------------------------------------
+// Example
+console.log(toBinary(42)); // "101010"
