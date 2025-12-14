@@ -1,36 +1,52 @@
-// Binary tree node interface
-interface TreeNode<T> {
-  val: T;
-  left?: TreeNode<T> | null;
-  right?: TreeNode<T> | null;
+const str = "123";
+const num = parseInt(str);
+console.log(num); // 123
+console.log(typeof num); // number
+
+// With radix (base)
+const hexStr = "FF";
+const hexNum = parseInt(hexStr, 16);
+console.log(hexNum); // 255
+const str = "456";
+const num = +str;
+console.log(num); // 456
+console.log(typeof num); // number
+const str = "789";
+const num = Number(str);
+console.log(num); // 789
+console.log(typeof num); // number
+const str: string = "999";
+// This doesn't convert, just tells TypeScript to treat it as a number
+const num = str as unknown as number;
+// These return NaN (Not a Number)
+console.log(parseInt("abc")); // NaN
+console.log(+"hello"); // NaN
+console.log(Number("world")); // NaN
+
+// Check for validity
+const str = "123abc";
+const num = parseInt(str);
+if (!isNaN(num)) {
+    console.log("Valid number:", num); // 123 (parses until non-digit)
+} else {
+    console.log("Invalid number");
+}
+// Always specify radix to avoid unexpected behavior
+console.log(parseInt("08")); // 8 (treated as decimal)
+console.log(parseInt("08", 10)); // 8 (explicit decimal)
+// parseInt is more forgiving
+console.log(parseInt("123abc")); // 123
+
+// Number() is stricter
+console.log(Number("123abc")); // NaN
+function safeStringToInt(str: string): number | null {
+    const num = parseInt(str, 10);
+    return isNaN(num) ? null : num;
 }
 
-// Diameter in edges (longest path length in edges)
-function diameterOfBinaryTree<T>(root: TreeNode<T> | null): number {
-  let diameter = 0;
-
-  function height(node: TreeNode<T> | null): number {
-    if (!node) return 0;
-    const left = height(node.left);
-    const right = height(node.right);
-    // path through this node is left + right (in edges)
-    diameter = Math.max(diameter, left + right);
-    // height of this node is max(left, right) + 1 (in edges)
-    return Math.max(left, right) + 1;
-  }
-
-  height(root);
-  return diameter;
+const result = safeStringToInt("123");
+if (result !== null) {
+    console.log("Success:", result);
+} else {
+    console.log("Invalid number");
 }
-function diameterInNodes<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-  return diameterOfBinaryTree(root) + 1;
-}
-const root: TreeNode<number> = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 } },
-  right: { val: 3 }
-};
-
-console.log(diameterOfBinaryTree(root)); // e.g., 3 (edges)
-console.log(diameterInNodes(root));      // e.g., 4 (nodes)
