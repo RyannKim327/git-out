@@ -1,174 +1,126 @@
-npm install node-cron
-npm install @types/node-cron --save-dev
-import cron from 'node-cron';
-import { Logger } from './logger'; // Optional custom logger
-
-// Interface for task configuration
-interface ScheduledTask {
-  id: string;
-  name: string;
-  schedule: string;
-  timezone?: string;
-  enabled: boolean;
+interface ListNode {
+    val: number;
+    next: ListNode | null;
 }
 
-// Sample task configuration
-const scheduledTasks: ScheduledTask[] = [
-  {
-    id: 'cleanup',
-    name: 'Database Cleanup',
-    schedule: '0 2 * * *', // Every day at 2:00 AM
-    timezone: 'America/New_York',
-    enabled: true
-  },
-  {
-    id: 'backup',
-    name: 'System Backup',
-    schedule: '0 */6 * * *', // Every 6 hours
-    enabled: true
-  },
-  {
-    id: 'health-check',
-    name: 'Health Check',
-    schedule: '*/5 * * * *', // Every 5 minutes
-    enabled: true
-  }
-];
-
-// Task execution functions
-class TaskRunner {
-  static async runDatabaseCleanup(): Promise<void> {
-    console.log('Running database cleanup...');
-    // Simulate async operation
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    console.log('Database cleanup completed');
-  }
-
-  static async runSystemBackup(): Promise<void> {
-    console.log('Running system backup...');
-    // Simulate backup process
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    console.log('System backup completed');
-  }
-
-  static async runHealthCheck(): Promise<void> {
-    console.log('Running health check...');
-    // Check system status
-    const timestamp = new Date().toISOString();
-    console.log(`Health check completed at ${timestamp}`);
-  }
-}
-
-// Cron job manager
-class CronManager {
-  private tasks: Map<string, cron.ScheduledTask> = new Map();
-
-  scheduleTask(taskConfig: ScheduledTask): void {
-    if (!taskConfig.enabled) {
-      console.log(`Task ${taskConfig.name} is disabled`);
-      return;
+function isPalindromeArray(head: ListNode | null): boolean {
+    if (!head) return true;
+    
+    const values: number[] = [];
+    let current: ListNode | null = head;
+    
+    // Store all values in an array
+    while (current) {
+        values.push(current.val);
+        current = current.next;
     }
-
-    const task = cron.schedule(
-      taskConfig.schedule,
-      () => this.executeTask(taskConfig),
-      {
-        scheduled: true,
-        timezone: taskConfig.timezone
-      }
-    );
-
-    this.tasks.set(taskConfig.id, task);
-    console.log(`Scheduled task: ${taskConfig.name} (${taskConfig.schedule})`);
-  }
-
-  private async executeTask(taskConfig: ScheduledTask): Promise<void> {
-    const startTime = Date.now();
-    console.log(`\n--- Starting task: ${taskConfig.name} ---`);
-
-    try {
-      switch (taskConfig.id) {
-        case 'cleanup':
-          await TaskRunner.runDatabaseCleanup();
-          break;
-        case 'backup':
-          await TaskRunner.runSystemBackup();
-          break;
-        case 'health-check':
-          await TaskRunner.runHealthCheck();
-          break;
-        default:
-          console.warn(`Unknown task ID: ${taskConfig.id}`);
-      }
-
-      const duration = Date.now() - startTime;
-      console.log(`Task ${taskConfig.name} completed in ${duration}ms`);
-    } catch (error) {
-      console.error(`Error executing task ${taskConfig.name}:`, error);
+    
+    // Check if array is palindrome
+    let left = 0, right = values.length - 1;
+    while (left < right) {
+        if (values[left] !== values[right]) {
+            return false;
+        }
+        left++;
+        right--;
     }
-  }
-
-  startAll(tasks: ScheduledTask[]): void {
-    tasks.forEach(task => this.scheduleTask(task));
-    console.log('\nAll tasks scheduled. Cron jobs are running...');
-  }
-
-  stopTask(taskId: string): void {
-    const task = this.tasks.get(taskId);
-    if (task) {
-      task.stop();
-      console.log(`Stopped task: ${taskId}`);
+    
+    return true;
+}
+function isPalindromeReverse(head: ListNode | null): boolean {
+    if (!head || !head.next) return true;
+    
+    // Find the middle using slow and fast pointers
+    let slow: ListNode | null = head;
+    let fast: ListNode | null = head;
+    
+    while (fast && fast.next) {
+        slow = slow!.next;
+        fast = fast.next.next;
     }
-  }
-
-  stopAll(): void {
-    this.tasks.forEach(task => task.stop());
-    console.log('All cron jobs stopped');
-  }
-
-  listTasks(): void {
-    console.log('\nActive Cron Jobs:');
-    this.tasks.forEach((task, id) => {
-      console.log(`- ${id}: ${task.getStatus()}`);
-    });
-  }
+    
+    // Reverse the second half
+    let prev: ListNode | null = null;
+    let current: ListNode | null = slow;
+    
+    while (current) {
+        const next: ListNode | null = current.next;
+        current.next = prev;
+        prev = current;
+        current = next;
+    }
+    
+    // Compare first half with reversed second half
+    let firstHalf: ListNode | null = head;
+    let secondHalf: ListNode | null = prev;
+    
+    while (secondHalf) {
+        if (firstHalf!.val !== secondHalf.val) {
+            return false;
+        }
+        firstHalf = firstHalf!.next;
+        secondHalf = secondHalf.next;
+    }
+    
+    return true;
+}
+function isPalindromeRecursive(head: ListNode | null): boolean {
+    let frontPointer: ListNode | null = head;
+    
+    function recursivelyCheck(current: ListNode | null): boolean {
+        if (current) {
+            if (!recursivelyCheck(current.next)) return false;
+            if (frontPointer!.val !== current.val) return false;
+            frontPointer = frontPointer!.next;
+        }
+        return true;
+    }
+    
+    return recursivelyCheck(head);
+}
+class ListNode {
+    constructor(
+        public val: number,
+        public next: ListNode | null = null
+    ) {}
 }
 
-// Main application
-class CronApplication {
-  private cronManager: CronManager;
-
-  constructor() {
-    this.cronManager = new CronManager();
-  }
-
-  start(): void {
-    console.log('Starting Cron Application...');
-    this.cronManager.startAll(scheduledTasks);
-
-    // Graceful shutdown
-    process.on('SIGINT', () => this.shutdown());
-    process.on('SIGTERM', () => this.shutdown());
-  }
-
-  private shutdown(): void {
-    console.log('\nShutting down Cron Application...');
-    this.cronManager.stopAll();
-    process.exit(0);
-  }
+// Helper function to create linked list from array
+function createLinkedList(arr: number[]): ListNode | null {
+    if (arr.length === 0) return null;
+    
+    const head = new ListNode(arr[0]);
+    let current = head;
+    
+    for (let i = 1; i < arr.length; i++) {
+        current.next = new ListNode(arr[i]);
+        current = current.next;
+    }
+    
+    return head;
 }
 
-// Run the application
-const app = new CronApplication();
-app.start();
+// Test the functions
+function testPalindrome() {
+    // Test cases
+    const testCases = [
+        [1, 2, 3, 2, 1],    // Palindrome
+        [1, 2, 2, 1],       // Palindrome
+        [1, 2, 3],          // Not palindrome
+        [1],                // Single element (palindrome)
+        []                  // Empty list (palindrome)
+    ];
+    
+    for (const testCase of testCases) {
+        const list = createLinkedList(testCase);
+        
+        console.log(`List: [${testCase}]`);
+        console.log(`Array method: ${isPalindromeArray(list)}`);
+        console.log(`Reverse method: ${isPalindromeReverse(createLinkedList(testCase))}`);
+        console.log(`Recursive method: ${isPalindromeRecursive(createLinkedList(testCase))}`);
+        console.log('---');
+    }
+}
 
-// Utility function to demonstrate manual execution
-export const manualTest = async (): Promise<void> => {
-  console.log('Running manual test...');
-  await TaskRunner.runDatabaseCleanup();
-  await TaskRunner.runSystemBackup();
-  await TaskRunner.runHealthCheck();
-};
-
-// Example of using the manual test
-// manualTest().then(() => console.log('Manual test completed'));
+// Run tests
+testPalindrome();
