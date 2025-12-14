@@ -1,297 +1,130 @@
-class AVLNode<T> {
-    value: T;
-    left: AVLNode<T> | null;
-    right: AVLNode<T> | null;
-    height: number;
-
-    constructor(value: T) {
-        this.value = value;
-        this.left = null;
-        this.right = null;
-        this.height = 1;
-    }
+class ListNode {
+    constructor(public val: number, public next: ListNode | null = null) {}
 }
 
-class AVLTree<T> {
-    private root: AVLNode<T> | null;
-    private comparator: (a: T, b: T) => number;
-
-    constructor(comparator?: (a: T, b: T) => number) {
-        this.root = null;
-        this.comparator = comparator || ((a: T, b: T) => {
-            if (a < b) return -1;
-            if (a > b) return 1;
-            return 0;
-        });
+function isPalindromeArray(head: ListNode | null): boolean {
+    if (!head) return true;
+    
+    const arr: number[] = [];
+    let current: ListNode | null = head;
+    
+    // Convert linked list to array
+    while (current) {
+        arr.push(current.val);
+        current = current.next;
     }
-
-    // Get height of a node
-    private getHeight(node: AVLNode<T> | null): number {
-        return node ? node.height : 0;
-    }
-
-    // Update height of a node
-    private updateHeight(node: AVLNode<T>): void {
-        node.height = Math.max(this.getHeight(node.left), this.getHeight(node.right)) + 1;
-    }
-
-    // Get balance factor of a node
-    private getBalanceFactor(node: AVLNode<T> | null): number {
-        if (!node) return 0;
-        return this.getHeight(node.left) - this.getHeight(node.right);
-    }
-
-    // Right rotation
-    private rotateRight(y: AVLNode<T>): AVLNode<T> {
-        const x = y.left!;
-        const T2 = x.right;
-
-        // Perform rotation
-        x.right = y;
-        y.left = T2;
-
-        // Update heights
-        this.updateHeight(y);
-        this.updateHeight(x);
-
-        return x;
-    }
-
-    // Left rotation
-    private rotateLeft(x: AVLNode<T>): AVLNode<T> {
-        const y = x.right!;
-        const T2 = y.left;
-
-        // Perform rotation
-        y.left = x;
-        x.right = T2;
-
-        // Update heights
-        this.updateHeight(x);
-        this.updateHeight(y);
-
-        return y;
-    }
-
-    // Balance the tree
-    private balance(node: AVLNode<T>): AVLNode<T> {
-        const balanceFactor = this.getBalanceFactor(node);
-
-        // Left Left Case
-        if (balanceFactor > 1 && this.getBalanceFactor(node.left) >= 0) {
-            return this.rotateRight(node);
-        }
-
-        // Right Right Case
-        if (balanceFactor < -1 && this.getBalanceFactor(node.right) <= 0) {
-            return this.rotateLeft(node);
-        }
-
-        // Left Right Case
-        if (balanceFactor > 1 && this.getBalanceFactor(node.left) < 0) {
-            node.left = this.rotateLeft(node.left!);
-            return this.rotateRight(node);
-        }
-
-        // Right Left Case
-        if (balanceFactor < -1 && this.getBalanceFactor(node.right) > 0) {
-            node.right = this.rotateRight(node.right!);
-            return this.rotateLeft(node);
-        }
-
-        return node;
-    }
-
-    // Insert a value
-    insert(value: T): void {
-        this.root = this.insertNode(this.root, value);
-    }
-
-    private insertNode(node: AVLNode<T> | null, value: T): AVLNode<T> {
-        // Perform normal BST insertion
-        if (node === null) {
-            return new AVLNode(value);
-        }
-
-        if (this.comparator(value, node.value) < 0) {
-            node.left = this.insertNode(node.left, value);
-        } else if (this.comparator(value, node.value) > 0) {
-            node.right = this.insertNode(node.right, value);
-        } else {
-            // Duplicate values not allowed
-            return node;
-        }
-
-        // Update height of current node
-        this.updateHeight(node);
-
-        // Balance the tree
-        return this.balance(node);
-    }
-
-    // Delete a value
-    delete(value: T): void {
-        this.root = this.deleteNode(this.root, value);
-    }
-
-    private deleteNode(node: AVLNode<T> | null, value: T): AVLNode<T> | null {
-        // Perform standard BST delete
-        if (node === null) {
-            return null;
-        }
-
-        if (this.comparator(value, node.value) < 0) {
-            node.left = this.deleteNode(node.left, value);
-        } else if (this.comparator(value, node.value) > 0) {
-            node.right = this.deleteNode(node.right, value);
-        } else {
-            // Node to be deleted found
-
-            // Node with only one child or no child
-            if (node.left === null || node.right === null) {
-                const temp = node.left || node.right;
-
-                // No child case
-                if (temp === null) {
-                    return null;
-                } else {
-                    // One child case
-                    node = temp;
-                }
-            } else {
-                // Node with two children: get inorder successor
-                const temp = this.getMinValueNode(node.right)!;
-                node.value = temp.value;
-                node.right = this.deleteNode(node.right, temp.value);
-            }
-        }
-
-        // If the tree had only one node then return
-        if (node === null) {
-            return null;
-        }
-
-        // Update height
-        this.updateHeight(node);
-
-        // Balance the tree
-        return this.balance(node);
-    }
-
-    // Get node with minimum value
-    private getMinValueNode(node: AVLNode<T>): AVLNode<T> | null {
-        let current = node;
-        while (current.left !== null) {
-            current = current.left;
-        }
-        return current;
-    }
-
-    // Search for a value
-    search(value: T): boolean {
-        return this.searchNode(this.root, value);
-    }
-
-    private searchNode(node: AVLNode<T> | null, value: T): boolean {
-        if (node === null) {
+    
+    // Check if array is palindrome
+    let left = 0;
+    let right = arr.length - 1;
+    
+    while (left < right) {
+        if (arr[left] !== arr[right]) {
             return false;
         }
-
-        if (this.comparator(value, node.value) === 0) {
-            return true;
+        left++;
+        right--;
+    }
+    
+    return true;
+}
+function isPalindromeTwoPointers(head: ListNode | null): boolean {
+    if (!head || !head.next) return true;
+    
+    let slow: ListNode | null = head;
+    let fast: ListNode | null = head;
+    
+    // Find middle of the list
+    while (fast && fast.next) {
+        slow = slow!.next;
+        fast = fast.next.next;
+    }
+    
+    // Reverse second half
+    let prev: ListNode | null = null;
+    let current: ListNode | null = slow;
+    
+    while (current) {
+        const next = current.next;
+        current.next = prev;
+        prev = current;
+        current = next;
+    }
+    
+    // Compare first half with reversed second half
+    let firstHalf: ListNode | null = head;
+    let secondHalf: ListNode | null = prev;
+    
+    while (secondHalf) {
+        if (firstHalf!.val !== secondHalf.val) {
+            return false;
         }
-
-        if (this.comparator(value, node.value) < 0) {
-            return this.searchNode(node.left, value);
+        firstHalf = firstHalf!.next;
+        secondHalf = secondHalf.next;
+    }
+    
+    return true;
+}
+function isPalindromeRecursive(head: ListNode | null): boolean {
+    let frontPointer: ListNode | null = head;
+    
+    function recursivelyCheck(current: ListNode | null): boolean {
+        if (current !== null) {
+            if (!recursivelyCheck(current.next)) return false;
+            if (current.val !== frontPointer!.val) return false;
+            frontPointer = frontPointer!.next;
+        }
+        return true;
+    }
+    
+    return recursivelyCheck(head);
+}
+class LinkedList {
+    head: ListNode | null = null;
+    
+    add(val: number): void {
+        const newNode = new ListNode(val);
+        if (!this.head) {
+            this.head = newNode;
         } else {
-            return this.searchNode(node.right, value);
+            let current = this.head;
+            while (current.next) {
+                current = current.next;
+            }
+            current.next = newNode;
         }
     }
-
-    // In-order traversal (returns sorted values)
-    inOrderTraversal(): T[] {
-        const result: T[] = [];
-        this.inOrder(this.root, result);
-        return result;
-    }
-
-    private inOrder(node: AVLNode<T> | null, result: T[]): void {
-        if (node !== null) {
-            this.inOrder(node.left, result);
-            result.push(node.value);
-            this.inOrder(node.right, result);
-        }
-    }
-
-    // Pre-order traversal
-    preOrderTraversal(): T[] {
-        const result: T[] = [];
-        this.preOrder(this.root, result);
-        return result;
-    }
-
-    private preOrder(node: AVLNode<T> | null, result: T[]): void {
-        if (node !== null) {
-            result.push(node.value);
-            this.preOrder(node.left, result);
-            this.preOrder(node.right, result);
-        }
-    }
-
-    // Post-order traversal
-    postOrderTraversal(): T[] {
-        const result: T[] = [];
-        this.postOrder(this.root, result);
-        return result;
-    }
-
-    private postOrder(node: AVLNode<T> | null, result: T[]): void {
-        if (node !== null) {
-            this.postOrder(node.left, result);
-            this.postOrder(node.right, result);
-            result.push(node.value);
-        }
-    }
-
-    // Get the root value (for testing)
-    getRoot(): T | null {
-        return this.root ? this.root.value : null;
+    
+    isPalindrome(): boolean {
+        return isPalindromeTwoPointers(this.head);
     }
 }
 
-// Example usage
-const avlTree = new AVLTree<number>();
-
-// Insert values
-avlTree.insert(10);
-avlTree.insert(20);
-avlTree.insert(30);
-avlTree.insert(40);
-avlTree.insert(50);
-avlTree.insert(25);
-
-// Search for values
-console.log("Search 30:", avlTree.search(30)); // true
-console.log("Search 35:", avlTree.search(35)); // false
-
-// Get sorted values (in-order traversal)
-console.log("In-order:", avlTree.inOrderTraversal()); // [10, 20, 25, 30, 40, 50]
-
-// Delete a value
-avlTree.delete(30);
-console.log("After deletion:", avlTree.inOrderTraversal()); // [10, 20, 25, 40, 50]
-
-// Example with custom comparator for objects
-interface Person {
-    name: string;
-    age: number;
+// Test cases
+function testPalindrome(): void {
+    // Test case 1: Palindrome list [1,2,3,2,1]
+    const list1 = new LinkedList();
+    [1, 2, 3, 2, 1].forEach(val => list1.add(val));
+    console.log('List 1 is palindrome:', list1.isPalindrome()); // true
+    
+    // Test case 2: Non-palindrome list [1,2,3,4,5]
+    const list2 = new LinkedList();
+    [1, 2, 3, 4, 5].forEach(val => list2.add(val));
+    console.log('List 2 is palindrome:', list2.isPalindrome()); // false
+    
+    // Test case 3: Single element [5]
+    const list3 = new LinkedList();
+    list3.add(5);
+    console.log('List 3 is palindrome:', list3.isPalindrome()); // true
+    
+    // Test case 4: Empty list
+    const list4 = new LinkedList();
+    console.log('List 4 is palindrome:', list4.isPalindrome()); // true
+    
+    // Test case 5: Even length palindrome [1,2,2,1]
+    const list5 = new LinkedList();
+    [1, 2, 2, 1].forEach(val => list5.add(val));
+    console.log('List 5 is palindrome:', list5.isPalindrome()); // true
 }
 
-const personTree = new AVLTree<Person>((a, b) => a.age - b.age);
-
-personTree.insert({ name: "Alice", age: 25 });
-personTree.insert({ name: "Bob", age: 30 });
-personTree.insert({ name: "Charlie", age: 20 });
-
-console.log("People by age:", personTree.inOrderTraversal());
-// [{ name: "Charlie", age: 20 }, { name: "Alice", age: 25 }, { name: "Bob", age: 30 }]
+testPalindrome();
