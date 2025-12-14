@@ -1,243 +1,297 @@
-import { Capacitor } from '@capacitor/core';
-import { Network } from '@capacitor/network';
-import { Toast } from '@capacitor/toast';
+class AVLNode<T> {
+    value: T;
+    left: AVLNode<T> | null;
+    right: AVLNode<T> | null;
+    height: number;
 
-// Interface for our async task result
-interface AsyncTaskResult<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
+    constructor(value: T) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+        this.height = 1;
+    }
 }
 
-// Example service that performs async operations
-class AndroidAsyncService {
-  
-  /**
-   * Simulates an async network request
-   */
-  async fetchDataFromAPI(): Promise<AsyncTaskResult<string>> {
-    try {
-      // Check network status (async operation)
-      const status = await Network.getStatus();
-      
-      if (!status.connected) {
-        return {
-          success: false,
-          error: 'No network connection'
-        };
-      }
+class AVLTree<T> {
+    private root: AVLNode<T> | null;
+    private comparator: (a: T, b: T) => number;
 
-      // Simulate API call with timeout
-      const data = await this.simulateAPICall();
-      
-      return {
-        success: true,
-        data: data
-      };
-      
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
-    }
-  }
-
-  /**
-   * Simulates a long-running async task
-   */
-  private simulateAPICall(): Promise<string> {
-    return new Promise((resolve) => {
-      // Simulate network delay
-      setTimeout(() => {
-        resolve('Data fetched successfully from API');
-      }, 2000);
-    });
-  }
-
-  /**
-   * Example of async file operation
-   */
-  async readFileAsync(filePath: string): Promise<AsyncTaskResult<string>> {
-    try {
-      if (Capacitor.getPlatform() !== 'android') {
-        return {
-          success: false,
-          error: 'This method is only available on Android'
-        };
-      }
-
-      // Simulate file reading operation
-      const content = await this.simulateFileRead(filePath);
-      
-      return {
-        success: true,
-        data: content
-      };
-      
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'File read error'
-      };
-    }
-  }
-
-  private simulateFileRead(filePath: string): Promise<string> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(`Content of ${filePath}: Hello from Android filesystem!`);
-      }, 1000);
-    });
-  }
-}
-
-// Usage example
-class MainApp {
-  private asyncService: AndroidAsyncService;
-
-  constructor() {
-    this.asyncService = new AndroidAsyncService();
-  }
-
-  async initializeApp() {
-    try {
-      // Show loading state
-      await Toast.show({
-        text: 'Starting async tasks...',
-        duration: 'short'
-      });
-
-      // Execute multiple async tasks
-      const [apiResult, fileResult] = await Promise.all([
-        this.asyncService.fetchDataFromAPI(),
-        this.asyncService.readFileAsync('/data/local/file.txt')
-      ]);
-
-      // Handle results
-      if (apiResult.success) {
-        console.log('API Success:', apiResult.data);
-        await Toast.show({
-          text: `API: ${apiResult.data}`,
-          duration: 'long'
+    constructor(comparator?: (a: T, b: T) => number) {
+        this.root = null;
+        this.comparator = comparator || ((a: T, b: T) => {
+            if (a < b) return -1;
+            if (a > b) return 1;
+            return 0;
         });
-      } else {
-        console.error('API Error:', apiResult.error);
-      }
-
-      if (fileResult.success) {
-        console.log('File Success:', fileResult.data);
-      } else {
-        console.error('File Error:', fileResult.error);
-      }
-
-    } catch (error) {
-      console.error('App initialization failed:', error);
-      await Toast.show({
-        text: 'Initialization failed',
-        duration: 'long'
-      });
     }
-  }
 
-  // Method to handle background async tasks
-  async performBackgroundTask(): Promise<void> {
-    try {
-      // This would typically run in a Web Worker or background thread
-      const result = await this.asyncService.fetchDataFromAPI();
-      
-      // Post message back to main thread (simulated)
-      this.handleBackgroundResult(result);
-      
-    } catch (error) {
-      console.error('Background task failed:', error);
+    // Get height of a node
+    private getHeight(node: AVLNode<T> | null): number {
+        return node ? node.height : 0;
     }
-  }
 
-  private handleBackgroundResult(result: AsyncTaskResult<string>): void {
-    if (result.success) {
-      console.log('Background task completed:', result.data);
-    } else {
-      console.error('Background task failed:', result.error);
+    // Update height of a node
+    private updateHeight(node: AVLNode<T>): void {
+        node.height = Math.max(this.getHeight(node.left), this.getHeight(node.right)) + 1;
     }
-  }
-}
 
-// Android-specific bridge example
-class AndroidNativeBridge {
-  /**
-   * Call native Android code asynchronously
-   */
-  static async callNativeMethod(methodName: string, params: any): Promise<any> {
-    if (Capacitor.getPlatform() === 'android') {
-      // Using Capacitor's bridge to call native Android code
-      try {
-        const result = await (Capacitor as any).Plugins[methodName].execute(params);
-        return { success: true, data: result };
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Native call failed'
-        };
-      }
+    // Get balance factor of a node
+    private getBalanceFactor(node: AVLNode<T> | null): number {
+        if (!node) return 0;
+        return this.getHeight(node.left) - this.getHeight(node.right);
     }
-    
-    return {
-      success: false,
-      error: 'Not running on Android'
-    };
-  }
+
+    // Right rotation
+    private rotateRight(y: AVLNode<T>): AVLNode<T> {
+        const x = y.left!;
+        const T2 = x.right;
+
+        // Perform rotation
+        x.right = y;
+        y.left = T2;
+
+        // Update heights
+        this.updateHeight(y);
+        this.updateHeight(x);
+
+        return x;
+    }
+
+    // Left rotation
+    private rotateLeft(x: AVLNode<T>): AVLNode<T> {
+        const y = x.right!;
+        const T2 = y.left;
+
+        // Perform rotation
+        y.left = x;
+        x.right = T2;
+
+        // Update heights
+        this.updateHeight(x);
+        this.updateHeight(y);
+
+        return y;
+    }
+
+    // Balance the tree
+    private balance(node: AVLNode<T>): AVLNode<T> {
+        const balanceFactor = this.getBalanceFactor(node);
+
+        // Left Left Case
+        if (balanceFactor > 1 && this.getBalanceFactor(node.left) >= 0) {
+            return this.rotateRight(node);
+        }
+
+        // Right Right Case
+        if (balanceFactor < -1 && this.getBalanceFactor(node.right) <= 0) {
+            return this.rotateLeft(node);
+        }
+
+        // Left Right Case
+        if (balanceFactor > 1 && this.getBalanceFactor(node.left) < 0) {
+            node.left = this.rotateLeft(node.left!);
+            return this.rotateRight(node);
+        }
+
+        // Right Left Case
+        if (balanceFactor < -1 && this.getBalanceFactor(node.right) > 0) {
+            node.right = this.rotateRight(node.right!);
+            return this.rotateLeft(node);
+        }
+
+        return node;
+    }
+
+    // Insert a value
+    insert(value: T): void {
+        this.root = this.insertNode(this.root, value);
+    }
+
+    private insertNode(node: AVLNode<T> | null, value: T): AVLNode<T> {
+        // Perform normal BST insertion
+        if (node === null) {
+            return new AVLNode(value);
+        }
+
+        if (this.comparator(value, node.value) < 0) {
+            node.left = this.insertNode(node.left, value);
+        } else if (this.comparator(value, node.value) > 0) {
+            node.right = this.insertNode(node.right, value);
+        } else {
+            // Duplicate values not allowed
+            return node;
+        }
+
+        // Update height of current node
+        this.updateHeight(node);
+
+        // Balance the tree
+        return this.balance(node);
+    }
+
+    // Delete a value
+    delete(value: T): void {
+        this.root = this.deleteNode(this.root, value);
+    }
+
+    private deleteNode(node: AVLNode<T> | null, value: T): AVLNode<T> | null {
+        // Perform standard BST delete
+        if (node === null) {
+            return null;
+        }
+
+        if (this.comparator(value, node.value) < 0) {
+            node.left = this.deleteNode(node.left, value);
+        } else if (this.comparator(value, node.value) > 0) {
+            node.right = this.deleteNode(node.right, value);
+        } else {
+            // Node to be deleted found
+
+            // Node with only one child or no child
+            if (node.left === null || node.right === null) {
+                const temp = node.left || node.right;
+
+                // No child case
+                if (temp === null) {
+                    return null;
+                } else {
+                    // One child case
+                    node = temp;
+                }
+            } else {
+                // Node with two children: get inorder successor
+                const temp = this.getMinValueNode(node.right)!;
+                node.value = temp.value;
+                node.right = this.deleteNode(node.right, temp.value);
+            }
+        }
+
+        // If the tree had only one node then return
+        if (node === null) {
+            return null;
+        }
+
+        // Update height
+        this.updateHeight(node);
+
+        // Balance the tree
+        return this.balance(node);
+    }
+
+    // Get node with minimum value
+    private getMinValueNode(node: AVLNode<T>): AVLNode<T> | null {
+        let current = node;
+        while (current.left !== null) {
+            current = current.left;
+        }
+        return current;
+    }
+
+    // Search for a value
+    search(value: T): boolean {
+        return this.searchNode(this.root, value);
+    }
+
+    private searchNode(node: AVLNode<T> | null, value: T): boolean {
+        if (node === null) {
+            return false;
+        }
+
+        if (this.comparator(value, node.value) === 0) {
+            return true;
+        }
+
+        if (this.comparator(value, node.value) < 0) {
+            return this.searchNode(node.left, value);
+        } else {
+            return this.searchNode(node.right, value);
+        }
+    }
+
+    // In-order traversal (returns sorted values)
+    inOrderTraversal(): T[] {
+        const result: T[] = [];
+        this.inOrder(this.root, result);
+        return result;
+    }
+
+    private inOrder(node: AVLNode<T> | null, result: T[]): void {
+        if (node !== null) {
+            this.inOrder(node.left, result);
+            result.push(node.value);
+            this.inOrder(node.right, result);
+        }
+    }
+
+    // Pre-order traversal
+    preOrderTraversal(): T[] {
+        const result: T[] = [];
+        this.preOrder(this.root, result);
+        return result;
+    }
+
+    private preOrder(node: AVLNode<T> | null, result: T[]): void {
+        if (node !== null) {
+            result.push(node.value);
+            this.preOrder(node.left, result);
+            this.preOrder(node.right, result);
+        }
+    }
+
+    // Post-order traversal
+    postOrderTraversal(): T[] {
+        const result: T[] = [];
+        this.postOrder(this.root, result);
+        return result;
+    }
+
+    private postOrder(node: AVLNode<T> | null, result: T[]): void {
+        if (node !== null) {
+            this.postOrder(node.left, result);
+            this.postOrder(node.right, result);
+            result.push(node.value);
+        }
+    }
+
+    // Get the root value (for testing)
+    getRoot(): T | null {
+        return this.root ? this.root.value : null;
+    }
 }
 
 // Example usage
-const app = new MainApp();
+const avlTree = new AVLTree<number>();
 
-// Initialize app when device is ready
-document.addEventListener('DOMContentLoaded', () => {
-  if (Capacitor.getPlatform() === 'android') {
-    app.initializeApp();
-    
-    // Example of calling native Android code
-    AndroidNativeBridge.callNativeMethod('FileSystem', { operation: 'read', path: '/data/file.txt' })
-      .then(result => {
-        console.log('Native call result:', result);
-      });
-  }
-});
+// Insert values
+avlTree.insert(10);
+avlTree.insert(20);
+avlTree.insert(30);
+avlTree.insert(40);
+avlTree.insert(50);
+avlTree.insert(25);
 
-// Export for use in other modules
-export { AndroidAsyncService, AsyncTaskResult, MainApp, AndroidNativeBridge };
-npm install @capacitor/core @capacitor/network @capacitor/toast
-npx cap add android
-// In your Android project
-@NativePlugin
-public class FileSystemPlugin extends Plugin {
-    
-    @PluginMethod
-    public void execute(PluginCall call) {
-        String operation = call.getString("operation");
-        String path = call.getString("path");
-        
-        // Run async task
-        new AsyncTask<Void, Void, String>() {
-            @Override
-            protected String doInBackground(Void... voids) {
-                try {
-                    // Perform file operation
-                    return readFile(path);
-                } catch (IOException e) {
-                    return null;
-                }
-            }
-            
-            @Override
-            protected void onPostExecute(String result) {
-                if (result != null) {
-                    call.success(result);
-                } else {
-                    call.error("File read failed");
-                }
-            }
-        }.execute();
-    }
+// Search for values
+console.log("Search 30:", avlTree.search(30)); // true
+console.log("Search 35:", avlTree.search(35)); // false
+
+// Get sorted values (in-order traversal)
+console.log("In-order:", avlTree.inOrderTraversal()); // [10, 20, 25, 30, 40, 50]
+
+// Delete a value
+avlTree.delete(30);
+console.log("After deletion:", avlTree.inOrderTraversal()); // [10, 20, 25, 40, 50]
+
+// Example with custom comparator for objects
+interface Person {
+    name: string;
+    age: number;
 }
+
+const personTree = new AVLTree<Person>((a, b) => a.age - b.age);
+
+personTree.insert({ name: "Alice", age: 25 });
+personTree.insert({ name: "Bob", age: 30 });
+personTree.insert({ name: "Charlie", age: 20 });
+
+console.log("People by age:", personTree.inOrderTraversal());
+// [{ name: "Charlie", age: 20 }, { name: "Alice", age: 25 }, { name: "Bob", age: 30 }]
