@@ -1,43 +1,23 @@
-// random-user.ts
-// A tiny CLI that fetches a random user from https://randomuser.me
-// Usage: npx ts-node random-user.ts
-
-import fetch from 'node-fetch';
-
-interface RandomUserResponse {
-  results: Array<{
-    name: { first: string; last: string };
-    email: string;
-    picture: { large: string };
-    location: {
-      country: string;
-      city: string;
-      coordinates: { latitude: string; longitude: string };
-    };
-  }>;
-}
-
-async function getRandomUser(): Promise<void> {
-  try {
-    const res = await fetch('https://randomuser.me/api/');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = (await res.json()) as RandomUserResponse;
-
-    const [user] = data.results;
-    console.log(`👤  ${user.name.first} ${user.name.last}`);
-    console.log(`📧  ${user.email}`);
-    console.log(`🌍  ${user.location.city}, ${user.location.country}`);
-    console.log(`📍  ${user.location.coordinates.latitude},${user.location.coordinates.longitude}`);
-    console.log(`🖼  ${user.picture.large}`);
-  } catch (err) {
-    console.error('Could not fetch random user:', (err as Error).message);
-    process.exit(1);
+function countOverlapping(text: string, word: string): number {
+  if (word.length === 0) return 0;          // avoid infinite loop
+  let count = 0;
+  let pos = 0;
+  while (true) {
+    pos = text.indexOf(word, pos);
+    if (pos === -1) break;
+    count++;
+    pos++;                                  // move only one char forward
   }
+  return count;
 }
 
-// Run if executed directly
-if (require.main === module) {
-  getRandomUser();
+console.log(countOverlapping("aaaa", "aa")); // 3
+function countWholeWords(text: string, word: string): number {
+  // Escape regex-special characters in the word
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
 }
 
-export { getRandomUser };
+console.log(countWholeWords('One fish, two fish, red fish, blue fish', 'fish')); // 4
