@@ -1,204 +1,70 @@
-function longestIncreasingSubsequence(nums: number[]): number[] {
-    if (nums.length === 0) return [];
-    
-    const n = nums.length;
-    const tails: number[] = [];  // Stores the smallest tail of all increasing subsequences
-    const prev: number[] = new Array(n).fill(-1);  // For reconstructing the sequence
-    const indices: number[] = [];  // Stores indices for tails
-    
-    for (let i = 0; i < n; i++) {
-        const num = nums[i];
-        
-        // Binary search for the position to insert/replace
-        let left = 0;
-        let right = tails.length;
-        
-        while (left < right) {
-            const mid = Math.floor((left + right) / 2);
-            if (nums[tails[mid]] < num) {
-                left = mid + 1;
-            } else {
-                right = mid;
-            }
-        }
-        
-        if (left === tails.length) {
-            tails.push(i);
-            if (tails.length > 1) {
-                prev[i] = tails[tails.length - 2];
-            }
-        } else {
-            tails[left] = i;
-            if (left > 0) {
-                prev[i] = tails[left - 1];
-            }
-        }
+// Remove by value
+const numbers = [1, 2, 3, 4, 5];
+const filteredNumbers = numbers.filter(num => num !== 3);
+console.log(filteredNumbers); // [1, 2, 4, 5]
+
+// Remove by index
+const removeByIndex = (arr: any[], index: number) => 
+    arr.filter((_, i) => i !== index);
+
+const result = removeByIndex(numbers, 2);
+console.log(result); // [1, 2, 4, 5]
+const numbers = [1, 2, 3, 4, 5];
+
+// Remove by index
+numbers.splice(2, 1); // Remove 1 element at index 2
+console.log(numbers); // [1, 2, 4, 5]
+
+// Remove by value (find index first)
+const valueToRemove = 3;
+const index = numbers.indexOf(valueToRemove);
+if (index > -1) {
+    numbers.splice(index, 1);
+}
+const numbers = [1, 2, 3, 4, 5];
+
+// Remove by index
+const indexToRemove = 2;
+const newArray = [
+    ...numbers.slice(0, indexToRemove),
+    ...numbers.slice(indexToRemove + 1)
+];
+console.log(newArray); // [1, 2, 4, 5]
+// Remove first occurrence of value
+function removeValue<T>(arr: T[], value: T): T[] {
+    const index = arr.indexOf(value);
+    if (index > -1) {
+        return [...arr.slice(0, index), ...arr.slice(index + 1)];
     }
-    
-    // Reconstruct the actual sequence
-    const result: number[] = [];
-    let current = tails[tails.length - 1];
-    
-    while (current !== -1) {
-        result.push(nums[current]);
-        current = prev[current];
-    }
-    
-    return result.reverse();
+    return arr;
 }
 
-// Example usage:
-const arr = [10, 9, 2, 5, 3, 7, 101, 18];
-console.log(longestIncreasingSubsequence(arr)); // Output: [2, 3, 7, 18]
-function longestIncreasingSubsequenceDP(nums: number[]): number[] {
-    if (nums.length === 0) return [];
-    
-    const n = nums.length;
-    const dp: number[] = new Array(n).fill(1);  // Length of LIS ending at each index
-    const prev: number[] = new Array(n).fill(-1);  // Previous index in the sequence
-    
-    let maxLength = 1;
-    let endIndex = 0;
-    
-    for (let i = 1; i < n; i++) {
-        for (let j = 0; j < i; j++) {
-            if (nums[j] < nums[i] && dp[j] + 1 > dp[i]) {
-                dp[i] = dp[j] + 1;
-                prev[i] = j;
-                
-                if (dp[i] > maxLength) {
-                    maxLength = dp[i];
-                    endIndex = i;
-                }
-            }
-        }
-    }
-    
-    // Reconstruct the sequence
-    const result: number[] = [];
-    let current = endIndex;
-    
-    while (current !== -1) {
-        result.push(nums[current]);
-        current = prev[current];
-    }
-    
-    return result.reverse();
+// Remove all occurrences of value
+function removeAllValues<T>(arr: T[], value: T): T[] {
+    return arr.filter(item => item !== value);
 }
 
-// Example usage:
-console.log(longestIncreasingSubsequenceDP(arr)); // Output: [2, 3, 7, 18]
-function lisLength(nums: number[]): number {
-    if (nums.length === 0) return 0;
-    
-    const dp: number[] = new Array(nums.length).fill(1);
-    let maxLength = 1;
-    
-    for (let i = 1; i < nums.length; i++) {
-        for (let j = 0; j < i; j++) {
-            if (nums[j] < nums[i]) {
-                dp[i] = Math.max(dp[i], dp[j] + 1);
-            }
-        }
-        maxLength = Math.max(maxLength, dp[i]);
-    }
-    
-    return maxLength;
+// Remove by predicate
+function removeByPredicate<T>(arr: T[], predicate: (item: T) => boolean): T[] {
+    return arr.filter(item => !predicate(item));
 }
 
-// Example usage:
-console.log(lisLength(arr)); // Output: 4
-interface LISResult<T> {
-    length: number;
-    sequence: T[];
-}
-
-function longestIncreasingSubsequenceGeneric<T>(
-    array: T[],
-    compareFn: (a: T, b: T) => boolean = (a, b) => a < b
-): LISResult<T> {
-    if (array.length === 0) {
-        return { length: 0, sequence: [] };
-    }
-    
-    const n = array.length;
-    const tails: number[] = [];
-    const prev: number[] = new Array(n).fill(-1);
-    
-    for (let i = 0; i < n; i++) {
-        let left = 0;
-        let right = tails.length;
-        
-        while (left < right) {
-            const mid = Math.floor((left + right) / 2);
-            if (compareFn(array[tails[mid]], array[i])) {
-                left = mid + 1;
-            } else {
-                right = mid;
-            }
-        }
-        
-        if (left === tails.length) {
-            tails.push(i);
-            if (tails.length > 1) {
-                prev[i] = tails[tails.length - 2];
-            }
-        } else {
-            tails[left] = i;
-            if (left > 0) {
-                prev[i] = tails[left - 1];
-            }
-        }
-    }
-    
-    // Reconstruct sequence
-    const sequence: T[] = [];
-    let current = tails[tails.length - 1];
-    
-    while (current !== -1) {
-        sequence.push(array[current]);
-        current = prev[current];
-    }
-    
-    return {
-        length: tails.length,
-        sequence: sequence.reverse()
-    };
-}
-
-// Example usage with custom objects:
-interface Person {
+// Example usage
+const fruits = ['apple', 'banana', 'orange', 'apple'];
+console.log(removeValue(fruits, 'apple')); // ['banana', 'orange', 'apple']
+console.log(removeAllValues(fruits, 'apple')); // ['banana', 'orange']
+console.log(removeByPredicate(fruits, fruit => fruit.startsWith('a'))); // ['banana', 'orange']
+interface User {
+    id: number;
     name: string;
-    age: number;
 }
 
-const people: Person[] = [
-    { name: "Alice", age: 20 },
-    { name: "Bob", age: 25 },
-    { name: "Charlie", age: 22 },
-    { name: "David", age: 30 }
+const users: User[] = [
+    { id: 1, name: 'Alice' },
+    { id: 2, name: 'Bob' },
+    { id: 3, name: 'Charlie' }
 ];
 
-const result = longestIncreasingSubsequenceGeneric(
-    people,
-    (a, b) => a.age < b.age
-);
-
-console.log(result);
-// Output: { length: 3, sequence: [{ name: "Alice", age: 20 }, { name: "Charlie", age: 22 }, { name: "David", age: 30 }] }
-// Test with large array
-function generateTestData(size: number): number[] {
-    return Array.from({ length: size }, () => Math.floor(Math.random() * 1000));
-}
-
-const largeArray = generateTestData(10000);
-
-console.time("O(n log n) method");
-const result1 = longestIncreasingSubsequence(largeArray);
-console.timeEnd("O(n log n) method");
-
-console.time("O(n²) method");
-const result2 = longestIncreasingSubsequenceDP(largeArray);
-console.timeEnd("O(n²) method");
-
-console.log("Length:", result1.length);
+// Remove user by ID
+const usersWithoutBob = users.filter(user => user.id !== 2);
+console.log(usersWithoutBob); // Alice and Charlie remain
