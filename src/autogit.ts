@@ -1,83 +1,165 @@
-// Tarjan's algorithm: find SCCs in a directed graph
-// Graph is a Map<V, V[]> adjacency list.
-// Returns an array of SCCs, each SCC is an array of vertices.
+/**
+ * SkipList.ts
+ * A fast, ordered map / multiset with O(log n) insert / delete / search.
+ * Licensed as MIT.
+ */
 
-export function tarjanSCC<V>(graph: Map<V, V[]>): V[][] {
-  const indexMap = new Map<V, number>();  // index of each node when first discovered
-  const lowlink = new Map<V, number>();   // smallest index reachable from the node
-  const onStack = new Map<V, boolean>();  // is the node on the stack?
-  const stack: V[] = [];                   // stack of nodes
-  const sccs: V[][] = [];                   // result: list of SCCs
-  let index = 0;
+export class SkipList<K, V> implements Iterable<[K, V]> {
+  private head: Node<K, V>;
+  private maxLevel: number;
+  private readonly p = 0.25;               // probability to increase level
+  private comp: (a: K, b: K) => number;
+  private _size = 0;
 
-  const neighbors = (v: V) => graph.get(v) ?? [];
+  constructor(
+    compareFn?: (a: K, b: K) => number,
+    maxLevels = 32
+  ) {
+    this.comp = compareFn || defaultCompare;
+    this.maxLevel = maxLevels;
+    this.head = new Node(maxLevels, undefined as any, undefined as any);
+  }
 
-  function strongconnect(v: V) {
-    indexMap.set(v, index);
-    lowlink.set(v, index);
-    index++;
-    stack.push(v);
-    onStack.set(v, true);
+  /* ---------- public API ---------- */
 
-    for (const w of neighbors(v)) {
-      if (!indexMap.has(w)) {
-        // Successor not yet visited
-        strongconnect(w);
-        // Update lowlink after returning
-        lowlink.set(v, Math.min(lowlink.get(v)!, lowlink.get(w)!));
-      } else if (onStack.get(w)) {
-        // Successor already on stack: update lowlink
-        lowlink.set(v, Math.min(lowlink.get(v)!, indexMap.get(w)!));
+  get size(): number { return this._size; }
+
+  clear(): void {
+    this.head = new Node(this.maxLevel, undefined as any, undefined as any);
+    this._size = 0;
+  }
+
+  has(key: K): boolean {
+    return this.find(key) !== null;
+  }
+
+  get(key: K): V | undefined {
+    const n = this.find(key);
+    return n ? n.value : undefined;
+  }
+
+  set(key: K, value: V): this {
+    const update: Node<K, V>[] = [];
+    let x: Node<K, V> = this.head;
+    for (let i = this.head.level - 1; i >= 0; i--) {
+      while (x.next[i] && this.comp(x.next[i]!.key, key) < 0) {
+        x = x.next[i]!;
+      }
+      update[i] = x;
+    }
+    x = x.next[0]!;
+
+    if (x && this.comp(x.key, key) === 0) {
+      x.value = value;                 // overwrite
+    } else {
+      const lvl = this.randomLevel();
+      const newNode = new Node(lvl, key, value);
+      if (lvl > this.head.level) {
+        for (let i = this.head.level; i < lvl; i++) update[i] = this.head;
+        this.head.level = lvl;
+      }
+      for (let i = 0; i < lvl; i++) {
+        newNode.next[i] = update[i].next[i];
+        update[i].next[i] = newNode;
+      }
+      this._size++;
+    }
+    return this;
+  }
+
+  delete(key: K): boolean {
+    const update: Node<K, V>[] = [];
+    let x: Node<K, V> = this.head;
+    for (let i = this.head.level - 1; i >= 0; i--) {
+      while (x.next[i] && this.comp(x.next[i]!.key, key) < 0) {
+        x = x.next[i]!;
+      }
+      update[i] = x;
+    }
+    x = x.next[0]!;
+
+    if (!x || this.comp(x.key, key) !== 0) return false;
+
+    for (let i = 0; i < this.head.level; i++) {
+      if (update[i].next[i] !== x) break;
+      update[i].next[i] = x.next[i];
+    }
+    while (this.head.level > 1 && !this.head.next[this.head.level - 1]) {
+      this.head.level--;
+    }
+    this._size--;
+    return true;
+  }
+
+  /** Return the k-th entry (0-based) in O(log n) */
+  at(index: number): [K, V] | undefined {
+    if (index < 0 || index >= this._size) return undefined;
+    let x = this.head.next[0]!;
+    for (let i = 0; i < index; i++) x = x.next[0]!;
+    return [x.key, x.value];
+  }
+
+  *keys(): IterableIterator<K>   { for (const [k] of this) yield k; }
+  *values(): IterableIterator<V>{ for (const [,v] of this) yield v; }
+  *entries(): IterableIterator<[K, V]> { yield* this; }
+
+  [Symbol.iterator](): IterableIterator<[K, V]> {
+    return (function* (self) {
+      let cur = self.head.next[0];
+      while (cur) {
+        yield [cur.key, cur.value];
+        cur = cur.next[0];
+      }
+    })(this);
+  }
+
+  /* ---------- internal helpers ---------- */
+
+  private find(key: K): Node<K, V> | null {
+    let x: Node<K, V> = this.head;
+    for (let i = this.head.level - 1; i >= 0; i--) {
+      while (x.next[i] && this.comp(x.next[i]!.key, key) < 0) {
+        x = x.next[i]!;
       }
     }
-
-    // If v is a root node, pop the stack to form an SCC
-    if (lowlink.get(v) === indexMap.get(v)) {
-      const scc: V[] = [];
-      let w: V;
-      do {
-        w = stack.pop()!;
-        onStack.set(w, false);
-        scc.push(w);
-      } while (w !== v);
-      sccs.push(scc);
-    }
+    x = x.next[0]!;
+    return x && this.comp(x.key, key) === 0 ? x : null;
   }
 
-  // Include nodes that might only appear as neighbors (not as keys)
-  const allNodes = new Set<V>();
-  for (const [v, nbrs] of graph) {
-    allNodes.add(v);
-    for (const w of nbrs) allNodes.add(w);
+  private randomLevel(): number {
+    let lvl = 1;
+    while (Math.random() < this.p && lvl < this.maxLevel) lvl++;
+    return lvl;
   }
-
-  for (const v of allNodes) {
-    if (!indexMap.has(v)) strongconnect(v);
-  }
-
-  return sccs;
 }
-type Node = string;
 
-// Build a graph:
-// A -> B
-// B -> C, D
-// C -> A
-// D -> E
-// E -> F
-// F -> D, G
-// G -> F
-const g = new Map<Node, Node[]>([
-  ["A", ["B"]],
-  ["B", ["C", "D"]],
-  ["C", ["A"]],
-  ["D", ["E"]],
-  ["E", ["F"]],
-  ["F", ["D", "G"]],
-  ["G", ["F"]],
-]);
+/* ---------- node ---------- */
 
-const components = tarjanSCC(g);
-console.log(components);
-// Example output (order of components and nodes within components may vary):
-// [ [ 'A', 'C', 'B' ], [ 'D', 'G', 'F', 'E' ] ]
+class Node<K, V> {
+  public next: (Node<K, V> | null)[];
+  public level: number;
+  constructor(level: number, public key: K, public value: V) {
+    this.level = level;
+    this.next = Array(level).fill(null);
+  }
+}
+
+/* ---------- default compare ---------- */
+
+function defaultCompare<T>(a: T, b: T): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+import { SkipList } from './SkipList';
+
+const sl = new SkipList<number, string>();
+sl.set(3, 'three');
+sl.set(1, 'one');
+sl.set(2, 'two');
+sl.set(4, 'four');
+
+console.log([...sl.entries()]);
+// [ [ 1, 'one' ], [ 2, 'two' ], [ 3, 'three' ], [ 4, 'four' ] ]
+
+sl.delete(2);
+console.log(sl.get(2));   // undefined
+console.log(sl.at(1));   // [ 3, 'three' ]
