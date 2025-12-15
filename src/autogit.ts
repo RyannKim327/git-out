@@ -1,115 +1,38 @@
-function factorial(n: number): number {
-    if (n < 0) throw new Error("Factorial is not defined for negative numbers");
-    if (!Number.isInteger(n)) throw new Error("Factorial is only defined for integers");
-    
-    let result = 1;
-    for (let i = 2; i <= n; i++) {
-        result *= i;
-    }
-    return result;
+class ListNode {
+  val: number;
+  next: ListNode | null = null;
+
+  constructor(val: number) {
+    this.val = val;
+  }
 }
 
-// Usage
-console.log(factorial(5)); // 120
-console.log(factorial(0)); // 1
-function factorialRecursive(n: number): number {
-    if (n < 0) throw new Error("Factorial is not defined for negative numbers");
-    if (!Number.isInteger(n)) throw new Error("Factorial is only defined for integers");
-    
-    if (n === 0 || n === 1) return 1;
-    return n * factorialRecursive(n - 1);
-}
+function findNthFromEnd(head: ListNode | null, n: number): ListNode | null {
+  if (!head || n <= 0) return null;
 
-// Usage
-console.log(factorialRecursive(5)); // 120
-function factorialArray(n: number): number {
-    if (n < 0) throw new Error("Factorial is not defined for negative numbers");
-    if (!Number.isInteger(n)) throw new Error("Factorial is only defined for integers");
-    
-    return Array.from({length: n}, (_, i) => i + 1)
-               .reduce((acc, val) => acc * val, 1);
-}
+  let fast: ListNode | null = head;
+  let slow: ListNode | null = head;
 
-// Usage
-console.log(factorialArray(5)); // 120
-class FactorialCalculator {
-    private static memo: Map<number, number> = new Map();
-    
-    static factorialMemoized(n: number): number {
-        if (n < 0) throw new Error("Factorial is not defined for negative numbers");
-        if (!Number.isInteger(n)) throw new Error("Factorial is only defined for integers");
-        
-        if (n === 0 || n === 1) return 1;
-        
-        if (this.memo.has(n)) {
-            return this.memo.get(n)!;
-        }
-        
-        const result = n * this.factorialMemoized(n - 1);
-        this.memo.set(n, result);
-        return result;
-    }
-}
+  // Move fast n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null; // n is larger than list length
+    fast = fast.next;
+  }
 
-// Usage
-console.log(FactorialCalculator.factorialMemoized(5)); // 120
-class Factorial {
-    /**
-     * Calculates factorial of a non-negative integer
-     * @param n - Non-negative integer
-     * @returns Factorial result
-     * @throws Error for invalid inputs
-     */
-    static calculate(n: number): number {
-        // Input validation
-        if (n < 0) {
-            throw new Error("Factorial is not defined for negative numbers");
-        }
-        
-        if (!Number.isInteger(n)) {
-            throw new Error("Factorial is only defined for integers");
-        }
-        
-        // Base cases
-        if (n === 0 || n === 1) {
-            return 1;
-        }
-        
-        // Iterative calculation
-        let result = 1;
-        for (let i = 2; i <= n; i++) {
-            result *= i;
-        }
-        
-        return result;
-    }
-}
+  // Move both until fast reaches the end
+  while (fast) {
+    slow = slow!;
+    fast = fast.next;
+  }
 
-// Usage examples
-console.log(Factorial.calculate(5)); // 120
-console.log(Factorial.calculate(0)); // 1
-console.log(Factorial.calculate(1)); // 1
-
-// Error cases
-try {
-    console.log(Factorial.calculate(-1)); // Throws error
-} catch (error) {
-    console.error(error.message);
+  return slow;
 }
+// Create list: 1 -> 2 -> 3 -> 4 -> 5
+const head = new ListNode(1);
+head.next = new ListNode(2);
+head.next.next = new ListNode(3);
+head.next.next.next = new ListNode(4);
+head.next.next.next.next = new ListNode(5);
 
-try {
-    console.log(Factorial.calculate(3.5)); // Throws error
-} catch (error) {
-    console.error(error.message);
-}
-function factorialBigInt(n: bigint): bigint {
-    if (n < 0n) throw new Error("Factorial is not defined for negative numbers");
-    
-    let result = 1n;
-    for (let i = 2n; i <= n; i++) {
-        result *= i;
-    }
-    return result;
-}
-
-console.log(factorialBigInt(20n).toString()); // 2432902008176640000
+const result = findNthFromEnd(head, 2); // Should return node with value 4
+console.log(result?.val); // Output: 4
