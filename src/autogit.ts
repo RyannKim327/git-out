@@ -1,51 +1,60 @@
-function removeVowels(str: string): string {
-    return str.replace(/[aeiou]/gi, '');
-}
+/**
+ * Returns the first repeated character in `s`.
+ * If there is no repetition, the function returns `null`.
+ *
+ * @param s - The input string (can contain any Unicode characters)
+ * @returns The first character that occurs more than once, or null.
+ */
+export function firstRepeatedChar(s: string): string | null {
+    // A Set gives O(1) lookup for “have we seen this character already?”
+    const seen = new Set<string>();
 
-// Usage
-const result = removeVowels("Hello World");
-console.log(result); // "Hll Wrld"
-function removeVowels(str: string): string {
-    const vowels = new Set(['a', 'e', 'i', 'o', 'u']);
-    return str
-        .split('')
-        .filter(char => !vowels.has(char.toLowerCase()))
-        .join('');
-}
-
-// Usage
-const result = removeVowels("TypeScript");
-console.log(result); // "TypScrpt"
-function removeVowels(str: string): string {
-    const vowels = new Set(['a', 'e', 'i', 'o', 'u']);
-    let result = '';
-    
-    for (const char of str) {
-        if (!vowels.has(char.toLowerCase())) {
-            result += char;
+    // `for...of` iterates over Unicode code points, not just UTF‑16 units.
+    // This means characters like emojis (👩‍💻) are handled correctly.
+    for (const ch of s) {
+        if (seen.has(ch)) {
+            // As soon as we encounter a character that is already in the set,
+            // we have found the *first* repeated character.
+            return ch;
         }
+        seen.add(ch);
     }
-    
-    return result;
+
+    // No character repeated.
+    return null;
+}
+import { firstRepeatedChar } from "./firstRepeatedChar";
+
+console.log(firstRepeatedChar("abca"));          // → "a"
+console.log(firstRepeatedChar("hello world"));  // → "l"
+console.log(firstRepeatedChar("abcdef"));       // → null
+console.log(firstRepeatedChar("😀😃😀"));        // → "😀"
+console.log(firstRepeatedChar("aA"));           // → null (case‑sensitive)
+function firstRepeatedChar(s: string): string | null {
+    const seen = new Set<string>();
+    for (const ch of s) {
+        if (seen.has(ch)) return ch;
+        seen.add(ch);
+    }
+    return null;
 }
 
-// Usage
-const result = removeVowels("Programming");
-console.log(result); // "Prgrmmng"
-function removeVowelsComprehensive(str: string): string {
-    // This regex includes common accented vowels
-    return str.replace(/[aeiouàèìòùáéíóúâêîôûäëïöü]/gi, '');
-}
+// Demo
+const tests = [
+    "abca",
+    "hello world",
+    "abcdef",
+    "😀😃😀",
+    "aA",
+    "Mississippi",
+];
 
-// Usage
-const result = removeVowelsComprehensive("café naïve");
-console.log(result); // "cf nv"
-function removeVowels(str: string): string {
-    const vowels = /[aeiou]/i;
-    return Array.from(str)
-        .reduce((acc, char) => vowels.test(char) ? acc : acc + char, '');
+for (const t of tests) {
+    console.log(`"${t}" → ${firstRepeatedChar(t) ?? "no repeat"}`);
 }
-
-// Usage
-const result = removeVowels("JavaScript");
-console.log(result); // "JvScrpt"
+"abca" → a
+"hello world" → l
+"abcdef" → no repeat
+"😀😃😀" → 😀
+"aA" → no repeat
+"Mississippi" → s
