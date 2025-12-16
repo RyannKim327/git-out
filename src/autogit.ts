@@ -1,77 +1,152 @@
-function isPrime(num: number): boolean {
-    if (num <= 1) return false;
-    if (num <= 3) return true;
-    if (num % 2 === 0 || num % 3 === 0) return false;
-    
-    for (let i = 5; i * i <= num; i += 6) {
-        if (num % i === 0 || num % (i + 2) === 0) return false;
-    }
-    
-    return true;
+interface ListNode<T> {
+    value: T;
+    next: ListNode<T> | null;
 }
 
-// Examples
-console.log(isPrime(2));    // true
-console.log(isPrime(17));   // true
-console.log(isPrime(15));   // false
-console.log(isPrime(1));    // false
-function isPrimeSimple(num: number): boolean {
-    if (num <= 1) return false;
-    if (num === 2) return true;
-    if (num % 2 === 0) return false;
+function findIntersectionByReference<T>(
+    headA: ListNode<T> | null,
+    headB: ListNode<T> | null
+): ListNode<T> | null {
+    if (!headA || !headB) return null;
     
-    // Check only odd divisors up to sqrt(num)
-    for (let i = 3; i <= Math.sqrt(num); i += 2) {
-        if (num % i === 0) return false;
+    const visited = new Set<ListNode<T>>();
+    let current: ListNode<T> | null = headA;
+    
+    // Mark all nodes from first list
+    while (current) {
+        visited.add(current);
+        current = current.next;
     }
     
-    return true;
+    // Check second list for intersections
+    current = headB;
+    while (current) {
+        if (visited.has(current)) {
+            return current;
+        }
+        current = current.next;
+    }
+    
+    return null;
 }
-function isPrimeOptimized(num: number): boolean {
-    // Handle edge cases
-    if (num <= 1) return false;
-    if (num <= 3) return true;
+function findIntersectionByValue<T>(
+    headA: ListNode<T> | null,
+    headB: ListNode<T> | null
+): ListNode<T> | null {
+    if (!headA || !headB) return null;
     
-    // Check for divisibility by 2 or 3
-    if (num % 2 === 0 || num % 3 === 0) return false;
+    const visited = new Set<T>();
+    let current: ListNode<T> | null = headA;
     
-    // All primes are of the form 6k ± 1
-    // Check divisibility by numbers of this form
-    for (let i = 5; i * i <= num; i += 6) {
-        if (num % i === 0 || num % (i + 2) === 0) return false;
+    // Store values from first list
+    while (current) {
+        visited.add(current.value);
+        current = current.next;
     }
     
-    return true;
+    // Find first matching value in second list
+    current = headB;
+    while (current) {
+        if (visited.has(current.value)) {
+            return current;
+        }
+        current = current.next;
+    }
+    
+    return null;
 }
-function isPrimeWithValidation(num: number): boolean {
-    // Input validation
-    if (!Number.isInteger(num)) {
-        throw new Error('Input must be an integer');
+function getIntersectionNodeTwoPointer<T>(
+    headA: ListNode<T> | null,
+    headB: ListNode<T> | null
+): ListNode<T> | null {
+    if (!headA || !headB) return null;
+    
+    let ptrA: ListNode<T> | null = headA;
+    let ptrB: ListNode<T> | null = headB;
+    
+    // When ptrA reaches end, redirect to headB
+    // When ptrB reaches end, redirect to headA
+    // They'll meet at intersection or both become null
+    while (ptrA !== ptrB) {
+        ptrA = ptrA ? ptrA.next : headB;
+        ptrB = ptrB ? ptrB.next : headA;
     }
     
-    if (num <= 1) return false;
-    if (num <= 3) return true;
-    if (num % 2 === 0 || num % 3 === 0) return false;
-    
-    for (let i = 5; i * i <= num; i += 6) {
-        if (num % i === 0 || num % (i + 2) === 0) return false;
-    }
-    
-    return true;
+    return ptrA;
 }
-function testPrimeFunction(): void {
-    const testNumbers = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37];
-    const nonPrimes = [1, 4, 6, 8, 9, 10, 12, 14, 15, 16, 18, 20];
-    
-    console.log('Testing prime numbers:');
-    testNumbers.forEach(num => {
-        console.log(`${num}: ${isPrime(num)}`);
-    });
-    
-    console.log('\nTesting non-prime numbers:');
-    nonPrimes.forEach(num => {
-        console.log(`${num}: ${isPrime(num)}`);
-    });
+class ListNode<T> {
+    constructor(
+        public value: T,
+        public next: ListNode<T> | null = null
+    ) {}
 }
 
-testPrimeFunction();
+class LinkedList<T> {
+    public head: ListNode<T> | null = null;
+    
+    append(value: T): void {
+        const newNode = new ListNode(value);
+        if (!this.head) {
+            this.head = newNode;
+            return;
+        }
+        
+        let current = this.head;
+        while (current.next) {
+            current = current.next;
+        }
+        current.next = newNode;
+    }
+    
+    // Create intersection with another list
+    createIntersection(targetList: LinkedList<T>, intersectionPoint: number): void {
+        if (!this.head) return;
+        
+        let current = this.head;
+        let count = 0;
+        
+        // Find the node where we want to create intersection
+        while (current && count < intersectionPoint) {
+            current = current.next;
+            count++;
+        }
+        
+        if (current) {
+            // Make the target list's last node point to this node
+            if (targetList.head) {
+                let targetCurrent = targetList.head;
+                while (targetCurrent.next) {
+                    targetCurrent = targetCurrent.next;
+                }
+                targetCurrent.next = current;
+            }
+        }
+    }
+}
+
+// Usage example
+function demoIntersection(): void {
+    // Create first list: 1 → 2 → 3 → 4 → 5
+    const list1 = new LinkedList<number>();
+    for (let i = 1; i <= 5; i++) {
+        list1.append(i);
+    }
+    
+    // Create second list: 6 → 7
+    const list2 = new LinkedList<number>();
+    list2.append(6);
+    list2.append(7);
+    
+    // Create intersection: make list2 point to node with value 3 in list1
+    list2.createIntersection(list1, 2); // Intersection at 3rd node (value 3)
+    
+    const intersection = getIntersectionNodeTwoPointer(list1.head, list2.head);
+    
+    if (intersection) {
+        console.log(`Lists intersect at node with value: ${intersection.value}`);
+    } else {
+        console.log("Lists do not intersect");
+    }
+}
+
+demoIntersection(); // Output: Lists intersect at node with value: 3
