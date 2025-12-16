@@ -1,109 +1,67 @@
-function uniq<T>(arr: T[]): T[] {
-  // A Set only stores unique values.
-  return [...new Set(arr)];
+function removeVowelsRegex(input: string): string {
+  // /[aeiou]/gi  →  matches any vowel, case‑insensitive (g = global)
+  return input.replace(/[aeiou]/gi, '');
 }
 
-/* Example */
-const numbers = [1, 2, 2, 3, 4, 4, 5];
-const uniqNumbers = uniq(numbers); // [1, 2, 3, 4, 5]
-function uniq<T>(arr: T[]): T[] {
-  return arr.filter((value, index) => arr.indexOf(value) === index);
+// Example
+const original = "Hello, TypeScript!";
+const noVowels = removeVowelsRegex(original);
+console.log(noVowels); // "Hll, TypScrpt!"
+function removeVowelsFilter(input: string): string {
+  const vowels = new Set(['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']);
+  return input
+    .split('')               // → array of characters
+    .filter(ch => !vowels.has(ch)) // keep only non‑vowels
+    .join('');               // back to a string
 }
 
-/* Example */
-const fruits = ['apple', 'banana', 'apple', 'orange'];
-const uniqFruits = uniq(fruits); // ['apple', 'banana', 'orange']
-type Person = { id: number; name: string };
+// Example
+console.log(removeVowelsFilter("OpenAI is awesome!")); // "pn s wsm!"
+function removeVowelsLoop(input: string): string {
+  const vowels = new Set(['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']);
+  let result = '';
 
-function uniqBy<T, K extends keyof any>(arr: T[], keyFn: (item: T) => K): T[] {
-  const seen = new Map<K, T>();
-  for (const item of arr) {
-    const key = keyFn(item);
-    if (!seen.has(key)) {
-      seen.set(key, item);
+  for (const ch of input) {
+    if (!vowels.has(ch)) {
+      result += ch;
     }
   }
-  return Array.from(seen.values());
+
+  return result;
 }
 
-/* Example */
-const people: Person[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 1, name: 'Alice (duplicate)' },
-];
-
-const uniqPeople = uniqBy(people, p => p.id);
-// [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
-// Overload signatures
-function uniq<T>(arr: T[]): T[];
-function uniq<T, K extends keyof any>(arr: T[], keyFn: (item: T) => K): T[];
-
-// Implementation
-function uniq<T, K extends keyof any>(arr: T[], keyFn?: (item: T) => K): T[] {
-  if (!keyFn) {
-    // Primitive path – Set is fastest
-    return [...new Set(arr)];
+// Example
+console.log(removeVowelsLoop("TypeScript is fun!")); // "TypScrpt s fn!"
+declare global {
+  interface String {
+    withoutVowels(): string;
   }
-
-  const seen = new Map<K, T>();
-  for (const item of arr) {
-    const key = keyFn(item);
-    if (!seen.has(key)) {
-      seen.set(key, item);
-    }
-  }
-  return Array.from(seen.values());
 }
 
-/* Usage */
-const nums = uniq([1, 2, 2, 3]); // [1, 2, 3]
+String.prototype.withoutVowels = function (): string {
+  return this.replace(/[aeiou]/gi, '');
+};
 
-type Book = { isbn: string; title: string };
-const books: Book[] = [
-  { isbn: '123', title: 'TS Basics' },
-  { isbn: '456', title: 'Node.js' },
-  { isbn: '123', title: 'Duplicate' },
-];
-const uniqBooks = uniq(books, b => b.isbn);
-// [{ isbn: '123', title: 'TS Basics' }, { isbn: '456', title: 'Node.js' }]
-import uniq from 'lodash/uniq';               // primitives only
-import uniqBy from 'lodash/uniqBy';           // objects with key selector
+// Usage
+const phrase = "TypeScript loves you!";
+console.log(phrase.withoutVowels()); // "TypScrpt lvs y!"
+#!/usr/bin/env ts-node
 
-const uniqNumbers = uniq([1, 2, 2, 3]);       // [1, 2, 3]
-const uniqBooks = uniqBy(books, b => b.isbn);
-/**
- * Remove duplicate entries from an array.
- * - For primitives: uses Set (fastest).
- * - For objects: provide a key selector.
- */
-export function uniq<T, K extends keyof any = never>(
-  arr: T[],
-  keyFn?: (item: T) => K
-): T[] {
-  if (!keyFn) {
-    // Primitive values – Set does the job.
-    return [...new Set(arr)];
-  }
-
-  const seen = new Map<K, T>();
-  for (const item of arr) {
-    const k = keyFn(item);
-    if (!seen.has(k)) seen.set(k, item);
-  }
-  return Array.from(seen.values());
+function removeVowels(input: string): string {
+  return input.replace(/[aeiou]/gi, '');
 }
 
-/* -------------------------------------------------
-   Example usage
----------------------------------------------------*/
-const nums = uniq([1, 2, 2, 3]); // → [1,2,3]
-
-type User = { id: string; name: string };
-const users: User[] = [
-  { id: 'a', name: 'Alice' },
-  { id: 'b', name: 'Bob' },
-  { id: 'a', name: 'Alice (dup)' },
-];
-const uniqUsers = uniq(users, u => u.id);
-// → [{id:'a', name:'Alice'}, {id:'b', name:'Bob'}]
+// Read from command line arguments or stdin
+const args = process.argv.slice(2);
+if (args.length) {
+  console.log(removeVowels(args.join(' ')));
+} else {
+  // fallback: read from stdin
+  process.stdin.setEncoding('utf8');
+  let data = '';
+  process.stdin.on('data', chunk => (data += chunk));
+  process.stdin.on('end', () => console.log(removeVowels(data)));
+}
+$ ./removeVowels.ts "Hello World"
+Hll Wrld
+const noVowels = str.replace(/[aeiou]/gi, '');
