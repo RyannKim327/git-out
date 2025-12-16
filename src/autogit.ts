@@ -1,292 +1,244 @@
-// Node interface
-interface AVLNode<T> {
-    value: T;
-    left: AVLNode<T> | null;
-    right: AVLNode<T> | null;
-    height: number;
+export class TarjanSCC {
+  private graph: Map<number, number[]>;
+  private index: number;
+  private stack: number[];
+  private indices: Map<number, number>;
+  private lowlinks: Map<number, number>;
+  private onStack: Map<number, boolean>;
+  private sccs: number[][];
+
+  constructor(graph: Map<number, number[]>) {
+    this.graph = graph;
+    this.index = 0;
+    this.stack = [];
+    this.indices = new Map();
+    this.lowlinks = new Map();
+    this.onStack = new Map();
+    this.sccs = [];
+  }
+
+  /**
+   * Find all strongly connected components in the graph
+   */
+  public findSCCs(): number[][] {
+    // Initialize tracking structures
+    this.indices.clear();
+    this.lowlinks.clear();
+    this.onStack.clear();
+    this.stack = [];
+    this.sccs = [];
+    this.index = 0;
+
+    // Process each node that hasn't been visited
+    for (const node of this.graph.keys()) {
+      if (!this.indices.has(node)) {
+        this.strongConnect(node);
+      }
+    }
+
+    return this.sccs;
+  }
+
+  /**
+   * Recursive DFS function for Tarjan's algorithm
+   */
+  private strongConnect(node: number): void {
+    // Set the depth index for this node to the smallest unused index
+    this.indices.set(node, this.index);
+    this.lowlinks.set(node, this.index);
+    this.index++;
+    this.stack.push(node);
+    this.onStack.set(node, true);
+
+    // Consider all neighbors of this node
+    const neighbors = this.graph.get(node) || [];
+    for (const neighbor of neighbors) {
+      if (!this.indices.has(neighbor)) {
+        // Neighbor hasn't been visited, recurse on it
+        this.strongConnect(neighbor);
+        this.lowlinks.set(
+          node,
+          Math.min(this.lowlinks.get(node)!, this.lowlinks.get(neighbor)!)
+        );
+      } else if (this.onStack.get(neighbor)) {
+        // Neighbor is in the stack and hence in the current SCC
+        this.lowlinks.set(
+          node,
+          Math.min(this.lowlinks.get(node)!, this.indices.get(neighbor)!)
+        );
+      }
+    }
+
+    // If node is a root node, pop the stack and generate an SCC
+    if (this.lowlinks.get(node) === this.indices.get(node)) {
+      const scc: number[] = [];
+      let top: number;
+
+      do {
+        top = this.stack.pop()!;
+        this.onStack.set(top, false);
+        scc.push(top);
+      } while (top !== node);
+
+      this.sccs.push(scc);
+    }
+  }
+
+  /**
+   * Get the condensation graph (DAG of SCCs)
+   */
+  public getCondensationGraph(): Map<number, number[]> {
+    const sccs = this.findSCCs();
+    const nodeToComponent = new Map<number, number>();
+    
+    // Map each node to its component index
+    sccs.forEach((scc, componentIndex) => {
+      scc.forEach(node => {
+        nodeToComponent.set(node, componentIndex);
+      });
+    });
+
+    const condensationGraph = new Map<number, number[]>();
+    
+    // Initialize components
+    for (let i = 0; i < sccs.length; i++) {
+      condensationGraph.set(i, []);
+    }
+
+    // Add edges between components
+    for (const [node, neighbors] of this.graph.entries()) {
+      const fromComponent = nodeToComponent.get(node)!;
+      
+      for (const neighbor of neighbors) {
+        const toComponent = nodeToComponent.get(neighbor)!;
+        
+        if (fromComponent !== toComponent) {
+          const edges = condensationGraph.get(fromComponent)!;
+          if (!edges.includes(toComponent)) {
+            edges.push(toComponent);
+          }
+        }
+      }
+    }
+
+    return condensationGraph;
+  }
 }
 
-// AVL Tree class
-class AVLTree<T> {
-    private root: AVLNode<T> | null = null;
-
-    // Create a new node
-    private createNode(value: T): AVLNode<T> {
-        return {
-            value,
-            left: null,
-            right: null,
-            height: 1
-        };
-    }
-
-    // Get height of a node
-    private getHeight(node: AVLNode<T> | null): number {
-        return node ? node.height : 0;
-    }
-
-    // Update height of a node based on its children
-    private updateHeight(node: AVLNode<T>): void {
-        node.height = Math.max(this.getHeight(node.left), this.getHeight(node.right)) + 1;
-    }
-
-    // Get balance factor of a node
-    private getBalanceFactor(node: AVLNode<T> | null): number {
-        if (!node) return 0;
-        return this.getHeight(node.left) - this.getHeight(node.right);
-    }
-
-    // Right rotation
-    private rotateRight(y: AVLNode<T>): AVLNode<T> {
-        const x = y.left!;
-        const T2 = x.right;
-
-        // Perform rotation
-        x.right = y;
-        y.left = T2;
-
-        // Update heights
-        this.updateHeight(y);
-        this.updateHeight(x);
-
-        return x;
-    }
-
-    // Left rotation
-    private rotateLeft(x: AVLNode<T>): AVLNode<T> {
-        const y = x.right!;
-        const T2 = y.left;
-
-        // Perform rotation
-        y.left = x;
-        x.right = T2;
-
-        // Update heights
-        this.updateHeight(x);
-        this.updateHeight(y);
-
-        return y;
-    }
-
-    // Balance the tree
-    private balance(node: AVLNode<T>): AVLNode<T> {
-        const balanceFactor = this.getBalanceFactor(node);
-
-        // Left Left Case
-        if (balanceFactor > 1 && this.getBalanceFactor(node.left) >= 0) {
-            return this.rotateRight(node);
-        }
-
-        // Right Right Case
-        if (balanceFactor < -1 && this.getBalanceFactor(node.right) <= 0) {
-            return this.rotateLeft(node);
-        }
-
-        // Left Right Case
-        if (balanceFactor > 1 && this.getBalanceFactor(node.left) < 0) {
-            node.left = this.rotateLeft(node.left!);
-            return this.rotateRight(node);
-        }
-
-        // Right Left Case
-        if (balanceFactor < -1 && this.getBalanceFactor(node.right) > 0) {
-            node.right = this.rotateRight(node.right!);
-            return this.rotateLeft(node);
-        }
-
-        return node;
-    }
-
-    // Insert a value
-    public insert(value: T): void {
-        this.root = this.insertNode(this.root, value);
-    }
-
-    private insertNode(node: AVLNode<T> | null, value: T): AVLNode<T> {
-        // Perform normal BST insertion
-        if (node === null) {
-            return this.createNode(value);
-        }
-
-        if (value < node.value) {
-            node.left = this.insertNode(node.left, value);
-        } else if (value > node.value) {
-            node.right = this.insertNode(node.right, value);
-        } else {
-            // Duplicate values not allowed
-            return node;
-        }
-
-        // Update height of this ancestor node
-        this.updateHeight(node);
-
-        // Balance the tree
-        return this.balance(node);
-    }
-
-    // Delete a value
-    public delete(value: T): void {
-        this.root = this.deleteNode(this.root, value);
-    }
-
-    private deleteNode(node: AVLNode<T> | null, value: T): AVLNode<T> | null {
-        if (node === null) {
-            return null;
-        }
-
-        // Perform normal BST deletion
-        if (value < node.value) {
-            node.left = this.deleteNode(node.left, value);
-        } else if (value > node.value) {
-            node.right = this.deleteNode(node.right, value);
-        } else {
-            // Node to be deleted found
-
-            // Node with only one child or no child
-            if (node.left === null || node.right === null) {
-                const temp = node.left || node.right;
-
-                // No child case
-                if (temp === null) {
-                    return null;
-                } else {
-                    // One child case
-                    node = temp;
-                }
-            } else {
-                // Node with two children: get the inorder successor
-                const temp = this.getMinValueNode(node.right)!;
-                node.value = temp.value;
-                node.right = this.deleteNode(node.right, temp.value);
-            }
-        }
-
-        // If the tree had only one node then return
-        if (node === null) {
-            return null;
-        }
-
-        // Update height
-        this.updateHeight(node);
-
-        // Balance the tree
-        return this.balance(node);
-    }
-
-    // Get node with minimum value
-    private getMinValueNode(node: AVLNode<T>): AVLNode<T> | null {
-        let current = node;
-        while (current.left !== null) {
-            current = current.left;
-        }
-        return current;
-    }
-
-    // Search for a value
-    public search(value: T): boolean {
-        return this.searchNode(this.root, value);
-    }
-
-    private searchNode(node: AVLNode<T> | null, value: T): boolean {
-        if (node === null) {
-            return false;
-        }
-
-        if (value < node.value) {
-            return this.searchNode(node.left, value);
-        } else if (value > node.value) {
-            return this.searchNode(node.right, value);
-        } else {
-            return true;
-        }
-    }
-
-    // Traversal methods
-    public inOrder(): T[] {
-        const result: T[] = [];
-        this.inOrderTraversal(this.root, result);
-        return result;
-    }
-
-    private inOrderTraversal(node: AVLNode<T> | null, result: T[]): void {
-        if (node !== null) {
-            this.inOrderTraversal(node.left, result);
-            result.push(node.value);
-            this.inOrderTraversal(node.right, result);
-        }
-    }
-
-    public preOrder(): T[] {
-        const result: T[] = [];
-        this.preOrderTraversal(this.root, result);
-        return result;
-    }
-
-    private preOrderTraversal(node: AVLNode<T> | null, result: T[]): void {
-        if (node !== null) {
-            result.push(node.value);
-            this.preOrderTraversal(node.left, result);
-            this.preOrderTraversal(node.right, result);
-        }
-    }
-
-    public postOrder(): T[] {
-        const result: T[] = [];
-        this.postOrderTraversal(this.root, result);
-        return result;
-    }
-
-    private postOrderTraversal(node: AVLNode<T> | null, result: T[]): void {
-        if (node !== null) {
-            this.postOrderTraversal(node.left, result);
-            this.postOrderTraversal(node.right, result);
-            result.push(node.value);
-        }
-    }
-
-    // Get tree height
-    public getTreeHeight(): number {
-        return this.getHeight(this.root);
-    }
-
-    // Check if tree is empty
-    public isEmpty(): boolean {
-        return this.root === null;
-    }
-
-    // Clear the tree
-    public clear(): void {
-        this.root = null;
-    }
+// Utility function to create a graph from an adjacency list
+export function createGraph(adjacencyList: Record<number, number[]>): Map<number, number[]> {
+  const graph = new Map<number, number[]>();
+  
+  for (const [node, neighbors] of Object.entries(adjacencyList)) {
+    graph.set(parseInt(node), neighbors);
+  }
+  
+  return graph;
 }
 
-// Example usage
-const avlTree = new AVLTree<number>();
+// Example usage and test
+function exampleUsage(): void {
+  // Example graph: 0->1, 1->2, 2->0, 2->3, 3->4, 4->5, 5->3
+  const adjacencyList: Record<number, number[]> = {
+    0: [1],
+    1: [2],
+    2: [0, 3],
+    3: [4],
+    4: [5],
+    5: [3]
+  };
 
-// Insert values
-avlTree.insert(10);
-avlTree.insert(20);
-avlTree.insert(30);
-avlTree.insert(40);
-avlTree.insert(50);
-avlTree.insert(25);
+  const graph = createGraph(adjacencyList);
+  const tarjan = new TarjanSCC(graph);
+  
+  const sccs = tarjan.findSCCs();
+  console.log("Strongly Connected Components:");
+  console.log(sccs); // [[0, 1, 2], [3, 4, 5]]
+  
+  const condensationGraph = tarjan.getCondensationGraph();
+  console.log("Condensation Graph:");
+  console.log(condensationGraph); // Map { 0 => [1], 1 => [] }
+}
 
-console.log("In-order traversal:", avlTree.inOrder());
-console.log("Pre-order traversal:", avlTree.preOrder());
-console.log("Post-order traversal:", avlTree.postOrder());
-console.log("Tree height:", avlTree.getTreeHeight());
+// Run the example
+exampleUsage();
+export interface TarjanResult {
+  sccs: number[][];
+  condensationGraph: Map<number, number[]>;
+}
 
-// Search operations
-console.log("Search 30:", avlTree.search(30)); // true
-console.log("Search 100:", avlTree.search(100)); // false
+export function tarjanSCC(graph: Map<number, number[]>): TarjanResult {
+  let index = 0;
+  const stack: number[] = [];
+  const indices = new Map<number, number>();
+  const lowlinks = new Map<number, number>();
+  const onStack = new Map<number, boolean>();
+  const sccs: number[][] = [];
 
-// Delete operations
-avlTree.delete(30);
-console.log("After deleting 30 - In-order:", avlTree.inOrder());
+  function strongConnect(node: number): void {
+    indices.set(node, index);
+    lowlinks.set(node, index);
+    index++;
+    stack.push(node);
+    onStack.set(node, true);
 
-// String example
-const stringTree = new AVLTree<string>();
-stringTree.insert("apple");
-stringTree.insert("banana");
-stringTree.insert("cherry");
-console.log("String tree - In-order:", stringTree.inOrder());
+    const neighbors = graph.get(node) || [];
+    for (const neighbor of neighbors) {
+      if (!indices.has(neighbor)) {
+        strongConnect(neighbor);
+        lowlinks.set(node, Math.min(lowlinks.get(node)!, lowlinks.get(neighbor)!));
+      } else if (onStack.get(neighbor)) {
+        lowlinks.set(node, Math.min(lowlinks.get(node)!, indices.get(neighbor)!));
+      }
+    }
+
+    if (lowlinks.get(node) === indices.get(node)) {
+      const component: number[] = [];
+      let top: number;
+
+      do {
+        top = stack.pop()!;
+        onStack.set(top, false);
+        component.push(top);
+      } while (top !== node);
+
+      sccs.push(component);
+    }
+  }
+
+  // Find all SCCs
+  for (const node of graph.keys()) {
+    if (!indices.has(node)) {
+      strongConnect(node);
+    }
+  }
+
+  return { sccs, condensationGraph: buildCondensationGraph(graph, sccs) };
+}
+
+function buildCondensationGraph(graph: Map<number, number[]>, sccs: number[][]): Map<number, number[]> {
+  const nodeToComponent = new Map<number, number>();
+  const condensationGraph = new Map<number, number[]>();
+
+  sccs.forEach((component, index) => {
+    component.forEach(node => nodeToComponent.set(node, index));
+    condensationGraph.set(index, []);
+  });
+
+  for (const [node, neighbors] of graph.entries()) {
+    const fromComponent = nodeToComponent.get(node)!;
+    
+    for (const neighbor of neighbors) {
+      const toComponent = nodeToComponent.get(neighbor)!;
+      
+      if (fromComponent !== toComponent) {
+        const edges = condensationGraph.get(fromComponent)!;
+        if (!edges.includes(toComponent)) {
+          edges.push(toComponent);
+        }
+      }
+    }
+  }
+
+  return condensationGraph;
+}
