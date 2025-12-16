@@ -1,249 +1,175 @@
-interface BeamSearchOptions<T> {
-  initialStates: T[];
-  generateSuccessors: (state: T) => T[];
-  isTerminal: (state: T) => boolean;
-  getScore: (state: T) => number;
-  beamWidth: number;
-  maxDepth?: number;
-}
+/**
+ * Build the LPS (Longest Proper Prefix which is also a Suffix) array for a pattern.
+ *
+ * @param pattern - The pattern we are searching for.
+ * @returns An array where lps[i] is the length of the longest proper prefix of pattern[0..i]
+ *          that is also a suffix of pattern[0..i].
+ */
+function buildLPS(pattern: string): number[] {
+    const m = pattern.length;
+    const lps = new Array<number>(m).fill(0);
 
-class BeamSearch<T> {
-  private options: BeamSearchOptions<T>;
+    // length of the previous longest prefix suffix
+    let len = 0;
+    // i starts from 1 because lps[0] is always 0
+    let i = 1;
 
-  constructor(options: BeamSearchOptions<T>) {
-    this.options = options;
-  }
-
-  search(): T[] {
-    const { initialStates, beamWidth, maxDepth = Infinity } = this.options;
-    let beam: T[] = [...initialStates];
-    let depth = 0;
-
-    while (depth < maxDepth && beam.length > 0) {
-      const allSuccessors: T[] = [];
-
-      // Generate all successors from current beam
-      for (const state of beam) {
-        if (this.options.isTerminal(state)) continue;
-        
-        const successors = this.options.generateSuccessors(state);
-        allSuccessors.push(...successors);
-      }
-
-      if (allSuccessors.length === 0) break;
-
-      // Score all successors and select top-k
-      const scoredSuccessors = allSuccessors.map(state => ({
-        state,
-        score: this.options.getScore(state)
-      }));
-
-      scoredSuccessors.sort((a, b) => b.score - a.score);
-      beam = scoredSuccessors.slice(0, beamWidth).map(item => item.state);
-
-      depth++;
-    }
-
-    return beam;
-  }
-}
-interface SearchNode<T> {
-  state: T;
-  score: number;
-  path: T[];
-  depth: number;
-}
-
-interface AdvancedBeamSearchOptions<T> {
-  initialStates: T[];
-  generateSuccessors: (state: T) => T[];
-  isTerminal: (state: T) => boolean;
-  getScore: (state: T, path: T[]) => number;
-  beamWidth: number;
-  maxDepth?: number;
-  includePath?: boolean;
-}
-
-class AdvancedBeamSearch<T> {
-  private options: AdvancedBeamSearchOptions<T>;
-
-  constructor(options: AdvancedBeamSearchOptions<T>) {
-    this.options = options;
-  }
-
-  search(): SearchNode<T>[] {
-    const { initialStates, beamWidth, maxDepth = Infinity, includePath = true } = this.options;
-    
-    let beam: SearchNode<T>[] = initialStates.map(state => ({
-      state,
-      score: this.options.getScore(state, [state]),
-      path: includePath ? [state] : [],
-      depth: 0
-    }));
-
-    let depth = 0;
-
-    while (depth < maxDepth && beam.length > 0) {
-      const allSuccessors: SearchNode<T>[] = [];
-
-      // Generate all successors from current beam
-      for (const node of beam) {
-        if (this.options.isTerminal(node.state)) continue;
-        
-        const successors = this.options.generateSuccessors(node.state);
-        
-        for (const successor of successors) {
-          const newPath = includePath ? [...node.path, successor] : [];
-          allSuccessors.push({
-            state: successor,
-            score: this.options.getScore(successor, newPath),
-            path: newPath,
-            depth: node.depth + 1
-          });
+    while (i < m) {
+        if (pattern[i] === pattern[len]) {
+            // we can extend the current prefix
+            len++;
+            lps[i] = len;
+            i++;
+        } else {
+            if (len !== 0) {
+                // fall back to the previous longest prefix suffix
+                len = lps[len - 1];
+                // note: we do NOT increment i here
+            } else {
+                // no proper prefix suffix exists for this i
+                lps[i] = 0;
+                i++;
+            }
         }
-      }
-
-      if (allSuccessors.length === 0) break;
-
-      // Select top-k successors
-      allSuccessors.sort((a, b) => b.score - a.score);
-      beam = allSuccessors.slice(0, beamWidth);
-
-      depth++;
     }
 
-    return beam;
-  }
+    return lps;
 }
-// Example: Generate strings that match a target pattern
-interface StringGenerationState {
-  currentString: string;
-  length: number;
-}
+pattern = "ABABCABAB"
+index   =  0 1 2 3 4 5 6 7 8
+lps     =  0 0 1 2 0 1 2 3 4
+/**
+ * Perform KMP string search.
+ *
+ * @param text    - The text (haystack) where we look for the pattern.
+ * @param pattern - The pattern (needle) we want to find.
+ * @returns An array of zero‑based indices in `text` where `pattern` starts.
+ *
+ * Example:
+ *   kmpSearch("ababcababc", "ababc")  // → [0, 5]
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+    const n = text.length;
+    const m = pattern.length;
 
-const stringBeamSearch = new BeamSearch<StringGenerationState>({
-  initialStates: [{ currentString: "", length: 0 }],
-  beamWidth: 3,
-  maxDepth: 10,
-
-  generateSuccessors: (state) => {
-    if (state.length >= 10) return [];
-    
-    return ['a', 'b', 'c'].map(char => ({
-      currentString: state.currentString + char,
-      length: state.length + 1
-    }));
-  },
-
-  isTerminal: (state) => state.length >= 10,
-
-  getScore: (state) => {
-    // Score based on similarity to target "abcabcabca"
-    const target = "abcabcabca";
-    let score = 0;
-    for (let i = 0; i < Math.min(state.currentString.length, target.length); i++) {
-      if (state.currentString[i] === target[i]) {
-        score++;
-      }
+    if (m === 0) {
+        // By convention, an empty pattern matches at every position.
+        // Return all possible start indices (including the position after the last char).
+        return Array.from({ length: n + 1 }, (_, i) => i);
     }
-    return score;
-  }
-});
 
-// Run the search
-const results = stringBeamSearch.search();
-console.log("Best results:", results);
-interface GridPosition {
-  x: number;
-  y: number;
+    const lps = buildLPS(pattern);
+    const matches: number[] = [];
+
+    let i = 0; // index for text
+    let j = 0; // index for pattern
+
+    while (i < n) {
+        if (text[i] === pattern[j]) {
+            i++;
+            j++;
+
+            if (j === m) {
+                // Full pattern matched – record the start index
+                matches.push(i - j);
+                // Continue searching for overlapping matches
+                j = lps[j - 1];
+            }
+        } else {
+            if (j !== 0) {
+                // Mismatch after j matches: fall back using LPS
+                j = lps[j - 1];
+            } else {
+                // No prefix matched, move to next character in text
+                i++;
+            }
+        }
+    }
+
+    return matches;
+}
+import { kmpSearch } from "./kmp";   // adjust the import path as needed
+
+const text = "ababcababcababc";
+const pattern = "ababc";
+
+const positions = kmpSearch(text, pattern);
+console.log(positions); // → [0, 5, 10]
+
+// Demonstrating overlapping matches
+console.log(kmpSearch("aaaaa", "aaa")); // → [0, 1, 2]
+// kmp.ts
+/**
+ * KMP (Knuth‑Morris‑Pratt) string searching implementation.
+ *
+ * Exported functions:
+ *   - buildLPS(pattern: string): number[]
+ *   - kmpSearch(text: string, pattern: string): number[]
+ *
+ * Both functions are pure and have O(n + m) time complexity.
+ */
+
+function buildLPS(pattern: string): number[] {
+    const m = pattern.length;
+    const lps = new Array<number>(m).fill(0);
+    let len = 0;
+    let i = 1;
+
+    while (i < m) {
+        if (pattern[i] === pattern[len]) {
+            len++;
+            lps[i] = len;
+            i++;
+        } else {
+            if (len !== 0) {
+                len = lps[len - 1];
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+
+    return lps;
 }
 
-interface PathState {
-  position: GridPosition;
-  visited: GridPosition[];
+/**
+ * Returns all start indices where `pattern` occurs in `text`.
+ *
+ * @param text    The haystack.
+ * @param pattern The needle.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+    const n = text.length;
+    const m = pattern.length;
+
+    if (m === 0) {
+        return Array.from({ length: n + 1 }, (_, i) => i);
+    }
+
+    const lps = buildLPS(pattern);
+    const matches: number[] = [];
+
+    let i = 0; // text index
+    let j = 0; // pattern index
+
+    while (i < n) {
+        if (text[i] === pattern[j]) {
+            i++;
+            j++;
+
+            if (j === m) {
+                matches.push(i - j);
+                j = lps[j - 1]; // allow overlapping matches
+            }
+        } else {
+            if (j !== 0) {
+                j = lps[j - 1];
+            } else {
+                i++;
+            }
+        }
+    }
+
+    return matches;
 }
-
-const pathFindingBeamSearch = new AdvancedBeamSearch<PathState>({
-  initialStates: [{
-    position: { x: 0, y: 0 },
-    visited: [{ x: 0, y: 0 }]
-  }],
-  beamWidth: 5,
-  maxDepth: 20,
-  includePath: true,
-
-  generateSuccessors: (state) => {
-    const directions = [
-      { x: 1, y: 0 }, { x: -1, y: 0 },
-      { x: 0, y: 1 }, { x: 0, y: -1 }
-    ];
-
-    return directions
-      .map(dir => ({
-        x: state.position.x + dir.x,
-        y: state.position.y + dir.y
-      }))
-      .filter(pos => 
-        pos.x >= 0 && pos.x < 5 && 
-        pos.y >= 0 && pos.y < 5 &&
-        !state.visited.some(v => v.x === pos.x && v.y === pos.y)
-      )
-      .map(position => ({
-        position,
-        visited: [...state.visited, position]
-      }));
-  },
-
-  isTerminal: (state) => 
-    state.position.x === 4 && state.position.y === 4,
-
-  getScore: (state, path) => {
-    const target = { x: 4, y: 4 };
-    const distance = Math.abs(state.position.x - target.x) + 
-                    Math.abs(state.position.y - target.y);
-    
-    // Higher score for being closer to target and shorter paths
-    return (10 - distance) - (state.visited.length * 0.1);
-  }
-});
-
-// Find path to target
-const paths = pathFindingBeamSearch.search();
-const bestPath = paths[0];
-console.log("Best path:", bestPath.path);
-// Helper function to get top N elements
-function getTopN<T>(items: T[], n: number, scoreFn: (item: T) => number): T[] {
-  return items
-    .map(item => ({ item, score: scoreFn(item) }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, n)
-    .map(entry => entry.item);
-}
-
-// Type-safe beam search with validation
-function validateBeamSearchOptions<T>(options: BeamSearchOptions<T>): boolean {
-  return (
-    Array.isArray(options.initialStates) &&
-    typeof options.generateSuccessors === 'function' &&
-    typeof options.isTerminal === 'function' &&
-    typeof options.getScore === 'function' &&
-    Number.isInteger(options.beamWidth) &&
-    options.beamWidth > 0
-  );
-}
-// 1. Choose appropriate beam width based on problem complexity
-// 2. Implement efficient scoring functions
-// 3. Consider memory usage for large state spaces
-// 4. Use pruning techniques for better performance
-
-// Example with pruning
-const beamSearchWithPruning = new AdvancedBeamSearch({
-  // ... options ...
-  generateSuccessors: (state) => {
-    const successors = /* generate successors */;
-    return successors.filter(successor => 
-      /* pruning condition */
-      this.isPromising(successor)
-    );
-  }
-});
