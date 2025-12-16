@@ -1,96 +1,208 @@
-/**
- * Returns the largest prime factor of a positive integer.
- * If the input is 1 or less, the function returns undefined.
- *
- * @param value - The number to factor. Must be a safe integer (≤ Number.MAX_SAFE_INTEGER).
- * @returns The largest prime factor, or undefined if none exists.
- */
-export function largestPrimeFactor(value: number): number | undefined {
-  // ---- 0. Guard clauses ----------------------------------------------------
-  if (!Number.isSafeInteger(value) || value < 2) {
-    // 0, 1, negative numbers, or numbers beyond the safe integer range have no prime factors.
-    return undefined;
+interface PriorityQueueItem<T> {
+  priority: number;
+  value: T;
+}
+
+class PriorityQueue<T> {
+  private heap: PriorityQueueItem<T>[];
+  private isMinHeap: boolean;
+
+  constructor(isMinHeap: boolean = true) {
+    this.heap = [];
+    this.isMinHeap = isMinHeap;
   }
 
-  // ---- 1. Strip out factor 2 ------------------------------------------------
-  let n = value;
-  let maxPrime = 2; // we know 2 is a prime factor if we ever see it
-
-  while (n % 2 === 0) {
-    n = n / 2;
+  /**
+   * Get parent index
+   */
+  private getParentIndex(index: number): number {
+    return Math.floor((index - 1) / 2);
   }
 
-  // If the whole number was a power of two, 2 is the answer.
-  if (n === 1) {
-    return maxPrime;
+  /**
+   * Get left child index
+   */
+  private getLeftChildIndex(index: number): number {
+    return 2 * index + 1;
   }
 
-  // ---- 2. Trial‑divide by odd numbers ---------------------------------------
-  // We only need to go up to sqrt(n). Because n changes during the loop,
-  // we recompute the limit each iteration.
-  for (let divisor = 3; divisor * divisor <= n; divisor += 2) {
-    if (n % divisor === 0) {
-      // divisor is a prime factor – keep it as the current max
-      maxPrime = divisor;
+  /**
+   * Get right child index
+   */
+  private getRightChildIndex(index: number): number {
+    return 2 * index + 2;
+  }
 
-      // Remove *all* occurrences of this prime factor
-      while (n % divisor === 0) {
-        n = n / divisor;
-      }
+  /**
+   * Check if heap has higher priority
+   */
+  private hasHigherPriority(a: number, b: number): boolean {
+    return this.isMinHeap ? a < b : a > b;
+  }
+
+  /**
+   * Swap two elements in the heap
+   */
+  private swap(index1: number, index2: number): void {
+    [this.heap[index1], this.heap[index2]] = [this.heap[index2], this.heap[index1]];
+  }
+
+  /**
+   * Move element up the heap (heapify up)
+   */
+  private heapifyUp(index: number): void {
+    if (index === 0) return;
+
+    const parentIndex = this.getParentIndex(index);
+    const current = this.heap[index].priority;
+    const parent = this.heap[parentIndex].priority;
+
+    if (this.hasHigherPriority(current, parent)) {
+      this.swap(index, parentIndex);
+      this.heapifyUp(parentIndex);
     }
   }
 
-  // ---- 3. Whatever is left (if > 1) is prime and larger than any we saw ----
-  if (n > 1) {
-    maxPrime = n; // n itself is prime
-  }
+  /**
+   * Move element down the heap (heapify down)
+   */
+  private heapifyDown(index: number): void {
+    const leftChildIndex = this.getLeftChildIndex(index);
+    const rightChildIndex = this.getRightChildIndex(index);
+    
+    let highestPriorityIndex = index;
+    const size = this.heap.length;
 
-  return maxPrime;
-}
-import { largestPrimeFactor } from "./primeFactor";
+    if (leftChildIndex < size && 
+        this.hasHigherPriority(
+          this.heap[leftChildIndex].priority, 
+          this.heap[highestPriorityIndex].priority
+        )) {
+      highestPriorityIndex = leftChildIndex;
+    }
 
-const numbers = [13195, 600851475143, 27, 2, 1];
+    if (rightChildIndex < size && 
+        this.hasHigherPriority(
+          this.heap[rightChildIndex].priority, 
+          this.heap[highestPriorityIndex].priority
+        )) {
+      highestPriorityIndex = rightChildIndex;
+    }
 
-for (const n of numbers) {
-  const result = largestPrimeFactor(n);
-  console.log(`${n} → ${result ?? "no prime factor"}`);
-}
-
-/* Output:
-13195 → 29
-600851475143 → 6857
-27 → 3
-2 → 2
-1 → no prime factor
-*/
-export function largestPrimeFactorBigInt(value: bigint): bigint | undefined {
-  if (value < 2n) return undefined;
-
-  let n = value;
-  let maxPrime = 2n;
-
-  while (n % 2n === 0n) n /= 2n;
-  if (n === 1n) return maxPrime;
-
-  for (let d = 3n; d * d <= n; d += 2n) {
-    if (n % d === 0n) {
-      maxPrime = d;
-      while (n % d === 0n) n /= d;
+    if (highestPriorityIndex !== index) {
+      this.swap(index, highestPriorityIndex);
+      this.heapifyDown(highestPriorityIndex);
     }
   }
 
-  if (n > 1n) maxPrime = n;
-  return maxPrime;
-}
-function largestPrimeFactor(n: number): number | undefined {
-  if (!Number.isSafeInteger(n) || n < 2) return undefined;
-  let max = 2;
-  while (n % 2 === 0) n /= 2;
-  for (let d = 3; d * d <= n; d += 2) {
-    if (n % d === 0) {
-      max = d;
-      while (n % d === 0) n /= d;
-    }
+  /**
+   * Add an element to the priority queue
+   */
+  enqueue(value: T, priority: number): void {
+    this.heap.push({ value, priority });
+    this.heapifyUp(this.heap.length - 1);
   }
-  return n > 1 ? n : max;
+
+  /**
+   * Remove and return the element with highest priority
+   */
+  dequeue(): T | null {
+    if (this.isEmpty()) {
+      return null;
+    }
+
+    if (this.heap.length === 1) {
+      return this.heap.pop()!.value;
+    }
+
+    const highestPriority = this.heap[0].value;
+    this.heap[0] = this.heap.pop()!;
+    this.heapifyDown(0);
+
+    return highestPriority;
+  }
+
+  /**
+   * Peek at the element with highest priority without removing it
+   */
+  peek(): T | null {
+    return this.isEmpty() ? null : this.heap[0].value;
+  }
+
+  /**
+   * Check if the queue is empty
+   */
+  isEmpty(): boolean {
+    return this.heap.length === 0;
+  }
+
+  /**
+   * Get the size of the queue
+   */
+  size(): number {
+    return this.heap.length;
+  }
+
+  /**
+   * Clear the queue
+   */
+  clear(): void {
+    this.heap = [];
+  }
+
+  /**
+   * Convert queue to array (for debugging)
+   */
+  toArray(): PriorityQueueItem<T>[] {
+    return [...this.heap];
+  }
 }
+// Example 1: Min-heap (default)
+const minQueue = new PriorityQueue<number>();
+minQueue.enqueue(10, 3);
+minQueue.enqueue(20, 1);
+minQueue.enqueue(30, 2);
+
+console.log(minQueue.dequeue()); // 20 (priority 1)
+console.log(minQueue.dequeue()); // 30 (priority 2)
+console.log(minQueue.dequeue()); // 10 (priority 3)
+
+// Example 2: Max-heap
+const maxQueue = new PriorityQueue<string>(false);
+maxQueue.enqueue("Task A", 5);
+maxQueue.enqueue("Task B", 10);
+maxQueue.enqueue("Task C", 3);
+
+console.log(maxQueue.dequeue()); // "Task B" (priority 10)
+console.log(maxQueue.dequeue()); // "Task A" (priority 5)
+console.log(maxQueue.dequeue()); // "Task C" (priority 3)
+
+// Example 3: Complex objects
+interface Task {
+  id: number;
+  description: string;
+  deadline: Date;
+}
+
+const taskQueue = new PriorityQueue<Task>();
+const now = new Date();
+
+taskQueue.enqueue(
+  { id: 1, description: "Urgent task", deadline: new Date(now.getTime() + 1000) },
+  1
+);
+
+taskQueue.enqueue(
+  { id: 2, description: "Regular task", deadline: new Date(now.getTime() + 5000) },
+  3
+);
+
+taskQueue.enqueue(
+  { id: 3, description: "Important task", deadline: new Date(now.getTime() + 2000) },
+  2
+);
+
+while (!taskQueue.isEmpty()) {
+  console.log(taskQueue.dequeue()?.description);
+}
+// Output: "Urgent task", "Important task", "Regular task"
