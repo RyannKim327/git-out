@@ -1,239 +1,109 @@
-interface Edge {
-  from: number;
-  to: number;
-  weight: number;
+function uniq<T>(arr: T[]): T[] {
+  // A Set only stores unique values.
+  return [...new Set(arr)];
 }
 
-interface ShortestPathResult {
-  distances: number[];
-  predecessors: number[];
-  hasNegativeCycle: boolean;
+/* Example */
+const numbers = [1, 2, 2, 3, 4, 4, 5];
+const uniqNumbers = uniq(numbers); // [1, 2, 3, 4, 5]
+function uniq<T>(arr: T[]): T[] {
+  return arr.filter((value, index) => arr.indexOf(value) === index);
 }
 
-class BellmanFord {
-  private vertices: number;
-  private edges: Edge[];
+/* Example */
+const fruits = ['apple', 'banana', 'apple', 'orange'];
+const uniqFruits = uniq(fruits); // ['apple', 'banana', 'orange']
+type Person = { id: number; name: string };
 
-  constructor(vertices: number, edges: Edge[]) {
-    this.vertices = vertices;
-    this.edges = edges;
-  }
-
-  findShortestPaths(startVertex: number): ShortestPathResult {
-    // Initialize distances and predecessors
-    const distances: number[] = new Array(this.vertices).fill(Infinity);
-    const predecessors: number[] = new Array(this.vertices).fill(-1);
-    
-    distances[startVertex] = 0;
-
-    // Relax edges |V| - 1 times
-    for (let i = 0; i < this.vertices - 1; i++) {
-      let updated = false;
-      
-      for (const edge of this.edges) {
-        if (distances[edge.from] !== Infinity && 
-            distances[edge.from] + edge.weight < distances[edge.to]) {
-          distances[edge.to] = distances[edge.from] + edge.weight;
-          predecessors[edge.to] = edge.from;
-          updated = true;
-        }
-      }
-      
-      // Early termination if no updates
-      if (!updated) break;
+function uniqBy<T, K extends keyof any>(arr: T[], keyFn: (item: T) => K): T[] {
+  const seen = new Map<K, T>();
+  for (const item of arr) {
+    const key = keyFn(item);
+    if (!seen.has(key)) {
+      seen.set(key, item);
     }
-
-    // Check for negative weight cycles
-    const hasNegativeCycle = this.checkNegativeCycle(distances);
-
-    return { distances, predecessors, hasNegativeCycle };
   }
-
-  private checkNegativeCycle(distances: number[]): boolean {
-    for (const edge of this.edges) {
-      if (distances[edge.from] !== Infinity && 
-          distances[edge.from] + edge.weight < distances[edge.to]) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  getPath(predecessors: number[], target: number): number[] {
-    const path: number[] = [];
-    let current = target;
-    
-    while (current !== -1) {
-      path.unshift(current);
-      current = predecessors[current];
-    }
-    
-    return path;
-  }
+  return Array.from(seen.values());
 }
-// Example usage
-const vertices = 5;
-const edges: Edge[] = [
-  { from: 0, to: 1, weight: 6 },
-  { from: 0, to: 2, weight: 7 },
-  { from: 1, to: 2, weight: 8 },
-  { from: 1, to: 3, weight: 5 },
-  { from: 1, to: 4, weight: -4 },
-  { from: 2, to: 3, weight: -3 },
-  { from: 2, to: 4, weight: 9 },
-  { from: 3, to: 1, weight: -2 },
-  { from: 4, to: 0, weight: 2 },
-  { from: 4, to: 3, weight: 7 }
+
+/* Example */
+const people: Person[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 1, name: 'Alice (duplicate)' },
 ];
 
-const bellmanFord = new BellmanFord(vertices, edges);
-const result = bellmanFord.findShortestPaths(0);
+const uniqPeople = uniqBy(people, p => p.id);
+// [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
+// Overload signatures
+function uniq<T>(arr: T[]): T[];
+function uniq<T, K extends keyof any>(arr: T[], keyFn: (item: T) => K): T[];
 
-console.log("Distances:", result.distances);
-console.log("Has negative cycle:", result.hasNegativeCycle);
-
-// Get path from vertex 0 to vertex 4
-const path = bellmanFord.getPath(result.predecessors, 4);
-console.log("Path from 0 to 4:", path);
-class EnhancedBellmanFord {
-  private vertices: number;
-  private edges: Edge[];
-
-  constructor(vertices: number, edges: Edge[]) {
-    if (vertices <= 0) {
-      throw new Error("Number of vertices must be positive");
-    }
-    
-    this.vertices = vertices;
-    this.edges = edges.filter(edge => this.validateEdge(edge));
+// Implementation
+function uniq<T, K extends keyof any>(arr: T[], keyFn?: (item: T) => K): T[] {
+  if (!keyFn) {
+    // Primitive path – Set is fastest
+    return [...new Set(arr)];
   }
 
-  private validateEdge(edge: Edge): boolean {
-    if (edge.from < 0 || edge.from >= this.vertices) {
-      console.warn(`Invalid from vertex ${edge.from}`);
-      return false;
+  const seen = new Map<K, T>();
+  for (const item of arr) {
+    const key = keyFn(item);
+    if (!seen.has(key)) {
+      seen.set(key, item);
     }
-    if (edge.to < 0 || edge.to >= this.vertices) {
-      console.warn(`Invalid to vertex ${edge.to}`);
-      return false;
-    }
-    return true;
   }
-
-  findShortestPaths(startVertex: number): ShortestPathResult {
-    if (startVertex < 0 || startVertex >= this.vertices) {
-      throw new Error("Start vertex is out of bounds");
-    }
-
-    const distances: number[] = new Array(this.vertices).fill(Infinity);
-    const predecessors: number[] = new Array(this.vertices).fill(-1);
-    
-    distances[startVertex] = 0;
-
-    // Relax edges |V| - 1 times
-    for (let i = 0; i < this.vertices - 1; i++) {
-      let updated = false;
-      
-      for (const edge of this.edges) {
-        if (this.canRelax(distances, edge)) {
-          distances[edge.to] = distances[edge.from] + edge.weight;
-          predecessors[edge.to] = edge.from;
-          updated = true;
-        }
-      }
-      
-      if (!updated) break;
-    }
-
-    const hasNegativeCycle = this.checkNegativeCycle(distances);
-
-    return { distances, predecessors, hasNegativeCycle };
-  }
-
-  private canRelax(distances: number[], edge: Edge): boolean {
-    return distances[edge.from] !== Infinity && 
-           distances[edge.from] + edge.weight < distances[edge.to];
-  }
-
-  private checkNegativeCycle(distances: number[]): boolean {
-    for (const edge of this.edges) {
-      if (this.canRelax(distances, edge)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  getPath(predecessors: number[], target: number): number[] {
-    if (target < 0 || target >= this.vertices) {
-      throw new Error("Target vertex is out of bounds");
-    }
-
-    const path: number[] = [];
-    let current = target;
-    
-    while (current !== -1) {
-      path.unshift(current);
-      current = predecessors[current];
-    }
-    
-    return path;
-  }
-
-  // Utility method to get all shortest paths from start vertex
-  getAllPaths(startVertex: number): Map<number, number[]> {
-    const result = this.findShortestPaths(startVertex);
-    const paths = new Map<number, number[]>();
-    
-    for (let i = 0; i < this.vertices; i++) {
-      if (i !== startVertex && result.distances[i] !== Infinity) {
-        paths.set(i, this.getPath(result.predecessors, i));
-      }
-    }
-    
-    return paths;
-  }
-}
-// Complete example with visualization
-function demonstrateBellmanFord() {
-  // Create a sample graph
-  const vertices = 5;
-  const edges: Edge[] = [
-    { from: 0, to: 1, weight: 6 },
-    { from: 0, to: 2, weight: 7 },
-    { from: 1, to: 2, weight: 8 },
-    { from: 1, to: 3, weight: 5 },
-    { from: 1, to: 4, weight: -4 },
-    { from: 2, to: 3, weight: -3 },
-    { from: 2, to: 4, weight: 9 },
-    { from: 3, to: 1, weight: -2 },
-    { from: 4, to: 0, weight: 2 },
-    { from: 4, to: 3, weight: 7 }
-  ];
-
-  const bellmanFord = new EnhancedBellmanFord(vertices, edges);
-  
-  // Find shortest paths from vertex 0
-  const result = bellmanFord.findShortestPaths(0);
-  
-  console.log("=== Bellman-Ford Algorithm Results ===");
-  console.log("Distances from vertex 0:");
-  result.distances.forEach((distance, vertex) => {
-    console.log(`Vertex ${vertex}: ${distance === Infinity ? "∞" : distance}`);
-  });
-  
-  console.log("\nPaths:");
-  for (let i = 1; i < vertices; i++) {
-    const path = bellmanFord.getPath(result.predecessors, i);
-    console.log(`Path to ${i}: ${path.join(" → ")}`);
-  }
-  
-  if (result.hasNegativeCycle) {
-    console.log("\n⚠️ Warning: Graph contains a negative weight cycle!");
-  } else {
-    console.log("\n✅ No negative weight cycles detected");
-  }
+  return Array.from(seen.values());
 }
 
-// Run the demonstration
-demonstrateBellmanFord();
+/* Usage */
+const nums = uniq([1, 2, 2, 3]); // [1, 2, 3]
+
+type Book = { isbn: string; title: string };
+const books: Book[] = [
+  { isbn: '123', title: 'TS Basics' },
+  { isbn: '456', title: 'Node.js' },
+  { isbn: '123', title: 'Duplicate' },
+];
+const uniqBooks = uniq(books, b => b.isbn);
+// [{ isbn: '123', title: 'TS Basics' }, { isbn: '456', title: 'Node.js' }]
+import uniq from 'lodash/uniq';               // primitives only
+import uniqBy from 'lodash/uniqBy';           // objects with key selector
+
+const uniqNumbers = uniq([1, 2, 2, 3]);       // [1, 2, 3]
+const uniqBooks = uniqBy(books, b => b.isbn);
+/**
+ * Remove duplicate entries from an array.
+ * - For primitives: uses Set (fastest).
+ * - For objects: provide a key selector.
+ */
+export function uniq<T, K extends keyof any = never>(
+  arr: T[],
+  keyFn?: (item: T) => K
+): T[] {
+  if (!keyFn) {
+    // Primitive values – Set does the job.
+    return [...new Set(arr)];
+  }
+
+  const seen = new Map<K, T>();
+  for (const item of arr) {
+    const k = keyFn(item);
+    if (!seen.has(k)) seen.set(k, item);
+  }
+  return Array.from(seen.values());
+}
+
+/* -------------------------------------------------
+   Example usage
+---------------------------------------------------*/
+const nums = uniq([1, 2, 2, 3]); // → [1,2,3]
+
+type User = { id: string; name: string };
+const users: User[] = [
+  { id: 'a', name: 'Alice' },
+  { id: 'b', name: 'Bob' },
+  { id: 'a', name: 'Alice (dup)' },
+];
+const uniqUsers = uniq(users, u => u.id);
+// → [{id:'a', name:'Alice'}, {id:'b', name:'Bob'}]
