@@ -1,187 +1,292 @@
-pos = low + ((key - arr[low]) * (high - low)) / (arr[high] - arr[low])
-/**
- * Interpolation Search
- *
- * @param arr            Sorted array (ascending by default)
- * @param target         Value we are looking for
- * @param keyExtractor   (optional) function that extracts a numeric key from an element
- * @param compare        (optional) comparator for the keys (default: (a,b)=>a-b)
- * @param fromIndex      (optional) start index of the search range (inclusive)
- * @param toIndex        (optional) end index of the search range (inclusive)
- *
- * @returns index of the target if found, otherwise -1
- */
-export function interpolationSearch<T>(
-  arr: readonly T[],
-  target: number,
-  keyExtractor?: (elem: T) => number,
-  compare?: (a: number, b: number) => number,
-  fromIndex: number = 0,
-  toIndex: number = arr.length - 1
-): number {
-  // ---- Helper defaults ----------------------------------------------------
-  const getKey = keyExtractor ?? ((elem: any) => Number(elem));
-  const cmp = compare ?? ((a: number, b: number) => a - b);
-
-  // ---- Validate bounds ----------------------------------------------------
-  if (arr.length === 0) return -1;
-  if (fromIndex < 0) fromIndex = 0;
-  if (toIndex >= arr.length) toIndex = arr.length - 1;
-  if (fromIndex > toIndex) return -1;
-
-  // ---- Main loop -----------------------------------------------------------
-  let low = fromIndex;
-  let high = toIndex;
-
-  while (low <= high) {
-    const lowKey = getKey(arr[low]);
-    const highKey = getKey(arr[high]);
-
-    // If the target is outside the current interval we can stop.
-    if (cmp(target, lowKey) < 0 || cmp(target, highKey) > 0) break;
-
-    // Avoid division by zero when all keys in the interval are equal.
-    if (lowKey === highKey) {
-      // Linear scan the remaining slice (could be just one element)
-      for (let i = low; i <= high; i++) {
-        if (cmp(getKey(arr[i]), target) === 0) return i;
-      }
-      return -1;
-    }
-
-    // ---- Interpolation formula (rounded to nearest integer) -------------
-    const pos = low + Math.floor(
-      ((target - lowKey) * (high - low)) / (highKey - lowKey)
-    );
-
-    // Safety: clamp pos inside the current window (floating‑point rounding can push it out)
-    const probe = Math.max(low, Math.min(high, pos));
-    const probeKey = getKey(arr[probe]);
-    const cmpResult = cmp(probeKey, target);
-
-    if (cmpResult === 0) {
-      return probe; // found!
-    } else if (cmpResult < 0) {
-      low = probe + 1; // target is larger → search right side
-    } else {
-      high = probe - 1; // target is smaller → search left side
-    }
-  }
-
-  // Not found
-  return -1;
-}
-import { interpolationSearch } from "./interpolationSearch";
-
-const data = [3, 7, 12, 19, 27, 34, 45, 58, 71, 84];
-const idx = interpolationSearch(data, 34); // → 5
-console.log(idx);
-interface Person {
-  id: number;
-  name: string;
+// Node interface
+interface AVLNode<T> {
+    value: T;
+    left: AVLNode<T> | null;
+    right: AVLNode<T> | null;
+    height: number;
 }
 
-const people: Person[] = [
-  { id: 101, name: "Alice" },
-  { id: 115, name: "Bob" },
-  { id: 130, name: "Carol" },
-  { id: 147, name: "Dave" },
-  { id: 162, name: "Eve" },
-];
+// AVL Tree class
+class AVLTree<T> {
+    private root: AVLNode<T> | null = null;
 
-// Search by `id`
-const pos = interpolationSearch(
-  people,
-  147,
-  (p) => p.id // keyExtractor
-);
-console.log(pos); // → 3
-console.log(people[pos]); // { id: 147, name: "Dave" }
-const descending = [100, 80, 60, 40, 20, 0];
-const target = 40;
-
-const idxDesc = interpolationSearch(
-  descending,
-  target,
-  undefined, // default keyExtractor (identity)
-  (a, b) => b - a // comparator for descending order
-);
-console.log(idxDesc); // → 3
-const nums = [5, 10, 15, 20, 25, 30, 35, 40];
-const subIdx = interpolationSearch(nums, 25, undefined, undefined, 2, 5);
-console.log(subIdx); // → 4 (global index)
-import { interpolationSearch } from "./interpolationSearch";
-
-describe("interpolationSearch", () => {
-  test("finds existing number", () => {
-    const arr = [1, 3, 5, 7, 9, 11];
-    expect(interpolationSearch(arr, 7)).toBe(3);
-  });
-
-  test("returns -1 for missing value", () => {
-    const arr = [2, 4, 6, 8, 10];
-    expect(interpolationSearch(arr, 5)).toBe(-1);
-  });
-
-  test("works with objects", () => {
-    const data = [{ id: 10 }, { id: 20 }, { id: 30 }];
-    const idx = interpolationSearch(data, 20, (o) => o.id);
-    expect(idx).toBe(1);
-  });
-
-  test("descending order", () => {
-    const arr = [100, 80, 60, 40, 20];
-    const idx = interpolationSearch(arr, 60, undefined, (a, b) => b - a);
-    expect(idx).toBe(2);
-  });
-
-  test("sub‑range search", () => {
-    const arr = [5, 10, 15, 20, 25, 30];
-    const idx = interpolationSearch(arr, 20, undefined, undefined, 2, 4);
-    expect(idx).toBe(3);
-  });
-});
-export function interpolationSearch<T>(
-  arr: readonly T[],
-  target: number,
-  keyExtractor?: (elem: T) => number,
-  compare?: (a: number, b: number) => number,
-  fromIndex: number = 0,
-  toIndex: number = arr.length - 1
-): number {
-  const getKey = keyExtractor ?? ((e: any) => Number(e));
-  const cmp = compare ?? ((a, b) => a - b);
-
-  if (arr.length === 0) return -1;
-  if (fromIndex < 0) fromIndex = 0;
-  if (toIndex >= arr.length) toIndex = arr.length - 1;
-  if (fromIndex > toIndex) return -1;
-
-  let low = fromIndex;
-  let high = toIndex;
-
-  while (low <= high) {
-    const lowKey = getKey(arr[low]);
-    const highKey = getKey(arr[high]);
-
-    if (cmp(target, lowKey) < 0 || cmp(target, highKey) > 0) break;
-
-    if (lowKey === highKey) {
-      for (let i = low; i <= high; i++) {
-        if (cmp(getKey(arr[i]), target) === 0) return i;
-      }
-      return -1;
+    // Create a new node
+    private createNode(value: T): AVLNode<T> {
+        return {
+            value,
+            left: null,
+            right: null,
+            height: 1
+        };
     }
 
-    const pos = low + Math.floor(((target - lowKey) * (high - low)) / (highKey - lowKey));
-    const probe = Math.max(low, Math.min(high, pos));
-    const probeKey = getKey(arr[probe]);
-    const diff = cmp(probeKey, target);
+    // Get height of a node
+    private getHeight(node: AVLNode<T> | null): number {
+        return node ? node.height : 0;
+    }
 
-    if (diff === 0) return probe;
-    if (diff < 0) low = probe + 1;
-    else high = probe - 1;
-  }
+    // Update height of a node based on its children
+    private updateHeight(node: AVLNode<T>): void {
+        node.height = Math.max(this.getHeight(node.left), this.getHeight(node.right)) + 1;
+    }
 
-  return -1;
+    // Get balance factor of a node
+    private getBalanceFactor(node: AVLNode<T> | null): number {
+        if (!node) return 0;
+        return this.getHeight(node.left) - this.getHeight(node.right);
+    }
+
+    // Right rotation
+    private rotateRight(y: AVLNode<T>): AVLNode<T> {
+        const x = y.left!;
+        const T2 = x.right;
+
+        // Perform rotation
+        x.right = y;
+        y.left = T2;
+
+        // Update heights
+        this.updateHeight(y);
+        this.updateHeight(x);
+
+        return x;
+    }
+
+    // Left rotation
+    private rotateLeft(x: AVLNode<T>): AVLNode<T> {
+        const y = x.right!;
+        const T2 = y.left;
+
+        // Perform rotation
+        y.left = x;
+        x.right = T2;
+
+        // Update heights
+        this.updateHeight(x);
+        this.updateHeight(y);
+
+        return y;
+    }
+
+    // Balance the tree
+    private balance(node: AVLNode<T>): AVLNode<T> {
+        const balanceFactor = this.getBalanceFactor(node);
+
+        // Left Left Case
+        if (balanceFactor > 1 && this.getBalanceFactor(node.left) >= 0) {
+            return this.rotateRight(node);
+        }
+
+        // Right Right Case
+        if (balanceFactor < -1 && this.getBalanceFactor(node.right) <= 0) {
+            return this.rotateLeft(node);
+        }
+
+        // Left Right Case
+        if (balanceFactor > 1 && this.getBalanceFactor(node.left) < 0) {
+            node.left = this.rotateLeft(node.left!);
+            return this.rotateRight(node);
+        }
+
+        // Right Left Case
+        if (balanceFactor < -1 && this.getBalanceFactor(node.right) > 0) {
+            node.right = this.rotateRight(node.right!);
+            return this.rotateLeft(node);
+        }
+
+        return node;
+    }
+
+    // Insert a value
+    public insert(value: T): void {
+        this.root = this.insertNode(this.root, value);
+    }
+
+    private insertNode(node: AVLNode<T> | null, value: T): AVLNode<T> {
+        // Perform normal BST insertion
+        if (node === null) {
+            return this.createNode(value);
+        }
+
+        if (value < node.value) {
+            node.left = this.insertNode(node.left, value);
+        } else if (value > node.value) {
+            node.right = this.insertNode(node.right, value);
+        } else {
+            // Duplicate values not allowed
+            return node;
+        }
+
+        // Update height of this ancestor node
+        this.updateHeight(node);
+
+        // Balance the tree
+        return this.balance(node);
+    }
+
+    // Delete a value
+    public delete(value: T): void {
+        this.root = this.deleteNode(this.root, value);
+    }
+
+    private deleteNode(node: AVLNode<T> | null, value: T): AVLNode<T> | null {
+        if (node === null) {
+            return null;
+        }
+
+        // Perform normal BST deletion
+        if (value < node.value) {
+            node.left = this.deleteNode(node.left, value);
+        } else if (value > node.value) {
+            node.right = this.deleteNode(node.right, value);
+        } else {
+            // Node to be deleted found
+
+            // Node with only one child or no child
+            if (node.left === null || node.right === null) {
+                const temp = node.left || node.right;
+
+                // No child case
+                if (temp === null) {
+                    return null;
+                } else {
+                    // One child case
+                    node = temp;
+                }
+            } else {
+                // Node with two children: get the inorder successor
+                const temp = this.getMinValueNode(node.right)!;
+                node.value = temp.value;
+                node.right = this.deleteNode(node.right, temp.value);
+            }
+        }
+
+        // If the tree had only one node then return
+        if (node === null) {
+            return null;
+        }
+
+        // Update height
+        this.updateHeight(node);
+
+        // Balance the tree
+        return this.balance(node);
+    }
+
+    // Get node with minimum value
+    private getMinValueNode(node: AVLNode<T>): AVLNode<T> | null {
+        let current = node;
+        while (current.left !== null) {
+            current = current.left;
+        }
+        return current;
+    }
+
+    // Search for a value
+    public search(value: T): boolean {
+        return this.searchNode(this.root, value);
+    }
+
+    private searchNode(node: AVLNode<T> | null, value: T): boolean {
+        if (node === null) {
+            return false;
+        }
+
+        if (value < node.value) {
+            return this.searchNode(node.left, value);
+        } else if (value > node.value) {
+            return this.searchNode(node.right, value);
+        } else {
+            return true;
+        }
+    }
+
+    // Traversal methods
+    public inOrder(): T[] {
+        const result: T[] = [];
+        this.inOrderTraversal(this.root, result);
+        return result;
+    }
+
+    private inOrderTraversal(node: AVLNode<T> | null, result: T[]): void {
+        if (node !== null) {
+            this.inOrderTraversal(node.left, result);
+            result.push(node.value);
+            this.inOrderTraversal(node.right, result);
+        }
+    }
+
+    public preOrder(): T[] {
+        const result: T[] = [];
+        this.preOrderTraversal(this.root, result);
+        return result;
+    }
+
+    private preOrderTraversal(node: AVLNode<T> | null, result: T[]): void {
+        if (node !== null) {
+            result.push(node.value);
+            this.preOrderTraversal(node.left, result);
+            this.preOrderTraversal(node.right, result);
+        }
+    }
+
+    public postOrder(): T[] {
+        const result: T[] = [];
+        this.postOrderTraversal(this.root, result);
+        return result;
+    }
+
+    private postOrderTraversal(node: AVLNode<T> | null, result: T[]): void {
+        if (node !== null) {
+            this.postOrderTraversal(node.left, result);
+            this.postOrderTraversal(node.right, result);
+            result.push(node.value);
+        }
+    }
+
+    // Get tree height
+    public getTreeHeight(): number {
+        return this.getHeight(this.root);
+    }
+
+    // Check if tree is empty
+    public isEmpty(): boolean {
+        return this.root === null;
+    }
+
+    // Clear the tree
+    public clear(): void {
+        this.root = null;
+    }
 }
+
+// Example usage
+const avlTree = new AVLTree<number>();
+
+// Insert values
+avlTree.insert(10);
+avlTree.insert(20);
+avlTree.insert(30);
+avlTree.insert(40);
+avlTree.insert(50);
+avlTree.insert(25);
+
+console.log("In-order traversal:", avlTree.inOrder());
+console.log("Pre-order traversal:", avlTree.preOrder());
+console.log("Post-order traversal:", avlTree.postOrder());
+console.log("Tree height:", avlTree.getTreeHeight());
+
+// Search operations
+console.log("Search 30:", avlTree.search(30)); // true
+console.log("Search 100:", avlTree.search(100)); // false
+
+// Delete operations
+avlTree.delete(30);
+console.log("After deleting 30 - In-order:", avlTree.inOrder());
+
+// String example
+const stringTree = new AVLTree<string>();
+stringTree.insert("apple");
+stringTree.insert("banana");
+stringTree.insert("cherry");
+console.log("String tree - In-order:", stringTree.inOrder());
