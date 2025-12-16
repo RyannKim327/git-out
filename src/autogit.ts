@@ -1,175 +1,110 @@
 /**
- * Build the LPS (Longest Proper Prefix which is also a Suffix) array for a pattern.
- *
- * @param pattern - The pattern we are searching for.
- * @returns An array where lps[i] is the length of the longest proper prefix of pattern[0..i]
- *          that is also a suffix of pattern[0..i].
+ * Count occurrences of a single character.
+ * Returns 0 if `char` is an empty string.
  */
-function buildLPS(pattern: string): number[] {
-    const m = pattern.length;
-    const lps = new Array<number>(m).fill(0);
-
-    // length of the previous longest prefix suffix
-    let len = 0;
-    // i starts from 1 because lps[0] is always 0
-    let i = 1;
-
-    while (i < m) {
-        if (pattern[i] === pattern[len]) {
-            // we can extend the current prefix
-            len++;
-            lps[i] = len;
-            i++;
-        } else {
-            if (len !== 0) {
-                // fall back to the previous longest prefix suffix
-                len = lps[len - 1];
-                // note: we do NOT increment i here
-            } else {
-                // no proper prefix suffix exists for this i
-                lps[i] = 0;
-                i++;
-            }
-        }
-    }
-
-    return lps;
+export function countCharSplit(str: string, char: string): number {
+  if (char.length !== 1) {
+    throw new Error('`char` must be a single character');
+  }
+  // split returns an array with N+1 elements where N is the number of matches
+  return str.split(char).length - 1;
 }
-pattern = "ABABCABAB"
-index   =  0 1 2 3 4 5 6 7 8
-lps     =  0 0 1 2 0 1 2 3 4
-/**
- * Perform KMP string search.
- *
- * @param text    - The text (haystack) where we look for the pattern.
- * @param pattern - The pattern (needle) we want to find.
- * @returns An array of zero‑based indices in `text` where `pattern` starts.
- *
- * Example:
- *   kmpSearch("ababcababc", "ababc")  // → [0, 5]
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-    const n = text.length;
-    const m = pattern.length;
 
-    if (m === 0) {
-        // By convention, an empty pattern matches at every position.
-        // Return all possible start indices (including the position after the last char).
-        return Array.from({ length: n + 1 }, (_, i) => i);
-    }
+/* Usage */
+const text = "abracadabra";
+console.log(countCharSplit(text, "a")); // 5
+export function countCharLoop(str: string, char: string): number {
+  if (char.length !== 1) {
+    throw new Error('`char` must be a single character');
+  }
 
-    const lps = buildLPS(pattern);
-    const matches: number[] = [];
-
-    let i = 0; // index for text
-    let j = 0; // index for pattern
-
-    while (i < n) {
-        if (text[i] === pattern[j]) {
-            i++;
-            j++;
-
-            if (j === m) {
-                // Full pattern matched – record the start index
-                matches.push(i - j);
-                // Continue searching for overlapping matches
-                j = lps[j - 1];
-            }
-        } else {
-            if (j !== 0) {
-                // Mismatch after j matches: fall back using LPS
-                j = lps[j - 1];
-            } else {
-                // No prefix matched, move to next character in text
-                i++;
-            }
-        }
-    }
-
-    return matches;
+  let count = 0;
+  for (const c of str) {
+    if (c === char) count++;
+  }
+  return count;
 }
-import { kmpSearch } from "./kmp";   // adjust the import path as needed
 
-const text = "ababcababcababc";
-const pattern = "ababc";
+/* Usage */
+console.log(countCharLoop("mississippi", "s")); // 4
+export const countCharReduce = (str: string, char: string): number => {
+  if (char.length !== 1) {
+    throw new Error('`char` must be a single character');
+  }
 
-const positions = kmpSearch(text, pattern);
-console.log(positions); // → [0, 5, 10]
+  return [...str].reduce((cnt, c) => (c === char ? cnt + 1 : cnt), 0);
+};
 
-// Demonstrating overlapping matches
-console.log(kmpSearch("aaaaa", "aaa")); // → [0, 1, 2]
-// kmp.ts
-/**
- * KMP (Knuth‑Morris‑Pratt) string searching implementation.
- *
- * Exported functions:
- *   - buildLPS(pattern: string): number[]
- *   - kmpSearch(text: string, pattern: string): number[]
- *
- * Both functions are pure and have O(n + m) time complexity.
- */
+/* Usage */
+console.log(countCharReduce("hello world", "l")); // 3
+export function countSubstringRegex(str: string, sub: string, caseSensitive = true): number {
+  if (sub === "") return 0; // avoid infinite matches
 
-function buildLPS(pattern: string): number[] {
-    const m = pattern.length;
-    const lps = new Array<number>(m).fill(0);
-    let len = 0;
-    let i = 1;
+  const flags = caseSensitive ? "g" : "gi";
+  // Escape special regex characters in `sub`
+  const escaped = sub.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(escaped, flags);
 
-    while (i < m) {
-        if (pattern[i] === pattern[len]) {
-            len++;
-            lps[i] = len;
-            i++;
-        } else {
-            if (len !== 0) {
-                len = lps[len - 1];
-            } else {
-                lps[i] = 0;
-                i++;
-            }
-        }
-    }
-
-    return lps;
+  const matches = str.match(regex);
+  return matches ? matches.length : 0;
 }
+
+/* Usage */
+console.log(countSubstringRegex("FooBarFoo", "foo", false)); // 2
+export const countCharMatchAll = (str: string, char: string): number => {
+  if (char.length !== 1) throw new Error('`char` must be a single character');
+  const escaped = char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(escaped, 'g');
+  return [...str.matchAll(regex)].length;
+};
+import graphemeSplit from 'grapheme-splitter';
+
+export function countGrapheme(str: string, target: string): number {
+  const splitter = new graphemeSplit();
+  const graphemes = splitter.splitGraphemes(str);
+  return graphemes.filter(g => g === target).length;
+}
+
+/* Usage */
+console.log(countGrapheme('👩‍💻👩‍💻', '👩‍💻')); // 2
+// src/utils/stringCount.ts
+export type CountOptions = {
+  /** If true, the search is case‑insensitive (default: false) */
+  caseInsensitive?: boolean;
+  /** If true, treat `search` as a literal string, not a RegExp (default: true) */
+  literal?: boolean;
+};
 
 /**
- * Returns all start indices where `pattern` occurs in `text`.
+ * Count how many times `search` appears in `source`.
  *
- * @param text    The haystack.
- * @param pattern The needle.
+ * Works for single characters *and* longer substrings.
+ * Throws if `search` is empty.
  */
-export function kmpSearch(text: string, pattern: string): number[] {
-    const n = text.length;
-    const m = pattern.length;
+export function countOccurrences(
+  source: string,
+  search: string,
+  opts: CountOptions = {}
+): number {
+  if (search === '') {
+    throw new Error('`search` must not be empty');
+  }
 
-    if (m === 0) {
-        return Array.from({ length: n + 1 }, (_, i) => i);
-    }
+  const { caseInsensitive = false, literal = true } = opts;
+  const flags = caseInsensitive ? 'gi' : 'g';
 
-    const lps = buildLPS(pattern);
-    const matches: number[] = [];
+  const pattern = literal
+    ? search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    : search; // caller supplied a safe regex pattern
 
-    let i = 0; // text index
-    let j = 0; // pattern index
-
-    while (i < n) {
-        if (text[i] === pattern[j]) {
-            i++;
-            j++;
-
-            if (j === m) {
-                matches.push(i - j);
-                j = lps[j - 1]; // allow overlapping matches
-            }
-        } else {
-            if (j !== 0) {
-                j = lps[j - 1];
-            } else {
-                i++;
-            }
-        }
-    }
-
-    return matches;
+  const regex = new RegExp(pattern, flags);
+  const matches = source.match(regex);
+  return matches ? matches.length : 0;
 }
+
+/* Example usage */
+import { countOccurrences } from './utils/stringCount';
+
+console.log(countOccurrences('Hello hello HELLO', 'hello', { caseInsensitive: true })); // 3
+console.log(countOccurrences('abracadabra', 'a')); // 5
+const count = (s: string, ch: string) => (ch.length === 1 ? s.split(ch).length - 1 : 0);
