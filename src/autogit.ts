@@ -1,259 +1,258 @@
-interface Graph {
-  [key: string]: { [neighbor: string]: number };
+npm install @capacitor/core @capacitor/android
+npm install --save-dev typescript
+export interface ConnectionResult {
+  success: boolean;
+  data?: any;
+  error?: string;
+  statusCode?: number;
 }
 
-interface DistanceTable {
-  [key: string]: number;
+export interface NetworkTaskOptions {
+  url: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  headers?: { [key: string]: string };
+  body?: any;
+  timeout?: number;
 }
+import { Plugins } from '@capacitor/core';
+import { ConnectionResult, NetworkTaskOptions } from './types';
 
-interface PreviousNode {
-  [key: string]: string | null;
-}
+const { Network } = Plugins;
 
-interface PriorityQueueItem {
-  node: string;
-  distance: number;
-}
-class PriorityQueue {
-  private items: PriorityQueueItem[] = [];
+export class NetworkService {
+  private static instance: NetworkService;
 
-  enqueue(node: string, distance: number): void {
-    this.items.push({ node, distance });
-    this.items.sort((a, b) => a.distance - b.distance);
-  }
+  private constructor() {}
 
-  dequeue(): PriorityQueueItem | null {
-    return this.items.shift() || null;
-  }
-
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  updatePriority(node: string, newDistance: number): void {
-    const index = this.items.findIndex(item => item.node === node);
-    if (index !== -1) {
-      this.items.splice(index, 1);
+  public static getInstance(): NetworkService {
+    if (!NetworkService.instance) {
+      NetworkService.instance = new NetworkService();
     }
-    this.enqueue(node, newDistance);
-  }
-}
-class DijkstraAlgorithm {
-  private graph: Graph;
-  
-  constructor(graph: Graph) {
-    this.graph = graph;
+    return NetworkService.instance;
   }
 
-  findShortestPath(startNode: string, endNode: string): { path: string[], distance: number } {
-    // Initialize data structures
-    const distances: DistanceTable = {};
-    const previous: PreviousNode = {};
-    const visited: Set<string> = new Set();
-    const queue = new PriorityQueue();
-
-    // Set initial distances to Infinity and previous nodes to null
-    for (const node in this.graph) {
-      distances[node] = node === startNode ? 0 : Infinity;
-      previous[node] = null;
-      queue.enqueue(node, distances[node]);
-    }
-
-    while (!queue.isEmpty()) {
-      const current = queue.dequeue();
-      if (!current) break;
-
-      const currentNode = current.node;
+  /**
+   * Execute an async network task
+   */
+  public async executeAsyncTask(options: NetworkTaskOptions): Promise<ConnectionResult> {
+    try {
+      // Check network connectivity first
+      const status = await Network.getStatus();
       
-      // Skip if we've already visited this node
-      if (visited.has(currentNode)) continue;
-      
-      visited.add(currentNode);
-
-      // Stop early if we reached the destination
-      if (currentNode === endNode) break;
-
-      // Update distances to neighbors
-      for (const neighbor in this.graph[currentNode]) {
-        if (visited.has(neighbor)) continue;
-
-        const weight = this.graph[currentNode][neighbor];
-        const newDistance = distances[currentNode] + weight;
-
-        if (newDistance < distances[neighbor]) {
-          distances[neighbor] = newDistance;
-          previous[neighbor] = currentNode;
-          queue.updatePriority(neighbor, newDistance);
-        }
+      if (!status.connected) {
+        return {
+          success: false,
+          error: 'No network connection',
+          statusCode: 0
+        };
       }
+
+      // Simulate async network call (replace with actual implementation)
+      const response = await this.mockNetworkCall(options);
+      
+      return {
+        success: true,
+        data: response,
+        statusCode: 200
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        statusCode: error.statusCode || 500
+      };
     }
+  }
 
-    // Reconstruct the path
-    const path: string[] = [];
-    let current: string | null = endNode;
+  /**
+   * Mock network call - Replace with actual HTTP implementation
+   */
+  private async mockNetworkCall(options: NetworkTaskOptions): Promise<any> {
+    return new Promise((resolve, reject) => {
+      // Simulate network delay
+      setTimeout(() => {
+        if (Math.random() > 0.2) { // 80% success rate for demo
+          resolve({ message: 'Async task completed successfully', request: options });
+        } else {
+          reject(new Error('Network request failed'));
+        }
+      }, 2000); // 2 second delay
+    });
+  }
 
-    while (current !== null) {
-      path.unshift(current);
-      current = previous[current];
-    }
-
-    // If no path exists
-    if (path[0] !== startNode) {
-      return { path: [], distance: Infinity };
-    }
-
-    return {
-      path,
-      distance: distances[endNode]
+  /**
+   * Example method to fetch data from API
+   */
+  public async fetchDataFromAPI(): Promise<ConnectionResult> {
+    const options: NetworkTaskOptions = {
+      url: 'https://jsonplaceholder.typicode.com/posts/1',
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000
     };
+
+    return this.executeAsyncTask(options);
   }
 
-  // Get all shortest distances from start node
-  getAllDistances(startNode: string): DistanceTable {
-    const distances: DistanceTable = {};
-    const previous: PreviousNode = {};
-    const visited: Set<string> = new Set();
-    const queue = new PriorityQueue();
+  /**
+   * Example method to post data
+   */
+  public async postDataToAPI(payload: any): Promise<ConnectionResult> {
+    const options: NetworkTaskOptions = {
+      url: 'https://jsonplaceholder.typicode.com/posts',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload),
+      timeout: 15000
+    };
 
-    for (const node in this.graph) {
-      distances[node] = node === startNode ? 0 : Infinity;
-      queue.enqueue(node, distances[node]);
-    }
-
-    while (!queue.isEmpty()) {
-      const current = queue.dequeue();
-      if (!current) break;
-
-      const currentNode = current.node;
-      if (visited.has(currentNode)) continue;
-      
-      visited.add(currentNode);
-
-      for (const neighbor in this.graph[currentNode]) {
-        if (visited.has(neighbor)) continue;
-
-        const weight = this.graph[currentNode][neighbor];
-        const newDistance = distances[currentNode] + weight;
-
-        if (newDistance < distances[neighbor]) {
-          distances[neighbor] = newDistance;
-          previous[neighbor] = currentNode;
-          queue.updatePriority(neighbor, newDistance);
-        }
-      }
-    }
-
-    return distances;
+    return this.executeAsyncTask(options);
   }
 }
-// Create a sample graph
-const graph: Graph = {
-  'A': { 'B': 4, 'C': 2 },
-  'B': { 'A': 4, 'C': 1, 'D': 5 },
-  'C': { 'A': 2, 'B': 1, 'D': 8, 'E': 10 },
-  'D': { 'B': 5, 'C': 8, 'E': 2 },
-  'E': { 'C': 10, 'D': 2 }
-};
+import { Component } from '@angular/core'; // or import from your framework
+import { NetworkService } from './NetworkService';
+import { ConnectionResult } from './types';
 
-// Create Dijkstra instance
-const dijkstra = new DijkstraAlgorithm(graph);
+@Component({
+  selector: 'app-root',
+  template: `
+    <button (click)="onFetchData()">Fetch Data</button>
+    <button (click)="onPostData()">Post Data</button>
+    <div *ngIf="loading">Loading...</div>
+    <div *ngIf="result">{{ result | json }}</div>
+    <div *ngIf="error" style="color: red;">Error: {{ error }}</div>
+  `
+})
+export class AppComponent {
+  private networkService: NetworkService;
+  loading = false;
+  result: any;
+  error: string | null = null;
 
-// Find shortest path from A to E
-const result = dijkstra.findShortestPath('A', 'E');
-console.log('Shortest path:', result.path); // ['A', 'C', 'B', 'D', 'E']
-console.log('Distance:', result.distance); // 12
-
-// Get all distances from A
-const allDistances = dijkstra.getAllDistances('A');
-console.log('All distances from A:', allDistances);
-class BinaryHeapPriorityQueue {
-  private heap: PriorityQueueItem[] = [];
-
-  private getParentIndex(index: number): number {
-    return Math.floor((index - 1) / 2);
+  constructor() {
+    this.networkService = NetworkService.getInstance();
   }
 
-  private getLeftChildIndex(index: number): number {
-    return 2 * index + 1;
-  }
-
-  private getRightChildIndex(index: number): number {
-    return 2 * index + 2;
-  }
-
-  private swap(i: number, j: number): void {
-    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
-  }
-
-  private heapifyUp(index: number): void {
-    while (index > 0) {
-      const parentIndex = this.getParentIndex(index);
-      if (this.heap[parentIndex].distance <= this.heap[index].distance) break;
-      this.swap(parentIndex, index);
-      index = parentIndex;
-    }
-  }
-
-  private heapifyDown(index: number): void {
-    const length = this.heap.length;
+  async onFetchData(): Promise<void> {
+    this.loading = true;
+    this.error = null;
     
-    while (true) {
-      let smallest = index;
-      const leftChild = this.getLeftChildIndex(index);
-      const rightChild = this.getRightChildIndex(index);
-
-      if (leftChild < length && this.heap[leftChild].distance < this.heap[smallest].distance) {
-        smallest = leftChild;
+    try {
+      const response: ConnectionResult = await this.networkService.fetchDataFromAPI();
+      
+      if (response.success) {
+        this.result = response.data;
+      } else {
+        this.error = response.error || 'Unknown error occurred';
       }
+    } catch (err) {
+      this.error = err.message;
+    } finally {
+      this.loading = false;
+    }
+  }
 
-      if (rightChild < length && this.heap[rightChild].distance < this.heap[smallest].distance) {
-        smallest = rightChild;
+  async onPostData(): Promise<void> {
+    this.loading = true;
+    this.error = null;
+    
+    const payload = {
+      title: 'Test Post',
+      body: 'This is a test post',
+      userId: 1
+    };
+
+    try {
+      const response: ConnectionResult = await this.networkService.postDataToAPI(payload);
+      
+      if (response.success) {
+        this.result = response.data;
+      } else {
+        this.error = response.error || 'Unknown error occurred';
       }
-
-      if (smallest === index) break;
-
-      this.swap(index, smallest);
-      index = smallest;
+    } catch (err) {
+      this.error = err.message;
+    } finally {
+      this.loading = false;
     }
   }
+}
+package com.yourapp;
 
-  enqueue(node: string, distance: number): void {
-    this.heap.push({ node, distance });
-    this.heapifyUp(this.heap.length - 1);
-  }
+import android.os.AsyncTask;
+import org.json.JSONObject;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
-  dequeue(): PriorityQueueItem | null {
-    if (this.heap.length === 0) return null;
+public class NetworkTask extends AsyncTask<String, Void, String> {
     
-    const min = this.heap[0];
-    const last = this.heap.pop()!;
-    
-    if (this.heap.length > 0) {
-      this.heap[0] = last;
-      this.heapifyDown(0);
+    public interface NetworkTaskListener {
+        void onTaskCompleted(String result);
+        void onTaskFailed(String error);
     }
     
-    return min;
-  }
-
-  isEmpty(): boolean {
-    return this.heap.length === 0;
-  }
-
-  updatePriority(node: string, newDistance: number): void {
-    const index = this.heap.findIndex(item => item.node === node);
-    if (index === -1) {
-      this.enqueue(node, newDistance);
-      return;
+    private NetworkTaskListener listener;
+    
+    public NetworkTask(NetworkTaskListener listener) {
+        this.listener = listener;
     }
-
-    const oldDistance = this.heap[index].distance;
-    this.heap[index].distance = newDistance;
-
-    if (newDistance < oldDistance) {
-      this.heapifyUp(index);
-    } else {
-      this.heapifyDown(index);
+    
+    @Override
+    protected String doInBackground(String... params) {
+        try {
+            String urlString = params[0];
+            String method = params[1];
+            String jsonData = params.length > 2 ? params[2] : null;
+            
+            URL url = new URL(urlString);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod(method);
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(10000);
+            
+            if (jsonData != null && !jsonData.isEmpty()) {
+                connection.setDoOutput(true);
+                try (OutputStream os = connection.getOutputStream()) {
+                    byte[] input = jsonData.getBytes("utf-8");
+                    os.write(input, 0, input.length);
+                }
+            }
+            
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                String inputLine;
+                StringBuilder response = new StringBuilder();
+                
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+                
+                return response.toString();
+            } else {
+                return "Error: " + responseCode;
+            }
+        } catch (Exception e) {
+            return "Error: " + e.getMessage();
+        }
     }
-  }
+    
+    @Override
+    protected void onPostExecute(String result) {
+        if (result.startsWith("Error:")) {
+            listener.onTaskFailed(result);
+        } else {
+            listener.onTaskCompleted(result);
+        }
+    }
 }
