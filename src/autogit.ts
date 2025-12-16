@@ -1,52 +1,61 @@
-// Simple singly linked list node
-interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
+// src/fetchRandomUser.ts
+import axios, { AxiosResponse } from 'axios';
+
+interface Name {
+  title: string;
+  first:  string;
+  last:   string;
+}
+
+interface Picture {
+  large:     string;
+  medium:    string;
+  thumbnail: string;
+}
+
+interface RandomUserResponse {
+  results: Array<{
+    name:    Name;
+    email:   string;
+    picture: Picture;
+  }>;
 }
 
 /**
- * Returns the nth node from the end (1-based: n = 1 -> last node)
- * If n is invalid or the list is too short, returns null.
+ * Fetches a single random user from https://randomuser.me
+ * and returns a slimmed-down object.
  */
-function nthFromEnd<T>(
-  head: ListNode<T> | null,
-  n: number
-): ListNode<T> | null {
-  if (head === null) return null;
-  if (n <= 0) return null; // invalid input
+export async function fetchRandomUser(): Promise<{
+  fullName: string;
+  email:    string;
+  avatar:   string;
+} | undefined> {
+  try {
+    const { data }: AxiosResponse<RandomUserResponse> = await axios.get(
+      'https://randomuser.me/api/',
+      { params: { inc: 'name,email,picture' } }
+    );
 
-  // Move fast n steps ahead
-  let fast: ListNode<T> | null = head;
-  for (let i = 0; i < n; i++) {
-    if (fast === null) return null; // n is larger than the length
-    fast = fast.next;
+    const user = data.results[0];
+    return {
+      fullName: `${user.name.title} ${user.name.first} ${user.name.last}`,
+      email:    user.email,
+      avatar:   user.picture.large,
+    };
+  } catch (err: any) {
+    console.error('Failed to fetch random user:', err.message);
+    return undefined;
   }
-
-  // Move both pointers until fast reaches the end
-  let slow: ListNode<T> | null = head;
-  while (fast !== null) {
-    slow = slow!.next;
-    fast = fast.next;
-  }
-
-  // slow is now the nth node from the end
-  return slow;
 }
-// Build a simple list: 1 -> 2 -> 3 -> 4 -> 5
-const head: ListNode<number> = {
-  value: 1,
-  next: {
-    value: 2,
-    next: {
-      value: 3,
-      next: {
-        value: 4,
-        next: { value: 5, next: null }
-      }
-    }
-  }
-};
 
-const n = 2;
-const node = nthFromEnd(head, n);
-console.log(node?.value); // 4
+/* ------------------------------------------------------------------ */
+/* Quick self-test (run with ts-node)                                   */
+/* ------------------------------------------------------------------ */
+if (require.main === module) {
+  (async () => {
+    const user = await fetchRandomUser();
+    if (user) {
+      console.log(`Fetched user: ${user.fullName} <${user.email}>`);
+    }
+  })();
+}
