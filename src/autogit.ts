@@ -1,43 +1,25 @@
-export function findMajority<T>(arr: T[]): T | null {
-  let candidate: T | undefined;
-  let count = 0;
+const originalString: string = "Hello WORLD";
+const lowerCaseString: string = originalString.toLowerCase();
 
-  // 1st pass: find a candidate
-  for (const x of arr) {
-    if (count === 0) candidate = x;
-    if (candidate === x) {
-      count++;
-    } else {
-      count--;
-    }
-  }
+console.log(lowerCaseString); // Output: "hello world"
+const originalString: string = "İstanbul";
+const lowerCaseString: string = originalString.toLocaleLowerCase('tr-TR');
 
-  // 2nd pass: verify the candidate actually appears more than n/2 times
-  if (candidate !== undefined) {
-    let occurrences = 0;
-    for (const x of arr) {
-      if (x === candidate) occurrences++;
-    }
-    if (occurrences > Math.floor(arr.length / 2)) {
-      return candidate;
-    }
-  }
+console.log(lowerCaseString); // Output: "istanbul" (Turkish locale)
+const stringArray: string[] = ["Apple", "BANANA", "Cherry"];
+const lowerCaseArray: string[] = stringArray.map(str => str.toLowerCase());
 
-  return null;
+console.log(lowerCaseArray); // Output: ["apple", "banana", "cherry"]
+function toLowerCase(input: string): string {
+    return input.toLowerCase();
 }
-export function findMajorityWithMap<T>(arr: T[]): T | null {
-  const freq = new Map<T, number>();
-  const half = Math.floor(arr.length / 2);
 
-  for (const x of arr) {
-    const c = (freq.get(x) ?? 0) + 1;
-    freq.set(x, c);
-    if (c > half) return x;
-  }
-  return null;
+const result = toLowerCase("TypeScript IS Awesome");
+console.log(result); // Output: "typescript is awesome"
+function convertToLower(input: string | null | undefined): string {
+    if (!input) return "";
+    return input.toLowerCase();
 }
-const a = [3, 1, 3, 3, 2];
-console.log(findMajority(a)); // 3
 
-const b = [1, 2, 3, 4];
-console.log(findMajority(b)); // null
+console.log(convertToLower("HELLO")); // "hello"
+console.log(convertToLower(null));    // ""
