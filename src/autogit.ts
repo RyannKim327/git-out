@@ -1,139 +1,83 @@
-interface ListNode<T> {
-    value: T;
-    next: ListNode<T> | null;
-}
+// Tarjan's algorithm: find SCCs in a directed graph
+// Graph is a Map<V, V[]> adjacency list.
+// Returns an array of SCCs, each SCC is an array of vertices.
 
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-    if (!head || !head.next) return false;
-    
-    let slow: ListNode<T> | null = head;
-    let fast: ListNode<T> | null = head;
-    
-    while (fast && fast.next) {
-        slow = slow!.next;
-        fast = fast.next.next;
-        
-        if (slow === fast) {
-            return true;
-        }
-    }
-    
-    return false;
-}
-function hasCycleUsingSet<T>(head: ListNode<T> | null): boolean {
-    const visited = new Set<ListNode<T>>();
-    let current = head;
-    
-    while (current) {
-        if (visited.has(current)) {
-            return true;
-        }
-        visited.add(current);
-        current = current.next;
-    }
-    
-    return false;
-}
-class LinkedListNode<T> {
-    value: T;
-    next: LinkedListNode<T> | null;
-    
-    constructor(value: T, next: LinkedListNode<T> | null = null) {
-        this.value = value;
-        this.next = next;
-    }
-}
+export function tarjanSCC<V>(graph: Map<V, V[]>): V[][] {
+  const indexMap = new Map<V, number>();  // index of each node when first discovered
+  const lowlink = new Map<V, number>();   // smallest index reachable from the node
+  const onStack = new Map<V, boolean>();  // is the node on the stack?
+  const stack: V[] = [];                   // stack of nodes
+  const sccs: V[][] = [];                   // result: list of SCCs
+  let index = 0;
 
-class LinkedList<T> {
-    head: LinkedListNode<T> | null;
-    
-    constructor() {
-        this.head = null;
+  const neighbors = (v: V) => graph.get(v) ?? [];
+
+  function strongconnect(v: V) {
+    indexMap.set(v, index);
+    lowlink.set(v, index);
+    index++;
+    stack.push(v);
+    onStack.set(v, true);
+
+    for (const w of neighbors(v)) {
+      if (!indexMap.has(w)) {
+        // Successor not yet visited
+        strongconnect(w);
+        // Update lowlink after returning
+        lowlink.set(v, Math.min(lowlink.get(v)!, lowlink.get(w)!));
+      } else if (onStack.get(w)) {
+        // Successor already on stack: update lowlink
+        lowlink.set(v, Math.min(lowlink.get(v)!, indexMap.get(w)!));
+      }
     }
-    
-    // Add node to the end
-    append(value: T): void {
-        const newNode = new LinkedListNode(value);
-        if (!this.head) {
-            this.head = newNode;
-            return;
-        }
-        
-        let current = this.head;
-        while (current.next) {
-            current = current.next;
-        }
-        current.next = newNode;
+
+    // If v is a root node, pop the stack to form an SCC
+    if (lowlink.get(v) === indexMap.get(v)) {
+      const scc: V[] = [];
+      let w: V;
+      do {
+        w = stack.pop()!;
+        onStack.set(w, false);
+        scc.push(w);
+      } while (w !== v);
+      sccs.push(scc);
     }
-    
-    // Create a cycle for testing
-    createCycle(position: number): void {
-        if (!this.head || position < 0) return;
-        
-        let cycleNode: LinkedListNode<T> | null = null;
-        let current = this.head;
-        let index = 0;
-        
-        while (current.next) {
-            if (index === position) {
-                cycleNode = current;
-            }
-            current = current.next;
-            index++;
-        }
-        
-        if (cycleNode) {
-            current.next = cycleNode;
-        }
-    }
-    
-    // Check for cycle using Floyd's algorithm
-    hasCycle(): boolean {
-        if (!this.head || !this.head.next) return false;
-        
-        let slow: LinkedListNode<T> | null = this.head;
-        let fast: LinkedListNode<T> | null = this.head;
-        
-        while (fast && fast.next) {
-            slow = slow!.next;
-            fast = fast.next.next;
-            
-            if (slow === fast) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
-    // Check for cycle using Set
-    hasCycleUsingSet(): boolean {
-        const visited = new Set<LinkedListNode<T>>();
-        let current = this.head;
-        
-        while (current) {
-            if (visited.has(current)) {
-                return true;
-            }
-            visited.add(current);
-            current = current.next;
-        }
-        
-        return false;
-    }
+  }
+
+  // Include nodes that might only appear as neighbors (not as keys)
+  const allNodes = new Set<V>();
+  for (const [v, nbrs] of graph) {
+    allNodes.add(v);
+    for (const w of nbrs) allNodes.add(w);
+  }
+
+  for (const v of allNodes) {
+    if (!indexMap.has(v)) strongconnect(v);
+  }
+
+  return sccs;
 }
+type Node = string;
 
-// Usage Example
-const list = new LinkedList<number>();
-list.append(1);
-list.append(2);
-list.append(3);
-list.append(4);
-list.append(5);
+// Build a graph:
+// A -> B
+// B -> C, D
+// C -> A
+// D -> E
+// E -> F
+// F -> D, G
+// G -> F
+const g = new Map<Node, Node[]>([
+  ["A", ["B"]],
+  ["B", ["C", "D"]],
+  ["C", ["A"]],
+  ["D", ["E"]],
+  ["E", ["F"]],
+  ["F", ["D", "G"]],
+  ["G", ["F"]],
+]);
 
-console.log("Has cycle:", list.hasCycle()); // false
-
-// Create a cycle from last node to second node
-list.createCycle(1);
-console.log("Has cycle after creating cycle:", list.hasCycle()); // true
-console.log("Has cycle (using Set):", list.hasCycleUsingSet()); // true
+const components = tarjanSCC(g);
+console.log(components);
+// Example output (order of components and nodes within components may vary):
+// [ [ 'A', 'C', 'B' ], [ 'D', 'G', 'F', 'E' ] ]
