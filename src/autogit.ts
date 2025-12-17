@@ -1,144 +1,156 @@
-function shellSort(arr: number[]): number[] {
-    const n = arr.length;
-    
-    // Start with a large gap, then reduce the gap
-    for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-        // Do a gapped insertion sort for this gap size
-        for (let i = gap; i < n; i++) {
-            const temp = arr[i];
-            let j: number;
-            
-            // Shift earlier gap-sorted elements up until the correct location for arr[i] is found
-            for (j = i; j >= gap && arr[j - gap] > temp; j -= gap) {
-                arr[j] = arr[j - gap];
-            }
-            
-            // Put temp (the original arr[i]) in its correct location
-            arr[j] = temp;
-        }
+/**
+ * Returns the longest common subsequence of `a` and `b`.
+ *
+ * @param a - first string
+ * @param b - second string
+ * @returns the LCS string (empty string if there is none)
+ *
+ * Time   : O(|a| * |b|)
+ * Space  : O(|a| * |b|)   (the DP table)
+ */
+export function longestCommonSubsequence(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
+
+  // dp[i][j] = length of LCS of a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array.from({ length: m + 1 }, () =>
+    new Array<number>(n + 1).fill(0)
+  );
+
+  // Fill the table
+  for (let i = 1; i <= m; i++) {
+    const ai = a.charAt(i - 1);
+    for (let j = 1; j <= n; j++) {
+      if (ai === b.charAt(j - 1)) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
-    
-    return arr;
-}
-// Different gap sequences for Shell Sort
-enum GapSequence {
-    SHELL = 'shell',        // Original: n/2, n/4, n/8...
-    KNUTH = 'knuth',        // (3^k - 1)/2
-    SEDGEWICK = 'sedgewick' // 4^k + 3*2^(k-1) + 1
-}
+  }
 
-function shellSortAdvanced(
-    arr: number[], 
-    gapSequence: GapSequence = GapSequence.SHELL
-): number[] {
-    const n = arr.length;
-    
-    // Generate gap sequence based on the chosen method
-    const gaps = generateGaps(n, gapSequence);
-    
-    // Sort using the generated gaps
-    for (const gap of gaps) {
-        for (let i = gap; i < n; i++) {
-            const temp = arr[i];
-            let j: number;
-            
-            for (j = i; j >= gap && arr[j - gap] > temp; j -= gap) {
-                arr[j] = arr[j - gap];
-            }
-            
-            arr[j] = temp;
-        }
+  // Back‑track to build the subsequence
+  let i = m;
+  let j = n;
+  const lcsChars: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a.charAt(i - 1) === b.charAt(j - 1)) {
+      // Current characters belong to LCS
+      lcsChars.push(a.charAt(i - 1));
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--; // Move up
+    } else {
+      j--; // Move left
     }
-    
-    return arr;
+  }
+
+  // The characters were collected backwards, reverse them
+  return lcsChars.reverse().join('');
 }
 
-function generateGaps(n: number, sequence: GapSequence): number[] {
-    const gaps: number[] = [];
-    
-    switch (sequence) {
-        case GapSequence.SHELL:
-            // Original Shell sequence: n/2, n/4, n/8...
-            for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-                gaps.push(gap);
-            }
-            break;
-            
-        case GapSequence.KNUTH:
-            // Knuth sequence: (3^k - 1)/2
-            let k = 1;
-            let gap = 1;
-            while (gap < n) {
-                gaps.unshift(gap); // Store in reverse order (largest first)
-                gap = Math.floor((Math.pow(3, k) - 1) / 2);
-                k++;
-            }
-            break;
-            
-        case GapSequence.SEDGEWICK:
-            // Sedgewick sequence: 4^k + 3*2^(k-1) + 1
-            k = 0;
-            gap = 1;
-            while (gap < n) {
-                gaps.unshift(gap);
-                if (k === 0) {
-                    gap = 5;
-                } else {
-                    gap = Math.pow(4, k) + 3 * Math.pow(2, k - 1) + 1;
-                }
-                k++;
-            }
-            break;
+/* -------------------------------------------------------------
+   Example usage
+------------------------------------------------------------- */
+const s1 = "AGGTAB";
+const s2 = "GXTXAYB";
+
+console.log(longestCommonSubsequence(s1, s2)); // → "GTAB"
+/**
+ * Returns the length of the LCS of `a` and `b`.
+ *
+ * Uses O(min(|a|,|b|)) extra space.
+ */
+export function lcsLength(a: string, b: string): number {
+  // Ensure `b` is the shorter string to minimise memory.
+  if (a.length < b.length) [a, b] = [b, a];
+
+  const m = a.length;
+  const n = b.length;
+
+  // `prev` holds dp[i‑1][*], `curr` holds dp[i][*]
+  let prev = new Array<number>(n + 1).fill(0);
+  let curr = new Array<number>(n + 1).fill(0);
+
+  for (let i = 1; i <= m; i++) {
+    const ai = a.charAt(i - 1);
+    for (let j = 1; j <= n; j++) {
+      if (ai === b.charAt(j - 1)) {
+        curr[j] = prev[j - 1] + 1;
+      } else {
+        curr[j] = Math.max(prev[j], curr[j - 1]);
+      }
     }
-    
-    return gaps;
+    // Swap rows for next iteration
+    [prev, curr] = [curr, prev];
+  }
+
+  // After the final swap `prev` holds the last computed row.
+  return prev[n];
 }
-function shellSortGeneric<T>(
-    arr: T[], 
-    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
-): T[] {
-    const n = arr.length;
-    
-    for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-        for (let i = gap; i < n; i++) {
-            const temp = arr[i];
-            let j: number;
-            
-            for (j = i; j >= gap && compareFn(arr[j - gap], temp) > 0; j -= gap) {
-                arr[j] = arr[j - gap];
-            }
-            
-            arr[j] = temp;
-        }
+
+/* -------------------------------------------------------------
+   Example usage
+------------------------------------------------------------- */
+console.log(lcsLength("AGGTAB", "GXTXAYB")); // → 4 (length of "GTAB")
+// lcs.ts
+export function longestCommonSubsequence(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () =>
+    new Array<number>(n + 1).fill(0)
+  );
+
+  for (let i = 1; i <= m; i++) {
+    const ai = a.charAt(i - 1);
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = ai === b.charAt(j - 1) ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
     }
-    
-    return arr;
+  }
+
+  const result: string[] = [];
+  let i = m,
+    j = n;
+  while (i > 0 && j > 0) {
+    if (a.charAt(i - 1) === b.charAt(j - 1)) {
+      result.push(a.charAt(i - 1));
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;
+    } else {
+      j--;
+    }
+  }
+
+  return result.reverse().join('');
 }
-// Basic usage
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-console.log("Original:", numbers);
-console.log("Sorted:", shellSort([...numbers]));
 
-// Advanced usage with different gap sequences
-console.log("Knuth sequence:", shellSortAdvanced([...numbers], GapSequence.KNUTH));
-console.log("Sedgewick sequence:", shellSortAdvanced([...numbers], GapSequence.SEDGEWICK));
+export function lcsLength(a: string, b: string): number {
+  if (a.length < b.length) [a, b] = [b, a];
+  const n = b.length;
+  let prev = new Array<number>(n + 1).fill(0);
+  let curr = new Array<number>(n + 1).fill(0);
 
-// Generic version with custom objects
-interface Person {
-    name: string;
-    age: number;
+  for (let i = 1; i <= a.length; i++) {
+    const ai = a.charAt(i - 1);
+    for (let j = 1; j <= n; j++) {
+      curr[j] = ai === b.charAt(j - 1) ? prev[j - 1] + 1 : Math.max(prev[j], curr[j - 1]);
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[n];
 }
 
-const people: Person[] = [
-    { name: "Alice", age: 30 },
-    { name: "Bob", age: 25 },
-    { name: "Charlie", age: 35 }
-];
+/* -------------------------------------------------------------
+   Quick test (run with `ts-node lcs.ts` or import in your code)
+------------------------------------------------------------- */
+if (require.main === module) {
+  const s1 = "AGGTAB";
+  const s2 = "GXTXAYB";
 
-const sortedByAge = shellSortGeneric([...people], (a, b) => a.age - b.age);
-console.log("Sorted by age:", sortedByAge);
-
-// Generic version with strings
-const names = ["Charlie", "Alice", "Bob"];
-const sortedNames = shellSortGeneric([...names]);
-console.log("Sorted names:", sortedNames);
+  console.log("LCS string :", longestCommonSubsequence(s1, s2)); // GTAB
+  console.log("LCS length :", lcsLength(s1, s2));                // 4
+}
