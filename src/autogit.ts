@@ -1,76 +1,132 @@
-// queue.ts
-export class Node<T> {
-  constructor(
-    public data: T,
-    public next: Node<T> | null = null
-  ) {}
+function binarySearchRecursive<T>(
+  array: T[],
+  target: T,
+  start: number = 0,
+  end: number = array.length - 1
+): number {
+  // Base case: element not found
+  if (start > end) {
+    return -1;
+  }
+
+  // Calculate middle index
+  const mid = Math.floor((start + end) / 2);
+
+  // Base case: element found
+  if (array[mid] === target) {
+    return mid;
+  }
+
+  // Recursive cases
+  if (array[mid] > target) {
+    // Search left half
+    return binarySearchRecursive(array, target, start, mid - 1);
+  } else {
+    // Search right half
+    return binarySearchRecursive(array, target, mid + 1, end);
+  }
+}
+function binarySearchRecursive<T>(
+  array: T[],
+  target: T,
+  comparator: (a: T, b: T) => number = (a, b) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  },
+  start: number = 0,
+  end: number = array.length - 1
+): number {
+  if (start > end) {
+    return -1;
+  }
+
+  const mid = Math.floor((start + end) / 2);
+  const comparison = comparator(array[mid], target);
+
+  if (comparison === 0) {
+    return mid;
+  }
+
+  if (comparison > 0) {
+    return binarySearchRecursive(array, target, comparator, start, mid - 1);
+  } else {
+    return binarySearchRecursive(array, target, comparator, mid + 1, end);
+  }
+}
+// Example 1: Basic usage with numbers
+const numbers = [1, 3, 5, 7, 9, 11, 13, 15];
+console.log(binarySearchRecursive(numbers, 7)); // Output: 3
+console.log(binarySearchRecursive(numbers, 10)); // Output: -1
+
+// Example 2: Usage with strings
+const strings = ["apple", "banana", "cherry", "date", "elderberry"];
+console.log(binarySearchRecursive(strings, "cherry")); // Output: 2
+
+// Example 3: Custom comparator for objects
+interface Person {
+  id: number;
+  name: string;
 }
 
-export class LinkedQueue<T> {
-  private head: Node<T> | null = null; // oldest node
-  private tail: Node<T> | null = null; // newest node
-  private _size = 0;
+const people: Person[] = [
+  { id: 1, name: "Alice" },
+  { id: 2, name: "Bob" },
+  { id: 3, name: "Charlie" },
+];
 
-  /* Add to the back */
-  enqueue(item: T): void {
-    const node = new Node(item);
-    if (this.tail) this.tail.next = node;
-    else this.head = node;          // first element
-    this.tail = node;
-    this._size++;
+const personComparator = (a: Person, b: Person) => a.id - b.id;
+console.log(binarySearchRecursive(people, { id: 2, name: "Bob" }, personComparator)); // Output: 1
+class BinarySearch<T> {
+  constructor(private array: T[], private comparator?: (a: T, b: T) => number) {}
+
+  search(target: T): number {
+    return this.recursiveSearch(target, 0, this.array.length - 1);
   }
 
-  /* Remove and return the front element */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined;
-    const data = this.head.data;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null; // queue became empty
-    this._size--;
-    return data;
-  }
+  private recursiveSearch(
+    target: T,
+    start: number,
+    end: number
+  ): number {
+    if (start > end) {
+      return -1;
+    }
 
-  /* Peek without removing */
-  peek(): T | undefined {
-    return this.head?.data;
-  }
+    const mid = Math.floor((start + end) / 2);
+    const current = this.array[mid];
 
-  get size(): number {
-    return this._size;
-  }
+    if (this.compare(current, target) === 0) {
+      return mid;
+    }
 
-  get isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /* Optional: make it iterable */
-  *[Symbol.iterator](): Iterator<T> {
-    let cur = this.head;
-    while (cur) {
-      yield cur.data;
-      cur = cur.next;
+    if (this.compare(current, target) > 0) {
+      return this.recursiveSearch(target, start, mid - 1);
+    } else {
+      return this.recursiveSearch(target, mid + 1, end);
     }
   }
+
+  private compare(a: T, b: T): number {
+    if (this.comparator) {
+      return this.comparator(a, b);
+    }
+
+    // Default comparison for primitives
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  }
 }
 
-/* ---------- Usage example ---------- */
-if (import.meta.vitest) {
-  const { expect, test } = import.meta.vitest;
+// Usage
+const search = new BinarySearch([1, 2, 3, 4, 5]);
+console.log(search.search(3)); // Output: 2
+// Empty array
+console.log(binarySearchRecursive([], 5)); // Output: -1
 
-  test('queue operations', () => {
-    const q = new LinkedQueue<number>();
-    expect(q.isEmpty).toBe(true);
+// Single element
+console.log(binarySearchRecursive([5], 5)); // Output: 0
 
-    q.enqueue(10);
-    q.enqueue(20);
-    expect(q.size).toBe(2);
-    expect(q.peek()).toBe(10);
-
-    expect(q.dequeue()).toBe(10);
-    expect(q.dequeue()).toBe(20);
-    expect(q.dequeue()).toBeUndefined();
-    expect(q.isEmpty).toBe(true);
-  });
-}
-npm i -D vitest
-npx vitest queue.ts
+// Duplicate elements (returns first occurrence)
+console.log(binarySearchRecursive([1, 2, 2, 2, 3], 2)); // Output: 2
