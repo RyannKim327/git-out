@@ -1,290 +1,173 @@
-interface GraphNode<T> {
-  value: T;
-  children: GraphNode<T>[];
-}
-
-class BreadthLimitedSearch<T> {
-  /**
-   * Perform breadth-limited search starting from the root node
-   * @param root Starting node
-   * @param target Value to search for
-   * @param maxDepth Maximum depth to search (0 = only root, 1 = root and direct children, etc.)
-   * @returns The found node or null if not found within depth limit
-   */
-  search(root: GraphNode<T>, target: T, maxDepth: number): GraphNode<T> | null {
-    if (maxDepth < 0) {
-      throw new Error("Max depth must be non-negative");
-    }
-
-    const queue: { node: GraphNode<T>; depth: number }[] = [];
-    const visited = new Set<GraphNode<T>>();
-
-    // Start with root node at depth 0
-    queue.push({ node: root, depth: 0 });
-    visited.add(root);
-
-    while (queue.length > 0) {
-      const { node, depth } = queue.shift()!;
-
-      // Check if we found the target
-      if (node.value === target) {
-        return node;
-      }
-
-      // Only explore children if we haven't reached depth limit
-      if (depth < maxDepth) {
-        for (const child of node.children) {
-          if (!visited.has(child)) {
-            visited.add(child);
-            queue.push({ node: child, depth: depth + 1 });
-          }
-        }
-      }
-    }
-
-    return null; // Target not found within depth limit
+function binarySearchRecursive<T>(
+  array: T[],
+  target: T,
+  left: number = 0,
+  right: number = array.length - 1
+): number {
+  // Base case: search range is invalid
+  if (left > right) {
+    return -1;
   }
 
-  /**
-   * Get all nodes within the depth limit (useful for visualization or analysis)
-   */
-  getAllNodesWithinDepth(root: GraphNode<T>, maxDepth: number): GraphNode<T>[] {
-    const nodes: GraphNode<T>[] = [];
-    const queue: { node: GraphNode<T>; depth: number }[] = [];
-    const visited = new Set<GraphNode<T>>();
+  const mid = Math.floor((left + right) / 2);
 
-    queue.push({ node: root, depth: 0 });
-    visited.add(root);
-    nodes.push(root);
-
-    while (queue.length > 0) {
-      const { node, depth } = queue.shift()!;
-
-      if (depth < maxDepth) {
-        for (const child of node.children) {
-          if (!visited.has(child)) {
-            visited.add(child);
-            nodes.push(child);
-            queue.push({ node: child, depth: depth + 1 });
-          }
-        }
-      }
-    }
-
-    return nodes;
+  // Found the target
+  if (array[mid] === target) {
+    return mid;
   }
 
-  /**
-   * Get the path from root to target if found
-   */
-  searchWithPath(root: GraphNode<T>, target: T, maxDepth: number): GraphNode<T>[] | null {
-    const queue: { node: GraphNode<T>; depth: number; path: GraphNode<T>[] }[] = [];
-    const visited = new Set<GraphNode<T>>();
-
-    queue.push({ node: root, depth: 0, path: [root] });
-    visited.add(root);
-
-    while (queue.length > 0) {
-      const { node, depth, path } = queue.shift()!;
-
-      if (node.value === target) {
-        return path;
-      }
-
-      if (depth < maxDepth) {
-        for (const child of node.children) {
-          if (!visited.has(child)) {
-            visited.add(child);
-            queue.push({ 
-              node: child, 
-              depth: depth + 1, 
-              path: [...path, child] 
-            });
-          }
-        }
-      }
-    }
-
-    return null;
-  }
-}
-interface SearchResult<T> {
-  node: GraphNode<T>;
-  depth: number;
-  path?: GraphNode<T>[];
-}
-
-class GenericBreadthLimitedSearch<T> {
-  /**
-   * Search with custom goal test and node processing
-   */
-  search(
-    root: GraphNode<T>,
-    maxDepth: number,
-    goalTest: (node: GraphNode<T>) => boolean,
-    processNode?: (node: GraphNode<T>, depth: number) => void
-  ): SearchResult<T> | null {
-    
-    const queue: { node: GraphNode<T>; depth: number }[] = [];
-    const visited = new Set<GraphNode<T>>();
-
-    queue.push({ node: root, depth: 0 });
-    visited.add(root);
-
-    while (queue.length > 0) {
-      const { node, depth } = queue.shift()!;
-
-      // Process node if callback provided
-      processNode?.(node, depth);
-
-      // Check if this node satisfies the goal
-      if (goalTest(node)) {
-        return { node, depth };
-      }
-
-      if (depth < maxDepth) {
-        for (const child of node.children) {
-          if (!visited.has(child)) {
-            visited.add(child);
-            queue.push({ node: child, depth: depth + 1 });
-          }
-        }
-      }
-    }
-
-    return null;
+  // Search left half
+  if (array[mid] > target) {
+    return binarySearchRecursive(array, target, left, mid - 1);
   }
 
-  /**
-   * Find all nodes that satisfy a condition within depth limit
-   */
-  findAll(
-    root: GraphNode<T>,
-    maxDepth: number,
-    condition: (node: GraphNode<T>) => boolean
-  ): SearchResult<T>[] {
-    
-    const results: SearchResult<T>[] = [];
-    const queue: { node: GraphNode<T>; depth: number }[] = [];
-    const visited = new Set<GraphNode<T>>();
-
-    queue.push({ node: root, depth: 0 });
-    visited.add(root);
-
-    if (condition(root)) {
-      results.push({ node: root, depth: 0 });
-    }
-
-    while (queue.length > 0) {
-      const { node, depth } = queue.shift()!;
-
-      if (depth < maxDepth) {
-        for (const child of node.children) {
-          if (!visited.has(child)) {
-            visited.add(child);
-            
-            if (condition(child)) {
-              results.push({ node: child, depth: depth + 1 });
-            }
-            
-            queue.push({ node: child, depth: depth + 1 });
-          }
-        }
-      }
-    }
-
-    return results;
+  // Search right half
+  return binarySearchRecursive(array, target, mid + 1, right);
+}
+function binarySearchRecursive<T>(
+  array: T[],
+  target: T,
+  compareFn?: (a: T, b: T) => number,
+  left: number = 0,
+  right: number = array.length - 1
+): number {
+  // Validate input
+  if (!array.length) {
+    return -1;
   }
+
+  // Default comparator for primitive types
+  const comparator = compareFn || ((a: T, b: T) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
+
+  // Base case
+  if (left > right) {
+    return -1;
+  }
+
+  const mid = Math.floor((left + right) / 2);
+  const comparison = comparator(array[mid], target);
+
+  if (comparison === 0) {
+    return mid;
+  }
+
+  if (comparison > 0) {
+    return binarySearchRecursive(array, target, comparator, left, mid - 1);
+  }
+
+  return binarySearchRecursive(array, target, comparator, mid + 1, right);
 }
-// Create a sample graph
-const createSampleGraph = (): GraphNode<string> => {
-  const root: GraphNode<string> = { value: "A", children: [] };
-  const b: GraphNode<string> = { value: "B", children: [] };
-  const c: GraphNode<string> = { value: "C", children: [] };
-  const d: GraphNode<string> = { value: "D", children: [] };
-  const e: GraphNode<string> = { value: "E", children: [] };
-  const f: GraphNode<string> = { value: "F", children: [] };
-
-  root.children = [b, c];
-  b.children = [d, e];
-  c.children = [f];
-  d.children = [];
-  e.children = [];
-  f.children = [];
-
-  return root;
-};
-
-// Usage examples
-const example = () => {
-  const graph = createSampleGraph();
-  const bls = new BreadthLimitedSearch<string>();
-
-  // Search for node "E" with max depth 2
-  const result1 = bls.search(graph, "E", 2);
-  console.log("Search for 'E' with depth 2:", result1?.value); // Should find E
-
-  // Search for node "E" with max depth 1 (should not find it)
-  const result2 = bls.search(graph, "E", 1);
-  console.log("Search for 'E' with depth 1:", result2?.value); // Should be null
-
-  // Get path to node
-  const path = bls.searchWithPath(graph, "F", 2);
-  console.log("Path to F:", path?.map(n => n.value).join(" -> ")); // A -> C -> F
-
-  // Get all nodes within depth 1
-  const nodes = bls.getAllNodesWithinDepth(graph, 1);
-  console.log("Nodes within depth 1:", nodes.map(n => n.value)); // [A, B, C]
-};
-
-// Run the example
-example();
-interface WeightedGraphNode<T> {
-  value: T;
-  edges: { node: WeightedGraphNode<T>; cost: number }[];
+interface BinarySearchResult {
+  index: number;
+  found: boolean;
 }
 
-class CostLimitedBreadthSearch<T> {
-  /**
-   * Breadth-limited search with cost consideration
-   */
-  searchWithCost(
-    root: WeightedGraphNode<T>,
+function binarySearch<T>(
+  sortedArray: T[],
+  target: T,
+  compareFn?: (a: T, b: T) => number
+): BinarySearchResult {
+  const defaultComparator = (a: T, b: T): number => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  };
+
+  const comparator = compareFn || defaultComparator;
+
+  function recursiveSearch(
+    left: number,
+    right: number
+  ): BinarySearchResult {
+    if (left > right) {
+      return { index: -1, found: false };
+    }
+
+    const mid = Math.floor((left + right) / 2);
+    const comparison = comparator(sortedArray[mid], target);
+
+    if (comparison === 0) {
+      return { index: mid, found: true };
+    }
+
+    if (comparison > 0) {
+      return recursiveSearch(left, mid - 1);
+    }
+
+    return recursiveSearch(mid + 1, right);
+  }
+
+  return recursiveSearch(0, sortedArray.length - 1);
+}
+// Example 1: Primitive types
+const numbers = [1, 3, 5, 7, 9, 11, 13];
+console.log(binarySearch(numbers, 7)); // { index: 3, found: true }
+console.log(binarySearch(numbers, 8)); // { index: -1, found: false }
+
+// Example 2: Objects with custom comparator
+interface User {
+  id: number;
+  name: string;
+}
+
+const users: User[] = [
+  { id: 1, name: "Alice" },
+  { id: 3, name: "Bob" },
+  { id: 5, name: "Charlie" },
+  { id: 7, name: "Diana" }
+];
+
+const userComparator = (a: User, b: User) => a.id - b.id;
+console.log(binarySearch(users, { id: 5, name: "" }, userComparator));
+// { index: 2, found: true }
+
+// Example 3: Strings
+const fruits = ["apple", "banana", "cherry", "date"];
+console.log(binarySearch(fruits, "cherry")); // { index: 2, found: true }
+class BinarySearch {
+  private static recursiveSearch<T>(
+    array: T[],
     target: T,
-    maxDepth: number,
-    maxCost: number
-  ): { node: WeightedGraphNode<T>; cost: number; depth: number } | null {
-    
-    const queue: { node: WeightedGraphNode<T>; depth: number; cost: number }[] = [];
-    const visited = new Set<WeightedGraphNode<T>>();
+    comparator: (a: T, b: T) => number,
+    left: number,
+    right: number
+  ): number {
+    // Tail call optimization (though TypeScript doesn't guarantee it)
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2);
+      const comparison = comparator(array[mid], target);
 
-    queue.push({ node: root, depth: 0, cost: 0 });
-    visited.add(root);
-
-    while (queue.length > 0) {
-      // Sort by cost for best-first approach (optional)
-      queue.sort((a, b) => a.cost - b.cost);
-      
-      const { node, depth, cost } = queue.shift()!;
-
-      if (node.value === target) {
-        return { node, cost, depth };
+      if (comparison === 0) {
+        return mid;
       }
 
-      if (depth < maxDepth && cost < maxCost) {
-        for (const edge of node.edges) {
-          if (!visited.has(edge.node)) {
-            visited.add(edge.node);
-            queue.push({
-              node: edge.node,
-              depth: depth + 1,
-              cost: cost + edge.cost
-            });
-          }
-        }
+      if (comparison > 0) {
+        right = mid - 1;
+      } else {
+        left = mid + 1;
       }
     }
 
-    return null;
+    return -1;
+  }
+
+  // Public method that uses iterative approach internally
+  // to avoid potential stack overflow with large arrays
+  static search<T>(
+    array: T[],
+    target: T,
+    compareFn?: (a: T, b: T) => number
+  ): number {
+    const comparator = compareFn || ((a: T, b: T) => {
+      if (a < b) return -1;
+      if (a > b) return 1;
+      return 0;
+    });
+
+    return this.recursiveSearch(array, target, comparator, 0, array.length - 1);
   }
 }
