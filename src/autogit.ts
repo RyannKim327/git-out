@@ -1,87 +1,41 @@
-function factorial(n: number): number {
-    if (n < 0 || !Number.isInteger(n)) {
-        throw new Error("Factorial is only defined for non-negative integers");
-    }
-    
-    let result = 1;
-    for (let i = 2; i <= n; i++) {
-        result *= i;
-    }
-    return result;
-}
+function isPalindrome(s: string): boolean {
+    let left = 0;
+    let right = s.length - 1;
 
-// Usage
-console.log(factorial(5)); // 120
-console.log(factorial(0)); // 1
-function factorialRecursive(n: number): number {
-    if (n < 0 || !Number.isInteger(n)) {
-        throw new Error("Factorial is only defined for non-negative integers");
-    }
-    
-    if (n === 0 || n === 1) {
-        return 1;
-    }
-    
-    return n * factorialRecursive(n - 1);
-}
+    while (left < right) {
+        // Skip non-alphanumeric characters
+        while (left < right && !isAlphanumeric(s[left])) left++;
+        while (left < right && !isAlphanumeric(s[right])) right--;
 
-// Usage
-console.log(factorialRecursive(5)); // 120
-function factorialBigInt(n: number): bigint {
-    if (n < 0 || !Number.isInteger(n)) {
-        throw new Error("Factorial is only defined for non-negative integers");
-    }
-    
-    let result = BigInt(1);
-    for (let i = 2; i <= n; i++) {
-        result *= BigInt(i);
-    }
-    return result;
-}
-
-// Usage
-console.log(factorialBigInt(20).toString()); // 2432902008176640000
-class FactorialCalculator {
-    private cache: Map<number, number> = new Map();
-    
-    factorialMemoized(n: number): number {
-        if (n < 0 || !Number.isInteger(n)) {
-            throw new Error("Factorial is only defined for non-negative integers");
+        // Compare lowercase characters
+        if (toLowerCase(s[left]) !== toLowerCase(s[right])) {
+            return false;
         }
-        
-        if (this.cache.has(n)) {
-            return this.cache.get(n)!;
-        }
-        
-        if (n === 0 || n === 1) {
-            return 1;
-        }
-        
-        const result = n * this.factorialMemoized(n - 1);
-        this.cache.set(n, result);
-        return result;
+
+        left++;
+        right--;
     }
+
+    return true;
 }
 
-// Usage
-const calculator = new FactorialCalculator();
-console.log(calculator.factorialMemoized(5)); // 120
-function isValidFactorialInput(n: number): n is number {
-    return Number.isInteger(n) && n >= 0;
+// Helper: check if char is alphanumeric (ASCII only)
+function isAlphanumeric(c: string): boolean {
+    const code = c.charCodeAt(0);
+    return (
+        (code >= 48 && code <= 57) || // 0-9
+        (code >= 65 && code <= 90) || // A-Z
+        (code >= 97 && code <= 122)   // a-z
+    );
 }
 
-function factorialSafe(n: number): number | string {
-    if (!isValidFactorialInput(n)) {
-        return "Error: Input must be a non-negative integer";
+// Helper: lowercase conversion without using .toLowerCase()
+function toLowerCase(c: string): string {
+    const code = c.charCodeAt(0);
+    if (code >= 65 && code <= 90) {
+        return String.fromCharCode(code + 32);
     }
-    
-    let result = 1;
-    for (let i = 2; i <= n; i++) {
-        result *= i;
-    }
-    return result;
+    return c;
 }
-
-// Usage
-console.log(factorialSafe(5)); // 120
-console.log(factorialSafe(-1)); // "Error: Input must be a non-negative integer"
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("race a car")); // false
