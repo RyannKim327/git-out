@@ -1,261 +1,136 @@
-class BurrowsWheelerTransform {
-  /**
-   * Apply Burrows-Wheeler Transform to a string
-   */
-  static encode(input: string): { bwt: string; index: number } {
-    if (input.length === 0) {
-      return { bwt: '', index: 0 };
-    }
-
-    // Check if input contains null character
-    if (input.includes('\0')) {
-      throw new Error('Input string cannot contain null character (\\0)');
-    }
-
-    // Create rotations
-    const rotations: string[] = [];
-    let rotation = input + '$'; // Use $ as EOF marker
-    const len = rotation.length;
-
-    for (let i = 0; i < len; i++) {
-      rotations.push(rotation);
-      rotation = rotation.slice(1) + rotation[0];
-    }
-
-    // Sort rotations lexicographically
-    rotations.sort();
-
-    // Extract last characters and find original rotation index
-    let bwt = '';
-    let originalIndex = -1;
-
-    for (let i = 0; i < rotations.length; i++) {
-      bwt += rotations[i][len - 1];
-      if (rotations[i] === input + '$') {
-        originalIndex = i;
-      }
-    }
-
-    return { bwt, index: originalIndex };
-  }
-
-  /**
-   * Reverse Burrows-Wheeler Transform
-   */
-  static decode(bwt: string, index: number): string {
-    if (bwt.length === 0) {
-      return '';
-    }
-
-    if (index < 0 || index >= bwt.length) {
-      throw new Error('Invalid index for decoding');
-    }
-
-    // Create table and reconstruct original string
-    const table: string[] = new Array(bwt.length).fill('');
-    
-    // Perform multiple passes (one for each character)
-    for (let i = 0; i < bwt.length; i++) {
-      for (let j = 0; j < bwt.length; j++) {
-        table[j] = bwt[j] + table[j];
-      }
-      table.sort();
-    }
-
-    // Find the string that ends with '$'
-    for (const str of table) {
-      if (str.endsWith('$')) {
-        return str.slice(0, -1); // Remove '$' marker
-      }
-    }
-
-    // Alternative decoding method (more efficient)
-    return this.decodeEfficient(bwt, index);
-  }
-
-  /**
-   * More efficient decoding algorithm
-   */
-  private static decodeEfficient(bwt: string, index: number): string {
-    const len = bwt.length;
-    
-    // Create an array of pairs (char, index)
-    const pairs: Array<[string, number]> = [];
-    for (let i = 0; i < len; i++) {
-      pairs.push([bwt[i], i]);
-    }
-
-    // Sort pairs to get the first column
-    pairs.sort((a, b) => {
-      if (a[0] === b[0]) {
-        return a[1] - b[1];
-      }
-      return a[0].localeCompare(b[0]);
-    });
-
-    // Reconstruct the original string
-    let result = '';
-    let currentIndex = index;
-
-    for (let i = 0; i < len - 1; i++) { // -1 because we skip the '$'
-      const char = pairs[currentIndex][0];
-      if (char === '$') {
-        continue; // Skip the end marker during reconstruction
-      }
-      result = char + result;
-      currentIndex = pairs[currentIndex][1];
-    }
-
-    return result;
-  }
+interface Edge {
+  from: number;
+  to: number;
+  weight: number;
 }
-class OptimizedBWT {
-  /**
-   * Optimized BWT encoding using suffix array-like approach
-   */
-  static encode(input: string): { bwt: string; index: number } {
-    if (input.length === 0) return { bwt: '', index: 0 };
 
-    const str = input + '\0'; // Using null character as terminator
-    const n = str.length;
-    
-    // Create suffix array indices
-    const indices: number[] = Array.from({ length: n }, (_, i) => i);
-    
-    // Sort indices based on suffixes
-    indices.sort((i, j) => {
-      while (i < n && j < n) {
-        if (str[i] !== str[j]) {
-          return str.charCodeAt(i) - str.charCodeAt(j);
-        }
-        i++;
-        j++;
-      }
-      return i === n ? -1 : 1;
-    });
+interface ShortestPathResult {
+  distances: number[];
+  predecessors: number[];
+  hasNegativeCycle: boolean;
+}
 
-    // Build BWT string and find original index
-    let bwt = '';
-    let originalIndex = -1;
-    
-    for (let i = 0; i < n; i++) {
-      const idx = indices[i];
-      if (idx === 0) {
-        bwt += str[n - 1];
-        originalIndex = i;
-      } else {
-        bwt += str[idx - 1];
-      }
-    }
+class BellmanFord {
+  private vertices: number;
+  private edges: Edge[];
 
-    return { bwt, index: originalIndex };
+  constructor(vertices: number, edges: Edge[]) {
+    this.vertices = vertices;
+    this.edges = edges;
   }
 
   /**
-   * Efficient decoding using LF mapping
+   * Finds shortest paths from source vertex using Bellman-Ford algorithm
+   * @param source Starting vertex (0-indexed)
+   * @returns Object containing distances, predecessors, and negative cycle flag
    */
-  static decode(bwt: string, index: number): string {
-    const n = bwt.length;
+  findShortestPaths(source: number): ShortestPathResult {
+    // Initialize distances and predecessors
+    const distances: number[] = new Array(this.vertices).fill(Infinity);
+    const predecessors: number[] = new Array(this.vertices).fill(-1);
     
-    // Count occurrences of each character
-    const charCount: Map<string, number> = new Map();
-    for (const char of bwt) {
-      charCount.set(char, (charCount.get(char) || 0) + 1);
-    }
+    distances[source] = 0;
 
-    // Build first column (sorted BWT)
-    const sortedChars = [...bwt].sort();
-    
-    // Build LF mapping
-    const lfMapping: number[] = new Array(n);
-    const charFirstOccurrence: Map<string, number> = new Map();
-    const charOccurrenceCount: Map<string, number> = new Map();
-
-    // Find first occurrence of each character in sorted array
-    for (let i = 0; i < n; i++) {
-      const char = sortedChars[i];
-      if (!charFirstOccurrence.has(char)) {
-        charFirstOccurrence.set(char, i);
+    // Relax all edges |V| - 1 times
+    for (let i = 0; i < this.vertices - 1; i++) {
+      for (const edge of this.edges) {
+        if (distances[edge.from] !== Infinity && 
+            distances[edge.from] + edge.weight < distances[edge.to]) {
+          distances[edge.to] = distances[edge.from] + edge.weight;
+          predecessors[edge.to] = edge.from;
+        }
       }
     }
 
-    // Build occurrence counts for each character
-    for (let i = 0; i < n; i++) {
-      const char = bwt[i];
-      const count = charOccurrenceCount.get(char) || 0;
-      lfMapping[i] = charFirstOccurrence.get(char)! + count;
-      charOccurrenceCount.set(char, count + 1);
-    }
-
-    // Reconstruct original string
-    let result = '';
-    let currentPos = index;
-    
-    for (let i = 0; i < n - 1; i++) { // Skip the null terminator
-      const char = bwt[currentPos];
-      if (char !== '\0') {
-        result = char + result;
+    // Check for negative weight cycles
+    let hasNegativeCycle = false;
+    for (const edge of this.edges) {
+      if (distances[edge.from] !== Infinity && 
+          distances[edge.from] + edge.weight < distances[edge.to]) {
+        hasNegativeCycle = true;
+        break;
       }
-      currentPos = lfMapping[currentPos];
     }
 
-    return result;
+    return { distances, predecessors, hasNegativeCycle };
+  }
+
+  /**
+   * Reconstructs the shortest path from source to target
+   * @param source Starting vertex
+   * @param target Ending vertex
+   * @param predecessors Predecessor array from Bellman-Ford
+   * @returns Array representing the path or empty array if no path exists
+   */
+  getPath(source: number, target: number, predecessors: number[]): number[] {
+    const path: number[] = [];
+    let current = target;
+    
+    // Backtrack from target to source using predecessors
+    while (current !== source) {
+      if (current === -1) return []; // No path exists
+      path.unshift(current);
+      current = predecessors[current];
+    }
+    
+    path.unshift(source);
+    return path;
   }
 }
 // Example usage
-function demonstrateBWT() {
-  const testStrings = [
-    "banana",
-    "abracadabra",
-    "mississippi",
-    "a",
-    ""
+function example() {
+  // Graph with 5 vertices (0-4)
+  const edges: Edge[] = [
+    { from: 0, to: 1, weight: 6 },
+    { from: 0, to: 2, weight: 7 },
+    { from: 1, to: 2, weight: 8 },
+    { from: 1, to: 3, weight: 5 },
+    { from: 1, to: 4, weight: -4 },
+    { from: 2, to: 3, weight: -3 },
+    { from: 2, to: 4, weight: 9 },
+    { from: 3, to: 1, weight: -2 },
+    { from: 4, to: 0, weight: 2 },
+    { from: 4, to: 3, weight: 7 }
   ];
 
-  for (const testStr of testStrings) {
-    console.log(`Original: "${testStr}"`);
-    
-    // Using basic implementation
-    const encoded = BurrowsWheelerTransform.encode(testStr);
-    console.log(`BWT: "${encoded.bwt}" (index: ${encoded.index})`);
-    
-    const decoded = BurrowsWheelerTransform.decode(encoded.bwt, encoded.index);
-    console.log(`Decoded: "${decoded}"`);
-    console.log(`Match: ${decoded === testStr}`);
-    console.log('---');
-    
-    // Using optimized implementation
-    const optEncoded = OptimizedBWT.encode(testStr);
-    const optDecoded = OptimizedBWT.decode(optEncoded.bwt, optEncoded.index);
-    console.log(`Optimized - Match: ${optDecoded === testStr}`);
-    console.log('========');
-  }
+  const bellmanFord = new BellmanFord(5, edges);
+  const result = bellmanFord.findShortestPaths(0);
+
+  console.log('Distances:', result.distances);
+  console.log('Predecessors:', result.predecessors);
+  console.log('Has negative cycle:', result.hasNegativeCycle);
+
+  // Get path from vertex 0 to vertex 4
+  const path = bellmanFord.getPath(0, 4, result.predecessors);
+  console.log('Path from 0 to 4:', path);
 }
 
-// Run demonstration
-demonstrateBWT();
-// Simple test suite
-class BWTTest {
-  static runTests() {
-    const testCases = [
-      { input: "banana", expected: "annb$aa" },
-      { input: "abracadabra", expected: "ard$rcaaaabb" },
-      { input: "mississippi", expected: "ipssm$pissii" }
-    ];
+example();
+function bellmanFord(
+  vertices: number,
+  edges: Edge[],
+  source: number
+): ShortestPathResult {
+  const distances: number[] = new Array(vertices).fill(Infinity);
+  const predecessors: number[] = new Array(vertices).fill(-1);
+  distances[source] = 0;
 
-    for (const testCase of testCases) {
-      const result = BurrowsWheelerTransform.encode(testCase.input);
-      console.log(`Input: "${testCase.input}"`);
-      console.log(`Expected BWT pattern: ${testCase.expected}`);
-      console.log(`Actual BWT: "${result.bwt}"`);
-      
-      const decoded = BurrowsWheelerTransform.decode(result.bwt, result.index);
-      console.log(`Decoded: "${decoded}"`);
-      console.log(`Test passed: ${decoded === testCase.input}`);
-      console.log('---');
+  // Relax edges
+  for (let i = 0; i < vertices - 1; i++) {
+    for (const edge of edges) {
+      if (distances[edge.from] !== Infinity && 
+          distances[edge.from] + edge.weight < distances[edge.to]) {
+        distances[edge.to] = distances[edge.from] + edge.weight;
+        predecessors[edge.to] = edge.from;
+      }
     }
   }
-}
 
-// Run tests
-BWTTest.runTests();
+  // Check for negative cycles
+  const hasNegativeCycle = edges.some(edge => 
+    distances[edge.from] !== Infinity && 
+    distances[edge.from] + edge.weight < distances[edge.to]
+  );
+
+  return { distances, predecessors, hasNegativeCycle };
+}
