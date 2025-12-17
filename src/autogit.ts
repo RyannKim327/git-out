@@ -1,52 +1,45 @@
-function countOccurrences(str: string, char: string): number {
-    return str.split(char).length - 1;
-}
+const firstName: string = "Ada";
+const lastName: string = "Lovelace";
 
-// Example usage
-const text = "hello world";
-const count = countOccurrences(text, "l");
-console.log(count); // Output: 3
-function countOccurrences(str: string, char: string): number {
-    const regex = new RegExp(char, "g");
-    const matches = str.match(regex);
-    return matches ? matches.length : 0;
-}
+const fullName: string = firstName + " " + lastName; // "Ada Lovelace"
+const firstName: string = "Grace";
+const lastName: string = "Hopper";
 
-// Example usage
-const text = "hello world";
-const count = countOccurrences(text, "l");
-console.log(count); // Output: 3
-function countOccurrences(str: string, char: string): number {
-    let count = 0;
-    for (let i = 0; i < str.length; i++) {
-        if (str[i] === char) {
-            count++;
-        }
-    }
-    return count;
-}
+const fullName: string = `${firstName} ${lastName}`; // "Grace Hopper"
+const a: string = "Hello";
+const b: string = "World";
 
-// Example usage
-const text = "hello world";
-const count = countOccurrences(text, "l");
-console.log(count); // Output: 3
-function countOccurrences(str: string, char: string): number {
-    return Array.from(str).reduce((count, currentChar) => {
-        return currentChar === char ? count + 1 : count;
-    }, 0);
+const result: string = a.concat(", ", b, "!"); // "Hello, World!"
+const parts: string[] = ["Type", "Script", "Rocks"];
+const sentence: string = parts.join(" "); // "Type Script Rocks"
+const greeting = "Hello, " + "world!"; // inferred as string
+const greeting: string = "Hello, " + "world!"; // ✅ OK
+function safeConcat(a: string | number, b: string | number): string {
+  return `${a}${b}`; // template literals automatically call .toString()
 }
-
-// Example usage
-const text = "hello world";
-const count = countOccurrences(text, "l");
-console.log(count); // Output: 3
-function countOccurrencesCaseInsensitive(str: string, char: string): number {
-    const lowerStr = str.toLowerCase();
-    const lowerChar = char.toLowerCase();
-    return lowerStr.split(lowerChar).length - 1;
+const result = String(a) + String(b);
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    // ...other options
+  }
 }
+// Types
+const first: string = "Type";
+const second: string = "Script";
+const numberVal: number = 2025;
 
-// Example usage
-const text = "Hello World";
-const count = countOccurrencesCaseInsensitive(text, "h");
-console.log(count); // Output: 1
+// 1️⃣ + operator
+const plus = first + " " + second; // "Type Script"
+
+// 2️⃣ Template literal
+const tmpl = `${first} ${second} ${numberVal}`; // "Type Script 2025"
+
+// 3️⃣ concat()
+const concat = first.concat(" ", second, " ", String(numberVal)); // "Type Script 2025"
+
+// 4️⃣ join()
+const join = [first, second, numberVal].join(" "); // "Type Script 2025"
+
+console.log({ plus, tmpl, concat, join });
