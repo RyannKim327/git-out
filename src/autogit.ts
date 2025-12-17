@@ -1,136 +1,186 @@
-interface Edge {
-  from: number;
-  to: number;
-  weight: number;
+interface Graph<T> {
+    [key: string]: T[];
 }
 
-interface ShortestPathResult {
-  distances: number[];
-  predecessors: number[];
-  hasNegativeCycle: boolean;
-}
-
-class BellmanFord {
-  private vertices: number;
-  private edges: Edge[];
-
-  constructor(vertices: number, edges: Edge[]) {
-    this.vertices = vertices;
-    this.edges = edges;
-  }
-
-  /**
-   * Finds shortest paths from source vertex using Bellman-Ford algorithm
-   * @param source Starting vertex (0-indexed)
-   * @returns Object containing distances, predecessors, and negative cycle flag
-   */
-  findShortestPaths(source: number): ShortestPathResult {
-    // Initialize distances and predecessors
-    const distances: number[] = new Array(this.vertices).fill(Infinity);
-    const predecessors: number[] = new Array(this.vertices).fill(-1);
+class BFS<T> {
+    private graph: Graph<T>;
     
-    distances[source] = 0;
-
-    // Relax all edges |V| - 1 times
-    for (let i = 0; i < this.vertices - 1; i++) {
-      for (const edge of this.edges) {
-        if (distances[edge.from] !== Infinity && 
-            distances[edge.from] + edge.weight < distances[edge.to]) {
-          distances[edge.to] = distances[edge.from] + edge.weight;
-          predecessors[edge.to] = edge.from;
+    constructor(graph: Graph<T>) {
+        this.graph = graph;
+    }
+    
+    /**
+     * Perform BFS starting from a given node
+     * @param startNode The starting node for BFS
+     * @returns Array of nodes in BFS order
+     */
+    search(startNode: string): T[] {
+        const visited: Set<string> = new Set();
+        const queue: string[] = [startNode];
+        const result: T[] = [];
+        
+        visited.add(startNode);
+        
+        while (queue.length > 0) {
+            const currentNode = queue.shift()!;
+            result.push(currentNode as unknown as T);
+            
+            const neighbors = this.graph[currentNode] || [];
+            
+            for (const neighbor of neighbors) {
+                const neighborKey = String(neighbor);
+                if (!visited.has(neighborKey)) {
+                    visited.add(neighborKey);
+                    queue.push(neighborKey);
+                }
+            }
         }
-      }
-    }
-
-    // Check for negative weight cycles
-    let hasNegativeCycle = false;
-    for (const edge of this.edges) {
-      if (distances[edge.from] !== Infinity && 
-          distances[edge.from] + edge.weight < distances[edge.to]) {
-        hasNegativeCycle = true;
-        break;
-      }
-    }
-
-    return { distances, predecessors, hasNegativeCycle };
-  }
-
-  /**
-   * Reconstructs the shortest path from source to target
-   * @param source Starting vertex
-   * @param target Ending vertex
-   * @param predecessors Predecessor array from Bellman-Ford
-   * @returns Array representing the path or empty array if no path exists
-   */
-  getPath(source: number, target: number, predecessors: number[]): number[] {
-    const path: number[] = [];
-    let current = target;
-    
-    // Backtrack from target to source using predecessors
-    while (current !== source) {
-      if (current === -1) return []; // No path exists
-      path.unshift(current);
-      current = predecessors[current];
+        
+        return result;
     }
     
-    path.unshift(source);
-    return path;
-  }
-}
-// Example usage
-function example() {
-  // Graph with 5 vertices (0-4)
-  const edges: Edge[] = [
-    { from: 0, to: 1, weight: 6 },
-    { from: 0, to: 2, weight: 7 },
-    { from: 1, to: 2, weight: 8 },
-    { from: 1, to: 3, weight: 5 },
-    { from: 1, to: 4, weight: -4 },
-    { from: 2, to: 3, weight: -3 },
-    { from: 2, to: 4, weight: 9 },
-    { from: 3, to: 1, weight: -2 },
-    { from: 4, to: 0, weight: 2 },
-    { from: 4, to: 3, weight: 7 }
-  ];
-
-  const bellmanFord = new BellmanFord(5, edges);
-  const result = bellmanFord.findShortestPaths(0);
-
-  console.log('Distances:', result.distances);
-  console.log('Predecessors:', result.predecessors);
-  console.log('Has negative cycle:', result.hasNegativeCycle);
-
-  // Get path from vertex 0 to vertex 4
-  const path = bellmanFord.getPath(0, 4, result.predecessors);
-  console.log('Path from 0 to 4:', path);
-}
-
-example();
-function bellmanFord(
-  vertices: number,
-  edges: Edge[],
-  source: number
-): ShortestPathResult {
-  const distances: number[] = new Array(vertices).fill(Infinity);
-  const predecessors: number[] = new Array(vertices).fill(-1);
-  distances[source] = 0;
-
-  // Relax edges
-  for (let i = 0; i < vertices - 1; i++) {
-    for (const edge of edges) {
-      if (distances[edge.from] !== Infinity && 
-          distances[edge.from] + edge.weight < distances[edge.to]) {
-        distances[edge.to] = distances[edge.from] + edge.weight;
-        predecessors[edge.to] = edge.from;
-      }
+    /**
+     * Find shortest path between two nodes using BFS
+     * @param startNode Starting node
+     * @param targetNode Target node
+     * @returns Array representing the shortest path or empty array if no path exists
+     */
+    findShortestPath(startNode: string, targetNode: string): string[] {
+        const visited: Set<string> = new Set();
+        const queue: { node: string; path: string[] }[] = [{ node: startNode, path: [startNode] }];
+        
+        visited.add(startNode);
+        
+        while (queue.length > 0) {
+            const { node, path } = queue.shift()!;
+            
+            if (node === targetNode) {
+                return path;
+            }
+            
+            const neighbors = this.graph[node] || [];
+            
+            for (const neighbor of neighbors) {
+                const neighborKey = String(neighbor);
+                if (!visited.has(neighborKey)) {
+                    visited.add(neighborKey);
+                    queue.push({ 
+                        node: neighborKey, 
+                        path: [...path, neighborKey] 
+                    });
+                }
+            }
+        }
+        
+        return []; // No path found
     }
-  }
-
-  // Check for negative cycles
-  const hasNegativeCycle = edges.some(edge => 
-    distances[edge.from] !== Infinity && 
-    distances[edge.from] + edge.weight < distances[edge.to]
-  );
-
-  return { distances, predecessors, hasNegativeCycle };
 }
+// Example 1: Number-based graph
+const numberGraph: Graph<number> = {
+    '1': [2, 3],
+    '2': [4, 5],
+    '3': [6],
+    '4': [],
+    '5': [7],
+    '6': [],
+    '7': []
+};
+
+const bfs = new BFS<number>(numberGraph);
+
+// Perform BFS
+console.log('BFS Traversal:', bfs.search('1')); 
+// Output: [1, 2, 3, 4, 5, 6, 7]
+
+// Find shortest path
+console.log('Shortest path from 1 to 7:', bfs.findShortestPath('1', '7'));
+// Output: [1, 2, 5, 7]
+
+// Example 2: String-based graph
+const stringGraph: Graph<string> = {
+    'A': ['B', 'C'],
+    'B': ['D', 'E'],
+    'C': ['F'],
+    'D': [],
+    'E': ['G'],
+    'F': [],
+    'G': []
+};
+
+const stringBFS = new BFS<string>(stringGraph);
+console.log('BFS Traversal:', stringBFS.search('A'));
+// Output: ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+interface Node {
+    id: string;
+    // Add other properties as needed
+}
+
+class GenericBFS<T extends Node> {
+    private adjacencyList: Map<string, T[]>;
+    
+    constructor() {
+        this.adjacencyList = new Map();
+    }
+    
+    addNode(node: T): void {
+        if (!this.adjacencyList.has(node.id)) {
+            this.adjacencyList.set(node.id, []);
+        }
+    }
+    
+    addEdge(from: T, to: T): void {
+        if (!this.adjacencyList.has(from.id)) {
+            this.addNode(from);
+        }
+        if (!this.adjacencyList.has(to.id)) {
+            this.addNode(to);
+        }
+        
+        this.adjacencyList.get(from.id)!.push(to);
+    }
+    
+    bfs(startNodeId: string): T[] {
+        const visited: Set<string> = new Set();
+        const queue: string[] = [startNodeId];
+        const result: T[] = [];
+        
+        visited.add(startNodeId);
+        
+        while (queue.length > 0) {
+            const currentNodeId = queue.shift()!;
+            
+            // Find the node object (you might want to store nodes separately)
+            const neighbors = this.adjacencyList.get(currentNodeId) || [];
+            
+            for (const neighbor of neighbors) {
+                if (!visited.has(neighbor.id)) {
+                    visited.add(neighbor.id);
+                    queue.push(neighbor.id);
+                    result.push(neighbor);
+                }
+            }
+        }
+        
+        return result;
+    }
+}
+
+// Usage with custom node type
+interface City extends Node {
+    name: string;
+    population: number;
+}
+
+const cityBFS = new GenericBFS<City>();
+
+const cities: City[] = [
+    { id: 'NYC', name: 'New York', population: 8500000 },
+    { id: 'LA', name: 'Los Angeles', population: 4000000 },
+    { id: 'CHI', name: 'Chicago', population: 2700000 },
+];
+
+cities.forEach(city => cityBFS.addNode(city));
+cityBFS.addEdge(cities[0], cities[1]);
+cityBFS.addEdge(cities[0], cities[2]);
+
+console.log('BFS result:', cityBFS.bfs('NYC'));
