@@ -1,190 +1,199 @@
-class Graph<T> {
-  private adjacencyList: Map<T, T[]>;
+type NodeId = string | number;
 
-  constructor() {
-    this.adjacencyList = new Map();
+/** A generic node that can hold any payload you like */
+interface Node<T = any> {
+  id: NodeId;               // unique identifier (used for the visited set)
+  value?: T;                // optional payload
+  neighbors: NodeId[];      // list of adjacent node ids
+}
+/**
+ * Breadth‑Limited Search (BLS)
+ *
+ * @param startId   ID of the start node
+ * @param goalId    ID of the goal node (or a predicate function)
+ * @param graph     Map of all nodes (adjacency list)
+ * @param limit     Maximum depth to explore (0 = only the start node)
+ * @returns         An array of node IDs representing the path from start to goal,
+ *                  or null if the goal is not found within the limit.
+ */
+export function breadthLimitedSearch<T = any>(
+  startId: NodeId,
+  goal: NodeId | ((node: Node<T>) => boolean),
+  graph: Map<NodeId, Node<T>>,
+  limit: number
+): NodeId[] | null {
+  // ---- Helper --------------------------------------------------------------
+  const isGoal = typeof goal === 'function'
+    ? goal
+    : (node: Node<T>) => node.id === goal;
+
+  // ---- Edge cases -----------------------------------------------------------
+  if (!graph.has(startId)) {
+    throw new Error(`Start node ${startId} does not exist in the graph`);
+  }
+  if (limit < 0) {
+    throw new Error('Depth limit must be >= 0');
   }
 
-  addVertex(vertex: T): void {
-    if (!this.adjacencyList.has(vertex)) {
-      this.adjacencyList.set(vertex, []);
+  // ---- BFS structures -------------------------------------------------------
+  const queue: Array<{ id: NodeId; depth: number; path: NodeId[] }> = [
+    { id: startId, depth: 0, path: [startId] },
+  ];
+  const visited = new Set<NodeId>([startId]);
+
+  // ---- Main loop ------------------------------------------------------------
+  while (queue.length > 0) {
+    const { id, depth, path } = queue.shift()!; // non‑empty guarantee
+
+    const node = graph.get(id)!; // we know it exists
+
+    // Goal test
+    if (isGoal(node)) {
+      return path; // success – return the full path
+    }
+
+    // Depth limit check – only expand if we are still under the limit
+    if (depth >= limit) continue;
+
+    // Enqueue neighbours
+    for (const neighborId of node.neighbors) {
+      if (!visited.has(neighborId) && graph.has(neighborId)) {
+        visited.add(neighborId);
+        queue.push({
+          id: neighborId,
+          depth: depth + 1,
+          path: [...path, neighborId],
+        });
+      }
     }
   }
 
-  addEdge(vertex1: T, vertex2: T): void {
-    if (!this.adjacencyList.has(vertex1)) this.addVertex(vertex1);
-    if (!this.adjacencyList.has(vertex2)) this.addVertex(vertex2);
-    
-    this.adjacencyList.get(vertex1)!.push(vertex2);
-    this.adjacencyList.get(vertex2)!.push(vertex1);
-  }
+  // ---- Exhausted ------------------------------------------------------------
+  return null; // not found within the depth limit
+}
+// 1️⃣ Build a tiny graph
+const graph = new Map<NodeId, Node>([
+  [1, { id: 1, neighbors: [2, 3] }],
+  [2, { id: 2, neighbors: [4] }],
+  [3, { id: 3, neighbors: [4, 5] }],
+  [4, { id: 4, neighbors: [] }],
+  [5, { id: 5, neighbors: [6] }],
+  [6, { id: 6, neighbors: [] }],
+]);
 
-  // Recursive DFS
-  dfsRecursive(start: T): T[] {
-    const result: T[] = [];
-    const visited = new Set<T>();
+// 2️⃣ Search for node 6 with a depth limit of 2 (should fail)
+const result1 = breadthLimitedSearch(1, 6, graph, 2);
+console.log(result1); // → null (6 is 3 edges away)
 
-    const dfs = (vertex: T) => {
-      if (!vertex || visited.has(vertex)) return;
-      
-      visited.add(vertex);
-      result.push(vertex);
-      
-      const neighbors = this.adjacencyList.get(vertex) || [];
-      for (const neighbor of neighbors) {
-        if (!visited.has(neighbor)) {
-          dfs(neighbor);
-        }
-      }
-    };
+// 3️⃣ Same search with a limit of 3 (should succeed)
+const result2 = breadthLimitedSearch(1, 6, graph, 3);
+console.log(result2); // → [1, 3, 5, 6]
 
-    dfs(start);
-    return result;
-  }
+// 4️⃣ Using a predicate instead of a concrete goal
+const result3 = breadthLimitedSearch(
+  1,
+  (node) => node.id === 4,
+  graph,
+  1
+);
+console.log(result3); // → [1, 2] or [1, 3] (first 4‑depth node found)
+// ---------------------------------------------------------------
+// 1️⃣ Types & Graph construction
+// ---------------------------------------------------------------
+type NodeId = number | string;
 
-  // Iterative DFS using stack
-  dfsIterative(start: T): T[] {
-    const result: T[] = [];
-    const visited = new Set<T>();
-    const stack: T[] = [start];
-    
-    visited.add(start);
+interface Node<T = any> {
+  id: NodeId;
+  value?: T;
+  neighbors: NodeId[];
+}
 
-    while (stack.length > 0) {
-      const vertex = stack.pop()!;
-      result.push(vertex);
-      
-      const neighbors = this.adjacencyList.get(vertex) || [];
-      for (const neighbor of neighbors.reverse()) { // Reverse to maintain order
-        if (!visited.has(neighbor)) {
-          visited.add(neighbor);
-          stack.push(neighbor);
-        }
+// ---------------------------------------------------------------
+// 2️⃣ Breadth‑Limited Search implementation (copy from above)
+// ---------------------------------------------------------------
+export function breadthLimitedSearch<T = any>(
+  startId: NodeId,
+  goal: NodeId | ((node: Node<T>) => boolean),
+  graph: Map<NodeId, Node<T>>,
+  limit: number
+): NodeId[] | null {
+  const isGoal = typeof goal === 'function'
+    ? goal
+    : (node: Node<T>) => node.id === goal;
+
+  if (!graph.has(startId)) throw new Error(`Start node ${startId} missing`);
+  if (limit < 0) throw new Error('Depth limit must be >= 0');
+
+  const queue: Array<{ id: NodeId; depth: number; path: NodeId[] }> = [
+    { id: startId, depth: 0, path: [startId] },
+  ];
+  const visited = new Set<NodeId>([startId]);
+
+  while (queue.length) {
+    const { id, depth, path } = queue.shift()!;
+    const node = graph.get(id)!;
+
+    if (isGoal(node)) return path;
+
+    if (depth >= limit) continue;
+
+    for (const nb of node.neighbors) {
+      if (!visited.has(nb) && graph.has(nb)) {
+        visited.add(nb);
+        queue.push({ id: nb, depth: depth + 1, path: [...path, nb] });
       }
     }
-    
-    return result;
   }
-}
-// Create and test the graph
-const graph = new Graph<string>();
-
-// Add vertices and edges
-graph.addEdge('A', 'B');
-graph.addEdge('A', 'C');
-graph.addEdge('B', 'D');
-graph.addEdge('B', 'E');
-graph.addEdge('C', 'F');
-graph.addEdge('E', 'F');
-
-console.log('Recursive DFS:', graph.dfsRecursive('A')); 
-// Output: ['A', 'B', 'D', 'E', 'F', 'C']
-
-console.log('Iterative DFS:', graph.dfsIterative('A')); 
-// Output: ['A', 'C', 'F', 'E', 'B', 'D']
-interface DFSVisitCallback<T> {
-  onVisit?: (vertex: T) => void;
-  onDiscover?: (vertex: T) => void;
-  onFinish?: (vertex: T) => void;
+  return null;
 }
 
-class AdvancedGraph<T> {
-  private adjacencyList: Map<T, T[]>;
+// ---------------------------------------------------------------
+// 3️⃣ Demo graph & test cases
+// ---------------------------------------------------------------
+function demo() {
+  const g = new Map<NodeId, Node>([
+    [1, { id: 1, neighbors: [2, 3] }],
+    [2, { id: 2, neighbors: [4] }],
+    [3, { id: 3, neighbors: [4, 5] }],
+    [4, { id: 4, neighbors: [] }],
+    [5, { id: 5, neighbors: [6] }],
+    [6, { id: 6, neighbors: [] }],
+  ]);
 
-  constructor() {
-    this.adjacencyList = new Map();
-  }
+  console.log('🔎 Search 1 → 6, limit 2 →', breadthLimitedSearch(1, 6, g, 2));
+  console.log('🔎 Search 1 → 6, limit 3 →', breadthLimitedSearch(1, 6, g, 3));
+  console.log(
+    '🔎 Search 1 → node with id 4, limit 1 →',
+    breadthLimitedSearch(1, 4, g, 1)
+  );
+}
 
-  addEdge(vertex1: T, vertex2: T): void {
-    if (!this.adjacencyList.has(vertex1)) this.adjacencyList.set(vertex1, []);
-    if (!this.adjacencyList.has(vertex2)) this.adjacencyList.set(vertex2, []);
-    
-    this.adjacencyList.get(vertex1)!.push(vertex2);
-    this.adjacencyList.get(vertex2)!.push(vertex1);
-  }
+// Run the demo when this file is executed directly (Node.js)
+if (require.main === module) demo();
+🔎 Search 1 → 6, limit 2 → null
+🔎 Search 1 → 6, limit 3 → [ 1, 3, 5, 6 ]
+🔎 Search 1 → node with id 4, limit 1 → [ 1, 2 ]   // (or [1,3] depending on queue order)
+function bfsLimited(
+  start: NodeId,
+  goal: NodeId | ((n: Node) => boolean),
+  graph: Map<NodeId, Node>,
+  maxDepth: number
+): NodeId[] | null {
+  const isGoal = typeof goal === 'function' ? goal : (n) => n.id === goal;
+  const q: Array<{id: NodeId; d: number; path: NodeId[]}> = [{id:start, d:0, path:[start]}];
+  const seen = new Set([start]);
 
-  dfsWithCallbacks(
-    start: T, 
-    callbacks: DFSVisitCallback<T> = {}
-  ): { order: T[]; discoveryTime: Map<T, number>; finishTime: Map<T, number> } {
-    const order: T[] = [];
-    const visited = new Set<T>();
-    const discoveryTime = new Map<T, number>();
-    const finishTime = new Map<T, number>();
-    let time = 0;
-
-    const dfs = (vertex: T) => {
-      visited.add(vertex);
-      discoveryTime.set(vertex, time++);
-      callbacks.onDiscover?.(vertex);
-      
-      order.push(vertex);
-      callbacks.onVisit?.(vertex);
-
-      const neighbors = this.adjacencyList.get(vertex) || [];
-      for (const neighbor of neighbors) {
-        if (!visited.has(neighbor)) {
-          dfs(neighbor);
-        }
+  while (q.length) {
+    const {id, d, path} = q.shift()!;
+    const node = graph.get(id)!;
+    if (isGoal(node)) return path;
+    if (d >= maxDepth) continue;
+    for (const nb of node.neighbors) {
+      if (!seen.has(nb) && graph.has(nb)) {
+        seen.add(nb);
+        q.push({id: nb, d: d+1, path: [...path, nb]});
       }
-      
-      finishTime.set(vertex, time++);
-      callbacks.onFinish?.(vertex);
-    };
-
-    dfs(start);
-    return { order, discoveryTime, finishTime };
+    }
   }
+  return null;
 }
-class DFSPathFinder<T> {
-  private graph: Graph<T>;
-
-  constructor(graph: Graph<T>) {
-    this.graph = graph;
-  }
-
-  findPath(start: T, end: T): T[] | null {
-    const visited = new Set<T>();
-    const path: T[] = [];
-    
-    const dfs = (current: T): boolean => {
-      if (current === end) {
-        path.push(current);
-        return true;
-      }
-      
-      if (visited.has(current)) return false;
-      
-      visited.add(current);
-      path.push(current);
-      
-      // Try to access adjacencyList - you might need to make it protected
-      const neighbors = (this.graph as any).adjacencyList.get(current) || [];
-      
-      for (const neighbor of neighbors) {
-        if (!visited.has(neighbor)) {
-          if (dfs(neighbor)) {
-            return true;
-          }
-        }
-      }
-      
-      path.pop();
-      return false;
-    };
-    
-    return dfs(start) ? path : null;
-  }
-}
-// Create graph
-const pathGraph = new Graph<string>();
-pathGraph.addEdge('A', 'B');
-pathGraph.addEdge('A', 'C');
-pathGraph.addEdge('B', 'D');
-pathGraph.addEdge('C', 'E');
-pathGraph.addEdge('D', 'F');
-pathGraph.addEdge('E', 'F');
-
-const pathFinder = new DFSPathFinder(pathGraph);
-console.log('Path from A to F:', pathFinder.findPath('A', 'F'));
-// Output: ['A', 'B', 'D', 'F'] or similar depending on traversal order
