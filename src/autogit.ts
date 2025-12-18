@@ -1,124 +1,264 @@
+Trie
+ └─ root: TrieNode
+TrieNode
+ ├─ children: Map<char, TrieNode>
+ ├─ isEndOfWord: boolean
+ └─ (optional) payload: T   // e.g., a value associated with the word
 /**
- * Generic singly‑linked list node.
- */
-export class ListNode<T> {
-  /** The stored value */
-  public value: T;
-  /** Reference to the next node (null = end of list) */
-  public next: ListNode<T> | null = null;
-
-  constructor(value: T, next: ListNode<T> | null = null) {
-    this.value = value;
-    this.next = next;
-  }
-}
-/**
- * Reverses a singly‑linked list in‑place.
+ * A generic Trie (prefix tree) implementation.
  *
- * @param head The first node of the list (or null for an empty list)
- * @returns The new head of the reversed list
+ * @template T  The type of the optional payload stored at each terminal node.
  */
-export function reverseIterative<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr: ListNode<T> | null = head;
+export class Trie<T = unknown> {
+  /** The root node never represents a character; it only holds children. */
+  private readonly root: TrieNode<T>;
 
-  while (curr !== null) {
-    // Keep a reference to the next node before we overwrite `curr.next`
-    const next: ListNode<T> | null = curr.next;
-
-    // Reverse the link
-    curr.next = prev;
-
-    // Move the two pointers one step forward
-    prev = curr;
-    curr = next;
+  constructor() {
+    this.root = new TrieNode<T>();
   }
 
-  // When the loop finishes, `prev` points at the new head
-  return prev;
-}
-/**
- * Recursively reverses a singly‑linked list.
- *
- * @param head The first node of the list (or null)
- * @returns The new head of the reversed list
- *
- * Note: This uses the call‑stack, so for very long lists you may hit the
- *       JavaScript/TypeScript recursion limit. Use the iterative version for
- *       production code.
- */
-export function reverseRecursive<T>(head: ListNode<T> | null): ListNode<T> | null {
-  // Base case: empty list or single node – already reversed
-  if (head === null || head.next === null) {
-    return head;
+  /** Insert a word into the trie. */
+  insert(word: string, payload?: T): void {
+    if (!this.isValidWord(word)) {
+      throw new Error('Trie only accepts non‑empty strings.');
+    }
+
+    let node = this.root;
+    for (const ch of word) {
+      if (!node.children.has(ch)) {
+        node.children.set(ch, new TrieNode<T>());
+      }
+      node = node.children.get(ch)!; // non‑null because we just set it
+    }
+    node.isEndOfWord = true;
+    if (payload !== undefined) node.payload = payload;
   }
 
-  // Recursively reverse the rest of the list
-  const newHead = reverseRecursive(head.next);
+  /** Return true if the exact word exists in the trie. */
+  contains(word: string): boolean {
+    const node = this.traverse(word);
+    return node !== null && node.isEndOfWord;
+  }
 
-  // At this point, `head.next` is the last node of the reversed sub‑list.
-  // We make that node point back to `head`.
-  head.next.next = head;
-  head.next = null; // break the original forward link
+  /** Return true if there is any word that starts with the given prefix. */
+  startsWith(prefix: string): boolean {
+    return this.traverse(prefix) !== null;
+  }
 
-  return newHead;
-}
-/**
- * Builds a linked list from a plain array.
- *
- * Example: fromArray([1,2,3]) → 1 → 2 → 3 → null
- */
-export function fromArray<T>(arr: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null;
-  let tail: ListNode<T> | null = null;
+  /** Retrieve the payload stored for a word (or undefined if none). */
+  getPayload(word: string): T | undefined {
+    const node = this.traverse(word);
+    return node?.isEndOfWord ? node.payload : undefined;
+  }
 
-  for (const value of arr) {
-    const node = new ListNode(value);
-    if (!head) {
-      head = tail = node;
-    } else {
-      tail!.next = node;
-      tail = node;
+  /** Delete a word from the trie. Returns true if the word was removed. */
+  delete(word: string): boolean {
+    if (!this.isValidWord(word)) return false;
+    return this.deleteRec(this.root, word, 0);
+  }
+
+  /** Return all words stored in the trie (useful for debugging / testing). */
+  *words(): Generator<string> {
+    const stack: Array<{ node: TrieNode<T>; prefix: string }> = [
+      { node: this.root, prefix: '' },
+    ];
+
+    while (stack.length) {
+      const { node, prefix } = stack.pop()!;
+      if (node.isEndOfWord) yield prefix;
+      for (const [ch, child] of node.children) {
+        stack.push({ node: child, prefix: prefix + ch });
+      }
     }
   }
 
-  return head;
+  // -------------------------------------------------------------------------
+  // -------------------------- Private helpers -----------------------------
+  // -------------------------------------------------------------------------
+
+  /** Walk the trie following `key`. Returns the final node or null if any step fails. */
+  private traverse(key: string): TrieNode<T> | null {
+    if (!this.isValidWord(key)) return null;
+    let node = this.root;
+    for (const ch of key) {
+      const next = node.children.get(ch);
+      if (!next) return null;
+      node = next;
+    }
+    return node;
+  }
+
+  /** Recursive delete helper. Returns true if the caller should delete its child. */
+  private deleteRec(node: TrieNode<T>, word: string, index: number): boolean {
+    if (index === word.length) {
+      // Reached the node that marks the word.
+      if (!node.isEndOfWord) return false; // word not present
+      node.isEndOfWord = false;
+      node.payload = undefined;
+      // If node has no children we can prune it.
+      return node.children.size === 0;
+    }
+
+    const ch = word[index];
+    const child = node.children.get(ch);
+    if (!child) return false; // word not present
+
+    const shouldDeleteChild = this.deleteRec(child, word, index + 1);
+    if (shouldDeleteChild) {
+      node.children.delete(ch);
+      // Prune this node if it became a leaf and does not terminate another word.
+      return node.children.size === 0 && !node.isEndOfWord;
+    }
+    return false;
+  }
+
+  /** Simple validation – you can replace it with a stricter regex if needed. */
+  private isValidWord(word: string): boolean {
+    return typeof word === 'string' && word.length > 0;
+  }
 }
 
 /**
- * Converts a linked list back to a plain array (useful for printing).
+ * Internal node class – not exported because callers should interact only via `Trie`.
  */
-export function toArray<T>(head: ListNode<T> | null): T[] {
-  const result: T[] = [];
-  let curr = head;
-  while (curr !== null) {
-    result.push(curr.value);
-    curr = curr.next;
-  }
-  return result;
+class TrieNode<T> {
+  /** Children keyed by the next character. */
+  readonly children: Map<string, TrieNode<T>> = new Map();
+
+  /** Marks that a word ends at this node. */
+  isEndOfWord: boolean = false;
+
+  /** Optional payload stored only when `isEndOfWord` is true. */
+  payload?: T;
 }
-// ---------------------------------------------------------------
-// Example usage (you can paste this into a TS file and run with ts-node)
-// ---------------------------------------------------------------
-import { ListNode, reverseIterative, reverseRecursive, fromArray, toArray } from "./linked-list";
+import { Trie } from './Trie';
 
-// Build a list: 1 → 2 → 3 → 4 → null
-const original = fromArray([1, 2, 3, 4]);
-console.log("Original:", toArray(original)); // [1,2,3,4]
+// 1️⃣  Create a trie that stores a number (e.g., word frequency) as payload.
+const dict = new Trie<number>();
 
-// ---- Iterative reversal ----
-const iterReversed = reverseIterative(original);
-console.log("Iterative reversed:", toArray(iterReversed)); // [4,3,2,1]
+// 2️⃣  Insert words.
+dict.insert('apple', 5);
+dict.insert('app', 12);
+dict.insert('application', 3);
+dict.insert('banana');
 
-// To demonstrate the recursive version we need a fresh list
-const fresh = fromArray([1, 2, 3, 4]);
-const recReversed = reverseRecursive(fresh);
-console.log("Recursive reversed:", toArray(recReversed)); // [4,3,2,1]
-Original: [ 1, 2, 3, 4 ]
-Iterative reversed: [ 4, 3, 2, 1 ]
-Recursive reversed: [ 4, 3, 2, 1 ]
-function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev = null, cur = head;
-  while (cur) { const nxt = cur.next; cur.next = prev; prev = cur; cur = nxt; }
-  return prev;
+// 3️⃣  Query.
+console.log(dict.contains('app'));          // true
+console.log(dict.contains('apples'));       // false
+console.log(dict.startsWith('appl'));       // true
+console.log(dict.getPayload('apple'));      // 5
+console.log(dict.getPayload('banana'));     // undefined (no payload supplied)
+
+// 4️⃣  Delete.
+dict.delete('app');
+console.log(dict.contains('app'));          // false
+console.log(dict.startsWith('app'));        // true (because "apple" still exists)
+
+// 5️⃣  List all stored words.
+for (const w of dict.words()) {
+  console.log(w);
+}
+// → apple
+// → application
+// → banana
+if (node.isEndOfWord) node.count++;
+else {
+  node.isEndOfWord = true;
+  node.count = 1;
+}
+getCount(word: string): number {
+  const node = this.traverse(word);
+  return node?.isEndOfWord ? node.count! : 0;
+}
+searchPattern(pattern: string): string[] {
+  const results: string[] = [];
+  const dfs = (node: TrieNode<T>, i: number, prefix: string) => {
+    if (i === pattern.length) {
+      if (node.isEndOfWord) results.push(prefix);
+      return;
+    }
+    const ch = pattern[i];
+    if (ch === '.') {
+      for (const [c, child] of node.children) dfs(child, i + 1, prefix + c);
+    } else {
+      const child = node.children.get(ch);
+      if (child) dfs(child, i + 1, prefix + ch);
+    }
+  };
+  dfs(this.root, 0, '');
+  return results;
+}
+private normalize(s: string): string {
+  return s.toLowerCase(); // or use Intl.Collator for locale‑aware folding
+}
+import { Trie } from './Trie';
+
+describe('Trie', () => {
+  let trie: Trie<number>;
+
+  beforeEach(() => {
+    trie = new Trie<number>();
+    trie.insert('cat', 1);
+    trie.insert('car', 2);
+    trie.insert('cart', 3);
+    trie.insert('dog');
+  });
+
+  test('contains', () => {
+    expect(trie.contains('cat')).toBe(true);
+    expect(trie.contains('c')).toBe(false);
+  });
+
+  test('startsWith', () => {
+    expect(trie.startsWith('ca')).toBe(true);
+    expect(trie.startsWith('do')).toBe(true);
+    expect(trie.startsWith('z')).toBe(false);
+  });
+
+  test('payload', () => {
+    expect(trie.getPayload('car')).toBe(2);
+    expect(trie.getPayload('dog')).toBeUndefined();
+  });
+
+  test('delete', () => {
+    expect(trie.delete('car')).toBe(true);
+    expect(trie.contains('car')).toBe(false);
+    // 'cart' should still exist
+    expect(trie.contains('cart')).toBe(true);
+  });
+
+  test('words iterator', () => {
+    const all = Array.from(trie.words()).sort();
+    expect(all).toEqual(['car', 'cart', 'cat', 'dog']);
+  });
+});
+class SimpleTrie {
+  private root = new Map<string, any>();
+
+  insert(word: string) {
+    let node = this.root;
+    for (const ch of word) {
+      if (!node.has(ch)) node.set(ch, new Map());
+      node = node.get(ch);
+    }
+    node.set('', true); // terminal marker
+  }
+
+  contains(word: string): boolean {
+    let node = this.root;
+    for (const ch of word) {
+      node = node.get(ch);
+      if (!node) return false;
+    }
+    return node.has('');
+  }
+
+  startsWith(prefix: string): boolean {
+    let node = this.root;
+    for (const ch of prefix) {
+      node = node.get(ch);
+      if (!node) return false;
+    }
+    return true;
+  }
 }
