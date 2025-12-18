@@ -1,127 +1,111 @@
-/**
- * Fibonacci Search
- *
- * @param arr   Sorted array (ascending) to search in.
- * @param key   Value to find.
- * @returns     Index of `key` in `arr` or -1 if not present.
- *
- * The function works for any type that can be compared with <, >, ===.
- * For custom objects you can pass a comparator function.
- */
-export function fibonacciSearch<T>(
-  arr: readonly T[],
-  key: T,
-  compareFn?: (a: T, b: T) => number
-): number {
-  // ---------- Helper: default comparator ----------
-  const cmp = compareFn
-    ? compareFn
-    : (a: T, b: T) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-      };
-
-  const n = arr.length;
-  if (n === 0) return -1;
-
-  // ---------- 1️⃣ Build the smallest Fibonacci number >= n ----------
-  let fibMm2 = 0; // (m-2)'th Fibonacci No.
-  let fibMm1 = 1; // (m-1)'th Fibonacci No.
-  let fibM = fibMm2 + fibMm1; // m'th Fibonacci
-
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM = fibMm2 + fibMm1;
-  }
-
-  // ---------- 2️⃣ offset marks the eliminated front part ----------
-  let offset = -1;
-
-  // ---------- 3️⃣ Main loop ----------
-  while (fibM > 1) {
-    // Check if fibMm2 is a valid location
-    const i = Math.min(offset + fibMm2, n - 1);
-    const comparison = cmp(arr[i], key);
-
-    if (comparison < 0) {
-      // Move three Fibonacci numbers down
-      fibM = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i; // key is greater, cut the subarray from offset to i
-    } else if (comparison > 0) {
-      // Move two Fibonacci numbers down
-      fibM = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
-      // offset stays the same
-    } else {
-      // Found!
-      return i;
-    }
-  }
-
-  // ---------- 4️⃣ One element left (fibMm1 == 1) ----------
-  if (fibMm1 && offset + 1 < n && cmp(arr[offset + 1], key) === 0) {
-    return offset + 1;
-  }
-
-  // ---------- 5️⃣ Not found ----------
-  return -1;
+function isPalindromeSimple(str: string): boolean {
+  // Spread the string into an array of characters, reverse it, join back.
+  return str === [...str].reverse().join('');
 }
-import { fibonacciSearch } from "./fibonacciSearch";
+console.log(isPalindromeSimple('racecar')); // true
+console.log(isPalindromeSimple('Racecar')); // false (case‑sensitive)
+function isPalindrome(str: string): boolean {
+  // 1️⃣ Normalise: lower‑case + keep only alphanumerics
+  const cleaned = str
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, ''); // adjust the regex if you need Unicode letters
 
-// Simple numeric array
-const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
-console.log(fibonacciSearch(nums, 7));   // → 3
-console.log(fibonacciSearch(nums, 2));   // → -1
+  // 2️⃣ Compare with its reverse
+  return cleaned === [...cleaned].reverse().join('');
+}
+console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
+console.log(isPalindrome('No lemon, no melon'));            // true
+console.log(isPalindrome('Hello, world!'));                // false
+function isPalindromeEfficient(str: string): boolean {
+  // Normalise on the fly while scanning from both ends
+  let left = 0;
+  let right = str.length - 1;
 
-// Using a custom comparator (e.g., objects sorted by `id`)
-type Person = { id: number; name: string };
-const people: Person[] = [
-  { id: 10, name: "Alice" },
-  { id: 20, name: "Bob" },
-  { id: 30, name: "Carol" },
-  { id: 40, name: "Dave" },
-];
+  while (left < right) {
+    // Move left pointer to the next alphanumeric character
+    while (left < right && !isAlphaNumeric(str.charAt(left))) left++;
+    // Move right pointer to the previous alphanumeric character
+    while (left < right && !isAlphaNumeric(str.charAt(right))) right--;
 
-const cmpById = (a: Person, b: Person) => a.id - b.id;
+    // Compare the lower‑cased characters
+    if (left < right && str.charAt(left).toLowerCase() !== str.charAt(right).toLowerCase())
+      return false;
 
-const target = { id: 30, name: "" }; // name is irrelevant for search
-console.log(fibonacciSearch(people, target, cmpById)); // → 2
-import { fibonacciSearch } from "./fibonacciSearch";
+    left++;
+    right--;
+  }
 
-describe("fibonacciSearch", () => {
-  test("finds existing numbers", () => {
-    const arr = [2, 4, 6, 8, 10, 12, 14];
-    expect(fibonacciSearch(arr, 8)).toBe(3);
-    expect(fibonacciSearch(arr, 2)).toBe(0);
-    expect(fibonacciSearch(arr, 14)).toBe(6);
+  return true;
+}
+
+/** Helper: true if the character is a letter or digit (ASCII only). */
+function isAlphaNumeric(ch: string): boolean {
+  const code = ch.charCodeAt(0);
+  // 0‑9
+  if (code >= 48 && code <= 57) return true;
+  // A‑Z
+  if (code >= 65 && code <= 90) return true;
+  // a‑z
+  if (code >= 97 && code <= 122) return true;
+  return false;
+}
+console.log(isPalindromeEfficient('Was it a car or a cat I saw?')); // true
+console.log(isPalindromeEfficient('Not a palindrome'));            // false
+function isPalindromeRecursive(str: string): boolean {
+  const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  function helper(start: number, end: number): boolean {
+    if (start >= end) return true;
+    if (cleaned[start] !== cleaned[end]) return false;
+    return helper(start + 1, end - 1);
+  }
+
+  return helper(0, cleaned.length - 1);
+}
+export type PalindromeCheckOptions = {
+  /** Whether to ignore case (default: true) */
+  ignoreCase?: boolean;
+  /** Whether to ignore non‑alphanumeric characters (default: true) */
+  ignoreNonAlphaNumeric?: boolean;
+};
+
+/**
+ * Returns true if `input` reads the same forward and backward according to the supplied options.
+ */
+export function isPalindrome(
+  input: string,
+  options: PalindromeCheckOptions = {}
+): boolean {
+  const { ignoreCase = true, ignoreNonAlphaNumeric = true } = options;
+
+  let cleaned = input;
+  if (ignoreCase) cleaned = cleaned.toLowerCase();
+  if (ignoreNonAlphaNumeric) cleaned = cleaned.replace(/[^a-z0-9]/g, '');
+
+  return cleaned === [...cleaned].reverse().join('');
+}
+import { isPalindrome } from './palindrome';
+
+console.log(isPalindrome('Madam', { ignoreCase: true })); // true
+console.log(isPalindrome('Madam', { ignoreCase: false })); // false
+// palindrome.test.ts
+import { isPalindrome } from './palindrome';
+
+describe('isPalindrome', () => {
+  test('basic palindrome', () => {
+    expect(isPalindrome('racecar')).toBe(true);
   });
 
-  test("returns -1 for missing values", () => {
-    const arr = [1, 3, 5, 7];
-    expect(fibonacciSearch(arr, 0)).toBe(-1);
-    expect(fibonacciSearch(arr, 4)).toBe(-1);
-    expect(fibonacciSearch(arr, 8)).toBe(-1);
+  test('ignores case & punctuation', () => {
+    expect(isPalindrome('A man, a plan, a canal: Panama')).toBe(true);
   });
 
-  test("works with custom comparator", () => {
-    type Item = { key: string };
-    const data: Item[] = [{ key: "a" }, { key: "c" }, { key: "e" }, { key: "g" }];
-    const cmp = (a: Item, b: Item) => a.key.localeCompare(b.key);
-    expect(fibonacciSearch(data, { key: "e" }, cmp)).toBe(2);
-    expect(fibonacciSearch(data, { key: "b" }, cmp)).toBe(-1);
+  test('non‑palindrome', () => {
+    expect(isPalindrome('hello')).toBe(false);
   });
 
-  test("handles empty array", () => {
-    expect(fibonacciSearch([], 5)).toBe(-1);
+  test('custom options', () => {
+    expect(isPalindrome('Madam', { ignoreCase: false })).toBe(false);
+    expect(isPalindrome('Madam', { ignoreCase: true })).toBe(true);
   });
 });
-// Import the function
-import { fibonacciSearch } from "./fibonacciSearch";
-
-// Search a sorted numeric array
-const idx = fibonacciSearch([10, 20, 30, 40, 50], 30); // → 2
