@@ -1,53 +1,59 @@
-class ListNode {
-  val: number;
-  next: ListNode | null = null;
-  constructor(val: number) {
-    this.val = val;
+export function longestCommonSubstring(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
+  if (m === 0 || n === 0) return "";
+
+  // dp[i][j] = length of longest common suffix of a[0..i-1], b[0..j-1]
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+  let maxLen = 0;
+  let endIndex = 0; // end index in string a
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > maxLen) {
+          maxLen = dp[i][j];
+          endIndex = i;
+        }
+      } else {
+        dp[i][j] = 0;
+      }
+    }
   }
+
+  return maxLen === 0 ? "" : a.substring(endIndex - maxLen, endIndex);
 }
+export function longestCommonSubstring(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
+  if (m === 0 || n === 0) return "";
 
-function getIntersectionNode(headA: ListNode | null, headB: ListNode | null): ListNode | null {
-  if (!headA || !headB) return null;
+  let maxLen = 0;
+  let endIndex = 0;
 
-  let lenA = getLength(headA);
-  let lenB = getLength(headB);
+  let prev = new Array<number>(n + 1).fill(0);
+  let curr = new Array<number>(n + 1).fill(0);
 
-  let longer = lenA > lenB ? headA : headB;
-  let shorter = lenA > lenB ? headB : headA;
-  let diff = Math.abs(lenA - lenB);
-
-  // Advance the longer list by the difference
-  for (let i = 0; i < diff; i++) {
-    longer = longer.next;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        curr[j] = prev[j - 1] + 1;
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          endIndex = i;
+        }
+      } else {
+        curr[j] = 0;
+      }
+    }
+    // roll the rows
+    const tmp = prev;
+    prev = curr;
+    curr = tmp;
+    curr.fill(0);
   }
 
-  // Walk together until intersection
-  while (longer && shorter) {
-    if (longer === shorter) return longer; // Same reference
-    longer = longer.next;
-    shorter = shorter.next;
-  }
-
-  return null; // No intersection
+  return maxLen === 0 ? "" : a.substring(endIndex - maxLen, endIndex);
 }
-
-function getLength(head: ListNode | null): number {
-  let count = 0;
-  while (head) {
-    count++;
-    head = head.next;
-  }
-  return count;
-}
-// Create intersecting lists
-const common = new ListNode(8);
-common.next = new ListNode(10);
-
-const headA = new ListNode(3);
-headA.next = new ListNode(7);
-headA.next.next = common;
-
-const headB = new ListNode(99);
-headB.next = common;
-
-console.log(getIntersectionNode(headA, headB)?.val); // Output: 8
