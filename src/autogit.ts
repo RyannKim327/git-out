@@ -1,86 +1,190 @@
-// ---------------------------------------------
-// Topological sort (Kahn’s BFS algorithm)
-// ---------------------------------------------
-type Graph = Map<string, string[]>;   // adjacency list
+class Graph<T> {
+  private adjacencyList: Map<T, T[]>;
 
-/**
- * Returns a topologically-sorted array of vertex names.
- * If the graph has a directed cycle, returns `null`.
- * Runs in O(V + E) time and O(V) space.
- */
-export function topologicalSort(graph: Graph): string[] | null {
-  const inDegree = new Map<string, number>();
-  const queue: string[] = [];
-  const sorted: string[] = [];
+  constructor() {
+    this.adjacencyList = new Map();
+  }
 
-  // 1. Initialise in-degree of every vertex to 0
-  for (const u of graph.keys()) inDegree.set(u, 0);
-
-  // 2. Fill in-degrees
-  for (const [u, neighbours] of graph) {
-    for (const v of neighbours) {
-      inDegree.set(v, (inDegree.get(v) ?? 0) + 1);
+  addVertex(vertex: T): void {
+    if (!this.adjacencyList.has(vertex)) {
+      this.adjacencyList.set(vertex, []);
     }
   }
 
-  // 3. Enqueue vertices with zero in-degree
-  for (const [u, deg] of inDegree) {
-    if (deg === 0) queue.push(u);
+  addEdge(vertex1: T, vertex2: T): void {
+    if (!this.adjacencyList.has(vertex1)) this.addVertex(vertex1);
+    if (!this.adjacencyList.has(vertex2)) this.addVertex(vertex2);
+    
+    this.adjacencyList.get(vertex1)!.push(vertex2);
+    this.adjacencyList.get(vertex2)!.push(vertex1);
   }
 
-  // 4. BFS
-  while (queue.length) {
-    const u = queue.shift()!;
-    sorted.push(u);
+  // Recursive DFS
+  dfsRecursive(start: T): T[] {
+    const result: T[] = [];
+    const visited = new Set<T>();
 
-    for (const v of graph.get(u) ?? []) {
-      inDegree.set(v, inDegree.get(v)! - 1);
-      if (inDegree.get(v) === 0) queue.push(v);
+    const dfs = (vertex: T) => {
+      if (!vertex || visited.has(vertex)) return;
+      
+      visited.add(vertex);
+      result.push(vertex);
+      
+      const neighbors = this.adjacencyList.get(vertex) || [];
+      for (const neighbor of neighbors) {
+        if (!visited.has(neighbor)) {
+          dfs(neighbor);
+        }
+      }
+    };
+
+    dfs(start);
+    return result;
+  }
+
+  // Iterative DFS using stack
+  dfsIterative(start: T): T[] {
+    const result: T[] = [];
+    const visited = new Set<T>();
+    const stack: T[] = [start];
+    
+    visited.add(start);
+
+    while (stack.length > 0) {
+      const vertex = stack.pop()!;
+      result.push(vertex);
+      
+      const neighbors = this.adjacencyList.get(vertex) || [];
+      for (const neighbor of neighbors.reverse()) { // Reverse to maintain order
+        if (!visited.has(neighbor)) {
+          visited.add(neighbor);
+          stack.push(neighbor);
+        }
+      }
     }
+    
+    return result;
+  }
+}
+// Create and test the graph
+const graph = new Graph<string>();
+
+// Add vertices and edges
+graph.addEdge('A', 'B');
+graph.addEdge('A', 'C');
+graph.addEdge('B', 'D');
+graph.addEdge('B', 'E');
+graph.addEdge('C', 'F');
+graph.addEdge('E', 'F');
+
+console.log('Recursive DFS:', graph.dfsRecursive('A')); 
+// Output: ['A', 'B', 'D', 'E', 'F', 'C']
+
+console.log('Iterative DFS:', graph.dfsIterative('A')); 
+// Output: ['A', 'C', 'F', 'E', 'B', 'D']
+interface DFSVisitCallback<T> {
+  onVisit?: (vertex: T) => void;
+  onDiscover?: (vertex: T) => void;
+  onFinish?: (vertex: T) => void;
+}
+
+class AdvancedGraph<T> {
+  private adjacencyList: Map<T, T[]>;
+
+  constructor() {
+    this.adjacencyList = new Map();
   }
 
-  // 5. Cycle detection
-  return sorted.length === inDegree.size ? sorted : null;
+  addEdge(vertex1: T, vertex2: T): void {
+    if (!this.adjacencyList.has(vertex1)) this.adjacencyList.set(vertex1, []);
+    if (!this.adjacencyList.has(vertex2)) this.adjacencyList.set(vertex2, []);
+    
+    this.adjacencyList.get(vertex1)!.push(vertex2);
+    this.adjacencyList.get(vertex2)!.push(vertex1);
+  }
+
+  dfsWithCallbacks(
+    start: T, 
+    callbacks: DFSVisitCallback<T> = {}
+  ): { order: T[]; discoveryTime: Map<T, number>; finishTime: Map<T, number> } {
+    const order: T[] = [];
+    const visited = new Set<T>();
+    const discoveryTime = new Map<T, number>();
+    const finishTime = new Map<T, number>();
+    let time = 0;
+
+    const dfs = (vertex: T) => {
+      visited.add(vertex);
+      discoveryTime.set(vertex, time++);
+      callbacks.onDiscover?.(vertex);
+      
+      order.push(vertex);
+      callbacks.onVisit?.(vertex);
+
+      const neighbors = this.adjacencyList.get(vertex) || [];
+      for (const neighbor of neighbors) {
+        if (!visited.has(neighbor)) {
+          dfs(neighbor);
+        }
+      }
+      
+      finishTime.set(vertex, time++);
+      callbacks.onFinish?.(vertex);
+    };
+
+    dfs(start);
+    return { order, discoveryTime, finishTime };
+  }
 }
+class DFSPathFinder<T> {
+  private graph: Graph<T>;
 
-// ---------------------------------------------
-// Quick sanity check
-// ---------------------------------------------
-if (import.meta.vitest) {
-  const { test, expect } = import.meta.vitest;
+  constructor(graph: Graph<T>) {
+    this.graph = graph;
+  }
 
-  test('topologicalSort', () => {
-    const g: Graph = new Map([
-      ['A', ['B', 'C']],
-      ['B', ['D']],
-      ['C', ['D']],
-      ['D', ['E']],
-      ['E', []],
-    ]);
-    expect(topologicalSort(g)).toEqual(['A', 'B', 'C', 'D', 'E']);
-
-    const cycle: Graph = new Map([
-      ['A', ['B']],
-      ['B', ['C']],
-      ['C', ['A']], // cycle
-    ]);
-    expect(topologicalSort(cycle)).toBeNull();
-  });
+  findPath(start: T, end: T): T[] | null {
+    const visited = new Set<T>();
+    const path: T[] = [];
+    
+    const dfs = (current: T): boolean => {
+      if (current === end) {
+        path.push(current);
+        return true;
+      }
+      
+      if (visited.has(current)) return false;
+      
+      visited.add(current);
+      path.push(current);
+      
+      // Try to access adjacencyList - you might need to make it protected
+      const neighbors = (this.graph as any).adjacencyList.get(current) || [];
+      
+      for (const neighbor of neighbors) {
+        if (!visited.has(neighbor)) {
+          if (dfs(neighbor)) {
+            return true;
+          }
+        }
+      }
+      
+      path.pop();
+      return false;
+    };
+    
+    return dfs(start) ? path : null;
+  }
 }
-import { topologicalSort } from './topologicalSort';
+// Create graph
+const pathGraph = new Graph<string>();
+pathGraph.addEdge('A', 'B');
+pathGraph.addEdge('A', 'C');
+pathGraph.addEdge('B', 'D');
+pathGraph.addEdge('C', 'E');
+pathGraph.addEdge('D', 'F');
+pathGraph.addEdge('E', 'F');
 
-const graph: Graph = new Map([
-  ['underwear', ['pants', 'shoes']],
-  ['pants',     ['belt',  'shoes']],
-  ['belt',      ['jacket']],
-  ['shirt',     ['belt',  'tie']],
-  ['tie',       ['jacket']],
-  ['jacket',    []],
-  ['socks',     ['shoes']],
-  ['shoes',     []],
-]);
-
-const order = topologicalSort(graph);
-if (order) console.log('Dressing order:', order.join(' → '));
-else console.error('Cycle detected – no valid order exists.');
-npx tsx yourFile.ts
+const pathFinder = new DFSPathFinder(pathGraph);
+console.log('Path from A to F:', pathFinder.findPath('A', 'F'));
+// Output: ['A', 'B', 'D', 'F'] or similar depending on traversal order
