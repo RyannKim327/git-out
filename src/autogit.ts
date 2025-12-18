@@ -1,109 +1,42 @@
-function firstRepeatedCharacter(str: string): string | null {
-    const seen = new Set<string>();
-    
-    for (const char of str) {
-        if (seen.has(char)) {
-            return char;
-        }
-        seen.add(char);
-    }
-    
-    return null; // No repeated characters found
-}
+// Generic recursive binary search with a comparator
+export function binarySearchRecursive<T>(
+  arr: T[],
+  target: T,
+  comparator: (a: T, b: T) => number,
+  low = 0,
+  high = arr.length - 1
+): number {
+  if (low > high) return -1;
 
-// Example usage
-console.log(firstRepeatedCharacter("abcdefa")); // "a"
-console.log(firstRepeatedCharacter("abcde"));   // null
-console.log(firstRepeatedCharacter("hello"));   // "l"
-function firstRepeatedCharacter(str: string): string | null {
-    const charCount: { [key: string]: boolean } = {};
-    
-    for (const char of str) {
-        if (charCount[char]) {
-            return char;
-        }
-        charCount[char] = true;
-    }
-    
-    return null;
-}
-function firstRepeatedCharacterWithIndex(str: string): { char: string, index: number } | null {
-    const seen = new Set<string>();
-    
-    for (let i = 0; i < str.length; i++) {
-        const char = str[i];
-        if (seen.has(char)) {
-            return { char, index: i };
-        }
-        seen.add(char);
-    }
-    
-    return null;
-}
+  const mid = Math.floor((low + high) / 2);
+  const cmp = comparator(arr[mid], target);
 
-// Example usage
-const result = firstRepeatedCharacterWithIndex("programming");
-if (result) {
-    console.log(`First repeated character: "${result.char}" at index ${result.index}`);
-} else {
-    console.log("No repeated characters found");
+  if (cmp === 0) return mid;
+  if (cmp < 0) {
+    // arr[mid] < target -> search right half
+    return binarySearchRecursive(arr, target, comparator, mid + 1, high);
+  } else {
+    // arr[mid] > target -> search left half
+    return binarySearchRecursive(arr, target, comparator, low, mid - 1);
+  }
 }
-function firstRepeatedCharacterArray(str: string): string | null {
-    for (let i = 0; i < str.length; i++) {
-        if (str.indexOf(str[i]) !== i) {
-            return str[i];
-        }
-    }
-    return null;
-}
-function firstRepeatedCharacterDetailed(str: string): string | null {
-    const charFrequency: Map<string, number> = new Map();
-    
-    for (const char of str) {
-        const count = charFrequency.get(char) || 0;
-        charFrequency.set(char, count + 1);
-        
-        if (count > 0) {
-            return char;
-        }
-    }
-    
-    return null;
-}
+const nums = [1, 3, 5, 7, 9];
+const idx = binarySearchRecursive(nums, 7, (a, b) => a - b); // 3
+const words = ["apple", "banana", "cherry"];
+const idx2 = binarySearchRecursive(words, "banana", (a, b) => a.localeCompare(b)); // 1
+// Number-specific version (no comparator required)
+export function binarySearchNumber(
+  arr: number[],
+  target: number,
+  low = 0,
+  high = arr.length - 1
+): number {
+  if (low > high) return -1;
 
-// To get all repeated characters
-function getAllRepeatedCharacters(str: string): string[] {
-    const charFrequency: Map<string, number> = new Map();
-    const repeated: Set<string> = new Set();
-    
-    for (const char of str) {
-        const count = charFrequency.get(char) || 0;
-        charFrequency.set(char, count + 1);
-        
-        if (count > 0) {
-            repeated.add(char);
-        }
-    }
-    
-    return Array.from(repeated);
+  const mid = (low + high) >> 1;
+
+  if (arr[mid] === target) return mid;
+  if (arr[mid] < target) return binarySearchNumber(arr, target, mid + 1, high);
+  return binarySearchNumber(arr, target, low, mid - 1);
 }
-function firstRepeatedCharacterSafe(str: string): string | null {
-    if (typeof str !== 'string') {
-        throw new Error('Input must be a string');
-    }
-    
-    if (str.length === 0) {
-        return null;
-    }
-    
-    const seen = new Set<string>();
-    
-    for (const char of str) {
-        if (seen.has(char)) {
-            return char;
-        }
-        seen.add(char);
-    }
-    
-    return null;
-}
+console.log(binarySearchNumber([1, 2, 4, 5, 7], 4)); // 2
