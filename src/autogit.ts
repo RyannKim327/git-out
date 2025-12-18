@@ -1,89 +1,114 @@
-// MainActivity.kt
-package com.example.webviewasync
-
-import android.os.Bundle
-import android.webkit.JavascriptInterface
-import android.webkit.WebView
-import androidx.appcompat.app.AppCompatActivity
-import kotlinx.coroutines.*
-
-class MainActivity : AppCompatActivity() {
-
-    private lateinit var webView: WebView
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        webView = WebView(this).apply {
-            settings.javaScriptEnabled = true
-            addJavascriptInterface(AndroidBridge(this), "AndroidBridge")
-            loadUrl("file:///android_asset/index.html")
-        }
-        setContentView(webView)
-    }
-
-    // Object exposed to JS
-    inner class AndroidBridge(private val webView: WebView) {
-
-        // Called from JS: androidDoWork("someArg") -> Promise<string>
-        @JavascriptInterface
-        fun androidDoWork(arg: String, promiseId: String) {
-            // Launch a coroutine on IO thread (simulate heavy work)
-            CoroutineScope(Dispatchers.IO).launch {
-                val result = doAsyncWork(arg)           // <-- your async task
-                withContext(Dispatchers.Main) {
-                    // Resolve the Promise on the JS side
-                    webView.evaluateJavascript(
-                        """window.__bridgeResolve("$promiseId", "$result");""", null
-                    )
-                }
-            }
-        }
-
-        private suspend fun doAsyncWork(input: String): String {
-            delay(1500)                               // simulate network/db
-            return "Hello $input from Android coroutine!"
-        }
+class TreeNode<T> {
+    val: T;
+    left: TreeNode<T> | null;
+    right: TreeNode<T> | null;
+    
+    constructor(val: T, left: TreeNode<T> | null = null, right: TreeNode<T> | null = null) {
+        this.val = val;
+        this.left = left;
+        this.right = right;
     }
 }
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8"/>
-    <title>TS ↔ Android async</title>
-  </head>
-  <body>
-    <button id="btn">Run Android async task</button>
-    <pre id="log"></pre>
+function diameterOfBinaryTreeNaive<T>(root: TreeNode<T> | null): number {
+    if (!root) return 0;
+    
+    // Calculate height of left and right subtrees
+    const leftHeight = getHeight(root.left);
+    const rightHeight = getHeight(root.right);
+    
+    // Diameter through root
+    const diameterThroughRoot = leftHeight + rightHeight;
+    
+    // Diameter in left and right subtrees
+    const leftDiameter = diameterOfBinaryTreeNaive(root.left);
+    const rightDiameter = diameterOfBinaryTreeNaive(root.right);
+    
+    // Return maximum of the three
+    return Math.max(diameterThroughRoot, leftDiameter, rightDiameter);
+}
 
-    <script type="module">
-      // ---------- tiny bridge ----------
-      const pending = new Map<string, { resolve: (v: any) => void; reject: (e: any) => void }>();
+function getHeight<T>(node: TreeNode<T> | null): number {
+    if (!node) return 0;
+    return 1 + Math.max(getHeight(node.left), getHeight(node.right));
+}
+function diameterOfBinaryTree<T>(root: TreeNode<T> | null): number {
+    let diameter = 0;
+    
+    function height(node: TreeNode<T> | null): number {
+        if (!node) return 0;
+        
+        const leftHeight = height(node.left);
+        const rightHeight = height(node.right);
+        
+        // Update diameter
+        diameter = Math.max(diameter, leftHeight + rightHeight);
+        
+        // Return height of current node
+        return 1 + Math.max(leftHeight, rightHeight);
+    }
+    
+    height(root);
+    return diameter;
+}
+interface TreeResult {
+    height: number;
+    diameter: number;
+}
 
-      (window as any).__bridgeResolve = (id: string, value: string) => {
-        pending.get(id)?.resolve(value);
-        pending.delete(id);
-      };
-      (window as any).__bridgeReject = (id: string, reason: string) => {
-        pending.get(id)?.reject(new Error(reason));
-        pending.delete(id);
-      };
-
-      function androidDoWork(arg: string): Promise<string> {
-        return new Promise((resolve, reject) => {
-          const id = Math.random().toString(36).slice(2);
-          pending.set(id, { resolve, reject });
-          (window as any).AndroidBridge.androidDoWork(arg, id);
-        });
-      }
-      // ---------- usage ----------
-      document.getElementById('btn')!.addEventListener('click', async () => {
-        try {
-          const msg = await androidDoWork('TypeScript');
-          document.getElementById('log')!.textContent = msg;
-        } catch (e) {
-          document.getElementById('log')!.textContent = 'Error: ' + e;
+function diameterOfBinaryTreeWithResult<T>(root: TreeNode<T> | null): number {
+    function calculate(node: TreeNode<T> | null): TreeResult {
+        if (!node) {
+            return { height: 0, diameter: 0 };
         }
-      });
-    </script>
-  </body>
-</html>
+        
+        const left = calculate(node.left);
+        const right = calculate(node.right);
+        
+        const currentHeight = 1 + Math.max(left.height, right.height);
+        const currentDiameter = Math.max(
+            left.height + right.height,
+            left.diameter,
+            right.diameter
+        );
+        
+        return { height: currentHeight, diameter: currentDiameter };
+    }
+    
+    return calculate(root).diameter;
+}
+// Create a sample binary tree
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4);
+root.left.right = new TreeNode(5);
+root.left.right.right = new TreeNode(6);
+
+// Test the functions
+console.log("Naive approach:", diameterOfBinaryTreeNaive(root)); // Output: 4
+console.log("Optimized approach:", diameterOfBinaryTree(root)); // Output: 4
+console.log("Result object approach:", diameterOfBinaryTreeWithResult(root)); // Output: 4
+
+// More complex example
+const complexRoot = new TreeNode(1);
+complexRoot.left = new TreeNode(2);
+complexRoot.right = new TreeNode(3);
+complexRoot.left.left = new TreeNode(4);
+complexRoot.left.right = new TreeNode(5);
+complexRoot.right.right = new TreeNode(6);
+complexRoot.left.left.left = new TreeNode(7);
+complexRoot.left.left.right = new TreeNode(8);
+complexRoot.left.right.right = new TreeNode(9);
+complexRoot.left.left.left.left = new TreeNode(10);
+
+console.log("Complex tree diameter:", diameterOfBinaryTree(complexRoot)); // Output: 6
+// Test edge cases
+console.log("Empty tree:", diameterOfBinaryTree(null)); // Output: 0
+
+const singleNode = new TreeNode(1);
+console.log("Single node:", diameterOfBinaryTree(singleNode)); // Output: 0
+
+const leftSkewed = new TreeNode(1);
+leftSkewed.left = new TreeNode(2);
+leftSkewed.left.left = new TreeNode(3);
+console.log("Left-skewed tree:", diameterOfBinaryTree(leftSkewed)); // Output: 2
