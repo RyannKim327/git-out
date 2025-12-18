@@ -1,42 +1,52 @@
-// Generic recursive binary search with a comparator
-export function binarySearchRecursive<T>(
-  arr: T[],
-  target: T,
-  comparator: (a: T, b: T) => number,
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (low > high) return -1;
+/**
+ * Returns the longest common substring of s and t.
+ * If several substrings have the same maximum length, the first one
+ * encountered in `s` is returned. Empty string if no match.
+ */
+export function longestCommonSubstring(s: string, t: string): string {
+  if (!s || !t) return '';
 
-  const mid = Math.floor((low + high) / 2);
-  const cmp = comparator(arr[mid], target);
+  // Ensure |t| <= |s| to minimise memory
+  if (t.length > s.length) [s, t] = [t, s];
 
-  if (cmp === 0) return mid;
-  if (cmp < 0) {
-    // arr[mid] < target -> search right half
-    return binarySearchRecursive(arr, target, comparator, mid + 1, high);
-  } else {
-    // arr[mid] > target -> search left half
-    return binarySearchRecursive(arr, target, comparator, low, mid - 1);
+  const m = s.length;
+  const n = t.length;
+
+  // Rolling two rows for DP: prev and curr
+  const prev = new Uint16Array(n + 1);
+  const curr = new Uint16Array(n + 1);
+
+  let maxLen = 0;
+  let endPos = 0; // exclusive index in s where best substring ends
+
+  for (let i = 1; i <= m; ++i) {
+    const chS = s[i - 1];
+    for (let j = 1; j <= n; ++j) {
+      if (chS === t[j - 1]) {
+        curr[j] = prev[j - 1] + 1;
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          endPos = i;
+        }
+      } else {
+        curr[j] = 0;
+      }
+    }
+    // Swap rows for next iteration
+    [prev, curr] = [curr, prev];
+    curr.fill(0); // clear reused row
   }
-}
-const nums = [1, 3, 5, 7, 9];
-const idx = binarySearchRecursive(nums, 7, (a, b) => a - b); // 3
-const words = ["apple", "banana", "cherry"];
-const idx2 = binarySearchRecursive(words, "banana", (a, b) => a.localeCompare(b)); // 1
-// Number-specific version (no comparator required)
-export function binarySearchNumber(
-  arr: number[],
-  target: number,
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (low > high) return -1;
 
-  const mid = (low + high) >> 1;
-
-  if (arr[mid] === target) return mid;
-  if (arr[mid] < target) return binarySearchNumber(arr, target, mid + 1, high);
-  return binarySearchNumber(arr, target, low, mid - 1);
+  return maxLen ? s.slice(endPos - maxLen, endPos) : '';
 }
-console.log(binarySearchNumber([1, 2, 4, 5, 7], 4)); // 2
+
+/* ---------- Quick sanity checks ---------- */
+if (import.meta.vitest) {
+  const { expect, test } = import.meta.vitest;
+  test('longestCommonSubstring', () => {
+    expect(longestCommonSubstring('ABABC', 'BABCA')).toBe('BABC');
+    expect(longestCommonSubstring('abcdef', 'zcdemf')).toBe('cde');
+    expect(longestCommonSubstring('abc', 'def')).toBe('');
+    expect(longestCommonSubstring('', 'foo')).toBe('');
+  });
+}
