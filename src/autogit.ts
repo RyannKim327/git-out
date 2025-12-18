@@ -1,78 +1,73 @@
-/**
- * Stable counting sort for any type T.
- * @param arr         array to be sorted (is *not* mutated)
- * @param keyOf       function that returns a non-negative integer key for every element
- * @param minKey      smallest key that can appear (inclusive)
- * @param maxKey      largest key that can appear (inclusive)
- * @returns           new sorted array
- */
-export function countingSort<T>(
-  arr: readonly T[],
-  keyOf: (item: T) => number,
-  minKey: number,
-  maxKey: number
-): T[] {
-  if (minKey < 0) throw new Error('Counting sort needs non-negative keys');
-  if (maxKey < minKey) return [];
-
-  const range = maxKey - minKey + 1;
-
-  // 1. frequency histogram
-  const freq = new Uint32Array(range);
-  for (const item of arr) {
-    const k = keyOf(item) - minKey;
-    ++freq[k];
-  }
-
-  // 2. prefix sums -> positions
-  for (let i = 1; i < range; ++i) freq[i] += freq[i - 1];
-
-  // 3. stable placement into output
-  const out = new Array<T>(arr.length);
-  for (let i = arr.length - 1; i >= 0; --i) {
-    const item = arr[i];
-    const k = keyOf(item) - minKey;
-    out[--freq[k]] = item;
-  }
-  return out;
+// ------------------------------------------------------------
+// 1️⃣  Types that model the JSONPlaceholder API responses
+// ------------------------------------------------------------
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
 
-/* ---------- convenience wrapper when you only have numbers ---------- */
-export function countingSortNumbers(arr: number[]): number[] {
-  if (arr.length === 0) return [];
-
-  let min = arr[0];
-  let max = arr[0];
-  for (const v of arr) {
-    if (v < min) min = v;
-    else if (v > max) max = v;
-  }
-  return countingSort(arr, x => x, min, max);
-}
-
-/* ---------------------- small sanity check ------------------------- */
-if (import.meta.vitest) {
-  const { it, expect } = import.meta.vitest;
-  it('sorts numbers', () => {
-    const data = [7, 0, 3, 1, 3, 5, 2, 5, 7, 0];
-    expect(countingSortNumbers(data)).toEqual([0, 0, 1, 2, 3, 3, 5, 5, 7, 7]);
+// ------------------------------------------------------------
+// 2️⃣  Generic GET helper – works for any JSON endpoint
+// ------------------------------------------------------------
+async function apiGet<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Accept": "application/json",
+      // Add any custom headers you need here, e.g. Authorization
+    },
+    ...init,
   });
-  it('is stable', () => {
-    const objs = [{ k: 2, id: 'a' }, { k: 1, id: 'b' }, { k: 2, id: 'c' }];
-    const sorted = countingSort(objs, o => o.k, 1, 2);
-    expect(sorted.map(o => o.id)).toEqual(['b', 'a', 'c']);
-  });
-}
-// 1. plain numbers
-const nums = [4, 2, 5, 1, 3];
-console.log(countingSortNumbers(nums));   // [1, 2, 3, 4, 5]
 
-// 2. sorting objects by a numeric field
-interface Person { name: string; age: number; }
-const people: Person[] = [
-  { name: 'Alice', age: 32 },
-  { name: 'Bob',   age: 25 },
-  { name: 'Eve',   age: 32 },
-];
-const byAge = countingSort(people, p => p.age, 0, 150);
-console.log(byAge.map(p => p.name));     // ['Bob', 'Alice', 'Eve'] (stable)
+  // Throw on non‑2xx status codes
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(
+      `HTTP ${response.status} ${response.statusText}: ${errorBody}`
+    );
+  }
+
+  // Parse JSON – the generic <T> tells TypeScript what shape we expect
+  const data = (await response.json()) as T;
+  return data;
+}
+
+// ------------------------------------------------------------
+// 3️⃣  Specific API call – fetch a list of posts
+// ------------------------------------------------------------
+async function getPosts(): Promise<Post[]> {
+  const endpoint = "https://jsonplaceholder.typicode.com/posts";
+  return apiGet<Post[]>(endpoint);
+}
+
+// ------------------------------------------------------------
+// 4️⃣  Demo / entry point
+// ------------------------------------------------------------
+async function main() {
+  try {
+    console.log("Fetching posts…");
+    const posts = await getPosts();
+
+    // Show just the first 3 posts to keep the output short
+    console.log("✅ Received", posts.length, "posts. Sample:");
+    posts.slice(0, 3).forEach((p) => {
+      console.log(`- (${p.id}) ${p.title}`);
+    });
+  } catch (err) {
+    // A real‑world app would have richer error handling/logging
+    console.error("❌ Something went wrong:", (err as Error).message);
+  }
+}
+
+// Run the demo when the script is executed directly
+if (require.main === module) {
+  // Node 18+ has native fetch; for older Node versions you can `npm i node-fetch`
+  main();
+}
+Fetching posts…
+✅ Received 100 posts. Sample:
+- (1) sunt aut facere repellat provident occaecati excepturi optio reprehenderit
+- (2) qui est esse
+- (3) ea molestias quasi exercitationem repellat qui ipsa sit aut
