@@ -1,59 +1,60 @@
-export function longestCommonSubstring(a: string, b: string): string {
-  const m = a.length;
-  const n = b.length;
-  if (m === 0 || n === 0) return "";
-
-  // dp[i][j] = length of longest common suffix of a[0..i-1], b[0..j-1]
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-
-  let maxLen = 0;
-  let endIndex = 0; // end index in string a
-
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-        if (dp[i][j] > maxLen) {
-          maxLen = dp[i][j];
-          endIndex = i;
-        }
-      } else {
-        dp[i][j] = 0;
-      }
-    }
-  }
-
-  return maxLen === 0 ? "" : a.substring(endIndex - maxLen, endIndex);
+function isPalindrome(str: string): boolean {
+    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return cleanStr === cleanStr.split('').reverse().join('');
 }
-export function longestCommonSubstring(a: string, b: string): string {
-  const m = a.length;
-  const n = b.length;
-  if (m === 0 || n === 0) return "";
 
-  let maxLen = 0;
-  let endIndex = 0;
-
-  let prev = new Array<number>(n + 1).fill(0);
-  let curr = new Array<number>(n + 1).fill(0);
-
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        curr[j] = prev[j - 1] + 1;
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          endIndex = i;
+// Examples
+console.log(isPalindrome("racecar"));     // true
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("hello"));       // false
+function isPalindromeTwoPointers(str: string): boolean {
+    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    let left = 0;
+    let right = cleanStr.length - 1;
+    
+    while (left < right) {
+        if (cleanStr[left] !== cleanStr[right]) {
+            return false;
         }
-      } else {
-        curr[j] = 0;
-      }
+        left++;
+        right--;
     }
-    // roll the rows
-    const tmp = prev;
-    prev = curr;
-    curr = tmp;
-    curr.fill(0);
-  }
-
-  return maxLen === 0 ? "" : a.substring(endIndex - maxLen, endIndex);
+    return true;
 }
+function isPalindromeRecursive(str: string): boolean {
+    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    function checkPalindrome(s: string, start: number, end: number): boolean {
+        if (start >= end) return true;
+        if (s[start] !== s[end]) return false;
+        return checkPalindrome(s, start + 1, end - 1);
+    }
+    
+    return checkPalindrome(cleanStr, 0, cleanStr.length - 1);
+}
+function isPalindromeCaseSensitive(str: string): boolean {
+    // Keep original case if case sensitivity matters
+    const cleanStr = str.replace(/[^a-zA-Z0-9]/g, '');
+    return cleanStr === cleanStr.split('').reverse().join('');
+}
+const isPalindrome = (str: string): boolean => 
+    str.toLowerCase().replace(/[^a-z0-9]/g, '') === 
+    str.toLowerCase().replace(/[^a-z0-9]/g, '').split('').reverse().join('');
+function testPalindrome(): void {
+    const testCases: { input: string; expected: boolean }[] = [
+        { input: "racecar", expected: true },
+        { input: "A man, a plan, a canal: Panama", expected: true },
+        { input: "hello", expected: false },
+        { input: "12321", expected: true },
+        { input: "Was it a car or a cat I saw?", expected: true },
+        { input: "", expected: true }, // Empty string is a palindrome
+        { input: "a", expected: true }, // Single character is a palindrome
+    ];
+
+    testCases.forEach(({ input, expected }) => {
+        const result = isPalindrome(input);
+        console.log(`"${input}" -> ${result} (expected: ${expected})`);
+    });
+}
+
+testPalindrome();
