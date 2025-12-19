@@ -1,142 +1,210 @@
-function kthSmallestSimple(arr: number[], k: number): number {
-    if (k < 1 || k > arr.length) {
-        throw new Error('k is out of bounds');
-    }
-    
-    const sorted = [...arr].sort((a, b) => a - b);
-    return sorted[k - 1];
-}
+/**
+ * Boyer‑Moore‑Horspool string search.
+ *
+ * Returns an array with the start indices of every occurrence of `pattern`
+ * inside `text`.  If you only need the first match, stop after the first
+ * push.
+ *
+ * The implementation works with any UTF‑16 string (the same representation
+ * JavaScript/TypeScript uses).  For true Unicode code‑point handling you
+ * would need to work on an array of code points instead of the raw string.
+ */
+export class BoyerMooreHorspool {
+  /** The pattern we are searching for (kept for reference). */
+  private readonly pattern: string;
+  /** Length of the pattern – cached for speed. */
+  private readonly m: number;
+  /** Bad‑character shift table.  key = character, value = shift distance. */
+  private readonly shiftTable: Record<string, number>;
 
-// Example usage
-const numbers = [3, 1, 4, 1, 5, 9, 2, 6];
-console.log(kthSmallestSimple(numbers, 3)); // Output: 2 (3rd smallest)
-function kthSmallestQuickSelect(arr: number[], k: number): number {
-    if (k < 1 || k > arr.length) {
-        throw new Error('k is out of bounds');
+  /**
+   * @param pattern The needle we want to find.
+   * @throws if `pattern` is empty (searching for an empty string is trivial).
+   */
+  constructor(pattern: string) {
+    if (pattern.length === 0) {
+      throw new Error('Pattern must not be empty');
     }
-    
-    return quickSelect([...arr], 0, arr.length - 1, k - 1);
-}
+    this.pattern = pattern;
+    this.m = pattern.length;
+    this.shiftTable = this.buildShiftTable(pattern);
+  }
 
-function quickSelect(arr: number[], left: number, right: number, k: number): number {
-    if (left === right) {
-        return arr[left];
-    }
-    
-    const pivotIndex = partition(arr, left, right);
-    
-    if (k === pivotIndex) {
-        return arr[k];
-    } else if (k < pivotIndex) {
-        return quickSelect(arr, left, pivotIndex - 1, k);
-    } else {
-        return quickSelect(arr, pivotIndex + 1, right, k);
-    }
-}
+  /**
+   * Build the bad‑character shift table.
+   *
+   * For every character `c` that appears in the pattern (except the last one)
+   * we store `m - i - 1`, where `i` is the index of the *rightmost* occurrence
+   * of `c`.  Characters that never appear get the default shift `m`.
+   */
+  private buildShiftTable(pat: string): Record<string, number> {
+    const table: Record<string, number> = {};
 
-function partition(arr: number[], left: number, right: number): number {
-    const pivot = arr[right];
-    let i = left;
-    
-    for (let j = left; j < right; j++) {
-        if (arr[j] <= pivot) {
-            [arr[i], arr[j]] = [arr[j], arr[i]];
-            i++;
-        }
-    }
-    
-    [arr[i], arr[right]] = [arr[right], arr[i]];
-    return i;
-}
+    // Default shift for characters not in the pattern.
+    const defaultShift = this.m;
 
-// Example usage
-console.log(kthSmallestQuickSelect(numbers, 3)); // Output: 2
-class MinHeap {
-    private heap: number[] = [];
-    
-    constructor(arr: number[]) {
-        this.heap = [...arr];
-        this.buildHeap();
+    // Populate the table with the rightmost occurrence rule.
+    // We stop at `m - 1` because the last character never contributes
+    // to a shift (if it mismatches we always shift by `m`).
+    for (let i = 0; i < this.m - 1; i++) {
+      const ch = pat[i];
+      table[ch] = this.m - i - 1; // distance to the pattern end
     }
-    
-    private buildHeap(): void {
-        for (let i = Math.floor(this.heap.length / 2); i >= 0; i--) {
-            this.heapifyDown(i);
-        }
-    }
-    
-    private heapifyDown(index: number): void {
-        const left = 2 * index + 1;
-        const right = 2 * index + 2;
-        let smallest = index;
-        
-        if (left < this.heap.length && this.heap[left] < this.heap[smallest]) {
-            smallest = left;
-        }
-        
-        if (right < this.heap.length && this.heap[right] < this.heap[smallest]) {
-            smallest = right;
-        }
-        
-        if (smallest !== index) {
-            [this.heap[index], this.heap[smallest]] = [this.heap[smallest], this.heap[index]];
-            this.heapifyDown(smallest);
-        }
-    }
-    
-    extractMin(): number {
-        if (this.heap.length === 0) throw new Error('Heap is empty');
-        
-        const min = this.heap[0];
-        this.heap[0] = this.heap[this.heap.length - 1];
-        this.heap.pop();
-        this.heapifyDown(0);
-        
-        return min;
-    }
-}
 
-function kthSmallestHeap(arr: number[], k: number): number {
-    if (k < 1 || k > arr.length) {
-        throw new Error('k is out of bounds');
+    // Store the default shift for any character we haven't seen.
+    // Instead of filling the whole Unicode space we just remember the value.
+    // The `getShift` helper below will fall back to `defaultShift`.
+    (table as any).__default = defaultShift;
+
+    return table;
+  }
+
+  /** Helper: get the shift distance for a character (with fallback). */
+  private getShift(ch: string): number {
+    // `Object.prototype.hasOwnProperty` is safe because we never store
+    // keys like "__proto__".
+    if (Object.prototype.hasOwnProperty.call(this.shiftTable, ch)) {
+      return this.shiftTable[ch];
     }
-    
-    const heap = new MinHeap(arr);
-    let result = 0;
-    
-    for (let i = 0; i < k; i++) {
-        result = heap.extractMin();
+    return (this.shiftTable as any).__default;
+  }
+
+  /**
+   * Search `text` for the pattern.
+   *
+   * @param text The haystack.
+   * @returns An array of start indices where the pattern occurs.
+   */
+  public search(text: string): number[] {
+    const n = text.length;
+    const m = this.m;
+    const result: number[] = [];
+
+    if (n < m) {
+      // Pattern longer than text → no matches.
+      return result;
     }
-    
+
+    // `i` points to the *rightmost* character of the current window.
+    let i = m - 1;
+
+    while (i < n) {
+      // Compare from right to left.
+      let j = m - 1; // pattern index
+      while (j >= 0 && this.pattern[j] === text[i - (m - 1 - j)]) {
+        j--;
+      }
+
+      if (j < 0) {
+        // All characters matched → record the occurrence.
+        result.push(i - m + 1);
+        // Shift by the full pattern length to look for *non‑overlapping* matches.
+        // If you want overlapping matches, use `i += 1` instead.
+        i += m;
+      } else {
+        // Mismatch at pattern[j] vs text[i - (m - 1 - j)].
+        const mismatchedChar = text[i];
+        const shift = this.getShift(mismatchedChar);
+        // Ensure we always move at least one position forward.
+        i += Math.max(shift, 1);
+      }
+    }
+
     return result;
+  }
+
+  /**
+   * Convenience static method – no need to instantiate the class.
+   *
+   * @example
+   *   const idx = BoyerMooreHorspool.find('needle', 'haystack with needle');
+   *   // idx === 13
+   */
+  public static find(pattern: string, text: string): number[] {
+    return new BoyerMooreHorspool(pattern).search(text);
+  }
 }
 
-// Example usage
-console.log(kthSmallestHeap(numbers, 3)); // Output: 2
-function kthSmallestGeneric<T>(
-    arr: T[], 
-    k: number, 
-    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
-): T {
-    if (k < 1 || k > arr.length) {
-        throw new Error('k is out of bounds');
+/* ------------------------------------------------------------------ */
+/* -------------------------- Example usage -------------------------- */
+/* ------------------------------------------------------------------ */
+
+function demo() {
+  const text = `The quick brown fox jumps over the lazy dog.
+                The quick brown fox is quick.`;
+
+  const pattern = 'quick';
+
+  // 1️⃣ Using the class instance (good if you search many times with the same pattern)
+  const bmh = new BoyerMooreHorspool(pattern);
+  const positions1 = bmh.search(text);
+  console.log('Instance search →', positions1); // e.g. [4, 71]
+
+  // 2️⃣ Using the static helper (convenient for a one‑off search)
+  const positions2 = BoyerMooreHorspool.find(pattern, text);
+  console.log('Static helper →', positions2);
+}
+
+// Uncomment to run the demo when this file is executed directly.
+// demo();
+// boyerMooreHorspool.ts
+export class BoyerMooreHorspool {
+  private readonly pattern: string;
+  private readonly m: number;
+  private readonly shiftTable: Record<string, number>;
+
+  constructor(pattern: string) {
+    if (!pattern) throw new Error('Pattern must not be empty');
+    this.pattern = pattern;
+    this.m = pattern.length;
+    this.shiftTable = this.buildShiftTable(pattern);
+  }
+
+  private buildShiftTable(pat: string): Record<string, number> {
+    const table: Record<string, number> = {};
+    const defaultShift = this.m;
+    for (let i = 0; i < this.m - 1; i++) {
+      table[pat[i]] = this.m - i - 1;
     }
-    
-    const sorted = [...arr].sort(compareFn);
-    return sorted[k - 1];
+    (table as any).__default = defaultShift;
+    return table;
+  }
+
+  private getShift(ch: string): number {
+    return Object.prototype.hasOwnProperty.call(this.shiftTable, ch)
+      ? this.shiftTable[ch]
+      : (this.shiftTable as any).__default;
+  }
+
+  public search(text: string): number[] {
+    const n = text.length;
+    const result: number[] = [];
+    if (n < this.m) return result;
+
+    let i = this.m - 1;
+    while (i < n) {
+      let j = this.m - 1;
+      while (j >= 0 && this.pattern[j] === text[i - (this.m - 1 - j)]) {
+        j--;
+      }
+      if (j < 0) {
+        result.push(i - this.m + 1);
+        i += this.m; // non‑overlapping; use `i += 1` for overlapping
+      } else {
+        i += Math.max(this.getShift(text[i]), 1);
+      }
+    }
+    return result;
+  }
+
+  public static find(pattern: string, text: string): number[] {
+    return new BoyerMooreHorspool(pattern).search(text);
+  }
 }
 
-// Example with custom objects
-interface Person {
-    name: string;
-    age: number;
+/* ------------------- Quick test ------------------- */
+if (require.main === module) {
+  const txt = 'abracadabra abracadabra';
+  const pat = 'abra';
+  console.log('Matches:', BoyerMooreHorspool.find(pat, txt)); // → [0, 7, 11, 18]
 }
-
-const people: Person[] = [
-    { name: 'Alice', age: 25 },
-    { name: 'Bob', age: 20 },
-    { name: 'Charlie', age: 30 }
-];
-
-const thirdYoungest = kthSmallestGeneric(people, 2, (a, b) => a.age - b.age);
-console.log(thirdYoungest); // Output: { name: 'Alice', age: 25 }
