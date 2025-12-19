@@ -1,127 +1,129 @@
-import * as readline from 'readline';
+function mergeSort<T>(array: T[]): T[] {
+    // Base case: arrays with 0 or 1 element are already sorted
+    if (array.length <= 1) {
+        return array;
+    }
 
-interface User {
+    // Find the middle index
+    const middle = Math.floor(array.length / 2);
+    
+    // Divide the array into left and right halves
+    const left = array.slice(0, middle);
+    const right = array.slice(middle);
+
+    // Recursively sort both halves and merge them
+    return merge(mergeSort(left), mergeSort(right));
+}
+
+function merge<T>(left: T[], right: T[]): T[] {
+    const result: T[] = [];
+    let leftIndex = 0;
+    let rightIndex = 0;
+
+    // Compare elements from both arrays and add the smaller one to result
+    while (leftIndex < left.length && rightIndex < right.length) {
+        if (left[leftIndex] < right[rightIndex]) {
+            result.push(left[leftIndex]);
+            leftIndex++;
+        } else {
+            result.push(right[rightIndex]);
+            rightIndex++;
+        }
+    }
+
+    // Add remaining elements from left array
+    while (leftIndex < left.length) {
+        result.push(left[leftIndex]);
+        leftIndex++;
+    }
+
+    // Add remaining elements from right array
+    while (rightIndex < right.length) {
+        result.push(right[rightIndex]);
+        rightIndex++;
+    }
+
+    return result;
+}
+// Example usage with numbers
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log('Original:', numbers);
+console.log('Sorted:', mergeSort(numbers));
+
+// Example usage with strings
+const strings = ['banana', 'apple', 'cherry', 'date'];
+console.log('Original:', strings);
+console.log('Sorted:', mergeSort(strings));
+
+// Example usage with custom objects
+interface Person {
     name: string;
     age: number;
-    email: string;
 }
 
-class InputHandler {
-    private rl: readline.Interface;
+const people: Person[] = [
+    { name: 'Alice', age: 30 },
+    { name: 'Bob', age: 25 },
+    { name: 'Charlie', age: 35 }
+];
 
-    constructor() {
-        this.rl = readline.createInterface({
-            input: process.stdin,
-            output: process.stdout
-        });
+// Sort by age
+const sortedByAge = mergeSort(people.map(p => p.age));
+console.log('Ages sorted:', sortedByAge);
+function mergeSortWithComparator<T>(
+    array: T[], 
+    comparator: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
+): T[] {
+    if (array.length <= 1) {
+        return array;
     }
 
-    // Function to get user input with validation
-    async getUserInput(): Promise<User> {
-        try {
-            const name = await this.question('Enter your name: ');
-            const ageInput = await this.question('Enter your age: ');
-            const email = await this.question('Enter your email: ');
+    const middle = Math.floor(array.length / 2);
+    const left = array.slice(0, middle);
+    const right = array.slice(middle);
 
-            const age = parseInt(ageInput);
-            
-            if (isNaN(age) || age <= 0) {
-                throw new Error('Age must be a positive number');
-            }
-
-            if (!this.isValidEmail(email)) {
-                throw new Error('Please enter a valid email address');
-            }
-
-            return {
-                name: name.trim(),
-                age,
-                email: email.trim().toLowerCase()
-            };
-        } catch (error) {
-            console.error('Error:', error.message);
-            return await this.getUserInput(); // Retry on error
-        }
-    }
-
-    // Wrapper for readline question with promise
-    private question(prompt: string): Promise<string> {
-        return new Promise((resolve) => {
-            this.rl.question(prompt, resolve);
-        });
-    }
-
-    // Simple email validation
-    private isValidEmail(email: string): boolean {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    }
-
-    // Close the readline interface
-    close(): void {
-        this.rl.close();
-    }
+    return mergeWithComparator(
+        mergeSortWithComparator(left, comparator),
+        mergeSortWithComparator(right, comparator),
+        comparator
+    );
 }
 
-// Main function
-async function main() {
-    console.log('=== User Registration ===');
-    console.log('Please enter your information:\n');
+function mergeWithComparator<T>(left: T[], right: T[], comparator: (a: T, b: T) => number): T[] {
+    const result: T[] = [];
+    let leftIndex = 0;
+    let rightIndex = 0;
 
-    const inputHandler = new InputHandler();
-    
-    try {
-        const userData = await inputHandler.getUserInput();
-        
-        console.log('\n=== User Information ===');
-        console.log(`Name: ${userData.name}`);
-        console.log(`Age: ${userData.age}`);
-        console.log(`Email: ${userData.email}`);
-        
-        // Additional processing
-        if (userData.age >= 18) {
-            console.log('\n✅ You are eligible for registration!');
+    while (leftIndex < left.length && rightIndex < right.length) {
+        if (comparator(left[leftIndex], right[rightIndex]) <= 0) {
+            result.push(left[leftIndex]);
+            leftIndex++;
         } else {
-            console.log('\n❌ You must be 18 or older to register.');
+            result.push(right[rightIndex]);
+            rightIndex++;
         }
-        
-    } catch (error) {
-        console.error('Unexpected error:', error);
-    } finally {
-        inputHandler.close();
     }
+
+    return result.concat(left.slice(leftIndex), right.slice(rightIndex));
 }
 
-// Run the program
-if (require.main === module) {
-    main().catch(console.error);
+// Usage with custom comparator
+const numbersDesc = [64, 34, 25, 12, 22, 11, 90];
+const sortedDesc = mergeSortWithComparator(numbersDesc, (a, b) => b - a);
+console.log('Descending order:', sortedDesc);
+// Time complexity: O(n log n) in all cases
+// Space complexity: O(n) due to auxiliary arrays
+
+// Test with large array
+function testPerformance() {
+    const largeArray = Array.from({ length: 10000 }, () => 
+        Math.floor(Math.random() * 1000)
+    );
+    
+    console.time('Merge Sort');
+    const sorted = mergeSort(largeArray);
+    console.timeEnd('Merge Sort');
+    console.log('First 10 elements:', sorted.slice(0, 10));
 }
 
-// Export for testing purposes
-export { InputHandler, User };
-npm install -g typescript
-{
-    "compilerOptions": {
-        "target": "ES2020",
-        "module": "commonjs",
-        "strict": true,
-        "esModuleInterop": true,
-        "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true
-    }
-}
-tsc filename.ts
-node filename.js
-=== User Registration ===
-Please enter your information:
-
-Enter your name: John Doe
-Enter your age: 25
-Enter your email: john.doe@example.com
-
-=== User Information ===
-Name: John Doe
-Age: 25
-Email: john.doe@example.com
-
-✅ You are eligible for registration!
+testPerformance();
