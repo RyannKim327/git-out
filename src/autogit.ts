@@ -1,110 +1,148 @@
-interface ListNode {
-    val: number;
-    next: ListNode | null;
-}
-
-function getIntersectionNode(headA: ListNode | null, headB: ListNode | null): ListNode | null {
-    const visited = new Set<ListNode>();
+function maxSubArray(nums: number[]): number {
+    let maxSum = nums[0];
+    let currentSum = nums[0];
     
-    // Traverse first list and store all nodes
-    let currentA = headA;
-    while (currentA !== null) {
-        visited.add(currentA);
-        currentA = currentA.next;
+    for (let i = 1; i < nums.length; i++) {
+        // Either extend the existing subarray or start a new one
+        currentSum = Math.max(nums[i], currentSum + nums[i]);
+        maxSum = Math.max(maxSum, currentSum);
     }
     
-    // Traverse second list and check for intersection
-    let currentB = headB;
-    while (currentB !== null) {
-        if (visited.has(currentB)) {
-            return currentB;
+    return maxSum;
+}
+
+// With indices to track the subarray
+function maxSubArrayWithIndices(nums: number[]): { sum: number; start: number; end: number } {
+    let maxSum = nums[0];
+    let currentSum = nums[0];
+    let start = 0;
+    let maxStart = 0;
+    let maxEnd = 0;
+    
+    for (let i = 1; i < nums.length; i++) {
+        if (currentSum + nums[i] < nums[i]) {
+            // Start new subarray
+            currentSum = nums[i];
+            start = i;
+        } else {
+            // Extend current subarray
+            currentSum += nums[i];
         }
-        currentB = currentB.next;
-    }
-    
-    return null;
-}
-function getIntersectionNodeTwoPointers(headA: ListNode | null, headB: ListNode | null): ListNode | null {
-    if (!headA || !headB) return null;
-    
-    let pointerA: ListNode | null = headA;
-    let pointerB: ListNode | null = headB;
-    
-    while (pointerA !== pointerB) {
-        // Move pointers to next node
-        pointerA = pointerA ? pointerA.next : headB;
-        pointerB = pointerB ? pointerB.next : headA;
-    }
-    
-    return pointerA; // Either intersection point or null if no intersection
-}
-function getIntersectionNodeWithLength(headA: ListNode | null, headB: ListNode | null): ListNode | null {
-    if (!headA || !headB) return null;
-    
-    // Calculate lengths of both lists
-    const lengthA = getLength(headA);
-    const lengthB = getLength(headB);
-    
-    let longer: ListNode | null = lengthA >= lengthB ? headA : headB;
-    let shorter: ListNode | null = lengthA >= lengthB ? headB : headA;
-    
-    // Move longer pointer ahead by the difference
-    let diff = Math.abs(lengthA - lengthB);
-    while (diff > 0 && longer) {
-        longer = longer.next;
-        diff--;
-    }
-    
-    // Move both pointers until they meet
-    while (longer && shorter) {
-        if (longer === shorter) {
-            return longer;
+        
+        if (currentSum > maxSum) {
+            maxSum = currentSum;
+            maxStart = start;
+            maxEnd = i;
         }
-        longer = longer.next;
-        shorter = shorter.next;
     }
     
-    return null;
+    return { sum: maxSum, start: maxStart, end: maxEnd };
 }
-
-function getLength(head: ListNode | null): number {
-    let length = 0;
-    let current = head;
-    while (current) {
-        length++;
-        current = current.next;
+function maxSubArrayDivideConquer(nums: number[]): number {
+    return findMaxSubArray(nums, 0, nums.length - 1);
+    
+    function findMaxSubArray(arr: number[], low: number, high: number): number {
+        if (low === high) {
+            return arr[low];
+        }
+        
+        const mid = Math.floor((low + high) / 2);
+        
+        // Find maximum subarray in left half, right half, and crossing midpoint
+        const leftMax = findMaxSubArray(arr, low, mid);
+        const rightMax = findMaxSubArray(arr, mid + 1, high);
+        const crossMax = findMaxCrossingSubArray(arr, low, mid, high);
+        
+        return Math.max(leftMax, rightMax, crossMax);
     }
-    return length;
+    
+    function findMaxCrossingSubArray(arr: number[], low: number, mid: number, high: number): number {
+        let leftSum = -Infinity;
+        let sum = 0;
+        
+        // Find maximum sum in left half
+        for (let i = mid; i >= low; i--) {
+            sum += arr[i];
+            if (sum > leftSum) {
+                leftSum = sum;
+            }
+        }
+        
+        let rightSum = -Infinity;
+        sum = 0;
+        
+        // Find maximum sum in right half
+        for (let i = mid + 1; i <= high; i++) {
+            sum += arr[i];
+            if (sum > rightSum) {
+                rightSum = sum;
+            }
+        }
+        
+        return leftSum + rightSum;
+    }
 }
-// ListNode class for easier testing
-class ListNode {
-    constructor(
-        public val: number,
-        public next: ListNode | null = null
-    ) {}
+function maxSubArrayBruteForce(nums: number[]): number {
+    let maxSum = -Infinity;
+    
+    for (let i = 0; i < nums.length; i++) {
+        let currentSum = 0;
+        for (let j = i; j < nums.length; j++) {
+            currentSum += nums[j];
+            if (currentSum > maxSum) {
+                maxSum = currentSum;
+            }
+        }
+    }
+    
+    return maxSum;
+}
+interface MaxSubArrayResult {
+    sum: number;
+    subarray: number[];
+    indices: { start: number; end: number };
 }
 
-// Test function
-function testIntersection(): void {
-    // Create lists: 
-    // listA: 1 → 2 → 3 → 4
-    // listB: 9 → 8 → 3 → 4 (intersection at node 3)
+function findMaxSubArray(nums: number[]): MaxSubArrayResult {
+    if (nums.length === 0) {
+        throw new Error("Array cannot be empty");
+    }
     
-    const commonNode1 = new ListNode(3);
-    const commonNode2 = new ListNode(4);
-    commonNode1.next = commonNode2;
+    let maxSum = nums[0];
+    let currentSum = nums[0];
+    let start = 0;
+    let maxStart = 0;
+    let maxEnd = 0;
     
-    const headA = new ListNode(1);
-    headA.next = new ListNode(2);
-    headA.next.next = commonNode1;
+    for (let i = 1; i < nums.length; i++) {
+        if (currentSum < 0) {
+            currentSum = nums[i];
+            start = i;
+        } else {
+            currentSum += nums[i];
+        }
+        
+        if (currentSum > maxSum) {
+            maxSum = currentSum;
+            maxStart = start;
+            maxEnd = i;
+        }
+    }
     
-    const headB = new ListNode(9);
-    headB.next = new ListNode(8);
-    headB.next.next = commonNode1;
-    
-    const result = getIntersectionNodeTwoPointers(headA, headB);
-    console.log('Intersection node value:', result?.val); // Output: 3
-    console.log('Is it the same node?', result === commonNode1); // Output: true
+    return {
+        sum: maxSum,
+        subarray: nums.slice(maxStart, maxEnd + 1),
+        indices: { start: maxStart, end: maxEnd }
+    };
 }
+// Example usage
+const numbers = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
 
-testIntersection();
+console.log("Kadane's Algorithm:", maxSubArray(numbers));
+// Output: 6 (subarray [4, -1, 2, 1])
+
+console.log("With indices:", maxSubArrayWithIndices(numbers));
+// Output: { sum: 6, start: 3, end: 6 }
+
+console.log("Type-safe result:", findMaxSubArray(numbers));
+// Output: { sum: 6, subarray: [4, -1, 2, 1], indices: { start: 3, end: 6 } }
