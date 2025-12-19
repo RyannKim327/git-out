@@ -1,145 +1,110 @@
-const numbers: number[] = [42, 7, 19, 3, 100];
-
-// Ascending order (small → large)
-const asc = numbers.slice().sort((a, b) => a - b);
-console.log(asc); // [3, 7, 19, 42, 100]
-
-// Descending order (large → small)
-const desc = numbers.slice().sort((a, b) => b - a);
-console.log(desc); // [100, 42, 19, 7, 3]
-/**
- * Returns a **new** array sorted in ascending numeric order.
- * The original array is left untouched.
- */
-function sortNumbersAsc(arr: readonly number[]): number[] {
-  // `Array.from` also clones the array; `slice()` works as well.
-  return Array.from(arr).sort((a, b) => a - b);
+interface ListNode {
+    val: number;
+    next: ListNode | null;
 }
 
-/**
- * Returns a **new** array sorted in descending numeric order.
- */
-function sortNumbersDesc(arr: readonly number[]): number[] {
-  return Array.from(arr).sort((a, b) => b - a);
+function getIntersectionNode(headA: ListNode | null, headB: ListNode | null): ListNode | null {
+    const visited = new Set<ListNode>();
+    
+    // Traverse first list and store all nodes
+    let currentA = headA;
+    while (currentA !== null) {
+        visited.add(currentA);
+        currentA = currentA.next;
+    }
+    
+    // Traverse second list and check for intersection
+    let currentB = headB;
+    while (currentB !== null) {
+        if (visited.has(currentB)) {
+            return currentB;
+        }
+        currentB = currentB.next;
+    }
+    
+    return null;
+}
+function getIntersectionNodeTwoPointers(headA: ListNode | null, headB: ListNode | null): ListNode | null {
+    if (!headA || !headB) return null;
+    
+    let pointerA: ListNode | null = headA;
+    let pointerB: ListNode | null = headB;
+    
+    while (pointerA !== pointerB) {
+        // Move pointers to next node
+        pointerA = pointerA ? pointerA.next : headB;
+        pointerB = pointerB ? pointerB.next : headA;
+    }
+    
+    return pointerA; // Either intersection point or null if no intersection
+}
+function getIntersectionNodeWithLength(headA: ListNode | null, headB: ListNode | null): ListNode | null {
+    if (!headA || !headB) return null;
+    
+    // Calculate lengths of both lists
+    const lengthA = getLength(headA);
+    const lengthB = getLength(headB);
+    
+    let longer: ListNode | null = lengthA >= lengthB ? headA : headB;
+    let shorter: ListNode | null = lengthA >= lengthB ? headB : headA;
+    
+    // Move longer pointer ahead by the difference
+    let diff = Math.abs(lengthA - lengthB);
+    while (diff > 0 && longer) {
+        longer = longer.next;
+        diff--;
+    }
+    
+    // Move both pointers until they meet
+    while (longer && shorter) {
+        if (longer === shorter) {
+            return longer;
+        }
+        longer = longer.next;
+        shorter = shorter.next;
+    }
+    
+    return null;
 }
 
-// Usage
-const original = [5, 2, 9, 1];
-const asc = sortNumbersAsc(original);   // [1, 2, 5, 9]
-const desc = sortNumbersDesc(original); // [9, 5, 2, 1]
-
-console.log(original); // still [5, 2, 9, 1]
-const nums = [8, 3, 6];
-nums.sort((a, b) => a - b); // nums is now [3, 6, 8]
-type Integer = number & { __brand: 'integer' };
-
-function isInteger(n: number): n is Integer {
-  return Number.isInteger(n);
+function getLength(head: ListNode | null): number {
+    let length = 0;
+    let current = head;
+    while (current) {
+        length++;
+        current = current.next;
+    }
+    return length;
+}
+// ListNode class for easier testing
+class ListNode {
+    constructor(
+        public val: number,
+        public next: ListNode | null = null
+    ) {}
 }
 
-/**
- * Casts a `number[]` to `Integer[]` after runtime validation.
- * Throws if any element is not an integer.
- */
-function asIntegerArray(arr: number[]): Integer[] {
-  if (!arr.every(isInteger)) {
-    throw new Error('Array contains non‑integer values');
-  }
-  return arr as Integer[];
+// Test function
+function testIntersection(): void {
+    // Create lists: 
+    // listA: 1 → 2 → 3 → 4
+    // listB: 9 → 8 → 3 → 4 (intersection at node 3)
+    
+    const commonNode1 = new ListNode(3);
+    const commonNode2 = new ListNode(4);
+    commonNode1.next = commonNode2;
+    
+    const headA = new ListNode(1);
+    headA.next = new ListNode(2);
+    headA.next.next = commonNode1;
+    
+    const headB = new ListNode(9);
+    headB.next = new ListNode(8);
+    headB.next.next = commonNode1;
+    
+    const result = getIntersectionNodeTwoPointers(headA, headB);
+    console.log('Intersection node value:', result?.val); // Output: 3
+    console.log('Is it the same node?', result === commonNode1); // Output: true
 }
 
-// Example
-const raw = [1, 2, 3.5, 4];
-const ints = asIntegerArray(raw); // ❌ throws because 3.5 is not an integer
-function sortIntegers(arr: Integer[]): Integer[] {
-  return arr.slice().sort((a, b) => a - b);
-}
-function sortedCopy(arr: readonly number[]): number[] {
-  // `readonly` prevents callers from passing a mutable array that we might
-  // accidentally modify; we still return a mutable copy.
-  return [...arr].sort((a, b) => a - b);
-}
-interface Item {
-  value: number;
-  name: string;
-}
-
-const items: Item[] = [
-  { value: 10, name: 'a' },
-  { value: 5,  name: 'b' },
-  { value: 10, name: 'c' },
-];
-
-// Sort by `value` ascending, then by `name` alphabetically
-const sorted = items
-  .slice()
-  .sort((x, y) => x.value - y.value || x.name.localeCompare(y.name));
-
-console.log(sorted);
-// sort-utils.ts
-/**
- * Utility functions for sorting numeric arrays in TypeScript.
- * All functions are pure (they never mutate their arguments) unless
- * explicitly documented.
- */
-
-export function sortNumbersAsc(arr: readonly number[]): number[] {
-  return [...arr].sort((a, b) => a - b);
-}
-
-export function sortNumbersDesc(arr: readonly number[]): number[] {
-  return [...arr].sort((a, b) => b - a);
-}
-
-/**
- * In‑place version – mutates the supplied array.
- * Use with caution!
- */
-export function sortNumbersAscInPlace(arr: number[]): void {
-  arr.sort((a, b) => a - b);
-}
-
-/* ---------- Optional integer‑only helpers ---------- */
-
-export type Integer = number & { __brand: 'integer' };
-
-export function isInteger(n: number): n is Integer {
-  return Number.isInteger(n);
-}
-
-/**
- * Throws if any element is not an integer.
- */
-export function asIntegerArray(arr: number[]): Integer[] {
-  if (!arr.every(isInteger)) {
-    throw new Error('Array contains non‑integer values');
-  }
-  return arr as Integer[];
-}
-
-/**
- * Sorts an array that has already been validated as integer‑only.
- */
-export function sortIntegers(arr: Integer[]): Integer[] {
-  return arr.slice().sort((a, b) => a - b);
-}
-
-/* ---------- Demo ---------- */
-if (require.main === module) {
-  const nums = [42, 7, 19, 3, 100];
-  console.log('asc  :', sortNumbersAsc(nums));
-  console.log('desc :', sortNumbersDesc(nums));
-
-  const mutable = [...nums];
-  sortNumbersAscInPlace(mutable);
-  console.log('in‑place:', mutable);
-}
-// 1️⃣ Simple, non‑mutating ascending sort
-const sorted = myArray.slice().sort((a, b) => a - b);
-
-// 2️⃣ In‑place (mutates original)
-myArray.sort((a, b) => a - b);
-
-// 3️⃣ Reusable helpers
-function sortAsc(arr: readonly number[]) { return [...arr].sort((a, b) => a - b); }
-function sortDesc(arr: readonly number[]) { return [...arr].sort((a, b) => b - a); }
+testIntersection();
