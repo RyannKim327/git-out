@@ -1,107 +1,91 @@
-interface TreeNode<T> {
-    value: T;
-    left: TreeNode<T> | null;
-    right: TreeNode<T> | null;
+// Define the linked list node
+class ListNode<T> {
+    constructor(
+        public value: T,
+        public next: ListNode<T> | null = null
+    ) {}
 }
 
-function countLeafNodes<T>(root: TreeNode<T> | null): number {
-    if (root === null) {
-        return 0;
+function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+    if (!head) return null;
+    
+    let slow: ListNode<T> = head;
+    let fast: ListNode<T> | null = head;
+    
+    while (fast && fast.next) {
+        slow = slow.next!;
+        fast = fast.next.next;
     }
     
-    // If both children are null, it's a leaf node
-    if (root.left === null && root.right === null) {
-        return 1;
-    }
-    
-    // Recursively count leaves in left and right subtrees
-    return countLeafNodes(root.left) + countLeafNodes(root.right);
+    return slow;
 }
-function countLeafNodesIterative<T>(root: TreeNode<T> | null): number {
-    if (root === null) {
-        return 0;
-    }
+function findMiddleByCount<T>(head: ListNode<T> | null): ListNode<T> | null {
+    if (!head) return null;
     
+    // First traversal: count nodes
     let count = 0;
-    const queue: TreeNode<T>[] = [root];
-    
-    while (queue.length > 0) {
-        const currentNode = queue.shift()!;
-        
-        if (currentNode.left === null && currentNode.right === null) {
-            count++;
-        }
-        
-        if (currentNode.left !== null) {
-            queue.push(currentNode.left);
-        }
-        
-        if (currentNode.right !== null) {
-            queue.push(currentNode.right);
-        }
+    let current: ListNode<T> | null = head;
+    while (current) {
+        count++;
+        current = current.next;
     }
     
-    return count;
+    // Second traversal: find middle
+    const middleIndex = Math.floor(count / 2);
+    current = head;
+    
+    for (let i = 0; i < middleIndex; i++) {
+        current = current!.next;
+    }
+    
+    return current;
 }
-function countLeafNodesDFS<T>(root: TreeNode<T> | null): number {
-    if (root === null) {
-        return 0;
-    }
+class LinkedList<T> {
+    head: ListNode<T> | null = null;
     
-    let count = 0;
-    const stack: TreeNode<T>[] = [root];
-    
-    while (stack.length > 0) {
-        const currentNode = stack.pop()!;
-        
-        if (currentNode.left === null && currentNode.right === null) {
-            count++;
-        }
-        
-        if (currentNode.right !== null) {
-            stack.push(currentNode.right);
-        }
-        
-        if (currentNode.left !== null) {
-            stack.push(currentNode.left);
+    add(value: T): void {
+        const newNode = new ListNode(value);
+        if (!this.head) {
+            this.head = newNode;
+        } else {
+            let current = this.head;
+            while (current.next) {
+                current = current.next;
+            }
+            current.next = newNode;
         }
     }
     
-    return count;
-}
-// Binary Tree implementation
-class BinaryTree<T> {
-    root: TreeNode<T> | null;
-    
-    constructor() {
-        this.root = null;
-    }
-    
-    countLeaves(): number {
-        return countLeafNodes(this.root);
-    }
-    
-    countLeavesIterative(): number {
-        return countLeafNodesIterative(this.root);
+    // Method 1: Two pointers (recommended)
+    findMiddle(): T | null {
+        const middleNode = findMiddle(this.head);
+        return middleNode ? middleNode.value : null;
     }
 }
 
-// Example usage
-const tree = new BinaryTree<number>();
-tree.root = {
-    value: 1,
-    left: {
-        value: 2,
-        left: { value: 4, left: null, right: null },
-        right: { value: 5, left: null, right: null }
-    },
-    right: {
-        value: 3,
-        left: { value: 6, left: null, right: null },
-        right: null
-    }
-};
+// Usage example
+const list = new LinkedList<number>();
+list.add(1);
+list.add(2);
+list.add(3);
+list.add(4);
+list.add(5);
 
-console.log("Recursive count:", countLeafNodes(tree.root)); // Output: 3
-console.log("Iterative count:", countLeafNodesIterative(tree.root)); // Output: 3
-console.log("DFS count:", countLeafNodesDFS(tree.root)); // Output: 3
+console.log("Middle element:", list.findMiddle()); // Output: 3
+
+list.add(6);
+console.log("Middle element:", list.findMiddle()); // Output: 4 (second middle in even-length list)
+function findMiddleUsingArray<T>(head: ListNode<T> | null): ListNode<T> | null {
+    if (!head) return null;
+    
+    const nodes: ListNode<T>[] = [];
+    let current: ListNode<T> | null = head;
+    
+    while (current) {
+        nodes.push(current);
+        current = current.next;
+    }
+    
+    const middleIndex = Math.floor(nodes.length / 2);
+    return nodes[middleIndex];
+}
