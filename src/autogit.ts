@@ -1,148 +1,142 @@
-function maxSubArray(nums: number[]): number {
-    let maxSum = nums[0];
-    let currentSum = nums[0];
-    
-    for (let i = 1; i < nums.length; i++) {
-        // Either extend the existing subarray or start a new one
-        currentSum = Math.max(nums[i], currentSum + nums[i]);
-        maxSum = Math.max(maxSum, currentSum);
+function kthSmallestSimple(arr: number[], k: number): number {
+    if (k < 1 || k > arr.length) {
+        throw new Error('k is out of bounds');
     }
     
-    return maxSum;
+    const sorted = [...arr].sort((a, b) => a - b);
+    return sorted[k - 1];
 }
 
-// With indices to track the subarray
-function maxSubArrayWithIndices(nums: number[]): { sum: number; start: number; end: number } {
-    let maxSum = nums[0];
-    let currentSum = nums[0];
-    let start = 0;
-    let maxStart = 0;
-    let maxEnd = 0;
-    
-    for (let i = 1; i < nums.length; i++) {
-        if (currentSum + nums[i] < nums[i]) {
-            // Start new subarray
-            currentSum = nums[i];
-            start = i;
-        } else {
-            // Extend current subarray
-            currentSum += nums[i];
-        }
-        
-        if (currentSum > maxSum) {
-            maxSum = currentSum;
-            maxStart = start;
-            maxEnd = i;
-        }
-    }
-    
-    return { sum: maxSum, start: maxStart, end: maxEnd };
-}
-function maxSubArrayDivideConquer(nums: number[]): number {
-    return findMaxSubArray(nums, 0, nums.length - 1);
-    
-    function findMaxSubArray(arr: number[], low: number, high: number): number {
-        if (low === high) {
-            return arr[low];
-        }
-        
-        const mid = Math.floor((low + high) / 2);
-        
-        // Find maximum subarray in left half, right half, and crossing midpoint
-        const leftMax = findMaxSubArray(arr, low, mid);
-        const rightMax = findMaxSubArray(arr, mid + 1, high);
-        const crossMax = findMaxCrossingSubArray(arr, low, mid, high);
-        
-        return Math.max(leftMax, rightMax, crossMax);
-    }
-    
-    function findMaxCrossingSubArray(arr: number[], low: number, mid: number, high: number): number {
-        let leftSum = -Infinity;
-        let sum = 0;
-        
-        // Find maximum sum in left half
-        for (let i = mid; i >= low; i--) {
-            sum += arr[i];
-            if (sum > leftSum) {
-                leftSum = sum;
-            }
-        }
-        
-        let rightSum = -Infinity;
-        sum = 0;
-        
-        // Find maximum sum in right half
-        for (let i = mid + 1; i <= high; i++) {
-            sum += arr[i];
-            if (sum > rightSum) {
-                rightSum = sum;
-            }
-        }
-        
-        return leftSum + rightSum;
-    }
-}
-function maxSubArrayBruteForce(nums: number[]): number {
-    let maxSum = -Infinity;
-    
-    for (let i = 0; i < nums.length; i++) {
-        let currentSum = 0;
-        for (let j = i; j < nums.length; j++) {
-            currentSum += nums[j];
-            if (currentSum > maxSum) {
-                maxSum = currentSum;
-            }
-        }
-    }
-    
-    return maxSum;
-}
-interface MaxSubArrayResult {
-    sum: number;
-    subarray: number[];
-    indices: { start: number; end: number };
-}
-
-function findMaxSubArray(nums: number[]): MaxSubArrayResult {
-    if (nums.length === 0) {
-        throw new Error("Array cannot be empty");
-    }
-    
-    let maxSum = nums[0];
-    let currentSum = nums[0];
-    let start = 0;
-    let maxStart = 0;
-    let maxEnd = 0;
-    
-    for (let i = 1; i < nums.length; i++) {
-        if (currentSum < 0) {
-            currentSum = nums[i];
-            start = i;
-        } else {
-            currentSum += nums[i];
-        }
-        
-        if (currentSum > maxSum) {
-            maxSum = currentSum;
-            maxStart = start;
-            maxEnd = i;
-        }
-    }
-    
-    return {
-        sum: maxSum,
-        subarray: nums.slice(maxStart, maxEnd + 1),
-        indices: { start: maxStart, end: maxEnd }
-    };
-}
 // Example usage
-const numbers = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
+const numbers = [3, 1, 4, 1, 5, 9, 2, 6];
+console.log(kthSmallestSimple(numbers, 3)); // Output: 2 (3rd smallest)
+function kthSmallestQuickSelect(arr: number[], k: number): number {
+    if (k < 1 || k > arr.length) {
+        throw new Error('k is out of bounds');
+    }
+    
+    return quickSelect([...arr], 0, arr.length - 1, k - 1);
+}
 
-console.log("Kadane's Algorithm:", maxSubArray(numbers));
-// Output: 6 (subarray [4, -1, 2, 1])
+function quickSelect(arr: number[], left: number, right: number, k: number): number {
+    if (left === right) {
+        return arr[left];
+    }
+    
+    const pivotIndex = partition(arr, left, right);
+    
+    if (k === pivotIndex) {
+        return arr[k];
+    } else if (k < pivotIndex) {
+        return quickSelect(arr, left, pivotIndex - 1, k);
+    } else {
+        return quickSelect(arr, pivotIndex + 1, right, k);
+    }
+}
 
-console.log("With indices:", maxSubArrayWithIndices(numbers));
-// Output: { sum: 6, start: 3, end: 6 }
+function partition(arr: number[], left: number, right: number): number {
+    const pivot = arr[right];
+    let i = left;
+    
+    for (let j = left; j < right; j++) {
+        if (arr[j] <= pivot) {
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+            i++;
+        }
+    }
+    
+    [arr[i], arr[right]] = [arr[right], arr[i]];
+    return i;
+}
 
-console.log("Type-safe result:", findMaxSubArray(numbers));
-// Output: { sum: 6, subarray: [4, -1, 2, 1], indices: { start: 3, end: 6 } }
+// Example usage
+console.log(kthSmallestQuickSelect(numbers, 3)); // Output: 2
+class MinHeap {
+    private heap: number[] = [];
+    
+    constructor(arr: number[]) {
+        this.heap = [...arr];
+        this.buildHeap();
+    }
+    
+    private buildHeap(): void {
+        for (let i = Math.floor(this.heap.length / 2); i >= 0; i--) {
+            this.heapifyDown(i);
+        }
+    }
+    
+    private heapifyDown(index: number): void {
+        const left = 2 * index + 1;
+        const right = 2 * index + 2;
+        let smallest = index;
+        
+        if (left < this.heap.length && this.heap[left] < this.heap[smallest]) {
+            smallest = left;
+        }
+        
+        if (right < this.heap.length && this.heap[right] < this.heap[smallest]) {
+            smallest = right;
+        }
+        
+        if (smallest !== index) {
+            [this.heap[index], this.heap[smallest]] = [this.heap[smallest], this.heap[index]];
+            this.heapifyDown(smallest);
+        }
+    }
+    
+    extractMin(): number {
+        if (this.heap.length === 0) throw new Error('Heap is empty');
+        
+        const min = this.heap[0];
+        this.heap[0] = this.heap[this.heap.length - 1];
+        this.heap.pop();
+        this.heapifyDown(0);
+        
+        return min;
+    }
+}
+
+function kthSmallestHeap(arr: number[], k: number): number {
+    if (k < 1 || k > arr.length) {
+        throw new Error('k is out of bounds');
+    }
+    
+    const heap = new MinHeap(arr);
+    let result = 0;
+    
+    for (let i = 0; i < k; i++) {
+        result = heap.extractMin();
+    }
+    
+    return result;
+}
+
+// Example usage
+console.log(kthSmallestHeap(numbers, 3)); // Output: 2
+function kthSmallestGeneric<T>(
+    arr: T[], 
+    k: number, 
+    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
+): T {
+    if (k < 1 || k > arr.length) {
+        throw new Error('k is out of bounds');
+    }
+    
+    const sorted = [...arr].sort(compareFn);
+    return sorted[k - 1];
+}
+
+// Example with custom objects
+interface Person {
+    name: string;
+    age: number;
+}
+
+const people: Person[] = [
+    { name: 'Alice', age: 25 },
+    { name: 'Bob', age: 20 },
+    { name: 'Charlie', age: 30 }
+];
+
+const thirdYoungest = kthSmallestGeneric(people, 2, (a, b) => a.age - b.age);
+console.log(thirdYoungest); // Output: { name: 'Alice', age: 25 }
