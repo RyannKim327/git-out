@@ -1,222 +1,109 @@
-// A directed edge with a weight
-interface Edge {
-  from: number;   // source vertex id (0‑based)
-  to: number;     // destination vertex id
-  weight: number; // edge weight (can be negative)
+function decToBin(num: number): string {
+  // Handles positive, zero, and negative numbers (two's‑complement string)
+  return num.toString(2);
 }
-/**
- * Bellman‑Ford shortest‑path algorithm.
- *
- * @param vertexCount   Number of vertices in the graph (ids 0 … vertexCount‑1)
- * @param edges         Array of directed edges (may contain negative weights)
- * @param source        Index of the source vertex
- *
- * @returns An object containing:
- *   - distances: number[]   // shortest distances from source (Infinity = unreachable)
- *   - predecessors: (number | null)[] // previous vertex on the shortest path
- *   - hasNegativeCycle: boolean // true if a reachable negative‑weight cycle exists
- */
-export function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): {
-  distances: number[];
-  predecessors: (number | null)[];
-  hasNegativeCycle: boolean;
-} {
-  // ---------- 1. initialise ----------
-  const distances = new Array<number>(vertexCount).fill(Infinity);
-  const predecessors: (number | null)[] = new Array<number | null>(vertexCount).fill(null);
 
-  distances[source] = 0; // distance to itself is zero
+// Usage
+console.log(decToBin(10));   // "1010"
+console.log(decToBin(0));    // "0"
+console.log(decToBin(-5));   // "-101"
+function decToBinPadded(num: number, width: number = 8): string {
+  const raw = Math.abs(num).toString(2);          // magnitude only
+  const padded = raw.padStart(width, '0');        // left‑pad with zeros
+  return num < 0 ? '-' + padded : padded;         // keep sign if needed
+}
 
-  // ---------- 2. relax edges |V|‑1 times ----------
-  for (let i = 0; i < vertexCount - 1; i++) {
-    let anyChange = false;
+// Example
+console.log(decToBinPadded(5, 8));   // "00000101"
+console.log(decToBinPadded(255, 8)); // "11111111"
+function decToBinTwosComplement(num: number, bits: number = 8): string {
+  const mask = (1 << bits) - 1;          // e.g. 0b11111111 for 8 bits
+  const unsigned = (num & mask) >>> 0;  // force unsigned 32‑bit
+  return unsigned.toString(2).padStart(bits, '0');
+}
 
-    for (const { from, to, weight } of edges) {
-      if (distances[from] !== Infinity && distances[from] + weight < distances[to]) {
-        distances[to] = distances[from] + weight;
-        predecessors[to] = from;
-        anyChange = true;
-      }
-    }
+// Example (8‑bit two's complement)
+console.log(decToBinTwosComplement(-5, 8)); // "11111011"
+function decToBinManual(num: number): string {
+  if (num === 0) return '0';
+  const isNeg = num < 0;
+  let n = Math.abs(num);
+  let bits = '';
 
-    // Early exit: if no distance changed in this pass, we are done
-    if (!anyChange) break;
+  while (n > 0) {
+    bits = (n % 2) + bits;   // prepend remainder (0 or 1)
+    n = Math.floor(n / 2);
   }
 
-  // ---------- 3. check for negative‑weight cycles ----------
-  let hasNegativeCycle = false;
-  for (const { from, to, weight } of edges) {
-    if (distances[from] !== Infinity && distances[from] + weight < distances[to]) {
-      // We can still improve a distance → a negative cycle is reachable
-      hasNegativeCycle = true;
-      break;
-    }
-  }
-
-  return { distances, predecessors, hasNegativeCycle };
+  return isNeg ? '-' + bits : bits;
 }
+
+// Test
+console.log(decToBinManual(13)); // "1101"
+console.log(decToBinManual(-13)); // "-1101"
+function bigIntToBin(value: bigint): string {
+  // BigInt also has toString(radix)
+  return value.toString(2);
+}
+
+// Example
+const huge = 123456789012345678901234567890n;
+console.log(bigIntToBin(huge));
+// "1101101101001101101001110010010110011111110010011111110100010101101110010010101101110"
+type BinOptions = {
+  /** Desired width (number of bits). If omitted, no padding is applied. */
+  width?: number;
+  /** If true, returns two's‑complement representation for negative numbers. */
+  twosComplement?: boolean;
+};
 
 /**
- * Reconstruct the path from `source` to `target` using the predecessor array.
+ * Convert a decimal number (Number or BigInt) to a binary string.
  *
- * @param predecessors  Array returned by `bellmanFord`
- * @param source        Source vertex id
- * @param target        Target vertex id
- *
- * @returns An array of vertex ids representing the path, or `null` if no path exists.
+ * @param value   The decimal value to convert.
+ * @param opts    Optional formatting flags.
+ * @returns       Binary string according to the requested options.
  */
-export function reconstructPath(
-  predecessors: (number | null)[],
-  source: number,
-  target: number
-): number[] | null {
-  if (predecessors[target] === null && source !== target) {
-    // target is unreachable
-    return null;
+function decToBinary(
+  value: number | bigint,
+  opts: BinOptions = {}
+): string {
+  const { width, twosComplement = false } = opts;
+
+  // ---------- 1️⃣ Handle BigInt ----------
+  if (typeof value === 'bigint') {
+    const raw = value.toString(2);
+    if (width) return raw.padStart(width, '0');
+    return raw;
   }
 
-  const path: number[] = [];
-  let cur: number | null = target;
-
-  while (cur !== null) {
-    path.push(cur);
-    if (cur === source) break;
-    cur = predecessors[cur];
+  // ---------- 2️⃣ Normal Number ----------
+  if (!Number.isFinite(value) || !Number.isInteger(value)) {
+    throw new TypeError('Only finite integers can be converted to binary.');
   }
 
-  // If we stopped before reaching the source, there is no path
-  if (path[path.length - 1] !== source) return null;
-
-  path.reverse(); // from source → target
-  return path;
-}
-import { bellmanFord, reconstructPath } from "./bellmanFord";
-
-// Example graph (0‑based vertex ids)
-//   0 → 1 (weight 5)
-//   0 → 2 (weight 2)
-//   1 → 2 (weight -4)
-//   2 → 3 (weight 3)
-//   3 → 1 (weight 1)
-const edges: Edge[] = [
-  { from: 0, to: 1, weight: 5 },
-  { from: 0, to: 2, weight: 2 },
-  { from: 1, to: 2, weight: -4 },
-  { from: 2, to: 3, weight: 3 },
-  { from: 3, to: 1, weight: 1 },
-];
-
-const V = 4;               // vertices 0 … 3
-const source = 0;
-
-const { distances, predecessors, hasNegativeCycle } = bellmanFord(V, edges, source);
-
-if (hasNegativeCycle) {
-  console.error("Graph contains a reachable negative‑weight cycle!");
-} else {
-  console.log("Shortest distances from source:", distances);
-  // → [0, 2, 2, 5]
-
-  // Reconstruct a path, e.g. from 0 to vertex 3
-  const path = reconstructPath(predecessors, source, 3);
-  console.log("Path 0 → 3 :", path?.join(" → "));
-  // → Path 0 → 3 : 0 → 2 → 3
-}
-Shortest distances from source: [ 0, 2, 2, 5 ]
-Path 0 → 3 : 0 → 2 → 3
-// bellmanFord.ts -------------------------------------------------------------
-export interface Edge {
-  from: number;
-  to: number;
-  weight: number;
-}
-
-/**
- * Bellman‑Ford algorithm.
- */
-export function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): {
-  distances: number[];
-  predecessors: (number | null)[];
-  hasNegativeCycle: boolean;
-} {
-  const distances = new Array<number>(vertexCount).fill(Infinity);
-  const predecessors: (number | null)[] = new Array<number | null>(vertexCount).fill(null);
-  distances[source] = 0;
-
-  for (let i = 0; i < vertexCount - 1; i++) {
-    let changed = false;
-    for (const { from, to, weight } of edges) {
-      if (distances[from] !== Infinity && distances[from] + weight < distances[to]) {
-        distances[to] = distances[from] + weight;
-        predecessors[to] = from;
-        changed = true;
-      }
-    }
-    if (!changed) break;
+  // Two's complement path (unsigned mask)
+  if (twosComplement && width) {
+    const mask = (1 << width) - 1;               // works up to 31 bits safely
+    const unsigned = (value & mask) >>> 0;      // >>> forces unsigned 32‑bit
+    const bin = unsigned.toString(2).padStart(width, '0');
+    return bin;
   }
 
-  let hasNegativeCycle = false;
-  for (const { from, to, weight } of edges) {
-    if (distances[from] !== Infinity && distances[from] + weight < distances[to]) {
-      hasNegativeCycle = true;
-      break;
-    }
-  }
-
-  return { distances, predecessors, hasNegativeCycle };
+  // Regular signed conversion
+  const raw = Math.abs(value).toString(2);
+  const padded = width ? raw.padStart(width, '0') : raw;
+  return value < 0 ? '-' + padded : padded;
 }
 
-/**
- * Reconstruct a path from source to target.
- */
-export function reconstructPath(
-  predecessors: (number | null)[],
-  source: number,
-  target: number
-): number[] | null {
-  if (predecessors[target] === null && source !== target) return null;
-  const path: number[] = [];
-  let cur: number | null = target;
-  while (cur !== null) {
-    path.push(cur);
-    if (cur === source) break;
-    cur = predecessors[cur];
-  }
-  if (path[path.length - 1] !== source) return null;
-  path.reverse();
-  return path;
-}
+// ---- Demo -------------------------------------------------
+console.log(decToBinary(42));                     // "101010"
+console.log(decToBinary(-42));                    // "-101010"
+console.log(decToBinary(42, { width: 8 }));       // "00101010"
+console.log(decToBinary(-5, { width: 8, twosComplement: true })); // "11111011"
+console.log(decToBinary(12345678901234567890n)); // big‑int example
+// One‑liner for most cases
+const binary = (num: number) => num.toString(2);
 
-// demo.ts --------------------------------------------------------------------
-import { bellmanFord, reconstructPath, Edge } from "./bellmanFord";
-
-const edges: Edge[] = [
-  { from: 0, to: 1, weight: 5 },
-  { from: 0, to: 2, weight: 2 },
-  { from: 1, to: 2, weight: -4 },
-  { from: 2, to: 3, weight: 3 },
-  { from: 3, to: 1, weight: 1 },
-];
-
-const V = 4;
-const source = 0;
-
-const { distances, predecessors, hasNegativeCycle } = bellmanFord(V, edges, source);
-
-if (hasNegativeCycle) {
-  console.error("Negative‑weight cycle detected!");
-} else {
-  console.log("Distances:", distances);
-  const target = 3;
-  const path = reconstructPath(predecessors, source, target);
-  console.log(`Shortest path ${source} → ${target}:`, path?.join(" → "));
-}
-ts-node demo.ts
+// Example
+console.log(binary(13)); // "1101"
