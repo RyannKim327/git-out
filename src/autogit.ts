@@ -1,108 +1,165 @@
-function maxWithMath(arr: number[]): number | undefined {
-  // If the array is empty we return undefined (Math.max() would give -Infinity)
-  return arr.length ? Math.max(...arr) : undefined;
-}
-
-// Example
-const nums = [3, 7, 2, 9, 5];
-console.log(maxWithMath(nums)); // 9
-function maxWithReduce(arr: number[]): number | undefined {
-  return arr.reduce((max, cur) => (cur > max ? cur : max), -Infinity);
-}
-
-// Or, if you want `undefined` for an empty array:
-function maxWithReduceOrUndef(arr: number[]): number | undefined {
-  if (!arr.length) return undefined;
-  return arr.reduce((max, cur) => (cur > max ? cur : max));
-}
-function maxWithLoop(arr: number[]): number | undefined {
-  if (!arr.length) return undefined;
-
-  let max = arr[0];
-  for (let i = 1; i < arr.length; i++) {
-    const v = arr[i];
-    if (v > max) max = v;
-  }
-  return max;
-}
-type Selector<T, R> = (item: T) => R;
-type Comparator<R> = (a: R, b: R) => number;
-
-/**
- * Returns the element whose selected value is maximal.
- * If the array is empty, returns undefined.
- */
-function maxBy<T, R>(
-  arr: T[],
-  selector: Selector<T, R>,
-  compare: Comparator<R> = (a, b) => (a > b ? 1 : a < b ? -1 : 0)
-): T | undefined {
-  if (!arr.length) return undefined;
-
-  let best = arr[0];
-  let bestKey = selector(best);
-
-  for (let i = 1; i < arr.length; i++) {
-    const cur = arr[i];
-    const curKey = selector(cur);
-    if (compare(curKey, bestKey) > 0) {
-      best = cur;
-      bestKey = curKey;
+function quicksort<T>(arr: T[]): T[] {
+    if (arr.length <= 1) {
+        return arr;
     }
-  }
-  return best;
+    
+    // Create a copy to avoid modifying the original array
+    const array = [...arr];
+    
+    // Choose pivot (middle element)
+    const pivotIndex = Math.floor(array.length / 2);
+    const pivot = array[pivotIndex];
+    
+    const left: T[] = [];
+    const right: T[] = [];
+    
+    // Partition the array around the pivot
+    for (let i = 0; i < array.length; i++) {
+        if (i === pivotIndex) continue;
+        
+        if (array[i] < pivot) {
+            left.push(array[i]);
+        } else {
+            right.push(array[i]);
+        }
+    }
+    
+    // Recursively sort and combine
+    return [...quicksort(left), pivot, ...quicksort(right)];
+}
+function quicksortInPlace<T>(arr: T[], left: number = 0, right: number = arr.length - 1): void {
+    if (left >= right) return;
+    
+    const pivotIndex = partition(arr, left, right);
+    
+    quicksortInPlace(arr, left, pivotIndex - 1);
+    quicksortInPlace(arr, pivotIndex + 1, right);
 }
 
-/* ---- Usage examples ---- */
+function partition<T>(arr: T[], left: number, right: number): number {
+    const pivot = arr[right];
+    let i = left - 1;
+    
+    for (let j = left; j < right; j++) {
+        if (arr[j] <= pivot) {
+            i++;
+            [arr[i], arr[j]] = [arr[j], arr[i]]; // Swap elements
+        }
+    }
+    
+    [arr[i + 1], arr[right]] = [arr[right], arr[i + 1]]; // Place pivot in correct position
+    return i + 1;
+}
+function quicksortGeneric<T>(
+    arr: T[], 
+    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
+): T[] {
+    if (arr.length <= 1) return arr;
+    
+    const array = [...arr];
+    const pivotIndex = Math.floor(array.length / 2);
+    const pivot = array[pivotIndex];
+    
+    const left: T[] = [];
+    const right: T[] = [];
+    
+    for (let i = 0; i < array.length; i++) {
+        if (i === pivotIndex) continue;
+        
+        if (compareFn(array[i], pivot) < 0) {
+            left.push(array[i]);
+        } else {
+            right.push(array[i]);
+        }
+    }
+    
+    return [
+        ...quicksortGeneric(left, compareFn),
+        pivot,
+        ...quicksortGeneric(right, compareFn)
+    ];
+}
+// Example with numbers
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log("Original:", numbers);
+console.log("Sorted:", quicksort(numbers));
 
-// 1️⃣ Numbers (same as before, but using the generic)
-const maxNum = maxBy([4, 2, 9, 1], n => n);
-console.log(maxNum); // 9
+// Example with strings
+const strings = ["banana", "apple", "cherry", "date"];
+console.log("Original:", strings);
+console.log("Sorted:", quicksort(strings));
 
-// 2️⃣ Objects – find the person with the highest score
+// Using the in-place version
+const arrayToSort = [3, 1, 4, 1, 5, 9, 2, 6];
+console.log("Before in-place:", arrayToSort);
+quicksortInPlace(arrayToSort);
+console.log("After in-place:", arrayToSort);
+
+// Using custom comparator for objects
 interface Person {
-  name: string;
-  score: number;
+    name: string;
+    age: number;
 }
+
 const people: Person[] = [
-  { name: 'Alice', score: 12 },
-  { name: 'Bob',   score: 17 },
-  { name: 'Cara',  score: 15 },
+    { name: "Alice", age: 30 },
+    { name: "Bob", age: 25 },
+    { name: "Charlie", age: 35 }
 ];
-const topScorer = maxBy(people, p => p.score);
-console.log(topScorer); // { name: 'Bob', score: 17 }
 
-// 3️⃣ Dates – latest date in an array
-const dates = [new Date('2023-01-01'), new Date('2024-06-15'), new Date('2022-12-31')];
-const latest = maxBy(dates, d => d.getTime());
-console.log(latest?.toISOString()); // 2024-06-15T00:00:00.000Z
-// src/utils/array.ts
-export function maxNumber(arr: number[]): number | undefined {
-  return arr.length ? Math.max(...arr) : undefined;
-}
+const sortedByAge = quicksortGeneric(people, (a, b) => a.age - b.age);
+console.log("Sorted by age:", sortedByAge);
 
-/** Generic max‑by selector */
-export function maxBy<T, R>(
-  arr: T[],
-  selector: (item: T) => R,
-  compare: (a: R, b: R) => number = (a, b) => (a > b ? 1 : a < b ? -1 : 0)
-): T | undefined {
-  if (!arr.length) return undefined;
-
-  let best = arr[0];
-  let bestKey = selector(best);
-
-  for (let i = 1; i < arr.length; i++) {
-    const cur = arr[i];
-    const curKey = selector(cur);
-    if (compare(curKey, bestKey) > 0) {
-      best = cur;
-      bestKey = curKey;
+const sortedByName = quicksortGeneric(people, (a, b) => a.name.localeCompare(b.name));
+console.log("Sorted by name:", sortedByName);
+// Optimized version with tail recursion and better pivot selection
+function optimizedQuicksort<T>(arr: T[]): T[] {
+    function sort(array: T[], left: number, right: number): void {
+        while (left < right) {
+            const pivotIndex = optimizedPartition(array, left, right);
+            
+            // Recursively sort the smaller partition first
+            if (pivotIndex - left < right - pivotIndex) {
+                sort(array, left, pivotIndex - 1);
+                left = pivotIndex + 1;
+            } else {
+                sort(array, pivotIndex + 1, right);
+                right = pivotIndex - 1;
+            }
+        }
     }
-  }
-  return best;
+    
+    const array = [...arr];
+    sort(array, 0, array.length - 1);
+    return array;
 }
-import { maxNumber, maxBy } from '@/utils/array';
 
-const biggest = maxNumber([10, 5, 22]); // 22
-const topStudent = maxBy(students, s => s.gpa);
+function optimizedPartition<T>(arr: T[], left: number, right: number): number {
+    // Median-of-three pivot selection
+    const mid = Math.floor((left + right) / 2);
+    const pivot = medianOfThree(arr, left, mid, right);
+    
+    let i = left - 1;
+    let j = right + 1;
+    
+    while (true) {
+        do { i++; } while (arr[i] < pivot);
+        do { j--; } while (arr[j] > pivot);
+        
+        if (i >= j) return j;
+        
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+}
+
+function medianOfThree<T>(arr: T[], a: number, b: number, c: number): T {
+    if (arr[a] < arr[b]) {
+        if (arr[b] < arr[c]) return arr[b];
+        else if (arr[a] < arr[c]) return arr[c];
+        else return arr[a];
+    } else {
+        if (arr[a] < arr[c]) return arr[a];
+        else if (arr[b] < arr[c]) return arr[c];
+        else return arr[b];
+    }
+}
