@@ -1,199 +1,132 @@
-interface BWTResult {
-    transformed: string;
-    originalIndex: number;
-}
-
-class BurrowsWheelerTransform {
-    /**
-     * Applies the Burrows-Wheeler Transform to a string
-     */
-    static encode(input: string): BWTResult {
-        if (input.length === 0) {
-            return { transformed: '', originalIndex: 0 };
-        }
-
-        // Add end-of-text marker if not present
-        const text = input + '$';
+function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+    // Ensure nums1 is the smaller array
+    if (nums1.length > nums2.length) {
+        [nums1, nums2] = [nums2, nums1];
+    }
+    
+    const m = nums1.length;
+    const n = nums2.length;
+    const total = m + n;
+    const half = Math.floor((total + 1) / 2);
+    
+    let left = 0;
+    let right = m;
+    
+    while (left <= right) {
+        const i = Math.floor((left + right) / 2);
+        const j = half - i;
         
-        // Generate all rotations
-        const rotations: string[] = [];
-        for (let i = 0; i < text.length; i++) {
-            const rotation = text.substring(i) + text.substring(0, i);
-            rotations.push(rotation);
-        }
-
-        // Sort rotations lexicographically
-        rotations.sort();
-
-        // Extract last characters and find original string index
-        let transformed = '';
-        let originalIndex = -1;
+        const nums1Left = i === 0 ? -Infinity : nums1[i - 1];
+        const nums1Right = i === m ? Infinity : nums1[i];
+        const nums2Left = j === 0 ? -Infinity : nums2[j - 1];
+        const nums2Right = j === n ? Infinity : nums2[j];
         
-        for (let i = 0; i < rotations.length; i++) {
-            transformed += rotations[i].charAt(rotations[i].length - 1);
-            if (rotations[i] === text) {
-                originalIndex = i;
+        if (nums1Left <= nums2Right && nums2Left <= nums1Right) {
+            // Partition is correct
+            if (total % 2 === 0) {
+                // Even total length
+                return (Math.max(nums1Left, nums2Left) + Math.min(nums1Right, nums2Right)) / 2;
+            } else {
+                // Odd total length
+                return Math.max(nums1Left, nums2Left);
             }
+        } else if (nums1Left > nums2Right) {
+            right = i - 1;
+        } else {
+            left = i + 1;
         }
-
-        return { transformed, originalIndex };
     }
+    
+    throw new Error("Input arrays are not sorted");
+}
 
-    /**
-     * Reverses the Burrows-Wheeler Transform
-     */
-    static decode(transformed: string, originalIndex: number): string {
-        if (transformed.length === 0) {
-            return '';
+// Example usage
+const arr1 = [1, 3, 5];
+const arr2 = [2, 4, 6];
+console.log(findMedianSortedArrays(arr1, arr2)); // Output: 3.5
+function findMedianSortedArraysSimple(nums1: number[], nums2: number[]): number {
+    const merged: number[] = [];
+    let i = 0, j = 0;
+    
+    // Merge the two arrays
+    while (i < nums1.length && j < nums2.length) {
+        if (nums1[i] < nums2[j]) {
+            merged.push(nums1[i++]);
+        } else {
+            merged.push(nums2[j++]);
         }
-
-        // Create and sort the table columns
-        let table: string[] = new Array(transformed.length).fill('');
-        
-        // Reconstruct the table by repeatedly inserting the transformed string
-        // as the first column and sorting
-        for (let i = 0; i < transformed.length; i++) {
-            // Prepend the transformed string to each row
-            for (let j = 0; j < transformed.length; j++) {
-                table[j] = transformed.charAt(j) + table[j];
-            }
-            
-            // Sort lexicographically
-            table.sort();
-        }
-
-        // The original string is at the originalIndex position
-        // Remove the '$' marker if present
-        const result = table[originalIndex];
-        return result.endsWith('$') ? result.slice(0, -1) : result;
     }
-
-    /**
-     * More efficient decoding using the LF mapping property
-     */
-    static decodeEfficient(transformed: string, originalIndex: number): string {
-        if (transformed.length === 0) {
-            return '';
-        }
-
-        // Create an array of indices and sort by the characters
-        const indices = Array.from({ length: transformed.length }, (_, i) => i);
-        
-        // Sort indices based on the characters they point to
-        indices.sort((a, b) => {
-            const charA = transformed.charAt(a);
-            const charB = transformed.charAt(b);
-            return charA.localeCompare(charB);
-        });
-
-        // Reconstruct the original string
-        let result = '';
-        let currentIndex = originalIndex;
-        
-        for (let i = 0; i < transformed.length - 1; i++) { // -1 to exclude the '$'
-            currentIndex = indices[currentIndex];
-            result += transformed.charAt(currentIndex);
-        }
-
-        return result;
+    
+    // Add remaining elements
+    while (i < nums1.length) merged.push(nums1[i++]);
+    while (j < nums2.length) merged.push(nums2[j++]);
+    
+    // Find median
+    const n = merged.length;
+    if (n % 2 === 0) {
+        return (merged[n / 2 - 1] + merged[n / 2]) / 2;
+    } else {
+        return merged[Math.floor(n / 2)];
     }
 }
 
-// Helper function for testing and demonstration
-class BWTUtils {
-    /**
-     * Validates that encode/decode work correctly
-     */
-    static testRoundTrip(input: string): boolean {
-        const encoded = BurrowsWheelerTransform.encode(input);
-        const decoded = BurrowsWheelerTransform.decode(encoded.transformed, encoded.originalIndex);
-        const decodedEfficient = BurrowsWheelerTransform.decodeEfficient(encoded.transformed, encoded.originalIndex);
+// Example usage
+console.log(findMedianSortedArraysSimple(arr1, arr2)); // Output: 3.5
+function findMedianSortedArraysOptimized(nums1: number[], nums2: number[]): number {
+    const totalLength = nums1.length + nums2.length;
+    const medianIndex = Math.floor(totalLength / 2);
+    let isEven = totalLength % 2 === 0;
+    
+    let i = 0, j = 0;
+    let current = 0, prev = 0;
+    
+    for (let count = 0; count <= medianIndex; count++) {
+        prev = current;
         
-        console.log(`Input: "${input}"`);
-        console.log(`BWT: "${encoded.transformed}" (index: ${encoded.originalIndex})`);
-        console.log(`Decoded: "${decoded}"`);
-        console.log(`Efficient Decoded: "${decodedEfficient}"`);
-        console.log(`Match: ${decoded === input && decodedEfficient === input}`);
-        console.log('---');
-        
-        return decoded === input && decodedEfficient === input;
-    }
-
-    /**
-     * Shows the rotation table for visualization
-     */
-    static showRotations(input: string): void {
-        const text = input + '$';
-        const rotations: string[] = [];
-        
-        for (let i = 0; i < text.length; i++) {
-            const rotation = text.substring(i) + text.substring(0, i);
-            rotations.push(rotation);
+        if (i < nums1.length && (j >= nums2.length || nums1[i] < nums2[j])) {
+            current = nums1[i++];
+        } else {
+            current = nums2[j++];
         }
-
-        rotations.sort();
-        
-        console.log('Rotation Table:');
-        rotations.forEach((rotation, index) => {
-            console.log(`${index}: ${rotation}`);
-        });
     }
+    
+    return isEven ? (prev + current) / 2 : current;
 }
 
-// Example usage and tests
-function demonstrateBWT(): void {
-    console.log('=== Burrows-Wheeler Transform Demonstration ===\n');
-
-    // Test cases
-    const testStrings = [
-        'banana',
-        'abracadabra',
-        'mississippi',
-        'a',
-        '',
-        'hello world'
-    ];
-
-    // Test round trips
-    testStrings.forEach(str => {
-        BWTUtils.testRoundTrip(str);
-    });
-
-    // Show rotation table for better understanding
-    console.log('\n=== Rotation Table Example ===');
-    BWTUtils.showRotations('banana');
+// Example usage
+console.log(findMedianSortedArraysOptimized(arr1, arr2)); // Output: 3.5
+function findMedianSortedArraysSafe(
+    nums1: number[], 
+    nums2: number[]
+): number {
+    // Input validation
+    if (!Array.isArray(nums1) || !Array.isArray(nums2)) {
+        throw new Error('Both inputs must be arrays');
+    }
+    
+    if (nums1.some(isNaN) || nums2.some(isNaN)) {
+        throw new Error('Arrays must contain only numbers');
+    }
+    
+    // Handle empty arrays
+    if (nums1.length === 0 && nums2.length === 0) {
+        return 0;
+    }
+    
+    // Use the efficient algorithm
+    return findMedianSortedArrays(nums1, nums2);
 }
 
-// Performance comparison
-function benchmarkBWT(): void {
-    console.log('\n=== Performance Comparison ===');
-    
-    const testString = 'abracadabra'.repeat(100); // Longer string for benchmarking
-    const startTime = performance.now();
-    
-    const encoded = BurrowsWheelerTransform.encode(testString);
-    const decodeTime1 = performance.now();
-    
-    BurrowsWheelerTransform.decode(encoded.transformed, encoded.originalIndex);
-    const decodeTime2 = performance.now();
-    
-    BurrowsWheelerTransform.decodeEfficient(encoded.transformed, encoded.originalIndex);
-    const endTime = performance.now();
-    
-    console.log(`Encode time: ${(decodeTime1 - startTime).toFixed(2)}ms`);
-    console.log(`Decode time (basic): ${(decodeTime2 - decodeTime1).toFixed(2)}ms`);
-    console.log(`Decode time (efficient): ${(endTime - decodeTime2).toFixed(2)}ms`);
-}
+// Test cases
+const testCases = [
+    { arr1: [1, 3], arr2: [2], expected: 2 },
+    { arr1: [1, 2], arr2: [3, 4], expected: 2.5 },
+    { arr1: [0, 0], arr2: [0, 0], expected: 0 },
+    { arr1: [], arr2: [1], expected: 1 },
+    { arr1: [2], arr2: [], expected: 2 }
+];
 
-// Run demonstration
-demonstrateBWT();
-benchmarkBWT();
-
-export { BurrowsWheelerTransform, BWTUtils, BWTResult };
-// Simple usage
-const input = "banana";
-const encoded = BurrowsWheelerTransform.encode(input);
-console.log(encoded.transformed); // Output: "annb$aa"
-
-const decoded = BurrowsWheelerTransform.decode(encoded.transformed, encoded.originalIndex);
-console.log(decoded); // Output: "banana"
+testCases.forEach((test, i) => {
+    const result = findMedianSortedArraysSafe(test.arr1, test.arr2);
+    console.log(`Test ${i + 1}: ${result} (expected: ${test.expected})`);
+});
