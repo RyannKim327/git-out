@@ -1,92 +1,155 @@
-function radixSortNonNegative32(arr: number[]): number[] {
-  const n = arr.length;
-  // Work with unsigned 32-bit values
-  let src = arr.map(v => v >>> 0);
-  let dest = new Array<number>(n);
-  const RADIX = 256;
-  const counts = new Array<number>(RADIX).fill(0);
-
-  for (let pass = 0; pass < 4; pass++) {
-    const shift = pass * 8;
-
-    // reset counts
-    for (let i = 0; i < RADIX; i++) counts[i] = 0;
-
-    // count per bucket
-    for (let i = 0; i < n; i++) {
-      const b = (src[i] >>> shift) & 0xff;
-      counts[b]++;
+function mergeSort<T>(array: T[]): T[] {
+    if (array.length <= 1) {
+        return array;
     }
-
-    // prefix sums
-    for (let i = 1; i < RADIX; i++) counts[i] += counts[i - 1];
-
-    // stable placement (iterate backwards)
-    for (let i = n - 1; i >= 0; i--) {
-      const b = (src[i] >>> shift) & 0xff;
-      const pos = --counts[b];
-      dest[pos] = src[i];
-    }
-
-    // swap src/dest for next pass
-    const tmp = src;
-    src = dest;
-    dest = tmp;
-  }
-
-  // After 4 passes (even number), sorted data ends up in `src`
-  return src.slice();
+    
+    const middle = Math.floor(array.length / 2);
+    const left = array.slice(0, middle);
+    const right = array.slice(middle);
+    
+    return merge(mergeSort(left), mergeSort(right));
 }
-const a = [170, 45, 75, 802, 24, 0, 3];
-console.log(radixSortNonNegative32(a)); // [0, 3, 24, 45, 75, 170, 802]
-function radixSortInt32(arr: number[]): number[] {
-  const n = arr.length;
-  // Map to unsigned by flipping the sign bit: n ^ 0x80000000
-  let src = new Array<number>(n);
-  for (let i = 0; i < n; i++) {
-    // Coerce to 32-bit signed, then bias to unsigned
-    const v = arr[i] | 0;
-    src[i] = (v ^ 0x80000000) >>> 0;
-  }
 
-  let dest = new Array<number>(n);
-  const RADIX = 256;
-  const counts = new Array<number>(RADIX).fill(0);
-
-  for (let pass = 0; pass < 4; pass++) {
-    const shift = pass * 8;
-
-    // reset counts
-    for (let i = 0; i < RADIX; i++) counts[i] = 0;
-
-    // count per bucket
-    for (let i = 0; i < n; i++) {
-      const b = (src[i] >>> shift) & 0xff;
-      counts[b]++;
+function merge<T>(left: T[], right: T[]): T[] {
+    const result: T[] = [];
+    let leftIndex = 0;
+    let rightIndex = 0;
+    
+    while (leftIndex < left.length && rightIndex < right.length) {
+        if (left[leftIndex] <= right[rightIndex]) {
+            result.push(left[leftIndex]);
+            leftIndex++;
+        } else {
+            result.push(right[rightIndex]);
+            rightIndex++;
+        }
     }
-
-    // prefix sums
-    for (let i = 1; i < RADIX; i++) counts[i] += counts[i - 1];
-
-    // stable placement
-    for (let i = n - 1; i >= 0; i--) {
-      const b = (src[i] >>> shift) & 0xff;
-      const pos = --counts[b];
-      dest[pos] = src[i];
-    }
-
-    // swap for next pass
-    const tmp = src;
-    src = dest;
-    dest = tmp;
-  }
-
-  // Map back to signed numbers
-  const result = new Array<number>(n);
-  for (let i = 0; i < n; i++) {
-    result[i] = (src[i] ^ 0x80000000) | 0;
-  }
-  return result;
+    
+    // Add remaining elements
+    return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
 }
-const b = [170, -5, 75, -2147483648, 0, 3];
-console.log(radixSortInt32(b)); // [-2147483648, -5, 0, 3, 75, 170]
+function mergeSort<T>(
+    array: T[],
+    comparator: (a: T, b: T) => number = (a, b) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+    }
+): T[] {
+    if (array.length <= 1) {
+        return array;
+    }
+    
+    const middle = Math.floor(array.length / 2);
+    const left = array.slice(0, middle);
+    const right = array.slice(middle);
+    
+    return merge(
+        mergeSort(left, comparator),
+        mergeSort(right, comparator),
+        comparator
+    );
+}
+
+function merge<T>(
+    left: T[],
+    right: T[],
+    comparator: (a: T, b: T) => number
+): T[] {
+    const result: T[] = [];
+    let leftIndex = 0;
+    let rightIndex = 0;
+    
+    while (leftIndex < left.length && rightIndex < right.length) {
+        if (comparator(left[leftIndex], right[rightIndex]) <= 0) {
+            result.push(left[leftIndex]);
+            leftIndex++;
+        } else {
+            result.push(right[rightIndex]);
+            rightIndex++;
+        }
+    }
+    
+    return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
+}
+function mergeSortInPlace<T>(array: T[]): T[] {
+    const tempArray = new Array(array.length);
+    mergeSortHelper(array, tempArray, 0, array.length - 1);
+    return array;
+}
+
+function mergeSortHelper<T>(
+    array: T[],
+    tempArray: T[],
+    leftStart: number,
+    rightEnd: number
+): void {
+    if (leftStart >= rightEnd) return;
+    
+    const middle = Math.floor((leftStart + rightEnd) / 2);
+    mergeSortHelper(array, tempArray, leftStart, middle);
+    mergeSortHelper(array, tempArray, middle + 1, rightEnd);
+    mergeHalves(array, tempArray, leftStart, rightEnd);
+}
+
+function mergeHalves<T>(
+    array: T[],
+    tempArray: T[],
+    leftStart: number,
+    rightEnd: number
+): void {
+    const leftEnd = Math.floor((leftStart + rightEnd) / 2);
+    const rightStart = leftEnd + 1;
+    const size = rightEnd - leftStart + 1;
+    
+    let left = leftStart;
+    let right = rightStart;
+    let index = leftStart;
+    
+    while (left <= leftEnd && right <= rightEnd) {
+        if (array[left] <= array[right]) {
+            tempArray[index] = array[left];
+            left++;
+        } else {
+            tempArray[index] = array[right];
+            right++;
+        }
+        index++;
+    }
+    
+    // Copy remaining elements
+    array.copyWithin(index, left, leftEnd + 1);
+    array.copyWithin(index, right, rightEnd + 1);
+    
+    // Copy back from temp array
+    for (let i = leftStart; i <= rightEnd; i++) {
+        array[i] = tempArray[i];
+    }
+}
+// Basic usage
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log(mergeSort(numbers)); // [11, 12, 22, 25, 34, 64, 90]
+
+// With custom comparator for descending order
+const descendingComparator = (a: number, b: number) => b - a;
+console.log(mergeSort(numbers, descendingComparator)); // [90, 64, 34, 25, 22, 12, 11]
+
+// Sorting objects
+interface Person {
+    name: string;
+    age: number;
+}
+
+const people: Person[] = [
+    { name: "Alice", age: 30 },
+    { name: "Bob", age: 25 },
+    { name: "Charlie", age: 35 }
+];
+
+const byAge = (a: Person, b: Person) => a.age - b.age;
+console.log(mergeSort(people, byAge));
+// [{ name: "Bob", age: 25 }, { name: "Alice", age: 30 }, { name: "Charlie", age: 35 }]
+
+// Sorting strings
+const strings = ["banana", "apple", "cherry"];
+console.log(mergeSort(strings)); // ["apple", "banana", "cherry"]
