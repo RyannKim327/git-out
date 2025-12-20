@@ -1,118 +1,136 @@
+/** A node in a singly‑linked list */
+class ListNode<T> {
+  /** The stored value */
+  public value: T;
+  /** Reference to the next node (null if this is the tail) */
+  public next: ListNode<T> | null = null;
+
+  constructor(value: T) {
+    this.value = value;
+  }
+}
 /**
- * Selection Sort – sorts an array of numbers in‑place.
- * Time   : O(n²)
- * Space  : O(1) (in‑place)
+ * Queue implemented with a singly‑linked list.
  *
- * @param arr - The array to sort. It will be mutated.
- * @returns The same array reference, now sorted.
- */
-function selectionSort(arr: number[]): number[] {
-  const n = arr.length;
-
-  // Walk through the array, placing the smallest remaining element at position i
-  for (let i = 0; i < n - 1; i++) {
-    // Assume the element at i is the smallest
-    let minIdx = i;
-
-    // Find the true smallest element in the unsorted suffix [i+1 … n-1]
-    for (let j = i + 1; j < n; j++) {
-      if (arr[j] < arr[minIdx]) {
-        minIdx = j;
-      }
-    }
-
-    // If we found a smaller element, swap it with the element at i
-    if (minIdx !== i) {
-      const tmp = arr[i];
-      arr[i] = arr[minIdx];
-      arr[minIdx] = tmp;
-    }
-  }
-
-  return arr;
-}
-
-/* ------------------- demo ------------------- */
-const numbers = [64, 25, 12, 22, 11];
-console.log('Before:', numbers);
-selectionSort(numbers);
-console.log('After :', numbers);
-Before: [ 64, 25, 12, 22, 11 ]
-After : [ 11, 12, 22, 25, 64 ]
-/**
- * Generic Selection Sort.
+ * The list maintains two pointers:
+ *   - `head` points to the front of the queue (where we dequeue)
+ *   - `tail` points to the back of the queue (where we enqueue)
  *
- * @param arr - The array to sort (mutated in‑place).
- * @param compare - Comparator function.
- *                  Should return <0 if a < b,
- *                  0 if a == b,
- *                  >0 if a > b.
- * @returns The same array reference, now sorted.
+ * All operations are O(1).
  */
-function selectionSortGeneric<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a as any) - (b as any) // default for numbers
-): T[] {
-  const n = arr.length;
+export class Queue<T> {
+  /** First node (front of the queue) */
+  private head: ListNode<T> | null = null;
+  /** Last node (back of the queue) */
+  private tail: ListNode<T> | null = null;
+  /** Number of elements currently stored */
+  private _size = 0;
 
-  for (let i = 0; i < n - 1; i++) {
-    let minIdx = i;
+  /** Returns the number of items in the queue */
+  public get size(): number {
+    return this._size;
+  }
 
-    for (let j = i + 1; j < n; j++) {
-      if (compare(arr[j], arr[minIdx]) < 0) {
-        minIdx = j;
-      }
+  /** Returns true if the queue contains no elements */
+  public get isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** Look at the element at the front without removing it */
+  public peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  /**
+   * Add a new element to the back of the queue.
+   *
+   * @param value The value to enqueue
+   */
+  public enqueue(value: T): void {
+    const node = new ListNode(value);
+
+    if (this.tail) {
+      // There is at least one element – link the new node after the tail
+      this.tail.next = node;
+    } else {
+      // Queue was empty, so head also points to the new node
+      this.head = node;
     }
 
-    if (minIdx !== i) {
-      const tmp = arr[i];
-      arr[i] = arr[minIdx];
-      arr[minIdx] = tmp;
+    // In any case, the new node becomes the new tail
+    this.tail = node;
+    this._size++;
+  }
+
+  /**
+   * Remove and return the element at the front of the queue.
+   *
+   * @returns The dequeued value, or `undefined` if the queue is empty.
+   */
+  public dequeue(): T | undefined {
+    if (!this.head) {
+      // Empty queue
+      return undefined;
+    }
+
+    const value = this.head.value;
+    this.head = this.head.next; // Move head forward
+
+    // If we removed the last element, tail must also become null
+    if (!this.head) {
+      this.tail = null;
+    }
+
+    this._size--;
+    return value;
+  }
+
+  /** Iterate over the queue from front to back (read‑only) */
+  public *[Symbol.iterator](): IterableIterator<T> {
+    let current = this.head;
+    while (current) {
+      yield current.value;
+      current = current.next;
     }
   }
 
-  return arr;
-}
-
-/* ------------------- demo ------------------- */
-
-// 1️⃣ Numbers (explicit comparator not needed)
-const nums = [5, 3, 8, 1, 2];
-selectionSortGeneric(nums);
-console.log('Sorted numbers:', nums);
-
-// 2️⃣ Strings (case‑insensitive)
-const words = ['Banana', 'apple', 'Cherry', 'date'];
-selectionSortGeneric(words, (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-console.log('Sorted words (case‑insensitive):', words);
-
-// 3️⃣ Objects (sort by a property)
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: 'Alice', age: 32 },
-  { name: 'Bob',   age: 24 },
-  { name: 'Carol', age: 29 },
-];
-selectionSortGeneric(people, (a, b) => a.age - b.age);
-console.log('People sorted by age:', people);
-Sorted numbers: [ 1, 2, 3, 5, 8 ]
-Sorted words (case-insensitive): [ 'apple', 'Banana', 'Cherry', 'date' ]
-People sorted by age: [
-  { name: 'Bob', age: 24 },
-  { name: 'Carol', age: 29 },
-  { name: 'Alice', age: 32 }
-]
-if (compare(arr[j], arr[minIdx]) < 0) { /* strictly smaller */ }
-function selectionSort<T>(arr: T[], compare: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)): T[] {
-  for (let i = 0; i < arr.length - 1; i++) {
-    let minIdx = i;
-    for (let j = i + 1; j < arr.length; j++) {
-      if (compare(arr[j], arr[minIdx]) < 0) minIdx = j;
-    }
-    if (minIdx !== i) [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+  /** Convert the queue to a plain array (useful for debugging) */
+  public toArray(): T[] {
+    return [...this];
   }
-  return arr;
+
+  /** Clear all elements from the queue */
+  public clear(): void {
+    this.head = null;
+    this.tail = null;
+    this._size = 0;
+  }
 }
-selectionSort([9, 4, 6, 2]);               // numbers
-selectionSort(['z', 'a', 'm']);           // strings (lexicographic)
-selectionSort(objects, (a, b) => a.id - b.id); // custom objects
+import { Queue } from "./Queue"; // adjust the import path as needed
+
+// Queue of numbers
+const q = new Queue<number>();
+
+console.log(q.isEmpty); // true
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.size);     // 3
+
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+
+console.log(q.toArray()); // [30]
+
+q.enqueue(40);
+q.enqueue(50);
+
+for (const val of q) {
+  console.log(val); // 30, 40, 50 (in order)
+}
+
+q.clear();
+console.log(q.isEmpty); // true
