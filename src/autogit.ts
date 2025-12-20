@@ -1,244 +1,119 @@
-interface TrieNode {
-  children: Map<string, TrieNode>;
-  isEndOfWord: boolean;
+/**
+ * Returns the longest common prefix of the given strings.
+ * If the array is empty, returns an empty string.
+ *
+ * @param strs - array of strings to examine
+ * @returns the longest common prefix
+ */
+export function longestCommonPrefix(strs: string[]): string {
+  if (strs.length === 0) return "";
+
+  // 1️⃣ Find the shortest string – it bounds the maximum possible prefix length.
+  let shortest = strs[0];
+  for (const s of strs) {
+    if (s.length < shortest.length) shortest = s;
+  }
+
+  // 2️⃣ Scan character by character.
+  for (let i = 0; i < shortest.length; i++) {
+    const ch = shortest[i];
+    // Compare this character with the same position in every other string.
+    for (const s of strs) {
+      if (s[i] !== ch) {
+        // Mismatch → prefix ends right before this index.
+        return shortest.slice(0, i);
+      }
+    }
+  }
+
+  // If we never broke out, the whole shortest string is the prefix.
+  return shortest;
 }
-
-class Trie {
-  private root: TrieNode;
-
-  constructor() {
-    this.root = this.createNode();
-  }
-
-  private createNode(): TrieNode {
-    return {
-      children: new Map(),
-      isEndOfWord: false,
-    };
-  }
-
-  // Insert a word into the trie
-  insert(word: string): void {
-    let currentNode = this.root;
-    
-    for (const char of word) {
-      if (!currentNode.children.has(char)) {
-        currentNode.children.set(char, this.createNode());
-      }
-      currentNode = currentNode.children.get(char)!;
-    }
-    
-    currentNode.isEndOfWord = true;
-  }
-
-  // Search for a word in the trie
-  search(word: string): boolean {
-    let currentNode = this.root;
-    
-    for (const char of word) {
-      if (!currentNode.children.has(char)) {
-        return false;
-      }
-      currentNode = currentNode.children.get(char)!;
-    }
-    
-    return currentNode.isEndOfWord;
-  }
-
-  // Check if any word starts with the given prefix
-  startsWith(prefix: string): boolean {
-    let currentNode = this.root;
-    
-    for (const char of prefix) {
-      if (!currentNode.children.has(char)) {
-        return false;
-      }
-      currentNode = currentNode.children.get(char)!;
-    }
-    
-    return true;
-  }
-
-  // Get all words with a given prefix
-  getWordsWithPrefix(prefix: string): string[] {
-    let currentNode = this.root;
-    const words: string[] = [];
-    
-    // Navigate to the prefix node
-    for (const char of prefix) {
-      if (!currentNode.children.has(char)) {
-        return words; // Prefix doesn't exist
-      }
-      currentNode = currentNode.children.get(char)!;
-    }
-    
-    // Collect all words starting from this node
-    this.collectWords(currentNode, prefix, words);
-    return words;
-  }
-
-  private collectWords(node: TrieNode, currentWord: string, words: string[]): void {
-    if (node.isEndOfWord) {
-      words.push(currentWord);
-    }
-    
-    for (const [char, childNode] of node.children) {
-      this.collectWords(childNode, currentWord + char, words);
-    }
-  }
-
-  // Delete a word from the trie
-  delete(word: string): boolean {
-    return this.deleteRecursive(this.root, word, 0);
-  }
-
-  private deleteRecursive(node: TrieNode, word: string, index: number): boolean {
-    if (index === word.length) {
-      if (!node.isEndOfWord) {
-        return false; // Word doesn't exist
-      }
-      node.isEndOfWord = false;
-      return node.children.size === 0; // Return true if node has no children
-    }
-
-    const char = word[index];
-    if (!node.children.has(char)) {
-      return false; // Word doesn't exist
-    }
-
-    const childNode = node.children.get(char)!;
-    const shouldDeleteChild = this.deleteRecursive(childNode, word, index + 1);
-
-    if (shouldDeleteChild) {
-      node.children.delete(char);
-      return node.children.size === 0 && !node.isEndOfWord;
-    }
-
-    return false;
-  }
-
-  // Get the total number of words in the trie
-  get size(): number {
-    return this.countWords(this.root);
-  }
-
-  private countWords(node: TrieNode): number {
-    let count = node.isEndOfWord ? 1 : 0;
-    
-    for (const childNode of node.children.values()) {
-      count += this.countWords(childNode);
-    }
-    
-    return count;
-  }
-
-  // Check if the trie is empty
-  isEmpty(): boolean {
-    return this.root.children.size === 0;
-  }
-}
-interface TrieNodeWithValue<T> {
-  children: Map<string, TrieNodeWithValue<T>>;
-  isEndOfWord: boolean;
-  value?: T;
-}
-
-class TrieWithValue<T> {
-  private root: TrieNodeWithValue<T>;
-
-  constructor() {
-    this.root = this.createNode();
-  }
-
-  private createNode(): TrieNodeWithValue<T> {
-    return {
-      children: new Map(),
-      isEndOfWord: false,
-    };
-  }
-
-  // Insert a word with an optional value
-  insert(word: string, value?: T): void {
-    let currentNode = this.root;
-    
-    for (const char of word) {
-      if (!currentNode.children.has(char)) {
-        currentNode.children.set(char, this.createNode());
-      }
-      currentNode = currentNode.children.get(char)!;
-    }
-    
-    currentNode.isEndOfWord = true;
-    if (value !== undefined) {
-      currentNode.value = value;
-    }
-  }
-
-  // Get the value associated with a word
-  getValue(word: string): T | undefined {
-    let currentNode = this.root;
-    
-    for (const char of word) {
-      if (!currentNode.children.has(char)) {
-        return undefined;
-      }
-      currentNode = currentNode.children.get(char)!;
-    }
-    
-    return currentNode.isEndOfWord ? currentNode.value : undefined;
-  }
-
-  // Get all words with their values
-  getAllWordsWithValues(): Array<{ word: string; value?: T }> {
-    const result: Array<{ word: string; value?: T }> = [];
-    this.collectWordsWithValues(this.root, '', result);
-    return result;
-  }
-
-  private collectWordsWithValues(
-    node: TrieNodeWithValue<T>, 
-    currentWord: string, 
-    result: Array<{ word: string; value?: T }>
-  ): void {
-    if (node.isEndOfWord) {
-      result.push({ word: currentWord, value: node.value });
-    }
-    
-    for (const [char, childNode] of node.children) {
-      this.collectWordsWithValues(childNode, currentWord + char, result);
+export function longestCommonPrefixVertical(strs: string[]): string {
+  if (!strs.length) return "";
+  for (let i = 0; ; i++) {
+    const char = strs[0][i];
+    if (char === undefined) return strs[0].slice(0, i); // reached end of first string
+    for (let j = 1; j < strs.length; j++) {
+      if (strs[j][i] !== char) return strs[0].slice(0, i);
     }
   }
 }
-// Basic Trie usage
-const trie = new Trie();
+export function longestCommonPrefixDivideAndConquer(strs: string[]): string {
+  if (!strs.length) return "";
 
-trie.insert("apple");
-trie.insert("app");
-trie.insert("application");
-trie.insert("banana");
+  const lcp = (left: number, right: number): string => {
+    if (left === right) return strs[left];
+    const mid = Math.floor((left + right) / 2);
+    const leftPrefix = lcp(left, mid);
+    const rightPrefix = lcp(mid + 1, right);
+    return commonPrefix(leftPrefix, rightPrefix);
+  };
 
-console.log(trie.search("apple")); // true
-console.log(trie.search("app")); // true
-console.log(trie.search("appl")); // false
-console.log(trie.startsWith("app")); // true
+  const commonPrefix = (a: string, b: string): string => {
+    const minLen = Math.min(a.length, b.length);
+    let i = 0;
+    while (i < minLen && a[i] === b[i]) i++;
+    return a.slice(0, i);
+  };
 
-console.log(trie.getWordsWithPrefix("app")); // ["app", "apple", "application"]
+  return lcp(0, strs.length - 1);
+}
+export function longestCommonPrefixReduce(strs: string[]): string {
+  if (!strs.length) return "";
+  return strs.reduce((prefix, cur) => {
+    let i = 0;
+    while (i < prefix.length && i < cur.length && prefix[i] === cur[i]) i++;
+    return prefix.slice(0, i);
+  });
+}
+// test.ts
+import { longestCommonPrefix } from "./lcp";
 
-trie.delete("app");
-console.log(trie.search("app")); // false
-console.log(trie.search("apple")); // true
+const cases: { input: string[]; expected: string }[] = [
+  { input: ["flower", "flow", "flight"], expected: "fl" },
+  { input: ["dog", "racecar", "car"], expected: "" },
+  { input: ["interspecies", "interstellar", "interstate"], expected: "inters" },
+  { input: ["throne", "throne"], expected: "throne" },
+  { input: [], expected: "" },
+  { input: ["single"], expected: "single" },
+];
 
-// Trie with values
-const dictionary = new TrieWithValue<string>();
+for (const { input, expected } of cases) {
+  const result = longestCommonPrefix(input);
+  console.assert(
+    result === expected,
+    `FAIL: input=${JSON.stringify(input)} → ${result} (expected ${expected})`
+  );
+}
+console.log("All tests passed!");
+ts-node test.ts   # or compile with tsc and node
+// longestCommonPrefix.ts
+export function longestCommonPrefix(strs: string[]): string {
+  if (strs.length === 0) return "";
 
-dictionary.insert("apple", "A fruit");
-dictionary.insert("application", "A software program");
-dictionary.insert("banana", "Another fruit");
+  // Find the shortest string – it limits the maximum possible prefix length.
+  let shortest = strs[0];
+  for (const s of strs) {
+    if (s.length < shortest.length) shortest = s;
+  }
 
-console.log(dictionary.getValue("apple")); // "A fruit"
-console.log(dictionary.getAllWordsWithValues());
-// [
-//   { word: "apple", value: "A fruit" },
-//   { word: "application", value: "A software program" },
-//   { word: "banana", value: "Another fruit" }
-// ]
+  // Scan each character of the shortest string.
+  for (let i = 0; i < shortest.length; i++) {
+    const ch = shortest[i];
+    for (const s of strs) {
+      if (s[i] !== ch) {
+        return shortest.slice(0, i);
+      }
+    }
+  }
+
+  // No mismatches → the whole shortest string is the common prefix.
+  return shortest;
+}
+
+/* -------------------------------------------------
+   Example usage (uncomment to run):
+--------------------------------------------------- */
+// const words = ["flower", "flow", "flight"];
+// console.log(longestCommonPrefix(words)); // → "fl"
