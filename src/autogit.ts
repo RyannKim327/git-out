@@ -1,221 +1,108 @@
-interface TrieNode {
-  children: Map<string, TrieNode>;
-  isEndOfWord: boolean;
+function maxWithMath(arr: number[]): number | undefined {
+  // If the array is empty we return undefined (Math.max() would give -Infinity)
+  return arr.length ? Math.max(...arr) : undefined;
 }
 
-class Trie {
-  private root: TrieNode;
-
-  constructor() {
-    this.root = this.createNode();
-  }
-
-  private createNode(): TrieNode {
-    return {
-      children: new Map(),
-      isEndOfWord: false
-    };
-  }
-
-  // Insert a word into the trie
-  insert(word: string): void {
-    let currentNode = this.root;
-    
-    for (const char of word) {
-      if (!currentNode.children.has(char)) {
-        currentNode.children.set(char, this.createNode());
-      }
-      currentNode = currentNode.children.get(char)!;
-    }
-    
-    currentNode.isEndOfWord = true;
-  }
-
-  // Search for a complete word
-  search(word: string): boolean {
-    let currentNode = this.root;
-    
-    for (const char of word) {
-      if (!currentNode.children.has(char)) {
-        return false;
-      }
-      currentNode = currentNode.children.get(char)!;
-    }
-    
-    return currentNode.isEndOfWord;
-  }
-
-  // Check if any word starts with the given prefix
-  startsWith(prefix: string): boolean {
-    let currentNode = this.root;
-    
-    for (const char of prefix) {
-      if (!currentNode.children.has(char)) {
-        return false;
-      }
-      currentNode = currentNode.children.get(char)!;
-    }
-    
-    return true;
-  }
-
-  // Get all words with the given prefix
-  getWordsWithPrefix(prefix: string): string[] {
-    let currentNode = this.root;
-    
-    // Navigate to the prefix node
-    for (const char of prefix) {
-      if (!currentNode.children.has(char)) {
-        return [];
-      }
-      currentNode = currentNode.children.get(char)!;
-    }
-    
-    // Collect all words from this node
-    const words: string[] = [];
-    this.collectWords(currentNode, prefix, words);
-    
-    return words;
-  }
-
-  private collectWords(node: TrieNode, currentWord: string, words: string[]): void {
-    if (node.isEndOfWord) {
-      words.push(currentWord);
-    }
-    
-    for (const [char, childNode] of node.children) {
-      this.collectWords(childNode, currentWord + char, words);
-    }
-  }
-
-  // Delete a word from the trie
-  delete(word: string): boolean {
-    return this.deleteRecursive(this.root, word, 0);
-  }
-
-  private deleteRecursive(node: TrieNode, word: string, index: number): boolean {
-    if (index === word.length) {
-      if (!node.isEndOfWord) {
-        return false;
-      }
-      node.isEndOfWord = false;
-      return node.children.size === 0;
-    }
-
-    const char = word[index];
-    const childNode = node.children.get(char);
-    
-    if (!childNode) {
-      return false;
-    }
-
-    const shouldDeleteChild = this.deleteRecursive(childNode, word, index + 1);
-    
-    if (shouldDeleteChild) {
-      node.children.delete(char);
-      return node.children.size === 0 && !node.isEndOfWord;
-    }
-    
-    return false;
-  }
-
-  // Get the total number of words in the trie
-  getWordCount(): number {
-    return this.countWords(this.root);
-  }
-
-  private countWords(node: TrieNode): number {
-    let count = node.isEndOfWord ? 1 : 0;
-    
-    for (const childNode of node.children.values()) {
-      count += this.countWords(childNode);
-    }
-    
-    return count;
-  }
-
-  // Clear the entire trie
-  clear(): void {
-    this.root = this.createNode();
-  }
-}
-// Create a new trie
-const trie = new Trie();
-
-// Insert words
-trie.insert("apple");
-trie.insert("app");
-trie.insert("application");
-trie.insert("banana");
-trie.insert("bat");
-
-// Search for words
-console.log(trie.search("apple")); // true
-console.log(trie.search("app"));   // true
-console.log(trie.search("appl"));  // false
-
-// Check prefixes
-console.log(trie.startsWith("app")); // true
-console.log(trie.startsWith("ba"));  // true
-
-// Get words with prefix
-console.log(trie.getWordsWithPrefix("app")); 
-// ["app", "apple", "application"]
-
-// Delete a word
-trie.delete("app");
-console.log(trie.search("app"));     // false
-console.log(trie.search("apple"));   // true
-
-// Get word count
-console.log(trie.getWordCount()); // 4
-interface ValueTrieNode<T> {
-  children: Map<string, ValueTrieNode<T>>;
-  value: T | null;
-  isEndOfWord: boolean;
+// Example
+const nums = [3, 7, 2, 9, 5];
+console.log(maxWithMath(nums)); // 9
+function maxWithReduce(arr: number[]): number | undefined {
+  return arr.reduce((max, cur) => (cur > max ? cur : max), -Infinity);
 }
 
-class ValueTrie<T> {
-  private root: ValueTrieNode<T>;
-
-  constructor() {
-    this.root = this.createNode();
-  }
-
-  private createNode(): ValueTrieNode<T> {
-    return {
-      children: new Map(),
-      value: null,
-      isEndOfWord: false
-    };
-  }
-
-  insert(word: string, value: T): void {
-    let currentNode = this.root;
-    
-    for (const char of word) {
-      if (!currentNode.children.has(char)) {
-        currentNode.children.set(char, this.createNode());
-      }
-      currentNode = currentNode.children.get(char)!;
-    }
-    
-    currentNode.isEndOfWord = true;
-    currentNode.value = value;
-  }
-
-  getValue(word: string): T | null {
-    let currentNode = this.root;
-    
-    for (const char of word) {
-      if (!currentNode.children.has(char)) {
-        return null;
-      }
-      currentNode = currentNode.children.get(char)!;
-    }
-    
-    return currentNode.isEndOfWord ? currentNode.value : null;
-  }
-
-  // Other methods similar to basic Trie...
+// Or, if you want `undefined` for an empty array:
+function maxWithReduceOrUndef(arr: number[]): number | undefined {
+  if (!arr.length) return undefined;
+  return arr.reduce((max, cur) => (cur > max ? cur : max));
 }
+function maxWithLoop(arr: number[]): number | undefined {
+  if (!arr.length) return undefined;
+
+  let max = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    const v = arr[i];
+    if (v > max) max = v;
+  }
+  return max;
+}
+type Selector<T, R> = (item: T) => R;
+type Comparator<R> = (a: R, b: R) => number;
+
+/**
+ * Returns the element whose selected value is maximal.
+ * If the array is empty, returns undefined.
+ */
+function maxBy<T, R>(
+  arr: T[],
+  selector: Selector<T, R>,
+  compare: Comparator<R> = (a, b) => (a > b ? 1 : a < b ? -1 : 0)
+): T | undefined {
+  if (!arr.length) return undefined;
+
+  let best = arr[0];
+  let bestKey = selector(best);
+
+  for (let i = 1; i < arr.length; i++) {
+    const cur = arr[i];
+    const curKey = selector(cur);
+    if (compare(curKey, bestKey) > 0) {
+      best = cur;
+      bestKey = curKey;
+    }
+  }
+  return best;
+}
+
+/* ---- Usage examples ---- */
+
+// 1️⃣ Numbers (same as before, but using the generic)
+const maxNum = maxBy([4, 2, 9, 1], n => n);
+console.log(maxNum); // 9
+
+// 2️⃣ Objects – find the person with the highest score
+interface Person {
+  name: string;
+  score: number;
+}
+const people: Person[] = [
+  { name: 'Alice', score: 12 },
+  { name: 'Bob',   score: 17 },
+  { name: 'Cara',  score: 15 },
+];
+const topScorer = maxBy(people, p => p.score);
+console.log(topScorer); // { name: 'Bob', score: 17 }
+
+// 3️⃣ Dates – latest date in an array
+const dates = [new Date('2023-01-01'), new Date('2024-06-15'), new Date('2022-12-31')];
+const latest = maxBy(dates, d => d.getTime());
+console.log(latest?.toISOString()); // 2024-06-15T00:00:00.000Z
+// src/utils/array.ts
+export function maxNumber(arr: number[]): number | undefined {
+  return arr.length ? Math.max(...arr) : undefined;
+}
+
+/** Generic max‑by selector */
+export function maxBy<T, R>(
+  arr: T[],
+  selector: (item: T) => R,
+  compare: (a: R, b: R) => number = (a, b) => (a > b ? 1 : a < b ? -1 : 0)
+): T | undefined {
+  if (!arr.length) return undefined;
+
+  let best = arr[0];
+  let bestKey = selector(best);
+
+  for (let i = 1; i < arr.length; i++) {
+    const cur = arr[i];
+    const curKey = selector(cur);
+    if (compare(curKey, bestKey) > 0) {
+      best = cur;
+      bestKey = curKey;
+    }
+  }
+  return best;
+}
+import { maxNumber, maxBy } from '@/utils/array';
+
+const biggest = maxNumber([10, 5, 22]); // 22
+const topStudent = maxBy(students, s => s.gpa);
