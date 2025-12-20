@@ -1,155 +1,221 @@
-function mergeSort<T>(array: T[]): T[] {
-    if (array.length <= 1) {
-        return array;
+interface TrieNode {
+  children: Map<string, TrieNode>;
+  isEndOfWord: boolean;
+}
+
+class Trie {
+  private root: TrieNode;
+
+  constructor() {
+    this.root = this.createNode();
+  }
+
+  private createNode(): TrieNode {
+    return {
+      children: new Map(),
+      isEndOfWord: false
+    };
+  }
+
+  // Insert a word into the trie
+  insert(word: string): void {
+    let currentNode = this.root;
+    
+    for (const char of word) {
+      if (!currentNode.children.has(char)) {
+        currentNode.children.set(char, this.createNode());
+      }
+      currentNode = currentNode.children.get(char)!;
     }
     
-    const middle = Math.floor(array.length / 2);
-    const left = array.slice(0, middle);
-    const right = array.slice(middle);
-    
-    return merge(mergeSort(left), mergeSort(right));
-}
+    currentNode.isEndOfWord = true;
+  }
 
-function merge<T>(left: T[], right: T[]): T[] {
-    const result: T[] = [];
-    let leftIndex = 0;
-    let rightIndex = 0;
+  // Search for a complete word
+  search(word: string): boolean {
+    let currentNode = this.root;
     
-    while (leftIndex < left.length && rightIndex < right.length) {
-        if (left[leftIndex] <= right[rightIndex]) {
-            result.push(left[leftIndex]);
-            leftIndex++;
-        } else {
-            result.push(right[rightIndex]);
-            rightIndex++;
-        }
+    for (const char of word) {
+      if (!currentNode.children.has(char)) {
+        return false;
+      }
+      currentNode = currentNode.children.get(char)!;
     }
     
-    // Add remaining elements
-    return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
-}
-function mergeSort<T>(
-    array: T[],
-    comparator: (a: T, b: T) => number = (a, b) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    }
-): T[] {
-    if (array.length <= 1) {
-        return array;
-    }
-    
-    const middle = Math.floor(array.length / 2);
-    const left = array.slice(0, middle);
-    const right = array.slice(middle);
-    
-    return merge(
-        mergeSort(left, comparator),
-        mergeSort(right, comparator),
-        comparator
-    );
-}
+    return currentNode.isEndOfWord;
+  }
 
-function merge<T>(
-    left: T[],
-    right: T[],
-    comparator: (a: T, b: T) => number
-): T[] {
-    const result: T[] = [];
-    let leftIndex = 0;
-    let rightIndex = 0;
+  // Check if any word starts with the given prefix
+  startsWith(prefix: string): boolean {
+    let currentNode = this.root;
     
-    while (leftIndex < left.length && rightIndex < right.length) {
-        if (comparator(left[leftIndex], right[rightIndex]) <= 0) {
-            result.push(left[leftIndex]);
-            leftIndex++;
-        } else {
-            result.push(right[rightIndex]);
-            rightIndex++;
-        }
+    for (const char of prefix) {
+      if (!currentNode.children.has(char)) {
+        return false;
+      }
+      currentNode = currentNode.children.get(char)!;
     }
     
-    return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
-}
-function mergeSortInPlace<T>(array: T[]): T[] {
-    const tempArray = new Array(array.length);
-    mergeSortHelper(array, tempArray, 0, array.length - 1);
-    return array;
-}
+    return true;
+  }
 
-function mergeSortHelper<T>(
-    array: T[],
-    tempArray: T[],
-    leftStart: number,
-    rightEnd: number
-): void {
-    if (leftStart >= rightEnd) return;
+  // Get all words with the given prefix
+  getWordsWithPrefix(prefix: string): string[] {
+    let currentNode = this.root;
     
-    const middle = Math.floor((leftStart + rightEnd) / 2);
-    mergeSortHelper(array, tempArray, leftStart, middle);
-    mergeSortHelper(array, tempArray, middle + 1, rightEnd);
-    mergeHalves(array, tempArray, leftStart, rightEnd);
-}
-
-function mergeHalves<T>(
-    array: T[],
-    tempArray: T[],
-    leftStart: number,
-    rightEnd: number
-): void {
-    const leftEnd = Math.floor((leftStart + rightEnd) / 2);
-    const rightStart = leftEnd + 1;
-    const size = rightEnd - leftStart + 1;
-    
-    let left = leftStart;
-    let right = rightStart;
-    let index = leftStart;
-    
-    while (left <= leftEnd && right <= rightEnd) {
-        if (array[left] <= array[right]) {
-            tempArray[index] = array[left];
-            left++;
-        } else {
-            tempArray[index] = array[right];
-            right++;
-        }
-        index++;
+    // Navigate to the prefix node
+    for (const char of prefix) {
+      if (!currentNode.children.has(char)) {
+        return [];
+      }
+      currentNode = currentNode.children.get(char)!;
     }
     
-    // Copy remaining elements
-    array.copyWithin(index, left, leftEnd + 1);
-    array.copyWithin(index, right, rightEnd + 1);
+    // Collect all words from this node
+    const words: string[] = [];
+    this.collectWords(currentNode, prefix, words);
     
-    // Copy back from temp array
-    for (let i = leftStart; i <= rightEnd; i++) {
-        array[i] = tempArray[i];
+    return words;
+  }
+
+  private collectWords(node: TrieNode, currentWord: string, words: string[]): void {
+    if (node.isEndOfWord) {
+      words.push(currentWord);
     }
+    
+    for (const [char, childNode] of node.children) {
+      this.collectWords(childNode, currentWord + char, words);
+    }
+  }
+
+  // Delete a word from the trie
+  delete(word: string): boolean {
+    return this.deleteRecursive(this.root, word, 0);
+  }
+
+  private deleteRecursive(node: TrieNode, word: string, index: number): boolean {
+    if (index === word.length) {
+      if (!node.isEndOfWord) {
+        return false;
+      }
+      node.isEndOfWord = false;
+      return node.children.size === 0;
+    }
+
+    const char = word[index];
+    const childNode = node.children.get(char);
+    
+    if (!childNode) {
+      return false;
+    }
+
+    const shouldDeleteChild = this.deleteRecursive(childNode, word, index + 1);
+    
+    if (shouldDeleteChild) {
+      node.children.delete(char);
+      return node.children.size === 0 && !node.isEndOfWord;
+    }
+    
+    return false;
+  }
+
+  // Get the total number of words in the trie
+  getWordCount(): number {
+    return this.countWords(this.root);
+  }
+
+  private countWords(node: TrieNode): number {
+    let count = node.isEndOfWord ? 1 : 0;
+    
+    for (const childNode of node.children.values()) {
+      count += this.countWords(childNode);
+    }
+    
+    return count;
+  }
+
+  // Clear the entire trie
+  clear(): void {
+    this.root = this.createNode();
+  }
 }
-// Basic usage
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-console.log(mergeSort(numbers)); // [11, 12, 22, 25, 34, 64, 90]
+// Create a new trie
+const trie = new Trie();
 
-// With custom comparator for descending order
-const descendingComparator = (a: number, b: number) => b - a;
-console.log(mergeSort(numbers, descendingComparator)); // [90, 64, 34, 25, 22, 12, 11]
+// Insert words
+trie.insert("apple");
+trie.insert("app");
+trie.insert("application");
+trie.insert("banana");
+trie.insert("bat");
 
-// Sorting objects
-interface Person {
-    name: string;
-    age: number;
+// Search for words
+console.log(trie.search("apple")); // true
+console.log(trie.search("app"));   // true
+console.log(trie.search("appl"));  // false
+
+// Check prefixes
+console.log(trie.startsWith("app")); // true
+console.log(trie.startsWith("ba"));  // true
+
+// Get words with prefix
+console.log(trie.getWordsWithPrefix("app")); 
+// ["app", "apple", "application"]
+
+// Delete a word
+trie.delete("app");
+console.log(trie.search("app"));     // false
+console.log(trie.search("apple"));   // true
+
+// Get word count
+console.log(trie.getWordCount()); // 4
+interface ValueTrieNode<T> {
+  children: Map<string, ValueTrieNode<T>>;
+  value: T | null;
+  isEndOfWord: boolean;
 }
 
-const people: Person[] = [
-    { name: "Alice", age: 30 },
-    { name: "Bob", age: 25 },
-    { name: "Charlie", age: 35 }
-];
+class ValueTrie<T> {
+  private root: ValueTrieNode<T>;
 
-const byAge = (a: Person, b: Person) => a.age - b.age;
-console.log(mergeSort(people, byAge));
-// [{ name: "Bob", age: 25 }, { name: "Alice", age: 30 }, { name: "Charlie", age: 35 }]
+  constructor() {
+    this.root = this.createNode();
+  }
 
-// Sorting strings
-const strings = ["banana", "apple", "cherry"];
-console.log(mergeSort(strings)); // ["apple", "banana", "cherry"]
+  private createNode(): ValueTrieNode<T> {
+    return {
+      children: new Map(),
+      value: null,
+      isEndOfWord: false
+    };
+  }
+
+  insert(word: string, value: T): void {
+    let currentNode = this.root;
+    
+    for (const char of word) {
+      if (!currentNode.children.has(char)) {
+        currentNode.children.set(char, this.createNode());
+      }
+      currentNode = currentNode.children.get(char)!;
+    }
+    
+    currentNode.isEndOfWord = true;
+    currentNode.value = value;
+  }
+
+  getValue(word: string): T | null {
+    let currentNode = this.root;
+    
+    for (const char of word) {
+      if (!currentNode.children.has(char)) {
+        return null;
+      }
+      currentNode = currentNode.children.get(char)!;
+    }
+    
+    return currentNode.isEndOfWord ? currentNode.value : null;
+  }
+
+  // Other methods similar to basic Trie...
+}
