@@ -1,123 +1,259 @@
-// A directed edge
-export interface Edge {
-  from: number;   // source vertex id
-  to: number;     // destination vertex id
-  weight: number; // edge weight (can be negative)
+class BinaryTreeNode<T> {
+  value: T;
+  left: BinaryTreeNode<T> | null;
+  right: BinaryTreeNode<T> | null;
+
+  constructor(value: T) {
+    this.value = value;
+    this.left = null;
+    this.right = null;
+  }
 }
-/**
- * Bellman‑Ford shortest‑path algorithm.
- *
- * @param verticesCount   Number of vertices in the graph (ids 0 … verticesCount‑1)
- * @param edges           Array of directed edges (may contain negative weights)
- * @param source          Index of the source vertex
- * @returns               An object with distances, predecessors and a flag for negative cycles
- */
-export function bellmanFord(
-  verticesCount: number,
-  edges: Edge[],
-  source: number
-): {
-  distances: number[];
-  predecessors: (number | null)[];
-  hasNegativeCycle: boolean;
-} {
-  // ---------- 1. initialise ----------
-  const distances = new Array<number>(verticesCount).fill(Infinity);
-  const predecessors: (number | null)[] = new Array<number | null>(verticesCount).fill(null);
+class BinaryTree<T> {
+  root: BinaryTreeNode<T> | null;
 
-  distances[source] = 0;
+  constructor() {
+    this.root = null;
+  }
 
-  // ---------- 2. relax edges V‑1 times ----------
-  for (let i = 0; i < verticesCount - 1; i++) {
-    let anyChange = false;
+  // Insert a value into the tree
+  insert(value: T): void {
+    const newNode = new BinaryTreeNode(value);
+    
+    if (this.root === null) {
+      this.root = newNode;
+      return;
+    }
 
-    for (const { from, to, weight } of edges) {
-      if (distances[from] !== Infinity && distances[from] + weight < distances[to]) {
-        distances[to] = distances[from] + weight;
-        predecessors[to] = from;
-        anyChange = true;
+    const queue: BinaryTreeNode<T>[] = [this.root];
+    
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      
+      if (current.left === null) {
+        current.left = newNode;
+        return;
+      } else {
+        queue.push(current.left);
+      }
+      
+      if (current.right === null) {
+        current.right = newNode;
+        return;
+      } else {
+        queue.push(current.right);
       }
     }
-
-    // Early exit: if no edge was relaxed in this pass, we are done
-    if (!anyChange) break;
   }
 
-  // ---------- 3. check for negative cycles ----------
-  let hasNegativeCycle = false;
-  for (const { from, to, weight } of edges) {
-    if (distances[from] !== Infinity && distances[from] + weight < distances[to]) {
-      hasNegativeCycle = true;
-      // Optionally you could propagate the "negative‑cycle reachable" flag
-      // to all vertices that can be affected, but for most use‑cases a boolean is enough.
-      break;
+  // Search for a value
+  search(value: T): boolean {
+    return this.searchNode(this.root, value);
+  }
+
+  private searchNode(node: BinaryTreeNode<T> | null, value: T): boolean {
+    if (node === null) return false;
+    if (node.value === value) return true;
+    
+    return this.searchNode(node.left, value) || this.searchNode(node.right, value);
+  }
+
+  // In-order traversal (Left, Root, Right)
+  inOrderTraversal(): T[] {
+    const result: T[] = [];
+    this.inOrder(this.root, result);
+    return result;
+  }
+
+  private inOrder(node: BinaryTreeNode<T> | null, result: T[]): void {
+    if (node === null) return;
+    this.inOrder(node.left, result);
+    result.push(node.value);
+    this.inOrder(node.right, result);
+  }
+
+  // Pre-order traversal (Root, Left, Right)
+  preOrderTraversal(): T[] {
+    const result: T[] = [];
+    this.preOrder(this.root, result);
+    return result;
+  }
+
+  private preOrder(node: BinaryTreeNode<T> | null, result: T[]): void {
+    if (node === null) return;
+    result.push(node.value);
+    this.preOrder(node.left, result);
+    this.preOrder(node.right, result);
+  }
+
+  // Post-order traversal (Left, Right, Root)
+  postOrderTraversal(): T[] {
+    const result: T[] = [];
+    this.postOrder(this.root, result);
+    return result;
+  }
+
+  private postOrder(node: BinaryTreeNode<T> | null, result: T[]): void {
+    if (node === null) return;
+    this.postOrder(node.left, result);
+    this.postOrder(node.right, result);
+    result.push(node.value);
+  }
+
+  // Level-order traversal (Breadth-first)
+  levelOrderTraversal(): T[] {
+    const result: T[] = [];
+    if (this.root === null) return result;
+    
+    const queue: BinaryTreeNode<T>[] = [this.root];
+    
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      result.push(current.value);
+      
+      if (current.left !== null) {
+        queue.push(current.left);
+      }
+      if (current.right !== null) {
+        queue.push(current.right);
+      }
+    }
+    
+    return result;
+  }
+
+  // Find the height/depth of the tree
+  height(): number {
+    return this.calculateHeight(this.root);
+  }
+
+  private calculateHeight(node: BinaryTreeNode<T> | null): number {
+    if (node === null) return 0;
+    return 1 + Math.max(
+      this.calculateHeight(node.left),
+      this.calculateHeight(node.right)
+    );
+  }
+
+  // Count number of nodes
+  countNodes(): number {
+    return this.countNodesRecursive(this.root);
+  }
+
+  private countNodesRecursive(node: BinaryTreeNode<T> | null): number {
+    if (node === null) return 0;
+    return 1 + this.countNodesRecursive(node.left) + this.countNodesRecursive(node.right);
+  }
+}
+class BinarySearchTree<T> {
+  root: BinaryTreeNode<T> | null;
+
+  constructor() {
+    this.root = null;
+  }
+
+  // Insert with BST rules (left < root < right)
+  insert(value: T): void {
+    this.root = this.insertRecursive(this.root, value);
+  }
+
+  private insertRecursive(node: BinaryTreeNode<T> | null, value: T): BinaryTreeNode<T> {
+    if (node === null) {
+      return new BinaryTreeNode(value);
+    }
+
+    if (value < node.value) {
+      node.left = this.insertRecursive(node.left, value);
+    } else if (value > node.value) {
+      node.right = this.insertRecursive(node.right, value);
+    }
+
+    return node;
+  }
+
+  // Search in BST (more efficient)
+  search(value: T): boolean {
+    return this.searchRecursive(this.root, value);
+  }
+
+  private searchRecursive(node: BinaryTreeNode<T> | null, value: T): boolean {
+    if (node === null) return false;
+    if (node.value === value) return true;
+    
+    if (value < node.value) {
+      return this.searchRecursive(node.left, value);
+    } else {
+      return this.searchRecursive(node.right, value);
     }
   }
 
-  return { distances, predecessors, hasNegativeCycle };
-}
-
-/**
- * Helper to reconstruct the path from `source` to `target`.
- *
- * @param predecessors   Array returned by `bellmanFord`
- * @param source          Source vertex id
- * @param target          Target vertex id
- * @returns               Array of vertex ids representing the path (empty if unreachable)
- */
-export function reconstructPath(
-  predecessors: (number | null)[],
-  source: number,
-  target: number
-): number[] {
-  const path: number[] = [];
-  let cur: number | null = target;
-
-  while (cur !== null) {
-    path.push(cur);
-    if (cur === source) break;
-    cur = predecessors[cur];
+  // Find minimum value
+  findMin(): T | null {
+    if (this.root === null) return null;
+    return this.findMinNode(this.root).value;
   }
 
-  // If we stopped before reaching the source, there is no path
-  if (path[path.length - 1] !== source) return [];
+  private findMinNode(node: BinaryTreeNode<T>): BinaryTreeNode<T> {
+    return node.left ? this.findMinNode(node.left) : node;
+  }
 
-  return path.reverse();
+  // Find maximum value
+  findMax(): T | null {
+    if (this.root === null) return null;
+    return this.findMaxNode(this.root).value;
+  }
+
+  private findMaxNode(node: BinaryTreeNode<T>): BinaryTreeNode<T> {
+    return node.right ? this.findMaxNode(node.right) : node;
+  }
 }
-import { bellmanFord, reconstructPath, Edge } from "./bellmanFord";
+// Example usage
+const tree = new BinaryTree<number>();
 
-// Build a graph with 5 vertices (0 … 4)
-const edges: Edge[] = [
-  { from: 0, to: 1, weight: 6 },
-  { from: 0, to: 2, weight: 7 },
-  { from: 1, to: 2, weight: 8 },
-  { from: 1, to: 3, weight: 5 },
-  { from: 1, to: 4, weight: -4 },
-  { from: 2, to: 3, weight: -3 },
-  { from: 2, to: 4, weight: 9 },
-  { from: 3, to: 1, weight: -2 },
-  { from: 4, to: 0, weight: 2 },
-  { from: 4, to: 3, weight: 7 },
-];
+// Insert values
+tree.insert(5);
+tree.insert(3);
+tree.insert(7);
+tree.insert(2);
+tree.insert(4);
+tree.insert(6);
+tree.insert(8);
 
-const source = 0;
-const verticesCount = 5;
+// Traversals
+console.log("In-order:", tree.inOrderTraversal());    // [2, 3, 4, 5, 6, 7, 8]
+console.log("Pre-order:", tree.preOrderTraversal()); // [5, 3, 2, 4, 7, 6, 8]
+console.log("Post-order:", tree.postOrderTraversal()); // [2, 4, 3, 6, 8, 7, 5]
+console.log("Level-order:", tree.levelOrderTraversal()); // [5, 3, 7, 2, 4, 6, 8]
 
-const { distances, predecessors, hasNegativeCycle } = bellmanFord(
-  verticesCount,
-  edges,
-  source
-);
+// Properties
+console.log("Height:", tree.height()); // 3
+console.log("Total nodes:", tree.countNodes()); // 7
+console.log("Search for 4:", tree.search(4)); // true
+console.log("Search for 10:", tree.search(10)); // false
 
-if (hasNegativeCycle) {
-  console.error("Graph contains a reachable negative‑weight cycle!");
-} else {
-  console.log("Shortest distances from source:", distances);
-  // Example: path from 0 to 3
-  const path = reconstructPath(predecessors, source, 3);
-  console.log("Shortest path 0 → 3 :", path);
+// BST Example
+const bst = new BinarySearchTree<number>();
+bst.insert(5);
+bst.insert(3);
+bst.insert(7);
+bst.insert(2);
+bst.insert(4);
+
+console.log("BST Min:", bst.findMin()); // 2
+console.log("BST Max:", bst.findMax()); // 7
+console.log("BST Search for 4:", bst.search(4)); // true
+interface IBinaryTree<T> {
+  insert(value: T): void;
+  search(value: T): boolean;
+  inOrderTraversal(): T[];
+  preOrderTraversal(): T[];
+  postOrderTraversal(): T[];
+  levelOrderTraversal(): T[];
+  height(): number;
+  countNodes(): number;
 }
-Shortest distances from source: [ 0, 2, 7, 4, -2 ]
-Shortest path 0 → 3 : [ 0, 1, 4, 3 ]
-const { distances, predecessors, hasNegativeCycle } = bellmanFord(V, edgeList, src);
-if (!hasNegativeCycle) console.log(distances, reconstructPath(predecessors, src, target));
+
+// You can implement the interface:
+class MyBinaryTree<T> implements IBinaryTree<T> {
+  // Implementation would go here
+}
