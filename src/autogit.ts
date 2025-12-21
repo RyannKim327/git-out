@@ -1,84 +1,29 @@
-function isSortedAscending<T>(arr: T[]): boolean {
-    return arr.every((value, index) => 
-        index === 0 || value >= arr[index - 1]
-    );
+function mean(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  const sum = nums.reduce((a, b) => a + b, 0);
+  return sum / nums.length;
 }
-
-// Usage
-const numbers = [1, 2, 3, 4, 5];
-const mixed = [1, 3, 2, 4, 5];
-
-console.log(isSortedAscending(numbers)); // true
-console.log(isSortedAscending(mixed));   // false
-function isSortedAscending<T>(arr: T[]): boolean {
-    for (let i = 1; i < arr.length; i++) {
-        if (arr[i] < arr[i - 1]) {
-            return false;
-        }
-    }
-    return true;
+mean([1, 2, 3, 4]); // 2.5
+mean([]);           // undefined
+function meanOrThrow(nums: number[]): number {
+  if (nums.length === 0) throw new Error("Cannot compute mean of an empty array");
+  const sum = nums.reduce((a, b) => a + b, 0);
+  return sum / nums.length;
 }
-function isSortedAscending<T>(
-    arr: T[], 
-    compareFn: (a: T, b: T) => number = (a, b) => (a > b ? 1 : a < b ? -1 : 0)
-): boolean {
-    for (let i = 1; i < arr.length; i++) {
-        if (compareFn(arr[i], arr[i - 1]) < 0) {
-            return false;
-        }
-    }
-    return true;
+function meanIter(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  let sum = 0;
+  for (let i = 0; i < nums.length; i++) {
+    sum += nums[i];
+  }
+  return sum / nums.length;
 }
-
-// Usage with custom objects
-interface Person {
-    name: string;
-    age: number;
+function meanFromIterable(iterable: Iterable<number>): number | undefined {
+  let sum = 0;
+  let count = 0;
+  for (const n of iterable) {
+    sum += n;
+    count++;
+  }
+  return count === 0 ? undefined : sum / count;
 }
-
-const people: Person[] = [
-    { name: "Alice", age: 25 },
-    { name: "Bob", age: 30 },
-    { name: "Charlie", age: 35 }
-];
-
-const isPeopleSorted = isSortedAscending(people, (a, b) => a.age - b.age);
-console.log(isPeopleSorted); // true
-const isSortedAscending = <T>(arr: T[]): boolean => 
-    arr.slice(1).every((value, i) => value >= arr[i]);
-
-// Usage
-console.log(isSortedAscending([1, 2, 3, 2, 5])); // false
-function isSortedAscending<T>(arr: T[]): boolean {
-    if (arr.length <= 1) return true;
-    
-    return arr.every((value, index) => 
-        index === 0 || value >= arr[index - 1]
-    );
-}
-
-// Test cases
-console.log(isSortedAscending([]));        // true (empty array)
-console.log(isSortedAscending([1]));       // true (single element)
-console.log(isSortedAscending([1, 1, 1])); // true (all equal)
-console.log(isSortedAscending([5, 4, 3])); // false (descending)
-function isSortedAscending<T extends number | string | Date>(
-    arr: T[]
-): boolean {
-    if (arr.length <= 1) return true;
-    
-    for (let i = 1; i < arr.length; i++) {
-        if (arr[i] < arr[i - 1]) {
-            return false;
-        }
-    }
-    return true;
-}
-
-// Works with numbers, strings, and Dates
-console.log(isSortedAscending([1, 2, 3, 4]));           // true
-console.log(isSortedAscending(['a', 'b', 'c']));        // true
-console.log(isSortedAscending([
-    new Date('2023-01-01'),
-    new Date('2023-01-02')
-]));                                                    // true
