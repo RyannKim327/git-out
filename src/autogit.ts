@@ -1,138 +1,146 @@
-function largestPrimeFactor(n: number): number {
-    if (n <= 1) return 1;
-    
-    let num = n;
-    let largestFactor = 1;
-    
-    // Handle factor 2
-    while (num % 2 === 0) {
-        largestFactor = 2;
-        num /= 2;
+function kthSmallestSort(arr: number[], k: number): number {
+    if (k < 1 || k > arr.length) {
+        throw new Error('k is out of bounds');
     }
     
-    // Handle odd factors starting from 3
-    let factor = 3;
-    while (factor * factor <= num) {
-        while (num % factor === 0) {
-            largestFactor = factor;
-            num /= factor;
-        }
-        factor += 2;
-    }
-    
-    // If remaining number is prime
-    if (num > 2) {
-        largestFactor = num;
-    }
-    
-    return largestFactor;
+    const sorted = [...arr].sort((a, b) => a - b);
+    return sorted[k - 1];
 }
 
 // Example usage
-console.log(largestPrimeFactor(13195)); // 29
-console.log(largestPrimeFactor(600851475143)); // 6857
-class PrimeFactorFinder {
-    
-    static isPrime(num: number): boolean {
-        if (num <= 1) return false;
-        if (num <= 3) return true;
-        if (num % 2 === 0 || num % 3 === 0) return false;
-        
-        let i = 5;
-        while (i * i <= num) {
-            if (num % i === 0 || num % (i + 2) === 0) {
-                return false;
-            }
-            i += 6;
-        }
-        return true;
+const numbers = [3, 2, 1, 5, 6, 4];
+console.log(kthSmallestSort(numbers, 2)); // Output: 2
+function quickSelect(arr: number[], k: number): number {
+    if (k < 1 || k > arr.length) {
+        throw new Error('k is out of bounds');
     }
     
-    static findLargestPrimeFactor(n: number): number {
-        if (n <= 1) return 1;
-        if (this.isPrime(n)) return n;
-        
-        let largestPrime = 1;
-        const sqrtN = Math.sqrt(n);
-        
-        // Check factors up to sqrt(n)
-        for (let i = 2; i <= sqrtN; i++) {
-            if (n % i === 0) {
-                const factor1 = i;
-                const factor2 = n / i;
-                
-                if (this.isPrime(factor1) && factor1 > largestPrime) {
-                    largestPrime = factor1;
-                }
-                
-                if (this.isPrime(factor2) && factor2 > largestPrime) {
-                    largestPrime = factor2;
-                }
-            }
-        }
-        
-        return largestPrime;
+    return _quickSelect([...arr], 0, arr.length - 1, k - 1);
+}
+
+function _quickSelect(arr: number[], left: number, right: number, k: number): number {
+    if (left === right) {
+        return arr[left];
+    }
+    
+    const pivotIndex = partition(arr, left, right);
+    
+    if (k === pivotIndex) {
+        return arr[k];
+    } else if (k < pivotIndex) {
+        return _quickSelect(arr, left, pivotIndex - 1, k);
+    } else {
+        return _quickSelect(arr, pivotIndex + 1, right, k);
     }
 }
 
-// Example usage
-console.log(PrimeFactorFinder.findLargestPrimeFactor(13195)); // 29
-const largestPrimeFactorFunctional = (n: number): number => {
-    const factors = (num: number): number[] => {
-        const result: number[] = [];
-        let current = num;
-        let divisor = 2;
-        
-        while (current >= 2) {
-            if (current % divisor === 0) {
-                result.push(divisor);
-                current /= divisor;
-            } else {
-                divisor++;
-            }
+function partition(arr: number[], left: number, right: number): number {
+    const pivot = arr[right];
+    let i = left;
+    
+    for (let j = left; j < right; j++) {
+        if (arr[j] <= pivot) {
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+            i++;
         }
-        return result;
-    };
+    }
     
-    const isPrime = (num: number): boolean => {
-        if (num <= 1) return false;
-        for (let i = 2; i <= Math.sqrt(num); i++) {
-            if (num % i === 0) return false;
-        }
-        return true;
-    };
-    
-    const primeFactors = factors(n).filter(isPrime);
-    return Math.max(...primeFactors);
-};
-
-// Example usage
-console.log(largestPrimeFactorFunctional(13195)); // 29
-// Test function to compare performance
-function testPerformance(n: number): void {
-    console.log(`Testing for n = ${n}`);
-    
-    console.time('Method 1');
-    const result1 = largestPrimeFactor(n);
-    console.timeEnd('Method 1');
-    console.log(`Result: ${result1}`);
-    
-    console.time('Method 2');
-    const result2 = PrimeFactorFinder.findLargestPrimeFactor(n);
-    console.timeEnd('Method 2');
-    console.log(`Result: ${result2}`);
-    
-    console.time('Method 3');
-    const result3 = largestPrimeFactorFunctional(n);
-    console.timeEnd('Method 3');
-    console.log(`Result: ${result3}`);
+    [arr[i], arr[right]] = [arr[right], arr[i]];
+    return i;
 }
 
-// Run performance test
-testPerformance(600851475143);
-// Test edge cases
-console.log(largestPrimeFactor(1)); // 1
-console.log(largestPrimeFactor(2)); // 2
-console.log(largestPrimeFactor(3)); // 3
-console.log(largestPrimeFactor(4)); // 2
-console.log(largestPrimeFactor(17)); // 17 (prime number)
+// Example usage
+const numbers = [3, 2, 1, 5, 6, 4];
+console.log(quickSelect(numbers, 2)); // Output: 2
+class MinHeap {
+    private heap: number[] = [];
+    
+    constructor(arr: number[]) {
+        this.heap = [...arr];
+        this.buildHeap();
+    }
+    
+    private buildHeap(): void {
+        for (let i = Math.floor(this.heap.length / 2); i >= 0; i--) {
+            this.heapify(i);
+        }
+    }
+    
+    private heapify(i: number): void {
+        const left = 2 * i + 1;
+        const right = 2 * i + 2;
+        let smallest = i;
+        
+        if (left < this.heap.length && this.heap[left] < this.heap[smallest]) {
+            smallest = left;
+        }
+        
+        if (right < this.heap.length && this.heap[right] < this.heap[smallest]) {
+            smallest = right;
+        }
+        
+        if (smallest !== i) {
+            [this.heap[i], this.heap[smallest]] = [this.heap[smallest], this.heap[i]];
+            this.heapify(smallest);
+        }
+    }
+    
+    public extractMin(): number {
+        if (this.heap.length === 0) throw new Error('Heap is empty');
+        
+        const min = this.heap[0];
+        this.heap[0] = this.heap[this.heap.length - 1];
+        this.heap.pop();
+        this.heapify(0);
+        
+        return min;
+    }
+}
+
+function kthSmallestHeap(arr: number[], k: number): number {
+    if (k < 1 || k > arr.length) {
+        throw new Error('k is out of bounds');
+    }
+    
+    const heap = new MinHeap(arr);
+    let result = 0;
+    
+    for (let i = 0; i < k; i++) {
+        result = heap.extractMin();
+    }
+    
+    return result;
+}
+
+// Example usage
+const numbers = [3, 2, 1, 5, 6, 4];
+console.log(kthSmallestHeap(numbers, 2)); // Output: 2
+function kthSmallest<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T {
+    if (k < 1 || k > arr.length) {
+        throw new Error('k is out of bounds');
+    }
+    
+    const comparator = compareFn || ((a: T, b: T) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+    });
+    
+    const sorted = [...arr].sort(comparator);
+    return sorted[k - 1];
+}
+
+// Example usage with custom objects
+interface Person {
+    name: string;
+    age: number;
+}
+
+const people: Person[] = [
+    { name: "Alice", age: 30 },
+    { name: "Bob", age: 25 },
+    { name: "Charlie", age: 35 }
+];
+
+console.log(kthSmallest(people, 2, (a, b) => a.age - b.age)); 
+// Output: { name: "Alice", age: 30 }
