@@ -1,146 +1,62 @@
-class ListNode<T> {
-    value: T;
-    next: ListNode<T> | null;
+/**
+ * Counting sort for numbers (or objects that can be mapped to numbers).
+ * Stable, non-destructive: returns a new array, original is untouched.
+ *
+ * @param arr          array to sort
+ * @param toNumber     optional mapper from T to non-negative integer
+ *                     (defaults to identity for number[])
+ * @returns            new sorted array
+ */
+export function countingSort<T>(
+  arr: readonly T[],
+  toNumber: (item: T) => number = (x: any) => x
+): T[] {
+  if (arr.length === 0) return [];
 
-    constructor(value: T, next: ListNode<T> | null = null) {
-        this.value = value;
-        this.next = next;
-    }
+  // 1. find range
+  let min = toNumber(arr[0]);
+  let max = min;
+  for (let i = 1; i < arr.length; ++i) {
+    const v = toNumber(arr[i]);
+    if (v < 0) throw new Error("Counting sort needs non-negative keys");
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+
+  const range = max - min + 1;
+
+  // 2. count frequencies
+  const count = new Uint32Array(range);
+  for (let i = 0; i < arr.length; ++i) {
+    ++count[toNumber(arr[i]) - min];
+  }
+
+  // 3. prefix sum
+  for (let i = 1; i < range; ++i) {
+    count[i] += count[i - 1];
+  }
+
+  // 4. build output (backwards keeps it stable)
+  const out = new Array<T>(arr.length);
+  for (let i = arr.length - 1; i >= 0; --i) {
+    const key = toNumber(arr[i]) - min;
+    out[--count[key]] = arr[i];
+  }
+  return out;
 }
 
-class LinkedList<T> {
-    head: ListNode<T> | null;
-    tail: ListNode<T> | null;
+/* ---------- Usage examples ---------- */
 
-    constructor() {
-        this.head = null;
-        this.tail = null;
-    }
-}
-class LinkedList<T> {
-    // ... previous code
+// 1. plain numbers
+const nums = [3, 7, 2, 7, 0, 3];
+console.log(countingSort(nums)); // [0, 2, 3, 3, 7, 7]
 
-    reverseIterative(): void {
-        let prev: ListNode<T> | null = null;
-        let current: ListNode<T> | null = this.head;
-        let next: ListNode<T> | null = null;
-
-        while (current !== null) {
-            next = current.next;    // Store next node
-            current.next = prev;    // Reverse current node's pointer
-            prev = current;         // Move prev to current
-            current = next;         // Move to next node
-        }
-
-        // Update head and tail
-        this.tail = this.head;
-        this.head = prev;
-    }
-}
-class LinkedList<T> {
-    // ... previous code
-
-    reverseRecursive(): void {
-        this.head = this._reverseRecursive(this.head);
-        // Update tail (you might want to track tail separately)
-    }
-
-    private _reverseRecursive(node: ListNode<T> | null): ListNode<T> | null {
-        if (node === null || node.next === null) {
-            return node;
-        }
-
-        const reversedHead = this._reverseRecursive(node.next);
-        node.next.next = node;
-        node.next = null;
-
-        return reversedHead;
-    }
-}
-class LinkedList<T> {
-    head: ListNode<T> | null;
-    tail: ListNode<T> | null;
-
-    constructor() {
-        this.head = null;
-        this.tail = null;
-    }
-
-    // Add node to the end
-    append(value: T): void {
-        const newNode = new ListNode(value);
-        if (!this.head) {
-            this.head = newNode;
-            this.tail = newNode;
-        } else {
-            this.tail!.next = newNode;
-            this.tail = newNode;
-        }
-    }
-
-    // Iterative reverse
-    reverse(): void {
-        let prev: ListNode<T> | null = null;
-        let current: ListNode<T> | null = this.head;
-        let next: ListNode<T> | null = null;
-
-        while (current !== null) {
-            next = current.next;
-            current.next = prev;
-            prev = current;
-            current = next;
-        }
-
-        this.tail = this.head;
-        this.head = prev;
-    }
-
-    // Convert to array for easy visualization
-    toArray(): T[] {
-        const result: T[] = [];
-        let current = this.head;
-        
-        while (current !== null) {
-            result.push(current.value);
-            current = current.next;
-        }
-        
-        return result;
-    }
-}
-
-// Usage example
-const list = new LinkedList<number>();
-list.append(1);
-list.append(2);
-list.append(3);
-list.append(4);
-
-console.log("Original:", list.toArray()); // [1, 2, 3, 4]
-list.reverse();
-console.log("Reversed:", list.toArray()); // [4, 3, 2, 1]
-reverseUsingStack(): void {
-    const stack: ListNode<T>[] = [];
-    let current = this.head;
-
-    // Push all nodes to stack
-    while (current !== null) {
-        stack.push(current);
-        current = current.next;
-    }
-
-    // Rebuild reversed list
-    this.head = stack.pop() || null;
-    current = this.head;
-    
-    while (stack.length > 0) {
-        const node = stack.pop()!;
-        current!.next = node;
-        current = node;
-    }
-    
-    this.tail = current;
-    if (this.tail) {
-        this.tail.next = null;
-    }
-}
+// 2. objects by a numeric field
+interface Person { age: number; name: string }
+const people: Person[] = [
+  { age: 34, name: "Alice" },
+  { age: 12, name: "Bob" },
+  { age: 34, name: "Claire" }
+];
+const byAge = countingSort(people, p => p.age);
+console.log(byAge.map(p => p.name)); // ["Bob","Alice","Claire"]
