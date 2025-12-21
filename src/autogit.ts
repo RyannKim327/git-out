@@ -1,80 +1,60 @@
-function toInt(value: string, radix: number = 10): number {
-  const result = parseInt(value, radix);
-  if (isNaN(result)) {
-    throw new Error(`"${value}" is not a valid integer`);
-  }
-  return result;
-}
-
-// Usage
-const age: number = toInt("42");          // 42
-const hex: number = toInt("ff", 16);      // 255
-function strictToInt(value: string): number {
-  // The unary plus is just a shorter syntax for Number(value)
-  const result = +value; // or Number(value)
-
-  // Ensure the result is an integer (no decimal part)
-  if (!Number.isInteger(result)) {
-    throw new Error(`"${value}" is not a valid integer`);
-  }
-  return result;
-}
-
-// Usage
-const count = strictToInt("100");   // 100
-// strictToInt("100.5"); // throws
-// strictToInt("abc");   // throws
-const n = Number.parseInt("123", 10); // 123
-function safeToInt(value: string, fallback: number = 0, radix: number = 10): number {
-  const parsed = parseInt(value, radix);
-  return Number.isNaN(parsed) ? fallback : parsed;
-}
-
-// Example
-const maybeId = safeToInt("abc", -1); // -1 (fallback)
-function isIntegerString(val: unknown): val is string {
-  return typeof val === "string" && /^\s*-?\d+\s*$/.test(val);
-}
-
-function toIntIfString(val: unknown): number | undefined {
-  if (isIntegerString(val)) {
-    return parseInt(val, 10);
-  }
-  return undefined; // or throw / fallback
-}
-// utils/number.ts
-export class NumberUtil {
-  /** Convert a string to an integer, throwing on failure. */
-  static toInt(value: string, radix: number = 10): number {
-    const n = parseInt(value, radix);
-    if (Number.isNaN(n)) {
-      throw new Error(`Invalid integer: "${value}"`);
+function isPrime(num: number): boolean {
+    if (num <= 1) return false;
+    if (num <= 3) return true;
+    if (num % 2 === 0 || num % 3 === 0) return false;
+    
+    // Check for divisors up to sqrt(num)
+    for (let i = 5; i * i <= num; i += 6) {
+        if (num % i === 0 || num % (i + 2) === 0) return false;
     }
-    return n;
-  }
-
-  /** Convert a string to an integer, returning a fallback on failure. */
-  static safeToInt(value: string, fallback: number = 0, radix: number = 10): number {
-    const n = parseInt(value, radix);
-    return Number.isNaN(n) ? fallback : n;
-  }
-
-  /** Strict conversion that also checks for integerness. */
-  static strictToInt(value: string): number {
-    const n = Number(value);
-    if (!Number.isInteger(n)) {
-      throw new Error(`"${value}" is not an integer`);
-    }
-    return n;
-  }
+    
+    return true;
 }
-import { NumberUtil } from "./utils/number";
+function isPrimeSimple(num: number): boolean {
+    if (num <= 1) return false;
+    if (num === 2) return true;
+    if (num % 2 === 0) return false;
+    
+    // Check odd divisors up to sqrt(num)
+    for (let i = 3; i <= Math.sqrt(num); i += 2) {
+        if (num % i === 0) return false;
+    }
+    
+    return true;
+}
+function isPrimeOptimized(n: number): boolean {
+    // Handle edge cases
+    if (n <= 1) return false;
+    if (n <= 3) return true;
+    
+    // Eliminate multiples of 2 and 3
+    if (n % 2 === 0 || n % 3 === 0) return false;
+    
+    // Check divisors of form 6k ± 1
+    for (let i = 5; i * i <= n; i += 6) {
+        if (n % i === 0 || n % (i + 2) === 0) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+// Test the functions
+console.log(isPrime(7));       // true
+console.log(isPrime(10));      // false
+console.log(isPrime(17));      // true
+console.log(isPrime(1));       // false
+console.log(isPrime(2));       // true
 
-const id = NumberUtil.toInt("123");               // 123
-const maybe = NumberUtil.safeToInt("xyz", -1);    // -1
-const strict = NumberUtil.strictToInt("42");      // 42
-// Most common, explicit, and safe:
-const myInt: number = NumberUtil.toInt(myString);   // throws if invalid
+// You can also create a function to find primes in a range
+function getPrimesInRange(start: number, end: number): number[] {
+    const primes: number[] = [];
+    for (let i = start; i <= end; i++) {
+        if (isPrime(i)) {
+            primes.push(i);
+        }
+    }
+    return primes;
+}
 
-// Or, if you want a fallback:
-const myIntOrZero = NumberUtil.safeToInt(myString, 0);
+console.log(getPrimesInRange(1, 20)); // [2, 3, 5, 7, 11, 13, 17, 19]
