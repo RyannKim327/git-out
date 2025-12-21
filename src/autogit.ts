@@ -1,118 +1,146 @@
-function largestPrimeFactor(n: number): number {
-    let largestFactor = -1;
-    let num = n;
-    
-    // Handle factor of 2
-    while (num % 2 === 0) {
-        largestFactor = 2;
-        num /= 2;
+class ListNode<T> {
+    value: T;
+    next: ListNode<T> | null;
+
+    constructor(value: T, next: ListNode<T> | null = null) {
+        this.value = value;
+        this.next = next;
     }
-    
-    // Handle odd factors starting from 3
-    for (let i = 3; i <= Math.sqrt(num); i += 2) {
-        while (num % i === 0) {
-            largestFactor = i;
-            num /= i;
-        }
-    }
-    
-    // If remaining number is prime and greater than 2
-    if (num > 2) {
-        largestFactor = num;
-    }
-    
-    return largestFactor;
 }
 
-// Example usage
-console.log(largestPrimeFactor(13195)); // 29
-console.log(largestPrimeFactor(600851475143)); // 6857
-function largestPrimeFactorDetailed(n: number): number {
-    if (n <= 1) {
-        throw new Error("Number must be greater than 1");
+class LinkedList<T> {
+    head: ListNode<T> | null;
+    tail: ListNode<T> | null;
+
+    constructor() {
+        this.head = null;
+        this.tail = null;
     }
-    
-    let numberToFactor = n;
-    let largestPrime = -1;
-    
-    // Factor out 2s
-    while (numberToFactor % 2 === 0) {
-        largestPrime = 2;
-        numberToFactor /= 2;
+}
+class LinkedList<T> {
+    // ... previous code
+
+    reverseIterative(): void {
+        let prev: ListNode<T> | null = null;
+        let current: ListNode<T> | null = this.head;
+        let next: ListNode<T> | null = null;
+
+        while (current !== null) {
+            next = current.next;    // Store next node
+            current.next = prev;    // Reverse current node's pointer
+            prev = current;         // Move prev to current
+            current = next;         // Move to next node
+        }
+
+        // Update head and tail
+        this.tail = this.head;
+        this.head = prev;
     }
-    
-    // Factor out odd numbers
-    let factor = 3;
-    while (factor * factor <= numberToFactor) {
-        if (numberToFactor % factor === 0) {
-            largestPrime = factor;
-            numberToFactor /= factor;
+}
+class LinkedList<T> {
+    // ... previous code
+
+    reverseRecursive(): void {
+        this.head = this._reverseRecursive(this.head);
+        // Update tail (you might want to track tail separately)
+    }
+
+    private _reverseRecursive(node: ListNode<T> | null): ListNode<T> | null {
+        if (node === null || node.next === null) {
+            return node;
+        }
+
+        const reversedHead = this._reverseRecursive(node.next);
+        node.next.next = node;
+        node.next = null;
+
+        return reversedHead;
+    }
+}
+class LinkedList<T> {
+    head: ListNode<T> | null;
+    tail: ListNode<T> | null;
+
+    constructor() {
+        this.head = null;
+        this.tail = null;
+    }
+
+    // Add node to the end
+    append(value: T): void {
+        const newNode = new ListNode(value);
+        if (!this.head) {
+            this.head = newNode;
+            this.tail = newNode;
         } else {
-            factor += 2;
+            this.tail!.next = newNode;
+            this.tail = newNode;
         }
     }
-    
-    // If what's left is prime
-    if (numberToFactor > 1) {
-        largestPrime = numberToFactor;
-    }
-    
-    return largestPrime;
-}
-function isPrime(num: number): boolean {
-    if (num <= 1) return false;
-    if (num <= 3) return true;
-    if (num % 2 === 0 || num % 3 === 0) return false;
-    
-    for (let i = 5; i * i <= num; i += 6) {
-        if (num % i === 0 || num % (i + 2) === 0) return false;
-    }
-    return true;
-}
 
-function largestPrimeFactorWithCheck(n: number): number {
-    let largest = -1;
-    
-    for (let i = 2; i <= Math.sqrt(n); i++) {
-        if (n % i === 0) {
-            const factor1 = i;
-            const factor2 = n / i;
-            
-            if (isPrime(factor1) && factor1 > largest) {
-                largest = factor1;
-            }
-            if (isPrime(factor2) && factor2 > largest) {
-                largest = factor2;
-            }
+    // Iterative reverse
+    reverse(): void {
+        let prev: ListNode<T> | null = null;
+        let current: ListNode<T> | null = this.head;
+        let next: ListNode<T> | null = null;
+
+        while (current !== null) {
+            next = current.next;
+            current.next = prev;
+            prev = current;
+            current = next;
         }
-    }
-    
-    return largest;
-}
-// Test cases
-const testCases = [
-    { input: 10, expected: 5 },
-    { input: 17, expected: 17 },
-    { input: 13195, expected: 29 },
-    { input: 600851475143, expected: 6857 }
-];
 
-testCases.forEach(({ input, expected }) => {
-    const result = largestPrimeFactor(input);
-    console.log(`Largest prime factor of ${input}: ${result} (expected: ${expected})`);
-});
-function safeLargestPrimeFactor(n: number): number {
-    if (typeof n !== 'number' || !Number.isInteger(n)) {
-        throw new Error("Input must be an integer");
+        this.tail = this.head;
+        this.head = prev;
+    }
+
+    // Convert to array for easy visualization
+    toArray(): T[] {
+        const result: T[] = [];
+        let current = this.head;
+        
+        while (current !== null) {
+            result.push(current.value);
+            current = current.next;
+        }
+        
+        return result;
+    }
+}
+
+// Usage example
+const list = new LinkedList<number>();
+list.append(1);
+list.append(2);
+list.append(3);
+list.append(4);
+
+console.log("Original:", list.toArray()); // [1, 2, 3, 4]
+list.reverse();
+console.log("Reversed:", list.toArray()); // [4, 3, 2, 1]
+reverseUsingStack(): void {
+    const stack: ListNode<T>[] = [];
+    let current = this.head;
+
+    // Push all nodes to stack
+    while (current !== null) {
+        stack.push(current);
+        current = current.next;
+    }
+
+    // Rebuild reversed list
+    this.head = stack.pop() || null;
+    current = this.head;
+    
+    while (stack.length > 0) {
+        const node = stack.pop()!;
+        current!.next = node;
+        current = node;
     }
     
-    if (n <= 1) {
-        throw new Error("Number must be greater than 1");
+    this.tail = current;
+    if (this.tail) {
+        this.tail.next = null;
     }
-    
-    if (n === 2) {
-        return 2; // 2 is prime
-    }
-    
-    return largestPrimeFactor(n);
 }
