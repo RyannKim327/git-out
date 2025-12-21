@@ -1,234 +1,142 @@
-class KMPStringMatcher {
-    private pattern: string;
-    private lps: number[];
-
-    constructor(pattern: string) {
-        this.pattern = pattern;
-        this.lps = this.computeLPSArray();
-    }
-
-    private computeLPSArray(): number[] {
-        const lps: number[] = new Array(this.pattern.length).fill(0);
-        let length = 0;
-        let i = 1;
-
-        while (i < this.pattern.length) {
-            if (this.pattern[i] === this.pattern[length]) {
-                length++;
-                lps[i] = length;
-                i++;
-            } else {
-                if (length !== 0) {
-                    length = lps[length - 1];
-                } else {
-                    lps[i] = 0;
-                    i++;
-                }
-            }
-        }
-
-        return lps;
-    }
-
-    search(text: string): number[] {
-        const matches: number[] = [];
-        let i = 0; // index for text
-        let j = 0; // index for pattern
-
-        while (i < text.length) {
-            if (this.pattern[j] === text[i]) {
-                i++;
-                j++;
-            }
-
-            if (j === this.pattern.length) {
-                matches.push(i - j);
-                j = this.lps[j - 1];
-            } else if (i < text.length && this.pattern[j] !== text[i]) {
-                if (j !== 0) {
-                    j = this.lps[j - 1];
-                } else {
-                    i++;
-                }
-            }
-        }
-
-        return matches;
-    }
+// astar.ts
+export interface AstarNode<T> {
+  id: string;                 // must be unique
+  data: T;                    // whatever payload you need
+  neighbours(): AstarNode<T>[];
+  cost(to: AstarNode<T>): number; // positive edge weight
 }
 
-// Usage
-const kmp = new KMPStringMatcher("abc");
-const text = "abcdeabcabc";
-const matches = kmp.search(text);
-console.log("KMP matches:", matches); // [0, 5, 8]
-class BoyerMooreStringMatcher {
-    private pattern: string;
-    private badCharTable: Map<string, number>;
-    private goodSuffixTable: number[];
-
-    constructor(pattern: string) {
-        this.pattern = pattern;
-        this.badCharTable = this.buildBadCharTable();
-        this.goodSuffixTable = this.buildGoodSuffixTable();
-    }
-
-    private buildBadCharTable(): Map<string, number> {
-        const table = new Map<string, number>();
-        for (let i = 0; i < this.pattern.length - 1; i++) {
-            table.set(this.pattern[i], this.pattern.length - 1 - i);
-        }
-        return table;
-    }
-
-    private buildGoodSuffixTable(): number[] {
-        const table = new Array(this.pattern.length).fill(this.pattern.length);
-        let lastPrefixPosition = this.pattern.length;
-
-        for (let i = this.pattern.length - 1; i >= 0; i--) {
-            if (this.isPrefix(i + 1)) {
-                lastPrefixPosition = i + 1;
-            }
-            table[this.pattern.length - 1 - i] = lastPrefixPosition - i + this.pattern.length - 1;
-        }
-
-        for (let i = 0; i < this.pattern.length - 1; i++) {
-            const suffixLength = this.suffixLength(i);
-            table[suffixLength] = this.pattern.length - 1 - i + suffixLength;
-        }
-
-        return table;
-    }
-
-    private isPrefix(position: number): boolean {
-        for (let i = position, j = 0; i < this.pattern.length; i++, j++) {
-            if (this.pattern[i] !== this.pattern[j]) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private suffixLength(position: number): number {
-        let length = 0;
-        let i = position;
-        let j = this.pattern.length - 1;
-
-        while (i >= 0 && this.pattern[i] === this.pattern[j]) {
-            length++;
-            i--;
-            j--;
-        }
-
-        return length;
-    }
-
-    search(text: string): number[] {
-        const matches: number[] = [];
-        let i = 0;
-
-        while (i <= text.length - this.pattern.length) {
-            let j = this.pattern.length - 1;
-
-            while (j >= 0 && this.pattern[j] === text[i + j]) {
-                j--;
-            }
-
-            if (j < 0) {
-                matches.push(i);
-                i += this.goodSuffixTable[0];
-            } else {
-                const badCharShift = this.badCharTable.get(text[i + j]) || this.pattern.length;
-                const goodSuffixShift = this.goodSuffixTable[this.pattern.length - 1 - j];
-                i += Math.max(badCharShift, goodSuffixShift);
-            }
-        }
-
-        return matches;
-    }
+export interface PathResult<T> {
+  path: AstarNode<T>[];
+  cost: number;
 }
 
-// Usage
-const bm = new BoyerMooreStringMatcher("abc");
-const matchesBM = bm.search("abcdeabcabc");
-console.log("Boyer-Moore matches:", matchesBM); // [0, 5, 8]
-class RabinKarpStringMatcher {
-    private pattern: string;
-    private patternHash: number;
-    private base: number = 256;
-    private prime: number = 101;
+/**
+ * A* search.
+ * @param start       Start node
+ * @param goal        Goal node
+ * @param heuristic   Admissible heuristic h(n) estimating cost from n to goal
+ */
+export function aStar<T>(
+  start: AstarNode<T>,
+  goal: AstarNode<T>,
+  heuristic: (n: AstarNode<T>) => number
+): PathResult<T> | null {
+  type Node = AstarNode<T>;
 
-    constructor(pattern: string) {
-        this.pattern = pattern;
-        this.patternHash = this.hash(pattern);
+  const open = new Heap<Node>((a, b) => (fScore.get(a) ?? Infinity) - (fScore.get(b) ?? Infinity));
+  const gScore = new Map<string, number>();   // cheapest cost from start
+  const fScore = new Map<string, number>(); // gScore + heuristic
+  const cameFrom = new Map<string, string>();
+
+  gScore.set(start.id, 0);
+  fScore.set(start.id, heuristic(start));
+  open.push(start);
+
+  while (!open.isEmpty()) {
+    const current = open.pop()!;
+
+    if (current.id === goal.id) {
+      // Reconstruct path
+      const path: Node[] = [];
+      let id: string | undefined = goal.id;
+      while (id) {
+        // lookup node by id (simple linear scan – replace by Map if needed)
+        const node = [start, goal, ...open.items()].find(n => n.id === id)!;
+        path.unshift(node);
+        id = cameFrom.get(id);
+      }
+      return { path, cost: gScore.get(goal.id)! };
     }
 
-    private hash(str: string): number {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            hash = (this.base * hash + str.charCodeAt(i)) % this.prime;
-        }
-        return hash;
+    for (const nb of current.neighbours()) {
+      const tentative = gScore.get(current.id)! + current.cost(nb);
+      const nbOldG = gScore.get(nb.id) ?? Infinity;
+
+      if (tentative < nbOldG) {
+        cameFrom.set(nb.id, current.id);
+        gScore.set(nb.id, tentative);
+        fScore.set(nb.id, tentative + heuristic(nb));
+
+        if (!open.contains(nb)) open.push(nb);
+      }
     }
-
-    search(text: string): number[] {
-        const matches: number[] = [];
-        const n = text.length;
-        const m = this.pattern.length;
-
-        if (n < m) return matches;
-
-        let textHash = this.hash(text.substring(0, m));
-        let h = 1;
-
-        // Calculate h = (base^(m-1)) % prime
-        for (let i = 0; i < m - 1; i++) {
-            h = (h * this.base) % this.prime;
-        }
-
-        for (let i = 0; i <= n - m; i++) {
-            if (textHash === this.patternHash) {
-                let match = true;
-                for (let j = 0; j < m; j++) {
-                    if (text[i + j] !== this.pattern[j]) {
-                        match = false;
-                        break;
-                    }
-                }
-                if (match) {
-                    matches.push(i);
-                }
-            }
-
-            if (i < n - m) {
-                textHash = (this.base * (textHash - text.charCodeAt(i) * h) + 
-                           text.charCodeAt(i + m)) % this.prime;
-                
-                if (textHash < 0) {
-                    textHash += this.prime;
-                }
-            }
-        }
-
-        return matches;
-    }
+  }
+  return null; // no path
 }
 
-// Usage
-const rk = new RabinKarpStringMatcher("abc");
-const matchesRK = rk.search("abcdeabcabc");
-console.log("Rabin-Karp matches:", matchesRK); // [0, 5, 8]
-function findAllOccurrences(text: string, pattern: string): number[] {
-    const matches: number[] = [];
-    let index = -1;
-    
-    while ((index = text.indexOf(pattern, index + 1)) !== -1) {
-        matches.push(index);
+/* ---------- Minimal binary heap priority queue ---------- */
+class Heap<T> {
+  private arr: T[] = [];
+  constructor(private cmp: (a: T, b: T) => number) {}
+  push(item: T) {
+    this.arr.push(item);
+    this.bubbleUp(this.arr.length - 1);
+  }
+  pop(): T | undefined {
+    if (this.arr.length === 0) return undefined;
+    const top = this.arr[0];
+    const last = this.arr.pop()!;
+    if (this.arr.length > 0) {
+      this.arr[0] = last;
+      this.bubbleDown(0);
     }
-    
-    return matches;
+    return top;
+  }
+  isEmpty() { return this.arr.length === 0; }
+  contains(item: T) { return this.arr.includes(item); }
+  items() { return this.arr.slice(); }
+
+  private bubbleUp(idx: number) {
+    while (idx > 0) {
+      const parent = (idx - 1) >> 1;
+      if (this.cmp(this.arr[idx], this.arr[parent]) < 0) {
+        [this.arr[idx], this.arr[parent]] = [this.arr[parent], this.arr[idx]];
+        idx = parent;
+      } else break;
+    }
+  }
+  private bubbleDown(idx: number) {
+    while (true) {
+      let min = idx;
+      const left = idx * 2 + 1;
+      const right = left + 1;
+      if (left < this.arr.length && this.cmp(this.arr[left], this.arr[min]) < 0) min = left;
+      if (right < this.arr.length && this.cmp(this.arr[right], this.arr[min]) < 0) min = right;
+      if (min !== idx) {
+        [this.arr[idx], this.arr[min]] = [this.arr[min], this.arr[idx]];
+        idx = min;
+      } else break;
+    }
+  }
+}
+class GridNode implements AstarNode<{ x: number; y: number }> {
+  id: string;
+  constructor(public data: { x: number; y: number }) {
+    this.id = `${data.x},${data.y}`;
+  }
+  neighbours(): GridNode[] {
+    const { x, y } = this.data;
+    const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+    return dirs
+      .map(([dx, dy]) => new GridNode({ x: x + dx, y: y + dy }))
+      .filter(n => n.data.x >= 0 && n.data.y >= 0 && n.data.x < 20 && n.data.y < 20); // stay inside 20×20
+  }
+  cost(): number { return 1; } // uniform cost
 }
 
-// Usage
-const simpleMatches = findAllOccurrences("abcdeabcabc", "abc");
-console.log("Simple matches:", simpleMatches); // [0, 5, 8]
+const start = new GridNode({ x: 0, y: 0 });
+const goal  = new GridNode({ x: 19, y: 19 });
+const heuristic = (n: GridNode) => {
+  const dx = Math.abs(n.data.x - goal.data.x);
+  const dy = Math.abs(n.data.y - goal.data.y);
+  return dx + dy; // Manhattan distance
+};
+
+const result = aStar(start, goal, heuristic);
+if (result) {
+  console.log('Path length:', result.path.length);
+  console.log('Cost:', result.cost);
+} else {
+  console.log('No path found');
+}
