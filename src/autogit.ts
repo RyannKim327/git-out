@@ -1,271 +1,311 @@
-interface Graph {
-  [key: number]: number[];
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  username: string;
 }
 
-class DFS {
-  // Recursive DFS
-  static dfsRecursive(graph: Graph, start: number): number[] {
-    const result: number[] = [];
-    const visited: Set<number> = new Set();
+interface ApiResponse<T> {
+  data: T;
+  status: number;
+  message?: string;
+}
 
-    const dfs = (node: number) => {
-      if (visited.has(node)) return;
+class UserService {
+  private baseUrl = 'https://jsonplaceholder.typicode.com';
+
+  async getUser(id: number): Promise<ApiResponse<User>> {
+    try {
+      const response = await fetch(`${this.baseUrl}/users/${id}`);
       
-      visited.add(node);
-      result.push(node);
-      
-      for (const neighbor of graph[node] || []) {
-        dfs(neighbor);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    };
-
-    dfs(start);
-    return result;
+      
+      const user: User = await response.json();
+      
+      return {
+        data: user,
+        status: response.status
+      };
+    } catch (error) {
+      throw new Error(`Failed to fetch user: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
-  // Iterative DFS using stack
-  static dfsIterative(graph: Graph, start: number): number[] {
-    const result: number[] = [];
-    const visited: Set<number> = new Set();
-    const stack: number[] = [start];
-
-    while (stack.length > 0) {
-      const node = stack.pop()!;
+  async getAllUsers(): Promise<ApiResponse<User[]>> {
+    try {
+      const response = await fetch(`${this.baseUrl}/users`);
       
-      if (!visited.has(node)) {
-        visited.add(node);
-        result.push(node);
-        
-        // Push neighbors in reverse order to maintain DFS order
-        for (let i = (graph[node] || []).length - 1; i >= 0; i--) {
-          const neighbor = graph[node]![i];
-          if (!visited.has(neighbor)) {
-            stack.push(neighbor);
-          }
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const users: User[] = await response.json();
+      
+      return {
+        data: users,
+        status: response.status
+      };
+    } catch (error) {
+      throw new Error(`Failed to fetch users: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async createUser(userData: Omit<User, 'id'>): Promise<ApiResponse<User>> {
+    try {
+      const response = await fetch(`${this.baseUrl}/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+      
+      const newUser: User = await response.json();
+      
+      return {
+        data: newUser,
+        status: response.status,
+        message: 'User created successfully'
+      };
+    } catch (error) {
+      throw new Error(`Failed to create user: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+}
+
+// Usage example
+async function demoUsersAPI() {
+  const userService = new UserService();
+  
+  try {
+    // Get all users
+    const usersResponse = await userService.getAllUsers();
+    console.log('All users:', usersResponse.data);
+    
+    // Get single user
+    const userResponse = await userService.getUser(1);
+    console.log('User 1:', userResponse.data);
+    
+    // Create new user
+    const newUserResponse = await userService.createUser({
+      name: 'John Doe',
+      email: 'john@example.com',
+      username: 'johndoe'
+    });
+    console.log('New user:', newUserResponse.data);
+    
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+demoUsersAPI();
+import axios, { AxiosResponse } from 'axios';
+
+interface WeatherData {
+  location: {
+    name: string;
+    country: string;
+  };
+  current: {
+    temp_c: number;
+    temp_f: number;
+    condition: {
+      text: string;
+      icon: string;
+    };
+    humidity: number;
+    wind_kph: number;
+  };
+}
+
+class WeatherService {
+  private apiKey: string;
+  private baseUrl = 'http://api.weatherapi.com/v1';
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
+  async getCurrentWeather(city: string): Promise<WeatherData> {
+    try {
+      const response: AxiosResponse<WeatherData> = await axios.get(
+        `${this.baseUrl}/current.json`,
+        {
+          params: {
+            key: this.apiKey,
+            q: city,
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(`Weather API error: ${error.response?.data?.error?.message || error.message}`);
+      }
+      throw error;
+    }
+  }
+}
+
+// Usage example
+async function demoWeatherAPI() {
+  // Note: You'd need a real API key from weatherapi.com
+  const weatherService = new WeatherService('your-api-key-here');
+  
+  try {
+    const weather = await weatherService.getCurrentWeather('London');
+    console.log(`Weather in ${weather.location.name}:`);
+    console.log(`Temperature: ${weather.current.temp_c}°C`);
+    console.log(`Condition: ${weather.current.condition.text}`);
+    console.log(`Humidity: ${weather.current.humidity}%`);
+  } catch (error) {
+    console.error('Weather API error:', error);
+  }
+}
+
+// demoWeatherAPI();
+interface GraphQLResponse<T> {
+  data?: T;
+  errors?: Array<{
+    message: string;
+    locations?: Array<{ line: number; column: number }>;
+  }>;
+}
+
+interface Post {
+  id: string;
+  title: string;
+  body: string;
+  author: {
+    name: string;
+    email: string;
+  };
+}
+
+class GraphQLClient {
+  private endpoint: string;
+
+  constructor(endpoint: string) {
+    this.endpoint = endpoint;
+  }
+
+  async query<T>(query: string, variables?: Record<string, any>): Promise<GraphQLResponse<T>> {
+    try {
+      const response = await fetch(this.endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query,
+          variables,
+        }),
+      });
+
+      return await response.json();
+    } catch (error) {
+      throw new Error(`GraphQL query failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+}
+
+// Usage example with a hypothetical GraphQL API
+async function demoGraphQL() {
+  const client = new GraphQLClient('https://example.com/graphql');
+  
+  const GET_POSTS = `
+    query GetPosts($limit: Int!) {
+      posts(limit: $limit) {
+        id
+        title
+        body
+        author {
+          name
+          email
         }
       }
     }
+  `;
 
-    return result;
-  }
-}
-class GraphDFS {
-  private adjacencyList: Map<number, number[]>;
-
-  constructor() {
-    this.adjacencyList = new Map();
-  }
-
-  addVertex(vertex: number): void {
-    if (!this.adjacencyList.has(vertex)) {
-      this.adjacencyList.set(vertex, []);
-    }
-  }
-
-  addEdge(vertex1: number, vertex2: number): void {
-    if (!this.adjacencyList.has(vertex1)) {
-      this.addVertex(vertex1);
-    }
-    if (!this.adjacencyList.has(vertex2)) {
-      this.addVertex(vertex2);
+  try {
+    const result = await client.query<{ posts: Post[] }>(GET_POSTS, { limit: 5 });
+    
+    if (result.errors) {
+      console.error('GraphQL errors:', result.errors);
+      return;
     }
     
-    this.adjacencyList.get(vertex1)!.push(vertex2);
-    this.adjacencyList.get(vertex2)!.push(vertex1); // For undirected graph
-  }
-
-  // DFS with path tracking
-  dfsWithPath(start: number, target: number): number[] | null {
-    const visited: Set<number> = new Set();
-    const path: number[] = [];
-    const parent: Map<number, number> = new Map();
-
-    const dfs = (node: number): boolean => {
-      visited.add(node);
-      
-      if (node === target) {
-        return true;
-      }
-
-      for (const neighbor of this.adjacencyList.get(node) || []) {
-        if (!visited.has(neighbor)) {
-          parent.set(neighbor, node);
-          if (dfs(neighbor)) {
-            return true;
-          }
-        }
-      }
-      
-      return false;
-    };
-
-    if (dfs(start)) {
-      // Reconstruct path
-      let current: number = target;
-      while (current !== start) {
-        path.unshift(current);
-        current = parent.get(current)!;
-      }
-      path.unshift(start);
-      return path;
+    if (result.data) {
+      console.log('Posts:', result.data.posts);
     }
-
-    return null;
-  }
-
-  // Get all connected components using DFS
-  getConnectedComponents(): number[][] {
-    const visited: Set<number> = new Set();
-    const components: number[][] = [];
-
-    for (const vertex of this.adjacencyList.keys()) {
-      if (!visited.has(vertex)) {
-        const component: number[] = [];
-        this.#dfsComponent(vertex, visited, component);
-        components.push(component);
-      }
-    }
-
-    return components;
-  }
-
-  #dfsComponent(vertex: number, visited: Set<number>, component: number[]): void {
-    visited.add(vertex);
-    component.push(vertex);
-
-    for (const neighbor of this.adjacencyList.get(vertex) || []) {
-      if (!visited.has(neighbor)) {
-        this.#dfsComponent(neighbor, visited, component);
-      }
-    }
+  } catch (error) {
+    console.error('GraphQL error:', error);
   }
 }
-interface DFSVisitor<T> {
-  onNodeVisit?(node: T): void;
-  onEdgeTraverse?(from: T, to: T): void;
-  shouldStop?(node: T): boolean;
+
+// demoGraphQL();
+class HttpClient {
+  private baseURL: string;
+
+  constructor(baseURL: string) {
+    this.baseURL = baseURL;
+  }
+
+  async get<T>(endpoint: string): Promise<T> {
+    const response = await fetch(`${this.baseURL}${endpoint}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return response.json();
+  }
+
+  async post<T>(endpoint: string, data: any): Promise<T> {
+    const response = await fetch(`${this.baseURL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return response.json();
+  }
 }
 
-class GenericDFS<T> {
-  constructor(
-    private getNeighbors: (node: T) => T[],
-    private areEqual: (a: T, b: T) => boolean = (a, b) => a === b
-  ) {}
+// Usage
+interface Product {
+  id: number;
+  title: string;
+  price: number;
+  category: string;
+}
 
-  traverse(
-    start: T,
-    visitor: DFSVisitor<T> = {},
-    strategy: 'recursive' | 'iterative' = 'recursive'
-  ): T[] {
-    if (strategy === 'recursive') {
-      return this.#traverseRecursive(start, visitor);
-    } else {
-      return this.#traverseIterative(start, visitor);
-    }
-  }
-
-  #traverseRecursive(start: T, visitor: DFSVisitor<T>): T[] {
-    const visited: T[] = [];
-    const visitedSet = new Set<T>();
-
-    const dfs = (node: T): boolean => {
-      if (visitedSet.has(node)) return false;
-      
-      visitedSet.add(node);
-      visited.push(node);
-      visitor.onNodeVisit?.(node);
-
-      if (visitor.shouldStop?.(node)) {
-        return true;
-      }
-
-      for (const neighbor of this.getNeighbors(node)) {
-        visitor.onEdgeTraverse?.(node, neighbor);
-        if (dfs(neighbor)) {
-          return true;
-        }
-      }
-
-      return false;
-    };
-
-    dfs(start);
-    return visited;
-  }
-
-  #traverseIterative(start: T, visitor: DFSVisitor<T>): T[] {
-    const visited: T[] = [];
-    const visitedSet = new Set<T>();
-    const stack: T[] = [start];
-
-    while (stack.length > 0) {
-      const node = stack.pop()!;
-      
-      if (!visitedSet.has(node)) {
-        visitedSet.add(node);
-        visited.push(node);
-        visitor.onNodeVisit?.(node);
-
-        if (visitor.shouldStop?.(node)) {
-          break;
-        }
-
-        const neighbors = this.getNeighbors(node);
-        for (let i = neighbors.length - 1; i >= 0; i--) {
-          const neighbor = neighbors[i];
-          visitor.onEdgeTraverse?.(node, neighbor);
-          if (!visitedSet.has(neighbor)) {
-            stack.push(neighbor);
-          }
-        }
-      }
-    }
-
-    return visited;
+async function demoHttpClient() {
+  const client = new HttpClient('https://fakestoreapi.com');
+  
+  try {
+    const products = await client.get<Product[]>('/products');
+    console.log('Products:', products);
+    
+    const newProduct = await client.post<Product>('/products', {
+      title: 'New Product',
+      price: 99.99,
+      category: 'electronics'
+    });
+    console.log('New product:', newProduct);
+  } catch (error) {
+    console.error('HTTP client error:', error);
   }
 }
-// Example 1: Basic graph traversal
-const graph: Graph = {
-  1: [2, 3],
-  2: [4, 5],
-  3: [6],
-  4: [],
-  5: [7],
-  6: [],
-  7: []
-};
 
-console.log('Recursive DFS:', DFS.dfsRecursive(graph, 1));
-console.log('Iterative DFS:', DFS.dfsIterative(graph, 1));
-
-// Example 2: Using GraphDFS class
-const graphDFS = new GraphDFS();
-graphDFS.addEdge(1, 2);
-graphDFS.addEdge(1, 3);
-graphDFS.addEdge(2, 4);
-graphDFS.addEdge(2, 5);
-graphDFS.addEdge(3, 6);
-
-console.log('Path from 1 to 6:', graphDFS.dfsWithPath(1, 6));
-console.log('Connected components:', graphDFS.getConnectedComponents());
-
-// Example 3: Generic DFS with strings
-const stringGraph = new GenericDFS<string>((node) => {
-  const graph: { [key: string]: string[] } = {
-    'A': ['B', 'C'],
-    'B': ['D', 'E'],
-    'C': ['F'],
-    'D': [],
-    'E': ['G'],
-    'F': [],
-    'G': []
-  };
-  return graph[node] || [];
-});
-
-const traversal = stringGraph.traverse('A', {
-  onNodeVisit: (node) => console.log(`Visiting: ${node}`),
-  onEdgeTraverse: (from, to) => console.log(`Traversing: ${from} -> ${to}`)
-});
-
-console.log('String graph traversal:', traversal);
+demoHttpClient();
