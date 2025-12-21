@@ -1,131 +1,150 @@
-function triangleAreaBaseHeight(base: number, height: number): number {
-    return (base * height) / 2;
+class ListNode {
+    val: number;
+    next: ListNode | null;
+    
+    constructor(val?: number, next?: ListNode | null) {
+        this.val = (val === undefined ? 0 : val);
+        this.next = (next === undefined ? null : next);
+    }
 }
 
-// Example usage
-const area1 = triangleAreaBaseHeight(10, 5); // 25
-console.log(area1);
-function triangleAreaHeron(a: number, b: number, c: number): number {
-    // Check if sides form a valid triangle
-    if (a + b <= c || a + c <= b || b + c <= a) {
-        throw new Error("Invalid triangle: sides do not satisfy triangle inequality");
+function isPalindrome(head: ListNode | null): boolean {
+    if (!head || !head.next) return true;
+    
+    const stack: number[] = [];
+    let slow: ListNode | null = head;
+    let fast: ListNode | null = head;
+    
+    // Push first half to stack using slow and fast pointers
+    while (fast && fast.next) {
+        stack.push(slow!.val);
+        slow = slow!.next;
+        fast = fast.next.next;
     }
     
-    const s = (a + b + c) / 2; // semi-perimeter
-    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
-}
-
-// Example usage
-const area2 = triangleAreaHeron(3, 4, 5); // 6
-console.log(area2);
-interface Point {
-    x: number;
-    y: number;
-}
-
-function triangleAreaCoordinates(p1: Point, p2: Point, p3: Point): number {
-    return Math.abs(
-        (p1.x * (p2.y - p3.y) + 
-         p2.x * (p3.y - p1.y) + 
-         p3.x * (p1.y - p2.y)) / 2
-    );
-}
-
-// Example usage
-const area3 = triangleAreaCoordinates(
-    {x: 0, y: 0},
-    {x: 4, y: 0},
-    {x: 0, y: 3}
-); // 6
-console.log(area3);
-class Triangle {
-    constructor(
-        private sideA?: number,
-        private sideB?: number,
-        private sideC?: number,
-        private base?: number,
-        private height?: number,
-        private points?: [Point, Point, Point]
-    ) {}
-    
-    // Method using base and height
-    areaFromBaseHeight(): number {
-        if (!this.base || !this.height) {
-            throw new Error("Base and height are required");
-        }
-        return (this.base * this.height) / 2;
+    // If odd number of nodes, skip the middle one
+    if (fast) {
+        slow = slow!.next;
     }
     
-    // Method using Heron's formula
-    areaFromSides(): number {
-        if (!this.sideA || !this.sideB || !this.sideC) {
-            throw new Error("All three sides are required");
+    // Compare second half with stack
+    while (slow) {
+        if (stack.pop() !== slow.val) {
+            return false;
         }
-        
-        const a = this.sideA, b = this.sideB, c = this.sideC;
-        
-        if (a + b <= c || a + c <= b || b + c <= a) {
-            throw new Error("Invalid triangle sides");
-        }
-        
-        const s = (a + b + c) / 2;
-        return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+        slow = slow.next;
     }
     
-    // Method using coordinates
-    areaFromCoordinates(): number {
-        if (!this.points || this.points.length !== 3) {
-            throw new Error("Three points are required");
+    return true;
+}
+function isPalindromeReverse(head: ListNode | null): boolean {
+    if (!head || !head.next) return true;
+    
+    // Find the middle
+    let slow: ListNode | null = head;
+    let fast: ListNode | null = head;
+    
+    while (fast && fast.next) {
+        slow = slow!.next;
+        fast = fast.next.next;
+    }
+    
+    // Reverse the second half
+    let prev: ListNode | null = null;
+    let current: ListNode | null = slow;
+    
+    while (current) {
+        const nextTemp = current.next;
+        current.next = prev;
+        prev = current;
+        current = nextTemp;
+    }
+    
+    // Compare first half and reversed second half
+    let firstHalf: ListNode | null = head;
+    let secondHalf: ListNode | null = prev;
+    
+    while (secondHalf) {
+        if (firstHalf!.val !== secondHalf.val) {
+            return false;
         }
-        
-        const [p1, p2, p3] = this.points;
-        return Math.abs(
-            (p1.x * (p2.y - p3.y) + 
-             p2.x * (p3.y - p1.y) + 
-             p3.x * (p1.y - p2.y)) / 2
-        );
+        firstHalf = firstHalf!.next;
+        secondHalf = secondHalf.next;
     }
+    
+    return true;
+}
+function isPalindromeRecursive(head: ListNode | null): boolean {
+    let frontPointer: ListNode | null = head;
+    
+    function recursivelyCheck(currentNode: ListNode | null): boolean {
+        if (currentNode !== null) {
+            if (!recursivelyCheck(currentNode.next)) {
+                return false;
+            }
+            if (currentNode.val !== frontPointer!.val) {
+                return false;
+            }
+            frontPointer = frontPointer!.next;
+        }
+        return true;
+    }
+    
+    return recursivelyCheck(head);
+}
+function isPalindromeArray(head: ListNode | null): boolean {
+    const values: number[] = [];
+    let current: ListNode | null = head;
+    
+    // Convert linked list to array
+    while (current) {
+        values.push(current.val);
+        current = current.next;
+    }
+    
+    // Check if array is palindrome
+    let left = 0;
+    let right = values.length - 1;
+    
+    while (left < right) {
+        if (values[left] !== values[right]) {
+            return false;
+        }
+        left++;
+        right--;
+    }
+    
+    return true;
+}
+// Helper function to create linked list from array
+function createLinkedList(arr: number[]): ListNode | null {
+    if (arr.length === 0) return null;
+    
+    const head = new ListNode(arr[0]);
+    let current = head;
+    
+    for (let i = 1; i < arr.length; i++) {
+        current.next = new ListNode(arr[i]);
+        current = current.next;
+    }
+    
+    return head;
 }
 
-// Example usage
-const triangle1 = new Triangle(undefined, undefined, undefined, 10, 5);
-console.log(triangle1.areaFromBaseHeight()); // 25
+// Test the functions
+const testCases = [
+    [1, 2, 3, 2, 1],    // Palindrome
+    [1, 2, 2, 1],       // Palindrome
+    [1, 2, 3],          // Not palindrome
+    [1],                 // Single element (palindrome)
+    []                   // Empty list (palindrome)
+];
 
-const triangle2 = new Triangle(3, 4, 5);
-console.log(triangle2.areaFromSides()); // 6
-
-const triangle3 = new Triangle(
-    undefined, undefined, undefined, undefined, undefined,
-    [{x: 0, y: 0}, {x: 4, y: 0}, {x: 0, y: 3}]
-);
-console.log(triangle3.areaFromCoordinates()); // 6
-type TriangleData = 
-    | { type: 'baseHeight'; base: number; height: number }
-    | { type: 'sides'; a: number; b: number; c: number }
-    | { type: 'coordinates'; points: [Point, Point, Point] };
-
-function calculateTriangleArea(data: TriangleData): number {
-    switch (data.type) {
-        case 'baseHeight':
-            return (data.base * data.height) / 2;
-        
-        case 'sides':
-            const s = (data.a + data.b + data.c) / 2;
-            return Math.sqrt(s * (s - data.a) * (s - data.b) * (s - data.c));
-        
-        case 'coordinates':
-            const [p1, p2, p3] = data.points;
-            return Math.abs(
-                (p1.x * (p2.y - p3.y) + 
-                 p2.x * (p3.y - p1.y) + 
-                 p3.x * (p1.y - p2.y)) / 2
-            );
-        
-        default:
-            throw new Error("Invalid triangle data type");
-    }
-}
-
-// Example usage
-console.log(calculateTriangleArea({ type: 'baseHeight', base: 10, height: 5 })); // 25
-console.log(calculateTriangleArea({ type: 'sides', a: 3, b: 4, c: 5 })); // 6
+testCases.forEach((testCase, index) => {
+    const list = createLinkedList(testCase);
+    console.log(`Test ${index + 1}: [${testCase}]`);
+    console.log(`Stack method: ${isPalindrome(list)}`);
+    console.log(`Reverse method: ${isPalindromeReverse(createLinkedList(testCase))}`);
+    console.log(`Array method: ${isPalindromeArray(createLinkedList(testCase))}`);
+    console.log('---');
+});
