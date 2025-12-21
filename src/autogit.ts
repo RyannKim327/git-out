@@ -1,146 +1,37 @@
-function kthSmallestSort(arr: number[], k: number): number {
-    if (k < 1 || k > arr.length) {
-        throw new Error('k is out of bounds');
-    }
-    
-    const sorted = [...arr].sort((a, b) => a - b);
-    return sorted[k - 1];
+/**
+ * In-place quicksort (ascending).
+ * @param arr Array of items that can be compared with `<`
+ * @param left  Start index (inclusive).  Default = 0
+ * @param right End index (inclusive).    Default = arr.length-1
+ */
+function quickSort<T>(arr: T[], left = 0, right = arr.length - 1): void {
+  if (left >= right) return;          // 0 or 1 element → already sorted
+
+  const pivot = partition(arr, left, right);
+  quickSort(arr, left, pivot - 1);    // Sort left part
+  quickSort(arr, pivot + 1, right);   // Sort right part
 }
 
-// Example usage
-const numbers = [3, 2, 1, 5, 6, 4];
-console.log(kthSmallestSort(numbers, 2)); // Output: 2
-function quickSelect(arr: number[], k: number): number {
-    if (k < 1 || k > arr.length) {
-        throw new Error('k is out of bounds');
+/**
+ * Lomuto partition scheme.
+ * Returns the final index of the pivot.
+ */
+function partition<T>(arr: T[], left: number, right: number): number {
+  const pivot = arr[right];           // Choose right-most element as pivot
+  let i = left - 1;                 // Place for swapping
+
+  for (let j = left; j < right; j++) {
+    if (arr[j] < pivot) {
+      i++;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-    
-    return _quickSelect([...arr], 0, arr.length - 1, k - 1);
+  }
+  // Put pivot after last smaller element
+  [arr[i + 1], arr[right]] = [arr[right], arr[i + 1]];
+  return i + 1;
 }
 
-function _quickSelect(arr: number[], left: number, right: number, k: number): number {
-    if (left === right) {
-        return arr[left];
-    }
-    
-    const pivotIndex = partition(arr, left, right);
-    
-    if (k === pivotIndex) {
-        return arr[k];
-    } else if (k < pivotIndex) {
-        return _quickSelect(arr, left, pivotIndex - 1, k);
-    } else {
-        return _quickSelect(arr, pivotIndex + 1, right, k);
-    }
-}
-
-function partition(arr: number[], left: number, right: number): number {
-    const pivot = arr[right];
-    let i = left;
-    
-    for (let j = left; j < right; j++) {
-        if (arr[j] <= pivot) {
-            [arr[i], arr[j]] = [arr[j], arr[i]];
-            i++;
-        }
-    }
-    
-    [arr[i], arr[right]] = [arr[right], arr[i]];
-    return i;
-}
-
-// Example usage
-const numbers = [3, 2, 1, 5, 6, 4];
-console.log(quickSelect(numbers, 2)); // Output: 2
-class MinHeap {
-    private heap: number[] = [];
-    
-    constructor(arr: number[]) {
-        this.heap = [...arr];
-        this.buildHeap();
-    }
-    
-    private buildHeap(): void {
-        for (let i = Math.floor(this.heap.length / 2); i >= 0; i--) {
-            this.heapify(i);
-        }
-    }
-    
-    private heapify(i: number): void {
-        const left = 2 * i + 1;
-        const right = 2 * i + 2;
-        let smallest = i;
-        
-        if (left < this.heap.length && this.heap[left] < this.heap[smallest]) {
-            smallest = left;
-        }
-        
-        if (right < this.heap.length && this.heap[right] < this.heap[smallest]) {
-            smallest = right;
-        }
-        
-        if (smallest !== i) {
-            [this.heap[i], this.heap[smallest]] = [this.heap[smallest], this.heap[i]];
-            this.heapify(smallest);
-        }
-    }
-    
-    public extractMin(): number {
-        if (this.heap.length === 0) throw new Error('Heap is empty');
-        
-        const min = this.heap[0];
-        this.heap[0] = this.heap[this.heap.length - 1];
-        this.heap.pop();
-        this.heapify(0);
-        
-        return min;
-    }
-}
-
-function kthSmallestHeap(arr: number[], k: number): number {
-    if (k < 1 || k > arr.length) {
-        throw new Error('k is out of bounds');
-    }
-    
-    const heap = new MinHeap(arr);
-    let result = 0;
-    
-    for (let i = 0; i < k; i++) {
-        result = heap.extractMin();
-    }
-    
-    return result;
-}
-
-// Example usage
-const numbers = [3, 2, 1, 5, 6, 4];
-console.log(kthSmallestHeap(numbers, 2)); // Output: 2
-function kthSmallest<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T {
-    if (k < 1 || k > arr.length) {
-        throw new Error('k is out of bounds');
-    }
-    
-    const comparator = compareFn || ((a: T, b: T) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    });
-    
-    const sorted = [...arr].sort(comparator);
-    return sorted[k - 1];
-}
-
-// Example usage with custom objects
-interface Person {
-    name: string;
-    age: number;
-}
-
-const people: Person[] = [
-    { name: "Alice", age: 30 },
-    { name: "Bob", age: 25 },
-    { name: "Charlie", age: 35 }
-];
-
-console.log(kthSmallest(people, 2, (a, b) => a.age - b.age)); 
-// Output: { name: "Alice", age: 30 }
+/* ---------- Usage example ---------- */
+const nums = [9, 3, 7, 4, 8, 2, 6, 5, 1];
+quickSort(nums);
+console.log(nums); // [1, 2, 3, 4, 5, 6, 7, 8, 9]
