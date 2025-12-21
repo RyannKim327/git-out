@@ -1,122 +1,161 @@
-function maxSubArray(nums: number[]): number {
-    if (nums.length === 0) return 0;
-    
-    let maxEndingHere = nums[0];
-    let maxSoFar = nums[0];
-    
-    for (let i = 1; i < nums.length; i++) {
-        // Either extend the existing subarray or start a new one
-        maxEndingHere = Math.max(nums[i], maxEndingHere + nums[i]);
-        maxSoFar = Math.max(maxSoFar, maxEndingHere);
-    }
-    
-    return maxSoFar;
+interface User {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  address: {
+    street: string;
+    city: string;
+    zipcode: string;
+  };
+  phone: string;
+  website: string;
+  company: {
+    name: string;
+  };
 }
 
-// Example usage:
-const arr = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
-console.log(maxSubArray(arr)); // Output: 6 (subarray [4, -1, 2, 1])
-function maxSubArrayWithIndices(nums: number[]): {
-    maxSum: number;
-    startIndex: number;
-    endIndex: number;
-} {
-    if (nums.length === 0) {
-        return { maxSum: 0, startIndex: -1, endIndex: -1 };
+class UserFetcher {
+  private apiUrl = 'https://jsonplaceholder.typicode.com/users';
+
+  // Method to fetch all users
+  async fetchUsers(): Promise<User[]> {
+    try {
+      const response = await fetch(this.apiUrl);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const users: User[] = await response.json();
+      return users;
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      throw error;
     }
-    
-    let maxEndingHere = nums[0];
-    let maxSoFar = nums[0];
-    let start = 0;
-    let end = 0;
-    let tempStart = 0;
-    
-    for (let i = 1; i < nums.length; i++) {
-        if (nums[i] > maxEndingHere + nums[i]) {
-            maxEndingHere = nums[i];
-            tempStart = i;
-        } else {
-            maxEndingHere += nums[i];
-        }
-        
-        if (maxEndingHere > maxSoFar) {
-            maxSoFar = maxEndingHere;
-            start = tempStart;
-            end = i;
-        }
+  }
+
+  // Method to fetch a single user by ID
+  async fetchUserById(id: number): Promise<User> {
+    try {
+      const response = await fetch(`${this.apiUrl}/${id}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const user: User = await response.json();
+      return user;
+    } catch (error) {
+      console.error(`Error fetching user ${id}:`, error);
+      throw error;
     }
-    
-    return { maxSum: maxSoFar, startIndex: start, endIndex: end };
+  }
+
+  // Method to display user information
+  displayUserInfo(user: User): void {
+    console.log(`
+      User Information:
+      ID: ${user.id}
+      Name: ${user.name}
+      Username: ${user.username}
+      Email: ${user.email}
+      Address: ${user.address.street}, ${user.address.city}, ${user.address.zipcode}
+      Phone: ${user.phone}
+      Website: ${user.website}
+      Company: ${user.company.name}
+    `);
+  }
+
+  // Method to run the example
+  async runExample(): Promise<void> {
+    try {
+      console.log('Fetching all users...');
+      const users = await this.fetchUsers();
+      console.log(`Found ${users.length} users`);
+
+      // Display first user
+      if (users.length > 0) {
+        console.log('\nFirst user details:');
+        this.displayUserInfo(users[0]);
+      }
+
+      // Fetch a specific user
+      console.log('\nFetching user with ID 3...');
+      const specificUser = await this.fetchUserById(3);
+      this.displayUserInfo(specificUser);
+
+    } catch (error) {
+      console.error('Example failed:', error);
+    }
+  }
 }
 
-// Example usage:
-const arr = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
-const result = maxSubArrayWithIndices(arr);
-console.log(result); // { maxSum: 6, startIndex: 3, endIndex: 6 }
-console.log(arr.slice(result.startIndex, result.endIndex + 1)); // [4, -1, 2, 1]
-function maxSubArrayDivideConquer(nums: number[]): number {
-    return maxSubArrayHelper(nums, 0, nums.length - 1);
+// Alternative fetch with more options
+async function fetchWithOptions(): Promise<void> {
+  try {
+    const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      cache: 'no-cache',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log(`Fetched ${data.length} posts`);
+    
+  } catch (error) {
+    console.error('Fetch with options failed:', error);
+  }
 }
 
-function maxSubArrayHelper(nums: number[], left: number, right: number): number {
-    if (left === right) return nums[left];
-    
-    const mid = Math.floor((left + right) / 2);
-    
-    // Find max subarray in left half, right half, and crossing the midpoint
-    const leftMax = maxSubArrayHelper(nums, left, mid);
-    const rightMax = maxSubArrayHelper(nums, mid + 1, right);
-    const crossMax = maxCrossingSubarray(nums, left, mid, right);
-    
-    return Math.max(leftMax, rightMax, crossMax);
+// Usage example
+async function main() {
+  const userFetcher = new UserFetcher();
+  
+  // Run the main example
+  await userFetcher.runExample();
+  
+  // Run alternative fetch
+  console.log('\n--- Alternative fetch example ---');
+  await fetchWithOptions();
 }
 
-function maxCrossingSubarray(nums: number[], left: number, mid: number, right: number): number {
-    let leftSum = -Infinity;
-    let sum = 0;
+// Execute the main function
+main().catch(console.error);
+
+// Error handling wrapper
+async function safeFetch<T>(url: string, options?: RequestInit): Promise<T> {
+  try {
+    const response = await fetch(url, options);
     
-    // Max sum from mid to left
-    for (let i = mid; i >= left; i--) {
-        sum += nums[i];
-        leftSum = Math.max(leftSum, sum);
+    if (!response.ok) {
+      throw new Error(`Request failed: ${response.status} ${response.statusText}`);
     }
     
-    let rightSum = -Infinity;
-    sum = 0;
-    
-    // Max sum from mid+1 to right
-    for (let i = mid + 1; i <= right; i++) {
-        sum += nums[i];
-        rightSum = Math.max(rightSum, sum);
-    }
-    
-    return leftSum + rightSum;
+    return await response.json();
+  } catch (error) {
+    console.error(`Fetch error for ${url}:`, error);
+    throw error;
+  }
 }
-function maxSubArrayBruteForce(nums: number[]): number {
-    let maxSum = -Infinity;
-    
-    for (let i = 0; i < nums.length; i++) {
-        let currentSum = 0;
-        for (let j = i; j < nums.length; j++) {
-            currentSum += nums[j];
-            maxSum = Math.max(maxSum, currentSum);
-        }
-    }
-    
-    return maxSum;
+
+// Example using the safeFetch wrapper
+async function fetchUserSafe(id: number): Promise<void> {
+  try {
+    const user = await safeFetch<User>(`https://jsonplaceholder.typicode.com/users/${id}`);
+    console.log(`Safe fetch successful for user: ${user.name}`);
+  } catch (error) {
+    console.log('Safe fetch caught the error gracefully');
+  }
 }
-function findMaxSubarray(arr: number[]): number {
-    if (!Array.isArray(arr)) {
-        throw new Error('Input must be an array');
-    }
-    
-    if (arr.length === 0) {
-        return 0;
-    }
-    
-    if (!arr.every(num => typeof num === 'number')) {
-        throw new Error('Array must contain only numbers');
-    }
-    
-    return maxSubArray(arr);
-}
+
+// Run safe fetch example
+fetchUserSafe(999).catch(console.error); // This will fail gracefully
+npm install typescript @types/node node-fetch
