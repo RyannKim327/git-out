@@ -1,116 +1,122 @@
-function majorityElement(nums: number[]): number | null {
-    let candidate: number | null = null;
-    let count = 0;
+function maxSubArray(nums: number[]): number {
+    if (nums.length === 0) return 0;
     
-    // First pass: find candidate
-    for (const num of nums) {
-        if (count === 0) {
-            candidate = num;
-            count = 1;
-        } else if (num === candidate) {
-            count++;
+    let maxEndingHere = nums[0];
+    let maxSoFar = nums[0];
+    
+    for (let i = 1; i < nums.length; i++) {
+        // Either extend the existing subarray or start a new one
+        maxEndingHere = Math.max(nums[i], maxEndingHere + nums[i]);
+        maxSoFar = Math.max(maxSoFar, maxEndingHere);
+    }
+    
+    return maxSoFar;
+}
+
+// Example usage:
+const arr = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
+console.log(maxSubArray(arr)); // Output: 6 (subarray [4, -1, 2, 1])
+function maxSubArrayWithIndices(nums: number[]): {
+    maxSum: number;
+    startIndex: number;
+    endIndex: number;
+} {
+    if (nums.length === 0) {
+        return { maxSum: 0, startIndex: -1, endIndex: -1 };
+    }
+    
+    let maxEndingHere = nums[0];
+    let maxSoFar = nums[0];
+    let start = 0;
+    let end = 0;
+    let tempStart = 0;
+    
+    for (let i = 1; i < nums.length; i++) {
+        if (nums[i] > maxEndingHere + nums[i]) {
+            maxEndingHere = nums[i];
+            tempStart = i;
         } else {
-            count--;
+            maxEndingHere += nums[i];
+        }
+        
+        if (maxEndingHere > maxSoFar) {
+            maxSoFar = maxEndingHere;
+            start = tempStart;
+            end = i;
         }
     }
     
-    // Second pass: verify candidate
-    if (candidate === null) return null;
-    
-    count = 0;
-    for (const num of nums) {
-        if (num === candidate) {
-            count++;
-        }
-    }
-    
-    return count > nums.length / 2 ? candidate : null;
+    return { maxSum: maxSoFar, startIndex: start, endIndex: end };
 }
 
-// Example usage
-const arr = [2, 2, 1, 1, 1, 2, 2];
-console.log(majorityElement(arr)); // 2
+// Example usage:
+const arr = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
+const result = maxSubArrayWithIndices(arr);
+console.log(result); // { maxSum: 6, startIndex: 3, endIndex: 6 }
+console.log(arr.slice(result.startIndex, result.endIndex + 1)); // [4, -1, 2, 1]
+function maxSubArrayDivideConquer(nums: number[]): number {
+    return maxSubArrayHelper(nums, 0, nums.length - 1);
+}
 
-const arr2 = [3, 2, 3];
-console.log(majorityElement(arr2)); // 3
-
-const arr3 = [1, 2, 3];
-console.log(majorityElement(arr3)); // null (no majority)
-function majorityElementHashMap(nums: number[]): number | null {
-    const countMap = new Map<number, number>();
-    const majorityThreshold = nums.length / 2;
+function maxSubArrayHelper(nums: number[], left: number, right: number): number {
+    if (left === right) return nums[left];
     
-    // Count occurrences
-    for (const num of nums) {
-        countMap.set(num, (countMap.get(num) || 0) + 1);
+    const mid = Math.floor((left + right) / 2);
+    
+    // Find max subarray in left half, right half, and crossing the midpoint
+    const leftMax = maxSubArrayHelper(nums, left, mid);
+    const rightMax = maxSubArrayHelper(nums, mid + 1, right);
+    const crossMax = maxCrossingSubarray(nums, left, mid, right);
+    
+    return Math.max(leftMax, rightMax, crossMax);
+}
+
+function maxCrossingSubarray(nums: number[], left: number, mid: number, right: number): number {
+    let leftSum = -Infinity;
+    let sum = 0;
+    
+    // Max sum from mid to left
+    for (let i = mid; i >= left; i--) {
+        sum += nums[i];
+        leftSum = Math.max(leftSum, sum);
     }
     
-    // Find majority element
-    for (const [num, count] of countMap) {
-        if (count > majorityThreshold) {
-            return num;
+    let rightSum = -Infinity;
+    sum = 0;
+    
+    // Max sum from mid+1 to right
+    for (let i = mid + 1; i <= right; i++) {
+        sum += nums[i];
+        rightSum = Math.max(rightSum, sum);
+    }
+    
+    return leftSum + rightSum;
+}
+function maxSubArrayBruteForce(nums: number[]): number {
+    let maxSum = -Infinity;
+    
+    for (let i = 0; i < nums.length; i++) {
+        let currentSum = 0;
+        for (let j = i; j < nums.length; j++) {
+            currentSum += nums[j];
+            maxSum = Math.max(maxSum, currentSum);
         }
     }
     
-    return null;
+    return maxSum;
 }
-function majorityElementSorting(nums: number[]): number | null {
-    const sorted = [...nums].sort((a, b) => a - b);
-    const candidate = sorted[Math.floor(nums.length / 2)];
-    
-    // Verify the candidate
-    const count = sorted.filter(num => num === candidate).length;
-    return count > nums.length / 2 ? candidate : null;
-}
-function majorityElementGeneric<T>(nums: T[]): T | null {
-    let candidate: T | null = null;
-    let count = 0;
-    
-    // First pass: find candidate
-    for (const num of nums) {
-        if (count === 0) {
-            candidate = num;
-            count = 1;
-        } else if (num === candidate) {
-            count++;
-        } else {
-            count--;
-        }
+function findMaxSubarray(arr: number[]): number {
+    if (!Array.isArray(arr)) {
+        throw new Error('Input must be an array');
     }
     
-    // Second pass: verify candidate
-    if (candidate === null) return null;
-    
-    count = 0;
-    for (const num of nums) {
-        if (num === candidate) {
-            count++;
-        }
+    if (arr.length === 0) {
+        return 0;
     }
     
-    return count > nums.length / 2 ? candidate : null;
+    if (!arr.every(num => typeof num === 'number')) {
+        throw new Error('Array must contain only numbers');
+    }
+    
+    return maxSubArray(arr);
 }
-
-// Example with strings
-const stringArr = ["apple", "banana", "apple", "apple", "cherry"];
-console.log(majorityElementGeneric(stringArr)); // "apple"
-function majorityElements(nums: number[]): number[] {
-    const result: number[] = [];
-    const countMap = new Map<number, number>();
-    const majorityThreshold = nums.length / 3; // For n/3 case
-    
-    for (const num of nums) {
-        countMap.set(num, (countMap.get(num) || 0) + 1);
-    }
-    
-    for (const [num, count] of countMap) {
-        if (count > majorityThreshold) {
-            result.push(num);
-        }
-    }
-    
-    return result;
-}
-
-// Example: Find elements that appear more than n/3 times
-console.log(majorityElements([1, 1, 1, 3, 3, 2, 2, 2])); // [1, 2]
