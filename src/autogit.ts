@@ -1,232 +1,134 @@
-interface Node<T> {
-  value: T;
-  children?: Node<T>[];
-}
-
-class DepthLimitedSearch<T> {
-  /**
-   * Perform depth-limited search
-   * @param root - Starting node
-   * @param target - Target value to search for
-   * @param depthLimit - Maximum depth to explore
-   * @returns Found node or null if not found within depth limit
-   */
-  search(root: Node<T>, target: T, depthLimit: number): Node<T> | null {
-    return this.dlsRecursive(root, target, depthLimit, 0);
-  }
-
-  /**
-   * Recursive helper function for DLS
-   */
-  private dlsRecursive(
-    node: Node<T>,
-    target: T,
-    depthLimit: number,
-    currentDepth: number
-  ): Node<T> | null {
-    // Check if current node is the target
-    if (node.value === target) {
-      return node;
-    }
-
-    // Check if we've reached the depth limit
-    if (currentDepth >= depthLimit) {
-      return null;
-    }
-
-    // Recursively search children
-    if (node.children) {
-      for (const child of node.children) {
-        const result = this.dlsRecursive(
-          child,
-          target,
-          depthLimit,
-          currentDepth + 1
-        );
-        if (result !== null) {
-          return result;
+class FibonacciSearch {
+    /**
+     * Generates Fibonacci numbers up to a given value
+     */
+    private generateFibonacci(n: number): number[] {
+        const fib: number[] = [0, 1];
+        
+        while (fib[fib.length - 1] < n) {
+            fib.push(fib[fib.length - 1] + fib[fib.length - 2]);
         }
-      }
+        
+        return fib;
     }
 
-    return null;
-  }
-}
-interface GraphNode<T> {
-  id: string;
-  value: T;
-  neighbors: GraphNode<T>[];
-}
-
-class AdvancedDepthLimitedSearch<T> {
-  private visited: Set<string> = new Set();
-
-  /**
-   * Depth-limited search for graph structures
-   */
-  searchGraph(
-    start: GraphNode<T>,
-    target: T,
-    depthLimit: number
-  ): GraphNode<T> | null {
-    this.visited.clear();
-    return this.dlsGraphRecursive(start, target, depthLimit, 0);
-  }
-
-  private dlsGraphRecursive(
-    node: GraphNode<T>,
-    target: T,
-    depthLimit: number,
-    currentDepth: number
-  ): GraphNode<T> | null {
-    // Mark node as visited
-    this.visited.add(node.id);
-
-    // Check if current node contains target
-    if (node.value === target) {
-      return node;
-    }
-
-    // Check depth limit
-    if (currentDepth >= depthLimit) {
-      return null;
-    }
-
-    // Search neighbors
-    for (const neighbor of node.neighbors) {
-      if (!this.visited.has(neighbor.id)) {
-        const result = this.dlsGraphRecursive(
-          neighbor,
-          target,
-          depthLimit,
-          currentDepth + 1
-        );
-        if (result !== null) {
-          return result;
+    /**
+     * Performs Fibonacci search on a sorted array
+     * @param arr - Sorted array to search
+     * @param target - Value to search for
+     * @returns Index of the target if found, -1 otherwise
+     */
+    search(arr: number[], target: number): number {
+        const n = arr.length;
+        
+        // Edge cases
+        if (n === 0) return -1;
+        if (n === 1) return arr[0] === target ? 0 : -1;
+        
+        // Generate Fibonacci numbers
+        const fib = this.generateFibonacci(n);
+        let fibM = fib.length - 1;
+        
+        let offset = 0;
+        
+        while (fibM > 0) {
+            // Calculate the index to check
+            const i = Math.min(offset + fib[fibM - 2], n - 1);
+            
+            if (arr[i] < target) {
+                // Search in the right subarray
+                fibM -= 1;
+                offset = i;
+            } else if (arr[i] > target) {
+                // Search in the left subarray
+                fibM -= 2;
+            } else {
+                // Found the target
+                return i;
+            }
         }
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * Find all nodes within depth limit
-   */
-  findAllWithinDepth(
-    start: GraphNode<T>,
-    depthLimit: number
-  ): GraphNode<T>[] {
-    this.visited.clear();
-    const result: GraphNode<T>[] = [];
-    this.collectNodesRecursive(start, depthLimit, 0, result);
-    return result;
-  }
-
-  private collectNodesRecursive(
-    node: GraphNode<T>,
-    depthLimit: number,
-    currentDepth: number,
-    result: GraphNode<T>[]
-  ): void {
-    result.push(node);
-    this.visited.add(node.id);
-
-    if (currentDepth < depthLimit) {
-      for (const neighbor of node.neighbors) {
-        if (!this.visited.has(neighbor.id)) {
-          this.collectNodesRecursive(
-            neighbor,
-            depthLimit,
-            currentDepth + 1,
-            result
-          );
+        
+        // Check if the last element is the target
+        if (fibM === 0 && arr[offset] === target) {
+            return offset;
         }
-      }
+        
+        return -1;
     }
-  }
 }
-// Example 1: Tree structure
-const treeExample = () => {
-  // Create a sample tree
-  const tree: Node<number> = {
-    value: 1,
-    children: [
-      {
-        value: 2,
-        children: [
-          { value: 4, children: [] },
-          { value: 5, children: [] }
-        ]
-      },
-      {
-        value: 3,
-        children: [
-          { value: 6, children: [] },
-          { value: 7, children: [] }
-        ]
-      }
-    ]
-  };
+// Example usage
+const fibonacciSearch = new FibonacciSearch();
 
-  const dls = new DepthLimitedSearch<number>();
-  const result = dls.search(tree, 5, 2); // Should find node with value 5
-  console.log(result?.value); // Output: 5
+const sortedArray = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25];
+const target = 13;
 
-  const notFound = dls.search(tree, 7, 1); // Depth limit too low
-  console.log(notFound); // Output: null
-};
+const result = fibonacciSearch.search(sortedArray, target);
 
-// Example 2: Graph structure
-const graphExample = () => {
-  // Create sample graph nodes
-  const nodeA: GraphNode<string> = { id: 'A', value: 'Apple', neighbors: [] };
-  const nodeB: GraphNode<string> = { id: 'B', value: 'Banana', neighbors: [] };
-  const nodeC: GraphNode<string> = { id: 'C', value: 'Cherry', neighbors: [] };
-  const nodeD: GraphNode<string> = { id: 'D', value: 'Date', neighbors: [] };
+console.log(`Array: [${sortedArray}]`);
+console.log(`Searching for: ${target}`);
+console.log(`Result: ${result !== -1 ? `Found at index ${result}` : 'Not found'}`);
 
-  // Connect nodes
-  nodeA.neighbors = [nodeB, nodeC];
-  nodeB.neighbors = [nodeA, nodeD];
-  nodeC.neighbors = [nodeA];
-  nodeD.neighbors = [nodeB];
+// Test with multiple examples
+const testCases = [
+    { array: [1, 2, 3, 4, 5], target: 3, expected: 2 },
+    { array: [10, 20, 30, 40, 50], target: 25, expected: -1 },
+    { array: [1, 3, 5, 7, 9], target: 1, expected: 0 },
+    { array: [2, 4, 6, 8, 10], target: 10, expected: 4 }
+];
 
-  const advancedDls = new AdvancedDepthLimitedSearch<string>();
-  
-  // Search for target
-  const found = advancedDls.searchGraph(nodeA, 'Date', 2);
-  console.log(found?.value); // Output: Date
-
-  // Find all nodes within depth
-  const allNodes = advancedDls.findAllWithinDepth(nodeA, 1);
-  console.log(allNodes.map(n => n.value)); // Output: ['Apple', 'Banana', 'Cherry']
-};
-
-// Run examples
-treeExample();
-graphExample();
-class IterativeDepthLimitedSearch<T> {
-  /**
-   * Iterative depth-limited search using a stack
-   */
-  searchIterative(root: Node<T>, target: T, depthLimit: number): Node<T> | null {
-    const stack: { node: Node<T>; depth: number }[] = [{ node: root, depth: 0 }];
-
-    while (stack.length > 0) {
-      const { node, depth } = stack.pop()!;
-
-      if (node.value === target) {
-        return node;
-      }
-
-      if (depth < depthLimit && node.children) {
-        // Push children in reverse order for DFS behavior
-        for (let i = node.children.length - 1; i >= 0; i--) {
-          stack.push({ node: node.children[i], depth: depth + 1 });
+testCases.forEach((testCase, index) => {
+    const result = fibonacciSearch.search(testCase.array, testCase.target);
+    const status = result === testCase.expected ? '✓ PASS' : '✗ FAIL';
+    console.log(`Test ${index + 1}: ${status} - Expected ${testCase.expected}, Got ${result}`);
+});
+class FibonacciSearchWithLogging extends FibonacciSearch {
+    search(arr: number[], target: number): number {
+        console.log(`Searching for ${target} in array: [${arr}]`);
+        
+        const n = arr.length;
+        
+        if (n === 0) {
+            console.log('Empty array');
+            return -1;
         }
-      }
+        
+        const fib = this.generateFibonacci(n);
+        console.log(`Generated Fibonacci sequence: [${fib}]`);
+        
+        let fibM = fib.length - 1;
+        let offset = 0;
+        let iteration = 0;
+        
+        while (fibM > 0) {
+            iteration++;
+            const i = Math.min(offset + fib[fibM - 2], n - 1);
+            
+            console.log(`Iteration ${iteration}: fibM=${fibM}, offset=${offset}, checking index ${i} (value=${arr[i]})`);
+            
+            if (arr[i] < target) {
+                console.log(`Moving right - ${arr[i]} < ${target}`);
+                fibM -= 1;
+                offset = i;
+            } else if (arr[i] > target) {
+                console.log(`Moving left - ${arr[i]} > ${target}`);
+                fibM -= 2;
+            } else {
+                console.log(`Found target at index ${i}`);
+                return i;
+            }
+        }
+        
+        if (fibM === 0 && arr[offset] === target) {
+            console.log(`Found target at index ${offset}`);
+            return offset;
+        }
+        
+        console.log('Target not found');
+        return -1;
     }
-
-    return null;
-  }
 }
+
+// Usage with logging
+const searchWithLogging = new FibonacciSearchWithLogging();
+const result = searchWithLogging.search([1, 3, 5, 7, 9, 11, 13], 7);
+console.log(`Final result: ${result}`);
