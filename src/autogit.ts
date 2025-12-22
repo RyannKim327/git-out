@@ -1,87 +1,129 @@
-function insertionSort(arr: number[]): number[] {
-    // Create a copy to avoid mutating the original array
-    const sortedArray = [...arr];
+class ListNode {
+    val: number;
+    next: ListNode | null;
     
-    for (let i = 1; i < sortedArray.length; i++) {
-        const currentElement = sortedArray[i];
-        let j = i - 1;
-        
-        // Move elements that are greater than currentElement one position ahead
-        while (j >= 0 && sortedArray[j] > currentElement) {
-            sortedArray[j + 1] = sortedArray[j];
-            j--;
-        }
-        
-        // Insert the currentElement at its correct position
-        sortedArray[j + 1] = currentElement;
-    }
-    
-    return sortedArray;
-}
-function insertionSortGeneric<T>(
-    arr: T[], 
-    compareFn: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
-): T[] {
-    const sortedArray = [...arr];
-    
-    for (let i = 1; i < sortedArray.length; i++) {
-        const currentElement = sortedArray[i];
-        let j = i - 1;
-        
-        while (j >= 0 && compareFn(sortedArray[j], currentElement) > 0) {
-            sortedArray[j + 1] = sortedArray[j];
-            j--;
-        }
-        
-        sortedArray[j + 1] = currentElement;
-    }
-    
-    return sortedArray;
-}
-// Basic usage with numbers
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-console.log("Original:", numbers);
-console.log("Sorted:", insertionSort(numbers));
-
-// Generic usage with numbers
-console.log("Generic sorted:", insertionSortGeneric(numbers));
-
-// Generic usage with strings
-const strings = ["banana", "apple", "cherry", "date"];
-console.log("Strings sorted:", insertionSortGeneric(strings));
-
-// Generic usage with custom objects
-interface Person {
-    name: string;
-    age: number;
-}
-
-const people: Person[] = [
-    { name: "Alice", age: 30 },
-    { name: "Bob", age: 25 },
-    { name: "Charlie", age: 35 }
-];
-
-const sortedByAge = insertionSortGeneric(people, (a, b) => a.age - b.age);
-console.log("People sorted by age:", sortedByAge);
-
-const sortedByName = insertionSortGeneric(people, (a, b) => a.name.localeCompare(b.name));
-console.log("People sorted by name:", sortedByName);
-function insertionSortInPlace(arr: number[]): void {
-    for (let i = 1; i < arr.length; i++) {
-        const currentElement = arr[i];
-        let j = i - 1;
-        
-        while (j >= 0 && arr[j] > currentElement) {
-            arr[j + 1] = arr[j];
-            j--;
-        }
-        
-        arr[j + 1] = currentElement;
+    constructor(val?: number, next?: ListNode | null) {
+        this.val = val === undefined ? 0 : val;
+        this.next = next === undefined ? null : next;
     }
 }
 
-// Usage
-const mutableArray = [64, 34, 25, 12, 22, 11, 90];
-insertionSortInPlace(mutableArray);
-console.log("In-place sorted:", mutableArray);
+function getIntersectionNode(headA: ListNode | null, headB: ListNode | null): ListNode | null {
+    const visited = new Set<ListNode>();
+    
+    // Traverse first list and store all nodes
+    let currentA = headA;
+    while (currentA !== null) {
+        visited.add(currentA);
+        currentA = currentA.next;
+    }
+    
+    // Traverse second list and check for intersection
+    let currentB = headB;
+    while (currentB !== null) {
+        if (visited.has(currentB)) {
+            return currentB;
+        }
+        currentB = currentB.next;
+    }
+    
+    return null;
+}
+function getIntersectionNodeTwoPointers(headA: ListNode | null, headB: ListNode | null): ListNode | null {
+    if (!headA || !headB) return null;
+    
+    let ptrA: ListNode | null = headA;
+    let ptrB: ListNode | null = headB;
+    
+    while (ptrA !== ptrB) {
+        ptrA = ptrA === null ? headB : ptrA.next;
+        ptrB = ptrB === null ? headA : ptrB.next;
+    }
+    
+    return ptrA;
+}
+function getIntersectionNodeLength(headA: ListNode | null, headB: ListNode | null): ListNode | null {
+    const getLength = (head: ListNode | null): number => {
+        let length = 0;
+        let current = head;
+        while (current !== null) {
+            length++;
+            current = current.next;
+        }
+        return length;
+    };
+    
+    const lenA = getLength(headA);
+    const lenB = getLength(headB);
+    
+    let longer: ListNode | null = lenA > lenB ? headA : headB;
+    let shorter: ListNode | null = lenA > lenB ? headB : headA;
+    const diff = Math.abs(lenA - lenB);
+    
+    // Move longer pointer ahead by difference
+    for (let i = 0; i < diff && longer !== null; i++) {
+        longer = longer.next;
+    }
+    
+    // Move both pointers together
+    while (longer !== null && shorter !== null) {
+        if (longer === shorter) {
+            return longer;
+        }
+        longer = longer.next;
+        shorter = shorter.next;
+    }
+    
+    return null;
+}
+// Create test case
+function createIntersectingLists(): { headA: ListNode, headB: ListNode, intersection: ListNode } {
+    // Common part (intersection)
+    const commonNode1 = new ListNode(8);
+    const commonNode2 = new ListNode(4);
+    const commonNode3 = new ListNode(5);
+    commonNode1.next = commonNode2;
+    commonNode2.next = commonNode3;
+    
+    // List A: 4 → 1 → 8 → 4 → 5
+    const nodeA1 = new ListNode(4);
+    const nodeA2 = new ListNode(1);
+    nodeA1.next = nodeA2;
+    nodeA2.next = commonNode1;
+    
+    // List B: 5 → 6 → 1 → 8 → 4 → 5
+    const nodeB1 = new ListNode(5);
+    const nodeB2 = new ListNode(6);
+    const nodeB3 = new ListNode(1);
+    nodeB1.next = nodeB2;
+    nodeB2.next = nodeB3;
+    nodeB3.next = commonNode1;
+    
+    return {
+        headA: nodeA1,
+        headB: nodeB1,
+        intersection: commonNode1
+    };
+}
+
+// Test function
+function testIntersection(): void {
+    const { headA, headB, intersection } = createIntersectingLists();
+    
+    console.log("Testing intersection detection:");
+    
+    const result1 = getIntersectionNode(headA, headB);
+    console.log("Hash Set Method:", result1?.val === 8 ? "✓ PASS" : "✗ FAIL");
+    
+    const result2 = getIntersectionNodeTwoPointers(headA, headB);
+    console.log("Two Pointers Method:", result2?.val === 8 ? "✓ PASS" : "✗ FAIL");
+    
+    const result3 = getIntersectionNodeLength(headA, headB);
+    console.log("Length Method:", result3?.val === 8 ? "✓ PASS" : "✗ FAIL");
+    
+    console.log("Expected intersection value: 8");
+    console.log("Actual intersection values:", 
+        result1?.val, result2?.val, result3?.val);
+}
+
+testIntersection();
