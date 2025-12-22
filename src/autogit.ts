@@ -1,27 +1,35 @@
-const str1 = "Hello";
-const str2 = "World";
-const result = str1 + " " + str2;
-console.log(result); // "Hello World"
-const str1 = "Hello";
-const str2 = "World";
-const result = `${str1} ${str2}`;
-console.log(result); // "Hello World"
-const str1 = "Hello";
-const str2 = "World";
-const result = str1.concat(" ", str2);
-console.log(result); // "Hello World"
-const str1 = "Hello";
-const str2 = "World";
-const result = [str1, str2].join(" ");
-console.log(result); // "Hello World"
-function concatenateStrings(first: string, second: string): string {
-    return first + " " + second;
+// random.ts  (run with:  ts-node random.ts)
+// A tiny “guess-the-number” game that actually asks the user for input.
+
+import * as readline from 'readline';
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+const secret = Math.floor(Math.random() * 100) + 1;
+
+console.log('🎲  I have chosen a number between 1 and 100.  Can you guess it?');
+
+function ask(): void {
+  rl.question('Your guess: ', (answer) => {
+    const guess = Number(answer.trim());
+    if (isNaN(guess)) {
+      console.log('❌  That is not a valid number.');
+      return ask();
+    }
+    if (guess < secret) {
+      console.log('📈  Too low!');
+      return ask();
+    }
+    if (guess > secret) {
+      console.log('📉  Too high!');
+      return ask();
+    }
+    console.log('🎉  Correct!  Thanks for playing.');
+    rl.close();
+  });
 }
 
-const firstName: string = "John";
-const lastName: string = "Doe";
-const fullName: string = concatenateStrings(firstName, lastName);
-console.log(fullName); // "John Doe"
-const name = "Alice";
-const greeting = `Hello ${name},
-Welcome to TypeScript!`;
+ask();
