@@ -1,61 +1,24 @@
-function getStringLength(str: string): number {
-    let length = 0;
-    let index = 0;
-    
-    while (str[index] !== undefined) {
-        length++;
-        index++;
-    }
-    
-    return length;
+const originalString = "Hello WORLD";
+const lowercaseString = originalString.toLowerCase();
+console.log(lowercaseString); // Output: "hello world"
+const text: string = "TypeScript IS Awesome";
+const lowerText: string = text.toLowerCase();
+console.log(lowerText); // Output: "typescript is awesome"
+function convertToLowercase(input: string): string {
+    return input.toLowerCase();
 }
 
-// Usage
-const text = "Hello, TypeScript!";
-console.log(getStringLength(text)); // Output: 18
-function getStringLength(str: string): number {
-    let length = 0;
-    
-    for (let i = 0; str[i] !== undefined; i++) {
-        length++;
-    }
-    
-    return length;
-}
-function getStringLength(str: string): number {
-    if (str === "") {
-        return 0;
-    }
-    return 1 + getStringLength(str.slice(1));
-}
-function getStringLength(str: string): number {
-    let length = 0;
-    
-    for (const char of str) {
-        length++;
-    }
-    
-    return length;
-}
-function getStringLength(str: string): number {
-    return Array.from(str).length;
-}
-function getStringLength(str: string): number {
-    let length = 0;
-    let index = 0;
-    
-    // Iterate until we reach undefined (end of string)
-    while (str[index] !== undefined) {
-        length++;
-        index++;
-    }
-    
-    return length;
-}
+const result = convertToLowercase("HELLO TypeScript");
+console.log(result); // Output: "hello typescript"
+// Using optional chaining and nullish coalescing
+const possiblyNull: string | null = "HELLO";
+const safeLowercase = possiblyNull?.toLowerCase() ?? "";
 
-// Testing the function
-const testCases: string[] = ["", "a", "hello", "TypeScript", "🎉 Emoji test!"];
-
-testCases.forEach(testStr => {
-    console.log(`"${testStr}" - Length: ${getStringLength(testStr)}`);
-});
+// Or with a type guard
+function safeToLowerCase(input: string | null | undefined): string {
+    if (input == null) return "";
+    return input.toLowerCase();
+}
+const germanText = "STRASSE"; // German for "street"
+const lowercaseGerman = germanText.toLocaleLowerCase('de-DE');
+console.log(lowercaseGerman); // Output: "strasse"
