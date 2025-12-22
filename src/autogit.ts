@@ -1,325 +1,204 @@
 /**
- * A simple, generic hash table implementation using separate chaining.
- *
- * The implementation mirrors the native Map API where possible, but
- * it also demonstrates the inner workings of a hash table.
- *
- * --------------------------------------------------------------
- * 1️⃣  Public API
- * --------------------------------------------------------------
- *   - constructor(initialCapacity?, loadFactor?, hashFn?)
- *   - set(key, value): this
- *   - get(key): V | undefined
- *   - has(key): boolean
- *   - delete(key): boolean
- *   - clear(): void
- *   - size: number (readonly)
- *   - keys(): IterableIterator<K>
- *   - values(): IterableIterator<V>
- *   - entries(): IterableIterator<[K, V]>
- *   - [Symbol.iterator](): IterableIterator<[K, V]>
- *
- * --------------------------------------------------------------
- * 2️⃣  Internals
- * --------------------------------------------------------------
- *   - _buckets: Array<Entry<K, V>[]>   // each bucket is an array (chain)
- *   - _hashFn: (key: K) => number
- *   - _loadFactor: number (default 0.75)
- *   - _capacity: number (always a power of two)
- *   - _size: number (number of stored entries)
- *
- * --------------------------------------------------------------
- * 3️⃣  Complexity (amortized)
- * --------------------------------------------------------------
- *   - set / get / has / delete : O(1)   (when load factor is kept low)
- *   - resize (rehash)          : O(n)   (rare, triggered when load factor exceeded)
+ * Returns the Unicode code point at `pos` and the number of UTF‑16 code units
+ * that belong to that code point (1 or 2).  This lets us step correctly over
+ * surrogate pairs.
  */
+function codePointAt(str: string, pos: number): { cp: number; length: number } {
+    const first = str.charCodeAt(pos);
+    // Is it a high surrogate?
+    if (first >= 0xd800 && first <= 0xdbff && pos + 1 < str.length) {
+        const second = str.charCodeAt(pos + 1);
+        // Is the next code unit a low surrogate?
+        if (second >= 0xdc00 && second <= 0xdfff) {
+            // Combine the pair into a single code point.
+            const cp = ((first - 0xd800) << 10) + (second - 0xdc00) + 0x10000;
+            return { cp, length: 2 };
+        }
+    }
+    // Not a surrogate pair – the code point is just the first unit.
+    return { cp: first, length: 1 };
+}
+/**
+ * Returns true if `s` reads the same forward and backward.
+ * No extra data structures are allocated – only a few numbers.
+ *
+ * @param s The string to test.
+ * @param ignoreNonAlphaNumeric If true, skips spaces, punctuation, etc.
+ * @param caseInsensitive If true, treats 'A' and 'a' as equal.
+ */
+export function isPalindrome(
+    s: string,
+    ignoreNonAlphaNumeric = false,
+    caseInsensitive = false
+): boolean {
+    // Fast‑path for empty or single‑character strings.
+    if (s.length < 2) return true;
 
-type HashFunction<K> = (key: K) => number;
+    // Two pointers: one from the start, one from the end.
+    let left = 0;
+    let right = s.length - 1;
 
-/** Internal entry stored in a bucket */
-interface Entry<K, V> {
-  key: K;
-  value: V;
+    while (left <= right) {
+        // ---- 1️⃣ Grab the next *valid* character from the left side ----
+        let leftInfo = codePointAt(s, left);
+        let leftCp = leftInfo.cp;
+        left += leftInfo.length; // advance past the whole code point
+
+        // If we are ignoring non‑alphanumerics, skip them.
+        if (ignoreNonAlphaNumeric) {
+            while (
+                leftCp !== undefined &&
+                !isAlphaNumericCodePoint(leftCp)
+            ) {
+                if (left > right) break; // ran out of characters
+                leftInfo = codePointAt(s, left);
+                leftCp = leftInfo.cp;
+                left += leftInfo.length;
+            }
+        }
+
+        // ---- 2️⃣ Grab the next *valid* character from the right side ----
+        let rightInfo = codePointAt(s, right - (rightInfo?.length ?? 0) + 1);
+        // The above line is a little tricky because we need to step *backwards*
+        // over a possible surrogate pair.  We first look at the code unit at `right`,
+        // then decide if we need to step one more position.
+        // Simpler (and still O(1) space) is to just move left‑to‑right and then
+        // compare the characters we collected, but the following version keeps the
+        // two‑pointer spirit.
+
+        // Determine the length of the code point at `right`.
+        const first = s.charCodeAt(right);
+        let rightCp: number;
+        let rightLen: number;
+        if (first >= 0xdc00 && first <= 0xdfff && right > 0) {
+            // low surrogate – the high surrogate is at right‑1
+            const prev = s.charCodeAt(right - 1);
+            if (prev >= 0xd800 && prev <= 0xdbff) {
+                rightCp = ((prev - 0xd800) << 10) + (first - 0xdc00) + 0x10000;
+                rightLen = 2;
+                right -= 2; // move past the pair
+            } else {
+                // malformed UTF‑16, treat as single unit
+                rightCp = first;
+                rightLen = 1;
+                right -= 1;
+            }
+        } else {
+            // regular BMP code unit
+            rightCp = first;
+            rightLen = 1;
+            right -= 1;
+        }
+
+        if (ignoreNonAlphaNumeric) {
+            while (
+                rightCp !== undefined &&
+                !isAlphaNumericCodePoint(rightCp)
+            ) {
+                if (right < left) break;
+                // Move leftwards again to fetch the previous code point.
+                const cur = s.charCodeAt(right);
+                if (cur >= 0xdc00 && cur <= 0xdfff && right > 0) {
+                    const prev = s.charCodeAt(right - 1);
+                    if (prev >= 0xd800 && prev <= 0xdbff) {
+                        rightCp = ((prev - 0xd800) << 10) + (cur - 0xdc00) + 0x10000;
+                        right -= 2;
+                        continue;
+                    }
+                }
+                rightCp = cur;
+                right -= 1;
+            }
+        }
+
+        // If we have exhausted one side before the other, the loop will exit.
+        if (leftInfo === undefined || rightCp === undefined) break;
+
+        // ---- 3️⃣ Normalise case if requested ----
+        if (caseInsensitive) {
+            leftCp = toAsciiLowerCase(leftCp);
+            rightCp = toAsciiLowerCase(rightCp);
+        }
+
+        // ---- 4️⃣ Compare the two code points ----
+        if (leftCp !== rightCp) return false;
+    }
+
+    return true;
 }
 
-/**
- * Default hash function.
- *
- * - For strings: a simple djb2 variant.
- * - For numbers: the number itself (modulo will be applied later).
- * - For other objects: JSON.stringify + djb2 (good enough for demo purposes).
- *
- * You can replace it with something stronger (e.g., murmurhash) if you need
- * production‑grade distribution.
- */
-function defaultHashFn<T>(key: T): number {
-  if (typeof key === 'number') {
-    // Ensure we work with 32‑bit signed ints
-    return key | 0;
-  }
-
-  if (typeof key === 'string') {
-    // djb2 – fast and decent for short strings
-    let hash = 5381;
-    for (let i = 0; i < key.length; i++) {
-      hash = (hash * 33) ^ key.charCodeAt(i);
-    }
-    return hash >>> 0; // force unsigned
-  }
-
-  // Fallback for objects / booleans / symbols etc.
-  const str = JSON.stringify(key);
-  let hash = 5381;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash * 33) ^ str.charCodeAt(i);
-  }
-  return hash >>> 0;
-}
+/* ------------------------------------------------------------------ */
+/* Helper utilities (tiny, O(1) space)                                 */
+/* ------------------------------------------------------------------ */
 
 /**
- * HashTable class
+ * Returns true if the Unicode code point is an ASCII letter or digit.
+ * This is enough for the typical “ignore punctuation” use‑case.
  */
-export class HashTable<K, V> implements Iterable<[K, V]> {
-  /** The array of buckets (each bucket is an array of entries). */
-  private _buckets: Array<Entry<K, V>[]>;
-
-  /** Number of key/value pairs stored. */
-  private _size = 0;
-
-  /** Load factor threshold before we resize. */
-  private readonly _loadFactor: number;
-
-  /** Hash function supplied by the user or the default one. */
-  private readonly _hashFn: HashFunction<K>;
-
-  /** Current capacity (always a power of two). */
-  private _capacity: number;
-
-  /**
-   * @param initialCapacity  Desired initial bucket count (rounded up to a power of two).
-   * @param loadFactor       Desired max load factor before resizing (default 0.75).
-   * @param hashFn           Optional custom hash function.
-   */
-  constructor(
-    initialCapacity = 16,
-    loadFactor = 0.75,
-    hashFn?: HashFunction<K>
-  ) {
-    if (initialCapacity < 1) {
-      throw new Error('initialCapacity must be >= 1');
-    }
-    if (loadFactor <= 0 || loadFactor >= 1) {
-      throw new Error('loadFactor must be > 0 and < 1');
-    }
-
-    // Ensure capacity is a power of two – simplifies index calculation.
-    this._capacity = 1;
-    while (this._capacity < initialCapacity) this._capacity <<= 1;
-
-    this._buckets = new Array(this._capacity);
-    for (let i = 0; i < this._capacity; i++) this._buckets[i] = [];
-
-    this._loadFactor = loadFactor;
-    this._hashFn = hashFn ?? defaultHashFn;
-  }
-
-  /** Number of stored entries (read‑only). */
-  get size(): number {
-    return this._size;
-  }
-
-  /** Compute the bucket index for a given key. */
-  private _index(key: K): number {
-    // The hash function returns a 32‑bit unsigned integer.
-    // Using bitwise AND with (capacity - 1) works because capacity is a power of two.
-    const hash = this._hashFn(key);
-    return hash & (this._capacity - 1);
-  }
-
-  /** Find an entry inside a bucket, returning its position or -1. */
-  private _findEntry(bucket: Entry<K, V>[], key: K): number {
-    for (let i = 0; i < bucket.length; i++) {
-      // Equality check – for primitives `===` works; for objects you may want a custom comparator.
-      if (Object.is(bucket[i].key, key)) {
-        return i;
-      }
-    }
-    return -1;
-  }
-
-  /** Insert or update a key/value pair. */
-  set(key: K, value: V): this {
-    const idx = this._index(key);
-    const bucket = this._buckets[idx];
-    const pos = this._findEntry(bucket, key);
-
-    if (pos >= 0) {
-      // Update existing entry
-      bucket[pos].value = value;
-    } else {
-      // Insert new entry
-      bucket.push({ key, value });
-      this._size++;
-
-      // Resize if needed
-      if (this._size > this._capacity * this._loadFactor) {
-        this._resize(this._capacity * 2);
-      }
-    }
-    return this;
-  }
-
-  /** Retrieve the value for a key, or undefined if missing. */
-  get(key: K): V | undefined {
-    const bucket = this._buckets[this._index(key)];
-    const pos = this._findEntry(bucket, key);
-    return pos >= 0 ? bucket[pos].value : undefined;
-  }
-
-  /** Returns true if the key exists in the table. */
-  has(key: K): boolean {
-    const bucket = this._buckets[this._index(key)];
-    return this._findEntry(bucket, key) >= 0;
-  }
-
-  /** Remove a key/value pair. Returns true if something was removed. */
-  delete(key: K): boolean {
-    const idx = this._index(key);
-    const bucket = this._buckets[idx];
-    const pos = this._findEntry(bucket, key);
-    if (pos >= 0) {
-      bucket.splice(pos, 1);
-      this._size--;
-      return true;
-    }
+function isAlphaNumericCodePoint(cp: number): boolean {
+    // 0‑9
+    if (cp >= 48 && cp <= 57) return true;
+    // A‑Z
+    if (cp >= 65 && cp <= 90) return true;
+    // a‑z
+    if (cp >= 97 && cp <= 122) return true;
     return false;
-  }
-
-  /** Remove all entries and reset capacity to the initial size. */
-  clear(): void {
-    this._buckets = new Array(this._capacity);
-    for (let i = 0; i < this._capacity; i++) this._buckets[i] = [];
-    this._size = 0;
-  }
-
-  /** Internal method to grow/shrink the table and re‑hash all entries. */
-  private _resize(newCapacity: number): void {
-    // Keep capacity a power of two
-    let cap = 1;
-    while (cap < newCapacity) cap <<= 1;
-    const oldBuckets = this._buckets;
-
-    this._capacity = cap;
-    this._buckets = new Array(this._capacity);
-    for (let i = 0; i < this._capacity; i++) this._buckets[i] = [];
-
-    // Reset size and re‑insert everything
-    const oldSize = this._size;
-    this._size = 0;
-
-    for (const bucket of oldBuckets) {
-      for (const entry of bucket) {
-        this.set(entry.key, entry.value);
-      }
-    }
-
-    // The size after re‑inserting should match the old size.
-    this._size = oldSize;
-  }
-
-  /** Iterate over all entries as [key, value] tuples. */
-  *entries(): IterableIterator<[K, V]> {
-    for (const bucket of this._buckets) {
-      for (const { key, value } of bucket) {
-        yield [key, value] as [K, V];
-      }
-    }
-  }
-
-  /** Iterate over all keys. */
-  *keys(): IterableIterator<K> {
-    for (const bucket of this._buckets) {
-      for (const { key } of bucket) {
-        yield key;
-      }
-    }
-  }
-
-  /** Iterate over all values. */
-  *values(): IterableIterator<V> {
-    for (const bucket of this._buckets) {
-      for (const { value } of bucket) {
-        yield value;
-      }
-    }
-  }
-
-  /** Default iterator – same as entries(). */
-  [Symbol.iterator](): IterableIterator<[K, V]> {
-    return this.entries();
-  }
-
-  /** For debugging – a quick visual of bucket distribution. */
-  _debugPrint(): void {
-    console.log(`HashTable (size=${this._size}, capacity=${this._capacity})`);
-    this._buckets.forEach((bucket, i) => {
-      if (bucket.length) {
-        console.log(`  bucket[${i}] → ${bucket.map(e => `${String(e.key)}:${String(e.value)}`).join(', ')}`);
-      }
-    });
-  }
 }
 
-/* --------------------------------------------------------------
-   Example usage & simple test harness
-   -------------------------------------------------------------- */
-if (require.main === module) {
-  // Simple demo with primitive keys
-  const map = new HashTable<string, number>();
-  map.set('apple', 1).set('banana', 2).set('cherry', 3);
-  console.log('size →', map.size); // 3
-  console.log('get banana →', map.get('banana')); // 2
-  console.log('has orange →', map.has('orange')); // false
-
-  // Delete a key
-  map.delete('apple');
-  console.log('after delete apple, size →', map.size); // 2
-
-  // Iterate
-  console.log('entries:');
-  for (const [k, v] of map) {
-    console.log(`  ${k} => ${v}`);
-  }
-
-  // Using a custom hash function for number keys (modulo a prime)
-  const numberHash = (n: number) => n % 97;
-  const numMap = new HashTable<number, string>(8, 0.75, numberHash);
-  for (let i = 0; i < 20; i++) {
-    numMap.set(i, `value-${i}`);
-  }
-  console.log('numMap size (after 20 inserts) →', numMap.size);
-  console.log('value for 13 →', numMap.get(13));
-
-  // Complex object keys – you must provide a hash function that can
-  // uniquely identify the object (or rely on JSON.stringify, which works
-  // for simple POJOs).
-  interface Point {
-    x: number;
-    y: number;
-  }
-  const pointHash = (p: Point) => {
-    // Simple combine: (x * 31) ^ y
-    return ((p.x * 31) ^ p.y) >>> 0;
-  };
-  const pointMap = new HashTable<Point, string>(4, 0.75, pointHash);
-  const p1 = { x: 1, y: 2 };
-  const p2 = { x: 3, y: 4 };
-  pointMap.set(p1, 'origin');
-  pointMap.set(p2, 'far');
-  console.log('pointMap.get(p1) →', pointMap.get(p1)); // origin
-  console.log('pointMap.has(p2) →', pointMap.has(p2)); // true
-
-  // Debug print (optional)
-  // map._debugPrint();
+/**
+ * Fast ASCII‑only lower‑casing.  For non‑ASCII characters we just return the
+ * original code point – the caller can decide to extend this if needed.
+ */
+function toAsciiLowerCase(cp: number): number {
+    // Upper‑case A‑Z → a‑z
+    if (cp >= 65 && cp <= 90) return cp + 32;
+    return cp;
 }
+/**
+ * Simple ASCII palindrome checker – O(1) extra space.
+ */
+export function isAsciiPalindrome(s: string, caseInsensitive = false): boolean {
+    let i = 0;
+    let j = s.length - 1;
+
+    while (i < j) {
+        let left = s.charCodeAt(i);
+        let right = s.charCodeAt(j);
+
+        if (caseInsensitive) {
+            // Convert A‑Z to a‑z
+            if (left >= 65 && left <= 90) left += 32;
+            if (right >= 65 && right <= 90) right += 32;
+        }
+
+        if (left !== right) return false;
+
+        i++;
+        j--;
+    }
+    return true;
+}
+function test() {
+    const cases: Array<[string, boolean, boolean, boolean]> = [
+        // [input, expectedStrict, expectedIgnoreSpaces, expectedIgnoreSpacesCase]
+        ["racecar", true, true, true],
+        ["RaceCar", false, false, true],
+        ["A man, a plan, a canal: Panama", false, true, true],
+        ["", true, true, true],
+        ["😀a😀", true, true, true], // palindrome with an emoji (surrogate pair)
+        ["😀ab😀", false, false, false],
+        ["12321", true, true, true],
+        ["12345", false, false, false],
+    ];
+
+    for (const [str, strict, ignoreSpaces, ignoreSpacesCase] of cases) {
+        console.assert(isAsciiPalindrome(str) === strict,
+            `ASCII strict failed for "${str}"`);
+        console.assert(isPalindrome(str, true, false) === ignoreSpaces,
+            `ignore‑non‑alnum failed for "${str}"`);
+        console.assert(isPalindrome(str, true, true) === ignoreSpacesCase,
+            `ignore‑non‑alnum + case‑insensitive failed for "${str}"`);
+    }
+    console.log("All tests passed!");
+}
+test();
