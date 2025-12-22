@@ -1,39 +1,26 @@
-class ListNode {
-    value: number;
-    next: ListNode | null;
+/**
+ * Returns true if `n` is a prime integer, otherwise false.
+ * Works for all safe integers (|n| ≤ 9_007_199_254_740_991).
+ */
+export function isPrime(n: number): boolean {
+  if (!Number.isInteger(n)) return false;   // Reject non-integers
+  n = Math.abs(n);                         // Deal with negatives
+  if (n < 2) return false;                 // 0, 1 and negatives are not prime
+  if (n % 2 === 0) return n === 2;         // Even numbers
+  if (n % 3 === 0) return n === 3;         // Multiples of 3
 
-    constructor(value: number) {
-        this.value = value;
-        this.next = null;
-    }
+  const limit = Math.floor(Math.sqrt(n));
+  // Test divisors of the form 6k ± 1
+  for (let i = 5; i <= limit; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
+  }
+  return true;
 }
 
-function findNthFromEnd(head: ListNode | null, n: number): ListNode | null {
-    if (!head || n <= 0) return null;
-
-    let fast: ListNode | null = head;
-    let slow: ListNode | null = head;
-
-    // Step 1: Move fast n steps ahead
-    for (let i = 0; i < n; i++) {
-        if (!fast) return null; // n is greater than list length
-        fast = fast.next;
-    }
-
-    // Step 2: Move both until fast reaches the end
-    while (fast) {
-        slow = slow!.next;
-        fast = fast.next;
-    }
-
-    return slow;
-}
-// Create list: 1 -> 2 -> 3 -> 4 -> 5
-const head = new ListNode(1);
-head.next = new ListNode(2);
-head.next.next = new ListNode(3);
-head.next.next.next = new ListNode(4);
-head.next.next.next.next = new ListNode(5);
-
-const result = findNthFromEnd(head, 2);
-console.log(result?.value); // Output: 4
+/* ---------- quick sanity checks ---------- */
+console.log(isPrime(-7));   // false
+console.log(isPrime(0));    // false
+console.log(isPrime(1));    // false
+console.log(isPrime(2));    // true
+console.log(isPrime(97));   // true
+console.log(isPrime(1001)); // false (7 * 11 * 13)
