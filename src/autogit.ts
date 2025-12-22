@@ -1,209 +1,198 @@
-class KMP {
-    private pattern: string;
-    private lps: number[]; // Longest Prefix Suffix array
-    
-    constructor(pattern: string) {
-        this.pattern = pattern;
-        this.lps = this.computeLPS();
+interface PriorityQueueItem<T> {
+    item: T;
+    priority: number;
+}
+
+class PriorityQueue<T> {
+    private heap: PriorityQueueItem<T>[];
+    private readonly isMinHeap: boolean;
+
+    constructor(isMinHeap: boolean = true) {
+        this.heap = [];
+        this.isMinHeap = isMinHeap;
     }
-    
-    private computeLPS(): number[] {
-        const lps = new Array(this.pattern.length).fill(0);
-        let len = 0; // length of the previous longest prefix suffix
-        let i = 1;
+
+    // Add an item with priority to the queue
+    enqueue(item: T, priority: number): void {
+        const queueItem: PriorityQueueItem<T> = { item, priority };
+        this.heap.push(queueItem);
+        this.bubbleUp(this.heap.length - 1);
+    }
+
+    // Remove and return the highest priority item
+    dequeue(): T | null {
+        if (this.isEmpty()) {
+            return null;
+        }
+
+        const min = this.heap[0];
+        const end = this.heap.pop()!;
+
+        if (this.heap.length > 0) {
+            this.heap[0] = end;
+            this.sinkDown(0);
+        }
+
+        return min.item;
+    }
+
+    // Peek at the highest priority item without removing it
+    peek(): T | null {
+        return this.isEmpty() ? null : this.heap[0].item;
+    }
+
+    // Check if the queue is empty
+    isEmpty(): boolean {
+        return this.heap.length === 0;
+    }
+
+    // Get the size of the queue
+    size(): number {
+        return this.heap.length;
+    }
+
+    // Clear the queue
+    clear(): void {
+        this.heap = [];
+    }
+
+    // Convert to array (for debugging/testing)
+    toArray(): PriorityQueueItem<T>[] {
+        return [...this.heap];
+    }
+
+    // Private helper methods
+    private getParentIndex(index: number): number {
+        return Math.floor((index - 1) / 2);
+    }
+
+    private getLeftChildIndex(index: number): number {
+        return 2 * index + 1;
+    }
+
+    private getRightChildIndex(index: number): number {
+        return 2 * index + 2;
+    }
+
+    private shouldSwap(parentIndex: number, childIndex: number): boolean {
+        if (parentIndex < 0 || childIndex >= this.heap.length) {
+            return false;
+        }
+
+        const parentPriority = this.heap[parentIndex].priority;
+        const childPriority = this.heap[childIndex].priority;
+
+        return this.isMinHeap 
+            ? childPriority < parentPriority
+            : childPriority > parentPriority;
+    }
+
+    private swap(index1: number, index2: number): void {
+        [this.heap[index1], this.heap[index2]] = [this.heap[index2], this.heap[index1]];
+    }
+
+    private bubbleUp(index: number): void {
+        let currentIndex = index;
+        let parentIndex = this.getParentIndex(currentIndex);
+
+        while (currentIndex > 0 && this.shouldSwap(parentIndex, currentIndex)) {
+            this.swap(parentIndex, currentIndex);
+            currentIndex = parentIndex;
+            parentIndex = this.getParentIndex(currentIndex);
+        }
+    }
+
+    private sinkDown(index: number): void {
+        let currentIndex = index;
+        let leftChildIndex = this.getLeftChildIndex(currentIndex);
+        let rightChildIndex = this.getRightChildIndex(currentIndex);
+        let swapIndex = currentIndex;
+
+        // Check left child
+        if (leftChildIndex < this.heap.length && this.shouldSwap(swapIndex, leftChildIndex)) {
+            swapIndex = leftChildIndex;
+        }
+
+        // Check right child
+        if (rightChildIndex < this.heap.length && this.shouldSwap(swapIndex, rightChildIndex)) {
+            swapIndex = rightChildIndex;
+        }
+
+        // If we found a child that should be swapped
+        if (swapIndex !== currentIndex) {
+            this.swap(currentIndex, swapIndex);
+            this.sinkDown(swapIndex);
+        }
+    }
+}
+// Example 1: Min-heap (default)
+const minQueue = new PriorityQueue<string>();
+minQueue.enqueue("Task A", 3);
+minQueue.enqueue("Task B", 1);
+minQueue.enqueue("Task C", 2);
+
+console.log(minQueue.dequeue()); // "Task B" (priority 1)
+console.log(minQueue.dequeue()); // "Task C" (priority 2)
+console.log(minQueue.dequeue()); // "Task A" (priority 3)
+
+// Example 2: Max-heap
+const maxQueue = new PriorityQueue<number>(false);
+maxQueue.enqueue(100, 5);
+maxQueue.enqueue(200, 3);
+maxQueue.enqueue(300, 7);
+
+console.log(maxQueue.dequeue()); // 300 (priority 7)
+console.log(maxQueue.dequeue()); // 100 (priority 5)
+console.log(maxQueue.dequeue()); // 200 (priority 3)
+
+// Example 3: Custom objects
+interface Patient {
+    name: string;
+    severity: number;
+}
+
+const patientQueue = new PriorityQueue<Patient>();
+patientQueue.enqueue({ name: "John", severity: 3 }, 3);
+patientQueue.enqueue({ name: "Jane", severity: 1 }, 1);
+patientQueue.enqueue({ name: "Bob", severity: 2 }, 2);
+
+console.log(patientQueue.dequeue()); // { name: "Jane", severity: 1 }
+class PriorityQueueWithComparator<T> {
+    private heap: T[];
+    private readonly comparator: (a: T, b: T) => number;
+
+    constructor(comparator: (a: T, b: T) => number) {
+        this.heap = [];
+        this.comparator = comparator;
+    }
+
+    enqueue(item: T): void {
+        this.heap.push(item);
+        this.bubbleUp(this.heap.length - 1);
+    }
+
+    dequeue(): T | null {
+        if (this.isEmpty()) return null;
         
-        while (i < this.pattern.length) {
-            if (this.pattern[i] === this.pattern[len]) {
-                len++;
-                lps[i] = len;
-                i++;
-            } else {
-                if (len !== 0) {
-                    len = lps[len - 1];
-                } else {
-                    lps[i] = 0;
-                    i++;
-                }
-            }
+        const first = this.heap[0];
+        const last = this.heap.pop()!;
+        
+        if (!this.isEmpty()) {
+            this.heap[0] = last;
+            this.sinkDown(0);
         }
         
-        return lps;
+        return first;
     }
-    
-    search(text: string): number[] {
-        const matches: number[] = [];
-        let i = 0; // index for text
-        let j = 0; // index for pattern
-        
-        while (i < text.length) {
-            if (this.pattern[j] === text[i]) {
-                i++;
-                j++;
-            }
-            
-            if (j === this.pattern.length) {
-                matches.push(i - j);
-                j = this.lps[j - 1];
-            } else if (i < text.length && this.pattern[j] !== text[i]) {
-                if (j !== 0) {
-                    j = this.lps[j - 1];
-                } else {
-                    i++;
-                }
-            }
-        }
-        
-        return matches;
+
+    // ... other methods remain similar
+
+    private shouldSwap(parentIndex: number, childIndex: number): boolean {
+        return this.comparator(this.heap[parentIndex], this.heap[childIndex]) > 0;
     }
 }
 
-// Usage
-const kmp = new KMP("abc");
-const positions = kmp.search("abcabcab");
-console.log(positions); // [0, 3]
-class BoyerMoore {
-    private pattern: string;
-    private badChar: Map<string, number>;
-    
-    constructor(pattern: string) {
-        this.pattern = pattern;
-        this.badChar = this.buildBadCharTable();
-    }
-    
-    private buildBadCharTable(): Map<string, number> {
-        const table = new Map<string, number>();
-        for (let i = 0; i < this.pattern.length - 1; i++) {
-            table.set(this.pattern[i], i);
-        }
-        return table;
-    }
-    
-    search(text: string): number[] {
-        const matches: number[] = [];
-        const n = text.length;
-        const m = this.pattern.length;
-        
-        let shift = 0;
-        
-        while (shift <= n - m) {
-            let j = m - 1;
-            
-            // Compare from right to left
-            while (j >= 0 && this.pattern[j] === text[shift + j]) {
-                j--;
-            }
-            
-            if (j < 0) {
-                matches.push(shift);
-                shift += (shift + m < n) ? m - (this.badChar.get(text[shift + m]) || -1) : 1;
-            } else {
-                const badCharShift = j - (this.badChar.get(text[shift + j]) || -1);
-                shift += Math.max(1, badCharShift);
-            }
-        }
-        
-        return matches;
-    }
-}
-class RabinKarp {
-    private pattern: string;
-    private patternHash: number;
-    private prime: number = 101;
-    
-    constructor(pattern: string) {
-        this.pattern = pattern;
-        this.patternHash = this.calculateHash(pattern);
-    }
-    
-    private calculateHash(str: string): number {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            hash = (hash * 256 + str.charCodeAt(i)) % this.prime;
-        }
-        return hash;
-    }
-    
-    search(text: string): number[] {
-        const matches: number[] = [];
-        const n = text.length;
-        const m = this.pattern.length;
-        
-        if (n < m) return matches;
-        
-        let textHash = this.calculateHash(text.substring(0, m));
-        
-        // Precompute 256^(m-1) mod prime
-        let h = 1;
-        for (let i = 0; i < m - 1; i++) {
-            h = (h * 256) % this.prime;
-        }
-        
-        for (let i = 0; i <= n - m; i++) {
-            if (textHash === this.patternHash) {
-                // Verify actual match to handle hash collisions
-                if (text.substring(i, i + m) === this.pattern) {
-                    matches.push(i);
-                }
-            }
-            
-            if (i < n - m) {
-                textHash = (256 * (textHash - text.charCodeAt(i) * h) + 
-                           text.charCodeAt(i + m)) % this.prime;
-                
-                if (textHash < 0) {
-                    textHash += this.prime;
-                }
-            }
-        }
-        
-        return matches;
-    }
-}
-interface StringMatcher {
-    search(text: string, pattern: string): number[];
-    searchAll(text: string, pattern: string): number[];
-}
-
-class SimpleStringMatcher implements StringMatcher {
-    search(text: string, pattern: string): number[] {
-        const matches: number[] = [];
-        let pos = text.indexOf(pattern);
-        
-        while (pos !== -1) {
-            matches.push(pos);
-            pos = text.indexOf(pattern, pos + 1);
-        }
-        
-        return matches;
-    }
-    
-    searchAll(text: string, pattern: string): number[] {
-        return this.search(text, pattern);
-    }
-}
-class StringMatchingBenchmark {
-    static benchmark(matcher: StringMatcher, text: string, pattern: string, iterations: number = 1000): number {
-        const start = performance.now();
-        
-        for (let i = 0; i < iterations; i++) {
-            matcher.search(text, pattern);
-        }
-        
-        const end = performance.now();
-        return end - start;
-    }
-}
-
-// Usage example
-const text = "ababcabcabababd";
-const pattern = "ababd";
-
-const kmp = new KMP(pattern);
-const bm = new BoyerMoore(pattern);
-const rk = new RabinKarp(pattern);
-const simple = new SimpleStringMatcher();
-
-console.log("KMP matches:", kmp.search(text));
-console.log("Boyer-Moore matches:", bm.search(text));
-console.log("Rabin-Karp matches:", rk.search(text));
-console.log("Simple matches:", simple.search(text, pattern));
+// Usage with custom comparator
+const customQueue = new PriorityQueueWithComparator<{ priority: number }>(
+    (a, b) => a.priority - b.priority // Min-heap comparator
+);
