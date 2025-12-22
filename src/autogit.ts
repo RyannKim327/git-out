@@ -1,120 +1,194 @@
-/**
- * Recursively searches for `target` in a sorted array.
- *
- * @param arr        The sorted array to search.
- * @param target     The value we are looking for.
- * @param compare    Optional comparator (a, b) => number.
- *                   Returns <0 if a < b, 0 if a == b, >0 if a > b.
- * @param left       Left bound of the current search interval (inclusive).
- * @param right      Right bound of the current search interval (inclusive).
- *
- * @returns The index of `target` in `arr`, or -1 if not found.
- */
-function binarySearchRecursive<T>(
-  arr: readonly T[],
-  target: T,
-  compare?: (a: T, b: T) => number,
-  left: number = 0,
-  right: number = arr.length - 1
-): number {
-  // Base case – interval is empty
-  if (left > right) return -1;
+interface GraphNode {
+  id: string;
+  children?: GraphNode[];
+}
 
-  const mid = Math.floor((left + right) / 2);
-  const midVal = arr[mid];
+interface DLSResult {
+  found: boolean;
+  node?: GraphNode;
+  depth: number;
+}
 
-  // Use the supplied comparator or fall back to the default JS comparison
-  const cmp = compare
-    ? compare(midVal, target)
-    : // default for numbers & strings (works for any type that supports <, >, ===)
-      (midVal as unknown as number) < (target as unknown as number)
-      ? -1
-      : (midVal as unknown as number) > (target as unknown as number)
-      ? 1
-      : 0;
+class DepthLimitedSearch {
+  /**
+   * Perform depth-limited search on a graph/tree
+   * @param startNode - The starting node
+   * @param targetId - The ID of the node to search for
+   * @param depthLimit - Maximum depth to search
+   * @returns DLSResult object with search results
+   */
+  static search(
+    startNode: GraphNode, 
+    targetId: string, 
+    depthLimit: number
+  ): DLSResult {
+    return this.dlsRecursive(startNode, targetId, depthLimit, 0);
+  }
 
-  if (cmp === 0) {
-    // Found!
-    return mid;
-  } else if (cmp > 0) {
-    // midVal > target → search left half
-    return binarySearchRecursive(arr, target, compare, left, mid - 1);
-  } else {
-    // midVal < target → search right half
-    return binarySearchRecursive(arr, target, compare, mid + 1, right);
+  /**
+   * Recursive helper function for DLS
+   */
+  private static dlsRecursive(
+    currentNode: GraphNode,
+    targetId: string,
+    depthLimit: number,
+    currentDepth: number
+  ): DLSResult {
+    // Check if current node is the target
+    if (currentNode.id === targetId) {
+      return { found: true, node: currentNode, depth: currentDepth };
+    }
+
+    // Check if we've reached the depth limit
+    if (currentDepth >= depthLimit) {
+      return { found: false, depth: currentDepth };
+    }
+
+    // Recursively search children
+    if (currentNode.children) {
+      for (const child of currentNode.children) {
+        const result = this.dlsRecursive(child, targetId, depthLimit, currentDepth + 1);
+        if (result.found) {
+          return result;
+        }
+      }
+    }
+
+    return { found: false, depth: currentDepth };
+  }
+
+  /**
+   * Perform iterative deepening depth-first search (IDDFS)
+   * which repeatedly calls DLS with increasing depth limits
+   * @param startNode - The starting node
+   * @param targetId - The ID of the node to search for
+   * @param maxDepth - Maximum depth to search (safety limit)
+   * @returns DLSResult object with search results
+   */
+  static iterativeDeepeningSearch(
+    startNode: GraphNode,
+    targetId: string,
+    maxDepth: number = 100
+  ): DLSResult {
+    for (let depth = 0; depth <= maxDepth; depth++) {
+      const result = this.search(startNode, targetId, depth);
+      if (result.found || result.depth < depth) {
+        // Found target or searched entire tree without hitting depth limit
+        return result;
+      }
+    }
+    return { found: false, depth: maxDepth };
   }
 }
-const nums = [1, 3, 5, 7, 9, 11, 13];
-console.log(binarySearchRecursive(nums, 7));   // → 3
-console.log(binarySearchRecursive(nums, 2));   // → -1
-const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
-console.log(binarySearchRecursive(words, 'date')); // → 3
-type Person = { id: number; name: string };
 
-const people: Person[] = [
-  { id: 1, name: 'Alice' },
-  { id: 3, name: 'Bob' },
-  { id: 5, name: 'Charlie' },
-  { id: 7, name: 'Diana' },
-];
-
-// Comparator that orders by `id`
-const byId = (a: Person, b: Person) => a.id - b.id;
-
-const target = { id: 5, name: '' }; // name is irrelevant for the search
-console.log(binarySearchRecursive(people, target, byId)); // → 2
-// ---------- binarySearchRecursive.ts ----------
-export function binarySearchRecursive<T>(
-  arr: readonly T[],
-  target: T,
-  compare?: (a: T, b: T) => number,
-  left: number = 0,
-  right: number = arr.length - 1
-): number {
-  if (left > right) return -1;
-
-  const mid = Math.floor((left + right) / 2);
-  const midVal = arr[mid];
-
-  const cmp = compare
-    ? compare(midVal, target)
-    : (midVal as unknown as number) < (target as unknown as number)
-    ? -1
-    : (midVal as unknown as number) > (target as unknown as number)
-    ? 1
-    : 0;
-
-  if (cmp === 0) return mid;
-  return cmp > 0
-    ? binarySearchRecursive(arr, target, compare, left, mid - 1)
-    : binarySearchRecursive(arr, target, compare, mid + 1, right);
+// Example usage and test
+function createSampleGraph(): GraphNode {
+  return {
+    id: "A",
+    children: [
+      {
+        id: "B",
+        children: [
+          { id: "D", children: [{ id: "G" }] },
+          { id: "E" }
+        ]
+      },
+      {
+        id: "C",
+        children: [
+          { id: "F", children: [{ id: "H" }, { id: "I" }] }
+        ]
+      }
+    ]
+  };
 }
 
-// ---------- demo.ts ----------
-import { binarySearchRecursive } from './binarySearchRecursive';
-
-// Numbers
-const nums = [2, 4, 6, 8, 10, 12];
-console.log(binarySearchRecursive(nums, 8));   // 3
-console.log(binarySearchRecursive(nums, 5));   // -1
-
-// Strings
-const colors = ['blue', 'green', 'orange', 'purple', 'red'];
-console.log(binarySearchRecursive(colors, 'purple')); // 3
-
-// Custom objects
-type Point = { x: number; y: number };
-const points: Point[] = [
-  { x: 1, y: 5 },
-  { x: 3, y: 2 },
-  { x: 7, y: 9 },
-];
-const byX = (a: Point, b: Point) => a.x - b.x;
-console.log(binarySearchRecursive(points, { x: 3, y: 0 }, byX)); // 1
-function bs<T>(arr: readonly T[], target: T, l = 0, r = arr.length - 1): number {
-  if (l > r) return -1;
-  const m = (l + r) >> 1;               // same as Math.floor((l+r)/2)
-  const v = arr[m];
-  if (v === target) return m;
-  return (v > target ? bs(arr, target, l, m - 1) : bs(arr, target, m + 1, r));
+// Test the implementation
+function testDepthLimitedSearch() {
+  const graph = createSampleGraph();
+  
+  console.log("=== Depth-Limited Search Tests ===");
+  
+  // Test 1: Search for node within depth limit
+  const result1 = DepthLimitedSearch.search(graph, "F", 3);
+  console.log("Search for 'F' with depth limit 3:", result1);
+  
+  // Test 2: Search for node beyond depth limit
+  const result2 = DepthLimitedSearch.search(graph, "G", 1);
+  console.log("Search for 'G' with depth limit 1:", result2);
+  
+  // Test 3: Search for non-existent node
+  const result3 = DepthLimitedSearch.search(graph, "Z", 5);
+  console.log("Search for 'Z' with depth limit 5:", result3);
+  
+  // Test 4: Iterative deepening search
+  const result4 = DepthLimitedSearch.iterativeDeepeningSearch(graph, "I");
+  console.log("Iterative deepening search for 'I':", result4);
 }
+
+// Run tests
+testDepthLimitedSearch();
+interface DLSResultWithPath extends DLSResult {
+  path?: string[];
+}
+
+class DepthLimitedSearchWithPath {
+  static search(
+    startNode: GraphNode,
+    targetId: string,
+    depthLimit: number
+  ): DLSResultWithPath {
+    return this.dlsRecursive(startNode, targetId, depthLimit, 0, []);
+  }
+
+  private static dlsRecursive(
+    currentNode: GraphNode,
+    targetId: string,
+    depthLimit: number,
+    currentDepth: number,
+    currentPath: string[]
+  ): DLSResultWithPath {
+    const newPath = [...currentPath, currentNode.id];
+
+    if (currentNode.id === targetId) {
+      return { 
+        found: true, 
+        node: currentNode, 
+        depth: currentDepth,
+        path: newPath
+      };
+    }
+
+    if (currentDepth >= depthLimit) {
+      return { found: false, depth: currentDepth, path: newPath };
+    }
+
+    if (currentNode.children) {
+      for (const child of currentNode.children) {
+        const result = this.dlsRecursive(
+          child, 
+          targetId, 
+          depthLimit, 
+          currentDepth + 1, 
+          newPath
+        );
+        if (result.found) {
+          return result;
+        }
+      }
+    }
+
+    return { found: false, depth: currentDepth, path: newPath };
+  }
+}
+
+// Test the path-tracking version
+function testDLSWithPath() {
+  const graph = createSampleGraph();
+  
+  console.log("\n=== DLS with Path Tracking ===");
+  const result = DepthLimitedSearchWithPath.search(graph, "H", 3);
+  console.log("Search for 'H' with path tracking:", result);
+}
+
+testDLSWithPath();
