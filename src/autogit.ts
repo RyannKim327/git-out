@@ -1,44 +1,61 @@
-/**
- * In-place quicksort (ascending).
- * @param arr  Array of items that can be compared with `<`
- * @param left  Left index (inclusive) – leave empty to sort the whole array
- * @param right Right index (inclusive) – leave empty to sort the whole array
- */
-export function quickSort<T>(
-  arr: T[],
-  left = 0,
-  right = arr.length - 1
-): T[] {
-  if (left >= right) return arr;
-
-  const pivot = arr[Math.floor((left + right) / 2)];
-
-  let i = left;
-  let j = right;
-
-  while (i <= j) {
-    while (arr[i] < pivot) i++;
-    while (arr[j] > pivot) j--;
-
-    if (i <= j) {
-      [arr[i], arr[j]] = [arr[j], arr[i]]; // swap
-      i++;
-      j--;
+function getStringLength(str: string): number {
+    let length = 0;
+    let index = 0;
+    
+    while (str[index] !== undefined) {
+        length++;
+        index++;
     }
-  }
-
-  // Recurse on the two halves
-  if (left < j) quickSort(arr, left, j);
-  if (i < right) quickSort(arr, i, right);
-
-  return arr;
+    
+    return length;
 }
 
-/* ---------- Usage ---------- */
-const nums = [9, 3, 7, 4, 8, 2, 6, 5, 1];
-quickSort(nums);
-console.log(nums); // [1, 2, 3, 4, 5, 6, 7, 8, 9]
+// Usage
+const text = "Hello, TypeScript!";
+console.log(getStringLength(text)); // Output: 18
+function getStringLength(str: string): number {
+    let length = 0;
+    
+    for (let i = 0; str[i] !== undefined; i++) {
+        length++;
+    }
+    
+    return length;
+}
+function getStringLength(str: string): number {
+    if (str === "") {
+        return 0;
+    }
+    return 1 + getStringLength(str.slice(1));
+}
+function getStringLength(str: string): number {
+    let length = 0;
+    
+    for (const char of str) {
+        length++;
+    }
+    
+    return length;
+}
+function getStringLength(str: string): number {
+    return Array.from(str).length;
+}
+function getStringLength(str: string): number {
+    let length = 0;
+    let index = 0;
+    
+    // Iterate until we reach undefined (end of string)
+    while (str[index] !== undefined) {
+        length++;
+        index++;
+    }
+    
+    return length;
+}
 
-const words = ['pear', 'apple', 'banana', 'apricot'];
-quickSort(words);
-console.log(words); // ['apple', 'apricot', 'banana', 'pear']
+// Testing the function
+const testCases: string[] = ["", "a", "hello", "TypeScript", "🎉 Emoji test!"];
+
+testCases.forEach(testStr => {
+    console.log(`"${testStr}" - Length: ${getStringLength(testStr)}`);
+});
