@@ -1,132 +1,173 @@
-// A generic node for a singly‑linked list
-export class ListNode<T> {
-  /** The value stored in the node */
-  public value: T;
-
-  /** Reference to the next node (null if this is the tail) */
-  public next: ListNode<T> | null = null;
-
-  constructor(value: T, next: ListNode<T> | null = null) {
-    this.value = value;
-    this.next = next;
+type Vertex = string | number;               // any hashable identifier
+type AdjList = Map<Vertex, Vertex[]>;        // vertex → list of outgoing neighbours
+/**
+ * Perform a topological sort using Kahn's algorithm.
+ *
+ * @param graph - adjacency list of the directed graph.
+ * @returns an array with vertices in topological order.
+ * @throws Error if the graph contains a cycle.
+ */
+export function topologicalSortKahn(graph: AdjList): Vertex[] {
+  // 1️⃣ Compute indegree of every vertex
+  const indegree = new Map<Vertex, number>();
+  for (const [v, neighbours] of graph.entries()) {
+    // ensure every vertex appears in the indegree map
+    if (!indegree.has(v)) indegree.set(v, 0);
+    for (const n of neighbours) {
+      indegree.set(n, (indegree.get(n) ?? 0) + 1);
+    }
   }
+
+  // 2️⃣ Initialise queue with all vertices of indegree 0
+  const queue: Vertex[] = [];
+  for (const [v, deg] of indegree.entries()) {
+    if (deg === 0) queue.push(v);
+  }
+
+  const result: Vertex[] = [];
+
+  // 3️⃣ Process the queue
+  while (queue.length) {
+    const v = queue.shift()!; // safe because length > 0
+    result.push(v);
+
+    // Decrease indegree of outgoing neighbours
+    const neighbours = graph.get(v) ?? [];
+    for (const n of neighbours) {
+      const newDeg = (indegree.get(n) ?? 0) - 1;
+      indegree.set(n, newDeg);
+      if (newDeg === 0) queue.push(n);
+    }
+  }
+
+  // 4️⃣ Detect cycles (if we couldn't output all vertices)
+  if (result.length !== indegree.size) {
+    throw new Error('Graph contains a cycle – topological ordering not possible.');
+  }
+
+  return result;
 }
 /**
- * Returns the node that sits in the middle of the list.
+ * Perform a topological sort using depth‑first search.
  *
- * If the list has an even number of nodes, the function returns the **first**
- * of the two middle nodes (i.e. the node at index ⌊n/2⌋, 0‑based).
- *
- * @param head The first node of the list (or null for an empty list)
- * @returns The middle node, or null if the list is empty
+ * @param graph - adjacency list of the directed graph.
+ * @returns an array with vertices in topological order.
+ * @throws Error if the graph contains a cycle.
  */
-export function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  // Edge case – empty list
-  if (head === null) return null;
+export function topologicalSortDFS(graph: AdjList): Vertex[] {
+  const visited = new Set<Vertex>();
+  const onStack = new Set<Vertex>(); // for cycle detection
+  const result: Vertex[] = [];
 
-  // `slow` moves one step at a time, `fast` moves two steps.
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+  // Helper recursive DFS
+  function dfs(v: Vertex) {
+    if (onStack.has(v)) {
+      // We reached a vertex that is already on the recursion stack → cycle
+      throw new Error('Graph contains a cycle – topological ordering not possible.');
+    }
+    if (visited.has(v)) return; // already processed
 
-  // Loop while there are still nodes for `fast` to jump over.
-  while (fast !== null && fast.next !== null) {
-    slow = slow!.next;          // safe because we know `slow` is not null here
-    fast = fast.next.next;      // advance two steps
+    onStack.add(v);
+    visited.add(v);
+
+    const neighbours = graph.get(v) ?? [];
+    for (const n of neighbours) {
+      dfs(n);
+    }
+
+    onStack.delete(v);
+    // Post‑order: push after exploring all descendants
+    result.push(v);
   }
 
-  // When the loop ends, `slow` points at the middle node.
-  return slow;
-}
-while (fast !== null && fast.next !== null) {
-  slow = slow!.next;
-  fast = fast.next.next;
-}
-if (fast !== null) { // list length is odd → already at true middle
-  // nothing to do
-} else {
-  // even length → move slow one step forward to get the second middle
-  slow = slow!.next;
-}
-// ---------------------------------------------------------------
-// Demo – building a list and printing its middle element
-// ---------------------------------------------------------------
-function buildListFromArray<T>(arr: T[]): ListNode<T> | null {
-  if (arr.length === 0) return null;
-
-  const head = new ListNode(arr[0]);
-  let current = head;
-  for (let i = 1; i < arr.length; i++) {
-    current.next = new ListNode(arr[i]);
-    current = current.next;
-  }
-  return head;
-}
-
-// Example 1: odd number of nodes
-const oddList = buildListFromArray([10, 20, 30, 40, 50]); // 5 nodes
-const oddMid = findMiddle(oddList);
-console.log('Odd list middle value →', oddMid?.value); // 30
-
-// Example 2: even number of nodes (first middle)
-const evenList = buildListFromArray(['a', 'b', 'c', 'd']); // 4 nodes
-const evenMid = findMiddle(evenList);
-console.log('Even list middle (first) value →', evenMid?.value); // 'b'
-
-// Example 3: empty list
-const emptyMid = findMiddle<number>(null);
-console.log('Empty list middle →', emptyMid); // null
-Odd list middle value → 30
-Even list middle (first) value → b
-Empty list middle → null
-// linked-list-middle.ts -------------------------------------------------
-export class ListNode<T> {
-  public value: T;
-  public next: ListNode<T> | null = null;
-
-  constructor(value: T, next: ListNode<T> | null = null) {
-    this.value = value;
-    this.next = next;
-  }
-}
-
-/**
- * Finds the middle node of a singly‑linked list.
- *
- * Returns the first middle node when the list length is even.
- */
-export function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (head === null) return null;
-
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
-
-  while (fast !== null && fast.next !== null) {
-    slow = slow!.next;
-    fast = fast.next.next;
+  // Kick off DFS from every vertex (graph may be disconnected)
+  for (const v of graph.keys()) {
+    if (!visited.has(v)) dfs(v);
   }
 
-  return slow;
+  // The result is built in reverse topological order
+  return result.reverse();
+}
+// Build a sample graph:
+//   5 → 2 → 3
+//   5 → 0
+//   4 → 0, 1
+//   2 → 1
+//   3 → 1
+const graph: AdjList = new Map([
+  [5, [2, 0]],
+  [4, [0, 1]],
+  [2, [3, 1]],
+  [3, [1]],
+  [0, []],
+  [1, []],
+]);
+
+// Using Kahn's algorithm
+try {
+  const orderKahn = topologicalSortKahn(graph);
+  console.log('Kahn order:', orderKahn); // e.g. [5,4,2,3,0,1] (any valid order)
+} catch (e) {
+  console.error(e);
 }
 
-/* ---------- Helper for the demo (optional) ---------- */
-export function buildListFromArray<T>(arr: T[]): ListNode<T> | null {
-  if (arr.length === 0) return null;
-  const head = new ListNode(arr[0]);
-  let cur = head;
-  for (let i = 1; i < arr.length; i++) {
-    cur.next = new ListNode(arr[i]);
-    cur = cur.next;
+// Using DFS algorithm
+try {
+  const orderDFS = topologicalSortDFS(graph);
+  console.log('DFS order:', orderDFS); // e.g. [5,4,2,3,0,1] (any valid order)
+} catch (e) {
+  console.error(e);
+}
+graph.set(1, [5]); // creates 5 → … → 1 → 5
+// topologicalSort.ts
+export type Vertex = string | number;
+export type AdjList = Map<Vertex, Vertex[]>;
+
+/* ---------- Kahn ---------- */
+export function topologicalSortKahn(graph: AdjList): Vertex[] {
+  const indegree = new Map<Vertex, number>();
+  for (const [v, neigh] of graph.entries()) {
+    if (!indegree.has(v)) indegree.set(v, 0);
+    for (const n of neigh) indegree.set(n, (indegree.get(n) ?? 0) + 1);
   }
-  return head;
+
+  const queue: Vertex[] = [];
+  for (const [v, d] of indegree.entries()) if (d === 0) queue.push(v);
+
+  const order: Vertex[] = [];
+  while (queue.length) {
+    const v = queue.shift()!;
+    order.push(v);
+    for (const n of graph.get(v) ?? []) {
+      const nd = (indegree.get(n) ?? 0) - 1;
+      indegree.set(n, nd);
+      if (nd === 0) queue.push(n);
+    }
+  }
+
+  if (order.length !== indegree.size) {
+    throw new Error('Cycle detected');
+  }
+  return order;
 }
 
-/* ---------- Demo ---------- */
-if (require.main === module) {
-  const odd = buildListFromArray([10, 20, 30, 40, 50]);
-  console.log('Odd middle →', findMiddle(odd)?.value); // 30
+/* ---------- DFS ---------- */
+export function topologicalSortDFS(graph: AdjList): Vertex[] {
+  const visited = new Set<Vertex>();
+  const onStack = new Set<Vertex>();
+  const order: Vertex[] = [];
 
-  const even = buildListFromArray(['a', 'b', 'c', 'd']);
-  console.log('Even middle (first) →', findMiddle(even)?.value); // b
+  function dfs(v: Vertex) {
+    if (onStack.has(v)) throw new Error('Cycle detected');
+    if (visited.has(v)) return;
+    onStack.add(v);
+    visited.add(v);
+    for (const n of graph.get(v) ?? []) dfs(n);
+    onStack.delete(v);
+    order.push(v);
+  }
 
-  console.log('Empty list →', findMiddle<number>(null)); // null
+  for (const v of graph.keys()) if (!visited.has(v)) dfs(v);
+  return order.reverse();
 }
+import { topologicalSortKahn, topologicalSortDFS, AdjList } from './topologicalSort';
