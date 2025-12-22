@@ -1,260 +1,132 @@
-// queue.ts
+// A generic node for a singly‑linked list
+export class ListNode<T> {
+  /** The value stored in the node */
+  public value: T;
+
+  /** Reference to the next node (null if this is the tail) */
+  public next: ListNode<T> | null = null;
+
+  constructor(value: T, next: ListNode<T> | null = null) {
+    this.value = value;
+    this.next = next;
+  }
+}
 /**
- * A Queue implementation that uses a singly‑linked list under the hood.
+ * Returns the node that sits in the middle of the list.
  *
- * Time complexities (amortised):
- *   enqueue  – O(1)
- *   dequeue  – O(1)
- *   peek     – O(1)
- *   size     – O(1)
+ * If the list has an even number of nodes, the function returns the **first**
+ * of the two middle nodes (i.e. the node at index ⌊n/2⌋, 0‑based).
  *
- * The implementation is generic (Queue<T>) and fully typed.
+ * @param head The first node of the list (or null for an empty list)
+ * @returns The middle node, or null if the list is empty
  */
+export function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  // Edge case – empty list
+  if (head === null) return null;
 
-export class Queue<T> implements Iterable<T> {
-  /** Internal node type – not exported, so callers cannot depend on it. */
-  private class Node {
-    public readonly value: T;
-    public next: Node | null = null;
+  // `slow` moves one step at a time, `fast` moves two steps.
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-    constructor(value: T) {
-      this.value = value;
-    }
+  // Loop while there are still nodes for `fast` to jump over.
+  while (fast !== null && fast.next !== null) {
+    slow = slow!.next;          // safe because we know `slow` is not null here
+    fast = fast.next.next;      // advance two steps
   }
 
-  private head: Node | null = null; // front of the queue (dequeue here)
-  private tail: Node | null = null; // back of the queue (enqueue here)
-  private _size = 0;                // cached size for O(1) size()
-  private readonly _capacity: number | undefined; // optional max size
+  // When the loop ends, `slow` points at the middle node.
+  return slow;
+}
+while (fast !== null && fast.next !== null) {
+  slow = slow!.next;
+  fast = fast.next.next;
+}
+if (fast !== null) { // list length is odd → already at true middle
+  // nothing to do
+} else {
+  // even length → move slow one step forward to get the second middle
+  slow = slow!.next;
+}
+// ---------------------------------------------------------------
+// Demo – building a list and printing its middle element
+// ---------------------------------------------------------------
+function buildListFromArray<T>(arr: T[]): ListNode<T> | null {
+  if (arr.length === 0) return null;
 
-  /**
-   * @param capacity Optional maximum number of elements the queue may hold.
-   *                 If omitted the queue is unbounded.
-   */
-  constructor(capacity?: number) {
-    if (capacity !== undefined && (!Number.isInteger(capacity) || capacity < 0)) {
-      throw new RangeError('capacity must be a non‑negative integer');
-    }
-    this._capacity = capacity;
+  const head = new ListNode(arr[0]);
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = new ListNode(arr[i]);
+    current = current.next;
   }
+  return head;
+}
 
-  /** Number of elements currently stored. */
-  get size(): number {
-    return this._size;
-  }
+// Example 1: odd number of nodes
+const oddList = buildListFromArray([10, 20, 30, 40, 50]); // 5 nodes
+const oddMid = findMiddle(oddList);
+console.log('Odd list middle value →', oddMid?.value); // 30
 
-  /** True if the queue contains no elements. */
-  get isEmpty(): boolean {
-    return this._size === 0;
-  }
+// Example 2: even number of nodes (first middle)
+const evenList = buildListFromArray(['a', 'b', 'c', 'd']); // 4 nodes
+const evenMid = findMiddle(evenList);
+console.log('Even list middle (first) value →', evenMid?.value); // 'b'
 
-  /** True if a capacity limit was supplied and the queue is full. */
-  get isFull(): boolean {
-    return this._capacity !== undefined && this._size >= this._capacity;
-  }
+// Example 3: empty list
+const emptyMid = findMiddle<number>(null);
+console.log('Empty list middle →', emptyMid); // null
+Odd list middle value → 30
+Even list middle (first) value → b
+Empty list middle → null
+// linked-list-middle.ts -------------------------------------------------
+export class ListNode<T> {
+  public value: T;
+  public next: ListNode<T> | null = null;
 
-  /**
-   * Adds a value to the back of the queue.
-   * @throws {Error} if the queue has a capacity limit and is already full.
-   */
-  enqueue(value: T): void {
-    if (this.isFull) {
-      throw new Error('Queue overflow – capacity reached');
-    }
-
-    const node = new this.Node(value);
-
-    if (this.tail) {
-      // There is at least one element – link the old tail to the new node.
-      this.tail.next = node;
-    } else {
-      // Queue was empty – new node becomes the head as well.
-      this.head = node;
-    }
-
-    // In all cases the new node becomes the new tail.
-    this.tail = node;
-    this._size++;
-  }
-
-  /**
-   * Removes and returns the value at the front of the queue.
-   * @returns The dequeued value.
-   * @throws {Error} if the queue is empty.
-   */
-  dequeue(): T {
-    if (this.isEmpty) {
-      throw new Error('Queue underflow – cannot dequeue from an empty queue');
-    }
-
-    // `head` is guaranteed to be non‑null here.
-    const node = this.head!;
-    const value = node.value;
-
-    // Move head forward.
-    this.head = node.next;
-
-    // If we removed the last element, tail must also become null.
-    if (this.head === null) {
-      this.tail = null;
-    }
-
-    // Help GC – break the link from the removed node.
-    node.next = null;
-
-    this._size--;
-    return value;
-  }
-
-  /**
-   * Returns (but does **not** remove) the value at the front of the queue.
-   * @throws {Error} if the queue is empty.
-   */
-  peek(): T {
-    if (this.isEmpty) {
-      throw new Error('Cannot peek – queue is empty');
-    }
-    return this.head!.value;
-  }
-
-  /**
-   * Clears the queue, releasing all node references.
-   * After this call the queue behaves like a newly‑constructed one.
-   */
-  clear(): void {
-    // Walk the list and null out each node's `next` to aid GC.
-    let cur = this.head;
-    while (cur) {
-      const nxt = cur.next;
-      cur.next = null;
-      cur = nxt;
-    }
-    this.head = this.tail = null;
-    this._size = 0;
-  }
-
-  /**
-   * Returns an iterator that yields the queue's values from front to back.
-   * Enables `for (const v of queue) { … }` and spread syntax.
-   */
-  *[Symbol.iterator](): Iterator<T> {
-    let cur = this.head;
-    while (cur) {
-      yield cur.value;
-      cur = cur.next;
-    }
-  }
-
-  /** Returns a nice string representation – useful for debugging. */
-  toString(): string {
-    const elems = [...this].map(v => `${v}`);
-    return `Queue(${elems.join(' → ')})`;
+  constructor(value: T, next: ListNode<T> | null = null) {
+    this.value = value;
+    this.next = next;
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* -------------------------- Example / Test Suite -------------------------- */
-/* -------------------------------------------------------------------------- */
+/**
+ * Finds the middle node of a singly‑linked list.
+ *
+ * Returns the first middle node when the list length is even.
+ */
+export function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (head === null) return null;
 
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
+
+  while (fast !== null && fast.next !== null) {
+    slow = slow!.next;
+    fast = fast.next.next;
+  }
+
+  return slow;
+}
+
+/* ---------- Helper for the demo (optional) ---------- */
+export function buildListFromArray<T>(arr: T[]): ListNode<T> | null {
+  if (arr.length === 0) return null;
+  const head = new ListNode(arr[0]);
+  let cur = head;
+  for (let i = 1; i < arr.length; i++) {
+    cur.next = new ListNode(arr[i]);
+    cur = cur.next;
+  }
+  return head;
+}
+
+/* ---------- Demo ---------- */
 if (require.main === module) {
-  // Simple ad‑hoc test when you run `ts-node queue.ts`
-  const q = new Queue<number>(5); // capacity 5 (optional)
+  const odd = buildListFromArray([10, 20, 30, 40, 50]);
+  console.log('Odd middle →', findMiddle(odd)?.value); // 30
 
-  console.log('Enqueue 1,2,3');
-  q.enqueue(1);
-  q.enqueue(2);
-  q.enqueue(3);
-  console.log(q.toString()); // Queue(1 → 2 → 3)
+  const even = buildListFromArray(['a', 'b', 'c', 'd']);
+  console.log('Even middle (first) →', findMiddle(even)?.value); // b
 
-  console.log('Peek:', q.peek()); // 1
-  console.log('Dequeue:', q.dequeue()); // 1
-  console.log('After dequeue:', q.toString()); // Queue(2 → 3)
-
-  console.log('Enqueue 4,5,6 (6 should overflow)');
-  q.enqueue(4);
-  q.enqueue(5);
-  try {
-    q.enqueue(6);
-  } catch (e) {
-    console.error('Expected overflow error →', (e as Error).message);
-  }
-
-  console.log('Iterate with for…of:');
-  for (const v of q) {
-    console.log('  ', v);
-  }
-
-  console.log('Clear queue');
-  q.clear();
-  console.log('Is empty?', q.isEmpty);
+  console.log('Empty list →', findMiddle<number>(null)); // null
 }
-
-/* -------------------------------------------------------------------------- */
-/* --------------------------- Jest‑style Tests ----------------------------- */
-/* -------------------------------------------------------------------------- */
-
-/*
-  To run the tests, install jest and ts-jest:
-
-    npm i -D jest ts-jest @types/jest
-    npx ts-jest config:init
-
-  Then add a file `queue.test.ts` with the following content:
-
-  import { Queue } from './queue';
-
-  describe('Queue (linked‑list implementation)', () => {
-    test('basic enqueue/dequeue', () => {
-      const q = new Queue<string>();
-      expect(q.isEmpty).toBe(true);
-      q.enqueue('a');
-      q.enqueue('b');
-      expect(q.size).toBe(2);
-      expect(q.peek()).toBe('a');
-      expect(q.dequeue()).toBe('a');
-      expect(q.dequeue()).toBe('b');
-      expect(q.isEmpty).toBe(true);
-    });
-
-    test('capacity limit', () => {
-      const q = new Queue<number>(2);
-      q.enqueue(1);
-      q.enqueue(2);
-      expect(() => q.enqueue(3)).toThrow('Queue overflow');
-    });
-
-    test('iteration order', () => {
-      const q = new Queue<number>();
-      [10, 20, 30].forEach(v => q.enqueue(v));
-      expect([...q]).toEqual([10, 20, 30]);
-    });
-
-    test('clear works', () => {
-      const q = new Queue<number>();
-      q.enqueue(1);
-      q.enqueue(2);
-      q.clear();
-      expect(q.isEmpty).toBe(true);
-      expect(() => q.dequeue()).toThrow('underflow');
-    });
-  });
-*/
-
-import { Queue } from './queue';
-
-const q = new Queue<string>();   // unbounded queue of strings
-
-q.enqueue('apple');
-q.enqueue('banana');
-q.enqueue('cherry');
-
-console.log(q.peek());   // → 'apple'
-console.log(q.dequeue()); // → 'apple'
-console.log(q.size);      // → 2
-
-for (const fruit of q) {
-  console.log(fruit);    // 'banana' then 'cherry'
-}
-
-q.clear();
-console.log(q.isEmpty);  // true
