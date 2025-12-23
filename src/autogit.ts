@@ -1,240 +1,217 @@
-interface Graph<T> {
-  getNeighbors(node: T): T[];
-}
+class KMP {
+    private pattern: string;
+    private lps: number[];
 
-interface SearchResult<T> {
-  path: T[];
-  visited: Set<T>;
-}
-
-class BidirectionalSearch<T> {
-  constructor(private graph: Graph<T>) {}
-
-  search(start: T, goal: T): SearchResult<T> {
-    if (start === goal) {
-      return { path: [start], visited: new Set([start]) };
+    constructor(pattern: string) {
+        this.pattern = pattern;
+        this.lps = this.computeLPS();
     }
 
-    // Queues for BFS from both directions
-    const queueStart: T[] = [start];
-    const queueGoal: T[] = [goal];
-    
-    // Visited nodes and parent pointers for both directions
-    const visitedStart = new Map<T, T>();
-    const visitedGoal = new Map<T, T>();
-    
-    visitedStart.set(start, null!);
-    visitedGoal.set(goal, null!);
+    private computeLPS(): number[] {
+        const lps: number[] = new Array(this.pattern.length).fill(0);
+        let length = 0;
+        let i = 1;
 
-    const allVisited = new Set<T>([start, goal]);
-
-    while (queueStart.length > 0 && queueGoal.length > 0) {
-      // Search from start direction
-      const meetingPoint = this.bfsStep(
-        queueStart, 
-        visitedStart, 
-        visitedGoal, 
-        this.graph.getNeighbors.bind(this.graph)
-      );
-      
-      if (meetingPoint) {
-        return {
-          path: this.constructPath(meetingPoint, visitedStart, visitedGoal),
-          visited: allVisited
-        };
-      }
-
-      // Search from goal direction
-      const meetingPoint2 = this.bfsStep(
-        queueGoal,
-        visitedGoal,
-        visitedStart,
-        this.graph.getNeighbors.bind(this.graph)
-      );
-      
-      if (meetingPoint2) {
-        return {
-          path: this.constructPath(meetingPoint2, visitedStart, visitedGoal),
-          visited: allVisited
-        };
-      }
-    }
-
-    return { path: [], visited: allVisited };
-  }
-
-  private bfsStep(
-    queue: T[],
-    visitedThis: Map<T, T>,
-    visitedOther: Map<T, T>,
-    getNeighbors: (node: T) => T[]
-  ): T | null {
-    if (queue.length === 0) return null;
-
-    const current = queue.shift()!;
-    const neighbors = getNeighbors(current);
-
-    for (const neighbor of neighbors) {
-      if (!visitedThis.has(neighbor)) {
-        visitedThis.set(neighbor, current);
-        
-        // Check if this node has been visited from the other direction
-        if (visitedOther.has(neighbor)) {
-          return neighbor; // Meeting point found
+        while (i < this.pattern.length) {
+            if (this.pattern[i] === this.pattern[length]) {
+                length++;
+                lps[i] = length;
+                i++;
+            } else {
+                if (length !== 0) {
+                    length = lps[length - 1];
+                } else {
+                    lps[i] = 0;
+                    i++;
+                }
+            }
         }
-        
-        queue.push(neighbor);
-      }
+
+        return lps;
     }
 
-    return null;
-  }
+    search(text: string): number[] {
+        const result: number[] = [];
+        let i = 0; // index for text
+        let j = 0; // index for pattern
 
-  private constructPath(
-    meetingPoint: T,
-    visitedStart: Map<T, T>,
-    visitedGoal: Map<T, T>
-  ): T[] {
-    // Construct path from start to meeting point
-    const pathFromStart: T[] = [];
-    let current: T = meetingPoint;
-    
-    while (current !== null!) {
-      pathFromStart.unshift(current);
-      current = visitedStart.get(current)!;
+        while (i < text.length) {
+            if (this.pattern[j] === text[i]) {
+                i++;
+                j++;
+            }
+
+            if (j === this.pattern.length) {
+                result.push(i - j);
+                j = this.lps[j - 1];
+            } else if (i < text.length && this.pattern[j] !== text[i]) {
+                if (j !== 0) {
+                    j = this.lps[j - 1];
+                } else {
+                    i++;
+                }
+            }
+        }
+
+        return result;
     }
-
-    // Construct path from meeting point to goal
-    const pathFromGoal: T[] = [];
-    current = visitedGoal.get(meetingPoint)!;
-    
-    while (current !== null!) {
-      pathFromGoal.push(current);
-      current = visitedGoal.get(current)!;
-    }
-
-    return [...pathFromStart, ...pathFromGoal];
-  }
-}
-// Example graph implementation
-class SimpleGraph implements Graph<string> {
-  private adjacencyList: Map<string, string[]>;
-
-  constructor() {
-    this.adjacencyList = new Map();
-  }
-
-  addEdge(from: string, to: string): void {
-    if (!this.adjacencyList.has(from)) {
-      this.adjacencyList.set(from, []);
-    }
-    if (!this.adjacencyList.has(to)) {
-      this.adjacencyList.set(to, []);
-    }
-    this.adjacencyList.get(from)!.push(to);
-    this.adjacencyList.get(to)!.push(from); // For undirected graph
-  }
-
-  getNeighbors(node: string): string[] {
-    return this.adjacencyList.get(node) || [];
-  }
 }
 
-// Usage example
-const graph = new SimpleGraph();
-graph.addEdge('A', 'B');
-graph.addEdge('A', 'C');
-graph.addEdge('B', 'D');
-graph.addEdge('C', 'E');
-graph.addEdge('D', 'F');
-graph.addEdge('E', 'F');
-graph.addEdge('F', 'G');
+// Usage
+const kmp = new KMP("abc");
+const positions = kmp.search("abcabcabc");
+console.log(positions); // [0, 3, 6]
+class BoyerMoore {
+    private pattern: string;
+    private badCharTable: Map<string, number>;
 
-const bidirectionalSearch = new BidirectionalSearch<string>(graph);
-const result = bidirectionalSearch.search('A', 'G');
-
-console.log('Path:', result.path.join(' → '));
-console.log('Nodes visited:', Array.from(result.visited).join(', '));
-interface EnhancedSearchResult<T> extends SearchResult<T> {
-  meetingPoint: T;
-  iterations: number;
-  executionTime: number;
-}
-
-class EnhancedBidirectionalSearch<T> extends BidirectionalSearch<T> {
-  searchWithMetrics(start: T, goal: T): EnhancedSearchResult<T> {
-    const startTime = performance.now();
-    let iterations = 0;
-    
-    if (start === goal) {
-      const endTime = performance.now();
-      return {
-        path: [start],
-        visited: new Set([start]),
-        meetingPoint: start,
-        iterations: 1,
-        executionTime: endTime - startTime
-      };
+    constructor(pattern: string) {
+        this.pattern = pattern;
+        this.badCharTable = this.buildBadCharTable();
     }
 
-    const queueStart: T[] = [start];
-    const queueGoal: T[] = [goal];
-    const visitedStart = new Map<T, T>();
-    const visitedGoal = new Map<T, T>();
-    visitedStart.set(start, null!);
-    visitedGoal.set(goal, null!);
-    const allVisited = new Set<T>([start, goal]);
+    private buildBadCharTable(): Map<string, number> {
+        const table = new Map<string, number>();
+        const patternLength = this.pattern.length;
 
-    while (queueStart.length > 0 && queueGoal.length > 0) {
-      iterations++;
-      
-      // Alternate between directions for better balance
-      const meetingPoint = this.bfsStep(
-        queueStart, 
-        visitedStart, 
-        visitedGoal, 
-        this.graph.getNeighbors.bind(this.graph)
-      );
-      
-      if (meetingPoint) {
-        const endTime = performance.now();
-        return {
-          path: this.constructPath(meetingPoint, visitedStart, visitedGoal),
-          visited: allVisited,
-          meetingPoint,
-          iterations,
-          executionTime: endTime - startTime
-        };
-      }
+        for (let i = 0; i < patternLength - 1; i++) {
+            table.set(this.pattern[i], patternLength - 1 - i);
+        }
 
-      iterations++;
-      
-      const meetingPoint2 = this.bfsStep(
-        queueGoal,
-        visitedGoal,
-        visitedStart,
-        this.graph.getNeighbors.bind(this.graph)
-      );
-      
-      if (meetingPoint2) {
-        const endTime = performance.now();
-        return {
-          path: this.constructPath(meetingPoint2, visitedStart, visitedGoal),
-          visited: allVisited,
-          meetingPoint: meetingPoint2,
-          iterations,
-          executionTime: endTime - startTime
-        };
-      }
+        return table;
     }
 
-    const endTime = performance.now();
-    return {
-      path: [],
-      visited: allVisited,
-      meetingPoint: null!,
-      iterations,
-      executionTime: endTime - startTime
-    };
-  }
+    search(text: string): number[] {
+        const result: number[] = [];
+        const patternLength = this.pattern.length;
+        const textLength = text.length;
+
+        let i = 0;
+        while (i <= textLength - patternLength) {
+            let j = patternLength - 1;
+
+            while (j >= 0 && this.pattern[j] === text[i + j]) {
+                j--;
+            }
+
+            if (j < 0) {
+                result.push(i);
+                i += patternLength;
+            } else {
+                const shift = this.badCharTable.get(text[i + j]) || patternLength;
+                i += Math.max(1, shift);
+            }
+        }
+
+        return result;
+    }
 }
+
+// Usage
+const bm = new BoyerMoore("abc");
+const positions = bm.search("abcabcabc");
+console.log(positions); // [0, 3, 6]
+class RabinKarp {
+    private pattern: string;
+    private patternHash: number;
+    private prime: number = 101;
+    private base: number = 256;
+
+    constructor(pattern: string) {
+        this.pattern = pattern;
+        this.patternHash = this.computeHash(pattern);
+    }
+
+    private computeHash(str: string): number {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = (this.base * hash + str.charCodeAt(i)) % this.prime;
+        }
+        return hash;
+    }
+
+    search(text: string): number[] {
+        const result: number[] = [];
+        const patternLength = this.pattern.length;
+        const textLength = text.length;
+
+        if (patternLength > textLength) return result;
+
+        let textHash = this.computeHash(text.substring(0, patternLength));
+        let h = 1;
+
+        // Calculate h = base^(patternLength-1) % prime
+        for (let i = 0; i < patternLength - 1; i++) {
+            h = (h * this.base) % this.prime;
+        }
+
+        for (let i = 0; i <= textLength - patternLength; i++) {
+            if (textHash === this.patternHash) {
+                // Verify actual match to avoid hash collisions
+                if (text.substring(i, i + patternLength) === this.pattern) {
+                    result.push(i);
+                }
+            }
+
+            if (i < textLength - patternLength) {
+                textHash = (this.base * (textHash - text.charCodeAt(i) * h) + 
+                           text.charCodeAt(i + patternLength)) % this.prime;
+                
+                if (textHash < 0) {
+                    textHash += this.prime;
+                }
+            }
+        }
+
+        return result;
+    }
+}
+
+// Usage
+const rk = new RabinKarp("abc");
+const positions = rk.search("abcabcabc");
+console.log(positions); // [0, 3, 6]
+function simpleStringSearch(text: string, pattern: string): number[] {
+    const result: number[] = [];
+    const textLength = text.length;
+    const patternLength = pattern.length;
+
+    for (let i = 0; i <= textLength - patternLength; i++) {
+        let j = 0;
+        while (j < patternLength && text[i + j] === pattern[j]) {
+            j++;
+        }
+        if (j === patternLength) {
+            result.push(i);
+        }
+    }
+
+    return result;
+}
+
+// Usage
+const positions = simpleStringSearch("abcabcabc", "abc");
+console.log(positions); // [0, 3, 6]
+interface StringMatcher {
+    search(text: string): number[];
+}
+
+function benchmark(matcher: StringMatcher, text: string, runs: number = 1000): number {
+    const start = performance.now();
+    for (let i = 0; i < runs; i++) {
+        matcher.search(text);
+    }
+    return performance.now() - start;
+}
+
+// Example usage
+const text = "a".repeat(10000) + "b" + "a".repeat(10000);
+const pattern = "b";
+
+const kmp = new KMP(pattern);
+const bm = new BoyerMoore(pattern);
+const rk = new RabinKarp(pattern);
+
+console.log("KMP:", benchmark(kmp, text), "ms");
+console.log("Boyer-Moore:", benchmark(bm, text), "ms");
+console.log("Rabin-Karp:", benchmark(rk, text), "ms");
