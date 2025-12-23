@@ -1,71 +1,184 @@
-const numbers: number[] = [1, 5, 3, 9, 2];
-const maxValue = Math.max(...numbers);
-console.log(maxValue); // 9
-const numbers: number[] = [1, 5, 3, 9, 2];
-const maxValue = Math.max.apply(null, numbers);
-console.log(maxValue); // 9
-const numbers: number[] = [1, 5, 3, 9, 2];
-const maxValue = numbers.reduce((max, current) => Math.max(max, current));
-console.log(maxValue); // 9
+import axios, { AxiosResponse } from 'axios';
 
-// Or more explicitly:
-const maxValue2 = numbers.reduce((max, current) => {
-    return current > max ? current : max;
-}, numbers[0]);
-const numbers: number[] = [];
-const maxValue = numbers.length > 0 ? Math.max(...numbers) : null;
-console.log(maxValue); // null
-
-// Or with a default value:
-const maxValue2 = numbers.length > 0 ? Math.max(...numbers) : -Infinity;
-interface Product {
-    id: number;
-    price: number;
+// Interface for user data structure
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  username: string;
 }
 
-const products: Product[] = [
-    { id: 1, price: 100 },
-    { id: 2, price: 250 },
-    { id: 3, price: 150 }
-];
+// Interface for API response
+interface ApiResponse<T> {
+  data: T;
+  status: number;
+  statusText: string;
+}
 
-// Find maximum price
-const maxPrice = Math.max(...products.map(p => p.price));
-console.log(maxPrice); // 250
+class ApiClient {
+  private baseURL: string;
 
-// Or using reduce to get the entire object with max value
-const productWithMaxPrice = products.reduce((max, product) => 
-    product.price > max.price ? product : max
-);
-console.log(productWithMaxPrice); // { id: 2, price: 250 }
-function findMax<T>(array: T[], getValue?: (item: T) => number): T | null {
-    if (array.length === 0) return null;
-    
-    if (getValue) {
-        return array.reduce((max, current) => 
-            getValue(current) > getValue(max) ? current : max
-        );
+  constructor(baseURL: string = 'https://jsonplaceholder.typicode.com') {
+    this.baseURL = baseURL;
+  }
+
+  // GET request example
+  async getUsers(): Promise<User[]> {
+    try {
+      const response: AxiosResponse<User[]> = await axios.get(
+        `${this.baseURL}/users`
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error:', error.message);
+        throw new Error(`Failed to fetch users: ${error.message}`);
+      }
+      throw error;
     }
-    
-    return array.reduce((max, current) => 
-        (current as any) > (max as any) ? current : max
-    );
-}
+  }
 
-// Usage examples:
-const numbers = [1, 5, 3, 9, 2];
-console.log(findMax(numbers)); // 9
+  // GET request with query parameters
+  async getUserById(id: number): Promise<User> {
+    try {
+      const response: AxiosResponse<User> = await axios.get(
+        `${this.baseURL}/users/${id}`
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Error fetching user:', error.message);
+        throw new Error(`User with ID ${id} not found`);
+      }
+      throw error;
+    }
+  }
 
-const products = [{ price: 100 }, { price: 250 }, { price: 150 }];
-console.log(findMax(products, p => p.price)); // { price: 250 }
-function findMaxFast(array: number[]): number | null {
-    if (array.length === 0) return null;
-    
-    let max = array[0];
-    for (let i = 1; i < array.length; i++) {
-        if (array[i] > max) {
-            max = array[i];
+  // POST request example
+  async createUser(userData: Partial<User>): Promise<User> {
+    try {
+      const response: AxiosResponse<User> = await axios.post(
+        `${this.baseURL}/users`,
+        userData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
         }
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Error creating user:', error.message);
+        throw new Error('Failed to create user');
+      }
+      throw error;
     }
-    return max;
+  }
+
+  // PUT request example
+  async updateUser(id: number, userData: Partial<User>): Promise<User> {
+    try {
+      const response: AxiosResponse<User> = await axios.put(
+        `${this.baseURL}/users/${id}`,
+        userData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Error updating user:', error.message);
+        throw new Error(`Failed to update user with ID ${id}`);
+      }
+      throw error;
+    }
+  }
+
+  // DELETE request example
+  async deleteUser(id: number): Promise<void> {
+    try {
+      await axios.delete(`${this.baseURL}/users/${id}`);
+      console.log(`User with ID ${id} deleted successfully`);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Error deleting user:', error.message);
+        throw new Error(`Failed to delete user with ID ${id}`);
+      }
+      throw error;
+    }
+  }
 }
+
+// Usage example
+async function demonstrateApiCalls() {
+  const apiClient = new ApiClient();
+
+  try {
+    // Get all users
+    console.log('Fetching all users...');
+    const users = await apiClient.getUsers();
+    console.log('Users:', users.slice(0, 3)); // Show first 3 users
+
+    // Get specific user
+    console.log('\nFetching user with ID 1...');
+    const user = await apiClient.getUserById(1);
+    console.log('User:', user);
+
+    // Create new user
+    console.log('\nCreating new user...');
+    const newUser = await apiClient.createUser({
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      username: 'johndoe',
+    });
+    console.log('Created user:', newUser);
+
+    // Update user
+    console.log('\nUpdating user...');
+    const updatedUser = await apiClient.updateUser(1, {
+      name: 'Updated Name',
+    });
+    console.log('Updated user:', updatedUser);
+
+    // Delete user (commented out to avoid actual deletion in example)
+    // await apiClient.deleteUser(1);
+
+  } catch (error) {
+    console.error('Error in API demonstration:', error);
+  }
+}
+
+// Run the demonstration
+demonstrateApiCalls();
+
+// Additional utility function with different axios configuration
+async function fetchWithTimeout(url: string, timeout: number = 5000) {
+  try {
+    const response = await axios.get(url, {
+      timeout,
+      headers: {
+        'User-Agent': 'TypeScript-Axios-Client/1.0',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (error.code === 'ECONNABORTED') {
+        throw new Error('Request timeout');
+      }
+      throw new Error(`HTTP error: ${error.response?.status}`);
+    }
+    throw error;
+  }
+}
+
+// Example of using the timeout function
+fetchWithTimeout('https://jsonplaceholder.typicode.com/posts/1')
+  .then(data => console.log('Fetched data with timeout:', data))
+  .catch(error => console.error('Timeout error:', error));
+npm install axios
+npm install -D typescript @types/node ts-node
