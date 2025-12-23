@@ -1,159 +1,135 @@
-// ---------- Types ----------
-type NodeValue<V> = V | undefined;
+/**
+ * Returns the longest increasing subsequence (LIS) of a numeric array.
+ *
+ * @param arr - Input array of numbers (any order, may contain duplicates)
+ * @returns An array containing one of the possible LIS (the subsequence itself)
+ *
+ * Complexity: O(n log n) time, O(n) extra space
+ */
+export function longestIncreasingSubsequence(arr: number[]): number[] {
+  const n = arr.length;
+  if (n === 0) return [];
 
-interface SkipNode<K, V> {
-  key: K;
-  value: NodeValue<V>;
-  forward: SkipNode<K, V>[]; // forward[i] is the next node on level i
+  // `tails[i]` holds the index of the smallest possible tail
+  // of an increasing subsequence of length i+1.
+  const tails: number[] = [];
+
+  // `prevIdx[i]` stores the index of the predecessor of arr[i] in the LIS.
+  const prevIdx = new Array<number>(n).fill(-1);
+
+  // Helper: binary search for the leftmost position >= target
+  const lowerBound = (target: number, end: number): number => {
+    let lo = 0;
+    let hi = end; // exclusive
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (arr[tails[mid]] < target) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo;
+  };
+
+  for (let i = 0; i < n; i++) {
+    // Find where arr[i] fits in the current tails
+    const pos = lowerBound(arr[i], tails.length);
+
+    // Record predecessor (only if we are not starting a new length‑1 subsequence)
+    if (pos > 0) {
+      prevIdx[i] = tails[pos - 1];
+    }
+
+    // Update tails: either extend or replace
+    if (pos === tails.length) {
+      tails.push(i);
+    } else {
+      tails[pos] = i;
+    }
+  }
+
+  // Reconstruct the LIS by walking backwards from the last index stored in tails
+  const lis: number[] = [];
+  let k = tails[tails.length - 1];
+  while (k !== -1) {
+    lis.push(arr[k]);
+    k = prevIdx[k];
+  }
+  lis.reverse(); // we built it backwards
+
+  return lis;
 }
 
-interface SkipListOptions {
-  maxLevel?: number;   // upper bound for levels (default 32)
-  p?: number;         // promotion probability (default 0.5)
-}
+/* --------------------------------------------------------------
+   Example usage / simple test harness
+   -------------------------------------------------------------- */
+if (require.main === module) {
+  // Run a quick demo when the file is executed directly (node file.js)
+  const examples: number[][] = [
+    [10, 9, 2, 5, 3, 7, 101, 18],
+    [0, 1, 0, 3, 2, 3],
+    [7, 7, 7, 7, 7],
+    [],
+    [1, 2, 3, 4, 5],
+    [5, 4, 3, 2, 1],
+    [3, 4, -1, 0, 6, 2, 3],
+  ];
 
-// ---------- SkipList class ----------
-export class SkipList<K, V> {
-  private readonly maxLevel: number;
-  private readonly p: number;
-  private readonly head: SkipNode<K, V>;
-  private level: number; // current highest level (0-based)
-  private compare: (a: K, b: K) => number;
-
-  constructor(
-    compareFn?: (a: K, b: K) => number,
-    options: SkipListOptions = {}
-  ) {
-    this.maxLevel = options.maxLevel ?? 32;
-    this.p = options.p ?? 0.5;
-    this.level = 0;
-    this.compare = compareFn ?? ((a: K, b: K) => (a as any) - (b as any));
-
-    // Head sentinel with key = -Infinity (simulated)
-    this.head = {
-      key: undefined as any,
-      value: undefined,
-      forward: new Array(this.maxLevel),
-    };
-  }
-
-  // ---------- Public API ----------
-  public insert(key: K, value: V): void {
-    const update: SkipNode<K, V>[] = new Array(this.maxLevel);
-    let x: SkipNode<K, V> = this.head;
-
-    // 1. Find position and record predecessors
-    for (let i = this.level; i >= 0; i--) {
-      while (
-        x.forward[i] &&
-        this.compare(x.forward[i].key, key) < 0
-      ) {
-        x = x.forward[i];
-      }
-      update[i] = x;
-    }
-
-    const next = x.forward[0];
-    // 2. Update value if key already present
-    if (next && this.compare(next.key, key) === 0) {
-      next.value = value;
-      return;
-    }
-
-    // 3. Random level for new node
-    const lvl = this.randomLevel();
-    if (lvl > this.level) {
-      for (let i = this.level + 1; i <= lvl; i++) update[i] = this.head;
-      this.level = lvl;
-    }
-
-    // 4. Create and splice node
-    const newNode: SkipNode<K, V> = {
-      key,
-      value,
-      forward: new Array(lvl + 1),
-    };
-    for (let i = 0; i <= lvl; i++) {
-      newNode.forward[i] = update[i].forward[i];
-      update[i].forward[i] = newNode;
-    }
-  }
-
-  public search(key: K): V | undefined {
-    let x = this.head;
-    for (let i = this.level; i >= 0; i--) {
-      while (
-        x.forward[i] &&
-        this.compare(x.forward[i].key, key) < 0
-      ) {
-        x = x.forward[i];
-      }
-    }
-    x = x.forward[0];
-    if (x && this.compare(x.key, key) === 0) return x.value;
-    return undefined;
-  }
-
-  public delete(key: K): boolean {
-    const update: SkipNode<K, V>[] = new Array(this.maxLevel);
-    let x = this.head;
-    for (let i = this.level; i >= 0; i--) {
-      while (
-        x.forward[i] &&
-        this.compare(x.forward[i].key, key) < 0
-      ) {
-        x = x.forward[i];
-      }
-      update[i] = x;
-    }
-    x = x.forward[0];
-    if (!x || this.compare(x.key, key) !== 0) return false;
-
-    // Unlink node
-    for (let i = 0; i <= this.level; i++) {
-      if (update[i].forward[i] !== x) break;
-      update[i].forward[i] = x.forward[i];
-    }
-    // Shrink list height if needed
-    while (
-      this.level > 0 &&
-      this.head.forward[this.level] === undefined
-    ) {
-      this.level--;
-    }
-    return true;
-  }
-
-  // ---------- Helpers ----------
-  private randomLevel(): number {
-    let lvl = 0;
-    while (Math.random() < this.p && lvl < this.maxLevel - 1) lvl++;
-    return lvl;
-  }
-
-  // ---------- Debug / pretty print ----------
-  public toString(): string {
-    let out = '';
-    for (let i = this.level; i >= 0; i--) {
-      let x = this.head.forward[i];
-      out += `L${i}: `;
-      const row: string[] = [];
-      while (x) {
-        row.push(`${x.key}`);
-        x = x.forward[i];
-      }
-      out += row.join(' -> ') + '\n';
-    }
-    return out;
+  for (const arr of examples) {
+    console.log('Input :', arr);
+    console.log('LIS   :', longestIncreasingSubsequence(arr));
+    console.log('Length:', longestIncreasingSubsequence(arr).length);
+    console.log('---');
   }
 }
-const sl = new SkipList<number, string>();
-sl.insert(3, 'three');
-sl.insert(1, 'one');
-sl.insert(5, 'five');
-console.log(sl.search(3)); // "three"
-sl.delete(3);
-console.log(sl.search(3)); // undefined
-console.log(sl.toString());
-tsc skipList.ts
-node skipList.js
+export function lisDP(arr: number[]): number[] {
+  const n = arr.length;
+  if (n === 0) return [];
+
+  const dp = new Array<number>(n).fill(1);      // length of LIS ending at i
+  const prev = new Array<number>(n).fill(-1);   // predecessor index
+
+  let maxLen = 1;
+  let maxIdx = 0;
+
+  for (let i = 1; i < n; i++) {
+    for (let j = 0; j < i; j++) {
+      if (arr[j] < arr[i] && dp[j] + 1 > dp[i]) {
+        dp[i] = dp[j] + 1;
+        prev[i] = j;
+      }
+    }
+    if (dp[i] > maxLen) {
+      maxLen = dp[i];
+      maxIdx = i;
+    }
+  }
+
+  // Reconstruct
+  const lis: number[] = [];
+  for (let k = maxIdx; k !== -1; k = prev[k]) {
+    lis.push(arr[k]);
+  }
+  lis.reverse();
+  return lis;
+}
+# Save the file as lis.ts, then compile & run:
+tsc lis.ts && node lis.js
+Input : [ 10, 9, 2, 5, 3, 7, 101, 18 ]
+LIS   : [ 2, 3, 7, 101 ]
+Length: 4
+---
+Input : [ 0, 1, 0, 3, 2, 3 ]
+LIS   : [ 0, 1, 2, 3 ]
+Length: 4
+---
+...
+import { longestIncreasingSubsequence } from './lis';
+
+// Example: find LIS of a user‑provided array
+function handleUserArray(input: unknown) {
+  if (!Array.isArray(input) || !input.every(v => typeof v === 'number')) {
+    throw new Error('Expected an array of numbers');
+  }
+  const lis = longestIncreasingSubsequence(input as number[]);
+  console.log('Longest increasing subsequence:', lis);
+}
+export const lisLength = (arr: number[]) => longestIncreasingSubsequence(arr).length;
