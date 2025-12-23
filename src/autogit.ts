@@ -1,199 +1,273 @@
-interface HashTableEntry<K, V> {
-  key: K;
-  value: V;
+interface Graph {
+  [node: string]: { [neighbor: string]: number };
 }
 
-class HashTable<K, V> {
-  private table: Array<Array<HashTableEntry<K, V>>>;
-  private size: number;
-  private count: number;
+interface Distances {
+  [node: string]: number;
+}
 
-  constructor(size: number = 100) {
-    this.size = size;
-    this.count = 0;
-    this.table = new Array(size);
-    for (let i = 0; i < size; i++) {
-      this.table[i] = [];
-    }
+interface Previous {
+  [node: string]: string | null;
+}
+
+class PriorityQueue<T> {
+  private elements: { priority: number; value: T }[] = [];
+
+  enqueue(value: T, priority: number): void {
+    this.elements.push({ value, priority });
+    this.elements.sort((a, b) => a.priority - b.priority);
   }
 
-  // Hash function
-  private hash(key: K): number {
-    const keyString = String(key);
-    let hash = 0;
-    for (let i = 0; i < keyString.length; i++) {
-      hash = (hash << 5) - hash + keyString.charCodeAt(i);
-      hash |= 0; // Convert to 32-bit integer
-    }
-    return Math.abs(hash) % this.size;
+  dequeue(): T | null {
+    return this.elements.shift()?.value || null;
   }
 
-  // Insert or update a key-value pair
-  set(key: K, value: V): void {
-    const index = this.hash(key);
-    const bucket = this.table[index];
-    
-    // Check if key already exists
-    const existingIndex = bucket.findIndex(entry => entry.key === key);
-    if (existingIndex !== -1) {
-      bucket[existingIndex].value = value;
-    } else {
-      bucket.push({ key, value });
-      this.count++;
+  isEmpty(): boolean {
+    return this.elements.length === 0;
+  }
+}
+
+function dijkstra(graph: Graph, start: string): { distances: Distances; previous: Previous } {
+  const distances: Distances = {};
+  const previous: Previous = {};
+  const queue = new PriorityQueue<string>();
+
+  // Initialize distances and previous
+  Object.keys(graph).forEach(node => {
+    distances[node] = node === start ? 0 : Infinity;
+    previous[node] = null;
+    queue.enqueue(node, distances[node]);
+  });
+
+  while (!queue.isEmpty()) {
+    const currentNode = queue.dequeue();
+    if (!currentNode || distances[currentNode] === Infinity) continue;
+
+    const neighbors = graph[currentNode];
+    for (const neighbor in neighbors) {
+      const distance = distances[currentNode] + neighbors[neighbor];
       
-      // Resize if load factor exceeds 0.7
-      if (this.count / this.size > 0.7) {
-        this.resize(this.size * 2);
+      if (distance < distances[neighbor]) {
+        distances[neighbor] = distance;
+        previous[neighbor] = currentNode;
+        queue.enqueue(neighbor, distance);
       }
     }
   }
 
-  // Get value by key
-  get(key: K): V | undefined {
-    const index = this.hash(key);
-    const bucket = this.table[index];
-    const entry = bucket.find(entry => entry.key === key);
-    return entry ? entry.value : undefined;
+  return { distances, previous };
+}
+
+function getShortestPath(previous: Previous, end: string): string[] {
+  const path: string[] = [];
+  let current: string | null = end;
+
+  while (current !== null) {
+    path.unshift(current);
+    current = previous[current];
   }
 
-  // Check if key exists
-  has(key: K): boolean {
-    return this.get(key) !== undefined;
+  return path;
+}
+type NodeId = string;
+type Weight = number;
+
+interface Edge {
+  to: NodeId;
+  weight: Weight;
+}
+
+interface GraphNode {
+  id: NodeId;
+  edges: Edge[];
+}
+
+interface Graph {
+  nodes: Map<NodeId, GraphNode>;
+}
+
+interface DijkstraResult {
+  distances: Map<NodeId, number>;
+  previous: Map<NodeId, NodeId | null>;
+}
+
+class PriorityQueue<T> {
+  private heap: { element: T; priority: number }[] = [];
+
+  enqueue(element: T, priority: number): void {
+    this.heap.push({ element, priority });
+    this.bubbleUp(this.heap.length - 1);
   }
 
-  // Delete a key-value pair
-  delete(key: K): boolean {
-    const index = this.hash(key);
-    const bucket = this.table[index];
-    const entryIndex = bucket.findIndex(entry => entry.key === key);
+  dequeue(): T | null {
+    if (this.heap.length === 0) return null;
     
-    if (entryIndex !== -1) {
-      bucket.splice(entryIndex, 1);
-      this.count--;
-      return true;
-    }
-    return false;
-  }
-
-  // Get all keys
-  keys(): K[] {
-    const keys: K[] = [];
-    for (const bucket of this.table) {
-      for (const entry of bucket) {
-        keys.push(entry.key);
-      }
-    }
-    return keys;
-  }
-
-  // Get all values
-  values(): V[] {
-    const values: V[] = [];
-    for (const bucket of this.table) {
-      for (const entry of bucket) {
-        values.push(entry.value);
-      }
-    }
-    return values;
-  }
-
-  // Get entries (key-value pairs)
-  entries(): [K, V][] {
-    const entries: [K, V][] = [];
-    for (const bucket of this.table) {
-      for (const entry of bucket) {
-        entries.push([entry.key, entry.value]);
-      }
-    }
-    return entries;
-  }
-
-  // Get number of elements
-  get length(): number {
-    return this.count;
-  }
-
-  // Clear the hash table
-  clear(): void {
-    this.table = new Array(this.size);
-    for (let i = 0; i < this.size; i++) {
-      this.table[i] = [];
-    }
-    this.count = 0;
-  }
-
-  // Resize the hash table
-  private resize(newSize: number): void {
-    const oldTable = this.table;
-    this.size = newSize;
-    this.table = new Array(newSize);
-    this.count = 0;
+    const min = this.heap[0];
+    const end = this.heap.pop();
     
-    for (let i = 0; i < newSize; i++) {
-      this.table[i] = [];
+    if (this.heap.length > 0 && end) {
+      this.heap[0] = end;
+      this.sinkDown(0);
     }
     
-    // Rehash all entries
-    for (const bucket of oldTable) {
-      for (const entry of bucket) {
-        this.set(entry.key, entry.value);
+    return min.element;
+  }
+
+  isEmpty(): boolean {
+    return this.heap.length === 0;
+  }
+
+  private bubbleUp(index: number): void {
+    const element = this.heap[index];
+    
+    while (index > 0) {
+      const parentIndex = Math.floor((index - 1) / 2);
+      const parent = this.heap[parentIndex];
+      
+      if (element.priority >= parent.priority) break;
+      
+      this.heap[parentIndex] = element;
+      this.heap[index] = parent;
+      index = parentIndex;
+    }
+  }
+
+  private sinkDown(index: number): void {
+    const length = this.heap.length;
+    const element = this.heap[index];
+    
+    while (true) {
+      let leftChildIndex = 2 * index + 1;
+      let rightChildIndex = 2 * index + 2;
+      let swap: number | null = null;
+      let leftChild, rightChild;
+      
+      if (leftChildIndex < length) {
+        leftChild = this.heap[leftChildIndex];
+        if (leftChild.priority < element.priority) {
+          swap = leftChildIndex;
+        }
       }
+      
+      if (rightChildIndex < length) {
+        rightChild = this.heap[rightChildIndex];
+        if (
+          (swap === null && rightChild.priority < element.priority) ||
+          (swap !== null && rightChild.priority < (leftChild?.priority || Infinity))
+        ) {
+          swap = rightChildIndex;
+        }
+      }
+      
+      if (swap === null) break;
+      
+      this.heap[index] = this.heap[swap];
+      this.heap[swap] = element;
+      index = swap;
     }
   }
 }
-// Create a hash table
-const hashTable = new HashTable<string, number>();
 
-// Set values
-hashTable.set("apple", 5);
-hashTable.set("banana", 10);
-hashTable.set("orange", 7);
+class DijkstraAlgorithm {
+  constructor(private graph: Graph) {}
 
-// Get values
-console.log(hashTable.get("apple")); // 5
-console.log(hashTable.get("banana")); // 10
-console.log(hashTable.get("grape")); // undefined
-
-// Check existence
-console.log(hashTable.has("orange")); // true
-console.log(hashTable.has("grape")); // false
-
-// Delete
-hashTable.delete("banana");
-console.log(hashTable.has("banana")); // false
-
-// Get all keys and values
-console.log(hashTable.keys()); // ["apple", "orange"]
-console.log(hashTable.values()); // [5, 7]
-
-// Iterate through entries
-for (const [key, value] of hashTable.entries()) {
-  console.log(`${key}: ${value}`);
-}
-
-// Get size
-console.log(hashTable.length); // 2
-class EnhancedHashTable<K, V> extends HashTable<K, V> {
-  protected hash(key: K): number {
-    if (typeof key === 'number') {
-      return Math.abs(key) % this.size;
-    }
+  findShortestPath(start: NodeId, end: NodeId): { path: NodeId[]; distance: number } {
+    const result = this.calculate(start);
+    const path = this.reconstructPath(result.previous, end);
+    const distance = result.distances.get(end) ?? Infinity;
     
-    if (typeof key === 'string') {
-      let hash = 5381;
-      for (let i = 0; i < key.length; i++) {
-        hash = (hash << 5) + hash + key.charCodeAt(i);
-      }
-      return Math.abs(hash) % this.size;
-    }
-    
-    // For objects, use JSON string representation
-    const keyString = JSON.stringify(key);
-    let hash = 0;
-    for (let i = 0; i < keyString.length; i++) {
-      hash = (hash << 5) - hash + keyString.charCodeAt(i);
-      hash |= 0;
-    }
-    return Math.abs(hash) % this.size;
+    return { path, distance };
   }
+
+  calculate(start: NodeId): DijkstraResult {
+    const distances = new Map<NodeId, number>();
+    const previous = new Map<NodeId, NodeId | null>();
+    const queue = new PriorityQueue<NodeId>();
+
+    // Initialize
+    this.graph.nodes.forEach((node, id) => {
+      distances.set(id, id === start ? 0 : Infinity);
+      previous.set(id, null);
+      queue.enqueue(id, distances.get(id)!);
+    });
+
+    while (!queue.isEmpty()) {
+      const currentNode = queue.dequeue();
+      if (!currentNode || distances.get(currentNode) === Infinity) continue;
+
+      const currentNodeData = this.graph.nodes.get(currentNode);
+      if (!currentNodeData) continue;
+
+      for (const edge of currentNodeData.edges) {
+        const newDistance = distances.get(currentNode)! + edge.weight;
+        const currentDistance = distances.get(edge.to) ?? Infinity;
+
+        if (newDistance < currentDistance) {
+          distances.set(edge.to, newDistance);
+          previous.set(edge.to, currentNode);
+          queue.enqueue(edge.to, newDistance);
+        }
+      }
+    }
+
+    return { distances, previous };
+  }
+
+  private reconstructPath(previous: Map<NodeId, NodeId | null>, end: NodeId): NodeId[] {
+    const path: NodeId[] = [];
+    let current: NodeId | null = end;
+
+    while (current !== null) {
+      path.unshift(current);
+      current = previous.get(current) ?? null;
+    }
+
+    return path[0] === end ? [] : path; // Return empty if no path found
+  }
+}
+// Create a graph
+const graph: Graph = {
+  nodes: new Map([
+    ['A', { id: 'A', edges: [{ to: 'B', weight: 4 }, { to: 'C', weight: 2 }] }],
+    ['B', { id: 'B', edges: [{ to: 'D', weight: 5 }, { to: 'E', weight: 3 }] }],
+    ['C', { id: 'C', edges: [{ to: 'B', weight: 1 }, { to: 'D', weight: 8 }] }],
+    ['D', { id: 'D', edges: [{ to: 'E', weight: 7 }] }],
+    ['E', { id: 'E', edges: [] }]
+  ])
+};
+
+// Use the algorithm
+const dijkstra = new DijkstraAlgorithm(graph);
+const result = dijkstra.findShortestPath('A', 'E');
+
+console.log('Shortest path:', result.path); // ['A', 'C', 'B', 'E']
+console.log('Distance:', result.distance); // 6
+function simpleDijkstra(graph: Record<string, Record<string, number>>, start: string) {
+  const distances: Record<string, number> = {};
+  const visited = new Set<string>();
+  const nodes = Object.keys(graph);
+
+  // Initialize distances
+  nodes.forEach(node => {
+    distances[node] = node === start ? 0 : Infinity;
+  });
+
+  while (visited.size < nodes.length) {
+    const currentNode = nodes
+      .filter(node => !visited.has(node))
+      .reduce((minNode, node) => 
+        distances[node] < distances[minNode] ? node : minNode, nodes[0]
+      );
+
+    visited.add(currentNode);
+
+    for (const neighbor in graph[currentNode]) {
+      const distance = distances[currentNode] + graph[currentNode][neighbor];
+      if (distance < distances[neighbor]) {
+        distances[neighbor] = distance;
+      }
+    }
+  }
+
+  return distances;
 }
