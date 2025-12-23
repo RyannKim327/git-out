@@ -1,66 +1,148 @@
-function countCharacter(text: string, char: string): number {
-  return text.split(char).length - 1;
+// ---------------------------------------------
+// 1.  Node definition
+// ---------------------------------------------
+class TreeNode<T> {
+  constructor(
+    public key: number,      // BST ordering key
+    public value: T,         // satellite data
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
 
-// Usage
-const text = "hello world";
-const count = countCharacter(text, "l");
-console.log(count); // Output: 3
-function countCharacterRegex(text: string, char: string): number {
-  const regex = new RegExp(char, "g");
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
-}
+// ---------------------------------------------
+// 2.  BST class
+// ---------------------------------------------
+export class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
+  private _size = 0;
 
-// Usage
-const text = "hello world";
-const count = countCharacterRegex(text, "l");
-console.log(count); // Output: 3
-function countCharacterLoop(text: string, char: string): number {
-  let count = 0;
-  for (let i = 0; i < text.length; i++) {
-    if (text[i] === char) {
-      count++;
+  // ---------- basic queries ----------
+  get size(): number { return this._size; }
+  isEmpty(): boolean { return this._size === 0; }
+
+  // ---------- search ----------
+  has(key: number): boolean {
+    return this._search(this.root, key) !== null;
+  }
+
+  get(key: number): T | undefined {
+    const node = this._search(this.root, key);
+    return node ? node.value : undefined;
+  }
+
+  // ---------- insertion ----------
+  insert(key: number, value: T): this {
+    this.root = this._insert(this.root, key, value);
+    return this;
+  }
+
+  // ---------- deletion ----------
+  delete(key: number): boolean {
+    const oldSize = this._size;
+    this.root = this._delete(this.root, key);
+    return this._size < oldSize;
+  }
+
+  // ---------- traversal ----------
+  *inOrder(): Iterable<[number, T]> {
+    function* walk(n: TreeNode<T> | null): Generator<[number, T]> {
+      if (!n) return;
+      yield* walk(n.left);
+      yield [n.key, n.value];
+      yield* walk(n.right);
     }
+    yield* walk(this.root);
   }
-  return count;
-}
 
-// Usage
-const text = "hello world";
-const count = countCharacterLoop(text, "l");
-console.log(count); // Output: 3
-function countCharacterReduce(text: string, char: string): number {
-  return [...text].reduce((count, currentChar) => {
-    return currentChar === char ? count + 1 : count;
-  }, 0);
-}
-
-// Usage
-const text = "hello world";
-const count = countCharacterReduce(text, "l");
-console.log(count); // Output: 3
-function countCharacterCaseInsensitive(text: string, char: string): number {
-  const lowerText = text.toLowerCase();
-  const lowerChar = char.toLowerCase();
-  return lowerText.split(lowerChar).length - 1;
-}
-
-// Usage
-const text = "Hello World";
-const count = countCharacterCaseInsensitive(text, "h");
-console.log(count); // Output: 1
-function countOccurrences(text: string, searchChar: string): number {
-  if (searchChar.length !== 1) {
-    throw new Error("Search character must be a single character");
+  // ---------- utilities ----------
+  min(): [number, T] | undefined {
+    const node = this._min(this.root);
+    return node ? [node.key, node.value] : undefined;
   }
-  
-  return text.split(searchChar).length - 1;
+
+  max(): [number, T] | undefined {
+    const node = this._max(this.root);
+    return node ? [node.key, node.value] : undefined;
+  }
+
+  clear(): void {
+    this.root = null;
+    this._size = 0;
+  }
+
+  // ---------- private helpers ----------
+  private _search(node: TreeNode<T> | null, key: number): TreeNode<T> | null {
+    if (!node) return null;
+    if (key === node.key) return node;
+    return key < node.key
+      ? this._search(node.left, key)
+      : this._search(node.right, key);
+  }
+
+  private _insert(node: TreeNode<T> | null, key: number, value: T): TreeNode<T> {
+    if (!node) {
+      this._size++;
+      return new TreeNode(key, value);
+    }
+    if (key === node.key) {
+      node.value = value;          // update semantics
+    } else if (key < node.key) {
+      node.left = this._insert(node.left, key, value);
+    } else {
+      node.right = this._insert(node.right, key, value);
+    }
+    return node;
+  }
+
+  private _delete(node: TreeNode<T> | null, key: number): TreeNode<T> | null {
+    if (!node) return null;
+
+    if (key < node.key) {
+      node.left = this._delete(node.left, key);
+    } else if (key > node.key) {
+      node.right = this._delete(node.right, key);
+    } else {
+      // node to be deleted found
+      this._size--;
+      // 0 or 1 child
+      if (!node.left) return node.right;
+      if (!node.right) return node.left;
+      // 2 children: replace with in-order successor (smallest in right subtree)
+      const successor = this._min(node.right)!;
+      node.key = successor.key;
+      node.value = successor.value;
+      node.right = this._delete(node.right, successor.key);
+    }
+    return node;
+  }
+
+  private _min(node: TreeNode<T> | null): TreeNode<T> | null {
+    while (node?.left) node = node.left;
+    return node;
+  }
+
+  private _max(node: TreeNode<T> | null): TreeNode<T> | null {
+    while (node?.right) node = node.right;
+    return node;
+  }
 }
 
-// Usage examples
-const exampleText = "TypeScript is awesome!";
+// ---------------------------------------------
+// 3.  Usage examples
+// ---------------------------------------------
+if (import.meta.vitest) {
+  const bst = new BinarySearchTree<string>();
 
-console.log(countOccurrences(exampleText, "e")); // Output: 3
-console.log(countOccurrences(exampleText, "s")); // Output: 2
-console.log(countOccurrences(exampleText, "z")); // Output: 0
+  bst.insert(5, 'five')
+     .insert(3, 'three')
+     .insert(7, 'seven')
+     .insert(4, 'four');
+
+  console.log([...bst.inOrder()]); // [ [3,'three'], [4,'four'], [5,'five'], [7,'seven'] ]
+
+  console.log(bst.get(4));         // 'four'
+  console.log(bst.delete(5));    // true
+  console.log(bst.size);           // 3
+  console.log(bst.min());          // [3, 'three']
+}
