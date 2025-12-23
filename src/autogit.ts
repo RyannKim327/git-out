@@ -1,115 +1,62 @@
-function maxSubarraySum(nums: number[]): number {
-    if (nums.length === 0) return 0;
-    
-    let maxSum = nums[0];
-    let currentSum = nums[0];
-    
-    for (let i = 1; i < nums.length; i++) {
-        // Either extend the existing subarray or start a new one
-        currentSum = Math.max(nums[i], currentSum + nums[i]);
-        maxSum = Math.max(maxSum, currentSum);
-    }
-    
-    return maxSum;
+function countCharacter(text: string, char: string): number {
+  return text.split(char).length - 1;
 }
 
-// Example usage
-const arr = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
-console.log(maxSubarraySum(arr)); // Output: 6 (subarray [4, -1, 2, 1])
-function maxSubarrayWithIndices(nums: number[]): { sum: number; start: number; end: number } {
-    if (nums.length === 0) return { sum: 0, start: 0, end: 0 };
-    
-    let maxSum = nums[0];
-    let currentSum = nums[0];
-    let start = 0, end = 0;
-    let tempStart = 0;
-    
-    for (let i = 1; i < nums.length; i++) {
-        if (nums[i] > currentSum + nums[i]) {
-            currentSum = nums[i];
-            tempStart = i;
-        } else {
-            currentSum += nums[i];
-        }
-        
-        if (currentSum > maxSum) {
-            maxSum = currentSum;
-            start = tempStart;
-            end = i;
-        }
-    }
-    
-    return { sum: maxSum, start, end };
+// Usage
+const result = countCharacter("hello world", "l");
+console.log(result); // Output: 3
+function countCharacterRegex(text: string, char: string): number {
+  const regex = new RegExp(char, "g");
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
 }
 
-// Example usage
-const result = maxSubarrayWithIndices([-2, 1, -3, 4, -1, 2, 1, -5, 4]);
-console.log(result); // { sum: 6, start: 3, end: 6 }
-function maxSubarraySumBruteForce(nums: number[]): number {
-    let maxSum = -Infinity;
-    
-    for (let i = 1; i <= nums.length; i++) {
-        for (let j = 0; j <= nums.length - i; j++) {
-            let currentSum = 0;
-            for (let k = j; k < j + i; k++) {
-                currentSum += nums[k];
-            }
-            maxSum = Math.max(maxSum, currentSum);
-        }
-    }
-    
-    return maxSum;
-}
-interface SubarrayResult {
-    sum: number;
-    subarray: number[];
-    indices: [number, number];
+// Usage
+const result = countCharacterRegex("hello world", "l");
+console.log(result); // Output: 3
+function countCharacterLoop(text: string, char: string): number {
+  let count = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === char) count++;
+  }
+  return count;
 }
 
-function findMaxSubarray(nums: number[]): SubarrayResult {
-    if (!Array.isArray(nums)) {
-        throw new Error('Input must be an array');
-    }
-    
-    if (nums.length === 0) {
-        return { sum: 0, subarray: [], indices: [0, 0] };
-    }
-    
-    let maxSum = nums[0];
-    let currentSum = nums[0];
-    let start = 0, end = 0;
-    let tempStart = 0;
-    
-    for (let i = 1; i < nums.length; i++) {
-        if (nums[i] > currentSum + nums[i]) {
-            currentSum = nums[i];
-            tempStart = i;
-        } else {
-            currentSum += nums[i];
-        }
-        
-        if (currentSum > maxSum) {
-            maxSum = currentSum;
-            start = tempStart;
-            end = i;
-        }
-    }
-    
-    const subarray = nums.slice(start, end + 1);
-    
-    return {
-        sum: maxSum,
-        subarray,
-        indices: [start, end]
-    };
+// Usage
+const result = countCharacterLoop("hello world", "l");
+console.log(result); // Output: 3
+function countCharacterReduce(text: string, char: string): number {
+  return [...text].reduce((count, currentChar) => 
+    currentChar === char ? count + 1 : count, 0);
 }
 
-// Example usage
-const result = findMaxSubarray([-2, 1, -3, 4, -1, 2, 1, -5, 4]);
-console.log(result);
-// Output: { sum: 6, subarray: [4, -1, 2, 1], indices: [3, 6] }
-// Test with different scenarios
-console.log(findMaxSubarray([])); // Empty array
-console.log(findMaxSubarray([-1, -2, -3])); // All negative numbers
-console.log(findMaxSubarray([5])); // Single element
-console.log(findMaxSubarray([1, 2, 3, 4, 5])); // All positive numbers
+// Usage
+const result = countCharacterReduce("hello world", "l");
+console.log(result); // Output: 3
+function countCharacterCaseInsensitive(text: string, char: string): number {
+  const lowerText = text.toLowerCase();
+  const lowerChar = char.toLowerCase();
+  return lowerText.split(lowerChar).length - 1;
+}
+
+// Usage
+const result = countCharacterCaseInsensitive("Hello World", "h");
+console.log(result); // Output: 1 (includes both 'H' and 'h')
+function countCharacter(
+  text: string, 
+  char: string, 
+  caseSensitive: boolean = true
+): number {
+  if (char.length !== 1) {
+    throw new Error("Character parameter must be a single character");
+  }
+  
+  const searchText = caseSensitive ? text : text.toLowerCase();
+  const searchChar = caseSensitive ? char : char.toLowerCase();
+  
+  return searchText.split(searchChar).length - 1;
+}
+
+// Usage examples
+console.log(countCharacter("Hello World", "l")); // 3
+console.log(countCharacter("Hello World", "h", false)); // 1 (case-insensitive)
