@@ -1,135 +1,159 @@
+stack ← [(startNode, depth = 0)]
+while stack not empty
+    (node, d) ← stack.pop()
+    if node == goal → success
+    if d == limit → continue   // do not expand deeper
+    for each child of node
+        push (child, d+1) onto stack
+fail
+/** A node identifier – can be a string, number, or any hashable type */
+type NodeId = string | number;
+
+/** Edge list for a directed (or undirected) graph */
+interface Graph {
+  /** adjacency list: node → array of neighbour nodes */
+  adjacency: Map<NodeId, NodeId[]>;
+}
+
+/** Helper to create a graph from a plain object literal */
+function buildGraph(edges: Record<NodeId, NodeId[]>): Graph {
+  const adjacency = new Map<NodeId, NodeId[]>();
+  for (const [src, dests] of Object.entries(edges)) {
+    adjacency.set(src, dests);
+  }
+  return { adjacency };
+}
 /**
- * Returns the longest increasing subsequence (LIS) of a numeric array.
+ * Depth‑Limited Search (iterative, stack‑based)
  *
- * @param arr - Input array of numbers (any order, may contain duplicates)
- * @returns An array containing one of the possible LIS (the subsequence itself)
- *
- * Complexity: O(n log n) time, O(n) extra space
+ * @param graph   The graph to search.
+ * @param start   Id of the start node.
+ * @param goal    Id of the goal node.
+ * @param limit   Maximum depth allowed (0 = only the start node).
+ * @param visited Optional Set to keep track of already‑expanded nodes.
+ *                If omitted the algorithm behaves like a *tree* search.
+ * @returns       An array representing the path from start → goal,
+ *                or null if the goal is not reachable within the limit.
  */
-export function longestIncreasingSubsequence(arr: number[]): number[] {
-  const n = arr.length;
-  if (n === 0) return [];
+function depthLimitedSearch(
+  graph: Graph,
+  start: NodeId,
+  goal: NodeId,
+  limit: number,
+  visited?: Set<NodeId>
+): NodeId[] | null {
+  // ---- sanity checks -------------------------------------------------
+  if (limit < 0) throw new Error('limit must be >= 0');
+  if (start === goal) return [start];
 
-  // `tails[i]` holds the index of the smallest possible tail
-  // of an increasing subsequence of length i+1.
-  const tails: number[] = [];
+  // ---- internal stack -------------------------------------------------
+  // Each entry stores: current node, depth, and the path taken so far.
+  type StackEntry = { node: NodeId; depth: number; path: NodeId[] };
+  const stack: StackEntry[] = [{ node: start, depth: 0, path: [start] }];
 
-  // `prevIdx[i]` stores the index of the predecessor of arr[i] in the LIS.
-  const prevIdx = new Array<number>(n).fill(-1);
+  // If the caller supplied a visited set we reuse it, otherwise we create a
+  // temporary one that lives only for this call (tree‑search semantics).
+  const closed = visited ?? new Set<NodeId>();
 
-  // Helper: binary search for the leftmost position >= target
-  const lowerBound = (target: number, end: number): number => {
-    let lo = 0;
-    let hi = end; // exclusive
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (arr[tails[mid]] < target) lo = mid + 1;
-      else hi = mid;
-    }
-    return lo;
-  };
+  while (stack.length > 0) {
+    const { node, depth, path } = stack.pop()!; // non‑empty guarantee
 
-  for (let i = 0; i < n; i++) {
-    // Find where arr[i] fits in the current tails
-    const pos = lowerBound(arr[i], tails.length);
+    // --------------------------------------------------- goal test
+    if (node === goal) return path;
 
-    // Record predecessor (only if we are not starting a new length‑1 subsequence)
-    if (pos > 0) {
-      prevIdx[i] = tails[pos - 1];
-    }
+    // --------------------------------------------------- depth cut‑off
+    if (depth === limit) continue; // do not expand deeper
 
-    // Update tails: either extend or replace
-    if (pos === tails.length) {
-      tails.push(i);
-    } else {
-      tails[pos] = i;
+    // --------------------------------------------------- graph expansion
+    const neighbours = graph.adjacency.get(node) ?? [];
+
+    // Push neighbours onto the stack.  We push them in *reverse* order
+    // so that the first neighbour in the adjacency list is explored first,
+    // mimicking the usual recursive DFS order.
+    for (let i = neighbours.length - 1; i >= 0; i--) {
+      const child = neighbours[i];
+
+      // For a *graph* search we avoid revisiting nodes that are already closed.
+      // For a *tree* search the caller can pass `undefined` for `visited`.
+      if (visited && closed.has(child)) continue;
+
+      // Record the node as closed *before* pushing it – this prevents
+      // duplicate pushes of the same node at the same depth.
+      if (visited) closed.add(child);
+
+      stack.push({ node: child, depth: depth + 1, path: [...path, child] });
     }
   }
 
-  // Reconstruct the LIS by walking backwards from the last index stored in tails
-  const lis: number[] = [];
-  let k = tails[tails.length - 1];
-  while (k !== -1) {
-    lis.push(arr[k]);
-    k = prevIdx[k];
-  }
-  lis.reverse(); // we built it backwards
+  // --------------------------------------------------- failure
+  return null;
+}
+// Define a simple directed graph
+const rawEdges = {
+  A: ['B', 'C'],
+  B: ['D', 'E'],
+  C: ['F'],
+  D: [],
+  E: ['G'],
+  F: [],
+  G: [],
+};
 
-  return lis;
+const graph = buildGraph(rawEdges);
+
+// -------------- 1️⃣  Simple DLS (tree‑search) -----------------
+const limit = 2; // allow at most 2 edges from the start
+const path1 = depthLimitedSearch(graph, 'A', 'G', limit);
+console.log('Tree‑search, limit=2 →', path1); // → null (G is depth 3)
+
+// -------------- 2️⃣  DLS with a visited set (graph‑search) -----
+const visited = new Set<NodeId>();
+const path2 = depthLimitedSearch(graph, 'A', 'G', 3, visited);
+console.log('Graph‑search, limit=3 →', path2); // → [ 'A', 'B', 'E', 'G' ]
+
+// -------------- 3️⃣  Using DLS inside Iterative Deepening -----
+function iterativeDeepeningSearch(
+  graph: Graph,
+  start: NodeId,
+  goal: NodeId,
+  maxDepth: number
+): NodeId[] | null {
+  for (let depth = 0; depth <= maxDepth; depth++) {
+    const result = depthLimitedSearch(graph, start, goal, depth);
+    if (result) return result; // found at the shallowest depth
+  }
+  return null; // not found within maxDepth
 }
 
-/* --------------------------------------------------------------
-   Example usage / simple test harness
-   -------------------------------------------------------------- */
-if (require.main === module) {
-  // Run a quick demo when the file is executed directly (node file.js)
-  const examples: number[][] = [
-    [10, 9, 2, 5, 3, 7, 101, 18],
-    [0, 1, 0, 3, 2, 3],
-    [7, 7, 7, 7, 7],
-    [],
-    [1, 2, 3, 4, 5],
-    [5, 4, 3, 2, 1],
-    [3, 4, -1, 0, 6, 2, 3],
-  ];
+const idsPath = iterativeDeepeningSearch(graph, 'A', 'G', 5);
+console.log('IDS →', idsPath); // → [ 'A', 'B', 'E', 'G' ]
+Tree‑search, limit=2 → null
+Graph‑search, limit=3 → [ 'A', 'B', 'E', 'G' ]
+IDS → [ 'A', 'B', 'E', 'G' ]
+type NodeId = string | number;
+type Graph = Map<NodeId, NodeId[]>;
 
-  for (const arr of examples) {
-    console.log('Input :', arr);
-    console.log('LIS   :', longestIncreasingSubsequence(arr));
-    console.log('Length:', longestIncreasingSubsequence(arr).length);
-    console.log('---');
-  }
-}
-export function lisDP(arr: number[]): number[] {
-  const n = arr.length;
-  if (n === 0) return [];
+function dlsIterative(
+  graph: Graph,
+  start: NodeId,
+  goal: NodeId,
+  limit: number,
+  visited = new Set<NodeId>()
+): NodeId[] | null {
+  const stack: { n: NodeId; d: number; p: NodeId[] }[] = [{ n: start, d: 0, p: [start] }];
+  visited.add(start);
 
-  const dp = new Array<number>(n).fill(1);      // length of LIS ending at i
-  const prev = new Array<number>(n).fill(-1);   // predecessor index
+  while (stack.length) {
+    const { n, d, p } = stack.pop()!;
+    if (n === goal) return p;
+    if (d === limit) continue;
 
-  let maxLen = 1;
-  let maxIdx = 0;
-
-  for (let i = 1; i < n; i++) {
-    for (let j = 0; j < i; j++) {
-      if (arr[j] < arr[i] && dp[j] + 1 > dp[i]) {
-        dp[i] = dp[j] + 1;
-        prev[i] = j;
+    for (const child of (graph.get(n) ?? [])) {
+      if (!visited.has(child)) {
+        visited.add(child);
+        stack.push({ n: child, d: d + 1, p: [...p, child] });
       }
     }
-    if (dp[i] > maxLen) {
-      maxLen = dp[i];
-      maxIdx = i;
-    }
   }
-
-  // Reconstruct
-  const lis: number[] = [];
-  for (let k = maxIdx; k !== -1; k = prev[k]) {
-    lis.push(arr[k]);
-  }
-  lis.reverse();
-  return lis;
+  return null;
 }
-# Save the file as lis.ts, then compile & run:
-tsc lis.ts && node lis.js
-Input : [ 10, 9, 2, 5, 3, 7, 101, 18 ]
-LIS   : [ 2, 3, 7, 101 ]
-Length: 4
----
-Input : [ 0, 1, 0, 3, 2, 3 ]
-LIS   : [ 0, 1, 2, 3 ]
-Length: 4
----
-...
-import { longestIncreasingSubsequence } from './lis';
-
-// Example: find LIS of a user‑provided array
-function handleUserArray(input: unknown) {
-  if (!Array.isArray(input) || !input.every(v => typeof v === 'number')) {
-    throw new Error('Expected an array of numbers');
-  }
-  const lis = longestIncreasingSubsequence(input as number[]);
-  console.log('Longest increasing subsequence:', lis);
-}
-export const lisLength = (arr: number[]) => longestIncreasingSubsequence(arr).length;
