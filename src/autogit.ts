@@ -1,144 +1,69 @@
-interface TreeNode {
-    val: number;
-    left: TreeNode | null;
-    right: TreeNode | null;
+function findCommonElements<T>(arr1: T[], arr2: T[]): T[] {
+  return arr1.filter(item => arr2.includes(item));
 }
 
-function maxDepth(root: TreeNode | null): number {
-    if (root === null) {
-        return 0;
-    }
-    
-    const leftDepth = maxDepth(root.left);
-    const rightDepth = maxDepth(root.right);
-    
-    return Math.max(leftDepth, rightDepth) + 1;
-}
-class TreeNode<T> {
-    constructor(
-        public value: T,
-        public left: TreeNode<T> | null = null,
-        public right: TreeNode<T> | null = null
-    ) {}
+// Example usage
+const array1 = [1, 2, 3, 4, 5];
+const array2 = [3, 4, 5, 6, 7];
+const commonElements = findCommonElements(array1, array2);
+console.log(commonElements); // [3, 4, 5]
+function findCommonElementsSet<T>(arr1: T[], arr2: T[]): T[] {
+  const set = new Set(arr2);
+  return arr1.filter(item => set.has(item));
 }
 
-class BinaryTree<T> {
-    constructor(public root: TreeNode<T> | null = null) {}
-
-    // Recursive approach
-    maxDepthRecursive(node: TreeNode<T> | null = this.root): number {
-        if (node === null) {
-            return 0;
-        }
-        
-        const leftDepth = this.maxDepthRecursive(node.left);
-        const rightDepth = this.maxDepthRecursive(node.right);
-        
-        return Math.max(leftDepth, rightDepth) + 1;
+// Example usage
+const commonElements = findCommonElementsSet(array1, array2);
+console.log(commonElements); // [3, 4, 5]
+function findCommonElementsReduce<T>(arr1: T[], arr2: T[]): T[] {
+  return arr1.reduce((common: T[], item) => {
+    if (arr2.includes(item)) {
+      common.push(item);
     }
-
-    // Iterative BFS approach
-    maxDepthBFS(): number {
-        if (this.root === null) {
-            return 0;
-        }
-        
-        let depth = 0;
-        const queue: TreeNode<T>[] = [this.root];
-        
-        while (queue.length > 0) {
-            const levelSize = queue.length;
-            
-            for (let i = 0; i < levelSize; i++) {
-                const currentNode = queue.shift()!;
-                
-                if (currentNode.left !== null) {
-                    queue.push(currentNode.left);
-                }
-                if (currentNode.right !== null) {
-                    queue.push(currentNode.right);
-                }
-            }
-            
-            depth++;
-        }
-        
-        return depth;
-    }
-
-    // Iterative DFS approach
-    maxDepthDFS(): number {
-        if (this.root === null) {
-            return 0;
-        }
-        
-        let maxDepth = 0;
-        const stack: { node: TreeNode<T>; depth: number }[] = [{ node: this.root, depth: 1 }];
-        
-        while (stack.length > 0) {
-            const { node, depth } = stack.pop()!;
-            maxDepth = Math.max(maxDepth, depth);
-            
-            if (node.right !== null) {
-                stack.push({ node: node.right, depth: depth + 1 });
-            }
-            if (node.left !== null) {
-                stack.push({ node: node.left, depth: depth + 1 });
-            }
-        }
-        
-        return maxDepth;
-    }
+    return common;
+  }, []);
 }
-type Tree<T> = {
-    value: T;
-    left: Tree<T> | null;
-    right: Tree<T> | null;
-} | null;
+interface User {
+  id: number;
+  name: string;
+}
 
-const maxDepthFunctional = <T>(tree: Tree<T>): number => {
-    if (tree === null) return 0;
-    
-    return 1 + Math.max(
-        maxDepthFunctional(tree.left),
-        maxDepthFunctional(tree.right)
+function findCommonObjects(arr1: User[], arr2: User[]): User[] {
+  return arr1.filter(item1 => 
+    arr2.some(item2 => item2.id === item1.id)
+  );
+}
+
+// Example usage
+const users1 = [{id: 1, name: 'Alice'}, {id: 2, name: 'Bob'}];
+const users2 = [{id: 2, name: 'Bob'}, {id: 3, name: 'Charlie'}];
+const commonUsers = findCommonObjects(users1, users2);
+console.log(commonUsers); // [{id: 2, name: 'Bob'}]
+function findCommonElements<T>(
+  arr1: T[], 
+  arr2: T[], 
+  comparator?: (a: T, b: T) => boolean
+): T[] {
+  if (comparator) {
+    return arr1.filter(item1 => 
+      arr2.some(item2 => comparator(item1, item2))
     );
-};
+  }
+  
+  const set = new Set(arr2);
+  return arr1.filter(item => set.has(item));
+}
 
-// One-liner version
-const maxDepthOneLiner = <T>(tree: Tree<T>): number => 
-    tree === null ? 0 : 1 + Math.max(
-        maxDepthOneLiner(tree.left), 
-        maxDepthOneLiner(tree.right)
-    );
-// Create a sample tree
-const tree = new BinaryTree<number>();
-tree.root = new TreeNode(1);
-tree.root.left = new TreeNode(2);
-tree.root.right = new TreeNode(3);
-tree.root.left.left = new TreeNode(4);
-tree.root.left.right = new TreeNode(5);
-tree.root.right.right = new TreeNode(6);
-tree.root.left.left.left = new TreeNode(7);
+// Usage with primitive types
+const numbers1 = [1, 2, 3, 4];
+const numbers2 = [3, 4, 5, 6];
+const commonNumbers = findCommonElements(numbers1, numbers2);
 
-// Test all methods
-console.log("Recursive depth:", tree.maxDepthRecursive());     // Output: 4
-console.log("BFS depth:", tree.maxDepthBFS());               // Output: 4
-console.log("DFS depth:", tree.maxDepthDFS());               // Output: 4
-
-// Using functional approach
-const functionalTree: Tree<number> = {
-    value: 1,
-    left: {
-        value: 2,
-        left: { value: 4, left: { value: 7, left: null, right: null }, right: null },
-        right: { value: 5, left: null, right: null }
-    },
-    right: {
-        value: 3,
-        left: null,
-        right: { value: 6, left: null, right: null }
-    }
-};
-
-console.log("Functional depth:", maxDepthFunctional(functionalTree)); // Output: 4
+// Usage with custom objects
+const objects1 = [{id: 1}, {id: 2}];
+const objects2 = [{id: 2}, {id: 3}];
+const commonObjects = findCommonElements(
+  objects1, 
+  objects2, 
+  (a, b) => a.id === b.id
+);
