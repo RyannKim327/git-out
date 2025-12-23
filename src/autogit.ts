@@ -1,215 +1,240 @@
-function radixSort(arr: number[]): number[] {
-    if (arr.length <= 1) return arr;
-    
-    // Find the maximum number to know number of digits
-    const max = Math.max(...arr);
-    
-    // Do counting sort for every digit
-    for (let exp = 1; Math.floor(max / exp) > 0; exp *= 10) {
-        countingSort(arr, exp);
-    }
-    
-    return arr;
+interface Graph<T> {
+  getNeighbors(node: T): T[];
 }
 
-function countingSort(arr: number[], exp: number): void {
-    const n = arr.length;
-    const output = new Array(n);
-    const count = new Array(10).fill(0);
-    
-    // Store count of occurrences in count[]
-    for (let i = 0; i < n; i++) {
-        const digit = Math.floor(arr[i] / exp) % 10;
-        count[digit]++;
-    }
-    
-    // Change count[i] so that count[i] contains actual
-    // position of this digit in output[]
-    for (let i = 1; i < 10; i++) {
-        count[i] += count[i - 1];
-    }
-    
-    // Build the output array
-    for (let i = n - 1; i >= 0; i--) {
-        const digit = Math.floor(arr[i] / exp) % 10;
-        output[count[digit] - 1] = arr[i];
-        count[digit]--;
-    }
-    
-    // Copy the output array to arr[]
-    for (let i = 0; i < n; i++) {
-        arr[i] = output[i];
-    }
+interface SearchResult<T> {
+  path: T[];
+  visited: Set<T>;
 }
 
-// Usage
-const numbers = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log(radixSort([...numbers])); // [2, 24, 45, 66, 75, 90, 170, 802]
-interface RadixSortable {
-    value: number;
-    original?: any; // For preserving original objects
-}
+class BidirectionalSearch<T> {
+  constructor(private graph: Graph<T>) {}
 
-function radixSortGeneric<T>(
-    arr: T[],
-    getKey: (item: T) => number = (item: T) => item as unknown as number
-): T[] {
-    if (arr.length <= 1) return arr;
-    
-    const items: RadixSortable[] = arr.map(item => ({
-        value: getKey(item),
-        original: item
-    }));
-    
-    const max = Math.max(...items.map(item => item.value));
-    
-    for (let exp = 1; Math.floor(max / exp) > 0; exp *= 10) {
-        countingSortGeneric(items, exp);
+  search(start: T, goal: T): SearchResult<T> {
+    if (start === goal) {
+      return { path: [start], visited: new Set([start]) };
     }
-    
-    return items.map(item => item.original as T);
-}
 
-function countingSortGeneric(arr: RadixSortable[], exp: number): void {
-    const n = arr.length;
-    const output = new Array<RadixSortable>(n);
-    const count = new Array(10).fill(0);
+    // Queues for BFS from both directions
+    const queueStart: T[] = [start];
+    const queueGoal: T[] = [goal];
     
-    for (let i = 0; i < n; i++) {
-        const digit = Math.floor(arr[i].value / exp) % 10;
-        count[digit]++;
-    }
+    // Visited nodes and parent pointers for both directions
+    const visitedStart = new Map<T, T>();
+    const visitedGoal = new Map<T, T>();
     
-    for (let i = 1; i < 10; i++) {
-        count[i] += count[i - 1];
-    }
-    
-    for (let i = n - 1; i >= 0; i--) {
-        const digit = Math.floor(arr[i].value / exp) % 10;
-        output[count[digit] - 1] = arr[i];
-        count[digit]--;
-    }
-    
-    for (let i = 0; i < n; i++) {
-        arr[i] = output[i];
-    }
-}
+    visitedStart.set(start, null!);
+    visitedGoal.set(goal, null!);
 
-// Usage examples
-const objects = [
-    { id: 1, score: 170 },
-    { id: 2, score: 45 },
-    { id: 3, score: 75 }
-];
+    const allVisited = new Set<T>([start, goal]);
 
-const sortedObjects = radixSortGeneric(objects, obj => obj.score);
-console.log(sortedObjects);
-function radixSortWithNegatives(arr: number[]): number[] {
-    if (arr.length <= 1) return arr;
-    
-    // Separate positive and negative numbers
-    const positives: number[] = [];
-    const negatives: number[] = [];
-    
-    for (const num of arr) {
-        if (num >= 0) {
-            positives.push(num);
-        } else {
-            negatives.push(-num); // Convert to positive for sorting
-        }
-    }
-    
-    // Sort both arrays
-    radixSort(positives);
-    radixSort(negatives);
-    
-    // Reverse negatives and convert back to negative
-    const sortedNegatives = negatives.reverse().map(n => -n);
-    
-    return [...sortedNegatives, ...positives];
-}
+    while (queueStart.length > 0 && queueGoal.length > 0) {
+      // Search from start direction
+      const meetingPoint = this.bfsStep(
+        queueStart, 
+        visitedStart, 
+        visitedGoal, 
+        this.graph.getNeighbors.bind(this.graph)
+      );
+      
+      if (meetingPoint) {
+        return {
+          path: this.constructPath(meetingPoint, visitedStart, visitedGoal),
+          visited: allVisited
+        };
+      }
 
-// Usage
-const mixedNumbers = [170, -45, 75, -90, 802, -24, 2, 66];
-console.log(radixSortWithNegatives(mixedNumbers));
-// [-90, -45, -24, 2, 66, 75, 170, 802]
-function optimizedRadixSort(arr: number[]): number[] {
-    if (arr.length <= 1) return arr;
-    
-    const max = Math.max(...arr);
-    const min = Math.min(...arr);
-    const hasNegatives = min < 0;
-    
-    if (hasNegatives) {
-        // Add offset to make all numbers positive
-        const offset = -min;
-        const adjusted = arr.map(n => n + offset);
-        const sorted = optimizedRadixSort(adjusted);
-        return sorted.map(n => n - offset);
+      // Search from goal direction
+      const meetingPoint2 = this.bfsStep(
+        queueGoal,
+        visitedGoal,
+        visitedStart,
+        this.graph.getNeighbors.bind(this.graph)
+      );
+      
+      if (meetingPoint2) {
+        return {
+          path: this.constructPath(meetingPoint2, visitedStart, visitedGoal),
+          visited: allVisited
+        };
+      }
     }
-    
-    const buckets: number[][] = Array.from({ length: 10 }, () => []);
-    let maxDigits = Math.floor(Math.log10(max)) + 1;
-    
-    for (let digit = 0; digit < maxDigits; digit++) {
-        // Distribute numbers into buckets
-        for (const num of arr) {
-            const currentDigit = Math.floor(num / Math.pow(10, digit)) % 10;
-            buckets[currentDigit].push(num);
+
+    return { path: [], visited: allVisited };
+  }
+
+  private bfsStep(
+    queue: T[],
+    visitedThis: Map<T, T>,
+    visitedOther: Map<T, T>,
+    getNeighbors: (node: T) => T[]
+  ): T | null {
+    if (queue.length === 0) return null;
+
+    const current = queue.shift()!;
+    const neighbors = getNeighbors(current);
+
+    for (const neighbor of neighbors) {
+      if (!visitedThis.has(neighbor)) {
+        visitedThis.set(neighbor, current);
+        
+        // Check if this node has been visited from the other direction
+        if (visitedOther.has(neighbor)) {
+          return neighbor; // Meeting point found
         }
         
-        // Collect numbers from buckets
-        arr = ([] as number[]).concat(...buckets);
-        
-        // Clear buckets for next iteration
-        buckets.forEach(bucket => bucket.length = 0);
+        queue.push(neighbor);
+      }
     }
+
+    return null;
+  }
+
+  private constructPath(
+    meetingPoint: T,
+    visitedStart: Map<T, T>,
+    visitedGoal: Map<T, T>
+  ): T[] {
+    // Construct path from start to meeting point
+    const pathFromStart: T[] = [];
+    let current: T = meetingPoint;
     
-    return arr;
+    while (current !== null!) {
+      pathFromStart.unshift(current);
+      current = visitedStart.get(current)!;
+    }
+
+    // Construct path from meeting point to goal
+    const pathFromGoal: T[] = [];
+    current = visitedGoal.get(meetingPoint)!;
+    
+    while (current !== null!) {
+      pathFromGoal.push(current);
+      current = visitedGoal.get(current)!;
+    }
+
+    return [...pathFromStart, ...pathFromGoal];
+  }
 }
-class RadixSorter {
-    static sort(arr: number[]): number[] {
-        return this.radixSort([...arr]);
+// Example graph implementation
+class SimpleGraph implements Graph<string> {
+  private adjacencyList: Map<string, string[]>;
+
+  constructor() {
+    this.adjacencyList = new Map();
+  }
+
+  addEdge(from: string, to: string): void {
+    if (!this.adjacencyList.has(from)) {
+      this.adjacencyList.set(from, []);
     }
-    
-    private static radixSort(arr: number[]): number[] {
-        if (arr.length <= 1) return arr;
-        
-        const max = Math.max(...arr);
-        
-        for (let exp = 1; Math.floor(max / exp) > 0; exp *= 10) {
-            this.countingSort(arr, exp);
-        }
-        
-        return arr;
+    if (!this.adjacencyList.has(to)) {
+      this.adjacencyList.set(to, []);
     }
-    
-    private static countingSort(arr: number[], exp: number): void {
-        const n = arr.length;
-        const output = new Array(n);
-        const count = new Array(10).fill(0);
-        
-        for (let i = 0; i < n; i++) {
-            const digit = Math.floor(arr[i] / exp) % 10;
-            count[digit]++;
-        }
-        
-        for (let i = 1; i < 10; i++) {
-            count[i] += count[i - 1];
-        }
-        
-        for (let i = n - 1; i >= 0; i--) {
-            const digit = Math.floor(arr[i] / exp) % 10;
-            output[count[digit] - 1] = arr[i];
-            count[digit]--;
-        }
-        
-        for (let i = 0; i < n; i++) {
-            arr[i] = output[i];
-        }
-    }
+    this.adjacencyList.get(from)!.push(to);
+    this.adjacencyList.get(to)!.push(from); // For undirected graph
+  }
+
+  getNeighbors(node: string): string[] {
+    return this.adjacencyList.get(node) || [];
+  }
 }
 
-// Usage
-const sorted = RadixSorter.sort([170, 45, 75, 90, 802, 24, 2, 66]);
-console.log(sorted);
+// Usage example
+const graph = new SimpleGraph();
+graph.addEdge('A', 'B');
+graph.addEdge('A', 'C');
+graph.addEdge('B', 'D');
+graph.addEdge('C', 'E');
+graph.addEdge('D', 'F');
+graph.addEdge('E', 'F');
+graph.addEdge('F', 'G');
+
+const bidirectionalSearch = new BidirectionalSearch<string>(graph);
+const result = bidirectionalSearch.search('A', 'G');
+
+console.log('Path:', result.path.join(' → '));
+console.log('Nodes visited:', Array.from(result.visited).join(', '));
+interface EnhancedSearchResult<T> extends SearchResult<T> {
+  meetingPoint: T;
+  iterations: number;
+  executionTime: number;
+}
+
+class EnhancedBidirectionalSearch<T> extends BidirectionalSearch<T> {
+  searchWithMetrics(start: T, goal: T): EnhancedSearchResult<T> {
+    const startTime = performance.now();
+    let iterations = 0;
+    
+    if (start === goal) {
+      const endTime = performance.now();
+      return {
+        path: [start],
+        visited: new Set([start]),
+        meetingPoint: start,
+        iterations: 1,
+        executionTime: endTime - startTime
+      };
+    }
+
+    const queueStart: T[] = [start];
+    const queueGoal: T[] = [goal];
+    const visitedStart = new Map<T, T>();
+    const visitedGoal = new Map<T, T>();
+    visitedStart.set(start, null!);
+    visitedGoal.set(goal, null!);
+    const allVisited = new Set<T>([start, goal]);
+
+    while (queueStart.length > 0 && queueGoal.length > 0) {
+      iterations++;
+      
+      // Alternate between directions for better balance
+      const meetingPoint = this.bfsStep(
+        queueStart, 
+        visitedStart, 
+        visitedGoal, 
+        this.graph.getNeighbors.bind(this.graph)
+      );
+      
+      if (meetingPoint) {
+        const endTime = performance.now();
+        return {
+          path: this.constructPath(meetingPoint, visitedStart, visitedGoal),
+          visited: allVisited,
+          meetingPoint,
+          iterations,
+          executionTime: endTime - startTime
+        };
+      }
+
+      iterations++;
+      
+      const meetingPoint2 = this.bfsStep(
+        queueGoal,
+        visitedGoal,
+        visitedStart,
+        this.graph.getNeighbors.bind(this.graph)
+      );
+      
+      if (meetingPoint2) {
+        const endTime = performance.now();
+        return {
+          path: this.constructPath(meetingPoint2, visitedStart, visitedGoal),
+          visited: allVisited,
+          meetingPoint: meetingPoint2,
+          iterations,
+          executionTime: endTime - startTime
+        };
+      }
+    }
+
+    const endTime = performance.now();
+    return {
+      path: [],
+      visited: allVisited,
+      meetingPoint: null!,
+      iterations,
+      executionTime: endTime - startTime
+    };
+  }
+}
