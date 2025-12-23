@@ -1,118 +1,245 @@
-/**
- * Returns the arithmetic mean of the supplied numbers.
- *
- * @param values - An array of numbers.
- * @returns The mean value, or NaN if the array is empty.
- */
-export function mean(values: number[]): number {
-  if (values.length === 0) return NaN; // or throw new Error('Empty array')
-  const sum = values.reduce((acc, cur) => acc + cur, 0);
-  return sum / values.length;
+import * as readline from 'readline';
+
+// Create readline interface
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+// Function to get user input
+function getUserInput(question: string): Promise<string> {
+  return new Promise((resolve) => {
+    rl.question(question, (answer: string) => {
+      resolve(answer);
+    });
+  });
 }
-import { mean } from "./mean";
 
-const data = [4, 8, 15, 16, 23, 42];
-console.log(mean(data)); // → 18
-/**
- * Calculates the mean while safely handling non‑numeric values.
- *
- * @param values - An array that may contain numbers or other types.
- * @returns The mean of the numeric entries, or NaN if none are valid.
- */
-export function safeMean(values: unknown[]): number {
-  const numericValues = values.filter(
-    (v): v is number => typeof v === "number" && !Number.isNaN(v)
-  );
-
-  if (numericValues.length === 0) return NaN; // or throw
-
-  const sum = numericValues.reduce((a, b) => a + b, 0);
-  return sum / numericValues.length;
-}
-const mixed = [10, "20", null, 30, undefined, 40];
-console.log(safeMean(mixed)); // → 26.666666666666668 (ignores non‑numbers)
-export class EmptyArrayError extends Error {
-  constructor() {
-    super("Cannot compute mean of an empty array");
-    this.name = "EmptyArrayError";
+// Main function
+async function main() {
+  try {
+    const name = await getUserInput('Enter your name: ');
+    const age = await getUserInput('Enter your age: ');
+    const email = await getUserInput('Enter your email: ');
+    
+    console.log('\n--- User Information ---');
+    console.log(`Name: ${name}`);
+    console.log(`Age: ${age}`);
+    console.log(`Email: ${email}`);
+    
+    rl.close();
+  } catch (error) {
+    console.error('Error reading input:', error);
   }
 }
 
-/**
- * Mean that throws on empty input.
- */
-export function meanOrThrow(values: number[]): number {
-  if (values.length === 0) throw new EmptyArrayError();
-  const sum = values.reduce((a, b) => a + b, 0);
-  return sum / values.length;
+main();
+// Define interface for form data
+interface UserFormData {
+  username: string;
+  email: string;
+  age: number;
+  subscription: boolean;
 }
-try {
-  console.log(meanOrThrow([]));
-} catch (e) {
-  console.error(e); // EmptyArrayError: Cannot compute mean of an empty array
+
+// Function to handle form submission
+function handleFormSubmit(event: Event): void {
+  event.preventDefault();
+  
+  const form = event.target as HTMLFormElement;
+  const formData = new FormData(form);
+  
+  const userData: UserFormData = {
+    username: formData.get('username') as string,
+    email: formData.get('email') as string,
+    age: parseInt(formData.get('age') as string),
+    subscription: formData.get('subscription') === 'on'
+  };
+  
+  validateAndProcessInput(userData);
 }
-const avg = (arr: number[]) => arr.reduce((s, n) => s + n, 0) / arr.length;
-// statistics.ts
-export class EmptyArrayError extends Error {
-  constructor() {
-    super("Cannot compute statistic on an empty array");
-    this.name = "EmptyArrayError";
+
+// Validate and process the input
+function validateAndProcessInput(data: UserFormData): void {
+  // Validation
+  if (data.username.length < 3) {
+    alert('Username must be at least 3 characters long');
+    return;
+  }
+  
+  if (data.age < 0 || data.age > 150) {
+    alert('Please enter a valid age');
+    return;
+  }
+  
+  // Process the data
+  console.log('Form submitted successfully!');
+  console.log('User Data:', data);
+  
+  // You could send this to an API, store it, etc.
+  sendToAPI(data);
+}
+
+// Simulate API call
+async function sendToAPI(data: UserFormData): Promise<void> {
+  try {
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    
+    if (response.ok) {
+      console.log('Data sent to API successfully');
+    }
+  } catch (error) {
+    console.error('Error sending data to API:', error);
   }
 }
 
-/**
- * Returns the arithmetic mean of a numeric array.
- * Throws EmptyArrayError if the array is empty.
- */
-export function mean(values: number[]): number {
-  if (values.length === 0) throw new EmptyArrayError();
-  const sum = values.reduce((a, b) => a + b, 0);
-  return sum / values.length;
+// Add event listener when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('userForm') as HTMLFormElement;
+  form.addEventListener('submit', handleFormSubmit);
+});
+// Process command line arguments
+interface Config {
+  inputFile: string;
+  outputFile: string;
+  verbose: boolean;
+  count: number;
 }
 
-/**
- * Safely computes the mean, ignoring non‑numeric entries.
- * Returns NaN if no valid numbers are found.
- */
-export function safeMean(values: unknown[]): number {
-  const nums = values.filter(
-    (v): v is number => typeof v === "number" && !Number.isNaN(v)
-  );
-  if (nums.length === 0) return NaN;
-  return mean(nums);
+function parseArguments(args: string[]): Config {
+  const config: Config = {
+    inputFile: '',
+    outputFile: '',
+    verbose: false,
+    count: 1
+  };
+  
+  for (let i = 2; i < args.length; i++) {
+    const arg = args[i];
+    
+    switch (arg) {
+      case '-i':
+      case '--input':
+        config.inputFile = args[++i];
+        break;
+      case '-o':
+      case '--output':
+        config.outputFile = args[++i];
+        break;
+      case '-v':
+      case '--verbose':
+        config.verbose = true;
+        break;
+      case '-c':
+      case '--count':
+        config.count = parseInt(args[++i]);
+        break;
+      case '-h':
+      case '--help':
+        showHelp();
+        process.exit(0);
+      default:
+        console.warn(`Unknown argument: ${arg}`);
+    }
+  }
+  
+  return config;
 }
 
-/**
- * Median (useful companion function)
- */
-export function median(values: number[]): number {
-  if (values.length === 0) throw new EmptyArrayError();
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[mid - 1] + sorted[mid]) / 2
-    : sorted[mid];
+function showHelp(): void {
+  console.log(`
+Usage: ts-node script.ts [options]
+Options:
+  -i, --input <file>    Input file path
+  -o, --output <file>   Output file path
+  -v, --verbose         Enable verbose mode
+  -c, --count <number>  Number of iterations
+  -h, --help            Show this help message
+  `);
 }
 
-/**
- * Sample variance (unbiased estimator)
- */
-export function variance(values: number[]): number {
-  if (values.length < 2) throw new EmptyArrayError();
-  const avg = mean(values);
-  const sqDiff = values.map(v => (v - avg) ** 2);
-  return sqDiff.reduce((a, b) => a + b, 0) / (values.length - 1);
-}
-import { mean, safeMean, median, variance } from "./statistics";
-
-console.log(mean([1, 2, 3]));          // 2
-console.log(safeMean([1, "a", 3]));    // 2
-console.log(median([5, 2, 9, 1]));     // 3.5
-console.log(variance([2, 4, 4, 4, 5, 5, 7, 9])); // 4
-function mean(nums: number[]): number {
-  if (!nums.length) throw new Error("Empty array");
-  return nums.reduce((s, n) => s + n, 0) / nums.length;
+function processInput(config: Config): void {
+  if (config.verbose) {
+    console.log('Processing with configuration:', config);
+  }
+  
+  // Simulate processing
+  for (let i = 0; i < config.count; i++) {
+    console.log(`Processing iteration ${i + 1}`);
+    // Process the input file here
+  }
+  
+  console.log(`Input file: ${config.inputFile}`);
+  console.log(`Output file: ${config.outputFile}`);
 }
 
-// Example
-console.log(mean([10, 20, 30])); // 20
+// Main execution
+const config = parseArguments(process.argv);
+processInput(config);
+// Generic input handler with strong typing
+class InputHandler<T> {
+  private validators: ((value: T) => boolean | string)[] = [];
+  
+  addValidator(validator: (value: T) => boolean | string): this {
+    this.validators.push(validator);
+    return this;
+  }
+  
+  validate(value: T): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    
+    for (const validator of this.validators) {
+      const result = validator(value);
+      if (result !== true) {
+        errors.push(result as string);
+      }
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+}
+
+// Example usage with user registration
+interface RegistrationData {
+  username: string;
+  password: string;
+  email: string;
+  age: number;
+}
+
+const registrationHandler = new InputHandler<RegistrationData>();
+
+// Add validators
+registrationHandler
+  .addValidator((data) => data.username.length >= 3 || 'Username too short')
+  .addValidator((data) => data.password.length >= 8 || 'Password too weak')
+  .addValidator((data) => data.email.includes('@') || 'Invalid email')
+  .addValidator((data) => data.age >= 18 || 'Must be 18 or older');
+
+// Test the validation
+const testData: RegistrationData = {
+  username: 'john',
+  password: 'weakpass',
+  email: 'invalid-email',
+  age: 16
+};
+
+const result = registrationHandler.validate(testData);
+console.log('Validation result:', result);
+
+// Process valid data
+if (result.isValid) {
+  console.log('Registration successful!');
+  // Process registration...
+} else {
+  console.log('Registration failed. Errors:', result.errors);
+}
