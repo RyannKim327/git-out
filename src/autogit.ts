@@ -1,103 +1,74 @@
-function isAnagram(str1: string, str2: string): boolean {
-    if (str1.length !== str2.length) {
-        return false;
-    }
-    
-    const charCount: { [key: string]: number } = {};
-    
-    // Count characters in first string
-    for (let char of str1) {
-        charCount[char] = (charCount[char] || 0) + 1;
-    }
-    
-    // Subtract characters from second string
-    for (let char of str2) {
-        if (!charCount[char]) {
-            return false;
-        }
-        charCount[char]--;
-    }
-    
-    return true;
+function getRandomNumber(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// Example usage
-console.log(isAnagram("listen", "silent")); // true
-console.log(isAnagram("hello", "world"));   // false
-function isAnagramSimple(str1: string, str2: string): boolean {
-    if (str1.length !== str2.length) {
-        return false;
-    }
-    
-    const sorted1 = str1.split('').sort().join('');
-    const sorted2 = str2.split('').sort().join('');
-    
-    return sorted1 === sorted2;
+// Usage
+const randomNum = getRandomNumber(1, 10); // Random number between 1 and 10 (inclusive)
+function getRandomNumberInRange(min: number, max: number): number {
+  if (min > max) {
+    throw new Error('Minimum value cannot be greater than maximum value');
+  }
+  
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// Example usage
-console.log(isAnagramSimple("triangle", "integral")); // true
-function isAnagramCaseInsensitive(str1: string, str2: string): boolean {
-    const normalize = (str: string): string => 
-        str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
-    const normalized1 = normalize(str1);
-    const normalized2 = normalize(str2);
-    
-    if (normalized1.length !== normalized2.length) {
-        return false;
-    }
-    
-    const sorted1 = normalized1.split('').sort().join('');
-    const sorted2 = normalized2.split('').sort().join('');
-    
-    return sorted1 === sorted2;
+// Usage
+const randomNumber = getRandomNumberInRange(5, 15);
+console.log(randomNumber); // Random number between 5-15
+function getRandomFloat(min: number, max: number, decimals: number = 2): number {
+  if (min > max) {
+    throw new Error('Minimum value cannot be greater than maximum value');
+  }
+  
+  const random = Math.random() * (max - min) + min;
+  return parseFloat(random.toFixed(decimals));
 }
 
-// Example usage - handles different cases and ignores non-alphanumeric characters
-console.log(isAnagramCaseInsensitive("Eleven plus two", "Twelve plus one")); // true
-function isAnagramRobust(str1: string, str2: string): boolean {
-    // Input validation
-    if (typeof str1 !== 'string' || typeof str2 !== 'string') {
-        return false;
-    }
-    
-    // Early return for different lengths
-    if (str1.length !== str2.length) {
-        return false;
-    }
-    
-    // Character frequency counting
-    const frequencyMap = new Map<string, number>();
-    
-    // Build frequency map from first string
-    for (const char of str1) {
-        frequencyMap.set(char, (frequencyMap.get(char) || 0) + 1);
-    }
-    
-    // Check against second string
-    for (const char of str2) {
-        const count = frequencyMap.get(char);
-        
-        if (!count) {
-            return false;
-        }
-        
-        if (count === 1) {
-            frequencyMap.delete(char);
-        } else {
-            frequencyMap.set(char, count - 1);
-        }
-    }
-    
-    return frequencyMap.size === 0;
+// Usage
+const randomFloat = getRandomFloat(0, 1, 3); // Random float between 0-1 with 3 decimal places
+class RandomNumberGenerator {
+  static getInteger(min: number, max: number): number {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+  
+  static getFloat(min: number, max: number, decimals: number = 2): number {
+    const random = Math.random() * (max - min) + min;
+    return parseFloat(random.toFixed(decimals));
+  }
 }
 
-// Example usage
-console.log(isAnagramRobust("anagram", "nagaram")); // true
-const isAnagramOneLiner = (str1: string, str2: string): boolean => 
-    str1.length === str2.length && 
-    [...str1].sort().join('') === [...str2].sort().join('');
+// Usage
+const randomInt = RandomNumberGenerator.getInteger(10, 20);
+const randomFloat = RandomNumberGenerator.getFloat(0.5, 2.5, 3);
+function getSecureRandomNumber(min: number, max: number): number {
+  const array = new Uint32Array(1);
+  const randomBuffer = crypto.getRandomValues(array);
+  const randomValue = randomBuffer[0] / (0xFFFFFFFF + 1);
+  
+  return Math.floor(randomValue * (max - min + 1)) + min;
+}
 
-// Example usage
-console.log(isAnagramOneLiner("rat", "tar")); // true
+// Usage (Note: Only works in browser/Node.js environments with crypto support)
+const secureRandom = getSecureRandomNumber(1, 100);
+type RandomRange = {
+  min: number;
+  max: number;
+};
+
+function generateRandomNumber(range: RandomRange): number {
+  const { min, max } = range;
+  
+  if (!Number.isInteger(min) || !Number.isInteger(max)) {
+    throw new Error('Both min and max must be integers');
+  }
+  
+  if (min > max) {
+    throw new Error('Minimum value cannot be greater than maximum value');
+  }
+  
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Usage
+const randomNum = generateRandomNumber({ min: 1, max: 100 });
+console.log(`Random number: ${randomNum}`);
