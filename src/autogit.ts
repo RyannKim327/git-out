@@ -1,264 +1,144 @@
-class TrieNode {
-  children: Map<string, TrieNode>;
-  isEndOfWord: boolean;
-
-  constructor() {
-    this.children = new Map();
-    this.isEndOfWord = false;
-  }
+interface TreeNode {
+    val: number;
+    left: TreeNode | null;
+    right: TreeNode | null;
 }
 
-class Trie {
-  private root: TrieNode;
-
-  constructor() {
-    this.root = new TrieNode();
-  }
-
-  // Insert a word into the trie
-  insert(word: string): void {
-    let currentNode = this.root;
-    
-    for (const char of word) {
-      if (!currentNode.children.has(char)) {
-        currentNode.children.set(char, new TrieNode());
-      }
-      currentNode = currentNode.children.get(char)!;
+function maxDepth(root: TreeNode | null): number {
+    if (root === null) {
+        return 0;
     }
     
-    currentNode.isEndOfWord = true;
-  }
-
-  // Search for a complete word
-  search(word: string): boolean {
-    let currentNode = this.root;
+    const leftDepth = maxDepth(root.left);
+    const rightDepth = maxDepth(root.right);
     
-    for (const char of word) {
-      if (!currentNode.children.has(char)) {
-        return false;
-      }
-      currentNode = currentNode.children.get(char)!;
-    }
-    
-    return currentNode.isEndOfWord;
-  }
-
-  // Check if any word starts with the prefix
-  startsWith(prefix: string): boolean {
-    let currentNode = this.root;
-    
-    for (const char of prefix) {
-      if (!currentNode.children.has(char)) {
-        return false;
-      }
-      currentNode = currentNode.children.get(char)!;
-    }
-    
-    return true;
-  }
-
-  // Get all words with a given prefix
-  getWordsWithPrefix(prefix: string): string[] {
-    let currentNode = this.root;
-    const results: string[] = [];
-    
-    // Navigate to the prefix node
-    for (const char of prefix) {
-      if (!currentNode.children.has(char)) {
-        return results; // No words with this prefix
-      }
-      currentNode = currentNode.children.get(char)!;
-    }
-    
-    // Collect all words from this node
-    this.collectWords(currentNode, prefix, results);
-    return results;
-  }
-
-  private collectWords(node: TrieNode, currentWord: string, results: string[]): void {
-    if (node.isEndOfWord) {
-      results.push(currentWord);
-    }
-    
-    for (const [char, childNode] of node.children) {
-      this.collectWords(childNode, currentWord + char, results);
-    }
-  }
-
-  // Delete a word from the trie
-  delete(word: string): boolean {
-    return this.deleteRecursive(this.root, word, 0);
-  }
-
-  private deleteRecursive(node: TrieNode, word: string, index: number): boolean {
-    if (index === word.length) {
-      if (!node.isEndOfWord) {
-        return false; // Word doesn't exist
-      }
-      node.isEndOfWord = false;
-      return node.children.size === 0;
-    }
-
-    const char = word[index];
-    const childNode = node.children.get(char);
-    
-    if (!childNode) {
-      return false; // Word doesn't exist
-    }
-
-    const shouldDeleteChild = this.deleteRecursive(childNode, word, index + 1);
-    
-    if (shouldDeleteChild) {
-      node.children.delete(char);
-      return node.children.size === 0 && !node.isEndOfWord;
-    }
-    
-    return false;
-  }
+    return Math.max(leftDepth, rightDepth) + 1;
 }
-interface TrieOptions {
-  caseSensitive?: boolean;
+class TreeNode<T> {
+    constructor(
+        public value: T,
+        public left: TreeNode<T> | null = null,
+        public right: TreeNode<T> | null = null
+    ) {}
 }
 
-class EnhancedTrie {
-  private root: TrieNode;
-  private caseSensitive: boolean;
+class BinaryTree<T> {
+    constructor(public root: TreeNode<T> | null = null) {}
 
-  constructor(options: TrieOptions = {}) {
-    this.root = new TrieNode();
-    this.caseSensitive = options.caseSensitive || false;
-  }
-
-  private normalizeWord(word: string): string {
-    return this.caseSensitive ? word : word.toLowerCase();
-  }
-
-  insert(word: string): void {
-    const normalizedWord = this.normalizeWord(word);
-    let currentNode = this.root;
-    
-    for (const char of normalizedWord) {
-      if (!currentNode.children.has(char)) {
-        currentNode.children.set(char, new TrieNode());
-      }
-      currentNode = currentNode.children.get(char)!;
+    // Recursive approach
+    maxDepthRecursive(node: TreeNode<T> | null = this.root): number {
+        if (node === null) {
+            return 0;
+        }
+        
+        const leftDepth = this.maxDepthRecursive(node.left);
+        const rightDepth = this.maxDepthRecursive(node.right);
+        
+        return Math.max(leftDepth, rightDepth) + 1;
     }
-    
-    currentNode.isEndOfWord = true;
-  }
 
-  search(word: string): boolean {
-    const normalizedWord = this.normalizeWord(word);
-    let currentNode = this.root;
-    
-    for (const char of normalizedWord) {
-      if (!currentNode.children.has(char)) {
-        return false;
-      }
-      currentNode = currentNode.children.get(char)!;
+    // Iterative BFS approach
+    maxDepthBFS(): number {
+        if (this.root === null) {
+            return 0;
+        }
+        
+        let depth = 0;
+        const queue: TreeNode<T>[] = [this.root];
+        
+        while (queue.length > 0) {
+            const levelSize = queue.length;
+            
+            for (let i = 0; i < levelSize; i++) {
+                const currentNode = queue.shift()!;
+                
+                if (currentNode.left !== null) {
+                    queue.push(currentNode.left);
+                }
+                if (currentNode.right !== null) {
+                    queue.push(currentNode.right);
+                }
+            }
+            
+            depth++;
+        }
+        
+        return depth;
     }
-    
-    return currentNode.isEndOfWord;
-  }
 
-  // Count total words in the trie
-  countWords(): number {
-    return this.countWordsRecursive(this.root);
-  }
-
-  private countWordsRecursive(node: TrieNode): number {
-    let count = node.isEndOfWord ? 1 : 0;
-    
-    for (const child of node.children.values()) {
-      count += this.countWordsRecursive(child);
+    // Iterative DFS approach
+    maxDepthDFS(): number {
+        if (this.root === null) {
+            return 0;
+        }
+        
+        let maxDepth = 0;
+        const stack: { node: TreeNode<T>; depth: number }[] = [{ node: this.root, depth: 1 }];
+        
+        while (stack.length > 0) {
+            const { node, depth } = stack.pop()!;
+            maxDepth = Math.max(maxDepth, depth);
+            
+            if (node.right !== null) {
+                stack.push({ node: node.right, depth: depth + 1 });
+            }
+            if (node.left !== null) {
+                stack.push({ node: node.left, depth: depth + 1 });
+            }
+        }
+        
+        return maxDepth;
     }
-    
-    return count;
-  }
-
-  // Get all words in the trie
-  getAllWords(): string[] {
-    const words: string[] = [];
-    this.collectWords(this.root, '', words);
-    return words;
-  }
-
-  private collectWords(node: TrieNode, currentWord: string, results: string[]): void {
-    if (node.isEndOfWord) {
-      results.push(currentWord);
-    }
-    
-    for (const [char, childNode] of node.children) {
-      this.collectWords(childNode, currentWord + char, results);
-    }
-  }
 }
-// Basic usage
-const trie = new Trie();
+type Tree<T> = {
+    value: T;
+    left: Tree<T> | null;
+    right: Tree<T> | null;
+} | null;
 
-// Insert words
-trie.insert("apple");
-trie.insert("app");
-trie.insert("application");
-trie.insert("banana");
+const maxDepthFunctional = <T>(tree: Tree<T>): number => {
+    if (tree === null) return 0;
+    
+    return 1 + Math.max(
+        maxDepthFunctional(tree.left),
+        maxDepthFunctional(tree.right)
+    );
+};
 
-// Search for words
-console.log(trie.search("apple")); // true
-console.log(trie.search("app")); // true
-console.log(trie.search("appl")); // false
+// One-liner version
+const maxDepthOneLiner = <T>(tree: Tree<T>): number => 
+    tree === null ? 0 : 1 + Math.max(
+        maxDepthOneLiner(tree.left), 
+        maxDepthOneLiner(tree.right)
+    );
+// Create a sample tree
+const tree = new BinaryTree<number>();
+tree.root = new TreeNode(1);
+tree.root.left = new TreeNode(2);
+tree.root.right = new TreeNode(3);
+tree.root.left.left = new TreeNode(4);
+tree.root.left.right = new TreeNode(5);
+tree.root.right.right = new TreeNode(6);
+tree.root.left.left.left = new TreeNode(7);
 
-// Check prefixes
-console.log(trie.startsWith("app")); // true
-console.log(trie.startsWith("ban")); // true
+// Test all methods
+console.log("Recursive depth:", tree.maxDepthRecursive());     // Output: 4
+console.log("BFS depth:", tree.maxDepthBFS());               // Output: 4
+console.log("DFS depth:", tree.maxDepthDFS());               // Output: 4
 
-// Get words with prefix
-console.log(trie.getWordsWithPrefix("app")); 
-// ["app", "apple", "application"]
-
-// Delete a word
-trie.delete("app");
-console.log(trie.search("app")); // false
-console.log(trie.search("apple")); // true
-
-// Enhanced trie usage
-const enhancedTrie = new EnhancedTrie({ caseSensitive: false });
-enhancedTrie.insert("TypeScript");
-enhancedTrie.insert("typescript");
-
-console.log(enhancedTrie.search("TYPESCRIPT")); // true (case insensitive)
-console.log(enhancedTrie.getAllWords()); // ["typescript"]
-console.log(enhancedTrie.countWords()); // 1 (duplicates not counted)
-class AutocompleteSystem {
-  private trie: Trie;
-
-  constructor() {
-    this.trie = new Trie();
-  }
-
-  addWords(words: string[]): void {
-    for (const word of words) {
-      this.trie.insert(word);
+// Using functional approach
+const functionalTree: Tree<number> = {
+    value: 1,
+    left: {
+        value: 2,
+        left: { value: 4, left: { value: 7, left: null, right: null }, right: null },
+        right: { value: 5, left: null, right: null }
+    },
+    right: {
+        value: 3,
+        left: null,
+        right: { value: 6, left: null, right: null }
     }
-  }
+};
 
-  suggest(prefix: string): string[] {
-    return this.trie.getWordsWithPrefix(prefix);
-  }
-
-  // With ranking based on usage frequency
-  suggestWithRanking(prefix: string, limit: number = 5): string[] {
-    const suggestions = this.trie.getWordsWithPrefix(prefix);
-    // In a real implementation, you'd rank by frequency
-    return suggestions.slice(0, limit);
-  }
-}
-
-// Usage
-const autocomplete = new AutocompleteSystem();
-autocomplete.addWords(["apple", "application", "appetizer", "banana", "band", "bandwidth"]);
-
-console.log(autocomplete.suggest("app"));
-// ["apple", "application", "appetizer"]
-
-console.log(autocomplete.suggestWithRanking("ban", 2));
-// ["banana", "band"]
+console.log("Functional depth:", maxDepthFunctional(functionalTree)); // Output: 4
