@@ -1,39 +1,71 @@
-/**
- * Shell sort (in-place, ascending order).
- * Uses the gap sequence: 1, 4, 13, 40, 121, 364, 1093, …
- * (3×previous + 1) until it is >= array length, then works backwards.
- *
- * Time-complexity:
- *   Worst-case:  O(n^(3/2))  (empirical for this sequence)
- *   Best-case:  O(n log n)
- * Space: O(1)
- */
-function shellSort<T>(arr: T[]): T[] {
-  const n = arr.length;
+const numbers: number[] = [1, 5, 3, 9, 2];
+const maxValue = Math.max(...numbers);
+console.log(maxValue); // 9
+const numbers: number[] = [1, 5, 3, 9, 2];
+const maxValue = Math.max.apply(null, numbers);
+console.log(maxValue); // 9
+const numbers: number[] = [1, 5, 3, 9, 2];
+const maxValue = numbers.reduce((max, current) => Math.max(max, current));
+console.log(maxValue); // 9
 
-  // 1. Build the gap sequence up to the largest < n
-  let h = 1;
-  while (h < n / 3) h = h * 3 + 1;   // 1, 4, 13, 40, …
+// Or more explicitly:
+const maxValue2 = numbers.reduce((max, current) => {
+    return current > max ? current : max;
+}, numbers[0]);
+const numbers: number[] = [];
+const maxValue = numbers.length > 0 ? Math.max(...numbers) : null;
+console.log(maxValue); // null
 
-  // 2. Work backwards through the gaps
-  while (h >= 1) {
-    // 3. Do an insertion-sort for this gap
-    for (let i = h; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      while (j >= h && arr[j - h] > temp) {
-        arr[j] = arr[j - h];
-        j -= h;
-      }
-      arr[j] = temp;
-    }
-    h = Math.floor(h / 3);            // next smaller gap
-  }
-  return arr;
+// Or with a default value:
+const maxValue2 = numbers.length > 0 ? Math.max(...numbers) : -Infinity;
+interface Product {
+    id: number;
+    price: number;
 }
 
-/* ---------- small demo ---------- */
-const nums = [64, 34, 25, 12, 22, 11, 90];
-console.log('before:', nums);
-shellSort(nums);
-console.log('after: ', nums);
+const products: Product[] = [
+    { id: 1, price: 100 },
+    { id: 2, price: 250 },
+    { id: 3, price: 150 }
+];
+
+// Find maximum price
+const maxPrice = Math.max(...products.map(p => p.price));
+console.log(maxPrice); // 250
+
+// Or using reduce to get the entire object with max value
+const productWithMaxPrice = products.reduce((max, product) => 
+    product.price > max.price ? product : max
+);
+console.log(productWithMaxPrice); // { id: 2, price: 250 }
+function findMax<T>(array: T[], getValue?: (item: T) => number): T | null {
+    if (array.length === 0) return null;
+    
+    if (getValue) {
+        return array.reduce((max, current) => 
+            getValue(current) > getValue(max) ? current : max
+        );
+    }
+    
+    return array.reduce((max, current) => 
+        (current as any) > (max as any) ? current : max
+    );
+}
+
+// Usage examples:
+const numbers = [1, 5, 3, 9, 2];
+console.log(findMax(numbers)); // 9
+
+const products = [{ price: 100 }, { price: 250 }, { price: 150 }];
+console.log(findMax(products, p => p.price)); // { price: 250 }
+function findMaxFast(array: number[]): number | null {
+    if (array.length === 0) return null;
+    
+    let max = array[0];
+    for (let i = 1; i < array.length; i++) {
+        if (array[i] > max) {
+            max = array[i];
+        }
+    }
+    return max;
+}
