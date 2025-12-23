@@ -1,273 +1,222 @@
-interface Graph {
-  [node: string]: { [neighbor: string]: number };
+/** A generic node type.  You can adapt it to your own domain. */
+export interface Node<T = any> {
+  /** Unique identifier – used for the optional visited set */
+  id: string | number;
+  /** Payload (optional) */
+  value?: T;
+  /** Adjacent nodes (children) */
+  children: Node<T>[];
 }
 
-interface Distances {
-  [node: string]: number;
-}
+/** Predicate that tells whether a node satisfies the goal condition */
+export type GoalPredicate<T = any> = (node: Node<T>) => boolean;
 
-interface Previous {
-  [node: string]: string | null;
-}
-
-class PriorityQueue<T> {
-  private elements: { priority: number; value: T }[] = [];
-
-  enqueue(value: T, priority: number): void {
-    this.elements.push({ value, priority });
-    this.elements.sort((a, b) => a.priority - b.priority);
+/** Optional function that extracts a unique key for a node (defaults to node.id) */
+export type KeyFn<T = any> = (node: Node<T>) => string | number;
+/**
+ * Iterative Depth‑Limited Search.
+ *
+ * @param start   Root node where the search begins.
+ * @param goal    Function that returns true for the goal node.
+ * @param limit   Maximum depth to explore (0 = only the start node).
+ * @param options Optional: visited‑set handling and child order.
+ *
+ * @returns The goal node if found, otherwise `null`.
+ */
+export function depthLimitedSearch<T = any>(
+  start: Node<T>,
+  goal: GoalPredicate<T>,
+  limit: number,
+  options?: {
+    /** If true, a visited set is kept to avoid revisiting nodes (good for graphs). */
+    avoidCycles?: boolean;
+    /** Function that returns a unique key for a node – defaults to node.id. */
+    keyFn?: KeyFn<T>;
+    /** If true, children are pushed onto the stack in reverse order so that the
+     *  first child in the array is explored first (more natural DFS order). */
+    preserveChildOrder?: boolean;
   }
+): Node<T> | null {
+  if (limit < 0) throw new Error('Depth limit must be >= 0');
 
-  dequeue(): T | null {
-    return this.elements.shift()?.value || null;
-  }
+  const {
+    avoidCycles = false,
+    keyFn = (n: Node<T>) => n.id,
+    preserveChildOrder = false,
+  } = options ?? {};
 
-  isEmpty(): boolean {
-    return this.elements.length === 0;
-  }
-}
+  // Stack holds {node, depth}
+  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: start, depth: 0 }];
 
-function dijkstra(graph: Graph, start: string): { distances: Distances; previous: Previous } {
-  const distances: Distances = {};
-  const previous: Previous = {};
-  const queue = new PriorityQueue<string>();
+  // Optional visited set – only used when avoidCycles === true
+  const visited = avoidCycles ? new Set<string | number>() : null;
 
-  // Initialize distances and previous
-  Object.keys(graph).forEach(node => {
-    distances[node] = node === start ? 0 : Infinity;
-    previous[node] = null;
-    queue.enqueue(node, distances[node]);
-  });
+  while (stack.length > 0) {
+    const { node, depth } = stack.pop()!; // non‑empty because of while condition
 
-  while (!queue.isEmpty()) {
-    const currentNode = queue.dequeue();
-    if (!currentNode || distances[currentNode] === Infinity) continue;
+    // Cycle detection (if enabled)
+    if (avoidCycles) {
+      const key = keyFn(node);
+      if (visited!.has(key)) continue; // already processed
+      visited!.add(key);
+    }
 
-    const neighbors = graph[currentNode];
-    for (const neighbor in neighbors) {
-      const distance = distances[currentNode] + neighbors[neighbor];
-      
-      if (distance < distances[neighbor]) {
-        distances[neighbor] = distance;
-        previous[neighbor] = currentNode;
-        queue.enqueue(neighbor, distance);
-      }
+    // Goal test
+    if (goal(node)) return node;
+
+    // Stop expanding when we hit the depth limit
+    if (depth >= limit) continue;
+
+    // Push children onto the stack.
+    // We push them in reverse order if we want the first child to be processed first.
+    const children = preserveChildOrder ? [...node.children].reverse() : node.children;
+
+    for (const child of children) {
+      stack.push({ node: child, depth: depth + 1 });
     }
   }
 
-  return { distances, previous };
+  // Exhausted the stack without finding the goal
+  return null;
 }
-
-function getShortestPath(previous: Previous, end: string): string[] {
-  const path: string[] = [];
-  let current: string | null = end;
-
-  while (current !== null) {
-    path.unshift(current);
-    current = previous[current];
-  }
-
-  return path;
-}
-type NodeId = string;
-type Weight = number;
-
-interface Edge {
-  to: NodeId;
-  weight: Weight;
-}
-
-interface GraphNode {
-  id: NodeId;
-  edges: Edge[];
-}
-
-interface Graph {
-  nodes: Map<NodeId, GraphNode>;
-}
-
-interface DijkstraResult {
-  distances: Map<NodeId, number>;
-  previous: Map<NodeId, NodeId | null>;
-}
-
-class PriorityQueue<T> {
-  private heap: { element: T; priority: number }[] = [];
-
-  enqueue(element: T, priority: number): void {
-    this.heap.push({ element, priority });
-    this.bubbleUp(this.heap.length - 1);
-  }
-
-  dequeue(): T | null {
-    if (this.heap.length === 0) return null;
-    
-    const min = this.heap[0];
-    const end = this.heap.pop();
-    
-    if (this.heap.length > 0 && end) {
-      this.heap[0] = end;
-      this.sinkDown(0);
-    }
-    
-    return min.element;
-  }
-
-  isEmpty(): boolean {
-    return this.heap.length === 0;
-  }
-
-  private bubbleUp(index: number): void {
-    const element = this.heap[index];
-    
-    while (index > 0) {
-      const parentIndex = Math.floor((index - 1) / 2);
-      const parent = this.heap[parentIndex];
-      
-      if (element.priority >= parent.priority) break;
-      
-      this.heap[parentIndex] = element;
-      this.heap[index] = parent;
-      index = parentIndex;
-    }
-  }
-
-  private sinkDown(index: number): void {
-    const length = this.heap.length;
-    const element = this.heap[index];
-    
-    while (true) {
-      let leftChildIndex = 2 * index + 1;
-      let rightChildIndex = 2 * index + 2;
-      let swap: number | null = null;
-      let leftChild, rightChild;
-      
-      if (leftChildIndex < length) {
-        leftChild = this.heap[leftChildIndex];
-        if (leftChild.priority < element.priority) {
-          swap = leftChildIndex;
-        }
-      }
-      
-      if (rightChildIndex < length) {
-        rightChild = this.heap[rightChildIndex];
-        if (
-          (swap === null && rightChild.priority < element.priority) ||
-          (swap !== null && rightChild.priority < (leftChild?.priority || Infinity))
-        ) {
-          swap = rightChildIndex;
-        }
-      }
-      
-      if (swap === null) break;
-      
-      this.heap[index] = this.heap[swap];
-      this.heap[swap] = element;
-      index = swap;
-    }
-  }
-}
-
-class DijkstraAlgorithm {
-  constructor(private graph: Graph) {}
-
-  findShortestPath(start: NodeId, end: NodeId): { path: NodeId[]; distance: number } {
-    const result = this.calculate(start);
-    const path = this.reconstructPath(result.previous, end);
-    const distance = result.distances.get(end) ?? Infinity;
-    
-    return { path, distance };
-  }
-
-  calculate(start: NodeId): DijkstraResult {
-    const distances = new Map<NodeId, number>();
-    const previous = new Map<NodeId, NodeId | null>();
-    const queue = new PriorityQueue<NodeId>();
-
-    // Initialize
-    this.graph.nodes.forEach((node, id) => {
-      distances.set(id, id === start ? 0 : Infinity);
-      previous.set(id, null);
-      queue.enqueue(id, distances.get(id)!);
-    });
-
-    while (!queue.isEmpty()) {
-      const currentNode = queue.dequeue();
-      if (!currentNode || distances.get(currentNode) === Infinity) continue;
-
-      const currentNodeData = this.graph.nodes.get(currentNode);
-      if (!currentNodeData) continue;
-
-      for (const edge of currentNodeData.edges) {
-        const newDistance = distances.get(currentNode)! + edge.weight;
-        const currentDistance = distances.get(edge.to) ?? Infinity;
-
-        if (newDistance < currentDistance) {
-          distances.set(edge.to, newDistance);
-          previous.set(edge.to, currentNode);
-          queue.enqueue(edge.to, newDistance);
-        }
-      }
-    }
-
-    return { distances, previous };
-  }
-
-  private reconstructPath(previous: Map<NodeId, NodeId | null>, end: NodeId): NodeId[] {
-    const path: NodeId[] = [];
-    let current: NodeId | null = end;
-
-    while (current !== null) {
-      path.unshift(current);
-      current = previous.get(current) ?? null;
-    }
-
-    return path[0] === end ? [] : path; // Return empty if no path found
-  }
-}
-// Create a graph
-const graph: Graph = {
-  nodes: new Map([
-    ['A', { id: 'A', edges: [{ to: 'B', weight: 4 }, { to: 'C', weight: 2 }] }],
-    ['B', { id: 'B', edges: [{ to: 'D', weight: 5 }, { to: 'E', weight: 3 }] }],
-    ['C', { id: 'C', edges: [{ to: 'B', weight: 1 }, { to: 'D', weight: 8 }] }],
-    ['D', { id: 'D', edges: [{ to: 'E', weight: 7 }] }],
-    ['E', { id: 'E', edges: [] }]
-  ])
+// Build a tiny tree
+const tree: Node<number> = {
+  id: 'A',
+  value: 1,
+  children: [
+    {
+      id: 'B',
+      value: 2,
+      children: [
+        { id: 'D', value: 4, children: [] },
+        { id: 'E', value: 5, children: [] },
+      ],
+    },
+    {
+      id: 'C',
+      value: 3,
+      children: [{ id: 'F', value: 6, children: [] }],
+    },
+  ],
 };
 
-// Use the algorithm
-const dijkstra = new DijkstraAlgorithm(graph);
-const result = dijkstra.findShortestPath('A', 'E');
+// Goal: find the node whose value is 5
+const goal = (n: Node<number>) => n.value === 5;
 
-console.log('Shortest path:', result.path); // ['A', 'C', 'B', 'E']
-console.log('Distance:', result.distance); // 6
-function simpleDijkstra(graph: Record<string, Record<string, number>>, start: string) {
-  const distances: Record<string, number> = {};
-  const visited = new Set<string>();
-  const nodes = Object.keys(graph);
+// Depth limit 2 → we can reach B (depth 1) and D/E (depth 2)
+const result = depthLimitedSearch(tree, goal, 2, { preserveChildOrder: true });
 
-  // Initialize distances
-  nodes.forEach(node => {
-    distances[node] = node === start ? 0 : Infinity;
-  });
+console.log(result?.id); // → "E"
+// A ↔ B ↔ C ↔ A (cycle)
+const a: Node<string> = { id: 'A', children: [] };
+const b: Node<string> = { id: 'B', children: [] };
+const c: Node<string> = { id: 'C', children: [] };
 
-  while (visited.size < nodes.length) {
-    const currentNode = nodes
-      .filter(node => !visited.has(node))
-      .reduce((minNode, node) => 
-        distances[node] < distances[minNode] ? node : minNode, nodes[0]
-      );
+a.children = [b];
+b.children = [c];
+c.children = [a]; // back‑edge creates a cycle
 
-    visited.add(currentNode);
+// Goal: find node "C"
+const goalC = (n: Node<string>) => n.id === 'C';
 
-    for (const neighbor in graph[currentNode]) {
-      const distance = distances[currentNode] + graph[currentNode][neighbor];
-      if (distance < distances[neighbor]) {
-        distances[neighbor] = distance;
-      }
+const found = depthLimitedSearch(a, goalC, 10, { avoidCycles: true });
+console.log(found?.id); // → "C"
+function iterativeDeepeningSearch<T>(
+  start: Node<T>,
+  goal: GoalPredicate<T>,
+  maxDepth: number,
+  options?: Parameters<typeof depthLimitedSearch>[3]
+): Node<T> | null {
+  for (let depth = 0; depth <= maxDepth; depth++) {
+    const result = depthLimitedSearch(start, goal, depth, options);
+    if (result) return result; // found at the shallowest depth
+  }
+  return null; // not found within maxDepth
+}
+
+// Example: same tree as before, but we don't know the depth in advance
+const id = iterativeDeepeningSearch(tree, goal, 5, { preserveChildOrder: true })?.id;
+console.log(id); // "E"
+// ---------------------------------------------------------------
+//  depthLimitedSearch.ts  (the implementation)
+// ---------------------------------------------------------------
+export interface Node<T = any> {
+  id: string | number;
+  value?: T;
+  children: Node<T>[];
+}
+export type GoalPredicate<T = any> = (node: Node<T>) => boolean;
+export type KeyFn<T = any> = (node: Node<T>) => string | number;
+
+export function depthLimitedSearch<T = any>(
+  start: Node<T>,
+  goal: GoalPredicate<T>,
+  limit: number,
+  options?: {
+    avoidCycles?: boolean;
+    keyFn?: KeyFn<T>;
+    preserveChildOrder?: boolean;
+  }
+): Node<T> | null {
+  if (limit < 0) throw new Error('Depth limit must be >= 0');
+
+  const {
+    avoidCycles = false,
+    keyFn = (n: Node<T>) => n.id,
+    preserveChildOrder = false,
+  } = options ?? {};
+
+  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: start, depth: 0 }];
+  const visited = avoidCycles ? new Set<string | number>() : null;
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+
+    if (avoidCycles) {
+      const k = keyFn(node);
+      if (visited!.has(k)) continue;
+      visited!.add(k);
+    }
+
+    if (goal(node)) return node;
+    if (depth >= limit) continue;
+
+    const children = preserveChildOrder ? [...node.children].reverse() : node.children;
+    for (const child of children) {
+      stack.push({ node: child, depth: depth + 1 });
     }
   }
 
-  return distances;
+  return null;
 }
+
+// ---------------------------------------------------------------
+//  demo.ts  (example usage)
+// ---------------------------------------------------------------
+import { depthLimitedSearch, Node } from './depthLimitedSearch';
+
+// Build a sample tree
+const tree: Node<number> = {
+  id: 'root',
+  value: 0,
+  children: [
+    {
+      id: 'a',
+      value: 1,
+      children: [
+        { id: 'a1', value: 2, children: [] },
+        { id: 'a2', value: 3, children: [] },
+      ],
+    },
+    {
+      id: 'b',
+      value: 4,
+      children: [{ id: 'b1', value: 5, children: [] }],
+    },
+  ],
+};
+
+const goal = (n: Node<number>) => n.value === 5;
+
+const found = depthLimitedSearch(tree, goal, 2, { preserveChildOrder: true });
+console.log('Found node:', found?.id ?? 'none'); // → "b1"
