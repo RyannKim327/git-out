@@ -1,182 +1,194 @@
-interface Graph {
-  [key: string]: { [neighbor: string]: number };
+/**
+ * Generic A* search in TypeScript
+ * T = type that represents a node (number, string, {x,y}, custom object, …)
+ */
+export interface AStarOpts<T> {
+  start: T;
+  goal: T;
+  getNeighbors: (node: T) => T[];
+  getCost: (from: T, to: T) => number;
+  heuristic: (a: T, b: T) => number;
+  equals?: (a: T, b: T) => boolean; // defaults to Object.is
 }
 
-interface DijkstraResult {
-  distances: { [node: string]: number };
-  previous: { [node: string]: string | null };
+export function aStar<T>(opts: AStarOpts<T>): T[] | null {
+  const {
+    start,
+    goal,
+    getNeighbors,
+    getCost,
+    heuristic,
+    equals = Object.is,
+  } = opts;
+
+  type NodeRef = { node: T; f: number; g: number; h: number };
+
+  // Priority queue ordered by f = g + h
+  const open = new BinaryHeap<NodeRef>((a, b) => a.f - b.f);
+
+  // Maps node → best known g-value
+  const gScore = new Map<T, number>();
+
+  // Maps node → predecessor on best path
+  const cameFrom = new Map<T, T>();
+
+  const startNode: NodeRef = {
+    node: start,
+    f: heuristic(start, goal),
+    g: 0,
+    h: heuristic(start, goal),
+  };
+
+  open.push(startNode);
+  gScore.set(start, 0);
+
+  while (!open.isEmpty()) {
+    const current = open.pop()!;
+
+    if (equals(current.node, goal)) {
+      // Reconstruct path
+      const path: T[] = [current.node];
+      let prev = cameFrom.get(current.node);
+      while (prev !== undefined) {
+        path.unshift(prev);
+        prev = cameFrom.get(prev);
+      }
+      return path;
+    }
+
+    for (const neighbor of getNeighbors(current.node)) {
+      const tentativeG = current.g + getCost(current.node, neighbor);
+
+      const bestG = gScore.get(neighbor);
+      if (bestG !== undefined && tentativeG >= bestG) continue;
+
+      // Found a better route to neighbor
+      cameFrom.set(neighbor, current.node);
+      gScore.set(neighbor, tentativeG);
+
+      const h = heuristic(neighbor, goal);
+      open.push({ node: neighbor, f: tentativeG + h, g: tentativeG, h });
+    }
+  }
+
+  return null; // No path
 }
 
-class MinHeap<T> {
-  private heap: T[] = [];
-  private compare: (a: T, b: T) => number;
+/* ------------------------------------------------------------------ */
+/* Minimal binary heap (min-heap) implementation                        */
+/* ------------------------------------------------------------------ */
+class BinaryHeap<T> {
+  private items: T[] = [];
 
-  constructor(compareFn: (a: T, b: T) => number) {
-    this.compare = compareFn;
+  constructor(private compare: (a: T, b: T) => number) {}
+
+  get length() { return this.items.length; }
+  isEmpty() { return this.items.length === 0; }
+
+  push(item: T) {
+    this.items.push(item);
+    this.bubbleUp(this.items.length - 1);
   }
 
-  push(item: T): void {
-    this.heap.push(item);
-    this.bubbleUp(this.heap.length - 1);
-  }
+  peek(): T | undefined { return this.items[0]; }
 
   pop(): T | undefined {
-    if (this.heap.length === 0) return undefined;
-    if (this.heap.length === 1) return this.heap.pop();
-
-    const root = this.heap[0];
-    this.heap[0] = this.heap.pop()!;
-    this.sinkDown(0);
-    return root;
-  }
-
-  isEmpty(): boolean {
-    return this.heap.length === 0;
-  }
-
-  private bubbleUp(index: number): void {
-    while (index > 0) {
-      const parent = Math.floor((index - 1) / 2);
-      if (this.compare(this.heap[index], this.heap[parent]) >= 0) break;
-      
-      [this.heap[parent], this.heap[index]] = [this.heap[index], this.heap[parent]];
-      index = parent;
+    const result = this.items[0];
+    const end = this.items.pop();
+    if (this.items.length > 0 && end !== undefined) {
+      this.items[0] = end;
+      this.bubbleDown(0);
     }
+    return result;
   }
 
-  private sinkDown(index: number): void {
-    const length = this.heap.length;
+  private bubbleUp(idx: number) {
+    const item = this.items[idx];
+    while (idx > 0) {
+      const parentIdx = Math.floor((idx - 1) / 2);
+      const parent = this.items[parentIdx];
+      if (this.compare(item, parent) >= 0) break;
+      this.items[idx] = parent;
+      idx = parentIdx;
+    }
+    this.items[idx] = item;
+  }
+
+  private bubbleDown(idx: number) {
+    const length = this.items.length;
+    const item = this.items[idx];
     while (true) {
-      let leftChild = 2 * index + 1;
-      let rightChild = 2 * index + 2;
-      let swap = null;
-      let element = this.heap[index];
+      const leftChildIdx = 2 * idx + 1;
+      const rightChildIdx = 2 * idx + 2;
+      let swapIdx: number | null = null;
 
-      if (leftChild < length && this.compare(this.heap[leftChild], element) < 0) {
-        swap = leftChild;
+      if (leftChildIdx < length) {
+        const leftChild = this.items[leftChildIdx];
+        if (this.compare(leftChild, item) < 0) swapIdx = leftChildIdx;
       }
-
-      if (rightChild < length && 
-          this.compare(this.heap[rightChild], (swap === null ? element : this.heap[leftChild])) < 0) {
-        swap = rightChild;
+      if (rightChildIdx < length) {
+        const rightChild = this.items[rightChildIdx];
+        const compareAgainst =
+          swapIdx === null ? item : this.items[swapIdx];
+        if (this.compare(rightChild, compareAgainst) < 0)
+          swapIdx = rightChildIdx;
       }
-
-      if (swap === null) break;
-      
-      [this.heap[index], this.heap[swap]] = [this.heap[swap], this.heap[index]];
-      index = swap;
+      if (swapIdx === null) break;
+      this.items[idx] = this.items[swapIdx];
+      idx = swapIdx;
     }
+    this.items[idx] = item;
   }
 }
+import { aStar } from "./astar";
 
-function dijkstra(graph: Graph, startNode: string): DijkstraResult {
-  const distances: { [node: string]: number } = {};
-  const previous: { [node: string]: string | null } = {};
-  const visited = new Set<string>();
-  
-  // Priority queue: [distance, node]
-  const queue = new MinHeap<[number, string]>((a, b) => a[0] - b[0]);
+interface Pos { x: number; y: number; }
 
-  // Initialize distances
-  for (const node in graph) {
-    distances[node] = node === startNode ? 0 : Infinity;
-    previous[node] = null;
-  }
+const GRID_W = 20;
+const GRID_H = 15;
 
-  queue.push([0, startNode]);
+// 0 = free, 1 = wall
+const grid: number[][] = Array.from({ length: GRID_H }, () =>
+  Array.from({ length: GRID_W }, () => 0)
+);
 
-  while (!queue.isEmpty()) {
-    const [currentDistance, currentNode] = queue.pop()!;
-    
-    if (visited.has(currentNode)) continue;
-    visited.add(currentNode);
+// Add some obstacles
+for (let y = 3; y < 8; y++) grid[y][5] = 1;
+for (let x = 10; x < 15; x++) grid[10][x] = 1;
 
-    // Update distances to neighbors
-    for (const neighbor in graph[currentNode]) {
-      if (visited.has(neighbor)) continue;
-
-      const weight = graph[currentNode][neighbor];
-      const distanceThroughCurrent = currentDistance + weight;
-
-      if (distanceThroughCurrent < distances[neighbor]) {
-        distances[neighbor] = distanceThroughCurrent;
-        previous[neighbor] = currentNode;
-        queue.push([distanceThroughCurrent, neighbor]);
-      }
-    }
-  }
-
-  return { distances, previous };
+function inBounds(p: Pos) {
+  return p.x >= 0 && p.y >= 0 && p.x < GRID_W && p.y < GRID_H;
 }
-function getShortestPath(
-  previous: { [node: string]: string | null },
-  targetNode: string
-): string[] {
-  const path: string[] = [];
-  let current: string | null = targetNode;
 
-  while (current !== null) {
-    path.unshift(current);
-    current = previous[current];
-  }
-
-  return path;
+function getNeighbors(p: Pos): Pos[] {
+  const dirs = [
+    { x: 1, y: 0 },
+    { x: -1, y: 0 },
+    { x: 0, y: 1 },
+    { x: 0, y: -1 },
+  ];
+  return dirs
+    .map((d) => ({ x: p.x + d.x, y: p.y + d.y }))
+    .filter((n) => inBounds(n) && grid[n.y][n.x] === 0);
 }
-// Example graph
-const graph: Graph = {
-  A: { B: 4, C: 2 },
-  B: { A: 4, C: 1, D: 5 },
-  C: { A: 2, B: 1, D: 8, E: 10 },
-  D: { B: 5, C: 8, E: 2 },
-  E: { C: 10, D: 2 }
-};
 
-// Find shortest paths from node 'A'
-const result = dijkstra(graph, 'A');
+function cost() { return 1; } // uniform cost
+function heuristic(a: Pos, b: Pos) {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y); // Manhattan distance
+}
 
-console.log('Distances from A:', result.distances);
-console.log('Previous nodes:', result.previous);
+const path = aStar({
+  start: { x: 2, y: 2 },
+  goal: { x: 18, y: 13 },
+  getNeighbors,
+  getCost: cost,
+  heuristic,
+  equals: (a, b) => a.x === b.x && a.y === b.y,
+});
 
-// Get shortest path to node 'E'
-const pathToE = getShortestPath(result.previous, 'E');
-console.log('Shortest path from A to E:', pathToE); // ['A', 'C', 'B', 'D', 'E']
-console.log('Distance:', result.distances['E']); // 12
-function dijkstraSimple(graph: Graph, startNode: string): DijkstraResult {
-  const distances: { [node: string]: number } = {};
-  const previous: { [node: string]: string | null } = {};
-  const unvisited = new Set<string>();
-
-  // Initialize
-  for (const node in graph) {
-    distances[node] = node === startNode ? 0 : Infinity;
-    previous[node] = null;
-    unvisited.add(node);
-  }
-
-  while (unvisited.size > 0) {
-    // Find unvisited node with smallest distance
-    let currentNode: string | null = null;
-    for (const node of unvisited) {
-      if (currentNode === null || distances[node] < distances[currentNode]) {
-        currentNode = node;
-      }
-    }
-
-    if (currentNode === null || distances[currentNode] === Infinity) break;
-
-    unvisited.delete(currentNode);
-
-    // Update neighbors
-    for (const neighbor in graph[currentNode]) {
-      if (!unvisited.has(neighbor)) continue;
-
-      const newDistance = distances[currentNode] + graph[currentNode][neighbor];
-      if (newDistance < distances[neighbor]) {
-        distances[neighbor] = newDistance;
-        previous[neighbor] = currentNode;
-      }
-    }
-  }
-
-  return { distances, previous };
+if (path) {
+  console.log("Found path with", path.length, "steps");
+  console.table(path);
+} else {
+  console.log("No path possible");
 }
