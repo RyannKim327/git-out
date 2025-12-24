@@ -1,72 +1,46 @@
-// TarjanStronglyConnectedComponents.ts
-export type Vertex = string | number;
+// Bogosort (random sort) - not practical for large arrays, just for fun.
 
-export interface TarjanGraph {
-  [from: string]: Vertex[];
+type Comparator<T> = (a: T, b: T) => number;
+
+function defaultCompare(a: any, b: any): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
 }
 
-export function tarjanSCC(g: TarjanGraph): Vertex[][] {
-  const index = 0;
-  const stack: Vertex[] = [];
-  const indices  = new Map<Vertex, number>();
-  const lowlinks = new Map<Vertex, number>();
-  const onStack  = new Set<Vertex>();
-  const sccs: Vertex[][] = [];
+function isSorted<T>(arr: T[], compare: Comparator<T>): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (compare(arr[i - 1], arr[i]) > 0) return false;
+  }
+  return true;
+}
 
-  function strongconnect(v: Vertex) {
-    indices.set(v, index);
-    lowlinks.set(v, index);
-    index++;
-    stack.push(v);
-    onStack.add(v);
+function shuffleInPlace<T>(arr: T[]): void {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
 
-    for (const w of g[v] ?? []) {
-      if (!indices.has(w)) {
-        // Successor w has not yet been visited; recurse on it
-        strongconnect(w);
-        lowlinks.set(v, Math.min(lowlinks.get(v)!, lowlinks.get(w)!));
-      } else if (onStack.has(w)) {
-        // Successor w is in stack and hence in the current SCC
-        lowlinks.set(v, Math.min(lowlinks.get(v)!, indices.get(w)!));
-      }
-    }
+export function bogosort<T>(
+  arr: T[],
+  compare?: Comparator<T>,
+  maxIterations?: number
+): T[] {
+  const a = arr.slice();
+  const cmp = compare ?? defaultCompare;
+  let iterations = 0;
 
-    // If v is a root node, pop the stack and generate an SCC
-    if (lowlinks.get(v) === indices.get(v)) {
-      const scc: Vertex[] = [];
-      let w: Vertex;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        scc.push(w);
-      } while (w !== v);
-      sccs.push(scc);
-    }
+  while (!isSorted(a, cmp)) {
+    if (maxIterations != null && iterations >= maxIterations) break;
+    shuffleInPlace(a);
+    iterations++;
   }
 
-  for (const v of Object.keys(g)) {
-    if (!indices.has(v)) strongconnect(v);
-  }
-  return sccs;
+  return a;
 }
 
-/* -------------------------------------------------
-   Usage example
--------------------------------------------------*/
-if (require.main === module) {
-  const graph: TarjanGraph = {
-    A: ['B'],
-    B: ['C', 'F'],
-    C: ['D', 'G'],
-    D: ['E', 'A'],
-    E: ['B'],
-    F: ['C'],
-    G: ['H'],
-    H: ['G'],
-  };
-
-  console.log(tarjanSCC(graph));
-  // Expected:
-  // [ [ 'H', 'G' ], [ 'F' ], [ 'E', 'D', 'C', 'B', 'A' ] ]
-}
-npx ts-node TarjanStronglyConnectedComponents.ts
+// Example usage:
+const data = [3, 1, 4, 1, 5, 9, 2];
+const sorted = bogosort<number>(data);
+console.log("Original:", data);
+console.log("Bogosorted (may be unsorted if maxIterations hit):", sorted);
