@@ -1,317 +1,239 @@
-// Edge from `to` with a numeric weight.
-export interface Edge {
-  to: number;      // destination vertex id
-  weight: number;  // non‑negative weight
+interface Graph {
+  [node: string]: string[];
 }
 
-// The whole graph: an array where index = vertex id.
-export type Graph = Edge[][];
-// ---------- Min‑Heap (binary heap) ----------
-export class MinHeap<T> {
-  private heap: { key: number; value: T }[] = [];
-
-  // Insert a value with its priority (the key)
-  push(key: number, value: T): void {
-    this.heap.push({ key, value });
-    this.bubbleUp(this.heap.length - 1);
-  }
-
-  // Remove and return the element with the smallest key
-  pop(): { key: number; value: T } | undefined {
-    if (this.heap.length === 0) return undefined;
-    const min = this.heap[0];
-    const end = this.heap.pop()!;
-    if (this.heap.length > 0) {
-      this.heap[0] = end;
-      this.sinkDown(0);
-    }
-    return min;
-  }
-
-  // Decrease‑key: if the element already exists, we push a new entry.
-  // The algorithm will ignore stale entries when they are popped.
-  // This keeps the implementation simple and still O(log V) amortised.
-  // (If you need a true decrease‑key, you can store indices in a map.)
-
-  size(): number {
-    return this.heap.length;
-  }
-
-  private bubbleUp(idx: number): void {
-    const element = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      const parent = this.heap[parentIdx];
-      if (element.key >= parent.key) break;
-      this.heap[parentIdx] = element;
-      this.heap[idx] = parent;
-      idx = parentIdx;
+function topologicalSortKahn(graph: Graph): string[] {
+  // Calculate in-degrees
+  const inDegree: Record<string, number> = {};
+  const nodes = new Set<string>();
+  
+  // Initialize all nodes and in-degrees
+  for (const node in graph) {
+    nodes.add(node);
+    inDegree[node] = inDegree[node] || 0;
+    for (const neighbor of graph[node]) {
+      nodes.add(neighbor);
+      inDegree[neighbor] = (inDegree[neighbor] || 0) + 1;
     }
   }
-
-  private sinkDown(idx: number): void {
-    const length = this.heap.length;
-    const element = this.heap[idx];
-
-    while (true) {
-      const leftIdx = 2 * idx + 1;
-      const rightIdx = 2 * idx + 2;
-      let smallest = idx;
-
-      if (leftIdx < length && this.heap[leftIdx].key < this.heap[smallest].key) {
-        smallest = leftIdx;
-      }
-      if (rightIdx < length && this.heap[rightIdx].key < this.heap[smallest].key) {
-        smallest = rightIdx;
-      }
-      if (smallest === idx) break;
-
-      this.heap[idx] = this.heap[smallest];
-      this.heap[smallest] = element;
-      idx = smallest;
+  
+  // Find nodes with 0 in-degree
+  const queue: string[] = [];
+  for (const node of nodes) {
+    if ((inDegree[node] || 0) === 0) {
+      queue.push(node);
     }
   }
-}
-/**
- * Runs Dijkstra’s algorithm from a source vertex.
- *
- * @param graph   adjacency list representation
- * @param source  id of the start vertex (0‑based)
- * @returns       an object containing:
- *                - distances: number[] where distances[v] = shortest distance from source to v
- *                - previous : number[] where previous[v] = predecessor of v on the shortest path
- */
-export function dijkstra(
-  graph: Graph,
-  source: number
-): { distances: number[]; previous: (number | null)[] } {
-  const V = graph.length;
-  const distances = new Array<number>(V).fill(Infinity);
-  const previous = new Array<number | null>(V).fill(null);
-  const visited = new Array<boolean>(V).fill(false);
-
-  const pq = new MinHeap<number>();
-  distances[source] = 0;
-  pq.push(0, source);
-
-  while (pq.size() > 0) {
-    const { key: dist, value: u } = pq.pop()!;
-
-    // If we already processed a better distance, skip (stale entry)
-    if (visited[u]) continue;
-    visited[u] = true;
-
-    // Relax all outgoing edges from u
-    for (const edge of graph[u]) {
-      const v = edge.to;
-      const weight = edge.weight;
-      if (weight < 0) {
-        throw new Error('Dijkstra does not support negative edge weights');
-      }
-
-      const alt = dist + weight;
-      if (alt < distances[v]) {
-        distances[v] = alt;
-        previous[v] = u;
-        pq.push(alt, v);
+  
+  const result: string[] = [];
+  let count = 0;
+  
+  while (queue.length > 0) {
+    const node = queue.shift()!;
+    result.push(node);
+    count++;
+    
+    // Reduce in-degree of neighbors
+    for (const neighbor of graph[node] || []) {
+      inDegree[neighbor]--;
+      if (inDegree[neighbor] === 0) {
+        queue.push(neighbor);
       }
     }
   }
-
-  return { distances, previous };
-}
-
-/**
- * Reconstructs the shortest path from `source` to `target` using the `previous` array.
- *
- * @param previous array returned by dijkstra()
- * @param source   start vertex id
- * @param target   destination vertex id
- * @returns        array of vertex ids representing the path (source → … → target)
- *                 or empty array if no path exists.
- */
-export function reconstructPath(
-  previous: (number | null)[],
-  source: number,
-  target: number
-): number[] {
-  const path: number[] = [];
-  let cur: number | null = target;
-  while (cur !== null) {
-    path.push(cur);
-    if (cur === source) break;
-    cur = previous[cur];
+  
+  // Check for cycles
+  if (count !== nodes.size) {
+    throw new Error("Graph contains a cycle - topological sort not possible");
   }
-  if (path[path.length - 1] !== source) {
-    // No connection
-    return [];
-  }
-  return path.reverse();
+  
+  return result;
 }
-import { dijkstra, reconstructPath, Graph } from "./dijkstra";
-
-// Build a simple directed weighted graph:
-//   0 → 1 (4), 0 → 2 (1)
-//   2 → 1 (2), 2 → 3 (5)
-//   1 → 3 (1)
-//   3 → 4 (3)
-//   4 → 0 (7)   // (optional, makes a cycle)
-const graph: Graph = [
-  // 0
-  [
-    { to: 1, weight: 4 },
-    { to: 2, weight: 1 },
-  ],
-  // 1
-  [{ to: 3, weight: 1 }],
-  // 2
-  [
-    { to: 1, weight: 2 },
-    { to: 3, weight: 5 },
-  ],
-  // 3
-  [{ to: 4, weight: 3 }],
-  // 4
-  [{ to: 0, weight: 7 }],
-];
-
-const source = 0;
-const { distances, previous } = dijkstra(graph, source);
-
-console.log("Shortest distances from source:", distances);
-// → [0, 3, 1, 4, 7]
-
-const target = 4;
-const path = reconstructPath(previous, source, target);
-console.log(`Shortest path ${source} → ${target}:`, path);
-// → [0, 2, 1, 3, 4]
-Shortest distances from source: [ 0, 3, 1, 4, 7 ]
-Shortest path 0 → 4: [ 0, 2, 1, 3, 4 ]
-0 → 2 = 1
-0 → 2 → 1 = 1 + 2 = 3
-0 → 2 → 1 → 3 = 3 + 1 = 4
-0 → 2 → 1 → 3 → 4 = 4 + 3 = 7
-// dijkstra.ts ---------------------------------------------------------
-
-export interface Edge {
-  to: number;
-  weight: number;
-}
-
-export type Graph = Edge[][];
-
-// ---------- Min‑Heap ----------
-export class MinHeap<T> {
-  private heap: { key: number; value: T }[] = [];
-
-  push(key: number, value: T): void {
-    this.heap.push({ key, value });
-    this.bubbleUp(this.heap.length - 1);
-  }
-
-  pop(): { key: number; value: T } | undefined {
-    if (this.heap.length === 0) return undefined;
-    const min = this.heap[0];
-    const end = this.heap.pop()!;
-    if (this.heap.length > 0) {
-      this.heap[0] = end;
-      this.sinkDown(0);
+function topologicalSortDFS(graph: Graph): string[] {
+  const visited = new Set<string>();
+  const recursionStack = new Set<string>();
+  const result: string[] = [];
+  
+  function dfs(node: string): void {
+    if (recursionStack.has(node)) {
+      throw new Error("Graph contains a cycle");
     }
-    return min;
+    
+    if (visited.has(node)) {
+      return;
+    }
+    
+    visited.add(node);
+    recursionStack.add(node);
+    
+    // Visit all neighbors first
+    for (const neighbor of graph[node] || []) {
+      dfs(neighbor);
+    }
+    
+    recursionStack.delete(node);
+    result.push(node);
   }
-
-  size(): number {
-    return this.heap.length;
-  }
-
-  private bubbleUp(idx: number): void {
-    const element = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      const parent = this.heap[parentIdx];
-      if (element.key >= parent.key) break;
-      this.heap[parentIdx] = element;
-      this.heap[idx] = parent;
-      idx = parentIdx;
+  
+  // Visit all nodes
+  for (const node in graph) {
+    if (!visited.has(node)) {
+      dfs(node);
     }
   }
-
-  private sinkDown(idx: number): void {
-    const length = this.heap.length;
-    const element = this.heap[idx];
-
-    while (true) {
-      const leftIdx = 2 * idx + 1;
-      const rightIdx = 2 * idx + 2;
-      let smallest = idx;
-
-      if (leftIdx < length && this.heap[leftIdx].key < this.heap[smallest].key) {
-        smallest = leftIdx;
-      }
-      if (rightIdx < length && this.heap[rightIdx].key < this.heap[smallest].key) {
-        smallest = rightIdx;
-      }
-      if (smallest === idx) break;
-
-      this.heap[idx] = this.heap[smallest];
-      this.heap[smallest] = element;
-      idx = smallest;
-    }
-  }
+  
+  return result.reverse();
+}
+interface TopologicalSortResult<T> {
+  sorted: T[];
+  hasCycle: boolean;
 }
 
-// ---------- Dijkstra ----------
-export function dijkstra(
-  graph: Graph,
-  source: number
-): { distances: number[]; previous: (number | null)[] } {
-  const V = graph.length;
-  const distances = new Array<number>(V).fill(Infinity);
-  const previous = new Array<number | null>(V).fill(null);
-  const visited = new Array<boolean>(V).fill(false);
-
-  const pq = new MinHeap<number>();
-  distances[source] = 0;
-  pq.push(0, source);
-
-  while (pq.size() > 0) {
-    const { key: dist, value: u } = pq.pop()!;
-
-    if (visited[u]) continue;
-    visited[u] = true;
-
-    for (const edge of graph[u]) {
-      const v = edge.to;
-      const w = edge.weight;
-      if (w < 0) throw new Error('Negative weight detected');
-
-      const alt = dist + w;
-      if (alt < distances[v]) {
-        distances[v] = alt;
-        previous[v] = u;
-        pq.push(alt, v);
+class TopologicalSorter<T extends string | number | symbol> {
+  private graph: Record<T, T[]>;
+  
+  constructor(graph: Record<T, T[]>) {
+    this.graph = graph;
+  }
+  
+  // Kahn's algorithm implementation
+  sortKahn(): TopologicalSortResult<T> {
+    const inDegree: Record<T, number> = {} as Record<T, number>;
+    const nodes = new Set<T>();
+    
+    // Initialize data structures
+    for (const node in this.graph) {
+      const typedNode = node as T;
+      nodes.add(typedNode);
+      inDegree[typedNode] = inDegree[typedNode] || 0;
+      
+      for (const neighbor of this.graph[typedNode]) {
+        nodes.add(neighbor);
+        inDegree[neighbor] = (inDegree[neighbor] || 0) + 1;
       }
     }
+    
+    const queue: T[] = [];
+    for (const node of nodes) {
+      if ((inDegree[node] || 0) === 0) {
+        queue.push(node);
+      }
+    }
+    
+    const sorted: T[] = [];
+    let count = 0;
+    
+    while (queue.length > 0) {
+      const node = queue.shift()!;
+      sorted.push(node);
+      count++;
+      
+      for (const neighbor of this.graph[node as T] || []) {
+        inDegree[neighbor]--;
+        if (inDegree[neighbor] === 0) {
+          queue.push(neighbor);
+        }
+      }
+    }
+    
+    return {
+      sorted,
+      hasCycle: count !== nodes.size
+    };
   }
+  
+  // DFS-based implementation
+  sortDFS(): TopologicalSortResult<T> {
+    const visited = new Set<T>();
+    const recursionStack = new Set<T>();
+    const result: T[] = [];
+    let hasCycle = false;
+    
+    const dfs = (node: T): void => {
+      if (recursionStack.has(node)) {
+        hasCycle = true;
+        return;
+      }
+      
+      if (visited.has(node)) {
+        return;
+      }
+      
+      visited.add(node);
+      recursionStack.add(node);
+      
+      for (const neighbor of this.graph[node] || []) {
+        dfs(neighbor);
+      }
+      
+      recursionStack.delete(node);
+      result.push(node);
+    };
+    
+    for (const node in this.graph) {
+      const typedNode = node as T;
+      if (!visited.has(typedNode)) {
+        dfs(typedNode);
+      }
+    }
+    
+    return {
+      sorted: result.reverse(),
+      hasCycle
+    };
+  }
+}
+// Example usage
+const graph: Graph = {
+  'A': ['C'],
+  'B': ['C', 'D'],
+  'C': ['E'],
+  'D': ['F'],
+  'E': ['F', 'H'],
+  'F': ['G'],
+  'G': [],
+  'H': []
+};
 
-  return { distances, previous };
+// Using Kahn's algorithm
+try {
+  const sortedKahn = topologicalSortKahn(graph);
+  console.log("Kahn's result:", sortedKahn);
+} catch (error) {
+  console.error("Cycle detected:", error.message);
 }
 
-// ---------- Path reconstruction ----------
-export function reconstructPath(
-  previous: (number | null)[],
-  source: number,
-  target: number
-): number[] {
-  const path: number[] = [];
-  let cur: number | null = target;
-  while (cur !== null) {
-    path.push(cur);
-    if (cur === source) break;
-    cur = previous[cur];
-  }
-  if (path[path.length - 1] !== source) return []; // unreachable
-  return path.reverse();
+// Using DFS algorithm
+try {
+  const sortedDFS = topologicalSortDFS(graph);
+  console.log("DFS result:", sortedDFS);
+} catch (error) {
+  console.error("Cycle detected:", error.message);
 }
 
-// --------------------------------------------------------------------
+// Using generic class
+const sorter = new TopologicalSorter<string>(graph);
+const result = sorter.sortKahn();
+
+if (result.hasCycle) {
+  console.log("Graph contains a cycle");
+} else {
+  console.log("Sorted order:", result.sorted);
+}
+// Handling cycles
+const cyclicGraph: Graph = {
+  'A': ['B'],
+  'B': ['C'],
+  'C': ['A'] // Cycle!
+};
+
+// Handling disconnected graphs
+const disconnectedGraph: Graph = {
+  'A': ['B'],
+  'B': ['C'],
+  'X': ['Y'],
+  'Y': ['Z']
+};
+
+// Handling empty graph
+const emptyGraph: Graph = {};
