@@ -1,54 +1,72 @@
-function removeVowels(input: string): string {
-  return input.replace(/[aeiou]/gi, '');
+function isPalindrome(str: string): boolean {
+    const cleanedStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return cleanedStr === cleanedStr.split('').reverse().join('');
 }
 
-// Example usage
-const result = removeVowels("Hello World"); // "Hll Wrld"
-function removeVowels(input: string): string {
-  const vowels = ['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U'];
-  return input
-    .split('')
-    .filter(char => !vowels.includes(char))
-    .join('');
-}
-
-// Example usage
-const result = removeVowels("TypeScript"); // "TypScrpt"
-function removeVowels(input: string): string {
-  const vowels = 'aeiouAEIOU';
-  let result = '';
-  
-  for (let i = 0; i < input.length; i++) {
-    if (!vowels.includes(input[i])) {
-      result += input[i];
+// Examples
+console.log(isPalindrome("racecar")); // true
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("hello")); // false
+function isPalindrome(str: string): boolean {
+    const cleanedStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    let left = 0;
+    let right = cleanedStr.length - 1;
+    
+    while (left < right) {
+        if (cleanedStr[left] !== cleanedStr[right]) {
+            return false;
+        }
+        left++;
+        right--;
     }
-  }
-  
-  return result;
+    return true;
+}
+function isPalindrome(str: string): boolean {
+    const cleanedStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    function checkPalindrome(s: string, start: number, end: number): boolean {
+        if (start >= end) return true;
+        if (s[start] !== s[end]) return false;
+        return checkPalindrome(s, start + 1, end - 1);
+    }
+    
+    return checkPalindrome(cleanedStr, 0, cleanedStr.length - 1);
+}
+interface PalindromeOptions {
+    caseSensitive?: boolean;
+    ignoreSpaces?: boolean;
+    ignorePunctuation?: boolean;
 }
 
-// Example usage
-const result = removeVowels("Programming"); // "Prgrmmng"
-function removeVowels(input: string): string {
-  const vowelSet = new Set(['a', 'e', 'i', 'o', 'u']);
-  return input
-    .split('')
-    .filter(char => !vowelSet.has(char.toLowerCase()))
-    .join('');
+function isPalindrome(
+    str: string, 
+    options: PalindromeOptions = {}
+): boolean {
+    const { 
+        caseSensitive = false, 
+        ignoreSpaces = true, 
+        ignorePunctuation = true 
+    } = options;
+    
+    let cleanedStr = str;
+    
+    if (!caseSensitive) {
+        cleanedStr = cleanedStr.toLowerCase();
+    }
+    
+    if (ignoreSpaces) {
+        cleanedStr = cleanedStr.replace(/\s/g, '');
+    }
+    
+    if (ignorePunctuation) {
+        cleanedStr = cleanedStr.replace(/[^a-z0-9]/gi, '');
+    }
+    
+    return cleanedStr === cleanedStr.split('').reverse().join('');
 }
 
-// Example usage
-const result = removeVowels("JavaScript"); // "JvScrpt"
-function removeVowels(input: string): string {
-  if (typeof input !== 'string') {
-    throw new Error('Input must be a string');
-  }
-  
-  return input.replace(/[aeiou]/gi, '');
-}
-
-// Test cases
-console.log(removeVowels("Hello World"));      // "Hll Wrld"
-console.log(removeVowels("TypeScript"));       // "TypScrpt"
-console.log(removeVowels("AEIOUaeiou"));       // ""
-console.log(removeVowels(""));                 // ""
+// Usage examples
+console.log(isPalindrome("Racecar")); // true
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("racecar", { caseSensitive: true })); // false
+console.log(isPalindrome("ra cec ar", { ignoreSpaces: false })); // false
