@@ -1,30 +1,29 @@
-/**
- * Returns the largest prime factor of n (n ≥ 2).
- * Runs in O(√n) time and O(1) space.
- */
-function largestPrimeFactor(n: number): number {
-  if (n < 2 || !Number.isInteger(n)) throw RangeError('n must be an integer ≥ 2');
-
-  let factor = 2;
-
-  // Remove all factors of 2 first (optional micro-optimisation)
-  while (n % factor === 0) n /= factor;
-
-  // Check odd candidates up to √n
-  factor = 3;
-  while (factor * factor <= n) {
-    if (n % factor === 0) {
-      n /= factor;          // divide out this factor completely
-    } else {
-      factor += 2;            // next odd number
-    }
-  }
-
-  // Whatever is left is either 1 or the last (largest) prime factor
-  return n === 1 ? factor - 2 : n;
+function mean(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  const sum = nums.reduce((a, b) => a + b, 0);
+  return sum / nums.length;
 }
-
-/* ---------- quick sanity checks ---------- */
-console.log(largestPrimeFactor(18));     // 3
-console.log(largestPrimeFactor(13195));   // 29
-console.log(largestPrimeFactor(600851475143)); // 6857
+mean([1, 2, 3, 4]); // 2.5
+mean([]);           // undefined
+function meanOrThrow(nums: number[]): number {
+  if (nums.length === 0) throw new Error("Cannot compute mean of an empty array");
+  const sum = nums.reduce((a, b) => a + b, 0);
+  return sum / nums.length;
+}
+function meanIter(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  let sum = 0;
+  for (let i = 0; i < nums.length; i++) {
+    sum += nums[i];
+  }
+  return sum / nums.length;
+}
+function meanFromIterable(iterable: Iterable<number>): number | undefined {
+  let sum = 0;
+  let count = 0;
+  for (const n of iterable) {
+    sum += n;
+    count++;
+  }
+  return count === 0 ? undefined : sum / count;
+}
