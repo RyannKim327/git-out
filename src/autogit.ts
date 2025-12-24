@@ -1,250 +1,147 @@
-interface Node {
-    id: string;
-    children?: Node[];
-    // Add any additional properties for your specific use case
-}
+function quicksort<T>(array: T[]): T[] {
+  if (array.length <= 1) {
+    return array;
+  }
 
-class BreadthLimitedSearch<T> {
-    private visited: Set<string> = new Set();
-    
-    search(
-        startNode: T,
-        getChildren: (node: T) => T[],
-        getId: (node: T) => string,
-        depthLimit: number,
-        isGoal?: (node: T) => boolean
-    ): T | null {
-        this.visited.clear();
-        
-        if (depthLimit < 0) {
-            throw new Error("Depth limit must be non-negative");
-        }
-        
-        const queue: { node: T; depth: number }[] = [];
-        queue.push({ node: startNode, depth: 0 });
-        this.visited.add(getId(startNode));
-        
-        while (queue.length > 0) {
-            const { node, depth } = queue.shift()!;
-            
-            // Check if this is the goal node
-            if (isGoal && isGoal(node)) {
-                return node;
-            }
-            
-            // Stop expanding if we've reached the depth limit
-            if (depth >= depthLimit) {
-                continue;
-            }
-            
-            // Explore children
-            const children = getChildren(node);
-            for (const child of children) {
-                const childId = getId(child);
-                if (!this.visited.has(childId)) {
-                    this.visited.add(childId);
-                    queue.push({ node: child, depth: depth + 1 });
-                }
-            }
-        }
-        
-        return null; // Goal not found within depth limit
+  const pivot = array[Math.floor(array.length / 2)];
+  const left: T[] = [];
+  const right: T[] = [];
+  const equal: T[] = [];
+
+  for (const element of array) {
+    if (element < pivot) {
+      left.push(element);
+    } else if (element > pivot) {
+      right.push(element);
+    } else {
+      equal.push(element);
     }
-    
-    // Method to get all nodes within depth limit
-    getAllNodesWithinDepth(
-        startNode: T,
-        getChildren: (node: T) => T[],
-        getId: (node: T) => string,
-        depthLimit: number
-    ): T[] {
-        this.visited.clear();
-        const result: T[] = [];
-        
-        const queue: { node: T; depth: number }[] = [];
-        queue.push({ node: startNode, depth: 0 });
-        this.visited.add(getId(startNode));
-        result.push(startNode);
-        
-        while (queue.length > 0) {
-            const { node, depth } = queue.shift()!;
-            
-            if (depth >= depthLimit) {
-                continue;
-            }
-            
-            const children = getChildren(node);
-            for (const child of children) {
-                const childId = getId(child);
-                if (!this.visited.has(childId)) {
-                    this.visited.add(childId);
-                    queue.push({ node: child, depth: depth + 1 });
-                    result.push(child);
-                }
-            }
-        }
-        
-        return result;
+  }
+
+  return [...quicksort(left), ...equal, ...quicksort(right)];
+}
+function quicksortInPlace<T>(array: T[], left: number = 0, right: number = array.length - 1): T[] {
+  if (left >= right) {
+    return array;
+  }
+
+  const pivotIndex = partition(array, left, right);
+  quicksortInPlace(array, left, pivotIndex - 1);
+  quicksortInPlace(array, pivotIndex + 1, right);
+  
+  return array;
+}
+
+function partition<T>(array: T[], left: number, right: number): number {
+  const pivot = array[right];
+  let i = left - 1;
+
+  for (let j = left; j < right; j++) {
+    if (array[j] <= pivot) {
+      i++;
+      [array[i], array[j]] = [array[j], array[i]];
     }
+  }
+
+  [array[i + 1], array[right]] = [array[right], array[i + 1]];
+  return i + 1;
 }
-// Define a tree node interface
-interface TreeNode {
-    id: string;
-    value: number;
-    children?: TreeNode[];
-}
+function quicksortGeneric<T>(
+  array: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  if (array.length <= 1) {
+    return array;
+  }
 
-// Create a sample tree
-const tree: TreeNode = {
-    id: 'A',
-    value: 1,
-    children: [
-        {
-            id: 'B',
-            value: 2,
-            children: [
-                { id: 'D', value: 4 },
-                { id: 'E', value: 5 }
-            ]
-        },
-        {
-            id: 'C',
-            value: 3,
-            children: [
-                { id: 'F', value: 6 },
-                { 
-                    id: 'G', 
-                    value: 7,
-                    children: [
-                        { id: 'H', value: 8 }
-                    ]
-                }
-            ]
-        }
-    ]
-};
+  const pivotIndex = Math.floor(array.length / 2);
+  const pivot = array[pivotIndex];
+  
+  const left: T[] = [];
+  const right: T[] = [];
+  const equal: T[] = [];
 
-// Create search instance
-const bfs = new BreadthLimitedSearch<TreeNode>();
-
-// Example 1: Find a specific node within depth limit
-const goalNode = bfs.search(
-    tree,
-    (node) => node.children || [],
-    (node) => node.id,
-    2, // Depth limit
-    (node) => node.value === 6 // Goal condition
-);
-
-console.log('Found node:', goalNode?.id); // Output: Found node: F
-
-// Example 2: Get all nodes within depth 2
-const allNodes = bfs.getAllNodesWithinDepth(
-    tree,
-    (node) => node.children || [],
-    (node) => node.id,
-    2
-);
-
-console.log('Nodes within depth 2:', allNodes.map(n => n.id));
-// Output: Nodes within depth 2: ['A', 'B', 'C', 'D', 'E', 'F', 'G']
-class BreadthLimitedSearchWithPath<T> {
-    searchWithPath(
-        startNode: T,
-        getChildren: (node: T) => T[],
-        getId: (node: T) => string,
-        depthLimit: number,
-        isGoal: (node: T) => boolean
-    ): T[] | null {
-        const visited: Set<string> = new Set();
-        const queue: { node: T; depth: number; path: T[] }[] = [];
-        
-        queue.push({ node: startNode, depth: 0, path: [startNode] });
-        visited.add(getId(startNode));
-        
-        while (queue.length > 0) {
-            const { node, depth, path } = queue.shift()!;
-            
-            if (isGoal(node)) {
-                return path;
-            }
-            
-            if (depth >= depthLimit) {
-                continue;
-            }
-            
-            const children = getChildren(node);
-            for (const child of children) {
-                const childId = getId(child);
-                if (!visited.has(childId)) {
-                    visited.add(childId);
-                    queue.push({ 
-                        node: child, 
-                        depth: depth + 1, 
-                        path: [...path, child] 
-                    });
-                }
-            }
-        }
-        
-        return null;
+  for (const item of array) {
+    const comparison = compareFn(item, pivot);
+    if (comparison < 0) {
+      left.push(item);
+    } else if (comparison > 0) {
+      right.push(item);
+    } else {
+      equal.push(item);
     }
+  }
+
+  return [
+    ...quicksortGeneric(left, compareFn),
+    ...equal,
+    ...quicksortGeneric(right, compareFn)
+  ];
+}
+function optimizedQuicksort<T>(array: T[], left: number = 0, right: number = array.length - 1): T[] {
+  if (left < right) {
+    const pivotIndex = optimizedPartition(array, left, right);
+    optimizedQuicksort(array, left, pivotIndex - 1);
+    optimizedQuicksort(array, pivotIndex + 1, right);
+  }
+  return array;
 }
 
-// Example usage with path tracking
-const bfsWithPath = new BreadthLimitedSearchWithPath<TreeNode>();
-
-const path = bfsWithPath.searchWithPath(
-    tree,
-    (node) => node.children || [],
-    (node) => node.id,
-    3,
-    (node) => node.value === 8
-);
-
-console.log('Path to node H:', path?.map(n => n.id));
-// Output: Path to node H: ['A', 'C', 'G', 'H']
-// For graph structures (where nodes can have multiple parents)
-interface GraphNode {
-    id: string;
-    neighbors: string[]; // IDs of neighboring nodes
-}
-
-class GraphBFS<T extends { id: string; neighbors: string[] }> {
-    search(
-        startNode: T,
-        getNodeById: (id: string) => T | undefined,
-        depthLimit: number,
-        isGoal: (node: T) => boolean
-    ): T | null {
-        const visited: Set<string> = new Set();
-        const queue: { node: T; depth: number }[] = [];
-        
-        queue.push({ node: startNode, depth: 0 });
-        visited.add(startNode.id);
-        
-        while (queue.length > 0) {
-            const { node, depth } = queue.shift()!;
-            
-            if (isGoal(node)) {
-                return node;
-            }
-            
-            if (depth >= depthLimit) {
-                continue;
-            }
-            
-            for (const neighborId of node.neighbors) {
-                if (!visited.has(neighborId)) {
-                    const neighbor = getNodeById(neighborId);
-                    if (neighbor) {
-                        visited.add(neighborId);
-                        queue.push({ node: neighbor, depth: depth + 1 });
-                    }
-                }
-            }
-        }
-        
-        return null;
+function optimizedPartition<T>(array: T[], left: number, right: number): number {
+  // Median-of-three pivot selection
+  const mid = Math.floor((left + right) / 2);
+  const pivot = medianOfThree(array[left], array[mid], array[right]);
+  
+  // Move pivot to the end
+  let pivotIndex = left;
+  if (array[left] === pivot) {
+    pivotIndex = left;
+  } else if (array[mid] === pivot) {
+    [array[mid], array[right]] = [array[right], array[mid]];
+    pivotIndex = mid;
+  } else {
+    pivotIndex = right;
+  }
+  
+  [array[pivotIndex], array[right]] = [array[right], array[pivotIndex]];
+  
+  let i = left - 1;
+  for (let j = left; j < right; j++) {
+    if (array[j] <= pivot) {
+      i++;
+      [array[i], array[j]] = [array[j], array[i]];
     }
+  }
+  
+  [array[i + 1], array[right]] = [array[right], array[i + 1]];
+  return i + 1;
 }
+
+function medianOfThree<T>(a: T, b: T, c: T): T {
+  if ((a <= b && b <= c) || (c <= b && b <= a)) return b;
+  if ((b <= a && a <= c) || (c <= a && a <= b)) return a;
+  return c;
+}
+// Basic usage
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log(quicksort(numbers)); // [11, 12, 22, 25, 34, 64, 90]
+
+// String sorting
+const strings = ["banana", "apple", "cherry", "date"];
+console.log(quicksort(strings)); // ["apple", "banana", "cherry", "date"]
+
+// With custom comparator
+const objects = [
+  { name: "John", age: 25 },
+  { name: "Alice", age: 30 },
+  { name: "Bob", age: 20 }
+];
+
+const sortedByAge = quicksortGeneric(objects, (a, b) => a.age - b.age);
+console.log(sortedByAge);
+// [{name: "Bob", age: 20}, {name: "John", age: 25}, {name: "Alice", age: 30}]
+
+// In-place sorting
+const arr = [3, 6, 8, 10, 1, 2, 1];
+quicksortInPlace(arr);
+console.log(arr); // [1, 1, 2, 3, 6, 8, 10]
