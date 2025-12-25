@@ -1,133 +1,123 @@
 /**
- * Returns n! (factorial of n) as a number.
- * Works for n up to about 170 (beyond that Number overflows to Infinity).
- *
- * @param n - non‑negative integer
- * @throws RangeError if n is negative or not an integer
+ * Returns the second largest *distinct* number in the array,
+ * or undefined if it does not exist.
  */
-function factorialIterative(n: number): number {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new RangeError('factorial is defined for non‑negative integers only');
+function secondLargestDistinct(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
+
+  let max = -Infinity;
+  let second = -Infinity;
+
+  for (const n of nums) {
+    if (n > max) {
+      second = max;   // old max becomes second
+      max = n;
+    } else if (n < max && n > second) {
+      // n is smaller than max but larger than current second
+      second = n;
+    }
   }
 
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
+  return second === -Infinity ? undefined : second;
 }
 
-// Example
-console.log(factorialIterative(5)); // 120
-/**
- * Recursive factorial – elegant but limited by the call‑stack size.
- *
- * @param n - non‑negative integer
- * @throws RangeError if n is negative or not an integer
- */
-function factorialRecursive(n: number): number {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new RangeError('factorial is defined for non‑negative integers only');
-  }
-  if (n === 0 || n === 1) return 1;
-  return n * factorialRecursive(n - 1);
-}
+/* ---- usage ---- */
+console.log(secondLargestDistinct([5, 2, 9, 1])); // 5
+console.log(secondLargestDistinct([3, 3, 3]));    // undefined
+console.log(secondLargestDistinct([7, 7, 5]));    // 5
+function secondLargestAllowDup(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
 
-// Example
-console.log(factorialRecursive(6)); // 720
-/**
- * Factorial that returns a BigInt, allowing results far larger than Number.MAX_SAFE_INTEGER.
- *
- * @param n - non‑negative integer (as a regular number)
- * @returns n! as a BigInt
- * @throws RangeError if n is negative or not an integer
- */
-function factorialBigInt(n: number): bigint {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new RangeError('factorial is defined for non‑negative integers only');
+  let max = -Infinity;
+  let second = -Infinity;
+
+  for (const n of nums) {
+    if (n > max) {
+      second = max;
+      max = n;
+    } else if (n > second) {
+      // n is <= max, but still larger than current second
+      second = n;
+    }
   }
 
-  let result = 1n; // note the "n" suffix → BigInt literal
-  for (let i = 2; i <= n; i++) {
-    result *= BigInt(i);
+  return second === -Infinity ? undefined : second;
+}
+
+/* ---- usage ---- */
+console.log(secondLargestAllowDup([5, 2, 9, 1])); // 5
+console.log(secondLargestAllowDup([3, 3, 3]));    // 3 (the second 3)
+console.log(secondLargestAllowDup([7, 7, 5]));    // 7 (the second 7)
+/**
+ * Returns the second largest distinct element, or undefined.
+ * Uses sorting, so it is O(n log n).
+ */
+function secondLargestBySorting(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
+
+  // Clone to avoid mutating the caller's array
+  const sorted = [...new Set(nums)].sort((a, b) => b - a); // descending, unique
+
+  return sorted[1]; // undefined if there is no second element
+}
+
+/* ---- usage ---- */
+console.log(secondLargestBySorting([5, 2, 9, 1])); // 5
+console.log(secondLargestBySorting([3, 3, 3]));    // undefined
+function secondLargestFunctional(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
+
+  const max = Math.max(...nums);
+  const withoutMax = nums.filter(v => v !== max); // drop all max values
+  return withoutMax.length ? Math.max(...withoutMax) : undefined;
+}
+
+/* ---- usage ---- */
+console.log(secondLargestFunctional([5, 2, 9, 1])); // 5
+function secondLargestSafe(nums: unknown[]): number | undefined {
+  const numbers = nums.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+  return secondLargestDistinct(numbers);
+}
+// utils/arrayMath.ts
+export function secondLargest<T extends number>(arr: T[]): T | undefined {
+  if (arr.length < 2) return undefined;
+
+  let max = -Infinity as T;
+  let second = -Infinity as T;
+
+  for (const v of arr) {
+    if (v > max) {
+      second = max;
+      max = v;
+    } else if (v < max && v > second) {
+      second = v;
+    }
   }
-  return result;
+
+  return second === -Infinity ? undefined : second;
 }
 
-// Example
-console.log(factorialBigInt(20).toString()); // "2432902008176640000"
-console.log(factorialBigInt(100).toString().slice(0, 20) + '...'); // first 20 digits of 100!
-// factorial.ts
-export type FactorialResult = number | bigint;
-
 /**
- * Validate that n is a non‑negative integer.
+ * Variant that treats duplicates as separate entries.
  */
-function assertNonNegativeInteger(n: number): void {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new RangeError('factorial is defined for non‑negative integers only');
+export function secondLargestAllowDup<T extends number>(arr: T[]): T | undefined {
+  if (arr.length < 2) return undefined;
+
+  let max = -Infinity as T;
+  let second = -Infinity as T;
+
+  for (const v of arr) {
+    if (v > max) {
+      second = max;
+      max = v;
+    } else if (v > second) {
+      second = v;
+    }
   }
-}
 
-/**
- * Iterative version returning a Number.
- */
-export function factorialIterative(n: number): number {
-  assertNonNegativeInteger(n);
-  let result = 1;
-  for (let i = 2; i <= n; i++) result *= i;
-  return result;
+  return second === -Infinity ? undefined : second;
 }
+import { secondLargest, secondLargestAllowDup } from './utils/arrayMath';
 
-/**
- * Recursive version returning a Number.
- */
-export function factorialRecursive(n: number): number {
-  assertNonNegativeInteger(n);
-  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
-}
-
-/**
- * BigInt version – safe for arbitrarily large n.
- */
-export function factorialBigInt(n: number): bigint {
-  assertNonNegativeInteger(n);
-  let result = 1n;
-  for (let i = 2; i <= n; i++) result *= BigInt(i);
-  return result;
-}
-
-/**
- * Convenience wrapper that picks the appropriate implementation.
- *
- * @param n - non‑negative integer
- * @param useBigInt - if true, returns a BigInt; otherwise a Number (may overflow)
- */
-export function factorial(n: number, useBigInt = false): FactorialResult {
-  return useBigInt ? factorialBigInt(n) : factorialIterative(n);
-}
-import { factorial, factorialBigInt } from './factorial';
-
-console.log(factorial(7));               // 5040 (Number)
-console.log(factorial(7, true));         // 5040n (BigInt)
-console.log(factorialBigInt(150).toString()); // huge number as a string
-for (let i = 0; i <= 20; i++) {
-  const a = factorialIterative(i);
-  const b = factorialRecursive(i);
-  const c = Number(factorialBigInt(i)); // safe up to 20!
-  console.assert(a === b && a === c, `Mismatch at ${i}`);
-}
-console.log('All checks passed!');
-// Simple iterative factorial (Number)
-function factorial(n: number): number {
-  if (!Number.isInteger(n) || n < 0) throw new RangeError('n must be a non‑negative integer');
-  let result = 1;
-  for (let i = 2; i <= n; i++) result *= i;
-  return result;
-}
-function factorialBig(n: number): bigint {
-  if (!Number.isInteger(n) || n < 0) throw new RangeError('n must be a non‑negative integer');
-  let result = 1n;
-  for (let i = 2; i <= n; i++) result *= BigInt(i);
-  return result;
-}
+console.log(secondLargest([10, 20, 30]));          // 20
+console.log(secondLargestAllowDup([10, 30, 30])); // 30
