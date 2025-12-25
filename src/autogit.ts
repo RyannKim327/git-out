@@ -1,136 +1,244 @@
-// Suffix tree (naive/compressed-ish) implementation in TS
-// Note: this is a practical, readable implementation for many use cases.
-// It uses explicit edge labels (substrings) for simplicity.
-
-class Node {
-  edges: Map<string, Edge> = new Map();
+export interface GraphNode {
+  id: number;
+  neighbors: number[];
 }
 
-class Edge {
-  label: string;
-  dest: Node;
-  constructor(label: string, dest: Node) {
-    this.label = label;
-    this.dest = dest;
-  }
-}
+export class TarjanSCC {
+  private graph: GraphNode[];
+  private index: number = 0;
+  private stack: number[] = [];
+  private indices: Map<number, number> = new Map();
+  private lowlinks: Map<number, number> = new Map();
+  private onStack: Map<number, boolean> = new Map();
+  private sccs: number[][] = [];
 
-export class SuffixTree {
-  private root: Node;
-  private text: string = "";
-
-  constructor() {
-    this.root = new Node();
+  constructor(graph: GraphNode[]) {
+    this.graph = graph;
   }
 
-  // Build a suffix tree for the string s
-  // We append a unique terminal symbol '$' to ensure unique leaves
-  build(s: string): void {
-    this.root = new Node();
-    this.text = s + "$"; // unique termination
-    // insert all suffixes starting at i = 0 .. text.length-1
-    for (let i = 0; i < this.text.length; i++) {
-      this.insertSuffix(i);
+  /**
+   * Find all strongly connected components in the graph
+   */
+  public findSCCs(): number[][] {
+    this.reset();
+    
+    // Initialize maps for all nodes
+    this.graph.forEach(node => {
+      this.indices.set(node.id, -1);
+      this.lowlinks.set(node.id, -1);
+      this.onStack.set(node.id, false);
+    });
+
+    // Perform DFS for each unvisited node
+    this.graph.forEach(node => {
+      if (this.indices.get(node.id) === -1) {
+        this.strongConnect(node.id);
+      }
+    });
+
+    return this.sccs;
+  }
+
+  /**
+   * Recursive DFS function for Tarjan's algorithm
+   */
+  private strongConnect(v: number): void {
+    // Set the depth index for v to the smallest unused index
+    this.indices.set(v, this.index);
+    this.lowlinks.set(v, this.index);
+    this.index++;
+    this.stack.push(v);
+    this.onStack.set(v, true);
+
+    // Consider all neighbors of v
+    const node = this.graph.find(n => n.id === v);
+    if (!node) return;
+
+    for (const w of node.neighbors) {
+      if (this.indices.get(w) === -1) {
+        // Successor w has not yet been visited; recurse on it
+        this.strongConnect(w);
+        this.lowlinks.set(v, Math.min(this.lowlinks.get(v)!, this.lowlinks.get(w)!));
+      } else if (this.onStack.get(w)) {
+        // Successor w is in stack and hence in the current SCC
+        this.lowlinks.set(v, Math.min(this.lowlinks.get(v)!, this.indices.get(w)!));
+      }
+    }
+
+    // If v is a root node, pop the stack and generate an SCC
+    if (this.lowlinks.get(v) === this.indices.get(v)) {
+      const component: number[] = [];
+      let w: number;
+      
+      do {
+        w = this.stack.pop()!;
+        this.onStack.set(w, false);
+        component.push(w);
+      } while (w !== v);
+
+      this.sccs.push(component);
     }
   }
 
-  // Insert the suffix starting at position i of this.text
-  private insertSuffix(i: number): void {
-    let current: Node = this.root;
-    let p = i;
+  /**
+   * Reset the algorithm state
+   */
+  private reset(): void {
+    this.index = 0;
+    this.stack = [];
+    this.indices.clear();
+    this.lowlinks.clear();
+    this.onStack.clear();
+    this.sccs = [];
+  }
 
-    while (true) {
-      if (p >= this.text.length) break;
-      const c = this.text[p];
-      const edge = current.edges.get(c);
+  /**
+   * Get the condensation graph (DAG of SCCs)
+   */
+  public getCondensationGraph(): { nodes: number[][], edges: [number, number][] } {
+    const sccs = this.findSCCs();
+    const sccMap = new Map<number, number>();
+    
+    // Map each node to its SCC index
+    sccs.forEach((scc, index) => {
+      scc.forEach(node => {
+        sccMap.set(node, index);
+      });
+    });
 
-      if (!edge) {
-        // No edge starting with this char: create a new leaf with the rest of the suffix
-        const leaf = new Node();
-        const leafLabel = this.text.substring(p); // includes the rest, ending with $
-        current.edges.set(c, new Edge(leafLabel, leaf));
-        break;
-      } else {
-        // We have an edge; try to match as much as possible with its label
-        const label = edge.label;
-        let k = 0;
-        while (
-          k < label.length &&
-          p + k < this.text.length &&
-          this.text[p + k] === label[k]
-        ) {
-          k++;
+    const edges: [number, number][] = [];
+    const addedEdges = new Set<string>();
+
+    // Find edges between different SCCs
+    this.graph.forEach(node => {
+      const fromScc = sccMap.get(node.id)!;
+      
+      node.neighbors.forEach(neighbor => {
+        const toScc = sccMap.get(neighbor)!;
+        
+        if (fromScc !== toScc) {
+          const edgeKey = `${fromScc}-${toScc}`;
+          if (!addedEdges.has(edgeKey)) {
+            edges.push([fromScc, toScc]);
+            addedEdges.add(edgeKey);
+          }
         }
+      });
+    });
 
-        if (k === label.length) {
-          // Fully matched the edge; move down
-          current = edge.dest;
-          p += k;
-          if (p >= this.text.length) break;
-          continue;
-        } else {
-          // Partial match inside the edge: split the edge
-          const mid = new Node();
-
-          // Part 1: current -> mid with label[0..k)
-          current.edges.set(c, new Edge(label.substring(0, k), mid));
-
-          // Part 2: mid -> oldDest with label[k..)
-          const secondLabel = label.substring(k);
-          mid.edges.set(secondLabel[0], new Edge(secondLabel, edge.dest));
-
-          // Leaf for the remaining suffix from position p+k
-          // If rest is empty (shouldn't normally happen because of '$'), guard it
-          let rest = this.text.substring(p + k);
-          if (rest.length === 0) rest = "$";
-          const leaf = new Node();
-          mid.edges.set(rest[0], new Edge(rest, leaf));
-
-          break;
-        }
-      }
-    }
+    return { nodes: sccs, edges };
   }
-
-  // Check whether the string pattern exists in the text
-  // Returns true if pattern is a substring of the original string (without the terminal)
-  contains(pattern: string): boolean {
-    let node: Node = this.root;
-    let m = pattern;
-
-    while (m.length > 0) {
-      const edge = node.edges.get(m[0]);
-      if (!edge) return false;
-
-      const label = edge.label;
-      // compare pattern prefix with edge label
-      let i = 0;
-      while (i < label.length && i < m.length && label[i] === m[i]) i++;
-
-      if (i === m.length) {
-        // pattern fully matched along this edge
-        return true;
-      }
-      if (i < label.length) {
-        // mismatch inside the edge
-        return false;
-      }
-
-      // matched whole edge: move to next node and reduce pattern
-      node = edge.dest;
-      m = m.substring(i);
-    }
-
-    return true;
-  }
-
-  // Optional: expose a simple query API
-  // Example usage:
-  // const st = new SuffixTree(); st.build("banana"); st.contains("ana"); // true
 }
-const st = new SuffixTree();
-st.build("banana");
+// Example usage
+const graph: GraphNode[] = [
+  { id: 0, neighbors: [1] },
+  { id: 1, neighbors: [2] },
+  { id: 2, neighbors: [0, 3] },
+  { id: 3, neighbors: [4] },
+  { id: 4, neighbors: [5, 7] },
+  { id: 5, neighbors: [6] },
+  { id: 6, neighbors: [4, 7] },
+  { id: 7, neighbors: [] }
+];
 
-console.log(st.contains("ana")); // true
-console.log(st.contains("nab")); // true  ("nab" is part of "banana"? yes, "banan"a contains "nab" as "banan"… but you can test other patterns)
-console.log(st.contains("apple")); // false
+const tarjan = new TarjanSCC(graph);
+const sccs = tarjan.findSCCs();
+const condensation = tarjan.getCondensationGraph();
+
+console.log('Strongly Connected Components:');
+sccs.forEach((scc, index) => {
+  console.log(`SCC ${index}: [${scc.join(', ')}]`);
+});
+
+console.log('\nCondensation Graph:');
+console.log('Nodes:', condensation.nodes);
+console.log('Edges:', condensation.edges);
+export class TarjanAdjacencyList {
+  private graph: Map<number, number[]>;
+  private index: number = 0;
+  private stack: number[] = [];
+  private indices: Map<number, number> = new Map();
+  private lowlinks: Map<number, number> = new Map();
+  private onStack: Map<number, boolean> = new Map();
+  private sccs: number[][] = [];
+
+  constructor(adjacencyList: Map<number, number[]>) {
+    this.graph = adjacencyList;
+  }
+
+  public findSCCs(): number[][] {
+    this.reset();
+    
+    // Initialize for all nodes
+    this.graph.forEach((_, node) => {
+      this.indices.set(node, -1);
+      this.lowlinks.set(node, -1);
+      this.onStack.set(node, false);
+    });
+
+    // Perform DFS for each unvisited node
+    this.graph.forEach((_, node) => {
+      if (this.indices.get(node) === -1) {
+        this.strongConnect(node);
+      }
+    });
+
+    return this.sccs;
+  }
+
+  private strongConnect(v: number): void {
+    this.indices.set(v, this.index);
+    this.lowlinks.set(v, this.index);
+    this.index++;
+    this.stack.push(v);
+    this.onStack.set(v, true);
+
+    const neighbors = this.graph.get(v) || [];
+    
+    for (const w of neighbors) {
+      if (this.indices.get(w) === -1) {
+        this.strongConnect(w);
+        this.lowlinks.set(v, Math.min(this.lowlinks.get(v)!, this.lowlinks.get(w)!));
+      } else if (this.onStack.get(w)) {
+        this.lowlinks.set(v, Math.min(this.lowlinks.get(v)!, this.indices.get(w)!));
+      }
+    }
+
+    if (this.lowlinks.get(v) === this.indices.get(v)) {
+      const component: number[] = [];
+      let w: number;
+      
+      do {
+        w = this.stack.pop()!;
+        this.onStack.set(w, false);
+        component.push(w);
+      } while (w !== v);
+
+      this.sccs.push(component);
+    }
+  }
+
+  private reset(): void {
+    this.index = 0;
+    this.stack = [];
+    this.indices.clear();
+    this.lowlinks.clear();
+    this.onStack.clear();
+    this.sccs = [];
+  }
+}
+
+// Usage with adjacency list
+const adjacencyList = new Map<number, number[]>();
+adjacencyList.set(0, [1]);
+adjacencyList.set(1, [2]);
+adjacencyList.set(2, [0, 3]);
+adjacencyList.set(3, [4]);
+adjacencyList.set(4, [5, 7]);
+adjacencyList.set(5, [6]);
+adjacencyList.set(6, [4, 7]);
+adjacencyList.set(7, []);
+
+const tarjanList = new TarjanAdjacencyList(adjacencyList);
+const sccsList = tarjanList.findSCCs();
+console.log('SCCs from adjacency list:', sccsList);
