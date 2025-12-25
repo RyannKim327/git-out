@@ -1,143 +1,153 @@
-// ------------------------------------------------------------
-// 1️⃣  Install the dependencies (run once):
-// ------------------------------------------------------------
-// npm i axios
-// npm i -D @types/node   // for the Node typings used below
-// ------------------------------------------------------------
-
-import axios, {
-  AxiosInstance,
-  AxiosRequestConfig,
-  AxiosResponse,
-  AxiosError,
-} from 'axios';
-
-// ------------------------------------------------------------
-// 2️⃣  Define the shape of the data you expect from the API
-// ------------------------------------------------------------
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
-// A tiny wrapper around the raw AxiosError so we can add extra context
-class ApiError extends Error {
-  public readonly status?: number;
-  public readonly data?: unknown;
-
-  constructor(message: string, status?: number, data?: unknown) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-    this.data = data;
-  }
-}
-
-// ------------------------------------------------------------
-// 3️⃣  Create a reusable, typed API client
-// ------------------------------------------------------------
-class JsonPlaceholderClient {
-  private readonly http: AxiosInstance;
-
-  constructor(baseURL: string = 'https://jsonplaceholder.typicode.com') {
-    this.http = axios.create({ baseURL });
-
-    // ---- Request interceptor (e.g., add auth header) ----
-    this.http.interceptors.request.use(
-      (config: AxiosRequestConfig) => {
-        // Imagine you have a token stored somewhere
-        const token = process.env.API_TOKEN;
-        if (token) {
-          config.headers = config.headers ?? {};
-          config.headers.Authorization = `Bearer ${token}`;
+function shellSort<T>(array: T[]): T[] {
+    const n = array.length;
+    
+    // Start with a large gap, then reduce it
+    let gap = Math.floor(n / 2);
+    
+    while (gap > 0) {
+        // Perform insertion sort for this gap size
+        for (let i = gap; i < n; i++) {
+            const temp = array[i];
+            let j = i;
+            
+            // Shift earlier gap-sorted elements up until the correct location for array[i] is found
+            while (j >= gap && array[j - gap] > temp) {
+                array[j] = array[j - gap];
+                j -= gap;
+            }
+            
+            // Put temp (the original array[i]) in its correct location
+            array[j] = temp;
         }
-        console.log(`[REQ] ${config.method?.toUpperCase()} ${config.url}`);
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
+        
+        // Reduce the gap for the next iteration
+        gap = Math.floor(gap / 2);
+    }
+    
+    return array;
+}
+function shellSort<T>(
+    array: T[], 
+    comparator: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
+): T[] {
+    const n = array.length;
+    let gap = Math.floor(n / 2);
+    
+    while (gap > 0) {
+        for (let i = gap; i < n; i++) {
+            const temp = array[i];
+            let j = i;
+            
+            while (j >= gap && comparator(array[j - gap], temp) > 0) {
+                array[j] = array[j - gap];
+                j -= gap;
+            }
+            
+            array[j] = temp;
+        }
+        
+        gap = Math.floor(gap / 2);
+    }
+    
+    return array;
+}
+// Test with numbers
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log("Original:", numbers);
+console.log("Sorted:", shellSort(numbers));
 
-    // ---- Response interceptor (e.g., logging) ----
-    this.http.interceptors.response.use(
-      (response: AxiosResponse) => {
-        console.log(`[RES] ${response.status} ${response.config.url}`);
-        return response;
-      },
-      (error: AxiosError) => {
-        // Transform AxiosError → ApiError for a cleaner API surface
-        const msg = error.message;
-        const status = error.response?.status;
-        const data = error.response?.data;
-        return Promise.reject(new ApiError(msg, status, data));
-      }
-    );
-  }
+// Test with strings
+const strings = ["banana", "apple", "cherry", "date"];
+console.log("Original:", strings);
+console.log("Sorted:", shellSort(strings));
 
-  // Generic GET helper that returns the typed data directly
-  private async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const resp = await this.http.get<T>(url, config);
-    return resp.data;
-  }
-
-  // --------------------------------------------------------
-  // Public methods that expose the API surface
-  // --------------------------------------------------------
-  async listTodos(): Promise<Todo[]> {
-    return this.get<Todo[]>('/todos');
-  }
-
-  async getTodoById(id: number): Promise<Todo> {
-    return this.get<Todo>(`/todos/${id}`);
-  }
-
-  async createTodo(todo: Omit<Todo, 'id'>): Promise<Todo> {
-    const resp = await this.http.post<Todo>('/todos', todo);
-    return resp.data;
-  }
-
-  async toggleTodoCompleted(id: number, completed: boolean): Promise<Todo> {
-    const resp = await this.http.patch<Todo>(`/todos/${id}`, { completed });
-    return resp.data;
-  }
+// Test with custom objects
+interface Person {
+    name: string;
+    age: number;
 }
 
-// ------------------------------------------------------------
-// 4️⃣  Example usage (run with `ts-node` or compile to JS)
-// ------------------------------------------------------------
-(async () => {
-  const client = new JsonPlaceholderClient();
+const people: Person[] = [
+    { name: "Alice", age: 30 },
+    { name: "Bob", age: 25 },
+    { name: "Charlie", age: 35 }
+];
 
-  try {
-    // 1️⃣  Fetch the first 5 todos
-    const todos = await client.listTodos();
-    console.log('First 5 todos:', todos.slice(0, 5));
+// Sort by age
+const sortedByAge = shellSort(people, (a, b) => a.age - b.age);
+console.log("Sorted by age:", sortedByAge);
 
-    // 2️⃣  Get a single todo
-    const todo42 = await client.getTodoById(42);
-    console.log('Todo #42:', todo42);
+// Sort by name
+const sortedByName = shellSort(people, (a, b) => a.name.localeCompare(b.name));
+console.log("Sorted by name:", sortedByName);
+type GapSequence = 'shell' | 'hibbard' | 'sedgewick';
 
-    // 3️⃣  Create a new todo (the placeholder API just echoes it back)
-    const newTodo = await client.createTodo({
-      userId: 1,
-      title: 'Learn TypeScript + Axios',
-      completed: false,
-    });
-    console.log('Created todo:', newTodo);
-
-    // 4️⃣  Toggle its completed flag
-    const updated = await client.toggleTodoCompleted(newTodo.id, true);
-    console.log('Toggled completed:', updated);
-  } catch (err) {
-    if (err instanceof ApiError) {
-      console.error(
-        `API error (status ${err.status ?? 'unknown'}):`,
-        err.message,
-        err.data
-      );
-    } else {
-      console.error('Unexpected error:', err);
+function shellSortEnhanced<T>(
+    array: T[], 
+    sequence: GapSequence = 'shell',
+    comparator: (a: T, b: T) => number = (a, b) => a < b ? -1 : a > b ? 1 : 0
+): T[] {
+    const n = array.length;
+    
+    // Generate gap sequence based on the chosen method
+    const gaps = generateGapSequence(n, sequence);
+    
+    for (let g = 0; g < gaps.length; g++) {
+        const gap = gaps[g];
+        
+        for (let i = gap; i < n; i++) {
+            const temp = array[i];
+            let j = i;
+            
+            while (j >= gap && comparator(array[j - gap], temp) > 0) {
+                array[j] = array[j - gap];
+                j -= gap;
+            }
+            
+            array[j] = temp;
+        }
     }
-  }
-})();
+    
+    return array;
+}
+
+function generateGapSequence(n: number, sequence: GapSequence): number[] {
+    const gaps: number[] = [];
+    
+    switch (sequence) {
+        case 'shell':
+            // Original Shell sequence: n/2, n/4, n/8, ..., 1
+            let gap = Math.floor(n / 2);
+            while (gap > 0) {
+                gaps.push(gap);
+                gap = Math.floor(gap / 2);
+            }
+            break;
+            
+        case 'hibbard':
+            // Hibbard's sequence: 2^k - 1
+            let k = 1;
+            let hibbardGap = Math.pow(2, k) - 1;
+            while (hibbardGap < n) {
+                gaps.unshift(hibbardGap); // Store in reverse order
+                k++;
+                hibbardGap = Math.pow(2, k) - 1;
+            }
+            break;
+            
+        case 'sedgewick':
+            // Sedgewick's sequence: 4^k + 3*2^(k-1) + 1
+            let sedgewickGaps = [1];
+            k = 1;
+            while (true) {
+                const gap1 = Math.pow(4, k) + 3 * Math.pow(2, k - 1) + 1;
+                if (gap1 >= n) break;
+                sedgewickGaps.push(gap1);
+                k++;
+            }
+            gaps.push(...sedgewickGaps.reverse());
+            break;
+    }
+    
+    return gaps;
+}
