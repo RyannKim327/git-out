@@ -1,8 +1,6 @@
 interface SkipListNode<T> {
   value: T;
-  next: SkipListNode<T> | null;
-  down: SkipListNode<T> | null;
-  level: number;
+  next: (SkipListNode<T> | null)[];
 }
 
 class SkipList<T> {
@@ -16,29 +14,16 @@ class SkipList<T> {
     this.probability = probability;
     this.size = 0;
     
-    // Create head node with max level
-    this.head = this.createNode(null as T, maxLevel);
-    
-    // Initialize all head pointers to null
-    let current: SkipListNode<T> = this.head;
-    for (let i = maxLevel - 1; i >= 0; i--) {
-      current.next = null;
-      if (i > 0) {
-        current.down = this.createNode(null as T, i);
-        current = current.down;
-      }
-    }
-  }
-
-  private createNode(value: T, level: number): SkipListNode<T> {
-    return {
-      value,
-      next: null,
-      down: null,
-      level
+    // Create head node with maxLevel pointers
+    this.head = {
+      value: null as unknown as T, // Head doesn't store actual value
+      next: new Array(maxLevel).fill(null)
     };
   }
 
+  /**
+   * Generate random level for a new node
+   */
   private randomLevel(): number {
     let level = 1;
     while (Math.random() < this.probability && level < this.maxLevel) {
@@ -47,146 +32,138 @@ class SkipList<T> {
     return level;
   }
 
+  /**
+   * Insert a value into the skip list
+   */
   insert(value: T): void {
-    const newLevel = this.randomLevel();
-    const newNode = this.createNode(value, newLevel);
-    
+    const newNodeLevel = this.randomLevel();
+    const newNode: SkipListNode<T> = {
+      value,
+      next: new Array(newNodeLevel).fill(null)
+    };
+
     let current = this.head;
-    const update: SkipListNode<T>[] = new Array(this.maxLevel).fill(null);
-    
-    // Find insertion points at each level
+    const update: (SkipListNode<T> | null)[] = new Array(this.maxLevel).fill(null);
+
+    // Find the insertion point at each level
     for (let level = this.maxLevel - 1; level >= 0; level--) {
-      while (current.next && current.next.value < value) {
-        current = current.next;
+      while (current.next[level] !== null && current.next[level]!.value < value) {
+        current = current.next[level]!;
       }
       update[level] = current;
-      
-      // Move down to next level
-      if (current.down) {
-        current = current.down;
-      }
     }
-    
-    // Insert the node at each appropriate level
-    for (let level = 0; level < newLevel; level++) {
-      const updateNode = update[level];
-      if (updateNode) {
-        newNode.next = updateNode.next;
-        updateNode.next = newNode;
-        
-        // Create down pointer for next level
-        if (level < newLevel - 1) {
-          newNode.down = this.createNode(value, level);
-          newNode = newNode.down;
-        }
-      }
+
+    // Insert the new node at each appropriate level
+    for (let level = 0; level < newNodeLevel; level++) {
+      newNode.next[level] = update[level]!.next[level];
+      update[level]!.next[level] = newNode;
     }
-    
+
     this.size++;
   }
 
+  /**
+   * Search for a value in the skip list
+   */
   search(value: T): boolean {
     let current = this.head;
-    
+
     for (let level = this.maxLevel - 1; level >= 0; level--) {
-      while (current.next && current.next.value <= value) {
-        if (current.next.value === value) {
-          return true;
-        }
-        current = current.next;
-      }
-      
-      if (current.down) {
-        current = current.down;
+      while (current.next[level] !== null && current.next[level]!.value < value) {
+        current = current.next[level]!;
       }
     }
-    
-    return false;
+
+    // Move to the next node at level 0
+    current = current.next[0]!;
+    return current !== null && current.value === value;
   }
 
-  delete(value: T): boolean {
+  /**
+   * Remove a value from the skip list
+   */
+  remove(value: T): boolean {
+    const update: (SkipListNode<T> | null)[] = new Array(this.maxLevel).fill(null);
     let current = this.head;
-    let found = false;
-    const update: SkipListNode<T>[] = new Array(this.maxLevel).fill(null);
-    
-    // Find the node and track update points
+
+    // Find the node to remove and track update pointers
     for (let level = this.maxLevel - 1; level >= 0; level--) {
-      while (current.next && current.next.value < value) {
-        current = current.next;
+      while (current.next[level] !== null && current.next[level]!.value < value) {
+        current = current.next[level]!;
       }
       update[level] = current;
-      
-      if (current.down) {
-        current = current.down;
+    }
+
+    current = current.next[0]!;
+
+    // If value not found
+    if (current === null || current.value !== value) {
+      return false;
+    }
+
+    // Remove the node from all levels
+    for (let level = 0; level < current.next.length; level++) {
+      if (update[level]!.next[level] !== current) {
+        break;
       }
+      update[level]!.next[level] = current.next[level];
     }
-    
-    // Delete the node at all levels
-    for (let level = 0; level < this.maxLevel; level++) {
-      const updateNode = update[level];
-      if (updateNode && updateNode.next && updateNode.next.value === value) {
-        updateNode.next = updateNode.next.next;
-        found = true;
-      }
-    }
-    
-    if (found) {
-      this.size--;
-    }
-    
-    return found;
+
+    this.size--;
+    return true;
   }
 
+  /**
+   * Get all values in sorted order
+   */
   toArray(): T[] {
     const result: T[] = [];
-    let current = this.head;
-    
-    // Go to bottom level
-    while (current.down) {
-      current = current.down;
-    }
-    
-    // Traverse bottom level
-    current = current.next;
-    while (current) {
+    let current = this.head.next[0];
+
+    while (current !== null) {
       result.push(current.value);
-      current = current.next;
+      current = current.next[0];
     }
-    
+
     return result;
   }
 
+  /**
+   * Get the size of the skip list
+   */
   getSize(): number {
     return this.size;
   }
 
-  // Debugging method to visualize the skip list
-  print(): void {
+  /**
+   * Check if the skip list is empty
+   */
+  isEmpty(): boolean {
+    return this.size === 0;
+  }
+
+  /**
+   * Visualize the skip list (useful for debugging)
+   */
+  visualize(): void {
+    console.log("Skip List Visualization:");
+    
     for (let level = this.maxLevel - 1; level >= 0; level--) {
-      let current = this.head;
       let output = `Level ${level}: `;
+      let current = this.head.next[level];
       
-      // Find the head at this level
-      while (current.level > level) {
-        if (current.down) {
-          current = current.down;
-        }
-      }
-      
-      current = current.next;
-      while (current) {
+      while (current !== null) {
         output += `${current.value} -> `;
-        current = current.next;
+        current = current.next[level];
       }
       
-      console.log(output + 'null');
+      console.log(output + "null");
     }
   }
 }
 interface SkipListNode<T> {
   value: T;
-  next: SkipListNode<T> | null;
-  down: SkipListNode<T> | null;
+  next: (SkipListNode<T> | null)[];
   level: number;
 }
 
@@ -212,24 +189,12 @@ class EnhancedSkipList<T> {
       if (a > b) return 1;
       return 0;
     });
-    
-    this.head = this.createNode(null as T, maxLevel);
-    this.initializeHead();
-  }
 
-  private initializeHead(): void {
-    let current: SkipListNode<T> = this.head;
-    for (let i = this.maxLevel - 1; i >= 0; i--) {
-      current.next = null;
-      if (i > 0) {
-        current.down = this.createNode(null as T, i);
-        current = current.down;
-      }
-    }
-  }
-
-  private createNode(value: T, level: number): SkipListNode<T> {
-    return { value, next: null, down: null, level };
+    this.head = {
+      value: null as unknown as T,
+      next: new Array(maxLevel).fill(null),
+      level: maxLevel
+    };
   }
 
   private randomLevel(): number {
@@ -245,144 +210,109 @@ class EnhancedSkipList<T> {
   }
 
   insert(value: T): void {
-    const newLevel = this.randomLevel();
-    let newNode = this.createNode(value, newLevel);
-    
+    const newNodeLevel = this.randomLevel();
+    const newNode: SkipListNode<T> = {
+      value,
+      next: new Array(newNodeLevel).fill(null),
+      level: newNodeLevel
+    };
+
     let current = this.head;
-    const update: (SkipListNode<T> | null)[] = new Array(this.maxLevel).fill(null);
+    const update: SkipListNode<T>[] = new Array(this.maxLevel);
     
+    for (let i = 0; i < this.maxLevel; i++) {
+      update[i] = this.head;
+    }
+
     // Find insertion points
     for (let level = this.maxLevel - 1; level >= 0; level--) {
-      while (current.next && this.compare(current.next.value, value) < 0) {
-        current = current.next;
+      while (
+        current.next[level] !== null &&
+        this.compare(current.next[level]!.value, value) < 0
+      ) {
+        current = current.next[level]!;
       }
       update[level] = current;
-      
-      if (current.down) {
-        current = current.down;
-      }
     }
-    
-    // Insert at all appropriate levels
-    for (let level = 0; level < newLevel; level++) {
-      const updateNode = update[level];
-      if (updateNode) {
-        newNode.next = updateNode.next;
-        updateNode.next = newNode;
-        
-        // Prepare down node for next level
-        if (level < newLevel - 1) {
-          const downNode = this.createNode(value, level);
-          newNode.down = downNode;
-          newNode = downNode;
-        }
-      }
+
+    // Insert at each level
+    for (let level = 0; level < newNodeLevel; level++) {
+      newNode.next[level] = update[level].next[level];
+      update[level].next[level] = newNode;
     }
-    
+
     this.size++;
   }
 
-  search(value: T): boolean {
+  search(value: T): T | null {
     let current = this.head;
-    
+
     for (let level = this.maxLevel - 1; level >= 0; level--) {
-      while (current.next && this.compare(current.next.value, value) <= 0) {
-        if (this.compare(current.next.value, value) === 0) {
-          return true;
-        }
-        current = current.next;
-      }
-      
-      if (current.down) {
-        current = current.down;
+      while (
+        current.next[level] !== null &&
+        this.compare(current.next[level]!.value, value) < 0
+      ) {
+        current = current.next[level]!;
       }
     }
-    
-    return false;
+
+    current = current.next[0]!;
+    return current !== null && this.compare(current.value, value) === 0 
+      ? current.value 
+      : null;
   }
 
-  delete(value: T): boolean {
-    let current = this.head;
-    let found = false;
-    const update: (SkipListNode<T> | null)[] = new Array(this.maxLevel).fill(null);
+  remove(value: T): boolean {
+    const update: SkipListNode<T>[] = new Array(this.maxLevel);
     
-    // Find node and update points
+    for (let i = 0; i < this.maxLevel; i++) {
+      update[i] = this.head;
+    }
+
+    let current = this.head;
+
+    // Find the node to remove
     for (let level = this.maxLevel - 1; level >= 0; level--) {
-      while (current.next && this.compare(current.next.value, value) < 0) {
-        current = current.next;
+      while (
+        current.next[level] !== null &&
+        this.compare(current.next[level]!.value, value) < 0
+      ) {
+        current = current.next[level]!;
       }
       update[level] = current;
-      
-      if (current.down) {
-        current = current.down;
-      }
     }
-    
-    // Remove node from all levels
+
+    current = current.next[0]!;
+
+    if (current === null || this.compare(current.value, value) !== 0) {
+      return false;
+    }
+
+    // Remove from all levels
+    for (let level = 0; level < current.level; level++) {
+      if (update[level].next[level] !== current) {
+        break;
+      }
+      update[level].next[level] = current.next[level];
+    }
+
+    this.size--;
+    return true;
+  }
+
+  *values(): IterableIterator<T> {
+    let current = this.head.next[0];
+    while (current !== null) {
+      yield current.value;
+      current = current.next[0];
+    }
+  }
+
+  clear(): void {
     for (let level = 0; level < this.maxLevel; level++) {
-      const updateNode = update[level];
-      if (updateNode && updateNode.next && 
-          this.compare(updateNode.next.value, value) === 0) {
-        updateNode.next = updateNode.next.next;
-        found = true;
-      }
+      this.head.next[level] = null;
     }
-    
-    if (found) {
-      this.size--;
-    }
-    
-    return found;
-  }
-
-  // Get minimum value
-  min(): T | null {
-    let current = this.head;
-    while (current.down) {
-      current = current.down;
-    }
-    return current.next ? current.next.value : null;
-  }
-
-  // Get maximum value
-  max(): T | null {
-    let current = this.head;
-    while (current.down) {
-      current = current.down;
-    }
-    
-    while (current.next) {
-      current = current.next;
-    }
-    
-    return current.value !== null ? current.value : null;
-  }
-
-  toArray(): T[] {
-    const result: T[] = [];
-    let current = this.head;
-    
-    // Navigate to bottom level
-    while (current.down) {
-      current = current.down;
-    }
-    
-    // Collect all values
-    current = current.next;
-    while (current) {
-      result.push(current.value);
-      current = current.next;
-    }
-    
-    return result;
-  }
-
-  getSize(): number {
-    return this.size;
-  }
-
-  isEmpty(): boolean {
-    return this.size === 0;
+    this.size = 0;
   }
 }
 // Basic usage with numbers
@@ -391,17 +321,16 @@ const skipList = new SkipList<number>();
 skipList.insert(10);
 skipList.insert(5);
 skipList.insert(15);
-skipList.insert(20);
-skipList.insert(3);
+skipList.insert(7);
 
-console.log(skipList.toArray()); // [3, 5, 10, 15, 20]
-console.log(skipList.search(10)); // true
-console.log(skipList.search(7)); // false
+console.log(skipList.toArray()); // [5, 7, 10, 15]
+console.log(skipList.search(7)); // true
+console.log(skipList.search(20)); // false
 
-skipList.delete(10);
-console.log(skipList.toArray()); // [3, 5, 15, 20]
+skipList.remove(7);
+console.log(skipList.toArray()); // [5, 10, 15]
 
-// Usage with custom comparator for objects
+// Enhanced version with custom comparator
 interface Person {
   name: string;
   age: number;
@@ -411,9 +340,10 @@ const personSkipList = new EnhancedSkipList<Person>(
   (a, b) => a.age - b.age
 );
 
-personSkipList.insert({ name: "Alice", age: 25 });
-personSkipList.insert({ name: "Bob", age: 30 });
-personSkipList.insert({ name: "Charlie", age: 20 });
+personSkipList.insert({ name: "Alice", age: 30 });
+personSkipList.insert({ name: "Bob", age: 25 });
+personSkipList.insert({ name: "Charlie", age: 35 });
 
-console.log(personSkipList.toArray());
-// [{name: "Charlie", age: 20}, {name: "Alice", age: 25}, {name: "Bob", age: 30}]
+for (const person of personSkipList.values()) {
+  console.log(person); // Bob (25), Alice (30), Charlie (35)
+}
