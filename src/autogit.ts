@@ -7,44 +7,58 @@ function stringLength(str: string): number {
 }
 
 // Usage
-const length = stringLength("Hello");
-console.log(length); // Output: 5
+const result = stringLength("Hello World"); // Returns 11
 function stringLength(str: string): number {
     let count = 0;
-    while (str[count] !== undefined) {
+    let i = 0;
+    while (str[i] !== undefined) {
         count++;
+        i++;
     }
     return count;
 }
 function stringLength(str: string): number {
-    if (str === "") {
+    if (str === '') {
         return 0;
     }
     return 1 + stringLength(str.slice(1));
 }
+
+// Usage
+const result = stringLength("TypeScript"); // Returns 10
 function stringLength(str: string): number {
-    const arr = Array.from(str);
+    return [...str].reduce((count) => count + 1, 0);
+}
+
+// Or using forEach
+function stringLength(str: string): number {
     let count = 0;
-    arr.forEach(() => count++);
+    [...str].forEach(() => count++);
     return count;
 }
 function stringLength(str: string): number {
-    return Array.from(str).reduce((count) => count + 1, 0);
+    const iterator = str[Symbol.iterator]();
+    let count = 0;
+    let next = iterator.next();
+    
+    while (!next.done) {
+        count++;
+        next = iterator.next();
+    }
+    return count;
 }
 function getStringLength(input: string): number {
-    // Type guard to ensure input is a string
-    if (typeof input !== 'string') {
-        throw new Error('Input must be a string');
-    }
-    
     let length = 0;
-    for (const _ of input) {
+    
+    // Iterate through each character
+    for (const char of input) {
         length++;
     }
+    
     return length;
 }
 
-// Usage examples
-console.log(getStringLength(""));          // 0
-console.log(getStringLength("Hello"));     // 5
-console.log(getStringLength("TypeScript")); // 10
+// Test the function
+const testString = "Hello TypeScript!";
+console.log(`Length of "${testString}" is: ${getStringLength(testString)}`);
+// Output: Length of "Hello TypeScript!" is: 17
