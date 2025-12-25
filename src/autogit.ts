@@ -1,143 +1,37 @@
-interface ListNode<T> {
-    val: T;
-    next: ListNode<T> | null;
-}
+/**
+ * Iterative (bottom-up) merge sort.
+ * Time: O(n log n)   Space: O(n)
+ */
+export function mergeSortIterative<T>(arr: T[]): T[] {
+  const n = arr.length;
+  if (n < 2) return arr;
 
-function findNthFromEnd<T>(head: ListNode<T> | null, n: number): T | null {
-    if (!head || n <= 0) return null;
-    
-    let slow: ListNode<T> | null = head;
-    let fast: ListNode<T> | null = head;
-    
-    // Move fast pointer n steps ahead
-    for (let i = 0; i < n; i++) {
-        if (!fast) return null; // List shorter than n
-        fast = fast.next;
-    }
-    
-    // Move both pointers until fast reaches end
-    while (fast) {
-        slow = slow!.next;
-        fast = fast.next;
-    }
-    
-    return slow ? slow.val : null;
-}
-function findNthFromEndLength<T>(head: ListNode<T> | null, n: number): T | null {
-    if (!head || n <= 0) return null;
-    
-    // Calculate length of linked list
-    let length = 0;
-    let current: ListNode<T> | null = head;
-    while (current) {
-        length++;
-        current = current.next;
-    }
-    
-    if (n > length) return null;
-    
-    // Find (length - n)th node from start
-    let targetIndex = length - n;
-    current = head;
-    for (let i = 0; i < targetIndex; i++) {
-        current = current!.next;
-    }
-    
-    return current!.val;
-}
-function findNthFromEndArray<T>(head: ListNode<T> | null, n: number): T | null {
-    if (!head || n <= 0) return null;
-    
-    const nodes: T[] = [];
-    let current: ListNode<T> | null = head;
-    
-    // Store all values in array
-    while (current) {
-        nodes.push(current.val);
-        current = current.next;
-    }
-    
-    if (n > nodes.length) return null;
-    
-    return nodes[nodes.length - n];
-}
-class LinkedListNode<T> {
-    constructor(
-        public val: T,
-        public next: LinkedListNode<T> | null = null
-    ) {}
-}
+  const aux = arr.slice();          // one auxiliary buffer
+  let width = 1;                    // current sub-array size
 
-class LinkedList<T> {
-    private head: LinkedListNode<T> | null = null;
-    
-    add(val: T): void {
-        const newNode = new LinkedListNode(val);
-        if (!this.head) {
-            this.head = newNode;
-        } else {
-            let current = this.head;
-            while (current.next) {
-                current = current.next;
-            }
-            current.next = newNode;
-        }
+  while (width < n) {
+    for (let left = 0; left < n; left += 2 * width) {
+      const mid = Math.min(left + width, n);
+      const right = Math.min(left + 2 * width, n);
+
+      // merge arr[left..mid-1] and arr[mid..right-1] into aux[left..right-1]
+      let i = left, j = mid, k = left;
+      while (i < mid && j < right)
+        aux[k++] = arr[i] <= arr[j] ? arr[i++] : arr[j++];
+      while (i < mid)  aux[k++] = arr[i++];
+      while (j < right) aux[k++] = arr[j++];
     }
-    
-    // Two pointers method implementation
-    findNthFromEnd(n: number): T | null {
-        if (!this.head || n <= 0) return null;
-        
-        let slow: LinkedListNode<T> | null = this.head;
-        let fast: LinkedListNode<T> | null = this.head;
-        
-        // Move fast pointer n steps ahead
-        for (let i = 0; i < n; i++) {
-            if (!fast) return null;
-            fast = fast.next;
-        }
-        
-        // Move both pointers until fast reaches end
-        while (fast) {
-            slow = slow!.next;
-            fast = fast.next;
-        }
-        
-        return slow ? slow.val : null;
-    }
-    
-    // Utility method to print the list
-    print(): void {
-        let current = this.head;
-        const values: T[] = [];
-        while (current) {
-            values.push(current.val);
-            current = current.next;
-        }
-        console.log(values.join(' → '));
-    }
+
+    // swap roles of arr and aux for next pass
+    [arr, aux] = [aux, arr];
+    width *= 2;
+  }
+
+  // if we ended with the result in aux, copy it back
+  if (arr !== aux) {
+    for (let i = 0; i < n; ++i) arr[i] = aux[i];
+  }
+  return arr;
 }
-
-// Usage example
-const list = new LinkedList<number>();
-list.add(1);
-list.add(2);
-list.add(3);
-list.add(4);
-list.add(5);
-
-list.print(); // 1 → 2 → 3 → 4 → 5
-
-console.log('2nd from end:', list.findNthFromEnd(2)); // 4
-console.log('1st from end:', list.findNthFromEnd(1)); // 5
-console.log('3rd from end:', list.findNthFromEnd(3)); // 3
-console.log('6th from end:', list.findNthFromEnd(6)); // null
-// Test cases for edge cases
-const emptyList = new LinkedList<number>();
-console.log('Empty list:', emptyList.findNthFromEnd(1)); // null
-
-const singleNodeList = new LinkedList<number>();
-singleNodeList.add(42);
-console.log('Single node:', singleNodeList.findNthFromEnd(1)); // 42
-console.log('Invalid n:', singleNodeList.findNthFromEnd(0)); // null
-console.log('n too large:', singleNodeList.findNthFromEnd(2)); // null
+const data = [3, 7, 1, -4, 0, 42, 8, 5];
+console.log(mergeSortIterative([...data])); // [-4, 0, 1, 3, 5, 7, 8, 42]
