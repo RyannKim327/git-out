@@ -1,30 +1,53 @@
-/**
- * Returns a pseudo-random integer N such that min ≤ N ≤ max.
- * Both min and max are inclusive.
- */
-function randomInt(min: number, max: number): number {
-  min = Math.ceil(min);   // ensure integer
-  max = Math.floor(max);  // ensure integer
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+const str = "42";
+const num: number = parseInt(str, 10); // 10 = radix (decimal)
+const str = "42";
+const num: number = Number(str);   // or: const num = +str;
+const str = "42.9";
+const intNum: number = Math.trunc(Number(str)); // 42
+// or Math.floor if you always want to round down (even for negatives)
+function toInt(value: string, radix: number = 10): number | null {
+  const parsed = parseInt(value, radix);
+  return isNaN(parsed) ? null : parsed;
 }
 
-// examples
-console.log(randomInt(1, 6));   // dice roll: 1‒6
-console.log(randomInt(0, 100)); // 0‒100
-function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min;
+// Usage
+const maybeInt = toInt("123"); // number | null
+if (maybeInt !== null) {
+  // TypeScript now knows `maybeInt` is a number
+  console.log(maybeInt * 2);
+}
+function toIntOrThrow(value: string, radix: number = 10): number {
+  const parsed = parseInt(value, radix);
+  if (isNaN(parsed)) {
+    throw new Error(`"${value}" is not a valid integer`);
+  }
+  return parsed;
+}
+const str = "7" as const; // type is "7"
+const num = Number(str); // type is 7 (numeric literal)
+function safeParseInt(value: string, radix: number = 10): number {
+  const trimmed = value.trim();          // remove surrounding whitespace
+  const result = parseInt(trimmed, radix);
+
+  if (isNaN(result)) {
+    throw new Error(`Unable to parse integer from "${value}"`);
+  }
+
+  return result;
 }
 
-console.log(randomFloat(0, 1));     // 0‒1 (exclusive of 1)
-console.log(randomFloat(2.5, 7)); // 2.5‒7
-function secureRandomInt(min: number, max: number): number {
-  const range = max - min + 1;
-  const maxRand = 0xFFFFFFFF; // 2^32 - 1
-  let rand: number;
-  do {
-    const buf = new Uint32Array(1);
-    crypto.getRandomValues(buf);
-    rand = buf[0];
-  } while (rand >= Math.floor(maxRand / range) * range); // rejection sampling
-  return min + (rand % range);
+// Demo
+try {
+  const a = safeParseInt("  123  "); // 123
+  const b = safeParseInt("42abc");   // throws
+  console.log(a, b);
+} catch (e) {
+  console.error(e.message);
 }
+const intFromString = (s: string): number => parseInt(s, 10);
+// or, if you need strict conversion:
+const intFromStringStrict = (s: string): number => {
+  const n = Number(s);
+  if (isNaN(n)) throw new Error(`Invalid number: ${s}`);
+  return Math.trunc(n);
+};
