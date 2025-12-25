@@ -1,228 +1,64 @@
-interface GraphNode<T> {
-  value: T;
-  neighbors: GraphNode<T>[];
-}
+// queue.ts
+export class LinkedQueue<T> {
+  private head: Node<T> | null = null;
+  private tail: Node<T> | null = null;
+  private _size = 0;
 
-interface SearchResult<T> {
-  found: boolean;
-  node?: GraphNode<T>;
-  path?: T[];
-}
+  /* ---------- public API ---------- */
 
-class DepthLimitedSearch<T> {
-  /**
-   * Iterative Depth-Limited Search
-   * @param startNode - Starting node for the search
-   * @param targetValue - Value to search for
-   * @param depthLimit - Maximum depth to search
-   * @returns Search result with path if found
-   */
-  search(
-    startNode: GraphNode<T>,
-    targetValue: T,
-    depthLimit: number
-  ): SearchResult<T> {
-    if (depthLimit < 0) {
-      throw new Error("Depth limit must be non-negative");
-    }
-
-    // Use a stack for DFS (Last In, First Out)
-    const stack: Array<{ node: GraphNode<T>; depth: number; path: T[] }> = [];
-    const visited = new Set<GraphNode<T>>();
-
-    // Start with the initial node
-    stack.push({
-      node: startNode,
-      depth: 0,
-      path: [startNode.value]
-    });
-    visited.add(startNode);
-
-    while (stack.length > 0) {
-      const { node, depth, path } = stack.pop()!;
-
-      // Check if we found the target
-      if (node.value === targetValue) {
-        return {
-          found: true,
-          node: node,
-          path: path
-        };
-      }
-
-      // Only explore neighbors if we haven't reached depth limit
-      if (depth < depthLimit) {
-        // Process neighbors in reverse order for correct DFS order
-        for (let i = node.neighbors.length - 1; i >= 0; i--) {
-          const neighbor = node.neighbors[i];
-          
-          // Avoid cycles by checking if we've visited this node
-          if (!visited.has(neighbor)) {
-            visited.add(neighbor);
-            stack.push({
-              node: neighbor,
-              depth: depth + 1,
-              path: [...path, neighbor.value]
-            });
-          }
-        }
-      }
-    }
-
-    return { found: false };
-  }
-}
-interface EnhancedGraphNode<T> {
-  id: string;
-  value: T;
-  neighbors: EnhancedGraphNode<T>[];
-}
-
-interface EnhancedSearchResult<T> {
-  found: boolean;
-  node?: EnhancedGraphNode<T>;
-  path?: T[];
-  nodesVisited: number;
-  maxDepthReached: number;
-}
-
-class EnhancedDepthLimitedSearch<T> {
-  /**
-   * Enhanced iterative DLS with better tracking
-   */
-  search(
-    startNode: EnhancedGraphNode<T>,
-    targetValue: T,
-    depthLimit: number
-  ): EnhancedSearchResult<T> {
-    if (depthLimit < 0) {
-      throw new Error("Depth limit must be non-negative");
-    }
-
-    const stack: Array<{
-      node: EnhancedGraphNode<T>;
-      depth: number;
-      path: T[];
-    }> = [];
-    
-    const visited = new Set<string>(); // Track by ID to avoid object reference issues
-    let nodesVisited = 0;
-    let maxDepthReached = 0;
-
-    stack.push({
-      node: startNode,
-      depth: 0,
-      path: [startNode.value]
-    });
-    visited.add(startNode.id);
-
-    while (stack.length > 0) {
-      const { node, depth, path } = stack.pop()!;
-      nodesVisited++;
-      maxDepthReached = Math.max(maxDepthReached, depth);
-
-      // Debug logging (optional)
-      // console.log(`Visiting: ${node.value}, Depth: ${depth}, Path: ${path.join(' -> ')}`);
-
-      if (node.value === targetValue) {
-        return {
-          found: true,
-          node: node,
-          path: path,
-          nodesVisited,
-          maxDepthReached
-        };
-      }
-
-      if (depth < depthLimit) {
-        // Explore neighbors in the order they appear
-        const unvisitedNeighbors = node.neighbors.filter(
-          neighbor => !visited.has(neighbor.id)
-        );
-
-        // Push neighbors in reverse order to maintain correct DFS order
-        for (let i = unvisitedNeighbors.length - 1; i >= 0; i--) {
-          const neighbor = unvisitedNeighbors[i];
-          visited.add(neighbor.id);
-          stack.push({
-            node: neighbor,
-            depth: depth + 1,
-            path: [...path, neighbor.value]
-          });
-        }
-      }
-    }
-
-    return {
-      found: false,
-      nodesVisited,
-      maxDepthReached
-    };
+  /** Add value to the back of the queue. */
+  enqueue(value: T): void {
+    const node = new Node(value);
+    if (this.tail) this.tail.next = node;
+    else this.head = node;      // empty list → head = new node
+    this.tail = node;
+    this._size++;
   }
 
-  /**
-   * Find all nodes within depth limit (like BFS but depth-limited)
-   */
-  findAllWithinDepth(
-    startNode: EnhancedGraphNode<T>,
-    depthLimit: number
-  ): EnhancedGraphNode<T>[] {
-    const result: EnhancedGraphNode<T>[] = [];
-    const stack: Array<{
-      node: EnhancedGraphNode<T>;
-      depth: number;
-    }> = [];
-    const visited = new Set<string>();
+  /** Remove and return the value at the front of the queue. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // empty
+    const value = this.head.value;
+    this.head = this.head.next;
+    if (!this.head) this.tail = null;  // queue became empty
+    this._size--;
+    return value;
+  }
 
-    stack.push({ node: startNode, depth: 0 });
-    visited.add(startNode.id);
-    result.push(startNode);
+  /** Peek at the front value without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
+  }
 
-    while (stack.length > 0) {
-      const { node, depth } = stack.pop()!;
+  get size(): number { return this._size; }
+  get isEmpty(): boolean { return this._size === 0; }
 
-      if (depth < depthLimit) {
-        for (let i = node.neighbors.length - 1; i >= 0; i--) {
-          const neighbor = node.neighbors[i];
-          if (!visited.has(neighbor.id)) {
-            visited.add(neighbor.id);
-            result.push(neighbor);
-            stack.push({
-              node: neighbor,
-              depth: depth + 1
-            });
-          }
-        }
-      }
+  /** Remove all elements. */
+  clear(): void {
+    this.head = this.tail = null;
+    this._size = 0;
+  }
+
+  /** Make the queue iterable (front → back). */
+  *[Symbol.iterator](): Iterator<T> {
+    let curr = this.head;
+    while (curr) {
+      yield curr.value;
+      curr = curr.next;
     }
-
-    return result;
   }
 }
-// Example usage
-const nodeA = { id: 'A', value: 'A', neighbors: [] };
-const nodeB = { id: 'B', value: 'B', neighbors: [] };
-const nodeC = { id: 'C', value: 'C', neighbors: [] };
-const nodeD = { id: 'D', value: 'D', neighbors: [] };
-const nodeE = { id: 'E', value: 'E', neighbors: [] };
 
-// Create a simple graph: A -> B -> C -> D
-//           -> E
-nodeA.neighbors = [nodeB, nodeE];
-nodeB.neighbors = [nodeC];
-nodeC.neighbors = [nodeD];
-nodeE.neighbors = [];
+/* ---------- internal node ---------- */
+class Node<T> {
+  next: Node<T> | null = null;
+  constructor(public value: T) {}
+}
+import { LinkedQueue } from './queue';
 
-const dls = new EnhancedDepthLimitedSearch<string>();
-
-// Search for node D with depth limit 3
-const result1 = dls.search(nodeA, 'D', 3);
-console.log('Search for D (limit 3):', result1);
-
-// Search for node D with depth limit 2 (should fail)
-const result2 = dls.search(nodeA, 'D', 2);
-console.log('Search for D (limit 2):', result2);
-
-// Find all nodes within depth 2
-const nodesWithin2 = dls.findAllWithinDepth(nodeA, 2);
-console.log('Nodes within depth 2:', nodesWithin2.map(n => n.value));
+const q = new LinkedQueue<number>();
+q.enqueue(10);
+q.enqueue(20);
+console.log(q.dequeue()); // 10
+console.log(q.peek());    // 20
+console.log([...q]);      // [20]
