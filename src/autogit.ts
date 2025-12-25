@@ -1,114 +1,143 @@
-// Define interfaces for TypeScript type safety
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  website?: string;
+interface ListNode<T> {
+    val: T;
+    next: ListNode<T> | null;
 }
 
-interface ApiResponse {
-  users: User[];
-}
-
-// Function to fetch users from the JSONPlaceholder API
-async function fetchUsers(): Promise<User[]> {
-  try {
-    const response = await fetch('https://jsonplaceholder.typicode.com/users');
+function findNthFromEnd<T>(head: ListNode<T> | null, n: number): T | null {
+    if (!head || n <= 0) return null;
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    let slow: ListNode<T> | null = head;
+    let fast: ListNode<T> | null = head;
+    
+    // Move fast pointer n steps ahead
+    for (let i = 0; i < n; i++) {
+        if (!fast) return null; // List shorter than n
+        fast = fast.next;
     }
     
-    const data: ApiResponse = await response.json();
-    return data.users || data as any; // JSONPlaceholder returns array directly
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    throw error;
-  }
-}
-
-// Function to fetch a specific user by ID
-async function fetchUserById(id: number): Promise<User> {
-  try {
-    const response = await fetch(`https://jsonplaceholder.typicode.com/users/${id}`);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Move both pointers until fast reaches end
+    while (fast) {
+        slow = slow!.next;
+        fast = fast.next;
     }
     
-    const user: User = await response.json();
-    return user;
-  } catch (error) {
-    console.error(`Error fetching user ${id}:`, error);
-    throw error;
-  }
+    return slow ? slow.val : null;
 }
-
-// Function to create a new user (POST request)
-async function createUser(userData: Omit<User, 'id'>): Promise<User> {
-  try {
-    const response = await fetch('https://jsonplaceholder.typicode.com/users', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData),
-    });
+function findNthFromEndLength<T>(head: ListNode<T> | null, n: number): T | null {
+    if (!head || n <= 0) return null;
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Calculate length of linked list
+    let length = 0;
+    let current: ListNode<T> | null = head;
+    while (current) {
+        length++;
+        current = current.next;
     }
     
-    const newUser: User = await response.json();
-    return newUser;
-  } catch (error) {
-    console.error('Error creating user:', error);
-    throw error;
-  }
-}
-
-// Example usage
-async function main() {
-  try {
-    // Fetch all users
-    console.log('Fetching all users...');
-    const users = await fetchUsers();
-    console.log('Users:', users.slice(0, 3)); // Show first 3 users
+    if (n > length) return null;
     
-    // Fetch a specific user
-    console.log('\nFetching user with ID 1...');
-    const user = await fetchUserById(1);
-    console.log('User 1:', user);
+    // Find (length - n)th node from start
+    let targetIndex = length - n;
+    current = head;
+    for (let i = 0; i < targetIndex; i++) {
+        current = current!.next;
+    }
     
-    // Create a new user
-    console.log('\nCreating new user...');
-    const newUser = await createUser({
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      website: 'https://johndoe.com'
-    });
-    console.log('Created user:', newUser);
+    return current!.val;
+}
+function findNthFromEndArray<T>(head: ListNode<T> | null, n: number): T | null {
+    if (!head || n <= 0) return null;
     
-  } catch (error) {
-    console.error('Error in main function:', error);
-  }
+    const nodes: T[] = [];
+    let current: ListNode<T> | null = head;
+    
+    // Store all values in array
+    while (current) {
+        nodes.push(current.val);
+        current = current.next;
+    }
+    
+    if (n > nodes.length) return null;
+    
+    return nodes[nodes.length - n];
+}
+class LinkedListNode<T> {
+    constructor(
+        public val: T,
+        public next: LinkedListNode<T> | null = null
+    ) {}
 }
 
-// Run the example
-main();
-
-// Alternative: Using fetch with typed response and error handling
-async function fetchWithType<T>(url: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(url, options);
-  
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-  
-  return response.json() as Promise<T>;
+class LinkedList<T> {
+    private head: LinkedListNode<T> | null = null;
+    
+    add(val: T): void {
+        const newNode = new LinkedListNode(val);
+        if (!this.head) {
+            this.head = newNode;
+        } else {
+            let current = this.head;
+            while (current.next) {
+                current = current.next;
+            }
+            current.next = newNode;
+        }
+    }
+    
+    // Two pointers method implementation
+    findNthFromEnd(n: number): T | null {
+        if (!this.head || n <= 0) return null;
+        
+        let slow: LinkedListNode<T> | null = this.head;
+        let fast: LinkedListNode<T> | null = this.head;
+        
+        // Move fast pointer n steps ahead
+        for (let i = 0; i < n; i++) {
+            if (!fast) return null;
+            fast = fast.next;
+        }
+        
+        // Move both pointers until fast reaches end
+        while (fast) {
+            slow = slow!.next;
+            fast = fast.next;
+        }
+        
+        return slow ? slow.val : null;
+    }
+    
+    // Utility method to print the list
+    print(): void {
+        let current = this.head;
+        const values: T[] = [];
+        while (current) {
+            values.push(current.val);
+            current = current.next;
+        }
+        console.log(values.join(' → '));
+    }
 }
 
-// Usage of the generic fetch function
-async function fetchUsersGeneric(): Promise<User[]> {
-  return fetchWithType<User[]>('https://jsonplaceholder.typicode.com/users');
-}
+// Usage example
+const list = new LinkedList<number>();
+list.add(1);
+list.add(2);
+list.add(3);
+list.add(4);
+list.add(5);
+
+list.print(); // 1 → 2 → 3 → 4 → 5
+
+console.log('2nd from end:', list.findNthFromEnd(2)); // 4
+console.log('1st from end:', list.findNthFromEnd(1)); // 5
+console.log('3rd from end:', list.findNthFromEnd(3)); // 3
+console.log('6th from end:', list.findNthFromEnd(6)); // null
+// Test cases for edge cases
+const emptyList = new LinkedList<number>();
+console.log('Empty list:', emptyList.findNthFromEnd(1)); // null
+
+const singleNodeList = new LinkedList<number>();
+singleNodeList.add(42);
+console.log('Single node:', singleNodeList.findNthFromEnd(1)); // 42
+console.log('Invalid n:', singleNodeList.findNthFromEnd(0)); // null
+console.log('n too large:', singleNodeList.findNthFromEnd(2)); // null
