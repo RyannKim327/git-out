@@ -1,101 +1,127 @@
+factorial(0) = 1
+factorial(n) = n * factorial(n‑1)   for n > 0
 /**
- * Returns the arithmetic mean of the numbers in `values`.
- * If the array is empty, `null` is returned (you can change this to 0 or throw an error).
- */
-function mean(values: number[]): number | null {
-  if (values.length === 0) {
-    return null;               // or: return 0;  // or: throw new Error('Empty array')
-  }
-
-  const sum = values.reduce((acc, cur) => acc + cur, 0);
-  return sum / values.length;
-}
-
-/* Example usage */
-const data = [4, 8, 15, 16, 23, 42];
-console.log(mean(data)); // → 18
-/**
- * Calculates the mean of any iterable collection of numbers.
+ * Returns n! (n factorial) using a simple recursive algorithm.
  *
- * @param source - An iterable (Array, Set, TypedArray, etc.) of numbers.
- * @returns The mean, or `null` if the collection is empty.
+ * @param n - A non‑negative integer.
+ * @throws {RangeError} if n is negative or not an integer.
+ * @returns The factorial of n as a number.
  */
-export function meanOf<T extends Iterable<number>>(source: T): number | null {
-  let sum = 0;
-  let count = 0;
-
-  for (const n of source) {
-    sum += n;
-    ++count;
+export function factorial(n: number): number {
+  // ---- Input validation ----------------------------------------------------
+  if (!Number.isInteger(n)) {
+    throw new RangeError('factorial() only accepts integer values.');
+  }
+  if (n < 0) {
+    throw new RangeError('factorial() is undefined for negative numbers.');
   }
 
-  return count === 0 ? null : sum / count;
-}
+  // ---- Base case -----------------------------------------------------------
+  if (n === 0) {
+    return 1;
+  }
 
-/* Usage examples */
-console.log(meanOf([1, 2, 3]));               // 2
-console.log(meanOf(new Set([10, 20, 30])));   // 20
-console.log(meanOf(new Float32Array([5, 5]))); // 5
+  // ---- Recursive case ------------------------------------------------------
+  return n * factorial(n - 1);
+}
+import { factorial } from './factorial';
+
+console.log(factorial(5)); // 120
+console.log(factorial(0)); // 1
 /**
- * Weighted arithmetic mean.
+ * Tail‑recursive factorial.
  *
- * @param values  - Numbers to average.
- * @param weights - Same length as `values`; each weight ≥ 0.
- * @returns Weighted mean, or null if inputs are empty.
+ * @param n - Non‑negative integer.
+ * @param acc - Accumulator (should be omitted by callers).
  */
-function weightedMean(values: number[], weights: number[]): number | null {
-  if (values.length !== weights.length) {
-    throw new Error('Values and weights must have the same length');
-  }
-  if (values.length === 0) return null;
-
-  let weightedSum = 0;
-  let weightTotal = 0;
-
-  for (let i = 0; i < values.length; ++i) {
-    weightedSum += values[i] * weights[i];
-    weightTotal += weights[i];
+export function factorialTail(n: number, acc: number = 1): number {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new RangeError('factorialTail() expects a non‑negative integer.');
   }
 
-  return weightTotal === 0 ? null : weightedSum / weightTotal;
+  if (n === 0) {
+    return acc;
+  }
+
+  // Tail call: the recursive call is the *last* operation.
+  return factorialTail(n - 1, n * acc);
 }
-import { mean } from 'lodash';
+console.log(factorialTail(6)); // 720
+/**
+ * Factorial using `bigint` – works for arbitrarily large n (limited only by memory).
+ *
+ * @param n - Non‑negative integer (as a regular number or bigint).
+ * @returns n! as a bigint.
+ */
+export function factorialBigInt(n: number | bigint): bigint {
+  const bn = typeof n === 'bigint' ? n : BigInt(n);
 
-const avg = mean([10, 20, 30]); // → 20
-test('mean works for positive numbers', () => {
-  expect(mean([1, 2, 3, 4])).toBe(2.5);
+  if (bn < 0n) {
+    throw new RangeError('factorialBigInt() does not accept negative numbers.');
+  }
+
+  // Base case
+  if (bn === 0n) {
+    return 1n;
+  }
+
+  // Recursive step (still tail‑recursive for consistency)
+  return bn * factorialBigInt(bn - 1n);
+}
+console.log(factorialBigInt(25).toString()); // "15511210043330985984000000"
+// factorial.ts ---------------------------------------------------------------
+
+/**
+ * Simple recursive factorial (number).
+ */
+export function factorial(n: number): number {
+  if (!Number.isInteger(n)) {
+    throw new RangeError('factorial() only accepts integer values.');
+  }
+  if (n < 0) {
+    throw new RangeError('factorial() is undefined for negative numbers.');
+  }
+  return n === 0 ? 1 : n * factorial(n - 1);
+}
+
+/**
+ * Tail‑recursive factorial (number).
+ */
+export function factorialTail(n: number, acc: number = 1): number {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new RangeError('factorialTail() expects a non‑negative integer.');
+  }
+  return n === 0 ? acc : factorialTail(n - 1, n * acc);
+}
+
+/**
+ * Factorial using bigint (arbitrary precision).
+ */
+export function factorialBigInt(n: number | bigint): bigint {
+  const bn = typeof n === 'bigint' ? n : BigInt(n);
+  if (bn < 0n) {
+    throw new RangeError('factorialBigInt() does not accept negative numbers.');
+  }
+  return bn === 0n ? 1n : bn * factorialBigInt(bn - 1n);
+}
+// factorial.test.ts
+import { factorial, factorialTail, factorialBigInt } from './factorial';
+
+describe('factorial (number)', () => {
+  test('0! = 1', () => expect(factorial(0)).toBe(1));
+  test('5! = 120', () => expect(factorial(5)).toBe(120));
+  test('throws on negative', () => expect(() => factorial(-3)).toThrow(RangeError));
+  test('throws on non‑integer', () => expect(() => factorial(2.5)).toThrow(RangeError));
 });
 
-test('mean returns null for empty array', () => {
-  expect(mean([])).toBeNull();
+describe('factorialTail (number)', () => {
+  test('6! = 720', () => expect(factorialTail(6)).toBe(720));
 });
-// mean.ts
-/**
- * Compute the arithmetic mean of a numeric iterable.
- *
- * @param source - Any iterable of numbers (Array, Set, TypedArray, etc.).
- * @returns The mean, or `null` if the iterable is empty.
- */
-export function meanOf<T extends Iterable<number>>(source: T): number | null {
-  let sum = 0;
-  let count = 0;
 
-  for (const n of source) {
-    // Optional: skip NaN / Infinity if you want stricter behavior
-    if (!Number.isFinite(n)) continue;
-    sum += n;
-    ++count;
-  }
-
-  return count === 0 ? null : sum / count;
-}
-
-/* Example usage */
-if (require.main === module) {
-  const data = [4, 8, 15, 16, 23, 42];
-  console.log('Mean:', meanOf(data)); // → Mean: 18
-}
-function mean(nums: number[]): number | null {
-  if (!nums.length) return null;
-  return nums.reduce((a, b) => a + b, 0) / nums.length;
-}
+describe('factorialBigInt', () => {
+  test('25! matches known value', () => {
+    const expected = BigInt('15511210043330985984000000');
+    expect(factorialBigInt(25)).toBe(expected);
+  });
+});
+const fact = (n: number): number => (n <= 1 ? 1 : n * fact(n - 1));
