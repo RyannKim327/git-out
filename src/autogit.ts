@@ -1,127 +1,135 @@
-factorial(0) = 1
-factorial(n) = n * factorial(n‑1)   for n > 0
+const arr = [10, 9, 2, 5, 3, 7, 101, 18];
 /**
- * Returns n! (n factorial) using a simple recursive algorithm.
+ * Returns one longest increasing subsequence of the given array.
+ * Works for any type that can be compared with < (e.g. number, string).
  *
- * @param n - A non‑negative integer.
- * @throws {RangeError} if n is negative or not an integer.
- * @returns The factorial of n as a number.
+ * @param arr - input array
+ * @returns the LIS as a new array
  */
-export function factorial(n: number): number {
-  // ---- Input validation ----------------------------------------------------
-  if (!Number.isInteger(n)) {
-    throw new RangeError('factorial() only accepts integer values.');
-  }
-  if (n < 0) {
-    throw new RangeError('factorial() is undefined for negative numbers.');
+export function lisDP<T>(arr: T[]): T[] {
+  const n = arr.length;
+  if (n === 0) return [];
+
+  // dp[i] = length of LIS ending at i
+  const dp = new Array<number>(n).fill(1);
+  // prev[i] = index of previous element in the LIS ending at i
+  const prev = new Array<number>(n).fill(-1);
+
+  let maxLen = 1;
+  let maxIdx = 0;
+
+  for (let i = 1; i < n; i++) {
+    for (let j = 0; j < i; j++) {
+      if (arr[j] < arr[i] && dp[j] + 1 > dp[i]) {
+        dp[i] = dp[j] + 1;
+        prev[i] = j;
+      }
+    }
+    if (dp[i] > maxLen) {
+      maxLen = dp[i];
+      maxIdx = i;
+    }
   }
 
-  // ---- Base case -----------------------------------------------------------
-  if (n === 0) {
-    return 1;
+  // Reconstruct the subsequence
+  const lis: T[] = [];
+  for (let cur = maxIdx; cur !== -1; cur = prev[cur]) {
+    lis.push(arr[cur]);
   }
-
-  // ---- Recursive case ------------------------------------------------------
-  return n * factorial(n - 1);
+  lis.reverse(); // we built it backwards
+  return lis;
 }
-import { factorial } from './factorial';
+import { lisDP } from "./lis";
 
-console.log(factorial(5)); // 120
-console.log(factorial(0)); // 1
+const arr = [10, 9, 2, 5, 3, 7, 101, 18];
+console.log(lisDP(arr)); // → [2, 3, 7, 101]
 /**
- * Tail‑recursive factorial.
+ * O(n log n) longest increasing subsequence.
+ * Returns one LIS (any one, not necessarily unique).
  *
- * @param n - Non‑negative integer.
- * @param acc - Accumulator (should be omitted by callers).
+ * @param arr - input array of comparable values
+ * @returns the LIS as a new array
  */
-export function factorialTail(n: number, acc: number = 1): number {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new RangeError('factorialTail() expects a non‑negative integer.');
+export function lisPatience<T>(arr: T[]): T[] {
+  const n = arr.length;
+  if (n === 0) return [];
+
+  // tails[i] = index of the smallest possible tail of an LIS of length i+1
+  const tails: number[] = [];
+  // prevIdx[i] = index of the predecessor of arr[i] in the LIS ending at i
+  const prevIdx = new Array<number>(n).fill(-1);
+  // pos[i] = length of the LIS ending at i (1‑based)
+  const pos = new Array<number>(n).fill(0);
+
+  // Helper: binary search for the first element >= target in tails (by value)
+  const lowerBound = (target: T): number => {
+    let lo = 0;
+    let hi = tails.length; // exclusive
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (arr[tails[mid]] < target) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo;
+  };
+
+  for (let i = 0; i < n; i++) {
+    const idx = lowerBound(arr[i]); // length-1 where arr[i] fits
+    if (idx > 0) prevIdx[i] = tails[idx - 1];
+    tails[idx] = i;
+    pos[i] = idx + 1; // store length (1‑based)
   }
 
-  if (n === 0) {
-    return acc;
+  // Reconstruct LIS from the last index stored in tails
+  const lisLength = tails.length;
+  const lis: T[] = new Array<T>(lisLength);
+  let k = tails[tails.length - 1];
+  for (let i = lisLength - 1; i >= 0; i--) {
+    lis[i] = arr[k];
+    k = prevIdx[k];
   }
-
-  // Tail call: the recursive call is the *last* operation.
-  return factorialTail(n - 1, n * acc);
+  return lis;
 }
-console.log(factorialTail(6)); // 720
-/**
- * Factorial using `bigint` – works for arbitrarily large n (limited only by memory).
- *
- * @param n - Non‑negative integer (as a regular number or bigint).
- * @returns n! as a bigint.
- */
-export function factorialBigInt(n: number | bigint): bigint {
-  const bn = typeof n === 'bigint' ? n : BigInt(n);
+import { lisPatience } from "./lis";
 
-  if (bn < 0n) {
-    throw new RangeError('factorialBigInt() does not accept negative numbers.');
-  }
+const arr = [10, 9, 2, 5, 3, 7, 101, 18];
+console.log(lisPatience(arr)); // → [2, 3, 7, 101]
+import { lisDP, lisPatience } from "./lis";
 
-  // Base case
-  if (bn === 0n) {
-    return 1n;
-  }
-
-  // Recursive step (still tail‑recursive for consistency)
-  return bn * factorialBigInt(bn - 1n);
-}
-console.log(factorialBigInt(25).toString()); // "15511210043330985984000000"
-// factorial.ts ---------------------------------------------------------------
-
-/**
- * Simple recursive factorial (number).
- */
-export function factorial(n: number): number {
-  if (!Number.isInteger(n)) {
-    throw new RangeError('factorial() only accepts integer values.');
-  }
-  if (n < 0) {
-    throw new RangeError('factorial() is undefined for negative numbers.');
-  }
-  return n === 0 ? 1 : n * factorial(n - 1);
-}
-
-/**
- * Tail‑recursive factorial (number).
- */
-export function factorialTail(n: number, acc: number = 1): number {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new RangeError('factorialTail() expects a non‑negative integer.');
-  }
-  return n === 0 ? acc : factorialTail(n - 1, n * acc);
+function benchmark<T>(fn: (arr: T[]) => T[], arr: T[], label: string) {
+  const start = performance.now();
+  const result = fn(arr);
+  const end = performance.now();
+  console.log(`${label}: length=${result.length}, time=${(end - start).toFixed(2)}ms`);
 }
 
-/**
- * Factorial using bigint (arbitrary precision).
- */
-export function factorialBigInt(n: number | bigint): bigint {
-  const bn = typeof n === 'bigint' ? n : BigInt(n);
-  if (bn < 0n) {
-    throw new RangeError('factorialBigInt() does not accept negative numbers.');
+// Small test
+const small = [10, 9, 2, 5, 3, 7, 101, 18];
+console.log("DP:", lisDP(small));
+console.log("Patience:", lisPatience(small));
+
+// Larger random test (size 100 000)
+const large = Array.from({ length: 100_000 }, () => Math.floor(Math.random() * 1_000_000));
+
+benchmark(lisDP, large, "DP (O(n²))");          // will be slow for 100k, just for demo
+benchmark(lisPatience, large, "Patience (O(n log n))");
+// O(n log n) LIS in TypeScript
+export const lis = (a: number[]) => {
+  const tails: number[] = [], prev = new Array<number>(a.length).fill(-1);
+  const lower = (x: number) => {
+    let l = 0, r = tails.length;
+    while (l < r) {
+      const m = (l + r) >> 1;
+      if (a[tails[m]] < x) l = m + 1; else r = m;
+    }
+    return l;
+  };
+  for (let i = 0; i < a.length; i++) {
+    const p = lower(a[i]);
+    if (p) prev[i] = tails[p - 1];
+    tails[p] = i;
   }
-  return bn === 0n ? 1n : bn * factorialBigInt(bn - 1n);
-}
-// factorial.test.ts
-import { factorial, factorialTail, factorialBigInt } from './factorial';
-
-describe('factorial (number)', () => {
-  test('0! = 1', () => expect(factorial(0)).toBe(1));
-  test('5! = 120', () => expect(factorial(5)).toBe(120));
-  test('throws on negative', () => expect(() => factorial(-3)).toThrow(RangeError));
-  test('throws on non‑integer', () => expect(() => factorial(2.5)).toThrow(RangeError));
-});
-
-describe('factorialTail (number)', () => {
-  test('6! = 720', () => expect(factorialTail(6)).toBe(720));
-});
-
-describe('factorialBigInt', () => {
-  test('25! matches known value', () => {
-    const expected = BigInt('15511210043330985984000000');
-    expect(factorialBigInt(25)).toBe(expected);
-  });
-});
-const fact = (n: number): number => (n <= 1 ? 1 : n * fact(n - 1));
+  const res: number[] = [];
+  for (let i = tails[tails.length - 1]; i !== -1; i = prev[i]) res.push(a[i]);
+  return res.reverse();
+};
