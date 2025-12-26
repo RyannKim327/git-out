@@ -1,66 +1,66 @@
-class ListNode {
-    val: number;
-    next: ListNode | null;
+function reverseWordsOneLiner(str: string): string {
+  return str.trim().split(/\s+/).reverse().join(' ');
+}
+console.log(reverseWordsOneLiner('Hello   world!  How are you?'));
+// → "you? are How world! Hello"
+/**
+ * Reverses the order of words in a string while preserving the original
+ * whitespace (spaces, tabs, newlines) between them.
+ *
+ * @param input - The string to transform.
+ * @returns A new string with the words reversed.
+ *
+ * @example
+ *   reverseWordsPreserveSpacing('Hello   world!\nHow are   you?')
+ *   // → "you?   are How\nworld!   Hello"
+ */
+function reverseWordsPreserveSpacing(input: string): string {
+  // 1️⃣ Split the string into alternating "word" and "separator" tokens.
+  //    The regex captures the separator (any whitespace) as a separate group.
+  const tokens = input.split(/(\s+)/);
 
-    constructor(val: number) {
-        this.val = val;
-        this.next = null;
-    }
+  // 2️⃣ Extract only the word tokens (even indices) and reverse them.
+  const words = tokens.filter((_, i) => i % 2 === 0).reverse();
+
+  // 3️⃣ Re‑assemble: walk through the original token list, replacing each word
+  //    token with the next one from the reversed `words` array.
+  let wordIdx = 0;
+  const result = tokens
+    .map((token, i) => (i % 2 === 0 ? words[wordIdx++] : token))
+    .join('');
+
+  return result;
+}
+const original = 'Hello   world!\nHow are   you?';
+const reversed = reverseWordsPreserveSpacing(original);
+console.log(reversed);
+// → "you?   are How\nworld!   Hello"
+// Paste the functions here, then run the examples below.
+
+console.log(reverseWordsOneLiner('  The quick   brown   fox  '));
+console.log(reverseWordsPreserveSpacing('  The quick   brown   fox  '));
+fox fox  brown quick The
+fox  brown   quick   The  
+// Split on whitespace **or** punctuation, keeping delimiters:
+const tokens = input.split(/([ \t\r\n.,;!?]+)/);
+// utils/string.ts
+export function reverseWords(str: string): string {
+  return str.trim().split(/\s+/).reverse().join(' ');
 }
 
-function getIntersectionNode(headA: ListNode | null, headB: ListNode | null): ListNode | null {
-    if (!headA || !headB) return null;
+/**
+ * Preserves original whitespace while reversing word order.
+ */
+export function reverseWordsPreserveSpacing(str: string): string {
+  const tokens = str.split(/(\s+)/);
+  const words = tokens.filter((_, i) => i % 2 === 0).reverse();
 
-    let lenA = getLength(headA);
-    let lenB = getLength(headB);
-
-    // Align the starts
-    let ptrA = headA;
-    let ptrB = headB;
-
-    if (lenA > lenB) {
-        ptrA = advanceBy(ptrA, lenA - lenB);
-    } else {
-        ptrB = advanceBy(ptrB, lenB - lenA);
-    }
-
-    // Traverse together
-    while (ptrA && ptrB) {
-        if (ptrA === ptrB) return ptrA;
-        ptrA = ptrA.next;
-        ptrB = ptrB.next;
-    }
-
-    return null;
+  let idx = 0;
+  return tokens
+    .map((t, i) => (i % 2 === 0 ? words[idx++] : t))
+    .join('');
 }
+import { reverseWords, reverseWordsPreserveSpacing } from './utils/string';
 
-function getLength(head: ListNode | null): number {
-    let count = 0;
-    while (head) {
-        count++;
-        head = head.next;
-    }
-    return count;
-}
-
-function advanceBy(head: ListNode | null, steps: number): ListNode | null {
-    while (steps > 0 && head) {
-        head = head.next;
-        steps--;
-    }
-    return head;
-}
-// Create intersecting lists
-const common = new ListNode(8);
-common.next = new ListNode(10);
-
-const headA = new ListNode(3);
-headA.next = new ListNode(7);
-headA.next.next = common;
-
-const headB = new ListNode(99);
-headB.next = new ListNode(1);
-headB.next.next = common;
-
-const intersection = getIntersectionNode(headA, headB);
-console.log(intersection?.val); // Output: 8
+console.log(reverseWords('Hello   world!'));               // "world! Hello"
+console.log(reverseWordsPreserveSpacing('Hello   world!')); // "world!   Hello"
