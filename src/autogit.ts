@@ -1,31 +1,63 @@
-class ListNode {
-    val: number;
-    next: ListNode | null;
-
-    constructor(val: number, next: ListNode | null = null) {
-        this.val = val;
-        this.next = next;
-    }
+function countChar(str: string, char: string): number {
+    return str.split(char).length - 1;
 }
-function getIntersectionNode(headA: ListNode | null, headB: ListNode | null): ListNode | null {
-    if (!headA || !headB) return null;
 
-    let pA: ListNode | null = headA;
-    let pB: ListNode | null = headB;
-
-    // Switch heads when reaching the end
-    while (pA !== pB) {
-        pA = pA === null ? headB : pA.next;
-        pB = pB === null ? headA : pB.next;
-    }
-
-    return pA; // Either the intersection node or null
+// Example usage
+const text = "hello world";
+const count = countChar(text, "l"); // Returns 3
+console.log(count);
+function countChar(str: string, char: string): number {
+    const matches = str.match(new RegExp(char, "g"));
+    return matches ? matches.length : 0;
 }
-// Create intersecting lists
-const common = new ListNode(8, new ListNode(10));
 
-const listA = new ListNode(3, new ListNode(7, common));
-const listB = new ListNode(99, new ListNode(1, common));
+// Example usage
+const text = "hello world";
+const count = countChar(text, "l"); // Returns 3
+function countChar(str: string, char: string): number {
+    let count = 0;
+    for (let i = 0; i < str.length; i++) {
+        if (str[i] === char) {
+            count++;
+        }
+    }
+    return count;
+}
 
-const intersection = getIntersectionNode(listA, listB);
-console.log(intersection?.val); // Output: 8
+// Example usage
+const text = "hello world";
+const count = countChar(text, "l"); // Returns 3
+function countChar(str: string, char: string): number {
+    return [...str].reduce((count, currentChar) => 
+        currentChar === char ? count + 1 : count, 0
+    );
+}
+
+// Example usage
+const text = "hello world";
+const count = countChar(text, "l"); // Returns 3
+function countCharCaseInsensitive(str: string, char: string): number {
+    const lowerStr = str.toLowerCase();
+    const lowerChar = char.toLowerCase();
+    return lowerStr.split(lowerChar).length - 1;
+}
+
+// Example usage
+const text = "Hello World";
+const count = countCharCaseInsensitive(text, "h"); // Returns 1
+const count2 = countCharCaseInsensitive(text, "H"); // Returns 1
+function countChar(str: string, char: string): number {
+    if (char.length !== 1) {
+        throw new Error("Character parameter must be a single character");
+    }
+    return str.split(char).length - 1;
+}
+
+// Example usage
+try {
+    const text = "hello world";
+    const count = countChar(text, "l"); // Returns 3
+    // const invalid = countChar(text, "ll"); // Throws error
+} catch (error) {
+    console.error(error);
+}
