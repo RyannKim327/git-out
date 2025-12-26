@@ -1,128 +1,54 @@
-dp[i][j] = length of LCS of A[0..i‑1] and B[0..j‑1]
-if A[i‑1] === B[j‑1]   → dp[i][j] = dp[i‑1][j‑1] + 1
-else                  → dp[i][j] = max(dp[i‑1][j], dp[i][j‑1])
 /**
- * Returns the length of the longest common subsequence of two strings.
- * Uses O(min(m,n)) extra space (two rows of the DP matrix).
+ * Counting sort (ascending) for an array of non-negative integers.
+ * Time  : O(n + k)   (k = maxValue - minValue + 1)
+ * Memory: O(n + k)
  *
- * @param a First string
- * @param b Second string
- * @returns Length of the LCS
+ * @param arr  array to sort (is overwritten)
+ * @param radix  0-based maximum value that can appear in arr
  */
-export function lcsLengthOptimised(a: string, b: string): number {
-  // Ensure we allocate the smaller dimension for the DP rows.
-  if (a.length < b.length) return lcsLengthOptimised(b, a);
+function countingSort(arr: number[], maxValue: number): void {
+  const n = arr.length;
+  if (n === 0) return;
 
-  const m = a.length;
-  const n = b.length;
+  // 1. Frequency histogram
+  const freq = new Uint32Array(maxValue + 1);
+  for (const v of arr) freq[v]++;
 
-  // Two rows: previous and current.
-  let prev = new Uint16Array(n + 1); // Uint16 is enough for typical string lengths (< 65535)
-  let cur = new Uint16Array(n + 1);
+  // 2. Prefix sum -> positions
+  for (let i = 1; i <= maxValue; ++i) freq[i] += freq[i - 1];
 
-  for (let i = 1; i <= m; i++) {
-    const ai = a.charAt(i - 1);
-    for (let j = 1; j <= n; j++) {
-      if (ai === b.charAt(j - 1)) {
-        cur[j] = prev[j - 1] + 1;
-      } else {
-        cur[j] = Math.max(prev[j], cur[j - 1]);
-      }
-    }
-    // swap rows for next iteration
-    const tmp = prev;
-    prev = cur;
-    cur = tmp;
+  // 3. Stable write into output
+  const out = new Uint32Array(n);
+  for (let i = n - 1; i >= 0; --i) {
+    const v = arr[i];
+    out[--freq[v]] = v;
   }
 
-  // After the last swap, `prev` holds the final row.
-  return prev[n];
+  // 4. Copy back
+  arr.set(out);
 }
 
-/**
- * Returns the actual longest common subsequence string.
- * This version builds the full DP matrix (O(m·n) space) to make back‑tracking easy.
- *
- * @param a First string
- * @param b Second string
- * @returns The LCS string (empty string if none)
- */
-export function lcs(a: string, b: string): string {
-  const m = a.length;
-  const n = b.length;
+/* ---------- Convenience wrapper that handles negatives ---------- */
 
-  // dp[i][j] = length of LCS of a[0..i-1] and b[0..j-1]
-  const dp: Uint16Array[] = Array.from({ length: m + 1 }, () => new Uint16Array(n + 1));
+function countingSortFull(arr: number[]): void {
+  if (arr.length === 0) return;
 
-  // Fill DP table
-  for (let i = 1; i <= m; i++) {
-    const ai = a.charAt(i - 1);
-    for (let j = 1; j <= n; j++) {
-      if (ai === b.charAt(j - 1)) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
+  let min = arr[0], max = arr[0];
+  for (const v of arr) {
+    if (v < min) min = v;
+    else if (v > max) max = v;
   }
 
-  // Reconstruct the subsequence by walking backwards
-  const result: string[] = [];
-  let i = m;
-  let j = n;
-  while (i > 0 && j > 0) {
-    if (a.charAt(i - 1) === b.charAt(j - 1)) {
-      // Character belongs to LCS
-      result.push(a.charAt(i - 1));
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--; // Move up
-    } else {
-      j--; // Move left
-    }
-  }
+  const shift = -min;                 // move range to start at 0
+  const shifted = arr.map(v => v + shift);
+  countingSort(shifted, max - min);   // maxValue is now (max-min)
 
-  // `result` was built backwards, so reverse it.
-  return result.reverse().join('');
+  // move values back
+  for (let i = 0; i < arr.length; ++i) arr[i] = shifted[i] - shift;
 }
 
-/**
- * Simple wrapper that returns both length and subsequence.
- *
- * @param a First string
- * @param b Second string
- * @returns Object containing length and the subsequence itself
- */
-export function lcsInfo(a: string, b: string): { length: number; subsequence: string } {
-  const subsequence = lcs(a, b);
-  return { length: subsequence.length, subsequence };
-}
+/* -------------------------- Demo -------------------------- */
 
-/* --------------------------------------------------------------
-   Demo / quick test
-   -------------------------------------------------------------- */
-if (require.main === module) {
-  const s1 = "AGGTAB";
-  const s2 = "GXTXAYB";
-
-  console.log(`String 1: ${s1}`);
-  console.log(`String 2: ${s2}`);
-
-  console.log("\n--- Using full DP (returns the subsequence) ---");
-  const { length, subsequence } = lcsInfo(s1, s2);
-  console.log(`LCS length: ${length}`);
-  console.log(`LCS: ${subsequence}`); // Expected: "GTAB"
-
-  console.log("\n--- Using space‑optimised length only ---");
-  console.log(`LCS length (optimised): ${lcsLengthOptimised(s1, s2)}`);
-}
-import { lcs, lcsLengthOptimised, lcsInfo } from "./lcs";
-
-// Example strings
-const a = "ABCDGH";
-const b = "AEDFHR";
-
-console.log(lcs(a, b));               // → "ADH"
-console.log(lcsLengthOptimised(a, b)); // → 3
-console.log(lcsInfo(a, b));            // → { length: 3, subsequence: 'ADH' }
+const data = [3, -1, 2, 3, 9, -5, 0, 2];
+countingSortFull(data);
+console.log(data);   // [-5, -1, 0, 2, 2, 3, 3, 9]
