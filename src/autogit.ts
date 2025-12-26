@@ -1,184 +1,128 @@
-function quicksort<T>(array: T[]): T[] {
-  if (array.length <= 1) {
-    return array;
-  }
+dp[i][j] = length of LCS of A[0..i‑1] and B[0..j‑1]
+if A[i‑1] === B[j‑1]   → dp[i][j] = dp[i‑1][j‑1] + 1
+else                  → dp[i][j] = max(dp[i‑1][j], dp[i][j‑1])
+/**
+ * Returns the length of the longest common subsequence of two strings.
+ * Uses O(min(m,n)) extra space (two rows of the DP matrix).
+ *
+ * @param a First string
+ * @param b Second string
+ * @returns Length of the LCS
+ */
+export function lcsLengthOptimised(a: string, b: string): number {
+  // Ensure we allocate the smaller dimension for the DP rows.
+  if (a.length < b.length) return lcsLengthOptimised(b, a);
 
-  const pivot = array[0];
-  const left: T[] = [];
-  const right: T[] = [];
+  const m = a.length;
+  const n = b.length;
 
-  for (let i = 1; i < array.length; i++) {
-    if (array[i] < pivot) {
-      left.push(array[i]);
-    } else {
-      right.push(array[i]);
-    }
-  }
+  // Two rows: previous and current.
+  let prev = new Uint16Array(n + 1); // Uint16 is enough for typical string lengths (< 65535)
+  let cur = new Uint16Array(n + 1);
 
-  return [...quicksort(left), pivot, ...quicksort(right)];
-}
-
-// Usage
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-const sortedNumbers = quicksort(numbers);
-console.log(sortedNumbers); // [11, 12, 22, 25, 34, 64, 90]
-function quicksortInPlace<T>(array: T[], left = 0, right = array.length - 1): T[] {
-  if (left < right) {
-    const pivotIndex = partition(array, left, right);
-    quicksortInPlace(array, left, pivotIndex - 1);
-    quicksortInPlace(array, pivotIndex + 1, right);
-  }
-  return array;
-}
-
-function partition<T>(array: T[], left: number, right: number): number {
-  const pivot = array[right];
-  let i = left - 1;
-
-  for (let j = left; j < right; j++) {
-    if (array[j] <= pivot) {
-      i++;
-      [array[i], array[j]] = [array[j], array[i]]; // Swap
-    }
-  }
-
-  [array[i + 1], array[right]] = [array[right], array[i + 1]]; // Swap pivot
-  return i + 1;
-}
-
-// Usage
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-quicksortInPlace(numbers);
-console.log(numbers); // [11, 12, 22, 25, 34, 64, 90]
-function quicksortWithComparator<T>(
-  array: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  if (array.length <= 1) return array;
-
-  const pivot = array[0];
-  const left: T[] = [];
-  const right: T[] = [];
-
-  for (let i = 1; i < array.length; i++) {
-    if (compare(array[i], pivot) < 0) {
-      left.push(array[i]);
-    } else {
-      right.push(array[i]);
-    }
-  }
-
-  return [
-    ...quicksortWithComparator(left, compare),
-    pivot,
-    ...quicksortWithComparator(right, compare)
-  ];
-}
-
-// Usage examples
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-const strings = ["banana", "apple", "cherry", "date"];
-
-// Default sorting (ascending)
-console.log(quicksortWithComparator(numbers));
-
-// Custom comparator for descending order
-console.log(quicksortWithComparator(numbers, (a, b) => b - a));
-
-// String sorting
-console.log(quicksortWithComparator(strings));
-
-// Custom object sorting
-interface Person {
-  name: string;
-  age: number;
-}
-
-const people: Person[] = [
-  { name: "John", age: 30 },
-  { name: "Alice", age: 25 },
-  { name: "Bob", age: 35 }
-];
-
-console.log(quicksortWithComparator(people, (a, b) => a.age - b.age));
-class QuickSorter<T> {
-  constructor(private array: T[], private compare?: (a: T, b: T) => number) {}
-
-  sort(): T[] {
-    return this.quicksort([...this.array]);
-  }
-
-  private quicksort(arr: T[]): T[] {
-    if (arr.length <= 1) return arr;
-
-    const pivot = arr[0];
-    const left: T[] = [];
-    const right: T[] = [];
-
-    for (let i = 1; i < arr.length; i++) {
-      if (this.compareFn(arr[i], pivot) < 0) {
-        left.push(arr[i]);
+  for (let i = 1; i <= m; i++) {
+    const ai = a.charAt(i - 1);
+    for (let j = 1; j <= n; j++) {
+      if (ai === b.charAt(j - 1)) {
+        cur[j] = prev[j - 1] + 1;
       } else {
-        right.push(arr[i]);
+        cur[j] = Math.max(prev[j], cur[j - 1]);
       }
     }
-
-    return [
-      ...this.quicksort(left),
-      pivot,
-      ...this.quicksort(right)
-    ];
+    // swap rows for next iteration
+    const tmp = prev;
+    prev = cur;
+    cur = tmp;
   }
 
-  private compareFn(a: T, b: T): number {
-    if (this.compare) {
-      return this.compare(a, b);
-    }
-    
-    // Default comparison
-    if (typeof a === 'number' && typeof b === 'number') {
-      return a - b;
-    }
-    
-    return String(a).localeCompare(String(b));
-  }
+  // After the last swap, `prev` holds the final row.
+  return prev[n];
 }
 
-// Usage
-const sorter = new QuickSorter([64, 34, 25, 12, 22, 11, 90]);
-console.log(sorter.sort());
-// Optimized version with median-of-three pivot selection
-function optimizedQuicksort<T>(array: T[]): T[] {
-  if (array.length <= 1) return array;
-  
-  // Median-of-three pivot selection
-  const mid = Math.floor(array.length / 2);
-  const first = array[0];
-  const middle = array[mid];
-  const last = array[array.length - 1];
-  
-  // Find median of first, middle, last
-  let pivotIndex = 0;
-  if ((first <= middle && middle <= last) || (last <= middle && middle <= first)) {
-    pivotIndex = mid;
-  } else if ((middle <= first && first <= last) || (last <= first && first <= middle)) {
-    pivotIndex = 0;
-  } else {
-    pivotIndex = array.length - 1;
+/**
+ * Returns the actual longest common subsequence string.
+ * This version builds the full DP matrix (O(m·n) space) to make back‑tracking easy.
+ *
+ * @param a First string
+ * @param b Second string
+ * @returns The LCS string (empty string if none)
+ */
+export function lcs(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
+
+  // dp[i][j] = length of LCS of a[0..i-1] and b[0..j-1]
+  const dp: Uint16Array[] = Array.from({ length: m + 1 }, () => new Uint16Array(n + 1));
+
+  // Fill DP table
+  for (let i = 1; i <= m; i++) {
+    const ai = a.charAt(i - 1);
+    for (let j = 1; j <= n; j++) {
+      if (ai === b.charAt(j - 1)) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
   }
-  
-  const pivot = array[pivotIndex];
-  const left: T[] = [];
-  const right: T[] = [];
-  
-  for (let i = 0; i < array.length; i++) {
-    if (i === pivotIndex) continue;
-    if (array[i] < pivot) {
-      left.push(array[i]);
+
+  // Reconstruct the subsequence by walking backwards
+  const result: string[] = [];
+  let i = m;
+  let j = n;
+  while (i > 0 && j > 0) {
+    if (a.charAt(i - 1) === b.charAt(j - 1)) {
+      // Character belongs to LCS
+      result.push(a.charAt(i - 1));
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--; // Move up
     } else {
-      right.push(array[i]);
+      j--; // Move left
     }
   }
-  
-  return [...optimizedQuicksort(left), pivot, ...optimizedQuicksort(right)];
+
+  // `result` was built backwards, so reverse it.
+  return result.reverse().join('');
 }
+
+/**
+ * Simple wrapper that returns both length and subsequence.
+ *
+ * @param a First string
+ * @param b Second string
+ * @returns Object containing length and the subsequence itself
+ */
+export function lcsInfo(a: string, b: string): { length: number; subsequence: string } {
+  const subsequence = lcs(a, b);
+  return { length: subsequence.length, subsequence };
+}
+
+/* --------------------------------------------------------------
+   Demo / quick test
+   -------------------------------------------------------------- */
+if (require.main === module) {
+  const s1 = "AGGTAB";
+  const s2 = "GXTXAYB";
+
+  console.log(`String 1: ${s1}`);
+  console.log(`String 2: ${s2}`);
+
+  console.log("\n--- Using full DP (returns the subsequence) ---");
+  const { length, subsequence } = lcsInfo(s1, s2);
+  console.log(`LCS length: ${length}`);
+  console.log(`LCS: ${subsequence}`); // Expected: "GTAB"
+
+  console.log("\n--- Using space‑optimised length only ---");
+  console.log(`LCS length (optimised): ${lcsLengthOptimised(s1, s2)}`);
+}
+import { lcs, lcsLengthOptimised, lcsInfo } from "./lcs";
+
+// Example strings
+const a = "ABCDGH";
+const b = "AEDFHR";
+
+console.log(lcs(a, b));               // → "ADH"
+console.log(lcsLengthOptimised(a, b)); // → 3
+console.log(lcsInfo(a, b));            // → { length: 3, subsequence: 'ADH' }
