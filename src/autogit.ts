@@ -1,118 +1,162 @@
 /**
- * Burrows-Wheeler Transform (BWT) + Inverse (IBWT)
- * =================================================
- *  – O(n log n) construction (fast enough for n ≤ 1–2 MByte).
- *  – No external deps, runs in browser and node.
- *  – Works on any binary data (strings, Uint8Array, Buffer, …).
+ * Counts occurrences of `word` in `text` using `String.split`.
+ * This works for plain substrings (no regex needed) and is case‑sensitive.
  *
- *  Author:  github.com/yourname
- *  License: MIT
+ * @param text  The source string.
+ * @param word  The word/substring to count.
+ * @returns     Number of non‑overlapping occurrences.
  */
+export function countBySplit(text: string, word: string): number {
+  if (word === '') return 0;               // avoid infinite split
+  // split returns an array with N+1 elements where N = occurrences
+  return text.split(word).length - 1;
+}
+/**
+ * Counts occurrences of `word` using a global RegExp.
+ *
+ * @param text          The source string.
+ * @param word          The word to count.
+ * @param caseSensitive Whether the match should be case‑sensitive (default: true).
+ * @returns             Number of matches (including overlapping if you use a look‑ahead).
+ */
+export function countByRegExp(
+  text: string,
+  word: string,
+  caseSensitive = true
+): number {
+  if (word === '') return 0;
 
-export type BwtResult = { transformed: Uint8Array; primaryIndex: number };
+  // Escape any regex meta‑characters so the pattern matches the literal word.
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // `\\b` ensures we match whole words only (optional – see note below).
+  const pattern = `\\b${escaped}\\b`;
+  const flags = caseSensitive ? 'g' : 'gi';
+  const re = new RegExp(pattern, flags);
+
+  let count = 0;
+  while (re.exec(text) !== null) {
+    count++;
+  }
+  return count;
+}
+export function countOverlapping(text: string, word: string, caseSensitive = true): number {
+  if (word === '') return 0;
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const flags = caseSensitive ? 'g' : 'gi';
+  const re = new RegExp(`(?=${escaped})`, flags); // zero‑width look‑ahead
+  let count = 0;
+  while (re.exec(text) !== null) {
+    count++;
+    // Move the regex engine forward by one character to avoid infinite loop
+    re.lastIndex = re.lastIndex + 1;
+  }
+  return count;
+}
+export function countByMatchAll(
+  text: string,
+  word: string,
+  caseSensitive = true,
+  wholeWord = false
+): number {
+  if (word === '') return 0;
+
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
+  const flags = caseSensitive ? 'g' : 'gi';
+  const re = new RegExp(pattern, flags);
+
+  // `matchAll` returns an iterator of all matches
+  const matches = text.matchAll(re);
+  let count = 0;
+  for (const _ of matches) count++;
+  return count;
+}
+const occurrences = (text: string, word: string) =>
+  (text.match(new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) ?? []).length;
+// utils/stringCount.ts
+export interface CountOptions {
+  /** If true, "Cat" and "cat" are considered the same. */
+  caseSensitive?: boolean;
+  /** If true, only whole‑word matches are counted (uses \\b). */
+  wholeWord?: boolean;
+  /** If true, overlapping matches are counted (e.g. "aa" in "aaaa" → 3). */
+  overlapping?: boolean;
+}
 
 /**
- * Forward BWT
- * @param data  Input bytes (Uint8Array, Buffer, or string)
- * @returns     {transformed, primaryIndex}  (primaryIndex is 0-based into *transformed*)
+ * Count how many times `word` appears in `text`.
+ *
+ * @param text   The source string.
+ * @param word   The word/substring to count.
+ * @param opts   Optional flags (default = { caseSensitive: true, wholeWord: false, overlapping: false })
+ * @returns      Number of occurrences.
  */
-export function bwt(data: Uint8Array | string): BwtResult {
-  const bytes = data instanceof Uint8Array ? data : new TextEncoder().encode(data);
-  const n = bytes.length;
-  if (n === 0) return { transformed: new Uint8Array(0), primaryIndex: 0 };
+export function countOccurrences(
+  text: string,
+  word: string,
+  opts: CountOptions = {}
+): number {
+  const {
+    caseSensitive = true,
+    wholeWord = false,
+    overlapping = false,
+  } = opts;
 
-  // Append sentinel (ETX = 0x03)
-  const s = new Uint8Array(n + 1);
-  s.set(bytes);
-  s[n] = 0x03; // sentinel
+  if (word === '') return 0;
 
-  // Build suffix array (O(n log n))
-  const sa = Array.from({ length: n + 1 }, (_, i) => i);
-  sa.sort((i, j) => {
-    for (let k = 0; k <= n; k++) {
-      const ci = s[(i + k) % (n + 1)];
-      const cj = s[(j + k) % (n + 1)];
-      if (ci !== cj) return ci - cj;
+  // Escape regex meta‑characters.
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // Build the pattern.
+  const pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
+  const flags = caseSensitive ? 'g' : 'gi';
+  const re = overlapping
+    ? new RegExp(`(?=${pattern})`, flags) // look‑ahead for overlapping
+    : new RegExp(pattern, flags);
+
+  // Count matches.
+  let count = 0;
+  if (overlapping) {
+    // For look‑ahead we must manually advance `lastIndex` to avoid an infinite loop.
+    while (re.exec(text) !== null) {
+      count++;
+      re.lastIndex = re.lastIndex + 1;
     }
-    return 0;
-  });
-
-  // Build BWT
-  const bwt = new Uint8Array(n + 1);
-  let primary = 0;
-  for (let i = 0; i <= n; i++) {
-    bwt[i] = s[(sa[i] - 1 + (n + 1)) % (n + 1)];
-    if (sa[i] === 0) primary = i;
+  } else {
+    // Normal global regex – `matchAll` is clean and fast.
+    for (const _ of text.matchAll(re)) count++;
   }
-  return { transformed: bwt, primaryIndex: primary };
+  return count;
 }
+import { countOccurrences } from './utils/stringCount';
 
-/**
- * Inverse BWT
- * @param transformed   BWT bytes (must include sentinel)
- * @param primaryIndex Must be the same returned by bwt()
- * @returns           Original data (without sentinel)
- */
-export function ibwt(transformed: Uint8Array, primaryIndex: number): Uint8Array {
-  const bwt = transformed;
-  const n = bwt.length;
-  if (n === 0) return new Uint8Array(0);
+const txt = "The quick brown fox jumps over the lazy dog. The fox was quick.";
 
-  // Count occurrences & build cumulative table
-  const counts = new Uint32Array(256);
-  for (let i = 0; i < n; i++) counts[bwt[i]]++;
-  const cumu = new Uint32Array(256);
-  for (let i = 1; i < 256; i++) cumu[i] = cumu[i - 1] + counts[i - 1];
+console.log(countOccurrences(txt, "fox"));                     // 2 (case‑sensitive)
+console.log(countOccurrences(txt, "Fox", { caseSensitive: false })); // 2
+console.log(countOccurrences(txt, "the", { caseSensitive: false, wholeWord: true })); // 2
+console.log(countOccurrences("aaaa", "aa", { overlapping: true })); // 3
+function test() {
+  const cases: [string, string, number][] = [
+    ["hello world hello", "hello", 2],
+    ["Hello hello HELLO", "hello", 1],
+    ["Hello hello HELLO", "hello", 3], // case‑insensitive
+    ["aaaaa", "aa", 2],                // non‑overlapping
+    ["aaaaa", "aa", 4],                // overlapping
+    ["cat concatenate catty cat", "cat", 2], // whole‑word only
+  ];
 
-  // Build LF-mapping (next[i])
-  const next = new Uint32Array(n);
-  const ptr = new Uint32Array(256);
-  for (let i = 0; i < 256; i++) ptr[i] = cumu[i];
-  for (let i = 0; i < n; i++) {
-    const c = bwt[i];
-    next[ptr[c]++] = i;
-  }
+  console.log('--- split ---');
+  console.log(countBySplit("hello world hello", "hello")); // 2
 
-  // Walk backwards
-  const out = new Uint8Array(n - 1);
-  let p = primaryIndex;
-  for (let i = n - 2; i >= 0; i--) {
-    p = next[p];
-    out[i] = bwt[p];
-  }
-  return out;
+  console.log('--- regex (case‑insensitive) ---');
+  console.log(countByRegExp("Hello hello HELLO", "hello", false)); // 3
+
+  console.log('--- overlapping ---');
+  console.log(countOverlapping("aaaaa", "aa")); // 4
+
+  console.log('--- whole‑word ---');
+  console.log(countByRegExp("cat concatenate catty cat", "cat")); // 2
 }
-
-/* ------------------ Convenience helpers ------------------ */
-
-export function bwtString(str: string): { transformed: string; primaryIndex: number } {
-  const { transformed, primaryIndex } = bwt(str);
-  return { transformed: new TextDecoder().decode(transformed), primaryIndex };
-}
-
-export function ibwtString(transformed: string, primaryIndex: number): string {
-  return new TextDecoder().decode(ibwt(new TextEncoder().encode(transformed), primaryIndex));
-}
-
-/* ------------------ Quick sanity check ------------------ */
-if (import.meta.url.endsWith(process.argv[1])) {
-  const original = "banana";
-  const { transformed, primaryIndex } = bwtString(original);
-  console.log("BWT:", JSON.stringify(transformed), "primaryIndex:", primaryIndex);
-  const back = ibwtString(transformed, primaryIndex);
-  console.log("IBWT:", JSON.stringify(back));
-  console.assert(back === original);
-}
-import { bwt, ibwt } from "./bwt";
-
-// Binary data
-const data = new Uint8Array([0, 1, 2, 3, 4, 5]);
-const { transformed, primaryIndex } = bwt(data);
-const recovered = ibwt(transformed, primaryIndex);
-console.log(recovered); // Uint8Array [0,1,2,3,4,5]
-
-// Strings
-import { bwtString, ibwtString } from "./bwt";
-const enc = bwtString("mississippi");
-const dec = ibwtString(enc.transformed, enc.primaryIndex);
-console.log(dec); // "mississippi"
+test();
