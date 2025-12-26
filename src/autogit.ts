@@ -1,54 +1,93 @@
-/**
- * Counting sort (ascending) for an array of non-negative integers.
- * Time  : O(n + k)   (k = maxValue - minValue + 1)
- * Memory: O(n + k)
- *
- * @param arr  array to sort (is overwritten)
- * @param radix  0-based maximum value that can appear in arr
- */
-function countingSort(arr: number[], maxValue: number): void {
-  const n = arr.length;
-  if (n === 0) return;
+function majorityElement(nums: number[]): number | null {
+    let candidate: number | null = null;
+    let count = 0;
 
-  // 1. Frequency histogram
-  const freq = new Uint32Array(maxValue + 1);
-  for (const v of arr) freq[v]++;
+    for (const num of nums) {
+        if (count === 0) {
+            candidate = num;
+            count = 1;
+        } else if (num === candidate) {
+            count++;
+        } else {
+            count--;
+        }
+    }
 
-  // 2. Prefix sum -> positions
-  for (let i = 1; i <= maxValue; ++i) freq[i] += freq[i - 1];
+    // Verify if candidate is actually majority
+    if (candidate !== null) {
+        const majorityThreshold = Math.floor(nums.length / 2);
+        const candidateCount = nums.filter(n => n === candidate).length;
+        
+        if (candidateCount > majorityThreshold) {
+            return candidate;
+        }
+    }
 
-  // 3. Stable write into output
-  const out = new Uint32Array(n);
-  for (let i = n - 1; i >= 0; --i) {
-    const v = arr[i];
-    out[--freq[v]] = v;
-  }
-
-  // 4. Copy back
-  arr.set(out);
+    return null;
 }
 
-/* ---------- Convenience wrapper that handles negatives ---------- */
+// Usage
+const array = [2, 2, 1, 1, 1, 2, 2];
+const result = majorityElement(array);
+console.log(result); // Output: 2
+function majorityElementHashMap(nums: number[]): number | null {
+    const frequencyMap = new Map<number, number>();
+    const majorityThreshold = Math.floor(nums.length / 2);
 
-function countingSortFull(arr: number[]): void {
-  if (arr.length === 0) return;
+    for (const num of nums) {
+        const count = (frequencyMap.get(num) || 0) + 1;
+        frequencyMap.set(num, count);
+        
+        if (count > majorityThreshold) {
+            return num;
+        }
+    }
 
-  let min = arr[0], max = arr[0];
-  for (const v of arr) {
-    if (v < min) min = v;
-    else if (v > max) max = v;
-  }
+    return null;
+}
+function majorityElementSorting(nums: number[]): number | null {
+    nums.sort((a, b) => a - b);
+    const majorityThreshold = Math.floor(nums.length / 2);
+    const candidate = nums[majorityThreshold];
+    
+    // Verify candidate
+    const candidateCount = nums.filter(n => n === candidate).length;
+    
+    if (candidateCount > majorityThreshold) {
+        return candidate;
+    }
+    
+    return null;
+}
+function findMajorityElement<T>(arr: T[]): T | null {
+    if (arr.length === 0) return null;
 
-  const shift = -min;                 // move range to start at 0
-  const shifted = arr.map(v => v + shift);
-  countingSort(shifted, max - min);   // maxValue is now (max-min)
+    let candidate: T = arr[0];
+    let count = 1;
 
-  // move values back
-  for (let i = 0; i < arr.length; ++i) arr[i] = shifted[i] - shift;
+    for (let i = 1; i < arr.length; i++) {
+        if (count === 0) {
+            candidate = arr[i];
+            count = 1;
+        } else if (arr[i] === candidate) {
+            count++;
+        } else {
+            count--;
+        }
+    }
+
+    // Verify candidate
+    const majorityThreshold = Math.floor(arr.length / 2);
+    const candidateCount = arr.filter(item => item === candidate).length;
+    
+    return candidateCount > majorityThreshold ? candidate : null;
 }
 
-/* -------------------------- Demo -------------------------- */
+// Usage examples
+const numbers = [3, 2, 3];
+const strings = ["a", "b", "a", "a", "c", "a"];
+const noMajority = [1, 2, 3, 4, 5];
 
-const data = [3, -1, 2, 3, 9, -5, 0, 2];
-countingSortFull(data);
-console.log(data);   // [-5, -1, 0, 2, 2, 3, 3, 9]
+console.log(findMajorityElement(numbers)); // Output: 3
+console.log(findMajorityElement(strings)); // Output: "a"
+console.log(findMajorityElement(noMajority)); // Output: null
