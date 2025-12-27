@@ -1,163 +1,191 @@
-type NodeId = string | number;               // whatever you use for node identifiers
-type AdjList = Map<NodeId, NodeId[]>;         // node → list of neighbours
 /**
- * Iterative Depth‑Limited Search.
+ * Returns one longest increasing subsequence and its length.
+ * Runs in O(n²) time and O(n) extra space.
  *
- * @param graph      The adjacency list of the graph.
- * @param start      The node where the search begins.
- * @param goalTest   A predicate that returns true for a goal node.
- * @param limit      Maximum depth allowed (0 = only the start node).
- * @returns          An array representing the path from start → goal,
- *                   or null if no goal was found within the limit.
- *
- * @throws          If start node is not present in the graph.
+ * @param arr - input array of numbers (or any comparable type)
+ * @returns { length: number; subsequence: number[] }
  */
-export function depthLimitedSearchIterative(
-  graph: AdjList,
-  start: NodeId,
-  goalTest: (node: NodeId) => boolean,
-  limit: number
-): NodeId[] | null {
-  if (!graph.has(start)) {
-    throw new Error(`Start node ${start} is not present in the graph`);
-  }
+export function lisDP<T>(arr: T[], compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)) {
+  const n = arr.length;
+  if (n === 0) return { length: 0, subsequence: [] };
 
-  // Stack holds tuples: [currentNode, depth, pathSoFar]
-  const stack: Array<[NodeId, number, NodeId[]]> = [[start, 0, [start]]];
+  const dp = new Array<number>(n).fill(1);   // dp[i] = length of LIS ending at i
+  const prev = new Array<number>(n).fill(-1); // predecessor index for reconstruction
 
-  while (stack.length > 0) {
-    const [node, depth, path] = stack.pop()!; // pop is safe because length > 0
+  let bestLen = 1;
+  let bestIdx = 0;
 
-    // Goal test – we check *as soon as we pop* so the start node can be a goal.
-    if (goalTest(node)) {
-      return path;
+  for (let i = 1; i < n; ++i) {
+    for (let j = 0; j < i; ++j) {
+      if (compare(arr[j], arr[i]) < 0 && dp[j] + 1 > dp[i]) {
+        dp[i] = dp[j] + 1;
+        prev[i] = j;
+      }
     }
-
-    // If we have already reached the depth limit, do NOT expand children.
-    if (depth >= limit) continue;
-
-    // Expand neighbours (push them onto the stack).
-    const neighbours = graph.get(node) ?? [];
-
-    // Optional: reverse order if you want the same order as recursive DFS.
-    for (let i = neighbours.length - 1; i >= 0; i--) {
-      const child = neighbours[i];
-      // Avoid cycles by not revisiting nodes already in the current path.
-      if (path.includes(child)) continue;
-
-      stack.push([child, depth + 1, [...path, child]]);
+    if (dp[i] > bestLen) {
+      bestLen = dp[i];
+      bestIdx = i;
     }
   }
 
-  // Exhausted stack → no goal within the depth limit.
-  return null;
+  // Reconstruct the subsequence by walking backwards through `prev`
+  const subsequence: T[] = [];
+  for (let cur = bestIdx; cur !== -1; cur = prev[cur]) {
+    subsequence.push(arr[cur]);
+  }
+  subsequence.reverse(); // we collected it backwards
+
+  return { length: bestLen, subsequence };
 }
-// ---------------------------------------------------
-// 1️⃣ Build a tiny graph (undirected for illustration)
-// ---------------------------------------------------
-const graph: AdjList = new Map([
-  [1, [2, 3]],
-  [2, [1, 4, 5]],
-  [3, [1, 6]],
-  [4, [2]],
-  [5, [2, 6]],
-  [6, [3, 5]],
-]);
+import { lisDP } from "./lis";
 
-// ---------------------------------------------------
-// 2️⃣ Define a goal predicate
-// ---------------------------------------------------
-const goalNode = 6;
-const isGoal = (n: NodeId) => n === goalNode;
-
-// ---------------------------------------------------
-// 3️⃣ Run DLS with different limits
-// ---------------------------------------------------
-function demo(limit: number) {
-  const result = depthLimitedSearchIterative(graph, 1, isGoal, limit);
-  console.log(`limit=${limit} →`, result ? `path ${result.join(' → ')}` : 'no solution');
-}
-
-demo(0); // limit=0 → no solution (start ≠ goal)
-demo(1); // limit=1 → no solution (goal is 2 edges away)
-demo(2); // limit=2 → path 1 → 3 → 6
-demo(3); // limit=3 → still finds the same shortest‑depth path
-limit=0 → no solution
-limit=1 → no solution
-limit=2 → path 1 → 3 → 6
-limit=3 → path 1 → 3 → 6
-// depthLimitedSearch.ts ---------------------------------------------------------
-
-type NodeId = string | number;
-type AdjList = Map<NodeId, NodeId[]>;
-
+const arr = [10, 9, 2, 5, 3, 7, 101, 18];
+const { length, subsequence } = lisDP(arr);
+console.log(length);      // 4
+console.log(subsequence); // [2, 3, 7, 101] (one of the possible LIS)
 /**
- * Iterative Depth‑Limited Search.
+ * O(n log n) LIS using patience sorting + binary search.
+ * Returns both the length and one concrete longest increasing subsequence.
  *
- * @param graph      The adjacency list of the graph.
- * @param start      Starting node.
- * @param goalTest   Predicate that returns true for a goal node.
- * @param limit      Maximum depth allowed (0 = only start node).
- * @returns          Path from start to goal, or null if none within limit.
+ * @param arr - input array of numbers (or any comparable type)
+ * @param compare - optional comparator (default works for numbers, strings, etc.)
+ * @returns { length: number; subsequence: T[] }
  */
-export function depthLimitedSearchIterative(
-  graph: AdjList,
-  start: NodeId,
-  goalTest: (node: NodeId) => boolean,
-  limit: number
-): NodeId[] | null {
-  if (!graph.has(start)) {
-    throw new Error(`Start node ${start} is not present in the graph`);
-  }
+export function lisPatience<T>(arr: T[], compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)) {
+  const n = arr.length;
+  if (n === 0) return { length: 0, subsequence: [] };
 
-  const stack: Array<[NodeId, number, NodeId[]]> = [[start, 0, [start]]];
+  // tails[k] = smallest possible tail value of an increasing subsequence of length k+1
+  const tails: T[] = [];
+  // tailsIdx[k] = original index of that tail value
+  const tailsIdx: number[] = [];
 
-  while (stack.length > 0) {
-    const [node, depth, path] = stack.pop()!;
+  // prevIdx[i] = index of predecessor of arr[i] in the LIS that ends at i
+  const prevIdx = new Array<number>(n).fill(-1);
 
-    if (goalTest(node)) {
-      return path;
+  for (let i = 0; i < n; ++i) {
+    const x = arr[i];
+
+    // binary search for the first tails[pos] >= x
+    let lo = 0;
+    let hi = tails.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (compare(tails[mid], x) < 0) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+    const pos = lo; // position where x will go
+
+    // Update predecessor link
+    if (pos > 0) {
+      prevIdx[i] = tailsIdx[pos - 1];
     }
 
-    if (depth >= limit) continue;
-
-    const neighbours = graph.get(node) ?? [];
-
-    // Push neighbours in reverse order to mimic recursive DFS order.
-    for (let i = neighbours.length - 1; i >= 0; i--) {
-      const child = neighbours[i];
-      if (path.includes(child)) continue; // simple cycle guard
-      stack.push([child, depth + 1, [...path, child]]);
+    // Insert / replace
+    if (pos === tails.length) {
+      tails.push(x);
+      tailsIdx.push(i);
+    } else {
+      tails[pos] = x;
+      tailsIdx[pos] = i;
     }
   }
 
-  return null;
+  // Reconstruct the subsequence
+  const lisLength = tails.length;
+  const subsequence: T[] = new Array<T>(lisLength);
+  let curIdx = tailsIdx[lisLength - 1];
+  for (let k = lisLength - 1; k >= 0; --k) {
+    subsequence[k] = arr[curIdx];
+    curIdx = prevIdx[curIdx];
+  }
+
+  return { length: lisLength, subsequence };
+}
+import { lisPatience } from "./lis";
+
+const data = [0, 8, 4, 12, 2, 10, 6, 14, 1, 9, 5, 13, 3, 11, 7, 15];
+const { length, subsequence } = lisPatience(data);
+console.log(length);      // 6
+console.log(subsequence); // [0, 2, 6, 9, 11, 15] (one possible LIS)
+// lis.ts --------------------------------------------------------------
+export function lisDP<T>(arr: T[], compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)) {
+  const n = arr.length;
+  if (n === 0) return { length: 0, subsequence: [] };
+
+  const dp = new Array<number>(n).fill(1);
+  const prev = new Array<number>(n).fill(-1);
+
+  let bestLen = 1;
+  let bestIdx = 0;
+
+  for (let i = 1; i < n; ++i) {
+    for (let j = 0; j < i; ++j) {
+      if (compare(arr[j], arr[i]) < 0 && dp[j] + 1 > dp[i]) {
+        dp[i] = dp[j] + 1;
+        prev[i] = j;
+      }
+    }
+    if (dp[i] > bestLen) {
+      bestLen = dp[i];
+      bestIdx = i;
+    }
+  }
+
+  const subsequence: T[] = [];
+  for (let cur = bestIdx; cur !== -1; cur = prev[cur]) subsequence.push(arr[cur]);
+  subsequence.reverse();
+
+  return { length: bestLen, subsequence };
 }
 
-// -----------------------------------------------------------------------------
-// Demo (run with `ts-node depthLimitedSearch.ts` or paste into a playground)
-// -----------------------------------------------------------------------------
-if (require.main === module) {
-  const graph: AdjList = new Map([
-    [1, [2, 3]],
-    [2, [1, 4, 5]],
-    [3, [1, 6]],
-    [4, [2]],
-    [5, [2, 6]],
-    [6, [3, 5]],
-  ]);
+// --------------------------------------------------------------
+export function lisPatience<T>(arr: T[], compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)) {
+  const n = arr.length;
+  if (n === 0) return { length: 0, subsequence: [] };
 
-  const goal = 6;
-  const isGoal = (n: NodeId) => n === goal;
+  const tails: T[] = [];
+  const tailsIdx: number[] = [];
+  const prevIdx = new Array<number>(n).fill(-1);
 
-  const demo = (limit: number) => {
-    const result = depthLimitedSearchIterative(graph, 1, isGoal, limit);
-    console.log(
-      `limit=${limit} →`,
-      result ? `path ${result.join(' → ')}` : 'no solution'
-    );
-  };
+  for (let i = 0; i < n; ++i) {
+    const x = arr[i];
+    let lo = 0, hi = tails.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (compare(tails[mid], x) < 0) lo = mid + 1;
+      else hi = mid;
+    }
+    const pos = lo;
 
-  [0, 1, 2, 3].forEach(demo);
+    if (pos > 0) prevIdx[i] = tailsIdx[pos - 1];
+
+    if (pos === tails.length) {
+      tails.push(x);
+      tailsIdx.push(i);
+    } else {
+      tails[pos] = x;
+      tailsIdx[pos] = i;
+    }
+  }
+
+  const lisLength = tails.length;
+  const subsequence: T[] = new Array<T>(lisLength);
+  let curIdx = tailsIdx[lisLength - 1];
+  for (let k = lisLength - 1; k >= 0; --k) {
+    subsequence[k] = arr[curIdx];
+    curIdx = prevIdx[curIdx];
+  }
+
+  return { length: lisLength, subsequence };
 }
-npx ts-node depthLimitedSearch.ts
+
+// --------------------------------------------------------------
+/* Example usage (uncomment to test):
+const a = [10, 9, 2, 5, 3, 7, 101, 18];
+console.log(lisDP(a));
+console.log(lisPatience(a));
+*/
