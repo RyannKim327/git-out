@@ -1,11 +1,29 @@
-function countWord(haystack: string, needle: string): number {
-  if (!needle) return 0;                     // empty word → 0
-  const esc = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // escape regex meta-chars
-  const regex = new RegExp(`\\b${esc}\\b`, 'gi');
-  const matches = haystack.match(regex);
-  return matches ? matches.length : 0;
+function toBin(n: number): string {
+  if (!Number.isInteger(n) || n < 0)
+    throw new RangeError('Only non-negative integers allowed');
+  return n.toString(2); // "1010" etc.
 }
 
-// ---- usage ----
-const text = 'One fish, two Fish, three FISH, four fish.';
-console.log(countWord(text, 'fish')); // → 4
+console.log(toBin(13)); // "1101"
+function toBinManual(n: number): string {
+  if (!Number.isInteger(n) || n < 0)
+    throw new RangeError('Only non-negative integers allowed');
+
+  if (n === 0) return '0';
+
+  let bits = '';
+  while (n > 0) {
+    bits = (n & 1) + bits; // same as (n % 2) but faster
+    n >>>= 1;               // unsigned right-shift divides by 2
+  }
+  return bits;
+}
+
+console.log(toBinManual(13)); // "1101"
+function toBinBigInt(value: bigint): string {
+  if (value < 0n) throw new RangeError('Only non-negative integers allowed');
+  return value.toString(2);
+}
+
+console.log(toBinBigInt(123456789012345678901234567890n));
+// → "11010001001010110110101010010000011101101…"
