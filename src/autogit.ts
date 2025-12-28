@@ -1,44 +1,55 @@
-/**
- * Returns the first repeated character in `s`.
- * If there is no repeated character, returns `null`.
- *
- * @param s - The input string (any Unicode characters are fine)
- * @returns The first character that occurs more than once, or null
- */
-function firstRepeatedChar(s: string): string | null {
-    // A Set gives O(1) lookup for “have we seen this already?”
-    const seen = new Set<string>();
+function countCharacter(text: string, char: string): number {
+    return text.split(char).length - 1;
+}
 
-    // Iterate over the string **in order** – the first duplicate we meet is the answer.
-    for (const ch of s) {
-        if (seen.has(ch)) {
-            // We have already seen this character → it is the first repeat.
-            return ch;
+// Example usage
+const text = "hello world";
+const count = countCharacter(text, "l"); // Returns 3
+function countCharacter(text: string, char: string): number {
+    const matches = text.match(new RegExp(char, "g"));
+    return matches ? matches.length : 0;
+}
+
+// Example usage
+const text = "hello world";
+const count = countCharacter(text, "l"); // Returns 3
+function countCharacter(text: string, char: string): number {
+    let count = 0;
+    for (let i = 0; i < text.length; i++) {
+        if (text[i] === char) {
+            count++;
         }
-        seen.add(ch);
     }
-
-    // No character repeated
-    return null;
+    return count;
 }
 
-/* ------------------- Example usage ------------------- */
-const examples = [
-    "abca",          // → 'a'
-    "hello world",  // → 'l' (the first 'l' repeats)
-    "abcdef",        // → null (no repeats)
-    "😀🐶😀",        // → '😀' (works with Unicode emojis)
-];
-
-for (const str of examples) {
-    console.log(`"${str}" →`, firstRepeatedChar(str));
+// Example usage
+const text = "hello world";
+const count = countCharacter(text, "l"); // Returns 3
+function countCharacter(text: string, char: string): number {
+    return [...text].reduce((count, currentChar) => 
+        currentChar === char ? count + 1 : count, 0
+    );
 }
-function firstRepeatedCharWithCounts(s: string): string | null {
-    const counts = new Map<string, number>();
-    for (const ch of s) {
-        const c = (counts.get(ch) ?? 0) + 1;
-        if (c === 2) return ch;   // first time we reach count 2 → first repeat
-        counts.set(ch, c);
+
+// Example usage
+const text = "hello world";
+const count = countCharacter(text, "l"); // Returns 3
+function countCharacter(text: string, char: string): number {
+    return [...text].filter(c => c === char).length;
+}
+
+// Example usage
+const text = "hello world";
+const count = countCharacter(text, "l"); // Returns 3
+function countCharacter(text: string, char: string): number {
+    if (char.length !== 1) {
+        throw new Error("Second parameter must be a single character");
     }
-    return null;
+    
+    return text.split(char).length - 1;
 }
+
+// Example usage
+const text = "hello world";
+const count = countCharacter(text, "l"); // Returns 3
