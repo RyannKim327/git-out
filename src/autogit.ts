@@ -1,1 +1,1 @@
-// May error sa API
+const lower = originalString.toLowerCase();
