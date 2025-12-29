@@ -1,313 +1,198 @@
-// A simple binary‑tree node
-export class TreeNode<T = number> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
-
-  constructor(value: T, left?: TreeNode<T> | null, right?: TreeNode<T> | null) {
-    this.value = value;
-    if (left) this.left = left;
-    if (right) this.right = right;
-  }
+interface Edge {
+  from: number;   // source vertex id
+  to: number;     // destination vertex id
+  weight: number; // edge weight (can be negative)
 }
+// ---------------------------------------------------------------
+// 1️⃣ Types
+// ---------------------------------------------------------------
+export interface Edge {
+  /** Index of the source vertex */
+  from: number;
+  /** Index of the destination vertex */
+  to: number;
+  /** Edge weight – can be negative */
+  weight: number;
+}
+
+/** Result of Bellman‑Ford */
+export interface BellmanFordResult {
+  /** Shortest distance from source to each vertex (Infinity = unreachable) */
+  distance: number[];
+  /** Predecessor of each vertex on the shortest path (‑1 = none) */
+  predecessor: number[];
+  /** True if a negative‑weight cycle reachable from the source exists */
+  hasNegativeCycle: boolean;
+}
+
 /**
- * Returns the diameter of the binary tree measured in **edges**.
+ * Runs Bellman‑Ford on a directed weighted graph.
  *
- * @param root - The root of the binary tree (or null for an empty tree)
- * @returns number of edges on the longest path between any two nodes
+ * @param vertexCount   Number of vertices (0 … vertexCount‑1)
+ * @param edges         Edge list of the graph
+ * @param source        Index of the source vertex
+ * @returns             Distances, predecessor list and a flag for negative cycles
  */
-export function treeDiameter<T>(root: TreeNode<T> | null): number {
-  // `maxDiameter` is captured by the inner helper and updated whenever we
-  // discover a longer path that passes through the current node.
-  let maxDiameter = 0;
+export function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult {
+  // ---------------------------------------------------------------
+  // 2️⃣ Initialisation
+  // ---------------------------------------------------------------
+  const distance = new Array<number>(vertexCount).fill(Infinity);
+  const predecessor = new Array<number>(vertexCount).fill(-1);
 
-  /**
-   * Post‑order DFS that returns the height of the subtree rooted at `node`.
-   * Height = number of edges on the longest downward path to a leaf.
-   */
-  function height(node: TreeNode<T> | null): number {
-    if (!node) return -1; // empty subtree → height = -1 so leaf height = 0
+  distance[source] = 0;
 
-    const leftHeight = height(node.left);
-    const rightHeight = height(node.right);
+  // ---------------------------------------------------------------
+  // 3️⃣ Relax edges |V|-1 times
+  // ---------------------------------------------------------------
+  for (let i = 0; i < vertexCount - 1; i++) {
+    let anyChange = false;
 
-    // Path that goes left → node → right uses `leftHeight + rightHeight + 2` edges.
-    // Since we store heights as edges, the candidate diameter is:
-    const candidate = leftHeight + rightHeight + 2;
-    if (candidate > maxDiameter) maxDiameter = candidate;
-
-    // Return the height of this node (max of its children + 1 edge to child)
-    return Math.max(leftHeight, rightHeight) + 1;
-  }
-
-  height(root);
-  return maxDiameter;
-}
-export function treeDiameterInNodes<T>(root: TreeNode<T> | null): number {
-  // Edge‑based diameter + 1 (unless the tree is empty)
-  const edges = treeDiameter(root);
-  return root ? edges + 1 : 0;
-}
-export function treeDiameterIterative<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  // Stack for post‑order traversal: [node, visitedFlag]
-  const stack: Array<[TreeNode<T>, boolean]> = [[root, false]];
-  const heightMap = new Map<TreeNode<T>, number>();
-  let maxDiameter = 0;
-
-  while (stack.length) {
-    const [node, visited] = stack.pop()!;
-
-    if (!node) continue;
-
-    if (visited) {
-      // Children have already been processed → we can compute height
-      const leftH = heightMap.get(node.left!) ?? -1;
-      const rightH = heightMap.get(node.right!) ?? -1;
-
-      const candidate = leftH + rightH + 2;
-      if (candidate > maxDiameter) maxDiameter = candidate;
-
-      heightMap.set(node, Math.max(leftH, rightH) + 1);
-    } else {
-      // Post‑order: push node again marked as visited, then its children
-      stack.push([node, true]);
-      if (node.right) stack.push([node.right, false]);
-      if (node.left) stack.push([node.left, false]);
-    }
-  }
-
-  return maxDiameter;
-}
-export function treeDiameterTwoBFS<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  // 1️⃣ Build adjacency list (node → neighbors)
-  const adj = new Map<TreeNode<T>, TreeNode<T>[]>();
-  const stack: TreeNode<T>[] = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    const neighbors: TreeNode<T>[] = [];
-
-    if (node.left) {
-      neighbors.push(node.left);
-      (adj.get(node.left) ?? []).push(node);
-      stack.push(node.left);
-    }
-    if (node.right) {
-      neighbors.push(node.right);
-      (adj.get(node.right) ?? []).push(node);
-      stack.push(node.right);
-    }
-    adj.set(node, neighbors);
-  }
-
-  // Helper: BFS returning [farthestNode, distance]
-  function bfs(start: TreeNode<T>): [TreeNode<T>, number] {
-    const visited = new Set<TreeNode<T>>();
-    const queue: Array<[TreeNode<T>, number]> = [[start, 0]];
-    visited.add(start);
-    let farthest: TreeNode<T> = start;
-    let maxDist = 0;
-
-    while (queue.length) {
-      const [cur, dist] = queue.shift()!;
-      if (dist > maxDist) {
-        maxDist = dist;
-        farthest = cur;
-      }
-      for (const nb of adj.get(cur) ?? []) {
-        if (!visited.has(nb)) {
-          visited.add(nb);
-          queue.push([nb, dist + 1]);
-        }
+    for (const { from, to, weight } of edges) {
+      if (distance[from] !== Infinity && distance[from] + weight < distance[to]) {
+        distance[to] = distance[from] + weight;
+        predecessor[to] = from;
+        anyChange = true;
       }
     }
-    return [farthest, maxDist];
+
+    // Early exit: if no edge relaxed in this pass, we are done
+    if (!anyChange) break;
   }
 
-  const [farNode] = bfs(root);          // any node → farthest node
-  const [, diameterEdges] = bfs(farNode); // farthest from farNode = diameter
-  return diameterEdges;
-}
-// ---------------------------------------------------------------
-// Build a sample tree:
-//
-//          1
-//        /   \
-//       2     3
-//      / \     \
-//     4   5     6
-//        / \
-//       7   8
-//
-// The longest path is 7‑5‑2‑1‑3‑6 (5 edges, 6 nodes)
-// ---------------------------------------------------------------
-function buildSampleTree(): TreeNode<number> {
-  const n7 = new TreeNode(7);
-  const n8 = new TreeNode(8);
-  const n5 = new TreeNode(5, n7, n8);
-  const n4 = new TreeNode(4);
-  const n2 = new TreeNode(2, n4, n5);
-  const n6 = new TreeNode(6);
-  const n3 = new TreeNode(3, null, n6);
-  const root = new TreeNode(1, n2, n3);
-  return root;
-}
-
-// Run all three implementations and log results
-function demo() {
-  const root = buildSampleTree();
-
-  console.log('Recursive (edges):', treeDiameter(root));               // 5
-  console.log('Recursive (nodes):', treeDiameterInNodes(root));        // 6
-  console.log('Iterative (edges):', treeDiameterIterative(root));      // 5
-  console.log('Two‑BFS (edges):', treeDiameterTwoBFS(root));           // 5
-}
-
-demo();
-Recursive (edges): 5
-Recursive (nodes): 6
-Iterative (edges): 5
-Two‑BFS (edges): 5
-// tree-diameter.ts -------------------------------------------------
-export class TreeNode<T = number> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
-
-  constructor(value: T, left?: TreeNode<T> | null, right?: TreeNode<T> | null) {
-    this.value = value;
-    if (left) this.left = left;
-    if (right) this.right = right;
+  // ---------------------------------------------------------------
+  // 4️⃣ Detect negative‑weight cycles
+  // ---------------------------------------------------------------
+  let hasNegativeCycle = false;
+  for (const { from, to, weight } of edges) {
+    if (distance[from] !== Infinity && distance[from] + weight < distance[to]) {
+      hasNegativeCycle = true;
+      // Optional: you could also mark the vertices that belong to the cycle
+      break;
+    }
   }
+
+  return { distance, predecessor, hasNegativeCycle };
 }
 
 /**
- * Diameter measured in edges (recursive O(N) solution).
+ * Reconstructs the shortest path from `source` to `target` using the predecessor array.
+ *
+ * @param predecessor  Array returned by `bellmanFord`
+ * @param source       Source vertex index
+ * @param target       Target vertex index
+ * @returns            Array of vertex indices representing the path (empty if unreachable)
  */
-export function treeDiameter<T>(root: TreeNode<T> | null): number {
-  let maxDiameter = 0;
-  function height(node: TreeNode<T> | null): number {
-    if (!node) return -1;
-    const left = height(node.left);
-    const right = height(node.right);
-    const candidate = left + right + 2;
-    if (candidate > maxDiameter) maxDiameter = candidate;
-    return Math.max(left, right) + 1;
-  }
-  height(root);
-  return maxDiameter;
-}
+export function reconstructPath(
+  predecessor: number[],
+  source: number,
+  target: number
+): number[] {
+  const path: number[] = [];
+  let cur = target;
 
-/**
- * Diameter measured in nodes (just edges + 1, unless empty).
- */
-export function treeDiameterInNodes<T>(root: TreeNode<T> | null): number {
-  const edges = treeDiameter(root);
-  return root ? edges + 1 : 0;
-}
+  // If the target is unreachable, distance would be Infinity and predecessor stays -1
+  if (predecessor[cur] === -1 && cur !== source) return [];
 
-/**
- * Iterative version (still O(N)).
- */
-export function treeDiameterIterative<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-  const stack: Array<[TreeNode<T>, boolean]> = [[root, false]];
-  const heightMap = new Map<TreeNode<T>, number>();
-  let maxDiameter = 0;
-
-  while (stack.length) {
-    const [node, visited] = stack.pop()!;
-    if (!node) continue;
-
-    if (visited) {
-      const leftH = heightMap.get(node.left!) ?? -1;
-      const rightH = heightMap.get(node.right!) ?? -1;
-      const candidate = leftH + rightH + 2;
-      if (candidate > maxDiameter) maxDiameter = candidate;
-      heightMap.set(node, Math.max(leftH, rightH) + 1);
-    } else {
-      stack.push([node, true]);
-      if (node.right) stack.push([node.right, false]);
-      if (node.left) stack.push([node.left, false]);
-    }
-  }
-  return maxDiameter;
-}
-
-/**
- * Two‑BFS version (works for any tree shape).
- */
-export function treeDiameterTwoBFS<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  // Build adjacency list
-  const adj = new Map<TreeNode<T>, TreeNode<T>[]>();
-  const stack: TreeNode<T>[] = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    const neighbors: TreeNode<T>[] = [];
-
-    if (node.left) {
-      neighbors.push(node.left);
-      (adj.get(node.left) ?? []).push(node);
-      stack.push(node.left);
-    }
-    if (node.right) {
-      neighbors.push(node.right);
-      (adj.get(node.right) ?? []).push(node);
-      stack.push(node.right);
-    }
-    adj.set(node, neighbors);
+  while (cur !== -1) {
+    path.push(cur);
+    if (cur === source) break;
+    cur = predecessor[cur];
   }
 
-  function bfs(start: TreeNode<T>): [TreeNode<T>, number] {
-    const visited = new Set<TreeNode<T>>();
-    const q: Array<[TreeNode<T>, number]> = [[start, 0]];
-    visited.add(start);
-    let far = start;
-    let maxDist = 0;
+  // The loop stopped before reaching the source → unreachable
+  if (path[path.length - 1] !== source) return [];
 
-    while (q.length) {
-      const [cur, d] = q.shift()!;
-      if (d > maxDist) {
-        maxDist = d;
-        far = cur;
-      }
-      for (const nb of adj.get(cur) ?? []) {
-        if (!visited.has(nb)) {
-          visited.add(nb);
-          q.push([nb, d + 1]);
-        }
-      }
-    }
-    return [far, maxDist];
-  }
-
-  const [farNode] = bfs(root);
-  const [, diameter] = bfs(farNode);
-  return diameter;
+  return path.reverse();
 }
+import { bellmanFord, reconstructPath, Edge } from "./bellmanFord";
 
 // ---------------------------------------------------------------
-// Example usage (uncomment to run with ts-node):
+// Build a graph (directed, may contain negative edges)
 // ---------------------------------------------------------------
-// function buildSample(): TreeNode<number> {
-//   const n7 = new TreeNode(7);
-//   const n8 = new TreeNode(8);
-//   const n5 = new TreeNode(5, n7, n8);
-//   const n4 = new TreeNode(4);
-//   const n2 = new TreeNode(2, n4, n5);
-//   const n6 = new TreeNode(6);
-//   const n3 = new TreeNode(3, null, n6);
-//   return new TreeNode(1, n2, n3);
-// }
-//
-// const root = buildSample();
-// console.log('Recursive (edges):', treeDiameter(root));          // 5
-// console.log('Recursive (nodes):', treeDiameterInNodes(root));   // 6
-// console.log('Iterative (edges):', treeDiameterIterative(root)); // 5
-// console.log('Two‑BFS (edges):', treeDiameterTwoBFS(root));      // 5
-npx ts-node tree-diameter.ts
+const edges: Edge[] = [
+  { from: 0, to: 1, weight: 6 },
+  { from: 0, to: 2, weight: 7 },
+  { from: 1, to: 2, weight: 8 },
+  { from: 1, to: 3, weight: 5 },
+  { from: 1, to: 4, weight: -4 },
+  { from: 2, to: 3, weight: -3 },
+  { from: 2, to: 4, weight: 9 },
+  { from: 3, to: 1, weight: -2 },
+  { from: 4, to: 0, weight: 2 },
+  { from: 4, to: 3, weight: 7 },
+];
+
+const V = 5;               // vertices 0 … 4
+const source = 0;
+
+const { distance, predecessor, hasNegativeCycle } = bellmanFord(V, edges, source);
+
+if (hasNegativeCycle) {
+  console.error("Graph contains a reachable negative‑weight cycle!");
+} else {
+  console.log("Shortest distances from source:", distance);
+  // Print paths
+  for (let v = 0; v < V; v++) {
+    const path = reconstructPath(predecessor, source, v);
+    console.log(`Path to ${v}:`, path.length ? path.join(" → ") : "unreachable");
+  }
+}
+Shortest distances from source: [ 0, 2, 7, 4, -2 ]
+Path to 0: 0
+Path to 1: 0 → 4 → 1
+Path to 2: 0 → 2
+Path to 3: 0 → 2 → 3
+Path to 4: 0 → 4
+// bellmanFord.test.ts
+import { bellmanFord, Edge } from "./bellmanFord";
+
+test("example graph – no negative cycle", () => {
+  const edges: Edge[] = [
+    { from: 0, to: 1, weight: 6 },
+    { from: 0, to: 2, weight: 7 },
+    { from: 1, to: 2, weight: 8 },
+    { from: 1, to: 3, weight: 5 },
+    { from: 1, to: 4, weight: -4 },
+    { from: 2, to: 3, weight: -3 },
+    { from: 2, to: 4, weight: 9 },
+    { from: 3, to: 1, weight: -2 },
+    { from: 4, to: 0, weight: 2 },
+    { from: 4, to: 3, weight: 7 },
+  ];
+
+  const { distance, hasNegativeCycle } = bellmanFord(5, edges, 0);
+  expect(hasNegativeCycle).toBe(false);
+  expect(distance).toEqual([0, 2, 7, 4, -2]);
+});
+function bellmanFord(V: number, edges: Edge[], src: number) {
+  const dist = Array(V).fill(Infinity);
+  const pred = Array(V).fill(-1);
+  dist[src] = 0;
+
+  for (let i = 0; i < V - 1; i++) {
+    let changed = false;
+    for (const { from, to, weight } of edges) {
+      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+        dist[to] = dist[from] + weight;
+        pred[to] = from;
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+
+  let hasNegCycle = false;
+  for (const { from, to, weight } of edges) {
+    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+      hasNegCycle = true;
+      break;
+    }
+  }
+
+  return { dist, pred, hasNegCycle };
+}
