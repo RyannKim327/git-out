@@ -1,138 +1,69 @@
-/** A binary‑tree node that stores a numeric value. */
-export class TreeNode {
-  /** The value stored at this node */
-  value: number;
-
-  /** Left child (null if none) */
-  left: TreeNode | null = null;
-
-  /** Right child (null if none) */
-  right: TreeNode | null = null;
-
-  constructor(value: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
+  constructor(value: T, next: ListNode<T> | null = null) {
     this.value = value;
-    this.left = left;
-    this.right = right;
-  }
-}
-/**
- * Returns the sum of all node values in the binary tree rooted at `root`.
- * Uses a simple post‑order recursion (left → right → node).
- *
- * @param root The root of the tree, or `null` for an empty tree.
- * @returns The total sum (0 for an empty tree).
- */
-export function sumTreeRecursive(root: TreeNode | null): number {
-  if (root === null) {
-    return 0;
-  }
-
-  // Sum of left subtree + sum of right subtree + current node's value
-  const leftSum = sumTreeRecursive(root.left);
-  const rightSum = sumTreeRecursive(root.right);
-  return leftSum + rightSum + root.value;
-}
-/**
- * Iterative version that uses a queue (BFS) to traverse the tree.
- *
- * @param root The root of the tree, or `null` for an empty tree.
- * @returns The total sum.
- */
-export function sumTreeIterative(root: TreeNode | null): number {
-  if (root === null) {
-    return 0;
-  }
-
-  let total = 0;
-  const queue: TreeNode[] = [root];
-
-  while (queue.length > 0) {
-    const node = queue.shift()!; // non‑null because we checked length
-    total += node.value;
-
-    if (node.left !== null) queue.push(node.left);
-    if (node.right !== null) queue.push(node.right);
-  }
-
-  return total;
-}
-import { TreeNode, sumTreeRecursive, sumTreeIterative } from "./binaryTreeSum";
-
-// Build the following tree:
-//        5
-//      /   \
-//     3     8
-//    / \   / \
-//   1   4 7   9
-const tree = new TreeNode(
-  5,
-  new TreeNode(
-    3,
-    new TreeNode(1),
-    new TreeNode(4)
-  ),
-  new TreeNode(
-    8,
-    new TreeNode(7),
-    new TreeNode(9)
-  )
-);
-
-console.log("Recursive sum:", sumTreeRecursive(tree)); // → 37
-console.log("Iterative sum:", sumTreeIterative(tree)); // → 37
-Recursive sum: 37
-Iterative sum: 37
-// binaryTreeSum.ts ---------------------------------------------------------
-
-export class TreeNode {
-  value: number;
-  left: TreeNode | null = null;
-  right: TreeNode | null = null;
-
-  constructor(value: number, left: TreeNode | null = null, right: TreeNode | null = null) {
-    this.value = value;
-    this.left = left;
-    this.right = right;
+    this.next = next;
   }
 }
 
-/**
- * Recursive depth‑first sum.
- */
-export function sumTreeRecursive(root: TreeNode | null): number {
-  if (root === null) return 0;
-  return sumTreeRecursive(root.left) + sumTreeRecursive(root.right) + root.value;
-}
+function getIntersectionNode<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  if (!headA || !headB) return null;
 
-/**
- * Iterative breadth‑first sum.
- */
-export function sumTreeIterative(root: TreeNode | null): number {
-  if (root === null) return 0;
+  let pA: ListNode<T> | null = headA;
+  let pB: ListNode<T> | null = headB;
 
-  let total = 0;
-  const queue: TreeNode[] = [root];
-
-  while (queue.length) {
-    const node = queue.shift()!;
-    total += node.value;
-    if (node.left) queue.push(node.left);
-    if (node.right) queue.push(node.right);
+  while (pA !== pB) {
+    pA = pA ? pA.next : headB;
+    pB = pB ? pB.next : headA;
   }
 
-  return total;
+  return pA; // either the intersection node or null
+}
+// common tail: C1 -> C2
+const common = new ListNode<number>(9, new ListNode<number>(12));
+
+// A: 3 -> 7 -> C1 -> C2
+const headA = new ListNode<number>(3, new ListNode<number>(7, common));
+
+// B: 99 -> 1 -> C1 -> C2
+const headB = new ListNode<number>(99, new ListNode<number>(1, common));
+
+const intersection = getIntersectionNode(headA, headB);
+console.log(intersection?.value); // 9
+function getLength<T>(head: ListNode<T> | null): number {
+  let len = 0;
+  while (head) {
+    len++;
+    head = head.next;
+  }
+  return len;
 }
 
-// -------------------------------------------------------------------------
+function getIntersectionNodeByLength<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  const lenA = getLength(headA);
+  const lenB = getLength(headB);
 
-// Example usage (you can comment this out when importing the module elsewhere)
-if (require.main === module) {
-  const tree = new TreeNode(
-    5,
-    new TreeNode(3, new TreeNode(1), new TreeNode(4)),
-    new TreeNode(8, new TreeNode(7), new TreeNode(9))
-  );
+  let a = headA;
+  let b = headB;
 
-  console.log("Recursive sum:", sumTreeRecursive(tree)); // 37
-  console.log("Iterative sum:", sumTreeIterative(tree)); // 37
+  let diff = Math.abs(lenA - lenB);
+  if (lenA > lenB) {
+    for (let i = 0; i < diff; i++) a = a!.next;
+  } else {
+    for (let i = 0; i < diff; i++) b = b!.next;
+  }
+
+  while (a && b && a !== b) {
+    a = a.next;
+    b = b.next;
+  }
+
+  return a;
 }
