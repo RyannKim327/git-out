@@ -1,75 +1,47 @@
-/**
- * Fibonacci Search in a sorted array.
- * Returns the index of `target` or -1 if not found.
- * Works with any array for which `<` and `>` are defined.
- */
-export function fibonacciSearch<T>(
-  arr: T[],
-  target: T
-): number {
-  const n = arr.length;
-  if (n === 0) return -1;
+// NativeModule.ts
+import { NativeModules } from 'react-native';
 
-  /* 1. Build the smallest Fibonacci number >= n */
-  let fibK  = 0;   // F(k)
-  let fibK1 = 1;   // F(k+1)
-  let fibK2 = 1;   // F(k+2)
+// 1. Describe the shape of the native module so TypeScript is happy
+interface HeavyWorkModule {
+  doHeavyWork(): Promise<string>;   // <-- returns a native Promise
+}
 
-  while (fibK2 < n) {
-    fibK  = fibK1;
-    fibK1 = fibK2;
-    fibK2 = fibK + fibK1;
-  }
+// 2. Pull the module out of the bridge
+const { HeavyWorkModule } = NativeModules as {
+  HeavyWorkModule: HeavyWorkModule;
+};
 
-  /* 2. Initialize the search range */
-  let offset = -1; // start of the eliminated range
-
-  /* 3. Main loop */
-  while (fibK2 > 1) {
-    const i = Math.min(offset + fibK, n - 1);
-
-    if (arr[i] < target) {
-      // Move one Fibonacci step down
-      fibK2 = fibK1;
-      fibK1 = fibK;
-      fibK  = fibK2 - fibK1;
-      offset = i;
-    } else if (arr[i] > target) {
-      // Move two Fibonacci steps down
-      fibK2 = fibK;
-      fibK1 = fibK1 - fibK;
-      fibK  = fibK2 - fibK1;
-    } else {
-      return i; // found
+// 3. A random async utility that wraps the native call
+export async function performHeavyTask(retries = 3): Promise<string> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const result = await HeavyWorkModule.doHeavyWork(); // <-- native async task
+      return result;                                    // success path
+    } catch (err) {
+      if (i === retries - 1) throw err;                 // give up after N tries
     }
   }
+  throw new Error('Unreachable');
+}
 
-  /* 4. Check the last remaining element */
-  if (fibK1 && offset + 1 < n && arr[offset + 1] === target) {
-    return offset + 1;
+// 4. Example usage somewhere in your UI
+(async () => {
+  try {
+    const msg = await performHeavyTask();
+    console.log('Native says:', msg);
+  } catch (e) {
+    console.error('Native task failed', e);
   }
-
-  return -1; // not found
+})();
+@ReactMethod
+fun doHeavyWork(promise: Promise) {
+  Thread {
+    try {
+      // Simulate 2-second heavy work
+      Thread.sleep(2000)
+      promise.resolve("Hello from Android ${Build.VERSION.RELEASE}")
+    } catch (e: Exception) {
+      promise.reject("HEAVY_WORK_ERR", e)
+    }
+  }.start()
 }
-
-/* ---------- Usage example ---------- */
-if (import.meta.vitest) {
-  const { describe, it, expect } = import.meta.vitest;
-
-  describe('fibonacciSearch', () => {
-    it('finds items', () => {
-      const data = [-10, -3, 0, 1, 5, 8, 13, 21, 34, 55];
-      expect(fibonacciSearch(data, 0)).toBe(2);
-      expect(fibonacciSearch(data, 55)).toBe(9);
-      expect(fibonacciSearch(data, 42)).toBe(-1);
-    });
-
-    it('handles edge cases', () => {
-      expect(fibonacciSearch([], 5)).toBe(-1);
-      expect(fibonacciSearch([5], 5)).toBe(0);
-      expect(fibonacciSearch([1, 2, 3], 0)).toBe(-1);
-    });
-  });
-}
-npm i -D vitest
-npx vitest run
