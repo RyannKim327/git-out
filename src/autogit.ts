@@ -1,88 +1,138 @@
-          1
-        /   \
-       2     3
-      / \     \
-     4   5     6
-                \
-                 7
-// ---------- 1️⃣  Tree node definition ----------
-class TreeNode {
-  val: number;
+/** A binary‑tree node that stores a numeric value. */
+export class TreeNode {
+  /** The value stored at this node */
+  value: number;
+
+  /** Left child (null if none) */
+  left: TreeNode | null = null;
+
+  /** Right child (null if none) */
+  right: TreeNode | null = null;
+
+  constructor(value: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.value = value;
+    this.left = left;
+    this.right = right;
+  }
+}
+/**
+ * Returns the sum of all node values in the binary tree rooted at `root`.
+ * Uses a simple post‑order recursion (left → right → node).
+ *
+ * @param root The root of the tree, or `null` for an empty tree.
+ * @returns The total sum (0 for an empty tree).
+ */
+export function sumTreeRecursive(root: TreeNode | null): number {
+  if (root === null) {
+    return 0;
+  }
+
+  // Sum of left subtree + sum of right subtree + current node's value
+  const leftSum = sumTreeRecursive(root.left);
+  const rightSum = sumTreeRecursive(root.right);
+  return leftSum + rightSum + root.value;
+}
+/**
+ * Iterative version that uses a queue (BFS) to traverse the tree.
+ *
+ * @param root The root of the tree, or `null` for an empty tree.
+ * @returns The total sum.
+ */
+export function sumTreeIterative(root: TreeNode | null): number {
+  if (root === null) {
+    return 0;
+  }
+
+  let total = 0;
+  const queue: TreeNode[] = [root];
+
+  while (queue.length > 0) {
+    const node = queue.shift()!; // non‑null because we checked length
+    total += node.value;
+
+    if (node.left !== null) queue.push(node.left);
+    if (node.right !== null) queue.push(node.right);
+  }
+
+  return total;
+}
+import { TreeNode, sumTreeRecursive, sumTreeIterative } from "./binaryTreeSum";
+
+// Build the following tree:
+//        5
+//      /   \
+//     3     8
+//    / \   / \
+//   1   4 7   9
+const tree = new TreeNode(
+  5,
+  new TreeNode(
+    3,
+    new TreeNode(1),
+    new TreeNode(4)
+  ),
+  new TreeNode(
+    8,
+    new TreeNode(7),
+    new TreeNode(9)
+  )
+);
+
+console.log("Recursive sum:", sumTreeRecursive(tree)); // → 37
+console.log("Iterative sum:", sumTreeIterative(tree)); // → 37
+Recursive sum: 37
+Iterative sum: 37
+// binaryTreeSum.ts ---------------------------------------------------------
+
+export class TreeNode {
+  value: number;
   left: TreeNode | null = null;
   right: TreeNode | null = null;
 
-  constructor(val: number, left?: TreeNode | null, right?: TreeNode | null) {
-    this.val = val;
-    if (left) this.left = left;
-    if (right) this.right = right;
+  constructor(value: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.value = value;
+    this.left = left;
+    this.right = right;
   }
 }
 
-// ---------- 2️⃣  Diameter calculation ----------
 /**
- * Returns the diameter (number of edges) of the binary tree rooted at `root`.
- *
- * @param root - The root of the binary tree (null => empty tree → diameter 0)
+ * Recursive depth‑first sum.
  */
-function treeDiameter(root: TreeNode | null): number {
-  // Holds the best diameter we have seen so far.
-  let maxDiameter = 0;
+export function sumTreeRecursive(root: TreeNode | null): number {
+  if (root === null) return 0;
+  return sumTreeRecursive(root.left) + sumTreeRecursive(root.right) + root.value;
+}
 
-  /**
-   * Post‑order DFS that returns the height of the subtree rooted at `node`.
-   *
-   * Height = number of edges on the longest downward path from `node`
-   * to a leaf.  An empty subtree has height -1 (so a leaf node gets height 0).
-   */
-  function dfs(node: TreeNode | null): number {
-    if (!node) return -1; // base case: empty child
+/**
+ * Iterative breadth‑first sum.
+ */
+export function sumTreeIterative(root: TreeNode | null): number {
+  if (root === null) return 0;
 
-    const leftHeight = dfs(node.left);
-    const rightHeight = dfs(node.right);
+  let total = 0;
+  const queue: TreeNode[] = [root];
 
-    // Path that goes through this node = leftHeight + rightHeight + 2 edges.
-    // (We add 2 because each height is measured in edges from child to leaf.)
-    const pathThroughNode = leftHeight + rightHeight + 2;
-    maxDiameter = Math.max(maxDiameter, pathThroughNode);
-
-    // Return height of this node for its parent.
-    return Math.max(leftHeight, rightHeight) + 1;
+  while (queue.length) {
+    const node = queue.shift()!;
+    total += node.value;
+    if (node.left) queue.push(node.left);
+    if (node.right) queue.push(node.right);
   }
 
-  dfs(root);
-  return maxDiameter; // 0 for an empty tree, otherwise number of edges
+  return total;
 }
 
-// ---------- 3️⃣  Example usage ----------
-function buildExampleTree(): TreeNode {
-  // Construct the tree from the picture above:
-  //          1
-  //        /   \
-  //       2     3
-  //      / \     \
-  //     4   5     6
-  //                \
-  //                 7
-  const n7 = new TreeNode(7);
-  const n6 = new TreeNode(6, null, n7);
-  const n5 = new TreeNode(5);
-  const n4 = new TreeNode(4);
-  const n3 = new TreeNode(3, null, n6);
-  const n2 = new TreeNode(2, n4, n5);
-  const n1 = new TreeNode(1, n2, n3);
-  return n1;
-}
+// -------------------------------------------------------------------------
 
-const root = buildExampleTree();
-console.log('Diameter (edges):', treeDiameter(root)); // → 5
-function treeDiameter(root: TreeNode | null): number {
-  let max = 0;
-  const height = (n: TreeNode | null): number => {
-    if (!n) return -1;
-    const l = height(n.left), r = height(n.right);
-    max = Math.max(max, l + r + 2);
-    return Math.max(l, r) + 1;
-  };
-  height(root);
-  return max;
+// Example usage (you can comment this out when importing the module elsewhere)
+if (require.main === module) {
+  const tree = new TreeNode(
+    5,
+    new TreeNode(3, new TreeNode(1), new TreeNode(4)),
+    new TreeNode(8, new TreeNode(7), new TreeNode(9))
+  );
+
+  console.log("Recursive sum:", sumTreeRecursive(tree)); // 37
+  console.log("Iterative sum:", sumTreeIterative(tree)); // 37
 }
