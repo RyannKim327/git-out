@@ -1,69 +1,48 @@
-// axios-typescript-demo.ts
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
+function findCommonElements<T>(arr1: T[], arr2: T[]): T[] {
+  return arr1.filter(item => arr2.includes(item));
+}
 
-type User = {
+// Example usage
+const array1 = [1, 2, 3, 4, 5];
+const array2 = [3, 4, 5, 6, 7];
+const common = findCommonElements(array1, array2); // [3, 4, 5]
+function findCommonElements<T>(arr1: T[], arr2: T[]): T[] {
+  return arr1.filter(item => arr2.indexOf(item) !== -1);
+}
+function findCommonElements<T>(arr1: T[], arr2: T[]): T[] {
+  const set2 = new Set(arr2);
+  return arr1.filter(item => set2.has(item));
+}
+
+// Example usage
+const fruits1 = ['apple', 'banana', 'orange'];
+const fruits2 = ['banana', 'grape', 'orange', 'pear'];
+const commonFruits = findCommonElements(fruits1, fruits2); // ['banana', 'orange']
+function findCommonElements<T>(arr1: T[], arr2: T[]): T[] {
+  return [...new Set(arr1)].filter(item => arr2.includes(item));
+}
+interface User {
   id: number;
   name: string;
-  email: string;
-  active?: boolean;
-};
-
-const api: AxiosInstance = axios.create({
-  baseURL: 'https://jsonplaceholder.typicode.com',
-  timeout: 4000,
-  headers: { 'Content-Type': 'application/json' },
-});
-
-// Simple request/response logging
-api.interceptors.request.use(req => {
-  console.debug('Request:', (req.method ?? 'GET').toUpperCase(), req.url);
-  return req;
-});
-
-api.interceptors.response.use(
-  res => {
-    console.debug('Response:', res.status, res.config.url);
-    return res;
-  },
-  (err: AxiosError) => {
-    console.error('Request failed:', err.message);
-    return Promise.reject(err);
-  }
-);
-
-async function fetchUsers(): Promise<User[]> {
-  const res: AxiosResponse<User[]> = await api.get<User[]>('/users');
-  return res.data;
 }
 
-async function createUser(name: string, email: string): Promise<User> {
-  const payload = { name, email };
-  const res: AxiosResponse<User> = await api.post<User>('/users', payload);
-  return res.data;
+function findCommonUsers(users1: User[], users2: User[]): User[] {
+  const ids2 = new Set(users2.map(user => user.id));
+  return users1.filter(user => ids2.has(user.id));
 }
 
-async function updateUser(id: number, patch: Partial<User>): Promise<User> {
-  const res: AxiosResponse<User> = await api.patch<User>(`/users/${id}`, patch);
-  return res.data;
+// Example usage
+const users1 = [{id: 1, name: 'Alice'}, {id: 2, name: 'Bob'}];
+const users2 = [{id: 2, name: 'Bob'}, {id: 3, name: 'Charlie'}];
+const commonUsers = findCommonUsers(users1, users2); // [{id: 2, name: 'Bob'}]
+// Generic version with type constraints
+function findCommonElements<T>(arr1: T[], arr2: T[]): T[] {
+  const set2 = new Set(arr2);
+  return arr1.filter(item => set2.has(item));
 }
 
-async function runDemo() {
-  try {
-    const users = await fetchUsers();
-    console.log('Fetched users:', users.length);
-
-    const created = await createUser('Jane Doe', 'jane@example.com');
-    console.log('Created user:', created);
-
-    const updated = await updateUser(created.id, { active: true } as Partial<User>);
-    console.log('Updated user:', updated);
-  } catch (e) {
-    if (axios.isAxiosError(e)) {
-      console.error('Axios error:', e.message);
-    } else {
-      console.error('Unknown error:', e);
-    }
-  }
+// For readonly arrays
+function findCommonElements<T>(arr1: readonly T[], arr2: readonly T[]): T[] {
+  const set2 = new Set(arr2);
+  return arr1.filter(item => set2.has(item));
 }
-
-runDemo();
