@@ -1,53 +1,88 @@
-function reverseString(str: string): string {
-    return str.split('').reverse().join('');
-}
+// -------------- Types --------------
+export type Edge = {
+  from: number;
+  to: number;
+  weight: number;
+};
 
-// Usage
-const original = "Hello, World!";
-const reversed = reverseString(original);
-console.log(reversed); // "!dlroW ,olleH"
-function reverseString(str: string): string {
-    return [...str].reverse().join('');
-}
+export type Graph = {
+  n: number;          // #vertices (0 … n-1)
+  edges: Edge[];
+};
 
-// Usage
-console.log(reverseString("TypeScript")); // "tpircSepyT"
-function reverseString(str: string): string {
-    let reversed = '';
-    for (let i = str.length - 1; i >= 0; i--) {
-        reversed += str[i];
+export type Result = {
+  dist: number[];     // dist[v] = shortest distance from source
+  prev: number[];       // prev[v] = predecessor of v on shortest path
+  hasNegativeCycle: boolean;
+};
+
+// -------------- Bellman–Ford --------------
+export function bellmanFord(g: Graph, source: number): Result {
+  const { n, edges } = g;
+  const INF = Number.POSITIVE_INFINITY;
+
+  // 1. Initialise
+  const dist = Array<number>(n).fill(INF);
+  const prev = Array<number>(n).fill(-1);
+  dist[source] = 0;
+
+  // 2. Relax all edges up to n-1 times
+  for (let i = 0; i < n - 1; i++) {
+    let updated = false;
+    for (const e of edges) {
+      const u = e.from;
+      const v = e.to;
+      const w = e.weight;
+      if (dist[u] !== INF && dist[u] + w < dist[v]) {
+        dist[v] = dist[u] + w;
+        prev[v] = u;
+        updated = true;
+      }
     }
-    return reversed;
-}
+    if (!updated) break;           // Early exit: no relaxations → done
+  }
 
-// Usage
-console.log(reverseString("Reverse me")); // "em esreveR"
-function reverseString(str: string): string {
-    if (str === '') {
-        return '';
+  // 3. Check for negative cycles
+  let hasNegativeCycle = false;
+  for (const e of edges) {
+    const u = e.from;
+    const v = e.to;
+    const w = e.weight;
+    if (dist[u] !== INF && dist[u] + w < dist[v]) {
+      hasNegativeCycle = true;
+      break;
     }
-    return reverseString(str.substring(1)) + str.charAt(0);
+  }
+
+  return { dist, prev, hasNegativeCycle };
 }
 
-// Usage
-console.log(reverseString("Recursive")); // "evisruceR"
-function reverseString(str: string): string {
-    return str.split('').reduce((reversed, char) => char + reversed, '');
+// -------------- Reconstruct path --------------
+export function buildPath(prev: number[], target: number): number[] {
+  const path: number[] = [];
+  for (let v = target; v !== -1; v = prev[v]) path.push(v);
+  path.reverse();
+  return path.length > 0 && path[0] === target ? [] : path;
 }
 
-// Usage
-console.log(reverseString("Functional")); // "lanoitcnuF"
-const reverseString = (str: string): string => [...str].reverse().join('');
+// -------------- Usage example --------------
+if (require.main === module) {
+  const g: Graph = {
+    n: 5,
+    edges: [
+      { from: 0, to: 1, weight: -1 },
+      { from: 0, to: 2, weight: 4 },
+      { from: 1, to: 2, weight: 3 },
+      { from: 1, to: 3, weight: 2 },
+      { from: 1, to: 4, weight: 2 },
+      { from: 3, to: 2, weight: 5 },
+      { from: 3, to: 1, weight: 1 },
+      { from: 4, to: 3, weight: -3 },
+    ],
+  };
 
-// Usage
-console.log(reverseString("Arrow function")); // "noitcnuF worrA"
-function safeReverseString(str: string): string {
-    if (typeof str !== 'string') {
-        throw new Error('Input must be a string');
-    }
-    return str.split('').reverse().join('');
+  const res = bellmanFord(g, 0);
+  console.log("Distances:", res.dist);
+  console.log("Has negative cycle:", res.hasNegativeCycle);
+  console.log("Path 0 → 4:", buildPath(res.prev, 4));
 }
-
-// Usage with type safety
-const input: string = "Safe reversing";
-console.log(safeReverseString(input));
