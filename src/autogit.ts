@@ -1,73 +1,39 @@
-const text: string = "The quick brown fox jumps over the lazy dog";
+const lower = myString.toLowerCase();   // standard Unicode‑aware lower‑casing
+// Example 1 – simple literal
+const greeting = "Hello, WORLD!";
+const lowerGreeting = greeting.toLowerCase(); // "hello, world!"
 
-if (text.includes("brown")) {
-  console.log("✅ Found 'brown'!");
+// Example 2 – inside a function
+function normalizeName(name: string): string {
+  return name.toLowerCase();
 }
-{
-  "compilerOptions": {
-    "target": "es5",
-    "lib": ["es2016", "dom"]
-  }
-}
-const text = "Hello, world!";
 
-if (text.indexOf("world") !== -1) {
-  console.log("✅ 'world' is present");
-}
-const text = "TypeScript is awesome!";
-
-if (text.search(/awesome/i) !== -1) {   // `i` = case‑insensitive
-  console.log("✅ Found (case‑insensitive)!");
-}
-const pattern = /awesome/i;
-if (pattern.test(text)) {
-  console.log("✅ test() says it’s there");
-}
-const maybeString: string | null = getUserInput(); // could be null
-
-if (maybeString?.includes("admin")) {
-  console.log("✅ admin keyword present");
+console.log(normalizeName("Alice")); // "alice"
+const turkish = "İstanbul";
+const lowerTurkish = turkish.toLocaleLowerCase('tr-TR'); // "ıstanbul"
+function safeLowerCase(value: string | null | undefined): string {
+  return value?.toLowerCase() ?? "";
 }
 /**
- * Returns true if `source` contains `sub`, optionally ignoring case.
+ * Normalizes any user‑provided text to lower case.
+ * Accepts only strings (or null/undefined) and always returns a string.
  */
-function contains(
-  source: string,
-  sub: string,
-  caseInsensitive = false
-): boolean {
-  if (caseInsensitive) {
-    return source.toLowerCase().includes(sub.toLowerCase());
+function normalizeText(input: string | null | undefined): string {
+  // Guard against non‑string values at compile‑time
+  if (typeof input !== "string") {
+    return "";
   }
-  return source.includes(sub);
+
+  // Use locale‑aware conversion if you know the target language
+  // return input.toLocaleLowerCase('en-US');
+
+  // Standard Unicode lower‑casing
+  return input.toLowerCase();
 }
 
-// Usage
-if (contains("Hello World", "world", true)) {
-  console.log("✅ case‑insensitive match");
-}
-// src/utils/string.ts
-export function contains(
-  source: string,
-  sub: string,
-  caseInsensitive = false
-): boolean {
-  if (caseInsensitive) {
-    return source.toLowerCase().includes(sub.toLowerCase());
-  }
-  return source.includes(sub);
-}
-
-// src/main.ts
-import { contains } from "./utils/string";
-
-const sentence = "Learning TypeScript is fun!";
-
-if (contains(sentence, "typescript", true)) {
-  console.log("✅ We found the word, ignoring case.");
-}
-// simplest modern way
-if (myString.includes("needle")) { … }
-
-// fallback for very old browsers
-if (myString.indexOf("needle") !== -1) { … }
+// Demo
+const raw = "TypeScript IS Awesome!";
+console.log(normalizeText(raw)); // "typescript is awesome!"
+const lower = myString.toLowerCase();          // standard
+// or, locale‑aware:
+const lower = myString.toLocaleLowerCase('en'); // optional locale
