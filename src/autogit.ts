@@ -1,174 +1,62 @@
-// A classic binary‑tree node
-export interface TreeNode<T = any> {
-  /** The stored value – you can change the generic type as you wish */
-  value: T;
-  /** Left child (null if absent) */
-  left: TreeNode<T> | null;
-  /** Right child (null if absent) */
-  right: TreeNode<T> | null;
-}
-export class TreeNode<T = any> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
 /**
- * Returns the number of leaf nodes in the subtree rooted at `node`.
- * Runs in O(n) time and O(h) call‑stack space, where h = tree height.
+ * Tarjan’s algorithm – strongly-connected components
+ * Returns an array of SCCs, each SCC is an array of vertex indices.
+ * Vertices are numbered 0 … n-1.
  */
-export function countLeavesRecursive<T>(node: TreeNode<T> | null): number {
-  // Empty subtree → no leaves
-  if (node === null) return 0;
+export function tarjanSCC(graph: number[][]): number[][] {
+  const n = graph.length;
+  const index = new Array<number>(n).fill(-1);
+  const low   = new Array<number>(n).fill(-1);
+  const onStack = new Array<boolean>(n).fill(false);
+  const stack: number[] = [];
+  const sccs: number[][] = [];
 
-  // Node with no children → it *is* a leaf
-  if (node.left === null && node.right === null) return 1;
+  let id = 0; // running index counter
 
-  // Otherwise sum the leaves of both sub‑trees
-  return (
-    countLeavesRecursive(node.left) + countLeavesRecursive(node.right)
-  );
-}
-/**
- * Iterative depth‑first traversal that counts leaves.
- * Time: O(n)   Space: O(h)  (h = height of the tree, worst‑case O(n) for a degenerate tree)
- */
-export function countLeavesIterative<T>(root: TreeNode<T> | null): number {
-  if (root === null) return 0;
+  function dfs(v: number) {
+    index[v] = low[v] = id++;
+    stack.push(v);
+    onStack[v] = true;
 
-  let leafCount = 0;
-  const stack: TreeNode<T>[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!; // non‑null because we checked length
-
-    // If both children are missing → leaf
-    if (node.left === null && node.right === null) {
-      leafCount++;
-      continue;
+    for (const w of graph[v]) {
+      if (index[w] === -1) {
+        // w not visited yet
+        dfs(w);
+        low[v] = Math.min(low[v], low[w]);
+      } else if (onStack[w]) {
+        // w is in the current SCC
+        low[v] = Math.min(low[v], index[w]);
+      }
     }
 
-    // Push non‑null children onto the stack
-    if (node.right !== null) stack.push(node.right);
-    if (node.left !== null) stack.push(node.left);
-  }
-
-  return leafCount;
-}
-export function countLeavesBFS<T>(root: TreeNode<T> | null): number {
-  if (root === null) return 0;
-
-  let leafCount = 0;
-  const queue: TreeNode<T>[] = [root];
-
-  while (queue.length) {
-    const node = queue.shift()!; // dequeue
-
-    if (node.left === null && node.right === null) {
-      leafCount++;
-    } else {
-      if (node.left !== null) queue.push(node.left);
-      if (node.right !== null) queue.push(node.right);
+    // root of SCC found
+    if (low[v] === index[v]) {
+      const scc: number[] = [];
+      let w: number;
+      do {
+        w = stack.pop()!;
+        onStack[w] = false;
+        scc.push(w);
+      } while (w !== v);
+      sccs.push(scc);
     }
   }
 
-  return leafCount;
-}
-// Build a small example tree:
-//
-//        1
-//      /   \
-//     2     3
-//    / \     \
-//   4   5     6
-//              \
-//               7
-//
-const root: TreeNode<number> = {
-  value: 1,
-  left: {
-    value: 2,
-    left: { value: 4, left: null, right: null },
-    right: { value: 5, left: null, right: null },
-  },
-  right: {
-    value: 3,
-    left: null,
-    right: {
-      value: 6,
-      left: null,
-      right: { value: 7, left: null, right: null },
-    },
-  },
-};
-
-console.log('Recursive:', countLeavesRecursive(root)); // → 4 (4,5,7,3? wait 3 is not leaf)
-/*
-   Leaves are: 4, 5, 7   (node 3 has a right child, so not a leaf)
-   Actually there are 3 leaves.
-   Let's double‑check:
-*/
-
-console.log('Iterative:', countLeavesIterative(root)); // → 3
-console.log('BFS:', countLeavesBFS(root));            // → 3
-Recursive: 3
-Iterative: 3
-BFS: 3
-// leafCounter.ts
-export interface TreeNode<T = any> {
-  value: T;
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
-}
-
-/**
- * Recursive leaf counter.
- */
-export function countLeavesRecursive<T>(node: TreeNode<T> | null): number {
-  if (node === null) return 0;
-  if (node.left === null && node.right === null) return 1;
-  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
-}
-
-/**
- * Iterative (stack‑based) leaf counter.
- */
-export function countLeavesIterative<T>(root: TreeNode<T> | null): number {
-  if (root === null) return 0;
-  let leafCount = 0;
-  const stack: TreeNode<T>[] = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (node.left === null && node.right === null) {
-      leafCount++;
-    } else {
-      if (node.right !== null) stack.push(node.right);
-      if (node.left !== null) stack.push(node.left);
-    }
+  for (let i = 0; i < n; ++i) {
+    if (index[i] === -1) dfs(i);
   }
-  return leafCount;
+  return sccs;
 }
 
-/**
- * Breadth‑first leaf counter.
- */
-export function countLeavesBFS<T>(root: TreeNode<T> | null): number {
-  if (root === null) return 0;
-  let leafCount = 0;
-  const queue: TreeNode<T>[] = [root];
-  while (queue.length) {
-    const node = queue.shift()!;
-    if (node.left === null && node.right === null) {
-      leafCount++;
-    } else {
-      if (node.left !== null) queue.push(node.left);
-      if (node.right !== null) queue.push(node.right);
-    }
-  }
-  return leafCount;
+/* ---------- example usage ---------- */
+if (require.main === module) {
+  const g: number[][] = [
+    [1],      // 0 -> 1
+    [2],      // 1 -> 2
+    [0, 3],   // 2 -> 0,3
+    [4],      // 3 -> 4
+    [5],      // 4 -> 5
+    [3],      // 5 -> 3
+  ];
+  console.log(tarjanSCC(g)); // [ [ 5, 4, 3 ], [ 2, 1, 0 ] ]
 }
-import { TreeNode, countLeavesRecursive } from "./leafCounter";
-
-const myTree: TreeNode<number> = /* … */;
-console.log(countLeavesRecursive(myTree));
