@@ -1,126 +1,106 @@
-/**
- * Classic binary‑tree node.
- *   - `val`   : payload (any type you need)
- *   - `left`  : left child or null
- *   - `right` : right child or null
- */
-export interface TreeNode<T = any> {
-  val: T;
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
+// ---------- types ----------
+type Vertex = string;
+type EdgeList = Record<Vertex, Vertex[]>;
+
+interface VisitedEntry {
+  distance: number;
+  parent: Vertex | null;
 }
-/**
- * Counts leaf nodes recursively.
- *
- * A leaf is a node whose both children are null.
- *
- * @param root - root of the binary tree (or null for an empty tree)
- * @returns number of leaf nodes
- */
-export function countLeavesRecursive<T>(root: TreeNode<T> | null): number {
-  // Base case: empty subtree → no leaves
-  if (root === null) return 0;
 
-  // If both children are null, this node itself is a leaf
-  if (root.left === null && root.right === null) return 1;
-
-  // Otherwise, sum leaves from left and right sub‑trees
-  return (
-    countLeavesRecursive(root.left) + countLeavesRecursive(root.right)
-  );
+interface SearchState {
+  queue: Queue<Vertex>;
+  visited: Map<Vertex, VisitedEntry>;
 }
-/**
- * Counts leaf nodes iteratively using an explicit stack.
- *
- * @param root - root of the binary tree (or null for an empty tree)
- * @returns number of leaf nodes
- */
-export function countLeavesIterative<T>(root: TreeNode<T> | null): number {
-  if (root === null) return 0;
 
-  let leafCount = 0;
-  const stack: TreeNode<T>[] = [root];
+class Queue<T> {
+  private data: T[] = [];
+  push(item: T) { this.data.push(item); }
+  shift(): T | undefined { return this.data.shift(); }
+  get length() { return this.data.length; }
+}
 
-  while (stack.length) {
-    const node = stack.pop()!; // non‑null because we checked length
+// ---------- bi-directional BFS ----------
+function biBFS(
+  adj: EdgeList,
+  start: Vertex,
+  goal: Vertex
+): Vertex[] | null {
+  if (start === goal) return [start];
 
-    // If both children are null → leaf
-    if (node.left === null && node.right === null) {
-      leafCount++;
-      continue;
+  // initialise forward and backward search states
+  const fwd: SearchState = {
+    queue: new Queue<Vertex>(),
+    visited: new Map<Vertex, VisitedEntry>(),
+  };
+  const rev: SearchState = {
+    queue: new Queue<Vertex>(),
+    visited: new Map<Vertex, VisitedEntry>(),
+  };
+
+  fwd.queue.push(start);
+  fwd.visited.set(start, { distance: 0, parent: null });
+
+  rev.queue.push(goal);
+  rev.visited.set(goal, { distance: 0, parent: null });
+
+  // helper to expand one level
+  function expand(from: SearchState, to: SearchState): Vertex | null {
+    const cur = from.queue.shift()!;
+    const curDist = from.visited.get(cur)!.distance;
+
+    for (const n of adj[cur] || []) {
+      if (!from.visited.has(n)) {
+        from.visited.set(n, { distance: curDist + 1, parent: cur });
+        from.queue.push(n);
+      }
+
+      // collision detection
+      if (to.visited.has(n)) return n;
     }
-
-    // Push non‑null children onto the stack
-    if (node.right !== null) stack.push(node.right);
-    if (node.left !== null) stack.push(node.left);
+    return null;
   }
 
-  return leafCount;
-}
-// Helper to build a simple tree for demo purposes
-function makeNode<T>(val: T, left: TreeNode<T> | null = null, right: TreeNode<T> | null = null): TreeNode<T> {
-  return { val, left, right };
-}
+  // main loop
+  while (fwd.queue.length && rev.queue.length) {
+    // expand the smaller frontier
+    const meet =
+      fwd.queue.length <= rev.queue.length
+        ? expand(fwd, rev)
+        : expand(rev, fwd);
 
-/*
-        1
-      /   \
-     2     3
-    / \     \
-   4   5     6
-        \
-         7
-Leaves: 4, 7, 6  → 3 leaves
-*/
-
-const tree: TreeNode<number> = makeNode(
-  1,
-  makeNode(
-    2,
-    makeNode(4),
-    makeNode(
-      5,
-      null,
-      makeNode(7)
-    )
-  ),
-  makeNode(
-    3,
-    null,
-    makeNode(6)
-  )
-);
-
-console.log('Recursive leaf count:', countLeavesRecursive(tree)); // → 3
-console.log('Iterative leaf count:', countLeavesIterative(tree)); // → 3
-
-// Edge cases
-console.log('Empty tree →', countLeavesRecursive(null)); // 0
-console.log('Single node →', countLeavesIterative(makeNode(42))); // 1
-export interface TreeNode<T = any> {
-  val: T;
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
-}
-
-export function countLeavesRecursive<T>(root: TreeNode<T> | null): number {
-  if (root === null) return 0;
-  if (root.left === null && root.right === null) return 1;
-  return countLeavesRecursive(root.left) + countLeavesRecursive(root.right);
-}
-
-export function countLeavesIterative<T>(root: TreeNode<T> | null): number {
-  if (root === null) return 0;
-  let leafCount = 0;
-  const stack: TreeNode<T>[] = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (node.left === null && node.right === null) {
-      leafCount++;
-    } else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
+    if (meet !== null) {
+      // reconstruct path
+      const left = buildPath(fwd.visited, meet);
+      const right = buildPath(rev.visited, meet).reverse();
+      return left.concat(right.slice(1)); // avoid duplicate meeting point
     }
   }
-  return leafCount;
+
+  return null; // no path
+}
+
+// ---------- path reconstruction ----------
+function buildPath(visited: Map<Vertex, VisitedEntry>, tip: Vertex): Vertex[] {
+  const path: Vertex[] = [];
+  let v: Vertex | null = tip;
+  while (v !== null) {
+    path.unshift(v);
+    v = visited.get(v)!.parent;
+  }
+  return path;
+}
+
+// ---------- small demo ----------
+if (import.meta.url.endsWith(process.argv[1])) {
+  const g: EdgeList = {
+    A: ["B", "C"],
+    B: ["A", "D", "E"],
+    C: ["A", "F"],
+    D: ["B"],
+    E: ["B", "F"],
+    F: ["C", "E", "G"],
+    G: ["F"],
+  };
+
+  console.log(biBFS(g, "A", "G")); // → [ 'A', 'C', 'F', 'G' ]
 }
