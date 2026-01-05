@@ -1,58 +1,100 @@
 /**
- * Counting sort for non-negative integers.
- * @param data  ArrayLike<number> (Array, typed array, NodeList, …)
- * @param min   Optional smallest value (inferred if omitted)
- * @param max   Optional largest  value (inferred if omitted)
- * @returns     New sorted array of the same runtime type as `data`
+ * Simple binary‑tree node.
+ * - `value` can be any type you need (number, string, object …)
+ * - `left` and `right` are either another TreeNode or `null`.
  */
-export function countingSort<T extends ArrayLike<number>>(
-  data: T,
-  min?: number,
-  max?: number
-): T {
-  const len = data.length;
-  if (len === 0) return data.slice(0) as T;
+export interface TreeNode<T = any> {
+  value: T;
+  left: TreeNode<T> | null;
+  right: TreeNode<T> | null;
+}
+/**
+ * Returns the number of leaf nodes in the subtree rooted at `node`.
+ * A leaf is a node whose both children are `null`.
+ *
+ * Time   : O(n) – each node is visited once.
+ * Space  : O(h) – recursion stack, where h = tree height (worst‑case O(n)).
+ */
+export function countLeavesRecursive<T>(node: TreeNode<T> | null): number {
+  // Base case: empty subtree → no leaves
+  if (node === null) return 0;
 
-  // 1. Discover range if not supplied
-  if (min === undefined || max === undefined) {
-    let lo = data[0]!;
-    let hi = lo;
-    for (let i = 1; i < len; ++i) {
-      const v = data[i]!;
-      lo = v < lo ? v : lo;
-      hi = v > hi ? v : hi;
+  // If both children are null, this node itself is a leaf
+  if (node.left === null && node.right === null) return 1;
+
+  // Otherwise sum the leaves of the left and right sub‑trees
+  return (
+    countLeavesRecursive(node.left) + countLeavesRecursive(node.right)
+  );
+}
+/**
+ * Iterative version using a stack.
+ *
+ * Time   : O(n)
+ * Space  : O(h) – stack holds at most the nodes on a root‑to‑leaf path.
+ */
+export function countLeavesIterative<T>(root: TreeNode<T> | null): number {
+  if (root === null) return 0;
+
+  const stack: TreeNode<T>[] = [root];
+  let leafCount = 0;
+
+  while (stack.length) {
+    const node = stack.pop()!; // non‑null because we checked length
+
+    // If both children are null → leaf
+    if (node.left === null && node.right === null) {
+      leafCount++;
+      continue;
     }
-    min = lo;
-    max = hi;
+
+    // Push non‑null children onto the stack
+    if (node.right !== null) stack.push(node.right);
+    if (node.left !== null) stack.push(node.left);
   }
-  if (min < 0) throw new RangeError("Counting sort requires non-negative keys");
 
-  // 2. Allocate counters
-  const range = max - min + 1;
-  const count = new Uint32Array(range);
-
-  // 3. Frequency count
-  for (let i = 0; i < len; ++i) ++count[data[i]! - min];
-
-  // 4. Prefix sum (count[i] will store the *end* index of value i)
-  for (let i = 1; i < range; ++i) count[i] += count[i - 1];
-
-  // 5. Stable write into output
-  const out = new (data.constructor as ArrayConstructor)(len) as T;
-  for (let i = len - 1; i >= 0; --i) {
-    const v = data[i]!;
-    const pos = --count[v - min];
-    (out as any)[pos] = v;
-  }
-  return out;
+  return leafCount;
+}
+// Helper to build a node quickly
+function node<T>(value: T, left: TreeNode<T> | null = null, right: TreeNode<T> | null = null): TreeNode<T> {
+  return { value, left, right };
 }
 
-/* ---------- usage example ---------- */
-if (import.meta.vitest) {
-  const { it, expect } = import.meta.vitest;
-  it("sorts 0-99 backwards", () => {
-    const data = Uint8Array.from({ length: 100 }, (_, i) => 99 - i);
-    const sorted = countingSort(data);
-    expect(Array.from(sorted)).toEqual(Array.from({ length: 100 }, (_, i) => i));
-  });
-}
+/* Build the following tree:
+          1
+        /   \
+       2     3
+      / \     \
+     4   5     6
+                \
+                 7
+Leaf nodes: 4, 5, 7  → 3 leaves
+*/
+const tree: TreeNode<number> = node(
+  1,
+  node(
+    2,
+    node(4),
+    node(5)
+  ),
+  node(
+    3,
+    null,
+    node(
+      6,
+      null,
+      node(7)
+    )
+  )
+);
+
+console.log('Recursive leaf count:', countLeavesRecursive(tree)); // 3
+console.log('Iterative leaf count:', countLeavesIterative(tree)); // 3
+
+// Edge cases
+console.log('Empty tree →', countLeavesRecursive(null)); // 0
+console.log('Single node →', countLeavesIterative(node(42))); // 1
+const leafCount = (root: TreeNode<any> | null): number =>
+  root === null ? 0 :
+  (root.left === null && root.right === null) ? 1 :
+  leafCount(root.left) + leafCount(root.right);
