@@ -1,58 +1,76 @@
-const numbers: number[] = [5, 2, 9, 1, 5, 6];
-numbers.sort((a, b) => a - b);
-console.log(numbers); // [1, 2, 5, 5, 6, 9]
-const numbers: number[] = [5, 2, 9, 1, 5, 6];
-numbers.sort((a, b) => b - a);
-console.log(numbers); // [9, 6, 5, 5, 2, 1]
-// ⚠️ Warning: This doesn't work correctly for numbers!
-const numbers: number[] = [5, 2, 9, 1, 5, 6];
-numbers.sort(); // Incorrect result: [1, 2, 5, 5, 6, 9] might work but is unreliable
-const numbers: number[] = [5, 2, 9, 1, 5, 6];
-const sortedNumbers = [...numbers].sort((a, b) => a - b);
-console.log(sortedNumbers); // [1, 2, 5, 5, 6, 9]
-console.log(numbers); // Original array unchanged: [5, 2, 9, 1, 5, 6]
-interface NumberItem {
-    value: number;
-    priority: number;
-}
-
-const items: NumberItem[] = [
-    { value: 5, priority: 2 },
-    { value: 2, priority: 1 },
-    { value: 9, priority: 3 }
-];
-
-// Sort by priority first, then by value
-items.sort((a, b) => {
-    if (a.priority !== b.priority) {
-        return a.priority - b.priority;
+function isSorted(arr: number[]): boolean {
+    for (let i = 1; i < arr.length; i++) {
+        if (arr[i] < arr[i - 1]) {
+            return false;
+        }
     }
-    return a.value - b.value;
-});
-
-console.log(items);
-// [{ value: 2, priority: 1 }, { value: 5, priority: 2 }, { value: 9, priority: 3 }]
-function sortNumbers<T extends number>(
-    array: T[], 
-    order: 'asc' | 'desc' = 'asc'
-): T[] {
-    return [...array].sort((a, b) => 
-        order === 'asc' ? a - b : b - a
-    );
+    return true;
 }
 
-const numbers = [5, 2, 9, 1, 5, 6];
-const ascending = sortNumbers(numbers);
-const descending = sortNumbers(numbers, 'desc');
-// ❌ Wrong - converts numbers to strings for comparison
-numbers.sort();
+// Usage
+console.log(isSorted([1, 2, 3, 4, 5])); // true
+console.log(isSorted([1, 3, 2, 4, 5])); // false
+function isSorted(arr: number[]): boolean {
+    return arr.every((value, index) => index === 0 || value >= arr[index - 1]);
+}
 
-// ❌ Wrong - doesn't return a number
-numbers.sort((a, b) => {
-    if (a > b) return 1;
-    if (a < b) return -1;
-    // missing return 0 for equal case
-});
+// Usage
+console.log(isSorted([1, 2, 3, 4, 5])); // true
+console.log(isSorted([5, 4, 3, 2, 1])); // false
+function isSorted<T>(arr: T[]): boolean {
+    for (let i = 1; i < arr.length; i++) {
+        if (arr[i] < arr[i - 1]) {
+            return false;
+        }
+    }
+    return true;
+}
 
-// ✅ Correct
-numbers.sort((a, b) => a - b);
+// Usage with numbers
+console.log(isSorted([1, 2, 3, 4, 5])); // true
+
+// Usage with strings
+console.log(isSorted(['a', 'b', 'c'])); // true
+console.log(isSorted(['c', 'a', 'b'])); // false
+function isSorted<T>(
+    arr: T[], 
+    comparator: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): boolean {
+    for (let i = 1; i < arr.length; i++) {
+        if (comparator(arr[i], arr[i - 1]) < 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Usage with default comparator (ascending)
+console.log(isSorted([1, 2, 3, 4, 5])); // true
+
+// Usage with custom comparator (descending)
+console.log(isSorted([5, 4, 3, 2, 1], (a, b) => b - a)); // true
+const isSorted = (arr: number[]): boolean => 
+    arr.slice(1).every((value, index) => value >= arr[index]);
+
+// Usage
+console.log(isSorted([1, 2, 3, 4, 5])); // true
+console.log(isSorted([1, 3, 2, 4, 5])); // false
+function isSorted(arr: number[]): boolean {
+    // Handle empty array and single-element array
+    if (arr.length <= 1) {
+        return true;
+    }
+    
+    // Handle arrays with duplicates
+    for (let i = 1; i < arr.length; i++) {
+        if (arr[i] < arr[i - 1]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Edge case tests
+console.log(isSorted([])); // true
+console.log(isSorted([1])); // true
+console.log(isSorted([1, 1, 2, 2, 3])); // true (duplicates allowed)
