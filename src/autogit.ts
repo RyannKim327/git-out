@@ -1,42 +1,72 @@
+str.includes(searchString: string, position?: number): boolean
+const phrase: string = "The quick brown fox jumps over the lazy dog";
+
+if (phrase.includes("brown")) {
+  console.log("Found the word 'brown'!");
+}
+// Look for "the" only after the first 10 characters
+if (phrase.includes("the", 10)) {
+  console.log("Found a later 'the'");
+}
+str.indexOf(searchString: string, position?: number): number
+if (phrase.indexOf("fox") !== -1) {
+  console.log("There's a fox in the phrase.");
+}
+regex.test(str: string): boolean
+const pattern = /lazy/i; // `i` flag = case‑insensitive
+
+if (pattern.test(phrase)) {
+  console.log("Found 'lazy' regardless of case.");
+}
+const word = "fox";
+const wordRegex = new RegExp(`\\b${word}\\b`); // \b = word boundary
+
+if (wordRegex.test(phrase)) {
+  console.log("Exact word 'fox' found.");
+}
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+const safePattern = new RegExp(escapeRegExp(userInput));
+if (phrase.search(/quick/) !== -1) {
+  console.log("Found 'quick'");
+}
 /**
- * Simple Shell‑Sort implementation
- *
- * @param arr      - array to sort (will be sorted *in‑place*)
- * @param compare  - optional comparator, defaults to numeric/alphabetical
- * @returns The sorted array (same reference that was passed in)
+ * Returns true if `source` contains `sub` (case‑sensitive by default).
  */
-function shellSort<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
-  // Default comparator – works for numbers & strings
-  const cmp = compare ?? ((a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0));
-
-  let n = arr.length;
-
-  // Open‑Hibbard gap sequence: 1, 3, 7, 15, … (or any diminishing series)
-  // Here we just halve the gap until 1 to keep it straightforward.
-  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Insertion‑style pass for the current gap
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-
-      // Shift earlier gap‑sorted elements up until the correct spot for temp is found
-      while (j >= gap && cmp(temp, arr[j - gap]) < 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
+function contains(
+  source: string,
+  sub: string,
+  options?: { ignoreCase?: boolean }
+): boolean {
+  if (options?.ignoreCase) {
+    return source.toLowerCase().includes(sub.toLowerCase());
   }
-
-  return arr;
+  return source.includes(sub);
 }
 
-/* ---- Example usage ---- */
-const nums = [9, 3, 1, 5, 13, 12, 4, 8];
-console.log('Before:', nums);
-shellSort(nums);                 // sorts in place
-console.log('After :', nums);
+// Usage
+const hasHello = contains("Hello World", "hello", { ignoreCase: true });
+const text = "TypeScript is awesome!";
 
-const words = ['banana', 'apple', 'cherry', 'date'];
-shellSort(words, (a, b) => a.localeCompare(b));
-console.log('Words sorted:', words);
+// 1️⃣ Simple contains (case‑sensitive)
+const hasTS = text.includes("Script"); // true
+
+// 2️⃣ Simple contains (case‑insensitive)
+const hasTSci = text.toLowerCase().includes("typescript".toLowerCase()); // true
+
+// 3️⃣ Index of (position needed)
+const pos = text.indexOf("awesome"); // 18 (or -1 if not found)
+
+// 4️⃣ RegExp test (case‑insensitive)
+const hasAwesome = /awesome/i.test(text); // true
+
+// 5️⃣ Whole‑word RegExp
+const wholeWord = /\bawesome\b/.test(text); // true
+
+// 6️⃣ Helper utility
+function contains(source: string, sub: string, ignoreCase = false): boolean {
+  return ignoreCase
+    ? source.toLowerCase().includes(sub.toLowerCase())
+    : source.includes(sub);
+}
