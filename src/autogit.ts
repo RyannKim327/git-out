@@ -1,280 +1,107 @@
-// A generic adjacency list: each vertex maps to an array of its neighbours.
-type AdjList<T> = Map<T, T[]>;
-class Graph<T> {
-  private adj: AdjList<T> = new Map();
+// HashTable.ts
+type Entry<K, V> = { key: K; value: V };
 
-  /** Add a vertex (if it does not already exist) */
-  addVertex(v: T): void {
-    if (!this.adj.has(v)) this.adj.set(v, []);
+export default class HashTable<K, V> {
+  private buckets: Array<Entry<K, V>[]> = [];
+  private size = 0;
+  private capacity: number;
+  private readonly loadFactor: number;
+
+  constructor(initialCapacity = 8, loadFactor = 0.75) {
+    this.capacity = Math.max(initialCapacity, 2);
+    this.loadFactor = loadFactor;
+    this.buckets = Array.from({ length: this.capacity }, () => []);
   }
 
-  /** Add an undirected edge v—w */
-  addEdge(v: T, w: T): void {
-    this.addVertex(v);
-    this.addVertex(w);
-    this.adj.get(v)!.push(w);
-    this.adj.get(w)!.push(v);
-  }
+  /* ---------- public API ---------- */
 
-  /** Add a directed edge v → w */
-  addDirectedEdge(v: T, w: T): void {
-    this.addVertex(v);
-    this.addVertex(w);
-    this.adj.get(v)!.push(w);
-  }
+  set(key: K, value: V): this {
+    this.resizeIfNeeded();
+    const idx = this.index(key);
+    const list = this.buckets[idx];
 
-  /** Get neighbours of a vertex (empty array if vertex not present) */
-  neighbours(v: T): T[] {
-    return this.adj.get(v) ?? [];
-  }
-
-  /** Expose the internal map for debugging / iteration */
-  get adjacency(): AdjList<T> {
-    return this.adj;
-  }
-}
-class Queue<T> {
-  private data: T[] = [];
-  private head = 0; // points to the next element to dequeue
-
-  enqueue(item: T): void {
-    this.data.push(item);
-  }
-
-  dequeue(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    const item = this.data[this.head];
-    this.head++;
-    // Periodically clean up the underlying array to avoid memory leak
-    if (this.head > 1000) {
-      this.data = this.data.slice(this.head);
-      this.head = 0;
+    const existing = list.find(e => e.key === key);
+    if (existing) {
+      existing.value = value;
+    } else {
+      list.push({ key, value });
+      this.size++;
     }
-    return item;
+    return this;
   }
 
-  isEmpty(): boolean {
-    return this.head >= this.data.length;
+  get(key: K): V | undefined {
+    const idx = this.index(key);
+    return this.buckets[idx].find(e => e.key === key)?.value;
   }
-}
-/**
- * Breadth‑first traversal of an un‑weighted graph.
- *
- * @param graph   The graph instance.
- * @param start   The vertex from which to start the search.
- * @param visit   Callback invoked for each visited vertex (in BFS order).
- */
-function bfsTraverse<T>(graph: Graph<T>, start: T, visit: (v: T) => void): void {
-  const visited = new Set<T>();
-  const q = new Queue<T>();
 
-  visited.add(start);
-  q.enqueue(start);
+  has(key: K): boolean {
+    return this.get(key) !== undefined;
+  }
 
-  while (!q.isEmpty()) {
-    const v = q.dequeue()!;
-    visit(v); // <-- user‑provided side‑effect (e.g., console.log)
+  delete(key: K): boolean {
+    const idx = this.index(key);
+    const list = this.buckets[idx];
+    const i = list.findIndex(e => e.key === key);
+    if (i === -1) return false;
+    list.splice(i, 1);
+    this.size--;
+    return true;
+  }
 
-    for (const neighbor of graph.neighbours(v)) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        q.enqueue(neighbor);
-      }
+  get length(): number {
+    return this.size;
+  }
+
+  clear(): void {
+    this.buckets.forEach(b => (b.length = 0));
+    this.size = 0;
+  }
+
+  keys(): K[] {
+    return this.buckets.flatMap(b => b.map(e => e.key));
+  }
+
+  values(): V[] {
+    return this.buckets.flatMap(b => b.map(e => e.value));
+  }
+
+  entries(): [K, V][] {
+    return this.buckets.flatMap(b => b.map(e => [e.key, e.value] as [K, V]));
+  }
+
+  /* ---------- internal ---------- */
+
+  private index(key: K): number {
+    // Simple but good enough for most cases
+    const str = String(key);
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash * 31 + str.charCodeAt(i)) >>> 0; // >>> 0 keeps it 32-bit
     }
-  }
-}
-const g = new Graph<number>();
-g.addEdge(1, 2);
-g.addEdge(1, 3);
-g.addEdge(2, 4);
-g.addEdge(3, 4);
-g.addEdge(4, 5);
-
-bfsTraverse(g, 1, v => console.log(v));
-// Output: 1 2 3 4 5   (order may vary for neighbours with same depth)
-/**
- * Returns the shortest path (as an array of vertices) from `start` to `target`.
- * If no path exists, returns `null`.
- *
- * @param graph   The graph.
- * @param start   Starting vertex.
- * @param target  Destination vertex.
- */
-function bfsShortestPath<T>(graph: Graph<T>, start: T, target: T): T[] | null {
-  if (start === target) return [start];
-
-  const visited = new Set<T>();
-  const predecessor = new Map<T, T>(); // child → parent
-  const q = new Queue<T>();
-
-  visited.add(start);
-  q.enqueue(start);
-
-  while (!q.isEmpty()) {
-    const v = q.dequeue()!;
-
-    for (const neighbor of graph.neighbours(v)) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        predecessor.set(neighbor, v);
-        if (neighbor === target) {
-          // Reconstruct path backwards
-          const path: T[] = [target];
-          let cur = neighbor;
-          while (cur !== start) {
-            cur = predecessor.get(cur)!;
-            path.push(cur);
-          }
-          return path.reverse();
-        }
-        q.enqueue(neighbor);
-      }
-    }
+    return hash % this.capacity;
   }
 
-  // Exhausted search without hitting target
-  return null;
-}
-const path = bfsShortestPath(g, 1, 5);
-console.log(path); // → [1, 2, 4, 5]  (or [1,3,4,5] – both are shortest)
-// ---------- Queue ----------
-class Queue<T> {
-  private data: T[] = [];
-  private head = 0;
-  enqueue(item: T): void { this.data.push(item); }
-  dequeue(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    const item = this.data[this.head];
-    this.head++;
-    if (this.head > 1000) {
-      this.data = this.data.slice(this.head);
-      this.head = 0;
-    }
-    return item;
-  }
-  isEmpty(): boolean { return this.head >= this.data.length; }
-}
+  private resizeIfNeeded(): void {
+    if (this.size / this.capacity <= this.loadFactor) return;
 
-// ---------- Graph ----------
-class Graph<T> {
-  private adj: Map<T, T[]> = new Map();
+    const old = this.buckets;
+    this.capacity *= 2;
+    this.buckets = Array.from({ length: this.capacity }, () => []);
+    this.size = 0;
 
-  addVertex(v: T): void {
-    if (!this.adj.has(v)) this.adj.set(v, []);
-  }
-
-  addEdge(v: T, w: T): void {
-    this.addVertex(v);
-    this.addVertex(w);
-    this.adj.get(v)!.push(w);
-    this.adj.get(w)!.push(v);
-  }
-
-  addDirectedEdge(v: T, w: T): void {
-    this.addVertex(v);
-    this.addVertex(w);
-    this.adj.get(v)!.push(w);
-  }
-
-  neighbours(v: T): T[] {
-    return this.adj.get(v) ?? [];
-  }
-}
-
-// ---------- BFS Traversal ----------
-function bfsTraverse<T>(graph: Graph<T>, start: T, visit: (v: T) => void): void {
-  const visited = new Set<T>();
-  const q = new Queue<T>();
-
-  visited.add(start);
-  q.enqueue(start);
-
-  while (!q.isEmpty()) {
-    const v = q.dequeue()!;
-    visit(v);
-    for (const nb of graph.neighbours(v)) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        q.enqueue(nb);
-      }
+    for (const list of old) {
+      for (const { key, value } of list) this.set(key, value);
     }
   }
 }
+import HashTable from './HashTable';
 
-// ---------- BFS Shortest Path ----------
-function bfsShortestPath<T>(graph: Graph<T>, start: T, target: T): T[] | null {
-  if (start === target) return [start];
-  const visited = new Set<T>();
-  const pred = new Map<T, T>();
-  const q = new Queue<T>();
-
-  visited.add(start);
-  q.enqueue(start);
-
-  while (!q.isEmpty()) {
-    const v = q.dequeue()!;
-    for (const nb of graph.neighbours(v)) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        pred.set(nb, v);
-        if (nb === target) {
-          const path: T[] = [target];
-          let cur = nb;
-          while (cur !== start) {
-            cur = pred.get(cur)!;
-            path.push(cur);
-          }
-          return path.reverse();
-        }
-        q.enqueue(nb);
-      }
-    }
-  }
-  return null;
-}
-
-// ---------- Demo ----------
-function demo() {
-  const g = new Graph<number>();
-  g.addEdge(1, 2);
-  g.addEdge(1, 3);
-  g.addEdge(2, 4);
-  g.addEdge(3, 4);
-  g.addEdge(4, 5);
-  g.addEdge(5, 6);
-  g.addEdge(3, 7);
-
-  console.log('BFS traversal from 1:');
-  bfsTraverse(g, 1, v => process.stdout.write(v + ' '));
-  console.log('\n');
-
-  const target = 6;
-  const path = bfsShortestPath(g, 1, target);
-  console.log(`Shortest path from 1 to ${target}:`, path?.join(' → ') ?? 'none');
-}
-
-demo();
-BFS traversal from 1:
-1 2 3 4 5 7 6 
-
-Shortest path from 1 to 6: 1 → 2 → 4 → 5 → 6
-function bfs<T>(adj: Map<T, T[]>, start: T): T[] {
-  const visited = new Set<T>();
-  const order: T[] = [];
-  const q: T[] = [];
-
-  visited.add(start);
-  q.push(start);
-
-  while (q.length) {
-    const v = q.shift()!;
-    order.push(v);
-    for (const nb of adj.get(v) ?? []) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        q.push(nb);
-      }
-    }
-  }
-  return order;
-}
+const map = new HashTable<string, number>();
+map.set('apple', 5).set('banana', 7);
+console.log(map.get('apple')); // 5
+console.log(map.entries());    // [ [ 'apple', 5 ], [ 'banana', 7 ] ]
+map.delete('apple');
+console.log(map.length);       // 1
+tsc HashTable.ts --strict
+node HashTable.js
