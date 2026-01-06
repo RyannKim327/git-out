@@ -1,17 +1,22 @@
-/**
- * Returns a random integer N such that min ≤ N ≤ max.
- * Both bounds are inclusive.
- */
-function randomInt(min: number, max: number): number {
-  const lo = Math.ceil(min);
-  const hi = Math.floor(max);
-  return Math.floor(Math.random() * (hi - lo + 1)) + lo;
+function firstRepeatedChar(s: string): string | null {
+  const seen = new Set<string>();
+  for (const ch of s) {
+    if (seen.has(ch)) return ch;
+    seen.add(ch);
+  }
+  return null;
 }
+function firstRepeatedCharIndex(s: string): number {
+  const seen = new Set<string>();
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (seen.has(ch)) return i;
+    seen.add(ch);
+  }
+  return -1;
+}
+console.log(firstRepeatedChar("hello")); // 'l'
+console.log(firstRepeatedChar("abcdef")); // null
 
-// examples
-console.log(randomInt(1, 6));   // dice: 1..6
-console.log(randomInt(10, 10)); // → 10
-function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min; // min ≤ x < max
-}
-const n = Math.floor(Math.random() * (max - min + 1)) + min;
+console.log(firstRepeatedCharIndex("hello")); // 2 (the second 'l' at index 2)
+console.log(firstRepeatedCharIndex("abcdef")); // -1
