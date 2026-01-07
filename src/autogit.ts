@@ -1,39 +1,32 @@
-const array: number[] = [1, 2, 3, 4, 5];
-array.reverse();
-console.log(array); // [5, 4, 3, 2, 1]
-const originalArray: number[] = [1, 2, 3, 4, 5];
-const reversedArray: number[] = [...originalArray].reverse();
-console.log(originalArray); // [1, 2, 3, 4, 5] (unchanged)
-console.log(reversedArray); // [5, 4, 3, 2, 1]
-const originalArray: number[] = [1, 2, 3, 4, 5];
-const reversedArray: number[] = originalArray.slice().reverse();
-console.log(reversedArray); // [5, 4, 3, 2, 1]
-function reverseArray<T>(arr: T[]): T[] {
-    const reversed: T[] = [];
-    for (let i = arr.length - 1; i >= 0; i--) {
-        reversed.push(arr[i]);
-    }
-    return reversed;
+const firstName: string = "Ada";
+const lastName: string = "Lovelace";
+
+const fullName: string = firstName + " " + lastName; // "Ada Lovelace"
+const firstName: string = "Grace";
+const lastName: string = "Hopper";
+
+const fullName: string = `${firstName} ${lastName}`; // "Grace Hopper"
+const a: string = "Alan";
+const b: string = "Turing";
+
+const combined: string = a.concat(" ", b); // "Alan Turing"
+const age: number = 42;
+const message: string = `You are ${age} years old.`; // "You are 42 years old."
+// or
+const message2: string = "You are " + age + " years old.";
+const ageStr: string = age.toString();
+const message3: string = "You are " + ageStr + " years old.";
+function greet(firstName: string, lastName: string): string {
+  // Using a template literal for clarity
+  return `Hello, ${firstName} ${lastName}!`;
 }
 
-const array: number[] = [1, 2, 3, 4, 5];
-const reversed = reverseArray(array);
-console.log(reversed); // [5, 4, 3, 2, 1]
-const array: number[] = [1, 2, 3, 4, 5];
-const reversed: number[] = array.reduce((acc: number[], current) => {
-    return [current, ...acc];
-}, []);
-console.log(reversed); // [5, 4, 3, 2, 1]
-// Generic function that works with any array type
-function reverseArray<T>(arr: T[]): T[] {
-    return [...arr].reverse();
-}
+console.log(greet("Katherine", "Johnson")); // → "Hello, Katherine Johnson!"
+// 1️⃣ + operator
+const c1 = a + b;
 
-// Usage examples
-const numbers: number[] = [1, 2, 3, 4, 5];
-const strings: string[] = ['a', 'b', 'c', 'd'];
-const mixed: (number | string)[] = [1, 'two', 3, 'four'];
+// 2️⃣ Template literal (recommended)
+const c2 = `${a}${b}`;
 
-console.log(reverseArray(numbers)); // [5, 4, 3, 2, 1]
-console.log(reverseArray(strings)); // ['d', 'c', 'b', 'a']
-console.log(reverseArray(mixed));   // ['four', 3, 'two', 1]
+// 3️⃣ concat()
+const c3 = a.concat(b);
