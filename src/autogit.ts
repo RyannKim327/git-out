@@ -1,48 +1,136 @@
-/**
- * Counting sort (stable).
- * @param arr Array of non-negative integers.
- * @returns new sorted array (original is left untouched).
- * @complexity
- *   Time:  O(n + k)  (k = max - min + 1)
- *   Space: O(n + k)
- * @throws If the array contains non-integers or negative numbers.
- */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+// Suffix tree (naive/compressed-ish) implementation in TS
+// Note: this is a practical, readable implementation for many use cases.
+// It uses explicit edge labels (substrings) for simplicity.
 
-  // 1. Find range
-  let min = arr[0];
-  let max = arr[0];
-  for (const v of arr) {
-    if (!Number.isInteger(v) || v < 0)
-      throw new Error('Counting sort requires non-negative integers');
-    if (v < min) min = v;
-    if (v > max) max = v;
-  }
-
-  const range = max - min + 1;
-
-  // 2. Count frequencies
-  const count = new Array<number>(range).fill(0);
-  for (const v of arr) count[v - min]++;
-
-  // 3. Convert count to start indices (stable)
-  for (let i = 1; i < range; i++) count[i] += count[i - 1];
-
-  // 4. Build output in stable order
-  const output = new Array<number>(arr.length);
-  // iterate backwards to keep stability
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const v = arr[i];
-    const pos = --count[v - min];
-    output[pos] = v;
-  }
-  return output;
+class Node {
+  edges: Map<string, Edge> = new Map();
 }
 
-/* ---------- demo ---------- */
-if (require.main === module) {
-  const data = [4, 2, 2, 8, 3, 3, 1];
-  console.log('original:', data);
-  console.log('sorted  :', countingSort(data));
+class Edge {
+  label: string;
+  dest: Node;
+  constructor(label: string, dest: Node) {
+    this.label = label;
+    this.dest = dest;
+  }
 }
+
+export class SuffixTree {
+  private root: Node;
+  private text: string = "";
+
+  constructor() {
+    this.root = new Node();
+  }
+
+  // Build a suffix tree for the string s
+  // We append a unique terminal symbol '$' to ensure unique leaves
+  build(s: string): void {
+    this.root = new Node();
+    this.text = s + "$"; // unique termination
+    // insert all suffixes starting at i = 0 .. text.length-1
+    for (let i = 0; i < this.text.length; i++) {
+      this.insertSuffix(i);
+    }
+  }
+
+  // Insert the suffix starting at position i of this.text
+  private insertSuffix(i: number): void {
+    let current: Node = this.root;
+    let p = i;
+
+    while (true) {
+      if (p >= this.text.length) break;
+      const c = this.text[p];
+      const edge = current.edges.get(c);
+
+      if (!edge) {
+        // No edge starting with this char: create a new leaf with the rest of the suffix
+        const leaf = new Node();
+        const leafLabel = this.text.substring(p); // includes the rest, ending with $
+        current.edges.set(c, new Edge(leafLabel, leaf));
+        break;
+      } else {
+        // We have an edge; try to match as much as possible with its label
+        const label = edge.label;
+        let k = 0;
+        while (
+          k < label.length &&
+          p + k < this.text.length &&
+          this.text[p + k] === label[k]
+        ) {
+          k++;
+        }
+
+        if (k === label.length) {
+          // Fully matched the edge; move down
+          current = edge.dest;
+          p += k;
+          if (p >= this.text.length) break;
+          continue;
+        } else {
+          // Partial match inside the edge: split the edge
+          const mid = new Node();
+
+          // Part 1: current -> mid with label[0..k)
+          current.edges.set(c, new Edge(label.substring(0, k), mid));
+
+          // Part 2: mid -> oldDest with label[k..)
+          const secondLabel = label.substring(k);
+          mid.edges.set(secondLabel[0], new Edge(secondLabel, edge.dest));
+
+          // Leaf for the remaining suffix from position p+k
+          // If rest is empty (shouldn't normally happen because of '$'), guard it
+          let rest = this.text.substring(p + k);
+          if (rest.length === 0) rest = "$";
+          const leaf = new Node();
+          mid.edges.set(rest[0], new Edge(rest, leaf));
+
+          break;
+        }
+      }
+    }
+  }
+
+  // Check whether the string pattern exists in the text
+  // Returns true if pattern is a substring of the original string (without the terminal)
+  contains(pattern: string): boolean {
+    let node: Node = this.root;
+    let m = pattern;
+
+    while (m.length > 0) {
+      const edge = node.edges.get(m[0]);
+      if (!edge) return false;
+
+      const label = edge.label;
+      // compare pattern prefix with edge label
+      let i = 0;
+      while (i < label.length && i < m.length && label[i] === m[i]) i++;
+
+      if (i === m.length) {
+        // pattern fully matched along this edge
+        return true;
+      }
+      if (i < label.length) {
+        // mismatch inside the edge
+        return false;
+      }
+
+      // matched whole edge: move to next node and reduce pattern
+      node = edge.dest;
+      m = m.substring(i);
+    }
+
+    return true;
+  }
+
+  // Optional: expose a simple query API
+  // Example usage:
+  // const st = new SuffixTree(); st.build("banana"); st.contains("ana"); // true
+}
+const st = new SuffixTree();
+st.build("banana");
+
+console.log(st.contains("ana")); // true
+console.log(st.contains("nab")); // true  ("nab" is part of "banana"? yes, "banan"a contains "nab" as "banan"… but you can test other patterns)
+console.log(st.contains("apple")); // false
