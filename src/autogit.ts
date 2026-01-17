@@ -1,56 +1,71 @@
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null
-  ) {}
+// kmp.ts
+/**
+ * Builds the LPS (Longest Prefix Suffix) array for a pattern.
+ * lps[i] = length of the longest proper prefix of pattern[0..i]
+ * that is also a suffix of pattern[0..i].
+ */
+export function buildLPS(pattern: string): number[] {
+    const lps = new Array(pattern.length).fill(0);
+    let length = 0;               // length of the previous longest prefix suffix
+    let i = 1;                    // lps[0] is always 0, so start from 1
+
+    while (i < pattern.length) {
+        if (pattern[i] === pattern[length]) {
+            length++;
+            lps[i] = length;
+            i++;
+        } else {
+            if (length !== 0) {
+                // Fall back to the previous longest prefix
+                length = lps[length - 1];
+                // No i++ here – we try the same i again with the new length
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+    return lps;
 }
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr = head;
 
-  while (curr !== null) {
-    const next = curr.next;   // remember where we’re headed
-    curr.next = prev;         // flip the link
-    prev = curr;              // move prev forward
-    curr = next;              // move curr forward
-  }
+/**
+ * KMP search for all occurrences of pattern inside text.
+ * Returns an array of 0‑based starting indices.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+    if (pattern.length === 0) return [];
 
-  // At the end of the loop, `prev` is the new head
-  return prev;
+    const lps = buildLPS(pattern);
+    const result: number[] = [];
+    let i = 0; // index for text
+    let j = 0; // index for pattern
+
+    while (i < text.length) {
+        if (text[i] === pattern[j]) {
+            i++;
+            j++;
+
+            if (j === pattern.length) {
+                // pattern found – push starting index
+                result.push(i - j);
+                // continue searching for next possible match
+                j = lps[j - 1];
+            }
+        } else if (j !== 0) {
+            // Fallback on pattern using LPS table
+            j = lps[j - 1];
+        } else {
+            // No match at the current position of `text`
+            i++;
+        }
+    }
+
+    return result;
 }
-// Helper to print the list
-function printList<T>(head: ListNode<T> | null): void {
-  const values = [];
-  let curr = head;
-  while (curr) {
-    values.push(curr.val);
-    curr = curr.next;
-  }
-  console.log(values.join(' → ') + ' → null');
-}
+import { kmpSearch } from "./kmp";
 
-// Build 1 → 2 → 3 → null
-const head = new ListNode(1,
-             new ListNode(2,
-               new ListNode(3)));
+const txt = "ABABDABACDABABCABAB";
+const pat = "ABABCABAB";
 
-console.log('Original list:');
-printList(head);
-
-const reversed = reverseList(head);
-
-console.log('Reversed list:');
-printList(reversed);
-Original list:
-1 → 2 → 3 → null
-Reversed list:
-3 → 2 → 1 → null
-export function reverseListRec<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head || !head.next) return head;         // base case
-
-  const newHead = reverseListRec(head.next);     // reverse rest of list
-  head.next.next = head;                        // make the next node point to us
-  head.next = null;                             // sever old link
-
-  return newHead;                               // new head propagates upward
-}
+const matches = kmpSearch(txt, pat);
+console.log(matches); // → [ 10 ]
