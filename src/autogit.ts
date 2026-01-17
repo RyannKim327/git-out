@@ -1,28 +1,30 @@
-const original = [1, 2, 3, 4, 5];
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
 
-const reversed = [...original].reverse(); // creates a new array, keeps `original` intact
-// or, if you don’t mind mutating the original array
-original.reverse();
-const copy = [...original];  // spread operator makes a new array
-copy.reverse();              // now you have the reversed copy
-function reverseArray<T>(arr: T[]): T[] {
-  const result: T[] = [];
-  for (let i = arr.length - 1; i >= 0; i--) {
-    result.push(arr[i]);
-  }
-  return result;
-}
+const intersection = a.filter(x => b.includes(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
 
-const reverseManual = reverseArray(original);
-function reverseInPlace<T>(arr: T[]): void {
-  let left = 0;
-  let right = arr.length - 1;
-  while (left < right) {
-    // swap
-    [arr[left], arr[right]] = [arr[right], arr[left]];
-    left++;
-    right--;
-  }
-}
+const setB = new Set(b);
+const intersection = a.filter(x => setB.has(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
 
-reverseInPlace(original); // `original` is now reversed
+const [small, large] = a.length < b.length ? [a, b] : [b, a];
+const setSmall = new Set(small);
+
+const intersection = large.filter(x => setSmall.has(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 2, 3, 4];
+const b = [2, 3, 3, 5];
+
+const intersection = Array.from(
+  new Set(a.filter(x => new Set(b).has(x)))
+);
+console.log(intersection); // [2, 3]
+import _ from 'lodash';
+
+const intersection = _.intersection([1, 2, 3], [2, 3, 4]);
+console.log(intersection); // [2, 3]
