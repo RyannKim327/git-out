@@ -1,60 +1,49 @@
 /**
- * Fibonacci search for a sorted array of numbers.
- * @param arr  The sorted array to search.
- * @param target The value to locate.
- * @returns The index of `target` in `arr`, or -1 if not found.
+ * Return the longest common subsequence of `a` and `b`.
+ *
+ * @param a - first string
+ * @param b - second string
+ * @returns the LCS (may be empty if nothing matches)
  */
-export function fibonacciSearch(arr: number[], target: number): number {
-  const n = arr.length;
-  if (n === 0) return -1;
+export function lcs(a: string, b: string): string {
+  const n = a.length;
+  const m = b.length;
 
-  // 1. Build the smallest Fibonacci number >= n
-  let fibMm2 = 0;   // (m-2)th Fibonacci
-  let fibMm1 = 1;   // (m-1)th Fibonacci
-  let fibM   = fibMm2 + fibMm1; // mth Fibonacci
+  // dp[i][j] = length of LCS of a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array.from({ length: n + 1 }, () =>
+    new Array(m + 1).fill(0)
+  );
 
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM   = fibMm2 + fibMm1;
-  }
-
-  // Marks the range to be searched
-  let offset = -1; // Element before the beginning (virtual)
-
-  // 2. While there is an element to inspect
-  while (fibM > 1) {
-    // Determines the index to compare
-    const i = Math.min(offset + fibMm2, n - 1);
-
-    if (arr[i] < target) {
-      // Move three steps ahead
-      fibM   = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i;
-    } else if (arr[i] > target) {
-      // Move one step back
-      fibM   = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
-    } else {
-      return i; // Found
+  // Fill table
+  for (let i = 1; i <= n; i++) {
+    const ca = a.charAt(i - 1);
+    for (let j = 1; j <= m; j++) {
+      if (ca === b.charAt(j - 1)) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
   }
 
-  // We are left with a single element
-  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
-    return offset + 1;
+  // Reconstruct the LCS from the table
+  let i = n, j = m;
+  const chars: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a.charAt(i - 1) === b.charAt(j - 1)) {
+      chars.push(a.charAt(i - 1)); // or b.charAt(j - 1)
+      i--; j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;                        // move up
+    } else {
+      j--;                        // move left
+    }
   }
 
-  return -1; // Not found
+  return chars.reverse().join('');
 }
-import { fibonacciSearch } from './fibonacci-search';
+const s1 = 'ABCBDAB';
+const s2 = 'BDCABC';
 
-const data = [3, 8, 10, 15, 20, 23, 27, 35, 41, 55, 68, 73, 82, 91, 97];
-const target = 55;
-
-const idx = fibonacciSearch(data, target);
-console.log(idx); // → 9
-console.log(fibonacciSearch(data, 22)); // → -1
+console.log(lcs(s1, s2)); // -> "BCAB"
