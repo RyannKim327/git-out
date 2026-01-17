@@ -1,60 +1,91 @@
-/**
- * Returns the max sum of any contiguous sub‑array of `nums`.
- * If all numbers are negative, it will still return the best (least negative) value.
- *
- * @param nums Array of numbers
- * @returns maximum sub‑array sum
- */
-function maxSubArraySum(nums: number[]): number {
-  if (nums.length === 0) {
-    throw new Error('Array must contain at least one element');
-  }
-
-  let bestSoFar = nums[0];      // best overall
-  let bestEndingHere = nums[0]; // best ending at current index
-
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the previous sub‑array or start fresh at nums[i]
-    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
-
-    // Update the global best if needed
-    bestSoFar = Math.max(bestSoFar, bestEndingHere);
-  }
-
-  return bestSoFar;
+interface ListNode {
+  val: number;          // or whatever type you prefer
+  next: ListNode | null;
 }
 
-/* Example usage */
-const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
-console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
-function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
-  let bestSoFar = nums[0], bestEndingHere = nums[0];
-  let start = 0, end = 0, tempStart = 0;
+function isPalindromeIterative(head: ListNode | null): boolean {
+  if (!head) return true;
 
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] > bestEndingHere + nums[i]) {
-      bestEndingHere = nums[i];
-      tempStart = i;          // potential new start
-    } else {
-      bestEndingHere += nums[i];
-    }
+  const stack: number[] = [];
+  let cur: ListNode | null = head;
 
-    if (bestEndingHere > bestSoFar) {
-      bestSoFar = bestEndingHere;
-      start = tempStart;      // commit new start
-      end = i;
-    }
+  // Push all values on the stack
+  while (cur) {
+    stack.push(cur.val);
+    cur = cur.next;
   }
 
-  return {
-    maxSum: bestSoFar,
-    subArray: nums.slice(start, end + 1),
-    indices: [start, end]
-  };
+  // Compare while traversing again
+  cur = head;
+  while (cur) {
+    if (cur.val !== stack.pop()) {
+      return false;
+    }
+    cur = cur.next;
+  }
+
+  return true;
 }
-console.log(maxSubArrayDetail(arr));
-// {
-//   maxSum: 6,
-//   subArray: [4, -1, 2, 1],
-//   indices: [3, 6]
-// }
+function isPalindromeOptimized(head: ListNode | null): boolean {
+  if (!head || !head.next) return true;
+
+  // 1. Find the middle (slow will point to middle)
+  let slow = head;
+  let fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
+  }
+
+  // 2. Reverse the second half
+  let prev: ListNode | null = null;
+  let curr = slow.next;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  // `prev` is now the head of the reversed second half
+
+  // 3. Compare the two halves
+  let first = head;
+  let second = prev;
+  let result = true;
+  while (result && second) {        // second will be shorter or equal
+    if (first.val !== second.val) result = false;
+    first = first.next!;
+    second = second.next!;
+  }
+
+  // 4. (Optional) Restore the list
+  // Reverse the second half again to bring the list back to original
+  curr = prev;
+  prev = null;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  slow.next = prev;
+
+  return result;
+}
+function buildList(arr: number[]): ListNode | null {
+  let dummy: ListNode = { val: 0, next: null };
+  let tail = dummy;
+  for (const v of arr) {
+    tail.next = { val: v, next: null };
+    tail = tail.next;
+  }
+  return dummy.next;
+}
+
+const a = buildList([1, 2, 3, 2, 1]);
+console.log(isPalindromeIterative(a));   // true
+console.log(isPalindromeOptimized(a));   // true
+
+const b = buildList([1, 2, 3, 4]);
+console.log(isPalindromeIterative(b));   // false
+console.log(isPalindromeOptimized(b));   // false
