@@ -1,104 +1,56 @@
-// ------------------------------------------------------------------
-//  Supporting types
-// ------------------------------------------------------------------
-/**
- * The shape of a graph node.  The `id` is used for a visited set.
- * `getNeighbours` must return raw references that `graph.getNode(id)` can resolve.
- */
-interface Node {
-  readonly id: string;
-  getNeighbours(): Iterable<string>;
+export class ListNode<T> {
+  constructor(
+    public val: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let curr = head;
 
-/**
- * A tiny graph interface that lets us look up nodes by id.
- * (You can replace this with your own representation; only the method
- * `getNode` is required by the algorithm.)
- */
-interface Graph {
-  /** Return the node instance for the supplied id or `undefined`. */
-  getNode(id: string): Node | undefined;
-}
-
-/**
- * A function tested against a node, returning true when the node is
- * the thing you’re looking for.
- */
-type Predicate = (node: Node) => boolean;
-
-// ------------------------------------------------------------------
-//  Depth‑limited DFS (iterative)
-// ------------------------------------------------------------------
-/**
- * Iterative depth‑limited depth‑first search.
- *
- * @param startId   id of the node where the search begins
- * @param maxDepth  stop expanding after this many edges from `startId`
- * @param graph     the graph interface
- * @param satisfies a predicate that tells when a node is a solution
- *
- * @returns the first node that satisfies `satisfies`, or undefined
- */
-export function depthLimitedSearch(
-  startId: string,
-  maxDepth: number,
-  graph: Graph,
-  satisfies: Predicate
-): Node | undefined {
-
-  // Guard against an empty or overly deep request
-  if (maxDepth < 0) return undefined;
-
-  // A stack holds tuples of (node, currentDepth).
-  const stack: Array<[Node, number]> = [];
-  const visited = new Set<string>();
-
-  const startNode = graph.getNode(startId);
-  if (!startNode) return undefined;   // start id is missing
-
-  stack.push([startNode, 0]);
-
-  while (stack.length) {
-    const [node, depth] = stack.pop()!;   // non‑empty promise
-
-    // Avoid revisiting the same node (important for cycles)
-    if (visited.has(node.id)) continue;
-    visited.add(node.id);
-
-    if (satisfies(node)) return node;    // found a match
-
-    if (depth === maxDepth) continue;    // reached depth limit
-
-    // Push neighbours onto the stack – order determines DFS order.
-    for (const neighId of node.getNeighbours()) {
-      const neighbour = graph.getNode(neighId);
-      if (neighbour) stack.push([neighbour, depth + 1]);
-    }
+  while (curr !== null) {
+    const next = curr.next;   // remember where we’re headed
+    curr.next = prev;         // flip the link
+    prev = curr;              // move prev forward
+    curr = next;              // move curr forward
   }
 
-  return undefined;   // nothing matched within the depth budget
+  // At the end of the loop, `prev` is the new head
+  return prev;
 }
-// A simple example graph implementation
-class SimpleNode implements Node {
-  constructor(public readonly id: string, private readonly neighIds: string[]) {}
-  getNeighbours() { return this.neighIds; }
-}
-class SimpleGraph implements Graph {
-  private readonly nodes = new Map<string, Node>();
-  addNode(node: Node) { this.nodes.set(node.id, node); }
-  getNode(id: string) { return this.nodes.get(id); }
+// Helper to print the list
+function printList<T>(head: ListNode<T> | null): void {
+  const values = [];
+  let curr = head;
+  while (curr) {
+    values.push(curr.val);
+    curr = curr.next;
+  }
+  console.log(values.join(' → ') + ' → null');
 }
 
-// Build a tiny graph
-const g = new SimpleGraph();
-g.addNode(new SimpleNode('A', ['B', 'C']));
-g.addNode(new SimpleNode('B', ['D']));
-g.addNode(new SimpleNode('C', []));
-g.addNode(new SimpleNode('D', []));
+// Build 1 → 2 → 3 → null
+const head = new ListNode(1,
+             new ListNode(2,
+               new ListNode(3)));
 
-// Define a search goal
-const goal = (n: Node) => n.id === 'D';
+console.log('Original list:');
+printList(head);
 
-// Run depth‑limited DFS limited to 2 edges from 'A'
-const result = depthLimitedSearch('A', 2, g, goal);
-console.log(result?.id); // → 'D'
+const reversed = reverseList(head);
+
+console.log('Reversed list:');
+printList(reversed);
+Original list:
+1 → 2 → 3 → null
+Reversed list:
+3 → 2 → 1 → null
+export function reverseListRec<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head || !head.next) return head;         // base case
+
+  const newHead = reverseListRec(head.next);     // reverse rest of list
+  head.next.next = head;                        // make the next node point to us
+  head.next = null;                             // sever old link
+
+  return newHead;                               // new head propagates upward
+}
