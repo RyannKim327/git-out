@@ -1,75 +1,56 @@
-// ──────────────────────────────────────────────────────────────
-// 1.  Types for the graph
-// ──────────────────────────────────────────────────────────────
-interface Node<T = void> {
-  value: T;
-  neighbours: Node<T>[];
+export class ListNode<T> {
+  constructor(
+    public val: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let curr = head;
 
-// A small helper to create nodes
-function createNode<T>(value: T): Node<T> {
-  return { value, neighbours: [] };
-}
-
-function addEdge<T>(from: Node<T>, to: Node<T>): void {
-  from.neighbours.push(to);
-  to.neighbours.push(from);    // undirected; drop this line for directed graphs
-}
-
-// ──────────────────────────────────────────────────────────────
-// 2.  Depth‑limited search (recursive DFS style)
-// ──────────────────────────────────────────────────────────────
-/**
- * Searches `startNode` for a node whose value satisfies `goalPredicate`,
- * but stops expanding any node that appears deeper than `limit` levels.
- *
- * @param start      the node to start from
- * @param goal       a predicate; if it returns true the node is considered the goal
- * @param limit      max depth to explore
- * @param visited    internal, tracks visited nodes
- * @param depth      internal, current depth
- * @returns          the goal node if found, or null
- */
-function depthLimitedSearch<T>(
-  start: Node<T>,
-  goal: (value: T) => boolean,
-  limit: number,
-  visited = new Set<Node<T>>(),
-  depth = 0
-): Node<T> | null {
-  if (depth > limit) return null;               // over the limit
-
-  visited.add(start);
-  if (goal(start.value)) return start;          // goal reached
-
-  for (const neighbour of start.neighbours) {
-    if (!visited.has(neighbour)) {
-      const result = depthLimitedSearch(neighbour, goal, limit, visited, depth + 1);
-      if (result !== null) return result;      // propagate success upwards
-    }
+  while (curr !== null) {
+    const next = curr.next;   // remember where we’re headed
+    curr.next = prev;         // flip the link
+    prev = curr;              // move prev forward
+    curr = next;              // move curr forward
   }
 
-  return null;                                  // no goal found within this branch
+  // At the end of the loop, `prev` is the new head
+  return prev;
+}
+// Helper to print the list
+function printList<T>(head: ListNode<T> | null): void {
+  const values = [];
+  let curr = head;
+  while (curr) {
+    values.push(curr.val);
+    curr = curr.next;
+  }
+  console.log(values.join(' → ') + ' → null');
 }
 
-// ──────────────────────────────────────────────────────────────
-// 3.  Example usage
-// ──────────────────────────────────────────────────────────────
-/*
-// Build a tiny graph
-const a = createNode('A');
-const b = createNode('B');
-const c = createNode('C');
-const d = createNode('D');
-const e = createNode('E');
+// Build 1 → 2 → 3 → null
+const head = new ListNode(1,
+             new ListNode(2,
+               new ListNode(3)));
 
-addEdge(a, b);
-addEdge(a, c);
-addEdge(b, d);
-addEdge(c, e);
+console.log('Original list:');
+printList(head);
 
-// Find node 'E' but stop after exploring 2 edges from 'A'
-const found = depthLimitedSearch(a, val => val === 'E', 2);
+const reversed = reverseList(head);
 
-console.log(found ? `Found ${found.value}` : 'Not found within depth limit');
-*/
+console.log('Reversed list:');
+printList(reversed);
+Original list:
+1 → 2 → 3 → null
+Reversed list:
+3 → 2 → 1 → null
+export function reverseListRec<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head || !head.next) return head;         // base case
+
+  const newHead = reverseListRec(head.next);     // reverse rest of list
+  head.next.next = head;                        // make the next node point to us
+  head.next = null;                             // sever old link
+
+  return newHead;                               // new head propagates upward
+}
