@@ -1,49 +1,54 @@
 /**
- * Return the longest common subsequence of `a` and `b`.
+ * Merge two sorted slices of `arr` into a temporary array.
  *
- * @param a - first string
- * @param b - second string
- * @returns the LCS (may be empty if nothing matches)
+ * @param arr  source array
+ * @param tmp  temporary array of the same length
+ * @param left  start index of the first slice
+ * @param mid   end index (exclusive) of the first slice and start of the second
+ * @param right end index (exclusive) of the second slice
  */
-export function lcs(a: string, b: string): string {
-  const n = a.length;
-  const m = b.length;
+function merge(
+  arr: number[],
+  tmp: number[],
+  left: number,
+  mid: number,
+  right: number
+): void {
+  let i = left;   // index in first slice
+  let j = mid;    // index in second slice
+  let k = left;   // index in tmp
 
-  // dp[i][j] = length of LCS of a[0..i-1] and b[0..j-1]
-  const dp: number[][] = Array.from({ length: n + 1 }, () =>
-    new Array(m + 1).fill(0)
-  );
+  // Copy the relevant segment to tmp
+  for (let idx = left; idx < right; idx++) tmp[idx] = arr[idx];
 
-  // Fill table
-  for (let i = 1; i <= n; i++) {
-    const ca = a.charAt(i - 1);
-    for (let j = 1; j <= m; j++) {
-      if (ca === b.charAt(j - 1)) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
+  // Merge back into arr
+  while (i < mid && j < right) {
+    arr[k++] = tmp[i] <= tmp[j] ? tmp[i++] : tmp[j++];
   }
-
-  // Reconstruct the LCS from the table
-  let i = n, j = m;
-  const chars: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a.charAt(i - 1) === b.charAt(j - 1)) {
-      chars.push(a.charAt(i - 1)); // or b.charAt(j - 1)
-      i--; j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;                        // move up
-    } else {
-      j--;                        // move left
-    }
-  }
-
-  return chars.reverse().join('');
+  while (i < mid) arr[k++] = tmp[i++];
+  while (j < right) arr[k++] = tmp[j++];
 }
-const s1 = 'ABCBDAB';
-const s2 = 'BDCABC';
 
-console.log(lcs(s1, s2)); // -> "BCAB"
+/**
+ * Iterative merge sort.
+ *
+ * @param arr  array to sort in‑place
+ */
+function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  if (n < 2) return; // already sorted
+
+  const tmp = new Array<number>(n);
+
+  // Run size = 1, 2, 4, 8, ...
+  for (let run = 1; run < n; run *= 2) {
+    for (let left = 0; left < n; left += 2 * run) {
+      const mid = Math.min(left + run, n);
+      const right = Math.min(left + 2 * run, n);
+      if (mid < right) merge(arr, tmp, left, mid, right);
+    }
+  }
+}
+const nums = [34, 7, 23, 32, 5, 62];
+mergeSortIterative(nums);
+console.log(nums); // [5, 7, 23, 32, 34, 62]
