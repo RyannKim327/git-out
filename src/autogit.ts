@@ -1,71 +1,51 @@
-// kmp.ts
-/**
- * Builds the LPS (Longest Prefix Suffix) array for a pattern.
- * lps[i] = length of the longest proper prefix of pattern[0..i]
- * that is also a suffix of pattern[0..i].
- */
-export function buildLPS(pattern: string): number[] {
-    const lps = new Array(pattern.length).fill(0);
-    let length = 0;               // length of the previous longest prefix suffix
-    let i = 1;                    // lps[0] is always 0, so start from 1
+function isPalindrome(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
+  // Normalise if requested
+  const src = ignoreCase
+    ? s.toLowerCase()
+    : s;
 
-    while (i < pattern.length) {
-        if (pattern[i] === pattern[length]) {
-            length++;
-            lps[i] = length;
-            i++;
-        } else {
-            if (length !== 0) {
-                // Fall back to the previous longest prefix
-                length = lps[length - 1];
-                // No i++ here – we try the same i again with the new length
-            } else {
-                lps[i] = 0;
-                i++;
-            }
-        }
-    }
-    return lps;
+  // Optionally strip out anything that isn’t a letter or a digit
+  const text = ignoreNonAlpha
+    ? src.replace(/[^a-z0-9]/gi, '')
+    : src;
+
+  let left = 0;
+  let right = text.length - 1;
+
+  while (left < right) {
+    if (text[left] !== text[right]) return false;
+    left++;
+    right--;
+  }
+  return true;
 }
+console.log(isPalindrome('Racecar'));          // true
+console.log(isPalindrome('A man, a plan!'));   // false
+console.log(isPalindrome('A man, a plan!', true, true)); // true
+function isPalindromeReverse(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
+  const cleaned = ignoreNonAlpha
+    ? s.replace(/[^a-z0-9]/gi, '')
+    : s;
 
-/**
- * KMP search for all occurrences of pattern inside text.
- * Returns an array of 0‑based starting indices.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-    if (pattern.length === 0) return [];
-
-    const lps = buildLPS(pattern);
-    const result: number[] = [];
-    let i = 0; // index for text
-    let j = 0; // index for pattern
-
-    while (i < text.length) {
-        if (text[i] === pattern[j]) {
-            i++;
-            j++;
-
-            if (j === pattern.length) {
-                // pattern found – push starting index
-                result.push(i - j);
-                // continue searching for next possible match
-                j = lps[j - 1];
-            }
-        } else if (j !== 0) {
-            // Fallback on pattern using LPS table
-            j = lps[j - 1];
-        } else {
-            // No match at the current position of `text`
-            i++;
-        }
-    }
-
-    return result;
+  const cmp = ignoreCase ? cleaned.toLowerCase() : cleaned;
+  const reversed = cmp.split('').reverse().join('');
+  return cmp === reversed;
 }
-import { kmpSearch } from "./kmp";
+console.log(isPalindromeReverse('Madam In Eden, I’m Adam', true, true)); // true
+const isPalindromeLazy = (s: string, ignoreCase = true, ignoreNonAlpha = false): boolean =>
+  (ignoreNonAlpha ? s.replace(/[^a-z0-9]/gi, '') : s)
+    .toLowerCase()
+    .split('')
+    .every((c, i, a) => c === a[a.length - i - 1]);
+const tests = [
+  { str: 'Radar', expect: true },
+  { str: 'Madam Anna', expect: false },
+  { str: 'Madam Anna', expect: true, options: { ignoreNonAlpha: true } },
+  { str: '12321', expect: true },
+  { str: 'Was it a cat I saw?', expect: true, options: { ignoreNonAlpha: true, ignoreCase: true } },
+];
 
-const txt = "ABABDABACDABABCABAB";
-const pat = "ABABCABAB";
-
-const matches = kmpSearch(txt, pat);
-console.log(matches); // → [ 10 ]
+tests.forEach(({ str, expect, options }) => {
+  const result = isPalindrome(str, ...(options ? [options.ignoreCase, options.ignoreNonAlpha] : []));
+  console.assert(result === expect, `❌ ${str} should be ${expect}`);
+});
