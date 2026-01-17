@@ -1,56 +1,54 @@
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr = head;
+/**
+ * Merge two sorted slices of `arr` into a temporary array.
+ *
+ * @param arr  source array
+ * @param tmp  temporary array of the same length
+ * @param left  start index of the first slice
+ * @param mid   end index (exclusive) of the first slice and start of the second
+ * @param right end index (exclusive) of the second slice
+ */
+function merge(
+  arr: number[],
+  tmp: number[],
+  left: number,
+  mid: number,
+  right: number
+): void {
+  let i = left;   // index in first slice
+  let j = mid;    // index in second slice
+  let k = left;   // index in tmp
 
-  while (curr !== null) {
-    const next = curr.next;   // remember where we’re headed
-    curr.next = prev;         // flip the link
-    prev = curr;              // move prev forward
-    curr = next;              // move curr forward
+  // Copy the relevant segment to tmp
+  for (let idx = left; idx < right; idx++) tmp[idx] = arr[idx];
+
+  // Merge back into arr
+  while (i < mid && j < right) {
+    arr[k++] = tmp[i] <= tmp[j] ? tmp[i++] : tmp[j++];
   }
-
-  // At the end of the loop, `prev` is the new head
-  return prev;
+  while (i < mid) arr[k++] = tmp[i++];
+  while (j < right) arr[k++] = tmp[j++];
 }
-// Helper to print the list
-function printList<T>(head: ListNode<T> | null): void {
-  const values = [];
-  let curr = head;
-  while (curr) {
-    values.push(curr.val);
-    curr = curr.next;
+
+/**
+ * Iterative merge sort.
+ *
+ * @param arr  array to sort in‑place
+ */
+function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  if (n < 2) return; // already sorted
+
+  const tmp = new Array<number>(n);
+
+  // Run size = 1, 2, 4, 8, ...
+  for (let run = 1; run < n; run *= 2) {
+    for (let left = 0; left < n; left += 2 * run) {
+      const mid = Math.min(left + run, n);
+      const right = Math.min(left + 2 * run, n);
+      if (mid < right) merge(arr, tmp, left, mid, right);
+    }
   }
-  console.log(values.join(' → ') + ' → null');
 }
-
-// Build 1 → 2 → 3 → null
-const head = new ListNode(1,
-             new ListNode(2,
-               new ListNode(3)));
-
-console.log('Original list:');
-printList(head);
-
-const reversed = reverseList(head);
-
-console.log('Reversed list:');
-printList(reversed);
-Original list:
-1 → 2 → 3 → null
-Reversed list:
-3 → 2 → 1 → null
-export function reverseListRec<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head || !head.next) return head;         // base case
-
-  const newHead = reverseListRec(head.next);     // reverse rest of list
-  head.next.next = head;                        // make the next node point to us
-  head.next = null;                             // sever old link
-
-  return newHead;                               // new head propagates upward
-}
+const nums = [34, 7, 23, 32, 5, 62];
+mergeSortIterative(nums);
+console.log(nums); // [5, 7, 23, 32, 34, 62]
