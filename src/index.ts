@@ -20,23 +20,22 @@ const run = async (): Promise<void> => {
   );
 
   try {
-    const { data } = await axios.post<{ response: string }>(
-      `https://g4f.dev/ai/1760433024795`,{
-        "model": "auto",
-        "messages": [
-          {
-            "role": "user",
-            "content": m3
-          }
-        ],
-        "stream": false,
-        "stream_options":{
-          "include_usage": true
-        }
-      }
-    );
+    const { data } = await axios.post(`https://text.pollinations.ai/openai`, {
+      messages: [
+        {
+          role: "user",
+          content: m3,
+        },
+      ],
+      model: "openai-fast",
+      temperature: 1,
+      max_tokens: 1000,
+      stream: false,
+    });
 
-    const datas: string[] = data.split("\n");
+    const response = data.choices[0].message.content;
+
+    const datas: string[] = response.split("\n");
     let result: string = "";
     let active = false;
 
