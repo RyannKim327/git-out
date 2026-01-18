@@ -1,93 +1,56 @@
-/**
- * Represents a node in the beam frontier.
- * Keeps the actual state and the path taken to reach it.
- */
-export interface BeamNode<T> {
-  /** The actual state */
-  state: T;
-  /** The sequence of states that led to this node (incl. this state) */
-  path: T[];
+export class ListNode<T> {
+  constructor(
+    public val: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let curr = head;
 
-/**
- * Performs a beam search.
- *
- * @param startNodes   Initial frontier. Usually a single root node, but you can start with many.
- * @param getSuccessors   Function that returns the child nodes of a parent.
- * @param score          Score function – higher is better.
- * @param beamWidth      How many nodes to keep after each expansion.
- * @param maxDepth       Optional depth cutoff (in terms of edges traversed).
- * @param isGoal         Optional goal‑test predicate.
- * @returns The first goal node found (or undefined if none).
- */
-export function beamSearch<T>(
-  startNodes: T[],
-  getSuccessors: (node: T) => T[],
-  score: (node: T) => number,
-  beamWidth: number,
-  maxDepth?: number,
-  isGoal?: (node: T) => boolean
-): BeamNode<T> | undefined {
-
-  // Ensure we keep a lightweight copy for sorting.
-  let frontier: BeamNode<T> = startNodes.map(state => ({ state, path: [state] }));
-
-  for (let depth = 0; depth < (maxDepth ?? Infinity); depth++) {
-    if (frontier.length === 0) break; // nothing to expand
-
-    // Expand every node in the frontier
-    const expansions: BeamNode<T>[] = [];
-    for (const node of frontier) {
-      const succ = getSuccessors(node.state);
-      for (const child of succ) {
-        expansions.push({
-          state: child,
-          path: [...node.path, child]
-        });
-      }
-    }
-
-    // Optional goal check as soon as we generate expansions
-    if (isGoal) {
-      for (const node of expansions) {
-        if (isGoal(node.state)) return node;
-      }
-    }
-
-    // Sort by score, keep top `beamWidth`
-    expansions.sort((a, b) => score(b.state) - score(a.state)); // descending
-    frontier = expansions.slice(0, beamWidth);
+  while (curr !== null) {
+    const next = curr.next;   // remember where we’re headed
+    curr.next = prev;         // flip the link
+    prev = curr;              // move prev forward
+    curr = next;              // move curr forward
   }
 
-  return undefined; // no goal reached within limits
+  // At the end of the loop, `prev` is the new head
+  return prev;
 }
-// Example: find a numeric sequence that sums to 15
-type MyState = number; // current sum
+// Helper to print the list
+function printList<T>(head: ListNode<T> | null): void {
+  const values = [];
+  let curr = head;
+  while (curr) {
+    values.push(curr.val);
+    curr = curr.next;
+  }
+  console.log(values.join(' → ') + ' → null');
+}
 
-const start = 0;
+// Build 1 → 2 → 3 → null
+const head = new ListNode(1,
+             new ListNode(2,
+               new ListNode(3)));
 
-const getSucc = (sum: MyState) => {
-  return [sum + 1, sum + 2, sum + 3]; // could be any branching scheme
-};
+console.log('Original list:');
+printList(head);
 
-const score = (sum: MyState) => {
-  // The closer to 15 without overshooting, the better
-  return Math.max(0, 15 - sum);
-};
+const reversed = reverseList(head);
 
-const isGoal = (sum: MyState) => sum === 15;
+console.log('Reversed list:');
+printList(reversed);
+Original list:
+1 → 2 → 3 → null
+Reversed list:
+3 → 2 → 1 → null
+export function reverseListRec<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head || !head.next) return head;         // base case
 
-const result = beamSearch(
-  [start],
-  getSucc,
-  score,
-  beamWidth = 3,
-  maxDepth = 10,
-  isGoal
-);
+  const newHead = reverseListRec(head.next);     // reverse rest of list
+  head.next.next = head;                        // make the next node point to us
+  head.next = null;                             // sever old link
 
-if (result) {
-  console.log(`Reached 15 via ${result.path.join(' -> ')}`);
-} else {
-  console.log('No path found within depth limit');
+  return newHead;                               // new head propagates upward
 }
