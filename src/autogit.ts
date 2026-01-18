@@ -1,67 +1,98 @@
-/**
- * Returns the k‑th smallest element (1‑based index).
- * O(n log n) by quick‑sort.
- */
-export function kthSmallestSort(arr: number[], k: number): number {
-  if (!arr.length) throw new Error('Array is empty');
-  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
+/* ──────────────────────────────────────────────────────
+   1️⃣  A tiny TypeScript helper that wraps the Fetch API
+─────────────────────────────────────────────────────── */
 
-  // Create a copy so the original array stays untouched
-  const copy = [...arr].sort((a, b) => a - b);
-  return copy[k - 1];
-}
+const api = {
+  /* GET a JSON‑encoded resource */
+  async get<T>(url: string): Promise<T> {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
 
-/**
- * Returns the k‑th smallest element in expected linear time via QuickSelect.
- * Stable but not guaranteed worst‑case performance.
- */
-export function kthSmallestQuickSelect(arr: number[], k: number): number {
-  if (!arr.length) throw new Error('Array is empty');
-  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
-
-  // Recursive helper
-  function quickSelect(nums: number[], left: number, right: number, kth: number): number {
-    if (left === right) return nums[left];
-
-    let pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
-    pivotIndex = partition(nums, left, right, pivotIndex);
-
-    const leftSize = pivotIndex - left + 1;
-    if (kth < leftSize) return quickSelect(nums, left, pivotIndex - 1, kth);
-    if (kth === leftSize) return nums[pivotIndex];
-    return quickSelect(nums, pivotIndex + 1, right, kth - leftSize);
-  }
-
-  function partition(nums: number[], left: number, right: number, pivotIndex: number): number {
-    const pivotValue = nums[pivotIndex];
-    // Move pivot to end
-    [nums[pivotIndex], nums[right]] = [nums[right], nums[pivotIndex]];
-    let storeIndex = left;
-
-    for (let i = left; i < right; i++) {
-      if (nums[i] < pivotValue) {
-        [nums[storeIndex], nums[i]] = [nums[i], nums[storeIndex]];
-        storeIndex++;
-      }
+    if (!response.ok) {
+      const msg = `Fetching ${url} failed with status ${response.status}`;
+      console.warn(msg);
+      throw new Error(msg);
     }
-    // Move pivot to its final place
-    [nums[right], nums[storeIndex]] = [nums[storeIndex], nums[right]];
-    return storeIndex;
-  }
 
-  // Clone the array so we don't mutate the caller's array
-  const clone = [...arr];
-  return quickSelect(clone, 0, clone.length - 1, k);
-}
-const data = [7, 2, 5, 3, 9, 1];
-const kth = 3; // 3rd smallest
+    const json = await response.json();
+    return json as T;
+  },
 
-console.log(kthSmallestSort(data, kth));          // 5
-console.log(kthSmallestQuickSelect(data, kth));   // 5
-export function kthSmallest<T>(
-  arr: T[],
-  k: number,
-  cmp: (a: T, b: T) => number,
-): T {
-  // ...same logic, replace numeric comparisons with cmp(...)
+  /* POST data as JSON */
+  async post<T, U>(url: string, body: T): Promise<U> {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const msg = `Posting to ${url} failed with status ${response.status}`;
+      console.warn(msg);
+      throw new Error(msg);
+    }
+
+    const json = await response.json();
+    return json as U;
+  },
+};
+
+/* ──────────────────────────────────────────────────────
+   2️⃣  A React‑Native component that uses the helper
+─────────────────────────────────────────────────────── */
+
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+
+type Todo = { userId: number; id: number; title: string; completed: boolean };
+
+// Example URL: https://jsonplaceholder.typicode.com/todos/1
+const TODO_URL = 'https://jsonplaceholder.typicode.com/todos/1';
+
+export default function AsyncExample() {
+  const [todo, setTodo] = useState<Todo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    /*═════════════════════════════════════════════════
+       Run an “async task” when the component mounts
+     ════════════════════════════════════════════════*/
+    const fetchTodo = async () => {
+      try {
+        const data = await api.get<Todo>(TODO_URL);
+        setTodo(data);
+      } catch (e: any) {
+        setError(e.message ?? 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTodo();
+  }, []);
+
+  if (loading) return <ActivityIndicator style={styles.center} />;
+  if (error) return <Text style={styles.error}>❌ {error}</Text>;
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Todo #{todo?.id}</Text>
+      <Text style={styles.content}>{todo?.title}</Text>
+      <Text style={styles.status}>
+        {todo?.completed ? '✅ Completed' : '🔄 Pending'}
+      </Text>
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },
+  center:      { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  title:   { fontSize: 24, fontWeight: 'bold', marginBottom: 12 },
+  content: { fontSize: 18, marginBottom: 8 },
+  status:  { fontSize: 16, color: '#777' },
+  error:   { color: 'red', textAlign: 'center', margin: 20 },
+});
