@@ -1,43 +1,93 @@
 /**
- * Counting sort for integer arrays (can include negatives).
- * @param arr The input array of numbers.
- * @returns A new sorted array.
+ * Represents a node in the beam frontier.
+ * Keeps the actual state and the path taken to reach it.
  */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+export interface BeamNode<T> {
+  /** The actual state */
+  state: T;
+  /** The sequence of states that led to this node (incl. this state) */
+  path: T[];
+}
 
-  // 1) Determine min and max to find the range.
-  let min = arr[0];
-  let max = arr[0];
-  for (const v of arr) {
-    if (v < min) min = v;
-    else if (v > max) max = v;
+/**
+ * Performs a beam search.
+ *
+ * @param startNodes   Initial frontier. Usually a single root node, but you can start with many.
+ * @param getSuccessors   Function that returns the child nodes of a parent.
+ * @param score          Score function – higher is better.
+ * @param beamWidth      How many nodes to keep after each expansion.
+ * @param maxDepth       Optional depth cutoff (in terms of edges traversed).
+ * @param isGoal         Optional goal‑test predicate.
+ * @returns The first goal node found (or undefined if none).
+ */
+export function beamSearch<T>(
+  startNodes: T[],
+  getSuccessors: (node: T) => T[],
+  score: (node: T) => number,
+  beamWidth: number,
+  maxDepth?: number,
+  isGoal?: (node: T) => boolean
+): BeamNode<T> | undefined {
+
+  // Ensure we keep a lightweight copy for sorting.
+  let frontier: BeamNode<T> = startNodes.map(state => ({ state, path: [state] }));
+
+  for (let depth = 0; depth < (maxDepth ?? Infinity); depth++) {
+    if (frontier.length === 0) break; // nothing to expand
+
+    // Expand every node in the frontier
+    const expansions: BeamNode<T>[] = [];
+    for (const node of frontier) {
+      const succ = getSuccessors(node.state);
+      for (const child of succ) {
+        expansions.push({
+          state: child,
+          path: [...node.path, child]
+        });
+      }
+    }
+
+    // Optional goal check as soon as we generate expansions
+    if (isGoal) {
+      for (const node of expansions) {
+        if (isGoal(node.state)) return node;
+      }
+    }
+
+    // Sort by score, keep top `beamWidth`
+    expansions.sort((a, b) => score(b.state) - score(a.state)); // descending
+    frontier = expansions.slice(0, beamWidth);
   }
 
-  const range = max - min + 1;          // how many distinct integer values
-  const count = new Array<number>(range).fill(0);
+  return undefined; // no goal reached within limits
+}
+// Example: find a numeric sequence that sums to 15
+type MyState = number; // current sum
 
-  // 2) Count each value
-  for (const v of arr) {
-    count[v - min]++;                   // offset by min so array starts at 0
-  }
+const start = 0;
 
-  // 3) Convert counts to cumulative counts
-  for (let i = 1; i < range; i++) {
-    count[i] += count[i - 1];
-  }
+const getSucc = (sum: MyState) => {
+  return [sum + 1, sum + 2, sum + 3]; // could be any branching scheme
+};
 
-  // 4) Allocate result array
-  const output = new Array<number>(arr.length);
+const score = (sum: MyState) => {
+  // The closer to 15 without overshooting, the better
+  return Math.max(0, 15 - sum);
+};
 
-  // 5) Place elements into output in stable order
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const v = arr[i];
-    const idx = v - min;
-    const pos = count[idx] - 1;         // final index for this element
-    output[pos] = v;
-    count[idx]--;                       // decrease count for next instance
-  }
+const isGoal = (sum: MyState) => sum === 15;
 
-  return output;
+const result = beamSearch(
+  [start],
+  getSucc,
+  score,
+  beamWidth = 3,
+  maxDepth = 10,
+  isGoal
+);
+
+if (result) {
+  console.log(`Reached 15 via ${result.path.join(' -> ')}`);
+} else {
+  console.log('No path found within depth limit');
 }
