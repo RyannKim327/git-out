@@ -1,64 +1,50 @@
-// ────────────────────────
-// Node definition
-// ────────────────────────
-class Node<T> {
-  value: T;
-  next: Node<T> | null = null;
-
-  constructor(value: T) {
-    this.value = value;
-  }
+// A minimal binary‑tree node definition
+interface TreeNode {
+  value: number;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
 
-// ────────────────────────
-// LinkedList implementation
-// ────────────────────────
-class LinkedList<T> {
-  head: Node<T> | null = null;
-  tail: Node<T> | null = null;
-
-  // Append new value to list
-  push(value: T): void {
-    const newNode = new Node(value);
-    if (!this.head) {
-      this.head = this.tail = newNode;
-      return;
-    }
-    this.tail!.next = newNode;  // non‑null assertion is safe here
-    this.tail = newNode;
-  }
-
-  // ────── length (iterative)
-  // Return number of nodes
-  length(): number {
-    let count = 0;
-    let current = this.head;
-    while (current !== null) {
-      count++;
-      current = current.next;
-    }
-    return count;
-  }
-
-  // ────── length (recursive helper)
-  private _recursiveLength(node: Node<T> | null): number {
-    if (!node) return 0;
-    return 1 + this._recursiveLength(node.next);
-  }
-
-  // Public wrapper for the recursive version
-  recursiveLength(): number {
-    return this._recursiveLength(this.head);
-  }
+/**
+ * Recursively sums the values of every node in a binary tree.
+ * @param root – the root of the tree
+ * @returns the total sum of all node values
+ */
+function sumTree(root: TreeNode | null | undefined): number {
+  if (!root) return 0;
+  return root.value + sumTree(root.left) + sumTree(root.right);
 }
 
-// ────────────────────────
-// Demo
-// ────────────────────────
-const list = new LinkedList<number>();
-list.push(1);
-list.push(2);
-list.push(3);
+/*--- Example usage -------------------------------------------------------*/
+// Construct a small tree:
+//
+//        4
+//       / \
+//      2   5
+//     / \
+//    1   3
+const tree: TreeNode = {
+  value: 4,
+  left: {
+    value: 2,
+    left: { value: 1, left: null, right: null },
+    right: { value: 3, left: null, right: null },
+  },
+  right: { value: 5, left: null, right: null },
+};
 
-console.log('Iterative length:', list.length());          // 3
-console.log('Recursive length:', list.recursiveLength()); // 3
+console.log(sumTree(tree)); // 15
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let total = 0;
+  const stack: Array<TreeNode> = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.value;
+    if (node.left) stack.push(node.left);
+    if (node.right) stack.push(node.right);
+  }
+
+  return total;
+}
