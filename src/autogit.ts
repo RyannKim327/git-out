@@ -1,28 +1,51 @@
-/**
- * Binary search on a sorted array.
- *
- * @param arr   Sorted array of comparable items.
- * @param value Value to search for.
- * @returns Index of value, or -1 if not found.
- */
-export function binarySearch<T>(arr: T[], value: T): number {
-  let low = 0;
-  let high = arr.length - 1;
+// Stack.ts
+export class Stack<T> {
+  // private backing store
+  private items: T[] = [];
 
-  while (low <= high) {
-    // Middle index – floor division
-    const mid = Math.floor((low + high) / 2);
-    const midVal = arr[mid];
-
-    if (midVal === value) return mid;      // exact match
-    if (midVal < value) {
-      low = mid + 1;                       // value is in higher half
-    } else {
-      high = mid - 1;                      // value is in lower half
-    }
+  /** Push an item onto the stack. */
+  push(item: T): void {
+    this.items.push(item);
   }
-  return -1;  // not found
+
+  /** Remove the top item and return it.  Returns undefined if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  /** Peek at the top item without removing it.  Returns undefined if the stack is empty. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Return true if the stack has no items. */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Current number of elements in the stack. */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Optional: completely clear the stack. */
+  clear(): void {
+    this.items = [];
+  }
 }
-const nums = [3, 7, 12, 18, 24, 31, 42];
-const idx = binarySearch(nums, 18); // => 3
-const missing = binarySearch(nums, 5); // => -1
+import { Stack } from "./Stack";
+
+const numberStack = new Stack<number>();
+numberStack.push(10);
+numberStack.push(20);
+
+console.log(numberStack.peek()); // 20
+console.log(numberStack.pop());  // 20
+console.log(numberStack.size()); // 1
+console.log(numberStack.isEmpty()); // false
+
+// Generic example with strings
+const wordStack = new Stack<string>();
+wordStack.push("hello");
+wordStack.push("world");
+console.log(wordStack.pop()); // world
