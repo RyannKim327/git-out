@@ -1,94 +1,68 @@
-// A tiny helper interface when you want a custom comparator
-export interface Comparable<T> {
-  compareTo(other: T): number;   // negative if this < other
+/**
+ * Stable counting sort of `arr` by the digit in position `exp`
+ * (exp = 1 → units, 10 → tens, 100 → hundreds, …)
+ */
+function countingSortByDigit(arr: number[], exp: number): void {
+  const n = arr.length;
+  const output = new Array<number>(n);
+  const count = new Array<number>(10).fill(0);   // base 10 → digits 0‑9
+
+  /* Count occurrences of each digit */
+  for (let i = 0; i < n; i++) {
+    const digit = Math.floor(arr[i] / exp) % 10;
+    count[digit] += 1;
+  }
+
+  /* Transform counts into starting indices */
+  for (let i = 1; i < 10; i++) {
+    count[i] += count[i - 1];
+  }
+
+  /* Build the output array from the end to preserve stability */
+  for (let i = n - 1; i >= 0; i--) {
+    const digit = Math.floor(arr[i] / exp) % 10;
+    const pos = --count[digit];
+    output[pos] = arr[i];
+  }
+
+  /* Copy back to the original array */
+  for (let i = 0; i < n; i++) {
+    arr[i] = output[i];
+  }
 }
 /**
- * Heap‑sort: in‑place, O(n log n) time, O(1) auxiliary space.
- * @param arr  The array to sort.
- * @param compare  Optional comparator: (a, b) => number
- *                 (negative if a < b, zero if equal, positive if a > b).
- *                 If omitted, the array is assumed to contain values
- *                 that support the `<` operator.
+ * Radix sort for an array of non‑negative integers.
+ * Complexity: O(d · (n + k)) where d = number of digits, k = base (10).
  */
-export function heapSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): void {
-  const cmp = compare ?? defaultCompare;
+export function radixSort(arr: number[]): number[] {
+  if (arr.length < 2) return arr;            // already sorted
 
-  // 1. Build a max‑heap
-  for (let i = Math.floor(arr.length / 2) - 1; i >= 0; i--) {
-    siftDown(arr, i, arr.length, cmp);
+  // Find the maximum number to know how many digits we need
+  const maxVal = Math.max(...arr);
+
+  // Start with the least significant digit (exp = 1)
+  for (let exp = 1; exp <= maxVal; exp *= 10) {
+    countingSortByDigit(arr, exp);
   }
 
-  // 2. Repeatedly swap the max element to the end and restore heap
-  for (let end = arr.length - 1; end > 0; end--) {
-    [arr[0], arr[end]] = [arr[end], arr[0]];
-    siftDown(arr, 0, end, cmp);  // `end` is the new heap size
-  }
-
-  /** Comparator that works on primitive numbers or strings … */
-  function defaultCompare(a: any, b: any): number {
-    return a < b ? -1 : a > b ? 1 : 0;   // 0 when equal
-  }
+  return arr; // sorted array (in‑place)
 }
-function siftDown<T>(
-  arr: T[],
-  start: number,
-  heapSize: number,
-  compare: (a: T, b: T) => number
-): void {
-  let root = start;
+const data = [170, 45, 75, 90, 802, 24, 2, 66];
 
-  while (true) {
-    const left = 2 * root + 1;
-    const right = left + 1;
-    let swap: number | null = null;
+radixSort(data);
+console.log(data); // [2, 24, 45, 66, 75, 90, 170, 802]
+export function radixSortMixed(arr: number[]): number[] {
+  const positives: number[] = [];
+  const negatives: number[] = [];
 
-    // Is there a left child larger than root?
-    if (left < heapSize && compare(arr[left], arr[root]) > 0) {
-      swap = left;
-    }
-
-    // Is there a right child that beats the current swap?
-    if (
-      right < heapSize &&
-      (swap === null || compare(arr[right], arr[swap]) > 0)
-    ) {
-      swap = right;
-    }
-
-    // Nothing to swap → we’re done
-    if (swap === null) break;
-
-    [arr[root], arr[swap]] = [arr[swap], arr[root]];
-    root = swap;
+  for (const v of arr) {
+    if (v >= 0) positives.push(v);
+    else negatives.push(-v);  // work with absolute values
   }
+
+  radixSort(positives);
+  radixSort(negatives);
+
+  const sortedNegatives = negatives.reverse().map(v => -v);
+  return [...sortedNegatives, ...positives];
 }
-// Numbers
-const nums = [12, 11, 13, 5, 6, 7];
-heapSort(nums);
-console.log(nums);   // [5, 6, 7, 11, 12, 13]
-
-// Strings (lexicographic)
-let words = ["pear", "apple", "orange", "banana"];
-heapSort(words);
-console.log(words);  // ["apple", "banana", "orange", "pear"]
-
-// Custom objects with a `compareTo` method
-class Person {
-  constructor(public name: string, public age: number) {}
-  compareTo(other: Person) {
-    return this.age - other.age;  // ascending by age
-  }
-}
-
-const people = [
-  new Person("Bob", 30),
-  new Person("Alice", 25),
-  new Person("Charlie", 35)
-];
-
-// Provide the comparator manually
-heapSort(people, (a, b) => a.compareTo(b));
-console.log(people.map(p => `${p.name}(${p.age})`));  // Alice(25) Bob(30) Charlie(35)
