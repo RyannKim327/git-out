@@ -1,69 +1,47 @@
-type Edge = { from: number; to: number; weight: number };
+/**
+ * Return true if `a` and `b` are anagrams.
+ *
+ *   * Ignore whitespace and punctuation.
+ *   * Ignore case.
+ */
+function areAnagramsSorting(a: string, b: string): boolean {
+  const clean = (s: string) =>
+    s.toLowerCase().replace(/\W/g, '').split('').sort().join('');
 
-interface BellmanFordResult {
-  dist: number[];          // shortest distance from source to each vertex   (Infinity = unreachable)
-  prev: (number | null)[]; // previous vertex on the shortest path, or null
-  hasNegativeCycle: boolean; // true if a negative cycle was detected
+  return clean(a) === clean(b);
 }
 
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult {
-  const dist = Array(vertexCount).fill(Infinity);
-  const prev = Array<number | null>(vertexCount).fill(null);
+// Example
+console.log(areAnagramsSorting('Listen', 'Silent')); // → true
+/**
+ * Count characters and compare the two maps.
+ * Complexity: O(n), with `n` = max(a.length, b.length).
+ */
+function areAnagramsCounting(a: string, b: string): boolean {
+  const normalize = (s: string) =>
+    s.toLowerCase().replace(/\W/g, '');
 
-  dist[source] = 0;
+  const strA = normalize(a);
+  const strB = normalize(b);
 
-  // 1️⃣ Relax every edge |V|‑1 times
-  for (let i = 0; i < vertexCount - 1; i++) {
-    let updated = false;
-    for (const {from, to, weight} of edges) {
-      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-        dist[to] = dist[from] + weight;
-        prev[to] = from;
-        updated = true;
-      }
-    }
-    // If no distance changed, we’re done early
-    if (!updated) break;
+  if (strA.length !== strB.length) return false;
+
+  const freq: Record<string, number> = {};
+
+  for (const ch of strA) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
   }
 
-  // 2️⃣ Check for negative cycles
-  let hasNegativeCycle = false;
-  for (const {from, to, weight} of edges) {
-    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-      hasNegativeCycle = true;
-      break;
-    }
+  for (const ch of strB) {
+    if (!freq[ch]) return false; // missing or too many
+    freq[ch]! -= 1;
   }
 
-  return {dist, prev, hasNegativeCycle};
+  return true;
 }
-function reconstructPath(prev: (number | null)[], target: number): number[] {
-  const path: number[] = [];
-  let cur: number | null = target;
 
-  while (cur !== null) {
-    path.push(cur);
-    cur = prev[cur];
-  }
-  path.reverse();
-  return path;
-}
-const edges: Edge[] = [
-  {from: 0, to: 1, weight: 5},
-  {from: 1, to: 2, weight: -2},
-  // ...
-];
-const {dist, prev, hasNegativeCycle} = bellmanFord(5, edges, 0);
-
-console.log(dist);               // shortest distances
-console.log(hasNegativeCycle);    // useful flag
-console.log(reconstructPath(prev, 4)); // path from 0 to 4
+// Example
+console.log(areAnagramsCounting('Software', 'Oxfartswe')); // → true
+const anagrams = (a: string, b: string) =>
+  a.toLowerCase().replace(/\W/g, '').split('').sort().join('') ===
+  b.toLowerCase().replace(/\W/g, '').split('').sort().join('');
