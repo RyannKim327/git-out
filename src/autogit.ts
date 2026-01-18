@@ -1,75 +1,94 @@
-// ──────────────────────────────────────────────────────────────
-// 1.  Types for the graph
-// ──────────────────────────────────────────────────────────────
-interface Node<T = void> {
-  value: T;
-  neighbours: Node<T>[];
+// A tiny helper interface when you want a custom comparator
+export interface Comparable<T> {
+  compareTo(other: T): number;   // negative if this < other
 }
-
-// A small helper to create nodes
-function createNode<T>(value: T): Node<T> {
-  return { value, neighbours: [] };
-}
-
-function addEdge<T>(from: Node<T>, to: Node<T>): void {
-  from.neighbours.push(to);
-  to.neighbours.push(from);    // undirected; drop this line for directed graphs
-}
-
-// ──────────────────────────────────────────────────────────────
-// 2.  Depth‑limited search (recursive DFS style)
-// ──────────────────────────────────────────────────────────────
 /**
- * Searches `startNode` for a node whose value satisfies `goalPredicate`,
- * but stops expanding any node that appears deeper than `limit` levels.
- *
- * @param start      the node to start from
- * @param goal       a predicate; if it returns true the node is considered the goal
- * @param limit      max depth to explore
- * @param visited    internal, tracks visited nodes
- * @param depth      internal, current depth
- * @returns          the goal node if found, or null
+ * Heap‑sort: in‑place, O(n log n) time, O(1) auxiliary space.
+ * @param arr  The array to sort.
+ * @param compare  Optional comparator: (a, b) => number
+ *                 (negative if a < b, zero if equal, positive if a > b).
+ *                 If omitted, the array is assumed to contain values
+ *                 that support the `<` operator.
  */
-function depthLimitedSearch<T>(
-  start: Node<T>,
-  goal: (value: T) => boolean,
-  limit: number,
-  visited = new Set<Node<T>>(),
-  depth = 0
-): Node<T> | null {
-  if (depth > limit) return null;               // over the limit
+export function heapSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): void {
+  const cmp = compare ?? defaultCompare;
 
-  visited.add(start);
-  if (goal(start.value)) return start;          // goal reached
-
-  for (const neighbour of start.neighbours) {
-    if (!visited.has(neighbour)) {
-      const result = depthLimitedSearch(neighbour, goal, limit, visited, depth + 1);
-      if (result !== null) return result;      // propagate success upwards
-    }
+  // 1. Build a max‑heap
+  for (let i = Math.floor(arr.length / 2) - 1; i >= 0; i--) {
+    siftDown(arr, i, arr.length, cmp);
   }
 
-  return null;                                  // no goal found within this branch
+  // 2. Repeatedly swap the max element to the end and restore heap
+  for (let end = arr.length - 1; end > 0; end--) {
+    [arr[0], arr[end]] = [arr[end], arr[0]];
+    siftDown(arr, 0, end, cmp);  // `end` is the new heap size
+  }
+
+  /** Comparator that works on primitive numbers or strings … */
+  function defaultCompare(a: any, b: any): number {
+    return a < b ? -1 : a > b ? 1 : 0;   // 0 when equal
+  }
+}
+function siftDown<T>(
+  arr: T[],
+  start: number,
+  heapSize: number,
+  compare: (a: T, b: T) => number
+): void {
+  let root = start;
+
+  while (true) {
+    const left = 2 * root + 1;
+    const right = left + 1;
+    let swap: number | null = null;
+
+    // Is there a left child larger than root?
+    if (left < heapSize && compare(arr[left], arr[root]) > 0) {
+      swap = left;
+    }
+
+    // Is there a right child that beats the current swap?
+    if (
+      right < heapSize &&
+      (swap === null || compare(arr[right], arr[swap]) > 0)
+    ) {
+      swap = right;
+    }
+
+    // Nothing to swap → we’re done
+    if (swap === null) break;
+
+    [arr[root], arr[swap]] = [arr[swap], arr[root]];
+    root = swap;
+  }
+}
+// Numbers
+const nums = [12, 11, 13, 5, 6, 7];
+heapSort(nums);
+console.log(nums);   // [5, 6, 7, 11, 12, 13]
+
+// Strings (lexicographic)
+let words = ["pear", "apple", "orange", "banana"];
+heapSort(words);
+console.log(words);  // ["apple", "banana", "orange", "pear"]
+
+// Custom objects with a `compareTo` method
+class Person {
+  constructor(public name: string, public age: number) {}
+  compareTo(other: Person) {
+    return this.age - other.age;  // ascending by age
+  }
 }
 
-// ──────────────────────────────────────────────────────────────
-// 3.  Example usage
-// ──────────────────────────────────────────────────────────────
-/*
-// Build a tiny graph
-const a = createNode('A');
-const b = createNode('B');
-const c = createNode('C');
-const d = createNode('D');
-const e = createNode('E');
+const people = [
+  new Person("Bob", 30),
+  new Person("Alice", 25),
+  new Person("Charlie", 35)
+];
 
-addEdge(a, b);
-addEdge(a, c);
-addEdge(b, d);
-addEdge(c, e);
-
-// Find node 'E' but stop after exploring 2 edges from 'A'
-const found = depthLimitedSearch(a, val => val === 'E', 2);
-
-console.log(found ? `Found ${found.value}` : 'Not found within depth limit');
-*/
+// Provide the comparator manually
+heapSort(people, (a, b) => a.compareTo(b));
+console.log(people.map(p => `${p.name}(${p.age})`));  // Alice(25) Bob(30) Charlie(35)
