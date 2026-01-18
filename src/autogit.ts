@@ -1,42 +1,20 @@
-// 1️⃣  Install the dependencies first:
-//     npm install axios @types/axios
+function mean(values: number[]): number {
+  if (values.length === 0) return NaN;          // empty list → no mean
 
-import axios, { AxiosError } from "axios";
+  // total everything up
+  const sum = values.reduce((acc, cur) => acc + cur, 0);
 
-// 2️⃣  Define the shape of the data we expect back.
-interface User {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
+  // divide by how many there are
+  return sum / values.length;
 }
+function meanLoop(values: number[]): number {
+  if (values.length === 0) return NaN;
 
-// 3️⃣  Perform the request in an async function.
-async function fetchUsers(): Promise<User[]> {
-  const url = "https://jsonplaceholder.typicode.com/users";
-
-  try {
-    // 4️⃣  Make the GET request
-    const response = await axios.get<User[]>(url);
-
-    // 5️⃣  Axios automatically parses JSON, so `data` has the correct type
-    return response.data;
-  } catch (err) {
-    // 6️⃣  Gracefully handle a possible Axios error
-    if (axios.isAxiosError(err)) {
-      const error = err as AxiosError;
-      console.error(
-        `Request failed! 🙁 Status: ${error.response?.status}  Message: ${error.message}`
-      );
-    } else {
-      console.error("Unexpected error:", err);
-    }
-    return []; // Return an empty array if something goes wrong
+  let sum = 0;
+  for (const v of values) {
+    sum += v;
   }
+  return sum / values.length;
 }
-
-// 7️⃣  Use the function somewhere in your app
-(async () => {
-  const users = await fetchUsers();
-  console.log("Fetched users:", users);
-})();
+console.log(mean([1, 2, 3, 4, 5])); // 3
+console.log(mean([]));              // NaN
