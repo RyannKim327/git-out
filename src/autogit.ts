@@ -1,39 +1,50 @@
-const original = [1, 2, 3, 4, 5];
-
-// remove every 3
-const withoutThree = original.filter(v => v !== 3);
-
-console.log(original);       // [1, 2, 3, 4, 5]
-console.log(withoutThree);   // [1, 2, 4, 5]
-const removeFirstThree = original.filter((v, i) => v !== 3 || i !== 1);
-const arr = [1, 2, 3, 4, 5];
-
-// find the index you want to remove
-const idx = arr.indexOf(3);
-if (idx !== -1) {
-  arr.splice(idx, 1);      // remove 1 element at idx
+interface ListNode<T = any> {
+  val: T;
+  next: ListNode<T> | null;
 }
-console.log(arr);           // [1, 2, 4, 5]
-let i = 0;
-while (i < arr.length) {
-  if (arr[i] === 3) {
-    arr.splice(i, 1);
-  } else {
-    i++;
+class ListNode<T = any> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
+}
+function nthFromEndNaive<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let size = 0;
+  for (let cur = head; cur; cur = cur.next) size++;
+
+  if (n > size) return null;          // not enough elements
+  let target = size - n;              // 0‑based index from start
+  let cur = head;
+  for (let i = 0; i < target; i++) cur = cur!.next;
+
+  return cur;
+}
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let fast = head;
+  // Move fast n steps forward
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;   // n is larger than list length
+    fast = fast.next;
   }
+
+  let slow = head!;          // head is guaranteed non‑null now
+  while (fast) {
+    fast = fast.next!;
+    slow = slow.next!;
+  }
+
+  return slow;
 }
-function removeAtIndex<T>(arr: T[], idx: number): T[] {
-  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
+function buildList(nums: number[]) {
+  let dummy = new ListNode(0);
+  let cur = dummy;
+  for (const v of nums) {
+    cur.next = new ListNode(v);
+    cur = cur.next;
+  }
+  return dummy.next;
 }
 
-const withoutIdx = removeAtIndex(original, 2);
-const set = new Set(original);
-set.delete(3);
-const arrFromSet = Array.from(set);
-interface Person { id: number; name: string }
-const people = [{ id: 1 }, { id: 2 }, { id: 3 }];
+const list = buildList([1, 2, 3, 4, 5]);
 
-const withoutId2 = people.filter(p => p.id !== 2);   // immutable
-// or
-const idx = people.findIndex(p => p.id === 2);
-if (idx !== -1) people.splice(idx, 1);               // mutate
+console.log(nthFromEnd(list, 1)!.val); // 5
+console.log(nthFromEnd(list, 3)!.val); // 3
+console.log(nthFromEnd(list, 5)!.val); // 1
+console.log(nthFromEnd(list, 6));      // null
