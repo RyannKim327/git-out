@@ -1,63 +1,58 @@
-// Node type – each element points to the next one
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
+// Majority element finder – works for any type that supports === comparison
+export function majorityElement<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
 
-// The queue itself
-class LinkedListQueue<T> {
-  private head: ListNode<T> | null = null; // dequeue from here
-  private tail: ListNode<T> | null = null; // enqueue at here
-  private _size: number = 0;
+  // 1st pass: find a candidate
+  let candidate = arr[0];
+  let count = 1;
 
-  /** Add an item to the back of the queue */
-  enqueue(value: T): void {
-    const newNode = new ListNode(value);
-    if (this.tail) {
-      this.tail.next = newNode;   // link the old tail to the new node
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === candidate) {
+      count++;
+    } else if (count === 0) {
+      candidate = arr[i];
+      count = 1;
     } else {
-      // Empty queue – head and tail both point to the new node
-      this.head = newNode;
+      count--;
     }
-    this.tail = newNode;
-    this._size++;
   }
 
-  /** Remove and return the item from the front of the queue.
-      Returns undefined if the queue is empty. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined;
-
-    const value = this.head.value;
-    this.head = this.head.next;          // move head forward
-    if (!this.head) this.tail = null;    // queue became empty
-    this._size--;
-    return value;
+  // 2nd pass: verify that the candidate is really a majority
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
   }
 
-  /** Peek at the front without removing it. */
-  peek(): T | undefined {
-    return this.head?.value;
-  }
+  return count > Math.floor(arr.length / 2) ? candidate : null;
+}
+const nums = [3, 1, 3, 3, 2, 3, 3];
+const maj = majorityElement(nums);
 
-  /** Number of items in the queue */
-  get size(): number {
-    return this._size;
-  }
+console.log(maj); // → 3
+function majorityBySorting<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
 
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this.size === 0;
+  const sorted = [...arr].sort(); // lexicographic for strings, numeric for numbers
+  const midVal = sorted[Math.floor(arr.length / 2)];
+
+  const count = sorted.reduce((c, v) => (v === midVal ? c + 1 : c), 0);
+  return count > Math.floor(arr.length / 2) ? midVal : null;
+}
+// A simple quick‑check
+export function testMajority() {
+  const cases: Array<[any[], any | null]> = [
+    [[1, 2, 1, 1, 3], 1],
+    [['a', 'b', 'a', 'a', 'c'], 'a'],
+    [[5, 5, 6, 6, 5], 5],
+    [[1, 2, 3], null],
+  ];
+
+  for (const [arr, expected] of cases) {
+    const result = majorityElement(arr);
+    if (result !== expected) {
+      console.error(`❌ Failed for ${JSON.stringify(arr)}: got ${result}`);
+    } else {
+      console.log(`✅ ${JSON.stringify(arr)} → ${result}`);
+    }
   }
 }
-const q = new LinkedListQueue<number>();
-
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
-
-console.log(q.peek()); // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.isEmpty()); // false
-console.log(q.dequeue()); // 30
-console.log(q.isEmpty()); // true
