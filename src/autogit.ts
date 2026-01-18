@@ -1,75 +1,63 @@
-// ──────────────────────────────────────────────────────────────
-// 1.  Types for the graph
-// ──────────────────────────────────────────────────────────────
-interface Node<T = void> {
-  value: T;
-  neighbours: Node<T>[];
+// Node type – each element points to the next one
+class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
 }
 
-// A small helper to create nodes
-function createNode<T>(value: T): Node<T> {
-  return { value, neighbours: [] };
-}
+// The queue itself
+class LinkedListQueue<T> {
+  private head: ListNode<T> | null = null; // dequeue from here
+  private tail: ListNode<T> | null = null; // enqueue at here
+  private _size: number = 0;
 
-function addEdge<T>(from: Node<T>, to: Node<T>): void {
-  from.neighbours.push(to);
-  to.neighbours.push(from);    // undirected; drop this line for directed graphs
-}
-
-// ──────────────────────────────────────────────────────────────
-// 2.  Depth‑limited search (recursive DFS style)
-// ──────────────────────────────────────────────────────────────
-/**
- * Searches `startNode` for a node whose value satisfies `goalPredicate`,
- * but stops expanding any node that appears deeper than `limit` levels.
- *
- * @param start      the node to start from
- * @param goal       a predicate; if it returns true the node is considered the goal
- * @param limit      max depth to explore
- * @param visited    internal, tracks visited nodes
- * @param depth      internal, current depth
- * @returns          the goal node if found, or null
- */
-function depthLimitedSearch<T>(
-  start: Node<T>,
-  goal: (value: T) => boolean,
-  limit: number,
-  visited = new Set<Node<T>>(),
-  depth = 0
-): Node<T> | null {
-  if (depth > limit) return null;               // over the limit
-
-  visited.add(start);
-  if (goal(start.value)) return start;          // goal reached
-
-  for (const neighbour of start.neighbours) {
-    if (!visited.has(neighbour)) {
-      const result = depthLimitedSearch(neighbour, goal, limit, visited, depth + 1);
-      if (result !== null) return result;      // propagate success upwards
+  /** Add an item to the back of the queue */
+  enqueue(value: T): void {
+    const newNode = new ListNode(value);
+    if (this.tail) {
+      this.tail.next = newNode;   // link the old tail to the new node
+    } else {
+      // Empty queue – head and tail both point to the new node
+      this.head = newNode;
     }
+    this.tail = newNode;
+    this._size++;
   }
 
-  return null;                                  // no goal found within this branch
+  /** Remove and return the item from the front of the queue.
+      Returns undefined if the queue is empty. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined;
+
+    const value = this.head.value;
+    this.head = this.head.next;          // move head forward
+    if (!this.head) this.tail = null;    // queue became empty
+    this._size--;
+    return value;
+  }
+
+  /** Peek at the front without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  /** Number of items in the queue */
+  get size(): number {
+    return this._size;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this.size === 0;
+  }
 }
+const q = new LinkedListQueue<number>();
 
-// ──────────────────────────────────────────────────────────────
-// 3.  Example usage
-// ──────────────────────────────────────────────────────────────
-/*
-// Build a tiny graph
-const a = createNode('A');
-const b = createNode('B');
-const c = createNode('C');
-const d = createNode('D');
-const e = createNode('E');
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
 
-addEdge(a, b);
-addEdge(a, c);
-addEdge(b, d);
-addEdge(c, e);
-
-// Find node 'E' but stop after exploring 2 edges from 'A'
-const found = depthLimitedSearch(a, val => val === 'E', 2);
-
-console.log(found ? `Found ${found.value}` : 'Not found within depth limit');
-*/
+console.log(q.peek()); // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.isEmpty()); // false
+console.log(q.dequeue()); // 30
+console.log(q.isEmpty()); // true
