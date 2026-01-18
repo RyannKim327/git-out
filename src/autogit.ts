@@ -1,91 +1,56 @@
-interface ListNode {
-  val: number;          // or whatever type you prefer
-  next: ListNode | null;
+export class ListNode<T> {
+  constructor(
+    public val: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let curr = head;
 
-function isPalindromeIterative(head: ListNode | null): boolean {
-  if (!head) return true;
-
-  const stack: number[] = [];
-  let cur: ListNode | null = head;
-
-  // Push all values on the stack
-  while (cur) {
-    stack.push(cur.val);
-    cur = cur.next;
+  while (curr !== null) {
+    const next = curr.next;   // remember where we’re headed
+    curr.next = prev;         // flip the link
+    prev = curr;              // move prev forward
+    curr = next;              // move curr forward
   }
 
-  // Compare while traversing again
-  cur = head;
-  while (cur) {
-    if (cur.val !== stack.pop()) {
-      return false;
-    }
-    cur = cur.next;
-  }
-
-  return true;
+  // At the end of the loop, `prev` is the new head
+  return prev;
 }
-function isPalindromeOptimized(head: ListNode | null): boolean {
-  if (!head || !head.next) return true;
-
-  // 1. Find the middle (slow will point to middle)
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  // 2. Reverse the second half
-  let prev: ListNode | null = null;
-  let curr = slow.next;
+// Helper to print the list
+function printList<T>(head: ListNode<T> | null): void {
+  const values = [];
+  let curr = head;
   while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
+    values.push(curr.val);
+    curr = curr.next;
   }
-  // `prev` is now the head of the reversed second half
-
-  // 3. Compare the two halves
-  let first = head;
-  let second = prev;
-  let result = true;
-  while (result && second) {        // second will be shorter or equal
-    if (first.val !== second.val) result = false;
-    first = first.next!;
-    second = second.next!;
-  }
-
-  // 4. (Optional) Restore the list
-  // Reverse the second half again to bring the list back to original
-  curr = prev;
-  prev = null;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  slow.next = prev;
-
-  return result;
-}
-function buildList(arr: number[]): ListNode | null {
-  let dummy: ListNode = { val: 0, next: null };
-  let tail = dummy;
-  for (const v of arr) {
-    tail.next = { val: v, next: null };
-    tail = tail.next;
-  }
-  return dummy.next;
+  console.log(values.join(' → ') + ' → null');
 }
 
-const a = buildList([1, 2, 3, 2, 1]);
-console.log(isPalindromeIterative(a));   // true
-console.log(isPalindromeOptimized(a));   // true
+// Build 1 → 2 → 3 → null
+const head = new ListNode(1,
+             new ListNode(2,
+               new ListNode(3)));
 
-const b = buildList([1, 2, 3, 4]);
-console.log(isPalindromeIterative(b));   // false
-console.log(isPalindromeOptimized(b));   // false
+console.log('Original list:');
+printList(head);
+
+const reversed = reverseList(head);
+
+console.log('Reversed list:');
+printList(reversed);
+Original list:
+1 → 2 → 3 → null
+Reversed list:
+3 → 2 → 1 → null
+export function reverseListRec<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head || !head.next) return head;         // base case
+
+  const newHead = reverseListRec(head.next);     // reverse rest of list
+  head.next.next = head;                        // make the next node point to us
+  head.next = null;                             // sever old link
+
+  return newHead;                               // new head propagates upward
+}
