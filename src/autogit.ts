@@ -1,42 +1,53 @@
-// 1️⃣  Install the dependencies first:
-//     npm install axios @types/axios
-
-import axios, { AxiosError } from "axios";
-
-// 2️⃣  Define the shape of the data we expect back.
-interface User {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
+/**
+ * Node for a singly linked list.
+ */
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
-// 3️⃣  Perform the request in an async function.
-async function fetchUsers(): Promise<User[]> {
-  const url = "https://jsonplaceholder.typicode.com/users";
+/**
+ * Detects if a linked list contains a cycle.
+ *
+ * @param head The head of the list.
+ * @returns true if a cycle exists, false otherwise.
+ */
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  let slow = head;
+  let fast = head;
 
-  try {
-    // 4️⃣  Make the GET request
-    const response = await axios.get<User[]>(url);
-
-    // 5️⃣  Axios automatically parses JSON, so `data` has the correct type
-    return response.data;
-  } catch (err) {
-    // 6️⃣  Gracefully handle a possible Axios error
-    if (axios.isAxiosError(err)) {
-      const error = err as AxiosError;
-      console.error(
-        `Request failed! 🙁 Status: ${error.response?.status}  Message: ${error.message}`
-      );
-    } else {
-      console.error("Unexpected error:", err);
+  while (fast !== null && fast.next !== null) {
+    slow = slow!.next;          // move one step
+    fast = fast.next.next;      // move two steps
+    if (slow === fast) {        // same reference → cycle
+      return true;
     }
-    return []; // Return an empty array if something goes wrong
   }
-}
 
-// 7️⃣  Use the function somewhere in your app
-(async () => {
-  const users = await fetchUsers();
-  console.log("Fetched users:", users);
-})();
+  return false;                 // fast hit the end → no cycle
+}
+// 1 → 2 → 3 → 4 → 5
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+const d = new ListNode(4);
+const e = new ListNode(5);
+
+a.next = b; b.next = c; c.next = d; d.next = e;
+
+// no cycle
+console.log(hasCycle(a)); // false
+
+// Introduce a cycle: e.next = c (3rd node)
+e.next = c;
+console.log(hasCycle(a)); // true
+function hasCycleSet<T>(head: ListNode<T> | null): boolean {
+  const visited = new Set<ListNode<T>>();
+
+  let current = head;
+  while (current !== null) {
+    if (visited.has(current)) return true; // already seen → cycle
+    visited.add(current);
+    current = current.next;
+  }
+  return false; // reached null → acyclic
+}
