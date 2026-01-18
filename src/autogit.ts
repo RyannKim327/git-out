@@ -1,25 +1,33 @@
 /**
- * Checks if `arr` is sorted in ascending order.
+ * Sorts an array of numbers (or any comparable type) in place
+ * using the classic selection‑sort algorithm.
  *
- * @param arr          the array to test
- * @param compareFn    optional comparison function.  
- *                     Should return <0 if a < b, 0 if equal, >0 if a > b.
- *                     If omitted, the default `a - b` numeric compare is used.
- * @returns true if the array is in ascending order, false otherwise
+ * @param arr – the array to sort
+ * @returns the same array reference, now sorted
  */
-export function isSortedAscending<T>(
-  arr: readonly T[],
-  compareFn: ((a: T, b: T) => number) = (a, b) =>
-    /* @ts-ignore */ a < b ? -1 : a > b ? 1 : 0
-): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    // If the current element is *before* the previous one, the array is out of order
-    if (compareFn(arr[i], arr[i - 1]) < 0) return false;
-  }
-  return true;
-}
-const names = ['Alice', 'Bob', 'Charlie'];
-console.log(isSortedAscending(names)); // true
+export function selectionSort<T>(arr: T[]): T[] {
+    const n = arr.length;
 
-const mixed = [1, 3, 2, 4];
-console.log(isSortedAscending(mixed)); // false
+    for (let i = 0; i < n - 1; i++) {
+        // Assume the smallest element starts at i
+        let minIndex = i;
+
+        // Scan the unsorted suffix to find the real minimum
+        for (let j = i + 1; j < n; j++) {
+            if (arr[j] < arr[minIndex]) {
+                minIndex = j;
+            }
+        }
+
+        // If the minimum isn’t already in position i, swap
+        if (minIndex !== i) {
+            [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+        }
+    }
+
+    return arr;
+}
+const unsorted = [64, 25, 12, 22, 11];
+console.log('Before:', unsorted);
+selectionSort(unsorted);
+console.log('After :', unsorted);
