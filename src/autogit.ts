@@ -1,50 +1,60 @@
 /**
- * Interpolation search – O(log log n) in the ideal case,
- * O(n) in the worst case (if the array is highly non‑uniform).
- *
- * @param arr   An array that is already sorted in ascending order.
- * @param key   The value to look for.
- * @returns     The index of `key` in `arr` or -1 if not present.
+ * Fibonacci search for a sorted array of numbers.
+ * @param arr  The sorted array to search.
+ * @param target The value to locate.
+ * @returns The index of `target` in `arr`, or -1 if not found.
  */
-export function interpolationSearch(arr: readonly number[], key: number): number {
-  // Guard against empty array
-  if (arr.length === 0) return -1;
+export function fibonacciSearch(arr: number[], target: number): number {
+  const n = arr.length;
+  if (n === 0) return -1;
 
-  let low = 0;
-  let high = arr.length - 1;
+  // 1. Build the smallest Fibonacci number >= n
+  let fibMm2 = 0;   // (m-2)th Fibonacci
+  let fibMm1 = 1;   // (m-1)th Fibonacci
+  let fibM   = fibMm2 + fibMm1; // mth Fibonacci
 
-  // Interpolation formula requires a strictly increasing array
-  // and a finite difference between the ends.
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    // Avoid division by zero when arr[low] == arr[high].
-    if (arr[low] === arr[high]) return arr[low] === key ? low : -1;
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
+  }
 
-    // Estimate the position of the key inside the current bounds.
-    const pos =
-      low +
-      Math.floor(
-        ((high - low) * (key - arr[low])) / (arr[high] - arr[low]),
-      );
+  // Marks the range to be searched
+  let offset = -1; // Element before the beginning (virtual)
 
-    const value = arr[pos];
+  // 2. While there is an element to inspect
+  while (fibM > 1) {
+    // Determines the index to compare
+    const i = Math.min(offset + fibMm2, n - 1);
 
-    if (value === key) return pos;
-    if (value < key) {
-      low = pos + 1;          // Look in the right sub‑array
+    if (arr[i] < target) {
+      // Move three steps ahead
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else if (arr[i] > target) {
+      // Move one step back
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
     } else {
-      high = pos - 1;         // Look in the left sub‑array
+      return i; // Found
     }
+  }
+
+  // We are left with a single element
+  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
   }
 
   return -1; // Not found
 }
-const nums = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91, 105];
-console.log(interpolationSearch(nums, 38)); // ➜ 6
-console.log(interpolationSearch(nums, 4));  // ➜ -1
-export function interpolationSearchBy<T, U extends number>(
-  arr: readonly T[],
-  key: U,
-  getKey: (item: T) => U,
-): number {
-  // Same logic, but cast / convert using getKey(item)
-}
+import { fibonacciSearch } from './fibonacci-search';
+
+const data = [3, 8, 10, 15, 20, 23, 27, 35, 41, 55, 68, 73, 82, 91, 97];
+const target = 55;
+
+const idx = fibonacciSearch(data, target);
+console.log(idx); // → 9
+console.log(fibonacciSearch(data, 22)); // → -1
