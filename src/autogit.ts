@@ -1,56 +1,29 @@
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr = head;
-
-  while (curr !== null) {
-    const next = curr.next;   // remember where we’re headed
-    curr.next = prev;         // flip the link
-    prev = curr;              // move prev forward
-    curr = next;              // move curr forward
-  }
-
-  // At the end of the loop, `prev` is the new head
-  return prev;
-}
-// Helper to print the list
-function printList<T>(head: ListNode<T> | null): void {
-  const values = [];
-  let curr = head;
-  while (curr) {
-    values.push(curr.val);
-    curr = curr.next;
-  }
-  console.log(values.join(' → ') + ' → null');
+const nums = [1, 2, 2, 3, 4, 4, 5];
+const unique = [...new Set(nums)];   // [1, 2, 3,4,5]
+const vals = ['a', 'b', 'a', 'c', 'b'];
+const uniq = vals.filter((value, index, arr) => arr.indexOf(value) === index);
+// ['a','b','c']
+interface User {
+  id: number;
+  name: string;
 }
 
-// Build 1 → 2 → 3 → null
-const head = new ListNode(1,
-             new ListNode(2,
-               new ListNode(3)));
+const users: User[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob'   },
+  { id: 1, name: 'Alice'},
+  { id: 3, name: 'Carol'},
+];
 
-console.log('Original list:');
-printList(head);
+const uniq = Array.from(
+  users.reduce((map, user) => map.set(user.id, user), new Map<number, User>())
+).map(entry => entry[1]);
 
-const reversed = reverseList(head);
+// [{id:1,name:'Alice'}, {id:2,name:'Bob'}, {id:3,name:'Carol'}]
+const objs = [{x:1},{x:2},{x:1},{x:3}];
+const uniq = Array.from(
+  new Set(objs.map(o => JSON.stringify(o)))
+).map(str => JSON.parse(str));
+import { uniqBy } from 'lodash';
 
-console.log('Reversed list:');
-printList(reversed);
-Original list:
-1 → 2 → 3 → null
-Reversed list:
-3 → 2 → 1 → null
-export function reverseListRec<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head || !head.next) return head;         // base case
-
-  const newHead = reverseListRec(head.next);     // reverse rest of list
-  head.next.next = head;                        // make the next node point to us
-  head.next = null;                             // sever old link
-
-  return newHead;                               // new head propagates upward
-}
+const uniqUsers = uniqBy(users, 'id');
