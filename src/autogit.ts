@@ -1,67 +1,99 @@
 /**
- * Returns the k‑th smallest element (1‑based index).
- * O(n log n) by quick‑sort.
+ * A single node inside the trie.
+ * 
+ * - `children` holds the outgoing edges keyed by the character they represent.
+ * - `isEnd` marks that a full word ends at this node.
  */
-export function kthSmallestSort(arr: number[], k: number): number {
-  if (!arr.length) throw new Error('Array is empty');
-  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
-
-  // Create a copy so the original array stays untouched
-  const copy = [...arr].sort((a, b) => a - b);
-  return copy[k - 1];
+class TrieNode {
+  public children: Map<string, TrieNode> = new Map();
+  public isEnd: boolean = false;
 }
 
 /**
- * Returns the k‑th smallest element in expected linear time via QuickSelect.
- * Stable but not guaranteed worst‑case performance.
+ * The trie itself.
  */
-export function kthSmallestQuickSelect(arr: number[], k: number): number {
-  if (!arr.length) throw new Error('Array is empty');
-  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
+export class Trie {
+  private root: TrieNode = new TrieNode();
 
-  // Recursive helper
-  function quickSelect(nums: number[], left: number, right: number, kth: number): number {
-    if (left === right) return nums[left];
-
-    let pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
-    pivotIndex = partition(nums, left, right, pivotIndex);
-
-    const leftSize = pivotIndex - left + 1;
-    if (kth < leftSize) return quickSelect(nums, left, pivotIndex - 1, kth);
-    if (kth === leftSize) return nums[pivotIndex];
-    return quickSelect(nums, pivotIndex + 1, right, kth - leftSize);
-  }
-
-  function partition(nums: number[], left: number, right: number, pivotIndex: number): number {
-    const pivotValue = nums[pivotIndex];
-    // Move pivot to end
-    [nums[pivotIndex], nums[right]] = [nums[right], nums[pivotIndex]];
-    let storeIndex = left;
-
-    for (let i = left; i < right; i++) {
-      if (nums[i] < pivotValue) {
-        [nums[storeIndex], nums[i]] = [nums[i], nums[storeIndex]];
-        storeIndex++;
+  /**
+   * Add a word to the trie.
+   */
+  insert(word: string): void {
+    let node = this.root;
+    for (const ch of word) {
+      let child = node.children.get(ch);
+      if (!child) {
+        child = new TrieNode();
+        node.children.set(ch, child);
       }
+      node = child;
     }
-    // Move pivot to its final place
-    [nums[right], nums[storeIndex]] = [nums[storeIndex], nums[right]];
-    return storeIndex;
+    node.isEnd = true;
   }
 
-  // Clone the array so we don't mutate the caller's array
-  const clone = [...arr];
-  return quickSelect(clone, 0, clone.length - 1, k);
-}
-const data = [7, 2, 5, 3, 9, 1];
-const kth = 3; // 3rd smallest
+  /**
+   * Does the trie contain the exact word?
+   */
+  search(word: string): boolean {
+    const node = this._findNode(word);
+    return node ? node.isEnd : false;
+  }
 
-console.log(kthSmallestSort(data, kth));          // 5
-console.log(kthSmallestQuickSelect(data, kth));   // 5
-export function kthSmallest<T>(
-  arr: T[],
-  k: number,
-  cmp: (a: T, b: T) => number,
-): T {
-  // ...same logic, replace numeric comparisons with cmp(...)
+  /**
+   * Does any stored word start with the given prefix?
+   */
+  startsWith(prefix: string): boolean {
+    return Boolean(this._findNode(prefix));
+  }
+
+  /**
+   * Optional: remove a word.  The implementation keeps the trie shrunken
+   * by pruning leaf nodes that become unused.
+   */
+  delete(word: string): boolean {
+    const stack: Array<{node: TrieNode, ch: string}> = [];
+    let node = this.root;
+
+    for (const ch of word) {
+      const child = node.children.get(ch);
+      if (!child) return false;        // word not present
+      stack.push({ node, ch });
+      node = child;
+    }
+
+    if (!node.isEnd) return false;      // word not present
+    node.isEnd = false;
+
+    // prune if the node has no children
+    while (stack.length && !node.children.size && !node.isEnd) {
+      const { node: parent, ch } = stack.pop()!;
+      parent.children.delete(ch);
+      node = parent;
+    }
+
+    return true;
+  }
+
+  /** Helper that walks the trie and returns the last node for a key. */
+  private _findNode(key: string): TrieNode | null {
+    let node = this.root;
+    for (const ch of key) {
+      node = node.children.get(ch) ?? null;
+      if (!node) return null;
+    }
+    return node;
+  }
 }
+const t = new Trie();
+t.insert("hello");
+t.insert("helium");
+t.insert("help");
+
+console.log(t.search("help"));    // true
+console.log(t.search("heal"));    // false
+console.log(t.startsWith("hel")); // true
+console.log(t.startsWith("hep")); // false
+
+t.delete("help");
+console.log(t.search("help"));    // false
+console.log(t.startsWith("hel")); // true (because "hello" and "helium" stay)
