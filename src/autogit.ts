@@ -1,58 +1,47 @@
 /**
- * Returns a random integer between min (inclusive) and max (inclusive).
+ * Count how many times a whole word appears in a string.
  *
- * @param min – lower bound, inclusive
- * @param max – upper bound, inclusive
+ * @param haystack  The text to search.
+ * @param needle    The word you’re looking for.
+ * @param caseSensitive  If false, treat both inputs as lower‑case.
+ * @returns Number of matches.
  */
-function randomInt(min: number, max: number): number {
-  // Clamp values to integers just in case
-  const lo = Math.ceil(min);
-  const hi = Math.floor(max);
+function countWord(
+  haystack: string,
+  needle: string,
+  caseSensitive = false
+): number {
+  if (!needle) return 0;
 
-  // Math.random returns a float in [0, 1)
-  const r = Math.random() * (hi - lo + 1);
-  return Math.floor(r) + lo;
+  const flags = caseSensitive ? 'g' : 'gi';
+  // \b ensures we only match whole words
+  const re = new RegExp(`\\b${escapeRegExp(needle)}\\b`, flags);
+  const matches = haystack.match(re);
+  return matches ? matches.length : 0;
 }
-const diceRoll = randomInt(1, 6);   // 1‑6
-const randomIndex = randomInt(0, array.length - 1);
-function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min;
+
+/** Helper to escape regex meta‑characters in the needle. */
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
-function secureRandomInt(min: number, max: number): number {
-  const lo = Math.ceil(min);
-  const hi = Math.floor(max);
+const text = 'The quick brown fox jumps over the lazy dog. The fox was quick.';
 
-  // Number of values in our range
-  const range = hi - lo + 1;
-  // Enough bytes to hold the full range
-  const bytesNeeded = Math.ceil(Math.log2(range) / 8);
+console.log(countWord(text, 'quick'));   // 2
+console.log(countWord(text, 'the'));     // 2 (case‑insensitive)
+console.log(countWord(text, 'the', true)); // 1 (case‑sensitive)
+function countWordUsingSplit(
+  text: string,
+  word: string,
+  caseSensitive = false
+): number {
+  if (!word) return 0;
 
-  // Read random unsigned bytes
-  const rand = new Uint8Array(bytesNeeded);
-  crypto.getRandomValues(rand);
+  const base = caseSensitive ? text : text.toLowerCase();
+  const target = caseSensitive ? word : word.toLowerCase();
 
-  // Convert bytes to a number
-  let value = 0;
-  for (let i = 0; i < bytesNeeded; i++) {
-    value = (value << 8) | rand[i];
-  }
-
-  // Map into the desired range
-  return (value % range) + lo;
+  // Split on whitespace and punctuation
+  const tokens = base.split(/\W+/).filter(Boolean);
+  return tokens.filter(t => t === target).length;
 }
-function randomChoice<T>(arr: T[]): T {
-  if (arr.length === 0) {
-    throw new RangeError('Cannot choose from an empty array');
-  }
-  const idx = randomInt(0, arr.length - 1);
-  return arr[idx];
-}
-const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-
-function randomToken(length = 8): string {
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars[randomInt(0, chars.length - 1)];
-  }
-  return result;
-}
+const re = new RegExp(escapeRegExp(substring), 'g'); // add gi for case‑insensitive
+const count = (text.match(re) || []).length;
