@@ -1,101 +1,60 @@
-// ------------------------------------------------------------
-// 1️⃣  In‑place quick‑sort – most common for competitive coding
-// ------------------------------------------------------------
-function quickSortInPlace<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): void {
-  const swap = (i: number, j: number) => {
-    const tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
-  };
+type Node = string | number;              // whichever you prefer for vertex IDs
+type Graph = Record<Node, Node[]>;          // e.g., { 1: [2,3], 2: [4], … }
 
-  function partition(low: number, high: number): number {
-    // Pick the last element as pivot (simple but fine for demo)
-    const pivot = arr[high];
-    let i = low - 1;
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['d', 'e'],
+  c: ['f'],
+  d: [],
+  e: ['c'],
+  f: [],
+};
+function dfsRecursive(
+  graph: Graph,
+  start: Node,
+  visited = new Set<Node>(),
+  order: Node[] = []
+): Node[] {
+  visited.add(start);        // 1️⃣ mark as visited
+  order.push(start);         // 2️⃣ record the visit order
 
-    for (let j = low; j < high; j++) {
-      if (compare(arr[j], pivot) <= 0) {
-        i++;
-        swap(i, j);
-      }
-    }
-    swap(i + 1, high);
-    return i + 1;
-  }
-
-  function quick(low: number, high: number): void {
-    if (low < high) {
-      const pi = partition(low, high);
-      quick(low, pi - 1);
-      quick(pi + 1, high);
+  for (const neighbor of graph[start] ?? []) {
+    if (!visited.has(neighbor)) {
+      dfsRecursive(graph, neighbor, visited, order); // 3️⃣ recurse
     }
   }
-
-  quick(0, arr.length - 1);
+  return order;
 }
 
-// ------------------------------------------------------------
-// 2️⃣  Functional quick‑sort – returns a new sorted array
-// ------------------------------------------------------------
-function quickSortFunctional<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  if (arr.length <= 1) return arr.slice(); // immutable copy
+// usage
+const visitOrder = dfsRecursive(graph, 'a');
+console.log(visitOrder); // ['a', 'b', 'd', 'e', 'c', 'f']
+function dfsIterative(graph: Graph, start: Node): Node[] {
+  const stack: Node[] = [start];
+  const visited = new Set<Node>();
+  const order: Node[] = [];
 
-  // Random pivot for better average performance on already‑sorted data
-  const pivot = arr[Math.floor(Math.random() * arr.length)];
-  const lows = arr.filter((v) => compare(v, pivot) < 0);
-  const highs = arr.filter((v) => compare(v, pivot) > 0);
-  const pivots = arr.filter((v) => compare(v, pivot) === 0);
+  while (stack.length) {
+    const node = stack.pop()!; // pop the top
+    if (visited.has(node)) continue; // skip if we've already seen it
 
-  return [
-    ...quickSortFunctional(lows, compare),
-    ...pivots,
-    ...quickSortFunctional(highs, compare),
-  ];
-}
+    visited.add(node);   // 1️⃣ mark
+    order.push(node);    // 2️⃣ record
 
-// ------------------------------------------------------------
-// 3️⃣  Small helper that wraps the in‑place version and offers
-//     a better pivot strategy
-// ------------------------------------------------------------
-function quickSort<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  // Randomize the array first; this keeps the pivot “good” on many inputs
-  // and eliminates the worst‑case for already‑sorted data.
-  const shuffled = arr.slice();
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    // push neighbors in reverse order so that the first neighbor
+    // is processed first (mimics recursive order)
+    const neighbors = graph[node] ?? [];
+    for (let i = neighbors.length - 1; i >= 0; i--) {
+      const neighbor = neighbors[i];
+      if (!visited.has(neighbor)) stack.push(neighbor);
+    }
   }
-
-  quickSortInPlace(shuffled, compare);
-  return shuffled;
+  return order;
 }
 
-// ---------------------------
-// Demo usage
-// ---------------------------
-
-const numbers = [34, 7, 23, 32, 5, 62, 32];
-console.log('in‑place:', (() => {
-  const copy = [...numbers];
-  quickSortInPlace(copy);
-  return copy;
-})());
-
-console.log('functional:', quickSortFunctional(numbers));
-
-console.log('wrapper:', quickSort(numbers));
-
-// ------------------------------------------------------------
-// Done!
-// ------------------------------------------------------------
-const byLength = (a: string, b: string) => a.length - b.length;
-quickSort(stringsArray, byLength);
+// usage
+const orderIter = dfsIterative(graph, 'a');
+console.log(orderIter); // ['a', 'b', 'd', 'e', 'c', 'f']
+// inside the while loop
+const prev = stack[stack.length - 1]; // last node that will lead to `node`
+order.push([prev, node] as [Node, Node]);
