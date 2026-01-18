@@ -1,58 +1,39 @@
-/**
- * Returns a random integer between min (inclusive) and max (inclusive).
- *
- * @param min – lower bound, inclusive
- * @param max – upper bound, inclusive
- */
-function randomInt(min: number, max: number): number {
-  // Clamp values to integers just in case
-  const lo = Math.ceil(min);
-  const hi = Math.floor(max);
+const original = [1, 2, 3, 4, 5];
 
-  // Math.random returns a float in [0, 1)
-  const r = Math.random() * (hi - lo + 1);
-  return Math.floor(r) + lo;
+// remove every 3
+const withoutThree = original.filter(v => v !== 3);
+
+console.log(original);       // [1, 2, 3, 4, 5]
+console.log(withoutThree);   // [1, 2, 4, 5]
+const removeFirstThree = original.filter((v, i) => v !== 3 || i !== 1);
+const arr = [1, 2, 3, 4, 5];
+
+// find the index you want to remove
+const idx = arr.indexOf(3);
+if (idx !== -1) {
+  arr.splice(idx, 1);      // remove 1 element at idx
 }
-const diceRoll = randomInt(1, 6);   // 1‑6
-const randomIndex = randomInt(0, array.length - 1);
-function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min;
-}
-function secureRandomInt(min: number, max: number): number {
-  const lo = Math.ceil(min);
-  const hi = Math.floor(max);
-
-  // Number of values in our range
-  const range = hi - lo + 1;
-  // Enough bytes to hold the full range
-  const bytesNeeded = Math.ceil(Math.log2(range) / 8);
-
-  // Read random unsigned bytes
-  const rand = new Uint8Array(bytesNeeded);
-  crypto.getRandomValues(rand);
-
-  // Convert bytes to a number
-  let value = 0;
-  for (let i = 0; i < bytesNeeded; i++) {
-    value = (value << 8) | rand[i];
+console.log(arr);           // [1, 2, 4, 5]
+let i = 0;
+while (i < arr.length) {
+  if (arr[i] === 3) {
+    arr.splice(i, 1);
+  } else {
+    i++;
   }
+}
+function removeAtIndex<T>(arr: T[], idx: number): T[] {
+  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
+}
 
-  // Map into the desired range
-  return (value % range) + lo;
-}
-function randomChoice<T>(arr: T[]): T {
-  if (arr.length === 0) {
-    throw new RangeError('Cannot choose from an empty array');
-  }
-  const idx = randomInt(0, arr.length - 1);
-  return arr[idx];
-}
-const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+const withoutIdx = removeAtIndex(original, 2);
+const set = new Set(original);
+set.delete(3);
+const arrFromSet = Array.from(set);
+interface Person { id: number; name: string }
+const people = [{ id: 1 }, { id: 2 }, { id: 3 }];
 
-function randomToken(length = 8): string {
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars[randomInt(0, chars.length - 1)];
-  }
-  return result;
-}
+const withoutId2 = people.filter(p => p.id !== 2);   // immutable
+// or
+const idx = people.findIndex(p => p.id === 2);
+if (idx !== -1) people.splice(idx, 1);               // mutate
