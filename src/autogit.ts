@@ -1,53 +1,70 @@
-/**
- * Node for a singly linked list.
- */
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+function longestCommonSubstring(a: string, b: string): string {
+  if (!a || !b) return '';
 
-/**
- * Detects if a linked list contains a cycle.
- *
- * @param head The head of the list.
- * @returns true if a cycle exists, false otherwise.
- */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  let slow = head;
-  let fast = head;
+  let maxLen = 0;
+  let maxStart = 0;          // start index inside `a`
 
-  while (fast !== null && fast.next !== null) {
-    slow = slow!.next;          // move one step
-    fast = fast.next.next;      // move two steps
-    if (slow === fast) {        // same reference → cycle
-      return true;
+  const aLen = a.length;
+  const bLen = b.length;
+
+  // Pick the shorter string as the outer loop to reduce the number of starts
+  const [short, long] = aLen < bLen ? [a, b] : [b, a];
+  const shortLen = short.length;
+  const longLen = long.length;
+
+  for (let i = 0; i < shortLen; i++) {
+    for (let j = 0; j < longLen; j++) {
+      let length = 0;
+      while (
+        i + length < shortLen &&
+        j + length < longLen &&
+        short[i + length] === long[j + length]
+      ) {
+        length++;
+      }
+      if (length > maxLen) {
+        maxLen = length;
+        maxStart = i;           // starts in `short`
+      }
     }
   }
 
-  return false;                 // fast hit the end → no cycle
+  // Return the slice from the original string that contains the substring
+  const result = short.substr(maxStart, maxLen);
+  // If we swapped the strings we need to return the same slice from the original `a`
+  return aLen < bLen ? result : result; // same, just explicit
 }
-// 1 → 2 → 3 → 4 → 5
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-const d = new ListNode(4);
-const e = new ListNode(5);
+console.log(longestCommonSubstring('abxabc', 'abcaby')); // → 'abc'
+function longestCommonSubstringDP(s1: string, s2: string): string {
+  const n = s1.length;
+  const m = s2.length;
+  if (!n || !m) return '';
 
-a.next = b; b.next = c; c.next = d; d.next = e;
+  // 2‑row DP to save memory – only previous row needed for current row calculation
+  let prev = new Array(m + 1).fill(0);
+  let curr = new Array(m + 1).fill(0);
 
-// no cycle
-console.log(hasCycle(a)); // false
+  let maxLen = 0;
+  let maxEndIdxS1 = 0; // end index in s1 of longest common substring
 
-// Introduce a cycle: e.next = c (3rd node)
-e.next = c;
-console.log(hasCycle(a)); // true
-function hasCycleSet<T>(head: ListNode<T> | null): boolean {
-  const visited = new Set<ListNode<T>>();
-
-  let current = head;
-  while (current !== null) {
-    if (visited.has(current)) return true; // already seen → cycle
-    visited.add(current);
-    current = current.next;
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        curr[j] = prev[j - 1] + 1; // extend the previous match
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          maxEndIdxS1 = i; // i is 1‑based
+        }
+      } else {
+        curr[j] = 0;
+      }
+    }
+    // swap rows for next iteration
+    [prev, curr] = [curr, prev];
+    curr.fill(0); // reset current row
   }
-  return false; // reached null → acyclic
+
+  // Extract the substring from s1 using the end index and length
+  return s1.slice(maxEndIdxS1 - maxLen, maxEndIdxS1);
 }
+console.log(longestCommonSubstringDP('abxabc', 'abcaby')); // → 'abc'
