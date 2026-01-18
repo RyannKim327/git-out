@@ -1,58 +1,93 @@
-// Majority element finder – works for any type that supports === comparison
-export function majorityElement<T>(arr: T[]): T | null {
-  if (arr.length === 0) return null;
-
-  // 1st pass: find a candidate
-  let candidate = arr[0];
-  let count = 1;
-
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] === candidate) {
-      count++;
-    } else if (count === 0) {
-      candidate = arr[i];
-      count = 1;
-    } else {
-      count--;
-    }
-  }
-
-  // 2nd pass: verify that the candidate is really a majority
-  count = 0;
-  for (const v of arr) {
-    if (v === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
+/**
+ * Represents a node in the beam frontier.
+ * Keeps the actual state and the path taken to reach it.
+ */
+export interface BeamNode<T> {
+  /** The actual state */
+  state: T;
+  /** The sequence of states that led to this node (incl. this state) */
+  path: T[];
 }
-const nums = [3, 1, 3, 3, 2, 3, 3];
-const maj = majorityElement(nums);
 
-console.log(maj); // → 3
-function majorityBySorting<T>(arr: T[]): T | null {
-  if (arr.length === 0) return null;
+/**
+ * Performs a beam search.
+ *
+ * @param startNodes   Initial frontier. Usually a single root node, but you can start with many.
+ * @param getSuccessors   Function that returns the child nodes of a parent.
+ * @param score          Score function – higher is better.
+ * @param beamWidth      How many nodes to keep after each expansion.
+ * @param maxDepth       Optional depth cutoff (in terms of edges traversed).
+ * @param isGoal         Optional goal‑test predicate.
+ * @returns The first goal node found (or undefined if none).
+ */
+export function beamSearch<T>(
+  startNodes: T[],
+  getSuccessors: (node: T) => T[],
+  score: (node: T) => number,
+  beamWidth: number,
+  maxDepth?: number,
+  isGoal?: (node: T) => boolean
+): BeamNode<T> | undefined {
 
-  const sorted = [...arr].sort(); // lexicographic for strings, numeric for numbers
-  const midVal = sorted[Math.floor(arr.length / 2)];
+  // Ensure we keep a lightweight copy for sorting.
+  let frontier: BeamNode<T> = startNodes.map(state => ({ state, path: [state] }));
 
-  const count = sorted.reduce((c, v) => (v === midVal ? c + 1 : c), 0);
-  return count > Math.floor(arr.length / 2) ? midVal : null;
-}
-// A simple quick‑check
-export function testMajority() {
-  const cases: Array<[any[], any | null]> = [
-    [[1, 2, 1, 1, 3], 1],
-    [['a', 'b', 'a', 'a', 'c'], 'a'],
-    [[5, 5, 6, 6, 5], 5],
-    [[1, 2, 3], null],
-  ];
+  for (let depth = 0; depth < (maxDepth ?? Infinity); depth++) {
+    if (frontier.length === 0) break; // nothing to expand
 
-  for (const [arr, expected] of cases) {
-    const result = majorityElement(arr);
-    if (result !== expected) {
-      console.error(`❌ Failed for ${JSON.stringify(arr)}: got ${result}`);
-    } else {
-      console.log(`✅ ${JSON.stringify(arr)} → ${result}`);
+    // Expand every node in the frontier
+    const expansions: BeamNode<T>[] = [];
+    for (const node of frontier) {
+      const succ = getSuccessors(node.state);
+      for (const child of succ) {
+        expansions.push({
+          state: child,
+          path: [...node.path, child]
+        });
+      }
     }
+
+    // Optional goal check as soon as we generate expansions
+    if (isGoal) {
+      for (const node of expansions) {
+        if (isGoal(node.state)) return node;
+      }
+    }
+
+    // Sort by score, keep top `beamWidth`
+    expansions.sort((a, b) => score(b.state) - score(a.state)); // descending
+    frontier = expansions.slice(0, beamWidth);
   }
+
+  return undefined; // no goal reached within limits
+}
+// Example: find a numeric sequence that sums to 15
+type MyState = number; // current sum
+
+const start = 0;
+
+const getSucc = (sum: MyState) => {
+  return [sum + 1, sum + 2, sum + 3]; // could be any branching scheme
+};
+
+const score = (sum: MyState) => {
+  // The closer to 15 without overshooting, the better
+  return Math.max(0, 15 - sum);
+};
+
+const isGoal = (sum: MyState) => sum === 15;
+
+const result = beamSearch(
+  [start],
+  getSucc,
+  score,
+  beamWidth = 3,
+  maxDepth = 10,
+  isGoal
+);
+
+if (result) {
+  console.log(`Reached 15 via ${result.path.join(' -> ')}`);
+} else {
+  console.log('No path found within depth limit');
 }
