@@ -1,43 +1,54 @@
 /**
- * Shell sort – an in‑place comparison sort.
+ * Merge two sorted slices of `arr` into a temporary array.
  *
- * @param arr   The array to sort.
- * @param cmp   Optional comparator: (a, b) => number. Positive if a > b,
- *              negative if a < b, zero if equal. If omitted, the
- *              default uses the `<` operator.
- * @returns     The same array instance, now sorted.
+ * @param arr  source array
+ * @param tmp  temporary array of the same length
+ * @param left  start index of the first slice
+ * @param mid   end index (exclusive) of the first slice and start of the second
+ * @param right end index (exclusive) of the second slice
  */
-export function shellSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-  const compare = cmp ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+function merge(
+  arr: number[],
+  tmp: number[],
+  left: number,
+  mid: number,
+  right: number
+): void {
+  let i = left;   // index in first slice
+  let j = mid;    // index in second slice
+  let k = left;   // index in tmp
 
-  let n = arr.length;
-  // Start with a gap of about n/2 and halve it each loop.
-  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Insertion‑sort on elements gap apart.
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      // Shift all larger gap‑spaced elements one step forward.
-      while (j >= gap && compare(temp, arr[j - gap]) < 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
+  // Copy the relevant segment to tmp
+  for (let idx = left; idx < right; idx++) tmp[idx] = arr[idx];
+
+  // Merge back into arr
+  while (i < mid && j < right) {
+    arr[k++] = tmp[i] <= tmp[j] ? tmp[i++] : tmp[j++];
+  }
+  while (i < mid) arr[k++] = tmp[i++];
+  while (j < right) arr[k++] = tmp[j++];
+}
+
+/**
+ * Iterative merge sort.
+ *
+ * @param arr  array to sort in‑place
+ */
+function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  if (n < 2) return; // already sorted
+
+  const tmp = new Array<number>(n);
+
+  // Run size = 1, 2, 4, 8, ...
+  for (let run = 1; run < n; run *= 2) {
+    for (let left = 0; left < n; left += 2 * run) {
+      const mid = Math.min(left + run, n);
+      const right = Math.min(left + 2 * run, n);
+      if (mid < right) merge(arr, tmp, left, mid, right);
     }
   }
-  return arr;
 }
-// sort.ts
-export { shellSort };
-// └─ ... implementation shown above
-import { shellSort } from './sort';
-
-const numbers = [23, 12, 1, 10, 7, 3, 9];
-console.log('unsorted:', numbers);
-
-shellSort(numbers);                 // default numeric comparison
-console.log('sorted:   ', numbers);
-
-// Custom comparator (descending)
-shellSort(numbers, (a, b) => b - a);
-console.log('desc:    ', numbers);
+const nums = [34, 7, 23, 32, 5, 62];
+mergeSortIterative(nums);
+console.log(nums); // [5, 7, 23, 32, 34, 62]
