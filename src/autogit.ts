@@ -1,24 +1,28 @@
-export function reverseString(s: string): string {
-  return s.split('').reverse().join('');
-}
-export function reverseStringManual(s: string): string {
-  let result = '';
-  for (let i = s.length - 1; i >= 0; i--) {
-    result += s[i];
+/**
+ * Binary search on a sorted array.
+ *
+ * @param arr   Sorted array of comparable items.
+ * @param value Value to search for.
+ * @returns Index of value, or -1 if not found.
+ */
+export function binarySearch<T>(arr: T[], value: T): number {
+  let low = 0;
+  let high = arr.length - 1;
+
+  while (low <= high) {
+    // Middle index – floor division
+    const mid = Math.floor((low + high) / 2);
+    const midVal = arr[mid];
+
+    if (midVal === value) return mid;      // exact match
+    if (midVal < value) {
+      low = mid + 1;                       // value is in higher half
+    } else {
+      high = mid - 1;                      // value is in lower half
+    }
   }
-  return result;
+  return -1;  // not found
 }
-export function reverseStringRecursive(s: string): string {
-  if (s.length <= 1) return s;
-  return reverseStringRecursive(s.slice(1)) + s[0];
-}
-export function reverseStringLoop(s: string): string {
-  const chars = [...s];          // same as s.split('')
-  for (let i = 0, j = chars.length - 1; i < j; i++, j--) {
-    [chars[i], chars[j]] = [chars[j], chars[i]];
-  }
-  return chars.join('');
-}
-console.log(reverseString('hello'));          // 'olleh'
-console.log(reverseStringManual('world'));    // 'dlrow'
-console.log(reverseStringRecursive('TypeScript')); // 'tpircSepyT'
+const nums = [3, 7, 12, 18, 24, 31, 42];
+const idx = binarySearch(nums, 18); // => 3
+const missing = binarySearch(nums, 5); // => -1
