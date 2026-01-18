@@ -1,60 +1,24 @@
-type Node = string | number;              // whichever you prefer for vertex IDs
-type Graph = Record<Node, Node[]>;          // e.g., { 1: [2,3], 2: [4], … }
+const scores: number[] = [12, 19, 3, 40, 27];
 
-const graph: Graph = {
-  a: ['b', 'c'],
-  b: ['d', 'e'],
-  c: ['f'],
-  d: [],
-  e: ['c'],
-  f: [],
-};
-function dfsRecursive(
-  graph: Graph,
-  start: Node,
-  visited = new Set<Node>(),
-  order: Node[] = []
-): Node[] {
-  visited.add(start);        // 1️⃣ mark as visited
-  order.push(start);         // 2️⃣ record the visit order
-
-  for (const neighbor of graph[start] ?? []) {
-    if (!visited.has(neighbor)) {
-      dfsRecursive(graph, neighbor, visited, order); // 3️⃣ recurse
-    }
-  }
-  return order;
+const max = Math.max(...scores);   // 40
+const max = scores.reduce((highest, current) => (current > highest ? current : highest), -Infinity);
+function findMax(arr: number[]): number | undefined {
+  if (arr.length === 0) return undefined;
+  return arr.reduce((m, n) => (n > m ? n : m), arr[0]);
 }
+function maxOfArray(arr: number[]): number {
+  if (arr.length === 0) throw new Error('Empty array');
 
-// usage
-const visitOrder = dfsRecursive(graph, 'a');
-console.log(visitOrder); // ['a', 'b', 'd', 'e', 'c', 'f']
-function dfsIterative(graph: Graph, start: Node): Node[] {
-  const stack: Node[] = [start];
-  const visited = new Set<Node>();
-  const order: Node[] = [];
-
-  while (stack.length) {
-    const node = stack.pop()!; // pop the top
-    if (visited.has(node)) continue; // skip if we've already seen it
-
-    visited.add(node);   // 1️⃣ mark
-    order.push(node);    // 2️⃣ record
-
-    // push neighbors in reverse order so that the first neighbor
-    // is processed first (mimics recursive order)
-    const neighbors = graph[node] ?? [];
-    for (let i = neighbors.length - 1; i >= 0; i--) {
-      const neighbor = neighbors[i];
-      if (!visited.has(neighbor)) stack.push(neighbor);
-    }
+  let max = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] > max) max = arr[i];
   }
-  return order;
+  return max;
 }
+const typed: Int32Array = new Int32Array([2, 5, 9, 1]);
 
-// usage
-const orderIter = dfsIterative(graph, 'a');
-console.log(orderIter); // ['a', 'b', 'd', 'e', 'c', 'f']
-// inside the while loop
-const prev = stack[stack.length - 1]; // last node that will lead to `node`
-order.push([prev, node] as [Node, Node]);
+const max = Math.max.apply(null, typed as unknown as number[]);
+const numbers = [7, 42, -3, 13];
+console.log(Math.max(...numbers)); // 42
+console.log(findMax(numbers));     // 42
+console.log(maxOfArray(numbers));  // 42
