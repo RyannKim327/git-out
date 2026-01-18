@@ -1,60 +1,61 @@
-type Node = string | number;              // whichever you prefer for vertex IDs
-type Graph = Record<Node, Node[]>;          // e.g., { 1: [2,3], 2: [4], … }
+// A generic graph node – you can replace this with whatever you’re actually
+// storing.  Here we just keep a value and an array of child nodes.
+export interface TreeNode<T> {
+  value: T;
+  children: TreeNode<T>[];
+}
+/**
+ * Performs a breadth‑first search up to a depth limit.
+ *
+ * @param root The starting node.
+ * @param maxDepth The maximum path length to explore (0 = only the root).
+ * @param filter A callback that decides whether a node should be “accepted”.
+ *               It receives the node and its depth (root = 0).
+ * @returns An array of all nodes that satisfy the filter within the depth bound.
+ */
+export function breadthLimitedSearch<T>(
+  root: TreeNode<T>,
+  maxDepth: number,
+  filter: (node: TreeNode<T>, depth: number) => boolean
+): TreeNode<T>[] {
+  const result: TreeNode<T>[] = [];
+  const queue: Array<{ node: TreeNode<T>; depth: number }> = [{ node: root, depth: 0 }];
 
-const graph: Graph = {
-  a: ['b', 'c'],
-  b: ['d', 'e'],
-  c: ['f'],
-  d: [],
-  e: ['c'],
-  f: [],
+  while (queue.length) {
+    const { node, depth } = queue.shift()!;           // FIFO
+    if (depth > maxDepth) continue;                  // depth guard
+
+    if (filter(node, depth)) result.push(node);
+
+    // Push children *after* checking depth to avoid pushing out‑of‑range nodes
+    if (depth < maxDepth) {
+      for (const child of node.children) {
+        queue.push({ node: child, depth: depth + 1 });
+      }
+    }
+  }
+
+  return result;
+}
+// Simple test tree
+const tree: TreeNode<string> = {
+  value: 'root',
+  children: [
+    { value: 'A', children: [] },
+    { value: 'B', children: [
+        { value: 'B1', children: [] },
+        { value: 'B2', children: [] },
+      ]
+    },
+    { value: 'C', children: [] }
+  ]
 };
-function dfsRecursive(
-  graph: Graph,
-  start: Node,
-  visited = new Set<Node>(),
-  order: Node[] = []
-): Node[] {
-  visited.add(start);        // 1️⃣ mark as visited
-  order.push(start);         // 2️⃣ record the visit order
 
-  for (const neighbor of graph[start] ?? []) {
-    if (!visited.has(neighbor)) {
-      dfsRecursive(graph, neighbor, visited, order); // 3️⃣ recurse
-    }
-  }
-  return order;
-}
+// Want all nodes that start with "B" and only dive 2 levels deep
+const matches = breadthLimitedSearch(
+  tree,
+  2,
+  (node, depth) => node.value.startsWith('B')
+);
 
-// usage
-const visitOrder = dfsRecursive(graph, 'a');
-console.log(visitOrder); // ['a', 'b', 'd', 'e', 'c', 'f']
-function dfsIterative(graph: Graph, start: Node): Node[] {
-  const stack: Node[] = [start];
-  const visited = new Set<Node>();
-  const order: Node[] = [];
-
-  while (stack.length) {
-    const node = stack.pop()!; // pop the top
-    if (visited.has(node)) continue; // skip if we've already seen it
-
-    visited.add(node);   // 1️⃣ mark
-    order.push(node);    // 2️⃣ record
-
-    // push neighbors in reverse order so that the first neighbor
-    // is processed first (mimics recursive order)
-    const neighbors = graph[node] ?? [];
-    for (let i = neighbors.length - 1; i >= 0; i--) {
-      const neighbor = neighbors[i];
-      if (!visited.has(neighbor)) stack.push(neighbor);
-    }
-  }
-  return order;
-}
-
-// usage
-const orderIter = dfsIterative(graph, 'a');
-console.log(orderIter); // ['a', 'b', 'd', 'e', 'c', 'f']
-// inside the while loop
-const prev = stack[stack.length - 1]; // last node that will lead to `node`
-order.push([prev, node] as [Node, Node]);
+console.log(matches.map(n => n.value)); // ['B', 'B1', 'B2']
