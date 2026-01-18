@@ -1,70 +1,75 @@
-function longestCommonSubstring(a: string, b: string): string {
-  if (!a || !b) return '';
+// ──────────────────────────────────────────────────────────────
+// 1.  Types for the graph
+// ──────────────────────────────────────────────────────────────
+interface Node<T = void> {
+  value: T;
+  neighbours: Node<T>[];
+}
 
-  let maxLen = 0;
-  let maxStart = 0;          // start index inside `a`
+// A small helper to create nodes
+function createNode<T>(value: T): Node<T> {
+  return { value, neighbours: [] };
+}
 
-  const aLen = a.length;
-  const bLen = b.length;
+function addEdge<T>(from: Node<T>, to: Node<T>): void {
+  from.neighbours.push(to);
+  to.neighbours.push(from);    // undirected; drop this line for directed graphs
+}
 
-  // Pick the shorter string as the outer loop to reduce the number of starts
-  const [short, long] = aLen < bLen ? [a, b] : [b, a];
-  const shortLen = short.length;
-  const longLen = long.length;
+// ──────────────────────────────────────────────────────────────
+// 2.  Depth‑limited search (recursive DFS style)
+// ──────────────────────────────────────────────────────────────
+/**
+ * Searches `startNode` for a node whose value satisfies `goalPredicate`,
+ * but stops expanding any node that appears deeper than `limit` levels.
+ *
+ * @param start      the node to start from
+ * @param goal       a predicate; if it returns true the node is considered the goal
+ * @param limit      max depth to explore
+ * @param visited    internal, tracks visited nodes
+ * @param depth      internal, current depth
+ * @returns          the goal node if found, or null
+ */
+function depthLimitedSearch<T>(
+  start: Node<T>,
+  goal: (value: T) => boolean,
+  limit: number,
+  visited = new Set<Node<T>>(),
+  depth = 0
+): Node<T> | null {
+  if (depth > limit) return null;               // over the limit
 
-  for (let i = 0; i < shortLen; i++) {
-    for (let j = 0; j < longLen; j++) {
-      let length = 0;
-      while (
-        i + length < shortLen &&
-        j + length < longLen &&
-        short[i + length] === long[j + length]
-      ) {
-        length++;
-      }
-      if (length > maxLen) {
-        maxLen = length;
-        maxStart = i;           // starts in `short`
-      }
+  visited.add(start);
+  if (goal(start.value)) return start;          // goal reached
+
+  for (const neighbour of start.neighbours) {
+    if (!visited.has(neighbour)) {
+      const result = depthLimitedSearch(neighbour, goal, limit, visited, depth + 1);
+      if (result !== null) return result;      // propagate success upwards
     }
   }
 
-  // Return the slice from the original string that contains the substring
-  const result = short.substr(maxStart, maxLen);
-  // If we swapped the strings we need to return the same slice from the original `a`
-  return aLen < bLen ? result : result; // same, just explicit
+  return null;                                  // no goal found within this branch
 }
-console.log(longestCommonSubstring('abxabc', 'abcaby')); // → 'abc'
-function longestCommonSubstringDP(s1: string, s2: string): string {
-  const n = s1.length;
-  const m = s2.length;
-  if (!n || !m) return '';
 
-  // 2‑row DP to save memory – only previous row needed for current row calculation
-  let prev = new Array(m + 1).fill(0);
-  let curr = new Array(m + 1).fill(0);
+// ──────────────────────────────────────────────────────────────
+// 3.  Example usage
+// ──────────────────────────────────────────────────────────────
+/*
+// Build a tiny graph
+const a = createNode('A');
+const b = createNode('B');
+const c = createNode('C');
+const d = createNode('D');
+const e = createNode('E');
 
-  let maxLen = 0;
-  let maxEndIdxS1 = 0; // end index in s1 of longest common substring
+addEdge(a, b);
+addEdge(a, c);
+addEdge(b, d);
+addEdge(c, e);
 
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (s1[i - 1] === s2[j - 1]) {
-        curr[j] = prev[j - 1] + 1; // extend the previous match
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          maxEndIdxS1 = i; // i is 1‑based
-        }
-      } else {
-        curr[j] = 0;
-      }
-    }
-    // swap rows for next iteration
-    [prev, curr] = [curr, prev];
-    curr.fill(0); // reset current row
-  }
+// Find node 'E' but stop after exploring 2 edges from 'A'
+const found = depthLimitedSearch(a, val => val === 'E', 2);
 
-  // Extract the substring from s1 using the end index and length
-  return s1.slice(maxEndIdxS1 - maxLen, maxEndIdxS1);
-}
-console.log(longestCommonSubstringDP('abxabc', 'abcaby')); // → 'abc'
+console.log(found ? `Found ${found.value}` : 'Not found within depth limit');
+*/
