@@ -1,15 +1,50 @@
-// 1️⃣ Convert with the global Number constructor
-const n1 = Number("42");          // 42
+// A minimal binary‑tree node definition
+interface TreeNode {
+  value: number;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
+}
 
-// 2️⃣ Use the unary plus – super terse
-const n2 = +"123";                // 123
+/**
+ * Recursively sums the values of every node in a binary tree.
+ * @param root – the root of the tree
+ * @returns the total sum of all node values
+ */
+function sumTree(root: TreeNode | null | undefined): number {
+  if (!root) return 0;
+  return root.value + sumTree(root.left) + sumTree(root.right);
+}
 
-// 3️⃣ (recommended for base‑10 integer strings)
-const n3 = parseInt("07", 10);    // 7
+/*--- Example usage -------------------------------------------------------*/
+// Construct a small tree:
+//
+//        4
+//       / \
+//      2   5
+//     / \
+//    1   3
+const tree: TreeNode = {
+  value: 4,
+  left: {
+    value: 2,
+    left: { value: 1, left: null, right: null },
+    right: { value: 3, left: null, right: null },
+  },
+  right: { value: 5, left: null, right: null },
+};
 
-// 4️⃣ If you need a float, use parseFloat
-const n4 = parseFloat("3.14");    // 3.14
-const toInt = (s: string | null | undefined): number | null =>
-  s == null ? null : parseInt(s, 10);
+console.log(sumTree(tree)); // 15
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let total = 0;
+  const stack: Array<TreeNode> = [root];
 
-const age = toInt(queryParamAge); // gives you a number or null if it's missing
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.value;
+    if (node.left) stack.push(node.left);
+    if (node.right) stack.push(node.right);
+  }
+
+  return total;
+}
