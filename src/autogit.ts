@@ -1,58 +1,69 @@
-// Majority element finder – works for any type that supports === comparison
-export function majorityElement<T>(arr: T[]): T | null {
-  if (arr.length === 0) return null;
+/**
+ * Builds the BMH bad‑character shift table.
+ *
+ * For every byte value (0‑255) we store how many positions the algorithm
+ * can safely skip when encountering that byte while scanning from the
+ * rightmost side of the pattern.
+ */
+function makeShiftTable(pattern: string): Uint8Array {
+  const m = pattern.length;
+  const table = new Uint8Array(256);
+  // Default shift is pattern length (skip the whole pattern).
+  table.fill(m);
 
-  // 1st pass: find a candidate
-  let candidate = arr[0];
-  let count = 1;
+  // For every non‑last character we set shift = m - i - 1
+  for (let i = 0; i < m - 1; ++i) {
+    const c = pattern.charCodeAt(i);
+    table[c] = m - i - 1;
+  }
+  return table;
+}
 
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] === candidate) {
-      count++;
-    } else if (count === 0) {
-      candidate = arr[i];
-      count = 1;
+/**
+ * Boyer‑Moore‑Horspool search.
+ *
+ * @param text    The text where we look for the pattern.
+ * @param pattern The pattern to find.
+ * @returns       An array of zero‑based start indices where `pattern`
+ *                is found in `text`.  Empty array if no match.
+ */
+export function bmhSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+
+  // Quick exits
+  if (m === 0) return [];          // Empty pattern => nothing meaningful
+  if (m > n) return [];            // Pattern longer than text => impossible
+
+  const shiftTable = makeShiftTable(pattern);
+  const result: number[] = [];
+
+  let i = 0; // Current offset in `text` aligning the end of the pattern
+  while (i <= n - m) {
+    // Compare pattern from the end backward
+    let j = m - 1;
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j -= 1;
+    }
+
+    if (j < 0) {               // All characters matched
+      result.push(i);
+      i += 1;                  // For overlapping matches we shift by 1
     } else {
-      count--;
+      const shiftVal = shiftTable[text.charCodeAt(i + m - 1)];
+      i += shiftVal;
     }
   }
 
-  // 2nd pass: verify that the candidate is really a majority
-  count = 0;
-  for (const v of arr) {
-    if (v === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
+  return result;
 }
-const nums = [3, 1, 3, 3, 2, 3, 3];
-const maj = majorityElement(nums);
 
-console.log(maj); // → 3
-function majorityBySorting<T>(arr: T[]): T | null {
-  if (arr.length === 0) return null;
+/* ---------- Example usage --------------------------------- */
 
-  const sorted = [...arr].sort(); // lexicographic for strings, numeric for numbers
-  const midVal = sorted[Math.floor(arr.length / 2)];
+const haystack = "abacababcab";
+const needle  = "cab";
 
-  const count = sorted.reduce((c, v) => (v === midVal ? c + 1 : c), 0);
-  return count > Math.floor(arr.length / 2) ? midVal : null;
-}
-// A simple quick‑check
-export function testMajority() {
-  const cases: Array<[any[], any | null]> = [
-    [[1, 2, 1, 1, 3], 1],
-    [['a', 'b', 'a', 'a', 'c'], 'a'],
-    [[5, 5, 6, 6, 5], 5],
-    [[1, 2, 3], null],
-  ];
+const indices = bmhSearch(haystack, needle);
+console.log(`Pattern found at indices: ${indices.join(", ")}`);
+// -> "Pattern found at indices: 3, 8"
 
-  for (const [arr, expected] of cases) {
-    const result = majorityElement(arr);
-    if (result !== expected) {
-      console.error(`❌ Failed for ${JSON.stringify(arr)}: got ${result}`);
-    } else {
-      console.log(`✅ ${JSON.stringify(arr)} → ${result}`);
-    }
-  }
-}
