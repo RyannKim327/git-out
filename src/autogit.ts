@@ -1,67 +1,63 @@
-class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+// Node type – each element points to the next one
+class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
 }
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;
 
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;          // height of a null subtree is 0
+// The queue itself
+class LinkedListQueue<T> {
+  private head: ListNode<T> | null = null; // dequeue from here
+  private tail: ListNode<T> | null = null; // enqueue at here
+  private _size: number = 0;
 
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
-
-    // potential diameter that passes through this node
-    const localDiameter = leftHeight + rightHeight;
-    if (localDiameter > maxDiameter) maxDiameter = localDiameter;
-
-    // height is max child height + 1 edge to the child
-    return Math.max(leftHeight, rightHeight) + 1;
-  }
-
-  dfs(root);
-  return maxDiameter;  // edges count
-}
-// Build a tree:
-//        1
-//       / \
-//      2   3
-//     / \     
-//    4   5  
-const root = new TreeNode(1,
-              new TreeNode(2,
-                new TreeNode(4),
-                new TreeNode(5)
-              ),
-              new TreeNode(3)
-            );
-
-console.log(diameterOfBinaryTree(root)); // → 3
-function diameterIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let maxDiameter = 0;
-  const stack = [{ node: root, visited: false, height: 0 }];
-
-  while (stack.length) {
-    const frame = stack.pop()!;
-    if (!frame.node) continue;
-
-    if (frame.visited) {
-      // Children already processed – compute height & diameter
-      const leftHeight = frame.node.left?.height ?? 0;
-      const rightHeight = frame.node.right?.height ?? 0;
-
-      maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
-      frame.node.height = Math.max(leftHeight, rightHeight) + 1;
+  /** Add an item to the back of the queue */
+  enqueue(value: T): void {
+    const newNode = new ListNode(value);
+    if (this.tail) {
+      this.tail.next = newNode;   // link the old tail to the new node
     } else {
-      // First visit: push back as visited and push children
-      stack.push({ node: frame.node, visited: true, height: 0 });
-      if (frame.node.right) stack.push({ node: frame.node.right, visited: false, height: 0 });
-      if (frame.node.left) stack.push({ node: frame.node.left, visited: false, height: 0 });
+      // Empty queue – head and tail both point to the new node
+      this.head = newNode;
     }
+    this.tail = newNode;
+    this._size++;
   }
-  return maxDiameter;
+
+  /** Remove and return the item from the front of the queue.
+      Returns undefined if the queue is empty. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined;
+
+    const value = this.head.value;
+    this.head = this.head.next;          // move head forward
+    if (!this.head) this.tail = null;    // queue became empty
+    this._size--;
+    return value;
+  }
+
+  /** Peek at the front without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  /** Number of items in the queue */
+  get size(): number {
+    return this._size;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this.size === 0;
+  }
 }
+const q = new LinkedListQueue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek()); // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.isEmpty()); // false
+console.log(q.dequeue()); // 30
+console.log(q.isEmpty()); // true
