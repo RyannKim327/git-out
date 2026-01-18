@@ -1,47 +1,63 @@
 /**
- * Count how many times a whole word appears in a string.
+ * Rabin‑Karp string search
  *
- * @param haystack  The text to search.
- * @param needle    The word you’re looking for.
- * @param caseSensitive  If false, treat both inputs as lower‑case.
- * @returns Number of matches.
+ * Parameters:
+ *  pattern – the string we’re looking for
+ *  text    – the string to search inside
+ *
+ * Returns:
+ *  array of starting indices where pattern occurs (empty if no match)
  */
-function countWord(
-  haystack: string,
-  needle: string,
-  caseSensitive = false
-): number {
-  if (!needle) return 0;
+export function rabinKarp(pattern: string, text: string): number[] {
+    // Edge cases
+    if (pattern.length === 0) return [];
+    if (pattern.length > text.length) return [];
 
-  const flags = caseSensitive ? 'g' : 'gi';
-  // \b ensures we only match whole words
-  const re = new RegExp(`\\b${escapeRegExp(needle)}\\b`, flags);
-  const matches = haystack.match(re);
-  return matches ? matches.length : 0;
+    const base = 256;               // number of possible characters (ASCII)
+    const mod = 101;                // a prime mod to keep numbers small
+
+    const m = pattern.length;
+    const n = text.length;
+
+    // Pre‑compute base^(m‑1) % mod  (the “high” power)
+    let basePower = 1;
+    for (let i = 0; i < m - 1; i++) {
+        basePower = (basePower * base) % mod;
+    }
+
+    // Compute hash for pattern and first window of text
+    let patHash = 0;
+    let txtHash = 0;
+    for (let i = 0; i < m; i++) {
+        patHash = (patHash * base + pattern.charCodeAt(i)) % mod;
+        txtHash = (txtHash * base + text.charCodeAt(i)) % mod;
+    }
+
+    const result: number[] = [];
+
+    // Slide the window over the text
+    for (let s = 0; s <= n - m; s++) {
+        // If the hash values match, verify the substring to confirm
+        if (patHash === txtHash) {
+            let match = true;
+            for (let k = 0; k < m; k++) {
+                if (text[s + k] !== pattern[k]) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) result.push(s);
+        }
+
+        // Compute hash for next window: remove leading char, add trailing char
+        if (s < n - m) {
+            txtHash = (txtHash - text.charCodeAt(s) * basePower) % mod;
+            if (txtHash < 0) txtHash += mod;                    // keep positive
+            txtHash = (txtHash * base + text.charCodeAt(s + m)) % mod;
+        }
+    }
+
+    return result;
 }
-
-/** Helper to escape regex meta‑characters in the needle. */
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-const text = 'The quick brown fox jumps over the lazy dog. The fox was quick.';
-
-console.log(countWord(text, 'quick'));   // 2
-console.log(countWord(text, 'the'));     // 2 (case‑insensitive)
-console.log(countWord(text, 'the', true)); // 1 (case‑sensitive)
-function countWordUsingSplit(
-  text: string,
-  word: string,
-  caseSensitive = false
-): number {
-  if (!word) return 0;
-
-  const base = caseSensitive ? text : text.toLowerCase();
-  const target = caseSensitive ? word : word.toLowerCase();
-
-  // Split on whitespace and punctuation
-  const tokens = base.split(/\W+/).filter(Boolean);
-  return tokens.filter(t => t === target).length;
-}
-const re = new RegExp(escapeRegExp(substring), 'g'); // add gi for case‑insensitive
-const count = (text.match(re) || []).length;
+const idx = rabinKarp('abc', 'xabcababc');
+console.log(idx);   // → [1, 6]
