@@ -1,55 +1,55 @@
 /**
- * Merge‑sort for array of T values.
+ * Insertion sort – stable, O(n²) average / worst‑case.
  *
- * @param arr  Input array – left untouched.
- * @param cmp  Optional comparison function. If omitted, values are compared with < >.
- * @returns A new sorted array.
+ * @param arr   - Array to sort (mutable, in‑place).
+ * @param cmp   - Optional compare function (a < b → negative,
+ *                a > b → positive, a == b → 0).
+ *                If omitted, the default numeric or string
+ *                comparison is used.
+ * @returns     - The same array reference, now sorted.
  */
-export function mergeSort<T>(arr: readonly T[], cmp?: (a: T, b: T) => number): T[] {
-  // Base case: arrays of size 0 or 1 are already sorted.
-  if (arr.length <= 1) return [...arr];
+function insertionSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): T[] {
+  // Default comparator: JavaScript's <= works for numbers & strings.
+  const compare = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
-  // Helper to merge two already‑sorted halves.
-  const merge = (left: T[], right: T[]): T[] => {
-    const result: T[] = [];
-    let i = 0, j = 0;
+  // Work from the second element onward – the sub‑array `[0, i)` is sorted.
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-    while (i < left.length && j < right.length) {
-      const l = left[i];
-      const r = right[j];
-      const comp = cmp
-        ? cmp(l, r)
-        : (l as any) < (r as any)
-          ? -1
-          : (l as any) > (r as any)
-          ? 1
-          : 0;
-
-      if (comp <= 0) {
-        result.push(l);
-        i++;
-      } else {
-        result.push(r);
-        j++;
-      }
+    // Shift larger elements rightward until the right spot is found.
+    while (j >= 0 && compare(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
     }
 
-    // Push any remaining items from left or right.
-    return result.concat(left.slice(i), right.slice(j));
-  };
+    // Put the key into its correct place.
+    arr[j + 1] = key;
+  }
 
-  // Split the array into two halves.
-  const middle = Math.floor(arr.length / 2);
-  const left = mergeSort(arr.slice(0, middle), cmp);
-  const right = mergeSort(arr.slice(middle), cmp);
-
-  // Merge back together.
-  return merge(left, right);
+  return arr;
 }
-const numbers = [42, 1, 23, 4, 16];
-const sorted = mergeSort(numbers);   // [1, 4, 16, 23, 42]
-console.log(sorted);
-console.log(numbers);  // still [42, 1, 23, 4, 16]
-const words = ["banana", "Apple", "cherry"];
-const sortedWords = mergeSort(words, (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-console.log(sortedWords); // ["Apple", "banana", "cherry"]
+// Numbers
+const nums = [21, 4, 18, 15, 6];
+console.log(insertionSort(nums));          // [4, 6, 15, 18, 21]
+
+// Strings
+const words = ['peach', 'apple', 'banana'];
+console.log(insertionSort(words));          // ['apple', 'banana', 'peach']
+
+// Custom objects – sort by `age`
+interface Person { name: string; age: number; }
+const people: Person[] = [
+  { name: 'Ann', age: 33 },
+  { name: 'Bob', age: 24 },
+  { name: 'Cleo', age: 41 },
+];
+
+console.log(
+  insertionSort(people, (a, b) => a.age - b.age)
+); // [{name:'Bob',age:24}, {name:'Ann',age:33}, {name:'Cleo',age:41}]
+console.assert(JSON.stringify(insertionSort([5, 4, 3, 2, 1])) === '[1,2,3,4,5]');
+console.assert(JSON.stringify(insertionSort([{x:2}, {x:1}], (a,b)=>a.x-b.x)) === '[{"x":1},{"x":2}]');
