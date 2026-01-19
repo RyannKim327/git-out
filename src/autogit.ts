@@ -1,39 +1,71 @@
+// kmp.ts
 /**
- * Returns the largest prime divisor of `n`.
- * If `n` is 0 or 1, returns `undefined`.
+ * Builds the LPS (Longest Prefix Suffix) array for a pattern.
+ * lps[i] = length of the longest proper prefix of pattern[0..i]
+ * that is also a suffix of pattern[0..i].
  */
-function largestPrimeFactor(n: number): number | undefined {
-  if (n < 2) return undefined;          // no prime factors for 0 or 1
+export function buildLPS(pattern: string): number[] {
+    const lps = new Array(pattern.length).fill(0);
+    let length = 0;               // length of the previous longest prefix suffix
+    let i = 1;                    // lps[0] is always 0, so start from 1
 
-  let num = Math.abs(n);                 // work with a positive number
-  let maxFactor = 1;
-
-  // Handle the factor 2 separately to keep the loop odd.
-  while (num % 2 === 0) {
-    maxFactor = 2;
-    num /= 2;
-  }
-
-  // Now only odd factors are possible.
-  let divisor = 3;
-  const sqrtLimit = Math.sqrt(num);
-  while (divisor <= sqrtLimit) {
-    while (num % divisor === 0) {
-      maxFactor = divisor;
-      num /= divisor;
+    while (i < pattern.length) {
+        if (pattern[i] === pattern[length]) {
+            length++;
+            lps[i] = length;
+            i++;
+        } else {
+            if (length !== 0) {
+                // Fall back to the previous longest prefix
+                length = lps[length - 1];
+                // No i++ here – we try the same i again with the new length
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
     }
-    divisor += 2;                       // skip even numbers
-  }
-
-  // If after the loop num > 1, it itself is a prime factor larger than all found.
-  if (num > 1) {
-    maxFactor = num;
-  }
-
-  return maxFactor;
+    return lps;
 }
-console.log(largestPrimeFactor(2));                // 2
-console.log(largestPrimeFactor(28));               // 7
-console.log(largestPrimeFactor(1000003));          // 1000003 (its prime)
-console.log(largestPrimeFactor(123456));           // 643
-console.log(largestPrimeFactor(-84));              // 7
+
+/**
+ * KMP search for all occurrences of pattern inside text.
+ * Returns an array of 0‑based starting indices.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+    if (pattern.length === 0) return [];
+
+    const lps = buildLPS(pattern);
+    const result: number[] = [];
+    let i = 0; // index for text
+    let j = 0; // index for pattern
+
+    while (i < text.length) {
+        if (text[i] === pattern[j]) {
+            i++;
+            j++;
+
+            if (j === pattern.length) {
+                // pattern found – push starting index
+                result.push(i - j);
+                // continue searching for next possible match
+                j = lps[j - 1];
+            }
+        } else if (j !== 0) {
+            // Fallback on pattern using LPS table
+            j = lps[j - 1];
+        } else {
+            // No match at the current position of `text`
+            i++;
+        }
+    }
+
+    return result;
+}
+import { kmpSearch } from "./kmp";
+
+const txt = "ABABDABACDABABCABAB";
+const pat = "ABABCABAB";
+
+const matches = kmpSearch(txt, pat);
+console.log(matches); // → [ 10 ]
