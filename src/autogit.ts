@@ -1,33 +1,13 @@
-/**
- * Bubble sort – O(n²) average / worst case.
- *
- * @param arr – array that will be sorted (mutated)
- * @returns the same array reference, now sorted ascending
- */
-function bubbleSort<T>(arr: T[]): T[] {
-  const n = arr.length;
+// 1. Regular expression – removes *any* whitespace (spaces, tabs, newlines)
+const noSpace = str.replace(/\s+/g, '');
 
-  // Outer loop: go through the array n‑1 times
-  for (let i = 0; i < n - 1; i++) {
-    // Inner loop scans up to the unsorted part
-    // We can stop early when the array is already sorted
-    let swapped = false;
+// 2. If you only want literal space characters:
+const noSpaceLiteral = str.replace(/ +/g, '');   // or / /g
 
-    for (let j = 0; j < n - 1 - i; j++) {
-      // Use > so that equal values stay in place
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
-    }
+// 3. Split/join – handy when you only want spaces:
+const noSpaceSplit = str.split(' ').join('');
 
-    // No swaps means the array is sorted
-    if (!swapped) break;
-  }
-
-  return arr;
-}
-
-// Example
-const nums = [64, 34, 25, 12, 22, 11, 90];
-console.log(bubbleSort(nums)); // [11, 12, 22, 25, 34, 64, 90]
+// 4. Using `Array.filter` to keep non‑space characters:
+const noSpaceArray = str.split('').filter(c => c !== ' ').join('');
+const original = 'Hello  world!\nThis is\tgood.';
+console.log(original.replace(/\s+/g, ''));  // "Helloworld!Thisisgood."
