@@ -1,71 +1,56 @@
-// kmp.ts
 /**
- * Builds the LPS (Longest Prefix Suffix) array for a pattern.
- * lps[i] = length of the longest proper prefix of pattern[0..i]
- * that is also a suffix of pattern[0..i].
+ * Returns the longest strictly increasing subsequence of `arr`.
+ *
+ * Example:
+ *   longestIncreasingSubsequence([10, 9, 2, 5, 3, 7, 101, 18])
+ *   → [2, 3, 7, 101]
  */
-export function buildLPS(pattern: string): number[] {
-    const lps = new Array(pattern.length).fill(0);
-    let length = 0;               // length of the previous longest prefix suffix
-    let i = 1;                    // lps[0] is always 0, so start from 1
+export function longestIncreasingSubsequence(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-    while (i < pattern.length) {
-        if (pattern[i] === pattern[length]) {
-            length++;
-            lps[i] = length;
-            i++;
-        } else {
-            if (length !== 0) {
-                // Fall back to the previous longest prefix
-                length = lps[length - 1];
-                // No i++ here – we try the same i again with the new length
-            } else {
-                lps[i] = 0;
-                i++;
-            }
-        }
-    }
-    return lps;
-}
+  // `tails` keeps the smallest tail value for all subsequences
+  // of a given length. `tails[i]` is the least possible tail of
+  // an increasing subsequence with length i+1.
+  const tails: number[] = [];
+  // `prevIndices` remembers, for each element, the index of its
+  // predecessor in the LIS that passes through that element.
+  const prevIndices: number[] = new Array(arr.length).fill(-1);
+  // `indicesAtLength` holds the index of the last element of the LIS
+  // of a given length, allowing us to reconstruct the sequence.
+  const indicesAtLength: number[] = [];
 
-/**
- * KMP search for all occurrences of pattern inside text.
- * Returns an array of 0‑based starting indices.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-    if (pattern.length === 0) return [];
-
-    const lps = buildLPS(pattern);
-    const result: number[] = [];
-    let i = 0; // index for text
-    let j = 0; // index for pattern
-
-    while (i < text.length) {
-        if (text[i] === pattern[j]) {
-            i++;
-            j++;
-
-            if (j === pattern.length) {
-                // pattern found – push starting index
-                result.push(i - j);
-                // continue searching for next possible match
-                j = lps[j - 1];
-            }
-        } else if (j !== 0) {
-            // Fallback on pattern using LPS table
-            j = lps[j - 1];
-        } else {
-            // No match at the current position of `text`
-            i++;
-        }
+  arr.forEach((val, idx) => {
+    // Binary search for the first tail that is >= val
+    let l = 0;
+    let r = tails.length;
+    while (l < r) {
+      const m = Math.floor((l + r) / 2);
+      if (tails[m] < val) l = m + 1;
+      else r = m;
     }
 
-    return result;
+    // `l` is the length (0‑based) of the subsequence that will end at idx
+    if (l > 0) prevIndices[idx] = indicesAtLength[l - 1];
+
+    if (l === tails.length) {
+      tails.push(val);
+      indicesAtLength.push(idx);
+    } else {
+      tails[l] = val;
+      indicesAtLength[l] = idx;
+    }
+  });
+
+  // Reconstruct the LIS from the recorded indices
+  const lis: number[] = [];
+  let k = indicesAtLength[indicesAtLength.length - 1];
+  while (k !== -1) {
+    lis.push(arr[k]);
+    k = prevIndices[k];
+  }
+  lis.reverse();
+  return lis;
 }
-import { kmpSearch } from "./kmp";
-
-const txt = "ABABDABACDABABCABAB";
-const pat = "ABABCABAB";
-
-const matches = kmpSearch(txt, pat);
-console.log(matches); // → [ 10 ]
+const data = [3, 10, 2, 1, 20];
+console.log(longestIncreasingSubsequence(data));
+// → [3, 10, 20]
