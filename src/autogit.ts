@@ -1,149 +1,44 @@
-/* ------------------------------------------------------------ */
-/*  A generic node that holds a value and a reference to next   */
-/* ------------------------------------------------------------ */
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
+// src/apiFetch.ts
+export interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
 
-/* ------------------------------------------------------------ */
-/*  A generic singly‑linked list                               */
-/* ------------------------------------------------------------ */
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+/**
+ * Pulls a single todo item from the JSON‑Placeholder API.
+ *
+ * @param todoId  the numeric ID of the todo to fetch
+ * @returns          a promise that resolves to the Todo object
+ */
+export async function getTodoById(todoId: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${todoId}`;
 
-  /* ---------- Properties ---------- */
-  get size(): number { return this._size; }
-  get isEmpty(): boolean { return this._size === 0; }
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { "Accept": "application/json" },
+  });
 
-  /* ---------- Core Operations ---------- */
-
-  /** Push a value onto the **end** of the list */
-  push(value: T): void {
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      this.tail!.next = node;
-      this.tail = node;
-    }
-    this._size++;
+  if (!response.ok) {
+    throw new Error(`API responded with ${response.status} ${response.statusText}`);
   }
 
-  /** Unshift a value onto the **head** of the list */
-  unshift(value: T): void {
-    const node = new ListNode(value, this.head);
-    this.head = node;
-    if (!this.tail) this.tail = node;
-    this._size++;
-  }
+  // `response.json()` already resolves to a `Promise<any>`, so we cast
+  // to `Todo` to satisfy TypeScript.
+  const data = (await response.json()) as Todo;
+  return data;
+}
+// src/start.ts
+import { getTodoById, Todo } from "./apiFetch";
 
-  /** Remove and return the value at the head */
-  shift(): T | undefined {
-    if (!this.head) return undefined;
-    const value = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null;
-    this._size--;
-    return value;
-  }
-
-  /** Remove and return the value at the tail */
-  pop(): T | undefined {
-    if (!this.head) return undefined;
-    if (!this.tail) return undefined;
-
-    let current = this.head;
-    let prev: ListNode<T> | null = null;
-
-    while (current.next) {
-      prev = current;
-      current = current.next;
-    }
-
-    const value = current.value;
-    if (prev) {
-      prev.next = null;
-      this.tail = prev;
-    } else {
-      // list had only one element
-      this.head = this.tail = null;
-    }
-    this._size--;
-    return value;
-  }
-
-  /* ---------- Traversal & Search ---------- */
-
-  /** Find the first node whose value satisfies the predicate */
-  find(predicate: (value: T) => boolean): T | undefined {
-    let node = this.head;
-    while (node) {
-      if (predicate(node.value)) return node.value;
-      node = node.next;
-    }
-    return undefined;
-  }
-
-  /** Convert the list to an array (for debugging or display) */
-  toArray(): T[] {
-    const arr: T[] = [];
-    let node = this.head;
-    while (node) {
-      arr.push(node.value);
-      node = node.next;
-    }
-    return arr;
-  }
-
-  /* ---------- Utility ---------- */
-
-  /** Remove the first node that satisfies the predicate */
-  remove(predicate: (value: T) => boolean): boolean {
-    if (!this.head) return false;
-
-    if (predicate(this.head.value)) {
-      this.shift();
-      return true;
-    }
-
-    let prev = this.head;
-    let current = this.head.next;
-
-    while (current) {
-      if (predicate(current.value)) {
-        prev.next = current.next;
-        if (!current.next) this.tail = prev; // removed tail
-        this._size--;
-        return true;
-      }
-      prev = current;
-      current = current.next;
-    }
-
-    return false; // not found
+async function main(): Promise<void> {
+  try {
+    const todo: Todo = await getTodoById(1);
+    console.log("Fetched todo:", todo);
+  } catch (err) {
+    console.error("Failed to fetch todo:", err);
   }
 }
 
-/* ------------------------------------------------------------ */
-/*  Usage example ------------------------------------------------ */
-const list = new LinkedList<number>();
-
-list.push(3);    // 3
-list.push(5);    // 3 → 5
-list.unshift(1); // 1 → 3 → 5
-
-console.log(list.toArray()); // [1, 3, 5]
-console.log(list.shift());   // 1
-console.log(list.pop());     // 5
-console.log(list.toArray()); // [3]
-console.log(list.find(v => v === 3)); // 3
-
-list.remove(v => v === 3);
-console.log(list.toArray()); // []
-
-/* ------------------------------------------------------------ */
+main().catch((outerErr) => console.error("Unhandled error:", outerErr));
