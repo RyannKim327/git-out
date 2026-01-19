@@ -1,104 +1,35 @@
-// ------------------------------------------------------------------
-//  Supporting types
-// ------------------------------------------------------------------
 /**
- * The shape of a graph node.  The `id` is used for a visited set.
- * `getNeighbours` must return raw references that `graph.getNode(id)` can resolve.
- */
-interface Node {
-  readonly id: string;
-  getNeighbours(): Iterable<string>;
-}
-
-/**
- * A tiny graph interface that lets us look up nodes by id.
- * (You can replace this with your own representation; only the method
- * `getNode` is required by the algorithm.)
- */
-interface Graph {
-  /** Return the node instance for the supplied id or `undefined`. */
-  getNode(id: string): Node | undefined;
-}
-
-/**
- * A function tested against a node, returning true when the node is
- * the thing you’re looking for.
- */
-type Predicate = (node: Node) => boolean;
-
-// ------------------------------------------------------------------
-//  Depth‑limited DFS (iterative)
-// ------------------------------------------------------------------
-/**
- * Iterative depth‑limited depth‑first search.
+ * Recursively searches for `target` inside a sorted array.
  *
- * @param startId   id of the node where the search begins
- * @param maxDepth  stop expanding after this many edges from `startId`
- * @param graph     the graph interface
- * @param satisfies a predicate that tells when a node is a solution
- *
- * @returns the first node that satisfies `satisfies`, or undefined
+ * @param arr  The sorted array to search.
+ * @param target The value we're looking for.
+ * @param left  The leftmost index to consider (inclusive).
+ * @param right The rightmost index to consider (inclusive).
+ * @returns The index of `target`, or `-1` if it isn’t present.
  */
-export function depthLimitedSearch(
-  startId: string,
-  maxDepth: number,
-  graph: Graph,
-  satisfies: Predicate
-): Node | undefined {
-
-  // Guard against an empty or overly deep request
-  if (maxDepth < 0) return undefined;
-
-  // A stack holds tuples of (node, currentDepth).
-  const stack: Array<[Node, number]> = [];
-  const visited = new Set<string>();
-
-  const startNode = graph.getNode(startId);
-  if (!startNode) return undefined;   // start id is missing
-
-  stack.push([startNode, 0]);
-
-  while (stack.length) {
-    const [node, depth] = stack.pop()!;   // non‑empty promise
-
-    // Avoid revisiting the same node (important for cycles)
-    if (visited.has(node.id)) continue;
-    visited.add(node.id);
-
-    if (satisfies(node)) return node;    // found a match
-
-    if (depth === maxDepth) continue;    // reached depth limit
-
-    // Push neighbours onto the stack – order determines DFS order.
-    for (const neighId of node.getNeighbours()) {
-      const neighbour = graph.getNode(neighId);
-      if (neighbour) stack.push([neighbour, depth + 1]);
+function binarySearchRecursive(
+    arr: number[],
+    target: number,
+    left: number = 0,
+    right: number = arr.length - 1
+): number {
+    if (left > right) {          // Base case: empty search window
+        return -1;
     }
-  }
 
-  return undefined;   // nothing matched within the depth budget
+    const mid = Math.floor((left + right) / 2);
+
+    if (arr[mid] === target) {
+        return mid;              // Found the target
+    } else if (arr[mid] > target) {
+        // Target is in the left half
+        return binarySearchRecursive(arr, target, left, mid - 1);
+    } else {
+        // Target is in the right half
+        return binarySearchRecursive(arr, target, mid + 1, right);
+    }
 }
-// A simple example graph implementation
-class SimpleNode implements Node {
-  constructor(public readonly id: string, private readonly neighIds: string[]) {}
-  getNeighbours() { return this.neighIds; }
-}
-class SimpleGraph implements Graph {
-  private readonly nodes = new Map<string, Node>();
-  addNode(node: Node) { this.nodes.set(node.id, node); }
-  getNode(id: string) { return this.nodes.get(id); }
-}
+const sorted = [3, 7, 11, 15, 23, 42, 56];
 
-// Build a tiny graph
-const g = new SimpleGraph();
-g.addNode(new SimpleNode('A', ['B', 'C']));
-g.addNode(new SimpleNode('B', ['D']));
-g.addNode(new SimpleNode('C', []));
-g.addNode(new SimpleNode('D', []));
-
-// Define a search goal
-const goal = (n: Node) => n.id === 'D';
-
-// Run depth‑limited DFS limited to 2 edges from 'A'
-const result = depthLimitedSearch('A', 2, g, goal);
-console.log(result?.id); // → 'D'
+console.log(binarySearchRecursive(sorted, 15)); // → 3
+console.log(binarySearchRecursive(sorted, 1));  // → -1
