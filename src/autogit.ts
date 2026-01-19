@@ -1,28 +1,63 @@
 /**
- * Binary search on a sorted array.
+ * Rabin‑Karp string search
  *
- * @param arr   Sorted array of comparable items.
- * @param value Value to search for.
- * @returns Index of value, or -1 if not found.
+ * Parameters:
+ *  pattern – the string we’re looking for
+ *  text    – the string to search inside
+ *
+ * Returns:
+ *  array of starting indices where pattern occurs (empty if no match)
  */
-export function binarySearch<T>(arr: T[], value: T): number {
-  let low = 0;
-  let high = arr.length - 1;
+export function rabinKarp(pattern: string, text: string): number[] {
+    // Edge cases
+    if (pattern.length === 0) return [];
+    if (pattern.length > text.length) return [];
 
-  while (low <= high) {
-    // Middle index – floor division
-    const mid = Math.floor((low + high) / 2);
-    const midVal = arr[mid];
+    const base = 256;               // number of possible characters (ASCII)
+    const mod = 101;                // a prime mod to keep numbers small
 
-    if (midVal === value) return mid;      // exact match
-    if (midVal < value) {
-      low = mid + 1;                       // value is in higher half
-    } else {
-      high = mid - 1;                      // value is in lower half
+    const m = pattern.length;
+    const n = text.length;
+
+    // Pre‑compute base^(m‑1) % mod  (the “high” power)
+    let basePower = 1;
+    for (let i = 0; i < m - 1; i++) {
+        basePower = (basePower * base) % mod;
     }
-  }
-  return -1;  // not found
+
+    // Compute hash for pattern and first window of text
+    let patHash = 0;
+    let txtHash = 0;
+    for (let i = 0; i < m; i++) {
+        patHash = (patHash * base + pattern.charCodeAt(i)) % mod;
+        txtHash = (txtHash * base + text.charCodeAt(i)) % mod;
+    }
+
+    const result: number[] = [];
+
+    // Slide the window over the text
+    for (let s = 0; s <= n - m; s++) {
+        // If the hash values match, verify the substring to confirm
+        if (patHash === txtHash) {
+            let match = true;
+            for (let k = 0; k < m; k++) {
+                if (text[s + k] !== pattern[k]) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) result.push(s);
+        }
+
+        // Compute hash for next window: remove leading char, add trailing char
+        if (s < n - m) {
+            txtHash = (txtHash - text.charCodeAt(s) * basePower) % mod;
+            if (txtHash < 0) txtHash += mod;                    // keep positive
+            txtHash = (txtHash * base + text.charCodeAt(s + m)) % mod;
+        }
+    }
+
+    return result;
 }
-const nums = [3, 7, 12, 18, 24, 31, 42];
-const idx = binarySearch(nums, 18); // => 3
-const missing = binarySearch(nums, 5); // => -1
+const idx = rabinKarp('abc', 'xabcababc');
+console.log(idx);   // → [1, 6]
