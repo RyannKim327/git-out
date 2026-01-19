@@ -1,43 +1,25 @@
-function stringLength(str: string): number {
-  let len = 0;
-  for (let i = 0; i < str.length; i++) {
-    len++;                // we still use str.length in the loop condition,
-                          // but we never read it as the "answer"
+/**
+ * Checks if `arr` is sorted in ascending order.
+ *
+ * @param arr          the array to test
+ * @param compareFn    optional comparison function.  
+ *                     Should return <0 if a < b, 0 if equal, >0 if a > b.
+ *                     If omitted, the default `a - b` numeric compare is used.
+ * @returns true if the array is in ascending order, false otherwise
+ */
+export function isSortedAscending<T>(
+  arr: readonly T[],
+  compareFn: ((a: T, b: T) => number) = (a, b) =>
+    /* @ts-ignore */ a < b ? -1 : a > b ? 1 : 0
+): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    // If the current element is *before* the previous one, the array is out of order
+    if (compareFn(arr[i], arr[i - 1]) < 0) return false;
   }
-  return len;
+  return true;
 }
-function stringLength(str: string): number {
-  let len = 0;
-  let code = str.codePointAt(0);
-  let idx = 0;
-  while (code !== undefined) {
-    len++;
-    idx++;
-    code = str.codePointAt(idx);
-  }
-  return len;
-}
-function stringLength(str: string): number {
-  let len = 0;
-  for (const _ of str) {
-    len++;
-  }
-  return len;
-}
-function stringLength(str: string): number {
-  if (str === '') return 0;
-  return 1 + stringLength(str.slice(1));
-}
-function stringLength(str: string): number {
-  const matches = str.match(/./gu);
-  return matches ? matches.length : 0;
-}
-function stringLength(str: string): number {
-  let idx = 0;
-  let len = 0;
-  while (str.charAt(idx) !== '') { // `charAt` returns '' past the end
-    len++;
-    idx++;
-  }
-  return len;
-}
+const names = ['Alice', 'Bob', 'Charlie'];
+console.log(isSortedAscending(names)); // true
+
+const mixed = [1, 3, 2, 4];
+console.log(isSortedAscending(mixed)); // false
