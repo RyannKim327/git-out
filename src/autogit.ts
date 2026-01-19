@@ -1,47 +1,39 @@
 /**
- * Count how many times a whole word appears in a string.
- *
- * @param haystack  The text to search.
- * @param needle    The word you’re looking for.
- * @param caseSensitive  If false, treat both inputs as lower‑case.
- * @returns Number of matches.
+ * Returns the largest prime divisor of `n`.
+ * If `n` is 0 or 1, returns `undefined`.
  */
-function countWord(
-  haystack: string,
-  needle: string,
-  caseSensitive = false
-): number {
-  if (!needle) return 0;
+function largestPrimeFactor(n: number): number | undefined {
+  if (n < 2) return undefined;          // no prime factors for 0 or 1
 
-  const flags = caseSensitive ? 'g' : 'gi';
-  // \b ensures we only match whole words
-  const re = new RegExp(`\\b${escapeRegExp(needle)}\\b`, flags);
-  const matches = haystack.match(re);
-  return matches ? matches.length : 0;
+  let num = Math.abs(n);                 // work with a positive number
+  let maxFactor = 1;
+
+  // Handle the factor 2 separately to keep the loop odd.
+  while (num % 2 === 0) {
+    maxFactor = 2;
+    num /= 2;
+  }
+
+  // Now only odd factors are possible.
+  let divisor = 3;
+  const sqrtLimit = Math.sqrt(num);
+  while (divisor <= sqrtLimit) {
+    while (num % divisor === 0) {
+      maxFactor = divisor;
+      num /= divisor;
+    }
+    divisor += 2;                       // skip even numbers
+  }
+
+  // If after the loop num > 1, it itself is a prime factor larger than all found.
+  if (num > 1) {
+    maxFactor = num;
+  }
+
+  return maxFactor;
 }
-
-/** Helper to escape regex meta‑characters in the needle. */
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-const text = 'The quick brown fox jumps over the lazy dog. The fox was quick.';
-
-console.log(countWord(text, 'quick'));   // 2
-console.log(countWord(text, 'the'));     // 2 (case‑insensitive)
-console.log(countWord(text, 'the', true)); // 1 (case‑sensitive)
-function countWordUsingSplit(
-  text: string,
-  word: string,
-  caseSensitive = false
-): number {
-  if (!word) return 0;
-
-  const base = caseSensitive ? text : text.toLowerCase();
-  const target = caseSensitive ? word : word.toLowerCase();
-
-  // Split on whitespace and punctuation
-  const tokens = base.split(/\W+/).filter(Boolean);
-  return tokens.filter(t => t === target).length;
-}
-const re = new RegExp(escapeRegExp(substring), 'g'); // add gi for case‑insensitive
-const count = (text.match(re) || []).length;
+console.log(largestPrimeFactor(2));                // 2
+console.log(largestPrimeFactor(28));               // 7
+console.log(largestPrimeFactor(1000003));          // 1000003 (its prime)
+console.log(largestPrimeFactor(123456));           // 643
+console.log(largestPrimeFactor(-84));              // 7
