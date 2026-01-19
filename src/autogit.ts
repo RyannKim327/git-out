@@ -1,48 +1,52 @@
-/**
- * Randomised quick‑sort for numbers (works for any type T that can be compared)
- * with an optional compare function.
- */
-function randomQuickSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
+/** Basic node structure for a binary tree. */
+class TreeNode {
+  /** Value stored in the node (use `any` if you need non‑numeric data). */
+  val: number
+  /** Left child, or null if none. */
+  left: TreeNode | null
+  /** Right child, or null if none. */
+  right: TreeNode | null
 
-  function sort(start: number, end: number): void {
-    if (end - start <= 1) return;              // 0 or 1 element
-
-    // Pick a random pivot index in [start, end-1]
-    const pivotIndex = start + Math.floor(Math.random() * (end - start));
-    const pivotValue = arr[pivotIndex];
-
-    // Move pivot to the end for convenience
-    [arr[pivotIndex], arr[end - 1]] = [arr[end - 1], arr[pivotIndex]];
-
-    // Partition: all < pivot on the left, others on the right
-    let storeIndex = start;
-    for (let i = start; i < end - 1; i++) {
-      if (cmp(arr[i], pivotValue) < 0) {
-        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
-        storeIndex++;
-      }
-    }
-
-    // Place pivot in its final position
-    [arr[storeIndex], arr[end - 1]] = [arr[end - 1], arr[storeIndex]];
-
-    // Recurse on partitions
-    sort(start, storeIndex);
-    sort(storeIndex + 1, end);
+  constructor(val: number, left?: TreeNode | null, right?: TreeNode | null) {
+    this.val = val
+    this.left = left ?? null
+    this.right = right ?? null
   }
-
-  // Make a copy to keep input immutable
-  const copy = arr.slice();
-  sort(0, copy.length);
-  return copy;
 }
 
-/* ----- Usage example ----- */
-const unsorted = [7, 2, 9, 4, 3, 1, 5, 6];
-const sorted = randomQuickSort(unsorted);
-console.log('original:', unsorted);
-console.log('sorted  :', sorted);
+/* ------------------------------------------------------------------ */
+/*  Recursive depth‑first search.  Returns the longest path length.    */
+function maxDepth(root: TreeNode | null): number {
+  if (!root) return 0                    // leaf + null = depth 0
+  const leftDepth  = maxDepth(root.left) // depth goes 1, 2, … from here
+  const rightDepth = maxDepth(root.right)
+  return Math.max(leftDepth, rightDepth) + 1
+}
+
+/* ------------------------------------------------------------------ */
+/*  Iterative breadth‑first search (queue).  Same result, no stack.   */
+function maxDepthIter(root: TreeNode | null): number {
+  if (!root) return 0
+  let max = 0
+  const queue: Array<{ node: TreeNode; depth: number }> = [
+    { node: root, depth: 1 },
+  ]
+
+  while (queue.length) {
+    const { node, depth } = queue.shift()!
+    max = Math.max(max, depth)
+    if (node.left)  queue.push({ node: node.left, depth: depth + 1 })
+    if (node.right) queue.push({ node: node.right, depth: depth + 1 })
+  }
+  return max
+}
+
+/* ------------------------------------------------------------------ */
+/*  Example usage ---------------------------------------------------- */
+const root = new TreeNode(1,
+  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
+  new TreeNode(3, null, new TreeNode(6))
+)
+
+console.log('Recursive depth:', maxDepth(root))      // → 3
+console.log('Iterative depth:', maxDepthIter(root)) // → 3
