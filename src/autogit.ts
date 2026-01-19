@@ -1,94 +1,55 @@
-// A tiny helper interface when you want a custom comparator
-export interface Comparable<T> {
-  compareTo(other: T): number;   // negative if this < other
-}
 /**
- * Heap‑sort: in‑place, O(n log n) time, O(1) auxiliary space.
- * @param arr  The array to sort.
- * @param compare  Optional comparator: (a, b) => number
- *                 (negative if a < b, zero if equal, positive if a > b).
- *                 If omitted, the array is assumed to contain values
- *                 that support the `<` operator.
+ * Insertion sort – stable, O(n²) average / worst‑case.
+ *
+ * @param arr   - Array to sort (mutable, in‑place).
+ * @param cmp   - Optional compare function (a < b → negative,
+ *                a > b → positive, a == b → 0).
+ *                If omitted, the default numeric or string
+ *                comparison is used.
+ * @returns     - The same array reference, now sorted.
  */
-export function heapSort<T>(
+function insertionSort<T>(
   arr: T[],
-  compare?: (a: T, b: T) => number
-): void {
-  const cmp = compare ?? defaultCompare;
+  cmp?: (a: T, b: T) => number
+): T[] {
+  // Default comparator: JavaScript's <= works for numbers & strings.
+  const compare = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
-  // 1. Build a max‑heap
-  for (let i = Math.floor(arr.length / 2) - 1; i >= 0; i--) {
-    siftDown(arr, i, arr.length, cmp);
-  }
+  // Work from the second element onward – the sub‑array `[0, i)` is sorted.
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-  // 2. Repeatedly swap the max element to the end and restore heap
-  for (let end = arr.length - 1; end > 0; end--) {
-    [arr[0], arr[end]] = [arr[end], arr[0]];
-    siftDown(arr, 0, end, cmp);  // `end` is the new heap size
-  }
-
-  /** Comparator that works on primitive numbers or strings … */
-  function defaultCompare(a: any, b: any): number {
-    return a < b ? -1 : a > b ? 1 : 0;   // 0 when equal
-  }
-}
-function siftDown<T>(
-  arr: T[],
-  start: number,
-  heapSize: number,
-  compare: (a: T, b: T) => number
-): void {
-  let root = start;
-
-  while (true) {
-    const left = 2 * root + 1;
-    const right = left + 1;
-    let swap: number | null = null;
-
-    // Is there a left child larger than root?
-    if (left < heapSize && compare(arr[left], arr[root]) > 0) {
-      swap = left;
+    // Shift larger elements rightward until the right spot is found.
+    while (j >= 0 && compare(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
     }
 
-    // Is there a right child that beats the current swap?
-    if (
-      right < heapSize &&
-      (swap === null || compare(arr[right], arr[swap]) > 0)
-    ) {
-      swap = right;
-    }
-
-    // Nothing to swap → we’re done
-    if (swap === null) break;
-
-    [arr[root], arr[swap]] = [arr[swap], arr[root]];
-    root = swap;
+    // Put the key into its correct place.
+    arr[j + 1] = key;
   }
+
+  return arr;
 }
 // Numbers
-const nums = [12, 11, 13, 5, 6, 7];
-heapSort(nums);
-console.log(nums);   // [5, 6, 7, 11, 12, 13]
+const nums = [21, 4, 18, 15, 6];
+console.log(insertionSort(nums));          // [4, 6, 15, 18, 21]
 
-// Strings (lexicographic)
-let words = ["pear", "apple", "orange", "banana"];
-heapSort(words);
-console.log(words);  // ["apple", "banana", "orange", "pear"]
+// Strings
+const words = ['peach', 'apple', 'banana'];
+console.log(insertionSort(words));          // ['apple', 'banana', 'peach']
 
-// Custom objects with a `compareTo` method
-class Person {
-  constructor(public name: string, public age: number) {}
-  compareTo(other: Person) {
-    return this.age - other.age;  // ascending by age
-  }
-}
-
-const people = [
-  new Person("Bob", 30),
-  new Person("Alice", 25),
-  new Person("Charlie", 35)
+// Custom objects – sort by `age`
+interface Person { name: string; age: number; }
+const people: Person[] = [
+  { name: 'Ann', age: 33 },
+  { name: 'Bob', age: 24 },
+  { name: 'Cleo', age: 41 },
 ];
 
-// Provide the comparator manually
-heapSort(people, (a, b) => a.compareTo(b));
-console.log(people.map(p => `${p.name}(${p.age})`));  // Alice(25) Bob(30) Charlie(35)
+console.log(
+  insertionSort(people, (a, b) => a.age - b.age)
+); // [{name:'Bob',age:24}, {name:'Ann',age:33}, {name:'Cleo',age:41}]
+console.assert(JSON.stringify(insertionSort([5, 4, 3, 2, 1])) === '[1,2,3,4,5]');
+console.assert(JSON.stringify(insertionSort([{x:2}, {x:1}], (a,b)=>a.x-b.x)) === '[{"x":1},{"x":2}]');
