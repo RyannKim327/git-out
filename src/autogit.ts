@@ -1,91 +1,75 @@
-type BMIndices = { badChar: number[]; goodSuffix: number[] };
+/**
+ * Tarjan's algorithm to find all strongly connected components (SCCs) of a directed graph.
+ *
+ * @param adjacencyList A Map where each key is a node id and the value is an array of adjacent node ids.
+ * @returns An array of components, each component is an array of node ids belonging to the same SCC.
+ */
+export function stronglyConnectedComponents(
+  adjacencyList: Map<number, number[]>
+): number[][] {
+  const indexMap = new Map<number, number>();   // node -> index
+  const lowlinkMap = new Map<number, number>(); // node -> lowlink
+  const onStack = new Set<number>();            // nodes currently in the stack
+  const stack: number[] = [];                   // stack of nodes
+  const components: number[][] = [];
+  let currentIndex = 0;
 
-const CHAR_LIMIT = 256;          // size of ASCII table (adjust if you need Unicode)
+  const strongConnect = (node: number) => {
+    // 1. set the depth index for this node
+    indexMap.set(node, currentIndex);
+    lowlinkMap.set(node, currentIndex);
+    currentIndex++;
+    stack.push(node);
+    onStack.add(node);
 
-// Allocate and initialise a lookup array, defaulting to -1
-function initArray(size: number, init: number = -1): number[] {
-  const arr = new Array<number>(size);
-  for (let i = 0; i < size; i++) arr[i] = init;
-  return arr;
-}
-function badCharTable(pattern: string): number[] {
-  const table = initArray(CHAR_LIMIT, -1);
-
-  for (let i = 0; i < pattern.length; i++) {
-    table[pattern.charCodeAt(i)] = i;
-  }
-
-  return table;
-}
-function goodSuffixTable(pat: string): number[] {
-  const m = pat.length;
-  const suffix = initArray(m);
-  const goodSuffix = initArray(m, 0);
-
-  suffix[m - 1] = m;
-  let g = m - 1;
-  let f = 0;
-
-  for (let i = m - 2; i >= 0; i--) {
-    if (i > g && suffix[i + m - 1 - f] < i - g) {
-      suffix[i] = suffix[i + m - 1 - f];
-    } else {
-      g = i;
-      f = i;
-      while (g >= 0 && pat[g] === pat[g + m - 1 - f]) {
-        g--;
+    // 2. consider successors of node
+    const neighbors = adjacencyList.get(node) ?? [];
+    for (const succ of neighbors) {
+      if (!indexMap.has(succ)) {
+        // (a) Successor has not yet been visited; recurse on it
+        strongConnect(succ);
+        // Update lowlink
+        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, lowlinkMap.get(succ)!));
+      } else if (onStack.has(succ)) {
+        // (b) Successor is in stack → part of current SCC
+        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, indexMap.get(succ)!));
       }
-      suffix[i] = f - g;
-    }
-  }
-
-  // Build the goodSuffix shift table from suffix lengths
-  for (let i = 0; i < m; i++) {
-    goodSuffix[i] = m - suffix[i];
-  }
-
-  return goodSuffix;
-}
-function boyerMooreSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return [];   // nothing to find
-
-  const { badChar, goodSuffix } = preprocess(pattern);
-
-  const matches: number[] = [];
-  let s = 0;                // shift of the pattern wrt text
-
-  while (s <= n - m) {
-    let j = m - 1;
-
-    // Keep moving left while the characters match
-    while (j >= 0 && pattern[j] === text[s + j]) {
-      j--;
+      // (c) else: successor has been visited and is not in stack – ignore
     }
 
-    if (j < 0) {
-      // match found
-      matches.push(s);
-      // next shift: either the good suffix shift or 1
-      s += goodSuffix[0] > 0 ? goodSuffix[0] : 1;
-    } else {
-      const badShift = j - badChar[text.charCodeAt(s + j)];
-      const goodShift = goodSuffix[j];
-      s += Math.max(badShift, goodShift);
+    // 3. If node is a root node, pop the stack and generate an SCC
+    if (lowlinkMap.get(node) === indexMap.get(node)) {
+      const component: number[] = [];
+      let w: number | undefined;
+      do {
+        w = stack.pop();
+        onStack.delete(w!);
+        component.push(w!);
+      } while (w !== node);
+      components.push(component);
     }
-  }
-
-  return matches;
-}
-
-function preprocess(pattern: string): BMIndices {
-  return {
-    badChar: badCharTable(pattern),
-    goodSuffix: goodSuffixTable(pattern),
   };
-}
-const txt = "ABAAABCDABAAABCDAAAABCDABAAABCDAAAABCD";
-const pat = "ABDAB";
 
-console.log(boyerMooreSearch(txt, pat));  // → [0, 9, 19, 29]
+  // Run strongConnect on every node that has not yet been visited
+  for (const node of adjacencyList.keys()) {
+    if (!indexMap.has(node)) {
+      strongConnect(node);
+    }
+  }
+
+  return components;
+}
+import { stronglyConnectedComponents } from './tarjan';
+
+const graph = new Map<number, number[]>();
+graph.set(0, [1]);
+graph.set(1, [2, 3]);
+graph.set(2, [0, 3]);
+graph.set(3, [4]);
+graph.set(4, [5]);
+graph.set(5, [3]);
+
+const sccs = stronglyConnectedComponents(graph);
+console.log(sccs);
+// → [ [ 4, 5, 3 ], [ 0, 1, 2 ] ]
+// (order may vary)
