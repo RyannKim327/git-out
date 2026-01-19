@@ -1,27 +1,42 @@
-function decimalToBinary(num: number): string {
-  return num.toString(2);   // base‑2 string
+// 1️⃣  Install the dependencies first:
+//     npm install axios @types/axios
+
+import axios, { AxiosError } from "axios";
+
+// 2️⃣  Define the shape of the data we expect back.
+interface User {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
 }
 
-console.log(decimalToBinary(42)); // "101010"
-function decimalToBinary(num: bigint): string {
-  if (num === 0n) return "0";
+// 3️⃣  Perform the request in an async function.
+async function fetchUsers(): Promise<User[]> {
+  const url = "https://jsonplaceholder.typicode.com/users";
 
-  let n = num;
-  let bits = "";
+  try {
+    // 4️⃣  Make the GET request
+    const response = await axios.get<User[]>(url);
 
-  while (n > 0n) {
-    bits = (n & 1n ? "1" : "0") + bits; // prepend the low bit
-    n >>= 1n;                           // shift right
+    // 5️⃣  Axios automatically parses JSON, so `data` has the correct type
+    return response.data;
+  } catch (err) {
+    // 6️⃣  Gracefully handle a possible Axios error
+    if (axios.isAxiosError(err)) {
+      const error = err as AxiosError;
+      console.error(
+        `Request failed! 🙁 Status: ${error.response?.status}  Message: ${error.message}`
+      );
+    } else {
+      console.error("Unexpected error:", err);
+    }
+    return []; // Return an empty array if something goes wrong
   }
-
-  return bits;
 }
 
-console.log(decimalToBinary(42n)); // "101010"
-export function toBinary(value: number | bigint): string {
-  // Pick the right conversion automatically
-  if (typeof value === "bigint") {
-    return decimalToBinary(value);
-  }
-  return value.toString(2);
-}
+// 7️⃣  Use the function somewhere in your app
+(async () => {
+  const users = await fetchUsers();
+  console.log("Fetched users:", users);
+})();
