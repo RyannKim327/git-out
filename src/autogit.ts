@@ -1,53 +1,13 @@
-/**
- * Returns the area of a triangle.
- *
- * You can provide:
- *   • base & height (Cartesian geometry)
- *   • three side lengths (Heron's formula)
- *
- * @param base   Base of the triangle (required if you give height)
- * @param height Height of the triangle
- * @param a      Length of side a
- * @param b      Length of side b
- * @param c      Length of side c
- * @returns      The area, or NaN if the input is invalid.
- */
-export function triangleArea({
-  base,
-  height,
-  a,
-  b,
-  c,
-}: {
-  base?: number;
-  height?: number;
-  a?: number;
-  b?: number;
-  c?: number;
-}): number {
-  // Cartesian: base * height / 2
-  if (base !== undefined && height !== undefined) {
-    if (base <= 0 || height <= 0) return NaN;
-    return (base * height) / 2;
-  }
+// 1. Regular expression – removes *any* whitespace (spaces, tabs, newlines)
+const noSpace = str.replace(/\s+/g, '');
 
-  // Heron: given three sides
-  if (a !== undefined && b !== undefined && c !== undefined) {
-    if (a <= 0 || b <= 0 || c <= 0) return NaN;
-    // Check triangle inequality: the sum of any two sides must exceed the third
-    if (a + b <= c || a + c <= b || b + c <= a) return NaN;
+// 2. If you only want literal space characters:
+const noSpaceLiteral = str.replace(/ +/g, '');   // or / /g
 
-    const s = (a + b + c) / 2; // semi‑perimeter
-    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
-  }
+// 3. Split/join – handy when you only want spaces:
+const noSpaceSplit = str.split(' ').join('');
 
-  // If the required parameters aren’t supplied
-  return NaN;
-}
-// Base + height
-const area1 = triangleArea({ base: 10, height: 5 }); // 25
-
-// Three sides
-const area2 = triangleArea({ a: 3, b: 4, c: 5 }); // 6
-
-console.log(area1, area2);
+// 4. Using `Array.filter` to keep non‑space characters:
+const noSpaceArray = str.split('').filter(c => c !== ' ').join('');
+const original = 'Hello  world!\nThis is\tgood.';
+console.log(original.replace(/\s+/g, ''));  // "Helloworld!Thisisgood."
