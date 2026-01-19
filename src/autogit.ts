@@ -1,52 +1,50 @@
-/** Basic node structure for a binary tree. */
-class TreeNode {
-  /** Value stored in the node (use `any` if you need non‑numeric data). */
-  val: number
-  /** Left child, or null if none. */
-  left: TreeNode | null
-  /** Right child, or null if none. */
-  right: TreeNode | null
+// A minimal binary‑tree node definition
+interface TreeNode {
+  value: number;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
+}
 
-  constructor(val: number, left?: TreeNode | null, right?: TreeNode | null) {
-    this.val = val
-    this.left = left ?? null
-    this.right = right ?? null
+/**
+ * Recursively sums the values of every node in a binary tree.
+ * @param root – the root of the tree
+ * @returns the total sum of all node values
+ */
+function sumTree(root: TreeNode | null | undefined): number {
+  if (!root) return 0;
+  return root.value + sumTree(root.left) + sumTree(root.right);
+}
+
+/*--- Example usage -------------------------------------------------------*/
+// Construct a small tree:
+//
+//        4
+//       / \
+//      2   5
+//     / \
+//    1   3
+const tree: TreeNode = {
+  value: 4,
+  left: {
+    value: 2,
+    left: { value: 1, left: null, right: null },
+    right: { value: 3, left: null, right: null },
+  },
+  right: { value: 5, left: null, right: null },
+};
+
+console.log(sumTree(tree)); // 15
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let total = 0;
+  const stack: Array<TreeNode> = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.value;
+    if (node.left) stack.push(node.left);
+    if (node.right) stack.push(node.right);
   }
+
+  return total;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Recursive depth‑first search.  Returns the longest path length.    */
-function maxDepth(root: TreeNode | null): number {
-  if (!root) return 0                    // leaf + null = depth 0
-  const leftDepth  = maxDepth(root.left) // depth goes 1, 2, … from here
-  const rightDepth = maxDepth(root.right)
-  return Math.max(leftDepth, rightDepth) + 1
-}
-
-/* ------------------------------------------------------------------ */
-/*  Iterative breadth‑first search (queue).  Same result, no stack.   */
-function maxDepthIter(root: TreeNode | null): number {
-  if (!root) return 0
-  let max = 0
-  const queue: Array<{ node: TreeNode; depth: number }> = [
-    { node: root, depth: 1 },
-  ]
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!
-    max = Math.max(max, depth)
-    if (node.left)  queue.push({ node: node.left, depth: depth + 1 })
-    if (node.right) queue.push({ node: node.right, depth: depth + 1 })
-  }
-  return max
-}
-
-/* ------------------------------------------------------------------ */
-/*  Example usage ---------------------------------------------------- */
-const root = new TreeNode(1,
-  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-  new TreeNode(3, null, new TreeNode(6))
-)
-
-console.log('Recursive depth:', maxDepth(root))      // → 3
-console.log('Iterative depth:', maxDepthIter(root)) // → 3
