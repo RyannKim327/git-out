@@ -1,67 +1,58 @@
-class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+/**
+ * Returns a random integer between min (inclusive) and max (inclusive).
+ *
+ * @param min – lower bound, inclusive
+ * @param max – upper bound, inclusive
+ */
+function randomInt(min: number, max: number): number {
+  // Clamp values to integers just in case
+  const lo = Math.ceil(min);
+  const hi = Math.floor(max);
+
+  // Math.random returns a float in [0, 1)
+  const r = Math.random() * (hi - lo + 1);
+  return Math.floor(r) + lo;
 }
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;
+const diceRoll = randomInt(1, 6);   // 1‑6
+const randomIndex = randomInt(0, array.length - 1);
+function randomFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min;
+}
+function secureRandomInt(min: number, max: number): number {
+  const lo = Math.ceil(min);
+  const hi = Math.floor(max);
 
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;          // height of a null subtree is 0
+  // Number of values in our range
+  const range = hi - lo + 1;
+  // Enough bytes to hold the full range
+  const bytesNeeded = Math.ceil(Math.log2(range) / 8);
 
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
+  // Read random unsigned bytes
+  const rand = new Uint8Array(bytesNeeded);
+  crypto.getRandomValues(rand);
 
-    // potential diameter that passes through this node
-    const localDiameter = leftHeight + rightHeight;
-    if (localDiameter > maxDiameter) maxDiameter = localDiameter;
-
-    // height is max child height + 1 edge to the child
-    return Math.max(leftHeight, rightHeight) + 1;
+  // Convert bytes to a number
+  let value = 0;
+  for (let i = 0; i < bytesNeeded; i++) {
+    value = (value << 8) | rand[i];
   }
 
-  dfs(root);
-  return maxDiameter;  // edges count
+  // Map into the desired range
+  return (value % range) + lo;
 }
-// Build a tree:
-//        1
-//       / \
-//      2   3
-//     / \     
-//    4   5  
-const root = new TreeNode(1,
-              new TreeNode(2,
-                new TreeNode(4),
-                new TreeNode(5)
-              ),
-              new TreeNode(3)
-            );
-
-console.log(diameterOfBinaryTree(root)); // → 3
-function diameterIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let maxDiameter = 0;
-  const stack = [{ node: root, visited: false, height: 0 }];
-
-  while (stack.length) {
-    const frame = stack.pop()!;
-    if (!frame.node) continue;
-
-    if (frame.visited) {
-      // Children already processed – compute height & diameter
-      const leftHeight = frame.node.left?.height ?? 0;
-      const rightHeight = frame.node.right?.height ?? 0;
-
-      maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
-      frame.node.height = Math.max(leftHeight, rightHeight) + 1;
-    } else {
-      // First visit: push back as visited and push children
-      stack.push({ node: frame.node, visited: true, height: 0 });
-      if (frame.node.right) stack.push({ node: frame.node.right, visited: false, height: 0 });
-      if (frame.node.left) stack.push({ node: frame.node.left, visited: false, height: 0 });
-    }
+function randomChoice<T>(arr: T[]): T {
+  if (arr.length === 0) {
+    throw new RangeError('Cannot choose from an empty array');
   }
-  return maxDiameter;
+  const idx = randomInt(0, arr.length - 1);
+  return arr[idx];
+}
+const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+function randomToken(length = 8): string {
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars[randomInt(0, chars.length - 1)];
+  }
+  return result;
 }
