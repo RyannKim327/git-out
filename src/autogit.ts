@@ -1,51 +1,27 @@
-// Stack.ts
-export class Stack<T> {
-  // private backing store
-  private items: T[] = [];
-
-  /** Push an item onto the stack. */
-  push(item: T): void {
-    this.items.push(item);
-  }
-
-  /** Remove the top item and return it.  Returns undefined if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  /** Peek at the top item without removing it.  Returns undefined if the stack is empty. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** Return true if the stack has no items. */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** Current number of elements in the stack. */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Optional: completely clear the stack. */
-  clear(): void {
-    this.items = [];
-  }
+function decimalToBinary(num: number): string {
+  return num.toString(2);   // base‑2 string
 }
-import { Stack } from "./Stack";
 
-const numberStack = new Stack<number>();
-numberStack.push(10);
-numberStack.push(20);
+console.log(decimalToBinary(42)); // "101010"
+function decimalToBinary(num: bigint): string {
+  if (num === 0n) return "0";
 
-console.log(numberStack.peek()); // 20
-console.log(numberStack.pop());  // 20
-console.log(numberStack.size()); // 1
-console.log(numberStack.isEmpty()); // false
+  let n = num;
+  let bits = "";
 
-// Generic example with strings
-const wordStack = new Stack<string>();
-wordStack.push("hello");
-wordStack.push("world");
-console.log(wordStack.pop()); // world
+  while (n > 0n) {
+    bits = (n & 1n ? "1" : "0") + bits; // prepend the low bit
+    n >>= 1n;                           // shift right
+  }
+
+  return bits;
+}
+
+console.log(decimalToBinary(42n)); // "101010"
+export function toBinary(value: number | bigint): string {
+  // Pick the right conversion automatically
+  if (typeof value === "bigint") {
+    return decimalToBinary(value);
+  }
+  return value.toString(2);
+}
