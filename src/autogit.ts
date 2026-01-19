@@ -1,48 +1,28 @@
 /**
- * Randomised quick‑sort for numbers (works for any type T that can be compared)
- * with an optional compare function.
+ * Return true if `s` is a palindrome.
+ *   - Works for regular strings and Unicode strings
+ *   - Uses a two‑pointer scan; no extra arrays/strings are allocated
+ *   - Time:  O(n)
+ *   - Extra space: O(1)
  */
-function randomQuickSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
+function isPalindrome(s: string): boolean {
+    let left  = 0;
+    let right = s.length - 1;
 
-  function sort(start: number, end: number): void {
-    if (end - start <= 1) return;              // 0 or 1 element
+    while (left < right) {
+        // Skip non‑alphanumeric characters & ignore case if you want
+        // if (!/[a-z0-9]/i.test(s.charAt(left))) { left++; continue; }
+        // if (!/[a-z0-9]/i.test(s.charAt(right))) { right--; continue; }
 
-    // Pick a random pivot index in [start, end-1]
-    const pivotIndex = start + Math.floor(Math.random() * (end - start));
-    const pivotValue = arr[pivotIndex];
-
-    // Move pivot to the end for convenience
-    [arr[pivotIndex], arr[end - 1]] = [arr[end - 1], arr[pivotIndex]];
-
-    // Partition: all < pivot on the left, others on the right
-    let storeIndex = start;
-    for (let i = start; i < end - 1; i++) {
-      if (cmp(arr[i], pivotValue) < 0) {
-        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
-        storeIndex++;
-      }
+        if (s[left] !== s[right]) {
+            return false;
+        }
+        left++;
+        right--;
     }
-
-    // Place pivot in its final position
-    [arr[storeIndex], arr[end - 1]] = [arr[end - 1], arr[storeIndex]];
-
-    // Recurse on partitions
-    sort(start, storeIndex);
-    sort(storeIndex + 1, end);
-  }
-
-  // Make a copy to keep input immutable
-  const copy = arr.slice();
-  sort(0, copy.length);
-  return copy;
+    return true;
 }
-
-/* ----- Usage example ----- */
-const unsorted = [7, 2, 9, 4, 3, 1, 5, 6];
-const sorted = randomQuickSort(unsorted);
-console.log('original:', unsorted);
-console.log('sorted  :', sorted);
+console.log(isPalindrome("racecar"));        // true
+console.log(isPalindrome("hello"));          // false
+console.log(isPalindrome("A man a plan a canal Panama".replace(/\s+/g, '').toLowerCase()));
+// true, after normalizing whitespace and case
