@@ -1,48 +1,93 @@
 /**
- * Randomised quick‑sort for numbers (works for any type T that can be compared)
- * with an optional compare function.
+ * Represents a node in the beam frontier.
+ * Keeps the actual state and the path taken to reach it.
  */
-function randomQuickSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
+export interface BeamNode<T> {
+  /** The actual state */
+  state: T;
+  /** The sequence of states that led to this node (incl. this state) */
+  path: T[];
+}
 
-  function sort(start: number, end: number): void {
-    if (end - start <= 1) return;              // 0 or 1 element
+/**
+ * Performs a beam search.
+ *
+ * @param startNodes   Initial frontier. Usually a single root node, but you can start with many.
+ * @param getSuccessors   Function that returns the child nodes of a parent.
+ * @param score          Score function – higher is better.
+ * @param beamWidth      How many nodes to keep after each expansion.
+ * @param maxDepth       Optional depth cutoff (in terms of edges traversed).
+ * @param isGoal         Optional goal‑test predicate.
+ * @returns The first goal node found (or undefined if none).
+ */
+export function beamSearch<T>(
+  startNodes: T[],
+  getSuccessors: (node: T) => T[],
+  score: (node: T) => number,
+  beamWidth: number,
+  maxDepth?: number,
+  isGoal?: (node: T) => boolean
+): BeamNode<T> | undefined {
 
-    // Pick a random pivot index in [start, end-1]
-    const pivotIndex = start + Math.floor(Math.random() * (end - start));
-    const pivotValue = arr[pivotIndex];
+  // Ensure we keep a lightweight copy for sorting.
+  let frontier: BeamNode<T> = startNodes.map(state => ({ state, path: [state] }));
 
-    // Move pivot to the end for convenience
-    [arr[pivotIndex], arr[end - 1]] = [arr[end - 1], arr[pivotIndex]];
+  for (let depth = 0; depth < (maxDepth ?? Infinity); depth++) {
+    if (frontier.length === 0) break; // nothing to expand
 
-    // Partition: all < pivot on the left, others on the right
-    let storeIndex = start;
-    for (let i = start; i < end - 1; i++) {
-      if (cmp(arr[i], pivotValue) < 0) {
-        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
-        storeIndex++;
+    // Expand every node in the frontier
+    const expansions: BeamNode<T>[] = [];
+    for (const node of frontier) {
+      const succ = getSuccessors(node.state);
+      for (const child of succ) {
+        expansions.push({
+          state: child,
+          path: [...node.path, child]
+        });
       }
     }
 
-    // Place pivot in its final position
-    [arr[storeIndex], arr[end - 1]] = [arr[end - 1], arr[storeIndex]];
+    // Optional goal check as soon as we generate expansions
+    if (isGoal) {
+      for (const node of expansions) {
+        if (isGoal(node.state)) return node;
+      }
+    }
 
-    // Recurse on partitions
-    sort(start, storeIndex);
-    sort(storeIndex + 1, end);
+    // Sort by score, keep top `beamWidth`
+    expansions.sort((a, b) => score(b.state) - score(a.state)); // descending
+    frontier = expansions.slice(0, beamWidth);
   }
 
-  // Make a copy to keep input immutable
-  const copy = arr.slice();
-  sort(0, copy.length);
-  return copy;
+  return undefined; // no goal reached within limits
 }
+// Example: find a numeric sequence that sums to 15
+type MyState = number; // current sum
 
-/* ----- Usage example ----- */
-const unsorted = [7, 2, 9, 4, 3, 1, 5, 6];
-const sorted = randomQuickSort(unsorted);
-console.log('original:', unsorted);
-console.log('sorted  :', sorted);
+const start = 0;
+
+const getSucc = (sum: MyState) => {
+  return [sum + 1, sum + 2, sum + 3]; // could be any branching scheme
+};
+
+const score = (sum: MyState) => {
+  // The closer to 15 without overshooting, the better
+  return Math.max(0, 15 - sum);
+};
+
+const isGoal = (sum: MyState) => sum === 15;
+
+const result = beamSearch(
+  [start],
+  getSucc,
+  score,
+  beamWidth = 3,
+  maxDepth = 10,
+  isGoal
+);
+
+if (result) {
+  console.log(`Reached 15 via ${result.path.join(' -> ')}`);
+} else {
+  console.log('No path found within depth limit');
+}
