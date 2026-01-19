@@ -1,53 +1,55 @@
 /**
- * Returns the area of a triangle.
+ * Returns the median of two sorted arrays.
  *
- * You can provide:
- *   • base & height (Cartesian geometry)
- *   • three side lengths (Heron's formula)
- *
- * @param base   Base of the triangle (required if you give height)
- * @param height Height of the triangle
- * @param a      Length of side a
- * @param b      Length of side b
- * @param c      Length of side c
- * @returns      The area, or NaN if the input is invalid.
+ * @param nums1 First sorted array
+ * @param nums2 Second sorted array
+ * @returns Median value (number)
  */
-export function triangleArea({
-  base,
-  height,
-  a,
-  b,
-  c,
-}: {
-  base?: number;
-  height?: number;
-  a?: number;
-  b?: number;
-  c?: number;
-}): number {
-  // Cartesian: base * height / 2
-  if (base !== undefined && height !== undefined) {
-    if (base <= 0 || height <= 0) return NaN;
-    return (base * height) / 2;
+export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Make sure nums1 is the smaller array; binary search will run on it.
+  if (nums1.length > nums2.length) {
+    return findMedianSortedArrays(nums2, nums1);
   }
 
-  // Heron: given three sides
-  if (a !== undefined && b !== undefined && c !== undefined) {
-    if (a <= 0 || b <= 0 || c <= 0) return NaN;
-    // Check triangle inequality: the sum of any two sides must exceed the third
-    if (a + b <= c || a + c <= b || b + c <= a) return NaN;
+  const m = nums1.length;
+  const n = nums2.length;
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-    const s = (a + b + c) / 2; // semi‑perimeter
-    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  let low = 0;
+  let high = m;
+
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2);   // Count from nums1
+    const j = halfLen - i;                    // Count from nums2
+
+    // If i is too small → move right
+    if (i < m && nums2[j - 1] > nums1[i]) {
+      low = i + 1;
+    }
+    // If i is too big → move left
+    else if (i > 0 && nums1[i - 1] > nums2[j]) {
+      high = i - 1;
+    }
+    // Found perfect i
+    else {
+      let maxLeft;
+      if (i === 0) maxLeft = nums2[j - 1];
+      else if (j === 0) maxLeft = nums1[i - 1];
+      else maxLeft = Math.max(nums1[i - 1], nums2[j - 1]);
+
+      // Odd total length – median is max of left side
+      if ((m + n) % 2 === 1) return maxLeft;
+
+      // Even total length – median is average of maxLeft and minRight
+      let minRight;
+      if (i === m) minRight = nums2[j];
+      else if (j === n) minRight = nums1[i];
+      else minRight = Math.min(nums1[i], nums2[j]);
+
+      return (maxLeft + minRight) / 2;
+    }
   }
 
-  // If the required parameters aren’t supplied
-  return NaN;
+  // If we get here, input arrays weren’t valid (empty, unsorted, etc.)
+  throw new Error('Input arrays are not valid.');
 }
-// Base + height
-const area1 = triangleArea({ base: 10, height: 5 }); // 25
-
-// Three sides
-const area2 = triangleArea({ a: 3, b: 4, c: 5 }); // 6
-
-console.log(area1, area2);
