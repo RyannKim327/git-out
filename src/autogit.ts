@@ -1,91 +1,67 @@
-interface ListNode {
-  val: number;          // or whatever type you prefer
-  next: ListNode | null;
+/**
+ * Returns the k‑th smallest element (1‑based index).
+ * O(n log n) by quick‑sort.
+ */
+export function kthSmallestSort(arr: number[], k: number): number {
+  if (!arr.length) throw new Error('Array is empty');
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
+
+  // Create a copy so the original array stays untouched
+  const copy = [...arr].sort((a, b) => a - b);
+  return copy[k - 1];
 }
 
-function isPalindromeIterative(head: ListNode | null): boolean {
-  if (!head) return true;
+/**
+ * Returns the k‑th smallest element in expected linear time via QuickSelect.
+ * Stable but not guaranteed worst‑case performance.
+ */
+export function kthSmallestQuickSelect(arr: number[], k: number): number {
+  if (!arr.length) throw new Error('Array is empty');
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
 
-  const stack: number[] = [];
-  let cur: ListNode | null = head;
+  // Recursive helper
+  function quickSelect(nums: number[], left: number, right: number, kth: number): number {
+    if (left === right) return nums[left];
 
-  // Push all values on the stack
-  while (cur) {
-    stack.push(cur.val);
-    cur = cur.next;
+    let pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
+    pivotIndex = partition(nums, left, right, pivotIndex);
+
+    const leftSize = pivotIndex - left + 1;
+    if (kth < leftSize) return quickSelect(nums, left, pivotIndex - 1, kth);
+    if (kth === leftSize) return nums[pivotIndex];
+    return quickSelect(nums, pivotIndex + 1, right, kth - leftSize);
   }
 
-  // Compare while traversing again
-  cur = head;
-  while (cur) {
-    if (cur.val !== stack.pop()) {
-      return false;
+  function partition(nums: number[], left: number, right: number, pivotIndex: number): number {
+    const pivotValue = nums[pivotIndex];
+    // Move pivot to end
+    [nums[pivotIndex], nums[right]] = [nums[right], nums[pivotIndex]];
+    let storeIndex = left;
+
+    for (let i = left; i < right; i++) {
+      if (nums[i] < pivotValue) {
+        [nums[storeIndex], nums[i]] = [nums[i], nums[storeIndex]];
+        storeIndex++;
+      }
     }
-    cur = cur.next;
+    // Move pivot to its final place
+    [nums[right], nums[storeIndex]] = [nums[storeIndex], nums[right]];
+    return storeIndex;
   }
 
-  return true;
+  // Clone the array so we don't mutate the caller's array
+  const clone = [...arr];
+  return quickSelect(clone, 0, clone.length - 1, k);
 }
-function isPalindromeOptimized(head: ListNode | null): boolean {
-  if (!head || !head.next) return true;
+const data = [7, 2, 5, 3, 9, 1];
+const kth = 3; // 3rd smallest
 
-  // 1. Find the middle (slow will point to middle)
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  // 2. Reverse the second half
-  let prev: ListNode | null = null;
-  let curr = slow.next;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  // `prev` is now the head of the reversed second half
-
-  // 3. Compare the two halves
-  let first = head;
-  let second = prev;
-  let result = true;
-  while (result && second) {        // second will be shorter or equal
-    if (first.val !== second.val) result = false;
-    first = first.next!;
-    second = second.next!;
-  }
-
-  // 4. (Optional) Restore the list
-  // Reverse the second half again to bring the list back to original
-  curr = prev;
-  prev = null;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  slow.next = prev;
-
-  return result;
+console.log(kthSmallestSort(data, kth));          // 5
+console.log(kthSmallestQuickSelect(data, kth));   // 5
+export function kthSmallest<T>(
+  arr: T[],
+  k: number,
+  cmp: (a: T, b: T) => number,
+): T {
+  // ...same logic, replace numeric comparisons with cmp(...)
 }
-function buildList(arr: number[]): ListNode | null {
-  let dummy: ListNode = { val: 0, next: null };
-  let tail = dummy;
-  for (const v of arr) {
-    tail.next = { val: v, next: null };
-    tail = tail.next;
-  }
-  return dummy.next;
-}
-
-const a = buildList([1, 2, 3, 2, 1]);
-console.log(isPalindromeIterative(a));   // true
-console.log(isPalindromeOptimized(a));   // true
-
-const b = buildList([1, 2, 3, 4]);
-console.log(isPalindromeIterative(b));   // false
-console.log(isPalindromeOptimized(b));   // false
