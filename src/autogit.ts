@@ -1,64 +1,15 @@
-// ────────────────────────
-// Node definition
-// ────────────────────────
-class Node<T> {
-  value: T;
-  next: Node<T> | null = null;
+// 1️⃣ Convert with the global Number constructor
+const n1 = Number("42");          // 42
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
+// 2️⃣ Use the unary plus – super terse
+const n2 = +"123";                // 123
 
-// ────────────────────────
-// LinkedList implementation
-// ────────────────────────
-class LinkedList<T> {
-  head: Node<T> | null = null;
-  tail: Node<T> | null = null;
+// 3️⃣ (recommended for base‑10 integer strings)
+const n3 = parseInt("07", 10);    // 7
 
-  // Append new value to list
-  push(value: T): void {
-    const newNode = new Node(value);
-    if (!this.head) {
-      this.head = this.tail = newNode;
-      return;
-    }
-    this.tail!.next = newNode;  // non‑null assertion is safe here
-    this.tail = newNode;
-  }
+// 4️⃣ If you need a float, use parseFloat
+const n4 = parseFloat("3.14");    // 3.14
+const toInt = (s: string | null | undefined): number | null =>
+  s == null ? null : parseInt(s, 10);
 
-  // ────── length (iterative)
-  // Return number of nodes
-  length(): number {
-    let count = 0;
-    let current = this.head;
-    while (current !== null) {
-      count++;
-      current = current.next;
-    }
-    return count;
-  }
-
-  // ────── length (recursive helper)
-  private _recursiveLength(node: Node<T> | null): number {
-    if (!node) return 0;
-    return 1 + this._recursiveLength(node.next);
-  }
-
-  // Public wrapper for the recursive version
-  recursiveLength(): number {
-    return this._recursiveLength(this.head);
-  }
-}
-
-// ────────────────────────
-// Demo
-// ────────────────────────
-const list = new LinkedList<number>();
-list.push(1);
-list.push(2);
-list.push(3);
-
-console.log('Iterative length:', list.length());          // 3
-console.log('Recursive length:', list.recursiveLength()); // 3
+const age = toInt(queryParamAge); // gives you a number or null if it's missing
