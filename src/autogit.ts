@@ -1,93 +1,44 @@
-/**
- * Represents a node in the beam frontier.
- * Keeps the actual state and the path taken to reach it.
- */
-export interface BeamNode<T> {
-  /** The actual state */
-  state: T;
-  /** The sequence of states that led to this node (incl. this state) */
-  path: T[];
+// src/apiFetch.ts
+export interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
 
 /**
- * Performs a beam search.
+ * Pulls a single todo item from the JSON‑Placeholder API.
  *
- * @param startNodes   Initial frontier. Usually a single root node, but you can start with many.
- * @param getSuccessors   Function that returns the child nodes of a parent.
- * @param score          Score function – higher is better.
- * @param beamWidth      How many nodes to keep after each expansion.
- * @param maxDepth       Optional depth cutoff (in terms of edges traversed).
- * @param isGoal         Optional goal‑test predicate.
- * @returns The first goal node found (or undefined if none).
+ * @param todoId  the numeric ID of the todo to fetch
+ * @returns          a promise that resolves to the Todo object
  */
-export function beamSearch<T>(
-  startNodes: T[],
-  getSuccessors: (node: T) => T[],
-  score: (node: T) => number,
-  beamWidth: number,
-  maxDepth?: number,
-  isGoal?: (node: T) => boolean
-): BeamNode<T> | undefined {
+export async function getTodoById(todoId: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${todoId}`;
 
-  // Ensure we keep a lightweight copy for sorting.
-  let frontier: BeamNode<T> = startNodes.map(state => ({ state, path: [state] }));
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { "Accept": "application/json" },
+  });
 
-  for (let depth = 0; depth < (maxDepth ?? Infinity); depth++) {
-    if (frontier.length === 0) break; // nothing to expand
-
-    // Expand every node in the frontier
-    const expansions: BeamNode<T>[] = [];
-    for (const node of frontier) {
-      const succ = getSuccessors(node.state);
-      for (const child of succ) {
-        expansions.push({
-          state: child,
-          path: [...node.path, child]
-        });
-      }
-    }
-
-    // Optional goal check as soon as we generate expansions
-    if (isGoal) {
-      for (const node of expansions) {
-        if (isGoal(node.state)) return node;
-      }
-    }
-
-    // Sort by score, keep top `beamWidth`
-    expansions.sort((a, b) => score(b.state) - score(a.state)); // descending
-    frontier = expansions.slice(0, beamWidth);
+  if (!response.ok) {
+    throw new Error(`API responded with ${response.status} ${response.statusText}`);
   }
 
-  return undefined; // no goal reached within limits
+  // `response.json()` already resolves to a `Promise<any>`, so we cast
+  // to `Todo` to satisfy TypeScript.
+  const data = (await response.json()) as Todo;
+  return data;
 }
-// Example: find a numeric sequence that sums to 15
-type MyState = number; // current sum
+// src/start.ts
+import { getTodoById, Todo } from "./apiFetch";
 
-const start = 0;
-
-const getSucc = (sum: MyState) => {
-  return [sum + 1, sum + 2, sum + 3]; // could be any branching scheme
-};
-
-const score = (sum: MyState) => {
-  // The closer to 15 without overshooting, the better
-  return Math.max(0, 15 - sum);
-};
-
-const isGoal = (sum: MyState) => sum === 15;
-
-const result = beamSearch(
-  [start],
-  getSucc,
-  score,
-  beamWidth = 3,
-  maxDepth = 10,
-  isGoal
-);
-
-if (result) {
-  console.log(`Reached 15 via ${result.path.join(' -> ')}`);
-} else {
-  console.log('No path found within depth limit');
+async function main(): Promise<void> {
+  try {
+    const todo: Todo = await getTodoById(1);
+    console.log("Fetched todo:", todo);
+  } catch (err) {
+    console.error("Failed to fetch todo:", err);
+  }
 }
+
+main().catch((outerErr) => console.error("Unhandled error:", outerErr));
