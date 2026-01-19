@@ -1,56 +1,43 @@
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr = head;
+/**
+ * Shell sort – an in‑place comparison sort.
+ *
+ * @param arr   The array to sort.
+ * @param cmp   Optional comparator: (a, b) => number. Positive if a > b,
+ *              negative if a < b, zero if equal. If omitted, the
+ *              default uses the `<` operator.
+ * @returns     The same array instance, now sorted.
+ */
+export function shellSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
+  const compare = cmp ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-  while (curr !== null) {
-    const next = curr.next;   // remember where we’re headed
-    curr.next = prev;         // flip the link
-    prev = curr;              // move prev forward
-    curr = next;              // move curr forward
+  let n = arr.length;
+  // Start with a gap of about n/2 and halve it each loop.
+  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Insertion‑sort on elements gap apart.
+    for (let i = gap; i < n; i++) {
+      const temp = arr[i];
+      let j = i;
+      // Shift all larger gap‑spaced elements one step forward.
+      while (j >= gap && compare(temp, arr[j - gap]) < 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
+    }
   }
-
-  // At the end of the loop, `prev` is the new head
-  return prev;
+  return arr;
 }
-// Helper to print the list
-function printList<T>(head: ListNode<T> | null): void {
-  const values = [];
-  let curr = head;
-  while (curr) {
-    values.push(curr.val);
-    curr = curr.next;
-  }
-  console.log(values.join(' → ') + ' → null');
-}
+// sort.ts
+export { shellSort };
+// └─ ... implementation shown above
+import { shellSort } from './sort';
 
-// Build 1 → 2 → 3 → null
-const head = new ListNode(1,
-             new ListNode(2,
-               new ListNode(3)));
+const numbers = [23, 12, 1, 10, 7, 3, 9];
+console.log('unsorted:', numbers);
 
-console.log('Original list:');
-printList(head);
+shellSort(numbers);                 // default numeric comparison
+console.log('sorted:   ', numbers);
 
-const reversed = reverseList(head);
-
-console.log('Reversed list:');
-printList(reversed);
-Original list:
-1 → 2 → 3 → null
-Reversed list:
-3 → 2 → 1 → null
-export function reverseListRec<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head || !head.next) return head;         // base case
-
-  const newHead = reverseListRec(head.next);     // reverse rest of list
-  head.next.next = head;                        // make the next node point to us
-  head.next = null;                             // sever old link
-
-  return newHead;                               // new head propagates upward
-}
+// Custom comparator (descending)
+shellSort(numbers, (a, b) => b - a);
+console.log('desc:    ', numbers);
