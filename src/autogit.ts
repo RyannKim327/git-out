@@ -1,25 +1,51 @@
-/**
- * Returns true if `n` is a prime number.
- * Works with any non‑negative integer. For negative numbers or 0/1 it returns false.
- */
-export function isPrime(n: number): boolean {
-  if (!Number.isInteger(n) || n < 2) return false;   // 0, 1, and non‑ints aren't prime
-  
-  // 2 and 3 are the only even/odd primes.
-  if (n === 2 || n === 3) return true;
+// Stack.ts
+export class Stack<T> {
+  // private backing store
+  private items: T[] = [];
 
-  // Even numbers > 2 are not prime.
-  if (n % 2 === 0) return false;
-
-  // Check odd divisors up to √n.
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 3; i <= limit; i += 2) {
-    if (n % i === 0) return false;
+  /** Push an item onto the stack. */
+  push(item: T): void {
+    this.items.push(item);
   }
 
-  return true;
+  /** Remove the top item and return it.  Returns undefined if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  /** Peek at the top item without removing it.  Returns undefined if the stack is empty. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Return true if the stack has no items. */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Current number of elements in the stack. */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Optional: completely clear the stack. */
+  clear(): void {
+    this.items = [];
+  }
 }
-console.log(isPrime(7));   // true
-console.log(isPrime(20));  // false
-console.log(isPrime(91));  // false (7 × 13)
-console.log(isPrime(97));  // true
+import { Stack } from "./Stack";
+
+const numberStack = new Stack<number>();
+numberStack.push(10);
+numberStack.push(20);
+
+console.log(numberStack.peek()); // 20
+console.log(numberStack.pop());  // 20
+console.log(numberStack.size()); // 1
+console.log(numberStack.isEmpty()); // false
+
+// Generic example with strings
+const wordStack = new Stack<string>();
+wordStack.push("hello");
+wordStack.push("world");
+console.log(wordStack.pop()); // world
