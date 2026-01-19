@@ -1,47 +1,53 @@
 /**
- * Count how many times a whole word appears in a string.
+ * Returns the area of a triangle.
  *
- * @param haystack  The text to search.
- * @param needle    The word you’re looking for.
- * @param caseSensitive  If false, treat both inputs as lower‑case.
- * @returns Number of matches.
+ * You can provide:
+ *   • base & height (Cartesian geometry)
+ *   • three side lengths (Heron's formula)
+ *
+ * @param base   Base of the triangle (required if you give height)
+ * @param height Height of the triangle
+ * @param a      Length of side a
+ * @param b      Length of side b
+ * @param c      Length of side c
+ * @returns      The area, or NaN if the input is invalid.
  */
-function countWord(
-  haystack: string,
-  needle: string,
-  caseSensitive = false
-): number {
-  if (!needle) return 0;
+export function triangleArea({
+  base,
+  height,
+  a,
+  b,
+  c,
+}: {
+  base?: number;
+  height?: number;
+  a?: number;
+  b?: number;
+  c?: number;
+}): number {
+  // Cartesian: base * height / 2
+  if (base !== undefined && height !== undefined) {
+    if (base <= 0 || height <= 0) return NaN;
+    return (base * height) / 2;
+  }
 
-  const flags = caseSensitive ? 'g' : 'gi';
-  // \b ensures we only match whole words
-  const re = new RegExp(`\\b${escapeRegExp(needle)}\\b`, flags);
-  const matches = haystack.match(re);
-  return matches ? matches.length : 0;
+  // Heron: given three sides
+  if (a !== undefined && b !== undefined && c !== undefined) {
+    if (a <= 0 || b <= 0 || c <= 0) return NaN;
+    // Check triangle inequality: the sum of any two sides must exceed the third
+    if (a + b <= c || a + c <= b || b + c <= a) return NaN;
+
+    const s = (a + b + c) / 2; // semi‑perimeter
+    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  }
+
+  // If the required parameters aren’t supplied
+  return NaN;
 }
+// Base + height
+const area1 = triangleArea({ base: 10, height: 5 }); // 25
 
-/** Helper to escape regex meta‑characters in the needle. */
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-const text = 'The quick brown fox jumps over the lazy dog. The fox was quick.';
+// Three sides
+const area2 = triangleArea({ a: 3, b: 4, c: 5 }); // 6
 
-console.log(countWord(text, 'quick'));   // 2
-console.log(countWord(text, 'the'));     // 2 (case‑insensitive)
-console.log(countWord(text, 'the', true)); // 1 (case‑sensitive)
-function countWordUsingSplit(
-  text: string,
-  word: string,
-  caseSensitive = false
-): number {
-  if (!word) return 0;
-
-  const base = caseSensitive ? text : text.toLowerCase();
-  const target = caseSensitive ? word : word.toLowerCase();
-
-  // Split on whitespace and punctuation
-  const tokens = base.split(/\W+/).filter(Boolean);
-  return tokens.filter(t => t === target).length;
-}
-const re = new RegExp(escapeRegExp(substring), 'g'); // add gi for case‑insensitive
-const count = (text.match(re) || []).length;
+console.log(area1, area2);
