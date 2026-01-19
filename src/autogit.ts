@@ -1,53 +1,29 @@
-/**
- * Node for a singly linked list.
- */
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+const nums = [1, 2, 2, 3, 4, 4, 5];
+const unique = [...new Set(nums)];   // [1, 2, 3,4,5]
+const vals = ['a', 'b', 'a', 'c', 'b'];
+const uniq = vals.filter((value, index, arr) => arr.indexOf(value) === index);
+// ['a','b','c']
+interface User {
+  id: number;
+  name: string;
 }
 
-/**
- * Detects if a linked list contains a cycle.
- *
- * @param head The head of the list.
- * @returns true if a cycle exists, false otherwise.
- */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  let slow = head;
-  let fast = head;
+const users: User[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob'   },
+  { id: 1, name: 'Alice'},
+  { id: 3, name: 'Carol'},
+];
 
-  while (fast !== null && fast.next !== null) {
-    slow = slow!.next;          // move one step
-    fast = fast.next.next;      // move two steps
-    if (slow === fast) {        // same reference → cycle
-      return true;
-    }
-  }
+const uniq = Array.from(
+  users.reduce((map, user) => map.set(user.id, user), new Map<number, User>())
+).map(entry => entry[1]);
 
-  return false;                 // fast hit the end → no cycle
-}
-// 1 → 2 → 3 → 4 → 5
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-const d = new ListNode(4);
-const e = new ListNode(5);
+// [{id:1,name:'Alice'}, {id:2,name:'Bob'}, {id:3,name:'Carol'}]
+const objs = [{x:1},{x:2},{x:1},{x:3}];
+const uniq = Array.from(
+  new Set(objs.map(o => JSON.stringify(o)))
+).map(str => JSON.parse(str));
+import { uniqBy } from 'lodash';
 
-a.next = b; b.next = c; c.next = d; d.next = e;
-
-// no cycle
-console.log(hasCycle(a)); // false
-
-// Introduce a cycle: e.next = c (3rd node)
-e.next = c;
-console.log(hasCycle(a)); // true
-function hasCycleSet<T>(head: ListNode<T> | null): boolean {
-  const visited = new Set<ListNode<T>>();
-
-  let current = head;
-  while (current !== null) {
-    if (visited.has(current)) return true; // already seen → cycle
-    visited.add(current);
-    current = current.next;
-  }
-  return false; // reached null → acyclic
-}
+const uniqUsers = uniqBy(users, 'id');
