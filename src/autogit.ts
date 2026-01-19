@@ -1,69 +1,60 @@
-type Edge = { from: number; to: number; weight: number };
+/**
+ * Returns the max sum of any contiguous sub‑array of `nums`.
+ * If all numbers are negative, it will still return the best (least negative) value.
+ *
+ * @param nums Array of numbers
+ * @returns maximum sub‑array sum
+ */
+function maxSubArraySum(nums: number[]): number {
+  if (nums.length === 0) {
+    throw new Error('Array must contain at least one element');
+  }
 
-interface BellmanFordResult {
-  dist: number[];          // shortest distance from source to each vertex   (Infinity = unreachable)
-  prev: (number | null)[]; // previous vertex on the shortest path, or null
-  hasNegativeCycle: boolean; // true if a negative cycle was detected
+  let bestSoFar = nums[0];      // best overall
+  let bestEndingHere = nums[0]; // best ending at current index
+
+  for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous sub‑array or start fresh at nums[i]
+    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
+
+    // Update the global best if needed
+    bestSoFar = Math.max(bestSoFar, bestEndingHere);
+  }
+
+  return bestSoFar;
 }
 
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult {
-  const dist = Array(vertexCount).fill(Infinity);
-  const prev = Array<number | null>(vertexCount).fill(null);
+/* Example usage */
+const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
+console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
+function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
+  let bestSoFar = nums[0], bestEndingHere = nums[0];
+  let start = 0, end = 0, tempStart = 0;
 
-  dist[source] = 0;
-
-  // 1️⃣ Relax every edge |V|‑1 times
-  for (let i = 0; i < vertexCount - 1; i++) {
-    let updated = false;
-    for (const {from, to, weight} of edges) {
-      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-        dist[to] = dist[from] + weight;
-        prev[to] = from;
-        updated = true;
-      }
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] > bestEndingHere + nums[i]) {
+      bestEndingHere = nums[i];
+      tempStart = i;          // potential new start
+    } else {
+      bestEndingHere += nums[i];
     }
-    // If no distance changed, we’re done early
-    if (!updated) break;
-  }
 
-  // 2️⃣ Check for negative cycles
-  let hasNegativeCycle = false;
-  for (const {from, to, weight} of edges) {
-    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-      hasNegativeCycle = true;
-      break;
+    if (bestEndingHere > bestSoFar) {
+      bestSoFar = bestEndingHere;
+      start = tempStart;      // commit new start
+      end = i;
     }
   }
 
-  return {dist, prev, hasNegativeCycle};
+  return {
+    maxSum: bestSoFar,
+    subArray: nums.slice(start, end + 1),
+    indices: [start, end]
+  };
 }
-function reconstructPath(prev: (number | null)[], target: number): number[] {
-  const path: number[] = [];
-  let cur: number | null = target;
-
-  while (cur !== null) {
-    path.push(cur);
-    cur = prev[cur];
-  }
-  path.reverse();
-  return path;
-}
-const edges: Edge[] = [
-  {from: 0, to: 1, weight: 5},
-  {from: 1, to: 2, weight: -2},
-  // ...
-];
-const {dist, prev, hasNegativeCycle} = bellmanFord(5, edges, 0);
-
-console.log(dist);               // shortest distances
-console.log(hasNegativeCycle);    // useful flag
-console.log(reconstructPath(prev, 4)); // path from 0 to 4
+console.log(maxSubArrayDetail(arr));
+// {
+//   maxSum: 6,
+//   subArray: [4, -1, 2, 1],
+//   indices: [3, 6]
+// }
