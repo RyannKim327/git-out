@@ -1,55 +1,56 @@
 /**
- * Insertion sort – stable, O(n²) average / worst‑case.
+ * Returns the longest strictly increasing subsequence of `arr`.
  *
- * @param arr   - Array to sort (mutable, in‑place).
- * @param cmp   - Optional compare function (a < b → negative,
- *                a > b → positive, a == b → 0).
- *                If omitted, the default numeric or string
- *                comparison is used.
- * @returns     - The same array reference, now sorted.
+ * Example:
+ *   longestIncreasingSubsequence([10, 9, 2, 5, 3, 7, 101, 18])
+ *   → [2, 3, 7, 101]
  */
-function insertionSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  // Default comparator: JavaScript's <= works for numbers & strings.
-  const compare = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+export function longestIncreasingSubsequence(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-  // Work from the second element onward – the sub‑array `[0, i)` is sorted.
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+  // `tails` keeps the smallest tail value for all subsequences
+  // of a given length. `tails[i]` is the least possible tail of
+  // an increasing subsequence with length i+1.
+  const tails: number[] = [];
+  // `prevIndices` remembers, for each element, the index of its
+  // predecessor in the LIS that passes through that element.
+  const prevIndices: number[] = new Array(arr.length).fill(-1);
+  // `indicesAtLength` holds the index of the last element of the LIS
+  // of a given length, allowing us to reconstruct the sequence.
+  const indicesAtLength: number[] = [];
 
-    // Shift larger elements rightward until the right spot is found.
-    while (j >= 0 && compare(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
+  arr.forEach((val, idx) => {
+    // Binary search for the first tail that is >= val
+    let l = 0;
+    let r = tails.length;
+    while (l < r) {
+      const m = Math.floor((l + r) / 2);
+      if (tails[m] < val) l = m + 1;
+      else r = m;
     }
 
-    // Put the key into its correct place.
-    arr[j + 1] = key;
+    // `l` is the length (0‑based) of the subsequence that will end at idx
+    if (l > 0) prevIndices[idx] = indicesAtLength[l - 1];
+
+    if (l === tails.length) {
+      tails.push(val);
+      indicesAtLength.push(idx);
+    } else {
+      tails[l] = val;
+      indicesAtLength[l] = idx;
+    }
+  });
+
+  // Reconstruct the LIS from the recorded indices
+  const lis: number[] = [];
+  let k = indicesAtLength[indicesAtLength.length - 1];
+  while (k !== -1) {
+    lis.push(arr[k]);
+    k = prevIndices[k];
   }
-
-  return arr;
+  lis.reverse();
+  return lis;
 }
-// Numbers
-const nums = [21, 4, 18, 15, 6];
-console.log(insertionSort(nums));          // [4, 6, 15, 18, 21]
-
-// Strings
-const words = ['peach', 'apple', 'banana'];
-console.log(insertionSort(words));          // ['apple', 'banana', 'peach']
-
-// Custom objects – sort by `age`
-interface Person { name: string; age: number; }
-const people: Person[] = [
-  { name: 'Ann', age: 33 },
-  { name: 'Bob', age: 24 },
-  { name: 'Cleo', age: 41 },
-];
-
-console.log(
-  insertionSort(people, (a, b) => a.age - b.age)
-); // [{name:'Bob',age:24}, {name:'Ann',age:33}, {name:'Cleo',age:41}]
-console.assert(JSON.stringify(insertionSort([5, 4, 3, 2, 1])) === '[1,2,3,4,5]');
-console.assert(JSON.stringify(insertionSort([{x:2}, {x:1}], (a,b)=>a.x-b.x)) === '[{"x":1},{"x":2}]');
+const data = [3, 10, 2, 1, 20];
+console.log(longestIncreasingSubsequence(data));
+// → [3, 10, 20]
