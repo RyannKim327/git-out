@@ -1,39 +1,39 @@
-/**
- * Returns the largest prime divisor of `n`.
- * If `n` is 0 or 1, returns `undefined`.
- */
-function largestPrimeFactor(n: number): number | undefined {
-  if (n < 2) return undefined;          // no prime factors for 0 or 1
+const original = [1, 2, 3, 4, 5];
 
-  let num = Math.abs(n);                 // work with a positive number
-  let maxFactor = 1;
+// remove every 3
+const withoutThree = original.filter(v => v !== 3);
 
-  // Handle the factor 2 separately to keep the loop odd.
-  while (num % 2 === 0) {
-    maxFactor = 2;
-    num /= 2;
-  }
+console.log(original);       // [1, 2, 3, 4, 5]
+console.log(withoutThree);   // [1, 2, 4, 5]
+const removeFirstThree = original.filter((v, i) => v !== 3 || i !== 1);
+const arr = [1, 2, 3, 4, 5];
 
-  // Now only odd factors are possible.
-  let divisor = 3;
-  const sqrtLimit = Math.sqrt(num);
-  while (divisor <= sqrtLimit) {
-    while (num % divisor === 0) {
-      maxFactor = divisor;
-      num /= divisor;
-    }
-    divisor += 2;                       // skip even numbers
-  }
-
-  // If after the loop num > 1, it itself is a prime factor larger than all found.
-  if (num > 1) {
-    maxFactor = num;
-  }
-
-  return maxFactor;
+// find the index you want to remove
+const idx = arr.indexOf(3);
+if (idx !== -1) {
+  arr.splice(idx, 1);      // remove 1 element at idx
 }
-console.log(largestPrimeFactor(2));                // 2
-console.log(largestPrimeFactor(28));               // 7
-console.log(largestPrimeFactor(1000003));          // 1000003 (its prime)
-console.log(largestPrimeFactor(123456));           // 643
-console.log(largestPrimeFactor(-84));              // 7
+console.log(arr);           // [1, 2, 4, 5]
+let i = 0;
+while (i < arr.length) {
+  if (arr[i] === 3) {
+    arr.splice(i, 1);
+  } else {
+    i++;
+  }
+}
+function removeAtIndex<T>(arr: T[], idx: number): T[] {
+  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
+}
+
+const withoutIdx = removeAtIndex(original, 2);
+const set = new Set(original);
+set.delete(3);
+const arrFromSet = Array.from(set);
+interface Person { id: number; name: string }
+const people = [{ id: 1 }, { id: 2 }, { id: 3 }];
+
+const withoutId2 = people.filter(p => p.id !== 2);   // immutable
+// or
+const idx = people.findIndex(p => p.id === 2);
+if (idx !== -1) people.splice(idx, 1);               // mutate
