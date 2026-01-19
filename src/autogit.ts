@@ -1,101 +1,52 @@
-// ------------------------------------------------------------
-// 1️⃣  In‑place quick‑sort – most common for competitive coding
-// ------------------------------------------------------------
-function quickSortInPlace<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): void {
-  const swap = (i: number, j: number) => {
-    const tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
-  };
+/** Basic node structure for a binary tree. */
+class TreeNode {
+  /** Value stored in the node (use `any` if you need non‑numeric data). */
+  val: number
+  /** Left child, or null if none. */
+  left: TreeNode | null
+  /** Right child, or null if none. */
+  right: TreeNode | null
 
-  function partition(low: number, high: number): number {
-    // Pick the last element as pivot (simple but fine for demo)
-    const pivot = arr[high];
-    let i = low - 1;
-
-    for (let j = low; j < high; j++) {
-      if (compare(arr[j], pivot) <= 0) {
-        i++;
-        swap(i, j);
-      }
-    }
-    swap(i + 1, high);
-    return i + 1;
+  constructor(val: number, left?: TreeNode | null, right?: TreeNode | null) {
+    this.val = val
+    this.left = left ?? null
+    this.right = right ?? null
   }
-
-  function quick(low: number, high: number): void {
-    if (low < high) {
-      const pi = partition(low, high);
-      quick(low, pi - 1);
-      quick(pi + 1, high);
-    }
-  }
-
-  quick(0, arr.length - 1);
 }
 
-// ------------------------------------------------------------
-// 2️⃣  Functional quick‑sort – returns a new sorted array
-// ------------------------------------------------------------
-function quickSortFunctional<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  if (arr.length <= 1) return arr.slice(); // immutable copy
-
-  // Random pivot for better average performance on already‑sorted data
-  const pivot = arr[Math.floor(Math.random() * arr.length)];
-  const lows = arr.filter((v) => compare(v, pivot) < 0);
-  const highs = arr.filter((v) => compare(v, pivot) > 0);
-  const pivots = arr.filter((v) => compare(v, pivot) === 0);
-
-  return [
-    ...quickSortFunctional(lows, compare),
-    ...pivots,
-    ...quickSortFunctional(highs, compare),
-  ];
+/* ------------------------------------------------------------------ */
+/*  Recursive depth‑first search.  Returns the longest path length.    */
+function maxDepth(root: TreeNode | null): number {
+  if (!root) return 0                    // leaf + null = depth 0
+  const leftDepth  = maxDepth(root.left) // depth goes 1, 2, … from here
+  const rightDepth = maxDepth(root.right)
+  return Math.max(leftDepth, rightDepth) + 1
 }
 
-// ------------------------------------------------------------
-// 3️⃣  Small helper that wraps the in‑place version and offers
-//     a better pivot strategy
-// ------------------------------------------------------------
-function quickSort<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  // Randomize the array first; this keeps the pivot “good” on many inputs
-  // and eliminates the worst‑case for already‑sorted data.
-  const shuffled = arr.slice();
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+/* ------------------------------------------------------------------ */
+/*  Iterative breadth‑first search (queue).  Same result, no stack.   */
+function maxDepthIter(root: TreeNode | null): number {
+  if (!root) return 0
+  let max = 0
+  const queue: Array<{ node: TreeNode; depth: number }> = [
+    { node: root, depth: 1 },
+  ]
+
+  while (queue.length) {
+    const { node, depth } = queue.shift()!
+    max = Math.max(max, depth)
+    if (node.left)  queue.push({ node: node.left, depth: depth + 1 })
+    if (node.right) queue.push({ node: node.right, depth: depth + 1 })
   }
-
-  quickSortInPlace(shuffled, compare);
-  return shuffled;
+  return max
 }
 
-// ---------------------------
-// Demo usage
-// ---------------------------
+/* ------------------------------------------------------------------ */
+/*  Example usage ---------------------------------------------------- */
+const root = new TreeNode(1,
+  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
+  new TreeNode(3, null, new TreeNode(6))
+)
 
-const numbers = [34, 7, 23, 32, 5, 62, 32];
-console.log('in‑place:', (() => {
-  const copy = [...numbers];
-  quickSortInPlace(copy);
-  return copy;
-})());
-
-console.log('functional:', quickSortFunctional(numbers));
-
-console.log('wrapper:', quickSort(numbers));
-
-// ------------------------------------------------------------
-// Done!
-// ------------------------------------------------------------
-const byLength = (a: string, b: string) => a.length - b.length;
-quickSort(stringsArray, byLength);
+console.log('Recursive depth:', maxDepth(root))      // → 3
+console.log('Iterative depth:', maxDepthIter(root)) // → 3
