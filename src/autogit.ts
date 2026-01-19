@@ -1,75 +1,43 @@
 /**
- * Tarjan's algorithm to find all strongly connected components (SCCs) of a directed graph.
- *
- * @param adjacencyList A Map where each key is a node id and the value is an array of adjacent node ids.
- * @returns An array of components, each component is an array of node ids belonging to the same SCC.
+ * Counting sort for integer arrays (can include negatives).
+ * @param arr The input array of numbers.
+ * @returns A new sorted array.
  */
-export function stronglyConnectedComponents(
-  adjacencyList: Map<number, number[]>
-): number[][] {
-  const indexMap = new Map<number, number>();   // node -> index
-  const lowlinkMap = new Map<number, number>(); // node -> lowlink
-  const onStack = new Set<number>();            // nodes currently in the stack
-  const stack: number[] = [];                   // stack of nodes
-  const components: number[][] = [];
-  let currentIndex = 0;
+export function countingSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-  const strongConnect = (node: number) => {
-    // 1. set the depth index for this node
-    indexMap.set(node, currentIndex);
-    lowlinkMap.set(node, currentIndex);
-    currentIndex++;
-    stack.push(node);
-    onStack.add(node);
-
-    // 2. consider successors of node
-    const neighbors = adjacencyList.get(node) ?? [];
-    for (const succ of neighbors) {
-      if (!indexMap.has(succ)) {
-        // (a) Successor has not yet been visited; recurse on it
-        strongConnect(succ);
-        // Update lowlink
-        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, lowlinkMap.get(succ)!));
-      } else if (onStack.has(succ)) {
-        // (b) Successor is in stack → part of current SCC
-        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, indexMap.get(succ)!));
-      }
-      // (c) else: successor has been visited and is not in stack – ignore
-    }
-
-    // 3. If node is a root node, pop the stack and generate an SCC
-    if (lowlinkMap.get(node) === indexMap.get(node)) {
-      const component: number[] = [];
-      let w: number | undefined;
-      do {
-        w = stack.pop();
-        onStack.delete(w!);
-        component.push(w!);
-      } while (w !== node);
-      components.push(component);
-    }
-  };
-
-  // Run strongConnect on every node that has not yet been visited
-  for (const node of adjacencyList.keys()) {
-    if (!indexMap.has(node)) {
-      strongConnect(node);
-    }
+  // 1) Determine min and max to find the range.
+  let min = arr[0];
+  let max = arr[0];
+  for (const v of arr) {
+    if (v < min) min = v;
+    else if (v > max) max = v;
   }
 
-  return components;
+  const range = max - min + 1;          // how many distinct integer values
+  const count = new Array<number>(range).fill(0);
+
+  // 2) Count each value
+  for (const v of arr) {
+    count[v - min]++;                   // offset by min so array starts at 0
+  }
+
+  // 3) Convert counts to cumulative counts
+  for (let i = 1; i < range; i++) {
+    count[i] += count[i - 1];
+  }
+
+  // 4) Allocate result array
+  const output = new Array<number>(arr.length);
+
+  // 5) Place elements into output in stable order
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const v = arr[i];
+    const idx = v - min;
+    const pos = count[idx] - 1;         // final index for this element
+    output[pos] = v;
+    count[idx]--;                       // decrease count for next instance
+  }
+
+  return output;
 }
-import { stronglyConnectedComponents } from './tarjan';
-
-const graph = new Map<number, number[]>();
-graph.set(0, [1]);
-graph.set(1, [2, 3]);
-graph.set(2, [0, 3]);
-graph.set(3, [4]);
-graph.set(4, [5]);
-graph.set(5, [3]);
-
-const sccs = stronglyConnectedComponents(graph);
-console.log(sccs);
-// → [ [ 4, 5, 3 ], [ 0, 1, 2 ] ]
-// (order may vary)
