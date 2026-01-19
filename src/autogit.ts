@@ -1,44 +1,53 @@
-// src/apiFetch.ts
-export interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
 /**
- * Pulls a single todo item from the JSON‑Placeholder API.
+ * Returns the area of a triangle.
  *
- * @param todoId  the numeric ID of the todo to fetch
- * @returns          a promise that resolves to the Todo object
+ * You can provide:
+ *   • base & height (Cartesian geometry)
+ *   • three side lengths (Heron's formula)
+ *
+ * @param base   Base of the triangle (required if you give height)
+ * @param height Height of the triangle
+ * @param a      Length of side a
+ * @param b      Length of side b
+ * @param c      Length of side c
+ * @returns      The area, or NaN if the input is invalid.
  */
-export async function getTodoById(todoId: number): Promise<Todo> {
-  const url = `https://jsonplaceholder.typicode.com/todos/${todoId}`;
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: { "Accept": "application/json" },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API responded with ${response.status} ${response.statusText}`);
+export function triangleArea({
+  base,
+  height,
+  a,
+  b,
+  c,
+}: {
+  base?: number;
+  height?: number;
+  a?: number;
+  b?: number;
+  c?: number;
+}): number {
+  // Cartesian: base * height / 2
+  if (base !== undefined && height !== undefined) {
+    if (base <= 0 || height <= 0) return NaN;
+    return (base * height) / 2;
   }
 
-  // `response.json()` already resolves to a `Promise<any>`, so we cast
-  // to `Todo` to satisfy TypeScript.
-  const data = (await response.json()) as Todo;
-  return data;
-}
-// src/start.ts
-import { getTodoById, Todo } from "./apiFetch";
+  // Heron: given three sides
+  if (a !== undefined && b !== undefined && c !== undefined) {
+    if (a <= 0 || b <= 0 || c <= 0) return NaN;
+    // Check triangle inequality: the sum of any two sides must exceed the third
+    if (a + b <= c || a + c <= b || b + c <= a) return NaN;
 
-async function main(): Promise<void> {
-  try {
-    const todo: Todo = await getTodoById(1);
-    console.log("Fetched todo:", todo);
-  } catch (err) {
-    console.error("Failed to fetch todo:", err);
+    const s = (a + b + c) / 2; // semi‑perimeter
+    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
   }
-}
 
-main().catch((outerErr) => console.error("Unhandled error:", outerErr));
+  // If the required parameters aren’t supplied
+  return NaN;
+}
+// Base + height
+const area1 = triangleArea({ base: 10, height: 5 }); // 25
+
+// Three sides
+const area2 = triangleArea({ a: 3, b: 4, c: 5 }); // 6
+
+console.log(area1, area2);
