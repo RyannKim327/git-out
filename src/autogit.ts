@@ -1,52 +1,69 @@
-/** Basic node structure for a binary tree. */
-class TreeNode {
-  /** Value stored in the node (use `any` if you need non‑numeric data). */
-  val: number
-  /** Left child, or null if none. */
-  left: TreeNode | null
-  /** Right child, or null if none. */
-  right: TreeNode | null
+type Edge = { from: number; to: number; weight: number };
 
-  constructor(val: number, left?: TreeNode | null, right?: TreeNode | null) {
-    this.val = val
-    this.left = left ?? null
-    this.right = right ?? null
+interface BellmanFordResult {
+  dist: number[];          // shortest distance from source to each vertex   (Infinity = unreachable)
+  prev: (number | null)[]; // previous vertex on the shortest path, or null
+  hasNegativeCycle: boolean; // true if a negative cycle was detected
+}
+
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult {
+  const dist = Array(vertexCount).fill(Infinity);
+  const prev = Array<number | null>(vertexCount).fill(null);
+
+  dist[source] = 0;
+
+  // 1️⃣ Relax every edge |V|‑1 times
+  for (let i = 0; i < vertexCount - 1; i++) {
+    let updated = false;
+    for (const {from, to, weight} of edges) {
+      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+        dist[to] = dist[from] + weight;
+        prev[to] = from;
+        updated = true;
+      }
+    }
+    // If no distance changed, we’re done early
+    if (!updated) break;
   }
-}
 
-/* ------------------------------------------------------------------ */
-/*  Recursive depth‑first search.  Returns the longest path length.    */
-function maxDepth(root: TreeNode | null): number {
-  if (!root) return 0                    // leaf + null = depth 0
-  const leftDepth  = maxDepth(root.left) // depth goes 1, 2, … from here
-  const rightDepth = maxDepth(root.right)
-  return Math.max(leftDepth, rightDepth) + 1
-}
-
-/* ------------------------------------------------------------------ */
-/*  Iterative breadth‑first search (queue).  Same result, no stack.   */
-function maxDepthIter(root: TreeNode | null): number {
-  if (!root) return 0
-  let max = 0
-  const queue: Array<{ node: TreeNode; depth: number }> = [
-    { node: root, depth: 1 },
-  ]
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!
-    max = Math.max(max, depth)
-    if (node.left)  queue.push({ node: node.left, depth: depth + 1 })
-    if (node.right) queue.push({ node: node.right, depth: depth + 1 })
+  // 2️⃣ Check for negative cycles
+  let hasNegativeCycle = false;
+  for (const {from, to, weight} of edges) {
+    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+      hasNegativeCycle = true;
+      break;
+    }
   }
-  return max
+
+  return {dist, prev, hasNegativeCycle};
 }
+function reconstructPath(prev: (number | null)[], target: number): number[] {
+  const path: number[] = [];
+  let cur: number | null = target;
 
-/* ------------------------------------------------------------------ */
-/*  Example usage ---------------------------------------------------- */
-const root = new TreeNode(1,
-  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-  new TreeNode(3, null, new TreeNode(6))
-)
+  while (cur !== null) {
+    path.push(cur);
+    cur = prev[cur];
+  }
+  path.reverse();
+  return path;
+}
+const edges: Edge[] = [
+  {from: 0, to: 1, weight: 5},
+  {from: 1, to: 2, weight: -2},
+  // ...
+];
+const {dist, prev, hasNegativeCycle} = bellmanFord(5, edges, 0);
 
-console.log('Recursive depth:', maxDepth(root))      // → 3
-console.log('Iterative depth:', maxDepthIter(root)) // → 3
+console.log(dist);               // shortest distances
+console.log(hasNegativeCycle);    // useful flag
+console.log(reconstructPath(prev, 4)); // path from 0 to 4
