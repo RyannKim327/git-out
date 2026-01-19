@@ -1,45 +1,55 @@
-function secondLargest(nums: number[]): number | null {
-  if (nums.length < 2) {            // not enough numbers
-    return null;                    // or throw an error, or whatever feels right
-  }
+/**
+ * Merge‑sort for array of T values.
+ *
+ * @param arr  Input array – left untouched.
+ * @param cmp  Optional comparison function. If omitted, values are compared with < >.
+ * @returns A new sorted array.
+ */
+export function mergeSort<T>(arr: readonly T[], cmp?: (a: T, b: T) => number): T[] {
+  // Base case: arrays of size 0 or 1 are already sorted.
+  if (arr.length <= 1) return [...arr];
 
-  let largest = Number.NEGATIVE_INFINITY;
-  let second  = Number.NEGATIVE_INFINITY;
+  // Helper to merge two already‑sorted halves.
+  const merge = (left: T[], right: T[]): T[] => {
+    const result: T[] = [];
+    let i = 0, j = 0;
 
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;   // old largest becomes second
-      largest = n;
-    } else if (n > second && n < largest) {   // distinct from largest
-      second = n;
+    while (i < left.length && j < right.length) {
+      const l = left[i];
+      const r = right[j];
+      const comp = cmp
+        ? cmp(l, r)
+        : (l as any) < (r as any)
+          ? -1
+          : (l as any) > (r as any)
+          ? 1
+          : 0;
+
+      if (comp <= 0) {
+        result.push(l);
+        i++;
+      } else {
+        result.push(r);
+        j++;
+      }
     }
-  }
 
-  // After the loop, `second` holds the second largest *distinct* value
-  return second === Number.NEGATIVE_INFINITY ? null : second;
-}
-else if (n > second) {   // allow n == largest to fill second slot
-  second = n;
-}
-function secondLargestSorted(nums: number[]): number | null {
-  if (nums.length < 2) return null;
-  const sorted = [...nums].sort((a, b) => b - a); // descending
-  // handle duplicates if you want distinct values
-  return sorted[1];
-}
-function secondLargest(nums: number[]): number | null {
-  if (nums.length < 2) return null;
+    // Push any remaining items from left or right.
+    return result.concat(left.slice(i), right.slice(j));
+  };
 
-  let largest = Number.NEGATIVE_INFINITY;
-  let second  = Number.NEGATIVE_INFINITY;
+  // Split the array into two halves.
+  const middle = Math.floor(arr.length / 2);
+  const left = mergeSort(arr.slice(0, middle), cmp);
+  const right = mergeSort(arr.slice(middle), cmp);
 
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;
-      largest = n;
-    } else if (n > second && n < largest) {
-      second = n;
-    }
-  }
-  return second === Number.NEGATIVE_INFINITY ? null : second;
+  // Merge back together.
+  return merge(left, right);
 }
+const numbers = [42, 1, 23, 4, 16];
+const sorted = mergeSort(numbers);   // [1, 4, 16, 23, 42]
+console.log(sorted);
+console.log(numbers);  // still [42, 1, 23, 4, 16]
+const words = ["banana", "Apple", "cherry"];
+const sortedWords = mergeSort(words, (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+console.log(sortedWords); // ["Apple", "banana", "cherry"]
