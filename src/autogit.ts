@@ -1,60 +1,39 @@
-/**
- * Returns the max sum of any contiguous sub‑array of `nums`.
- * If all numbers are negative, it will still return the best (least negative) value.
- *
- * @param nums Array of numbers
- * @returns maximum sub‑array sum
- */
-function maxSubArraySum(nums: number[]): number {
-  if (nums.length === 0) {
-    throw new Error('Array must contain at least one element');
-  }
-
-  let bestSoFar = nums[0];      // best overall
-  let bestEndingHere = nums[0]; // best ending at current index
-
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the previous sub‑array or start fresh at nums[i]
-    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
-
-    // Update the global best if needed
-    bestSoFar = Math.max(bestSoFar, bestEndingHere);
-  }
-
-  return bestSoFar;
+function factorialRecursive(n: number): number {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
 }
-
-/* Example usage */
-const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
-console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
-function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
-  let bestSoFar = nums[0], bestEndingHere = nums[0];
-  let start = 0, end = 0, tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] > bestEndingHere + nums[i]) {
-      bestEndingHere = nums[i];
-      tempStart = i;          // potential new start
-    } else {
-      bestEndingHere += nums[i];
-    }
-
-    if (bestEndingHere > bestSoFar) {
-      bestSoFar = bestEndingHere;
-      start = tempStart;      // commit new start
-      end = i;
-    }
+console.log(factorialRecursive(5)); // 120
+function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
+  return result;
+}
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1n;
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
+}
+console.log(factorialBigInt(20));        // 2432902008176640000n
+console.log(factorialBigInt(100));       // 9.332621544e+157n (full bigint printed)
+const factorialMemo = (() => {
+  const cache: Record<number, number> = {0: 1, 1: 1};
 
-  return {
-    maxSum: bestSoFar,
-    subArray: nums.slice(start, end + 1),
-    indices: [start, end]
+  const inner = (n: number): number => {
+    if (n in cache) return cache[n];
+    cache[n] = n * inner(n - 1);
+    return cache[n];
   };
-}
-console.log(maxSubArrayDetail(arr));
-// {
-//   maxSum: 6,
-//   subArray: [4, -1, 2, 1],
-//   indices: [3, 6]
-// }
+
+  return inner;
+})();
+console.assert(factorialIterative(0) === 1);
+console.assert(factorialIterative(6) === 720);
+
+console.assert(factorialBigInt(5).toString() === '120');
+console.assert(factorialBigInt(30).toString().startsWith('265252859...'));
