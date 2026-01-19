@@ -1,15 +1,28 @@
-// 1️⃣ Convert with the global Number constructor
-const n1 = Number("42");          // 42
+/**
+ * Binary search on a sorted array.
+ *
+ * @param arr   Sorted array of comparable items.
+ * @param value Value to search for.
+ * @returns Index of value, or -1 if not found.
+ */
+export function binarySearch<T>(arr: T[], value: T): number {
+  let low = 0;
+  let high = arr.length - 1;
 
-// 2️⃣ Use the unary plus – super terse
-const n2 = +"123";                // 123
+  while (low <= high) {
+    // Middle index – floor division
+    const mid = Math.floor((low + high) / 2);
+    const midVal = arr[mid];
 
-// 3️⃣ (recommended for base‑10 integer strings)
-const n3 = parseInt("07", 10);    // 7
-
-// 4️⃣ If you need a float, use parseFloat
-const n4 = parseFloat("3.14");    // 3.14
-const toInt = (s: string | null | undefined): number | null =>
-  s == null ? null : parseInt(s, 10);
-
-const age = toInt(queryParamAge); // gives you a number or null if it's missing
+    if (midVal === value) return mid;      // exact match
+    if (midVal < value) {
+      low = mid + 1;                       // value is in higher half
+    } else {
+      high = mid - 1;                      // value is in lower half
+    }
+  }
+  return -1;  // not found
+}
+const nums = [3, 7, 12, 18, 24, 31, 42];
+const idx = binarySearch(nums, 18); // => 3
+const missing = binarySearch(nums, 5); // => -1
