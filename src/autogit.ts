@@ -1,39 +1,26 @@
 /**
- * Returns the largest prime divisor of `n`.
- * If `n` is 0 or 1, returns `undefined`.
+ * Returns the first non‑repeating character in `str`.
+ * If every character repeats, returns `undefined`.
+ *
+ * @param str – the string to check
  */
-function largestPrimeFactor(n: number): number | undefined {
-  if (n < 2) return undefined;          // no prime factors for 0 or 1
-
-  let num = Math.abs(n);                 // work with a positive number
-  let maxFactor = 1;
-
-  // Handle the factor 2 separately to keep the loop odd.
-  while (num % 2 === 0) {
-    maxFactor = 2;
-    num /= 2;
+function firstNonRepeating(str: string): string | undefined {
+  // 1️⃣ Count how many times every character shows up
+  const freq = new Map<string, number>();
+  for (const ch of str) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  // Now only odd factors are possible.
-  let divisor = 3;
-  const sqrtLimit = Math.sqrt(num);
-  while (divisor <= sqrtLimit) {
-    while (num % divisor === 0) {
-      maxFactor = divisor;
-      num /= divisor;
+  // 2️⃣ Scan again, looking for the first character whose count is 1
+  for (const ch of str) {
+    if (freq.get(ch) === 1) {
+      return ch;          // found it!
     }
-    divisor += 2;                       // skip even numbers
   }
 
-  // If after the loop num > 1, it itself is a prime factor larger than all found.
-  if (num > 1) {
-    maxFactor = num;
-  }
-
-  return maxFactor;
+  return undefined;       // nothing unique found
 }
-console.log(largestPrimeFactor(2));                // 2
-console.log(largestPrimeFactor(28));               // 7
-console.log(largestPrimeFactor(1000003));          // 1000003 (its prime)
-console.log(largestPrimeFactor(123456));           // 643
-console.log(largestPrimeFactor(-84));              // 7
+
+// Demo
+console.log(firstNonRepeating("swiss"));   // → "w"
+console.log(firstNonRepeating("aabb"));    // → undefined
