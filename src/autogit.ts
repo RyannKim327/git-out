@@ -1,58 +1,43 @@
 /**
- * Returns a random integer between min (inclusive) and max (inclusive).
- *
- * @param min – lower bound, inclusive
- * @param max – upper bound, inclusive
+ * Counting sort for integer arrays (can include negatives).
+ * @param arr The input array of numbers.
+ * @returns A new sorted array.
  */
-function randomInt(min: number, max: number): number {
-  // Clamp values to integers just in case
-  const lo = Math.ceil(min);
-  const hi = Math.floor(max);
+export function countingSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-  // Math.random returns a float in [0, 1)
-  const r = Math.random() * (hi - lo + 1);
-  return Math.floor(r) + lo;
-}
-const diceRoll = randomInt(1, 6);   // 1‑6
-const randomIndex = randomInt(0, array.length - 1);
-function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min;
-}
-function secureRandomInt(min: number, max: number): number {
-  const lo = Math.ceil(min);
-  const hi = Math.floor(max);
-
-  // Number of values in our range
-  const range = hi - lo + 1;
-  // Enough bytes to hold the full range
-  const bytesNeeded = Math.ceil(Math.log2(range) / 8);
-
-  // Read random unsigned bytes
-  const rand = new Uint8Array(bytesNeeded);
-  crypto.getRandomValues(rand);
-
-  // Convert bytes to a number
-  let value = 0;
-  for (let i = 0; i < bytesNeeded; i++) {
-    value = (value << 8) | rand[i];
+  // 1) Determine min and max to find the range.
+  let min = arr[0];
+  let max = arr[0];
+  for (const v of arr) {
+    if (v < min) min = v;
+    else if (v > max) max = v;
   }
 
-  // Map into the desired range
-  return (value % range) + lo;
-}
-function randomChoice<T>(arr: T[]): T {
-  if (arr.length === 0) {
-    throw new RangeError('Cannot choose from an empty array');
-  }
-  const idx = randomInt(0, arr.length - 1);
-  return arr[idx];
-}
-const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const range = max - min + 1;          // how many distinct integer values
+  const count = new Array<number>(range).fill(0);
 
-function randomToken(length = 8): string {
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars[randomInt(0, chars.length - 1)];
+  // 2) Count each value
+  for (const v of arr) {
+    count[v - min]++;                   // offset by min so array starts at 0
   }
-  return result;
+
+  // 3) Convert counts to cumulative counts
+  for (let i = 1; i < range; i++) {
+    count[i] += count[i - 1];
+  }
+
+  // 4) Allocate result array
+  const output = new Array<number>(arr.length);
+
+  // 5) Place elements into output in stable order
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const v = arr[i];
+    const idx = v - min;
+    const pos = count[idx] - 1;         // final index for this element
+    output[pos] = v;
+    count[idx]--;                       // decrease count for next instance
+  }
+
+  return output;
 }
