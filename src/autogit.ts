@@ -1,35 +1,30 @@
-/**
- * Recursively searches for `target` inside a sorted array.
- *
- * @param arr  The sorted array to search.
- * @param target The value we're looking for.
- * @param left  The leftmost index to consider (inclusive).
- * @param right The rightmost index to consider (inclusive).
- * @returns The index of `target`, or `-1` if it isn’t present.
- */
-function binarySearchRecursive(
-    arr: number[],
-    target: number,
-    left: number = 0,
-    right: number = arr.length - 1
-): number {
-    if (left > right) {          // Base case: empty search window
-        return -1;
-    }
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
 
-    const mid = Math.floor((left + right) / 2);
+const intersection = a.filter(x => b.includes(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
 
-    if (arr[mid] === target) {
-        return mid;              // Found the target
-    } else if (arr[mid] > target) {
-        // Target is in the left half
-        return binarySearchRecursive(arr, target, left, mid - 1);
-    } else {
-        // Target is in the right half
-        return binarySearchRecursive(arr, target, mid + 1, right);
-    }
-}
-const sorted = [3, 7, 11, 15, 23, 42, 56];
+const setB = new Set(b);
+const intersection = a.filter(x => setB.has(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
 
-console.log(binarySearchRecursive(sorted, 15)); // → 3
-console.log(binarySearchRecursive(sorted, 1));  // → -1
+const [small, large] = a.length < b.length ? [a, b] : [b, a];
+const setSmall = new Set(small);
+
+const intersection = large.filter(x => setSmall.has(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 2, 3, 4];
+const b = [2, 3, 3, 5];
+
+const intersection = Array.from(
+  new Set(a.filter(x => new Set(b).has(x)))
+);
+console.log(intersection); // [2, 3]
+import _ from 'lodash';
+
+const intersection = _.intersection([1, 2, 3], [2, 3, 4]);
+console.log(intersection); // [2, 3]
