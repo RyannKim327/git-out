@@ -1,44 +1,51 @@
-/**
- * Return the longest common prefix of an array of strings.
- *
- * @param arr – list of strings to compare
- * @returns the longest common prefix, or an empty string if none exists
- */
-function longestCommonPrefix(arr: string[]): string {
-  if (!arr.length) return "";
+function isPalindrome(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
+  // Normalise if requested
+  const src = ignoreCase
+    ? s.toLowerCase()
+    : s;
 
-  // The classic “compare the first and last after sorting” trick.
-  // It guarantees we only have to check the two outermost strings,
-  // because any common prefix must be common to all.
-  const sorted = [...arr].sort();                  // sort lexicographically
-  const first = sorted[0];
-  const last  = sorted[sorted.length - 1];
+  // Optionally strip out anything that isn’t a letter or a digit
+  const text = ignoreNonAlpha
+    ? src.replace(/[^a-z0-9]/gi, '')
+    : src;
 
-  let i = 0;
-  const minLen = Math.min(first.length, last.length);
+  let left = 0;
+  let right = text.length - 1;
 
-  while (i < minLen && first.charAt(i) === last.charAt(i)) {
-    i++;
+  while (left < right) {
+    if (text[left] !== text[right]) return false;
+    left++;
+    right--;
   }
-
-  return first.substring(0, i);
+  return true;
 }
-function lcpScan(arr: string[]): string {
-  if (!arr.length) return "";
+console.log(isPalindrome('Racecar'));          // true
+console.log(isPalindrome('A man, a plan!'));   // false
+console.log(isPalindrome('A man, a plan!', true, true)); // true
+function isPalindromeReverse(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
+  const cleaned = ignoreNonAlpha
+    ? s.replace(/[^a-z0-9]/gi, '')
+    : s;
 
-  let prefix = arr[0];
-
-  for (const s of arr.slice(1)) {
-    // shrink prefix until it’s a prefix of s
-    while (!s.startsWith(prefix)) {
-      prefix = prefix.slice(0, -1);
-      if (!prefix) return "";
-    }
-  }
-  return prefix;
+  const cmp = ignoreCase ? cleaned.toLowerCase() : cleaned;
+  const reversed = cmp.split('').reverse().join('');
+  return cmp === reversed;
 }
-const words = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(words)); // → "fl"
+console.log(isPalindromeReverse('Madam In Eden, I’m Adam', true, true)); // true
+const isPalindromeLazy = (s: string, ignoreCase = true, ignoreNonAlpha = false): boolean =>
+  (ignoreNonAlpha ? s.replace(/[^a-z0-9]/gi, '') : s)
+    .toLowerCase()
+    .split('')
+    .every((c, i, a) => c === a[a.length - i - 1]);
+const tests = [
+  { str: 'Radar', expect: true },
+  { str: 'Madam Anna', expect: false },
+  { str: 'Madam Anna', expect: true, options: { ignoreNonAlpha: true } },
+  { str: '12321', expect: true },
+  { str: 'Was it a cat I saw?', expect: true, options: { ignoreNonAlpha: true, ignoreCase: true } },
+];
 
-const zoo = ["dog", "racecar", "car"];
-console.log(longestCommonPrefix(zoo));   // → ""
+tests.forEach(({ str, expect, options }) => {
+  const result = isPalindrome(str, ...(options ? [options.ignoreCase, options.ignoreNonAlpha] : []));
+  console.assert(result === expect, `❌ ${str} should be ${expect}`);
+});
