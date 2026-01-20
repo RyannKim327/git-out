@@ -1,44 +1,24 @@
-/**
- * Return the longest common prefix of an array of strings.
- *
- * @param arr – list of strings to compare
- * @returns the longest common prefix, or an empty string if none exists
- */
-function longestCommonPrefix(arr: string[]): string {
-  if (!arr.length) return "";
+const scores: number[] = [12, 19, 3, 40, 27];
 
-  // The classic “compare the first and last after sorting” trick.
-  // It guarantees we only have to check the two outermost strings,
-  // because any common prefix must be common to all.
-  const sorted = [...arr].sort();                  // sort lexicographically
-  const first = sorted[0];
-  const last  = sorted[sorted.length - 1];
-
-  let i = 0;
-  const minLen = Math.min(first.length, last.length);
-
-  while (i < minLen && first.charAt(i) === last.charAt(i)) {
-    i++;
-  }
-
-  return first.substring(0, i);
+const max = Math.max(...scores);   // 40
+const max = scores.reduce((highest, current) => (current > highest ? current : highest), -Infinity);
+function findMax(arr: number[]): number | undefined {
+  if (arr.length === 0) return undefined;
+  return arr.reduce((m, n) => (n > m ? n : m), arr[0]);
 }
-function lcpScan(arr: string[]): string {
-  if (!arr.length) return "";
+function maxOfArray(arr: number[]): number {
+  if (arr.length === 0) throw new Error('Empty array');
 
-  let prefix = arr[0];
-
-  for (const s of arr.slice(1)) {
-    // shrink prefix until it’s a prefix of s
-    while (!s.startsWith(prefix)) {
-      prefix = prefix.slice(0, -1);
-      if (!prefix) return "";
-    }
+  let max = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] > max) max = arr[i];
   }
-  return prefix;
+  return max;
 }
-const words = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(words)); // → "fl"
+const typed: Int32Array = new Int32Array([2, 5, 9, 1]);
 
-const zoo = ["dog", "racecar", "car"];
-console.log(longestCommonPrefix(zoo));   // → ""
+const max = Math.max.apply(null, typed as unknown as number[]);
+const numbers = [7, 42, -3, 13];
+console.log(Math.max(...numbers)); // 42
+console.log(findMax(numbers));     // 42
+console.log(maxOfArray(numbers));  // 42
