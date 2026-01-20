@@ -1,99 +1,51 @@
-/**
- * A single node inside the trie.
- * 
- * - `children` holds the outgoing edges keyed by the character they represent.
- * - `isEnd` marks that a full word ends at this node.
- */
-class TrieNode {
-  public children: Map<string, TrieNode> = new Map();
-  public isEnd: boolean = false;
-}
+// Stack.ts
+export class Stack<T> {
+  // private backing store
+  private items: T[] = [];
 
-/**
- * The trie itself.
- */
-export class Trie {
-  private root: TrieNode = new TrieNode();
-
-  /**
-   * Add a word to the trie.
-   */
-  insert(word: string): void {
-    let node = this.root;
-    for (const ch of word) {
-      let child = node.children.get(ch);
-      if (!child) {
-        child = new TrieNode();
-        node.children.set(ch, child);
-      }
-      node = child;
-    }
-    node.isEnd = true;
+  /** Push an item onto the stack. */
+  push(item: T): void {
+    this.items.push(item);
   }
 
-  /**
-   * Does the trie contain the exact word?
-   */
-  search(word: string): boolean {
-    const node = this._findNode(word);
-    return node ? node.isEnd : false;
+  /** Remove the top item and return it.  Returns undefined if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
   }
 
-  /**
-   * Does any stored word start with the given prefix?
-   */
-  startsWith(prefix: string): boolean {
-    return Boolean(this._findNode(prefix));
+  /** Peek at the top item without removing it.  Returns undefined if the stack is empty. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
   }
 
-  /**
-   * Optional: remove a word.  The implementation keeps the trie shrunken
-   * by pruning leaf nodes that become unused.
-   */
-  delete(word: string): boolean {
-    const stack: Array<{node: TrieNode, ch: string}> = [];
-    let node = this.root;
-
-    for (const ch of word) {
-      const child = node.children.get(ch);
-      if (!child) return false;        // word not present
-      stack.push({ node, ch });
-      node = child;
-    }
-
-    if (!node.isEnd) return false;      // word not present
-    node.isEnd = false;
-
-    // prune if the node has no children
-    while (stack.length && !node.children.size && !node.isEnd) {
-      const { node: parent, ch } = stack.pop()!;
-      parent.children.delete(ch);
-      node = parent;
-    }
-
-    return true;
+  /** Return true if the stack has no items. */
+  isEmpty(): boolean {
+    return this.items.length === 0;
   }
 
-  /** Helper that walks the trie and returns the last node for a key. */
-  private _findNode(key: string): TrieNode | null {
-    let node = this.root;
-    for (const ch of key) {
-      node = node.children.get(ch) ?? null;
-      if (!node) return null;
-    }
-    return node;
+  /** Current number of elements in the stack. */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Optional: completely clear the stack. */
+  clear(): void {
+    this.items = [];
   }
 }
-const t = new Trie();
-t.insert("hello");
-t.insert("helium");
-t.insert("help");
+import { Stack } from "./Stack";
 
-console.log(t.search("help"));    // true
-console.log(t.search("heal"));    // false
-console.log(t.startsWith("hel")); // true
-console.log(t.startsWith("hep")); // false
+const numberStack = new Stack<number>();
+numberStack.push(10);
+numberStack.push(20);
 
-t.delete("help");
-console.log(t.search("help"));    // false
-console.log(t.startsWith("hel")); // true (because "hello" and "helium" stay)
+console.log(numberStack.peek()); // 20
+console.log(numberStack.pop());  // 20
+console.log(numberStack.size()); // 1
+console.log(numberStack.isEmpty()); // false
+
+// Generic example with strings
+const wordStack = new Stack<string>();
+wordStack.push("hello");
+wordStack.push("world");
+console.log(wordStack.pop()); // world
