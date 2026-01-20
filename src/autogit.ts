@@ -1,39 +1,54 @@
-const original = [1, 2, 3, 4, 5];
+/**
+ * Merge two sorted slices of `arr` into a temporary array.
+ *
+ * @param arr  source array
+ * @param tmp  temporary array of the same length
+ * @param left  start index of the first slice
+ * @param mid   end index (exclusive) of the first slice and start of the second
+ * @param right end index (exclusive) of the second slice
+ */
+function merge(
+  arr: number[],
+  tmp: number[],
+  left: number,
+  mid: number,
+  right: number
+): void {
+  let i = left;   // index in first slice
+  let j = mid;    // index in second slice
+  let k = left;   // index in tmp
 
-// remove every 3
-const withoutThree = original.filter(v => v !== 3);
+  // Copy the relevant segment to tmp
+  for (let idx = left; idx < right; idx++) tmp[idx] = arr[idx];
 
-console.log(original);       // [1, 2, 3, 4, 5]
-console.log(withoutThree);   // [1, 2, 4, 5]
-const removeFirstThree = original.filter((v, i) => v !== 3 || i !== 1);
-const arr = [1, 2, 3, 4, 5];
-
-// find the index you want to remove
-const idx = arr.indexOf(3);
-if (idx !== -1) {
-  arr.splice(idx, 1);      // remove 1 element at idx
+  // Merge back into arr
+  while (i < mid && j < right) {
+    arr[k++] = tmp[i] <= tmp[j] ? tmp[i++] : tmp[j++];
+  }
+  while (i < mid) arr[k++] = tmp[i++];
+  while (j < right) arr[k++] = tmp[j++];
 }
-console.log(arr);           // [1, 2, 4, 5]
-let i = 0;
-while (i < arr.length) {
-  if (arr[i] === 3) {
-    arr.splice(i, 1);
-  } else {
-    i++;
+
+/**
+ * Iterative merge sort.
+ *
+ * @param arr  array to sort in‑place
+ */
+function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  if (n < 2) return; // already sorted
+
+  const tmp = new Array<number>(n);
+
+  // Run size = 1, 2, 4, 8, ...
+  for (let run = 1; run < n; run *= 2) {
+    for (let left = 0; left < n; left += 2 * run) {
+      const mid = Math.min(left + run, n);
+      const right = Math.min(left + 2 * run, n);
+      if (mid < right) merge(arr, tmp, left, mid, right);
+    }
   }
 }
-function removeAtIndex<T>(arr: T[], idx: number): T[] {
-  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
-}
-
-const withoutIdx = removeAtIndex(original, 2);
-const set = new Set(original);
-set.delete(3);
-const arrFromSet = Array.from(set);
-interface Person { id: number; name: string }
-const people = [{ id: 1 }, { id: 2 }, { id: 3 }];
-
-const withoutId2 = people.filter(p => p.id !== 2);   // immutable
-// or
-const idx = people.findIndex(p => p.id === 2);
-if (idx !== -1) people.splice(idx, 1);               // mutate
+const nums = [34, 7, 23, 32, 5, 62];
+mergeSortIterative(nums);
+console.log(nums); // [5, 7, 23, 32, 34, 62]
