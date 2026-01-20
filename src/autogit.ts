@@ -1,91 +1,55 @@
-type BMIndices = { badChar: number[]; goodSuffix: number[] };
+/**
+ * Insertion sort – stable, O(n²) average / worst‑case.
+ *
+ * @param arr   - Array to sort (mutable, in‑place).
+ * @param cmp   - Optional compare function (a < b → negative,
+ *                a > b → positive, a == b → 0).
+ *                If omitted, the default numeric or string
+ *                comparison is used.
+ * @returns     - The same array reference, now sorted.
+ */
+function insertionSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): T[] {
+  // Default comparator: JavaScript's <= works for numbers & strings.
+  const compare = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
-const CHAR_LIMIT = 256;          // size of ASCII table (adjust if you need Unicode)
+  // Work from the second element onward – the sub‑array `[0, i)` is sorted.
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-// Allocate and initialise a lookup array, defaulting to -1
-function initArray(size: number, init: number = -1): number[] {
-  const arr = new Array<number>(size);
-  for (let i = 0; i < size; i++) arr[i] = init;
-  return arr;
-}
-function badCharTable(pattern: string): number[] {
-  const table = initArray(CHAR_LIMIT, -1);
-
-  for (let i = 0; i < pattern.length; i++) {
-    table[pattern.charCodeAt(i)] = i;
-  }
-
-  return table;
-}
-function goodSuffixTable(pat: string): number[] {
-  const m = pat.length;
-  const suffix = initArray(m);
-  const goodSuffix = initArray(m, 0);
-
-  suffix[m - 1] = m;
-  let g = m - 1;
-  let f = 0;
-
-  for (let i = m - 2; i >= 0; i--) {
-    if (i > g && suffix[i + m - 1 - f] < i - g) {
-      suffix[i] = suffix[i + m - 1 - f];
-    } else {
-      g = i;
-      f = i;
-      while (g >= 0 && pat[g] === pat[g + m - 1 - f]) {
-        g--;
-      }
-      suffix[i] = f - g;
-    }
-  }
-
-  // Build the goodSuffix shift table from suffix lengths
-  for (let i = 0; i < m; i++) {
-    goodSuffix[i] = m - suffix[i];
-  }
-
-  return goodSuffix;
-}
-function boyerMooreSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return [];   // nothing to find
-
-  const { badChar, goodSuffix } = preprocess(pattern);
-
-  const matches: number[] = [];
-  let s = 0;                // shift of the pattern wrt text
-
-  while (s <= n - m) {
-    let j = m - 1;
-
-    // Keep moving left while the characters match
-    while (j >= 0 && pattern[j] === text[s + j]) {
+    // Shift larger elements rightward until the right spot is found.
+    while (j >= 0 && compare(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
       j--;
     }
 
-    if (j < 0) {
-      // match found
-      matches.push(s);
-      // next shift: either the good suffix shift or 1
-      s += goodSuffix[0] > 0 ? goodSuffix[0] : 1;
-    } else {
-      const badShift = j - badChar[text.charCodeAt(s + j)];
-      const goodShift = goodSuffix[j];
-      s += Math.max(badShift, goodShift);
-    }
+    // Put the key into its correct place.
+    arr[j + 1] = key;
   }
 
-  return matches;
+  return arr;
 }
+// Numbers
+const nums = [21, 4, 18, 15, 6];
+console.log(insertionSort(nums));          // [4, 6, 15, 18, 21]
 
-function preprocess(pattern: string): BMIndices {
-  return {
-    badChar: badCharTable(pattern),
-    goodSuffix: goodSuffixTable(pattern),
-  };
-}
-const txt = "ABAAABCDABAAABCDAAAABCDABAAABCDAAAABCD";
-const pat = "ABDAB";
+// Strings
+const words = ['peach', 'apple', 'banana'];
+console.log(insertionSort(words));          // ['apple', 'banana', 'peach']
 
-console.log(boyerMooreSearch(txt, pat));  // → [0, 9, 19, 29]
+// Custom objects – sort by `age`
+interface Person { name: string; age: number; }
+const people: Person[] = [
+  { name: 'Ann', age: 33 },
+  { name: 'Bob', age: 24 },
+  { name: 'Cleo', age: 41 },
+];
+
+console.log(
+  insertionSort(people, (a, b) => a.age - b.age)
+); // [{name:'Bob',age:24}, {name:'Ann',age:33}, {name:'Cleo',age:41}]
+console.assert(JSON.stringify(insertionSort([5, 4, 3, 2, 1])) === '[1,2,3,4,5]');
+console.assert(JSON.stringify(insertionSort([{x:2}, {x:1}], (a,b)=>a.x-b.x)) === '[{"x":1},{"x":2}]');
