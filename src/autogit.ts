@@ -1,19 +1,24 @@
-/**
- * Minimal email validator.
- * Covers most real‑world cases without being overly strict.
- */
-export function isValidEmail(email: string): boolean {
-  // 1. Basic structural check: local part @ domain
-  // 2. Local part: letters, digits, dots, hyphens, underscores, and plus
-  // 3. Domain: DNS‑style labels separated by dots; ends in 2‑63‑letter TLD
-  const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,64}$/;
-  return pattern.test(email);
+export function reverseString(s: string): string {
+  return s.split('').reverse().join('');
 }
-import validator from 'validator';
-
-function isValidFullEmail(email: string): boolean {
-  return validator.isEmail(email);  // uses RFC‑compliant logic
+export function reverseStringManual(s: string): string {
+  let result = '';
+  for (let i = s.length - 1; i >= 0; i--) {
+    result += s[i];
+  }
+  return result;
 }
-console.log(isValidEmail('user@example.com'));   // true
-console.log(isValidEmail('bob.smith@sub.domain.co')); // true
-console.log(isValidEmail('invalid-email@'));    // false
+export function reverseStringRecursive(s: string): string {
+  if (s.length <= 1) return s;
+  return reverseStringRecursive(s.slice(1)) + s[0];
+}
+export function reverseStringLoop(s: string): string {
+  const chars = [...s];          // same as s.split('')
+  for (let i = 0, j = chars.length - 1; i < j; i++, j--) {
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join('');
+}
+console.log(reverseString('hello'));          // 'olleh'
+console.log(reverseStringManual('world'));    // 'dlrow'
+console.log(reverseStringRecursive('TypeScript')); // 'tpircSepyT'
