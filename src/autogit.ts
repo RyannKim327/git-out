@@ -1,54 +1,44 @@
 /**
- * Merge two sorted slices of `arr` into a temporary array.
+ * Return the longest common prefix of an array of strings.
  *
- * @param arr  source array
- * @param tmp  temporary array of the same length
- * @param left  start index of the first slice
- * @param mid   end index (exclusive) of the first slice and start of the second
- * @param right end index (exclusive) of the second slice
+ * @param arr – list of strings to compare
+ * @returns the longest common prefix, or an empty string if none exists
  */
-function merge(
-  arr: number[],
-  tmp: number[],
-  left: number,
-  mid: number,
-  right: number
-): void {
-  let i = left;   // index in first slice
-  let j = mid;    // index in second slice
-  let k = left;   // index in tmp
+function longestCommonPrefix(arr: string[]): string {
+  if (!arr.length) return "";
 
-  // Copy the relevant segment to tmp
-  for (let idx = left; idx < right; idx++) tmp[idx] = arr[idx];
+  // The classic “compare the first and last after sorting” trick.
+  // It guarantees we only have to check the two outermost strings,
+  // because any common prefix must be common to all.
+  const sorted = [...arr].sort();                  // sort lexicographically
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
 
-  // Merge back into arr
-  while (i < mid && j < right) {
-    arr[k++] = tmp[i] <= tmp[j] ? tmp[i++] : tmp[j++];
+  let i = 0;
+  const minLen = Math.min(first.length, last.length);
+
+  while (i < minLen && first.charAt(i) === last.charAt(i)) {
+    i++;
   }
-  while (i < mid) arr[k++] = tmp[i++];
-  while (j < right) arr[k++] = tmp[j++];
+
+  return first.substring(0, i);
 }
+function lcpScan(arr: string[]): string {
+  if (!arr.length) return "";
 
-/**
- * Iterative merge sort.
- *
- * @param arr  array to sort in‑place
- */
-function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  if (n < 2) return; // already sorted
+  let prefix = arr[0];
 
-  const tmp = new Array<number>(n);
-
-  // Run size = 1, 2, 4, 8, ...
-  for (let run = 1; run < n; run *= 2) {
-    for (let left = 0; left < n; left += 2 * run) {
-      const mid = Math.min(left + run, n);
-      const right = Math.min(left + 2 * run, n);
-      if (mid < right) merge(arr, tmp, left, mid, right);
+  for (const s of arr.slice(1)) {
+    // shrink prefix until it’s a prefix of s
+    while (!s.startsWith(prefix)) {
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return "";
     }
   }
+  return prefix;
 }
-const nums = [34, 7, 23, 32, 5, 62];
-mergeSortIterative(nums);
-console.log(nums); // [5, 7, 23, 32, 34, 62]
+const words = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(words)); // → "fl"
+
+const zoo = ["dog", "racecar", "car"];
+console.log(longestCommonPrefix(zoo));   // → ""
