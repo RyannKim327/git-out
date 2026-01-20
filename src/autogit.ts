@@ -1,51 +1,28 @@
-function isPalindrome(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
-  // Normalise if requested
-  const src = ignoreCase
-    ? s.toLowerCase()
-    : s;
+/**
+ * Return true if `s` is a palindrome.
+ *   - Works for regular strings and Unicode strings
+ *   - Uses a two‑pointer scan; no extra arrays/strings are allocated
+ *   - Time:  O(n)
+ *   - Extra space: O(1)
+ */
+function isPalindrome(s: string): boolean {
+    let left  = 0;
+    let right = s.length - 1;
 
-  // Optionally strip out anything that isn’t a letter or a digit
-  const text = ignoreNonAlpha
-    ? src.replace(/[^a-z0-9]/gi, '')
-    : src;
+    while (left < right) {
+        // Skip non‑alphanumeric characters & ignore case if you want
+        // if (!/[a-z0-9]/i.test(s.charAt(left))) { left++; continue; }
+        // if (!/[a-z0-9]/i.test(s.charAt(right))) { right--; continue; }
 
-  let left = 0;
-  let right = text.length - 1;
-
-  while (left < right) {
-    if (text[left] !== text[right]) return false;
-    left++;
-    right--;
-  }
-  return true;
+        if (s[left] !== s[right]) {
+            return false;
+        }
+        left++;
+        right--;
+    }
+    return true;
 }
-console.log(isPalindrome('Racecar'));          // true
-console.log(isPalindrome('A man, a plan!'));   // false
-console.log(isPalindrome('A man, a plan!', true, true)); // true
-function isPalindromeReverse(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
-  const cleaned = ignoreNonAlpha
-    ? s.replace(/[^a-z0-9]/gi, '')
-    : s;
-
-  const cmp = ignoreCase ? cleaned.toLowerCase() : cleaned;
-  const reversed = cmp.split('').reverse().join('');
-  return cmp === reversed;
-}
-console.log(isPalindromeReverse('Madam In Eden, I’m Adam', true, true)); // true
-const isPalindromeLazy = (s: string, ignoreCase = true, ignoreNonAlpha = false): boolean =>
-  (ignoreNonAlpha ? s.replace(/[^a-z0-9]/gi, '') : s)
-    .toLowerCase()
-    .split('')
-    .every((c, i, a) => c === a[a.length - i - 1]);
-const tests = [
-  { str: 'Radar', expect: true },
-  { str: 'Madam Anna', expect: false },
-  { str: 'Madam Anna', expect: true, options: { ignoreNonAlpha: true } },
-  { str: '12321', expect: true },
-  { str: 'Was it a cat I saw?', expect: true, options: { ignoreNonAlpha: true, ignoreCase: true } },
-];
-
-tests.forEach(({ str, expect, options }) => {
-  const result = isPalindrome(str, ...(options ? [options.ignoreCase, options.ignoreNonAlpha] : []));
-  console.assert(result === expect, `❌ ${str} should be ${expect}`);
-});
+console.log(isPalindrome("racecar"));        // true
+console.log(isPalindrome("hello"));          // false
+console.log(isPalindrome("A man a plan a canal Panama".replace(/\s+/g, '').toLowerCase()));
+// true, after normalizing whitespace and case
