@@ -1,67 +1,61 @@
-class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+// A generic graph node – you can replace this with whatever you’re actually
+// storing.  Here we just keep a value and an array of child nodes.
+export interface TreeNode<T> {
+  value: T;
+  children: TreeNode<T>[];
 }
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;
+/**
+ * Performs a breadth‑first search up to a depth limit.
+ *
+ * @param root The starting node.
+ * @param maxDepth The maximum path length to explore (0 = only the root).
+ * @param filter A callback that decides whether a node should be “accepted”.
+ *               It receives the node and its depth (root = 0).
+ * @returns An array of all nodes that satisfy the filter within the depth bound.
+ */
+export function breadthLimitedSearch<T>(
+  root: TreeNode<T>,
+  maxDepth: number,
+  filter: (node: TreeNode<T>, depth: number) => boolean
+): TreeNode<T>[] {
+  const result: TreeNode<T>[] = [];
+  const queue: Array<{ node: TreeNode<T>; depth: number }> = [{ node: root, depth: 0 }];
 
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;          // height of a null subtree is 0
+  while (queue.length) {
+    const { node, depth } = queue.shift()!;           // FIFO
+    if (depth > maxDepth) continue;                  // depth guard
 
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
+    if (filter(node, depth)) result.push(node);
 
-    // potential diameter that passes through this node
-    const localDiameter = leftHeight + rightHeight;
-    if (localDiameter > maxDiameter) maxDiameter = localDiameter;
-
-    // height is max child height + 1 edge to the child
-    return Math.max(leftHeight, rightHeight) + 1;
-  }
-
-  dfs(root);
-  return maxDiameter;  // edges count
-}
-// Build a tree:
-//        1
-//       / \
-//      2   3
-//     / \     
-//    4   5  
-const root = new TreeNode(1,
-              new TreeNode(2,
-                new TreeNode(4),
-                new TreeNode(5)
-              ),
-              new TreeNode(3)
-            );
-
-console.log(diameterOfBinaryTree(root)); // → 3
-function diameterIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let maxDiameter = 0;
-  const stack = [{ node: root, visited: false, height: 0 }];
-
-  while (stack.length) {
-    const frame = stack.pop()!;
-    if (!frame.node) continue;
-
-    if (frame.visited) {
-      // Children already processed – compute height & diameter
-      const leftHeight = frame.node.left?.height ?? 0;
-      const rightHeight = frame.node.right?.height ?? 0;
-
-      maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
-      frame.node.height = Math.max(leftHeight, rightHeight) + 1;
-    } else {
-      // First visit: push back as visited and push children
-      stack.push({ node: frame.node, visited: true, height: 0 });
-      if (frame.node.right) stack.push({ node: frame.node.right, visited: false, height: 0 });
-      if (frame.node.left) stack.push({ node: frame.node.left, visited: false, height: 0 });
+    // Push children *after* checking depth to avoid pushing out‑of‑range nodes
+    if (depth < maxDepth) {
+      for (const child of node.children) {
+        queue.push({ node: child, depth: depth + 1 });
+      }
     }
   }
-  return maxDiameter;
+
+  return result;
 }
+// Simple test tree
+const tree: TreeNode<string> = {
+  value: 'root',
+  children: [
+    { value: 'A', children: [] },
+    { value: 'B', children: [
+        { value: 'B1', children: [] },
+        { value: 'B2', children: [] },
+      ]
+    },
+    { value: 'C', children: [] }
+  ]
+};
+
+// Want all nodes that start with "B" and only dive 2 levels deep
+const matches = breadthLimitedSearch(
+  tree,
+  2,
+  (node, depth) => node.value.startsWith('B')
+);
+
+console.log(matches.map(n => n.value)); // ['B', 'B1', 'B2']
