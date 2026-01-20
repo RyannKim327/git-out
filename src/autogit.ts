@@ -1,47 +1,91 @@
-/**
- * Return true if `a` and `b` are anagrams.
- *
- *   * Ignore whitespace and punctuation.
- *   * Ignore case.
- */
-function areAnagramsSorting(a: string, b: string): boolean {
-  const clean = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '').split('').sort().join('');
+type BMIndices = { badChar: number[]; goodSuffix: number[] };
 
-  return clean(a) === clean(b);
+const CHAR_LIMIT = 256;          // size of ASCII table (adjust if you need Unicode)
+
+// Allocate and initialise a lookup array, defaulting to -1
+function initArray(size: number, init: number = -1): number[] {
+  const arr = new Array<number>(size);
+  for (let i = 0; i < size; i++) arr[i] = init;
+  return arr;
 }
+function badCharTable(pattern: string): number[] {
+  const table = initArray(CHAR_LIMIT, -1);
 
-// Example
-console.log(areAnagramsSorting('Listen', 'Silent')); // → true
-/**
- * Count characters and compare the two maps.
- * Complexity: O(n), with `n` = max(a.length, b.length).
- */
-function areAnagramsCounting(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '');
-
-  const strA = normalize(a);
-  const strB = normalize(b);
-
-  if (strA.length !== strB.length) return false;
-
-  const freq: Record<string, number> = {};
-
-  for (const ch of strA) {
-    freq[ch] = (freq[ch] ?? 0) + 1;
+  for (let i = 0; i < pattern.length; i++) {
+    table[pattern.charCodeAt(i)] = i;
   }
 
-  for (const ch of strB) {
-    if (!freq[ch]) return false; // missing or too many
-    freq[ch]! -= 1;
+  return table;
+}
+function goodSuffixTable(pat: string): number[] {
+  const m = pat.length;
+  const suffix = initArray(m);
+  const goodSuffix = initArray(m, 0);
+
+  suffix[m - 1] = m;
+  let g = m - 1;
+  let f = 0;
+
+  for (let i = m - 2; i >= 0; i--) {
+    if (i > g && suffix[i + m - 1 - f] < i - g) {
+      suffix[i] = suffix[i + m - 1 - f];
+    } else {
+      g = i;
+      f = i;
+      while (g >= 0 && pat[g] === pat[g + m - 1 - f]) {
+        g--;
+      }
+      suffix[i] = f - g;
+    }
   }
 
-  return true;
+  // Build the goodSuffix shift table from suffix lengths
+  for (let i = 0; i < m; i++) {
+    goodSuffix[i] = m - suffix[i];
+  }
+
+  return goodSuffix;
+}
+function boyerMooreSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [];   // nothing to find
+
+  const { badChar, goodSuffix } = preprocess(pattern);
+
+  const matches: number[] = [];
+  let s = 0;                // shift of the pattern wrt text
+
+  while (s <= n - m) {
+    let j = m - 1;
+
+    // Keep moving left while the characters match
+    while (j >= 0 && pattern[j] === text[s + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      // match found
+      matches.push(s);
+      // next shift: either the good suffix shift or 1
+      s += goodSuffix[0] > 0 ? goodSuffix[0] : 1;
+    } else {
+      const badShift = j - badChar[text.charCodeAt(s + j)];
+      const goodShift = goodSuffix[j];
+      s += Math.max(badShift, goodShift);
+    }
+  }
+
+  return matches;
 }
 
-// Example
-console.log(areAnagramsCounting('Software', 'Oxfartswe')); // → true
-const anagrams = (a: string, b: string) =>
-  a.toLowerCase().replace(/\W/g, '').split('').sort().join('') ===
-  b.toLowerCase().replace(/\W/g, '').split('').sort().join('');
+function preprocess(pattern: string): BMIndices {
+  return {
+    badChar: badCharTable(pattern),
+    goodSuffix: goodSuffixTable(pattern),
+  };
+}
+const txt = "ABAAABCDABAAABCDAAAABCDABAAABCDAAAABCD";
+const pat = "ABDAB";
+
+console.log(boyerMooreSearch(txt, pat));  // → [0, 9, 19, 29]
