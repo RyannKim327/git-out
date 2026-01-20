@@ -1,33 +1,99 @@
-// Basic node definition
-interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
+/**
+ * A single node inside the trie.
+ * 
+ * - `children` holds the outgoing edges keyed by the character they represent.
+ * - `isEnd` marks that a full word ends at this node.
+ */
+class TrieNode {
+  public children: Map<string, TrieNode> = new Map();
+  public isEnd: boolean = false;
 }
 
-// Helper – takes the head of a list and returns the middle node.
-function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null;
+/**
+ * The trie itself.
+ */
+export class Trie {
+  private root: TrieNode = new TrieNode();
 
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
-
-  // advance `fast` two steps for every one step `slow` takes
-  while (fast !== null && fast.next !== null) {
-    slow = slow!.next;          // will never be null here – just for TS safety
-    fast = fast.next.next;
+  /**
+   * Add a word to the trie.
+   */
+  insert(word: string): void {
+    let node = this.root;
+    for (const ch of word) {
+      let child = node.children.get(ch);
+      if (!child) {
+        child = new TrieNode();
+        node.children.set(ch, child);
+      }
+      node = child;
+    }
+    node.isEnd = true;
   }
 
-  // when fast runs out, slow is at the middle
-  return slow;
+  /**
+   * Does the trie contain the exact word?
+   */
+  search(word: string): boolean {
+    const node = this._findNode(word);
+    return node ? node.isEnd : false;
+  }
+
+  /**
+   * Does any stored word start with the given prefix?
+   */
+  startsWith(prefix: string): boolean {
+    return Boolean(this._findNode(prefix));
+  }
+
+  /**
+   * Optional: remove a word.  The implementation keeps the trie shrunken
+   * by pruning leaf nodes that become unused.
+   */
+  delete(word: string): boolean {
+    const stack: Array<{node: TrieNode, ch: string}> = [];
+    let node = this.root;
+
+    for (const ch of word) {
+      const child = node.children.get(ch);
+      if (!child) return false;        // word not present
+      stack.push({ node, ch });
+      node = child;
+    }
+
+    if (!node.isEnd) return false;      // word not present
+    node.isEnd = false;
+
+    // prune if the node has no children
+    while (stack.length && !node.children.size && !node.isEnd) {
+      const { node: parent, ch } = stack.pop()!;
+      parent.children.delete(ch);
+      node = parent;
+    }
+
+    return true;
+  }
+
+  /** Helper that walks the trie and returns the last node for a key. */
+  private _findNode(key: string): TrieNode | null {
+    let node = this.root;
+    for (const ch of key) {
+      node = node.children.get(ch) ?? null;
+      if (!node) return null;
+    }
+    return node;
+  }
 }
-// Build a tiny list: 1 → 2 → 3 → 4 → 5
-const a: ListNode<number> = { value: 1, next: null };
-const b: ListNode<number> = { value: 2, next: null };
-const c: ListNode<number> = { value: 3, next: null };
-const d: ListNode<number> = { value: 4, next: null };
-const e: ListNode<number> = { value: 5, next: null };
+const t = new Trie();
+t.insert("hello");
+t.insert("helium");
+t.insert("help");
 
-a.next = b; b.next = c; c.next = d; d.next = e;
+console.log(t.search("help"));    // true
+console.log(t.search("heal"));    // false
+console.log(t.startsWith("hel")); // true
+console.log(t.startsWith("hep")); // false
 
-const middle = findMiddle(a);
-console.log(middle?.value); // logs 3
+t.delete("help");
+console.log(t.search("help"));    // false
+console.log(t.startsWith("hel")); // true (because "hello" and "helium" stay)
