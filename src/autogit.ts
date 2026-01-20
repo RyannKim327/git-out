@@ -1,19 +1,30 @@
-/**
- * Minimal email validator.
- * Covers most real‑world cases without being overly strict.
- */
-export function isValidEmail(email: string): boolean {
-  // 1. Basic structural check: local part @ domain
-  // 2. Local part: letters, digits, dots, hyphens, underscores, and plus
-  // 3. Domain: DNS‑style labels separated by dots; ends in 2‑63‑letter TLD
-  const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,64}$/;
-  return pattern.test(email);
-}
-import validator from 'validator';
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
 
-function isValidFullEmail(email: string): boolean {
-  return validator.isEmail(email);  // uses RFC‑compliant logic
-}
-console.log(isValidEmail('user@example.com'));   // true
-console.log(isValidEmail('bob.smith@sub.domain.co')); // true
-console.log(isValidEmail('invalid-email@'));    // false
+const intersection = a.filter(x => b.includes(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
+
+const setB = new Set(b);
+const intersection = a.filter(x => setB.has(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
+
+const [small, large] = a.length < b.length ? [a, b] : [b, a];
+const setSmall = new Set(small);
+
+const intersection = large.filter(x => setSmall.has(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 2, 3, 4];
+const b = [2, 3, 3, 5];
+
+const intersection = Array.from(
+  new Set(a.filter(x => new Set(b).has(x)))
+);
+console.log(intersection); // [2, 3]
+import _ from 'lodash';
+
+const intersection = _.intersection([1, 2, 3], [2, 3, 4]);
+console.log(intersection); // [2, 3]
