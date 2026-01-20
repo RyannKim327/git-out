@@ -1,24 +1,47 @@
-const numbers: number[] = [5, 2, 9, 1, 5, 6];
+/**
+ * Count how many times a whole word appears in a string.
+ *
+ * @param haystack  The text to search.
+ * @param needle    The word you’re looking for.
+ * @param caseSensitive  If false, treat both inputs as lower‑case.
+ * @returns Number of matches.
+ */
+function countWord(
+  haystack: string,
+  needle: string,
+  caseSensitive = false
+): number {
+  if (!needle) return 0;
 
-// sort in place (mutates the original array)
-numbers.sort((a, b) => a - b);
-console.log(numbers); // [1, 2, 5, 5, 6, 9]
-numbers.sort((a, b) => b - a);
-console.log(numbers); // [9, 6, 5, 5, 2, 1]
-const sorted = [...numbers].sort((a, b) => a - b);
-// or
-const sorted = numbers.slice().sort((a, b) => a - b);
-interface Item { value: number; rank: number }
+  const flags = caseSensitive ? 'g' : 'gi';
+  // \b ensures we only match whole words
+  const re = new RegExp(`\\b${escapeRegExp(needle)}\\b`, flags);
+  const matches = haystack.match(re);
+  return matches ? matches.length : 0;
+}
 
-const items: Item[] = [
-  { value: 10, rank: 2 },
-  { value: 12, rank: 1 },
-  { value: 10, rank: 1 }
-];
+/** Helper to escape regex meta‑characters in the needle. */
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+const text = 'The quick brown fox jumps over the lazy dog. The fox was quick.';
 
-items.sort((x, y) => {
-  if (x.value === y.value) return x.rank - y.rank; // tie‑break on rank
-  return x.value - y.value;
-});
+console.log(countWord(text, 'quick'));   // 2
+console.log(countWord(text, 'the'));     // 2 (case‑insensitive)
+console.log(countWord(text, 'the', true)); // 1 (case‑sensitive)
+function countWordUsingSplit(
+  text: string,
+  word: string,
+  caseSensitive = false
+): number {
+  if (!word) return 0;
 
-console.log(items);
+  const base = caseSensitive ? text : text.toLowerCase();
+  const target = caseSensitive ? word : word.toLowerCase();
+
+  // Split on whitespace and punctuation
+  const tokens = base.split(/\W+/).filter(Boolean);
+  return tokens.filter(t => t === target).length;
+}
+const re = new RegExp(escapeRegExp(substring), 'g'); // add gi for case‑insensitive
+const count = (text.match(re) || []).length;
