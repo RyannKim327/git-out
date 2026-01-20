@@ -1,38 +1,53 @@
 /**
- * Returns true if `a` and `b` contain exactly the same characters
- * (ignoring whitespace, punctuation, and case).
+ * Returns the area of a triangle.
+ *
+ * You can provide:
+ *   • base & height (Cartesian geometry)
+ *   • three side lengths (Heron's formula)
+ *
+ * @param base   Base of the triangle (required if you give height)
+ * @param height Height of the triangle
+ * @param a      Length of side a
+ * @param b      Length of side b
+ * @param c      Length of side c
+ * @returns      The area, or NaN if the input is invalid.
  */
-export function isAnagram(a: string, b: string): boolean {
-  // 1. Strip anything that isn’t a letter or a digit, and
-  //    normalize the case to lower‑case.
-  const norm = (s: string) =>
-    s.replace(/\W+/g, "") // removes non‑alphanumeric characters
-      .toLowerCase();
-
-  const cleanA = norm(a);
-  const cleanB = norm(b);
-
-  // 2. Quick length check – if lengths differ, they can’t be anagrams.
-  if (cleanA.length !== cleanB.length) return false;
-
-  // 3. Count each character in a Map.
-  const counter = new Map<string, number>();
-
-  for (const ch of cleanA) {
-    counter.set(ch, (counter.get(ch) ?? 0) + 1);
+export function triangleArea({
+  base,
+  height,
+  a,
+  b,
+  c,
+}: {
+  base?: number;
+  height?: number;
+  a?: number;
+  b?: number;
+  c?: number;
+}): number {
+  // Cartesian: base * height / 2
+  if (base !== undefined && height !== undefined) {
+    if (base <= 0 || height <= 0) return NaN;
+    return (base * height) / 2;
   }
 
-  // 4. Decrement counts with characters from the second string.
-  for (const ch of cleanB) {
-    const cur = counter.get(ch);
-    if (!cur) return false;            // missing or too many of 'ch'
-    if (cur === 1) counter.delete(ch); // tidy up to keep map small
-    else counter.set(ch, cur - 1);
+  // Heron: given three sides
+  if (a !== undefined && b !== undefined && c !== undefined) {
+    if (a <= 0 || b <= 0 || c <= 0) return NaN;
+    // Check triangle inequality: the sum of any two sides must exceed the third
+    if (a + b <= c || a + c <= b || b + c <= a) return NaN;
+
+    const s = (a + b + c) / 2; // semi‑perimeter
+    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
   }
 
-  // 5. If the map is empty, the two strings were perfect anagrams.
-  return counter.size === 0;
+  // If the required parameters aren’t supplied
+  return NaN;
 }
-console.log(isAnagram("Listen", "Silent"));   // true
-console.log(isAnagram("Hello!", "Oleh!"));    // true
-console.log(isAnagram("Hello", "World"));     // false
+// Base + height
+const area1 = triangleArea({ base: 10, height: 5 }); // 25
+
+// Three sides
+const area2 = triangleArea({ a: 3, b: 4, c: 5 }); // 6
+
+console.log(area1, area2);
