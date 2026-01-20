@@ -1,69 +1,70 @@
-type Edge = { from: number; to: number; weight: number };
+function longestCommonSubstring(a: string, b: string): string {
+  if (!a || !b) return '';
 
-interface BellmanFordResult {
-  dist: number[];          // shortest distance from source to each vertex   (Infinity = unreachable)
-  prev: (number | null)[]; // previous vertex on the shortest path, or null
-  hasNegativeCycle: boolean; // true if a negative cycle was detected
-}
+  let maxLen = 0;
+  let maxStart = 0;          // start index inside `a`
 
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult {
-  const dist = Array(vertexCount).fill(Infinity);
-  const prev = Array<number | null>(vertexCount).fill(null);
+  const aLen = a.length;
+  const bLen = b.length;
 
-  dist[source] = 0;
+  // Pick the shorter string as the outer loop to reduce the number of starts
+  const [short, long] = aLen < bLen ? [a, b] : [b, a];
+  const shortLen = short.length;
+  const longLen = long.length;
 
-  // 1️⃣ Relax every edge |V|‑1 times
-  for (let i = 0; i < vertexCount - 1; i++) {
-    let updated = false;
-    for (const {from, to, weight} of edges) {
-      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-        dist[to] = dist[from] + weight;
-        prev[to] = from;
-        updated = true;
+  for (let i = 0; i < shortLen; i++) {
+    for (let j = 0; j < longLen; j++) {
+      let length = 0;
+      while (
+        i + length < shortLen &&
+        j + length < longLen &&
+        short[i + length] === long[j + length]
+      ) {
+        length++;
+      }
+      if (length > maxLen) {
+        maxLen = length;
+        maxStart = i;           // starts in `short`
       }
     }
-    // If no distance changed, we’re done early
-    if (!updated) break;
   }
 
-  // 2️⃣ Check for negative cycles
-  let hasNegativeCycle = false;
-  for (const {from, to, weight} of edges) {
-    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-      hasNegativeCycle = true;
-      break;
+  // Return the slice from the original string that contains the substring
+  const result = short.substr(maxStart, maxLen);
+  // If we swapped the strings we need to return the same slice from the original `a`
+  return aLen < bLen ? result : result; // same, just explicit
+}
+console.log(longestCommonSubstring('abxabc', 'abcaby')); // → 'abc'
+function longestCommonSubstringDP(s1: string, s2: string): string {
+  const n = s1.length;
+  const m = s2.length;
+  if (!n || !m) return '';
+
+  // 2‑row DP to save memory – only previous row needed for current row calculation
+  let prev = new Array(m + 1).fill(0);
+  let curr = new Array(m + 1).fill(0);
+
+  let maxLen = 0;
+  let maxEndIdxS1 = 0; // end index in s1 of longest common substring
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        curr[j] = prev[j - 1] + 1; // extend the previous match
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          maxEndIdxS1 = i; // i is 1‑based
+        }
+      } else {
+        curr[j] = 0;
+      }
     }
+    // swap rows for next iteration
+    [prev, curr] = [curr, prev];
+    curr.fill(0); // reset current row
   }
 
-  return {dist, prev, hasNegativeCycle};
+  // Extract the substring from s1 using the end index and length
+  return s1.slice(maxEndIdxS1 - maxLen, maxEndIdxS1);
 }
-function reconstructPath(prev: (number | null)[], target: number): number[] {
-  const path: number[] = [];
-  let cur: number | null = target;
-
-  while (cur !== null) {
-    path.push(cur);
-    cur = prev[cur];
-  }
-  path.reverse();
-  return path;
-}
-const edges: Edge[] = [
-  {from: 0, to: 1, weight: 5},
-  {from: 1, to: 2, weight: -2},
-  // ...
-];
-const {dist, prev, hasNegativeCycle} = bellmanFord(5, edges, 0);
-
-console.log(dist);               // shortest distances
-console.log(hasNegativeCycle);    // useful flag
-console.log(reconstructPath(prev, 4)); // path from 0 to 4
+console.log(longestCommonSubstringDP('abxabc', 'abcaby')); // → 'abc'
