@@ -1,54 +1,69 @@
 /**
- * Merge two sorted slices of `arr` into a temporary array.
- *
- * @param arr  source array
- * @param tmp  temporary array of the same length
- * @param left  start index of the first slice
- * @param mid   end index (exclusive) of the first slice and start of the second
- * @param right end index (exclusive) of the second slice
+ * Topological sort (Kahn's algorithm).
+ * @param graph – adjacency list: node → list of successors.  Nodes that don’t appear as keys are treated as isolated vertices.
+ * @returns an array of nodes in topological order.
+ * @throws Error if the graph contains a cycle.
  */
-function merge(
-  arr: number[],
-  tmp: number[],
-  left: number,
-  mid: number,
-  right: number
-): void {
-  let i = left;   // index in first slice
-  let j = mid;    // index in second slice
-  let k = left;   // index in tmp
+export function topologicalSort<T extends string | number | symbol>(
+  graph: Partial<Record<T, readonly T[]>>,
+): T[] {
+  // 1. Compute indegree of each vertex
+  const indegree = new Map<T, number>();
+  const nodes = new Set<T>();
 
-  // Copy the relevant segment to tmp
-  for (let idx = left; idx < right; idx++) tmp[idx] = arr[idx];
-
-  // Merge back into arr
-  while (i < mid && j < right) {
-    arr[k++] = tmp[i] <= tmp[j] ? tmp[i++] : tmp[j++];
+  // First pass: collect all vertices (keys + targets)
+  for (const [u, adj] of Object.entries(graph) as [T, T[]][]) {
+    nodes.add(u);
+    for (const v of adj) nodes.add(v);
   }
-  while (i < mid) arr[k++] = tmp[i++];
-  while (j < right) arr[k++] = tmp[j++];
-}
 
-/**
- * Iterative merge sort.
- *
- * @param arr  array to sort in‑place
- */
-function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  if (n < 2) return; // already sorted
+  // Initialise indegree map
+  for (const node of nodes) indegree.set(node, 0);
 
-  const tmp = new Array<number>(n);
-
-  // Run size = 1, 2, 4, 8, ...
-  for (let run = 1; run < n; run *= 2) {
-    for (let left = 0; left < n; left += 2 * run) {
-      const mid = Math.min(left + run, n);
-      const right = Math.min(left + 2 * run, n);
-      if (mid < right) merge(arr, tmp, left, mid, right);
+  // Second pass: count incoming edges
+  for (const adj of Object.values(graph)) {
+    for (const v of adj) {
+      indegree.set(v, (indegree.get(v) ?? 0) + 1);
     }
   }
+
+  // 2. Initialise a queue of all nodes with indegree 0
+  const queue: T[] = [];
+  for (const [node, d] of indegree.entries()) {
+    if (d === 0) queue.push(node);
+  }
+
+  const order: T[] = [];
+
+  // 3. Process the queue
+  while (queue.length) {
+    const u = queue.shift() as T; // queue is never empty here
+    order.push(u);
+
+    const successors = graph[u] ?? [];
+    for (const v of successors) {
+      const d = indegree.get(v)! - 1;
+      indegree.set(v, d);
+      if (d === 0) queue.push(v);
+    }
+  }
+
+  // 4. If we processed all vertices, we succeeded; otherwise a cycle exists
+  if (order.length !== nodes.size) {
+    throw new Error('Graph contains a cycle – no topological ordering possible.');
+  }
+
+  return order;
 }
-const nums = [34, 7, 23, 32, 5, 62];
-mergeSortIterative(nums);
-console.log(nums); // [5, 7, 23, 32, 34, 62]
+const pkgGraph = {
+  // A package can depend on other packages (edges go “downward”)
+  'express': ['body-parser', 'morgan'],
+  'body-parser': ['raw-body'],
+  'morgan': ['stream-http'],
+  'stream-http': [],
+  'raw-body': [],
+  'lodash': [],          // independent package
+};
+
+console.log(topologicalSort(pkgGraph));
+// Possible output: ['lodash', 'stream-http', 'morgan', 'raw-body', 'body-parser', 'express']
