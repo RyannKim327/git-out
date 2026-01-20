@@ -1,69 +1,49 @@
-type Edge = { from: number; to: number; weight: number };
+/**
+ * Return the longest common subsequence of `a` and `b`.
+ *
+ * @param a - first string
+ * @param b - second string
+ * @returns the LCS (may be empty if nothing matches)
+ */
+export function lcs(a: string, b: string): string {
+  const n = a.length;
+  const m = b.length;
 
-interface BellmanFordResult {
-  dist: number[];          // shortest distance from source to each vertex   (Infinity = unreachable)
-  prev: (number | null)[]; // previous vertex on the shortest path, or null
-  hasNegativeCycle: boolean; // true if a negative cycle was detected
-}
+  // dp[i][j] = length of LCS of a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array.from({ length: n + 1 }, () =>
+    new Array(m + 1).fill(0)
+  );
 
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult {
-  const dist = Array(vertexCount).fill(Infinity);
-  const prev = Array<number | null>(vertexCount).fill(null);
-
-  dist[source] = 0;
-
-  // 1️⃣ Relax every edge |V|‑1 times
-  for (let i = 0; i < vertexCount - 1; i++) {
-    let updated = false;
-    for (const {from, to, weight} of edges) {
-      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-        dist[to] = dist[from] + weight;
-        prev[to] = from;
-        updated = true;
+  // Fill table
+  for (let i = 1; i <= n; i++) {
+    const ca = a.charAt(i - 1);
+    for (let j = 1; j <= m; j++) {
+      if (ca === b.charAt(j - 1)) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
       }
     }
-    // If no distance changed, we’re done early
-    if (!updated) break;
   }
 
-  // 2️⃣ Check for negative cycles
-  let hasNegativeCycle = false;
-  for (const {from, to, weight} of edges) {
-    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-      hasNegativeCycle = true;
-      break;
+  // Reconstruct the LCS from the table
+  let i = n, j = m;
+  const chars: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a.charAt(i - 1) === b.charAt(j - 1)) {
+      chars.push(a.charAt(i - 1)); // or b.charAt(j - 1)
+      i--; j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;                        // move up
+    } else {
+      j--;                        // move left
     }
   }
 
-  return {dist, prev, hasNegativeCycle};
+  return chars.reverse().join('');
 }
-function reconstructPath(prev: (number | null)[], target: number): number[] {
-  const path: number[] = [];
-  let cur: number | null = target;
+const s1 = 'ABCBDAB';
+const s2 = 'BDCABC';
 
-  while (cur !== null) {
-    path.push(cur);
-    cur = prev[cur];
-  }
-  path.reverse();
-  return path;
-}
-const edges: Edge[] = [
-  {from: 0, to: 1, weight: 5},
-  {from: 1, to: 2, weight: -2},
-  // ...
-];
-const {dist, prev, hasNegativeCycle} = bellmanFord(5, edges, 0);
-
-console.log(dist);               // shortest distances
-console.log(hasNegativeCycle);    // useful flag
-console.log(reconstructPath(prev, 4)); // path from 0 to 4
+console.log(lcs(s1, s2)); // -> "BCAB"
