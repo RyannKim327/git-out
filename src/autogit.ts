@@ -1,15 +1,33 @@
-// 1️⃣ Convert with the global Number constructor
-const n1 = Number("42");          // 42
+/**
+ * Sorts an array of numbers (or any comparable type) in place
+ * using the classic selection‑sort algorithm.
+ *
+ * @param arr – the array to sort
+ * @returns the same array reference, now sorted
+ */
+export function selectionSort<T>(arr: T[]): T[] {
+    const n = arr.length;
 
-// 2️⃣ Use the unary plus – super terse
-const n2 = +"123";                // 123
+    for (let i = 0; i < n - 1; i++) {
+        // Assume the smallest element starts at i
+        let minIndex = i;
 
-// 3️⃣ (recommended for base‑10 integer strings)
-const n3 = parseInt("07", 10);    // 7
+        // Scan the unsorted suffix to find the real minimum
+        for (let j = i + 1; j < n; j++) {
+            if (arr[j] < arr[minIndex]) {
+                minIndex = j;
+            }
+        }
 
-// 4️⃣ If you need a float, use parseFloat
-const n4 = parseFloat("3.14");    // 3.14
-const toInt = (s: string | null | undefined): number | null =>
-  s == null ? null : parseInt(s, 10);
+        // If the minimum isn’t already in position i, swap
+        if (minIndex !== i) {
+            [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+        }
+    }
 
-const age = toInt(queryParamAge); // gives you a number or null if it's missing
+    return arr;
+}
+const unsorted = [64, 25, 12, 22, 11];
+console.log('Before:', unsorted);
+selectionSort(unsorted);
+console.log('After :', unsorted);
