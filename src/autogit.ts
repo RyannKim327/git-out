@@ -1,52 +1,56 @@
-/** Basic node structure for a binary tree. */
-class TreeNode {
-  /** Value stored in the node (use `any` if you need non‑numeric data). */
-  val: number
-  /** Left child, or null if none. */
-  left: TreeNode | null
-  /** Right child, or null if none. */
-  right: TreeNode | null
+export class ListNode<T> {
+  constructor(
+    public val: T,
+    public next: ListNode<T> | null = null
+  ) {}
+}
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let curr = head;
 
-  constructor(val: number, left?: TreeNode | null, right?: TreeNode | null) {
-    this.val = val
-    this.left = left ?? null
-    this.right = right ?? null
+  while (curr !== null) {
+    const next = curr.next;   // remember where we’re headed
+    curr.next = prev;         // flip the link
+    prev = curr;              // move prev forward
+    curr = next;              // move curr forward
   }
+
+  // At the end of the loop, `prev` is the new head
+  return prev;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Recursive depth‑first search.  Returns the longest path length.    */
-function maxDepth(root: TreeNode | null): number {
-  if (!root) return 0                    // leaf + null = depth 0
-  const leftDepth  = maxDepth(root.left) // depth goes 1, 2, … from here
-  const rightDepth = maxDepth(root.right)
-  return Math.max(leftDepth, rightDepth) + 1
-}
-
-/* ------------------------------------------------------------------ */
-/*  Iterative breadth‑first search (queue).  Same result, no stack.   */
-function maxDepthIter(root: TreeNode | null): number {
-  if (!root) return 0
-  let max = 0
-  const queue: Array<{ node: TreeNode; depth: number }> = [
-    { node: root, depth: 1 },
-  ]
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!
-    max = Math.max(max, depth)
-    if (node.left)  queue.push({ node: node.left, depth: depth + 1 })
-    if (node.right) queue.push({ node: node.right, depth: depth + 1 })
+// Helper to print the list
+function printList<T>(head: ListNode<T> | null): void {
+  const values = [];
+  let curr = head;
+  while (curr) {
+    values.push(curr.val);
+    curr = curr.next;
   }
-  return max
+  console.log(values.join(' → ') + ' → null');
 }
 
-/* ------------------------------------------------------------------ */
-/*  Example usage ---------------------------------------------------- */
-const root = new TreeNode(1,
-  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-  new TreeNode(3, null, new TreeNode(6))
-)
+// Build 1 → 2 → 3 → null
+const head = new ListNode(1,
+             new ListNode(2,
+               new ListNode(3)));
 
-console.log('Recursive depth:', maxDepth(root))      // → 3
-console.log('Iterative depth:', maxDepthIter(root)) // → 3
+console.log('Original list:');
+printList(head);
+
+const reversed = reverseList(head);
+
+console.log('Reversed list:');
+printList(reversed);
+Original list:
+1 → 2 → 3 → null
+Reversed list:
+3 → 2 → 1 → null
+export function reverseListRec<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head || !head.next) return head;         // base case
+
+  const newHead = reverseListRec(head.next);     // reverse rest of list
+  head.next.next = head;                        // make the next node point to us
+  head.next = null;                             // sever old link
+
+  return newHead;                               // new head propagates upward
+}
