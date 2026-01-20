@@ -1,29 +1,26 @@
-const nums = [1, 2, 2, 3, 4, 4, 5];
-const unique = [...new Set(nums)];   // [1, 2, 3,4,5]
-const vals = ['a', 'b', 'a', 'c', 'b'];
-const uniq = vals.filter((value, index, arr) => arr.indexOf(value) === index);
-// ['a','b','c']
-interface User {
-  id: number;
-  name: string;
+/**
+ * Returns the first non‑repeating character in `str`.
+ * If every character repeats, returns `undefined`.
+ *
+ * @param str – the string to check
+ */
+function firstNonRepeating(str: string): string | undefined {
+  // 1️⃣ Count how many times every character shows up
+  const freq = new Map<string, number>();
+  for (const ch of str) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  }
+
+  // 2️⃣ Scan again, looking for the first character whose count is 1
+  for (const ch of str) {
+    if (freq.get(ch) === 1) {
+      return ch;          // found it!
+    }
+  }
+
+  return undefined;       // nothing unique found
 }
 
-const users: User[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob'   },
-  { id: 1, name: 'Alice'},
-  { id: 3, name: 'Carol'},
-];
-
-const uniq = Array.from(
-  users.reduce((map, user) => map.set(user.id, user), new Map<number, User>())
-).map(entry => entry[1]);
-
-// [{id:1,name:'Alice'}, {id:2,name:'Bob'}, {id:3,name:'Carol'}]
-const objs = [{x:1},{x:2},{x:1},{x:3}];
-const uniq = Array.from(
-  new Set(objs.map(o => JSON.stringify(o)))
-).map(str => JSON.parse(str));
-import { uniqBy } from 'lodash';
-
-const uniqUsers = uniqBy(users, 'id');
+// Demo
+console.log(firstNonRepeating("swiss"));   // → "w"
+console.log(firstNonRepeating("aabb"));    // → undefined
