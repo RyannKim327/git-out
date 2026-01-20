@@ -1,60 +1,56 @@
 /**
- * Returns the max sum of any contiguous sub‑array of `nums`.
- * If all numbers are negative, it will still return the best (least negative) value.
+ * Returns the longest strictly increasing subsequence of `arr`.
  *
- * @param nums Array of numbers
- * @returns maximum sub‑array sum
+ * Example:
+ *   longestIncreasingSubsequence([10, 9, 2, 5, 3, 7, 101, 18])
+ *   → [2, 3, 7, 101]
  */
-function maxSubArraySum(nums: number[]): number {
-  if (nums.length === 0) {
-    throw new Error('Array must contain at least one element');
-  }
+export function longestIncreasingSubsequence(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-  let bestSoFar = nums[0];      // best overall
-  let bestEndingHere = nums[0]; // best ending at current index
+  // `tails` keeps the smallest tail value for all subsequences
+  // of a given length. `tails[i]` is the least possible tail of
+  // an increasing subsequence with length i+1.
+  const tails: number[] = [];
+  // `prevIndices` remembers, for each element, the index of its
+  // predecessor in the LIS that passes through that element.
+  const prevIndices: number[] = new Array(arr.length).fill(-1);
+  // `indicesAtLength` holds the index of the last element of the LIS
+  // of a given length, allowing us to reconstruct the sequence.
+  const indicesAtLength: number[] = [];
 
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the previous sub‑array or start fresh at nums[i]
-    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
+  arr.forEach((val, idx) => {
+    // Binary search for the first tail that is >= val
+    let l = 0;
+    let r = tails.length;
+    while (l < r) {
+      const m = Math.floor((l + r) / 2);
+      if (tails[m] < val) l = m + 1;
+      else r = m;
+    }
 
-    // Update the global best if needed
-    bestSoFar = Math.max(bestSoFar, bestEndingHere);
-  }
+    // `l` is the length (0‑based) of the subsequence that will end at idx
+    if (l > 0) prevIndices[idx] = indicesAtLength[l - 1];
 
-  return bestSoFar;
-}
-
-/* Example usage */
-const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
-console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
-function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
-  let bestSoFar = nums[0], bestEndingHere = nums[0];
-  let start = 0, end = 0, tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] > bestEndingHere + nums[i]) {
-      bestEndingHere = nums[i];
-      tempStart = i;          // potential new start
+    if (l === tails.length) {
+      tails.push(val);
+      indicesAtLength.push(idx);
     } else {
-      bestEndingHere += nums[i];
+      tails[l] = val;
+      indicesAtLength[l] = idx;
     }
+  });
 
-    if (bestEndingHere > bestSoFar) {
-      bestSoFar = bestEndingHere;
-      start = tempStart;      // commit new start
-      end = i;
-    }
+  // Reconstruct the LIS from the recorded indices
+  const lis: number[] = [];
+  let k = indicesAtLength[indicesAtLength.length - 1];
+  while (k !== -1) {
+    lis.push(arr[k]);
+    k = prevIndices[k];
   }
-
-  return {
-    maxSum: bestSoFar,
-    subArray: nums.slice(start, end + 1),
-    indices: [start, end]
-  };
+  lis.reverse();
+  return lis;
 }
-console.log(maxSubArrayDetail(arr));
-// {
-//   maxSum: 6,
-//   subArray: [4, -1, 2, 1],
-//   indices: [3, 6]
-// }
+const data = [3, 10, 2, 1, 20];
+console.log(longestIncreasingSubsequence(data));
+// → [3, 10, 20]
