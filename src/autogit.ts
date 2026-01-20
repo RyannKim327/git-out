@@ -1,64 +1,51 @@
-// ────────────────────────
-// Node definition
-// ────────────────────────
-class Node<T> {
-  value: T;
-  next: Node<T> | null = null;
+// Stack.ts
+export class Stack<T> {
+  // private backing store
+  private items: T[] = [];
 
-  constructor(value: T) {
-    this.value = value;
+  /** Push an item onto the stack. */
+  push(item: T): void {
+    this.items.push(item);
+  }
+
+  /** Remove the top item and return it.  Returns undefined if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  /** Peek at the top item without removing it.  Returns undefined if the stack is empty. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Return true if the stack has no items. */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Current number of elements in the stack. */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Optional: completely clear the stack. */
+  clear(): void {
+    this.items = [];
   }
 }
+import { Stack } from "./Stack";
 
-// ────────────────────────
-// LinkedList implementation
-// ────────────────────────
-class LinkedList<T> {
-  head: Node<T> | null = null;
-  tail: Node<T> | null = null;
+const numberStack = new Stack<number>();
+numberStack.push(10);
+numberStack.push(20);
 
-  // Append new value to list
-  push(value: T): void {
-    const newNode = new Node(value);
-    if (!this.head) {
-      this.head = this.tail = newNode;
-      return;
-    }
-    this.tail!.next = newNode;  // non‑null assertion is safe here
-    this.tail = newNode;
-  }
+console.log(numberStack.peek()); // 20
+console.log(numberStack.pop());  // 20
+console.log(numberStack.size()); // 1
+console.log(numberStack.isEmpty()); // false
 
-  // ────── length (iterative)
-  // Return number of nodes
-  length(): number {
-    let count = 0;
-    let current = this.head;
-    while (current !== null) {
-      count++;
-      current = current.next;
-    }
-    return count;
-  }
-
-  // ────── length (recursive helper)
-  private _recursiveLength(node: Node<T> | null): number {
-    if (!node) return 0;
-    return 1 + this._recursiveLength(node.next);
-  }
-
-  // Public wrapper for the recursive version
-  recursiveLength(): number {
-    return this._recursiveLength(this.head);
-  }
-}
-
-// ────────────────────────
-// Demo
-// ────────────────────────
-const list = new LinkedList<number>();
-list.push(1);
-list.push(2);
-list.push(3);
-
-console.log('Iterative length:', list.length());          // 3
-console.log('Recursive length:', list.recursiveLength()); // 3
+// Generic example with strings
+const wordStack = new Stack<string>();
+wordStack.push("hello");
+wordStack.push("world");
+console.log(wordStack.pop()); // world
