@@ -1,104 +1,69 @@
-// ------------------------------------------------------------------
-//  Supporting types
-// ------------------------------------------------------------------
-/**
- * The shape of a graph node.  The `id` is used for a visited set.
- * `getNeighbours` must return raw references that `graph.getNode(id)` can resolve.
- */
-interface Node {
-  readonly id: string;
-  getNeighbours(): Iterable<string>;
+type Edge = { from: number; to: number; weight: number };
+
+interface BellmanFordResult {
+  dist: number[];          // shortest distance from source to each vertex   (Infinity = unreachable)
+  prev: (number | null)[]; // previous vertex on the shortest path, or null
+  hasNegativeCycle: boolean; // true if a negative cycle was detected
 }
 
-/**
- * A tiny graph interface that lets us look up nodes by id.
- * (You can replace this with your own representation; only the method
- * `getNode` is required by the algorithm.)
- */
-interface Graph {
-  /** Return the node instance for the supplied id or `undefined`. */
-  getNode(id: string): Node | undefined;
-}
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult {
+  const dist = Array(vertexCount).fill(Infinity);
+  const prev = Array<number | null>(vertexCount).fill(null);
 
-/**
- * A function tested against a node, returning true when the node is
- * the thing you’re looking for.
- */
-type Predicate = (node: Node) => boolean;
+  dist[source] = 0;
 
-// ------------------------------------------------------------------
-//  Depth‑limited DFS (iterative)
-// ------------------------------------------------------------------
-/**
- * Iterative depth‑limited depth‑first search.
- *
- * @param startId   id of the node where the search begins
- * @param maxDepth  stop expanding after this many edges from `startId`
- * @param graph     the graph interface
- * @param satisfies a predicate that tells when a node is a solution
- *
- * @returns the first node that satisfies `satisfies`, or undefined
- */
-export function depthLimitedSearch(
-  startId: string,
-  maxDepth: number,
-  graph: Graph,
-  satisfies: Predicate
-): Node | undefined {
+  // 1️⃣ Relax every edge |V|‑1 times
+  for (let i = 0; i < vertexCount - 1; i++) {
+    let updated = false;
+    for (const {from, to, weight} of edges) {
+      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+        dist[to] = dist[from] + weight;
+        prev[to] = from;
+        updated = true;
+      }
+    }
+    // If no distance changed, we’re done early
+    if (!updated) break;
+  }
 
-  // Guard against an empty or overly deep request
-  if (maxDepth < 0) return undefined;
-
-  // A stack holds tuples of (node, currentDepth).
-  const stack: Array<[Node, number]> = [];
-  const visited = new Set<string>();
-
-  const startNode = graph.getNode(startId);
-  if (!startNode) return undefined;   // start id is missing
-
-  stack.push([startNode, 0]);
-
-  while (stack.length) {
-    const [node, depth] = stack.pop()!;   // non‑empty promise
-
-    // Avoid revisiting the same node (important for cycles)
-    if (visited.has(node.id)) continue;
-    visited.add(node.id);
-
-    if (satisfies(node)) return node;    // found a match
-
-    if (depth === maxDepth) continue;    // reached depth limit
-
-    // Push neighbours onto the stack – order determines DFS order.
-    for (const neighId of node.getNeighbours()) {
-      const neighbour = graph.getNode(neighId);
-      if (neighbour) stack.push([neighbour, depth + 1]);
+  // 2️⃣ Check for negative cycles
+  let hasNegativeCycle = false;
+  for (const {from, to, weight} of edges) {
+    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+      hasNegativeCycle = true;
+      break;
     }
   }
 
-  return undefined;   // nothing matched within the depth budget
+  return {dist, prev, hasNegativeCycle};
 }
-// A simple example graph implementation
-class SimpleNode implements Node {
-  constructor(public readonly id: string, private readonly neighIds: string[]) {}
-  getNeighbours() { return this.neighIds; }
+function reconstructPath(prev: (number | null)[], target: number): number[] {
+  const path: number[] = [];
+  let cur: number | null = target;
+
+  while (cur !== null) {
+    path.push(cur);
+    cur = prev[cur];
+  }
+  path.reverse();
+  return path;
 }
-class SimpleGraph implements Graph {
-  private readonly nodes = new Map<string, Node>();
-  addNode(node: Node) { this.nodes.set(node.id, node); }
-  getNode(id: string) { return this.nodes.get(id); }
-}
+const edges: Edge[] = [
+  {from: 0, to: 1, weight: 5},
+  {from: 1, to: 2, weight: -2},
+  // ...
+];
+const {dist, prev, hasNegativeCycle} = bellmanFord(5, edges, 0);
 
-// Build a tiny graph
-const g = new SimpleGraph();
-g.addNode(new SimpleNode('A', ['B', 'C']));
-g.addNode(new SimpleNode('B', ['D']));
-g.addNode(new SimpleNode('C', []));
-g.addNode(new SimpleNode('D', []));
-
-// Define a search goal
-const goal = (n: Node) => n.id === 'D';
-
-// Run depth‑limited DFS limited to 2 edges from 'A'
-const result = depthLimitedSearch('A', 2, g, goal);
-console.log(result?.id); // → 'D'
+console.log(dist);               // shortest distances
+console.log(hasNegativeCycle);    // useful flag
+console.log(reconstructPath(prev, 4)); // path from 0 to 4
