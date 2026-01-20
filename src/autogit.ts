@@ -1,68 +1,101 @@
-/**
- * Stable counting sort of `arr` by the digit in position `exp`
- * (exp = 1 → units, 10 → tens, 100 → hundreds, …)
- */
-function countingSortByDigit(arr: number[], exp: number): void {
-  const n = arr.length;
-  const output = new Array<number>(n);
-  const count = new Array<number>(10).fill(0);   // base 10 → digits 0‑9
+// ------------------------------------------------------------
+// 1️⃣  In‑place quick‑sort – most common for competitive coding
+// ------------------------------------------------------------
+function quickSortInPlace<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): void {
+  const swap = (i: number, j: number) => {
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  };
 
-  /* Count occurrences of each digit */
-  for (let i = 0; i < n; i++) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    count[digit] += 1;
+  function partition(low: number, high: number): number {
+    // Pick the last element as pivot (simple but fine for demo)
+    const pivot = arr[high];
+    let i = low - 1;
+
+    for (let j = low; j < high; j++) {
+      if (compare(arr[j], pivot) <= 0) {
+        i++;
+        swap(i, j);
+      }
+    }
+    swap(i + 1, high);
+    return i + 1;
   }
 
-  /* Transform counts into starting indices */
-  for (let i = 1; i < 10; i++) {
-    count[i] += count[i - 1];
+  function quick(low: number, high: number): void {
+    if (low < high) {
+      const pi = partition(low, high);
+      quick(low, pi - 1);
+      quick(pi + 1, high);
+    }
   }
 
-  /* Build the output array from the end to preserve stability */
-  for (let i = n - 1; i >= 0; i--) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    const pos = --count[digit];
-    output[pos] = arr[i];
-  }
-
-  /* Copy back to the original array */
-  for (let i = 0; i < n; i++) {
-    arr[i] = output[i];
-  }
+  quick(0, arr.length - 1);
 }
-/**
- * Radix sort for an array of non‑negative integers.
- * Complexity: O(d · (n + k)) where d = number of digits, k = base (10).
- */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length < 2) return arr;            // already sorted
 
-  // Find the maximum number to know how many digits we need
-  const maxVal = Math.max(...arr);
+// ------------------------------------------------------------
+// 2️⃣  Functional quick‑sort – returns a new sorted array
+// ------------------------------------------------------------
+function quickSortFunctional<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  if (arr.length <= 1) return arr.slice(); // immutable copy
 
-  // Start with the least significant digit (exp = 1)
-  for (let exp = 1; exp <= maxVal; exp *= 10) {
-    countingSortByDigit(arr, exp);
+  // Random pivot for better average performance on already‑sorted data
+  const pivot = arr[Math.floor(Math.random() * arr.length)];
+  const lows = arr.filter((v) => compare(v, pivot) < 0);
+  const highs = arr.filter((v) => compare(v, pivot) > 0);
+  const pivots = arr.filter((v) => compare(v, pivot) === 0);
+
+  return [
+    ...quickSortFunctional(lows, compare),
+    ...pivots,
+    ...quickSortFunctional(highs, compare),
+  ];
+}
+
+// ------------------------------------------------------------
+// 3️⃣  Small helper that wraps the in‑place version and offers
+//     a better pivot strategy
+// ------------------------------------------------------------
+function quickSort<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  // Randomize the array first; this keeps the pivot “good” on many inputs
+  // and eliminates the worst‑case for already‑sorted data.
+  const shuffled = arr.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
 
-  return arr; // sorted array (in‑place)
+  quickSortInPlace(shuffled, compare);
+  return shuffled;
 }
-const data = [170, 45, 75, 90, 802, 24, 2, 66];
 
-radixSort(data);
-console.log(data); // [2, 24, 45, 66, 75, 90, 170, 802]
-export function radixSortMixed(arr: number[]): number[] {
-  const positives: number[] = [];
-  const negatives: number[] = [];
+// ---------------------------
+// Demo usage
+// ---------------------------
 
-  for (const v of arr) {
-    if (v >= 0) positives.push(v);
-    else negatives.push(-v);  // work with absolute values
-  }
+const numbers = [34, 7, 23, 32, 5, 62, 32];
+console.log('in‑place:', (() => {
+  const copy = [...numbers];
+  quickSortInPlace(copy);
+  return copy;
+})());
 
-  radixSort(positives);
-  radixSort(negatives);
+console.log('functional:', quickSortFunctional(numbers));
 
-  const sortedNegatives = negatives.reverse().map(v => -v);
-  return [...sortedNegatives, ...positives];
-}
+console.log('wrapper:', quickSort(numbers));
+
+// ------------------------------------------------------------
+// Done!
+// ------------------------------------------------------------
+const byLength = (a: string, b: string) => a.length - b.length;
+quickSort(stringsArray, byLength);
