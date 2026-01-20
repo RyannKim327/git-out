@@ -1,63 +1,47 @@
-// Node type – each element points to the next one
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
+/**
+ * Count how many times a whole word appears in a string.
+ *
+ * @param haystack  The text to search.
+ * @param needle    The word you’re looking for.
+ * @param caseSensitive  If false, treat both inputs as lower‑case.
+ * @returns Number of matches.
+ */
+function countWord(
+  haystack: string,
+  needle: string,
+  caseSensitive = false
+): number {
+  if (!needle) return 0;
+
+  const flags = caseSensitive ? 'g' : 'gi';
+  // \b ensures we only match whole words
+  const re = new RegExp(`\\b${escapeRegExp(needle)}\\b`, flags);
+  const matches = haystack.match(re);
+  return matches ? matches.length : 0;
 }
 
-// The queue itself
-class LinkedListQueue<T> {
-  private head: ListNode<T> | null = null; // dequeue from here
-  private tail: ListNode<T> | null = null; // enqueue at here
-  private _size: number = 0;
-
-  /** Add an item to the back of the queue */
-  enqueue(value: T): void {
-    const newNode = new ListNode(value);
-    if (this.tail) {
-      this.tail.next = newNode;   // link the old tail to the new node
-    } else {
-      // Empty queue – head and tail both point to the new node
-      this.head = newNode;
-    }
-    this.tail = newNode;
-    this._size++;
-  }
-
-  /** Remove and return the item from the front of the queue.
-      Returns undefined if the queue is empty. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined;
-
-    const value = this.head.value;
-    this.head = this.head.next;          // move head forward
-    if (!this.head) this.tail = null;    // queue became empty
-    this._size--;
-    return value;
-  }
-
-  /** Peek at the front without removing it. */
-  peek(): T | undefined {
-    return this.head?.value;
-  }
-
-  /** Number of items in the queue */
-  get size(): number {
-    return this._size;
-  }
-
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this.size === 0;
-  }
+/** Helper to escape regex meta‑characters in the needle. */
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
-const q = new LinkedListQueue<number>();
+const text = 'The quick brown fox jumps over the lazy dog. The fox was quick.';
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+console.log(countWord(text, 'quick'));   // 2
+console.log(countWord(text, 'the'));     // 2 (case‑insensitive)
+console.log(countWord(text, 'the', true)); // 1 (case‑sensitive)
+function countWordUsingSplit(
+  text: string,
+  word: string,
+  caseSensitive = false
+): number {
+  if (!word) return 0;
 
-console.log(q.peek()); // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.isEmpty()); // false
-console.log(q.dequeue()); // 30
-console.log(q.isEmpty()); // true
+  const base = caseSensitive ? text : text.toLowerCase();
+  const target = caseSensitive ? word : word.toLowerCase();
+
+  // Split on whitespace and punctuation
+  const tokens = base.split(/\W+/).filter(Boolean);
+  return tokens.filter(t => t === target).length;
+}
+const re = new RegExp(escapeRegExp(substring), 'g'); // add gi for case‑insensitive
+const count = (text.match(re) || []).length;
