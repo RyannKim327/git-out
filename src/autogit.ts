@@ -1,26 +1,25 @@
 /**
- * Returns the first non‑repeating character in `str`.
- * If every character repeats, returns `undefined`.
- *
- * @param str – the string to check
+ * Returns true if `n` is a prime number.
+ * Works with any non‑negative integer. For negative numbers or 0/1 it returns false.
  */
-function firstNonRepeating(str: string): string | undefined {
-  // 1️⃣ Count how many times every character shows up
-  const freq = new Map<string, number>();
-  for (const ch of str) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+export function isPrime(n: number): boolean {
+  if (!Number.isInteger(n) || n < 2) return false;   // 0, 1, and non‑ints aren't prime
+  
+  // 2 and 3 are the only even/odd primes.
+  if (n === 2 || n === 3) return true;
+
+  // Even numbers > 2 are not prime.
+  if (n % 2 === 0) return false;
+
+  // Check odd divisors up to √n.
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false;
   }
 
-  // 2️⃣ Scan again, looking for the first character whose count is 1
-  for (const ch of str) {
-    if (freq.get(ch) === 1) {
-      return ch;          // found it!
-    }
-  }
-
-  return undefined;       // nothing unique found
+  return true;
 }
-
-// Demo
-console.log(firstNonRepeating("swiss"));   // → "w"
-console.log(firstNonRepeating("aabb"));    // → undefined
+console.log(isPrime(7));   // true
+console.log(isPrime(20));  // false
+console.log(isPrime(91));  // false (7 × 13)
+console.log(isPrime(97));  // true
