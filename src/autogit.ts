@@ -1,33 +1,39 @@
 /**
- * Bubble sort – O(n²) average / worst case.
- *
- * @param arr – array that will be sorted (mutated)
- * @returns the same array reference, now sorted ascending
+ * Returns the largest prime divisor of `n`.
+ * If `n` is 0 or 1, returns `undefined`.
  */
-function bubbleSort<T>(arr: T[]): T[] {
-  const n = arr.length;
+function largestPrimeFactor(n: number): number | undefined {
+  if (n < 2) return undefined;          // no prime factors for 0 or 1
 
-  // Outer loop: go through the array n‑1 times
-  for (let i = 0; i < n - 1; i++) {
-    // Inner loop scans up to the unsorted part
-    // We can stop early when the array is already sorted
-    let swapped = false;
+  let num = Math.abs(n);                 // work with a positive number
+  let maxFactor = 1;
 
-    for (let j = 0; j < n - 1 - i; j++) {
-      // Use > so that equal values stay in place
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
-    }
-
-    // No swaps means the array is sorted
-    if (!swapped) break;
+  // Handle the factor 2 separately to keep the loop odd.
+  while (num % 2 === 0) {
+    maxFactor = 2;
+    num /= 2;
   }
 
-  return arr;
-}
+  // Now only odd factors are possible.
+  let divisor = 3;
+  const sqrtLimit = Math.sqrt(num);
+  while (divisor <= sqrtLimit) {
+    while (num % divisor === 0) {
+      maxFactor = divisor;
+      num /= divisor;
+    }
+    divisor += 2;                       // skip even numbers
+  }
 
-// Example
-const nums = [64, 34, 25, 12, 22, 11, 90];
-console.log(bubbleSort(nums)); // [11, 12, 22, 25, 34, 64, 90]
+  // If after the loop num > 1, it itself is a prime factor larger than all found.
+  if (num > 1) {
+    maxFactor = num;
+  }
+
+  return maxFactor;
+}
+console.log(largestPrimeFactor(2));                // 2
+console.log(largestPrimeFactor(28));               // 7
+console.log(largestPrimeFactor(1000003));          // 1000003 (its prime)
+console.log(largestPrimeFactor(123456));           // 643
+console.log(largestPrimeFactor(-84));              // 7
