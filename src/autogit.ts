@@ -1,26 +1,42 @@
-/**
- * Returns the first non‑repeating character in `str`.
- * If every character repeats, returns `undefined`.
- *
- * @param str – the string to check
- */
-function firstNonRepeating(str: string): string | undefined {
-  // 1️⃣ Count how many times every character shows up
-  const freq = new Map<string, number>();
-  for (const ch of str) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
-
-  // 2️⃣ Scan again, looking for the first character whose count is 1
-  for (const ch of str) {
-    if (freq.get(ch) === 1) {
-      return ch;          // found it!
-    }
-  }
-
-  return undefined;       // nothing unique found
+// --------------------------------------------------
+// Types
+// --------------------------------------------------
+interface User {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
 }
 
-// Demo
-console.log(firstNonRepeating("swiss"));   // → "w"
-console.log(firstNonRepeating("aabb"));    // → undefined
+// --------------------------------------------------
+// Helper: generic fetch wrapper with type inference
+// --------------------------------------------------
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+
+  // Throw if status is not in the 200–299 range
+  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+  // Let the compiler infer the returned shape
+  return response.json() as Promise<T>;
+}
+
+// --------------------------------------------------
+// Main logic
+// --------------------------------------------------
+async function main() {
+  try {
+    const users = await fetchJson<User[]>(
+      'https://jsonplaceholder.typicode.com/users'
+    );
+
+    users.forEach((u) => console.log(`${u.name} (${u.email})`));
+  } catch (err) {
+    console.error('Fetching failed:', err);
+  }
+}
+
+// --------------------------------------------------
+// Kick it off
+// --------------------------------------------------
+main();
