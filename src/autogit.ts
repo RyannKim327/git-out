@@ -1,45 +1,60 @@
-function secondLargest(nums: number[]): number | null {
-  if (nums.length < 2) {            // not enough numbers
-    return null;                    // or throw an error, or whatever feels right
+/**
+ * Returns the max sum of any contiguous sub‑array of `nums`.
+ * If all numbers are negative, it will still return the best (least negative) value.
+ *
+ * @param nums Array of numbers
+ * @returns maximum sub‑array sum
+ */
+function maxSubArraySum(nums: number[]): number {
+  if (nums.length === 0) {
+    throw new Error('Array must contain at least one element');
   }
 
-  let largest = Number.NEGATIVE_INFINITY;
-  let second  = Number.NEGATIVE_INFINITY;
+  let bestSoFar = nums[0];      // best overall
+  let bestEndingHere = nums[0]; // best ending at current index
 
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;   // old largest becomes second
-      largest = n;
-    } else if (n > second && n < largest) {   // distinct from largest
-      second = n;
+  for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous sub‑array or start fresh at nums[i]
+    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
+
+    // Update the global best if needed
+    bestSoFar = Math.max(bestSoFar, bestEndingHere);
+  }
+
+  return bestSoFar;
+}
+
+/* Example usage */
+const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
+console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
+function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
+  let bestSoFar = nums[0], bestEndingHere = nums[0];
+  let start = 0, end = 0, tempStart = 0;
+
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] > bestEndingHere + nums[i]) {
+      bestEndingHere = nums[i];
+      tempStart = i;          // potential new start
+    } else {
+      bestEndingHere += nums[i];
+    }
+
+    if (bestEndingHere > bestSoFar) {
+      bestSoFar = bestEndingHere;
+      start = tempStart;      // commit new start
+      end = i;
     }
   }
 
-  // After the loop, `second` holds the second largest *distinct* value
-  return second === Number.NEGATIVE_INFINITY ? null : second;
+  return {
+    maxSum: bestSoFar,
+    subArray: nums.slice(start, end + 1),
+    indices: [start, end]
+  };
 }
-else if (n > second) {   // allow n == largest to fill second slot
-  second = n;
-}
-function secondLargestSorted(nums: number[]): number | null {
-  if (nums.length < 2) return null;
-  const sorted = [...nums].sort((a, b) => b - a); // descending
-  // handle duplicates if you want distinct values
-  return sorted[1];
-}
-function secondLargest(nums: number[]): number | null {
-  if (nums.length < 2) return null;
-
-  let largest = Number.NEGATIVE_INFINITY;
-  let second  = Number.NEGATIVE_INFINITY;
-
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;
-      largest = n;
-    } else if (n > second && n < largest) {
-      second = n;
-    }
-  }
-  return second === Number.NEGATIVE_INFINITY ? null : second;
-}
+console.log(maxSubArrayDetail(arr));
+// {
+//   maxSum: 6,
+//   subArray: [4, -1, 2, 1],
+//   indices: [3, 6]
+// }
