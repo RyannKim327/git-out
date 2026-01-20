@@ -1,65 +1,75 @@
-// ---------- Basics ----------
-class ListNode {
-  val: number          // you can keep any data you need
-  next: ListNode | null = null;
+// ──────────────────────────────────────────────────────────────
+// 1.  Types for the graph
+// ──────────────────────────────────────────────────────────────
+interface Node<T = void> {
+  value: T;
+  neighbours: Node<T>[];
+}
 
-  constructor(val: number) {
-    this.val = val;
+// A small helper to create nodes
+function createNode<T>(value: T): Node<T> {
+  return { value, neighbours: [] };
+}
+
+function addEdge<T>(from: Node<T>, to: Node<T>): void {
+  from.neighbours.push(to);
+  to.neighbours.push(from);    // undirected; drop this line for directed graphs
+}
+
+// ──────────────────────────────────────────────────────────────
+// 2.  Depth‑limited search (recursive DFS style)
+// ──────────────────────────────────────────────────────────────
+/**
+ * Searches `startNode` for a node whose value satisfies `goalPredicate`,
+ * but stops expanding any node that appears deeper than `limit` levels.
+ *
+ * @param start      the node to start from
+ * @param goal       a predicate; if it returns true the node is considered the goal
+ * @param limit      max depth to explore
+ * @param visited    internal, tracks visited nodes
+ * @param depth      internal, current depth
+ * @returns          the goal node if found, or null
+ */
+function depthLimitedSearch<T>(
+  start: Node<T>,
+  goal: (value: T) => boolean,
+  limit: number,
+  visited = new Set<Node<T>>(),
+  depth = 0
+): Node<T> | null {
+  if (depth > limit) return null;               // over the limit
+
+  visited.add(start);
+  if (goal(start.value)) return start;          // goal reached
+
+  for (const neighbour of start.neighbours) {
+    if (!visited.has(neighbour)) {
+      const result = depthLimitedSearch(neighbour, goal, limit, visited, depth + 1);
+      if (result !== null) return result;      // propagate success upwards
+    }
   }
+
+  return null;                                  // no goal found within this branch
 }
 
-// ---------- Intersection finder ----------
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  if (!headA || !headB) return null;
+// ──────────────────────────────────────────────────────────────
+// 3.  Example usage
+// ──────────────────────────────────────────────────────────────
+/*
+// Build a tiny graph
+const a = createNode('A');
+const b = createNode('B');
+const c = createNode('C');
+const d = createNode('D');
+const e = createNode('E');
 
-  let ptrA: ListNode | null = headA;
-  let ptrB: ListNode | null = headB;
+addEdge(a, b);
+addEdge(a, c);
+addEdge(b, d);
+addEdge(c, e);
 
-  // After at most two passes through each list the pointers
-  // will either meet at the intersection or both become null.
-  while (ptrA !== ptrB) {
-    ptrA = ptrA ? ptrA.next : headB; // switch to the head of the other list
-    ptrB = ptrB ? ptrB.next : headA;
-  }
+// Find node 'E' but stop after exploring 2 edges from 'A'
+const found = depthLimitedSearch(a, val => val === 'E', 2);
 
-  return ptrA; // either the intersection node, or null
-}
-
-// ---------- Quick demo ----------
-function buildLinkedList(values: number[], offset: number = 0) {
-  let head: ListNode | null = null;
-  let tail: ListNode | null = null;
-  for (let v of values) {
-    const node = new ListNode(v);
-    if (!head) head = node;
-    if (tail) tail.next = node;
-    tail = node;
-  }
-  return { head, tail };
-}
-
-// Common tail that will be shared by two lists
-const { head: shared, tail: sharedTail } = buildLinkedList([8, 10]);
-
-// First list: 3 → 7 → 8 → 10
-const { head: aHead } = buildLinkedList([3, 7]);
-if (aHead && sharedHead) {
-  // connect the shared tail
-  let node = aHead;
-  while (node.next) node = node.next;
-  node.next = shared;
-}
-
-// Second list: 99 → 1 → 8 → 10
-const { head: bHead } = buildLinkedList([99, 1]);
-if (bHead && sharedHead) {
-  let node = bHead;
-  while (node.next) node = node.next;
-  node.next = shared;
-}
-
-const intersection = getIntersectionNode(aHead, bHead);
-console.log(intersection?.val); // prints 8
+console.log(found ? `Found ${found.value}` : 'Not found within depth limit');
+*/
