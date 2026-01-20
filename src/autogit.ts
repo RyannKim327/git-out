@@ -1,39 +1,24 @@
-const original = [1, 2, 3, 4, 5];
+const scores: number[] = [12, 19, 3, 40, 27];
 
-// remove every 3
-const withoutThree = original.filter(v => v !== 3);
-
-console.log(original);       // [1, 2, 3, 4, 5]
-console.log(withoutThree);   // [1, 2, 4, 5]
-const removeFirstThree = original.filter((v, i) => v !== 3 || i !== 1);
-const arr = [1, 2, 3, 4, 5];
-
-// find the index you want to remove
-const idx = arr.indexOf(3);
-if (idx !== -1) {
-  arr.splice(idx, 1);      // remove 1 element at idx
+const max = Math.max(...scores);   // 40
+const max = scores.reduce((highest, current) => (current > highest ? current : highest), -Infinity);
+function findMax(arr: number[]): number | undefined {
+  if (arr.length === 0) return undefined;
+  return arr.reduce((m, n) => (n > m ? n : m), arr[0]);
 }
-console.log(arr);           // [1, 2, 4, 5]
-let i = 0;
-while (i < arr.length) {
-  if (arr[i] === 3) {
-    arr.splice(i, 1);
-  } else {
-    i++;
+function maxOfArray(arr: number[]): number {
+  if (arr.length === 0) throw new Error('Empty array');
+
+  let max = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] > max) max = arr[i];
   }
+  return max;
 }
-function removeAtIndex<T>(arr: T[], idx: number): T[] {
-  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
-}
+const typed: Int32Array = new Int32Array([2, 5, 9, 1]);
 
-const withoutIdx = removeAtIndex(original, 2);
-const set = new Set(original);
-set.delete(3);
-const arrFromSet = Array.from(set);
-interface Person { id: number; name: string }
-const people = [{ id: 1 }, { id: 2 }, { id: 3 }];
-
-const withoutId2 = people.filter(p => p.id !== 2);   // immutable
-// or
-const idx = people.findIndex(p => p.id === 2);
-if (idx !== -1) people.splice(idx, 1);               // mutate
+const max = Math.max.apply(null, typed as unknown as number[]);
+const numbers = [7, 42, -3, 13];
+console.log(Math.max(...numbers)); // 42
+console.log(findMax(numbers));     // 42
+console.log(maxOfArray(numbers));  // 42
