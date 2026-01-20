@@ -1,21 +1,28 @@
-/**
- * Returns the first repeated character in `s`, or `undefined`
- * if nothing repeats.
- *
- * @param s string to inspect
- */
-export function firstRepeatedChar(s: string): string | undefined {
-  const seen = new Set<string>();
+const original = [1, 2, 3, 4, 5];
 
-  for (const ch of s) {
-    if (seen.has(ch)) {
-      return ch;            // first repeat found
-    }
-    seen.add(ch);
+const reversed = [...original].reverse(); // creates a new array, keeps `original` intact
+// or, if you don’t mind mutating the original array
+original.reverse();
+const copy = [...original];  // spread operator makes a new array
+copy.reverse();              // now you have the reversed copy
+function reverseArray<T>(arr: T[]): T[] {
+  const result: T[] = [];
+  for (let i = arr.length - 1; i >= 0; i--) {
+    result.push(arr[i]);
   }
-
-  return undefined;          // no repeats
+  return result;
 }
-console.log(firstRepeatedChar('abcda')); // 'a'
-console.log(firstRepeatedChar('hello world')); // 'l'
-console.log(firstRepeatedChar('abcdef')); // undefined
+
+const reverseManual = reverseArray(original);
+function reverseInPlace<T>(arr: T[]): void {
+  let left = 0;
+  let right = arr.length - 1;
+  while (left < right) {
+    // swap
+    [arr[left], arr[right]] = [arr[right], arr[left]];
+    left++;
+    right--;
+  }
+}
+
+reverseInPlace(original); // `original` is now reversed
