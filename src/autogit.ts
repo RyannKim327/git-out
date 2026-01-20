@@ -1,20 +1,28 @@
-function mean(values: number[]): number {
-  if (values.length === 0) return NaN;          // empty list → no mean
+/**
+ * Binary search on a sorted array.
+ *
+ * @param arr   Sorted array of comparable items.
+ * @param value Value to search for.
+ * @returns Index of value, or -1 if not found.
+ */
+export function binarySearch<T>(arr: T[], value: T): number {
+  let low = 0;
+  let high = arr.length - 1;
 
-  // total everything up
-  const sum = values.reduce((acc, cur) => acc + cur, 0);
+  while (low <= high) {
+    // Middle index – floor division
+    const mid = Math.floor((low + high) / 2);
+    const midVal = arr[mid];
 
-  // divide by how many there are
-  return sum / values.length;
-}
-function meanLoop(values: number[]): number {
-  if (values.length === 0) return NaN;
-
-  let sum = 0;
-  for (const v of values) {
-    sum += v;
+    if (midVal === value) return mid;      // exact match
+    if (midVal < value) {
+      low = mid + 1;                       // value is in higher half
+    } else {
+      high = mid - 1;                      // value is in lower half
+    }
   }
-  return sum / values.length;
+  return -1;  // not found
 }
-console.log(mean([1, 2, 3, 4, 5])); // 3
-console.log(mean([]));              // NaN
+const nums = [3, 7, 12, 18, 24, 31, 42];
+const idx = binarySearch(nums, 18); // => 3
+const missing = binarySearch(nums, 5); // => -1
