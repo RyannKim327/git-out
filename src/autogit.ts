@@ -1,69 +1,29 @@
-/**
- * Builds the BMH bad‑character shift table.
- *
- * For every byte value (0‑255) we store how many positions the algorithm
- * can safely skip when encountering that byte while scanning from the
- * rightmost side of the pattern.
- */
-function makeShiftTable(pattern: string): Uint8Array {
-  const m = pattern.length;
-  const table = new Uint8Array(256);
-  // Default shift is pattern length (skip the whole pattern).
-  table.fill(m);
-
-  // For every non‑last character we set shift = m - i - 1
-  for (let i = 0; i < m - 1; ++i) {
-    const c = pattern.charCodeAt(i);
-    table[c] = m - i - 1;
-  }
-  return table;
+const nums = [1, 2, 2, 3, 4, 4, 5];
+const unique = [...new Set(nums)];   // [1, 2, 3,4,5]
+const vals = ['a', 'b', 'a', 'c', 'b'];
+const uniq = vals.filter((value, index, arr) => arr.indexOf(value) === index);
+// ['a','b','c']
+interface User {
+  id: number;
+  name: string;
 }
 
-/**
- * Boyer‑Moore‑Horspool search.
- *
- * @param text    The text where we look for the pattern.
- * @param pattern The pattern to find.
- * @returns       An array of zero‑based start indices where `pattern`
- *                is found in `text`.  Empty array if no match.
- */
-export function bmhSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
+const users: User[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob'   },
+  { id: 1, name: 'Alice'},
+  { id: 3, name: 'Carol'},
+];
 
-  // Quick exits
-  if (m === 0) return [];          // Empty pattern => nothing meaningful
-  if (m > n) return [];            // Pattern longer than text => impossible
+const uniq = Array.from(
+  users.reduce((map, user) => map.set(user.id, user), new Map<number, User>())
+).map(entry => entry[1]);
 
-  const shiftTable = makeShiftTable(pattern);
-  const result: number[] = [];
+// [{id:1,name:'Alice'}, {id:2,name:'Bob'}, {id:3,name:'Carol'}]
+const objs = [{x:1},{x:2},{x:1},{x:3}];
+const uniq = Array.from(
+  new Set(objs.map(o => JSON.stringify(o)))
+).map(str => JSON.parse(str));
+import { uniqBy } from 'lodash';
 
-  let i = 0; // Current offset in `text` aligning the end of the pattern
-  while (i <= n - m) {
-    // Compare pattern from the end backward
-    let j = m - 1;
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j -= 1;
-    }
-
-    if (j < 0) {               // All characters matched
-      result.push(i);
-      i += 1;                  // For overlapping matches we shift by 1
-    } else {
-      const shiftVal = shiftTable[text.charCodeAt(i + m - 1)];
-      i += shiftVal;
-    }
-  }
-
-  return result;
-}
-
-/* ---------- Example usage --------------------------------- */
-
-const haystack = "abacababcab";
-const needle  = "cab";
-
-const indices = bmhSearch(haystack, needle);
-console.log(`Pattern found at indices: ${indices.join(", ")}`);
-// -> "Pattern found at indices: 3, 8"
-
+const uniqUsers = uniqBy(users, 'id');
