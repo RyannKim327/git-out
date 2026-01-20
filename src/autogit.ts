@@ -1,85 +1,149 @@
-/**
- * `AdjacencyList` is a mapping from a node key to the keys of its neighbors.
- * It works for directed or undirected graphs – just decide how you add edges.
- */
-export type AdjacencyList<K extends string | number> = Record<
-  K,
-  K[] // List of outgoing neighbor keys
->;
-const graph: AdjacencyList<string> = {
-  A: ['B', 'C'],
-  B: ['A', 'D'],
-  C: ['A', 'D'],
-  D: ['B', 'C', 'E'],
-  E: ['D'],
-};
-class Queue<T> {
-  private data: T[] = [];
-  private head = 0;
-  private tail = 0;
-
-  enqueue(item: T) {
-    this.data[this.tail++] = item;
-  }
-
-  dequeue(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    const item = this.data[this.head];
-    // Optional: free memory if the queue shrinks a lot
-    if (this.head % 64 === 0) this.data = this.data.slice(this.head);
-    this.head++;
-    return item;
-  }
-
-  isEmpty() {
-    return this.head >= this.tail;
-  }
+/* ------------------------------------------------------------ */
+/*  A generic node that holds a value and a reference to next   */
+/* ------------------------------------------------------------ */
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
-/**
- * Breadth‑first search on an adjacency list.
- *
- * @param graph      the graph (adjacency list)
- * @param start      the node to start from
- * @param target     optional: stop when this node is reached
- * @returns          { distance: Map<node, number>, parent: Map<node, node | null>, found?: node }
- */
-export function bfs<K extends string | number>(
-  graph: AdjacencyList<K>,
-  start: K,
-  target?: K,
-) {
-  const distance = new Map<K, number>();
-  const parent = new Map<K, K | null>();
 
-  const queue = new Queue<K>();
-  queue.enqueue(start);
-  distance.set(start, 0);
-  parent.set(start, null);
+/* ------------------------------------------------------------ */
+/*  A generic singly‑linked list                               */
+/* ------------------------------------------------------------ */
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
 
-  while (!queue.isEmpty()) {
-    const current = queue.dequeue()!;
-    const curDist = distance.get(current)!;
+  /* ---------- Properties ---------- */
+  get size(): number { return this._size; }
+  get isEmpty(): boolean { return this._size === 0; }
 
-    // Optional early‑exit
-    if (target !== undefined && current === target) {
-      return { distance, parent, found: current };
+  /* ---------- Core Operations ---------- */
+
+  /** Push a value onto the **end** of the list */
+  push(value: T): void {
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      this.tail!.next = node;
+      this.tail = node;
+    }
+    this._size++;
+  }
+
+  /** Unshift a value onto the **head** of the list */
+  unshift(value: T): void {
+    const node = new ListNode(value, this.head);
+    this.head = node;
+    if (!this.tail) this.tail = node;
+    this._size++;
+  }
+
+  /** Remove and return the value at the head */
+  shift(): T | undefined {
+    if (!this.head) return undefined;
+    const value = this.head.value;
+    this.head = this.head.next;
+    if (!this.head) this.tail = null;
+    this._size--;
+    return value;
+  }
+
+  /** Remove and return the value at the tail */
+  pop(): T | undefined {
+    if (!this.head) return undefined;
+    if (!this.tail) return undefined;
+
+    let current = this.head;
+    let prev: ListNode<T> | null = null;
+
+    while (current.next) {
+      prev = current;
+      current = current.next;
     }
 
-    for (const neighbor of graph[current] ?? []) {
-      if (!distance.has(neighbor)) {                // not visited
-        distance.set(neighbor, curDist + 1);
-        parent.set(neighbor, current);
-        queue.enqueue(neighbor);
+    const value = current.value;
+    if (prev) {
+      prev.next = null;
+      this.tail = prev;
+    } else {
+      // list had only one element
+      this.head = this.tail = null;
+    }
+    this._size--;
+    return value;
+  }
+
+  /* ---------- Traversal & Search ---------- */
+
+  /** Find the first node whose value satisfies the predicate */
+  find(predicate: (value: T) => boolean): T | undefined {
+    let node = this.head;
+    while (node) {
+      if (predicate(node.value)) return node.value;
+      node = node.next;
+    }
+    return undefined;
+  }
+
+  /** Convert the list to an array (for debugging or display) */
+  toArray(): T[] {
+    const arr: T[] = [];
+    let node = this.head;
+    while (node) {
+      arr.push(node.value);
+      node = node.next;
+    }
+    return arr;
+  }
+
+  /* ---------- Utility ---------- */
+
+  /** Remove the first node that satisfies the predicate */
+  remove(predicate: (value: T) => boolean): boolean {
+    if (!this.head) return false;
+
+    if (predicate(this.head.value)) {
+      this.shift();
+      return true;
+    }
+
+    let prev = this.head;
+    let current = this.head.next;
+
+    while (current) {
+      if (predicate(current.value)) {
+        prev.next = current.next;
+        if (!current.next) this.tail = prev; // removed tail
+        this._size--;
+        return true;
       }
+      prev = current;
+      current = current.next;
     }
-  }
 
-  return { distance, parent, found: target }; // target not found
+    return false; // not found
+  }
 }
-const result = bfs(graph, 'A', 'E');
-console.log('Distance map:', result.distance);
-console.log('Parent map:', result.parent);
-console.log('Target found?', result.found !== undefined);
-Distance map: Map(5) { 'A' => 0, 'B' => 1, 'C' => 1, 'D' => 2, 'E' => 3 }
-Parent map: Map(5) { 'A' => null, 'B' => 'A', 'C' => 'A', 'D' => 'B', 'E' => 'D' }
-Target found? true
+
+/* ------------------------------------------------------------ */
+/*  Usage example ------------------------------------------------ */
+const list = new LinkedList<number>();
+
+list.push(3);    // 3
+list.push(5);    // 3 → 5
+list.unshift(1); // 1 → 3 → 5
+
+console.log(list.toArray()); // [1, 3, 5]
+console.log(list.shift());   // 1
+console.log(list.pop());     // 5
+console.log(list.toArray()); // [3]
+console.log(list.find(v => v === 3)); // 3
+
+list.remove(v => v === 3);
+console.log(list.toArray()); // []
+
+/* ------------------------------------------------------------ */
