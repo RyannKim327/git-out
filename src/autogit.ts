@@ -1,70 +1,104 @@
-function longestCommonSubstring(a: string, b: string): string {
-  if (!a || !b) return '';
+// ------------------------------------------------------------------
+//  Supporting types
+// ------------------------------------------------------------------
+/**
+ * The shape of a graph node.  The `id` is used for a visited set.
+ * `getNeighbours` must return raw references that `graph.getNode(id)` can resolve.
+ */
+interface Node {
+  readonly id: string;
+  getNeighbours(): Iterable<string>;
+}
 
-  let maxLen = 0;
-  let maxStart = 0;          // start index inside `a`
+/**
+ * A tiny graph interface that lets us look up nodes by id.
+ * (You can replace this with your own representation; only the method
+ * `getNode` is required by the algorithm.)
+ */
+interface Graph {
+  /** Return the node instance for the supplied id or `undefined`. */
+  getNode(id: string): Node | undefined;
+}
 
-  const aLen = a.length;
-  const bLen = b.length;
+/**
+ * A function tested against a node, returning true when the node is
+ * the thing you’re looking for.
+ */
+type Predicate = (node: Node) => boolean;
 
-  // Pick the shorter string as the outer loop to reduce the number of starts
-  const [short, long] = aLen < bLen ? [a, b] : [b, a];
-  const shortLen = short.length;
-  const longLen = long.length;
+// ------------------------------------------------------------------
+//  Depth‑limited DFS (iterative)
+// ------------------------------------------------------------------
+/**
+ * Iterative depth‑limited depth‑first search.
+ *
+ * @param startId   id of the node where the search begins
+ * @param maxDepth  stop expanding after this many edges from `startId`
+ * @param graph     the graph interface
+ * @param satisfies a predicate that tells when a node is a solution
+ *
+ * @returns the first node that satisfies `satisfies`, or undefined
+ */
+export function depthLimitedSearch(
+  startId: string,
+  maxDepth: number,
+  graph: Graph,
+  satisfies: Predicate
+): Node | undefined {
 
-  for (let i = 0; i < shortLen; i++) {
-    for (let j = 0; j < longLen; j++) {
-      let length = 0;
-      while (
-        i + length < shortLen &&
-        j + length < longLen &&
-        short[i + length] === long[j + length]
-      ) {
-        length++;
-      }
-      if (length > maxLen) {
-        maxLen = length;
-        maxStart = i;           // starts in `short`
-      }
+  // Guard against an empty or overly deep request
+  if (maxDepth < 0) return undefined;
+
+  // A stack holds tuples of (node, currentDepth).
+  const stack: Array<[Node, number]> = [];
+  const visited = new Set<string>();
+
+  const startNode = graph.getNode(startId);
+  if (!startNode) return undefined;   // start id is missing
+
+  stack.push([startNode, 0]);
+
+  while (stack.length) {
+    const [node, depth] = stack.pop()!;   // non‑empty promise
+
+    // Avoid revisiting the same node (important for cycles)
+    if (visited.has(node.id)) continue;
+    visited.add(node.id);
+
+    if (satisfies(node)) return node;    // found a match
+
+    if (depth === maxDepth) continue;    // reached depth limit
+
+    // Push neighbours onto the stack – order determines DFS order.
+    for (const neighId of node.getNeighbours()) {
+      const neighbour = graph.getNode(neighId);
+      if (neighbour) stack.push([neighbour, depth + 1]);
     }
   }
 
-  // Return the slice from the original string that contains the substring
-  const result = short.substr(maxStart, maxLen);
-  // If we swapped the strings we need to return the same slice from the original `a`
-  return aLen < bLen ? result : result; // same, just explicit
+  return undefined;   // nothing matched within the depth budget
 }
-console.log(longestCommonSubstring('abxabc', 'abcaby')); // → 'abc'
-function longestCommonSubstringDP(s1: string, s2: string): string {
-  const n = s1.length;
-  const m = s2.length;
-  if (!n || !m) return '';
-
-  // 2‑row DP to save memory – only previous row needed for current row calculation
-  let prev = new Array(m + 1).fill(0);
-  let curr = new Array(m + 1).fill(0);
-
-  let maxLen = 0;
-  let maxEndIdxS1 = 0; // end index in s1 of longest common substring
-
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (s1[i - 1] === s2[j - 1]) {
-        curr[j] = prev[j - 1] + 1; // extend the previous match
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          maxEndIdxS1 = i; // i is 1‑based
-        }
-      } else {
-        curr[j] = 0;
-      }
-    }
-    // swap rows for next iteration
-    [prev, curr] = [curr, prev];
-    curr.fill(0); // reset current row
-  }
-
-  // Extract the substring from s1 using the end index and length
-  return s1.slice(maxEndIdxS1 - maxLen, maxEndIdxS1);
+// A simple example graph implementation
+class SimpleNode implements Node {
+  constructor(public readonly id: string, private readonly neighIds: string[]) {}
+  getNeighbours() { return this.neighIds; }
 }
-console.log(longestCommonSubstringDP('abxabc', 'abcaby')); // → 'abc'
+class SimpleGraph implements Graph {
+  private readonly nodes = new Map<string, Node>();
+  addNode(node: Node) { this.nodes.set(node.id, node); }
+  getNode(id: string) { return this.nodes.get(id); }
+}
+
+// Build a tiny graph
+const g = new SimpleGraph();
+g.addNode(new SimpleNode('A', ['B', 'C']));
+g.addNode(new SimpleNode('B', ['D']));
+g.addNode(new SimpleNode('C', []));
+g.addNode(new SimpleNode('D', []));
+
+// Define a search goal
+const goal = (n: Node) => n.id === 'D';
+
+// Run depth‑limited DFS limited to 2 edges from 'A'
+const result = depthLimitedSearch('A', 2, g, goal);
+console.log(result?.id); // → 'D'
