@@ -1,47 +1,44 @@
 /**
- * Count how many times a whole word appears in a string.
+ * Return the longest common prefix of an array of strings.
  *
- * @param haystack  The text to search.
- * @param needle    The word you’re looking for.
- * @param caseSensitive  If false, treat both inputs as lower‑case.
- * @returns Number of matches.
+ * @param arr – list of strings to compare
+ * @returns the longest common prefix, or an empty string if none exists
  */
-function countWord(
-  haystack: string,
-  needle: string,
-  caseSensitive = false
-): number {
-  if (!needle) return 0;
+function longestCommonPrefix(arr: string[]): string {
+  if (!arr.length) return "";
 
-  const flags = caseSensitive ? 'g' : 'gi';
-  // \b ensures we only match whole words
-  const re = new RegExp(`\\b${escapeRegExp(needle)}\\b`, flags);
-  const matches = haystack.match(re);
-  return matches ? matches.length : 0;
+  // The classic “compare the first and last after sorting” trick.
+  // It guarantees we only have to check the two outermost strings,
+  // because any common prefix must be common to all.
+  const sorted = [...arr].sort();                  // sort lexicographically
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
+
+  let i = 0;
+  const minLen = Math.min(first.length, last.length);
+
+  while (i < minLen && first.charAt(i) === last.charAt(i)) {
+    i++;
+  }
+
+  return first.substring(0, i);
 }
+function lcpScan(arr: string[]): string {
+  if (!arr.length) return "";
 
-/** Helper to escape regex meta‑characters in the needle. */
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  let prefix = arr[0];
+
+  for (const s of arr.slice(1)) {
+    // shrink prefix until it’s a prefix of s
+    while (!s.startsWith(prefix)) {
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return "";
+    }
+  }
+  return prefix;
 }
-const text = 'The quick brown fox jumps over the lazy dog. The fox was quick.';
+const words = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(words)); // → "fl"
 
-console.log(countWord(text, 'quick'));   // 2
-console.log(countWord(text, 'the'));     // 2 (case‑insensitive)
-console.log(countWord(text, 'the', true)); // 1 (case‑sensitive)
-function countWordUsingSplit(
-  text: string,
-  word: string,
-  caseSensitive = false
-): number {
-  if (!word) return 0;
-
-  const base = caseSensitive ? text : text.toLowerCase();
-  const target = caseSensitive ? word : word.toLowerCase();
-
-  // Split on whitespace and punctuation
-  const tokens = base.split(/\W+/).filter(Boolean);
-  return tokens.filter(t => t === target).length;
-}
-const re = new RegExp(escapeRegExp(substring), 'g'); // add gi for case‑insensitive
-const count = (text.match(re) || []).length;
+const zoo = ["dog", "racecar", "car"];
+console.log(longestCommonPrefix(zoo));   // → ""
