@@ -1,85 +1,50 @@
 /**
- * `AdjacencyList` is a mapping from a node key to the keys of its neighbors.
- * It works for directed or undirected graphs – just decide how you add edges.
- */
-export type AdjacencyList<K extends string | number> = Record<
-  K,
-  K[] // List of outgoing neighbor keys
->;
-const graph: AdjacencyList<string> = {
-  A: ['B', 'C'],
-  B: ['A', 'D'],
-  C: ['A', 'D'],
-  D: ['B', 'C', 'E'],
-  E: ['D'],
-};
-class Queue<T> {
-  private data: T[] = [];
-  private head = 0;
-  private tail = 0;
-
-  enqueue(item: T) {
-    this.data[this.tail++] = item;
-  }
-
-  dequeue(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    const item = this.data[this.head];
-    // Optional: free memory if the queue shrinks a lot
-    if (this.head % 64 === 0) this.data = this.data.slice(this.head);
-    this.head++;
-    return item;
-  }
-
-  isEmpty() {
-    return this.head >= this.tail;
-  }
-}
-/**
- * Breadth‑first search on an adjacency list.
+ * Interpolation search – O(log log n) in the ideal case,
+ * O(n) in the worst case (if the array is highly non‑uniform).
  *
- * @param graph      the graph (adjacency list)
- * @param start      the node to start from
- * @param target     optional: stop when this node is reached
- * @returns          { distance: Map<node, number>, parent: Map<node, node | null>, found?: node }
+ * @param arr   An array that is already sorted in ascending order.
+ * @param key   The value to look for.
+ * @returns     The index of `key` in `arr` or -1 if not present.
  */
-export function bfs<K extends string | number>(
-  graph: AdjacencyList<K>,
-  start: K,
-  target?: K,
-) {
-  const distance = new Map<K, number>();
-  const parent = new Map<K, K | null>();
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  // Guard against empty array
+  if (arr.length === 0) return -1;
 
-  const queue = new Queue<K>();
-  queue.enqueue(start);
-  distance.set(start, 0);
-  parent.set(start, null);
+  let low = 0;
+  let high = arr.length - 1;
 
-  while (!queue.isEmpty()) {
-    const current = queue.dequeue()!;
-    const curDist = distance.get(current)!;
+  // Interpolation formula requires a strictly increasing array
+  // and a finite difference between the ends.
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Avoid division by zero when arr[low] == arr[high].
+    if (arr[low] === arr[high]) return arr[low] === key ? low : -1;
 
-    // Optional early‑exit
-    if (target !== undefined && current === target) {
-      return { distance, parent, found: current };
-    }
+    // Estimate the position of the key inside the current bounds.
+    const pos =
+      low +
+      Math.floor(
+        ((high - low) * (key - arr[low])) / (arr[high] - arr[low]),
+      );
 
-    for (const neighbor of graph[current] ?? []) {
-      if (!distance.has(neighbor)) {                // not visited
-        distance.set(neighbor, curDist + 1);
-        parent.set(neighbor, current);
-        queue.enqueue(neighbor);
-      }
+    const value = arr[pos];
+
+    if (value === key) return pos;
+    if (value < key) {
+      low = pos + 1;          // Look in the right sub‑array
+    } else {
+      high = pos - 1;         // Look in the left sub‑array
     }
   }
 
-  return { distance, parent, found: target }; // target not found
+  return -1; // Not found
 }
-const result = bfs(graph, 'A', 'E');
-console.log('Distance map:', result.distance);
-console.log('Parent map:', result.parent);
-console.log('Target found?', result.found !== undefined);
-Distance map: Map(5) { 'A' => 0, 'B' => 1, 'C' => 1, 'D' => 2, 'E' => 3 }
-Parent map: Map(5) { 'A' => null, 'B' => 'A', 'C' => 'A', 'D' => 'B', 'E' => 'D' }
-Target found? true
+const nums = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91, 105];
+console.log(interpolationSearch(nums, 38)); // ➜ 6
+console.log(interpolationSearch(nums, 4));  // ➜ -1
+export function interpolationSearchBy<T, U extends number>(
+  arr: readonly T[],
+  key: U,
+  getKey: (item: T) => U,
+): number {
+  // Same logic, but cast / convert using getKey(item)
+}
