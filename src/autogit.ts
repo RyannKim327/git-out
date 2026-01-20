@@ -1,9 +1,28 @@
-function factorial(n: number): number {
-  if (n <= 1) return 1;   // base case: 0! = 1 and 1! = 1
-  return n * factorial(n - 1);
+/**
+ * Binary search on a sorted array.
+ *
+ * @param arr   Sorted array of comparable items.
+ * @param value Value to search for.
+ * @returns Index of value, or -1 if not found.
+ */
+export function binarySearch<T>(arr: T[], value: T): number {
+  let low = 0;
+  let high = arr.length - 1;
+
+  while (low <= high) {
+    // Middle index – floor division
+    const mid = Math.floor((low + high) / 2);
+    const midVal = arr[mid];
+
+    if (midVal === value) return mid;      // exact match
+    if (midVal < value) {
+      low = mid + 1;                       // value is in higher half
+    } else {
+      high = mid - 1;                      // value is in lower half
+    }
+  }
+  return -1;  // not found
 }
-console.log(factorial(5)); // 120
-function factorialBig(n: bigint): bigint {
-  if (n <= 1n) return 1n;
-  return n * factorialBig(n - 1n);
-}
+const nums = [3, 7, 12, 18, 24, 31, 42];
+const idx = binarySearch(nums, 18); // => 3
+const missing = binarySearch(nums, 5); // => -1
