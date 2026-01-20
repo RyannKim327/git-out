@@ -1,39 +1,45 @@
-/**
- * Returns the largest prime divisor of `n`.
- * If `n` is 0 or 1, returns `undefined`.
- */
-function largestPrimeFactor(n: number): number | undefined {
-  if (n < 2) return undefined;          // no prime factors for 0 or 1
-
-  let num = Math.abs(n);                 // work with a positive number
-  let maxFactor = 1;
-
-  // Handle the factor 2 separately to keep the loop odd.
-  while (num % 2 === 0) {
-    maxFactor = 2;
-    num /= 2;
+function secondLargest(nums: number[]): number | null {
+  if (nums.length < 2) {            // not enough numbers
+    return null;                    // or throw an error, or whatever feels right
   }
 
-  // Now only odd factors are possible.
-  let divisor = 3;
-  const sqrtLimit = Math.sqrt(num);
-  while (divisor <= sqrtLimit) {
-    while (num % divisor === 0) {
-      maxFactor = divisor;
-      num /= divisor;
+  let largest = Number.NEGATIVE_INFINITY;
+  let second  = Number.NEGATIVE_INFINITY;
+
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;   // old largest becomes second
+      largest = n;
+    } else if (n > second && n < largest) {   // distinct from largest
+      second = n;
     }
-    divisor += 2;                       // skip even numbers
   }
 
-  // If after the loop num > 1, it itself is a prime factor larger than all found.
-  if (num > 1) {
-    maxFactor = num;
-  }
-
-  return maxFactor;
+  // After the loop, `second` holds the second largest *distinct* value
+  return second === Number.NEGATIVE_INFINITY ? null : second;
 }
-console.log(largestPrimeFactor(2));                // 2
-console.log(largestPrimeFactor(28));               // 7
-console.log(largestPrimeFactor(1000003));          // 1000003 (its prime)
-console.log(largestPrimeFactor(123456));           // 643
-console.log(largestPrimeFactor(-84));              // 7
+else if (n > second) {   // allow n == largest to fill second slot
+  second = n;
+}
+function secondLargestSorted(nums: number[]): number | null {
+  if (nums.length < 2) return null;
+  const sorted = [...nums].sort((a, b) => b - a); // descending
+  // handle duplicates if you want distinct values
+  return sorted[1];
+}
+function secondLargest(nums: number[]): number | null {
+  if (nums.length < 2) return null;
+
+  let largest = Number.NEGATIVE_INFINITY;
+  let second  = Number.NEGATIVE_INFINITY;
+
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;
+      largest = n;
+    } else if (n > second && n < largest) {
+      second = n;
+    }
+  }
+  return second === Number.NEGATIVE_INFINITY ? null : second;
+}
