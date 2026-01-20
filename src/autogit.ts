@@ -1,47 +1,69 @@
-/**
- * Count how many times a whole word appears in a string.
- *
- * @param haystack  The text to search.
- * @param needle    The word you’re looking for.
- * @param caseSensitive  If false, treat both inputs as lower‑case.
- * @returns Number of matches.
- */
-function countWord(
-  haystack: string,
-  needle: string,
-  caseSensitive = false
-): number {
-  if (!needle) return 0;
+type Edge = { from: number; to: number; weight: number };
 
-  const flags = caseSensitive ? 'g' : 'gi';
-  // \b ensures we only match whole words
-  const re = new RegExp(`\\b${escapeRegExp(needle)}\\b`, flags);
-  const matches = haystack.match(re);
-  return matches ? matches.length : 0;
+interface BellmanFordResult {
+  dist: number[];          // shortest distance from source to each vertex   (Infinity = unreachable)
+  prev: (number | null)[]; // previous vertex on the shortest path, or null
+  hasNegativeCycle: boolean; // true if a negative cycle was detected
 }
 
-/** Helper to escape regex meta‑characters in the needle. */
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult {
+  const dist = Array(vertexCount).fill(Infinity);
+  const prev = Array<number | null>(vertexCount).fill(null);
+
+  dist[source] = 0;
+
+  // 1️⃣ Relax every edge |V|‑1 times
+  for (let i = 0; i < vertexCount - 1; i++) {
+    let updated = false;
+    for (const {from, to, weight} of edges) {
+      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+        dist[to] = dist[from] + weight;
+        prev[to] = from;
+        updated = true;
+      }
+    }
+    // If no distance changed, we’re done early
+    if (!updated) break;
+  }
+
+  // 2️⃣ Check for negative cycles
+  let hasNegativeCycle = false;
+  for (const {from, to, weight} of edges) {
+    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+      hasNegativeCycle = true;
+      break;
+    }
+  }
+
+  return {dist, prev, hasNegativeCycle};
 }
-const text = 'The quick brown fox jumps over the lazy dog. The fox was quick.';
+function reconstructPath(prev: (number | null)[], target: number): number[] {
+  const path: number[] = [];
+  let cur: number | null = target;
 
-console.log(countWord(text, 'quick'));   // 2
-console.log(countWord(text, 'the'));     // 2 (case‑insensitive)
-console.log(countWord(text, 'the', true)); // 1 (case‑sensitive)
-function countWordUsingSplit(
-  text: string,
-  word: string,
-  caseSensitive = false
-): number {
-  if (!word) return 0;
-
-  const base = caseSensitive ? text : text.toLowerCase();
-  const target = caseSensitive ? word : word.toLowerCase();
-
-  // Split on whitespace and punctuation
-  const tokens = base.split(/\W+/).filter(Boolean);
-  return tokens.filter(t => t === target).length;
+  while (cur !== null) {
+    path.push(cur);
+    cur = prev[cur];
+  }
+  path.reverse();
+  return path;
 }
-const re = new RegExp(escapeRegExp(substring), 'g'); // add gi for case‑insensitive
-const count = (text.match(re) || []).length;
+const edges: Edge[] = [
+  {from: 0, to: 1, weight: 5},
+  {from: 1, to: 2, weight: -2},
+  // ...
+];
+const {dist, prev, hasNegativeCycle} = bellmanFord(5, edges, 0);
+
+console.log(dist);               // shortest distances
+console.log(hasNegativeCycle);    // useful flag
+console.log(reconstructPath(prev, 4)); // path from 0 to 4
