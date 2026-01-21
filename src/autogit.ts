@@ -1,43 +1,69 @@
-/**
- * Shell sort – an in‑place comparison sort.
- *
- * @param arr   The array to sort.
- * @param cmp   Optional comparator: (a, b) => number. Positive if a > b,
- *              negative if a < b, zero if equal. If omitted, the
- *              default uses the `<` operator.
- * @returns     The same array instance, now sorted.
- */
-export function shellSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-  const compare = cmp ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+type Edge = { from: number; to: number; weight: number };
 
-  let n = arr.length;
-  // Start with a gap of about n/2 and halve it each loop.
-  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Insertion‑sort on elements gap apart.
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      // Shift all larger gap‑spaced elements one step forward.
-      while (j >= gap && compare(temp, arr[j - gap]) < 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
+interface BellmanFordResult {
+  dist: number[];          // shortest distance from source to each vertex   (Infinity = unreachable)
+  prev: (number | null)[]; // previous vertex on the shortest path, or null
+  hasNegativeCycle: boolean; // true if a negative cycle was detected
+}
+
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult {
+  const dist = Array(vertexCount).fill(Infinity);
+  const prev = Array<number | null>(vertexCount).fill(null);
+
+  dist[source] = 0;
+
+  // 1️⃣ Relax every edge |V|‑1 times
+  for (let i = 0; i < vertexCount - 1; i++) {
+    let updated = false;
+    for (const {from, to, weight} of edges) {
+      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+        dist[to] = dist[from] + weight;
+        prev[to] = from;
+        updated = true;
       }
-      arr[j] = temp;
+    }
+    // If no distance changed, we’re done early
+    if (!updated) break;
+  }
+
+  // 2️⃣ Check for negative cycles
+  let hasNegativeCycle = false;
+  for (const {from, to, weight} of edges) {
+    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+      hasNegativeCycle = true;
+      break;
     }
   }
-  return arr;
+
+  return {dist, prev, hasNegativeCycle};
 }
-// sort.ts
-export { shellSort };
-// └─ ... implementation shown above
-import { shellSort } from './sort';
+function reconstructPath(prev: (number | null)[], target: number): number[] {
+  const path: number[] = [];
+  let cur: number | null = target;
 
-const numbers = [23, 12, 1, 10, 7, 3, 9];
-console.log('unsorted:', numbers);
+  while (cur !== null) {
+    path.push(cur);
+    cur = prev[cur];
+  }
+  path.reverse();
+  return path;
+}
+const edges: Edge[] = [
+  {from: 0, to: 1, weight: 5},
+  {from: 1, to: 2, weight: -2},
+  // ...
+];
+const {dist, prev, hasNegativeCycle} = bellmanFord(5, edges, 0);
 
-shellSort(numbers);                 // default numeric comparison
-console.log('sorted:   ', numbers);
-
-// Custom comparator (descending)
-shellSort(numbers, (a, b) => b - a);
-console.log('desc:    ', numbers);
+console.log(dist);               // shortest distances
+console.log(hasNegativeCycle);    // useful flag
+console.log(reconstructPath(prev, 4)); // path from 0 to 4
