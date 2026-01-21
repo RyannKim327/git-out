@@ -1,55 +1,91 @@
-/**
- * Insertion sort – stable, O(n²) average / worst‑case.
- *
- * @param arr   - Array to sort (mutable, in‑place).
- * @param cmp   - Optional compare function (a < b → negative,
- *                a > b → positive, a == b → 0).
- *                If omitted, the default numeric or string
- *                comparison is used.
- * @returns     - The same array reference, now sorted.
- */
-function insertionSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  // Default comparator: JavaScript's <= works for numbers & strings.
-  const compare = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+interface ListNode {
+  val: number;          // or whatever type you prefer
+  next: ListNode | null;
+}
 
-  // Work from the second element onward – the sub‑array `[0, i)` is sorted.
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+function isPalindromeIterative(head: ListNode | null): boolean {
+  if (!head) return true;
 
-    // Shift larger elements rightward until the right spot is found.
-    while (j >= 0 && compare(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
+  const stack: number[] = [];
+  let cur: ListNode | null = head;
 
-    // Put the key into its correct place.
-    arr[j + 1] = key;
+  // Push all values on the stack
+  while (cur) {
+    stack.push(cur.val);
+    cur = cur.next;
   }
 
-  return arr;
+  // Compare while traversing again
+  cur = head;
+  while (cur) {
+    if (cur.val !== stack.pop()) {
+      return false;
+    }
+    cur = cur.next;
+  }
+
+  return true;
 }
-// Numbers
-const nums = [21, 4, 18, 15, 6];
-console.log(insertionSort(nums));          // [4, 6, 15, 18, 21]
+function isPalindromeOptimized(head: ListNode | null): boolean {
+  if (!head || !head.next) return true;
 
-// Strings
-const words = ['peach', 'apple', 'banana'];
-console.log(insertionSort(words));          // ['apple', 'banana', 'peach']
+  // 1. Find the middle (slow will point to middle)
+  let slow = head;
+  let fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
+  }
 
-// Custom objects – sort by `age`
-interface Person { name: string; age: number; }
-const people: Person[] = [
-  { name: 'Ann', age: 33 },
-  { name: 'Bob', age: 24 },
-  { name: 'Cleo', age: 41 },
-];
+  // 2. Reverse the second half
+  let prev: ListNode | null = null;
+  let curr = slow.next;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  // `prev` is now the head of the reversed second half
 
-console.log(
-  insertionSort(people, (a, b) => a.age - b.age)
-); // [{name:'Bob',age:24}, {name:'Ann',age:33}, {name:'Cleo',age:41}]
-console.assert(JSON.stringify(insertionSort([5, 4, 3, 2, 1])) === '[1,2,3,4,5]');
-console.assert(JSON.stringify(insertionSort([{x:2}, {x:1}], (a,b)=>a.x-b.x)) === '[{"x":1},{"x":2}]');
+  // 3. Compare the two halves
+  let first = head;
+  let second = prev;
+  let result = true;
+  while (result && second) {        // second will be shorter or equal
+    if (first.val !== second.val) result = false;
+    first = first.next!;
+    second = second.next!;
+  }
+
+  // 4. (Optional) Restore the list
+  // Reverse the second half again to bring the list back to original
+  curr = prev;
+  prev = null;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  slow.next = prev;
+
+  return result;
+}
+function buildList(arr: number[]): ListNode | null {
+  let dummy: ListNode = { val: 0, next: null };
+  let tail = dummy;
+  for (const v of arr) {
+    tail.next = { val: v, next: null };
+    tail = tail.next;
+  }
+  return dummy.next;
+}
+
+const a = buildList([1, 2, 3, 2, 1]);
+console.log(isPalindromeIterative(a));   // true
+console.log(isPalindromeOptimized(a));   // true
+
+const b = buildList([1, 2, 3, 4]);
+console.log(isPalindromeIterative(b));   // false
+console.log(isPalindromeOptimized(b));   // false
