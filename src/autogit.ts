@@ -1,55 +1,33 @@
 /**
- * Merge‑sort for array of T values.
+ * Sorts an array of numbers (or any comparable type) in place
+ * using the classic selection‑sort algorithm.
  *
- * @param arr  Input array – left untouched.
- * @param cmp  Optional comparison function. If omitted, values are compared with < >.
- * @returns A new sorted array.
+ * @param arr – the array to sort
+ * @returns the same array reference, now sorted
  */
-export function mergeSort<T>(arr: readonly T[], cmp?: (a: T, b: T) => number): T[] {
-  // Base case: arrays of size 0 or 1 are already sorted.
-  if (arr.length <= 1) return [...arr];
+export function selectionSort<T>(arr: T[]): T[] {
+    const n = arr.length;
 
-  // Helper to merge two already‑sorted halves.
-  const merge = (left: T[], right: T[]): T[] => {
-    const result: T[] = [];
-    let i = 0, j = 0;
+    for (let i = 0; i < n - 1; i++) {
+        // Assume the smallest element starts at i
+        let minIndex = i;
 
-    while (i < left.length && j < right.length) {
-      const l = left[i];
-      const r = right[j];
-      const comp = cmp
-        ? cmp(l, r)
-        : (l as any) < (r as any)
-          ? -1
-          : (l as any) > (r as any)
-          ? 1
-          : 0;
+        // Scan the unsorted suffix to find the real minimum
+        for (let j = i + 1; j < n; j++) {
+            if (arr[j] < arr[minIndex]) {
+                minIndex = j;
+            }
+        }
 
-      if (comp <= 0) {
-        result.push(l);
-        i++;
-      } else {
-        result.push(r);
-        j++;
-      }
+        // If the minimum isn’t already in position i, swap
+        if (minIndex !== i) {
+            [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+        }
     }
 
-    // Push any remaining items from left or right.
-    return result.concat(left.slice(i), right.slice(j));
-  };
-
-  // Split the array into two halves.
-  const middle = Math.floor(arr.length / 2);
-  const left = mergeSort(arr.slice(0, middle), cmp);
-  const right = mergeSort(arr.slice(middle), cmp);
-
-  // Merge back together.
-  return merge(left, right);
+    return arr;
 }
-const numbers = [42, 1, 23, 4, 16];
-const sorted = mergeSort(numbers);   // [1, 4, 16, 23, 42]
-console.log(sorted);
-console.log(numbers);  // still [42, 1, 23, 4, 16]
-const words = ["banana", "Apple", "cherry"];
-const sortedWords = mergeSort(words, (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-console.log(sortedWords); // ["Apple", "banana", "cherry"]
+const unsorted = [64, 25, 12, 22, 11];
+console.log('Before:', unsorted);
+selectionSort(unsorted);
+console.log('After :', unsorted);
