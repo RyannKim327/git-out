@@ -1,91 +1,60 @@
-type BMIndices = { badChar: number[]; goodSuffix: number[] };
+/**
+ * Fibonacci search for a sorted array of numbers.
+ * @param arr  The sorted array to search.
+ * @param target The value to locate.
+ * @returns The index of `target` in `arr`, or -1 if not found.
+ */
+export function fibonacciSearch(arr: number[], target: number): number {
+  const n = arr.length;
+  if (n === 0) return -1;
 
-const CHAR_LIMIT = 256;          // size of ASCII table (adjust if you need Unicode)
+  // 1. Build the smallest Fibonacci number >= n
+  let fibMm2 = 0;   // (m-2)th Fibonacci
+  let fibMm1 = 1;   // (m-1)th Fibonacci
+  let fibM   = fibMm2 + fibMm1; // mth Fibonacci
 
-// Allocate and initialise a lookup array, defaulting to -1
-function initArray(size: number, init: number = -1): number[] {
-  const arr = new Array<number>(size);
-  for (let i = 0; i < size; i++) arr[i] = init;
-  return arr;
-}
-function badCharTable(pattern: string): number[] {
-  const table = initArray(CHAR_LIMIT, -1);
-
-  for (let i = 0; i < pattern.length; i++) {
-    table[pattern.charCodeAt(i)] = i;
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
   }
 
-  return table;
-}
-function goodSuffixTable(pat: string): number[] {
-  const m = pat.length;
-  const suffix = initArray(m);
-  const goodSuffix = initArray(m, 0);
+  // Marks the range to be searched
+  let offset = -1; // Element before the beginning (virtual)
 
-  suffix[m - 1] = m;
-  let g = m - 1;
-  let f = 0;
+  // 2. While there is an element to inspect
+  while (fibM > 1) {
+    // Determines the index to compare
+    const i = Math.min(offset + fibMm2, n - 1);
 
-  for (let i = m - 2; i >= 0; i--) {
-    if (i > g && suffix[i + m - 1 - f] < i - g) {
-      suffix[i] = suffix[i + m - 1 - f];
+    if (arr[i] < target) {
+      // Move three steps ahead
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else if (arr[i] > target) {
+      // Move one step back
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
     } else {
-      g = i;
-      f = i;
-      while (g >= 0 && pat[g] === pat[g + m - 1 - f]) {
-        g--;
-      }
-      suffix[i] = f - g;
+      return i; // Found
     }
   }
 
-  // Build the goodSuffix shift table from suffix lengths
-  for (let i = 0; i < m; i++) {
-    goodSuffix[i] = m - suffix[i];
+  // We are left with a single element
+  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
   }
 
-  return goodSuffix;
+  return -1; // Not found
 }
-function boyerMooreSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return [];   // nothing to find
+import { fibonacciSearch } from './fibonacci-search';
 
-  const { badChar, goodSuffix } = preprocess(pattern);
+const data = [3, 8, 10, 15, 20, 23, 27, 35, 41, 55, 68, 73, 82, 91, 97];
+const target = 55;
 
-  const matches: number[] = [];
-  let s = 0;                // shift of the pattern wrt text
-
-  while (s <= n - m) {
-    let j = m - 1;
-
-    // Keep moving left while the characters match
-    while (j >= 0 && pattern[j] === text[s + j]) {
-      j--;
-    }
-
-    if (j < 0) {
-      // match found
-      matches.push(s);
-      // next shift: either the good suffix shift or 1
-      s += goodSuffix[0] > 0 ? goodSuffix[0] : 1;
-    } else {
-      const badShift = j - badChar[text.charCodeAt(s + j)];
-      const goodShift = goodSuffix[j];
-      s += Math.max(badShift, goodShift);
-    }
-  }
-
-  return matches;
-}
-
-function preprocess(pattern: string): BMIndices {
-  return {
-    badChar: badCharTable(pattern),
-    goodSuffix: goodSuffixTable(pattern),
-  };
-}
-const txt = "ABAAABCDABAAABCDAAAABCDABAAABCDAAAABCD";
-const pat = "ABDAB";
-
-console.log(boyerMooreSearch(txt, pat));  // → [0, 9, 19, 29]
+const idx = fibonacciSearch(data, target);
+console.log(idx); // → 9
+console.log(fibonacciSearch(data, 22)); // → -1
