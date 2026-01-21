@@ -1,64 +1,55 @@
-// ────────────────────────
-// Node definition
-// ────────────────────────
-class Node<T> {
-  value: T;
-  next: Node<T> | null = null;
+/**
+ * Insertion sort – stable, O(n²) average / worst‑case.
+ *
+ * @param arr   - Array to sort (mutable, in‑place).
+ * @param cmp   - Optional compare function (a < b → negative,
+ *                a > b → positive, a == b → 0).
+ *                If omitted, the default numeric or string
+ *                comparison is used.
+ * @returns     - The same array reference, now sorted.
+ */
+function insertionSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): T[] {
+  // Default comparator: JavaScript's <= works for numbers & strings.
+  const compare = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
+  // Work from the second element onward – the sub‑array `[0, i)` is sorted.
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-// ────────────────────────
-// LinkedList implementation
-// ────────────────────────
-class LinkedList<T> {
-  head: Node<T> | null = null;
-  tail: Node<T> | null = null;
-
-  // Append new value to list
-  push(value: T): void {
-    const newNode = new Node(value);
-    if (!this.head) {
-      this.head = this.tail = newNode;
-      return;
+    // Shift larger elements rightward until the right spot is found.
+    while (j >= 0 && compare(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
     }
-    this.tail!.next = newNode;  // non‑null assertion is safe here
-    this.tail = newNode;
+
+    // Put the key into its correct place.
+    arr[j + 1] = key;
   }
 
-  // ────── length (iterative)
-  // Return number of nodes
-  length(): number {
-    let count = 0;
-    let current = this.head;
-    while (current !== null) {
-      count++;
-      current = current.next;
-    }
-    return count;
-  }
-
-  // ────── length (recursive helper)
-  private _recursiveLength(node: Node<T> | null): number {
-    if (!node) return 0;
-    return 1 + this._recursiveLength(node.next);
-  }
-
-  // Public wrapper for the recursive version
-  recursiveLength(): number {
-    return this._recursiveLength(this.head);
-  }
+  return arr;
 }
+// Numbers
+const nums = [21, 4, 18, 15, 6];
+console.log(insertionSort(nums));          // [4, 6, 15, 18, 21]
 
-// ────────────────────────
-// Demo
-// ────────────────────────
-const list = new LinkedList<number>();
-list.push(1);
-list.push(2);
-list.push(3);
+// Strings
+const words = ['peach', 'apple', 'banana'];
+console.log(insertionSort(words));          // ['apple', 'banana', 'peach']
 
-console.log('Iterative length:', list.length());          // 3
-console.log('Recursive length:', list.recursiveLength()); // 3
+// Custom objects – sort by `age`
+interface Person { name: string; age: number; }
+const people: Person[] = [
+  { name: 'Ann', age: 33 },
+  { name: 'Bob', age: 24 },
+  { name: 'Cleo', age: 41 },
+];
+
+console.log(
+  insertionSort(people, (a, b) => a.age - b.age)
+); // [{name:'Bob',age:24}, {name:'Ann',age:33}, {name:'Cleo',age:41}]
+console.assert(JSON.stringify(insertionSort([5, 4, 3, 2, 1])) === '[1,2,3,4,5]');
+console.assert(JSON.stringify(insertionSort([{x:2}, {x:1}], (a,b)=>a.x-b.x)) === '[{"x":1},{"x":2}]');
