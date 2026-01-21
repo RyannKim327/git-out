@@ -1,26 +1,37 @@
-/**
- * Returns the first non‑repeating character in `str`.
- * If every character repeats, returns `undefined`.
- *
- * @param str – the string to check
- */
-function firstNonRepeating(str: string): string | undefined {
-  // 1️⃣ Count how many times every character shows up
-  const freq = new Map<string, number>();
-  for (const ch of str) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
+// factorial.ts
+import readline from 'readline';
 
-  // 2️⃣ Scan again, looking for the first character whose count is 1
-  for (const ch of str) {
-    if (freq.get(ch) === 1) {
-      return ch;          // found it!
+// Utility that returns the factorial of a non‑negative integer
+function factorial(n: number): number {
+  if (n < 0) throw new Error('Number must be non‑negative');
+  if (n === 0 || n === 1) return 1;
+  return n * factorial(n - 1);
+}
+
+// Set up a readline interface to read from stdin
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+// Ask the user for a number
+rl.question('Enter a non‑negative integer: ', (answer) => {
+  const num = Number(answer.trim());
+
+  if (Number.isNaN(num) || !Number.isInteger(num)) {
+    console.log(`"${answer}" is not a valid integer.`);
+  } else {
+    try {
+      const result = factorial(num);
+      console.log(`Factorial of ${num} is ${result}`);
+    } catch (e) {
+      console.log(e.message);
     }
   }
 
-  return undefined;       // nothing unique found
-}
-
-// Demo
-console.log(firstNonRepeating("swiss"));   // → "w"
-console.log(firstNonRepeating("aabb"));    // → undefined
+  rl.close();
+});
+npm install --save-dev @types/node
+npx ts-node factorial.ts
+tsc factorial.ts   # produces factorial.js
+node factorial.js
