@@ -1,55 +1,69 @@
-/**
- * Returns the median of two sorted arrays.
- *
- * @param nums1 First sorted array
- * @param nums2 Second sorted array
- * @returns Median value (number)
- */
-export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Make sure nums1 is the smaller array; binary search will run on it.
-  if (nums1.length > nums2.length) {
-    return findMedianSortedArrays(nums2, nums1);
-  }
+type Edge = { from: number; to: number; weight: number };
 
-  const m = nums1.length;
-  const n = nums2.length;
-  const halfLen = Math.floor((m + n + 1) / 2);
-
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);   // Count from nums1
-    const j = halfLen - i;                    // Count from nums2
-
-    // If i is too small → move right
-    if (i < m && nums2[j - 1] > nums1[i]) {
-      low = i + 1;
-    }
-    // If i is too big → move left
-    else if (i > 0 && nums1[i - 1] > nums2[j]) {
-      high = i - 1;
-    }
-    // Found perfect i
-    else {
-      let maxLeft;
-      if (i === 0) maxLeft = nums2[j - 1];
-      else if (j === 0) maxLeft = nums1[i - 1];
-      else maxLeft = Math.max(nums1[i - 1], nums2[j - 1]);
-
-      // Odd total length – median is max of left side
-      if ((m + n) % 2 === 1) return maxLeft;
-
-      // Even total length – median is average of maxLeft and minRight
-      let minRight;
-      if (i === m) minRight = nums2[j];
-      else if (j === n) minRight = nums1[i];
-      else minRight = Math.min(nums1[i], nums2[j]);
-
-      return (maxLeft + minRight) / 2;
-    }
-  }
-
-  // If we get here, input arrays weren’t valid (empty, unsorted, etc.)
-  throw new Error('Input arrays are not valid.');
+interface BellmanFordResult {
+  dist: number[];          // shortest distance from source to each vertex   (Infinity = unreachable)
+  prev: (number | null)[]; // previous vertex on the shortest path, or null
+  hasNegativeCycle: boolean; // true if a negative cycle was detected
 }
+
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult {
+  const dist = Array(vertexCount).fill(Infinity);
+  const prev = Array<number | null>(vertexCount).fill(null);
+
+  dist[source] = 0;
+
+  // 1️⃣ Relax every edge |V|‑1 times
+  for (let i = 0; i < vertexCount - 1; i++) {
+    let updated = false;
+    for (const {from, to, weight} of edges) {
+      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+        dist[to] = dist[from] + weight;
+        prev[to] = from;
+        updated = true;
+      }
+    }
+    // If no distance changed, we’re done early
+    if (!updated) break;
+  }
+
+  // 2️⃣ Check for negative cycles
+  let hasNegativeCycle = false;
+  for (const {from, to, weight} of edges) {
+    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+      hasNegativeCycle = true;
+      break;
+    }
+  }
+
+  return {dist, prev, hasNegativeCycle};
+}
+function reconstructPath(prev: (number | null)[], target: number): number[] {
+  const path: number[] = [];
+  let cur: number | null = target;
+
+  while (cur !== null) {
+    path.push(cur);
+    cur = prev[cur];
+  }
+  path.reverse();
+  return path;
+}
+const edges: Edge[] = [
+  {from: 0, to: 1, weight: 5},
+  {from: 1, to: 2, weight: -2},
+  // ...
+];
+const {dist, prev, hasNegativeCycle} = bellmanFord(5, edges, 0);
+
+console.log(dist);               // shortest distances
+console.log(hasNegativeCycle);    // useful flag
+console.log(reconstructPath(prev, 4)); // path from 0 to 4
