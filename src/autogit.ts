@@ -1,42 +1,67 @@
-// 1️⃣  Install the dependencies first:
-//     npm install axios @types/axios
+/**
+ * Returns the k‑th smallest element (1‑based index).
+ * O(n log n) by quick‑sort.
+ */
+export function kthSmallestSort(arr: number[], k: number): number {
+  if (!arr.length) throw new Error('Array is empty');
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
 
-import axios, { AxiosError } from "axios";
-
-// 2️⃣  Define the shape of the data we expect back.
-interface User {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
+  // Create a copy so the original array stays untouched
+  const copy = [...arr].sort((a, b) => a - b);
+  return copy[k - 1];
 }
 
-// 3️⃣  Perform the request in an async function.
-async function fetchUsers(): Promise<User[]> {
-  const url = "https://jsonplaceholder.typicode.com/users";
+/**
+ * Returns the k‑th smallest element in expected linear time via QuickSelect.
+ * Stable but not guaranteed worst‑case performance.
+ */
+export function kthSmallestQuickSelect(arr: number[], k: number): number {
+  if (!arr.length) throw new Error('Array is empty');
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
 
-  try {
-    // 4️⃣  Make the GET request
-    const response = await axios.get<User[]>(url);
+  // Recursive helper
+  function quickSelect(nums: number[], left: number, right: number, kth: number): number {
+    if (left === right) return nums[left];
 
-    // 5️⃣  Axios automatically parses JSON, so `data` has the correct type
-    return response.data;
-  } catch (err) {
-    // 6️⃣  Gracefully handle a possible Axios error
-    if (axios.isAxiosError(err)) {
-      const error = err as AxiosError;
-      console.error(
-        `Request failed! 🙁 Status: ${error.response?.status}  Message: ${error.message}`
-      );
-    } else {
-      console.error("Unexpected error:", err);
-    }
-    return []; // Return an empty array if something goes wrong
+    let pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
+    pivotIndex = partition(nums, left, right, pivotIndex);
+
+    const leftSize = pivotIndex - left + 1;
+    if (kth < leftSize) return quickSelect(nums, left, pivotIndex - 1, kth);
+    if (kth === leftSize) return nums[pivotIndex];
+    return quickSelect(nums, pivotIndex + 1, right, kth - leftSize);
   }
-}
 
-// 7️⃣  Use the function somewhere in your app
-(async () => {
-  const users = await fetchUsers();
-  console.log("Fetched users:", users);
-})();
+  function partition(nums: number[], left: number, right: number, pivotIndex: number): number {
+    const pivotValue = nums[pivotIndex];
+    // Move pivot to end
+    [nums[pivotIndex], nums[right]] = [nums[right], nums[pivotIndex]];
+    let storeIndex = left;
+
+    for (let i = left; i < right; i++) {
+      if (nums[i] < pivotValue) {
+        [nums[storeIndex], nums[i]] = [nums[i], nums[storeIndex]];
+        storeIndex++;
+      }
+    }
+    // Move pivot to its final place
+    [nums[right], nums[storeIndex]] = [nums[storeIndex], nums[right]];
+    return storeIndex;
+  }
+
+  // Clone the array so we don't mutate the caller's array
+  const clone = [...arr];
+  return quickSelect(clone, 0, clone.length - 1, k);
+}
+const data = [7, 2, 5, 3, 9, 1];
+const kth = 3; // 3rd smallest
+
+console.log(kthSmallestSort(data, kth));          // 5
+console.log(kthSmallestQuickSelect(data, kth));   // 5
+export function kthSmallest<T>(
+  arr: T[],
+  k: number,
+  cmp: (a: T, b: T) => number,
+): T {
+  // ...same logic, replace numeric comparisons with cmp(...)
+}
