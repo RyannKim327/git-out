@@ -1,37 +1,28 @@
-// factorial.ts
-import readline from 'readline';
+/**
+ * Binary search on a sorted array.
+ *
+ * @param arr   Sorted array of comparable items.
+ * @param value Value to search for.
+ * @returns Index of value, or -1 if not found.
+ */
+export function binarySearch<T>(arr: T[], value: T): number {
+  let low = 0;
+  let high = arr.length - 1;
 
-// Utility that returns the factorial of a non‑negative integer
-function factorial(n: number): number {
-  if (n < 0) throw new Error('Number must be non‑negative');
-  if (n === 0 || n === 1) return 1;
-  return n * factorial(n - 1);
-}
+  while (low <= high) {
+    // Middle index – floor division
+    const mid = Math.floor((low + high) / 2);
+    const midVal = arr[mid];
 
-// Set up a readline interface to read from stdin
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-// Ask the user for a number
-rl.question('Enter a non‑negative integer: ', (answer) => {
-  const num = Number(answer.trim());
-
-  if (Number.isNaN(num) || !Number.isInteger(num)) {
-    console.log(`"${answer}" is not a valid integer.`);
-  } else {
-    try {
-      const result = factorial(num);
-      console.log(`Factorial of ${num} is ${result}`);
-    } catch (e) {
-      console.log(e.message);
+    if (midVal === value) return mid;      // exact match
+    if (midVal < value) {
+      low = mid + 1;                       // value is in higher half
+    } else {
+      high = mid - 1;                      // value is in lower half
     }
   }
-
-  rl.close();
-});
-npm install --save-dev @types/node
-npx ts-node factorial.ts
-tsc factorial.ts   # produces factorial.js
-node factorial.js
+  return -1;  // not found
+}
+const nums = [3, 7, 12, 18, 24, 31, 42];
+const idx = binarySearch(nums, 18); // => 3
+const missing = binarySearch(nums, 5); // => -1
