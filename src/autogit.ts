@@ -1,50 +1,27 @@
-interface ListNode<T = any> {
-  val: T;
-  next: ListNode<T> | null;
+function decimalToBinary(num: number): string {
+  return num.toString(2);   // base‑2 string
 }
-class ListNode<T = any> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-function nthFromEndNaive<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let size = 0;
-  for (let cur = head; cur; cur = cur.next) size++;
 
-  if (n > size) return null;          // not enough elements
-  let target = size - n;              // 0‑based index from start
-  let cur = head;
-  for (let i = 0; i < target; i++) cur = cur!.next;
+console.log(decimalToBinary(42)); // "101010"
+function decimalToBinary(num: bigint): string {
+  if (num === 0n) return "0";
 
-  return cur;
-}
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let fast = head;
-  // Move fast n steps forward
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;   // n is larger than list length
-    fast = fast.next;
+  let n = num;
+  let bits = "";
+
+  while (n > 0n) {
+    bits = (n & 1n ? "1" : "0") + bits; // prepend the low bit
+    n >>= 1n;                           // shift right
   }
 
-  let slow = head!;          // head is guaranteed non‑null now
-  while (fast) {
-    fast = fast.next!;
-    slow = slow.next!;
-  }
-
-  return slow;
-}
-function buildList(nums: number[]) {
-  let dummy = new ListNode(0);
-  let cur = dummy;
-  for (const v of nums) {
-    cur.next = new ListNode(v);
-    cur = cur.next;
-  }
-  return dummy.next;
+  return bits;
 }
 
-const list = buildList([1, 2, 3, 4, 5]);
-
-console.log(nthFromEnd(list, 1)!.val); // 5
-console.log(nthFromEnd(list, 3)!.val); // 3
-console.log(nthFromEnd(list, 5)!.val); // 1
-console.log(nthFromEnd(list, 6));      // null
+console.log(decimalToBinary(42n)); // "101010"
+export function toBinary(value: number | bigint): string {
+  // Pick the right conversion automatically
+  if (typeof value === "bigint") {
+    return decimalToBinary(value);
+  }
+  return value.toString(2);
+}
