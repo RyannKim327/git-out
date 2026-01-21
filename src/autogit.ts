@@ -1,52 +1,21 @@
-/** Basic node structure for a binary tree. */
-class TreeNode {
-  /** Value stored in the node (use `any` if you need non‑numeric data). */
-  val: number
-  /** Left child, or null if none. */
-  left: TreeNode | null
-  /** Right child, or null if none. */
-  right: TreeNode | null
-
-  constructor(val: number, left?: TreeNode | null, right?: TreeNode | null) {
-    this.val = val
-    this.left = left ?? null
-    this.right = right ?? null
+function countChar(str: string, ch: string): number {
+  let count = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === ch) count++;
   }
+  return count;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Recursive depth‑first search.  Returns the longest path length.    */
-function maxDepth(root: TreeNode | null): number {
-  if (!root) return 0                    // leaf + null = depth 0
-  const leftDepth  = maxDepth(root.left) // depth goes 1, 2, … from here
-  const rightDepth = maxDepth(root.right)
-  return Math.max(leftDepth, rightDepth) + 1
+const count = str.split(ch).length - 1;
+function countCharWithRegex(str: string, ch: string): number {
+  // Escape regex metacharacters in case ch is not a plain letter
+  const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(escaped, 'g');
+  const matches = str.match(re);
+  return matches ? matches.length : 0;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Iterative breadth‑first search (queue).  Same result, no stack.   */
-function maxDepthIter(root: TreeNode | null): number {
-  if (!root) return 0
-  let max = 0
-  const queue: Array<{ node: TreeNode; depth: number }> = [
-    { node: root, depth: 1 },
-  ]
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!
-    max = Math.max(max, depth)
-    if (node.left)  queue.push({ node: node.left, depth: depth + 1 })
-    if (node.right) queue.push({ node: node.right, depth: depth + 1 })
-  }
-  return max
-}
-
-/* ------------------------------------------------------------------ */
-/*  Example usage ---------------------------------------------------- */
-const root = new TreeNode(1,
-  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-  new TreeNode(3, null, new TreeNode(6))
-)
-
-console.log('Recursive depth:', maxDepth(root))      // → 3
-console.log('Iterative depth:', maxDepthIter(root)) // → 3
+const count = [...str].reduce((acc, c) => acc + (c === ch ? 1 : 0), 0);
+const count = [...str.toUpperCase()].filter(c => c === ch.toUpperCase()).length;
+const test = "hello world, hello TypeScript!";
+console.log(countChar(test, "l")); // 8
+console.log(countChar(test, "H")); // 1
+console.log(countChar(test, "o")); // 3
