@@ -1,91 +1,55 @@
-interface ListNode {
-  val: number;          // or whatever type you prefer
-  next: ListNode | null;
-}
-
-function isPalindromeIterative(head: ListNode | null): boolean {
-  if (!head) return true;
-
-  const stack: number[] = [];
-  let cur: ListNode | null = head;
-
-  // Push all values on the stack
-  while (cur) {
-    stack.push(cur.val);
-    cur = cur.next;
+/**
+ * Returns the median of two sorted arrays.
+ *
+ * @param nums1 First sorted array
+ * @param nums2 Second sorted array
+ * @returns Median value (number)
+ */
+export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Make sure nums1 is the smaller array; binary search will run on it.
+  if (nums1.length > nums2.length) {
+    return findMedianSortedArrays(nums2, nums1);
   }
 
-  // Compare while traversing again
-  cur = head;
-  while (cur) {
-    if (cur.val !== stack.pop()) {
-      return false;
+  const m = nums1.length;
+  const n = nums2.length;
+  const halfLen = Math.floor((m + n + 1) / 2);
+
+  let low = 0;
+  let high = m;
+
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2);   // Count from nums1
+    const j = halfLen - i;                    // Count from nums2
+
+    // If i is too small → move right
+    if (i < m && nums2[j - 1] > nums1[i]) {
+      low = i + 1;
     }
-    cur = cur.next;
+    // If i is too big → move left
+    else if (i > 0 && nums1[i - 1] > nums2[j]) {
+      high = i - 1;
+    }
+    // Found perfect i
+    else {
+      let maxLeft;
+      if (i === 0) maxLeft = nums2[j - 1];
+      else if (j === 0) maxLeft = nums1[i - 1];
+      else maxLeft = Math.max(nums1[i - 1], nums2[j - 1]);
+
+      // Odd total length – median is max of left side
+      if ((m + n) % 2 === 1) return maxLeft;
+
+      // Even total length – median is average of maxLeft and minRight
+      let minRight;
+      if (i === m) minRight = nums2[j];
+      else if (j === n) minRight = nums1[i];
+      else minRight = Math.min(nums1[i], nums2[j]);
+
+      return (maxLeft + minRight) / 2;
+    }
   }
 
-  return true;
+  // If we get here, input arrays weren’t valid (empty, unsorted, etc.)
+  throw new Error('Input arrays are not valid.');
 }
-function isPalindromeOptimized(head: ListNode | null): boolean {
-  if (!head || !head.next) return true;
-
-  // 1. Find the middle (slow will point to middle)
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  // 2. Reverse the second half
-  let prev: ListNode | null = null;
-  let curr = slow.next;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  // `prev` is now the head of the reversed second half
-
-  // 3. Compare the two halves
-  let first = head;
-  let second = prev;
-  let result = true;
-  while (result && second) {        // second will be shorter or equal
-    if (first.val !== second.val) result = false;
-    first = first.next!;
-    second = second.next!;
-  }
-
-  // 4. (Optional) Restore the list
-  // Reverse the second half again to bring the list back to original
-  curr = prev;
-  prev = null;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  slow.next = prev;
-
-  return result;
-}
-function buildList(arr: number[]): ListNode | null {
-  let dummy: ListNode = { val: 0, next: null };
-  let tail = dummy;
-  for (const v of arr) {
-    tail.next = { val: v, next: null };
-    tail = tail.next;
-  }
-  return dummy.next;
-}
-
-const a = buildList([1, 2, 3, 2, 1]);
-console.log(isPalindromeIterative(a));   // true
-console.log(isPalindromeOptimized(a));   // true
-
-const b = buildList([1, 2, 3, 4]);
-console.log(isPalindromeIterative(b));   // false
-console.log(isPalindromeOptimized(b));   // false
