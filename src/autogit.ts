@@ -1,48 +1,24 @@
-/**
- * Randomised quick‑sort for numbers (works for any type T that can be compared)
- * with an optional compare function.
- */
-function randomQuickSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
+const scores: number[] = [12, 19, 3, 40, 27];
 
-  function sort(start: number, end: number): void {
-    if (end - start <= 1) return;              // 0 or 1 element
-
-    // Pick a random pivot index in [start, end-1]
-    const pivotIndex = start + Math.floor(Math.random() * (end - start));
-    const pivotValue = arr[pivotIndex];
-
-    // Move pivot to the end for convenience
-    [arr[pivotIndex], arr[end - 1]] = [arr[end - 1], arr[pivotIndex]];
-
-    // Partition: all < pivot on the left, others on the right
-    let storeIndex = start;
-    for (let i = start; i < end - 1; i++) {
-      if (cmp(arr[i], pivotValue) < 0) {
-        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
-        storeIndex++;
-      }
-    }
-
-    // Place pivot in its final position
-    [arr[storeIndex], arr[end - 1]] = [arr[end - 1], arr[storeIndex]];
-
-    // Recurse on partitions
-    sort(start, storeIndex);
-    sort(storeIndex + 1, end);
-  }
-
-  // Make a copy to keep input immutable
-  const copy = arr.slice();
-  sort(0, copy.length);
-  return copy;
+const max = Math.max(...scores);   // 40
+const max = scores.reduce((highest, current) => (current > highest ? current : highest), -Infinity);
+function findMax(arr: number[]): number | undefined {
+  if (arr.length === 0) return undefined;
+  return arr.reduce((m, n) => (n > m ? n : m), arr[0]);
 }
+function maxOfArray(arr: number[]): number {
+  if (arr.length === 0) throw new Error('Empty array');
 
-/* ----- Usage example ----- */
-const unsorted = [7, 2, 9, 4, 3, 1, 5, 6];
-const sorted = randomQuickSort(unsorted);
-console.log('original:', unsorted);
-console.log('sorted  :', sorted);
+  let max = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] > max) max = arr[i];
+  }
+  return max;
+}
+const typed: Int32Array = new Int32Array([2, 5, 9, 1]);
+
+const max = Math.max.apply(null, typed as unknown as number[]);
+const numbers = [7, 42, -3, 13];
+console.log(Math.max(...numbers)); // 42
+console.log(findMax(numbers));     // 42
+console.log(maxOfArray(numbers));  // 42
