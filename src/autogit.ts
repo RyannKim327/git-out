@@ -1,24 +1,26 @@
-export function reverseString(s: string): string {
-  return s.split('').reverse().join('');
-}
-export function reverseStringManual(s: string): string {
-  let result = '';
-  for (let i = s.length - 1; i >= 0; i--) {
-    result += s[i];
+/**
+ * Returns the first non‑repeating character in `str`.
+ * If every character repeats, returns `undefined`.
+ *
+ * @param str – the string to check
+ */
+function firstNonRepeating(str: string): string | undefined {
+  // 1️⃣ Count how many times every character shows up
+  const freq = new Map<string, number>();
+  for (const ch of str) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
-  return result;
-}
-export function reverseStringRecursive(s: string): string {
-  if (s.length <= 1) return s;
-  return reverseStringRecursive(s.slice(1)) + s[0];
-}
-export function reverseStringLoop(s: string): string {
-  const chars = [...s];          // same as s.split('')
-  for (let i = 0, j = chars.length - 1; i < j; i++, j--) {
-    [chars[i], chars[j]] = [chars[j], chars[i]];
+
+  // 2️⃣ Scan again, looking for the first character whose count is 1
+  for (const ch of str) {
+    if (freq.get(ch) === 1) {
+      return ch;          // found it!
+    }
   }
-  return chars.join('');
+
+  return undefined;       // nothing unique found
 }
-console.log(reverseString('hello'));          // 'olleh'
-console.log(reverseStringManual('world'));    // 'dlrow'
-console.log(reverseStringRecursive('TypeScript')); // 'tpircSepyT'
+
+// Demo
+console.log(firstNonRepeating("swiss"));   // → "w"
+console.log(firstNonRepeating("aabb"));    // → undefined
