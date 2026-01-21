@@ -1,17 +1,21 @@
 /**
- * Reverses the order of words in a string.
+ * Returns the first repeated character in `s`, or `undefined`
+ * if nothing repeats.
  *
- *      "Hello world again"  →  "again world Hello"
- *
- * Words are defined as sequences of non‑whitespace characters.
+ * @param s string to inspect
  */
-function reverseWords(s: string): string {
-  return s
-    .trim()                // remove leading/trailing blanks
-    .split(/\s+/)          // break into words (any amount of whitespace)
-    .reverse()             // flip the array
-    .join(' ');            // stitch back together
-}
+export function firstRepeatedChar(s: string): string | undefined {
+  const seen = new Set<string>();
 
-// demo
-console.log(reverseWords('Hello world again')); // “again world Hello”
+  for (const ch of s) {
+    if (seen.has(ch)) {
+      return ch;            // first repeat found
+    }
+    seen.add(ch);
+  }
+
+  return undefined;          // no repeats
+}
+console.log(firstRepeatedChar('abcda')); // 'a'
+console.log(firstRepeatedChar('hello world')); // 'l'
+console.log(firstRepeatedChar('abcdef')); // undefined
