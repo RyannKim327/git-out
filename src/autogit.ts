@@ -1,67 +1,44 @@
-class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
-}
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;
+/**
+ * Return the longest common prefix of an array of strings.
+ *
+ * @param arr – list of strings to compare
+ * @returns the longest common prefix, or an empty string if none exists
+ */
+function longestCommonPrefix(arr: string[]): string {
+  if (!arr.length) return "";
 
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;          // height of a null subtree is 0
+  // The classic “compare the first and last after sorting” trick.
+  // It guarantees we only have to check the two outermost strings,
+  // because any common prefix must be common to all.
+  const sorted = [...arr].sort();                  // sort lexicographically
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
 
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
+  let i = 0;
+  const minLen = Math.min(first.length, last.length);
 
-    // potential diameter that passes through this node
-    const localDiameter = leftHeight + rightHeight;
-    if (localDiameter > maxDiameter) maxDiameter = localDiameter;
-
-    // height is max child height + 1 edge to the child
-    return Math.max(leftHeight, rightHeight) + 1;
+  while (i < minLen && first.charAt(i) === last.charAt(i)) {
+    i++;
   }
 
-  dfs(root);
-  return maxDiameter;  // edges count
+  return first.substring(0, i);
 }
-// Build a tree:
-//        1
-//       / \
-//      2   3
-//     / \     
-//    4   5  
-const root = new TreeNode(1,
-              new TreeNode(2,
-                new TreeNode(4),
-                new TreeNode(5)
-              ),
-              new TreeNode(3)
-            );
+function lcpScan(arr: string[]): string {
+  if (!arr.length) return "";
 
-console.log(diameterOfBinaryTree(root)); // → 3
-function diameterIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let maxDiameter = 0;
-  const stack = [{ node: root, visited: false, height: 0 }];
+  let prefix = arr[0];
 
-  while (stack.length) {
-    const frame = stack.pop()!;
-    if (!frame.node) continue;
-
-    if (frame.visited) {
-      // Children already processed – compute height & diameter
-      const leftHeight = frame.node.left?.height ?? 0;
-      const rightHeight = frame.node.right?.height ?? 0;
-
-      maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
-      frame.node.height = Math.max(leftHeight, rightHeight) + 1;
-    } else {
-      // First visit: push back as visited and push children
-      stack.push({ node: frame.node, visited: true, height: 0 });
-      if (frame.node.right) stack.push({ node: frame.node.right, visited: false, height: 0 });
-      if (frame.node.left) stack.push({ node: frame.node.left, visited: false, height: 0 });
+  for (const s of arr.slice(1)) {
+    // shrink prefix until it’s a prefix of s
+    while (!s.startsWith(prefix)) {
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return "";
     }
   }
-  return maxDiameter;
+  return prefix;
 }
+const words = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(words)); // → "fl"
+
+const zoo = ["dog", "racecar", "car"];
+console.log(longestCommonPrefix(zoo));   // → ""
