@@ -1,51 +1,44 @@
-// Stack.ts
-export class Stack<T> {
-  // private backing store
-  private items: T[] = [];
+/**
+ * Return the longest common prefix of an array of strings.
+ *
+ * @param arr – list of strings to compare
+ * @returns the longest common prefix, or an empty string if none exists
+ */
+function longestCommonPrefix(arr: string[]): string {
+  if (!arr.length) return "";
 
-  /** Push an item onto the stack. */
-  push(item: T): void {
-    this.items.push(item);
+  // The classic “compare the first and last after sorting” trick.
+  // It guarantees we only have to check the two outermost strings,
+  // because any common prefix must be common to all.
+  const sorted = [...arr].sort();                  // sort lexicographically
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
+
+  let i = 0;
+  const minLen = Math.min(first.length, last.length);
+
+  while (i < minLen && first.charAt(i) === last.charAt(i)) {
+    i++;
   }
 
-  /** Remove the top item and return it.  Returns undefined if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  /** Peek at the top item without removing it.  Returns undefined if the stack is empty. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** Return true if the stack has no items. */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** Current number of elements in the stack. */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Optional: completely clear the stack. */
-  clear(): void {
-    this.items = [];
-  }
+  return first.substring(0, i);
 }
-import { Stack } from "./Stack";
+function lcpScan(arr: string[]): string {
+  if (!arr.length) return "";
 
-const numberStack = new Stack<number>();
-numberStack.push(10);
-numberStack.push(20);
+  let prefix = arr[0];
 
-console.log(numberStack.peek()); // 20
-console.log(numberStack.pop());  // 20
-console.log(numberStack.size()); // 1
-console.log(numberStack.isEmpty()); // false
+  for (const s of arr.slice(1)) {
+    // shrink prefix until it’s a prefix of s
+    while (!s.startsWith(prefix)) {
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return "";
+    }
+  }
+  return prefix;
+}
+const words = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(words)); // → "fl"
 
-// Generic example with strings
-const wordStack = new Stack<string>();
-wordStack.push("hello");
-wordStack.push("world");
-console.log(wordStack.pop()); // world
+const zoo = ["dog", "racecar", "car"];
+console.log(longestCommonPrefix(zoo));   // → ""
