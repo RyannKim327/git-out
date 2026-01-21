@@ -1,67 +1,60 @@
-class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
-}
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;
+/**
+ * Fibonacci search for a sorted array of numbers.
+ * @param arr  The sorted array to search.
+ * @param target The value to locate.
+ * @returns The index of `target` in `arr`, or -1 if not found.
+ */
+export function fibonacciSearch(arr: number[], target: number): number {
+  const n = arr.length;
+  if (n === 0) return -1;
 
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;          // height of a null subtree is 0
+  // 1. Build the smallest Fibonacci number >= n
+  let fibMm2 = 0;   // (m-2)th Fibonacci
+  let fibMm1 = 1;   // (m-1)th Fibonacci
+  let fibM   = fibMm2 + fibMm1; // mth Fibonacci
 
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
-
-    // potential diameter that passes through this node
-    const localDiameter = leftHeight + rightHeight;
-    if (localDiameter > maxDiameter) maxDiameter = localDiameter;
-
-    // height is max child height + 1 edge to the child
-    return Math.max(leftHeight, rightHeight) + 1;
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
   }
 
-  dfs(root);
-  return maxDiameter;  // edges count
-}
-// Build a tree:
-//        1
-//       / \
-//      2   3
-//     / \     
-//    4   5  
-const root = new TreeNode(1,
-              new TreeNode(2,
-                new TreeNode(4),
-                new TreeNode(5)
-              ),
-              new TreeNode(3)
-            );
+  // Marks the range to be searched
+  let offset = -1; // Element before the beginning (virtual)
 
-console.log(diameterOfBinaryTree(root)); // → 3
-function diameterIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let maxDiameter = 0;
-  const stack = [{ node: root, visited: false, height: 0 }];
+  // 2. While there is an element to inspect
+  while (fibM > 1) {
+    // Determines the index to compare
+    const i = Math.min(offset + fibMm2, n - 1);
 
-  while (stack.length) {
-    const frame = stack.pop()!;
-    if (!frame.node) continue;
-
-    if (frame.visited) {
-      // Children already processed – compute height & diameter
-      const leftHeight = frame.node.left?.height ?? 0;
-      const rightHeight = frame.node.right?.height ?? 0;
-
-      maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
-      frame.node.height = Math.max(leftHeight, rightHeight) + 1;
+    if (arr[i] < target) {
+      // Move three steps ahead
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else if (arr[i] > target) {
+      // Move one step back
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
     } else {
-      // First visit: push back as visited and push children
-      stack.push({ node: frame.node, visited: true, height: 0 });
-      if (frame.node.right) stack.push({ node: frame.node.right, visited: false, height: 0 });
-      if (frame.node.left) stack.push({ node: frame.node.left, visited: false, height: 0 });
+      return i; // Found
     }
   }
-  return maxDiameter;
+
+  // We are left with a single element
+  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
+  }
+
+  return -1; // Not found
 }
+import { fibonacciSearch } from './fibonacci-search';
+
+const data = [3, 8, 10, 15, 20, 23, 27, 35, 41, 55, 68, 73, 82, 91, 97];
+const target = 55;
+
+const idx = fibonacciSearch(data, target);
+console.log(idx); // → 9
+console.log(fibonacciSearch(data, 22)); // → -1
