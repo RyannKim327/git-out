@@ -1,13 +1,27 @@
-const raw = "  hello  world \n\t!";
-const cleaned = raw.replace(/\s+/g, "");   // ↓
-console.log(cleaned);   // "helloworld!"
-const raw = "   hello world   ";
-const trimmed = raw.trim();
-console.log(trimmed);   // "hello world"
-const left = raw.trimStart();  // "hello world   "
-const right = raw.trimEnd();   // "   hello world"
-const messy = "This   is\nan\t  example.";
-const normalised = messy.replace(/\s+/g, " ").trim();
-console.log(normalised);   // "This is an example."
-const raw = "  a b  ";
-const withoutSpaces = raw.replaceAll(" ", "");
+function decimalToBinary(num: number): string {
+  return num.toString(2);   // base‑2 string
+}
+
+console.log(decimalToBinary(42)); // "101010"
+function decimalToBinary(num: bigint): string {
+  if (num === 0n) return "0";
+
+  let n = num;
+  let bits = "";
+
+  while (n > 0n) {
+    bits = (n & 1n ? "1" : "0") + bits; // prepend the low bit
+    n >>= 1n;                           // shift right
+  }
+
+  return bits;
+}
+
+console.log(decimalToBinary(42n)); // "101010"
+export function toBinary(value: number | bigint): string {
+  // Pick the right conversion automatically
+  if (typeof value === "bigint") {
+    return decimalToBinary(value);
+  }
+  return value.toString(2);
+}
