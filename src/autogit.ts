@@ -1,71 +1,44 @@
-// kmp.ts
-/**
- * Builds the LPS (Longest Prefix Suffix) array for a pattern.
- * lps[i] = length of the longest proper prefix of pattern[0..i]
- * that is also a suffix of pattern[0..i].
- */
-export function buildLPS(pattern: string): number[] {
-    const lps = new Array(pattern.length).fill(0);
-    let length = 0;               // length of the previous longest prefix suffix
-    let i = 1;                    // lps[0] is always 0, so start from 1
-
-    while (i < pattern.length) {
-        if (pattern[i] === pattern[length]) {
-            length++;
-            lps[i] = length;
-            i++;
-        } else {
-            if (length !== 0) {
-                // Fall back to the previous longest prefix
-                length = lps[length - 1];
-                // No i++ here – we try the same i again with the new length
-            } else {
-                lps[i] = 0;
-                i++;
-            }
-        }
-    }
-    return lps;
+// src/apiFetch.ts
+export interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
 
 /**
- * KMP search for all occurrences of pattern inside text.
- * Returns an array of 0‑based starting indices.
+ * Pulls a single todo item from the JSON‑Placeholder API.
+ *
+ * @param todoId  the numeric ID of the todo to fetch
+ * @returns          a promise that resolves to the Todo object
  */
-export function kmpSearch(text: string, pattern: string): number[] {
-    if (pattern.length === 0) return [];
+export async function getTodoById(todoId: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${todoId}`;
 
-    const lps = buildLPS(pattern);
-    const result: number[] = [];
-    let i = 0; // index for text
-    let j = 0; // index for pattern
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { "Accept": "application/json" },
+  });
 
-    while (i < text.length) {
-        if (text[i] === pattern[j]) {
-            i++;
-            j++;
+  if (!response.ok) {
+    throw new Error(`API responded with ${response.status} ${response.statusText}`);
+  }
 
-            if (j === pattern.length) {
-                // pattern found – push starting index
-                result.push(i - j);
-                // continue searching for next possible match
-                j = lps[j - 1];
-            }
-        } else if (j !== 0) {
-            // Fallback on pattern using LPS table
-            j = lps[j - 1];
-        } else {
-            // No match at the current position of `text`
-            i++;
-        }
-    }
-
-    return result;
+  // `response.json()` already resolves to a `Promise<any>`, so we cast
+  // to `Todo` to satisfy TypeScript.
+  const data = (await response.json()) as Todo;
+  return data;
 }
-import { kmpSearch } from "./kmp";
+// src/start.ts
+import { getTodoById, Todo } from "./apiFetch";
 
-const txt = "ABABDABACDABABCABAB";
-const pat = "ABABCABAB";
+async function main(): Promise<void> {
+  try {
+    const todo: Todo = await getTodoById(1);
+    console.log("Fetched todo:", todo);
+  } catch (err) {
+    console.error("Failed to fetch todo:", err);
+  }
+}
 
-const matches = kmpSearch(txt, pat);
-console.log(matches); // → [ 10 ]
+main().catch((outerErr) => console.error("Unhandled error:", outerErr));
