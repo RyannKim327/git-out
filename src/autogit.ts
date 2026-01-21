@@ -1,124 +1,94 @@
-class TreeNode<T> {
-  /** Value stored in the node. */
-  value: T
+// A tiny helper interface when you want a custom comparator
+export interface Comparable<T> {
+  compareTo(other: T): number;   // negative if this < other
+}
+/**
+ * Heap‑sort: in‑place, O(n log n) time, O(1) auxiliary space.
+ * @param arr  The array to sort.
+ * @param compare  Optional comparator: (a, b) => number
+ *                 (negative if a < b, zero if equal, positive if a > b).
+ *                 If omitted, the array is assumed to contain values
+ *                 that support the `<` operator.
+ */
+export function heapSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): void {
+  const cmp = compare ?? defaultCompare;
 
-  /** Left child (values < this.value). */
-  left: TreeNode<T> | null = null
+  // 1. Build a max‑heap
+  for (let i = Math.floor(arr.length / 2) - 1; i >= 0; i--) {
+    siftDown(arr, i, arr.length, cmp);
+  }
 
-  /** Right child (values > this.value). */
-  right: TreeNode<T> | null = null
+  // 2. Repeatedly swap the max element to the end and restore heap
+  for (let end = arr.length - 1; end > 0; end--) {
+    [arr[0], arr[end]] = [arr[end], arr[0]];
+    siftDown(arr, 0, end, cmp);  // `end` is the new heap size
+  }
 
-  constructor(value: T) {
-    this.value = value
+  /** Comparator that works on primitive numbers or strings … */
+  function defaultCompare(a: any, b: any): number {
+    return a < b ? -1 : a > b ? 1 : 0;   // 0 when equal
   }
 }
-class BinaryTree<T> {
-  root: TreeNode<T> | null = null
+function siftDown<T>(
+  arr: T[],
+  start: number,
+  heapSize: number,
+  compare: (a: T, b: T) => number
+): void {
+  let root = start;
 
-  /* --------------------------------- */
-  /* Core helpers (private) */
-  /* --------------------------------- */
+  while (true) {
+    const left = 2 * root + 1;
+    const right = left + 1;
+    let swap: number | null = null;
 
-  /** Simple comparison that works for numbers or strings. */
-  private compare(a: T, b: T): number {
-    if (a === b) return 0
-    return a < b ? -1 : 1
-  }
-
-  /* --------------------------------- */
-  /* Public API */
-  /* --------------------------------- */
-
-  /** Insert a value into the tree. */
-  insert(value: T): void {
-    this.root = this.insertRec(this.root, value)
-  }
-  private insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
-    if (!node) return new TreeNode(value)
-
-    if (this.compare(value, node.value) < 0) {
-      node.left = this.insertRec(node.left, value)
-    } else if (this.compare(value, node.value) > 0) {
-      node.right = this.insertRec(node.right, value)
-    }
-    // (duplicates are ignored for a classic BST – change if you need them)
-    return node
-  }
-
-  /** Search for a value, return the node or null. */
-  find(value: T): TreeNode<T> | null {
-    return this.findRec(this.root, value)
-  }
-  private findRec(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
-    if (!node) return null
-    const cmp = this.compare(value, node.value)
-    if (cmp === 0) return node
-    return cmp < 0 ? this.findRec(node.left, value) : this.findRec(node.right, value)
-  }
-
-  /** Depth‑first in‑order traversal — gives you sorted values. */
-  inorder(callback: (node: TreeNode<T>) => void): void {
-    this.inorderRec(this.root, callback)
-  }
-  private inorderRec(node: TreeNode<T> | null, callback: (node: TreeNode<T>) => void): void {
-    if (!node) return
-    this.inorderRec(node.left, callback)
-    callback(node)
-    this.inorderRec(node.right, callback)
-  }
-
-  /** Remove a value from the tree (simple BST delete). */
-  delete(value: T): void {
-    this.root = this.deleteRec(this.root, value)
-  }
-  private deleteRec(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
-    if (!node) return null
-
-    const cmp = this.compare(value, node.value)
-    if (cmp < 0) {
-      node.left = this.deleteRec(node.left, value)
-      return node
-    }
-    if (cmp > 0) {
-      node.right = this.deleteRec(node.right, value)
-      return node
+    // Is there a left child larger than root?
+    if (left < heapSize && compare(arr[left], arr[root]) > 0) {
+      swap = left;
     }
 
-    // Node to delete found.
+    // Is there a right child that beats the current swap?
+    if (
+      right < heapSize &&
+      (swap === null || compare(arr[right], arr[swap]) > 0)
+    ) {
+      swap = right;
+    }
 
-    // 1️⃣ No children
-    if (!node.left && !node.right) return null
+    // Nothing to swap → we’re done
+    if (swap === null) break;
 
-    // 2️⃣ One child
-    if (!node.left) return node.right
-    if (!node.right) return node.left
-
-    // 3️⃣ Two children – replace with inorder successor
-    const successor = this.minNode(node.right)!
-    node.value = successor.value
-    node.right = this.deleteRec(node.right, successor.value)
-    return node
-  }
-
-  /** Find the minimum node in a subtree (used in delete). */
-  private minNode(node: TreeNode<T> | null): TreeNode<T> | null {
-    let current = node
-    while (current?.left) current = current.left
-    return current
+    [arr[root], arr[swap]] = [arr[swap], arr[root]];
+    root = swap;
   }
 }
-const bst = new BinaryTree<number>()
+// Numbers
+const nums = [12, 11, 13, 5, 6, 7];
+heapSort(nums);
+console.log(nums);   // [5, 6, 7, 11, 12, 13]
 
-// Insert values
-[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v))
+// Strings (lexicographic)
+let words = ["pear", "apple", "orange", "banana"];
+heapSort(words);
+console.log(words);  // ["apple", "banana", "orange", "pear"]
 
-// In‑order prints 1 3 5 7 8 9 10
-bst.inorder(n => console.log(n.value))
+// Custom objects with a `compareTo` method
+class Person {
+  constructor(public name: string, public age: number) {}
+  compareTo(other: Person) {
+    return this.age - other.age;  // ascending by age
+  }
+}
 
-// Search
-const node = bst.find(5)
-console.log(node ? `Found ${node.value}` : 'Not found')
+const people = [
+  new Person("Bob", 30),
+  new Person("Alice", 25),
+  new Person("Charlie", 35)
+];
 
-// Delete
-bst.delete(7)                // Remove root node
-bst.inorder(n => console.log(n.value)) // 1 3 5 8 9 10
+// Provide the comparator manually
+heapSort(people, (a, b) => a.compareTo(b));
+console.log(people.map(p => `${p.name}(${p.age})`));  // Alice(25) Bob(30) Charlie(35)
