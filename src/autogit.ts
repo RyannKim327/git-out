@@ -1,69 +1,63 @@
-type Edge = { from: number; to: number; weight: number };
-
-interface BellmanFordResult {
-  dist: number[];          // shortest distance from source to each vertex   (Infinity = unreachable)
-  prev: (number | null)[]; // previous vertex on the shortest path, or null
-  hasNegativeCycle: boolean; // true if a negative cycle was detected
+// Node type – each element points to the next one
+class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
 }
 
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult {
-  const dist = Array(vertexCount).fill(Infinity);
-  const prev = Array<number | null>(vertexCount).fill(null);
+// The queue itself
+class LinkedListQueue<T> {
+  private head: ListNode<T> | null = null; // dequeue from here
+  private tail: ListNode<T> | null = null; // enqueue at here
+  private _size: number = 0;
 
-  dist[source] = 0;
-
-  // 1️⃣ Relax every edge |V|‑1 times
-  for (let i = 0; i < vertexCount - 1; i++) {
-    let updated = false;
-    for (const {from, to, weight} of edges) {
-      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-        dist[to] = dist[from] + weight;
-        prev[to] = from;
-        updated = true;
-      }
+  /** Add an item to the back of the queue */
+  enqueue(value: T): void {
+    const newNode = new ListNode(value);
+    if (this.tail) {
+      this.tail.next = newNode;   // link the old tail to the new node
+    } else {
+      // Empty queue – head and tail both point to the new node
+      this.head = newNode;
     }
-    // If no distance changed, we’re done early
-    if (!updated) break;
+    this.tail = newNode;
+    this._size++;
   }
 
-  // 2️⃣ Check for negative cycles
-  let hasNegativeCycle = false;
-  for (const {from, to, weight} of edges) {
-    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-      hasNegativeCycle = true;
-      break;
-    }
+  /** Remove and return the item from the front of the queue.
+      Returns undefined if the queue is empty. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined;
+
+    const value = this.head.value;
+    this.head = this.head.next;          // move head forward
+    if (!this.head) this.tail = null;    // queue became empty
+    this._size--;
+    return value;
   }
 
-  return {dist, prev, hasNegativeCycle};
+  /** Peek at the front without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  /** Number of items in the queue */
+  get size(): number {
+    return this._size;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this.size === 0;
+  }
 }
-function reconstructPath(prev: (number | null)[], target: number): number[] {
-  const path: number[] = [];
-  let cur: number | null = target;
+const q = new LinkedListQueue<number>();
 
-  while (cur !== null) {
-    path.push(cur);
-    cur = prev[cur];
-  }
-  path.reverse();
-  return path;
-}
-const edges: Edge[] = [
-  {from: 0, to: 1, weight: 5},
-  {from: 1, to: 2, weight: -2},
-  // ...
-];
-const {dist, prev, hasNegativeCycle} = bellmanFord(5, edges, 0);
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
 
-console.log(dist);               // shortest distances
-console.log(hasNegativeCycle);    // useful flag
-console.log(reconstructPath(prev, 4)); // path from 0 to 4
+console.log(q.peek()); // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.isEmpty()); // false
+console.log(q.dequeue()); // 30
+console.log(q.isEmpty()); // true
