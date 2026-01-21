@@ -1,20 +1,43 @@
-function mean(values: number[]): number {
-  if (values.length === 0) return NaN;          // empty list → no mean
-
-  // total everything up
-  const sum = values.reduce((acc, cur) => acc + cur, 0);
-
-  // divide by how many there are
-  return sum / values.length;
-}
-function meanLoop(values: number[]): number {
-  if (values.length === 0) return NaN;
-
-  let sum = 0;
-  for (const v of values) {
-    sum += v;
+function stringLength(str: string): number {
+  let len = 0;
+  for (let i = 0; i < str.length; i++) {
+    len++;                // we still use str.length in the loop condition,
+                          // but we never read it as the "answer"
   }
-  return sum / values.length;
+  return len;
 }
-console.log(mean([1, 2, 3, 4, 5])); // 3
-console.log(mean([]));              // NaN
+function stringLength(str: string): number {
+  let len = 0;
+  let code = str.codePointAt(0);
+  let idx = 0;
+  while (code !== undefined) {
+    len++;
+    idx++;
+    code = str.codePointAt(idx);
+  }
+  return len;
+}
+function stringLength(str: string): number {
+  let len = 0;
+  for (const _ of str) {
+    len++;
+  }
+  return len;
+}
+function stringLength(str: string): number {
+  if (str === '') return 0;
+  return 1 + stringLength(str.slice(1));
+}
+function stringLength(str: string): number {
+  const matches = str.match(/./gu);
+  return matches ? matches.length : 0;
+}
+function stringLength(str: string): number {
+  let idx = 0;
+  let len = 0;
+  while (str.charAt(idx) !== '') { // `charAt` returns '' past the end
+    len++;
+    idx++;
+  }
+  return len;
+}
