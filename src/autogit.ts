@@ -1,65 +1,39 @@
-// ---------------------------------------------------------
-//  FunRandomCron.ts
-//  A tiny demo that shows how to:
-//   • import node‑cron with types
-//   • schedule a repeating job
-//   • cancel a job on demand
-//   • use a more powerful CRON expression
-//   • log the next run time every time it fires
-// ---------------------------------------------------------
+/**
+ * Returns the largest prime divisor of `n`.
+ * If `n` is 0 or 1, returns `undefined`.
+ */
+function largestPrimeFactor(n: number): number | undefined {
+  if (n < 2) return undefined;          // no prime factors for 0 or 1
 
-import cron, { ScheduledTask } from 'node‑cron';
-import { format } from 'date‑fns';
+  let num = Math.abs(n);                 // work with a positive number
+  let maxFactor = 1;
 
-// This job runs every 10 seconds—just to keep the console fire‑breathing.
-// In a real app you could do backups, recompute stats, notify users, etc.
-const repeatEveryTenSeconds: ScheduledTask = cron.schedule(
-  '*/10 * * * * *',                // <seconds> <minutes> <hours> <day> <month> <dow>
-  () => {
-    const now = new Date();
-    console.log(`[${format(now, 'HH:mm:ss.SSS')}] 10‑second heartbeat!`);
-    // Do your real work here.
-  },
-  { scheduled: true }              // starts immediately
-);
+  // Handle the factor 2 separately to keep the loop odd.
+  while (num % 2 === 0) {
+    maxFactor = 2;
+    num /= 2;
+  }
 
-// Also throw in a “Monday at 04:35” job just to show another flavour.
-const mondayMorning: ScheduledTask = cron.schedule(
-  '35 4 * * 1',                    // minute hour day-of-month month day-of-week
-  () => {
-    console.log(`🎉 Monday Special – It’s 04:35!`);
-  },
-  { scheduled: true, timezone: 'America/New_York' } // time‑zone support
-);
+  // Now only odd factors are possible.
+  let divisor = 3;
+  const sqrtLimit = Math.sqrt(num);
+  while (divisor <= sqrtLimit) {
+    while (num % divisor === 0) {
+      maxFactor = divisor;
+      num /= divisor;
+    }
+    divisor += 2;                       // skip even numbers
+  }
 
-// Show next run times.  Handy for debugging.
-function displayNextRun(job: ScheduledTask, name: string) {
-  console.log(` → ${name} next run at ${format(job.nextDates().toDate(), 'yyyy‑MM‑dd HH:mm:ss')}`);
+  // If after the loop num > 1, it itself is a prime factor larger than all found.
+  if (num > 1) {
+    maxFactor = num;
+  }
+
+  return maxFactor;
 }
-displayNextRun(repeatEveryTenSeconds, 'Heartbeat');
-displayNextRun(mondayMorning, 'Mon‑4:35 AM');
-
-// ---------------------------------------------------------
-//  Graceful shutdown inside this demo
-// ---------------------------------------------------------
-const shutdown = () => {
-  console.log('\n→ Shutting down cron jobs gracefully...');
-  repeatEveryTenSeconds.stop();
-  mondayMorning.stop();
-  console.log('→ All job timers cleared. Bye!');
-  process.exit(0);
-};
-
-// In a real app you’d hook this into SIGINT, SIGTERM, etc.
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
-# 1️⃣ Install the runtime dependencies
-npm install node-cron date-fns
-
-# 2️⃣ Add TypeScript types, optional but handy
-npm install -D typescript @types/node-cron @types/date-fns
-
-# 3️⃣ Compile + run
-npx tsc FunRandomCron.ts
-node FunRandomCron.js
-npx ts-node FunRandomCron.ts
+console.log(largestPrimeFactor(2));                // 2
+console.log(largestPrimeFactor(28));               // 7
+console.log(largestPrimeFactor(1000003));          // 1000003 (its prime)
+console.log(largestPrimeFactor(123456));           // 643
+console.log(largestPrimeFactor(-84));              // 7
