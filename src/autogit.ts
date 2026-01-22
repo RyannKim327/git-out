@@ -1,21 +1,43 @@
-function countChar(str: string, ch: string): number {
-  let count = 0;
+function stringLength(str: string): number {
+  let len = 0;
   for (let i = 0; i < str.length; i++) {
-    if (str[i] === ch) count++;
+    len++;                // we still use str.length in the loop condition,
+                          // but we never read it as the "answer"
   }
-  return count;
+  return len;
 }
-const count = str.split(ch).length - 1;
-function countCharWithRegex(str: string, ch: string): number {
-  // Escape regex metacharacters in case ch is not a plain letter
-  const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp(escaped, 'g');
-  const matches = str.match(re);
+function stringLength(str: string): number {
+  let len = 0;
+  let code = str.codePointAt(0);
+  let idx = 0;
+  while (code !== undefined) {
+    len++;
+    idx++;
+    code = str.codePointAt(idx);
+  }
+  return len;
+}
+function stringLength(str: string): number {
+  let len = 0;
+  for (const _ of str) {
+    len++;
+  }
+  return len;
+}
+function stringLength(str: string): number {
+  if (str === '') return 0;
+  return 1 + stringLength(str.slice(1));
+}
+function stringLength(str: string): number {
+  const matches = str.match(/./gu);
   return matches ? matches.length : 0;
 }
-const count = [...str].reduce((acc, c) => acc + (c === ch ? 1 : 0), 0);
-const count = [...str.toUpperCase()].filter(c => c === ch.toUpperCase()).length;
-const test = "hello world, hello TypeScript!";
-console.log(countChar(test, "l")); // 8
-console.log(countChar(test, "H")); // 1
-console.log(countChar(test, "o")); // 3
+function stringLength(str: string): number {
+  let idx = 0;
+  let len = 0;
+  while (str.charAt(idx) !== '') { // `charAt` returns '' past the end
+    len++;
+    idx++;
+  }
+  return len;
+}
