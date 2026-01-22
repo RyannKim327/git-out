@@ -1,24 +1,28 @@
-export function reverseString(s: string): string {
-  return s.split('').reverse().join('');
-}
-export function reverseStringManual(s: string): string {
-  let result = '';
-  for (let i = s.length - 1; i >= 0; i--) {
-    result += s[i];
+const original = [1, 2, 3, 4, 5];
+
+const reversed = [...original].reverse(); // creates a new array, keeps `original` intact
+// or, if you don’t mind mutating the original array
+original.reverse();
+const copy = [...original];  // spread operator makes a new array
+copy.reverse();              // now you have the reversed copy
+function reverseArray<T>(arr: T[]): T[] {
+  const result: T[] = [];
+  for (let i = arr.length - 1; i >= 0; i--) {
+    result.push(arr[i]);
   }
   return result;
 }
-export function reverseStringRecursive(s: string): string {
-  if (s.length <= 1) return s;
-  return reverseStringRecursive(s.slice(1)) + s[0];
-}
-export function reverseStringLoop(s: string): string {
-  const chars = [...s];          // same as s.split('')
-  for (let i = 0, j = chars.length - 1; i < j; i++, j--) {
-    [chars[i], chars[j]] = [chars[j], chars[i]];
+
+const reverseManual = reverseArray(original);
+function reverseInPlace<T>(arr: T[]): void {
+  let left = 0;
+  let right = arr.length - 1;
+  while (left < right) {
+    // swap
+    [arr[left], arr[right]] = [arr[right], arr[left]];
+    left++;
+    right--;
   }
-  return chars.join('');
 }
-console.log(reverseString('hello'));          // 'olleh'
-console.log(reverseStringManual('world'));    // 'dlrow'
-console.log(reverseStringRecursive('TypeScript')); // 'tpircSepyT'
+
+reverseInPlace(original); // `original` is now reversed
