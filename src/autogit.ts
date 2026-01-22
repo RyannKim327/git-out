@@ -1,49 +1,53 @@
 /**
- * Return the longest common subsequence of `a` and `b`.
+ * Returns the area of a triangle.
  *
- * @param a - first string
- * @param b - second string
- * @returns the LCS (may be empty if nothing matches)
+ * You can provide:
+ *   • base & height (Cartesian geometry)
+ *   • three side lengths (Heron's formula)
+ *
+ * @param base   Base of the triangle (required if you give height)
+ * @param height Height of the triangle
+ * @param a      Length of side a
+ * @param b      Length of side b
+ * @param c      Length of side c
+ * @returns      The area, or NaN if the input is invalid.
  */
-export function lcs(a: string, b: string): string {
-  const n = a.length;
-  const m = b.length;
-
-  // dp[i][j] = length of LCS of a[0..i-1] and b[0..j-1]
-  const dp: number[][] = Array.from({ length: n + 1 }, () =>
-    new Array(m + 1).fill(0)
-  );
-
-  // Fill table
-  for (let i = 1; i <= n; i++) {
-    const ca = a.charAt(i - 1);
-    for (let j = 1; j <= m; j++) {
-      if (ca === b.charAt(j - 1)) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
+export function triangleArea({
+  base,
+  height,
+  a,
+  b,
+  c,
+}: {
+  base?: number;
+  height?: number;
+  a?: number;
+  b?: number;
+  c?: number;
+}): number {
+  // Cartesian: base * height / 2
+  if (base !== undefined && height !== undefined) {
+    if (base <= 0 || height <= 0) return NaN;
+    return (base * height) / 2;
   }
 
-  // Reconstruct the LCS from the table
-  let i = n, j = m;
-  const chars: string[] = [];
+  // Heron: given three sides
+  if (a !== undefined && b !== undefined && c !== undefined) {
+    if (a <= 0 || b <= 0 || c <= 0) return NaN;
+    // Check triangle inequality: the sum of any two sides must exceed the third
+    if (a + b <= c || a + c <= b || b + c <= a) return NaN;
 
-  while (i > 0 && j > 0) {
-    if (a.charAt(i - 1) === b.charAt(j - 1)) {
-      chars.push(a.charAt(i - 1)); // or b.charAt(j - 1)
-      i--; j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;                        // move up
-    } else {
-      j--;                        // move left
-    }
+    const s = (a + b + c) / 2; // semi‑perimeter
+    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
   }
 
-  return chars.reverse().join('');
+  // If the required parameters aren’t supplied
+  return NaN;
 }
-const s1 = 'ABCBDAB';
-const s2 = 'BDCABC';
+// Base + height
+const area1 = triangleArea({ base: 10, height: 5 }); // 25
 
-console.log(lcs(s1, s2)); // -> "BCAB"
+// Three sides
+const area2 = triangleArea({ a: 3, b: 4, c: 5 }); // 6
+
+console.log(area1, area2);
