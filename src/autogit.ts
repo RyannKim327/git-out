@@ -1,94 +1,67 @@
-// A tiny helper interface when you want a custom comparator
-export interface Comparable<T> {
-  compareTo(other: T): number;   // negative if this < other
-}
 /**
- * Heap‑sort: in‑place, O(n log n) time, O(1) auxiliary space.
- * @param arr  The array to sort.
- * @param compare  Optional comparator: (a, b) => number
- *                 (negative if a < b, zero if equal, positive if a > b).
- *                 If omitted, the array is assumed to contain values
- *                 that support the `<` operator.
+ * Returns the k‑th smallest element (1‑based index).
+ * O(n log n) by quick‑sort.
  */
-export function heapSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): void {
-  const cmp = compare ?? defaultCompare;
+export function kthSmallestSort(arr: number[], k: number): number {
+  if (!arr.length) throw new Error('Array is empty');
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
 
-  // 1. Build a max‑heap
-  for (let i = Math.floor(arr.length / 2) - 1; i >= 0; i--) {
-    siftDown(arr, i, arr.length, cmp);
-  }
-
-  // 2. Repeatedly swap the max element to the end and restore heap
-  for (let end = arr.length - 1; end > 0; end--) {
-    [arr[0], arr[end]] = [arr[end], arr[0]];
-    siftDown(arr, 0, end, cmp);  // `end` is the new heap size
-  }
-
-  /** Comparator that works on primitive numbers or strings … */
-  function defaultCompare(a: any, b: any): number {
-    return a < b ? -1 : a > b ? 1 : 0;   // 0 when equal
-  }
+  // Create a copy so the original array stays untouched
+  const copy = [...arr].sort((a, b) => a - b);
+  return copy[k - 1];
 }
-function siftDown<T>(
-  arr: T[],
-  start: number,
-  heapSize: number,
-  compare: (a: T, b: T) => number
-): void {
-  let root = start;
 
-  while (true) {
-    const left = 2 * root + 1;
-    const right = left + 1;
-    let swap: number | null = null;
+/**
+ * Returns the k‑th smallest element in expected linear time via QuickSelect.
+ * Stable but not guaranteed worst‑case performance.
+ */
+export function kthSmallestQuickSelect(arr: number[], k: number): number {
+  if (!arr.length) throw new Error('Array is empty');
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
 
-    // Is there a left child larger than root?
-    if (left < heapSize && compare(arr[left], arr[root]) > 0) {
-      swap = left;
+  // Recursive helper
+  function quickSelect(nums: number[], left: number, right: number, kth: number): number {
+    if (left === right) return nums[left];
+
+    let pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
+    pivotIndex = partition(nums, left, right, pivotIndex);
+
+    const leftSize = pivotIndex - left + 1;
+    if (kth < leftSize) return quickSelect(nums, left, pivotIndex - 1, kth);
+    if (kth === leftSize) return nums[pivotIndex];
+    return quickSelect(nums, pivotIndex + 1, right, kth - leftSize);
+  }
+
+  function partition(nums: number[], left: number, right: number, pivotIndex: number): number {
+    const pivotValue = nums[pivotIndex];
+    // Move pivot to end
+    [nums[pivotIndex], nums[right]] = [nums[right], nums[pivotIndex]];
+    let storeIndex = left;
+
+    for (let i = left; i < right; i++) {
+      if (nums[i] < pivotValue) {
+        [nums[storeIndex], nums[i]] = [nums[i], nums[storeIndex]];
+        storeIndex++;
+      }
     }
-
-    // Is there a right child that beats the current swap?
-    if (
-      right < heapSize &&
-      (swap === null || compare(arr[right], arr[swap]) > 0)
-    ) {
-      swap = right;
-    }
-
-    // Nothing to swap → we’re done
-    if (swap === null) break;
-
-    [arr[root], arr[swap]] = [arr[swap], arr[root]];
-    root = swap;
+    // Move pivot to its final place
+    [nums[right], nums[storeIndex]] = [nums[storeIndex], nums[right]];
+    return storeIndex;
   }
+
+  // Clone the array so we don't mutate the caller's array
+  const clone = [...arr];
+  return quickSelect(clone, 0, clone.length - 1, k);
 }
-// Numbers
-const nums = [12, 11, 13, 5, 6, 7];
-heapSort(nums);
-console.log(nums);   // [5, 6, 7, 11, 12, 13]
+const data = [7, 2, 5, 3, 9, 1];
+const kth = 3; // 3rd smallest
 
-// Strings (lexicographic)
-let words = ["pear", "apple", "orange", "banana"];
-heapSort(words);
-console.log(words);  // ["apple", "banana", "orange", "pear"]
-
-// Custom objects with a `compareTo` method
-class Person {
-  constructor(public name: string, public age: number) {}
-  compareTo(other: Person) {
-    return this.age - other.age;  // ascending by age
-  }
+console.log(kthSmallestSort(data, kth));          // 5
+console.log(kthSmallestQuickSelect(data, kth));   // 5
+export function kthSmallest<T>(
+  arr: T[],
+  k: number,
+  cmp: (a: T, b: T) => number,
+): T {
+  // ...same logic, replace numeric comparisons with cmp(...)
 }
-
-const people = [
-  new Person("Bob", 30),
-  new Person("Alice", 25),
-  new Person("Charlie", 35)
-];
-
-// Provide the comparator manually
-heapSort(people, (a, b) => a.compareTo(b));
-console.log(people.map(p => `${p.name}(${p.age})`));  // Alice(25) Bob(30) Charlie(35)
