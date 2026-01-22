@@ -1,55 +1,94 @@
-/**
- * Returns the median of two sorted arrays.
- *
- * @param nums1 First sorted array
- * @param nums2 Second sorted array
- * @returns Median value (number)
- */
-export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Make sure nums1 is the smaller array; binary search will run on it.
-  if (nums1.length > nums2.length) {
-    return findMedianSortedArrays(nums2, nums1);
-  }
-
-  const m = nums1.length;
-  const n = nums2.length;
-  const halfLen = Math.floor((m + n + 1) / 2);
-
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);   // Count from nums1
-    const j = halfLen - i;                    // Count from nums2
-
-    // If i is too small → move right
-    if (i < m && nums2[j - 1] > nums1[i]) {
-      low = i + 1;
-    }
-    // If i is too big → move left
-    else if (i > 0 && nums1[i - 1] > nums2[j]) {
-      high = i - 1;
-    }
-    // Found perfect i
-    else {
-      let maxLeft;
-      if (i === 0) maxLeft = nums2[j - 1];
-      else if (j === 0) maxLeft = nums1[i - 1];
-      else maxLeft = Math.max(nums1[i - 1], nums2[j - 1]);
-
-      // Odd total length – median is max of left side
-      if ((m + n) % 2 === 1) return maxLeft;
-
-      // Even total length – median is average of maxLeft and minRight
-      let minRight;
-      if (i === m) minRight = nums2[j];
-      else if (j === n) minRight = nums1[i];
-      else minRight = Math.min(nums1[i], nums2[j]);
-
-      return (maxLeft + minRight) / 2;
-    }
-  }
-
-  // If we get here, input arrays weren’t valid (empty, unsorted, etc.)
-  throw new Error('Input arrays are not valid.');
+// A tiny helper interface when you want a custom comparator
+export interface Comparable<T> {
+  compareTo(other: T): number;   // negative if this < other
 }
+/**
+ * Heap‑sort: in‑place, O(n log n) time, O(1) auxiliary space.
+ * @param arr  The array to sort.
+ * @param compare  Optional comparator: (a, b) => number
+ *                 (negative if a < b, zero if equal, positive if a > b).
+ *                 If omitted, the array is assumed to contain values
+ *                 that support the `<` operator.
+ */
+export function heapSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): void {
+  const cmp = compare ?? defaultCompare;
+
+  // 1. Build a max‑heap
+  for (let i = Math.floor(arr.length / 2) - 1; i >= 0; i--) {
+    siftDown(arr, i, arr.length, cmp);
+  }
+
+  // 2. Repeatedly swap the max element to the end and restore heap
+  for (let end = arr.length - 1; end > 0; end--) {
+    [arr[0], arr[end]] = [arr[end], arr[0]];
+    siftDown(arr, 0, end, cmp);  // `end` is the new heap size
+  }
+
+  /** Comparator that works on primitive numbers or strings … */
+  function defaultCompare(a: any, b: any): number {
+    return a < b ? -1 : a > b ? 1 : 0;   // 0 when equal
+  }
+}
+function siftDown<T>(
+  arr: T[],
+  start: number,
+  heapSize: number,
+  compare: (a: T, b: T) => number
+): void {
+  let root = start;
+
+  while (true) {
+    const left = 2 * root + 1;
+    const right = left + 1;
+    let swap: number | null = null;
+
+    // Is there a left child larger than root?
+    if (left < heapSize && compare(arr[left], arr[root]) > 0) {
+      swap = left;
+    }
+
+    // Is there a right child that beats the current swap?
+    if (
+      right < heapSize &&
+      (swap === null || compare(arr[right], arr[swap]) > 0)
+    ) {
+      swap = right;
+    }
+
+    // Nothing to swap → we’re done
+    if (swap === null) break;
+
+    [arr[root], arr[swap]] = [arr[swap], arr[root]];
+    root = swap;
+  }
+}
+// Numbers
+const nums = [12, 11, 13, 5, 6, 7];
+heapSort(nums);
+console.log(nums);   // [5, 6, 7, 11, 12, 13]
+
+// Strings (lexicographic)
+let words = ["pear", "apple", "orange", "banana"];
+heapSort(words);
+console.log(words);  // ["apple", "banana", "orange", "pear"]
+
+// Custom objects with a `compareTo` method
+class Person {
+  constructor(public name: string, public age: number) {}
+  compareTo(other: Person) {
+    return this.age - other.age;  // ascending by age
+  }
+}
+
+const people = [
+  new Person("Bob", 30),
+  new Person("Alice", 25),
+  new Person("Charlie", 35)
+];
+
+// Provide the comparator manually
+heapSort(people, (a, b) => a.compareTo(b));
+console.log(people.map(p => `${p.name}(${p.age})`));  // Alice(25) Bob(30) Charlie(35)
