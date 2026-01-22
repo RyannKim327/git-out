@@ -1,55 +1,65 @@
-/**
- * Insertion sort – stable, O(n²) average / worst‑case.
- *
- * @param arr   - Array to sort (mutable, in‑place).
- * @param cmp   - Optional compare function (a < b → negative,
- *                a > b → positive, a == b → 0).
- *                If omitted, the default numeric or string
- *                comparison is used.
- * @returns     - The same array reference, now sorted.
- */
-function insertionSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  // Default comparator: JavaScript's <= works for numbers & strings.
-  const compare = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+// ---------------------------------------------------------
+//  FunRandomCron.ts
+//  A tiny demo that shows how to:
+//   • import node‑cron with types
+//   • schedule a repeating job
+//   • cancel a job on demand
+//   • use a more powerful CRON expression
+//   • log the next run time every time it fires
+// ---------------------------------------------------------
 
-  // Work from the second element onward – the sub‑array `[0, i)` is sorted.
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+import cron, { ScheduledTask } from 'node‑cron';
+import { format } from 'date‑fns';
 
-    // Shift larger elements rightward until the right spot is found.
-    while (j >= 0 && compare(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
+// This job runs every 10 seconds—just to keep the console fire‑breathing.
+// In a real app you could do backups, recompute stats, notify users, etc.
+const repeatEveryTenSeconds: ScheduledTask = cron.schedule(
+  '*/10 * * * * *',                // <seconds> <minutes> <hours> <day> <month> <dow>
+  () => {
+    const now = new Date();
+    console.log(`[${format(now, 'HH:mm:ss.SSS')}] 10‑second heartbeat!`);
+    // Do your real work here.
+  },
+  { scheduled: true }              // starts immediately
+);
 
-    // Put the key into its correct place.
-    arr[j + 1] = key;
-  }
+// Also throw in a “Monday at 04:35” job just to show another flavour.
+const mondayMorning: ScheduledTask = cron.schedule(
+  '35 4 * * 1',                    // minute hour day-of-month month day-of-week
+  () => {
+    console.log(`🎉 Monday Special – It’s 04:35!`);
+  },
+  { scheduled: true, timezone: 'America/New_York' } // time‑zone support
+);
 
-  return arr;
+// Show next run times.  Handy for debugging.
+function displayNextRun(job: ScheduledTask, name: string) {
+  console.log(` → ${name} next run at ${format(job.nextDates().toDate(), 'yyyy‑MM‑dd HH:mm:ss')}`);
 }
-// Numbers
-const nums = [21, 4, 18, 15, 6];
-console.log(insertionSort(nums));          // [4, 6, 15, 18, 21]
+displayNextRun(repeatEveryTenSeconds, 'Heartbeat');
+displayNextRun(mondayMorning, 'Mon‑4:35 AM');
 
-// Strings
-const words = ['peach', 'apple', 'banana'];
-console.log(insertionSort(words));          // ['apple', 'banana', 'peach']
+// ---------------------------------------------------------
+//  Graceful shutdown inside this demo
+// ---------------------------------------------------------
+const shutdown = () => {
+  console.log('\n→ Shutting down cron jobs gracefully...');
+  repeatEveryTenSeconds.stop();
+  mondayMorning.stop();
+  console.log('→ All job timers cleared. Bye!');
+  process.exit(0);
+};
 
-// Custom objects – sort by `age`
-interface Person { name: string; age: number; }
-const people: Person[] = [
-  { name: 'Ann', age: 33 },
-  { name: 'Bob', age: 24 },
-  { name: 'Cleo', age: 41 },
-];
+// In a real app you’d hook this into SIGINT, SIGTERM, etc.
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+# 1️⃣ Install the runtime dependencies
+npm install node-cron date-fns
 
-console.log(
-  insertionSort(people, (a, b) => a.age - b.age)
-); // [{name:'Bob',age:24}, {name:'Ann',age:33}, {name:'Cleo',age:41}]
-console.assert(JSON.stringify(insertionSort([5, 4, 3, 2, 1])) === '[1,2,3,4,5]');
-console.assert(JSON.stringify(insertionSort([{x:2}, {x:1}], (a,b)=>a.x-b.x)) === '[{"x":1},{"x":2}]');
+# 2️⃣ Add TypeScript types, optional but handy
+npm install -D typescript @types/node-cron @types/date-fns
+
+# 3️⃣ Compile + run
+npx tsc FunRandomCron.ts
+node FunRandomCron.js
+npx ts-node FunRandomCron.ts
