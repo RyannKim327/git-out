@@ -1,40 +1,55 @@
-export interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
-}
-export function countLeaves<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                     // empty tree
+/**
+ * Returns the median of two sorted arrays.
+ *
+ * @param nums1 First sorted array
+ * @param nums2 Second sorted array
+ * @returns Median value (number)
+ */
+export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Make sure nums1 is the smaller array; binary search will run on it.
+  if (nums1.length > nums2.length) {
+    return findMedianSortedArrays(nums2, nums1);
+  }
 
-  // If the node has no children, it’s a leaf
-  if (!root.left && !root.right) return 1;
+  const m = nums1.length;
+  const n = nums2.length;
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-  // Otherwise recurse on children and sum the results
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-export function countLeavesIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
+  let low = 0;
+  let high = m;
 
-  let stack: TreeNode<T>[] = [root];
-  let leaves = 0;
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2);   // Count from nums1
+    const j = halfLen - i;                    // Count from nums2
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node.left && !node.right) {
-      leaves++;                // it’s a leaf
-    } else {
-      if (node.left) stack.push(node.left);
-      if (node.right) stack.push(node.right);
+    // If i is too small → move right
+    if (i < m && nums2[j - 1] > nums1[i]) {
+      low = i + 1;
+    }
+    // If i is too big → move left
+    else if (i > 0 && nums1[i - 1] > nums2[j]) {
+      high = i - 1;
+    }
+    // Found perfect i
+    else {
+      let maxLeft;
+      if (i === 0) maxLeft = nums2[j - 1];
+      else if (j === 0) maxLeft = nums1[i - 1];
+      else maxLeft = Math.max(nums1[i - 1], nums2[j - 1]);
+
+      // Odd total length – median is max of left side
+      if ((m + n) % 2 === 1) return maxLeft;
+
+      // Even total length – median is average of maxLeft and minRight
+      let minRight;
+      if (i === m) minRight = nums2[j];
+      else if (j === n) minRight = nums1[i];
+      else minRight = Math.min(nums1[i], nums2[j]);
+
+      return (maxLeft + minRight) / 2;
     }
   }
 
-  return leaves;
+  // If we get here, input arrays weren’t valid (empty, unsorted, etc.)
+  throw new Error('Input arrays are not valid.');
 }
-const tree: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3, right: { value: 6 } }
-};
-
-console.log(countLeaves(tree));          // → 3  (nodes 4, 5, 6)
-console.log(countLeavesIter(tree));      // → 3
