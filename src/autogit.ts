@@ -1,85 +1,39 @@
-/**
- * `AdjacencyList` is a mapping from a node key to the keys of its neighbors.
- * It works for directed or undirected graphs – just decide how you add edges.
- */
-export type AdjacencyList<K extends string | number> = Record<
-  K,
-  K[] // List of outgoing neighbor keys
->;
-const graph: AdjacencyList<string> = {
-  A: ['B', 'C'],
-  B: ['A', 'D'],
-  C: ['A', 'D'],
-  D: ['B', 'C', 'E'],
-  E: ['D'],
-};
-class Queue<T> {
-  private data: T[] = [];
-  private head = 0;
-  private tail = 0;
-
-  enqueue(item: T) {
-    this.data[this.tail++] = item;
-  }
-
-  dequeue(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    const item = this.data[this.head];
-    // Optional: free memory if the queue shrinks a lot
-    if (this.head % 64 === 0) this.data = this.data.slice(this.head);
-    this.head++;
-    return item;
-  }
-
-  isEmpty() {
-    return this.head >= this.tail;
-  }
+function factorialRecursive(n: number): number {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
 }
-/**
- * Breadth‑first search on an adjacency list.
- *
- * @param graph      the graph (adjacency list)
- * @param start      the node to start from
- * @param target     optional: stop when this node is reached
- * @returns          { distance: Map<node, number>, parent: Map<node, node | null>, found?: node }
- */
-export function bfs<K extends string | number>(
-  graph: AdjacencyList<K>,
-  start: K,
-  target?: K,
-) {
-  const distance = new Map<K, number>();
-  const parent = new Map<K, K | null>();
-
-  const queue = new Queue<K>();
-  queue.enqueue(start);
-  distance.set(start, 0);
-  parent.set(start, null);
-
-  while (!queue.isEmpty()) {
-    const current = queue.dequeue()!;
-    const curDist = distance.get(current)!;
-
-    // Optional early‑exit
-    if (target !== undefined && current === target) {
-      return { distance, parent, found: current };
-    }
-
-    for (const neighbor of graph[current] ?? []) {
-      if (!distance.has(neighbor)) {                // not visited
-        distance.set(neighbor, curDist + 1);
-        parent.set(neighbor, current);
-        queue.enqueue(neighbor);
-      }
-    }
+console.log(factorialRecursive(5)); // 120
+function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-
-  return { distance, parent, found: target }; // target not found
+  return result;
 }
-const result = bfs(graph, 'A', 'E');
-console.log('Distance map:', result.distance);
-console.log('Parent map:', result.parent);
-console.log('Target found?', result.found !== undefined);
-Distance map: Map(5) { 'A' => 0, 'B' => 1, 'C' => 1, 'D' => 2, 'E' => 3 }
-Parent map: Map(5) { 'A' => null, 'B' => 'A', 'C' => 'A', 'D' => 'B', 'E' => 'D' }
-Target found? true
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1n;
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
+}
+console.log(factorialBigInt(20));        // 2432902008176640000n
+console.log(factorialBigInt(100));       // 9.332621544e+157n (full bigint printed)
+const factorialMemo = (() => {
+  const cache: Record<number, number> = {0: 1, 1: 1};
+
+  const inner = (n: number): number => {
+    if (n in cache) return cache[n];
+    cache[n] = n * inner(n - 1);
+    return cache[n];
+  };
+
+  return inner;
+})();
+console.assert(factorialIterative(0) === 1);
+console.assert(factorialIterative(6) === 720);
+
+console.assert(factorialBigInt(5).toString() === '120');
+console.assert(factorialBigInt(30).toString().startsWith('265252859...'));
