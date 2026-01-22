@@ -1,26 +1,44 @@
 /**
- * Returns the first non‑repeating character in `str`.
- * If every character repeats, returns `undefined`.
+ * Return the longest common prefix of an array of strings.
  *
- * @param str – the string to check
+ * @param arr – list of strings to compare
+ * @returns the longest common prefix, or an empty string if none exists
  */
-function firstNonRepeating(str: string): string | undefined {
-  // 1️⃣ Count how many times every character shows up
-  const freq = new Map<string, number>();
-  for (const ch of str) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+function longestCommonPrefix(arr: string[]): string {
+  if (!arr.length) return "";
+
+  // The classic “compare the first and last after sorting” trick.
+  // It guarantees we only have to check the two outermost strings,
+  // because any common prefix must be common to all.
+  const sorted = [...arr].sort();                  // sort lexicographically
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
+
+  let i = 0;
+  const minLen = Math.min(first.length, last.length);
+
+  while (i < minLen && first.charAt(i) === last.charAt(i)) {
+    i++;
   }
 
-  // 2️⃣ Scan again, looking for the first character whose count is 1
-  for (const ch of str) {
-    if (freq.get(ch) === 1) {
-      return ch;          // found it!
+  return first.substring(0, i);
+}
+function lcpScan(arr: string[]): string {
+  if (!arr.length) return "";
+
+  let prefix = arr[0];
+
+  for (const s of arr.slice(1)) {
+    // shrink prefix until it’s a prefix of s
+    while (!s.startsWith(prefix)) {
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return "";
     }
   }
-
-  return undefined;       // nothing unique found
+  return prefix;
 }
+const words = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(words)); // → "fl"
 
-// Demo
-console.log(firstNonRepeating("swiss"));   // → "w"
-console.log(firstNonRepeating("aabb"));    // → undefined
+const zoo = ["dog", "racecar", "car"];
+console.log(longestCommonPrefix(zoo));   // → ""
