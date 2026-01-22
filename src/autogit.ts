@@ -1,101 +1,51 @@
-// ------------------------------------------------------------
-// 1️⃣  In‑place quick‑sort – most common for competitive coding
-// ------------------------------------------------------------
-function quickSortInPlace<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): void {
-  const swap = (i: number, j: number) => {
-    const tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
-  };
+// Stack.ts
+export class Stack<T> {
+  // private backing store
+  private items: T[] = [];
 
-  function partition(low: number, high: number): number {
-    // Pick the last element as pivot (simple but fine for demo)
-    const pivot = arr[high];
-    let i = low - 1;
-
-    for (let j = low; j < high; j++) {
-      if (compare(arr[j], pivot) <= 0) {
-        i++;
-        swap(i, j);
-      }
-    }
-    swap(i + 1, high);
-    return i + 1;
+  /** Push an item onto the stack. */
+  push(item: T): void {
+    this.items.push(item);
   }
 
-  function quick(low: number, high: number): void {
-    if (low < high) {
-      const pi = partition(low, high);
-      quick(low, pi - 1);
-      quick(pi + 1, high);
-    }
+  /** Remove the top item and return it.  Returns undefined if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
   }
 
-  quick(0, arr.length - 1);
-}
-
-// ------------------------------------------------------------
-// 2️⃣  Functional quick‑sort – returns a new sorted array
-// ------------------------------------------------------------
-function quickSortFunctional<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  if (arr.length <= 1) return arr.slice(); // immutable copy
-
-  // Random pivot for better average performance on already‑sorted data
-  const pivot = arr[Math.floor(Math.random() * arr.length)];
-  const lows = arr.filter((v) => compare(v, pivot) < 0);
-  const highs = arr.filter((v) => compare(v, pivot) > 0);
-  const pivots = arr.filter((v) => compare(v, pivot) === 0);
-
-  return [
-    ...quickSortFunctional(lows, compare),
-    ...pivots,
-    ...quickSortFunctional(highs, compare),
-  ];
-}
-
-// ------------------------------------------------------------
-// 3️⃣  Small helper that wraps the in‑place version and offers
-//     a better pivot strategy
-// ------------------------------------------------------------
-function quickSort<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  // Randomize the array first; this keeps the pivot “good” on many inputs
-  // and eliminates the worst‑case for already‑sorted data.
-  const shuffled = arr.slice();
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  /** Peek at the top item without removing it.  Returns undefined if the stack is empty. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
   }
 
-  quickSortInPlace(shuffled, compare);
-  return shuffled;
+  /** Return true if the stack has no items. */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Current number of elements in the stack. */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Optional: completely clear the stack. */
+  clear(): void {
+    this.items = [];
+  }
 }
+import { Stack } from "./Stack";
 
-// ---------------------------
-// Demo usage
-// ---------------------------
+const numberStack = new Stack<number>();
+numberStack.push(10);
+numberStack.push(20);
 
-const numbers = [34, 7, 23, 32, 5, 62, 32];
-console.log('in‑place:', (() => {
-  const copy = [...numbers];
-  quickSortInPlace(copy);
-  return copy;
-})());
+console.log(numberStack.peek()); // 20
+console.log(numberStack.pop());  // 20
+console.log(numberStack.size()); // 1
+console.log(numberStack.isEmpty()); // false
 
-console.log('functional:', quickSortFunctional(numbers));
-
-console.log('wrapper:', quickSort(numbers));
-
-// ------------------------------------------------------------
-// Done!
-// ------------------------------------------------------------
-const byLength = (a: string, b: string) => a.length - b.length;
-quickSort(stringsArray, byLength);
+// Generic example with strings
+const wordStack = new Stack<string>();
+wordStack.push("hello");
+wordStack.push("world");
+console.log(wordStack.pop()); // world
