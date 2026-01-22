@@ -1,35 +1,39 @@
-/**
- * Recursively searches for `target` inside a sorted array.
- *
- * @param arr  The sorted array to search.
- * @param target The value we're looking for.
- * @param left  The leftmost index to consider (inclusive).
- * @param right The rightmost index to consider (inclusive).
- * @returns The index of `target`, or `-1` if it isn’t present.
- */
-function binarySearchRecursive(
-    arr: number[],
-    target: number,
-    left: number = 0,
-    right: number = arr.length - 1
-): number {
-    if (left > right) {          // Base case: empty search window
-        return -1;
-    }
+const original = [1, 2, 3, 4, 5];
 
-    const mid = Math.floor((left + right) / 2);
+// remove every 3
+const withoutThree = original.filter(v => v !== 3);
 
-    if (arr[mid] === target) {
-        return mid;              // Found the target
-    } else if (arr[mid] > target) {
-        // Target is in the left half
-        return binarySearchRecursive(arr, target, left, mid - 1);
-    } else {
-        // Target is in the right half
-        return binarySearchRecursive(arr, target, mid + 1, right);
-    }
+console.log(original);       // [1, 2, 3, 4, 5]
+console.log(withoutThree);   // [1, 2, 4, 5]
+const removeFirstThree = original.filter((v, i) => v !== 3 || i !== 1);
+const arr = [1, 2, 3, 4, 5];
+
+// find the index you want to remove
+const idx = arr.indexOf(3);
+if (idx !== -1) {
+  arr.splice(idx, 1);      // remove 1 element at idx
 }
-const sorted = [3, 7, 11, 15, 23, 42, 56];
+console.log(arr);           // [1, 2, 4, 5]
+let i = 0;
+while (i < arr.length) {
+  if (arr[i] === 3) {
+    arr.splice(i, 1);
+  } else {
+    i++;
+  }
+}
+function removeAtIndex<T>(arr: T[], idx: number): T[] {
+  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
+}
 
-console.log(binarySearchRecursive(sorted, 15)); // → 3
-console.log(binarySearchRecursive(sorted, 1));  // → -1
+const withoutIdx = removeAtIndex(original, 2);
+const set = new Set(original);
+set.delete(3);
+const arrFromSet = Array.from(set);
+interface Person { id: number; name: string }
+const people = [{ id: 1 }, { id: 2 }, { id: 3 }];
+
+const withoutId2 = people.filter(p => p.id !== 2);   // immutable
+// or
+const idx = people.findIndex(p => p.id === 2);
+if (idx !== -1) people.splice(idx, 1);               // mutate
