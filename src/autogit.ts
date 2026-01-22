@@ -1,38 +1,48 @@
 /**
- * Returns true if `a` and `b` contain exactly the same characters
- * (ignoring whitespace, punctuation, and case).
+ * Randomised quick‑sort for numbers (works for any type T that can be compared)
+ * with an optional compare function.
  */
-export function isAnagram(a: string, b: string): boolean {
-  // 1. Strip anything that isn’t a letter or a digit, and
-  //    normalize the case to lower‑case.
-  const norm = (s: string) =>
-    s.replace(/\W+/g, "") // removes non‑alphanumeric characters
-      .toLowerCase();
+function randomQuickSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
 
-  const cleanA = norm(a);
-  const cleanB = norm(b);
+  function sort(start: number, end: number): void {
+    if (end - start <= 1) return;              // 0 or 1 element
 
-  // 2. Quick length check – if lengths differ, they can’t be anagrams.
-  if (cleanA.length !== cleanB.length) return false;
+    // Pick a random pivot index in [start, end-1]
+    const pivotIndex = start + Math.floor(Math.random() * (end - start));
+    const pivotValue = arr[pivotIndex];
 
-  // 3. Count each character in a Map.
-  const counter = new Map<string, number>();
+    // Move pivot to the end for convenience
+    [arr[pivotIndex], arr[end - 1]] = [arr[end - 1], arr[pivotIndex]];
 
-  for (const ch of cleanA) {
-    counter.set(ch, (counter.get(ch) ?? 0) + 1);
+    // Partition: all < pivot on the left, others on the right
+    let storeIndex = start;
+    for (let i = start; i < end - 1; i++) {
+      if (cmp(arr[i], pivotValue) < 0) {
+        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
+        storeIndex++;
+      }
+    }
+
+    // Place pivot in its final position
+    [arr[storeIndex], arr[end - 1]] = [arr[end - 1], arr[storeIndex]];
+
+    // Recurse on partitions
+    sort(start, storeIndex);
+    sort(storeIndex + 1, end);
   }
 
-  // 4. Decrement counts with characters from the second string.
-  for (const ch of cleanB) {
-    const cur = counter.get(ch);
-    if (!cur) return false;            // missing or too many of 'ch'
-    if (cur === 1) counter.delete(ch); // tidy up to keep map small
-    else counter.set(ch, cur - 1);
-  }
-
-  // 5. If the map is empty, the two strings were perfect anagrams.
-  return counter.size === 0;
+  // Make a copy to keep input immutable
+  const copy = arr.slice();
+  sort(0, copy.length);
+  return copy;
 }
-console.log(isAnagram("Listen", "Silent"));   // true
-console.log(isAnagram("Hello!", "Oleh!"));    // true
-console.log(isAnagram("Hello", "World"));     // false
+
+/* ----- Usage example ----- */
+const unsorted = [7, 2, 9, 4, 3, 1, 5, 6];
+const sorted = randomQuickSort(unsorted);
+console.log('original:', unsorted);
+console.log('sorted  :', sorted);
