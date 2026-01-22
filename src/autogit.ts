@@ -1,53 +1,43 @@
 /**
- * Node for a singly linked list.
- */
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-
-/**
- * Detects if a linked list contains a cycle.
+ * Shell sort – an in‑place comparison sort.
  *
- * @param head The head of the list.
- * @returns true if a cycle exists, false otherwise.
+ * @param arr   The array to sort.
+ * @param cmp   Optional comparator: (a, b) => number. Positive if a > b,
+ *              negative if a < b, zero if equal. If omitted, the
+ *              default uses the `<` operator.
+ * @returns     The same array instance, now sorted.
  */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  let slow = head;
-  let fast = head;
+export function shellSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
+  const compare = cmp ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-  while (fast !== null && fast.next !== null) {
-    slow = slow!.next;          // move one step
-    fast = fast.next.next;      // move two steps
-    if (slow === fast) {        // same reference → cycle
-      return true;
+  let n = arr.length;
+  // Start with a gap of about n/2 and halve it each loop.
+  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Insertion‑sort on elements gap apart.
+    for (let i = gap; i < n; i++) {
+      const temp = arr[i];
+      let j = i;
+      // Shift all larger gap‑spaced elements one step forward.
+      while (j >= gap && compare(temp, arr[j - gap]) < 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
     }
   }
-
-  return false;                 // fast hit the end → no cycle
+  return arr;
 }
-// 1 → 2 → 3 → 4 → 5
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-const d = new ListNode(4);
-const e = new ListNode(5);
+// sort.ts
+export { shellSort };
+// └─ ... implementation shown above
+import { shellSort } from './sort';
 
-a.next = b; b.next = c; c.next = d; d.next = e;
+const numbers = [23, 12, 1, 10, 7, 3, 9];
+console.log('unsorted:', numbers);
 
-// no cycle
-console.log(hasCycle(a)); // false
+shellSort(numbers);                 // default numeric comparison
+console.log('sorted:   ', numbers);
 
-// Introduce a cycle: e.next = c (3rd node)
-e.next = c;
-console.log(hasCycle(a)); // true
-function hasCycleSet<T>(head: ListNode<T> | null): boolean {
-  const visited = new Set<ListNode<T>>();
-
-  let current = head;
-  while (current !== null) {
-    if (visited.has(current)) return true; // already seen → cycle
-    visited.add(current);
-    current = current.next;
-  }
-  return false; // reached null → acyclic
-}
+// Custom comparator (descending)
+shellSort(numbers, (a, b) => b - a);
+console.log('desc:    ', numbers);
