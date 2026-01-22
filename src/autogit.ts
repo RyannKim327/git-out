@@ -1,43 +1,63 @@
 /**
- * Shell sort – an in‑place comparison sort.
+ * Rabin‑Karp string search
  *
- * @param arr   The array to sort.
- * @param cmp   Optional comparator: (a, b) => number. Positive if a > b,
- *              negative if a < b, zero if equal. If omitted, the
- *              default uses the `<` operator.
- * @returns     The same array instance, now sorted.
+ * Parameters:
+ *  pattern – the string we’re looking for
+ *  text    – the string to search inside
+ *
+ * Returns:
+ *  array of starting indices where pattern occurs (empty if no match)
  */
-export function shellSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-  const compare = cmp ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+export function rabinKarp(pattern: string, text: string): number[] {
+    // Edge cases
+    if (pattern.length === 0) return [];
+    if (pattern.length > text.length) return [];
 
-  let n = arr.length;
-  // Start with a gap of about n/2 and halve it each loop.
-  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Insertion‑sort on elements gap apart.
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      // Shift all larger gap‑spaced elements one step forward.
-      while (j >= gap && compare(temp, arr[j - gap]) < 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
+    const base = 256;               // number of possible characters (ASCII)
+    const mod = 101;                // a prime mod to keep numbers small
+
+    const m = pattern.length;
+    const n = text.length;
+
+    // Pre‑compute base^(m‑1) % mod  (the “high” power)
+    let basePower = 1;
+    for (let i = 0; i < m - 1; i++) {
+        basePower = (basePower * base) % mod;
     }
-  }
-  return arr;
+
+    // Compute hash for pattern and first window of text
+    let patHash = 0;
+    let txtHash = 0;
+    for (let i = 0; i < m; i++) {
+        patHash = (patHash * base + pattern.charCodeAt(i)) % mod;
+        txtHash = (txtHash * base + text.charCodeAt(i)) % mod;
+    }
+
+    const result: number[] = [];
+
+    // Slide the window over the text
+    for (let s = 0; s <= n - m; s++) {
+        // If the hash values match, verify the substring to confirm
+        if (patHash === txtHash) {
+            let match = true;
+            for (let k = 0; k < m; k++) {
+                if (text[s + k] !== pattern[k]) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) result.push(s);
+        }
+
+        // Compute hash for next window: remove leading char, add trailing char
+        if (s < n - m) {
+            txtHash = (txtHash - text.charCodeAt(s) * basePower) % mod;
+            if (txtHash < 0) txtHash += mod;                    // keep positive
+            txtHash = (txtHash * base + text.charCodeAt(s + m)) % mod;
+        }
+    }
+
+    return result;
 }
-// sort.ts
-export { shellSort };
-// └─ ... implementation shown above
-import { shellSort } from './sort';
-
-const numbers = [23, 12, 1, 10, 7, 3, 9];
-console.log('unsorted:', numbers);
-
-shellSort(numbers);                 // default numeric comparison
-console.log('sorted:   ', numbers);
-
-// Custom comparator (descending)
-shellSort(numbers, (a, b) => b - a);
-console.log('desc:    ', numbers);
+const idx = rabinKarp('abc', 'xabcababc');
+console.log(idx);   // → [1, 6]
