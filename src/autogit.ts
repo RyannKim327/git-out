@@ -1,56 +1,51 @@
-/**
- * Returns the longest strictly increasing subsequence of `arr`.
- *
- * Example:
- *   longestIncreasingSubsequence([10, 9, 2, 5, 3, 7, 101, 18])
- *   → [2, 3, 7, 101]
- */
-export function longestIncreasingSubsequence(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+// Stack.ts
+export class Stack<T> {
+  // private backing store
+  private items: T[] = [];
 
-  // `tails` keeps the smallest tail value for all subsequences
-  // of a given length. `tails[i]` is the least possible tail of
-  // an increasing subsequence with length i+1.
-  const tails: number[] = [];
-  // `prevIndices` remembers, for each element, the index of its
-  // predecessor in the LIS that passes through that element.
-  const prevIndices: number[] = new Array(arr.length).fill(-1);
-  // `indicesAtLength` holds the index of the last element of the LIS
-  // of a given length, allowing us to reconstruct the sequence.
-  const indicesAtLength: number[] = [];
-
-  arr.forEach((val, idx) => {
-    // Binary search for the first tail that is >= val
-    let l = 0;
-    let r = tails.length;
-    while (l < r) {
-      const m = Math.floor((l + r) / 2);
-      if (tails[m] < val) l = m + 1;
-      else r = m;
-    }
-
-    // `l` is the length (0‑based) of the subsequence that will end at idx
-    if (l > 0) prevIndices[idx] = indicesAtLength[l - 1];
-
-    if (l === tails.length) {
-      tails.push(val);
-      indicesAtLength.push(idx);
-    } else {
-      tails[l] = val;
-      indicesAtLength[l] = idx;
-    }
-  });
-
-  // Reconstruct the LIS from the recorded indices
-  const lis: number[] = [];
-  let k = indicesAtLength[indicesAtLength.length - 1];
-  while (k !== -1) {
-    lis.push(arr[k]);
-    k = prevIndices[k];
+  /** Push an item onto the stack. */
+  push(item: T): void {
+    this.items.push(item);
   }
-  lis.reverse();
-  return lis;
+
+  /** Remove the top item and return it.  Returns undefined if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  /** Peek at the top item without removing it.  Returns undefined if the stack is empty. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Return true if the stack has no items. */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Current number of elements in the stack. */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Optional: completely clear the stack. */
+  clear(): void {
+    this.items = [];
+  }
 }
-const data = [3, 10, 2, 1, 20];
-console.log(longestIncreasingSubsequence(data));
-// → [3, 10, 20]
+import { Stack } from "./Stack";
+
+const numberStack = new Stack<number>();
+numberStack.push(10);
+numberStack.push(20);
+
+console.log(numberStack.peek()); // 20
+console.log(numberStack.pop());  // 20
+console.log(numberStack.size()); // 1
+console.log(numberStack.isEmpty()); // false
+
+// Generic example with strings
+const wordStack = new Stack<string>();
+wordStack.push("hello");
+wordStack.push("world");
+console.log(wordStack.pop()); // world
