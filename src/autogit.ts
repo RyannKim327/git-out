@@ -1,70 +1,54 @@
-function longestCommonSubstring(a: string, b: string): string {
-  if (!a || !b) return '';
+/**
+ * Merge two sorted slices of `arr` into a temporary array.
+ *
+ * @param arr  source array
+ * @param tmp  temporary array of the same length
+ * @param left  start index of the first slice
+ * @param mid   end index (exclusive) of the first slice and start of the second
+ * @param right end index (exclusive) of the second slice
+ */
+function merge(
+  arr: number[],
+  tmp: number[],
+  left: number,
+  mid: number,
+  right: number
+): void {
+  let i = left;   // index in first slice
+  let j = mid;    // index in second slice
+  let k = left;   // index in tmp
 
-  let maxLen = 0;
-  let maxStart = 0;          // start index inside `a`
+  // Copy the relevant segment to tmp
+  for (let idx = left; idx < right; idx++) tmp[idx] = arr[idx];
 
-  const aLen = a.length;
-  const bLen = b.length;
+  // Merge back into arr
+  while (i < mid && j < right) {
+    arr[k++] = tmp[i] <= tmp[j] ? tmp[i++] : tmp[j++];
+  }
+  while (i < mid) arr[k++] = tmp[i++];
+  while (j < right) arr[k++] = tmp[j++];
+}
 
-  // Pick the shorter string as the outer loop to reduce the number of starts
-  const [short, long] = aLen < bLen ? [a, b] : [b, a];
-  const shortLen = short.length;
-  const longLen = long.length;
+/**
+ * Iterative merge sort.
+ *
+ * @param arr  array to sort in‑place
+ */
+function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  if (n < 2) return; // already sorted
 
-  for (let i = 0; i < shortLen; i++) {
-    for (let j = 0; j < longLen; j++) {
-      let length = 0;
-      while (
-        i + length < shortLen &&
-        j + length < longLen &&
-        short[i + length] === long[j + length]
-      ) {
-        length++;
-      }
-      if (length > maxLen) {
-        maxLen = length;
-        maxStart = i;           // starts in `short`
-      }
+  const tmp = new Array<number>(n);
+
+  // Run size = 1, 2, 4, 8, ...
+  for (let run = 1; run < n; run *= 2) {
+    for (let left = 0; left < n; left += 2 * run) {
+      const mid = Math.min(left + run, n);
+      const right = Math.min(left + 2 * run, n);
+      if (mid < right) merge(arr, tmp, left, mid, right);
     }
   }
-
-  // Return the slice from the original string that contains the substring
-  const result = short.substr(maxStart, maxLen);
-  // If we swapped the strings we need to return the same slice from the original `a`
-  return aLen < bLen ? result : result; // same, just explicit
 }
-console.log(longestCommonSubstring('abxabc', 'abcaby')); // → 'abc'
-function longestCommonSubstringDP(s1: string, s2: string): string {
-  const n = s1.length;
-  const m = s2.length;
-  if (!n || !m) return '';
-
-  // 2‑row DP to save memory – only previous row needed for current row calculation
-  let prev = new Array(m + 1).fill(0);
-  let curr = new Array(m + 1).fill(0);
-
-  let maxLen = 0;
-  let maxEndIdxS1 = 0; // end index in s1 of longest common substring
-
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (s1[i - 1] === s2[j - 1]) {
-        curr[j] = prev[j - 1] + 1; // extend the previous match
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          maxEndIdxS1 = i; // i is 1‑based
-        }
-      } else {
-        curr[j] = 0;
-      }
-    }
-    // swap rows for next iteration
-    [prev, curr] = [curr, prev];
-    curr.fill(0); // reset current row
-  }
-
-  // Extract the substring from s1 using the end index and length
-  return s1.slice(maxEndIdxS1 - maxLen, maxEndIdxS1);
-}
-console.log(longestCommonSubstringDP('abxabc', 'abcaby')); // → 'abc'
+const nums = [34, 7, 23, 32, 5, 62];
+mergeSortIterative(nums);
+console.log(nums); // [5, 7, 23, 32, 34, 62]
