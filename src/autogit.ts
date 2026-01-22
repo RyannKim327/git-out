@@ -1,44 +1,25 @@
 /**
- * Return the longest common prefix of an array of strings.
+ * Checks if `arr` is sorted in ascending order.
  *
- * @param arr – list of strings to compare
- * @returns the longest common prefix, or an empty string if none exists
+ * @param arr          the array to test
+ * @param compareFn    optional comparison function.  
+ *                     Should return <0 if a < b, 0 if equal, >0 if a > b.
+ *                     If omitted, the default `a - b` numeric compare is used.
+ * @returns true if the array is in ascending order, false otherwise
  */
-function longestCommonPrefix(arr: string[]): string {
-  if (!arr.length) return "";
-
-  // The classic “compare the first and last after sorting” trick.
-  // It guarantees we only have to check the two outermost strings,
-  // because any common prefix must be common to all.
-  const sorted = [...arr].sort();                  // sort lexicographically
-  const first = sorted[0];
-  const last  = sorted[sorted.length - 1];
-
-  let i = 0;
-  const minLen = Math.min(first.length, last.length);
-
-  while (i < minLen && first.charAt(i) === last.charAt(i)) {
-    i++;
+export function isSortedAscending<T>(
+  arr: readonly T[],
+  compareFn: ((a: T, b: T) => number) = (a, b) =>
+    /* @ts-ignore */ a < b ? -1 : a > b ? 1 : 0
+): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    // If the current element is *before* the previous one, the array is out of order
+    if (compareFn(arr[i], arr[i - 1]) < 0) return false;
   }
-
-  return first.substring(0, i);
+  return true;
 }
-function lcpScan(arr: string[]): string {
-  if (!arr.length) return "";
+const names = ['Alice', 'Bob', 'Charlie'];
+console.log(isSortedAscending(names)); // true
 
-  let prefix = arr[0];
-
-  for (const s of arr.slice(1)) {
-    // shrink prefix until it’s a prefix of s
-    while (!s.startsWith(prefix)) {
-      prefix = prefix.slice(0, -1);
-      if (!prefix) return "";
-    }
-  }
-  return prefix;
-}
-const words = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(words)); // → "fl"
-
-const zoo = ["dog", "racecar", "car"];
-console.log(longestCommonPrefix(zoo));   // → ""
+const mixed = [1, 3, 2, 4];
+console.log(isSortedAscending(mixed)); // false
