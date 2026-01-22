@@ -1,63 +1,55 @@
-// Node type – each element points to the next one
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
+/**
+ * Merge‑sort for array of T values.
+ *
+ * @param arr  Input array – left untouched.
+ * @param cmp  Optional comparison function. If omitted, values are compared with < >.
+ * @returns A new sorted array.
+ */
+export function mergeSort<T>(arr: readonly T[], cmp?: (a: T, b: T) => number): T[] {
+  // Base case: arrays of size 0 or 1 are already sorted.
+  if (arr.length <= 1) return [...arr];
 
-// The queue itself
-class LinkedListQueue<T> {
-  private head: ListNode<T> | null = null; // dequeue from here
-  private tail: ListNode<T> | null = null; // enqueue at here
-  private _size: number = 0;
+  // Helper to merge two already‑sorted halves.
+  const merge = (left: T[], right: T[]): T[] => {
+    const result: T[] = [];
+    let i = 0, j = 0;
 
-  /** Add an item to the back of the queue */
-  enqueue(value: T): void {
-    const newNode = new ListNode(value);
-    if (this.tail) {
-      this.tail.next = newNode;   // link the old tail to the new node
-    } else {
-      // Empty queue – head and tail both point to the new node
-      this.head = newNode;
+    while (i < left.length && j < right.length) {
+      const l = left[i];
+      const r = right[j];
+      const comp = cmp
+        ? cmp(l, r)
+        : (l as any) < (r as any)
+          ? -1
+          : (l as any) > (r as any)
+          ? 1
+          : 0;
+
+      if (comp <= 0) {
+        result.push(l);
+        i++;
+      } else {
+        result.push(r);
+        j++;
+      }
     }
-    this.tail = newNode;
-    this._size++;
-  }
 
-  /** Remove and return the item from the front of the queue.
-      Returns undefined if the queue is empty. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined;
+    // Push any remaining items from left or right.
+    return result.concat(left.slice(i), right.slice(j));
+  };
 
-    const value = this.head.value;
-    this.head = this.head.next;          // move head forward
-    if (!this.head) this.tail = null;    // queue became empty
-    this._size--;
-    return value;
-  }
+  // Split the array into two halves.
+  const middle = Math.floor(arr.length / 2);
+  const left = mergeSort(arr.slice(0, middle), cmp);
+  const right = mergeSort(arr.slice(middle), cmp);
 
-  /** Peek at the front without removing it. */
-  peek(): T | undefined {
-    return this.head?.value;
-  }
-
-  /** Number of items in the queue */
-  get size(): number {
-    return this._size;
-  }
-
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this.size === 0;
-  }
+  // Merge back together.
+  return merge(left, right);
 }
-const q = new LinkedListQueue<number>();
-
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
-
-console.log(q.peek()); // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.isEmpty()); // false
-console.log(q.dequeue()); // 30
-console.log(q.isEmpty()); // true
+const numbers = [42, 1, 23, 4, 16];
+const sorted = mergeSort(numbers);   // [1, 4, 16, 23, 42]
+console.log(sorted);
+console.log(numbers);  // still [42, 1, 23, 4, 16]
+const words = ["banana", "Apple", "cherry"];
+const sortedWords = mergeSort(words, (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+console.log(sortedWords); // ["Apple", "banana", "cherry"]
