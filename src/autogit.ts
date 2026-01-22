@@ -1,19 +1,33 @@
 /**
- * Minimal email validator.
- * Covers most real‑world cases without being overly strict.
+ * Sorts an array of numbers (or any comparable type) in place
+ * using the classic selection‑sort algorithm.
+ *
+ * @param arr – the array to sort
+ * @returns the same array reference, now sorted
  */
-export function isValidEmail(email: string): boolean {
-  // 1. Basic structural check: local part @ domain
-  // 2. Local part: letters, digits, dots, hyphens, underscores, and plus
-  // 3. Domain: DNS‑style labels separated by dots; ends in 2‑63‑letter TLD
-  const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,64}$/;
-  return pattern.test(email);
-}
-import validator from 'validator';
+export function selectionSort<T>(arr: T[]): T[] {
+    const n = arr.length;
 
-function isValidFullEmail(email: string): boolean {
-  return validator.isEmail(email);  // uses RFC‑compliant logic
+    for (let i = 0; i < n - 1; i++) {
+        // Assume the smallest element starts at i
+        let minIndex = i;
+
+        // Scan the unsorted suffix to find the real minimum
+        for (let j = i + 1; j < n; j++) {
+            if (arr[j] < arr[minIndex]) {
+                minIndex = j;
+            }
+        }
+
+        // If the minimum isn’t already in position i, swap
+        if (minIndex !== i) {
+            [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+        }
+    }
+
+    return arr;
 }
-console.log(isValidEmail('user@example.com'));   // true
-console.log(isValidEmail('bob.smith@sub.domain.co')); // true
-console.log(isValidEmail('invalid-email@'));    // false
+const unsorted = [64, 25, 12, 22, 11];
+console.log('Before:', unsorted);
+selectionSort(unsorted);
+console.log('After :', unsorted);
