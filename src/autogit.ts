@@ -1,68 +1,85 @@
 /**
- * Stable counting sort of `arr` by the digit in position `exp`
- * (exp = 1 → units, 10 → tens, 100 → hundreds, …)
+ * `AdjacencyList` is a mapping from a node key to the keys of its neighbors.
+ * It works for directed or undirected graphs – just decide how you add edges.
  */
-function countingSortByDigit(arr: number[], exp: number): void {
-  const n = arr.length;
-  const output = new Array<number>(n);
-  const count = new Array<number>(10).fill(0);   // base 10 → digits 0‑9
+export type AdjacencyList<K extends string | number> = Record<
+  K,
+  K[] // List of outgoing neighbor keys
+>;
+const graph: AdjacencyList<string> = {
+  A: ['B', 'C'],
+  B: ['A', 'D'],
+  C: ['A', 'D'],
+  D: ['B', 'C', 'E'],
+  E: ['D'],
+};
+class Queue<T> {
+  private data: T[] = [];
+  private head = 0;
+  private tail = 0;
 
-  /* Count occurrences of each digit */
-  for (let i = 0; i < n; i++) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    count[digit] += 1;
+  enqueue(item: T) {
+    this.data[this.tail++] = item;
   }
 
-  /* Transform counts into starting indices */
-  for (let i = 1; i < 10; i++) {
-    count[i] += count[i - 1];
+  dequeue(): T | undefined {
+    if (this.isEmpty()) return undefined;
+    const item = this.data[this.head];
+    // Optional: free memory if the queue shrinks a lot
+    if (this.head % 64 === 0) this.data = this.data.slice(this.head);
+    this.head++;
+    return item;
   }
 
-  /* Build the output array from the end to preserve stability */
-  for (let i = n - 1; i >= 0; i--) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    const pos = --count[digit];
-    output[pos] = arr[i];
-  }
-
-  /* Copy back to the original array */
-  for (let i = 0; i < n; i++) {
-    arr[i] = output[i];
+  isEmpty() {
+    return this.head >= this.tail;
   }
 }
 /**
- * Radix sort for an array of non‑negative integers.
- * Complexity: O(d · (n + k)) where d = number of digits, k = base (10).
+ * Breadth‑first search on an adjacency list.
+ *
+ * @param graph      the graph (adjacency list)
+ * @param start      the node to start from
+ * @param target     optional: stop when this node is reached
+ * @returns          { distance: Map<node, number>, parent: Map<node, node | null>, found?: node }
  */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length < 2) return arr;            // already sorted
+export function bfs<K extends string | number>(
+  graph: AdjacencyList<K>,
+  start: K,
+  target?: K,
+) {
+  const distance = new Map<K, number>();
+  const parent = new Map<K, K | null>();
 
-  // Find the maximum number to know how many digits we need
-  const maxVal = Math.max(...arr);
+  const queue = new Queue<K>();
+  queue.enqueue(start);
+  distance.set(start, 0);
+  parent.set(start, null);
 
-  // Start with the least significant digit (exp = 1)
-  for (let exp = 1; exp <= maxVal; exp *= 10) {
-    countingSortByDigit(arr, exp);
+  while (!queue.isEmpty()) {
+    const current = queue.dequeue()!;
+    const curDist = distance.get(current)!;
+
+    // Optional early‑exit
+    if (target !== undefined && current === target) {
+      return { distance, parent, found: current };
+    }
+
+    for (const neighbor of graph[current] ?? []) {
+      if (!distance.has(neighbor)) {                // not visited
+        distance.set(neighbor, curDist + 1);
+        parent.set(neighbor, current);
+        queue.enqueue(neighbor);
+      }
+    }
   }
 
-  return arr; // sorted array (in‑place)
+  return { distance, parent, found: target }; // target not found
 }
-const data = [170, 45, 75, 90, 802, 24, 2, 66];
-
-radixSort(data);
-console.log(data); // [2, 24, 45, 66, 75, 90, 170, 802]
-export function radixSortMixed(arr: number[]): number[] {
-  const positives: number[] = [];
-  const negatives: number[] = [];
-
-  for (const v of arr) {
-    if (v >= 0) positives.push(v);
-    else negatives.push(-v);  // work with absolute values
-  }
-
-  radixSort(positives);
-  radixSort(negatives);
-
-  const sortedNegatives = negatives.reverse().map(v => -v);
-  return [...sortedNegatives, ...positives];
-}
+const result = bfs(graph, 'A', 'E');
+console.log('Distance map:', result.distance);
+console.log('Parent map:', result.parent);
+console.log('Target found?', result.found !== undefined);
+Distance map: Map(5) { 'A' => 0, 'B' => 1, 'C' => 1, 'D' => 2, 'E' => 3 }
+Parent map: Map(5) { 'A' => null, 'B' => 'A', 'C' => 'A', 'D' => 'B', 'E' => 'D' }
+Target found? true
