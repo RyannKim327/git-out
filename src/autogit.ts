@@ -1,30 +1,25 @@
-const a = [1, 2, 3, 4];
-const b = [3, 4, 5, 6];
+/**
+ * Returns true if `n` is a prime number.
+ * Works with any non‑negative integer. For negative numbers or 0/1 it returns false.
+ */
+export function isPrime(n: number): boolean {
+  if (!Number.isInteger(n) || n < 2) return false;   // 0, 1, and non‑ints aren't prime
+  
+  // 2 and 3 are the only even/odd primes.
+  if (n === 2 || n === 3) return true;
 
-const intersection = a.filter(x => b.includes(x));
-console.log(intersection); // [3, 4]
-const a = [1, 2, 3, 4];
-const b = [3, 4, 5, 6];
+  // Even numbers > 2 are not prime.
+  if (n % 2 === 0) return false;
 
-const setB = new Set(b);
-const intersection = a.filter(x => setB.has(x));
-console.log(intersection); // [3, 4]
-const a = [1, 2, 3, 4];
-const b = [3, 4, 5, 6];
+  // Check odd divisors up to √n.
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false;
+  }
 
-const [small, large] = a.length < b.length ? [a, b] : [b, a];
-const setSmall = new Set(small);
-
-const intersection = large.filter(x => setSmall.has(x));
-console.log(intersection); // [3, 4]
-const a = [1, 2, 2, 3, 4];
-const b = [2, 3, 3, 5];
-
-const intersection = Array.from(
-  new Set(a.filter(x => new Set(b).has(x)))
-);
-console.log(intersection); // [2, 3]
-import _ from 'lodash';
-
-const intersection = _.intersection([1, 2, 3], [2, 3, 4]);
-console.log(intersection); // [2, 3]
+  return true;
+}
+console.log(isPrime(7));   // true
+console.log(isPrime(20));  // false
+console.log(isPrime(91));  // false (7 × 13)
+console.log(isPrime(97));  // true
