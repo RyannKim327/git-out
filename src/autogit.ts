@@ -1,35 +1,25 @@
 /**
- * Recursively searches for `target` inside a sorted array.
+ * Checks if `arr` is sorted in ascending order.
  *
- * @param arr  The sorted array to search.
- * @param target The value we're looking for.
- * @param left  The leftmost index to consider (inclusive).
- * @param right The rightmost index to consider (inclusive).
- * @returns The index of `target`, or `-1` if it isn’t present.
+ * @param arr          the array to test
+ * @param compareFn    optional comparison function.  
+ *                     Should return <0 if a < b, 0 if equal, >0 if a > b.
+ *                     If omitted, the default `a - b` numeric compare is used.
+ * @returns true if the array is in ascending order, false otherwise
  */
-function binarySearchRecursive(
-    arr: number[],
-    target: number,
-    left: number = 0,
-    right: number = arr.length - 1
-): number {
-    if (left > right) {          // Base case: empty search window
-        return -1;
-    }
-
-    const mid = Math.floor((left + right) / 2);
-
-    if (arr[mid] === target) {
-        return mid;              // Found the target
-    } else if (arr[mid] > target) {
-        // Target is in the left half
-        return binarySearchRecursive(arr, target, left, mid - 1);
-    } else {
-        // Target is in the right half
-        return binarySearchRecursive(arr, target, mid + 1, right);
-    }
+export function isSortedAscending<T>(
+  arr: readonly T[],
+  compareFn: ((a: T, b: T) => number) = (a, b) =>
+    /* @ts-ignore */ a < b ? -1 : a > b ? 1 : 0
+): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    // If the current element is *before* the previous one, the array is out of order
+    if (compareFn(arr[i], arr[i - 1]) < 0) return false;
+  }
+  return true;
 }
-const sorted = [3, 7, 11, 15, 23, 42, 56];
+const names = ['Alice', 'Bob', 'Charlie'];
+console.log(isSortedAscending(names)); // true
 
-console.log(binarySearchRecursive(sorted, 15)); // → 3
-console.log(binarySearchRecursive(sorted, 1));  // → -1
+const mixed = [1, 3, 2, 4];
+console.log(isSortedAscending(mixed)); // false
