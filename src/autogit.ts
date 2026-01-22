@@ -1,43 +1,44 @@
-function stringLength(str: string): number {
-  let len = 0;
-  for (let i = 0; i < str.length; i++) {
-    len++;                // we still use str.length in the loop condition,
-                          // but we never read it as the "answer"
+// src/apiFetch.ts
+export interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
+/**
+ * Pulls a single todo item from the JSON‑Placeholder API.
+ *
+ * @param todoId  the numeric ID of the todo to fetch
+ * @returns          a promise that resolves to the Todo object
+ */
+export async function getTodoById(todoId: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${todoId}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { "Accept": "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`API responded with ${response.status} ${response.statusText}`);
   }
-  return len;
+
+  // `response.json()` already resolves to a `Promise<any>`, so we cast
+  // to `Todo` to satisfy TypeScript.
+  const data = (await response.json()) as Todo;
+  return data;
 }
-function stringLength(str: string): number {
-  let len = 0;
-  let code = str.codePointAt(0);
-  let idx = 0;
-  while (code !== undefined) {
-    len++;
-    idx++;
-    code = str.codePointAt(idx);
+// src/start.ts
+import { getTodoById, Todo } from "./apiFetch";
+
+async function main(): Promise<void> {
+  try {
+    const todo: Todo = await getTodoById(1);
+    console.log("Fetched todo:", todo);
+  } catch (err) {
+    console.error("Failed to fetch todo:", err);
   }
-  return len;
 }
-function stringLength(str: string): number {
-  let len = 0;
-  for (const _ of str) {
-    len++;
-  }
-  return len;
-}
-function stringLength(str: string): number {
-  if (str === '') return 0;
-  return 1 + stringLength(str.slice(1));
-}
-function stringLength(str: string): number {
-  const matches = str.match(/./gu);
-  return matches ? matches.length : 0;
-}
-function stringLength(str: string): number {
-  let idx = 0;
-  let len = 0;
-  while (str.charAt(idx) !== '') { // `charAt` returns '' past the end
-    len++;
-    idx++;
-  }
-  return len;
-}
+
+main().catch((outerErr) => console.error("Unhandled error:", outerErr));
