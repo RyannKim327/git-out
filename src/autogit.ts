@@ -1,43 +1,43 @@
-function stringLength(str: string): number {
-  let len = 0;
-  for (let i = 0; i < str.length; i++) {
-    len++;                // we still use str.length in the loop condition,
-                          // but we never read it as the "answer"
+// Helper that normalises the string – handy if you want to ignore
+// spaces, punctuation, and case.
+function normalise(text: string): string {
+  return text
+    .toLowerCase()         // ignore case
+    .replace(/[^a-z0-9]/g, '');  // keep only alphanumerics
+}
+
+/**
+ * Returns true if `input` is a palindrome.
+ *
+ * @param input – the string you want to test
+ * @param {boolean} allowEmpty = false  – whether an empty string is considered a palindrome
+ */
+function isPalindrome(
+  input: string,
+  allowEmpty = false,
+): boolean {
+  // Fast‑path for empty string
+  if (input.length === 0) return allowEmpty;
+
+  const s = normalise(input);
+
+  // Empty after normalisation may be true or false – decide here
+  if (s.length === 0) return false;
+
+  // Compare characters from both ends
+  let left = 0;
+  let right = s.length - 1;
+
+  while (left < right) {
+    if (s[left] !== s[right]) return false;
+    left++;
+    right--;
   }
-  return len;
+
+  return true;
 }
-function stringLength(str: string): number {
-  let len = 0;
-  let code = str.codePointAt(0);
-  let idx = 0;
-  while (code !== undefined) {
-    len++;
-    idx++;
-    code = str.codePointAt(idx);
-  }
-  return len;
-}
-function stringLength(str: string): number {
-  let len = 0;
-  for (const _ of str) {
-    len++;
-  }
-  return len;
-}
-function stringLength(str: string): number {
-  if (str === '') return 0;
-  return 1 + stringLength(str.slice(1));
-}
-function stringLength(str: string): number {
-  const matches = str.match(/./gu);
-  return matches ? matches.length : 0;
-}
-function stringLength(str: string): number {
-  let idx = 0;
-  let len = 0;
-  while (str.charAt(idx) !== '') { // `charAt` returns '' past the end
-    len++;
-    idx++;
-  }
-  return len;
-}
+
+// Demo
+console.log(isPalindrome('RaceCar'));           // true
+console.log(isPalindrome('A man, a plan!'));    // true
+console.log(isPalindrome('hello world'));       // false
