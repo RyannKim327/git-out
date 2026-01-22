@@ -1,42 +1,39 @@
-// --------------------------------------------------
-// Types
-// --------------------------------------------------
-interface User {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
+function factorialRecursive(n: number): number {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
 }
-
-// --------------------------------------------------
-// Helper: generic fetch wrapper with type inference
-// --------------------------------------------------
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-
-  // Throw if status is not in the 200–299 range
-  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-  // Let the compiler infer the returned shape
-  return response.json() as Promise<T>;
-}
-
-// --------------------------------------------------
-// Main logic
-// --------------------------------------------------
-async function main() {
-  try {
-    const users = await fetchJson<User[]>(
-      'https://jsonplaceholder.typicode.com/users'
-    );
-
-    users.forEach((u) => console.log(`${u.name} (${u.email})`));
-  } catch (err) {
-    console.error('Fetching failed:', err);
+console.log(factorialRecursive(5)); // 120
+function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
+  return result;
 }
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1n;
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
+}
+console.log(factorialBigInt(20));        // 2432902008176640000n
+console.log(factorialBigInt(100));       // 9.332621544e+157n (full bigint printed)
+const factorialMemo = (() => {
+  const cache: Record<number, number> = {0: 1, 1: 1};
 
-// --------------------------------------------------
-// Kick it off
-// --------------------------------------------------
-main();
+  const inner = (n: number): number => {
+    if (n in cache) return cache[n];
+    cache[n] = n * inner(n - 1);
+    return cache[n];
+  };
+
+  return inner;
+})();
+console.assert(factorialIterative(0) === 1);
+console.assert(factorialIterative(6) === 720);
+
+console.assert(factorialBigInt(5).toString() === '120');
+console.assert(factorialBigInt(30).toString().startsWith('265252859...'));
