@@ -1,50 +1,30 @@
-// A minimal binary‑tree node definition
-interface TreeNode {
-  value: number;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
 
-/**
- * Recursively sums the values of every node in a binary tree.
- * @param root – the root of the tree
- * @returns the total sum of all node values
- */
-function sumTree(root: TreeNode | null | undefined): number {
-  if (!root) return 0;
-  return root.value + sumTree(root.left) + sumTree(root.right);
-}
+const intersection = a.filter(x => b.includes(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
 
-/*--- Example usage -------------------------------------------------------*/
-// Construct a small tree:
-//
-//        4
-//       / \
-//      2   5
-//     / \
-//    1   3
-const tree: TreeNode = {
-  value: 4,
-  left: {
-    value: 2,
-    left: { value: 1, left: null, right: null },
-    right: { value: 3, left: null, right: null },
-  },
-  right: { value: 5, left: null, right: null },
-};
+const setB = new Set(b);
+const intersection = a.filter(x => setB.has(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
 
-console.log(sumTree(tree)); // 15
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let total = 0;
-  const stack: Array<TreeNode> = [root];
+const [small, large] = a.length < b.length ? [a, b] : [b, a];
+const setSmall = new Set(small);
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.value;
-    if (node.left) stack.push(node.left);
-    if (node.right) stack.push(node.right);
-  }
+const intersection = large.filter(x => setSmall.has(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 2, 3, 4];
+const b = [2, 3, 3, 5];
 
-  return total;
-}
+const intersection = Array.from(
+  new Set(a.filter(x => new Set(b).has(x)))
+);
+console.log(intersection); // [2, 3]
+import _ from 'lodash';
+
+const intersection = _.intersection([1, 2, 3], [2, 3, 4]);
+console.log(intersection); // [2, 3]
