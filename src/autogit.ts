@@ -1,93 +1,67 @@
-/**
- * Represents a node in the beam frontier.
- * Keeps the actual state and the path taken to reach it.
- */
-export interface BeamNode<T> {
-  /** The actual state */
-  state: T;
-  /** The sequence of states that led to this node (incl. this state) */
-  path: T[];
+class TreeNode<T = number> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
 }
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;
 
-/**
- * Performs a beam search.
- *
- * @param startNodes   Initial frontier. Usually a single root node, but you can start with many.
- * @param getSuccessors   Function that returns the child nodes of a parent.
- * @param score          Score function – higher is better.
- * @param beamWidth      How many nodes to keep after each expansion.
- * @param maxDepth       Optional depth cutoff (in terms of edges traversed).
- * @param isGoal         Optional goal‑test predicate.
- * @returns The first goal node found (or undefined if none).
- */
-export function beamSearch<T>(
-  startNodes: T[],
-  getSuccessors: (node: T) => T[],
-  score: (node: T) => number,
-  beamWidth: number,
-  maxDepth?: number,
-  isGoal?: (node: T) => boolean
-): BeamNode<T> | undefined {
+  function dfs(node: TreeNode | null): number {
+    if (!node) return 0;          // height of a null subtree is 0
 
-  // Ensure we keep a lightweight copy for sorting.
-  let frontier: BeamNode<T> = startNodes.map(state => ({ state, path: [state] }));
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
 
-  for (let depth = 0; depth < (maxDepth ?? Infinity); depth++) {
-    if (frontier.length === 0) break; // nothing to expand
+    // potential diameter that passes through this node
+    const localDiameter = leftHeight + rightHeight;
+    if (localDiameter > maxDiameter) maxDiameter = localDiameter;
 
-    // Expand every node in the frontier
-    const expansions: BeamNode<T>[] = [];
-    for (const node of frontier) {
-      const succ = getSuccessors(node.state);
-      for (const child of succ) {
-        expansions.push({
-          state: child,
-          path: [...node.path, child]
-        });
-      }
-    }
-
-    // Optional goal check as soon as we generate expansions
-    if (isGoal) {
-      for (const node of expansions) {
-        if (isGoal(node.state)) return node;
-      }
-    }
-
-    // Sort by score, keep top `beamWidth`
-    expansions.sort((a, b) => score(b.state) - score(a.state)); // descending
-    frontier = expansions.slice(0, beamWidth);
+    // height is max child height + 1 edge to the child
+    return Math.max(leftHeight, rightHeight) + 1;
   }
 
-  return undefined; // no goal reached within limits
+  dfs(root);
+  return maxDiameter;  // edges count
 }
-// Example: find a numeric sequence that sums to 15
-type MyState = number; // current sum
+// Build a tree:
+//        1
+//       / \
+//      2   3
+//     / \     
+//    4   5  
+const root = new TreeNode(1,
+              new TreeNode(2,
+                new TreeNode(4),
+                new TreeNode(5)
+              ),
+              new TreeNode(3)
+            );
 
-const start = 0;
+console.log(diameterOfBinaryTree(root)); // → 3
+function diameterIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let maxDiameter = 0;
+  const stack = [{ node: root, visited: false, height: 0 }];
 
-const getSucc = (sum: MyState) => {
-  return [sum + 1, sum + 2, sum + 3]; // could be any branching scheme
-};
+  while (stack.length) {
+    const frame = stack.pop()!;
+    if (!frame.node) continue;
 
-const score = (sum: MyState) => {
-  // The closer to 15 without overshooting, the better
-  return Math.max(0, 15 - sum);
-};
+    if (frame.visited) {
+      // Children already processed – compute height & diameter
+      const leftHeight = frame.node.left?.height ?? 0;
+      const rightHeight = frame.node.right?.height ?? 0;
 
-const isGoal = (sum: MyState) => sum === 15;
-
-const result = beamSearch(
-  [start],
-  getSucc,
-  score,
-  beamWidth = 3,
-  maxDepth = 10,
-  isGoal
-);
-
-if (result) {
-  console.log(`Reached 15 via ${result.path.join(' -> ')}`);
-} else {
-  console.log('No path found within depth limit');
+      maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
+      frame.node.height = Math.max(leftHeight, rightHeight) + 1;
+    } else {
+      // First visit: push back as visited and push children
+      stack.push({ node: frame.node, visited: true, height: 0 });
+      if (frame.node.right) stack.push({ node: frame.node.right, visited: false, height: 0 });
+      if (frame.node.left) stack.push({ node: frame.node.left, visited: false, height: 0 });
+    }
+  }
+  return maxDiameter;
 }
