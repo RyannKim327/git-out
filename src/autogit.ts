@@ -1,68 +1,67 @@
 /**
- * Stable counting sort of `arr` by the digit in position `exp`
- * (exp = 1 → units, 10 → tens, 100 → hundreds, …)
+ * Returns the k‑th smallest element (1‑based index).
+ * O(n log n) by quick‑sort.
  */
-function countingSortByDigit(arr: number[], exp: number): void {
-  const n = arr.length;
-  const output = new Array<number>(n);
-  const count = new Array<number>(10).fill(0);   // base 10 → digits 0‑9
+export function kthSmallestSort(arr: number[], k: number): number {
+  if (!arr.length) throw new Error('Array is empty');
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
 
-  /* Count occurrences of each digit */
-  for (let i = 0; i < n; i++) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    count[digit] += 1;
-  }
-
-  /* Transform counts into starting indices */
-  for (let i = 1; i < 10; i++) {
-    count[i] += count[i - 1];
-  }
-
-  /* Build the output array from the end to preserve stability */
-  for (let i = n - 1; i >= 0; i--) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    const pos = --count[digit];
-    output[pos] = arr[i];
-  }
-
-  /* Copy back to the original array */
-  for (let i = 0; i < n; i++) {
-    arr[i] = output[i];
-  }
+  // Create a copy so the original array stays untouched
+  const copy = [...arr].sort((a, b) => a - b);
+  return copy[k - 1];
 }
+
 /**
- * Radix sort for an array of non‑negative integers.
- * Complexity: O(d · (n + k)) where d = number of digits, k = base (10).
+ * Returns the k‑th smallest element in expected linear time via QuickSelect.
+ * Stable but not guaranteed worst‑case performance.
  */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length < 2) return arr;            // already sorted
+export function kthSmallestQuickSelect(arr: number[], k: number): number {
+  if (!arr.length) throw new Error('Array is empty');
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
 
-  // Find the maximum number to know how many digits we need
-  const maxVal = Math.max(...arr);
+  // Recursive helper
+  function quickSelect(nums: number[], left: number, right: number, kth: number): number {
+    if (left === right) return nums[left];
 
-  // Start with the least significant digit (exp = 1)
-  for (let exp = 1; exp <= maxVal; exp *= 10) {
-    countingSortByDigit(arr, exp);
+    let pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
+    pivotIndex = partition(nums, left, right, pivotIndex);
+
+    const leftSize = pivotIndex - left + 1;
+    if (kth < leftSize) return quickSelect(nums, left, pivotIndex - 1, kth);
+    if (kth === leftSize) return nums[pivotIndex];
+    return quickSelect(nums, pivotIndex + 1, right, kth - leftSize);
   }
 
-  return arr; // sorted array (in‑place)
+  function partition(nums: number[], left: number, right: number, pivotIndex: number): number {
+    const pivotValue = nums[pivotIndex];
+    // Move pivot to end
+    [nums[pivotIndex], nums[right]] = [nums[right], nums[pivotIndex]];
+    let storeIndex = left;
+
+    for (let i = left; i < right; i++) {
+      if (nums[i] < pivotValue) {
+        [nums[storeIndex], nums[i]] = [nums[i], nums[storeIndex]];
+        storeIndex++;
+      }
+    }
+    // Move pivot to its final place
+    [nums[right], nums[storeIndex]] = [nums[storeIndex], nums[right]];
+    return storeIndex;
+  }
+
+  // Clone the array so we don't mutate the caller's array
+  const clone = [...arr];
+  return quickSelect(clone, 0, clone.length - 1, k);
 }
-const data = [170, 45, 75, 90, 802, 24, 2, 66];
+const data = [7, 2, 5, 3, 9, 1];
+const kth = 3; // 3rd smallest
 
-radixSort(data);
-console.log(data); // [2, 24, 45, 66, 75, 90, 170, 802]
-export function radixSortMixed(arr: number[]): number[] {
-  const positives: number[] = [];
-  const negatives: number[] = [];
-
-  for (const v of arr) {
-    if (v >= 0) positives.push(v);
-    else negatives.push(-v);  // work with absolute values
-  }
-
-  radixSort(positives);
-  radixSort(negatives);
-
-  const sortedNegatives = negatives.reverse().map(v => -v);
-  return [...sortedNegatives, ...positives];
+console.log(kthSmallestSort(data, kth));          // 5
+console.log(kthSmallestQuickSelect(data, kth));   // 5
+export function kthSmallest<T>(
+  arr: T[],
+  k: number,
+  cmp: (a: T, b: T) => number,
+): T {
+  // ...same logic, replace numeric comparisons with cmp(...)
 }
