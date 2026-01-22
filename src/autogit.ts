@@ -1,65 +1,47 @@
-// ---------- Basics ----------
-class ListNode {
-  val: number          // you can keep any data you need
-  next: ListNode | null = null;
+/**
+ * Count how many times a whole word appears in a string.
+ *
+ * @param haystack  The text to search.
+ * @param needle    The word you’re looking for.
+ * @param caseSensitive  If false, treat both inputs as lower‑case.
+ * @returns Number of matches.
+ */
+function countWord(
+  haystack: string,
+  needle: string,
+  caseSensitive = false
+): number {
+  if (!needle) return 0;
 
-  constructor(val: number) {
-    this.val = val;
-  }
+  const flags = caseSensitive ? 'g' : 'gi';
+  // \b ensures we only match whole words
+  const re = new RegExp(`\\b${escapeRegExp(needle)}\\b`, flags);
+  const matches = haystack.match(re);
+  return matches ? matches.length : 0;
 }
 
-// ---------- Intersection finder ----------
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  if (!headA || !headB) return null;
-
-  let ptrA: ListNode | null = headA;
-  let ptrB: ListNode | null = headB;
-
-  // After at most two passes through each list the pointers
-  // will either meet at the intersection or both become null.
-  while (ptrA !== ptrB) {
-    ptrA = ptrA ? ptrA.next : headB; // switch to the head of the other list
-    ptrB = ptrB ? ptrB.next : headA;
-  }
-
-  return ptrA; // either the intersection node, or null
+/** Helper to escape regex meta‑characters in the needle. */
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+const text = 'The quick brown fox jumps over the lazy dog. The fox was quick.';
 
-// ---------- Quick demo ----------
-function buildLinkedList(values: number[], offset: number = 0) {
-  let head: ListNode | null = null;
-  let tail: ListNode | null = null;
-  for (let v of values) {
-    const node = new ListNode(v);
-    if (!head) head = node;
-    if (tail) tail.next = node;
-    tail = node;
-  }
-  return { head, tail };
+console.log(countWord(text, 'quick'));   // 2
+console.log(countWord(text, 'the'));     // 2 (case‑insensitive)
+console.log(countWord(text, 'the', true)); // 1 (case‑sensitive)
+function countWordUsingSplit(
+  text: string,
+  word: string,
+  caseSensitive = false
+): number {
+  if (!word) return 0;
+
+  const base = caseSensitive ? text : text.toLowerCase();
+  const target = caseSensitive ? word : word.toLowerCase();
+
+  // Split on whitespace and punctuation
+  const tokens = base.split(/\W+/).filter(Boolean);
+  return tokens.filter(t => t === target).length;
 }
-
-// Common tail that will be shared by two lists
-const { head: shared, tail: sharedTail } = buildLinkedList([8, 10]);
-
-// First list: 3 → 7 → 8 → 10
-const { head: aHead } = buildLinkedList([3, 7]);
-if (aHead && sharedHead) {
-  // connect the shared tail
-  let node = aHead;
-  while (node.next) node = node.next;
-  node.next = shared;
-}
-
-// Second list: 99 → 1 → 8 → 10
-const { head: bHead } = buildLinkedList([99, 1]);
-if (bHead && sharedHead) {
-  let node = bHead;
-  while (node.next) node = node.next;
-  node.next = shared;
-}
-
-const intersection = getIntersectionNode(aHead, bHead);
-console.log(intersection?.val); // prints 8
+const re = new RegExp(escapeRegExp(substring), 'g'); // add gi for case‑insensitive
+const count = (text.match(re) || []).length;
