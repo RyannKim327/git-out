@@ -1,39 +1,60 @@
-function factorialRecursive(n: number): number {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
-}
-console.log(factorialRecursive(5)); // 120
-function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+/**
+ * Fibonacci search for a sorted array of numbers.
+ * @param arr  The sorted array to search.
+ * @param target The value to locate.
+ * @returns The index of `target` in `arr`, or -1 if not found.
+ */
+export function fibonacciSearch(arr: number[], target: number): number {
+  const n = arr.length;
+  if (n === 0) return -1;
+
+  // 1. Build the smallest Fibonacci number >= n
+  let fibMm2 = 0;   // (m-2)th Fibonacci
+  let fibMm1 = 1;   // (m-1)th Fibonacci
+  let fibM   = fibMm2 + fibMm1; // mth Fibonacci
+
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
   }
-  return result;
-}
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1n;
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
+
+  // Marks the range to be searched
+  let offset = -1; // Element before the beginning (virtual)
+
+  // 2. While there is an element to inspect
+  while (fibM > 1) {
+    // Determines the index to compare
+    const i = Math.min(offset + fibMm2, n - 1);
+
+    if (arr[i] < target) {
+      // Move three steps ahead
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else if (arr[i] > target) {
+      // Move one step back
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
+    } else {
+      return i; // Found
+    }
   }
-  return result;
+
+  // We are left with a single element
+  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
+  }
+
+  return -1; // Not found
 }
-console.log(factorialBigInt(20));        // 2432902008176640000n
-console.log(factorialBigInt(100));       // 9.332621544e+157n (full bigint printed)
-const factorialMemo = (() => {
-  const cache: Record<number, number> = {0: 1, 1: 1};
+import { fibonacciSearch } from './fibonacci-search';
 
-  const inner = (n: number): number => {
-    if (n in cache) return cache[n];
-    cache[n] = n * inner(n - 1);
-    return cache[n];
-  };
+const data = [3, 8, 10, 15, 20, 23, 27, 35, 41, 55, 68, 73, 82, 91, 97];
+const target = 55;
 
-  return inner;
-})();
-console.assert(factorialIterative(0) === 1);
-console.assert(factorialIterative(6) === 720);
-
-console.assert(factorialBigInt(5).toString() === '120');
-console.assert(factorialBigInt(30).toString().startsWith('265252859...'));
+const idx = fibonacciSearch(data, target);
+console.log(idx); // → 9
+console.log(fibonacciSearch(data, 22)); // → -1
