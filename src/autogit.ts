@@ -1,24 +1,45 @@
-export function reverseString(s: string): string {
-  return s.split('').reverse().join('');
-}
-export function reverseStringManual(s: string): string {
-  let result = '';
-  for (let i = s.length - 1; i >= 0; i--) {
-    result += s[i];
+function secondLargest(nums: number[]): number | null {
+  if (nums.length < 2) {            // not enough numbers
+    return null;                    // or throw an error, or whatever feels right
   }
-  return result;
-}
-export function reverseStringRecursive(s: string): string {
-  if (s.length <= 1) return s;
-  return reverseStringRecursive(s.slice(1)) + s[0];
-}
-export function reverseStringLoop(s: string): string {
-  const chars = [...s];          // same as s.split('')
-  for (let i = 0, j = chars.length - 1; i < j; i++, j--) {
-    [chars[i], chars[j]] = [chars[j], chars[i]];
+
+  let largest = Number.NEGATIVE_INFINITY;
+  let second  = Number.NEGATIVE_INFINITY;
+
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;   // old largest becomes second
+      largest = n;
+    } else if (n > second && n < largest) {   // distinct from largest
+      second = n;
+    }
   }
-  return chars.join('');
+
+  // After the loop, `second` holds the second largest *distinct* value
+  return second === Number.NEGATIVE_INFINITY ? null : second;
 }
-console.log(reverseString('hello'));          // 'olleh'
-console.log(reverseStringManual('world'));    // 'dlrow'
-console.log(reverseStringRecursive('TypeScript')); // 'tpircSepyT'
+else if (n > second) {   // allow n == largest to fill second slot
+  second = n;
+}
+function secondLargestSorted(nums: number[]): number | null {
+  if (nums.length < 2) return null;
+  const sorted = [...nums].sort((a, b) => b - a); // descending
+  // handle duplicates if you want distinct values
+  return sorted[1];
+}
+function secondLargest(nums: number[]): number | null {
+  if (nums.length < 2) return null;
+
+  let largest = Number.NEGATIVE_INFINITY;
+  let second  = Number.NEGATIVE_INFINITY;
+
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;
+      largest = n;
+    } else if (n > second && n < largest) {
+      second = n;
+    }
+  }
+  return second === Number.NEGATIVE_INFINITY ? null : second;
+}
