@@ -1,43 +1,43 @@
 /**
- * Counting sort for integer arrays (can include negatives).
- * @param arr The input array of numbers.
- * @returns A new sorted array.
+ * Shell sort – an in‑place comparison sort.
+ *
+ * @param arr   The array to sort.
+ * @param cmp   Optional comparator: (a, b) => number. Positive if a > b,
+ *              negative if a < b, zero if equal. If omitted, the
+ *              default uses the `<` operator.
+ * @returns     The same array instance, now sorted.
  */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+export function shellSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
+  const compare = cmp ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-  // 1) Determine min and max to find the range.
-  let min = arr[0];
-  let max = arr[0];
-  for (const v of arr) {
-    if (v < min) min = v;
-    else if (v > max) max = v;
+  let n = arr.length;
+  // Start with a gap of about n/2 and halve it each loop.
+  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Insertion‑sort on elements gap apart.
+    for (let i = gap; i < n; i++) {
+      const temp = arr[i];
+      let j = i;
+      // Shift all larger gap‑spaced elements one step forward.
+      while (j >= gap && compare(temp, arr[j - gap]) < 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
+    }
   }
-
-  const range = max - min + 1;          // how many distinct integer values
-  const count = new Array<number>(range).fill(0);
-
-  // 2) Count each value
-  for (const v of arr) {
-    count[v - min]++;                   // offset by min so array starts at 0
-  }
-
-  // 3) Convert counts to cumulative counts
-  for (let i = 1; i < range; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 4) Allocate result array
-  const output = new Array<number>(arr.length);
-
-  // 5) Place elements into output in stable order
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const v = arr[i];
-    const idx = v - min;
-    const pos = count[idx] - 1;         // final index for this element
-    output[pos] = v;
-    count[idx]--;                       // decrease count for next instance
-  }
-
-  return output;
+  return arr;
 }
+// sort.ts
+export { shellSort };
+// └─ ... implementation shown above
+import { shellSort } from './sort';
+
+const numbers = [23, 12, 1, 10, 7, 3, 9];
+console.log('unsorted:', numbers);
+
+shellSort(numbers);                 // default numeric comparison
+console.log('sorted:   ', numbers);
+
+// Custom comparator (descending)
+shellSort(numbers, (a, b) => b - a);
+console.log('desc:    ', numbers);
