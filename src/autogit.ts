@@ -1,39 +1,25 @@
-function factorialRecursive(n: number): number {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
-}
-console.log(factorialRecursive(5)); // 120
-function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+/**
+ * Checks if `arr` is sorted in ascending order.
+ *
+ * @param arr          the array to test
+ * @param compareFn    optional comparison function.  
+ *                     Should return <0 if a < b, 0 if equal, >0 if a > b.
+ *                     If omitted, the default `a - b` numeric compare is used.
+ * @returns true if the array is in ascending order, false otherwise
+ */
+export function isSortedAscending<T>(
+  arr: readonly T[],
+  compareFn: ((a: T, b: T) => number) = (a, b) =>
+    /* @ts-ignore */ a < b ? -1 : a > b ? 1 : 0
+): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    // If the current element is *before* the previous one, the array is out of order
+    if (compareFn(arr[i], arr[i - 1]) < 0) return false;
   }
-  return result;
+  return true;
 }
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1n;
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
-}
-console.log(factorialBigInt(20));        // 2432902008176640000n
-console.log(factorialBigInt(100));       // 9.332621544e+157n (full bigint printed)
-const factorialMemo = (() => {
-  const cache: Record<number, number> = {0: 1, 1: 1};
+const names = ['Alice', 'Bob', 'Charlie'];
+console.log(isSortedAscending(names)); // true
 
-  const inner = (n: number): number => {
-    if (n in cache) return cache[n];
-    cache[n] = n * inner(n - 1);
-    return cache[n];
-  };
-
-  return inner;
-})();
-console.assert(factorialIterative(0) === 1);
-console.assert(factorialIterative(6) === 720);
-
-console.assert(factorialBigInt(5).toString() === '120');
-console.assert(factorialBigInt(30).toString().startsWith('265252859...'));
+const mixed = [1, 3, 2, 4];
+console.log(isSortedAscending(mixed)); // false
