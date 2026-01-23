@@ -1,15 +1,38 @@
-// 1️⃣ Convert with the global Number constructor
-const n1 = Number("42");          // 42
+/**
+ * Returns true if `a` and `b` contain exactly the same characters
+ * (ignoring whitespace, punctuation, and case).
+ */
+export function isAnagram(a: string, b: string): boolean {
+  // 1. Strip anything that isn’t a letter or a digit, and
+  //    normalize the case to lower‑case.
+  const norm = (s: string) =>
+    s.replace(/\W+/g, "") // removes non‑alphanumeric characters
+      .toLowerCase();
 
-// 2️⃣ Use the unary plus – super terse
-const n2 = +"123";                // 123
+  const cleanA = norm(a);
+  const cleanB = norm(b);
 
-// 3️⃣ (recommended for base‑10 integer strings)
-const n3 = parseInt("07", 10);    // 7
+  // 2. Quick length check – if lengths differ, they can’t be anagrams.
+  if (cleanA.length !== cleanB.length) return false;
 
-// 4️⃣ If you need a float, use parseFloat
-const n4 = parseFloat("3.14");    // 3.14
-const toInt = (s: string | null | undefined): number | null =>
-  s == null ? null : parseInt(s, 10);
+  // 3. Count each character in a Map.
+  const counter = new Map<string, number>();
 
-const age = toInt(queryParamAge); // gives you a number or null if it's missing
+  for (const ch of cleanA) {
+    counter.set(ch, (counter.get(ch) ?? 0) + 1);
+  }
+
+  // 4. Decrement counts with characters from the second string.
+  for (const ch of cleanB) {
+    const cur = counter.get(ch);
+    if (!cur) return false;            // missing or too many of 'ch'
+    if (cur === 1) counter.delete(ch); // tidy up to keep map small
+    else counter.set(ch, cur - 1);
+  }
+
+  // 5. If the map is empty, the two strings were perfect anagrams.
+  return counter.size === 0;
+}
+console.log(isAnagram("Listen", "Silent"));   // true
+console.log(isAnagram("Hello!", "Oleh!"));    // true
+console.log(isAnagram("Hello", "World"));     // false
