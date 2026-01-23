@@ -1,85 +1,69 @@
 /**
- * `AdjacencyList` is a mapping from a node key to the keys of its neighbors.
- * It works for directed or undirected graphs – just decide how you add edges.
- */
-export type AdjacencyList<K extends string | number> = Record<
-  K,
-  K[] // List of outgoing neighbor keys
->;
-const graph: AdjacencyList<string> = {
-  A: ['B', 'C'],
-  B: ['A', 'D'],
-  C: ['A', 'D'],
-  D: ['B', 'C', 'E'],
-  E: ['D'],
-};
-class Queue<T> {
-  private data: T[] = [];
-  private head = 0;
-  private tail = 0;
-
-  enqueue(item: T) {
-    this.data[this.tail++] = item;
-  }
-
-  dequeue(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    const item = this.data[this.head];
-    // Optional: free memory if the queue shrinks a lot
-    if (this.head % 64 === 0) this.data = this.data.slice(this.head);
-    this.head++;
-    return item;
-  }
-
-  isEmpty() {
-    return this.head >= this.tail;
-  }
-}
-/**
- * Breadth‑first search on an adjacency list.
+ * Builds the BMH bad‑character shift table.
  *
- * @param graph      the graph (adjacency list)
- * @param start      the node to start from
- * @param target     optional: stop when this node is reached
- * @returns          { distance: Map<node, number>, parent: Map<node, node | null>, found?: node }
+ * For every byte value (0‑255) we store how many positions the algorithm
+ * can safely skip when encountering that byte while scanning from the
+ * rightmost side of the pattern.
  */
-export function bfs<K extends string | number>(
-  graph: AdjacencyList<K>,
-  start: K,
-  target?: K,
-) {
-  const distance = new Map<K, number>();
-  const parent = new Map<K, K | null>();
+function makeShiftTable(pattern: string): Uint8Array {
+  const m = pattern.length;
+  const table = new Uint8Array(256);
+  // Default shift is pattern length (skip the whole pattern).
+  table.fill(m);
 
-  const queue = new Queue<K>();
-  queue.enqueue(start);
-  distance.set(start, 0);
-  parent.set(start, null);
+  // For every non‑last character we set shift = m - i - 1
+  for (let i = 0; i < m - 1; ++i) {
+    const c = pattern.charCodeAt(i);
+    table[c] = m - i - 1;
+  }
+  return table;
+}
 
-  while (!queue.isEmpty()) {
-    const current = queue.dequeue()!;
-    const curDist = distance.get(current)!;
+/**
+ * Boyer‑Moore‑Horspool search.
+ *
+ * @param text    The text where we look for the pattern.
+ * @param pattern The pattern to find.
+ * @returns       An array of zero‑based start indices where `pattern`
+ *                is found in `text`.  Empty array if no match.
+ */
+export function bmhSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
 
-    // Optional early‑exit
-    if (target !== undefined && current === target) {
-      return { distance, parent, found: current };
+  // Quick exits
+  if (m === 0) return [];          // Empty pattern => nothing meaningful
+  if (m > n) return [];            // Pattern longer than text => impossible
+
+  const shiftTable = makeShiftTable(pattern);
+  const result: number[] = [];
+
+  let i = 0; // Current offset in `text` aligning the end of the pattern
+  while (i <= n - m) {
+    // Compare pattern from the end backward
+    let j = m - 1;
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j -= 1;
     }
 
-    for (const neighbor of graph[current] ?? []) {
-      if (!distance.has(neighbor)) {                // not visited
-        distance.set(neighbor, curDist + 1);
-        parent.set(neighbor, current);
-        queue.enqueue(neighbor);
-      }
+    if (j < 0) {               // All characters matched
+      result.push(i);
+      i += 1;                  // For overlapping matches we shift by 1
+    } else {
+      const shiftVal = shiftTable[text.charCodeAt(i + m - 1)];
+      i += shiftVal;
     }
   }
 
-  return { distance, parent, found: target }; // target not found
+  return result;
 }
-const result = bfs(graph, 'A', 'E');
-console.log('Distance map:', result.distance);
-console.log('Parent map:', result.parent);
-console.log('Target found?', result.found !== undefined);
-Distance map: Map(5) { 'A' => 0, 'B' => 1, 'C' => 1, 'D' => 2, 'E' => 3 }
-Parent map: Map(5) { 'A' => null, 'B' => 'A', 'C' => 'A', 'D' => 'B', 'E' => 'D' }
-Target found? true
+
+/* ---------- Example usage --------------------------------- */
+
+const haystack = "abacababcab";
+const needle  = "cab";
+
+const indices = bmhSearch(haystack, needle);
+console.log(`Pattern found at indices: ${indices.join(", ")}`);
+// -> "Pattern found at indices: 3, 8"
+
