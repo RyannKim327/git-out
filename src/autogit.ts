@@ -1,55 +1,98 @@
-/**
- * Returns the median of two sorted arrays.
- *
- * @param nums1 First sorted array
- * @param nums2 Second sorted array
- * @returns Median value (number)
- */
-export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Make sure nums1 is the smaller array; binary search will run on it.
-  if (nums1.length > nums2.length) {
-    return findMedianSortedArrays(nums2, nums1);
-  }
+/* ──────────────────────────────────────────────────────
+   1️⃣  A tiny TypeScript helper that wraps the Fetch API
+─────────────────────────────────────────────────────── */
 
-  const m = nums1.length;
-  const n = nums2.length;
-  const halfLen = Math.floor((m + n + 1) / 2);
+const api = {
+  /* GET a JSON‑encoded resource */
+  async get<T>(url: string): Promise<T> {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
 
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);   // Count from nums1
-    const j = halfLen - i;                    // Count from nums2
-
-    // If i is too small → move right
-    if (i < m && nums2[j - 1] > nums1[i]) {
-      low = i + 1;
+    if (!response.ok) {
+      const msg = `Fetching ${url} failed with status ${response.status}`;
+      console.warn(msg);
+      throw new Error(msg);
     }
-    // If i is too big → move left
-    else if (i > 0 && nums1[i - 1] > nums2[j]) {
-      high = i - 1;
+
+    const json = await response.json();
+    return json as T;
+  },
+
+  /* POST data as JSON */
+  async post<T, U>(url: string, body: T): Promise<U> {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const msg = `Posting to ${url} failed with status ${response.status}`;
+      console.warn(msg);
+      throw new Error(msg);
     }
-    // Found perfect i
-    else {
-      let maxLeft;
-      if (i === 0) maxLeft = nums2[j - 1];
-      else if (j === 0) maxLeft = nums1[i - 1];
-      else maxLeft = Math.max(nums1[i - 1], nums2[j - 1]);
 
-      // Odd total length – median is max of left side
-      if ((m + n) % 2 === 1) return maxLeft;
+    const json = await response.json();
+    return json as U;
+  },
+};
 
-      // Even total length – median is average of maxLeft and minRight
-      let minRight;
-      if (i === m) minRight = nums2[j];
-      else if (j === n) minRight = nums1[i];
-      else minRight = Math.min(nums1[i], nums2[j]);
+/* ──────────────────────────────────────────────────────
+   2️⃣  A React‑Native component that uses the helper
+─────────────────────────────────────────────────────── */
 
-      return (maxLeft + minRight) / 2;
-    }
-  }
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 
-  // If we get here, input arrays weren’t valid (empty, unsorted, etc.)
-  throw new Error('Input arrays are not valid.');
+type Todo = { userId: number; id: number; title: string; completed: boolean };
+
+// Example URL: https://jsonplaceholder.typicode.com/todos/1
+const TODO_URL = 'https://jsonplaceholder.typicode.com/todos/1';
+
+export default function AsyncExample() {
+  const [todo, setTodo] = useState<Todo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    /*═════════════════════════════════════════════════
+       Run an “async task” when the component mounts
+     ════════════════════════════════════════════════*/
+    const fetchTodo = async () => {
+      try {
+        const data = await api.get<Todo>(TODO_URL);
+        setTodo(data);
+      } catch (e: any) {
+        setError(e.message ?? 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTodo();
+  }, []);
+
+  if (loading) return <ActivityIndicator style={styles.center} />;
+  if (error) return <Text style={styles.error}>❌ {error}</Text>;
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Todo #{todo?.id}</Text>
+      <Text style={styles.content}>{todo?.title}</Text>
+      <Text style={styles.status}>
+        {todo?.completed ? '✅ Completed' : '🔄 Pending'}
+      </Text>
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },
+  center:      { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  title:   { fontSize: 24, fontWeight: 'bold', marginBottom: 12 },
+  content: { fontSize: 18, marginBottom: 8 },
+  status:  { fontSize: 16, color: '#777' },
+  error:   { color: 'red', textAlign: 'center', margin: 20 },
+});
