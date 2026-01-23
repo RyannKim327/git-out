@@ -1,65 +1,70 @@
-// ---------------------------------------------------------
-//  FunRandomCron.ts
-//  A tiny demo that shows how to:
-//   • import node‑cron with types
-//   • schedule a repeating job
-//   • cancel a job on demand
-//   • use a more powerful CRON expression
-//   • log the next run time every time it fires
-// ---------------------------------------------------------
+function longestCommonSubstring(a: string, b: string): string {
+  if (!a || !b) return '';
 
-import cron, { ScheduledTask } from 'node‑cron';
-import { format } from 'date‑fns';
+  let maxLen = 0;
+  let maxStart = 0;          // start index inside `a`
 
-// This job runs every 10 seconds—just to keep the console fire‑breathing.
-// In a real app you could do backups, recompute stats, notify users, etc.
-const repeatEveryTenSeconds: ScheduledTask = cron.schedule(
-  '*/10 * * * * *',                // <seconds> <minutes> <hours> <day> <month> <dow>
-  () => {
-    const now = new Date();
-    console.log(`[${format(now, 'HH:mm:ss.SSS')}] 10‑second heartbeat!`);
-    // Do your real work here.
-  },
-  { scheduled: true }              // starts immediately
-);
+  const aLen = a.length;
+  const bLen = b.length;
 
-// Also throw in a “Monday at 04:35” job just to show another flavour.
-const mondayMorning: ScheduledTask = cron.schedule(
-  '35 4 * * 1',                    // minute hour day-of-month month day-of-week
-  () => {
-    console.log(`🎉 Monday Special – It’s 04:35!`);
-  },
-  { scheduled: true, timezone: 'America/New_York' } // time‑zone support
-);
+  // Pick the shorter string as the outer loop to reduce the number of starts
+  const [short, long] = aLen < bLen ? [a, b] : [b, a];
+  const shortLen = short.length;
+  const longLen = long.length;
 
-// Show next run times.  Handy for debugging.
-function displayNextRun(job: ScheduledTask, name: string) {
-  console.log(` → ${name} next run at ${format(job.nextDates().toDate(), 'yyyy‑MM‑dd HH:mm:ss')}`);
+  for (let i = 0; i < shortLen; i++) {
+    for (let j = 0; j < longLen; j++) {
+      let length = 0;
+      while (
+        i + length < shortLen &&
+        j + length < longLen &&
+        short[i + length] === long[j + length]
+      ) {
+        length++;
+      }
+      if (length > maxLen) {
+        maxLen = length;
+        maxStart = i;           // starts in `short`
+      }
+    }
+  }
+
+  // Return the slice from the original string that contains the substring
+  const result = short.substr(maxStart, maxLen);
+  // If we swapped the strings we need to return the same slice from the original `a`
+  return aLen < bLen ? result : result; // same, just explicit
 }
-displayNextRun(repeatEveryTenSeconds, 'Heartbeat');
-displayNextRun(mondayMorning, 'Mon‑4:35 AM');
+console.log(longestCommonSubstring('abxabc', 'abcaby')); // → 'abc'
+function longestCommonSubstringDP(s1: string, s2: string): string {
+  const n = s1.length;
+  const m = s2.length;
+  if (!n || !m) return '';
 
-// ---------------------------------------------------------
-//  Graceful shutdown inside this demo
-// ---------------------------------------------------------
-const shutdown = () => {
-  console.log('\n→ Shutting down cron jobs gracefully...');
-  repeatEveryTenSeconds.stop();
-  mondayMorning.stop();
-  console.log('→ All job timers cleared. Bye!');
-  process.exit(0);
-};
+  // 2‑row DP to save memory – only previous row needed for current row calculation
+  let prev = new Array(m + 1).fill(0);
+  let curr = new Array(m + 1).fill(0);
 
-// In a real app you’d hook this into SIGINT, SIGTERM, etc.
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
-# 1️⃣ Install the runtime dependencies
-npm install node-cron date-fns
+  let maxLen = 0;
+  let maxEndIdxS1 = 0; // end index in s1 of longest common substring
 
-# 2️⃣ Add TypeScript types, optional but handy
-npm install -D typescript @types/node-cron @types/date-fns
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        curr[j] = prev[j - 1] + 1; // extend the previous match
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          maxEndIdxS1 = i; // i is 1‑based
+        }
+      } else {
+        curr[j] = 0;
+      }
+    }
+    // swap rows for next iteration
+    [prev, curr] = [curr, prev];
+    curr.fill(0); // reset current row
+  }
 
-# 3️⃣ Compile + run
-npx tsc FunRandomCron.ts
-node FunRandomCron.js
-npx ts-node FunRandomCron.ts
+  // Extract the substring from s1 using the end index and length
+  return s1.slice(maxEndIdxS1 - maxLen, maxEndIdxS1);
+}
+console.log(longestCommonSubstringDP('abxabc', 'abcaby')); // → 'abc'
