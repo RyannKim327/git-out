@@ -1,69 +1,104 @@
+// ------------------------------------------------------------------
+//  Supporting types
+// ------------------------------------------------------------------
 /**
- * Builds the BMH bad‑character shift table.
- *
- * For every byte value (0‑255) we store how many positions the algorithm
- * can safely skip when encountering that byte while scanning from the
- * rightmost side of the pattern.
+ * The shape of a graph node.  The `id` is used for a visited set.
+ * `getNeighbours` must return raw references that `graph.getNode(id)` can resolve.
  */
-function makeShiftTable(pattern: string): Uint8Array {
-  const m = pattern.length;
-  const table = new Uint8Array(256);
-  // Default shift is pattern length (skip the whole pattern).
-  table.fill(m);
-
-  // For every non‑last character we set shift = m - i - 1
-  for (let i = 0; i < m - 1; ++i) {
-    const c = pattern.charCodeAt(i);
-    table[c] = m - i - 1;
-  }
-  return table;
+interface Node {
+  readonly id: string;
+  getNeighbours(): Iterable<string>;
 }
 
 /**
- * Boyer‑Moore‑Horspool search.
- *
- * @param text    The text where we look for the pattern.
- * @param pattern The pattern to find.
- * @returns       An array of zero‑based start indices where `pattern`
- *                is found in `text`.  Empty array if no match.
+ * A tiny graph interface that lets us look up nodes by id.
+ * (You can replace this with your own representation; only the method
+ * `getNode` is required by the algorithm.)
  */
-export function bmhSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
+interface Graph {
+  /** Return the node instance for the supplied id or `undefined`. */
+  getNode(id: string): Node | undefined;
+}
 
-  // Quick exits
-  if (m === 0) return [];          // Empty pattern => nothing meaningful
-  if (m > n) return [];            // Pattern longer than text => impossible
+/**
+ * A function tested against a node, returning true when the node is
+ * the thing you’re looking for.
+ */
+type Predicate = (node: Node) => boolean;
 
-  const shiftTable = makeShiftTable(pattern);
-  const result: number[] = [];
+// ------------------------------------------------------------------
+//  Depth‑limited DFS (iterative)
+// ------------------------------------------------------------------
+/**
+ * Iterative depth‑limited depth‑first search.
+ *
+ * @param startId   id of the node where the search begins
+ * @param maxDepth  stop expanding after this many edges from `startId`
+ * @param graph     the graph interface
+ * @param satisfies a predicate that tells when a node is a solution
+ *
+ * @returns the first node that satisfies `satisfies`, or undefined
+ */
+export function depthLimitedSearch(
+  startId: string,
+  maxDepth: number,
+  graph: Graph,
+  satisfies: Predicate
+): Node | undefined {
 
-  let i = 0; // Current offset in `text` aligning the end of the pattern
-  while (i <= n - m) {
-    // Compare pattern from the end backward
-    let j = m - 1;
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j -= 1;
-    }
+  // Guard against an empty or overly deep request
+  if (maxDepth < 0) return undefined;
 
-    if (j < 0) {               // All characters matched
-      result.push(i);
-      i += 1;                  // For overlapping matches we shift by 1
-    } else {
-      const shiftVal = shiftTable[text.charCodeAt(i + m - 1)];
-      i += shiftVal;
+  // A stack holds tuples of (node, currentDepth).
+  const stack: Array<[Node, number]> = [];
+  const visited = new Set<string>();
+
+  const startNode = graph.getNode(startId);
+  if (!startNode) return undefined;   // start id is missing
+
+  stack.push([startNode, 0]);
+
+  while (stack.length) {
+    const [node, depth] = stack.pop()!;   // non‑empty promise
+
+    // Avoid revisiting the same node (important for cycles)
+    if (visited.has(node.id)) continue;
+    visited.add(node.id);
+
+    if (satisfies(node)) return node;    // found a match
+
+    if (depth === maxDepth) continue;    // reached depth limit
+
+    // Push neighbours onto the stack – order determines DFS order.
+    for (const neighId of node.getNeighbours()) {
+      const neighbour = graph.getNode(neighId);
+      if (neighbour) stack.push([neighbour, depth + 1]);
     }
   }
 
-  return result;
+  return undefined;   // nothing matched within the depth budget
+}
+// A simple example graph implementation
+class SimpleNode implements Node {
+  constructor(public readonly id: string, private readonly neighIds: string[]) {}
+  getNeighbours() { return this.neighIds; }
+}
+class SimpleGraph implements Graph {
+  private readonly nodes = new Map<string, Node>();
+  addNode(node: Node) { this.nodes.set(node.id, node); }
+  getNode(id: string) { return this.nodes.get(id); }
 }
 
-/* ---------- Example usage --------------------------------- */
+// Build a tiny graph
+const g = new SimpleGraph();
+g.addNode(new SimpleNode('A', ['B', 'C']));
+g.addNode(new SimpleNode('B', ['D']));
+g.addNode(new SimpleNode('C', []));
+g.addNode(new SimpleNode('D', []));
 
-const haystack = "abacababcab";
-const needle  = "cab";
+// Define a search goal
+const goal = (n: Node) => n.id === 'D';
 
-const indices = bmhSearch(haystack, needle);
-console.log(`Pattern found at indices: ${indices.join(", ")}`);
-// -> "Pattern found at indices: 3, 8"
-
+// Run depth‑limited DFS limited to 2 edges from 'A'
+const result = depthLimitedSearch('A', 2, g, goal);
+console.log(result?.id); // → 'D'
