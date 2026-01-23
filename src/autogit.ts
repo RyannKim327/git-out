@@ -1,61 +1,35 @@
-// A generic graph node – you can replace this with whatever you’re actually
-// storing.  Here we just keep a value and an array of child nodes.
-export interface TreeNode<T> {
-  value: T;
-  children: TreeNode<T>[];
-}
 /**
- * Performs a breadth‑first search up to a depth limit.
+ * Recursively searches for `target` inside a sorted array.
  *
- * @param root The starting node.
- * @param maxDepth The maximum path length to explore (0 = only the root).
- * @param filter A callback that decides whether a node should be “accepted”.
- *               It receives the node and its depth (root = 0).
- * @returns An array of all nodes that satisfy the filter within the depth bound.
+ * @param arr  The sorted array to search.
+ * @param target The value we're looking for.
+ * @param left  The leftmost index to consider (inclusive).
+ * @param right The rightmost index to consider (inclusive).
+ * @returns The index of `target`, or `-1` if it isn’t present.
  */
-export function breadthLimitedSearch<T>(
-  root: TreeNode<T>,
-  maxDepth: number,
-  filter: (node: TreeNode<T>, depth: number) => boolean
-): TreeNode<T>[] {
-  const result: TreeNode<T>[] = [];
-  const queue: Array<{ node: TreeNode<T>; depth: number }> = [{ node: root, depth: 0 }];
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;           // FIFO
-    if (depth > maxDepth) continue;                  // depth guard
-
-    if (filter(node, depth)) result.push(node);
-
-    // Push children *after* checking depth to avoid pushing out‑of‑range nodes
-    if (depth < maxDepth) {
-      for (const child of node.children) {
-        queue.push({ node: child, depth: depth + 1 });
-      }
+function binarySearchRecursive(
+    arr: number[],
+    target: number,
+    left: number = 0,
+    right: number = arr.length - 1
+): number {
+    if (left > right) {          // Base case: empty search window
+        return -1;
     }
-  }
 
-  return result;
+    const mid = Math.floor((left + right) / 2);
+
+    if (arr[mid] === target) {
+        return mid;              // Found the target
+    } else if (arr[mid] > target) {
+        // Target is in the left half
+        return binarySearchRecursive(arr, target, left, mid - 1);
+    } else {
+        // Target is in the right half
+        return binarySearchRecursive(arr, target, mid + 1, right);
+    }
 }
-// Simple test tree
-const tree: TreeNode<string> = {
-  value: 'root',
-  children: [
-    { value: 'A', children: [] },
-    { value: 'B', children: [
-        { value: 'B1', children: [] },
-        { value: 'B2', children: [] },
-      ]
-    },
-    { value: 'C', children: [] }
-  ]
-};
+const sorted = [3, 7, 11, 15, 23, 42, 56];
 
-// Want all nodes that start with "B" and only dive 2 levels deep
-const matches = breadthLimitedSearch(
-  tree,
-  2,
-  (node, depth) => node.value.startsWith('B')
-);
-
-console.log(matches.map(n => n.value)); // ['B', 'B1', 'B2']
+console.log(binarySearchRecursive(sorted, 15)); // → 3
+console.log(binarySearchRecursive(sorted, 1));  // → -1
