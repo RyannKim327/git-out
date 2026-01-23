@@ -1,43 +1,55 @@
-// Helper that normalises the string – handy if you want to ignore
-// spaces, punctuation, and case.
-function normalise(text: string): string {
-  return text
-    .toLowerCase()         // ignore case
-    .replace(/[^a-z0-9]/g, '');  // keep only alphanumerics
-}
-
 /**
- * Returns true if `input` is a palindrome.
+ * Merge‑sort for array of T values.
  *
- * @param input – the string you want to test
- * @param {boolean} allowEmpty = false  – whether an empty string is considered a palindrome
+ * @param arr  Input array – left untouched.
+ * @param cmp  Optional comparison function. If omitted, values are compared with < >.
+ * @returns A new sorted array.
  */
-function isPalindrome(
-  input: string,
-  allowEmpty = false,
-): boolean {
-  // Fast‑path for empty string
-  if (input.length === 0) return allowEmpty;
+export function mergeSort<T>(arr: readonly T[], cmp?: (a: T, b: T) => number): T[] {
+  // Base case: arrays of size 0 or 1 are already sorted.
+  if (arr.length <= 1) return [...arr];
 
-  const s = normalise(input);
+  // Helper to merge two already‑sorted halves.
+  const merge = (left: T[], right: T[]): T[] => {
+    const result: T[] = [];
+    let i = 0, j = 0;
 
-  // Empty after normalisation may be true or false – decide here
-  if (s.length === 0) return false;
+    while (i < left.length && j < right.length) {
+      const l = left[i];
+      const r = right[j];
+      const comp = cmp
+        ? cmp(l, r)
+        : (l as any) < (r as any)
+          ? -1
+          : (l as any) > (r as any)
+          ? 1
+          : 0;
 
-  // Compare characters from both ends
-  let left = 0;
-  let right = s.length - 1;
+      if (comp <= 0) {
+        result.push(l);
+        i++;
+      } else {
+        result.push(r);
+        j++;
+      }
+    }
 
-  while (left < right) {
-    if (s[left] !== s[right]) return false;
-    left++;
-    right--;
-  }
+    // Push any remaining items from left or right.
+    return result.concat(left.slice(i), right.slice(j));
+  };
 
-  return true;
+  // Split the array into two halves.
+  const middle = Math.floor(arr.length / 2);
+  const left = mergeSort(arr.slice(0, middle), cmp);
+  const right = mergeSort(arr.slice(middle), cmp);
+
+  // Merge back together.
+  return merge(left, right);
 }
-
-// Demo
-console.log(isPalindrome('RaceCar'));           // true
-console.log(isPalindrome('A man, a plan!'));    // true
-console.log(isPalindrome('hello world'));       // false
+const numbers = [42, 1, 23, 4, 16];
+const sorted = mergeSort(numbers);   // [1, 4, 16, 23, 42]
+console.log(sorted);
+console.log(numbers);  // still [42, 1, 23, 4, 16]
+const words = ["banana", "Apple", "cherry"];
+const sortedWords = mergeSort(words, (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+console.log(sortedWords); // ["Apple", "banana", "cherry"]
