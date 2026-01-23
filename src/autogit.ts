@@ -1,43 +1,24 @@
-/**
- * Shell sort – an in‑place comparison sort.
- *
- * @param arr   The array to sort.
- * @param cmp   Optional comparator: (a, b) => number. Positive if a > b,
- *              negative if a < b, zero if equal. If omitted, the
- *              default uses the `<` operator.
- * @returns     The same array instance, now sorted.
- */
-export function shellSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-  const compare = cmp ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+const numbers: number[] = [5, 2, 9, 1, 5, 6];
 
-  let n = arr.length;
-  // Start with a gap of about n/2 and halve it each loop.
-  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Insertion‑sort on elements gap apart.
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      // Shift all larger gap‑spaced elements one step forward.
-      while (j >= gap && compare(temp, arr[j - gap]) < 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
-  }
-  return arr;
-}
-// sort.ts
-export { shellSort };
-// └─ ... implementation shown above
-import { shellSort } from './sort';
+// sort in place (mutates the original array)
+numbers.sort((a, b) => a - b);
+console.log(numbers); // [1, 2, 5, 5, 6, 9]
+numbers.sort((a, b) => b - a);
+console.log(numbers); // [9, 6, 5, 5, 2, 1]
+const sorted = [...numbers].sort((a, b) => a - b);
+// or
+const sorted = numbers.slice().sort((a, b) => a - b);
+interface Item { value: number; rank: number }
 
-const numbers = [23, 12, 1, 10, 7, 3, 9];
-console.log('unsorted:', numbers);
+const items: Item[] = [
+  { value: 10, rank: 2 },
+  { value: 12, rank: 1 },
+  { value: 10, rank: 1 }
+];
 
-shellSort(numbers);                 // default numeric comparison
-console.log('sorted:   ', numbers);
+items.sort((x, y) => {
+  if (x.value === y.value) return x.rank - y.rank; // tie‑break on rank
+  return x.value - y.value;
+});
 
-// Custom comparator (descending)
-shellSort(numbers, (a, b) => b - a);
-console.log('desc:    ', numbers);
+console.log(items);
