@@ -1,75 +1,58 @@
-/**
- * Tarjan's algorithm to find all strongly connected components (SCCs) of a directed graph.
- *
- * @param adjacencyList A Map where each key is a node id and the value is an array of adjacent node ids.
- * @returns An array of components, each component is an array of node ids belonging to the same SCC.
- */
-export function stronglyConnectedComponents(
-  adjacencyList: Map<number, number[]>
-): number[][] {
-  const indexMap = new Map<number, number>();   // node -> index
-  const lowlinkMap = new Map<number, number>(); // node -> lowlink
-  const onStack = new Set<number>();            // nodes currently in the stack
-  const stack: number[] = [];                   // stack of nodes
-  const components: number[][] = [];
-  let currentIndex = 0;
+// Majority element finder – works for any type that supports === comparison
+export function majorityElement<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
 
-  const strongConnect = (node: number) => {
-    // 1. set the depth index for this node
-    indexMap.set(node, currentIndex);
-    lowlinkMap.set(node, currentIndex);
-    currentIndex++;
-    stack.push(node);
-    onStack.add(node);
+  // 1st pass: find a candidate
+  let candidate = arr[0];
+  let count = 1;
 
-    // 2. consider successors of node
-    const neighbors = adjacencyList.get(node) ?? [];
-    for (const succ of neighbors) {
-      if (!indexMap.has(succ)) {
-        // (a) Successor has not yet been visited; recurse on it
-        strongConnect(succ);
-        // Update lowlink
-        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, lowlinkMap.get(succ)!));
-      } else if (onStack.has(succ)) {
-        // (b) Successor is in stack → part of current SCC
-        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, indexMap.get(succ)!));
-      }
-      // (c) else: successor has been visited and is not in stack – ignore
-    }
-
-    // 3. If node is a root node, pop the stack and generate an SCC
-    if (lowlinkMap.get(node) === indexMap.get(node)) {
-      const component: number[] = [];
-      let w: number | undefined;
-      do {
-        w = stack.pop();
-        onStack.delete(w!);
-        component.push(w!);
-      } while (w !== node);
-      components.push(component);
-    }
-  };
-
-  // Run strongConnect on every node that has not yet been visited
-  for (const node of adjacencyList.keys()) {
-    if (!indexMap.has(node)) {
-      strongConnect(node);
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === candidate) {
+      count++;
+    } else if (count === 0) {
+      candidate = arr[i];
+      count = 1;
+    } else {
+      count--;
     }
   }
 
-  return components;
+  // 2nd pass: verify that the candidate is really a majority
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
+  }
+
+  return count > Math.floor(arr.length / 2) ? candidate : null;
 }
-import { stronglyConnectedComponents } from './tarjan';
+const nums = [3, 1, 3, 3, 2, 3, 3];
+const maj = majorityElement(nums);
 
-const graph = new Map<number, number[]>();
-graph.set(0, [1]);
-graph.set(1, [2, 3]);
-graph.set(2, [0, 3]);
-graph.set(3, [4]);
-graph.set(4, [5]);
-graph.set(5, [3]);
+console.log(maj); // → 3
+function majorityBySorting<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
 
-const sccs = stronglyConnectedComponents(graph);
-console.log(sccs);
-// → [ [ 4, 5, 3 ], [ 0, 1, 2 ] ]
-// (order may vary)
+  const sorted = [...arr].sort(); // lexicographic for strings, numeric for numbers
+  const midVal = sorted[Math.floor(arr.length / 2)];
+
+  const count = sorted.reduce((c, v) => (v === midVal ? c + 1 : c), 0);
+  return count > Math.floor(arr.length / 2) ? midVal : null;
+}
+// A simple quick‑check
+export function testMajority() {
+  const cases: Array<[any[], any | null]> = [
+    [[1, 2, 1, 1, 3], 1],
+    [['a', 'b', 'a', 'a', 'c'], 'a'],
+    [[5, 5, 6, 6, 5], 5],
+    [[1, 2, 3], null],
+  ];
+
+  for (const [arr, expected] of cases) {
+    const result = majorityElement(arr);
+    if (result !== expected) {
+      console.error(`❌ Failed for ${JSON.stringify(arr)}: got ${result}`);
+    } else {
+      console.log(`✅ ${JSON.stringify(arr)} → ${result}`);
+    }
+  }
+}
