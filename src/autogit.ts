@@ -1,26 +1,43 @@
+// Helper that normalises the string – handy if you want to ignore
+// spaces, punctuation, and case.
+function normalise(text: string): string {
+  return text
+    .toLowerCase()         // ignore case
+    .replace(/[^a-z0-9]/g, '');  // keep only alphanumerics
+}
+
 /**
- * Returns the first non‑repeating character in `str`.
- * If every character repeats, returns `undefined`.
+ * Returns true if `input` is a palindrome.
  *
- * @param str – the string to check
+ * @param input – the string you want to test
+ * @param {boolean} allowEmpty = false  – whether an empty string is considered a palindrome
  */
-function firstNonRepeating(str: string): string | undefined {
-  // 1️⃣ Count how many times every character shows up
-  const freq = new Map<string, number>();
-  for (const ch of str) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+function isPalindrome(
+  input: string,
+  allowEmpty = false,
+): boolean {
+  // Fast‑path for empty string
+  if (input.length === 0) return allowEmpty;
+
+  const s = normalise(input);
+
+  // Empty after normalisation may be true or false – decide here
+  if (s.length === 0) return false;
+
+  // Compare characters from both ends
+  let left = 0;
+  let right = s.length - 1;
+
+  while (left < right) {
+    if (s[left] !== s[right]) return false;
+    left++;
+    right--;
   }
 
-  // 2️⃣ Scan again, looking for the first character whose count is 1
-  for (const ch of str) {
-    if (freq.get(ch) === 1) {
-      return ch;          // found it!
-    }
-  }
-
-  return undefined;       // nothing unique found
+  return true;
 }
 
 // Demo
-console.log(firstNonRepeating("swiss"));   // → "w"
-console.log(firstNonRepeating("aabb"));    // → undefined
+console.log(isPalindrome('RaceCar'));           // true
+console.log(isPalindrome('A man, a plan!'));    // true
+console.log(isPalindrome('hello world'));       // false
