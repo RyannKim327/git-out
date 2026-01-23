@@ -1,24 +1,71 @@
-const scores: number[] = [12, 19, 3, 40, 27];
+// kmp.ts
+/**
+ * Builds the LPS (Longest Prefix Suffix) array for a pattern.
+ * lps[i] = length of the longest proper prefix of pattern[0..i]
+ * that is also a suffix of pattern[0..i].
+ */
+export function buildLPS(pattern: string): number[] {
+    const lps = new Array(pattern.length).fill(0);
+    let length = 0;               // length of the previous longest prefix suffix
+    let i = 1;                    // lps[0] is always 0, so start from 1
 
-const max = Math.max(...scores);   // 40
-const max = scores.reduce((highest, current) => (current > highest ? current : highest), -Infinity);
-function findMax(arr: number[]): number | undefined {
-  if (arr.length === 0) return undefined;
-  return arr.reduce((m, n) => (n > m ? n : m), arr[0]);
+    while (i < pattern.length) {
+        if (pattern[i] === pattern[length]) {
+            length++;
+            lps[i] = length;
+            i++;
+        } else {
+            if (length !== 0) {
+                // Fall back to the previous longest prefix
+                length = lps[length - 1];
+                // No i++ here – we try the same i again with the new length
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+    return lps;
 }
-function maxOfArray(arr: number[]): number {
-  if (arr.length === 0) throw new Error('Empty array');
 
-  let max = arr[0];
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] > max) max = arr[i];
-  }
-  return max;
+/**
+ * KMP search for all occurrences of pattern inside text.
+ * Returns an array of 0‑based starting indices.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+    if (pattern.length === 0) return [];
+
+    const lps = buildLPS(pattern);
+    const result: number[] = [];
+    let i = 0; // index for text
+    let j = 0; // index for pattern
+
+    while (i < text.length) {
+        if (text[i] === pattern[j]) {
+            i++;
+            j++;
+
+            if (j === pattern.length) {
+                // pattern found – push starting index
+                result.push(i - j);
+                // continue searching for next possible match
+                j = lps[j - 1];
+            }
+        } else if (j !== 0) {
+            // Fallback on pattern using LPS table
+            j = lps[j - 1];
+        } else {
+            // No match at the current position of `text`
+            i++;
+        }
+    }
+
+    return result;
 }
-const typed: Int32Array = new Int32Array([2, 5, 9, 1]);
+import { kmpSearch } from "./kmp";
 
-const max = Math.max.apply(null, typed as unknown as number[]);
-const numbers = [7, 42, -3, 13];
-console.log(Math.max(...numbers)); // 42
-console.log(findMax(numbers));     // 42
-console.log(maxOfArray(numbers));  // 42
+const txt = "ABABDABACDABABCABAB";
+const pat = "ABABCABAB";
+
+const matches = kmpSearch(txt, pat);
+console.log(matches); // → [ 10 ]
