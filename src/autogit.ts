@@ -1,28 +1,43 @@
-/**
- * Binary search on a sorted array.
- *
- * @param arr   Sorted array of comparable items.
- * @param value Value to search for.
- * @returns Index of value, or -1 if not found.
- */
-export function binarySearch<T>(arr: T[], value: T): number {
-  let low = 0;
-  let high = arr.length - 1;
-
-  while (low <= high) {
-    // Middle index – floor division
-    const mid = Math.floor((low + high) / 2);
-    const midVal = arr[mid];
-
-    if (midVal === value) return mid;      // exact match
-    if (midVal < value) {
-      low = mid + 1;                       // value is in higher half
-    } else {
-      high = mid - 1;                      // value is in lower half
-    }
-  }
-  return -1;  // not found
+// Helper that normalises the string – handy if you want to ignore
+// spaces, punctuation, and case.
+function normalise(text: string): string {
+  return text
+    .toLowerCase()         // ignore case
+    .replace(/[^a-z0-9]/g, '');  // keep only alphanumerics
 }
-const nums = [3, 7, 12, 18, 24, 31, 42];
-const idx = binarySearch(nums, 18); // => 3
-const missing = binarySearch(nums, 5); // => -1
+
+/**
+ * Returns true if `input` is a palindrome.
+ *
+ * @param input – the string you want to test
+ * @param {boolean} allowEmpty = false  – whether an empty string is considered a palindrome
+ */
+function isPalindrome(
+  input: string,
+  allowEmpty = false,
+): boolean {
+  // Fast‑path for empty string
+  if (input.length === 0) return allowEmpty;
+
+  const s = normalise(input);
+
+  // Empty after normalisation may be true or false – decide here
+  if (s.length === 0) return false;
+
+  // Compare characters from both ends
+  let left = 0;
+  let right = s.length - 1;
+
+  while (left < right) {
+    if (s[left] !== s[right]) return false;
+    left++;
+    right--;
+  }
+
+  return true;
+}
+
+// Demo
+console.log(isPalindrome('RaceCar'));           // true
+console.log(isPalindrome('A man, a plan!'));    // true
+console.log(isPalindrome('hello world'));       // false
