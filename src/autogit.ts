@@ -1,60 +1,50 @@
-type Node = string | number;              // whichever you prefer for vertex IDs
-type Graph = Record<Node, Node[]>;          // e.g., { 1: [2,3], 2: [4], … }
+interface ListNode<T = any> {
+  val: T;
+  next: ListNode<T> | null;
+}
+class ListNode<T = any> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
+}
+function nthFromEndNaive<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let size = 0;
+  for (let cur = head; cur; cur = cur.next) size++;
 
-const graph: Graph = {
-  a: ['b', 'c'],
-  b: ['d', 'e'],
-  c: ['f'],
-  d: [],
-  e: ['c'],
-  f: [],
-};
-function dfsRecursive(
-  graph: Graph,
-  start: Node,
-  visited = new Set<Node>(),
-  order: Node[] = []
-): Node[] {
-  visited.add(start);        // 1️⃣ mark as visited
-  order.push(start);         // 2️⃣ record the visit order
+  if (n > size) return null;          // not enough elements
+  let target = size - n;              // 0‑based index from start
+  let cur = head;
+  for (let i = 0; i < target; i++) cur = cur!.next;
 
-  for (const neighbor of graph[start] ?? []) {
-    if (!visited.has(neighbor)) {
-      dfsRecursive(graph, neighbor, visited, order); // 3️⃣ recurse
-    }
+  return cur;
+}
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let fast = head;
+  // Move fast n steps forward
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;   // n is larger than list length
+    fast = fast.next;
   }
-  return order;
+
+  let slow = head!;          // head is guaranteed non‑null now
+  while (fast) {
+    fast = fast.next!;
+    slow = slow.next!;
+  }
+
+  return slow;
+}
+function buildList(nums: number[]) {
+  let dummy = new ListNode(0);
+  let cur = dummy;
+  for (const v of nums) {
+    cur.next = new ListNode(v);
+    cur = cur.next;
+  }
+  return dummy.next;
 }
 
-// usage
-const visitOrder = dfsRecursive(graph, 'a');
-console.log(visitOrder); // ['a', 'b', 'd', 'e', 'c', 'f']
-function dfsIterative(graph: Graph, start: Node): Node[] {
-  const stack: Node[] = [start];
-  const visited = new Set<Node>();
-  const order: Node[] = [];
+const list = buildList([1, 2, 3, 4, 5]);
 
-  while (stack.length) {
-    const node = stack.pop()!; // pop the top
-    if (visited.has(node)) continue; // skip if we've already seen it
-
-    visited.add(node);   // 1️⃣ mark
-    order.push(node);    // 2️⃣ record
-
-    // push neighbors in reverse order so that the first neighbor
-    // is processed first (mimics recursive order)
-    const neighbors = graph[node] ?? [];
-    for (let i = neighbors.length - 1; i >= 0; i--) {
-      const neighbor = neighbors[i];
-      if (!visited.has(neighbor)) stack.push(neighbor);
-    }
-  }
-  return order;
-}
-
-// usage
-const orderIter = dfsIterative(graph, 'a');
-console.log(orderIter); // ['a', 'b', 'd', 'e', 'c', 'f']
-// inside the while loop
-const prev = stack[stack.length - 1]; // last node that will lead to `node`
-order.push([prev, node] as [Node, Node]);
+console.log(nthFromEnd(list, 1)!.val); // 5
+console.log(nthFromEnd(list, 3)!.val); // 3
+console.log(nthFromEnd(list, 5)!.val); // 1
+console.log(nthFromEnd(list, 6));      // null
