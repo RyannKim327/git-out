@@ -1,60 +1,43 @@
 /**
- * Returns the max sum of any contiguous sub‑array of `nums`.
- * If all numbers are negative, it will still return the best (least negative) value.
+ * Shell sort – an in‑place comparison sort.
  *
- * @param nums Array of numbers
- * @returns maximum sub‑array sum
+ * @param arr   The array to sort.
+ * @param cmp   Optional comparator: (a, b) => number. Positive if a > b,
+ *              negative if a < b, zero if equal. If omitted, the
+ *              default uses the `<` operator.
+ * @returns     The same array instance, now sorted.
  */
-function maxSubArraySum(nums: number[]): number {
-  if (nums.length === 0) {
-    throw new Error('Array must contain at least one element');
-  }
+export function shellSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
+  const compare = cmp ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-  let bestSoFar = nums[0];      // best overall
-  let bestEndingHere = nums[0]; // best ending at current index
-
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the previous sub‑array or start fresh at nums[i]
-    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
-
-    // Update the global best if needed
-    bestSoFar = Math.max(bestSoFar, bestEndingHere);
-  }
-
-  return bestSoFar;
-}
-
-/* Example usage */
-const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
-console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
-function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
-  let bestSoFar = nums[0], bestEndingHere = nums[0];
-  let start = 0, end = 0, tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] > bestEndingHere + nums[i]) {
-      bestEndingHere = nums[i];
-      tempStart = i;          // potential new start
-    } else {
-      bestEndingHere += nums[i];
-    }
-
-    if (bestEndingHere > bestSoFar) {
-      bestSoFar = bestEndingHere;
-      start = tempStart;      // commit new start
-      end = i;
+  let n = arr.length;
+  // Start with a gap of about n/2 and halve it each loop.
+  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Insertion‑sort on elements gap apart.
+    for (let i = gap; i < n; i++) {
+      const temp = arr[i];
+      let j = i;
+      // Shift all larger gap‑spaced elements one step forward.
+      while (j >= gap && compare(temp, arr[j - gap]) < 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
     }
   }
-
-  return {
-    maxSum: bestSoFar,
-    subArray: nums.slice(start, end + 1),
-    indices: [start, end]
-  };
+  return arr;
 }
-console.log(maxSubArrayDetail(arr));
-// {
-//   maxSum: 6,
-//   subArray: [4, -1, 2, 1],
-//   indices: [3, 6]
-// }
+// sort.ts
+export { shellSort };
+// └─ ... implementation shown above
+import { shellSort } from './sort';
+
+const numbers = [23, 12, 1, 10, 7, 3, 9];
+console.log('unsorted:', numbers);
+
+shellSort(numbers);                 // default numeric comparison
+console.log('sorted:   ', numbers);
+
+// Custom comparator (descending)
+shellSort(numbers, (a, b) => b - a);
+console.log('desc:    ', numbers);
