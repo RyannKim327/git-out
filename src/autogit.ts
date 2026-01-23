@@ -1,53 +1,38 @@
 /**
- * Node for a singly linked list.
+ * Returns true if `a` and `b` contain exactly the same characters
+ * (ignoring whitespace, punctuation, and case).
  */
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+export function isAnagram(a: string, b: string): boolean {
+  // 1. Strip anything that isn’t a letter or a digit, and
+  //    normalize the case to lower‑case.
+  const norm = (s: string) =>
+    s.replace(/\W+/g, "") // removes non‑alphanumeric characters
+      .toLowerCase();
 
-/**
- * Detects if a linked list contains a cycle.
- *
- * @param head The head of the list.
- * @returns true if a cycle exists, false otherwise.
- */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  let slow = head;
-  let fast = head;
+  const cleanA = norm(a);
+  const cleanB = norm(b);
 
-  while (fast !== null && fast.next !== null) {
-    slow = slow!.next;          // move one step
-    fast = fast.next.next;      // move two steps
-    if (slow === fast) {        // same reference → cycle
-      return true;
-    }
+  // 2. Quick length check – if lengths differ, they can’t be anagrams.
+  if (cleanA.length !== cleanB.length) return false;
+
+  // 3. Count each character in a Map.
+  const counter = new Map<string, number>();
+
+  for (const ch of cleanA) {
+    counter.set(ch, (counter.get(ch) ?? 0) + 1);
   }
 
-  return false;                 // fast hit the end → no cycle
-}
-// 1 → 2 → 3 → 4 → 5
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-const d = new ListNode(4);
-const e = new ListNode(5);
-
-a.next = b; b.next = c; c.next = d; d.next = e;
-
-// no cycle
-console.log(hasCycle(a)); // false
-
-// Introduce a cycle: e.next = c (3rd node)
-e.next = c;
-console.log(hasCycle(a)); // true
-function hasCycleSet<T>(head: ListNode<T> | null): boolean {
-  const visited = new Set<ListNode<T>>();
-
-  let current = head;
-  while (current !== null) {
-    if (visited.has(current)) return true; // already seen → cycle
-    visited.add(current);
-    current = current.next;
+  // 4. Decrement counts with characters from the second string.
+  for (const ch of cleanB) {
+    const cur = counter.get(ch);
+    if (!cur) return false;            // missing or too many of 'ch'
+    if (cur === 1) counter.delete(ch); // tidy up to keep map small
+    else counter.set(ch, cur - 1);
   }
-  return false; // reached null → acyclic
+
+  // 5. If the map is empty, the two strings were perfect anagrams.
+  return counter.size === 0;
 }
+console.log(isAnagram("Listen", "Silent"));   // true
+console.log(isAnagram("Hello!", "Oleh!"));    // true
+console.log(isAnagram("Hello", "World"));     // false
