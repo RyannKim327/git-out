@@ -1,69 +1,63 @@
-/**
- * Builds the BMH bad‑character shift table.
- *
- * For every byte value (0‑255) we store how many positions the algorithm
- * can safely skip when encountering that byte while scanning from the
- * rightmost side of the pattern.
- */
-function makeShiftTable(pattern: string): Uint8Array {
-  const m = pattern.length;
-  const table = new Uint8Array(256);
-  // Default shift is pattern length (skip the whole pattern).
-  table.fill(m);
-
-  // For every non‑last character we set shift = m - i - 1
-  for (let i = 0; i < m - 1; ++i) {
-    const c = pattern.charCodeAt(i);
-    table[c] = m - i - 1;
-  }
-  return table;
+// Node type – each element points to the next one
+class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
 }
 
-/**
- * Boyer‑Moore‑Horspool search.
- *
- * @param text    The text where we look for the pattern.
- * @param pattern The pattern to find.
- * @returns       An array of zero‑based start indices where `pattern`
- *                is found in `text`.  Empty array if no match.
- */
-export function bmhSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
+// The queue itself
+class LinkedListQueue<T> {
+  private head: ListNode<T> | null = null; // dequeue from here
+  private tail: ListNode<T> | null = null; // enqueue at here
+  private _size: number = 0;
 
-  // Quick exits
-  if (m === 0) return [];          // Empty pattern => nothing meaningful
-  if (m > n) return [];            // Pattern longer than text => impossible
-
-  const shiftTable = makeShiftTable(pattern);
-  const result: number[] = [];
-
-  let i = 0; // Current offset in `text` aligning the end of the pattern
-  while (i <= n - m) {
-    // Compare pattern from the end backward
-    let j = m - 1;
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j -= 1;
-    }
-
-    if (j < 0) {               // All characters matched
-      result.push(i);
-      i += 1;                  // For overlapping matches we shift by 1
+  /** Add an item to the back of the queue */
+  enqueue(value: T): void {
+    const newNode = new ListNode(value);
+    if (this.tail) {
+      this.tail.next = newNode;   // link the old tail to the new node
     } else {
-      const shiftVal = shiftTable[text.charCodeAt(i + m - 1)];
-      i += shiftVal;
+      // Empty queue – head and tail both point to the new node
+      this.head = newNode;
     }
+    this.tail = newNode;
+    this._size++;
   }
 
-  return result;
+  /** Remove and return the item from the front of the queue.
+      Returns undefined if the queue is empty. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined;
+
+    const value = this.head.value;
+    this.head = this.head.next;          // move head forward
+    if (!this.head) this.tail = null;    // queue became empty
+    this._size--;
+    return value;
+  }
+
+  /** Peek at the front without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  /** Number of items in the queue */
+  get size(): number {
+    return this._size;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this.size === 0;
+  }
 }
+const q = new LinkedListQueue<number>();
 
-/* ---------- Example usage --------------------------------- */
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
 
-const haystack = "abacababcab";
-const needle  = "cab";
-
-const indices = bmhSearch(haystack, needle);
-console.log(`Pattern found at indices: ${indices.join(", ")}`);
-// -> "Pattern found at indices: 3, 8"
-
+console.log(q.peek()); // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.isEmpty()); // false
+console.log(q.dequeue()); // 30
+console.log(q.isEmpty()); // true
