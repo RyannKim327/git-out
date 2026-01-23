@@ -1,52 +1,67 @@
-/** Basic node structure for a binary tree. */
-class TreeNode {
-  /** Value stored in the node (use `any` if you need non‑numeric data). */
-  val: number
-  /** Left child, or null if none. */
-  left: TreeNode | null
-  /** Right child, or null if none. */
-  right: TreeNode | null
+class TreeNode<T = number> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
+}
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;
 
-  constructor(val: number, left?: TreeNode | null, right?: TreeNode | null) {
-    this.val = val
-    this.left = left ?? null
-    this.right = right ?? null
+  function dfs(node: TreeNode | null): number {
+    if (!node) return 0;          // height of a null subtree is 0
+
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
+
+    // potential diameter that passes through this node
+    const localDiameter = leftHeight + rightHeight;
+    if (localDiameter > maxDiameter) maxDiameter = localDiameter;
+
+    // height is max child height + 1 edge to the child
+    return Math.max(leftHeight, rightHeight) + 1;
   }
+
+  dfs(root);
+  return maxDiameter;  // edges count
 }
-
-/* ------------------------------------------------------------------ */
-/*  Recursive depth‑first search.  Returns the longest path length.    */
-function maxDepth(root: TreeNode | null): number {
-  if (!root) return 0                    // leaf + null = depth 0
-  const leftDepth  = maxDepth(root.left) // depth goes 1, 2, … from here
-  const rightDepth = maxDepth(root.right)
-  return Math.max(leftDepth, rightDepth) + 1
-}
-
-/* ------------------------------------------------------------------ */
-/*  Iterative breadth‑first search (queue).  Same result, no stack.   */
-function maxDepthIter(root: TreeNode | null): number {
-  if (!root) return 0
-  let max = 0
-  const queue: Array<{ node: TreeNode; depth: number }> = [
-    { node: root, depth: 1 },
-  ]
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!
-    max = Math.max(max, depth)
-    if (node.left)  queue.push({ node: node.left, depth: depth + 1 })
-    if (node.right) queue.push({ node: node.right, depth: depth + 1 })
-  }
-  return max
-}
-
-/* ------------------------------------------------------------------ */
-/*  Example usage ---------------------------------------------------- */
+// Build a tree:
+//        1
+//       / \
+//      2   3
+//     / \     
+//    4   5  
 const root = new TreeNode(1,
-  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-  new TreeNode(3, null, new TreeNode(6))
-)
+              new TreeNode(2,
+                new TreeNode(4),
+                new TreeNode(5)
+              ),
+              new TreeNode(3)
+            );
 
-console.log('Recursive depth:', maxDepth(root))      // → 3
-console.log('Iterative depth:', maxDepthIter(root)) // → 3
+console.log(diameterOfBinaryTree(root)); // → 3
+function diameterIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let maxDiameter = 0;
+  const stack = [{ node: root, visited: false, height: 0 }];
+
+  while (stack.length) {
+    const frame = stack.pop()!;
+    if (!frame.node) continue;
+
+    if (frame.visited) {
+      // Children already processed – compute height & diameter
+      const leftHeight = frame.node.left?.height ?? 0;
+      const rightHeight = frame.node.right?.height ?? 0;
+
+      maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
+      frame.node.height = Math.max(leftHeight, rightHeight) + 1;
+    } else {
+      // First visit: push back as visited and push children
+      stack.push({ node: frame.node, visited: true, height: 0 });
+      if (frame.node.right) stack.push({ node: frame.node.right, visited: false, height: 0 });
+      if (frame.node.left) stack.push({ node: frame.node.left, visited: false, height: 0 });
+    }
+  }
+  return maxDiameter;
+}
