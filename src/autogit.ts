@@ -1,51 +1,44 @@
-// Stack.ts
-export class Stack<T> {
-  // private backing store
-  private items: T[] = [];
+// src/apiFetch.ts
+export interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+}
 
-  /** Push an item onto the stack. */
-  push(item: T): void {
-    this.items.push(item);
+/**
+ * Pulls a single todo item from the JSON‑Placeholder API.
+ *
+ * @param todoId  the numeric ID of the todo to fetch
+ * @returns          a promise that resolves to the Todo object
+ */
+export async function getTodoById(todoId: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${todoId}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { "Accept": "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`API responded with ${response.status} ${response.statusText}`);
   }
 
-  /** Remove the top item and return it.  Returns undefined if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
+  // `response.json()` already resolves to a `Promise<any>`, so we cast
+  // to `Todo` to satisfy TypeScript.
+  const data = (await response.json()) as Todo;
+  return data;
+}
+// src/start.ts
+import { getTodoById, Todo } from "./apiFetch";
 
-  /** Peek at the top item without removing it.  Returns undefined if the stack is empty. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** Return true if the stack has no items. */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** Current number of elements in the stack. */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Optional: completely clear the stack. */
-  clear(): void {
-    this.items = [];
+async function main(): Promise<void> {
+  try {
+    const todo: Todo = await getTodoById(1);
+    console.log("Fetched todo:", todo);
+  } catch (err) {
+    console.error("Failed to fetch todo:", err);
   }
 }
-import { Stack } from "./Stack";
 
-const numberStack = new Stack<number>();
-numberStack.push(10);
-numberStack.push(20);
-
-console.log(numberStack.peek()); // 20
-console.log(numberStack.pop());  // 20
-console.log(numberStack.size()); // 1
-console.log(numberStack.isEmpty()); // false
-
-// Generic example with strings
-const wordStack = new Stack<string>();
-wordStack.push("hello");
-wordStack.push("world");
-console.log(wordStack.pop()); // world
+main().catch((outerErr) => console.error("Unhandled error:", outerErr));
