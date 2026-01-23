@@ -1,38 +1,39 @@
-/**
- * Returns true if `a` and `b` contain exactly the same characters
- * (ignoring whitespace, punctuation, and case).
- */
-export function isAnagram(a: string, b: string): boolean {
-  // 1. Strip anything that isn’t a letter or a digit, and
-  //    normalize the case to lower‑case.
-  const norm = (s: string) =>
-    s.replace(/\W+/g, "") // removes non‑alphanumeric characters
-      .toLowerCase();
-
-  const cleanA = norm(a);
-  const cleanB = norm(b);
-
-  // 2. Quick length check – if lengths differ, they can’t be anagrams.
-  if (cleanA.length !== cleanB.length) return false;
-
-  // 3. Count each character in a Map.
-  const counter = new Map<string, number>();
-
-  for (const ch of cleanA) {
-    counter.set(ch, (counter.get(ch) ?? 0) + 1);
-  }
-
-  // 4. Decrement counts with characters from the second string.
-  for (const ch of cleanB) {
-    const cur = counter.get(ch);
-    if (!cur) return false;            // missing or too many of 'ch'
-    if (cur === 1) counter.delete(ch); // tidy up to keep map small
-    else counter.set(ch, cur - 1);
-  }
-
-  // 5. If the map is empty, the two strings were perfect anagrams.
-  return counter.size === 0;
+function factorialRecursive(n: number): number {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
 }
-console.log(isAnagram("Listen", "Silent"));   // true
-console.log(isAnagram("Hello!", "Oleh!"));    // true
-console.log(isAnagram("Hello", "World"));     // false
+console.log(factorialRecursive(5)); // 120
+function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
+}
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1n;
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
+}
+console.log(factorialBigInt(20));        // 2432902008176640000n
+console.log(factorialBigInt(100));       // 9.332621544e+157n (full bigint printed)
+const factorialMemo = (() => {
+  const cache: Record<number, number> = {0: 1, 1: 1};
+
+  const inner = (n: number): number => {
+    if (n in cache) return cache[n];
+    cache[n] = n * inner(n - 1);
+    return cache[n];
+  };
+
+  return inner;
+})();
+console.assert(factorialIterative(0) === 1);
+console.assert(factorialIterative(6) === 720);
+
+console.assert(factorialBigInt(5).toString() === '120');
+console.assert(factorialBigInt(30).toString().startsWith('265252859...'));
