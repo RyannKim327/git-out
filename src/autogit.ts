@@ -1,98 +1,70 @@
-/* ──────────────────────────────────────────────────────
-   1️⃣  A tiny TypeScript helper that wraps the Fetch API
-─────────────────────────────────────────────────────── */
+function longestCommonSubstring(a: string, b: string): string {
+  if (!a || !b) return '';
 
-const api = {
-  /* GET a JSON‑encoded resource */
-  async get<T>(url: string): Promise<T> {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
+  let maxLen = 0;
+  let maxStart = 0;          // start index inside `a`
 
-    if (!response.ok) {
-      const msg = `Fetching ${url} failed with status ${response.status}`;
-      console.warn(msg);
-      throw new Error(msg);
-    }
+  const aLen = a.length;
+  const bLen = b.length;
 
-    const json = await response.json();
-    return json as T;
-  },
+  // Pick the shorter string as the outer loop to reduce the number of starts
+  const [short, long] = aLen < bLen ? [a, b] : [b, a];
+  const shortLen = short.length;
+  const longLen = long.length;
 
-  /* POST data as JSON */
-  async post<T, U>(url: string, body: T): Promise<U> {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const msg = `Posting to ${url} failed with status ${response.status}`;
-      console.warn(msg);
-      throw new Error(msg);
-    }
-
-    const json = await response.json();
-    return json as U;
-  },
-};
-
-/* ──────────────────────────────────────────────────────
-   2️⃣  A React‑Native component that uses the helper
-─────────────────────────────────────────────────────── */
-
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-
-type Todo = { userId: number; id: number; title: string; completed: boolean };
-
-// Example URL: https://jsonplaceholder.typicode.com/todos/1
-const TODO_URL = 'https://jsonplaceholder.typicode.com/todos/1';
-
-export default function AsyncExample() {
-  const [todo, setTodo] = useState<Todo | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    /*═════════════════════════════════════════════════
-       Run an “async task” when the component mounts
-     ════════════════════════════════════════════════*/
-    const fetchTodo = async () => {
-      try {
-        const data = await api.get<Todo>(TODO_URL);
-        setTodo(data);
-      } catch (e: any) {
-        setError(e.message ?? 'Unknown error');
-      } finally {
-        setLoading(false);
+  for (let i = 0; i < shortLen; i++) {
+    for (let j = 0; j < longLen; j++) {
+      let length = 0;
+      while (
+        i + length < shortLen &&
+        j + length < longLen &&
+        short[i + length] === long[j + length]
+      ) {
+        length++;
       }
-    };
+      if (length > maxLen) {
+        maxLen = length;
+        maxStart = i;           // starts in `short`
+      }
+    }
+  }
 
-    fetchTodo();
-  }, []);
-
-  if (loading) return <ActivityIndicator style={styles.center} />;
-  if (error) return <Text style={styles.error}>❌ {error}</Text>;
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Todo #{todo?.id}</Text>
-      <Text style={styles.content}>{todo?.title}</Text>
-      <Text style={styles.status}>
-        {todo?.completed ? '✅ Completed' : '🔄 Pending'}
-      </Text>
-    </View>
-  );
+  // Return the slice from the original string that contains the substring
+  const result = short.substr(maxStart, maxLen);
+  // If we swapped the strings we need to return the same slice from the original `a`
+  return aLen < bLen ? result : result; // same, just explicit
 }
+console.log(longestCommonSubstring('abxabc', 'abcaby')); // → 'abc'
+function longestCommonSubstringDP(s1: string, s2: string): string {
+  const n = s1.length;
+  const m = s2.length;
+  if (!n || !m) return '';
 
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },
-  center:      { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title:   { fontSize: 24, fontWeight: 'bold', marginBottom: 12 },
-  content: { fontSize: 18, marginBottom: 8 },
-  status:  { fontSize: 16, color: '#777' },
-  error:   { color: 'red', textAlign: 'center', margin: 20 },
-});
+  // 2‑row DP to save memory – only previous row needed for current row calculation
+  let prev = new Array(m + 1).fill(0);
+  let curr = new Array(m + 1).fill(0);
+
+  let maxLen = 0;
+  let maxEndIdxS1 = 0; // end index in s1 of longest common substring
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        curr[j] = prev[j - 1] + 1; // extend the previous match
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          maxEndIdxS1 = i; // i is 1‑based
+        }
+      } else {
+        curr[j] = 0;
+      }
+    }
+    // swap rows for next iteration
+    [prev, curr] = [curr, prev];
+    curr.fill(0); // reset current row
+  }
+
+  // Extract the substring from s1 using the end index and length
+  return s1.slice(maxEndIdxS1 - maxLen, maxEndIdxS1);
+}
+console.log(longestCommonSubstringDP('abxabc', 'abcaby')); // → 'abc'
