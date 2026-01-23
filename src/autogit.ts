@@ -1,47 +1,58 @@
 /**
- * Return true if `a` and `b` are anagrams.
+ * Returns a random integer between min (inclusive) and max (inclusive).
  *
- *   * Ignore whitespace and punctuation.
- *   * Ignore case.
+ * @param min – lower bound, inclusive
+ * @param max – upper bound, inclusive
  */
-function areAnagramsSorting(a: string, b: string): boolean {
-  const clean = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '').split('').sort().join('');
+function randomInt(min: number, max: number): number {
+  // Clamp values to integers just in case
+  const lo = Math.ceil(min);
+  const hi = Math.floor(max);
 
-  return clean(a) === clean(b);
+  // Math.random returns a float in [0, 1)
+  const r = Math.random() * (hi - lo + 1);
+  return Math.floor(r) + lo;
 }
+const diceRoll = randomInt(1, 6);   // 1‑6
+const randomIndex = randomInt(0, array.length - 1);
+function randomFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min;
+}
+function secureRandomInt(min: number, max: number): number {
+  const lo = Math.ceil(min);
+  const hi = Math.floor(max);
 
-// Example
-console.log(areAnagramsSorting('Listen', 'Silent')); // → true
-/**
- * Count characters and compare the two maps.
- * Complexity: O(n), with `n` = max(a.length, b.length).
- */
-function areAnagramsCounting(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '');
+  // Number of values in our range
+  const range = hi - lo + 1;
+  // Enough bytes to hold the full range
+  const bytesNeeded = Math.ceil(Math.log2(range) / 8);
 
-  const strA = normalize(a);
-  const strB = normalize(b);
+  // Read random unsigned bytes
+  const rand = new Uint8Array(bytesNeeded);
+  crypto.getRandomValues(rand);
 
-  if (strA.length !== strB.length) return false;
-
-  const freq: Record<string, number> = {};
-
-  for (const ch of strA) {
-    freq[ch] = (freq[ch] ?? 0) + 1;
+  // Convert bytes to a number
+  let value = 0;
+  for (let i = 0; i < bytesNeeded; i++) {
+    value = (value << 8) | rand[i];
   }
 
-  for (const ch of strB) {
-    if (!freq[ch]) return false; // missing or too many
-    freq[ch]! -= 1;
-  }
-
-  return true;
+  // Map into the desired range
+  return (value % range) + lo;
 }
+function randomChoice<T>(arr: T[]): T {
+  if (arr.length === 0) {
+    throw new RangeError('Cannot choose from an empty array');
+  }
+  const idx = randomInt(0, arr.length - 1);
+  return arr[idx];
+}
+const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
-// Example
-console.log(areAnagramsCounting('Software', 'Oxfartswe')); // → true
-const anagrams = (a: string, b: string) =>
-  a.toLowerCase().replace(/\W/g, '').split('').sort().join('') ===
-  b.toLowerCase().replace(/\W/g, '').split('').sort().join('');
+function randomToken(length = 8): string {
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars[randomInt(0, chars.length - 1)];
+  }
+  return result;
+}
