@@ -1,56 +1,98 @@
-/**
- * Returns the longest strictly increasing subsequence of `arr`.
- *
- * Example:
- *   longestIncreasingSubsequence([10, 9, 2, 5, 3, 7, 101, 18])
- *   → [2, 3, 7, 101]
- */
-export function longestIncreasingSubsequence(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+/* ──────────────────────────────────────────────────────
+   1️⃣  A tiny TypeScript helper that wraps the Fetch API
+─────────────────────────────────────────────────────── */
 
-  // `tails` keeps the smallest tail value for all subsequences
-  // of a given length. `tails[i]` is the least possible tail of
-  // an increasing subsequence with length i+1.
-  const tails: number[] = [];
-  // `prevIndices` remembers, for each element, the index of its
-  // predecessor in the LIS that passes through that element.
-  const prevIndices: number[] = new Array(arr.length).fill(-1);
-  // `indicesAtLength` holds the index of the last element of the LIS
-  // of a given length, allowing us to reconstruct the sequence.
-  const indicesAtLength: number[] = [];
+const api = {
+  /* GET a JSON‑encoded resource */
+  async get<T>(url: string): Promise<T> {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
 
-  arr.forEach((val, idx) => {
-    // Binary search for the first tail that is >= val
-    let l = 0;
-    let r = tails.length;
-    while (l < r) {
-      const m = Math.floor((l + r) / 2);
-      if (tails[m] < val) l = m + 1;
-      else r = m;
+    if (!response.ok) {
+      const msg = `Fetching ${url} failed with status ${response.status}`;
+      console.warn(msg);
+      throw new Error(msg);
     }
 
-    // `l` is the length (0‑based) of the subsequence that will end at idx
-    if (l > 0) prevIndices[idx] = indicesAtLength[l - 1];
+    const json = await response.json();
+    return json as T;
+  },
 
-    if (l === tails.length) {
-      tails.push(val);
-      indicesAtLength.push(idx);
-    } else {
-      tails[l] = val;
-      indicesAtLength[l] = idx;
+  /* POST data as JSON */
+  async post<T, U>(url: string, body: T): Promise<U> {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const msg = `Posting to ${url} failed with status ${response.status}`;
+      console.warn(msg);
+      throw new Error(msg);
     }
-  });
 
-  // Reconstruct the LIS from the recorded indices
-  const lis: number[] = [];
-  let k = indicesAtLength[indicesAtLength.length - 1];
-  while (k !== -1) {
-    lis.push(arr[k]);
-    k = prevIndices[k];
-  }
-  lis.reverse();
-  return lis;
+    const json = await response.json();
+    return json as U;
+  },
+};
+
+/* ──────────────────────────────────────────────────────
+   2️⃣  A React‑Native component that uses the helper
+─────────────────────────────────────────────────────── */
+
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+
+type Todo = { userId: number; id: number; title: string; completed: boolean };
+
+// Example URL: https://jsonplaceholder.typicode.com/todos/1
+const TODO_URL = 'https://jsonplaceholder.typicode.com/todos/1';
+
+export default function AsyncExample() {
+  const [todo, setTodo] = useState<Todo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    /*═════════════════════════════════════════════════
+       Run an “async task” when the component mounts
+     ════════════════════════════════════════════════*/
+    const fetchTodo = async () => {
+      try {
+        const data = await api.get<Todo>(TODO_URL);
+        setTodo(data);
+      } catch (e: any) {
+        setError(e.message ?? 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTodo();
+  }, []);
+
+  if (loading) return <ActivityIndicator style={styles.center} />;
+  if (error) return <Text style={styles.error}>❌ {error}</Text>;
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Todo #{todo?.id}</Text>
+      <Text style={styles.content}>{todo?.title}</Text>
+      <Text style={styles.status}>
+        {todo?.completed ? '✅ Completed' : '🔄 Pending'}
+      </Text>
+    </View>
+  );
 }
-const data = [3, 10, 2, 1, 20];
-console.log(longestIncreasingSubsequence(data));
-// → [3, 10, 20]
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },
+  center:      { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  title:   { fontSize: 24, fontWeight: 'bold', marginBottom: 12 },
+  content: { fontSize: 18, marginBottom: 8 },
+  status:  { fontSize: 16, color: '#777' },
+  error:   { color: 'red', textAlign: 'center', margin: 20 },
+});
