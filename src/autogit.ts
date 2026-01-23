@@ -1,33 +1,60 @@
-// Basic node definition
-interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-}
-
-// Helper – takes the head of a list and returns the middle node.
-function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null;
-
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
-
-  // advance `fast` two steps for every one step `slow` takes
-  while (fast !== null && fast.next !== null) {
-    slow = slow!.next;          // will never be null here – just for TS safety
-    fast = fast.next.next;
+/**
+ * Returns the max sum of any contiguous sub‑array of `nums`.
+ * If all numbers are negative, it will still return the best (least negative) value.
+ *
+ * @param nums Array of numbers
+ * @returns maximum sub‑array sum
+ */
+function maxSubArraySum(nums: number[]): number {
+  if (nums.length === 0) {
+    throw new Error('Array must contain at least one element');
   }
 
-  // when fast runs out, slow is at the middle
-  return slow;
+  let bestSoFar = nums[0];      // best overall
+  let bestEndingHere = nums[0]; // best ending at current index
+
+  for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous sub‑array or start fresh at nums[i]
+    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
+
+    // Update the global best if needed
+    bestSoFar = Math.max(bestSoFar, bestEndingHere);
+  }
+
+  return bestSoFar;
 }
-// Build a tiny list: 1 → 2 → 3 → 4 → 5
-const a: ListNode<number> = { value: 1, next: null };
-const b: ListNode<number> = { value: 2, next: null };
-const c: ListNode<number> = { value: 3, next: null };
-const d: ListNode<number> = { value: 4, next: null };
-const e: ListNode<number> = { value: 5, next: null };
 
-a.next = b; b.next = c; c.next = d; d.next = e;
+/* Example usage */
+const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
+console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
+function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
+  let bestSoFar = nums[0], bestEndingHere = nums[0];
+  let start = 0, end = 0, tempStart = 0;
 
-const middle = findMiddle(a);
-console.log(middle?.value); // logs 3
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] > bestEndingHere + nums[i]) {
+      bestEndingHere = nums[i];
+      tempStart = i;          // potential new start
+    } else {
+      bestEndingHere += nums[i];
+    }
+
+    if (bestEndingHere > bestSoFar) {
+      bestSoFar = bestEndingHere;
+      start = tempStart;      // commit new start
+      end = i;
+    }
+  }
+
+  return {
+    maxSum: bestSoFar,
+    subArray: nums.slice(start, end + 1),
+    indices: [start, end]
+  };
+}
+console.log(maxSubArrayDetail(arr));
+// {
+//   maxSum: 6,
+//   subArray: [4, -1, 2, 1],
+//   indices: [3, 6]
+// }
