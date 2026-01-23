@@ -1,55 +1,58 @@
-/**
- * Insertion sort – stable, O(n²) average / worst‑case.
- *
- * @param arr   - Array to sort (mutable, in‑place).
- * @param cmp   - Optional compare function (a < b → negative,
- *                a > b → positive, a == b → 0).
- *                If omitted, the default numeric or string
- *                comparison is used.
- * @returns     - The same array reference, now sorted.
- */
-function insertionSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  // Default comparator: JavaScript's <= works for numbers & strings.
-  const compare = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+// Majority element finder – works for any type that supports === comparison
+export function majorityElement<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
 
-  // Work from the second element onward – the sub‑array `[0, i)` is sorted.
+  // 1st pass: find a candidate
+  let candidate = arr[0];
+  let count = 1;
+
   for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-
-    // Shift larger elements rightward until the right spot is found.
-    while (j >= 0 && compare(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
+    if (arr[i] === candidate) {
+      count++;
+    } else if (count === 0) {
+      candidate = arr[i];
+      count = 1;
+    } else {
+      count--;
     }
-
-    // Put the key into its correct place.
-    arr[j + 1] = key;
   }
 
-  return arr;
+  // 2nd pass: verify that the candidate is really a majority
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
+  }
+
+  return count > Math.floor(arr.length / 2) ? candidate : null;
 }
-// Numbers
-const nums = [21, 4, 18, 15, 6];
-console.log(insertionSort(nums));          // [4, 6, 15, 18, 21]
+const nums = [3, 1, 3, 3, 2, 3, 3];
+const maj = majorityElement(nums);
 
-// Strings
-const words = ['peach', 'apple', 'banana'];
-console.log(insertionSort(words));          // ['apple', 'banana', 'peach']
+console.log(maj); // → 3
+function majorityBySorting<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
 
-// Custom objects – sort by `age`
-interface Person { name: string; age: number; }
-const people: Person[] = [
-  { name: 'Ann', age: 33 },
-  { name: 'Bob', age: 24 },
-  { name: 'Cleo', age: 41 },
-];
+  const sorted = [...arr].sort(); // lexicographic for strings, numeric for numbers
+  const midVal = sorted[Math.floor(arr.length / 2)];
 
-console.log(
-  insertionSort(people, (a, b) => a.age - b.age)
-); // [{name:'Bob',age:24}, {name:'Ann',age:33}, {name:'Cleo',age:41}]
-console.assert(JSON.stringify(insertionSort([5, 4, 3, 2, 1])) === '[1,2,3,4,5]');
-console.assert(JSON.stringify(insertionSort([{x:2}, {x:1}], (a,b)=>a.x-b.x)) === '[{"x":1},{"x":2}]');
+  const count = sorted.reduce((c, v) => (v === midVal ? c + 1 : c), 0);
+  return count > Math.floor(arr.length / 2) ? midVal : null;
+}
+// A simple quick‑check
+export function testMajority() {
+  const cases: Array<[any[], any | null]> = [
+    [[1, 2, 1, 1, 3], 1],
+    [['a', 'b', 'a', 'a', 'c'], 'a'],
+    [[5, 5, 6, 6, 5], 5],
+    [[1, 2, 3], null],
+  ];
+
+  for (const [arr, expected] of cases) {
+    const result = majorityElement(arr);
+    if (result !== expected) {
+      console.error(`❌ Failed for ${JSON.stringify(arr)}: got ${result}`);
+    } else {
+      console.log(`✅ ${JSON.stringify(arr)} → ${result}`);
+    }
+  }
+}
