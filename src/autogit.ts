@@ -1,47 +1,69 @@
 /**
- * Count how many times a whole word appears in a string.
+ * Builds the BMH bad‑character shift table.
  *
- * @param haystack  The text to search.
- * @param needle    The word you’re looking for.
- * @param caseSensitive  If false, treat both inputs as lower‑case.
- * @returns Number of matches.
+ * For every byte value (0‑255) we store how many positions the algorithm
+ * can safely skip when encountering that byte while scanning from the
+ * rightmost side of the pattern.
  */
-function countWord(
-  haystack: string,
-  needle: string,
-  caseSensitive = false
-): number {
-  if (!needle) return 0;
+function makeShiftTable(pattern: string): Uint8Array {
+  const m = pattern.length;
+  const table = new Uint8Array(256);
+  // Default shift is pattern length (skip the whole pattern).
+  table.fill(m);
 
-  const flags = caseSensitive ? 'g' : 'gi';
-  // \b ensures we only match whole words
-  const re = new RegExp(`\\b${escapeRegExp(needle)}\\b`, flags);
-  const matches = haystack.match(re);
-  return matches ? matches.length : 0;
+  // For every non‑last character we set shift = m - i - 1
+  for (let i = 0; i < m - 1; ++i) {
+    const c = pattern.charCodeAt(i);
+    table[c] = m - i - 1;
+  }
+  return table;
 }
 
-/** Helper to escape regex meta‑characters in the needle. */
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * Boyer‑Moore‑Horspool search.
+ *
+ * @param text    The text where we look for the pattern.
+ * @param pattern The pattern to find.
+ * @returns       An array of zero‑based start indices where `pattern`
+ *                is found in `text`.  Empty array if no match.
+ */
+export function bmhSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+
+  // Quick exits
+  if (m === 0) return [];          // Empty pattern => nothing meaningful
+  if (m > n) return [];            // Pattern longer than text => impossible
+
+  const shiftTable = makeShiftTable(pattern);
+  const result: number[] = [];
+
+  let i = 0; // Current offset in `text` aligning the end of the pattern
+  while (i <= n - m) {
+    // Compare pattern from the end backward
+    let j = m - 1;
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j -= 1;
+    }
+
+    if (j < 0) {               // All characters matched
+      result.push(i);
+      i += 1;                  // For overlapping matches we shift by 1
+    } else {
+      const shiftVal = shiftTable[text.charCodeAt(i + m - 1)];
+      i += shiftVal;
+    }
+  }
+
+  return result;
 }
-const text = 'The quick brown fox jumps over the lazy dog. The fox was quick.';
 
-console.log(countWord(text, 'quick'));   // 2
-console.log(countWord(text, 'the'));     // 2 (case‑insensitive)
-console.log(countWord(text, 'the', true)); // 1 (case‑sensitive)
-function countWordUsingSplit(
-  text: string,
-  word: string,
-  caseSensitive = false
-): number {
-  if (!word) return 0;
+/* ---------- Example usage --------------------------------- */
 
-  const base = caseSensitive ? text : text.toLowerCase();
-  const target = caseSensitive ? word : word.toLowerCase();
+const haystack = "abacababcab";
+const needle  = "cab";
 
-  // Split on whitespace and punctuation
-  const tokens = base.split(/\W+/).filter(Boolean);
-  return tokens.filter(t => t === target).length;
-}
-const re = new RegExp(escapeRegExp(substring), 'g'); // add gi for case‑insensitive
-const count = (text.match(re) || []).length;
+const indices = bmhSearch(haystack, needle);
+console.log(`Pattern found at indices: ${indices.join(", ")}`);
+// -> "Pattern found at indices: 3, 8"
+
