@@ -1,68 +1,104 @@
+// ------------------------------------------------------------------
+//  Supporting types
+// ------------------------------------------------------------------
 /**
- * Stable counting sort of `arr` by the digit in position `exp`
- * (exp = 1 → units, 10 → tens, 100 → hundreds, …)
+ * The shape of a graph node.  The `id` is used for a visited set.
+ * `getNeighbours` must return raw references that `graph.getNode(id)` can resolve.
  */
-function countingSortByDigit(arr: number[], exp: number): void {
-  const n = arr.length;
-  const output = new Array<number>(n);
-  const count = new Array<number>(10).fill(0);   // base 10 → digits 0‑9
-
-  /* Count occurrences of each digit */
-  for (let i = 0; i < n; i++) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    count[digit] += 1;
-  }
-
-  /* Transform counts into starting indices */
-  for (let i = 1; i < 10; i++) {
-    count[i] += count[i - 1];
-  }
-
-  /* Build the output array from the end to preserve stability */
-  for (let i = n - 1; i >= 0; i--) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    const pos = --count[digit];
-    output[pos] = arr[i];
-  }
-
-  /* Copy back to the original array */
-  for (let i = 0; i < n; i++) {
-    arr[i] = output[i];
-  }
+interface Node {
+  readonly id: string;
+  getNeighbours(): Iterable<string>;
 }
+
 /**
- * Radix sort for an array of non‑negative integers.
- * Complexity: O(d · (n + k)) where d = number of digits, k = base (10).
+ * A tiny graph interface that lets us look up nodes by id.
+ * (You can replace this with your own representation; only the method
+ * `getNode` is required by the algorithm.)
  */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length < 2) return arr;            // already sorted
+interface Graph {
+  /** Return the node instance for the supplied id or `undefined`. */
+  getNode(id: string): Node | undefined;
+}
 
-  // Find the maximum number to know how many digits we need
-  const maxVal = Math.max(...arr);
+/**
+ * A function tested against a node, returning true when the node is
+ * the thing you’re looking for.
+ */
+type Predicate = (node: Node) => boolean;
 
-  // Start with the least significant digit (exp = 1)
-  for (let exp = 1; exp <= maxVal; exp *= 10) {
-    countingSortByDigit(arr, exp);
+// ------------------------------------------------------------------
+//  Depth‑limited DFS (iterative)
+// ------------------------------------------------------------------
+/**
+ * Iterative depth‑limited depth‑first search.
+ *
+ * @param startId   id of the node where the search begins
+ * @param maxDepth  stop expanding after this many edges from `startId`
+ * @param graph     the graph interface
+ * @param satisfies a predicate that tells when a node is a solution
+ *
+ * @returns the first node that satisfies `satisfies`, or undefined
+ */
+export function depthLimitedSearch(
+  startId: string,
+  maxDepth: number,
+  graph: Graph,
+  satisfies: Predicate
+): Node | undefined {
+
+  // Guard against an empty or overly deep request
+  if (maxDepth < 0) return undefined;
+
+  // A stack holds tuples of (node, currentDepth).
+  const stack: Array<[Node, number]> = [];
+  const visited = new Set<string>();
+
+  const startNode = graph.getNode(startId);
+  if (!startNode) return undefined;   // start id is missing
+
+  stack.push([startNode, 0]);
+
+  while (stack.length) {
+    const [node, depth] = stack.pop()!;   // non‑empty promise
+
+    // Avoid revisiting the same node (important for cycles)
+    if (visited.has(node.id)) continue;
+    visited.add(node.id);
+
+    if (satisfies(node)) return node;    // found a match
+
+    if (depth === maxDepth) continue;    // reached depth limit
+
+    // Push neighbours onto the stack – order determines DFS order.
+    for (const neighId of node.getNeighbours()) {
+      const neighbour = graph.getNode(neighId);
+      if (neighbour) stack.push([neighbour, depth + 1]);
+    }
   }
 
-  return arr; // sorted array (in‑place)
+  return undefined;   // nothing matched within the depth budget
 }
-const data = [170, 45, 75, 90, 802, 24, 2, 66];
-
-radixSort(data);
-console.log(data); // [2, 24, 45, 66, 75, 90, 170, 802]
-export function radixSortMixed(arr: number[]): number[] {
-  const positives: number[] = [];
-  const negatives: number[] = [];
-
-  for (const v of arr) {
-    if (v >= 0) positives.push(v);
-    else negatives.push(-v);  // work with absolute values
-  }
-
-  radixSort(positives);
-  radixSort(negatives);
-
-  const sortedNegatives = negatives.reverse().map(v => -v);
-  return [...sortedNegatives, ...positives];
+// A simple example graph implementation
+class SimpleNode implements Node {
+  constructor(public readonly id: string, private readonly neighIds: string[]) {}
+  getNeighbours() { return this.neighIds; }
 }
+class SimpleGraph implements Graph {
+  private readonly nodes = new Map<string, Node>();
+  addNode(node: Node) { this.nodes.set(node.id, node); }
+  getNode(id: string) { return this.nodes.get(id); }
+}
+
+// Build a tiny graph
+const g = new SimpleGraph();
+g.addNode(new SimpleNode('A', ['B', 'C']));
+g.addNode(new SimpleNode('B', ['D']));
+g.addNode(new SimpleNode('C', []));
+g.addNode(new SimpleNode('D', []));
+
+// Define a search goal
+const goal = (n: Node) => n.id === 'D';
+
+// Run depth‑limited DFS limited to 2 edges from 'A'
+const result = depthLimitedSearch('A', 2, g, goal);
+console.log(result?.id); // → 'D'
