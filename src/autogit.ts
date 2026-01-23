@@ -1,56 +1,69 @@
 /**
- * Returns the longest strictly increasing subsequence of `arr`.
+ * Builds the BMH bad‑character shift table.
  *
- * Example:
- *   longestIncreasingSubsequence([10, 9, 2, 5, 3, 7, 101, 18])
- *   → [2, 3, 7, 101]
+ * For every byte value (0‑255) we store how many positions the algorithm
+ * can safely skip when encountering that byte while scanning from the
+ * rightmost side of the pattern.
  */
-export function longestIncreasingSubsequence(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+function makeShiftTable(pattern: string): Uint8Array {
+  const m = pattern.length;
+  const table = new Uint8Array(256);
+  // Default shift is pattern length (skip the whole pattern).
+  table.fill(m);
 
-  // `tails` keeps the smallest tail value for all subsequences
-  // of a given length. `tails[i]` is the least possible tail of
-  // an increasing subsequence with length i+1.
-  const tails: number[] = [];
-  // `prevIndices` remembers, for each element, the index of its
-  // predecessor in the LIS that passes through that element.
-  const prevIndices: number[] = new Array(arr.length).fill(-1);
-  // `indicesAtLength` holds the index of the last element of the LIS
-  // of a given length, allowing us to reconstruct the sequence.
-  const indicesAtLength: number[] = [];
-
-  arr.forEach((val, idx) => {
-    // Binary search for the first tail that is >= val
-    let l = 0;
-    let r = tails.length;
-    while (l < r) {
-      const m = Math.floor((l + r) / 2);
-      if (tails[m] < val) l = m + 1;
-      else r = m;
-    }
-
-    // `l` is the length (0‑based) of the subsequence that will end at idx
-    if (l > 0) prevIndices[idx] = indicesAtLength[l - 1];
-
-    if (l === tails.length) {
-      tails.push(val);
-      indicesAtLength.push(idx);
-    } else {
-      tails[l] = val;
-      indicesAtLength[l] = idx;
-    }
-  });
-
-  // Reconstruct the LIS from the recorded indices
-  const lis: number[] = [];
-  let k = indicesAtLength[indicesAtLength.length - 1];
-  while (k !== -1) {
-    lis.push(arr[k]);
-    k = prevIndices[k];
+  // For every non‑last character we set shift = m - i - 1
+  for (let i = 0; i < m - 1; ++i) {
+    const c = pattern.charCodeAt(i);
+    table[c] = m - i - 1;
   }
-  lis.reverse();
-  return lis;
+  return table;
 }
-const data = [3, 10, 2, 1, 20];
-console.log(longestIncreasingSubsequence(data));
-// → [3, 10, 20]
+
+/**
+ * Boyer‑Moore‑Horspool search.
+ *
+ * @param text    The text where we look for the pattern.
+ * @param pattern The pattern to find.
+ * @returns       An array of zero‑based start indices where `pattern`
+ *                is found in `text`.  Empty array if no match.
+ */
+export function bmhSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+
+  // Quick exits
+  if (m === 0) return [];          // Empty pattern => nothing meaningful
+  if (m > n) return [];            // Pattern longer than text => impossible
+
+  const shiftTable = makeShiftTable(pattern);
+  const result: number[] = [];
+
+  let i = 0; // Current offset in `text` aligning the end of the pattern
+  while (i <= n - m) {
+    // Compare pattern from the end backward
+    let j = m - 1;
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j -= 1;
+    }
+
+    if (j < 0) {               // All characters matched
+      result.push(i);
+      i += 1;                  // For overlapping matches we shift by 1
+    } else {
+      const shiftVal = shiftTable[text.charCodeAt(i + m - 1)];
+      i += shiftVal;
+    }
+  }
+
+  return result;
+}
+
+/* ---------- Example usage --------------------------------- */
+
+const haystack = "abacababcab";
+const needle  = "cab";
+
+const indices = bmhSearch(haystack, needle);
+console.log(`Pattern found at indices: ${indices.join(", ")}`);
+// -> "Pattern found at indices: 3, 8"
+
