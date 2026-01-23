@@ -1,37 +1,43 @@
-// factorial.ts
-import readline from 'readline';
+/**
+ * Counting sort for integer arrays (can include negatives).
+ * @param arr The input array of numbers.
+ * @returns A new sorted array.
+ */
+export function countingSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-// Utility that returns the factorial of a non‑negative integer
-function factorial(n: number): number {
-  if (n < 0) throw new Error('Number must be non‑negative');
-  if (n === 0 || n === 1) return 1;
-  return n * factorial(n - 1);
-}
-
-// Set up a readline interface to read from stdin
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-// Ask the user for a number
-rl.question('Enter a non‑negative integer: ', (answer) => {
-  const num = Number(answer.trim());
-
-  if (Number.isNaN(num) || !Number.isInteger(num)) {
-    console.log(`"${answer}" is not a valid integer.`);
-  } else {
-    try {
-      const result = factorial(num);
-      console.log(`Factorial of ${num} is ${result}`);
-    } catch (e) {
-      console.log(e.message);
-    }
+  // 1) Determine min and max to find the range.
+  let min = arr[0];
+  let max = arr[0];
+  for (const v of arr) {
+    if (v < min) min = v;
+    else if (v > max) max = v;
   }
 
-  rl.close();
-});
-npm install --save-dev @types/node
-npx ts-node factorial.ts
-tsc factorial.ts   # produces factorial.js
-node factorial.js
+  const range = max - min + 1;          // how many distinct integer values
+  const count = new Array<number>(range).fill(0);
+
+  // 2) Count each value
+  for (const v of arr) {
+    count[v - min]++;                   // offset by min so array starts at 0
+  }
+
+  // 3) Convert counts to cumulative counts
+  for (let i = 1; i < range; i++) {
+    count[i] += count[i - 1];
+  }
+
+  // 4) Allocate result array
+  const output = new Array<number>(arr.length);
+
+  // 5) Place elements into output in stable order
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const v = arr[i];
+    const idx = v - min;
+    const pos = count[idx] - 1;         // final index for this element
+    output[pos] = v;
+    count[idx]--;                       // decrease count for next instance
+  }
+
+  return output;
+}
