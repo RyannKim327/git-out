@@ -1,91 +1,58 @@
-interface ListNode {
-  val: number;          // or whatever type you prefer
-  next: ListNode | null;
+/**
+ * Returns a random integer between min (inclusive) and max (inclusive).
+ *
+ * @param min – lower bound, inclusive
+ * @param max – upper bound, inclusive
+ */
+function randomInt(min: number, max: number): number {
+  // Clamp values to integers just in case
+  const lo = Math.ceil(min);
+  const hi = Math.floor(max);
+
+  // Math.random returns a float in [0, 1)
+  const r = Math.random() * (hi - lo + 1);
+  return Math.floor(r) + lo;
 }
-
-function isPalindromeIterative(head: ListNode | null): boolean {
-  if (!head) return true;
-
-  const stack: number[] = [];
-  let cur: ListNode | null = head;
-
-  // Push all values on the stack
-  while (cur) {
-    stack.push(cur.val);
-    cur = cur.next;
-  }
-
-  // Compare while traversing again
-  cur = head;
-  while (cur) {
-    if (cur.val !== stack.pop()) {
-      return false;
-    }
-    cur = cur.next;
-  }
-
-  return true;
+const diceRoll = randomInt(1, 6);   // 1‑6
+const randomIndex = randomInt(0, array.length - 1);
+function randomFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min;
 }
-function isPalindromeOptimized(head: ListNode | null): boolean {
-  if (!head || !head.next) return true;
+function secureRandomInt(min: number, max: number): number {
+  const lo = Math.ceil(min);
+  const hi = Math.floor(max);
 
-  // 1. Find the middle (slow will point to middle)
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+  // Number of values in our range
+  const range = hi - lo + 1;
+  // Enough bytes to hold the full range
+  const bytesNeeded = Math.ceil(Math.log2(range) / 8);
+
+  // Read random unsigned bytes
+  const rand = new Uint8Array(bytesNeeded);
+  crypto.getRandomValues(rand);
+
+  // Convert bytes to a number
+  let value = 0;
+  for (let i = 0; i < bytesNeeded; i++) {
+    value = (value << 8) | rand[i];
   }
 
-  // 2. Reverse the second half
-  let prev: ListNode | null = null;
-  let curr = slow.next;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
+  // Map into the desired range
+  return (value % range) + lo;
+}
+function randomChoice<T>(arr: T[]): T {
+  if (arr.length === 0) {
+    throw new RangeError('Cannot choose from an empty array');
   }
-  // `prev` is now the head of the reversed second half
+  const idx = randomInt(0, arr.length - 1);
+  return arr[idx];
+}
+const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
-  // 3. Compare the two halves
-  let first = head;
-  let second = prev;
-  let result = true;
-  while (result && second) {        // second will be shorter or equal
-    if (first.val !== second.val) result = false;
-    first = first.next!;
-    second = second.next!;
+function randomToken(length = 8): string {
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars[randomInt(0, chars.length - 1)];
   }
-
-  // 4. (Optional) Restore the list
-  // Reverse the second half again to bring the list back to original
-  curr = prev;
-  prev = null;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  slow.next = prev;
-
   return result;
 }
-function buildList(arr: number[]): ListNode | null {
-  let dummy: ListNode = { val: 0, next: null };
-  let tail = dummy;
-  for (const v of arr) {
-    tail.next = { val: v, next: null };
-    tail = tail.next;
-  }
-  return dummy.next;
-}
-
-const a = buildList([1, 2, 3, 2, 1]);
-console.log(isPalindromeIterative(a));   // true
-console.log(isPalindromeOptimized(a));   // true
-
-const b = buildList([1, 2, 3, 4]);
-console.log(isPalindromeIterative(b));   // false
-console.log(isPalindromeOptimized(b));   // false
