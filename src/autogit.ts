@@ -1,63 +1,53 @@
-// Node type – each element points to the next one
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
+/**
+ * Returns the area of a triangle.
+ *
+ * You can provide:
+ *   • base & height (Cartesian geometry)
+ *   • three side lengths (Heron's formula)
+ *
+ * @param base   Base of the triangle (required if you give height)
+ * @param height Height of the triangle
+ * @param a      Length of side a
+ * @param b      Length of side b
+ * @param c      Length of side c
+ * @returns      The area, or NaN if the input is invalid.
+ */
+export function triangleArea({
+  base,
+  height,
+  a,
+  b,
+  c,
+}: {
+  base?: number;
+  height?: number;
+  a?: number;
+  b?: number;
+  c?: number;
+}): number {
+  // Cartesian: base * height / 2
+  if (base !== undefined && height !== undefined) {
+    if (base <= 0 || height <= 0) return NaN;
+    return (base * height) / 2;
+  }
+
+  // Heron: given three sides
+  if (a !== undefined && b !== undefined && c !== undefined) {
+    if (a <= 0 || b <= 0 || c <= 0) return NaN;
+    // Check triangle inequality: the sum of any two sides must exceed the third
+    if (a + b <= c || a + c <= b || b + c <= a) return NaN;
+
+    const s = (a + b + c) / 2; // semi‑perimeter
+    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  }
+
+  // If the required parameters aren’t supplied
+  return NaN;
 }
+// Base + height
+const area1 = triangleArea({ base: 10, height: 5 }); // 25
 
-// The queue itself
-class LinkedListQueue<T> {
-  private head: ListNode<T> | null = null; // dequeue from here
-  private tail: ListNode<T> | null = null; // enqueue at here
-  private _size: number = 0;
+// Three sides
+const area2 = triangleArea({ a: 3, b: 4, c: 5 }); // 6
 
-  /** Add an item to the back of the queue */
-  enqueue(value: T): void {
-    const newNode = new ListNode(value);
-    if (this.tail) {
-      this.tail.next = newNode;   // link the old tail to the new node
-    } else {
-      // Empty queue – head and tail both point to the new node
-      this.head = newNode;
-    }
-    this.tail = newNode;
-    this._size++;
-  }
-
-  /** Remove and return the item from the front of the queue.
-      Returns undefined if the queue is empty. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined;
-
-    const value = this.head.value;
-    this.head = this.head.next;          // move head forward
-    if (!this.head) this.tail = null;    // queue became empty
-    this._size--;
-    return value;
-  }
-
-  /** Peek at the front without removing it. */
-  peek(): T | undefined {
-    return this.head?.value;
-  }
-
-  /** Number of items in the queue */
-  get size(): number {
-    return this._size;
-  }
-
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this.size === 0;
-  }
-}
-const q = new LinkedListQueue<number>();
-
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
-
-console.log(q.peek()); // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.isEmpty()); // false
-console.log(q.dequeue()); // 30
-console.log(q.isEmpty()); // true
+console.log(area1, area2);
