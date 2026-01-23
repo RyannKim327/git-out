@@ -1,35 +1,43 @@
 /**
- * Recursively searches for `target` inside a sorted array.
+ * Shell sort – an in‑place comparison sort.
  *
- * @param arr  The sorted array to search.
- * @param target The value we're looking for.
- * @param left  The leftmost index to consider (inclusive).
- * @param right The rightmost index to consider (inclusive).
- * @returns The index of `target`, or `-1` if it isn’t present.
+ * @param arr   The array to sort.
+ * @param cmp   Optional comparator: (a, b) => number. Positive if a > b,
+ *              negative if a < b, zero if equal. If omitted, the
+ *              default uses the `<` operator.
+ * @returns     The same array instance, now sorted.
  */
-function binarySearchRecursive(
-    arr: number[],
-    target: number,
-    left: number = 0,
-    right: number = arr.length - 1
-): number {
-    if (left > right) {          // Base case: empty search window
-        return -1;
-    }
+export function shellSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
+  const compare = cmp ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-    const mid = Math.floor((left + right) / 2);
-
-    if (arr[mid] === target) {
-        return mid;              // Found the target
-    } else if (arr[mid] > target) {
-        // Target is in the left half
-        return binarySearchRecursive(arr, target, left, mid - 1);
-    } else {
-        // Target is in the right half
-        return binarySearchRecursive(arr, target, mid + 1, right);
+  let n = arr.length;
+  // Start with a gap of about n/2 and halve it each loop.
+  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Insertion‑sort on elements gap apart.
+    for (let i = gap; i < n; i++) {
+      const temp = arr[i];
+      let j = i;
+      // Shift all larger gap‑spaced elements one step forward.
+      while (j >= gap && compare(temp, arr[j - gap]) < 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
     }
+  }
+  return arr;
 }
-const sorted = [3, 7, 11, 15, 23, 42, 56];
+// sort.ts
+export { shellSort };
+// └─ ... implementation shown above
+import { shellSort } from './sort';
 
-console.log(binarySearchRecursive(sorted, 15)); // → 3
-console.log(binarySearchRecursive(sorted, 1));  // → -1
+const numbers = [23, 12, 1, 10, 7, 3, 9];
+console.log('unsorted:', numbers);
+
+shellSort(numbers);                 // default numeric comparison
+console.log('sorted:   ', numbers);
+
+// Custom comparator (descending)
+shellSort(numbers, (a, b) => b - a);
+console.log('desc:    ', numbers);
