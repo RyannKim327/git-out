@@ -1,60 +1,51 @@
-/**
- * Returns the max sum of any contiguous sub‑array of `nums`.
- * If all numbers are negative, it will still return the best (least negative) value.
- *
- * @param nums Array of numbers
- * @returns maximum sub‑array sum
- */
-function maxSubArraySum(nums: number[]): number {
-  if (nums.length === 0) {
-    throw new Error('Array must contain at least one element');
+function isPalindrome(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
+  // Normalise if requested
+  const src = ignoreCase
+    ? s.toLowerCase()
+    : s;
+
+  // Optionally strip out anything that isn’t a letter or a digit
+  const text = ignoreNonAlpha
+    ? src.replace(/[^a-z0-9]/gi, '')
+    : src;
+
+  let left = 0;
+  let right = text.length - 1;
+
+  while (left < right) {
+    if (text[left] !== text[right]) return false;
+    left++;
+    right--;
   }
-
-  let bestSoFar = nums[0];      // best overall
-  let bestEndingHere = nums[0]; // best ending at current index
-
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the previous sub‑array or start fresh at nums[i]
-    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
-
-    // Update the global best if needed
-    bestSoFar = Math.max(bestSoFar, bestEndingHere);
-  }
-
-  return bestSoFar;
+  return true;
 }
+console.log(isPalindrome('Racecar'));          // true
+console.log(isPalindrome('A man, a plan!'));   // false
+console.log(isPalindrome('A man, a plan!', true, true)); // true
+function isPalindromeReverse(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
+  const cleaned = ignoreNonAlpha
+    ? s.replace(/[^a-z0-9]/gi, '')
+    : s;
 
-/* Example usage */
-const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
-console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
-function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
-  let bestSoFar = nums[0], bestEndingHere = nums[0];
-  let start = 0, end = 0, tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] > bestEndingHere + nums[i]) {
-      bestEndingHere = nums[i];
-      tempStart = i;          // potential new start
-    } else {
-      bestEndingHere += nums[i];
-    }
-
-    if (bestEndingHere > bestSoFar) {
-      bestSoFar = bestEndingHere;
-      start = tempStart;      // commit new start
-      end = i;
-    }
-  }
-
-  return {
-    maxSum: bestSoFar,
-    subArray: nums.slice(start, end + 1),
-    indices: [start, end]
-  };
+  const cmp = ignoreCase ? cleaned.toLowerCase() : cleaned;
+  const reversed = cmp.split('').reverse().join('');
+  return cmp === reversed;
 }
-console.log(maxSubArrayDetail(arr));
-// {
-//   maxSum: 6,
-//   subArray: [4, -1, 2, 1],
-//   indices: [3, 6]
-// }
+console.log(isPalindromeReverse('Madam In Eden, I’m Adam', true, true)); // true
+const isPalindromeLazy = (s: string, ignoreCase = true, ignoreNonAlpha = false): boolean =>
+  (ignoreNonAlpha ? s.replace(/[^a-z0-9]/gi, '') : s)
+    .toLowerCase()
+    .split('')
+    .every((c, i, a) => c === a[a.length - i - 1]);
+const tests = [
+  { str: 'Radar', expect: true },
+  { str: 'Madam Anna', expect: false },
+  { str: 'Madam Anna', expect: true, options: { ignoreNonAlpha: true } },
+  { str: '12321', expect: true },
+  { str: 'Was it a cat I saw?', expect: true, options: { ignoreNonAlpha: true, ignoreCase: true } },
+];
+
+tests.forEach(({ str, expect, options }) => {
+  const result = isPalindrome(str, ...(options ? [options.ignoreCase, options.ignoreNonAlpha] : []));
+  console.assert(result === expect, `❌ ${str} should be ${expect}`);
+});
