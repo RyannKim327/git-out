@@ -1,44 +1,55 @@
-// src/apiFetch.ts
-export interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
 /**
- * Pulls a single todo item from the JSON‑Placeholder API.
+ * Returns the median of two sorted arrays.
  *
- * @param todoId  the numeric ID of the todo to fetch
- * @returns          a promise that resolves to the Todo object
+ * @param nums1 First sorted array
+ * @param nums2 Second sorted array
+ * @returns Median value (number)
  */
-export async function getTodoById(todoId: number): Promise<Todo> {
-  const url = `https://jsonplaceholder.typicode.com/todos/${todoId}`;
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: { "Accept": "application/json" },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API responded with ${response.status} ${response.statusText}`);
+export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Make sure nums1 is the smaller array; binary search will run on it.
+  if (nums1.length > nums2.length) {
+    return findMedianSortedArrays(nums2, nums1);
   }
 
-  // `response.json()` already resolves to a `Promise<any>`, so we cast
-  // to `Todo` to satisfy TypeScript.
-  const data = (await response.json()) as Todo;
-  return data;
-}
-// src/start.ts
-import { getTodoById, Todo } from "./apiFetch";
+  const m = nums1.length;
+  const n = nums2.length;
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-async function main(): Promise<void> {
-  try {
-    const todo: Todo = await getTodoById(1);
-    console.log("Fetched todo:", todo);
-  } catch (err) {
-    console.error("Failed to fetch todo:", err);
+  let low = 0;
+  let high = m;
+
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2);   // Count from nums1
+    const j = halfLen - i;                    // Count from nums2
+
+    // If i is too small → move right
+    if (i < m && nums2[j - 1] > nums1[i]) {
+      low = i + 1;
+    }
+    // If i is too big → move left
+    else if (i > 0 && nums1[i - 1] > nums2[j]) {
+      high = i - 1;
+    }
+    // Found perfect i
+    else {
+      let maxLeft;
+      if (i === 0) maxLeft = nums2[j - 1];
+      else if (j === 0) maxLeft = nums1[i - 1];
+      else maxLeft = Math.max(nums1[i - 1], nums2[j - 1]);
+
+      // Odd total length – median is max of left side
+      if ((m + n) % 2 === 1) return maxLeft;
+
+      // Even total length – median is average of maxLeft and minRight
+      let minRight;
+      if (i === m) minRight = nums2[j];
+      else if (j === n) minRight = nums1[i];
+      else minRight = Math.min(nums1[i], nums2[j]);
+
+      return (maxLeft + minRight) / 2;
+    }
   }
-}
 
-main().catch((outerErr) => console.error("Unhandled error:", outerErr));
+  // If we get here, input arrays weren’t valid (empty, unsorted, etc.)
+  throw new Error('Input arrays are not valid.');
+}
