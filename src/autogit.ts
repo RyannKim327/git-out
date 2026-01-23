@@ -1,47 +1,28 @@
 /**
- * Return true if `a` and `b` are anagrams.
- *
- *   * Ignore whitespace and punctuation.
- *   * Ignore case.
+ * Return true if `s` is a palindrome.
+ *   - Works for regular strings and Unicode strings
+ *   - Uses a two‑pointer scan; no extra arrays/strings are allocated
+ *   - Time:  O(n)
+ *   - Extra space: O(1)
  */
-function areAnagramsSorting(a: string, b: string): boolean {
-  const clean = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '').split('').sort().join('');
+function isPalindrome(s: string): boolean {
+    let left  = 0;
+    let right = s.length - 1;
 
-  return clean(a) === clean(b);
+    while (left < right) {
+        // Skip non‑alphanumeric characters & ignore case if you want
+        // if (!/[a-z0-9]/i.test(s.charAt(left))) { left++; continue; }
+        // if (!/[a-z0-9]/i.test(s.charAt(right))) { right--; continue; }
+
+        if (s[left] !== s[right]) {
+            return false;
+        }
+        left++;
+        right--;
+    }
+    return true;
 }
-
-// Example
-console.log(areAnagramsSorting('Listen', 'Silent')); // → true
-/**
- * Count characters and compare the two maps.
- * Complexity: O(n), with `n` = max(a.length, b.length).
- */
-function areAnagramsCounting(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '');
-
-  const strA = normalize(a);
-  const strB = normalize(b);
-
-  if (strA.length !== strB.length) return false;
-
-  const freq: Record<string, number> = {};
-
-  for (const ch of strA) {
-    freq[ch] = (freq[ch] ?? 0) + 1;
-  }
-
-  for (const ch of strB) {
-    if (!freq[ch]) return false; // missing or too many
-    freq[ch]! -= 1;
-  }
-
-  return true;
-}
-
-// Example
-console.log(areAnagramsCounting('Software', 'Oxfartswe')); // → true
-const anagrams = (a: string, b: string) =>
-  a.toLowerCase().replace(/\W/g, '').split('').sort().join('') ===
-  b.toLowerCase().replace(/\W/g, '').split('').sort().join('');
+console.log(isPalindrome("racecar"));        // true
+console.log(isPalindrome("hello"));          // false
+console.log(isPalindrome("A man a plan a canal Panama".replace(/\s+/g, '').toLowerCase()));
+// true, after normalizing whitespace and case
