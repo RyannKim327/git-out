@@ -1,50 +1,25 @@
 /**
- * Interpolation search – O(log log n) in the ideal case,
- * O(n) in the worst case (if the array is highly non‑uniform).
+ * Checks if `arr` is sorted in ascending order.
  *
- * @param arr   An array that is already sorted in ascending order.
- * @param key   The value to look for.
- * @returns     The index of `key` in `arr` or -1 if not present.
+ * @param arr          the array to test
+ * @param compareFn    optional comparison function.  
+ *                     Should return <0 if a < b, 0 if equal, >0 if a > b.
+ *                     If omitted, the default `a - b` numeric compare is used.
+ * @returns true if the array is in ascending order, false otherwise
  */
-export function interpolationSearch(arr: readonly number[], key: number): number {
-  // Guard against empty array
-  if (arr.length === 0) return -1;
-
-  let low = 0;
-  let high = arr.length - 1;
-
-  // Interpolation formula requires a strictly increasing array
-  // and a finite difference between the ends.
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    // Avoid division by zero when arr[low] == arr[high].
-    if (arr[low] === arr[high]) return arr[low] === key ? low : -1;
-
-    // Estimate the position of the key inside the current bounds.
-    const pos =
-      low +
-      Math.floor(
-        ((high - low) * (key - arr[low])) / (arr[high] - arr[low]),
-      );
-
-    const value = arr[pos];
-
-    if (value === key) return pos;
-    if (value < key) {
-      low = pos + 1;          // Look in the right sub‑array
-    } else {
-      high = pos - 1;         // Look in the left sub‑array
-    }
-  }
-
-  return -1; // Not found
-}
-const nums = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91, 105];
-console.log(interpolationSearch(nums, 38)); // ➜ 6
-console.log(interpolationSearch(nums, 4));  // ➜ -1
-export function interpolationSearchBy<T, U extends number>(
+export function isSortedAscending<T>(
   arr: readonly T[],
-  key: U,
-  getKey: (item: T) => U,
-): number {
-  // Same logic, but cast / convert using getKey(item)
+  compareFn: ((a: T, b: T) => number) = (a, b) =>
+    /* @ts-ignore */ a < b ? -1 : a > b ? 1 : 0
+): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    // If the current element is *before* the previous one, the array is out of order
+    if (compareFn(arr[i], arr[i - 1]) < 0) return false;
+  }
+  return true;
 }
+const names = ['Alice', 'Bob', 'Charlie'];
+console.log(isSortedAscending(names)); // true
+
+const mixed = [1, 3, 2, 4];
+console.log(isSortedAscending(mixed)); // false
