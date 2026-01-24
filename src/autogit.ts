@@ -1,69 +1,85 @@
-type Edge = { from: number; to: number; weight: number };
+/**
+ * `AdjacencyList` is a mapping from a node key to the keys of its neighbors.
+ * It works for directed or undirected graphs – just decide how you add edges.
+ */
+export type AdjacencyList<K extends string | number> = Record<
+  K,
+  K[] // List of outgoing neighbor keys
+>;
+const graph: AdjacencyList<string> = {
+  A: ['B', 'C'],
+  B: ['A', 'D'],
+  C: ['A', 'D'],
+  D: ['B', 'C', 'E'],
+  E: ['D'],
+};
+class Queue<T> {
+  private data: T[] = [];
+  private head = 0;
+  private tail = 0;
 
-interface BellmanFordResult {
-  dist: number[];          // shortest distance from source to each vertex   (Infinity = unreachable)
-  prev: (number | null)[]; // previous vertex on the shortest path, or null
-  hasNegativeCycle: boolean; // true if a negative cycle was detected
+  enqueue(item: T) {
+    this.data[this.tail++] = item;
+  }
+
+  dequeue(): T | undefined {
+    if (this.isEmpty()) return undefined;
+    const item = this.data[this.head];
+    // Optional: free memory if the queue shrinks a lot
+    if (this.head % 64 === 0) this.data = this.data.slice(this.head);
+    this.head++;
+    return item;
+  }
+
+  isEmpty() {
+    return this.head >= this.tail;
+  }
 }
+/**
+ * Breadth‑first search on an adjacency list.
+ *
+ * @param graph      the graph (adjacency list)
+ * @param start      the node to start from
+ * @param target     optional: stop when this node is reached
+ * @returns          { distance: Map<node, number>, parent: Map<node, node | null>, found?: node }
+ */
+export function bfs<K extends string | number>(
+  graph: AdjacencyList<K>,
+  start: K,
+  target?: K,
+) {
+  const distance = new Map<K, number>();
+  const parent = new Map<K, K | null>();
 
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult {
-  const dist = Array(vertexCount).fill(Infinity);
-  const prev = Array<number | null>(vertexCount).fill(null);
+  const queue = new Queue<K>();
+  queue.enqueue(start);
+  distance.set(start, 0);
+  parent.set(start, null);
 
-  dist[source] = 0;
+  while (!queue.isEmpty()) {
+    const current = queue.dequeue()!;
+    const curDist = distance.get(current)!;
 
-  // 1️⃣ Relax every edge |V|‑1 times
-  for (let i = 0; i < vertexCount - 1; i++) {
-    let updated = false;
-    for (const {from, to, weight} of edges) {
-      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-        dist[to] = dist[from] + weight;
-        prev[to] = from;
-        updated = true;
+    // Optional early‑exit
+    if (target !== undefined && current === target) {
+      return { distance, parent, found: current };
+    }
+
+    for (const neighbor of graph[current] ?? []) {
+      if (!distance.has(neighbor)) {                // not visited
+        distance.set(neighbor, curDist + 1);
+        parent.set(neighbor, current);
+        queue.enqueue(neighbor);
       }
     }
-    // If no distance changed, we’re done early
-    if (!updated) break;
   }
 
-  // 2️⃣ Check for negative cycles
-  let hasNegativeCycle = false;
-  for (const {from, to, weight} of edges) {
-    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-      hasNegativeCycle = true;
-      break;
-    }
-  }
-
-  return {dist, prev, hasNegativeCycle};
+  return { distance, parent, found: target }; // target not found
 }
-function reconstructPath(prev: (number | null)[], target: number): number[] {
-  const path: number[] = [];
-  let cur: number | null = target;
-
-  while (cur !== null) {
-    path.push(cur);
-    cur = prev[cur];
-  }
-  path.reverse();
-  return path;
-}
-const edges: Edge[] = [
-  {from: 0, to: 1, weight: 5},
-  {from: 1, to: 2, weight: -2},
-  // ...
-];
-const {dist, prev, hasNegativeCycle} = bellmanFord(5, edges, 0);
-
-console.log(dist);               // shortest distances
-console.log(hasNegativeCycle);    // useful flag
-console.log(reconstructPath(prev, 4)); // path from 0 to 4
+const result = bfs(graph, 'A', 'E');
+console.log('Distance map:', result.distance);
+console.log('Parent map:', result.parent);
+console.log('Target found?', result.found !== undefined);
+Distance map: Map(5) { 'A' => 0, 'B' => 1, 'C' => 1, 'D' => 2, 'E' => 3 }
+Parent map: Map(5) { 'A' => null, 'B' => 'A', 'C' => 'A', 'D' => 'B', 'E' => 'D' }
+Target found? true
