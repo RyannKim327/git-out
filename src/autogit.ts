@@ -1,60 +1,25 @@
 /**
- * Fibonacci search for a sorted array of numbers.
- * @param arr  The sorted array to search.
- * @param target The value to locate.
- * @returns The index of `target` in `arr`, or -1 if not found.
+ * Returns true if `n` is a prime number.
+ * Works with any non‑negative integer. For negative numbers or 0/1 it returns false.
  */
-export function fibonacciSearch(arr: number[], target: number): number {
-  const n = arr.length;
-  if (n === 0) return -1;
+export function isPrime(n: number): boolean {
+  if (!Number.isInteger(n) || n < 2) return false;   // 0, 1, and non‑ints aren't prime
+  
+  // 2 and 3 are the only even/odd primes.
+  if (n === 2 || n === 3) return true;
 
-  // 1. Build the smallest Fibonacci number >= n
-  let fibMm2 = 0;   // (m-2)th Fibonacci
-  let fibMm1 = 1;   // (m-1)th Fibonacci
-  let fibM   = fibMm2 + fibMm1; // mth Fibonacci
+  // Even numbers > 2 are not prime.
+  if (n % 2 === 0) return false;
 
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM   = fibMm2 + fibMm1;
+  // Check odd divisors up to √n.
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false;
   }
 
-  // Marks the range to be searched
-  let offset = -1; // Element before the beginning (virtual)
-
-  // 2. While there is an element to inspect
-  while (fibM > 1) {
-    // Determines the index to compare
-    const i = Math.min(offset + fibMm2, n - 1);
-
-    if (arr[i] < target) {
-      // Move three steps ahead
-      fibM   = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i;
-    } else if (arr[i] > target) {
-      // Move one step back
-      fibM   = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
-    } else {
-      return i; // Found
-    }
-  }
-
-  // We are left with a single element
-  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
-    return offset + 1;
-  }
-
-  return -1; // Not found
+  return true;
 }
-import { fibonacciSearch } from './fibonacci-search';
-
-const data = [3, 8, 10, 15, 20, 23, 27, 35, 41, 55, 68, 73, 82, 91, 97];
-const target = 55;
-
-const idx = fibonacciSearch(data, target);
-console.log(idx); // → 9
-console.log(fibonacciSearch(data, 22)); // → -1
+console.log(isPrime(7));   // true
+console.log(isPrime(20));  // false
+console.log(isPrime(91));  // false (7 × 13)
+console.log(isPrime(97));  // true
