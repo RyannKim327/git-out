@@ -1,104 +1,55 @@
-// ------------------------------------------------------------------
-//  Supporting types
-// ------------------------------------------------------------------
 /**
- * The shape of a graph node.  The `id` is used for a visited set.
- * `getNeighbours` must return raw references that `graph.getNode(id)` can resolve.
- */
-interface Node {
-  readonly id: string;
-  getNeighbours(): Iterable<string>;
-}
-
-/**
- * A tiny graph interface that lets us look up nodes by id.
- * (You can replace this with your own representation; only the method
- * `getNode` is required by the algorithm.)
- */
-interface Graph {
-  /** Return the node instance for the supplied id or `undefined`. */
-  getNode(id: string): Node | undefined;
-}
-
-/**
- * A function tested against a node, returning true when the node is
- * the thing you’re looking for.
- */
-type Predicate = (node: Node) => boolean;
-
-// ------------------------------------------------------------------
-//  Depth‑limited DFS (iterative)
-// ------------------------------------------------------------------
-/**
- * Iterative depth‑limited depth‑first search.
+ * Merge‑sort for array of T values.
  *
- * @param startId   id of the node where the search begins
- * @param maxDepth  stop expanding after this many edges from `startId`
- * @param graph     the graph interface
- * @param satisfies a predicate that tells when a node is a solution
- *
- * @returns the first node that satisfies `satisfies`, or undefined
+ * @param arr  Input array – left untouched.
+ * @param cmp  Optional comparison function. If omitted, values are compared with < >.
+ * @returns A new sorted array.
  */
-export function depthLimitedSearch(
-  startId: string,
-  maxDepth: number,
-  graph: Graph,
-  satisfies: Predicate
-): Node | undefined {
+export function mergeSort<T>(arr: readonly T[], cmp?: (a: T, b: T) => number): T[] {
+  // Base case: arrays of size 0 or 1 are already sorted.
+  if (arr.length <= 1) return [...arr];
 
-  // Guard against an empty or overly deep request
-  if (maxDepth < 0) return undefined;
+  // Helper to merge two already‑sorted halves.
+  const merge = (left: T[], right: T[]): T[] => {
+    const result: T[] = [];
+    let i = 0, j = 0;
 
-  // A stack holds tuples of (node, currentDepth).
-  const stack: Array<[Node, number]> = [];
-  const visited = new Set<string>();
+    while (i < left.length && j < right.length) {
+      const l = left[i];
+      const r = right[j];
+      const comp = cmp
+        ? cmp(l, r)
+        : (l as any) < (r as any)
+          ? -1
+          : (l as any) > (r as any)
+          ? 1
+          : 0;
 
-  const startNode = graph.getNode(startId);
-  if (!startNode) return undefined;   // start id is missing
-
-  stack.push([startNode, 0]);
-
-  while (stack.length) {
-    const [node, depth] = stack.pop()!;   // non‑empty promise
-
-    // Avoid revisiting the same node (important for cycles)
-    if (visited.has(node.id)) continue;
-    visited.add(node.id);
-
-    if (satisfies(node)) return node;    // found a match
-
-    if (depth === maxDepth) continue;    // reached depth limit
-
-    // Push neighbours onto the stack – order determines DFS order.
-    for (const neighId of node.getNeighbours()) {
-      const neighbour = graph.getNode(neighId);
-      if (neighbour) stack.push([neighbour, depth + 1]);
+      if (comp <= 0) {
+        result.push(l);
+        i++;
+      } else {
+        result.push(r);
+        j++;
+      }
     }
-  }
 
-  return undefined;   // nothing matched within the depth budget
+    // Push any remaining items from left or right.
+    return result.concat(left.slice(i), right.slice(j));
+  };
+
+  // Split the array into two halves.
+  const middle = Math.floor(arr.length / 2);
+  const left = mergeSort(arr.slice(0, middle), cmp);
+  const right = mergeSort(arr.slice(middle), cmp);
+
+  // Merge back together.
+  return merge(left, right);
 }
-// A simple example graph implementation
-class SimpleNode implements Node {
-  constructor(public readonly id: string, private readonly neighIds: string[]) {}
-  getNeighbours() { return this.neighIds; }
-}
-class SimpleGraph implements Graph {
-  private readonly nodes = new Map<string, Node>();
-  addNode(node: Node) { this.nodes.set(node.id, node); }
-  getNode(id: string) { return this.nodes.get(id); }
-}
-
-// Build a tiny graph
-const g = new SimpleGraph();
-g.addNode(new SimpleNode('A', ['B', 'C']));
-g.addNode(new SimpleNode('B', ['D']));
-g.addNode(new SimpleNode('C', []));
-g.addNode(new SimpleNode('D', []));
-
-// Define a search goal
-const goal = (n: Node) => n.id === 'D';
-
-// Run depth‑limited DFS limited to 2 edges from 'A'
-const result = depthLimitedSearch('A', 2, g, goal);
-console.log(result?.id); // → 'D'
+const numbers = [42, 1, 23, 4, 16];
+const sorted = mergeSort(numbers);   // [1, 4, 16, 23, 42]
+console.log(sorted);
+console.log(numbers);  // still [42, 1, 23, 4, 16]
+const words = ["banana", "Apple", "cherry"];
+const sortedWords = mergeSort(words, (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+console.log(sortedWords); // ["Apple", "banana", "cherry"]
