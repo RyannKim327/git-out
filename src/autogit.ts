@@ -1,50 +1,33 @@
-// A minimal binary‑tree node definition
-interface TreeNode {
-  value: number;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
-
 /**
- * Recursively sums the values of every node in a binary tree.
- * @param root – the root of the tree
- * @returns the total sum of all node values
+ * Sorts an array of numbers (or any comparable type) in place
+ * using the classic selection‑sort algorithm.
+ *
+ * @param arr – the array to sort
+ * @returns the same array reference, now sorted
  */
-function sumTree(root: TreeNode | null | undefined): number {
-  if (!root) return 0;
-  return root.value + sumTree(root.left) + sumTree(root.right);
+export function selectionSort<T>(arr: T[]): T[] {
+    const n = arr.length;
+
+    for (let i = 0; i < n - 1; i++) {
+        // Assume the smallest element starts at i
+        let minIndex = i;
+
+        // Scan the unsorted suffix to find the real minimum
+        for (let j = i + 1; j < n; j++) {
+            if (arr[j] < arr[minIndex]) {
+                minIndex = j;
+            }
+        }
+
+        // If the minimum isn’t already in position i, swap
+        if (minIndex !== i) {
+            [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+        }
+    }
+
+    return arr;
 }
-
-/*--- Example usage -------------------------------------------------------*/
-// Construct a small tree:
-//
-//        4
-//       / \
-//      2   5
-//     / \
-//    1   3
-const tree: TreeNode = {
-  value: 4,
-  left: {
-    value: 2,
-    left: { value: 1, left: null, right: null },
-    right: { value: 3, left: null, right: null },
-  },
-  right: { value: 5, left: null, right: null },
-};
-
-console.log(sumTree(tree)); // 15
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let total = 0;
-  const stack: Array<TreeNode> = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.value;
-    if (node.left) stack.push(node.left);
-    if (node.right) stack.push(node.right);
-  }
-
-  return total;
-}
+const unsorted = [64, 25, 12, 22, 11];
+console.log('Before:', unsorted);
+selectionSort(unsorted);
+console.log('After :', unsorted);
