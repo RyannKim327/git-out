@@ -1,43 +1,33 @@
-// Helper that normalises the string – handy if you want to ignore
-// spaces, punctuation, and case.
-function normalise(text: string): string {
-  return text
-    .toLowerCase()         // ignore case
-    .replace(/[^a-z0-9]/g, '');  // keep only alphanumerics
-}
-
 /**
- * Returns true if `input` is a palindrome.
+ * Bubble sort – O(n²) average / worst case.
  *
- * @param input – the string you want to test
- * @param {boolean} allowEmpty = false  – whether an empty string is considered a palindrome
+ * @param arr – array that will be sorted (mutated)
+ * @returns the same array reference, now sorted ascending
  */
-function isPalindrome(
-  input: string,
-  allowEmpty = false,
-): boolean {
-  // Fast‑path for empty string
-  if (input.length === 0) return allowEmpty;
+function bubbleSort<T>(arr: T[]): T[] {
+  const n = arr.length;
 
-  const s = normalise(input);
+  // Outer loop: go through the array n‑1 times
+  for (let i = 0; i < n - 1; i++) {
+    // Inner loop scans up to the unsorted part
+    // We can stop early when the array is already sorted
+    let swapped = false;
 
-  // Empty after normalisation may be true or false – decide here
-  if (s.length === 0) return false;
+    for (let j = 0; j < n - 1 - i; j++) {
+      // Use > so that equal values stay in place
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swapped = true;
+      }
+    }
 
-  // Compare characters from both ends
-  let left = 0;
-  let right = s.length - 1;
-
-  while (left < right) {
-    if (s[left] !== s[right]) return false;
-    left++;
-    right--;
+    // No swaps means the array is sorted
+    if (!swapped) break;
   }
 
-  return true;
+  return arr;
 }
 
-// Demo
-console.log(isPalindrome('RaceCar'));           // true
-console.log(isPalindrome('A man, a plan!'));    // true
-console.log(isPalindrome('hello world'));       // false
+// Example
+const nums = [64, 34, 25, 12, 22, 11, 90];
+console.log(bubbleSort(nums)); // [11, 12, 22, 25, 34, 64, 90]
