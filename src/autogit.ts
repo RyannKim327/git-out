@@ -1,39 +1,67 @@
-const original = [1, 2, 3, 4, 5];
+/**
+ * Returns the k‑th smallest element (1‑based index).
+ * O(n log n) by quick‑sort.
+ */
+export function kthSmallestSort(arr: number[], k: number): number {
+  if (!arr.length) throw new Error('Array is empty');
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
 
-// remove every 3
-const withoutThree = original.filter(v => v !== 3);
-
-console.log(original);       // [1, 2, 3, 4, 5]
-console.log(withoutThree);   // [1, 2, 4, 5]
-const removeFirstThree = original.filter((v, i) => v !== 3 || i !== 1);
-const arr = [1, 2, 3, 4, 5];
-
-// find the index you want to remove
-const idx = arr.indexOf(3);
-if (idx !== -1) {
-  arr.splice(idx, 1);      // remove 1 element at idx
+  // Create a copy so the original array stays untouched
+  const copy = [...arr].sort((a, b) => a - b);
+  return copy[k - 1];
 }
-console.log(arr);           // [1, 2, 4, 5]
-let i = 0;
-while (i < arr.length) {
-  if (arr[i] === 3) {
-    arr.splice(i, 1);
-  } else {
-    i++;
+
+/**
+ * Returns the k‑th smallest element in expected linear time via QuickSelect.
+ * Stable but not guaranteed worst‑case performance.
+ */
+export function kthSmallestQuickSelect(arr: number[], k: number): number {
+  if (!arr.length) throw new Error('Array is empty');
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
+
+  // Recursive helper
+  function quickSelect(nums: number[], left: number, right: number, kth: number): number {
+    if (left === right) return nums[left];
+
+    let pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
+    pivotIndex = partition(nums, left, right, pivotIndex);
+
+    const leftSize = pivotIndex - left + 1;
+    if (kth < leftSize) return quickSelect(nums, left, pivotIndex - 1, kth);
+    if (kth === leftSize) return nums[pivotIndex];
+    return quickSelect(nums, pivotIndex + 1, right, kth - leftSize);
   }
-}
-function removeAtIndex<T>(arr: T[], idx: number): T[] {
-  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
-}
 
-const withoutIdx = removeAtIndex(original, 2);
-const set = new Set(original);
-set.delete(3);
-const arrFromSet = Array.from(set);
-interface Person { id: number; name: string }
-const people = [{ id: 1 }, { id: 2 }, { id: 3 }];
+  function partition(nums: number[], left: number, right: number, pivotIndex: number): number {
+    const pivotValue = nums[pivotIndex];
+    // Move pivot to end
+    [nums[pivotIndex], nums[right]] = [nums[right], nums[pivotIndex]];
+    let storeIndex = left;
 
-const withoutId2 = people.filter(p => p.id !== 2);   // immutable
-// or
-const idx = people.findIndex(p => p.id === 2);
-if (idx !== -1) people.splice(idx, 1);               // mutate
+    for (let i = left; i < right; i++) {
+      if (nums[i] < pivotValue) {
+        [nums[storeIndex], nums[i]] = [nums[i], nums[storeIndex]];
+        storeIndex++;
+      }
+    }
+    // Move pivot to its final place
+    [nums[right], nums[storeIndex]] = [nums[storeIndex], nums[right]];
+    return storeIndex;
+  }
+
+  // Clone the array so we don't mutate the caller's array
+  const clone = [...arr];
+  return quickSelect(clone, 0, clone.length - 1, k);
+}
+const data = [7, 2, 5, 3, 9, 1];
+const kth = 3; // 3rd smallest
+
+console.log(kthSmallestSort(data, kth));          // 5
+console.log(kthSmallestQuickSelect(data, kth));   // 5
+export function kthSmallest<T>(
+  arr: T[],
+  k: number,
+  cmp: (a: T, b: T) => number,
+): T {
+  // ...same logic, replace numeric comparisons with cmp(...)
+}
