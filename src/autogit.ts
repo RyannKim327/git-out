@@ -1,60 +1,35 @@
 /**
- * Fibonacci search for a sorted array of numbers.
+ * Recursively searches for `target` inside a sorted array.
+ *
  * @param arr  The sorted array to search.
- * @param target The value to locate.
- * @returns The index of `target` in `arr`, or -1 if not found.
+ * @param target The value we're looking for.
+ * @param left  The leftmost index to consider (inclusive).
+ * @param right The rightmost index to consider (inclusive).
+ * @returns The index of `target`, or `-1` if it isn’t present.
  */
-export function fibonacciSearch(arr: number[], target: number): number {
-  const n = arr.length;
-  if (n === 0) return -1;
-
-  // 1. Build the smallest Fibonacci number >= n
-  let fibMm2 = 0;   // (m-2)th Fibonacci
-  let fibMm1 = 1;   // (m-1)th Fibonacci
-  let fibM   = fibMm2 + fibMm1; // mth Fibonacci
-
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM   = fibMm2 + fibMm1;
-  }
-
-  // Marks the range to be searched
-  let offset = -1; // Element before the beginning (virtual)
-
-  // 2. While there is an element to inspect
-  while (fibM > 1) {
-    // Determines the index to compare
-    const i = Math.min(offset + fibMm2, n - 1);
-
-    if (arr[i] < target) {
-      // Move three steps ahead
-      fibM   = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i;
-    } else if (arr[i] > target) {
-      // Move one step back
-      fibM   = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
-    } else {
-      return i; // Found
+function binarySearchRecursive(
+    arr: number[],
+    target: number,
+    left: number = 0,
+    right: number = arr.length - 1
+): number {
+    if (left > right) {          // Base case: empty search window
+        return -1;
     }
-  }
 
-  // We are left with a single element
-  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
-    return offset + 1;
-  }
+    const mid = Math.floor((left + right) / 2);
 
-  return -1; // Not found
+    if (arr[mid] === target) {
+        return mid;              // Found the target
+    } else if (arr[mid] > target) {
+        // Target is in the left half
+        return binarySearchRecursive(arr, target, left, mid - 1);
+    } else {
+        // Target is in the right half
+        return binarySearchRecursive(arr, target, mid + 1, right);
+    }
 }
-import { fibonacciSearch } from './fibonacci-search';
+const sorted = [3, 7, 11, 15, 23, 42, 56];
 
-const data = [3, 8, 10, 15, 20, 23, 27, 35, 41, 55, 68, 73, 82, 91, 97];
-const target = 55;
-
-const idx = fibonacciSearch(data, target);
-console.log(idx); // → 9
-console.log(fibonacciSearch(data, 22)); // → -1
+console.log(binarySearchRecursive(sorted, 15)); // → 3
+console.log(binarySearchRecursive(sorted, 1));  // → -1
