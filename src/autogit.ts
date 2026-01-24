@@ -1,65 +1,68 @@
-// ---------------------------------------------------------
-//  FunRandomCron.ts
-//  A tiny demo that shows how to:
-//   • import node‑cron with types
-//   • schedule a repeating job
-//   • cancel a job on demand
-//   • use a more powerful CRON expression
-//   • log the next run time every time it fires
-// ---------------------------------------------------------
+/**
+ * Stable counting sort of `arr` by the digit in position `exp`
+ * (exp = 1 → units, 10 → tens, 100 → hundreds, …)
+ */
+function countingSortByDigit(arr: number[], exp: number): void {
+  const n = arr.length;
+  const output = new Array<number>(n);
+  const count = new Array<number>(10).fill(0);   // base 10 → digits 0‑9
 
-import cron, { ScheduledTask } from 'node‑cron';
-import { format } from 'date‑fns';
+  /* Count occurrences of each digit */
+  for (let i = 0; i < n; i++) {
+    const digit = Math.floor(arr[i] / exp) % 10;
+    count[digit] += 1;
+  }
 
-// This job runs every 10 seconds—just to keep the console fire‑breathing.
-// In a real app you could do backups, recompute stats, notify users, etc.
-const repeatEveryTenSeconds: ScheduledTask = cron.schedule(
-  '*/10 * * * * *',                // <seconds> <minutes> <hours> <day> <month> <dow>
-  () => {
-    const now = new Date();
-    console.log(`[${format(now, 'HH:mm:ss.SSS')}] 10‑second heartbeat!`);
-    // Do your real work here.
-  },
-  { scheduled: true }              // starts immediately
-);
+  /* Transform counts into starting indices */
+  for (let i = 1; i < 10; i++) {
+    count[i] += count[i - 1];
+  }
 
-// Also throw in a “Monday at 04:35” job just to show another flavour.
-const mondayMorning: ScheduledTask = cron.schedule(
-  '35 4 * * 1',                    // minute hour day-of-month month day-of-week
-  () => {
-    console.log(`🎉 Monday Special – It’s 04:35!`);
-  },
-  { scheduled: true, timezone: 'America/New_York' } // time‑zone support
-);
+  /* Build the output array from the end to preserve stability */
+  for (let i = n - 1; i >= 0; i--) {
+    const digit = Math.floor(arr[i] / exp) % 10;
+    const pos = --count[digit];
+    output[pos] = arr[i];
+  }
 
-// Show next run times.  Handy for debugging.
-function displayNextRun(job: ScheduledTask, name: string) {
-  console.log(` → ${name} next run at ${format(job.nextDates().toDate(), 'yyyy‑MM‑dd HH:mm:ss')}`);
+  /* Copy back to the original array */
+  for (let i = 0; i < n; i++) {
+    arr[i] = output[i];
+  }
 }
-displayNextRun(repeatEveryTenSeconds, 'Heartbeat');
-displayNextRun(mondayMorning, 'Mon‑4:35 AM');
+/**
+ * Radix sort for an array of non‑negative integers.
+ * Complexity: O(d · (n + k)) where d = number of digits, k = base (10).
+ */
+export function radixSort(arr: number[]): number[] {
+  if (arr.length < 2) return arr;            // already sorted
 
-// ---------------------------------------------------------
-//  Graceful shutdown inside this demo
-// ---------------------------------------------------------
-const shutdown = () => {
-  console.log('\n→ Shutting down cron jobs gracefully...');
-  repeatEveryTenSeconds.stop();
-  mondayMorning.stop();
-  console.log('→ All job timers cleared. Bye!');
-  process.exit(0);
-};
+  // Find the maximum number to know how many digits we need
+  const maxVal = Math.max(...arr);
 
-// In a real app you’d hook this into SIGINT, SIGTERM, etc.
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
-# 1️⃣ Install the runtime dependencies
-npm install node-cron date-fns
+  // Start with the least significant digit (exp = 1)
+  for (let exp = 1; exp <= maxVal; exp *= 10) {
+    countingSortByDigit(arr, exp);
+  }
 
-# 2️⃣ Add TypeScript types, optional but handy
-npm install -D typescript @types/node-cron @types/date-fns
+  return arr; // sorted array (in‑place)
+}
+const data = [170, 45, 75, 90, 802, 24, 2, 66];
 
-# 3️⃣ Compile + run
-npx tsc FunRandomCron.ts
-node FunRandomCron.js
-npx ts-node FunRandomCron.ts
+radixSort(data);
+console.log(data); // [2, 24, 45, 66, 75, 90, 170, 802]
+export function radixSortMixed(arr: number[]): number[] {
+  const positives: number[] = [];
+  const negatives: number[] = [];
+
+  for (const v of arr) {
+    if (v >= 0) positives.push(v);
+    else negatives.push(-v);  // work with absolute values
+  }
+
+  radixSort(positives);
+  radixSort(negatives);
+
+  const sortedNegatives = negatives.reverse().map(v => -v);
+  return [...sortedNegatives, ...positives];
+}
