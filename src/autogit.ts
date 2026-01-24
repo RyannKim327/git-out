@@ -1,50 +1,104 @@
-interface ListNode<T = any> {
-  val: T;
-  next: ListNode<T> | null;
+// ------------------------------------------------------------------
+//  Supporting types
+// ------------------------------------------------------------------
+/**
+ * The shape of a graph node.  The `id` is used for a visited set.
+ * `getNeighbours` must return raw references that `graph.getNode(id)` can resolve.
+ */
+interface Node {
+  readonly id: string;
+  getNeighbours(): Iterable<string>;
 }
-class ListNode<T = any> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-function nthFromEndNaive<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let size = 0;
-  for (let cur = head; cur; cur = cur.next) size++;
 
-  if (n > size) return null;          // not enough elements
-  let target = size - n;              // 0‑based index from start
-  let cur = head;
-  for (let i = 0; i < target; i++) cur = cur!.next;
-
-  return cur;
+/**
+ * A tiny graph interface that lets us look up nodes by id.
+ * (You can replace this with your own representation; only the method
+ * `getNode` is required by the algorithm.)
+ */
+interface Graph {
+  /** Return the node instance for the supplied id or `undefined`. */
+  getNode(id: string): Node | undefined;
 }
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let fast = head;
-  // Move fast n steps forward
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;   // n is larger than list length
-    fast = fast.next;
+
+/**
+ * A function tested against a node, returning true when the node is
+ * the thing you’re looking for.
+ */
+type Predicate = (node: Node) => boolean;
+
+// ------------------------------------------------------------------
+//  Depth‑limited DFS (iterative)
+// ------------------------------------------------------------------
+/**
+ * Iterative depth‑limited depth‑first search.
+ *
+ * @param startId   id of the node where the search begins
+ * @param maxDepth  stop expanding after this many edges from `startId`
+ * @param graph     the graph interface
+ * @param satisfies a predicate that tells when a node is a solution
+ *
+ * @returns the first node that satisfies `satisfies`, or undefined
+ */
+export function depthLimitedSearch(
+  startId: string,
+  maxDepth: number,
+  graph: Graph,
+  satisfies: Predicate
+): Node | undefined {
+
+  // Guard against an empty or overly deep request
+  if (maxDepth < 0) return undefined;
+
+  // A stack holds tuples of (node, currentDepth).
+  const stack: Array<[Node, number]> = [];
+  const visited = new Set<string>();
+
+  const startNode = graph.getNode(startId);
+  if (!startNode) return undefined;   // start id is missing
+
+  stack.push([startNode, 0]);
+
+  while (stack.length) {
+    const [node, depth] = stack.pop()!;   // non‑empty promise
+
+    // Avoid revisiting the same node (important for cycles)
+    if (visited.has(node.id)) continue;
+    visited.add(node.id);
+
+    if (satisfies(node)) return node;    // found a match
+
+    if (depth === maxDepth) continue;    // reached depth limit
+
+    // Push neighbours onto the stack – order determines DFS order.
+    for (const neighId of node.getNeighbours()) {
+      const neighbour = graph.getNode(neighId);
+      if (neighbour) stack.push([neighbour, depth + 1]);
+    }
   }
 
-  let slow = head!;          // head is guaranteed non‑null now
-  while (fast) {
-    fast = fast.next!;
-    slow = slow.next!;
-  }
-
-  return slow;
+  return undefined;   // nothing matched within the depth budget
 }
-function buildList(nums: number[]) {
-  let dummy = new ListNode(0);
-  let cur = dummy;
-  for (const v of nums) {
-    cur.next = new ListNode(v);
-    cur = cur.next;
-  }
-  return dummy.next;
+// A simple example graph implementation
+class SimpleNode implements Node {
+  constructor(public readonly id: string, private readonly neighIds: string[]) {}
+  getNeighbours() { return this.neighIds; }
+}
+class SimpleGraph implements Graph {
+  private readonly nodes = new Map<string, Node>();
+  addNode(node: Node) { this.nodes.set(node.id, node); }
+  getNode(id: string) { return this.nodes.get(id); }
 }
 
-const list = buildList([1, 2, 3, 4, 5]);
+// Build a tiny graph
+const g = new SimpleGraph();
+g.addNode(new SimpleNode('A', ['B', 'C']));
+g.addNode(new SimpleNode('B', ['D']));
+g.addNode(new SimpleNode('C', []));
+g.addNode(new SimpleNode('D', []));
 
-console.log(nthFromEnd(list, 1)!.val); // 5
-console.log(nthFromEnd(list, 3)!.val); // 3
-console.log(nthFromEnd(list, 5)!.val); // 1
-console.log(nthFromEnd(list, 6));      // null
+// Define a search goal
+const goal = (n: Node) => n.id === 'D';
+
+// Run depth‑limited DFS limited to 2 edges from 'A'
+const result = depthLimitedSearch('A', 2, g, goal);
+console.log(result?.id); // → 'D'
