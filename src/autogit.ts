@@ -1,45 +1,65 @@
-function secondLargest(nums: number[]): number | null {
-  if (nums.length < 2) {            // not enough numbers
-    return null;                    // or throw an error, or whatever feels right
-  }
+// ---------------------------------------------------------
+//  FunRandomCron.ts
+//  A tiny demo that shows how to:
+//   • import node‑cron with types
+//   • schedule a repeating job
+//   • cancel a job on demand
+//   • use a more powerful CRON expression
+//   • log the next run time every time it fires
+// ---------------------------------------------------------
 
-  let largest = Number.NEGATIVE_INFINITY;
-  let second  = Number.NEGATIVE_INFINITY;
+import cron, { ScheduledTask } from 'node‑cron';
+import { format } from 'date‑fns';
 
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;   // old largest becomes second
-      largest = n;
-    } else if (n > second && n < largest) {   // distinct from largest
-      second = n;
-    }
-  }
+// This job runs every 10 seconds—just to keep the console fire‑breathing.
+// In a real app you could do backups, recompute stats, notify users, etc.
+const repeatEveryTenSeconds: ScheduledTask = cron.schedule(
+  '*/10 * * * * *',                // <seconds> <minutes> <hours> <day> <month> <dow>
+  () => {
+    const now = new Date();
+    console.log(`[${format(now, 'HH:mm:ss.SSS')}] 10‑second heartbeat!`);
+    // Do your real work here.
+  },
+  { scheduled: true }              // starts immediately
+);
 
-  // After the loop, `second` holds the second largest *distinct* value
-  return second === Number.NEGATIVE_INFINITY ? null : second;
+// Also throw in a “Monday at 04:35” job just to show another flavour.
+const mondayMorning: ScheduledTask = cron.schedule(
+  '35 4 * * 1',                    // minute hour day-of-month month day-of-week
+  () => {
+    console.log(`🎉 Monday Special – It’s 04:35!`);
+  },
+  { scheduled: true, timezone: 'America/New_York' } // time‑zone support
+);
+
+// Show next run times.  Handy for debugging.
+function displayNextRun(job: ScheduledTask, name: string) {
+  console.log(` → ${name} next run at ${format(job.nextDates().toDate(), 'yyyy‑MM‑dd HH:mm:ss')}`);
 }
-else if (n > second) {   // allow n == largest to fill second slot
-  second = n;
-}
-function secondLargestSorted(nums: number[]): number | null {
-  if (nums.length < 2) return null;
-  const sorted = [...nums].sort((a, b) => b - a); // descending
-  // handle duplicates if you want distinct values
-  return sorted[1];
-}
-function secondLargest(nums: number[]): number | null {
-  if (nums.length < 2) return null;
+displayNextRun(repeatEveryTenSeconds, 'Heartbeat');
+displayNextRun(mondayMorning, 'Mon‑4:35 AM');
 
-  let largest = Number.NEGATIVE_INFINITY;
-  let second  = Number.NEGATIVE_INFINITY;
+// ---------------------------------------------------------
+//  Graceful shutdown inside this demo
+// ---------------------------------------------------------
+const shutdown = () => {
+  console.log('\n→ Shutting down cron jobs gracefully...');
+  repeatEveryTenSeconds.stop();
+  mondayMorning.stop();
+  console.log('→ All job timers cleared. Bye!');
+  process.exit(0);
+};
 
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;
-      largest = n;
-    } else if (n > second && n < largest) {
-      second = n;
-    }
-  }
-  return second === Number.NEGATIVE_INFINITY ? null : second;
-}
+// In a real app you’d hook this into SIGINT, SIGTERM, etc.
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+# 1️⃣ Install the runtime dependencies
+npm install node-cron date-fns
+
+# 2️⃣ Add TypeScript types, optional but handy
+npm install -D typescript @types/node-cron @types/date-fns
+
+# 3️⃣ Compile + run
+npx tsc FunRandomCron.ts
+node FunRandomCron.js
+npx ts-node FunRandomCron.ts
