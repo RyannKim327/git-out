@@ -1,51 +1,50 @@
-function isPalindrome(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
-  // Normalise if requested
-  const src = ignoreCase
-    ? s.toLowerCase()
-    : s;
+/**
+ * Interpolation search – O(log log n) in the ideal case,
+ * O(n) in the worst case (if the array is highly non‑uniform).
+ *
+ * @param arr   An array that is already sorted in ascending order.
+ * @param key   The value to look for.
+ * @returns     The index of `key` in `arr` or -1 if not present.
+ */
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  // Guard against empty array
+  if (arr.length === 0) return -1;
 
-  // Optionally strip out anything that isn’t a letter or a digit
-  const text = ignoreNonAlpha
-    ? src.replace(/[^a-z0-9]/gi, '')
-    : src;
+  let low = 0;
+  let high = arr.length - 1;
 
-  let left = 0;
-  let right = text.length - 1;
+  // Interpolation formula requires a strictly increasing array
+  // and a finite difference between the ends.
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Avoid division by zero when arr[low] == arr[high].
+    if (arr[low] === arr[high]) return arr[low] === key ? low : -1;
 
-  while (left < right) {
-    if (text[left] !== text[right]) return false;
-    left++;
-    right--;
+    // Estimate the position of the key inside the current bounds.
+    const pos =
+      low +
+      Math.floor(
+        ((high - low) * (key - arr[low])) / (arr[high] - arr[low]),
+      );
+
+    const value = arr[pos];
+
+    if (value === key) return pos;
+    if (value < key) {
+      low = pos + 1;          // Look in the right sub‑array
+    } else {
+      high = pos - 1;         // Look in the left sub‑array
+    }
   }
-  return true;
-}
-console.log(isPalindrome('Racecar'));          // true
-console.log(isPalindrome('A man, a plan!'));   // false
-console.log(isPalindrome('A man, a plan!', true, true)); // true
-function isPalindromeReverse(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
-  const cleaned = ignoreNonAlpha
-    ? s.replace(/[^a-z0-9]/gi, '')
-    : s;
 
-  const cmp = ignoreCase ? cleaned.toLowerCase() : cleaned;
-  const reversed = cmp.split('').reverse().join('');
-  return cmp === reversed;
+  return -1; // Not found
 }
-console.log(isPalindromeReverse('Madam In Eden, I’m Adam', true, true)); // true
-const isPalindromeLazy = (s: string, ignoreCase = true, ignoreNonAlpha = false): boolean =>
-  (ignoreNonAlpha ? s.replace(/[^a-z0-9]/gi, '') : s)
-    .toLowerCase()
-    .split('')
-    .every((c, i, a) => c === a[a.length - i - 1]);
-const tests = [
-  { str: 'Radar', expect: true },
-  { str: 'Madam Anna', expect: false },
-  { str: 'Madam Anna', expect: true, options: { ignoreNonAlpha: true } },
-  { str: '12321', expect: true },
-  { str: 'Was it a cat I saw?', expect: true, options: { ignoreNonAlpha: true, ignoreCase: true } },
-];
-
-tests.forEach(({ str, expect, options }) => {
-  const result = isPalindrome(str, ...(options ? [options.ignoreCase, options.ignoreNonAlpha] : []));
-  console.assert(result === expect, `❌ ${str} should be ${expect}`);
-});
+const nums = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91, 105];
+console.log(interpolationSearch(nums, 38)); // ➜ 6
+console.log(interpolationSearch(nums, 4));  // ➜ -1
+export function interpolationSearchBy<T, U extends number>(
+  arr: readonly T[],
+  key: U,
+  getKey: (item: T) => U,
+): number {
+  // Same logic, but cast / convert using getKey(item)
+}
