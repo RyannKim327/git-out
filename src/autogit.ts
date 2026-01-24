@@ -1,37 +1,48 @@
-// factorial.ts
-import readline from 'readline';
+/**
+ * Randomised quick‑sort for numbers (works for any type T that can be compared)
+ * with an optional compare function.
+ */
+function randomQuickSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
 
-// Utility that returns the factorial of a non‑negative integer
-function factorial(n: number): number {
-  if (n < 0) throw new Error('Number must be non‑negative');
-  if (n === 0 || n === 1) return 1;
-  return n * factorial(n - 1);
-}
+  function sort(start: number, end: number): void {
+    if (end - start <= 1) return;              // 0 or 1 element
 
-// Set up a readline interface to read from stdin
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
+    // Pick a random pivot index in [start, end-1]
+    const pivotIndex = start + Math.floor(Math.random() * (end - start));
+    const pivotValue = arr[pivotIndex];
 
-// Ask the user for a number
-rl.question('Enter a non‑negative integer: ', (answer) => {
-  const num = Number(answer.trim());
+    // Move pivot to the end for convenience
+    [arr[pivotIndex], arr[end - 1]] = [arr[end - 1], arr[pivotIndex]];
 
-  if (Number.isNaN(num) || !Number.isInteger(num)) {
-    console.log(`"${answer}" is not a valid integer.`);
-  } else {
-    try {
-      const result = factorial(num);
-      console.log(`Factorial of ${num} is ${result}`);
-    } catch (e) {
-      console.log(e.message);
+    // Partition: all < pivot on the left, others on the right
+    let storeIndex = start;
+    for (let i = start; i < end - 1; i++) {
+      if (cmp(arr[i], pivotValue) < 0) {
+        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
+        storeIndex++;
+      }
     }
+
+    // Place pivot in its final position
+    [arr[storeIndex], arr[end - 1]] = [arr[end - 1], arr[storeIndex]];
+
+    // Recurse on partitions
+    sort(start, storeIndex);
+    sort(storeIndex + 1, end);
   }
 
-  rl.close();
-});
-npm install --save-dev @types/node
-npx ts-node factorial.ts
-tsc factorial.ts   # produces factorial.js
-node factorial.js
+  // Make a copy to keep input immutable
+  const copy = arr.slice();
+  sort(0, copy.length);
+  return copy;
+}
+
+/* ----- Usage example ----- */
+const unsorted = [7, 2, 9, 4, 3, 1, 5, 6];
+const sorted = randomQuickSort(unsorted);
+console.log('original:', unsorted);
+console.log('sorted  :', sorted);
