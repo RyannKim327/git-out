@@ -1,56 +1,67 @@
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr = head;
+/**
+ * Returns the k‑th smallest element (1‑based index).
+ * O(n log n) by quick‑sort.
+ */
+export function kthSmallestSort(arr: number[], k: number): number {
+  if (!arr.length) throw new Error('Array is empty');
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
 
-  while (curr !== null) {
-    const next = curr.next;   // remember where we’re headed
-    curr.next = prev;         // flip the link
-    prev = curr;              // move prev forward
-    curr = next;              // move curr forward
+  // Create a copy so the original array stays untouched
+  const copy = [...arr].sort((a, b) => a - b);
+  return copy[k - 1];
+}
+
+/**
+ * Returns the k‑th smallest element in expected linear time via QuickSelect.
+ * Stable but not guaranteed worst‑case performance.
+ */
+export function kthSmallestQuickSelect(arr: number[], k: number): number {
+  if (!arr.length) throw new Error('Array is empty');
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
+
+  // Recursive helper
+  function quickSelect(nums: number[], left: number, right: number, kth: number): number {
+    if (left === right) return nums[left];
+
+    let pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
+    pivotIndex = partition(nums, left, right, pivotIndex);
+
+    const leftSize = pivotIndex - left + 1;
+    if (kth < leftSize) return quickSelect(nums, left, pivotIndex - 1, kth);
+    if (kth === leftSize) return nums[pivotIndex];
+    return quickSelect(nums, pivotIndex + 1, right, kth - leftSize);
   }
 
-  // At the end of the loop, `prev` is the new head
-  return prev;
-}
-// Helper to print the list
-function printList<T>(head: ListNode<T> | null): void {
-  const values = [];
-  let curr = head;
-  while (curr) {
-    values.push(curr.val);
-    curr = curr.next;
+  function partition(nums: number[], left: number, right: number, pivotIndex: number): number {
+    const pivotValue = nums[pivotIndex];
+    // Move pivot to end
+    [nums[pivotIndex], nums[right]] = [nums[right], nums[pivotIndex]];
+    let storeIndex = left;
+
+    for (let i = left; i < right; i++) {
+      if (nums[i] < pivotValue) {
+        [nums[storeIndex], nums[i]] = [nums[i], nums[storeIndex]];
+        storeIndex++;
+      }
+    }
+    // Move pivot to its final place
+    [nums[right], nums[storeIndex]] = [nums[storeIndex], nums[right]];
+    return storeIndex;
   }
-  console.log(values.join(' → ') + ' → null');
+
+  // Clone the array so we don't mutate the caller's array
+  const clone = [...arr];
+  return quickSelect(clone, 0, clone.length - 1, k);
 }
+const data = [7, 2, 5, 3, 9, 1];
+const kth = 3; // 3rd smallest
 
-// Build 1 → 2 → 3 → null
-const head = new ListNode(1,
-             new ListNode(2,
-               new ListNode(3)));
-
-console.log('Original list:');
-printList(head);
-
-const reversed = reverseList(head);
-
-console.log('Reversed list:');
-printList(reversed);
-Original list:
-1 → 2 → 3 → null
-Reversed list:
-3 → 2 → 1 → null
-export function reverseListRec<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head || !head.next) return head;         // base case
-
-  const newHead = reverseListRec(head.next);     // reverse rest of list
-  head.next.next = head;                        // make the next node point to us
-  head.next = null;                             // sever old link
-
-  return newHead;                               // new head propagates upward
+console.log(kthSmallestSort(data, kth));          // 5
+console.log(kthSmallestQuickSelect(data, kth));   // 5
+export function kthSmallest<T>(
+  arr: T[],
+  k: number,
+  cmp: (a: T, b: T) => number,
+): T {
+  // ...same logic, replace numeric comparisons with cmp(...)
 }
