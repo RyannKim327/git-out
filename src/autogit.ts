@@ -1,33 +1,24 @@
-/**
- * Bubble sort – O(n²) average / worst case.
- *
- * @param arr – array that will be sorted (mutated)
- * @returns the same array reference, now sorted ascending
- */
-function bubbleSort<T>(arr: T[]): T[] {
-  const n = arr.length;
-
-  // Outer loop: go through the array n‑1 times
-  for (let i = 0; i < n - 1; i++) {
-    // Inner loop scans up to the unsorted part
-    // We can stop early when the array is already sorted
-    let swapped = false;
-
-    for (let j = 0; j < n - 1 - i; j++) {
-      // Use > so that equal values stay in place
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
-    }
-
-    // No swaps means the array is sorted
-    if (!swapped) break;
-  }
-
-  return arr;
+export function reverseString(s: string): string {
+  return s.split('').reverse().join('');
 }
-
-// Example
-const nums = [64, 34, 25, 12, 22, 11, 90];
-console.log(bubbleSort(nums)); // [11, 12, 22, 25, 34, 64, 90]
+export function reverseStringManual(s: string): string {
+  let result = '';
+  for (let i = s.length - 1; i >= 0; i--) {
+    result += s[i];
+  }
+  return result;
+}
+export function reverseStringRecursive(s: string): string {
+  if (s.length <= 1) return s;
+  return reverseStringRecursive(s.slice(1)) + s[0];
+}
+export function reverseStringLoop(s: string): string {
+  const chars = [...s];          // same as s.split('')
+  for (let i = 0, j = chars.length - 1; i < j; i++, j--) {
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join('');
+}
+console.log(reverseString('hello'));          // 'olleh'
+console.log(reverseStringManual('world'));    // 'dlrow'
+console.log(reverseStringRecursive('TypeScript')); // 'tpircSepyT'
