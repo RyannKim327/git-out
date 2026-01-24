@@ -1,43 +1,64 @@
-function stringLength(str: string): number {
-  let len = 0;
-  for (let i = 0; i < str.length; i++) {
-    len++;                // we still use str.length in the loop condition,
-                          // but we never read it as the "answer"
+// ────────────────────────
+// Node definition
+// ────────────────────────
+class Node<T> {
+  value: T;
+  next: Node<T> | null = null;
+
+  constructor(value: T) {
+    this.value = value;
   }
-  return len;
 }
-function stringLength(str: string): number {
-  let len = 0;
-  let code = str.codePointAt(0);
-  let idx = 0;
-  while (code !== undefined) {
-    len++;
-    idx++;
-    code = str.codePointAt(idx);
+
+// ────────────────────────
+// LinkedList implementation
+// ────────────────────────
+class LinkedList<T> {
+  head: Node<T> | null = null;
+  tail: Node<T> | null = null;
+
+  // Append new value to list
+  push(value: T): void {
+    const newNode = new Node(value);
+    if (!this.head) {
+      this.head = this.tail = newNode;
+      return;
+    }
+    this.tail!.next = newNode;  // non‑null assertion is safe here
+    this.tail = newNode;
   }
-  return len;
-}
-function stringLength(str: string): number {
-  let len = 0;
-  for (const _ of str) {
-    len++;
+
+  // ────── length (iterative)
+  // Return number of nodes
+  length(): number {
+    let count = 0;
+    let current = this.head;
+    while (current !== null) {
+      count++;
+      current = current.next;
+    }
+    return count;
   }
-  return len;
-}
-function stringLength(str: string): number {
-  if (str === '') return 0;
-  return 1 + stringLength(str.slice(1));
-}
-function stringLength(str: string): number {
-  const matches = str.match(/./gu);
-  return matches ? matches.length : 0;
-}
-function stringLength(str: string): number {
-  let idx = 0;
-  let len = 0;
-  while (str.charAt(idx) !== '') { // `charAt` returns '' past the end
-    len++;
-    idx++;
+
+  // ────── length (recursive helper)
+  private _recursiveLength(node: Node<T> | null): number {
+    if (!node) return 0;
+    return 1 + this._recursiveLength(node.next);
   }
-  return len;
+
+  // Public wrapper for the recursive version
+  recursiveLength(): number {
+    return this._recursiveLength(this.head);
+  }
 }
+
+// ────────────────────────
+// Demo
+// ────────────────────────
+const list = new LinkedList<number>();
+list.push(1);
+list.push(2);
+list.push(3);
+
+console.log('Iterative length:', list.length());          // 3
+console.log('Recursive length:', list.recursiveLength()); // 3
