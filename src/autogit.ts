@@ -1,61 +1,33 @@
-// A generic graph node – you can replace this with whatever you’re actually
-// storing.  Here we just keep a value and an array of child nodes.
-export interface TreeNode<T> {
-  value: T;
-  children: TreeNode<T>[];
-}
 /**
- * Performs a breadth‑first search up to a depth limit.
+ * Sorts an array of numbers (or any comparable type) in place
+ * using the classic selection‑sort algorithm.
  *
- * @param root The starting node.
- * @param maxDepth The maximum path length to explore (0 = only the root).
- * @param filter A callback that decides whether a node should be “accepted”.
- *               It receives the node and its depth (root = 0).
- * @returns An array of all nodes that satisfy the filter within the depth bound.
+ * @param arr – the array to sort
+ * @returns the same array reference, now sorted
  */
-export function breadthLimitedSearch<T>(
-  root: TreeNode<T>,
-  maxDepth: number,
-  filter: (node: TreeNode<T>, depth: number) => boolean
-): TreeNode<T>[] {
-  const result: TreeNode<T>[] = [];
-  const queue: Array<{ node: TreeNode<T>; depth: number }> = [{ node: root, depth: 0 }];
+export function selectionSort<T>(arr: T[]): T[] {
+    const n = arr.length;
 
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;           // FIFO
-    if (depth > maxDepth) continue;                  // depth guard
+    for (let i = 0; i < n - 1; i++) {
+        // Assume the smallest element starts at i
+        let minIndex = i;
 
-    if (filter(node, depth)) result.push(node);
+        // Scan the unsorted suffix to find the real minimum
+        for (let j = i + 1; j < n; j++) {
+            if (arr[j] < arr[minIndex]) {
+                minIndex = j;
+            }
+        }
 
-    // Push children *after* checking depth to avoid pushing out‑of‑range nodes
-    if (depth < maxDepth) {
-      for (const child of node.children) {
-        queue.push({ node: child, depth: depth + 1 });
-      }
+        // If the minimum isn’t already in position i, swap
+        if (minIndex !== i) {
+            [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+        }
     }
-  }
 
-  return result;
+    return arr;
 }
-// Simple test tree
-const tree: TreeNode<string> = {
-  value: 'root',
-  children: [
-    { value: 'A', children: [] },
-    { value: 'B', children: [
-        { value: 'B1', children: [] },
-        { value: 'B2', children: [] },
-      ]
-    },
-    { value: 'C', children: [] }
-  ]
-};
-
-// Want all nodes that start with "B" and only dive 2 levels deep
-const matches = breadthLimitedSearch(
-  tree,
-  2,
-  (node, depth) => node.value.startsWith('B')
-);
-
-console.log(matches.map(n => n.value)); // ['B', 'B1', 'B2']
+const unsorted = [64, 25, 12, 22, 11];
+console.log('Before:', unsorted);
+selectionSort(unsorted);
+console.log('After :', unsorted);
