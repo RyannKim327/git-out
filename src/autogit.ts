@@ -1,39 +1,19 @@
 /**
- * Returns the largest prime divisor of `n`.
- * If `n` is 0 or 1, returns `undefined`.
+ * Minimal email validator.
+ * Covers most real‑world cases without being overly strict.
  */
-function largestPrimeFactor(n: number): number | undefined {
-  if (n < 2) return undefined;          // no prime factors for 0 or 1
-
-  let num = Math.abs(n);                 // work with a positive number
-  let maxFactor = 1;
-
-  // Handle the factor 2 separately to keep the loop odd.
-  while (num % 2 === 0) {
-    maxFactor = 2;
-    num /= 2;
-  }
-
-  // Now only odd factors are possible.
-  let divisor = 3;
-  const sqrtLimit = Math.sqrt(num);
-  while (divisor <= sqrtLimit) {
-    while (num % divisor === 0) {
-      maxFactor = divisor;
-      num /= divisor;
-    }
-    divisor += 2;                       // skip even numbers
-  }
-
-  // If after the loop num > 1, it itself is a prime factor larger than all found.
-  if (num > 1) {
-    maxFactor = num;
-  }
-
-  return maxFactor;
+export function isValidEmail(email: string): boolean {
+  // 1. Basic structural check: local part @ domain
+  // 2. Local part: letters, digits, dots, hyphens, underscores, and plus
+  // 3. Domain: DNS‑style labels separated by dots; ends in 2‑63‑letter TLD
+  const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,64}$/;
+  return pattern.test(email);
 }
-console.log(largestPrimeFactor(2));                // 2
-console.log(largestPrimeFactor(28));               // 7
-console.log(largestPrimeFactor(1000003));          // 1000003 (its prime)
-console.log(largestPrimeFactor(123456));           // 643
-console.log(largestPrimeFactor(-84));              // 7
+import validator from 'validator';
+
+function isValidFullEmail(email: string): boolean {
+  return validator.isEmail(email);  // uses RFC‑compliant logic
+}
+console.log(isValidEmail('user@example.com'));   // true
+console.log(isValidEmail('bob.smith@sub.domain.co')); // true
+console.log(isValidEmail('invalid-email@'));    // false
