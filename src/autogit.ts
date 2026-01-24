@@ -1,27 +1,75 @@
-function decimalToBinary(num: number): string {
-  return num.toString(2);   // base‑2 string
-}
+/**
+ * Tarjan's algorithm to find all strongly connected components (SCCs) of a directed graph.
+ *
+ * @param adjacencyList A Map where each key is a node id and the value is an array of adjacent node ids.
+ * @returns An array of components, each component is an array of node ids belonging to the same SCC.
+ */
+export function stronglyConnectedComponents(
+  adjacencyList: Map<number, number[]>
+): number[][] {
+  const indexMap = new Map<number, number>();   // node -> index
+  const lowlinkMap = new Map<number, number>(); // node -> lowlink
+  const onStack = new Set<number>();            // nodes currently in the stack
+  const stack: number[] = [];                   // stack of nodes
+  const components: number[][] = [];
+  let currentIndex = 0;
 
-console.log(decimalToBinary(42)); // "101010"
-function decimalToBinary(num: bigint): string {
-  if (num === 0n) return "0";
+  const strongConnect = (node: number) => {
+    // 1. set the depth index for this node
+    indexMap.set(node, currentIndex);
+    lowlinkMap.set(node, currentIndex);
+    currentIndex++;
+    stack.push(node);
+    onStack.add(node);
 
-  let n = num;
-  let bits = "";
+    // 2. consider successors of node
+    const neighbors = adjacencyList.get(node) ?? [];
+    for (const succ of neighbors) {
+      if (!indexMap.has(succ)) {
+        // (a) Successor has not yet been visited; recurse on it
+        strongConnect(succ);
+        // Update lowlink
+        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, lowlinkMap.get(succ)!));
+      } else if (onStack.has(succ)) {
+        // (b) Successor is in stack → part of current SCC
+        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, indexMap.get(succ)!));
+      }
+      // (c) else: successor has been visited and is not in stack – ignore
+    }
 
-  while (n > 0n) {
-    bits = (n & 1n ? "1" : "0") + bits; // prepend the low bit
-    n >>= 1n;                           // shift right
+    // 3. If node is a root node, pop the stack and generate an SCC
+    if (lowlinkMap.get(node) === indexMap.get(node)) {
+      const component: number[] = [];
+      let w: number | undefined;
+      do {
+        w = stack.pop();
+        onStack.delete(w!);
+        component.push(w!);
+      } while (w !== node);
+      components.push(component);
+    }
+  };
+
+  // Run strongConnect on every node that has not yet been visited
+  for (const node of adjacencyList.keys()) {
+    if (!indexMap.has(node)) {
+      strongConnect(node);
+    }
   }
 
-  return bits;
+  return components;
 }
+import { stronglyConnectedComponents } from './tarjan';
 
-console.log(decimalToBinary(42n)); // "101010"
-export function toBinary(value: number | bigint): string {
-  // Pick the right conversion automatically
-  if (typeof value === "bigint") {
-    return decimalToBinary(value);
-  }
-  return value.toString(2);
-}
+const graph = new Map<number, number[]>();
+graph.set(0, [1]);
+graph.set(1, [2, 3]);
+graph.set(2, [0, 3]);
+graph.set(3, [4]);
+graph.set(4, [5]);
+graph.set(5, [3]);
+
+const sccs = stronglyConnectedComponents(graph);
+console.log(sccs);
+// → [ [ 4, 5, 3 ], [ 0, 1, 2 ] ]
+// (order may vary)
