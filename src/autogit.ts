@@ -1,65 +1,65 @@
-// ---------------------------------------------------------
-//  FunRandomCron.ts
-//  A tiny demo that shows how to:
-//   • import node‑cron with types
-//   • schedule a repeating job
-//   • cancel a job on demand
-//   • use a more powerful CRON expression
-//   • log the next run time every time it fires
-// ---------------------------------------------------------
+// ---------- Basics ----------
+class ListNode {
+  val: number          // you can keep any data you need
+  next: ListNode | null = null;
 
-import cron, { ScheduledTask } from 'node‑cron';
-import { format } from 'date‑fns';
-
-// This job runs every 10 seconds—just to keep the console fire‑breathing.
-// In a real app you could do backups, recompute stats, notify users, etc.
-const repeatEveryTenSeconds: ScheduledTask = cron.schedule(
-  '*/10 * * * * *',                // <seconds> <minutes> <hours> <day> <month> <dow>
-  () => {
-    const now = new Date();
-    console.log(`[${format(now, 'HH:mm:ss.SSS')}] 10‑second heartbeat!`);
-    // Do your real work here.
-  },
-  { scheduled: true }              // starts immediately
-);
-
-// Also throw in a “Monday at 04:35” job just to show another flavour.
-const mondayMorning: ScheduledTask = cron.schedule(
-  '35 4 * * 1',                    // minute hour day-of-month month day-of-week
-  () => {
-    console.log(`🎉 Monday Special – It’s 04:35!`);
-  },
-  { scheduled: true, timezone: 'America/New_York' } // time‑zone support
-);
-
-// Show next run times.  Handy for debugging.
-function displayNextRun(job: ScheduledTask, name: string) {
-  console.log(` → ${name} next run at ${format(job.nextDates().toDate(), 'yyyy‑MM‑dd HH:mm:ss')}`);
+  constructor(val: number) {
+    this.val = val;
+  }
 }
-displayNextRun(repeatEveryTenSeconds, 'Heartbeat');
-displayNextRun(mondayMorning, 'Mon‑4:35 AM');
 
-// ---------------------------------------------------------
-//  Graceful shutdown inside this demo
-// ---------------------------------------------------------
-const shutdown = () => {
-  console.log('\n→ Shutting down cron jobs gracefully...');
-  repeatEveryTenSeconds.stop();
-  mondayMorning.stop();
-  console.log('→ All job timers cleared. Bye!');
-  process.exit(0);
-};
+// ---------- Intersection finder ----------
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  if (!headA || !headB) return null;
 
-// In a real app you’d hook this into SIGINT, SIGTERM, etc.
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
-# 1️⃣ Install the runtime dependencies
-npm install node-cron date-fns
+  let ptrA: ListNode | null = headA;
+  let ptrB: ListNode | null = headB;
 
-# 2️⃣ Add TypeScript types, optional but handy
-npm install -D typescript @types/node-cron @types/date-fns
+  // After at most two passes through each list the pointers
+  // will either meet at the intersection or both become null.
+  while (ptrA !== ptrB) {
+    ptrA = ptrA ? ptrA.next : headB; // switch to the head of the other list
+    ptrB = ptrB ? ptrB.next : headA;
+  }
 
-# 3️⃣ Compile + run
-npx tsc FunRandomCron.ts
-node FunRandomCron.js
-npx ts-node FunRandomCron.ts
+  return ptrA; // either the intersection node, or null
+}
+
+// ---------- Quick demo ----------
+function buildLinkedList(values: number[], offset: number = 0) {
+  let head: ListNode | null = null;
+  let tail: ListNode | null = null;
+  for (let v of values) {
+    const node = new ListNode(v);
+    if (!head) head = node;
+    if (tail) tail.next = node;
+    tail = node;
+  }
+  return { head, tail };
+}
+
+// Common tail that will be shared by two lists
+const { head: shared, tail: sharedTail } = buildLinkedList([8, 10]);
+
+// First list: 3 → 7 → 8 → 10
+const { head: aHead } = buildLinkedList([3, 7]);
+if (aHead && sharedHead) {
+  // connect the shared tail
+  let node = aHead;
+  while (node.next) node = node.next;
+  node.next = shared;
+}
+
+// Second list: 99 → 1 → 8 → 10
+const { head: bHead } = buildLinkedList([99, 1]);
+if (bHead && sharedHead) {
+  let node = bHead;
+  while (node.next) node = node.next;
+  node.next = shared;
+}
+
+const intersection = getIntersectionNode(aHead, bHead);
+console.log(intersection?.val); // prints 8
