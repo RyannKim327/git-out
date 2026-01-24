@@ -1,29 +1,15 @@
-const nums = [1, 2, 2, 3, 4, 4, 5];
-const unique = [...new Set(nums)];   // [1, 2, 3,4,5]
-const vals = ['a', 'b', 'a', 'c', 'b'];
-const uniq = vals.filter((value, index, arr) => arr.indexOf(value) === index);
-// ['a','b','c']
-interface User {
-  id: number;
-  name: string;
-}
+// 1️⃣ Convert with the global Number constructor
+const n1 = Number("42");          // 42
 
-const users: User[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob'   },
-  { id: 1, name: 'Alice'},
-  { id: 3, name: 'Carol'},
-];
+// 2️⃣ Use the unary plus – super terse
+const n2 = +"123";                // 123
 
-const uniq = Array.from(
-  users.reduce((map, user) => map.set(user.id, user), new Map<number, User>())
-).map(entry => entry[1]);
+// 3️⃣ (recommended for base‑10 integer strings)
+const n3 = parseInt("07", 10);    // 7
 
-// [{id:1,name:'Alice'}, {id:2,name:'Bob'}, {id:3,name:'Carol'}]
-const objs = [{x:1},{x:2},{x:1},{x:3}];
-const uniq = Array.from(
-  new Set(objs.map(o => JSON.stringify(o)))
-).map(str => JSON.parse(str));
-import { uniqBy } from 'lodash';
+// 4️⃣ If you need a float, use parseFloat
+const n4 = parseFloat("3.14");    // 3.14
+const toInt = (s: string | null | undefined): number | null =>
+  s == null ? null : parseInt(s, 10);
 
-const uniqUsers = uniqBy(users, 'id');
+const age = toInt(queryParamAge); // gives you a number or null if it's missing
