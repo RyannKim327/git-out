@@ -1,60 +1,69 @@
 /**
- * Fibonacci search for a sorted array of numbers.
- * @param arr  The sorted array to search.
- * @param target The value to locate.
- * @returns The index of `target` in `arr`, or -1 if not found.
+ * Builds the BMH bad‑character shift table.
+ *
+ * For every byte value (0‑255) we store how many positions the algorithm
+ * can safely skip when encountering that byte while scanning from the
+ * rightmost side of the pattern.
  */
-export function fibonacciSearch(arr: number[], target: number): number {
-  const n = arr.length;
-  if (n === 0) return -1;
+function makeShiftTable(pattern: string): Uint8Array {
+  const m = pattern.length;
+  const table = new Uint8Array(256);
+  // Default shift is pattern length (skip the whole pattern).
+  table.fill(m);
 
-  // 1. Build the smallest Fibonacci number >= n
-  let fibMm2 = 0;   // (m-2)th Fibonacci
-  let fibMm1 = 1;   // (m-1)th Fibonacci
-  let fibM   = fibMm2 + fibMm1; // mth Fibonacci
-
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM   = fibMm2 + fibMm1;
+  // For every non‑last character we set shift = m - i - 1
+  for (let i = 0; i < m - 1; ++i) {
+    const c = pattern.charCodeAt(i);
+    table[c] = m - i - 1;
   }
+  return table;
+}
 
-  // Marks the range to be searched
-  let offset = -1; // Element before the beginning (virtual)
+/**
+ * Boyer‑Moore‑Horspool search.
+ *
+ * @param text    The text where we look for the pattern.
+ * @param pattern The pattern to find.
+ * @returns       An array of zero‑based start indices where `pattern`
+ *                is found in `text`.  Empty array if no match.
+ */
+export function bmhSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
 
-  // 2. While there is an element to inspect
-  while (fibM > 1) {
-    // Determines the index to compare
-    const i = Math.min(offset + fibMm2, n - 1);
+  // Quick exits
+  if (m === 0) return [];          // Empty pattern => nothing meaningful
+  if (m > n) return [];            // Pattern longer than text => impossible
 
-    if (arr[i] < target) {
-      // Move three steps ahead
-      fibM   = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i;
-    } else if (arr[i] > target) {
-      // Move one step back
-      fibM   = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
+  const shiftTable = makeShiftTable(pattern);
+  const result: number[] = [];
+
+  let i = 0; // Current offset in `text` aligning the end of the pattern
+  while (i <= n - m) {
+    // Compare pattern from the end backward
+    let j = m - 1;
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j -= 1;
+    }
+
+    if (j < 0) {               // All characters matched
+      result.push(i);
+      i += 1;                  // For overlapping matches we shift by 1
     } else {
-      return i; // Found
+      const shiftVal = shiftTable[text.charCodeAt(i + m - 1)];
+      i += shiftVal;
     }
   }
 
-  // We are left with a single element
-  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
-    return offset + 1;
-  }
-
-  return -1; // Not found
+  return result;
 }
-import { fibonacciSearch } from './fibonacci-search';
 
-const data = [3, 8, 10, 15, 20, 23, 27, 35, 41, 55, 68, 73, 82, 91, 97];
-const target = 55;
+/* ---------- Example usage --------------------------------- */
 
-const idx = fibonacciSearch(data, target);
-console.log(idx); // → 9
-console.log(fibonacciSearch(data, 22)); // → -1
+const haystack = "abacababcab";
+const needle  = "cab";
+
+const indices = bmhSearch(haystack, needle);
+console.log(`Pattern found at indices: ${indices.join(", ")}`);
+// -> "Pattern found at indices: 3, 8"
+
