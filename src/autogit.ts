@@ -1,52 +1,29 @@
-/** Basic node structure for a binary tree. */
-class TreeNode {
-  /** Value stored in the node (use `any` if you need non‑numeric data). */
-  val: number
-  /** Left child, or null if none. */
-  left: TreeNode | null
-  /** Right child, or null if none. */
-  right: TreeNode | null
-
-  constructor(val: number, left?: TreeNode | null, right?: TreeNode | null) {
-    this.val = val
-    this.left = left ?? null
-    this.right = right ?? null
-  }
+const nums = [1, 2, 2, 3, 4, 4, 5];
+const unique = [...new Set(nums)];   // [1, 2, 3,4,5]
+const vals = ['a', 'b', 'a', 'c', 'b'];
+const uniq = vals.filter((value, index, arr) => arr.indexOf(value) === index);
+// ['a','b','c']
+interface User {
+  id: number;
+  name: string;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Recursive depth‑first search.  Returns the longest path length.    */
-function maxDepth(root: TreeNode | null): number {
-  if (!root) return 0                    // leaf + null = depth 0
-  const leftDepth  = maxDepth(root.left) // depth goes 1, 2, … from here
-  const rightDepth = maxDepth(root.right)
-  return Math.max(leftDepth, rightDepth) + 1
-}
+const users: User[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob'   },
+  { id: 1, name: 'Alice'},
+  { id: 3, name: 'Carol'},
+];
 
-/* ------------------------------------------------------------------ */
-/*  Iterative breadth‑first search (queue).  Same result, no stack.   */
-function maxDepthIter(root: TreeNode | null): number {
-  if (!root) return 0
-  let max = 0
-  const queue: Array<{ node: TreeNode; depth: number }> = [
-    { node: root, depth: 1 },
-  ]
+const uniq = Array.from(
+  users.reduce((map, user) => map.set(user.id, user), new Map<number, User>())
+).map(entry => entry[1]);
 
-  while (queue.length) {
-    const { node, depth } = queue.shift()!
-    max = Math.max(max, depth)
-    if (node.left)  queue.push({ node: node.left, depth: depth + 1 })
-    if (node.right) queue.push({ node: node.right, depth: depth + 1 })
-  }
-  return max
-}
+// [{id:1,name:'Alice'}, {id:2,name:'Bob'}, {id:3,name:'Carol'}]
+const objs = [{x:1},{x:2},{x:1},{x:3}];
+const uniq = Array.from(
+  new Set(objs.map(o => JSON.stringify(o)))
+).map(str => JSON.parse(str));
+import { uniqBy } from 'lodash';
 
-/* ------------------------------------------------------------------ */
-/*  Example usage ---------------------------------------------------- */
-const root = new TreeNode(1,
-  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-  new TreeNode(3, null, new TreeNode(6))
-)
-
-console.log('Recursive depth:', maxDepth(root))      // → 3
-console.log('Iterative depth:', maxDepthIter(root)) // → 3
+const uniqUsers = uniqBy(users, 'id');
