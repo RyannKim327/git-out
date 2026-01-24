@@ -1,29 +1,28 @@
-const nums = [1, 2, 2, 3, 4, 4, 5];
-const unique = [...new Set(nums)];   // [1, 2, 3,4,5]
-const vals = ['a', 'b', 'a', 'c', 'b'];
-const uniq = vals.filter((value, index, arr) => arr.indexOf(value) === index);
-// ['a','b','c']
-interface User {
-  id: number;
-  name: string;
+const original = [1, 2, 3, 4, 5];
+
+const reversed = [...original].reverse(); // creates a new array, keeps `original` intact
+// or, if you don’t mind mutating the original array
+original.reverse();
+const copy = [...original];  // spread operator makes a new array
+copy.reverse();              // now you have the reversed copy
+function reverseArray<T>(arr: T[]): T[] {
+  const result: T[] = [];
+  for (let i = arr.length - 1; i >= 0; i--) {
+    result.push(arr[i]);
+  }
+  return result;
 }
 
-const users: User[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob'   },
-  { id: 1, name: 'Alice'},
-  { id: 3, name: 'Carol'},
-];
+const reverseManual = reverseArray(original);
+function reverseInPlace<T>(arr: T[]): void {
+  let left = 0;
+  let right = arr.length - 1;
+  while (left < right) {
+    // swap
+    [arr[left], arr[right]] = [arr[right], arr[left]];
+    left++;
+    right--;
+  }
+}
 
-const uniq = Array.from(
-  users.reduce((map, user) => map.set(user.id, user), new Map<number, User>())
-).map(entry => entry[1]);
-
-// [{id:1,name:'Alice'}, {id:2,name:'Bob'}, {id:3,name:'Carol'}]
-const objs = [{x:1},{x:2},{x:1},{x:3}];
-const uniq = Array.from(
-  new Set(objs.map(o => JSON.stringify(o)))
-).map(str => JSON.parse(str));
-import { uniqBy } from 'lodash';
-
-const uniqUsers = uniqBy(users, 'id');
+reverseInPlace(original); // `original` is now reversed
