@@ -1,33 +1,17 @@
 /**
- * Sorts an array of numbers (or any comparable type) in place
- * using the classic selection‑sort algorithm.
+ * Reverses the order of words in a string.
  *
- * @param arr – the array to sort
- * @returns the same array reference, now sorted
+ *      "Hello world again"  →  "again world Hello"
+ *
+ * Words are defined as sequences of non‑whitespace characters.
  */
-export function selectionSort<T>(arr: T[]): T[] {
-    const n = arr.length;
-
-    for (let i = 0; i < n - 1; i++) {
-        // Assume the smallest element starts at i
-        let minIndex = i;
-
-        // Scan the unsorted suffix to find the real minimum
-        for (let j = i + 1; j < n; j++) {
-            if (arr[j] < arr[minIndex]) {
-                minIndex = j;
-            }
-        }
-
-        // If the minimum isn’t already in position i, swap
-        if (minIndex !== i) {
-            [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-        }
-    }
-
-    return arr;
+function reverseWords(s: string): string {
+  return s
+    .trim()                // remove leading/trailing blanks
+    .split(/\s+/)          // break into words (any amount of whitespace)
+    .reverse()             // flip the array
+    .join(' ');            // stitch back together
 }
-const unsorted = [64, 25, 12, 22, 11];
-console.log('Before:', unsorted);
-selectionSort(unsorted);
-console.log('After :', unsorted);
+
+// demo
+console.log(reverseWords('Hello world again')); // “again world Hello”
