@@ -1,28 +1,15 @@
-const original = [1, 2, 3, 4, 5];
+// 1️⃣ Convert with the global Number constructor
+const n1 = Number("42");          // 42
 
-const reversed = [...original].reverse(); // creates a new array, keeps `original` intact
-// or, if you don’t mind mutating the original array
-original.reverse();
-const copy = [...original];  // spread operator makes a new array
-copy.reverse();              // now you have the reversed copy
-function reverseArray<T>(arr: T[]): T[] {
-  const result: T[] = [];
-  for (let i = arr.length - 1; i >= 0; i--) {
-    result.push(arr[i]);
-  }
-  return result;
-}
+// 2️⃣ Use the unary plus – super terse
+const n2 = +"123";                // 123
 
-const reverseManual = reverseArray(original);
-function reverseInPlace<T>(arr: T[]): void {
-  let left = 0;
-  let right = arr.length - 1;
-  while (left < right) {
-    // swap
-    [arr[left], arr[right]] = [arr[right], arr[left]];
-    left++;
-    right--;
-  }
-}
+// 3️⃣ (recommended for base‑10 integer strings)
+const n3 = parseInt("07", 10);    // 7
 
-reverseInPlace(original); // `original` is now reversed
+// 4️⃣ If you need a float, use parseFloat
+const n4 = parseFloat("3.14");    // 3.14
+const toInt = (s: string | null | undefined): number | null =>
+  s == null ? null : parseInt(s, 10);
+
+const age = toInt(queryParamAge); // gives you a number or null if it's missing
