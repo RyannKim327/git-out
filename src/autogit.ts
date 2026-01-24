@@ -1,47 +1,52 @@
-/**
- * Return true if `a` and `b` are anagrams.
- *
- *   * Ignore whitespace and punctuation.
- *   * Ignore case.
- */
-function areAnagramsSorting(a: string, b: string): boolean {
-  const clean = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '').split('').sort().join('');
+/** Basic node structure for a binary tree. */
+class TreeNode {
+  /** Value stored in the node (use `any` if you need non‑numeric data). */
+  val: number
+  /** Left child, or null if none. */
+  left: TreeNode | null
+  /** Right child, or null if none. */
+  right: TreeNode | null
 
-  return clean(a) === clean(b);
+  constructor(val: number, left?: TreeNode | null, right?: TreeNode | null) {
+    this.val = val
+    this.left = left ?? null
+    this.right = right ?? null
+  }
 }
 
-// Example
-console.log(areAnagramsSorting('Listen', 'Silent')); // → true
-/**
- * Count characters and compare the two maps.
- * Complexity: O(n), with `n` = max(a.length, b.length).
- */
-function areAnagramsCounting(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '');
-
-  const strA = normalize(a);
-  const strB = normalize(b);
-
-  if (strA.length !== strB.length) return false;
-
-  const freq: Record<string, number> = {};
-
-  for (const ch of strA) {
-    freq[ch] = (freq[ch] ?? 0) + 1;
-  }
-
-  for (const ch of strB) {
-    if (!freq[ch]) return false; // missing or too many
-    freq[ch]! -= 1;
-  }
-
-  return true;
+/* ------------------------------------------------------------------ */
+/*  Recursive depth‑first search.  Returns the longest path length.    */
+function maxDepth(root: TreeNode | null): number {
+  if (!root) return 0                    // leaf + null = depth 0
+  const leftDepth  = maxDepth(root.left) // depth goes 1, 2, … from here
+  const rightDepth = maxDepth(root.right)
+  return Math.max(leftDepth, rightDepth) + 1
 }
 
-// Example
-console.log(areAnagramsCounting('Software', 'Oxfartswe')); // → true
-const anagrams = (a: string, b: string) =>
-  a.toLowerCase().replace(/\W/g, '').split('').sort().join('') ===
-  b.toLowerCase().replace(/\W/g, '').split('').sort().join('');
+/* ------------------------------------------------------------------ */
+/*  Iterative breadth‑first search (queue).  Same result, no stack.   */
+function maxDepthIter(root: TreeNode | null): number {
+  if (!root) return 0
+  let max = 0
+  const queue: Array<{ node: TreeNode; depth: number }> = [
+    { node: root, depth: 1 },
+  ]
+
+  while (queue.length) {
+    const { node, depth } = queue.shift()!
+    max = Math.max(max, depth)
+    if (node.left)  queue.push({ node: node.left, depth: depth + 1 })
+    if (node.right) queue.push({ node: node.right, depth: depth + 1 })
+  }
+  return max
+}
+
+/* ------------------------------------------------------------------ */
+/*  Example usage ---------------------------------------------------- */
+const root = new TreeNode(1,
+  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
+  new TreeNode(3, null, new TreeNode(6))
+)
+
+console.log('Recursive depth:', maxDepth(root))      // → 3
+console.log('Iterative depth:', maxDepthIter(root)) // → 3
