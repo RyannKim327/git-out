@@ -1,28 +1,38 @@
-const original = [1, 2, 3, 4, 5];
+/**
+ * Returns true if `a` and `b` contain exactly the same characters
+ * (ignoring whitespace, punctuation, and case).
+ */
+export function isAnagram(a: string, b: string): boolean {
+  // 1. Strip anything that isn’t a letter or a digit, and
+  //    normalize the case to lower‑case.
+  const norm = (s: string) =>
+    s.replace(/\W+/g, "") // removes non‑alphanumeric characters
+      .toLowerCase();
 
-const reversed = [...original].reverse(); // creates a new array, keeps `original` intact
-// or, if you don’t mind mutating the original array
-original.reverse();
-const copy = [...original];  // spread operator makes a new array
-copy.reverse();              // now you have the reversed copy
-function reverseArray<T>(arr: T[]): T[] {
-  const result: T[] = [];
-  for (let i = arr.length - 1; i >= 0; i--) {
-    result.push(arr[i]);
+  const cleanA = norm(a);
+  const cleanB = norm(b);
+
+  // 2. Quick length check – if lengths differ, they can’t be anagrams.
+  if (cleanA.length !== cleanB.length) return false;
+
+  // 3. Count each character in a Map.
+  const counter = new Map<string, number>();
+
+  for (const ch of cleanA) {
+    counter.set(ch, (counter.get(ch) ?? 0) + 1);
   }
-  return result;
-}
 
-const reverseManual = reverseArray(original);
-function reverseInPlace<T>(arr: T[]): void {
-  let left = 0;
-  let right = arr.length - 1;
-  while (left < right) {
-    // swap
-    [arr[left], arr[right]] = [arr[right], arr[left]];
-    left++;
-    right--;
+  // 4. Decrement counts with characters from the second string.
+  for (const ch of cleanB) {
+    const cur = counter.get(ch);
+    if (!cur) return false;            // missing or too many of 'ch'
+    if (cur === 1) counter.delete(ch); // tidy up to keep map small
+    else counter.set(ch, cur - 1);
   }
-}
 
-reverseInPlace(original); // `original` is now reversed
+  // 5. If the map is empty, the two strings were perfect anagrams.
+  return counter.size === 0;
+}
+console.log(isAnagram("Listen", "Silent"));   // true
+console.log(isAnagram("Hello!", "Oleh!"));    // true
+console.log(isAnagram("Hello", "World"));     // false
