@@ -1,25 +1,33 @@
 /**
- * Returns true if `n` is a prime number.
- * Works with any non‑negative integer. For negative numbers or 0/1 it returns false.
+ * Bubble sort – O(n²) average / worst case.
+ *
+ * @param arr – array that will be sorted (mutated)
+ * @returns the same array reference, now sorted ascending
  */
-export function isPrime(n: number): boolean {
-  if (!Number.isInteger(n) || n < 2) return false;   // 0, 1, and non‑ints aren't prime
-  
-  // 2 and 3 are the only even/odd primes.
-  if (n === 2 || n === 3) return true;
+function bubbleSort<T>(arr: T[]): T[] {
+  const n = arr.length;
 
-  // Even numbers > 2 are not prime.
-  if (n % 2 === 0) return false;
+  // Outer loop: go through the array n‑1 times
+  for (let i = 0; i < n - 1; i++) {
+    // Inner loop scans up to the unsorted part
+    // We can stop early when the array is already sorted
+    let swapped = false;
 
-  // Check odd divisors up to √n.
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 3; i <= limit; i += 2) {
-    if (n % i === 0) return false;
+    for (let j = 0; j < n - 1 - i; j++) {
+      // Use > so that equal values stay in place
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swapped = true;
+      }
+    }
+
+    // No swaps means the array is sorted
+    if (!swapped) break;
   }
 
-  return true;
+  return arr;
 }
-console.log(isPrime(7));   // true
-console.log(isPrime(20));  // false
-console.log(isPrime(91));  // false (7 × 13)
-console.log(isPrime(97));  // true
+
+// Example
+const nums = [64, 34, 25, 12, 22, 11, 90];
+console.log(bubbleSort(nums)); // [11, 12, 22, 25, 34, 64, 90]
