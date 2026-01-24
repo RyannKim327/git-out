@@ -1,43 +1,53 @@
 /**
- * Shell sort – an in‑place comparison sort.
+ * Returns the area of a triangle.
  *
- * @param arr   The array to sort.
- * @param cmp   Optional comparator: (a, b) => number. Positive if a > b,
- *              negative if a < b, zero if equal. If omitted, the
- *              default uses the `<` operator.
- * @returns     The same array instance, now sorted.
+ * You can provide:
+ *   • base & height (Cartesian geometry)
+ *   • three side lengths (Heron's formula)
+ *
+ * @param base   Base of the triangle (required if you give height)
+ * @param height Height of the triangle
+ * @param a      Length of side a
+ * @param b      Length of side b
+ * @param c      Length of side c
+ * @returns      The area, or NaN if the input is invalid.
  */
-export function shellSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-  const compare = cmp ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
-
-  let n = arr.length;
-  // Start with a gap of about n/2 and halve it each loop.
-  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Insertion‑sort on elements gap apart.
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      // Shift all larger gap‑spaced elements one step forward.
-      while (j >= gap && compare(temp, arr[j - gap]) < 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
+export function triangleArea({
+  base,
+  height,
+  a,
+  b,
+  c,
+}: {
+  base?: number;
+  height?: number;
+  a?: number;
+  b?: number;
+  c?: number;
+}): number {
+  // Cartesian: base * height / 2
+  if (base !== undefined && height !== undefined) {
+    if (base <= 0 || height <= 0) return NaN;
+    return (base * height) / 2;
   }
-  return arr;
+
+  // Heron: given three sides
+  if (a !== undefined && b !== undefined && c !== undefined) {
+    if (a <= 0 || b <= 0 || c <= 0) return NaN;
+    // Check triangle inequality: the sum of any two sides must exceed the third
+    if (a + b <= c || a + c <= b || b + c <= a) return NaN;
+
+    const s = (a + b + c) / 2; // semi‑perimeter
+    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  }
+
+  // If the required parameters aren’t supplied
+  return NaN;
 }
-// sort.ts
-export { shellSort };
-// └─ ... implementation shown above
-import { shellSort } from './sort';
+// Base + height
+const area1 = triangleArea({ base: 10, height: 5 }); // 25
 
-const numbers = [23, 12, 1, 10, 7, 3, 9];
-console.log('unsorted:', numbers);
+// Three sides
+const area2 = triangleArea({ a: 3, b: 4, c: 5 }); // 6
 
-shellSort(numbers);                 // default numeric comparison
-console.log('sorted:   ', numbers);
-
-// Custom comparator (descending)
-shellSort(numbers, (a, b) => b - a);
-console.log('desc:    ', numbers);
+console.log(area1, area2);
