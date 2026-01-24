@@ -1,53 +1,45 @@
-/**
- * Returns the area of a triangle.
- *
- * You can provide:
- *   • base & height (Cartesian geometry)
- *   • three side lengths (Heron's formula)
- *
- * @param base   Base of the triangle (required if you give height)
- * @param height Height of the triangle
- * @param a      Length of side a
- * @param b      Length of side b
- * @param c      Length of side c
- * @returns      The area, or NaN if the input is invalid.
- */
-export function triangleArea({
-  base,
-  height,
-  a,
-  b,
-  c,
-}: {
-  base?: number;
-  height?: number;
-  a?: number;
-  b?: number;
-  c?: number;
-}): number {
-  // Cartesian: base * height / 2
-  if (base !== undefined && height !== undefined) {
-    if (base <= 0 || height <= 0) return NaN;
-    return (base * height) / 2;
+function secondLargest(nums: number[]): number | null {
+  if (nums.length < 2) {            // not enough numbers
+    return null;                    // or throw an error, or whatever feels right
   }
 
-  // Heron: given three sides
-  if (a !== undefined && b !== undefined && c !== undefined) {
-    if (a <= 0 || b <= 0 || c <= 0) return NaN;
-    // Check triangle inequality: the sum of any two sides must exceed the third
-    if (a + b <= c || a + c <= b || b + c <= a) return NaN;
+  let largest = Number.NEGATIVE_INFINITY;
+  let second  = Number.NEGATIVE_INFINITY;
 
-    const s = (a + b + c) / 2; // semi‑perimeter
-    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;   // old largest becomes second
+      largest = n;
+    } else if (n > second && n < largest) {   // distinct from largest
+      second = n;
+    }
   }
 
-  // If the required parameters aren’t supplied
-  return NaN;
+  // After the loop, `second` holds the second largest *distinct* value
+  return second === Number.NEGATIVE_INFINITY ? null : second;
 }
-// Base + height
-const area1 = triangleArea({ base: 10, height: 5 }); // 25
+else if (n > second) {   // allow n == largest to fill second slot
+  second = n;
+}
+function secondLargestSorted(nums: number[]): number | null {
+  if (nums.length < 2) return null;
+  const sorted = [...nums].sort((a, b) => b - a); // descending
+  // handle duplicates if you want distinct values
+  return sorted[1];
+}
+function secondLargest(nums: number[]): number | null {
+  if (nums.length < 2) return null;
 
-// Three sides
-const area2 = triangleArea({ a: 3, b: 4, c: 5 }); // 6
+  let largest = Number.NEGATIVE_INFINITY;
+  let second  = Number.NEGATIVE_INFINITY;
 
-console.log(area1, area2);
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;
+      largest = n;
+    } else if (n > second && n < largest) {
+      second = n;
+    }
+  }
+  return second === Number.NEGATIVE_INFINITY ? null : second;
+}
