@@ -1,56 +1,60 @@
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr = head;
-
-  while (curr !== null) {
-    const next = curr.next;   // remember where we’re headed
-    curr.next = prev;         // flip the link
-    prev = curr;              // move prev forward
-    curr = next;              // move curr forward
+/**
+ * Returns the max sum of any contiguous sub‑array of `nums`.
+ * If all numbers are negative, it will still return the best (least negative) value.
+ *
+ * @param nums Array of numbers
+ * @returns maximum sub‑array sum
+ */
+function maxSubArraySum(nums: number[]): number {
+  if (nums.length === 0) {
+    throw new Error('Array must contain at least one element');
   }
 
-  // At the end of the loop, `prev` is the new head
-  return prev;
-}
-// Helper to print the list
-function printList<T>(head: ListNode<T> | null): void {
-  const values = [];
-  let curr = head;
-  while (curr) {
-    values.push(curr.val);
-    curr = curr.next;
+  let bestSoFar = nums[0];      // best overall
+  let bestEndingHere = nums[0]; // best ending at current index
+
+  for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous sub‑array or start fresh at nums[i]
+    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
+
+    // Update the global best if needed
+    bestSoFar = Math.max(bestSoFar, bestEndingHere);
   }
-  console.log(values.join(' → ') + ' → null');
+
+  return bestSoFar;
 }
 
-// Build 1 → 2 → 3 → null
-const head = new ListNode(1,
-             new ListNode(2,
-               new ListNode(3)));
+/* Example usage */
+const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
+console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
+function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
+  let bestSoFar = nums[0], bestEndingHere = nums[0];
+  let start = 0, end = 0, tempStart = 0;
 
-console.log('Original list:');
-printList(head);
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] > bestEndingHere + nums[i]) {
+      bestEndingHere = nums[i];
+      tempStart = i;          // potential new start
+    } else {
+      bestEndingHere += nums[i];
+    }
 
-const reversed = reverseList(head);
+    if (bestEndingHere > bestSoFar) {
+      bestSoFar = bestEndingHere;
+      start = tempStart;      // commit new start
+      end = i;
+    }
+  }
 
-console.log('Reversed list:');
-printList(reversed);
-Original list:
-1 → 2 → 3 → null
-Reversed list:
-3 → 2 → 1 → null
-export function reverseListRec<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head || !head.next) return head;         // base case
-
-  const newHead = reverseListRec(head.next);     // reverse rest of list
-  head.next.next = head;                        // make the next node point to us
-  head.next = null;                             // sever old link
-
-  return newHead;                               // new head propagates upward
+  return {
+    maxSum: bestSoFar,
+    subArray: nums.slice(start, end + 1),
+    indices: [start, end]
+  };
 }
+console.log(maxSubArrayDetail(arr));
+// {
+//   maxSum: 6,
+//   subArray: [4, -1, 2, 1],
+//   indices: [3, 6]
+// }
