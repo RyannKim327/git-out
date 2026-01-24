@@ -1,33 +1,67 @@
-/**
- * Bubble sort – O(n²) average / worst case.
- *
- * @param arr – array that will be sorted (mutated)
- * @returns the same array reference, now sorted ascending
- */
-function bubbleSort<T>(arr: T[]): T[] {
-  const n = arr.length;
+class TreeNode<T = number> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
+}
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;
 
-  // Outer loop: go through the array n‑1 times
-  for (let i = 0; i < n - 1; i++) {
-    // Inner loop scans up to the unsorted part
-    // We can stop early when the array is already sorted
-    let swapped = false;
+  function dfs(node: TreeNode | null): number {
+    if (!node) return 0;          // height of a null subtree is 0
 
-    for (let j = 0; j < n - 1 - i; j++) {
-      // Use > so that equal values stay in place
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
-    }
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
 
-    // No swaps means the array is sorted
-    if (!swapped) break;
+    // potential diameter that passes through this node
+    const localDiameter = leftHeight + rightHeight;
+    if (localDiameter > maxDiameter) maxDiameter = localDiameter;
+
+    // height is max child height + 1 edge to the child
+    return Math.max(leftHeight, rightHeight) + 1;
   }
 
-  return arr;
+  dfs(root);
+  return maxDiameter;  // edges count
 }
+// Build a tree:
+//        1
+//       / \
+//      2   3
+//     / \     
+//    4   5  
+const root = new TreeNode(1,
+              new TreeNode(2,
+                new TreeNode(4),
+                new TreeNode(5)
+              ),
+              new TreeNode(3)
+            );
 
-// Example
-const nums = [64, 34, 25, 12, 22, 11, 90];
-console.log(bubbleSort(nums)); // [11, 12, 22, 25, 34, 64, 90]
+console.log(diameterOfBinaryTree(root)); // → 3
+function diameterIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let maxDiameter = 0;
+  const stack = [{ node: root, visited: false, height: 0 }];
+
+  while (stack.length) {
+    const frame = stack.pop()!;
+    if (!frame.node) continue;
+
+    if (frame.visited) {
+      // Children already processed – compute height & diameter
+      const leftHeight = frame.node.left?.height ?? 0;
+      const rightHeight = frame.node.right?.height ?? 0;
+
+      maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
+      frame.node.height = Math.max(leftHeight, rightHeight) + 1;
+    } else {
+      // First visit: push back as visited and push children
+      stack.push({ node: frame.node, visited: true, height: 0 });
+      if (frame.node.right) stack.push({ node: frame.node.right, visited: false, height: 0 });
+      if (frame.node.left) stack.push({ node: frame.node.left, visited: false, height: 0 });
+    }
+  }
+  return maxDiameter;
+}
