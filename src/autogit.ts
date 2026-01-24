@@ -1,39 +1,19 @@
-function factorialRecursive(n: number): number {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
+/**
+ * Minimal email validator.
+ * Covers most real‑world cases without being overly strict.
+ */
+export function isValidEmail(email: string): boolean {
+  // 1. Basic structural check: local part @ domain
+  // 2. Local part: letters, digits, dots, hyphens, underscores, and plus
+  // 3. Domain: DNS‑style labels separated by dots; ends in 2‑63‑letter TLD
+  const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,64}$/;
+  return pattern.test(email);
 }
-console.log(factorialRecursive(5)); // 120
-function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
+import validator from 'validator';
+
+function isValidFullEmail(email: string): boolean {
+  return validator.isEmail(email);  // uses RFC‑compliant logic
 }
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1n;
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
-}
-console.log(factorialBigInt(20));        // 2432902008176640000n
-console.log(factorialBigInt(100));       // 9.332621544e+157n (full bigint printed)
-const factorialMemo = (() => {
-  const cache: Record<number, number> = {0: 1, 1: 1};
-
-  const inner = (n: number): number => {
-    if (n in cache) return cache[n];
-    cache[n] = n * inner(n - 1);
-    return cache[n];
-  };
-
-  return inner;
-})();
-console.assert(factorialIterative(0) === 1);
-console.assert(factorialIterative(6) === 720);
-
-console.assert(factorialBigInt(5).toString() === '120');
-console.assert(factorialBigInt(30).toString().startsWith('265252859...'));
+console.log(isValidEmail('user@example.com'));   // true
+console.log(isValidEmail('bob.smith@sub.domain.co')); // true
+console.log(isValidEmail('invalid-email@'));    // false
