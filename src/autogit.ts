@@ -1,52 +1,98 @@
-/** Basic node structure for a binary tree. */
-class TreeNode {
-  /** Value stored in the node (use `any` if you need non‑numeric data). */
-  val: number
-  /** Left child, or null if none. */
-  left: TreeNode | null
-  /** Right child, or null if none. */
-  right: TreeNode | null
+/* ──────────────────────────────────────────────────────
+   1️⃣  A tiny TypeScript helper that wraps the Fetch API
+─────────────────────────────────────────────────────── */
 
-  constructor(val: number, left?: TreeNode | null, right?: TreeNode | null) {
-    this.val = val
-    this.left = left ?? null
-    this.right = right ?? null
-  }
+const api = {
+  /* GET a JSON‑encoded resource */
+  async get<T>(url: string): Promise<T> {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      const msg = `Fetching ${url} failed with status ${response.status}`;
+      console.warn(msg);
+      throw new Error(msg);
+    }
+
+    const json = await response.json();
+    return json as T;
+  },
+
+  /* POST data as JSON */
+  async post<T, U>(url: string, body: T): Promise<U> {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const msg = `Posting to ${url} failed with status ${response.status}`;
+      console.warn(msg);
+      throw new Error(msg);
+    }
+
+    const json = await response.json();
+    return json as U;
+  },
+};
+
+/* ──────────────────────────────────────────────────────
+   2️⃣  A React‑Native component that uses the helper
+─────────────────────────────────────────────────────── */
+
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+
+type Todo = { userId: number; id: number; title: string; completed: boolean };
+
+// Example URL: https://jsonplaceholder.typicode.com/todos/1
+const TODO_URL = 'https://jsonplaceholder.typicode.com/todos/1';
+
+export default function AsyncExample() {
+  const [todo, setTodo] = useState<Todo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    /*═════════════════════════════════════════════════
+       Run an “async task” when the component mounts
+     ════════════════════════════════════════════════*/
+    const fetchTodo = async () => {
+      try {
+        const data = await api.get<Todo>(TODO_URL);
+        setTodo(data);
+      } catch (e: any) {
+        setError(e.message ?? 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTodo();
+  }, []);
+
+  if (loading) return <ActivityIndicator style={styles.center} />;
+  if (error) return <Text style={styles.error}>❌ {error}</Text>;
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Todo #{todo?.id}</Text>
+      <Text style={styles.content}>{todo?.title}</Text>
+      <Text style={styles.status}>
+        {todo?.completed ? '✅ Completed' : '🔄 Pending'}
+      </Text>
+    </View>
+  );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Recursive depth‑first search.  Returns the longest path length.    */
-function maxDepth(root: TreeNode | null): number {
-  if (!root) return 0                    // leaf + null = depth 0
-  const leftDepth  = maxDepth(root.left) // depth goes 1, 2, … from here
-  const rightDepth = maxDepth(root.right)
-  return Math.max(leftDepth, rightDepth) + 1
-}
-
-/* ------------------------------------------------------------------ */
-/*  Iterative breadth‑first search (queue).  Same result, no stack.   */
-function maxDepthIter(root: TreeNode | null): number {
-  if (!root) return 0
-  let max = 0
-  const queue: Array<{ node: TreeNode; depth: number }> = [
-    { node: root, depth: 1 },
-  ]
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!
-    max = Math.max(max, depth)
-    if (node.left)  queue.push({ node: node.left, depth: depth + 1 })
-    if (node.right) queue.push({ node: node.right, depth: depth + 1 })
-  }
-  return max
-}
-
-/* ------------------------------------------------------------------ */
-/*  Example usage ---------------------------------------------------- */
-const root = new TreeNode(1,
-  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-  new TreeNode(3, null, new TreeNode(6))
-)
-
-console.log('Recursive depth:', maxDepth(root))      // → 3
-console.log('Iterative depth:', maxDepthIter(root)) // → 3
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },
+  center:      { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  title:   { fontSize: 24, fontWeight: 'bold', marginBottom: 12 },
+  content: { fontSize: 18, marginBottom: 8 },
+  status:  { fontSize: 16, color: '#777' },
+  error:   { color: 'red', textAlign: 'center', margin: 20 },
+});
