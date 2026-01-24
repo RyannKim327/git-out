@@ -1,24 +1,42 @@
-export function reverseString(s: string): string {
-  return s.split('').reverse().join('');
+// 1️⃣  Install the dependencies first:
+//     npm install axios @types/axios
+
+import axios, { AxiosError } from "axios";
+
+// 2️⃣  Define the shape of the data we expect back.
+interface User {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
 }
-export function reverseStringManual(s: string): string {
-  let result = '';
-  for (let i = s.length - 1; i >= 0; i--) {
-    result += s[i];
+
+// 3️⃣  Perform the request in an async function.
+async function fetchUsers(): Promise<User[]> {
+  const url = "https://jsonplaceholder.typicode.com/users";
+
+  try {
+    // 4️⃣  Make the GET request
+    const response = await axios.get<User[]>(url);
+
+    // 5️⃣  Axios automatically parses JSON, so `data` has the correct type
+    return response.data;
+  } catch (err) {
+    // 6️⃣  Gracefully handle a possible Axios error
+    if (axios.isAxiosError(err)) {
+      const error = err as AxiosError;
+      console.error(
+        `Request failed! 🙁 Status: ${error.response?.status}  Message: ${error.message}`
+      );
+    } else {
+      console.error("Unexpected error:", err);
+    }
+    return []; // Return an empty array if something goes wrong
   }
-  return result;
 }
-export function reverseStringRecursive(s: string): string {
-  if (s.length <= 1) return s;
-  return reverseStringRecursive(s.slice(1)) + s[0];
-}
-export function reverseStringLoop(s: string): string {
-  const chars = [...s];          // same as s.split('')
-  for (let i = 0, j = chars.length - 1; i < j; i++, j--) {
-    [chars[i], chars[j]] = [chars[j], chars[i]];
-  }
-  return chars.join('');
-}
-console.log(reverseString('hello'));          // 'olleh'
-console.log(reverseStringManual('world'));    // 'dlrow'
-console.log(reverseStringRecursive('TypeScript')); // 'tpircSepyT'
+
+// 7️⃣  Use the function somewhere in your app
+(async () => {
+  const users = await fetchUsers();
+  console.log("Fetched users:", users);
+})();
