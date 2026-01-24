@@ -1,69 +1,67 @@
-/**
- * Topological sort (Kahn's algorithm).
- * @param graph – adjacency list: node → list of successors.  Nodes that don’t appear as keys are treated as isolated vertices.
- * @returns an array of nodes in topological order.
- * @throws Error if the graph contains a cycle.
- */
-export function topologicalSort<T extends string | number | symbol>(
-  graph: Partial<Record<T, readonly T[]>>,
-): T[] {
-  // 1. Compute indegree of each vertex
-  const indegree = new Map<T, number>();
-  const nodes = new Set<T>();
-
-  // First pass: collect all vertices (keys + targets)
-  for (const [u, adj] of Object.entries(graph) as [T, T[]][]) {
-    nodes.add(u);
-    for (const v of adj) nodes.add(v);
-  }
-
-  // Initialise indegree map
-  for (const node of nodes) indegree.set(node, 0);
-
-  // Second pass: count incoming edges
-  for (const adj of Object.values(graph)) {
-    for (const v of adj) {
-      indegree.set(v, (indegree.get(v) ?? 0) + 1);
-    }
-  }
-
-  // 2. Initialise a queue of all nodes with indegree 0
-  const queue: T[] = [];
-  for (const [node, d] of indegree.entries()) {
-    if (d === 0) queue.push(node);
-  }
-
-  const order: T[] = [];
-
-  // 3. Process the queue
-  while (queue.length) {
-    const u = queue.shift() as T; // queue is never empty here
-    order.push(u);
-
-    const successors = graph[u] ?? [];
-    for (const v of successors) {
-      const d = indegree.get(v)! - 1;
-      indegree.set(v, d);
-      if (d === 0) queue.push(v);
-    }
-  }
-
-  // 4. If we processed all vertices, we succeeded; otherwise a cycle exists
-  if (order.length !== nodes.size) {
-    throw new Error('Graph contains a cycle – no topological ordering possible.');
-  }
-
-  return order;
+class TreeNode<T = number> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
 }
-const pkgGraph = {
-  // A package can depend on other packages (edges go “downward”)
-  'express': ['body-parser', 'morgan'],
-  'body-parser': ['raw-body'],
-  'morgan': ['stream-http'],
-  'stream-http': [],
-  'raw-body': [],
-  'lodash': [],          // independent package
-};
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;
 
-console.log(topologicalSort(pkgGraph));
-// Possible output: ['lodash', 'stream-http', 'morgan', 'raw-body', 'body-parser', 'express']
+  function dfs(node: TreeNode | null): number {
+    if (!node) return 0;          // height of a null subtree is 0
+
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
+
+    // potential diameter that passes through this node
+    const localDiameter = leftHeight + rightHeight;
+    if (localDiameter > maxDiameter) maxDiameter = localDiameter;
+
+    // height is max child height + 1 edge to the child
+    return Math.max(leftHeight, rightHeight) + 1;
+  }
+
+  dfs(root);
+  return maxDiameter;  // edges count
+}
+// Build a tree:
+//        1
+//       / \
+//      2   3
+//     / \     
+//    4   5  
+const root = new TreeNode(1,
+              new TreeNode(2,
+                new TreeNode(4),
+                new TreeNode(5)
+              ),
+              new TreeNode(3)
+            );
+
+console.log(diameterOfBinaryTree(root)); // → 3
+function diameterIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let maxDiameter = 0;
+  const stack = [{ node: root, visited: false, height: 0 }];
+
+  while (stack.length) {
+    const frame = stack.pop()!;
+    if (!frame.node) continue;
+
+    if (frame.visited) {
+      // Children already processed – compute height & diameter
+      const leftHeight = frame.node.left?.height ?? 0;
+      const rightHeight = frame.node.right?.height ?? 0;
+
+      maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
+      frame.node.height = Math.max(leftHeight, rightHeight) + 1;
+    } else {
+      // First visit: push back as visited and push children
+      stack.push({ node: frame.node, visited: true, height: 0 });
+      if (frame.node.right) stack.push({ node: frame.node.right, visited: false, height: 0 });
+      if (frame.node.left) stack.push({ node: frame.node.left, visited: false, height: 0 });
+    }
+  }
+  return maxDiameter;
+}
