@@ -1,93 +1,85 @@
 /**
- * Represents a node in the beam frontier.
- * Keeps the actual state and the path taken to reach it.
+ * `AdjacencyList` is a mapping from a node key to the keys of its neighbors.
+ * It works for directed or undirected graphs – just decide how you add edges.
  */
-export interface BeamNode<T> {
-  /** The actual state */
-  state: T;
-  /** The sequence of states that led to this node (incl. this state) */
-  path: T[];
-}
+export type AdjacencyList<K extends string | number> = Record<
+  K,
+  K[] // List of outgoing neighbor keys
+>;
+const graph: AdjacencyList<string> = {
+  A: ['B', 'C'],
+  B: ['A', 'D'],
+  C: ['A', 'D'],
+  D: ['B', 'C', 'E'],
+  E: ['D'],
+};
+class Queue<T> {
+  private data: T[] = [];
+  private head = 0;
+  private tail = 0;
 
-/**
- * Performs a beam search.
- *
- * @param startNodes   Initial frontier. Usually a single root node, but you can start with many.
- * @param getSuccessors   Function that returns the child nodes of a parent.
- * @param score          Score function – higher is better.
- * @param beamWidth      How many nodes to keep after each expansion.
- * @param maxDepth       Optional depth cutoff (in terms of edges traversed).
- * @param isGoal         Optional goal‑test predicate.
- * @returns The first goal node found (or undefined if none).
- */
-export function beamSearch<T>(
-  startNodes: T[],
-  getSuccessors: (node: T) => T[],
-  score: (node: T) => number,
-  beamWidth: number,
-  maxDepth?: number,
-  isGoal?: (node: T) => boolean
-): BeamNode<T> | undefined {
-
-  // Ensure we keep a lightweight copy for sorting.
-  let frontier: BeamNode<T> = startNodes.map(state => ({ state, path: [state] }));
-
-  for (let depth = 0; depth < (maxDepth ?? Infinity); depth++) {
-    if (frontier.length === 0) break; // nothing to expand
-
-    // Expand every node in the frontier
-    const expansions: BeamNode<T>[] = [];
-    for (const node of frontier) {
-      const succ = getSuccessors(node.state);
-      for (const child of succ) {
-        expansions.push({
-          state: child,
-          path: [...node.path, child]
-        });
-      }
-    }
-
-    // Optional goal check as soon as we generate expansions
-    if (isGoal) {
-      for (const node of expansions) {
-        if (isGoal(node.state)) return node;
-      }
-    }
-
-    // Sort by score, keep top `beamWidth`
-    expansions.sort((a, b) => score(b.state) - score(a.state)); // descending
-    frontier = expansions.slice(0, beamWidth);
+  enqueue(item: T) {
+    this.data[this.tail++] = item;
   }
 
-  return undefined; // no goal reached within limits
+  dequeue(): T | undefined {
+    if (this.isEmpty()) return undefined;
+    const item = this.data[this.head];
+    // Optional: free memory if the queue shrinks a lot
+    if (this.head % 64 === 0) this.data = this.data.slice(this.head);
+    this.head++;
+    return item;
+  }
+
+  isEmpty() {
+    return this.head >= this.tail;
+  }
 }
-// Example: find a numeric sequence that sums to 15
-type MyState = number; // current sum
+/**
+ * Breadth‑first search on an adjacency list.
+ *
+ * @param graph      the graph (adjacency list)
+ * @param start      the node to start from
+ * @param target     optional: stop when this node is reached
+ * @returns          { distance: Map<node, number>, parent: Map<node, node | null>, found?: node }
+ */
+export function bfs<K extends string | number>(
+  graph: AdjacencyList<K>,
+  start: K,
+  target?: K,
+) {
+  const distance = new Map<K, number>();
+  const parent = new Map<K, K | null>();
 
-const start = 0;
+  const queue = new Queue<K>();
+  queue.enqueue(start);
+  distance.set(start, 0);
+  parent.set(start, null);
 
-const getSucc = (sum: MyState) => {
-  return [sum + 1, sum + 2, sum + 3]; // could be any branching scheme
-};
+  while (!queue.isEmpty()) {
+    const current = queue.dequeue()!;
+    const curDist = distance.get(current)!;
 
-const score = (sum: MyState) => {
-  // The closer to 15 without overshooting, the better
-  return Math.max(0, 15 - sum);
-};
+    // Optional early‑exit
+    if (target !== undefined && current === target) {
+      return { distance, parent, found: current };
+    }
 
-const isGoal = (sum: MyState) => sum === 15;
+    for (const neighbor of graph[current] ?? []) {
+      if (!distance.has(neighbor)) {                // not visited
+        distance.set(neighbor, curDist + 1);
+        parent.set(neighbor, current);
+        queue.enqueue(neighbor);
+      }
+    }
+  }
 
-const result = beamSearch(
-  [start],
-  getSucc,
-  score,
-  beamWidth = 3,
-  maxDepth = 10,
-  isGoal
-);
-
-if (result) {
-  console.log(`Reached 15 via ${result.path.join(' -> ')}`);
-} else {
-  console.log('No path found within depth limit');
+  return { distance, parent, found: target }; // target not found
 }
+const result = bfs(graph, 'A', 'E');
+console.log('Distance map:', result.distance);
+console.log('Parent map:', result.parent);
+console.log('Target found?', result.found !== undefined);
+Distance map: Map(5) { 'A' => 0, 'B' => 1, 'C' => 1, 'D' => 2, 'E' => 3 }
+Parent map: Map(5) { 'A' => null, 'B' => 'A', 'C' => 'A', 'D' => 'B', 'E' => 'D' }
+Target found? true
