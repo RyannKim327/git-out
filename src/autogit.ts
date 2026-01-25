@@ -1,39 +1,47 @@
-function factorialRecursive(n: number): number {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
-}
-console.log(factorialRecursive(5)); // 120
-function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
-}
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1n;
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
-}
-console.log(factorialBigInt(20));        // 2432902008176640000n
-console.log(factorialBigInt(100));       // 9.332621544e+157n (full bigint printed)
-const factorialMemo = (() => {
-  const cache: Record<number, number> = {0: 1, 1: 1};
+/**
+ * Count how many times a whole word appears in a string.
+ *
+ * @param haystack  The text to search.
+ * @param needle    The word you’re looking for.
+ * @param caseSensitive  If false, treat both inputs as lower‑case.
+ * @returns Number of matches.
+ */
+function countWord(
+  haystack: string,
+  needle: string,
+  caseSensitive = false
+): number {
+  if (!needle) return 0;
 
-  const inner = (n: number): number => {
-    if (n in cache) return cache[n];
-    cache[n] = n * inner(n - 1);
-    return cache[n];
-  };
+  const flags = caseSensitive ? 'g' : 'gi';
+  // \b ensures we only match whole words
+  const re = new RegExp(`\\b${escapeRegExp(needle)}\\b`, flags);
+  const matches = haystack.match(re);
+  return matches ? matches.length : 0;
+}
 
-  return inner;
-})();
-console.assert(factorialIterative(0) === 1);
-console.assert(factorialIterative(6) === 720);
+/** Helper to escape regex meta‑characters in the needle. */
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+const text = 'The quick brown fox jumps over the lazy dog. The fox was quick.';
 
-console.assert(factorialBigInt(5).toString() === '120');
-console.assert(factorialBigInt(30).toString().startsWith('265252859...'));
+console.log(countWord(text, 'quick'));   // 2
+console.log(countWord(text, 'the'));     // 2 (case‑insensitive)
+console.log(countWord(text, 'the', true)); // 1 (case‑sensitive)
+function countWordUsingSplit(
+  text: string,
+  word: string,
+  caseSensitive = false
+): number {
+  if (!word) return 0;
+
+  const base = caseSensitive ? text : text.toLowerCase();
+  const target = caseSensitive ? word : word.toLowerCase();
+
+  // Split on whitespace and punctuation
+  const tokens = base.split(/\W+/).filter(Boolean);
+  return tokens.filter(t => t === target).length;
+}
+const re = new RegExp(escapeRegExp(substring), 'g'); // add gi for case‑insensitive
+const count = (text.match(re) || []).length;
