@@ -1,69 +1,42 @@
-/**
- * Builds the BMH bad‑character shift table.
- *
- * For every byte value (0‑255) we store how many positions the algorithm
- * can safely skip when encountering that byte while scanning from the
- * rightmost side of the pattern.
- */
-function makeShiftTable(pattern: string): Uint8Array {
-  const m = pattern.length;
-  const table = new Uint8Array(256);
-  // Default shift is pattern length (skip the whole pattern).
-  table.fill(m);
+// 1️⃣  Install the dependencies first:
+//     npm install axios @types/axios
 
-  // For every non‑last character we set shift = m - i - 1
-  for (let i = 0; i < m - 1; ++i) {
-    const c = pattern.charCodeAt(i);
-    table[c] = m - i - 1;
-  }
-  return table;
+import axios, { AxiosError } from "axios";
+
+// 2️⃣  Define the shape of the data we expect back.
+interface User {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
 }
 
-/**
- * Boyer‑Moore‑Horspool search.
- *
- * @param text    The text where we look for the pattern.
- * @param pattern The pattern to find.
- * @returns       An array of zero‑based start indices where `pattern`
- *                is found in `text`.  Empty array if no match.
- */
-export function bmhSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
+// 3️⃣  Perform the request in an async function.
+async function fetchUsers(): Promise<User[]> {
+  const url = "https://jsonplaceholder.typicode.com/users";
 
-  // Quick exits
-  if (m === 0) return [];          // Empty pattern => nothing meaningful
-  if (m > n) return [];            // Pattern longer than text => impossible
+  try {
+    // 4️⃣  Make the GET request
+    const response = await axios.get<User[]>(url);
 
-  const shiftTable = makeShiftTable(pattern);
-  const result: number[] = [];
-
-  let i = 0; // Current offset in `text` aligning the end of the pattern
-  while (i <= n - m) {
-    // Compare pattern from the end backward
-    let j = m - 1;
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j -= 1;
-    }
-
-    if (j < 0) {               // All characters matched
-      result.push(i);
-      i += 1;                  // For overlapping matches we shift by 1
+    // 5️⃣  Axios automatically parses JSON, so `data` has the correct type
+    return response.data;
+  } catch (err) {
+    // 6️⃣  Gracefully handle a possible Axios error
+    if (axios.isAxiosError(err)) {
+      const error = err as AxiosError;
+      console.error(
+        `Request failed! 🙁 Status: ${error.response?.status}  Message: ${error.message}`
+      );
     } else {
-      const shiftVal = shiftTable[text.charCodeAt(i + m - 1)];
-      i += shiftVal;
+      console.error("Unexpected error:", err);
     }
+    return []; // Return an empty array if something goes wrong
   }
-
-  return result;
 }
 
-/* ---------- Example usage --------------------------------- */
-
-const haystack = "abacababcab";
-const needle  = "cab";
-
-const indices = bmhSearch(haystack, needle);
-console.log(`Pattern found at indices: ${indices.join(", ")}`);
-// -> "Pattern found at indices: 3, 8"
-
+// 7️⃣  Use the function somewhere in your app
+(async () => {
+  const users = await fetchUsers();
+  console.log("Fetched users:", users);
+})();
