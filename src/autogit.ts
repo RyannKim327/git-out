@@ -1,60 +1,55 @@
 /**
- * Fibonacci search for a sorted array of numbers.
- * @param arr  The sorted array to search.
- * @param target The value to locate.
- * @returns The index of `target` in `arr`, or -1 if not found.
+ * Merge‑sort for array of T values.
+ *
+ * @param arr  Input array – left untouched.
+ * @param cmp  Optional comparison function. If omitted, values are compared with < >.
+ * @returns A new sorted array.
  */
-export function fibonacciSearch(arr: number[], target: number): number {
-  const n = arr.length;
-  if (n === 0) return -1;
+export function mergeSort<T>(arr: readonly T[], cmp?: (a: T, b: T) => number): T[] {
+  // Base case: arrays of size 0 or 1 are already sorted.
+  if (arr.length <= 1) return [...arr];
 
-  // 1. Build the smallest Fibonacci number >= n
-  let fibMm2 = 0;   // (m-2)th Fibonacci
-  let fibMm1 = 1;   // (m-1)th Fibonacci
-  let fibM   = fibMm2 + fibMm1; // mth Fibonacci
+  // Helper to merge two already‑sorted halves.
+  const merge = (left: T[], right: T[]): T[] => {
+    const result: T[] = [];
+    let i = 0, j = 0;
 
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM   = fibMm2 + fibMm1;
-  }
+    while (i < left.length && j < right.length) {
+      const l = left[i];
+      const r = right[j];
+      const comp = cmp
+        ? cmp(l, r)
+        : (l as any) < (r as any)
+          ? -1
+          : (l as any) > (r as any)
+          ? 1
+          : 0;
 
-  // Marks the range to be searched
-  let offset = -1; // Element before the beginning (virtual)
-
-  // 2. While there is an element to inspect
-  while (fibM > 1) {
-    // Determines the index to compare
-    const i = Math.min(offset + fibMm2, n - 1);
-
-    if (arr[i] < target) {
-      // Move three steps ahead
-      fibM   = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i;
-    } else if (arr[i] > target) {
-      // Move one step back
-      fibM   = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
-    } else {
-      return i; // Found
+      if (comp <= 0) {
+        result.push(l);
+        i++;
+      } else {
+        result.push(r);
+        j++;
+      }
     }
-  }
 
-  // We are left with a single element
-  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
-    return offset + 1;
-  }
+    // Push any remaining items from left or right.
+    return result.concat(left.slice(i), right.slice(j));
+  };
 
-  return -1; // Not found
+  // Split the array into two halves.
+  const middle = Math.floor(arr.length / 2);
+  const left = mergeSort(arr.slice(0, middle), cmp);
+  const right = mergeSort(arr.slice(middle), cmp);
+
+  // Merge back together.
+  return merge(left, right);
 }
-import { fibonacciSearch } from './fibonacci-search';
-
-const data = [3, 8, 10, 15, 20, 23, 27, 35, 41, 55, 68, 73, 82, 91, 97];
-const target = 55;
-
-const idx = fibonacciSearch(data, target);
-console.log(idx); // → 9
-console.log(fibonacciSearch(data, 22)); // → -1
+const numbers = [42, 1, 23, 4, 16];
+const sorted = mergeSort(numbers);   // [1, 4, 16, 23, 42]
+console.log(sorted);
+console.log(numbers);  // still [42, 1, 23, 4, 16]
+const words = ["banana", "Apple", "cherry"];
+const sortedWords = mergeSort(words, (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+console.log(sortedWords); // ["Apple", "banana", "cherry"]
