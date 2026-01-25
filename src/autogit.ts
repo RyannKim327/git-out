@@ -1,60 +1,49 @@
-type Node = string | number;              // whichever you prefer for vertex IDs
-type Graph = Record<Node, Node[]>;          // e.g., { 1: [2,3], 2: [4], … }
+/**
+ * Return the longest common subsequence of `a` and `b`.
+ *
+ * @param a - first string
+ * @param b - second string
+ * @returns the LCS (may be empty if nothing matches)
+ */
+export function lcs(a: string, b: string): string {
+  const n = a.length;
+  const m = b.length;
 
-const graph: Graph = {
-  a: ['b', 'c'],
-  b: ['d', 'e'],
-  c: ['f'],
-  d: [],
-  e: ['c'],
-  f: [],
-};
-function dfsRecursive(
-  graph: Graph,
-  start: Node,
-  visited = new Set<Node>(),
-  order: Node[] = []
-): Node[] {
-  visited.add(start);        // 1️⃣ mark as visited
-  order.push(start);         // 2️⃣ record the visit order
+  // dp[i][j] = length of LCS of a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array.from({ length: n + 1 }, () =>
+    new Array(m + 1).fill(0)
+  );
 
-  for (const neighbor of graph[start] ?? []) {
-    if (!visited.has(neighbor)) {
-      dfsRecursive(graph, neighbor, visited, order); // 3️⃣ recurse
+  // Fill table
+  for (let i = 1; i <= n; i++) {
+    const ca = a.charAt(i - 1);
+    for (let j = 1; j <= m; j++) {
+      if (ca === b.charAt(j - 1)) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
   }
-  return order;
-}
 
-// usage
-const visitOrder = dfsRecursive(graph, 'a');
-console.log(visitOrder); // ['a', 'b', 'd', 'e', 'c', 'f']
-function dfsIterative(graph: Graph, start: Node): Node[] {
-  const stack: Node[] = [start];
-  const visited = new Set<Node>();
-  const order: Node[] = [];
+  // Reconstruct the LCS from the table
+  let i = n, j = m;
+  const chars: string[] = [];
 
-  while (stack.length) {
-    const node = stack.pop()!; // pop the top
-    if (visited.has(node)) continue; // skip if we've already seen it
-
-    visited.add(node);   // 1️⃣ mark
-    order.push(node);    // 2️⃣ record
-
-    // push neighbors in reverse order so that the first neighbor
-    // is processed first (mimics recursive order)
-    const neighbors = graph[node] ?? [];
-    for (let i = neighbors.length - 1; i >= 0; i--) {
-      const neighbor = neighbors[i];
-      if (!visited.has(neighbor)) stack.push(neighbor);
+  while (i > 0 && j > 0) {
+    if (a.charAt(i - 1) === b.charAt(j - 1)) {
+      chars.push(a.charAt(i - 1)); // or b.charAt(j - 1)
+      i--; j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;                        // move up
+    } else {
+      j--;                        // move left
     }
   }
-  return order;
-}
 
-// usage
-const orderIter = dfsIterative(graph, 'a');
-console.log(orderIter); // ['a', 'b', 'd', 'e', 'c', 'f']
-// inside the while loop
-const prev = stack[stack.length - 1]; // last node that will lead to `node`
-order.push([prev, node] as [Node, Node]);
+  return chars.reverse().join('');
+}
+const s1 = 'ABCBDAB';
+const s2 = 'BDCABC';
+
+console.log(lcs(s1, s2)); // -> "BCAB"
