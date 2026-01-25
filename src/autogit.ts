@@ -1,61 +1,52 @@
-// A generic graph node – you can replace this with whatever you’re actually
-// storing.  Here we just keep a value and an array of child nodes.
-export interface TreeNode<T> {
-  value: T;
-  children: TreeNode<T>[];
+/** Basic node structure for a binary tree. */
+class TreeNode {
+  /** Value stored in the node (use `any` if you need non‑numeric data). */
+  val: number
+  /** Left child, or null if none. */
+  left: TreeNode | null
+  /** Right child, or null if none. */
+  right: TreeNode | null
+
+  constructor(val: number, left?: TreeNode | null, right?: TreeNode | null) {
+    this.val = val
+    this.left = left ?? null
+    this.right = right ?? null
+  }
 }
-/**
- * Performs a breadth‑first search up to a depth limit.
- *
- * @param root The starting node.
- * @param maxDepth The maximum path length to explore (0 = only the root).
- * @param filter A callback that decides whether a node should be “accepted”.
- *               It receives the node and its depth (root = 0).
- * @returns An array of all nodes that satisfy the filter within the depth bound.
- */
-export function breadthLimitedSearch<T>(
-  root: TreeNode<T>,
-  maxDepth: number,
-  filter: (node: TreeNode<T>, depth: number) => boolean
-): TreeNode<T>[] {
-  const result: TreeNode<T>[] = [];
-  const queue: Array<{ node: TreeNode<T>; depth: number }> = [{ node: root, depth: 0 }];
+
+/* ------------------------------------------------------------------ */
+/*  Recursive depth‑first search.  Returns the longest path length.    */
+function maxDepth(root: TreeNode | null): number {
+  if (!root) return 0                    // leaf + null = depth 0
+  const leftDepth  = maxDepth(root.left) // depth goes 1, 2, … from here
+  const rightDepth = maxDepth(root.right)
+  return Math.max(leftDepth, rightDepth) + 1
+}
+
+/* ------------------------------------------------------------------ */
+/*  Iterative breadth‑first search (queue).  Same result, no stack.   */
+function maxDepthIter(root: TreeNode | null): number {
+  if (!root) return 0
+  let max = 0
+  const queue: Array<{ node: TreeNode; depth: number }> = [
+    { node: root, depth: 1 },
+  ]
 
   while (queue.length) {
-    const { node, depth } = queue.shift()!;           // FIFO
-    if (depth > maxDepth) continue;                  // depth guard
-
-    if (filter(node, depth)) result.push(node);
-
-    // Push children *after* checking depth to avoid pushing out‑of‑range nodes
-    if (depth < maxDepth) {
-      for (const child of node.children) {
-        queue.push({ node: child, depth: depth + 1 });
-      }
-    }
+    const { node, depth } = queue.shift()!
+    max = Math.max(max, depth)
+    if (node.left)  queue.push({ node: node.left, depth: depth + 1 })
+    if (node.right) queue.push({ node: node.right, depth: depth + 1 })
   }
-
-  return result;
+  return max
 }
-// Simple test tree
-const tree: TreeNode<string> = {
-  value: 'root',
-  children: [
-    { value: 'A', children: [] },
-    { value: 'B', children: [
-        { value: 'B1', children: [] },
-        { value: 'B2', children: [] },
-      ]
-    },
-    { value: 'C', children: [] }
-  ]
-};
 
-// Want all nodes that start with "B" and only dive 2 levels deep
-const matches = breadthLimitedSearch(
-  tree,
-  2,
-  (node, depth) => node.value.startsWith('B')
-);
+/* ------------------------------------------------------------------ */
+/*  Example usage ---------------------------------------------------- */
+const root = new TreeNode(1,
+  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
+  new TreeNode(3, null, new TreeNode(6))
+)
 
-console.log(matches.map(n => n.value)); // ['B', 'B1', 'B2']
+console.log('Recursive depth:', maxDepth(root))      // → 3
+console.log('Iterative depth:', maxDepthIter(root)) // → 3
