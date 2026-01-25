@@ -1,64 +1,44 @@
-// ────────────────────────
-// Node definition
-// ────────────────────────
-class Node<T> {
-  value: T;
-  next: Node<T> | null = null;
+// src/apiFetch.ts
+export interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+}
 
-  constructor(value: T) {
-    this.value = value;
+/**
+ * Pulls a single todo item from the JSON‑Placeholder API.
+ *
+ * @param todoId  the numeric ID of the todo to fetch
+ * @returns          a promise that resolves to the Todo object
+ */
+export async function getTodoById(todoId: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${todoId}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { "Accept": "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`API responded with ${response.status} ${response.statusText}`);
+  }
+
+  // `response.json()` already resolves to a `Promise<any>`, so we cast
+  // to `Todo` to satisfy TypeScript.
+  const data = (await response.json()) as Todo;
+  return data;
+}
+// src/start.ts
+import { getTodoById, Todo } from "./apiFetch";
+
+async function main(): Promise<void> {
+  try {
+    const todo: Todo = await getTodoById(1);
+    console.log("Fetched todo:", todo);
+  } catch (err) {
+    console.error("Failed to fetch todo:", err);
   }
 }
 
-// ────────────────────────
-// LinkedList implementation
-// ────────────────────────
-class LinkedList<T> {
-  head: Node<T> | null = null;
-  tail: Node<T> | null = null;
-
-  // Append new value to list
-  push(value: T): void {
-    const newNode = new Node(value);
-    if (!this.head) {
-      this.head = this.tail = newNode;
-      return;
-    }
-    this.tail!.next = newNode;  // non‑null assertion is safe here
-    this.tail = newNode;
-  }
-
-  // ────── length (iterative)
-  // Return number of nodes
-  length(): number {
-    let count = 0;
-    let current = this.head;
-    while (current !== null) {
-      count++;
-      current = current.next;
-    }
-    return count;
-  }
-
-  // ────── length (recursive helper)
-  private _recursiveLength(node: Node<T> | null): number {
-    if (!node) return 0;
-    return 1 + this._recursiveLength(node.next);
-  }
-
-  // Public wrapper for the recursive version
-  recursiveLength(): number {
-    return this._recursiveLength(this.head);
-  }
-}
-
-// ────────────────────────
-// Demo
-// ────────────────────────
-const list = new LinkedList<number>();
-list.push(1);
-list.push(2);
-list.push(3);
-
-console.log('Iterative length:', list.length());          // 3
-console.log('Recursive length:', list.recursiveLength()); // 3
+main().catch((outerErr) => console.error("Unhandled error:", outerErr));
