@@ -1,75 +1,104 @@
-// ──────────────────────────────────────────────────────────────
-// 1.  Types for the graph
-// ──────────────────────────────────────────────────────────────
-interface Node<T = void> {
-  value: T;
-  neighbours: Node<T>[];
-}
-
-// A small helper to create nodes
-function createNode<T>(value: T): Node<T> {
-  return { value, neighbours: [] };
-}
-
-function addEdge<T>(from: Node<T>, to: Node<T>): void {
-  from.neighbours.push(to);
-  to.neighbours.push(from);    // undirected; drop this line for directed graphs
-}
-
-// ──────────────────────────────────────────────────────────────
-// 2.  Depth‑limited search (recursive DFS style)
-// ──────────────────────────────────────────────────────────────
+// ------------------------------------------------------------------
+//  Supporting types
+// ------------------------------------------------------------------
 /**
- * Searches `startNode` for a node whose value satisfies `goalPredicate`,
- * but stops expanding any node that appears deeper than `limit` levels.
- *
- * @param start      the node to start from
- * @param goal       a predicate; if it returns true the node is considered the goal
- * @param limit      max depth to explore
- * @param visited    internal, tracks visited nodes
- * @param depth      internal, current depth
- * @returns          the goal node if found, or null
+ * The shape of a graph node.  The `id` is used for a visited set.
+ * `getNeighbours` must return raw references that `graph.getNode(id)` can resolve.
  */
-function depthLimitedSearch<T>(
-  start: Node<T>,
-  goal: (value: T) => boolean,
-  limit: number,
-  visited = new Set<Node<T>>(),
-  depth = 0
-): Node<T> | null {
-  if (depth > limit) return null;               // over the limit
+interface Node {
+  readonly id: string;
+  getNeighbours(): Iterable<string>;
+}
 
-  visited.add(start);
-  if (goal(start.value)) return start;          // goal reached
+/**
+ * A tiny graph interface that lets us look up nodes by id.
+ * (You can replace this with your own representation; only the method
+ * `getNode` is required by the algorithm.)
+ */
+interface Graph {
+  /** Return the node instance for the supplied id or `undefined`. */
+  getNode(id: string): Node | undefined;
+}
 
-  for (const neighbour of start.neighbours) {
-    if (!visited.has(neighbour)) {
-      const result = depthLimitedSearch(neighbour, goal, limit, visited, depth + 1);
-      if (result !== null) return result;      // propagate success upwards
+/**
+ * A function tested against a node, returning true when the node is
+ * the thing you’re looking for.
+ */
+type Predicate = (node: Node) => boolean;
+
+// ------------------------------------------------------------------
+//  Depth‑limited DFS (iterative)
+// ------------------------------------------------------------------
+/**
+ * Iterative depth‑limited depth‑first search.
+ *
+ * @param startId   id of the node where the search begins
+ * @param maxDepth  stop expanding after this many edges from `startId`
+ * @param graph     the graph interface
+ * @param satisfies a predicate that tells when a node is a solution
+ *
+ * @returns the first node that satisfies `satisfies`, or undefined
+ */
+export function depthLimitedSearch(
+  startId: string,
+  maxDepth: number,
+  graph: Graph,
+  satisfies: Predicate
+): Node | undefined {
+
+  // Guard against an empty or overly deep request
+  if (maxDepth < 0) return undefined;
+
+  // A stack holds tuples of (node, currentDepth).
+  const stack: Array<[Node, number]> = [];
+  const visited = new Set<string>();
+
+  const startNode = graph.getNode(startId);
+  if (!startNode) return undefined;   // start id is missing
+
+  stack.push([startNode, 0]);
+
+  while (stack.length) {
+    const [node, depth] = stack.pop()!;   // non‑empty promise
+
+    // Avoid revisiting the same node (important for cycles)
+    if (visited.has(node.id)) continue;
+    visited.add(node.id);
+
+    if (satisfies(node)) return node;    // found a match
+
+    if (depth === maxDepth) continue;    // reached depth limit
+
+    // Push neighbours onto the stack – order determines DFS order.
+    for (const neighId of node.getNeighbours()) {
+      const neighbour = graph.getNode(neighId);
+      if (neighbour) stack.push([neighbour, depth + 1]);
     }
   }
 
-  return null;                                  // no goal found within this branch
+  return undefined;   // nothing matched within the depth budget
+}
+// A simple example graph implementation
+class SimpleNode implements Node {
+  constructor(public readonly id: string, private readonly neighIds: string[]) {}
+  getNeighbours() { return this.neighIds; }
+}
+class SimpleGraph implements Graph {
+  private readonly nodes = new Map<string, Node>();
+  addNode(node: Node) { this.nodes.set(node.id, node); }
+  getNode(id: string) { return this.nodes.get(id); }
 }
 
-// ──────────────────────────────────────────────────────────────
-// 3.  Example usage
-// ──────────────────────────────────────────────────────────────
-/*
 // Build a tiny graph
-const a = createNode('A');
-const b = createNode('B');
-const c = createNode('C');
-const d = createNode('D');
-const e = createNode('E');
+const g = new SimpleGraph();
+g.addNode(new SimpleNode('A', ['B', 'C']));
+g.addNode(new SimpleNode('B', ['D']));
+g.addNode(new SimpleNode('C', []));
+g.addNode(new SimpleNode('D', []));
 
-addEdge(a, b);
-addEdge(a, c);
-addEdge(b, d);
-addEdge(c, e);
+// Define a search goal
+const goal = (n: Node) => n.id === 'D';
 
-// Find node 'E' but stop after exploring 2 edges from 'A'
-const found = depthLimitedSearch(a, val => val === 'E', 2);
-
-console.log(found ? `Found ${found.value}` : 'Not found within depth limit');
-*/
+// Run depth‑limited DFS limited to 2 edges from 'A'
+const result = depthLimitedSearch('A', 2, g, goal);
+console.log(result?.id); // → 'D'
