@@ -1,50 +1,65 @@
-interface ListNode<T = any> {
-  val: T;
-  next: ListNode<T> | null;
+// ---------------------------------------------------------
+//  FunRandomCron.ts
+//  A tiny demo that shows how to:
+//   • import node‑cron with types
+//   • schedule a repeating job
+//   • cancel a job on demand
+//   • use a more powerful CRON expression
+//   • log the next run time every time it fires
+// ---------------------------------------------------------
+
+import cron, { ScheduledTask } from 'node‑cron';
+import { format } from 'date‑fns';
+
+// This job runs every 10 seconds—just to keep the console fire‑breathing.
+// In a real app you could do backups, recompute stats, notify users, etc.
+const repeatEveryTenSeconds: ScheduledTask = cron.schedule(
+  '*/10 * * * * *',                // <seconds> <minutes> <hours> <day> <month> <dow>
+  () => {
+    const now = new Date();
+    console.log(`[${format(now, 'HH:mm:ss.SSS')}] 10‑second heartbeat!`);
+    // Do your real work here.
+  },
+  { scheduled: true }              // starts immediately
+);
+
+// Also throw in a “Monday at 04:35” job just to show another flavour.
+const mondayMorning: ScheduledTask = cron.schedule(
+  '35 4 * * 1',                    // minute hour day-of-month month day-of-week
+  () => {
+    console.log(`🎉 Monday Special – It’s 04:35!`);
+  },
+  { scheduled: true, timezone: 'America/New_York' } // time‑zone support
+);
+
+// Show next run times.  Handy for debugging.
+function displayNextRun(job: ScheduledTask, name: string) {
+  console.log(` → ${name} next run at ${format(job.nextDates().toDate(), 'yyyy‑MM‑dd HH:mm:ss')}`);
 }
-class ListNode<T = any> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-function nthFromEndNaive<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let size = 0;
-  for (let cur = head; cur; cur = cur.next) size++;
+displayNextRun(repeatEveryTenSeconds, 'Heartbeat');
+displayNextRun(mondayMorning, 'Mon‑4:35 AM');
 
-  if (n > size) return null;          // not enough elements
-  let target = size - n;              // 0‑based index from start
-  let cur = head;
-  for (let i = 0; i < target; i++) cur = cur!.next;
+// ---------------------------------------------------------
+//  Graceful shutdown inside this demo
+// ---------------------------------------------------------
+const shutdown = () => {
+  console.log('\n→ Shutting down cron jobs gracefully...');
+  repeatEveryTenSeconds.stop();
+  mondayMorning.stop();
+  console.log('→ All job timers cleared. Bye!');
+  process.exit(0);
+};
 
-  return cur;
-}
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let fast = head;
-  // Move fast n steps forward
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;   // n is larger than list length
-    fast = fast.next;
-  }
+// In a real app you’d hook this into SIGINT, SIGTERM, etc.
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+# 1️⃣ Install the runtime dependencies
+npm install node-cron date-fns
 
-  let slow = head!;          // head is guaranteed non‑null now
-  while (fast) {
-    fast = fast.next!;
-    slow = slow.next!;
-  }
+# 2️⃣ Add TypeScript types, optional but handy
+npm install -D typescript @types/node-cron @types/date-fns
 
-  return slow;
-}
-function buildList(nums: number[]) {
-  let dummy = new ListNode(0);
-  let cur = dummy;
-  for (const v of nums) {
-    cur.next = new ListNode(v);
-    cur = cur.next;
-  }
-  return dummy.next;
-}
-
-const list = buildList([1, 2, 3, 4, 5]);
-
-console.log(nthFromEnd(list, 1)!.val); // 5
-console.log(nthFromEnd(list, 3)!.val); // 3
-console.log(nthFromEnd(list, 5)!.val); // 1
-console.log(nthFromEnd(list, 6));      // null
+# 3️⃣ Compile + run
+npx tsc FunRandomCron.ts
+node FunRandomCron.js
+npx ts-node FunRandomCron.ts
