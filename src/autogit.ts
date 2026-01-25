@@ -1,21 +1,50 @@
-function countChar(str: string, ch: string): number {
-  let count = 0;
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === ch) count++;
+/**
+ * Interpolation search – O(log log n) in the ideal case,
+ * O(n) in the worst case (if the array is highly non‑uniform).
+ *
+ * @param arr   An array that is already sorted in ascending order.
+ * @param key   The value to look for.
+ * @returns     The index of `key` in `arr` or -1 if not present.
+ */
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  // Guard against empty array
+  if (arr.length === 0) return -1;
+
+  let low = 0;
+  let high = arr.length - 1;
+
+  // Interpolation formula requires a strictly increasing array
+  // and a finite difference between the ends.
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Avoid division by zero when arr[low] == arr[high].
+    if (arr[low] === arr[high]) return arr[low] === key ? low : -1;
+
+    // Estimate the position of the key inside the current bounds.
+    const pos =
+      low +
+      Math.floor(
+        ((high - low) * (key - arr[low])) / (arr[high] - arr[low]),
+      );
+
+    const value = arr[pos];
+
+    if (value === key) return pos;
+    if (value < key) {
+      low = pos + 1;          // Look in the right sub‑array
+    } else {
+      high = pos - 1;         // Look in the left sub‑array
+    }
   }
-  return count;
+
+  return -1; // Not found
 }
-const count = str.split(ch).length - 1;
-function countCharWithRegex(str: string, ch: string): number {
-  // Escape regex metacharacters in case ch is not a plain letter
-  const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp(escaped, 'g');
-  const matches = str.match(re);
-  return matches ? matches.length : 0;
+const nums = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91, 105];
+console.log(interpolationSearch(nums, 38)); // ➜ 6
+console.log(interpolationSearch(nums, 4));  // ➜ -1
+export function interpolationSearchBy<T, U extends number>(
+  arr: readonly T[],
+  key: U,
+  getKey: (item: T) => U,
+): number {
+  // Same logic, but cast / convert using getKey(item)
 }
-const count = [...str].reduce((acc, c) => acc + (c === ch ? 1 : 0), 0);
-const count = [...str.toUpperCase()].filter(c => c === ch.toUpperCase()).length;
-const test = "hello world, hello TypeScript!";
-console.log(countChar(test, "l")); // 8
-console.log(countChar(test, "H")); // 1
-console.log(countChar(test, "o")); // 3
