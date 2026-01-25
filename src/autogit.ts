@@ -1,52 +1,28 @@
-/** Basic node structure for a binary tree. */
-class TreeNode {
-  /** Value stored in the node (use `any` if you need non‑numeric data). */
-  val: number
-  /** Left child, or null if none. */
-  left: TreeNode | null
-  /** Right child, or null if none. */
-  right: TreeNode | null
+/**
+ * Return true if `s` is a palindrome.
+ *   - Works for regular strings and Unicode strings
+ *   - Uses a two‑pointer scan; no extra arrays/strings are allocated
+ *   - Time:  O(n)
+ *   - Extra space: O(1)
+ */
+function isPalindrome(s: string): boolean {
+    let left  = 0;
+    let right = s.length - 1;
 
-  constructor(val: number, left?: TreeNode | null, right?: TreeNode | null) {
-    this.val = val
-    this.left = left ?? null
-    this.right = right ?? null
-  }
+    while (left < right) {
+        // Skip non‑alphanumeric characters & ignore case if you want
+        // if (!/[a-z0-9]/i.test(s.charAt(left))) { left++; continue; }
+        // if (!/[a-z0-9]/i.test(s.charAt(right))) { right--; continue; }
+
+        if (s[left] !== s[right]) {
+            return false;
+        }
+        left++;
+        right--;
+    }
+    return true;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Recursive depth‑first search.  Returns the longest path length.    */
-function maxDepth(root: TreeNode | null): number {
-  if (!root) return 0                    // leaf + null = depth 0
-  const leftDepth  = maxDepth(root.left) // depth goes 1, 2, … from here
-  const rightDepth = maxDepth(root.right)
-  return Math.max(leftDepth, rightDepth) + 1
-}
-
-/* ------------------------------------------------------------------ */
-/*  Iterative breadth‑first search (queue).  Same result, no stack.   */
-function maxDepthIter(root: TreeNode | null): number {
-  if (!root) return 0
-  let max = 0
-  const queue: Array<{ node: TreeNode; depth: number }> = [
-    { node: root, depth: 1 },
-  ]
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!
-    max = Math.max(max, depth)
-    if (node.left)  queue.push({ node: node.left, depth: depth + 1 })
-    if (node.right) queue.push({ node: node.right, depth: depth + 1 })
-  }
-  return max
-}
-
-/* ------------------------------------------------------------------ */
-/*  Example usage ---------------------------------------------------- */
-const root = new TreeNode(1,
-  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-  new TreeNode(3, null, new TreeNode(6))
-)
-
-console.log('Recursive depth:', maxDepth(root))      // → 3
-console.log('Iterative depth:', maxDepthIter(root)) // → 3
+console.log(isPalindrome("racecar"));        // true
+console.log(isPalindrome("hello"));          // false
+console.log(isPalindrome("A man a plan a canal Panama".replace(/\s+/g, '').toLowerCase()));
+// true, after normalizing whitespace and case
