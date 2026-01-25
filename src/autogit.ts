@@ -1,53 +1,48 @@
 /**
- * Returns the area of a triangle.
- *
- * You can provide:
- *   • base & height (Cartesian geometry)
- *   • three side lengths (Heron's formula)
- *
- * @param base   Base of the triangle (required if you give height)
- * @param height Height of the triangle
- * @param a      Length of side a
- * @param b      Length of side b
- * @param c      Length of side c
- * @returns      The area, or NaN if the input is invalid.
+ * Randomised quick‑sort for numbers (works for any type T that can be compared)
+ * with an optional compare function.
  */
-export function triangleArea({
-  base,
-  height,
-  a,
-  b,
-  c,
-}: {
-  base?: number;
-  height?: number;
-  a?: number;
-  b?: number;
-  c?: number;
-}): number {
-  // Cartesian: base * height / 2
-  if (base !== undefined && height !== undefined) {
-    if (base <= 0 || height <= 0) return NaN;
-    return (base * height) / 2;
+function randomQuickSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
+
+  function sort(start: number, end: number): void {
+    if (end - start <= 1) return;              // 0 or 1 element
+
+    // Pick a random pivot index in [start, end-1]
+    const pivotIndex = start + Math.floor(Math.random() * (end - start));
+    const pivotValue = arr[pivotIndex];
+
+    // Move pivot to the end for convenience
+    [arr[pivotIndex], arr[end - 1]] = [arr[end - 1], arr[pivotIndex]];
+
+    // Partition: all < pivot on the left, others on the right
+    let storeIndex = start;
+    for (let i = start; i < end - 1; i++) {
+      if (cmp(arr[i], pivotValue) < 0) {
+        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
+        storeIndex++;
+      }
+    }
+
+    // Place pivot in its final position
+    [arr[storeIndex], arr[end - 1]] = [arr[end - 1], arr[storeIndex]];
+
+    // Recurse on partitions
+    sort(start, storeIndex);
+    sort(storeIndex + 1, end);
   }
 
-  // Heron: given three sides
-  if (a !== undefined && b !== undefined && c !== undefined) {
-    if (a <= 0 || b <= 0 || c <= 0) return NaN;
-    // Check triangle inequality: the sum of any two sides must exceed the third
-    if (a + b <= c || a + c <= b || b + c <= a) return NaN;
-
-    const s = (a + b + c) / 2; // semi‑perimeter
-    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
-  }
-
-  // If the required parameters aren’t supplied
-  return NaN;
+  // Make a copy to keep input immutable
+  const copy = arr.slice();
+  sort(0, copy.length);
+  return copy;
 }
-// Base + height
-const area1 = triangleArea({ base: 10, height: 5 }); // 25
 
-// Three sides
-const area2 = triangleArea({ a: 3, b: 4, c: 5 }); // 6
-
-console.log(area1, area2);
+/* ----- Usage example ----- */
+const unsorted = [7, 2, 9, 4, 3, 1, 5, 6];
+const sorted = randomQuickSort(unsorted);
+console.log('original:', unsorted);
+console.log('sorted  :', sorted);
