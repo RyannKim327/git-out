@@ -1,44 +1,42 @@
-// src/apiFetch.ts
-export interface Todo {
-  userId: number;
+// 1️⃣  Install the dependencies first:
+//     npm install axios @types/axios
+
+import axios, { AxiosError } from "axios";
+
+// 2️⃣  Define the shape of the data we expect back.
+interface User {
   id: number;
-  title: string;
-  completed: boolean;
+  name: string;
+  username: string;
+  email: string;
 }
 
-/**
- * Pulls a single todo item from the JSON‑Placeholder API.
- *
- * @param todoId  the numeric ID of the todo to fetch
- * @returns          a promise that resolves to the Todo object
- */
-export async function getTodoById(todoId: number): Promise<Todo> {
-  const url = `https://jsonplaceholder.typicode.com/todos/${todoId}`;
+// 3️⃣  Perform the request in an async function.
+async function fetchUsers(): Promise<User[]> {
+  const url = "https://jsonplaceholder.typicode.com/users";
 
-  const response = await fetch(url, {
-    method: "GET",
-    headers: { "Accept": "application/json" },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API responded with ${response.status} ${response.statusText}`);
-  }
-
-  // `response.json()` already resolves to a `Promise<any>`, so we cast
-  // to `Todo` to satisfy TypeScript.
-  const data = (await response.json()) as Todo;
-  return data;
-}
-// src/start.ts
-import { getTodoById, Todo } from "./apiFetch";
-
-async function main(): Promise<void> {
   try {
-    const todo: Todo = await getTodoById(1);
-    console.log("Fetched todo:", todo);
+    // 4️⃣  Make the GET request
+    const response = await axios.get<User[]>(url);
+
+    // 5️⃣  Axios automatically parses JSON, so `data` has the correct type
+    return response.data;
   } catch (err) {
-    console.error("Failed to fetch todo:", err);
+    // 6️⃣  Gracefully handle a possible Axios error
+    if (axios.isAxiosError(err)) {
+      const error = err as AxiosError;
+      console.error(
+        `Request failed! 🙁 Status: ${error.response?.status}  Message: ${error.message}`
+      );
+    } else {
+      console.error("Unexpected error:", err);
+    }
+    return []; // Return an empty array if something goes wrong
   }
 }
 
-main().catch((outerErr) => console.error("Unhandled error:", outerErr));
+// 7️⃣  Use the function somewhere in your app
+(async () => {
+  const users = await fetchUsers();
+  console.log("Fetched users:", users);
+})();
