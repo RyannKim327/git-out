@@ -1,54 +1,75 @@
-/**
- * Merge two sorted slices of `arr` into a temporary array.
- *
- * @param arr  source array
- * @param tmp  temporary array of the same length
- * @param left  start index of the first slice
- * @param mid   end index (exclusive) of the first slice and start of the second
- * @param right end index (exclusive) of the second slice
- */
-function merge(
-  arr: number[],
-  tmp: number[],
-  left: number,
-  mid: number,
-  right: number
-): void {
-  let i = left;   // index in first slice
-  let j = mid;    // index in second slice
-  let k = left;   // index in tmp
-
-  // Copy the relevant segment to tmp
-  for (let idx = left; idx < right; idx++) tmp[idx] = arr[idx];
-
-  // Merge back into arr
-  while (i < mid && j < right) {
-    arr[k++] = tmp[i] <= tmp[j] ? tmp[i++] : tmp[j++];
-  }
-  while (i < mid) arr[k++] = tmp[i++];
-  while (j < right) arr[k++] = tmp[j++];
+// ──────────────────────────────────────────────────────────────
+// 1.  Types for the graph
+// ──────────────────────────────────────────────────────────────
+interface Node<T = void> {
+  value: T;
+  neighbours: Node<T>[];
 }
 
+// A small helper to create nodes
+function createNode<T>(value: T): Node<T> {
+  return { value, neighbours: [] };
+}
+
+function addEdge<T>(from: Node<T>, to: Node<T>): void {
+  from.neighbours.push(to);
+  to.neighbours.push(from);    // undirected; drop this line for directed graphs
+}
+
+// ──────────────────────────────────────────────────────────────
+// 2.  Depth‑limited search (recursive DFS style)
+// ──────────────────────────────────────────────────────────────
 /**
- * Iterative merge sort.
+ * Searches `startNode` for a node whose value satisfies `goalPredicate`,
+ * but stops expanding any node that appears deeper than `limit` levels.
  *
- * @param arr  array to sort in‑place
+ * @param start      the node to start from
+ * @param goal       a predicate; if it returns true the node is considered the goal
+ * @param limit      max depth to explore
+ * @param visited    internal, tracks visited nodes
+ * @param depth      internal, current depth
+ * @returns          the goal node if found, or null
  */
-function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  if (n < 2) return; // already sorted
+function depthLimitedSearch<T>(
+  start: Node<T>,
+  goal: (value: T) => boolean,
+  limit: number,
+  visited = new Set<Node<T>>(),
+  depth = 0
+): Node<T> | null {
+  if (depth > limit) return null;               // over the limit
 
-  const tmp = new Array<number>(n);
+  visited.add(start);
+  if (goal(start.value)) return start;          // goal reached
 
-  // Run size = 1, 2, 4, 8, ...
-  for (let run = 1; run < n; run *= 2) {
-    for (let left = 0; left < n; left += 2 * run) {
-      const mid = Math.min(left + run, n);
-      const right = Math.min(left + 2 * run, n);
-      if (mid < right) merge(arr, tmp, left, mid, right);
+  for (const neighbour of start.neighbours) {
+    if (!visited.has(neighbour)) {
+      const result = depthLimitedSearch(neighbour, goal, limit, visited, depth + 1);
+      if (result !== null) return result;      // propagate success upwards
     }
   }
+
+  return null;                                  // no goal found within this branch
 }
-const nums = [34, 7, 23, 32, 5, 62];
-mergeSortIterative(nums);
-console.log(nums); // [5, 7, 23, 32, 34, 62]
+
+// ──────────────────────────────────────────────────────────────
+// 3.  Example usage
+// ──────────────────────────────────────────────────────────────
+/*
+// Build a tiny graph
+const a = createNode('A');
+const b = createNode('B');
+const c = createNode('C');
+const d = createNode('D');
+const e = createNode('E');
+
+addEdge(a, b);
+addEdge(a, c);
+addEdge(b, d);
+addEdge(c, e);
+
+// Find node 'E' but stop after exploring 2 edges from 'A'
+const found = depthLimitedSearch(a, val => val === 'E', 2);
+
+console.log(found ? `Found ${found.value}` : 'Not found within depth limit');
+*/
