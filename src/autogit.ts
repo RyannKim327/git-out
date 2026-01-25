@@ -1,67 +1,40 @@
-class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+export interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;
+export function countLeaves<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                     // empty tree
 
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;          // height of a null subtree is 0
+  // If the node has no children, it’s a leaf
+  if (!root.left && !root.right) return 1;
 
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
-
-    // potential diameter that passes through this node
-    const localDiameter = leftHeight + rightHeight;
-    if (localDiameter > maxDiameter) maxDiameter = localDiameter;
-
-    // height is max child height + 1 edge to the child
-    return Math.max(leftHeight, rightHeight) + 1;
-  }
-
-  dfs(root);
-  return maxDiameter;  // edges count
+  // Otherwise recurse on children and sum the results
+  return countLeaves(root.left) + countLeaves(root.right);
 }
-// Build a tree:
-//        1
-//       / \
-//      2   3
-//     / \     
-//    4   5  
-const root = new TreeNode(1,
-              new TreeNode(2,
-                new TreeNode(4),
-                new TreeNode(5)
-              ),
-              new TreeNode(3)
-            );
-
-console.log(diameterOfBinaryTree(root)); // → 3
-function diameterIterative(root: TreeNode | null): number {
+export function countLeavesIter<T>(root?: TreeNode<T>): number {
   if (!root) return 0;
-  let maxDiameter = 0;
-  const stack = [{ node: root, visited: false, height: 0 }];
+
+  let stack: TreeNode<T>[] = [root];
+  let leaves = 0;
 
   while (stack.length) {
-    const frame = stack.pop()!;
-    if (!frame.node) continue;
-
-    if (frame.visited) {
-      // Children already processed – compute height & diameter
-      const leftHeight = frame.node.left?.height ?? 0;
-      const rightHeight = frame.node.right?.height ?? 0;
-
-      maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
-      frame.node.height = Math.max(leftHeight, rightHeight) + 1;
+    const node = stack.pop()!;
+    if (!node.left && !node.right) {
+      leaves++;                // it’s a leaf
     } else {
-      // First visit: push back as visited and push children
-      stack.push({ node: frame.node, visited: true, height: 0 });
-      if (frame.node.right) stack.push({ node: frame.node.right, visited: false, height: 0 });
-      if (frame.node.left) stack.push({ node: frame.node.left, visited: false, height: 0 });
+      if (node.left) stack.push(node.left);
+      if (node.right) stack.push(node.right);
     }
   }
-  return maxDiameter;
+
+  return leaves;
 }
+const tree: TreeNode = {
+  value: 1,
+  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
+  right: { value: 3, right: { value: 6 } }
+};
+
+console.log(countLeaves(tree));          // → 3  (nodes 4, 5, 6)
+console.log(countLeavesIter(tree));      // → 3
