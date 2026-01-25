@@ -1,42 +1,30 @@
-// --------------------------------------------------
-// Types
-// --------------------------------------------------
-interface User {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-}
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
 
-// --------------------------------------------------
-// Helper: generic fetch wrapper with type inference
-// --------------------------------------------------
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+const intersection = a.filter(x => b.includes(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
 
-  // Throw if status is not in the 200–299 range
-  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+const setB = new Set(b);
+const intersection = a.filter(x => setB.has(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
 
-  // Let the compiler infer the returned shape
-  return response.json() as Promise<T>;
-}
+const [small, large] = a.length < b.length ? [a, b] : [b, a];
+const setSmall = new Set(small);
 
-// --------------------------------------------------
-// Main logic
-// --------------------------------------------------
-async function main() {
-  try {
-    const users = await fetchJson<User[]>(
-      'https://jsonplaceholder.typicode.com/users'
-    );
+const intersection = large.filter(x => setSmall.has(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 2, 3, 4];
+const b = [2, 3, 3, 5];
 
-    users.forEach((u) => console.log(`${u.name} (${u.email})`));
-  } catch (err) {
-    console.error('Fetching failed:', err);
-  }
-}
+const intersection = Array.from(
+  new Set(a.filter(x => new Set(b).has(x)))
+);
+console.log(intersection); // [2, 3]
+import _ from 'lodash';
 
-// --------------------------------------------------
-// Kick it off
-// --------------------------------------------------
-main();
+const intersection = _.intersection([1, 2, 3], [2, 3, 4]);
+console.log(intersection); // [2, 3]
