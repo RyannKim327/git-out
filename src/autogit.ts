@@ -1,42 +1,75 @@
-// 1️⃣  Install the dependencies first:
-//     npm install axios @types/axios
-
-import axios, { AxiosError } from "axios";
-
-// 2️⃣  Define the shape of the data we expect back.
-interface User {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
+// ──────────────────────────────────────────────────────────────
+// 1.  Types for the graph
+// ──────────────────────────────────────────────────────────────
+interface Node<T = void> {
+  value: T;
+  neighbours: Node<T>[];
 }
 
-// 3️⃣  Perform the request in an async function.
-async function fetchUsers(): Promise<User[]> {
-  const url = "https://jsonplaceholder.typicode.com/users";
+// A small helper to create nodes
+function createNode<T>(value: T): Node<T> {
+  return { value, neighbours: [] };
+}
 
-  try {
-    // 4️⃣  Make the GET request
-    const response = await axios.get<User[]>(url);
+function addEdge<T>(from: Node<T>, to: Node<T>): void {
+  from.neighbours.push(to);
+  to.neighbours.push(from);    // undirected; drop this line for directed graphs
+}
 
-    // 5️⃣  Axios automatically parses JSON, so `data` has the correct type
-    return response.data;
-  } catch (err) {
-    // 6️⃣  Gracefully handle a possible Axios error
-    if (axios.isAxiosError(err)) {
-      const error = err as AxiosError;
-      console.error(
-        `Request failed! 🙁 Status: ${error.response?.status}  Message: ${error.message}`
-      );
-    } else {
-      console.error("Unexpected error:", err);
+// ──────────────────────────────────────────────────────────────
+// 2.  Depth‑limited search (recursive DFS style)
+// ──────────────────────────────────────────────────────────────
+/**
+ * Searches `startNode` for a node whose value satisfies `goalPredicate`,
+ * but stops expanding any node that appears deeper than `limit` levels.
+ *
+ * @param start      the node to start from
+ * @param goal       a predicate; if it returns true the node is considered the goal
+ * @param limit      max depth to explore
+ * @param visited    internal, tracks visited nodes
+ * @param depth      internal, current depth
+ * @returns          the goal node if found, or null
+ */
+function depthLimitedSearch<T>(
+  start: Node<T>,
+  goal: (value: T) => boolean,
+  limit: number,
+  visited = new Set<Node<T>>(),
+  depth = 0
+): Node<T> | null {
+  if (depth > limit) return null;               // over the limit
+
+  visited.add(start);
+  if (goal(start.value)) return start;          // goal reached
+
+  for (const neighbour of start.neighbours) {
+    if (!visited.has(neighbour)) {
+      const result = depthLimitedSearch(neighbour, goal, limit, visited, depth + 1);
+      if (result !== null) return result;      // propagate success upwards
     }
-    return []; // Return an empty array if something goes wrong
   }
+
+  return null;                                  // no goal found within this branch
 }
 
-// 7️⃣  Use the function somewhere in your app
-(async () => {
-  const users = await fetchUsers();
-  console.log("Fetched users:", users);
-})();
+// ──────────────────────────────────────────────────────────────
+// 3.  Example usage
+// ──────────────────────────────────────────────────────────────
+/*
+// Build a tiny graph
+const a = createNode('A');
+const b = createNode('B');
+const c = createNode('C');
+const d = createNode('D');
+const e = createNode('E');
+
+addEdge(a, b);
+addEdge(a, c);
+addEdge(b, d);
+addEdge(c, e);
+
+// Find node 'E' but stop after exploring 2 edges from 'A'
+const found = depthLimitedSearch(a, val => val === 'E', 2);
+
+console.log(found ? `Found ${found.value}` : 'Not found within depth limit');
+*/
