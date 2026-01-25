@@ -1,75 +1,52 @@
-/**
- * Tarjan's algorithm to find all strongly connected components (SCCs) of a directed graph.
- *
- * @param adjacencyList A Map where each key is a node id and the value is an array of adjacent node ids.
- * @returns An array of components, each component is an array of node ids belonging to the same SCC.
- */
-export function stronglyConnectedComponents(
-  adjacencyList: Map<number, number[]>
-): number[][] {
-  const indexMap = new Map<number, number>();   // node -> index
-  const lowlinkMap = new Map<number, number>(); // node -> lowlink
-  const onStack = new Set<number>();            // nodes currently in the stack
-  const stack: number[] = [];                   // stack of nodes
-  const components: number[][] = [];
-  let currentIndex = 0;
+/** Basic node structure for a binary tree. */
+class TreeNode {
+  /** Value stored in the node (use `any` if you need non‑numeric data). */
+  val: number
+  /** Left child, or null if none. */
+  left: TreeNode | null
+  /** Right child, or null if none. */
+  right: TreeNode | null
 
-  const strongConnect = (node: number) => {
-    // 1. set the depth index for this node
-    indexMap.set(node, currentIndex);
-    lowlinkMap.set(node, currentIndex);
-    currentIndex++;
-    stack.push(node);
-    onStack.add(node);
-
-    // 2. consider successors of node
-    const neighbors = adjacencyList.get(node) ?? [];
-    for (const succ of neighbors) {
-      if (!indexMap.has(succ)) {
-        // (a) Successor has not yet been visited; recurse on it
-        strongConnect(succ);
-        // Update lowlink
-        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, lowlinkMap.get(succ)!));
-      } else if (onStack.has(succ)) {
-        // (b) Successor is in stack → part of current SCC
-        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, indexMap.get(succ)!));
-      }
-      // (c) else: successor has been visited and is not in stack – ignore
-    }
-
-    // 3. If node is a root node, pop the stack and generate an SCC
-    if (lowlinkMap.get(node) === indexMap.get(node)) {
-      const component: number[] = [];
-      let w: number | undefined;
-      do {
-        w = stack.pop();
-        onStack.delete(w!);
-        component.push(w!);
-      } while (w !== node);
-      components.push(component);
-    }
-  };
-
-  // Run strongConnect on every node that has not yet been visited
-  for (const node of adjacencyList.keys()) {
-    if (!indexMap.has(node)) {
-      strongConnect(node);
-    }
+  constructor(val: number, left?: TreeNode | null, right?: TreeNode | null) {
+    this.val = val
+    this.left = left ?? null
+    this.right = right ?? null
   }
-
-  return components;
 }
-import { stronglyConnectedComponents } from './tarjan';
 
-const graph = new Map<number, number[]>();
-graph.set(0, [1]);
-graph.set(1, [2, 3]);
-graph.set(2, [0, 3]);
-graph.set(3, [4]);
-graph.set(4, [5]);
-graph.set(5, [3]);
+/* ------------------------------------------------------------------ */
+/*  Recursive depth‑first search.  Returns the longest path length.    */
+function maxDepth(root: TreeNode | null): number {
+  if (!root) return 0                    // leaf + null = depth 0
+  const leftDepth  = maxDepth(root.left) // depth goes 1, 2, … from here
+  const rightDepth = maxDepth(root.right)
+  return Math.max(leftDepth, rightDepth) + 1
+}
 
-const sccs = stronglyConnectedComponents(graph);
-console.log(sccs);
-// → [ [ 4, 5, 3 ], [ 0, 1, 2 ] ]
-// (order may vary)
+/* ------------------------------------------------------------------ */
+/*  Iterative breadth‑first search (queue).  Same result, no stack.   */
+function maxDepthIter(root: TreeNode | null): number {
+  if (!root) return 0
+  let max = 0
+  const queue: Array<{ node: TreeNode; depth: number }> = [
+    { node: root, depth: 1 },
+  ]
+
+  while (queue.length) {
+    const { node, depth } = queue.shift()!
+    max = Math.max(max, depth)
+    if (node.left)  queue.push({ node: node.left, depth: depth + 1 })
+    if (node.right) queue.push({ node: node.right, depth: depth + 1 })
+  }
+  return max
+}
+
+/* ------------------------------------------------------------------ */
+/*  Example usage ---------------------------------------------------- */
+const root = new TreeNode(1,
+  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
+  new TreeNode(3, null, new TreeNode(6))
+)
+
+console.log('Recursive depth:', maxDepth(root))      // → 3
+console.log('Iterative depth:', maxDepthIter(root)) // → 3
