@@ -1,55 +1,101 @@
-/**
- * Returns the median of two sorted arrays.
- *
- * @param nums1 First sorted array
- * @param nums2 Second sorted array
- * @returns Median value (number)
- */
-export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Make sure nums1 is the smaller array; binary search will run on it.
-  if (nums1.length > nums2.length) {
-    return findMedianSortedArrays(nums2, nums1);
+// ------------------------------------------------------------
+// 1️⃣  In‑place quick‑sort – most common for competitive coding
+// ------------------------------------------------------------
+function quickSortInPlace<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): void {
+  const swap = (i: number, j: number) => {
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  };
+
+  function partition(low: number, high: number): number {
+    // Pick the last element as pivot (simple but fine for demo)
+    const pivot = arr[high];
+    let i = low - 1;
+
+    for (let j = low; j < high; j++) {
+      if (compare(arr[j], pivot) <= 0) {
+        i++;
+        swap(i, j);
+      }
+    }
+    swap(i + 1, high);
+    return i + 1;
   }
 
-  const m = nums1.length;
-  const n = nums2.length;
-  const halfLen = Math.floor((m + n + 1) / 2);
-
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);   // Count from nums1
-    const j = halfLen - i;                    // Count from nums2
-
-    // If i is too small → move right
-    if (i < m && nums2[j - 1] > nums1[i]) {
-      low = i + 1;
-    }
-    // If i is too big → move left
-    else if (i > 0 && nums1[i - 1] > nums2[j]) {
-      high = i - 1;
-    }
-    // Found perfect i
-    else {
-      let maxLeft;
-      if (i === 0) maxLeft = nums2[j - 1];
-      else if (j === 0) maxLeft = nums1[i - 1];
-      else maxLeft = Math.max(nums1[i - 1], nums2[j - 1]);
-
-      // Odd total length – median is max of left side
-      if ((m + n) % 2 === 1) return maxLeft;
-
-      // Even total length – median is average of maxLeft and minRight
-      let minRight;
-      if (i === m) minRight = nums2[j];
-      else if (j === n) minRight = nums1[i];
-      else minRight = Math.min(nums1[i], nums2[j]);
-
-      return (maxLeft + minRight) / 2;
+  function quick(low: number, high: number): void {
+    if (low < high) {
+      const pi = partition(low, high);
+      quick(low, pi - 1);
+      quick(pi + 1, high);
     }
   }
 
-  // If we get here, input arrays weren’t valid (empty, unsorted, etc.)
-  throw new Error('Input arrays are not valid.');
+  quick(0, arr.length - 1);
 }
+
+// ------------------------------------------------------------
+// 2️⃣  Functional quick‑sort – returns a new sorted array
+// ------------------------------------------------------------
+function quickSortFunctional<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  if (arr.length <= 1) return arr.slice(); // immutable copy
+
+  // Random pivot for better average performance on already‑sorted data
+  const pivot = arr[Math.floor(Math.random() * arr.length)];
+  const lows = arr.filter((v) => compare(v, pivot) < 0);
+  const highs = arr.filter((v) => compare(v, pivot) > 0);
+  const pivots = arr.filter((v) => compare(v, pivot) === 0);
+
+  return [
+    ...quickSortFunctional(lows, compare),
+    ...pivots,
+    ...quickSortFunctional(highs, compare),
+  ];
+}
+
+// ------------------------------------------------------------
+// 3️⃣  Small helper that wraps the in‑place version and offers
+//     a better pivot strategy
+// ------------------------------------------------------------
+function quickSort<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  // Randomize the array first; this keeps the pivot “good” on many inputs
+  // and eliminates the worst‑case for already‑sorted data.
+  const shuffled = arr.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  quickSortInPlace(shuffled, compare);
+  return shuffled;
+}
+
+// ---------------------------
+// Demo usage
+// ---------------------------
+
+const numbers = [34, 7, 23, 32, 5, 62, 32];
+console.log('in‑place:', (() => {
+  const copy = [...numbers];
+  quickSortInPlace(copy);
+  return copy;
+})());
+
+console.log('functional:', quickSortFunctional(numbers));
+
+console.log('wrapper:', quickSort(numbers));
+
+// ------------------------------------------------------------
+// Done!
+// ------------------------------------------------------------
+const byLength = (a: string, b: string) => a.length - b.length;
+quickSort(stringsArray, byLength);
