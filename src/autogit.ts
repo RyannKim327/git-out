@@ -1,28 +1,21 @@
-/**
- * Return true if `s` is a palindrome.
- *   - Works for regular strings and Unicode strings
- *   - Uses a two‑pointer scan; no extra arrays/strings are allocated
- *   - Time:  O(n)
- *   - Extra space: O(1)
- */
-function isPalindrome(s: string): boolean {
-    let left  = 0;
-    let right = s.length - 1;
-
-    while (left < right) {
-        // Skip non‑alphanumeric characters & ignore case if you want
-        // if (!/[a-z0-9]/i.test(s.charAt(left))) { left++; continue; }
-        // if (!/[a-z0-9]/i.test(s.charAt(right))) { right--; continue; }
-
-        if (s[left] !== s[right]) {
-            return false;
-        }
-        left++;
-        right--;
-    }
-    return true;
+function countChar(str: string, ch: string): number {
+  let count = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === ch) count++;
+  }
+  return count;
 }
-console.log(isPalindrome("racecar"));        // true
-console.log(isPalindrome("hello"));          // false
-console.log(isPalindrome("A man a plan a canal Panama".replace(/\s+/g, '').toLowerCase()));
-// true, after normalizing whitespace and case
+const count = str.split(ch).length - 1;
+function countCharWithRegex(str: string, ch: string): number {
+  // Escape regex metacharacters in case ch is not a plain letter
+  const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(escaped, 'g');
+  const matches = str.match(re);
+  return matches ? matches.length : 0;
+}
+const count = [...str].reduce((acc, c) => acc + (c === ch ? 1 : 0), 0);
+const count = [...str.toUpperCase()].filter(c => c === ch.toUpperCase()).length;
+const test = "hello world, hello TypeScript!";
+console.log(countChar(test, "l")); // 8
+console.log(countChar(test, "H")); // 1
+console.log(countChar(test, "o")); // 3
