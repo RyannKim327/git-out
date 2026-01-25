@@ -1,24 +1,15 @@
-const numbers: number[] = [5, 2, 9, 1, 5, 6];
+// 1️⃣ Convert with the global Number constructor
+const n1 = Number("42");          // 42
 
-// sort in place (mutates the original array)
-numbers.sort((a, b) => a - b);
-console.log(numbers); // [1, 2, 5, 5, 6, 9]
-numbers.sort((a, b) => b - a);
-console.log(numbers); // [9, 6, 5, 5, 2, 1]
-const sorted = [...numbers].sort((a, b) => a - b);
-// or
-const sorted = numbers.slice().sort((a, b) => a - b);
-interface Item { value: number; rank: number }
+// 2️⃣ Use the unary plus – super terse
+const n2 = +"123";                // 123
 
-const items: Item[] = [
-  { value: 10, rank: 2 },
-  { value: 12, rank: 1 },
-  { value: 10, rank: 1 }
-];
+// 3️⃣ (recommended for base‑10 integer strings)
+const n3 = parseInt("07", 10);    // 7
 
-items.sort((x, y) => {
-  if (x.value === y.value) return x.rank - y.rank; // tie‑break on rank
-  return x.value - y.value;
-});
+// 4️⃣ If you need a float, use parseFloat
+const n4 = parseFloat("3.14");    // 3.14
+const toInt = (s: string | null | undefined): number | null =>
+  s == null ? null : parseInt(s, 10);
 
-console.log(items);
+const age = toInt(queryParamAge); // gives you a number or null if it's missing
