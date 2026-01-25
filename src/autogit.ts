@@ -1,64 +1,29 @@
-// ────────────────────────
-// Node definition
-// ────────────────────────
-class Node<T> {
-  value: T;
-  next: Node<T> | null = null;
-
-  constructor(value: T) {
-    this.value = value;
-  }
+const nums = [1, 2, 2, 3, 4, 4, 5];
+const unique = [...new Set(nums)];   // [1, 2, 3,4,5]
+const vals = ['a', 'b', 'a', 'c', 'b'];
+const uniq = vals.filter((value, index, arr) => arr.indexOf(value) === index);
+// ['a','b','c']
+interface User {
+  id: number;
+  name: string;
 }
 
-// ────────────────────────
-// LinkedList implementation
-// ────────────────────────
-class LinkedList<T> {
-  head: Node<T> | null = null;
-  tail: Node<T> | null = null;
+const users: User[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob'   },
+  { id: 1, name: 'Alice'},
+  { id: 3, name: 'Carol'},
+];
 
-  // Append new value to list
-  push(value: T): void {
-    const newNode = new Node(value);
-    if (!this.head) {
-      this.head = this.tail = newNode;
-      return;
-    }
-    this.tail!.next = newNode;  // non‑null assertion is safe here
-    this.tail = newNode;
-  }
+const uniq = Array.from(
+  users.reduce((map, user) => map.set(user.id, user), new Map<number, User>())
+).map(entry => entry[1]);
 
-  // ────── length (iterative)
-  // Return number of nodes
-  length(): number {
-    let count = 0;
-    let current = this.head;
-    while (current !== null) {
-      count++;
-      current = current.next;
-    }
-    return count;
-  }
+// [{id:1,name:'Alice'}, {id:2,name:'Bob'}, {id:3,name:'Carol'}]
+const objs = [{x:1},{x:2},{x:1},{x:3}];
+const uniq = Array.from(
+  new Set(objs.map(o => JSON.stringify(o)))
+).map(str => JSON.parse(str));
+import { uniqBy } from 'lodash';
 
-  // ────── length (recursive helper)
-  private _recursiveLength(node: Node<T> | null): number {
-    if (!node) return 0;
-    return 1 + this._recursiveLength(node.next);
-  }
-
-  // Public wrapper for the recursive version
-  recursiveLength(): number {
-    return this._recursiveLength(this.head);
-  }
-}
-
-// ────────────────────────
-// Demo
-// ────────────────────────
-const list = new LinkedList<number>();
-list.push(1);
-list.push(2);
-list.push(3);
-
-console.log('Iterative length:', list.length());          // 3
-console.log('Recursive length:', list.recursiveLength()); // 3
+const uniqUsers = uniqBy(users, 'id');
