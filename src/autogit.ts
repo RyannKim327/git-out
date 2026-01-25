@@ -1,65 +1,60 @@
-// ---------- Basics ----------
-class ListNode {
-  val: number          // you can keep any data you need
-  next: ListNode | null = null;
+type Node = string | number;              // whichever you prefer for vertex IDs
+type Graph = Record<Node, Node[]>;          // e.g., { 1: [2,3], 2: [4], … }
 
-  constructor(val: number) {
-    this.val = val;
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['d', 'e'],
+  c: ['f'],
+  d: [],
+  e: ['c'],
+  f: [],
+};
+function dfsRecursive(
+  graph: Graph,
+  start: Node,
+  visited = new Set<Node>(),
+  order: Node[] = []
+): Node[] {
+  visited.add(start);        // 1️⃣ mark as visited
+  order.push(start);         // 2️⃣ record the visit order
+
+  for (const neighbor of graph[start] ?? []) {
+    if (!visited.has(neighbor)) {
+      dfsRecursive(graph, neighbor, visited, order); // 3️⃣ recurse
+    }
   }
+  return order;
 }
 
-// ---------- Intersection finder ----------
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  if (!headA || !headB) return null;
+// usage
+const visitOrder = dfsRecursive(graph, 'a');
+console.log(visitOrder); // ['a', 'b', 'd', 'e', 'c', 'f']
+function dfsIterative(graph: Graph, start: Node): Node[] {
+  const stack: Node[] = [start];
+  const visited = new Set<Node>();
+  const order: Node[] = [];
 
-  let ptrA: ListNode | null = headA;
-  let ptrB: ListNode | null = headB;
+  while (stack.length) {
+    const node = stack.pop()!; // pop the top
+    if (visited.has(node)) continue; // skip if we've already seen it
 
-  // After at most two passes through each list the pointers
-  // will either meet at the intersection or both become null.
-  while (ptrA !== ptrB) {
-    ptrA = ptrA ? ptrA.next : headB; // switch to the head of the other list
-    ptrB = ptrB ? ptrB.next : headA;
+    visited.add(node);   // 1️⃣ mark
+    order.push(node);    // 2️⃣ record
+
+    // push neighbors in reverse order so that the first neighbor
+    // is processed first (mimics recursive order)
+    const neighbors = graph[node] ?? [];
+    for (let i = neighbors.length - 1; i >= 0; i--) {
+      const neighbor = neighbors[i];
+      if (!visited.has(neighbor)) stack.push(neighbor);
+    }
   }
-
-  return ptrA; // either the intersection node, or null
+  return order;
 }
 
-// ---------- Quick demo ----------
-function buildLinkedList(values: number[], offset: number = 0) {
-  let head: ListNode | null = null;
-  let tail: ListNode | null = null;
-  for (let v of values) {
-    const node = new ListNode(v);
-    if (!head) head = node;
-    if (tail) tail.next = node;
-    tail = node;
-  }
-  return { head, tail };
-}
-
-// Common tail that will be shared by two lists
-const { head: shared, tail: sharedTail } = buildLinkedList([8, 10]);
-
-// First list: 3 → 7 → 8 → 10
-const { head: aHead } = buildLinkedList([3, 7]);
-if (aHead && sharedHead) {
-  // connect the shared tail
-  let node = aHead;
-  while (node.next) node = node.next;
-  node.next = shared;
-}
-
-// Second list: 99 → 1 → 8 → 10
-const { head: bHead } = buildLinkedList([99, 1]);
-if (bHead && sharedHead) {
-  let node = bHead;
-  while (node.next) node = node.next;
-  node.next = shared;
-}
-
-const intersection = getIntersectionNode(aHead, bHead);
-console.log(intersection?.val); // prints 8
+// usage
+const orderIter = dfsIterative(graph, 'a');
+console.log(orderIter); // ['a', 'b', 'd', 'e', 'c', 'f']
+// inside the while loop
+const prev = stack[stack.length - 1]; // last node that will lead to `node`
+order.push([prev, node] as [Node, Node]);
