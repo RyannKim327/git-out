@@ -1,53 +1,75 @@
 /**
- * Node for a singly linked list.
- */
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-
-/**
- * Detects if a linked list contains a cycle.
+ * Tarjan's algorithm to find all strongly connected components (SCCs) of a directed graph.
  *
- * @param head The head of the list.
- * @returns true if a cycle exists, false otherwise.
+ * @param adjacencyList A Map where each key is a node id and the value is an array of adjacent node ids.
+ * @returns An array of components, each component is an array of node ids belonging to the same SCC.
  */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  let slow = head;
-  let fast = head;
+export function stronglyConnectedComponents(
+  adjacencyList: Map<number, number[]>
+): number[][] {
+  const indexMap = new Map<number, number>();   // node -> index
+  const lowlinkMap = new Map<number, number>(); // node -> lowlink
+  const onStack = new Set<number>();            // nodes currently in the stack
+  const stack: number[] = [];                   // stack of nodes
+  const components: number[][] = [];
+  let currentIndex = 0;
 
-  while (fast !== null && fast.next !== null) {
-    slow = slow!.next;          // move one step
-    fast = fast.next.next;      // move two steps
-    if (slow === fast) {        // same reference → cycle
-      return true;
+  const strongConnect = (node: number) => {
+    // 1. set the depth index for this node
+    indexMap.set(node, currentIndex);
+    lowlinkMap.set(node, currentIndex);
+    currentIndex++;
+    stack.push(node);
+    onStack.add(node);
+
+    // 2. consider successors of node
+    const neighbors = adjacencyList.get(node) ?? [];
+    for (const succ of neighbors) {
+      if (!indexMap.has(succ)) {
+        // (a) Successor has not yet been visited; recurse on it
+        strongConnect(succ);
+        // Update lowlink
+        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, lowlinkMap.get(succ)!));
+      } else if (onStack.has(succ)) {
+        // (b) Successor is in stack → part of current SCC
+        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, indexMap.get(succ)!));
+      }
+      // (c) else: successor has been visited and is not in stack – ignore
+    }
+
+    // 3. If node is a root node, pop the stack and generate an SCC
+    if (lowlinkMap.get(node) === indexMap.get(node)) {
+      const component: number[] = [];
+      let w: number | undefined;
+      do {
+        w = stack.pop();
+        onStack.delete(w!);
+        component.push(w!);
+      } while (w !== node);
+      components.push(component);
+    }
+  };
+
+  // Run strongConnect on every node that has not yet been visited
+  for (const node of adjacencyList.keys()) {
+    if (!indexMap.has(node)) {
+      strongConnect(node);
     }
   }
 
-  return false;                 // fast hit the end → no cycle
+  return components;
 }
-// 1 → 2 → 3 → 4 → 5
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-const d = new ListNode(4);
-const e = new ListNode(5);
+import { stronglyConnectedComponents } from './tarjan';
 
-a.next = b; b.next = c; c.next = d; d.next = e;
+const graph = new Map<number, number[]>();
+graph.set(0, [1]);
+graph.set(1, [2, 3]);
+graph.set(2, [0, 3]);
+graph.set(3, [4]);
+graph.set(4, [5]);
+graph.set(5, [3]);
 
-// no cycle
-console.log(hasCycle(a)); // false
-
-// Introduce a cycle: e.next = c (3rd node)
-e.next = c;
-console.log(hasCycle(a)); // true
-function hasCycleSet<T>(head: ListNode<T> | null): boolean {
-  const visited = new Set<ListNode<T>>();
-
-  let current = head;
-  while (current !== null) {
-    if (visited.has(current)) return true; // already seen → cycle
-    visited.add(current);
-    current = current.next;
-  }
-  return false; // reached null → acyclic
-}
+const sccs = stronglyConnectedComponents(graph);
+console.log(sccs);
+// → [ [ 4, 5, 3 ], [ 0, 1, 2 ] ]
+// (order may vary)
