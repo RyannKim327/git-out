@@ -1,50 +1,91 @@
-/**
- * Interpolation search – O(log log n) in the ideal case,
- * O(n) in the worst case (if the array is highly non‑uniform).
- *
- * @param arr   An array that is already sorted in ascending order.
- * @param key   The value to look for.
- * @returns     The index of `key` in `arr` or -1 if not present.
- */
-export function interpolationSearch(arr: readonly number[], key: number): number {
-  // Guard against empty array
-  if (arr.length === 0) return -1;
+type BMIndices = { badChar: number[]; goodSuffix: number[] };
 
-  let low = 0;
-  let high = arr.length - 1;
+const CHAR_LIMIT = 256;          // size of ASCII table (adjust if you need Unicode)
 
-  // Interpolation formula requires a strictly increasing array
-  // and a finite difference between the ends.
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    // Avoid division by zero when arr[low] == arr[high].
-    if (arr[low] === arr[high]) return arr[low] === key ? low : -1;
+// Allocate and initialise a lookup array, defaulting to -1
+function initArray(size: number, init: number = -1): number[] {
+  const arr = new Array<number>(size);
+  for (let i = 0; i < size; i++) arr[i] = init;
+  return arr;
+}
+function badCharTable(pattern: string): number[] {
+  const table = initArray(CHAR_LIMIT, -1);
 
-    // Estimate the position of the key inside the current bounds.
-    const pos =
-      low +
-      Math.floor(
-        ((high - low) * (key - arr[low])) / (arr[high] - arr[low]),
-      );
+  for (let i = 0; i < pattern.length; i++) {
+    table[pattern.charCodeAt(i)] = i;
+  }
 
-    const value = arr[pos];
+  return table;
+}
+function goodSuffixTable(pat: string): number[] {
+  const m = pat.length;
+  const suffix = initArray(m);
+  const goodSuffix = initArray(m, 0);
 
-    if (value === key) return pos;
-    if (value < key) {
-      low = pos + 1;          // Look in the right sub‑array
+  suffix[m - 1] = m;
+  let g = m - 1;
+  let f = 0;
+
+  for (let i = m - 2; i >= 0; i--) {
+    if (i > g && suffix[i + m - 1 - f] < i - g) {
+      suffix[i] = suffix[i + m - 1 - f];
     } else {
-      high = pos - 1;         // Look in the left sub‑array
+      g = i;
+      f = i;
+      while (g >= 0 && pat[g] === pat[g + m - 1 - f]) {
+        g--;
+      }
+      suffix[i] = f - g;
     }
   }
 
-  return -1; // Not found
+  // Build the goodSuffix shift table from suffix lengths
+  for (let i = 0; i < m; i++) {
+    goodSuffix[i] = m - suffix[i];
+  }
+
+  return goodSuffix;
 }
-const nums = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91, 105];
-console.log(interpolationSearch(nums, 38)); // ➜ 6
-console.log(interpolationSearch(nums, 4));  // ➜ -1
-export function interpolationSearchBy<T, U extends number>(
-  arr: readonly T[],
-  key: U,
-  getKey: (item: T) => U,
-): number {
-  // Same logic, but cast / convert using getKey(item)
+function boyerMooreSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [];   // nothing to find
+
+  const { badChar, goodSuffix } = preprocess(pattern);
+
+  const matches: number[] = [];
+  let s = 0;                // shift of the pattern wrt text
+
+  while (s <= n - m) {
+    let j = m - 1;
+
+    // Keep moving left while the characters match
+    while (j >= 0 && pattern[j] === text[s + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      // match found
+      matches.push(s);
+      // next shift: either the good suffix shift or 1
+      s += goodSuffix[0] > 0 ? goodSuffix[0] : 1;
+    } else {
+      const badShift = j - badChar[text.charCodeAt(s + j)];
+      const goodShift = goodSuffix[j];
+      s += Math.max(badShift, goodShift);
+    }
+  }
+
+  return matches;
 }
+
+function preprocess(pattern: string): BMIndices {
+  return {
+    badChar: badCharTable(pattern),
+    goodSuffix: goodSuffixTable(pattern),
+  };
+}
+const txt = "ABAAABCDABAAABCDAAAABCDABAAABCDAAAABCD";
+const pat = "ABDAB";
+
+console.log(boyerMooreSearch(txt, pat));  // → [0, 9, 19, 29]
