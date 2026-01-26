@@ -1,47 +1,25 @@
 /**
- * Return true if `a` and `b` are anagrams.
- *
- *   * Ignore whitespace and punctuation.
- *   * Ignore case.
+ * Returns true if `n` is a prime number.
+ * Works with any non‑negative integer. For negative numbers or 0/1 it returns false.
  */
-function areAnagramsSorting(a: string, b: string): boolean {
-  const clean = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '').split('').sort().join('');
+export function isPrime(n: number): boolean {
+  if (!Number.isInteger(n) || n < 2) return false;   // 0, 1, and non‑ints aren't prime
+  
+  // 2 and 3 are the only even/odd primes.
+  if (n === 2 || n === 3) return true;
 
-  return clean(a) === clean(b);
-}
+  // Even numbers > 2 are not prime.
+  if (n % 2 === 0) return false;
 
-// Example
-console.log(areAnagramsSorting('Listen', 'Silent')); // → true
-/**
- * Count characters and compare the two maps.
- * Complexity: O(n), with `n` = max(a.length, b.length).
- */
-function areAnagramsCounting(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '');
-
-  const strA = normalize(a);
-  const strB = normalize(b);
-
-  if (strA.length !== strB.length) return false;
-
-  const freq: Record<string, number> = {};
-
-  for (const ch of strA) {
-    freq[ch] = (freq[ch] ?? 0) + 1;
-  }
-
-  for (const ch of strB) {
-    if (!freq[ch]) return false; // missing or too many
-    freq[ch]! -= 1;
+  // Check odd divisors up to √n.
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false;
   }
 
   return true;
 }
-
-// Example
-console.log(areAnagramsCounting('Software', 'Oxfartswe')); // → true
-const anagrams = (a: string, b: string) =>
-  a.toLowerCase().replace(/\W/g, '').split('').sort().join('') ===
-  b.toLowerCase().replace(/\W/g, '').split('').sort().join('');
+console.log(isPrime(7));   // true
+console.log(isPrime(20));  // false
+console.log(isPrime(91));  // false (7 × 13)
+console.log(isPrime(97));  // true
