@@ -1,63 +1,43 @@
 /**
- * Rabin‑Karp string search
- *
- * Parameters:
- *  pattern – the string we’re looking for
- *  text    – the string to search inside
- *
- * Returns:
- *  array of starting indices where pattern occurs (empty if no match)
+ * Counting sort for integer arrays (can include negatives).
+ * @param arr The input array of numbers.
+ * @returns A new sorted array.
  */
-export function rabinKarp(pattern: string, text: string): number[] {
-    // Edge cases
-    if (pattern.length === 0) return [];
-    if (pattern.length > text.length) return [];
+export function countingSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-    const base = 256;               // number of possible characters (ASCII)
-    const mod = 101;                // a prime mod to keep numbers small
+  // 1) Determine min and max to find the range.
+  let min = arr[0];
+  let max = arr[0];
+  for (const v of arr) {
+    if (v < min) min = v;
+    else if (v > max) max = v;
+  }
 
-    const m = pattern.length;
-    const n = text.length;
+  const range = max - min + 1;          // how many distinct integer values
+  const count = new Array<number>(range).fill(0);
 
-    // Pre‑compute base^(m‑1) % mod  (the “high” power)
-    let basePower = 1;
-    for (let i = 0; i < m - 1; i++) {
-        basePower = (basePower * base) % mod;
-    }
+  // 2) Count each value
+  for (const v of arr) {
+    count[v - min]++;                   // offset by min so array starts at 0
+  }
 
-    // Compute hash for pattern and first window of text
-    let patHash = 0;
-    let txtHash = 0;
-    for (let i = 0; i < m; i++) {
-        patHash = (patHash * base + pattern.charCodeAt(i)) % mod;
-        txtHash = (txtHash * base + text.charCodeAt(i)) % mod;
-    }
+  // 3) Convert counts to cumulative counts
+  for (let i = 1; i < range; i++) {
+    count[i] += count[i - 1];
+  }
 
-    const result: number[] = [];
+  // 4) Allocate result array
+  const output = new Array<number>(arr.length);
 
-    // Slide the window over the text
-    for (let s = 0; s <= n - m; s++) {
-        // If the hash values match, verify the substring to confirm
-        if (patHash === txtHash) {
-            let match = true;
-            for (let k = 0; k < m; k++) {
-                if (text[s + k] !== pattern[k]) {
-                    match = false;
-                    break;
-                }
-            }
-            if (match) result.push(s);
-        }
+  // 5) Place elements into output in stable order
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const v = arr[i];
+    const idx = v - min;
+    const pos = count[idx] - 1;         // final index for this element
+    output[pos] = v;
+    count[idx]--;                       // decrease count for next instance
+  }
 
-        // Compute hash for next window: remove leading char, add trailing char
-        if (s < n - m) {
-            txtHash = (txtHash - text.charCodeAt(s) * basePower) % mod;
-            if (txtHash < 0) txtHash += mod;                    // keep positive
-            txtHash = (txtHash * base + text.charCodeAt(s + m)) % mod;
-        }
-    }
-
-    return result;
+  return output;
 }
-const idx = rabinKarp('abc', 'xabcababc');
-console.log(idx);   // → [1, 6]
