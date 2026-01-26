@@ -1,70 +1,93 @@
-function longestCommonSubstring(a: string, b: string): string {
-  if (!a || !b) return '';
+/**
+ * Represents a node in the beam frontier.
+ * Keeps the actual state and the path taken to reach it.
+ */
+export interface BeamNode<T> {
+  /** The actual state */
+  state: T;
+  /** The sequence of states that led to this node (incl. this state) */
+  path: T[];
+}
 
-  let maxLen = 0;
-  let maxStart = 0;          // start index inside `a`
+/**
+ * Performs a beam search.
+ *
+ * @param startNodes   Initial frontier. Usually a single root node, but you can start with many.
+ * @param getSuccessors   Function that returns the child nodes of a parent.
+ * @param score          Score function – higher is better.
+ * @param beamWidth      How many nodes to keep after each expansion.
+ * @param maxDepth       Optional depth cutoff (in terms of edges traversed).
+ * @param isGoal         Optional goal‑test predicate.
+ * @returns The first goal node found (or undefined if none).
+ */
+export function beamSearch<T>(
+  startNodes: T[],
+  getSuccessors: (node: T) => T[],
+  score: (node: T) => number,
+  beamWidth: number,
+  maxDepth?: number,
+  isGoal?: (node: T) => boolean
+): BeamNode<T> | undefined {
 
-  const aLen = a.length;
-  const bLen = b.length;
+  // Ensure we keep a lightweight copy for sorting.
+  let frontier: BeamNode<T> = startNodes.map(state => ({ state, path: [state] }));
 
-  // Pick the shorter string as the outer loop to reduce the number of starts
-  const [short, long] = aLen < bLen ? [a, b] : [b, a];
-  const shortLen = short.length;
-  const longLen = long.length;
+  for (let depth = 0; depth < (maxDepth ?? Infinity); depth++) {
+    if (frontier.length === 0) break; // nothing to expand
 
-  for (let i = 0; i < shortLen; i++) {
-    for (let j = 0; j < longLen; j++) {
-      let length = 0;
-      while (
-        i + length < shortLen &&
-        j + length < longLen &&
-        short[i + length] === long[j + length]
-      ) {
-        length++;
-      }
-      if (length > maxLen) {
-        maxLen = length;
-        maxStart = i;           // starts in `short`
+    // Expand every node in the frontier
+    const expansions: BeamNode<T>[] = [];
+    for (const node of frontier) {
+      const succ = getSuccessors(node.state);
+      for (const child of succ) {
+        expansions.push({
+          state: child,
+          path: [...node.path, child]
+        });
       }
     }
-  }
 
-  // Return the slice from the original string that contains the substring
-  const result = short.substr(maxStart, maxLen);
-  // If we swapped the strings we need to return the same slice from the original `a`
-  return aLen < bLen ? result : result; // same, just explicit
-}
-console.log(longestCommonSubstring('abxabc', 'abcaby')); // → 'abc'
-function longestCommonSubstringDP(s1: string, s2: string): string {
-  const n = s1.length;
-  const m = s2.length;
-  if (!n || !m) return '';
-
-  // 2‑row DP to save memory – only previous row needed for current row calculation
-  let prev = new Array(m + 1).fill(0);
-  let curr = new Array(m + 1).fill(0);
-
-  let maxLen = 0;
-  let maxEndIdxS1 = 0; // end index in s1 of longest common substring
-
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (s1[i - 1] === s2[j - 1]) {
-        curr[j] = prev[j - 1] + 1; // extend the previous match
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          maxEndIdxS1 = i; // i is 1‑based
-        }
-      } else {
-        curr[j] = 0;
+    // Optional goal check as soon as we generate expansions
+    if (isGoal) {
+      for (const node of expansions) {
+        if (isGoal(node.state)) return node;
       }
     }
-    // swap rows for next iteration
-    [prev, curr] = [curr, prev];
-    curr.fill(0); // reset current row
+
+    // Sort by score, keep top `beamWidth`
+    expansions.sort((a, b) => score(b.state) - score(a.state)); // descending
+    frontier = expansions.slice(0, beamWidth);
   }
 
-  // Extract the substring from s1 using the end index and length
-  return s1.slice(maxEndIdxS1 - maxLen, maxEndIdxS1);
+  return undefined; // no goal reached within limits
 }
-console.log(longestCommonSubstringDP('abxabc', 'abcaby')); // → 'abc'
+// Example: find a numeric sequence that sums to 15
+type MyState = number; // current sum
+
+const start = 0;
+
+const getSucc = (sum: MyState) => {
+  return [sum + 1, sum + 2, sum + 3]; // could be any branching scheme
+};
+
+const score = (sum: MyState) => {
+  // The closer to 15 without overshooting, the better
+  return Math.max(0, 15 - sum);
+};
+
+const isGoal = (sum: MyState) => sum === 15;
+
+const result = beamSearch(
+  [start],
+  getSucc,
+  score,
+  beamWidth = 3,
+  maxDepth = 10,
+  isGoal
+);
+
+if (result) {
+  console.log(`Reached 15 via ${result.path.join(' -> ')}`);
+} else {
+  console.log('No path found within depth limit');
+}
