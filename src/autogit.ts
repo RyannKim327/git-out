@@ -1,53 +1,69 @@
 /**
- * Node for a singly linked list.
+ * Topological sort (Kahn's algorithm).
+ * @param graph – adjacency list: node → list of successors.  Nodes that don’t appear as keys are treated as isolated vertices.
+ * @returns an array of nodes in topological order.
+ * @throws Error if the graph contains a cycle.
  */
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+export function topologicalSort<T extends string | number | symbol>(
+  graph: Partial<Record<T, readonly T[]>>,
+): T[] {
+  // 1. Compute indegree of each vertex
+  const indegree = new Map<T, number>();
+  const nodes = new Set<T>();
 
-/**
- * Detects if a linked list contains a cycle.
- *
- * @param head The head of the list.
- * @returns true if a cycle exists, false otherwise.
- */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  let slow = head;
-  let fast = head;
+  // First pass: collect all vertices (keys + targets)
+  for (const [u, adj] of Object.entries(graph) as [T, T[]][]) {
+    nodes.add(u);
+    for (const v of adj) nodes.add(v);
+  }
 
-  while (fast !== null && fast.next !== null) {
-    slow = slow!.next;          // move one step
-    fast = fast.next.next;      // move two steps
-    if (slow === fast) {        // same reference → cycle
-      return true;
+  // Initialise indegree map
+  for (const node of nodes) indegree.set(node, 0);
+
+  // Second pass: count incoming edges
+  for (const adj of Object.values(graph)) {
+    for (const v of adj) {
+      indegree.set(v, (indegree.get(v) ?? 0) + 1);
     }
   }
 
-  return false;                 // fast hit the end → no cycle
-}
-// 1 → 2 → 3 → 4 → 5
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-const d = new ListNode(4);
-const e = new ListNode(5);
-
-a.next = b; b.next = c; c.next = d; d.next = e;
-
-// no cycle
-console.log(hasCycle(a)); // false
-
-// Introduce a cycle: e.next = c (3rd node)
-e.next = c;
-console.log(hasCycle(a)); // true
-function hasCycleSet<T>(head: ListNode<T> | null): boolean {
-  const visited = new Set<ListNode<T>>();
-
-  let current = head;
-  while (current !== null) {
-    if (visited.has(current)) return true; // already seen → cycle
-    visited.add(current);
-    current = current.next;
+  // 2. Initialise a queue of all nodes with indegree 0
+  const queue: T[] = [];
+  for (const [node, d] of indegree.entries()) {
+    if (d === 0) queue.push(node);
   }
-  return false; // reached null → acyclic
+
+  const order: T[] = [];
+
+  // 3. Process the queue
+  while (queue.length) {
+    const u = queue.shift() as T; // queue is never empty here
+    order.push(u);
+
+    const successors = graph[u] ?? [];
+    for (const v of successors) {
+      const d = indegree.get(v)! - 1;
+      indegree.set(v, d);
+      if (d === 0) queue.push(v);
+    }
+  }
+
+  // 4. If we processed all vertices, we succeeded; otherwise a cycle exists
+  if (order.length !== nodes.size) {
+    throw new Error('Graph contains a cycle – no topological ordering possible.');
+  }
+
+  return order;
 }
+const pkgGraph = {
+  // A package can depend on other packages (edges go “downward”)
+  'express': ['body-parser', 'morgan'],
+  'body-parser': ['raw-body'],
+  'morgan': ['stream-http'],
+  'stream-http': [],
+  'raw-body': [],
+  'lodash': [],          // independent package
+};
+
+console.log(topologicalSort(pkgGraph));
+// Possible output: ['lodash', 'stream-http', 'morgan', 'raw-body', 'body-parser', 'express']
