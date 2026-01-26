@@ -1,91 +1,124 @@
-type BMIndices = { badChar: number[]; goodSuffix: number[] };
+class TreeNode<T> {
+  /** Value stored in the node. */
+  value: T
 
-const CHAR_LIMIT = 256;          // size of ASCII table (adjust if you need Unicode)
+  /** Left child (values < this.value). */
+  left: TreeNode<T> | null = null
 
-// Allocate and initialise a lookup array, defaulting to -1
-function initArray(size: number, init: number = -1): number[] {
-  const arr = new Array<number>(size);
-  for (let i = 0; i < size; i++) arr[i] = init;
-  return arr;
+  /** Right child (values > this.value). */
+  right: TreeNode<T> | null = null
+
+  constructor(value: T) {
+    this.value = value
+  }
 }
-function badCharTable(pattern: string): number[] {
-  const table = initArray(CHAR_LIMIT, -1);
+class BinaryTree<T> {
+  root: TreeNode<T> | null = null
 
-  for (let i = 0; i < pattern.length; i++) {
-    table[pattern.charCodeAt(i)] = i;
+  /* --------------------------------- */
+  /* Core helpers (private) */
+  /* --------------------------------- */
+
+  /** Simple comparison that works for numbers or strings. */
+  private compare(a: T, b: T): number {
+    if (a === b) return 0
+    return a < b ? -1 : 1
   }
 
-  return table;
-}
-function goodSuffixTable(pat: string): number[] {
-  const m = pat.length;
-  const suffix = initArray(m);
-  const goodSuffix = initArray(m, 0);
+  /* --------------------------------- */
+  /* Public API */
+  /* --------------------------------- */
 
-  suffix[m - 1] = m;
-  let g = m - 1;
-  let f = 0;
+  /** Insert a value into the tree. */
+  insert(value: T): void {
+    this.root = this.insertRec(this.root, value)
+  }
+  private insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
+    if (!node) return new TreeNode(value)
 
-  for (let i = m - 2; i >= 0; i--) {
-    if (i > g && suffix[i + m - 1 - f] < i - g) {
-      suffix[i] = suffix[i + m - 1 - f];
-    } else {
-      g = i;
-      f = i;
-      while (g >= 0 && pat[g] === pat[g + m - 1 - f]) {
-        g--;
-      }
-      suffix[i] = f - g;
+    if (this.compare(value, node.value) < 0) {
+      node.left = this.insertRec(node.left, value)
+    } else if (this.compare(value, node.value) > 0) {
+      node.right = this.insertRec(node.right, value)
     }
+    // (duplicates are ignored for a classic BST – change if you need them)
+    return node
   }
 
-  // Build the goodSuffix shift table from suffix lengths
-  for (let i = 0; i < m; i++) {
-    goodSuffix[i] = m - suffix[i];
+  /** Search for a value, return the node or null. */
+  find(value: T): TreeNode<T> | null {
+    return this.findRec(this.root, value)
+  }
+  private findRec(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
+    if (!node) return null
+    const cmp = this.compare(value, node.value)
+    if (cmp === 0) return node
+    return cmp < 0 ? this.findRec(node.left, value) : this.findRec(node.right, value)
   }
 
-  return goodSuffix;
-}
-function boyerMooreSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return [];   // nothing to find
+  /** Depth‑first in‑order traversal — gives you sorted values. */
+  inorder(callback: (node: TreeNode<T>) => void): void {
+    this.inorderRec(this.root, callback)
+  }
+  private inorderRec(node: TreeNode<T> | null, callback: (node: TreeNode<T>) => void): void {
+    if (!node) return
+    this.inorderRec(node.left, callback)
+    callback(node)
+    this.inorderRec(node.right, callback)
+  }
 
-  const { badChar, goodSuffix } = preprocess(pattern);
+  /** Remove a value from the tree (simple BST delete). */
+  delete(value: T): void {
+    this.root = this.deleteRec(this.root, value)
+  }
+  private deleteRec(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
+    if (!node) return null
 
-  const matches: number[] = [];
-  let s = 0;                // shift of the pattern wrt text
-
-  while (s <= n - m) {
-    let j = m - 1;
-
-    // Keep moving left while the characters match
-    while (j >= 0 && pattern[j] === text[s + j]) {
-      j--;
+    const cmp = this.compare(value, node.value)
+    if (cmp < 0) {
+      node.left = this.deleteRec(node.left, value)
+      return node
+    }
+    if (cmp > 0) {
+      node.right = this.deleteRec(node.right, value)
+      return node
     }
 
-    if (j < 0) {
-      // match found
-      matches.push(s);
-      // next shift: either the good suffix shift or 1
-      s += goodSuffix[0] > 0 ? goodSuffix[0] : 1;
-    } else {
-      const badShift = j - badChar[text.charCodeAt(s + j)];
-      const goodShift = goodSuffix[j];
-      s += Math.max(badShift, goodShift);
-    }
+    // Node to delete found.
+
+    // 1️⃣ No children
+    if (!node.left && !node.right) return null
+
+    // 2️⃣ One child
+    if (!node.left) return node.right
+    if (!node.right) return node.left
+
+    // 3️⃣ Two children – replace with inorder successor
+    const successor = this.minNode(node.right)!
+    node.value = successor.value
+    node.right = this.deleteRec(node.right, successor.value)
+    return node
   }
 
-  return matches;
+  /** Find the minimum node in a subtree (used in delete). */
+  private minNode(node: TreeNode<T> | null): TreeNode<T> | null {
+    let current = node
+    while (current?.left) current = current.left
+    return current
+  }
 }
+const bst = new BinaryTree<number>()
 
-function preprocess(pattern: string): BMIndices {
-  return {
-    badChar: badCharTable(pattern),
-    goodSuffix: goodSuffixTable(pattern),
-  };
-}
-const txt = "ABAAABCDABAAABCDAAAABCDABAAABCDAAAABCD";
-const pat = "ABDAB";
+// Insert values
+[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v))
 
-console.log(boyerMooreSearch(txt, pat));  // → [0, 9, 19, 29]
+// In‑order prints 1 3 5 7 8 9 10
+bst.inorder(n => console.log(n.value))
+
+// Search
+const node = bst.find(5)
+console.log(node ? `Found ${node.value}` : 'Not found')
+
+// Delete
+bst.delete(7)                // Remove root node
+bst.inorder(n => console.log(n.value)) // 1 3 5 8 9 10
