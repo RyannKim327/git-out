@@ -1,24 +1,43 @@
-const numbers: number[] = [5, 2, 9, 1, 5, 6];
+// Helper that normalises the string – handy if you want to ignore
+// spaces, punctuation, and case.
+function normalise(text: string): string {
+  return text
+    .toLowerCase()         // ignore case
+    .replace(/[^a-z0-9]/g, '');  // keep only alphanumerics
+}
 
-// sort in place (mutates the original array)
-numbers.sort((a, b) => a - b);
-console.log(numbers); // [1, 2, 5, 5, 6, 9]
-numbers.sort((a, b) => b - a);
-console.log(numbers); // [9, 6, 5, 5, 2, 1]
-const sorted = [...numbers].sort((a, b) => a - b);
-// or
-const sorted = numbers.slice().sort((a, b) => a - b);
-interface Item { value: number; rank: number }
+/**
+ * Returns true if `input` is a palindrome.
+ *
+ * @param input – the string you want to test
+ * @param {boolean} allowEmpty = false  – whether an empty string is considered a palindrome
+ */
+function isPalindrome(
+  input: string,
+  allowEmpty = false,
+): boolean {
+  // Fast‑path for empty string
+  if (input.length === 0) return allowEmpty;
 
-const items: Item[] = [
-  { value: 10, rank: 2 },
-  { value: 12, rank: 1 },
-  { value: 10, rank: 1 }
-];
+  const s = normalise(input);
 
-items.sort((x, y) => {
-  if (x.value === y.value) return x.rank - y.rank; // tie‑break on rank
-  return x.value - y.value;
-});
+  // Empty after normalisation may be true or false – decide here
+  if (s.length === 0) return false;
 
-console.log(items);
+  // Compare characters from both ends
+  let left = 0;
+  let right = s.length - 1;
+
+  while (left < right) {
+    if (s[left] !== s[right]) return false;
+    left++;
+    right--;
+  }
+
+  return true;
+}
+
+// Demo
+console.log(isPalindrome('RaceCar'));           // true
+console.log(isPalindrome('A man, a plan!'));    // true
+console.log(isPalindrome('hello world'));       // false
