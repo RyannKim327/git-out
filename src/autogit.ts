@@ -1,51 +1,53 @@
-function isPalindrome(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
-  // Normalise if requested
-  const src = ignoreCase
-    ? s.toLowerCase()
-    : s;
+/**
+ * Node for a singly linked list.
+ */
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
+}
 
-  // Optionally strip out anything that isn’t a letter or a digit
-  const text = ignoreNonAlpha
-    ? src.replace(/[^a-z0-9]/gi, '')
-    : src;
+/**
+ * Detects if a linked list contains a cycle.
+ *
+ * @param head The head of the list.
+ * @returns true if a cycle exists, false otherwise.
+ */
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  let slow = head;
+  let fast = head;
 
-  let left = 0;
-  let right = text.length - 1;
-
-  while (left < right) {
-    if (text[left] !== text[right]) return false;
-    left++;
-    right--;
+  while (fast !== null && fast.next !== null) {
+    slow = slow!.next;          // move one step
+    fast = fast.next.next;      // move two steps
+    if (slow === fast) {        // same reference → cycle
+      return true;
+    }
   }
-  return true;
-}
-console.log(isPalindrome('Racecar'));          // true
-console.log(isPalindrome('A man, a plan!'));   // false
-console.log(isPalindrome('A man, a plan!', true, true)); // true
-function isPalindromeReverse(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
-  const cleaned = ignoreNonAlpha
-    ? s.replace(/[^a-z0-9]/gi, '')
-    : s;
 
-  const cmp = ignoreCase ? cleaned.toLowerCase() : cleaned;
-  const reversed = cmp.split('').reverse().join('');
-  return cmp === reversed;
+  return false;                 // fast hit the end → no cycle
 }
-console.log(isPalindromeReverse('Madam In Eden, I’m Adam', true, true)); // true
-const isPalindromeLazy = (s: string, ignoreCase = true, ignoreNonAlpha = false): boolean =>
-  (ignoreNonAlpha ? s.replace(/[^a-z0-9]/gi, '') : s)
-    .toLowerCase()
-    .split('')
-    .every((c, i, a) => c === a[a.length - i - 1]);
-const tests = [
-  { str: 'Radar', expect: true },
-  { str: 'Madam Anna', expect: false },
-  { str: 'Madam Anna', expect: true, options: { ignoreNonAlpha: true } },
-  { str: '12321', expect: true },
-  { str: 'Was it a cat I saw?', expect: true, options: { ignoreNonAlpha: true, ignoreCase: true } },
-];
+// 1 → 2 → 3 → 4 → 5
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+const d = new ListNode(4);
+const e = new ListNode(5);
 
-tests.forEach(({ str, expect, options }) => {
-  const result = isPalindrome(str, ...(options ? [options.ignoreCase, options.ignoreNonAlpha] : []));
-  console.assert(result === expect, `❌ ${str} should be ${expect}`);
-});
+a.next = b; b.next = c; c.next = d; d.next = e;
+
+// no cycle
+console.log(hasCycle(a)); // false
+
+// Introduce a cycle: e.next = c (3rd node)
+e.next = c;
+console.log(hasCycle(a)); // true
+function hasCycleSet<T>(head: ListNode<T> | null): boolean {
+  const visited = new Set<ListNode<T>>();
+
+  let current = head;
+  while (current !== null) {
+    if (visited.has(current)) return true; // already seen → cycle
+    visited.add(current);
+    current = current.next;
+  }
+  return false; // reached null → acyclic
+}
