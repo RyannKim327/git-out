@@ -1,67 +1,27 @@
-class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+function decimalToBinary(num: number): string {
+  return num.toString(2);   // base‑2 string
 }
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;
 
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;          // height of a null subtree is 0
+console.log(decimalToBinary(42)); // "101010"
+function decimalToBinary(num: bigint): string {
+  if (num === 0n) return "0";
 
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
+  let n = num;
+  let bits = "";
 
-    // potential diameter that passes through this node
-    const localDiameter = leftHeight + rightHeight;
-    if (localDiameter > maxDiameter) maxDiameter = localDiameter;
-
-    // height is max child height + 1 edge to the child
-    return Math.max(leftHeight, rightHeight) + 1;
+  while (n > 0n) {
+    bits = (n & 1n ? "1" : "0") + bits; // prepend the low bit
+    n >>= 1n;                           // shift right
   }
 
-  dfs(root);
-  return maxDiameter;  // edges count
+  return bits;
 }
-// Build a tree:
-//        1
-//       / \
-//      2   3
-//     / \     
-//    4   5  
-const root = new TreeNode(1,
-              new TreeNode(2,
-                new TreeNode(4),
-                new TreeNode(5)
-              ),
-              new TreeNode(3)
-            );
 
-console.log(diameterOfBinaryTree(root)); // → 3
-function diameterIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let maxDiameter = 0;
-  const stack = [{ node: root, visited: false, height: 0 }];
-
-  while (stack.length) {
-    const frame = stack.pop()!;
-    if (!frame.node) continue;
-
-    if (frame.visited) {
-      // Children already processed – compute height & diameter
-      const leftHeight = frame.node.left?.height ?? 0;
-      const rightHeight = frame.node.right?.height ?? 0;
-
-      maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
-      frame.node.height = Math.max(leftHeight, rightHeight) + 1;
-    } else {
-      // First visit: push back as visited and push children
-      stack.push({ node: frame.node, visited: true, height: 0 });
-      if (frame.node.right) stack.push({ node: frame.node.right, visited: false, height: 0 });
-      if (frame.node.left) stack.push({ node: frame.node.left, visited: false, height: 0 });
-    }
+console.log(decimalToBinary(42n)); // "101010"
+export function toBinary(value: number | bigint): string {
+  // Pick the right conversion automatically
+  if (typeof value === "bigint") {
+    return decimalToBinary(value);
   }
-  return maxDiameter;
+  return value.toString(2);
 }
