@@ -1,33 +1,60 @@
 /**
- * Sorts an array of numbers (or any comparable type) in place
- * using the classic selection‑sort algorithm.
+ * Returns the max sum of any contiguous sub‑array of `nums`.
+ * If all numbers are negative, it will still return the best (least negative) value.
  *
- * @param arr – the array to sort
- * @returns the same array reference, now sorted
+ * @param nums Array of numbers
+ * @returns maximum sub‑array sum
  */
-export function selectionSort<T>(arr: T[]): T[] {
-    const n = arr.length;
+function maxSubArraySum(nums: number[]): number {
+  if (nums.length === 0) {
+    throw new Error('Array must contain at least one element');
+  }
 
-    for (let i = 0; i < n - 1; i++) {
-        // Assume the smallest element starts at i
-        let minIndex = i;
+  let bestSoFar = nums[0];      // best overall
+  let bestEndingHere = nums[0]; // best ending at current index
 
-        // Scan the unsorted suffix to find the real minimum
-        for (let j = i + 1; j < n; j++) {
-            if (arr[j] < arr[minIndex]) {
-                minIndex = j;
-            }
-        }
+  for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous sub‑array or start fresh at nums[i]
+    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
 
-        // If the minimum isn’t already in position i, swap
-        if (minIndex !== i) {
-            [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-        }
+    // Update the global best if needed
+    bestSoFar = Math.max(bestSoFar, bestEndingHere);
+  }
+
+  return bestSoFar;
+}
+
+/* Example usage */
+const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
+console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
+function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
+  let bestSoFar = nums[0], bestEndingHere = nums[0];
+  let start = 0, end = 0, tempStart = 0;
+
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] > bestEndingHere + nums[i]) {
+      bestEndingHere = nums[i];
+      tempStart = i;          // potential new start
+    } else {
+      bestEndingHere += nums[i];
     }
 
-    return arr;
+    if (bestEndingHere > bestSoFar) {
+      bestSoFar = bestEndingHere;
+      start = tempStart;      // commit new start
+      end = i;
+    }
+  }
+
+  return {
+    maxSum: bestSoFar,
+    subArray: nums.slice(start, end + 1),
+    indices: [start, end]
+  };
 }
-const unsorted = [64, 25, 12, 22, 11];
-console.log('Before:', unsorted);
-selectionSort(unsorted);
-console.log('After :', unsorted);
+console.log(maxSubArrayDetail(arr));
+// {
+//   maxSum: 6,
+//   subArray: [4, -1, 2, 1],
+//   indices: [3, 6]
+// }
