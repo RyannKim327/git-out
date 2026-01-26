@@ -1,58 +1,56 @@
 /**
- * Returns a random integer between min (inclusive) and max (inclusive).
+ * Returns the longest strictly increasing subsequence of `arr`.
  *
- * @param min – lower bound, inclusive
- * @param max – upper bound, inclusive
+ * Example:
+ *   longestIncreasingSubsequence([10, 9, 2, 5, 3, 7, 101, 18])
+ *   → [2, 3, 7, 101]
  */
-function randomInt(min: number, max: number): number {
-  // Clamp values to integers just in case
-  const lo = Math.ceil(min);
-  const hi = Math.floor(max);
+export function longestIncreasingSubsequence(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-  // Math.random returns a float in [0, 1)
-  const r = Math.random() * (hi - lo + 1);
-  return Math.floor(r) + lo;
-}
-const diceRoll = randomInt(1, 6);   // 1‑6
-const randomIndex = randomInt(0, array.length - 1);
-function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min;
-}
-function secureRandomInt(min: number, max: number): number {
-  const lo = Math.ceil(min);
-  const hi = Math.floor(max);
+  // `tails` keeps the smallest tail value for all subsequences
+  // of a given length. `tails[i]` is the least possible tail of
+  // an increasing subsequence with length i+1.
+  const tails: number[] = [];
+  // `prevIndices` remembers, for each element, the index of its
+  // predecessor in the LIS that passes through that element.
+  const prevIndices: number[] = new Array(arr.length).fill(-1);
+  // `indicesAtLength` holds the index of the last element of the LIS
+  // of a given length, allowing us to reconstruct the sequence.
+  const indicesAtLength: number[] = [];
 
-  // Number of values in our range
-  const range = hi - lo + 1;
-  // Enough bytes to hold the full range
-  const bytesNeeded = Math.ceil(Math.log2(range) / 8);
+  arr.forEach((val, idx) => {
+    // Binary search for the first tail that is >= val
+    let l = 0;
+    let r = tails.length;
+    while (l < r) {
+      const m = Math.floor((l + r) / 2);
+      if (tails[m] < val) l = m + 1;
+      else r = m;
+    }
 
-  // Read random unsigned bytes
-  const rand = new Uint8Array(bytesNeeded);
-  crypto.getRandomValues(rand);
+    // `l` is the length (0‑based) of the subsequence that will end at idx
+    if (l > 0) prevIndices[idx] = indicesAtLength[l - 1];
 
-  // Convert bytes to a number
-  let value = 0;
-  for (let i = 0; i < bytesNeeded; i++) {
-    value = (value << 8) | rand[i];
+    if (l === tails.length) {
+      tails.push(val);
+      indicesAtLength.push(idx);
+    } else {
+      tails[l] = val;
+      indicesAtLength[l] = idx;
+    }
+  });
+
+  // Reconstruct the LIS from the recorded indices
+  const lis: number[] = [];
+  let k = indicesAtLength[indicesAtLength.length - 1];
+  while (k !== -1) {
+    lis.push(arr[k]);
+    k = prevIndices[k];
   }
-
-  // Map into the desired range
-  return (value % range) + lo;
+  lis.reverse();
+  return lis;
 }
-function randomChoice<T>(arr: T[]): T {
-  if (arr.length === 0) {
-    throw new RangeError('Cannot choose from an empty array');
-  }
-  const idx = randomInt(0, arr.length - 1);
-  return arr[idx];
-}
-const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-
-function randomToken(length = 8): string {
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars[randomInt(0, chars.length - 1)];
-  }
-  return result;
-}
+const data = [3, 10, 2, 1, 20];
+console.log(longestIncreasingSubsequence(data));
+// → [3, 10, 20]
