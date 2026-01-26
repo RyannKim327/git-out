@@ -1,25 +1,33 @@
 /**
- * Checks if `arr` is sorted in ascending order.
+ * Bubble sort – O(n²) average / worst case.
  *
- * @param arr          the array to test
- * @param compareFn    optional comparison function.  
- *                     Should return <0 if a < b, 0 if equal, >0 if a > b.
- *                     If omitted, the default `a - b` numeric compare is used.
- * @returns true if the array is in ascending order, false otherwise
+ * @param arr – array that will be sorted (mutated)
+ * @returns the same array reference, now sorted ascending
  */
-export function isSortedAscending<T>(
-  arr: readonly T[],
-  compareFn: ((a: T, b: T) => number) = (a, b) =>
-    /* @ts-ignore */ a < b ? -1 : a > b ? 1 : 0
-): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    // If the current element is *before* the previous one, the array is out of order
-    if (compareFn(arr[i], arr[i - 1]) < 0) return false;
-  }
-  return true;
-}
-const names = ['Alice', 'Bob', 'Charlie'];
-console.log(isSortedAscending(names)); // true
+function bubbleSort<T>(arr: T[]): T[] {
+  const n = arr.length;
 
-const mixed = [1, 3, 2, 4];
-console.log(isSortedAscending(mixed)); // false
+  // Outer loop: go through the array n‑1 times
+  for (let i = 0; i < n - 1; i++) {
+    // Inner loop scans up to the unsorted part
+    // We can stop early when the array is already sorted
+    let swapped = false;
+
+    for (let j = 0; j < n - 1 - i; j++) {
+      // Use > so that equal values stay in place
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swapped = true;
+      }
+    }
+
+    // No swaps means the array is sorted
+    if (!swapped) break;
+  }
+
+  return arr;
+}
+
+// Example
+const nums = [64, 34, 25, 12, 22, 11, 90];
+console.log(bubbleSort(nums)); // [11, 12, 22, 25, 34, 64, 90]
