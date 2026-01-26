@@ -1,27 +1,24 @@
-function decimalToBinary(num: number): string {
-  return num.toString(2);   // base‑2 string
-}
+const numbers: number[] = [5, 2, 9, 1, 5, 6];
 
-console.log(decimalToBinary(42)); // "101010"
-function decimalToBinary(num: bigint): string {
-  if (num === 0n) return "0";
+// sort in place (mutates the original array)
+numbers.sort((a, b) => a - b);
+console.log(numbers); // [1, 2, 5, 5, 6, 9]
+numbers.sort((a, b) => b - a);
+console.log(numbers); // [9, 6, 5, 5, 2, 1]
+const sorted = [...numbers].sort((a, b) => a - b);
+// or
+const sorted = numbers.slice().sort((a, b) => a - b);
+interface Item { value: number; rank: number }
 
-  let n = num;
-  let bits = "";
+const items: Item[] = [
+  { value: 10, rank: 2 },
+  { value: 12, rank: 1 },
+  { value: 10, rank: 1 }
+];
 
-  while (n > 0n) {
-    bits = (n & 1n ? "1" : "0") + bits; // prepend the low bit
-    n >>= 1n;                           // shift right
-  }
+items.sort((x, y) => {
+  if (x.value === y.value) return x.rank - y.rank; // tie‑break on rank
+  return x.value - y.value;
+});
 
-  return bits;
-}
-
-console.log(decimalToBinary(42n)); // "101010"
-export function toBinary(value: number | bigint): string {
-  // Pick the right conversion automatically
-  if (typeof value === "bigint") {
-    return decimalToBinary(value);
-  }
-  return value.toString(2);
-}
+console.log(items);
