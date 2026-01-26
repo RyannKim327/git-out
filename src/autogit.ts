@@ -1,43 +1,50 @@
 /**
- * Counting sort for integer arrays (can include negatives).
- * @param arr The input array of numbers.
- * @returns A new sorted array.
+ * Interpolation search – O(log log n) in the ideal case,
+ * O(n) in the worst case (if the array is highly non‑uniform).
+ *
+ * @param arr   An array that is already sorted in ascending order.
+ * @param key   The value to look for.
+ * @returns     The index of `key` in `arr` or -1 if not present.
  */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  // Guard against empty array
+  if (arr.length === 0) return -1;
 
-  // 1) Determine min and max to find the range.
-  let min = arr[0];
-  let max = arr[0];
-  for (const v of arr) {
-    if (v < min) min = v;
-    else if (v > max) max = v;
+  let low = 0;
+  let high = arr.length - 1;
+
+  // Interpolation formula requires a strictly increasing array
+  // and a finite difference between the ends.
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Avoid division by zero when arr[low] == arr[high].
+    if (arr[low] === arr[high]) return arr[low] === key ? low : -1;
+
+    // Estimate the position of the key inside the current bounds.
+    const pos =
+      low +
+      Math.floor(
+        ((high - low) * (key - arr[low])) / (arr[high] - arr[low]),
+      );
+
+    const value = arr[pos];
+
+    if (value === key) return pos;
+    if (value < key) {
+      low = pos + 1;          // Look in the right sub‑array
+    } else {
+      high = pos - 1;         // Look in the left sub‑array
+    }
   }
 
-  const range = max - min + 1;          // how many distinct integer values
-  const count = new Array<number>(range).fill(0);
-
-  // 2) Count each value
-  for (const v of arr) {
-    count[v - min]++;                   // offset by min so array starts at 0
-  }
-
-  // 3) Convert counts to cumulative counts
-  for (let i = 1; i < range; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 4) Allocate result array
-  const output = new Array<number>(arr.length);
-
-  // 5) Place elements into output in stable order
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const v = arr[i];
-    const idx = v - min;
-    const pos = count[idx] - 1;         // final index for this element
-    output[pos] = v;
-    count[idx]--;                       // decrease count for next instance
-  }
-
-  return output;
+  return -1; // Not found
+}
+const nums = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91, 105];
+console.log(interpolationSearch(nums, 38)); // ➜ 6
+console.log(interpolationSearch(nums, 4));  // ➜ -1
+export function interpolationSearchBy<T, U extends number>(
+  arr: readonly T[],
+  key: U,
+  getKey: (item: T) => U,
+): number {
+  // Same logic, but cast / convert using getKey(item)
 }
