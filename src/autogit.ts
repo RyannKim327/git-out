@@ -1,24 +1,28 @@
-const scores: number[] = [12, 19, 3, 40, 27];
+const original = [1, 2, 3, 4, 5];
 
-const max = Math.max(...scores);   // 40
-const max = scores.reduce((highest, current) => (current > highest ? current : highest), -Infinity);
-function findMax(arr: number[]): number | undefined {
-  if (arr.length === 0) return undefined;
-  return arr.reduce((m, n) => (n > m ? n : m), arr[0]);
-}
-function maxOfArray(arr: number[]): number {
-  if (arr.length === 0) throw new Error('Empty array');
-
-  let max = arr[0];
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] > max) max = arr[i];
+const reversed = [...original].reverse(); // creates a new array, keeps `original` intact
+// or, if you don’t mind mutating the original array
+original.reverse();
+const copy = [...original];  // spread operator makes a new array
+copy.reverse();              // now you have the reversed copy
+function reverseArray<T>(arr: T[]): T[] {
+  const result: T[] = [];
+  for (let i = arr.length - 1; i >= 0; i--) {
+    result.push(arr[i]);
   }
-  return max;
+  return result;
 }
-const typed: Int32Array = new Int32Array([2, 5, 9, 1]);
 
-const max = Math.max.apply(null, typed as unknown as number[]);
-const numbers = [7, 42, -3, 13];
-console.log(Math.max(...numbers)); // 42
-console.log(findMax(numbers));     // 42
-console.log(maxOfArray(numbers));  // 42
+const reverseManual = reverseArray(original);
+function reverseInPlace<T>(arr: T[]): void {
+  let left = 0;
+  let right = arr.length - 1;
+  while (left < right) {
+    // swap
+    [arr[left], arr[right]] = [arr[right], arr[left]];
+    left++;
+    right--;
+  }
+}
+
+reverseInPlace(original); // `original` is now reversed
