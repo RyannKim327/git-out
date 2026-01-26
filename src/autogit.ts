@@ -1,25 +1,39 @@
-/**
- * Checks if `arr` is sorted in ascending order.
- *
- * @param arr          the array to test
- * @param compareFn    optional comparison function.  
- *                     Should return <0 if a < b, 0 if equal, >0 if a > b.
- *                     If omitted, the default `a - b` numeric compare is used.
- * @returns true if the array is in ascending order, false otherwise
- */
-export function isSortedAscending<T>(
-  arr: readonly T[],
-  compareFn: ((a: T, b: T) => number) = (a, b) =>
-    /* @ts-ignore */ a < b ? -1 : a > b ? 1 : 0
-): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    // If the current element is *before* the previous one, the array is out of order
-    if (compareFn(arr[i], arr[i - 1]) < 0) return false;
-  }
-  return true;
-}
-const names = ['Alice', 'Bob', 'Charlie'];
-console.log(isSortedAscending(names)); // true
+const original = [1, 2, 3, 4, 5];
 
-const mixed = [1, 3, 2, 4];
-console.log(isSortedAscending(mixed)); // false
+// remove every 3
+const withoutThree = original.filter(v => v !== 3);
+
+console.log(original);       // [1, 2, 3, 4, 5]
+console.log(withoutThree);   // [1, 2, 4, 5]
+const removeFirstThree = original.filter((v, i) => v !== 3 || i !== 1);
+const arr = [1, 2, 3, 4, 5];
+
+// find the index you want to remove
+const idx = arr.indexOf(3);
+if (idx !== -1) {
+  arr.splice(idx, 1);      // remove 1 element at idx
+}
+console.log(arr);           // [1, 2, 4, 5]
+let i = 0;
+while (i < arr.length) {
+  if (arr[i] === 3) {
+    arr.splice(i, 1);
+  } else {
+    i++;
+  }
+}
+function removeAtIndex<T>(arr: T[], idx: number): T[] {
+  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
+}
+
+const withoutIdx = removeAtIndex(original, 2);
+const set = new Set(original);
+set.delete(3);
+const arrFromSet = Array.from(set);
+interface Person { id: number; name: string }
+const people = [{ id: 1 }, { id: 2 }, { id: 3 }];
+
+const withoutId2 = people.filter(p => p.id !== 2);   // immutable
+// or
+const idx = people.findIndex(p => p.id === 2);
+if (idx !== -1) people.splice(idx, 1);               // mutate
