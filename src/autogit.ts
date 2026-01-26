@@ -1,28 +1,9 @@
-const original = [1, 2, 3, 4, 5];
-
-const reversed = [...original].reverse(); // creates a new array, keeps `original` intact
-// or, if you don’t mind mutating the original array
-original.reverse();
-const copy = [...original];  // spread operator makes a new array
-copy.reverse();              // now you have the reversed copy
-function reverseArray<T>(arr: T[]): T[] {
-  const result: T[] = [];
-  for (let i = arr.length - 1; i >= 0; i--) {
-    result.push(arr[i]);
-  }
-  return result;
+function factorial(n: number): number {
+  if (n <= 1) return 1;   // base case: 0! = 1 and 1! = 1
+  return n * factorial(n - 1);
 }
-
-const reverseManual = reverseArray(original);
-function reverseInPlace<T>(arr: T[]): void {
-  let left = 0;
-  let right = arr.length - 1;
-  while (left < right) {
-    // swap
-    [arr[left], arr[right]] = [arr[right], arr[left]];
-    left++;
-    right--;
-  }
+console.log(factorial(5)); // 120
+function factorialBig(n: bigint): bigint {
+  if (n <= 1n) return 1n;
+  return n * factorialBig(n - 1n);
 }
-
-reverseInPlace(original); // `original` is now reversed
