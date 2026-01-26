@@ -1,60 +1,50 @@
-type Node = string | number;              // whichever you prefer for vertex IDs
-type Graph = Record<Node, Node[]>;          // e.g., { 1: [2,3], 2: [4], … }
+/**
+ * Interpolation search – O(log log n) in the ideal case,
+ * O(n) in the worst case (if the array is highly non‑uniform).
+ *
+ * @param arr   An array that is already sorted in ascending order.
+ * @param key   The value to look for.
+ * @returns     The index of `key` in `arr` or -1 if not present.
+ */
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  // Guard against empty array
+  if (arr.length === 0) return -1;
 
-const graph: Graph = {
-  a: ['b', 'c'],
-  b: ['d', 'e'],
-  c: ['f'],
-  d: [],
-  e: ['c'],
-  f: [],
-};
-function dfsRecursive(
-  graph: Graph,
-  start: Node,
-  visited = new Set<Node>(),
-  order: Node[] = []
-): Node[] {
-  visited.add(start);        // 1️⃣ mark as visited
-  order.push(start);         // 2️⃣ record the visit order
+  let low = 0;
+  let high = arr.length - 1;
 
-  for (const neighbor of graph[start] ?? []) {
-    if (!visited.has(neighbor)) {
-      dfsRecursive(graph, neighbor, visited, order); // 3️⃣ recurse
+  // Interpolation formula requires a strictly increasing array
+  // and a finite difference between the ends.
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Avoid division by zero when arr[low] == arr[high].
+    if (arr[low] === arr[high]) return arr[low] === key ? low : -1;
+
+    // Estimate the position of the key inside the current bounds.
+    const pos =
+      low +
+      Math.floor(
+        ((high - low) * (key - arr[low])) / (arr[high] - arr[low]),
+      );
+
+    const value = arr[pos];
+
+    if (value === key) return pos;
+    if (value < key) {
+      low = pos + 1;          // Look in the right sub‑array
+    } else {
+      high = pos - 1;         // Look in the left sub‑array
     }
   }
-  return order;
+
+  return -1; // Not found
 }
-
-// usage
-const visitOrder = dfsRecursive(graph, 'a');
-console.log(visitOrder); // ['a', 'b', 'd', 'e', 'c', 'f']
-function dfsIterative(graph: Graph, start: Node): Node[] {
-  const stack: Node[] = [start];
-  const visited = new Set<Node>();
-  const order: Node[] = [];
-
-  while (stack.length) {
-    const node = stack.pop()!; // pop the top
-    if (visited.has(node)) continue; // skip if we've already seen it
-
-    visited.add(node);   // 1️⃣ mark
-    order.push(node);    // 2️⃣ record
-
-    // push neighbors in reverse order so that the first neighbor
-    // is processed first (mimics recursive order)
-    const neighbors = graph[node] ?? [];
-    for (let i = neighbors.length - 1; i >= 0; i--) {
-      const neighbor = neighbors[i];
-      if (!visited.has(neighbor)) stack.push(neighbor);
-    }
-  }
-  return order;
+const nums = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91, 105];
+console.log(interpolationSearch(nums, 38)); // ➜ 6
+console.log(interpolationSearch(nums, 4));  // ➜ -1
+export function interpolationSearchBy<T, U extends number>(
+  arr: readonly T[],
+  key: U,
+  getKey: (item: T) => U,
+): number {
+  // Same logic, but cast / convert using getKey(item)
 }
-
-// usage
-const orderIter = dfsIterative(graph, 'a');
-console.log(orderIter); // ['a', 'b', 'd', 'e', 'c', 'f']
-// inside the while loop
-const prev = stack[stack.length - 1]; // last node that will lead to `node`
-order.push([prev, node] as [Node, Node]);
