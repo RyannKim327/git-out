@@ -1,50 +1,91 @@
-interface ListNode<T = any> {
-  val: T;
-  next: ListNode<T> | null;
+interface ListNode {
+  val: number;          // or whatever type you prefer
+  next: ListNode | null;
 }
-class ListNode<T = any> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-function nthFromEndNaive<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let size = 0;
-  for (let cur = head; cur; cur = cur.next) size++;
 
-  if (n > size) return null;          // not enough elements
-  let target = size - n;              // 0‑based index from start
-  let cur = head;
-  for (let i = 0; i < target; i++) cur = cur!.next;
+function isPalindromeIterative(head: ListNode | null): boolean {
+  if (!head) return true;
 
-  return cur;
-}
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let fast = head;
-  // Move fast n steps forward
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;   // n is larger than list length
-    fast = fast.next;
-  }
+  const stack: number[] = [];
+  let cur: ListNode | null = head;
 
-  let slow = head!;          // head is guaranteed non‑null now
-  while (fast) {
-    fast = fast.next!;
-    slow = slow.next!;
-  }
-
-  return slow;
-}
-function buildList(nums: number[]) {
-  let dummy = new ListNode(0);
-  let cur = dummy;
-  for (const v of nums) {
-    cur.next = new ListNode(v);
+  // Push all values on the stack
+  while (cur) {
+    stack.push(cur.val);
     cur = cur.next;
+  }
+
+  // Compare while traversing again
+  cur = head;
+  while (cur) {
+    if (cur.val !== stack.pop()) {
+      return false;
+    }
+    cur = cur.next;
+  }
+
+  return true;
+}
+function isPalindromeOptimized(head: ListNode | null): boolean {
+  if (!head || !head.next) return true;
+
+  // 1. Find the middle (slow will point to middle)
+  let slow = head;
+  let fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
+  }
+
+  // 2. Reverse the second half
+  let prev: ListNode | null = null;
+  let curr = slow.next;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  // `prev` is now the head of the reversed second half
+
+  // 3. Compare the two halves
+  let first = head;
+  let second = prev;
+  let result = true;
+  while (result && second) {        // second will be shorter or equal
+    if (first.val !== second.val) result = false;
+    first = first.next!;
+    second = second.next!;
+  }
+
+  // 4. (Optional) Restore the list
+  // Reverse the second half again to bring the list back to original
+  curr = prev;
+  prev = null;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  slow.next = prev;
+
+  return result;
+}
+function buildList(arr: number[]): ListNode | null {
+  let dummy: ListNode = { val: 0, next: null };
+  let tail = dummy;
+  for (const v of arr) {
+    tail.next = { val: v, next: null };
+    tail = tail.next;
   }
   return dummy.next;
 }
 
-const list = buildList([1, 2, 3, 4, 5]);
+const a = buildList([1, 2, 3, 2, 1]);
+console.log(isPalindromeIterative(a));   // true
+console.log(isPalindromeOptimized(a));   // true
 
-console.log(nthFromEnd(list, 1)!.val); // 5
-console.log(nthFromEnd(list, 3)!.val); // 3
-console.log(nthFromEnd(list, 5)!.val); // 1
-console.log(nthFromEnd(list, 6));      // null
+const b = buildList([1, 2, 3, 4]);
+console.log(isPalindromeIterative(b));   // false
+console.log(isPalindromeOptimized(b));   // false
