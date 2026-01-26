@@ -1,21 +1,15 @@
-/**
- * Returns the first repeated character in `s`, or `undefined`
- * if nothing repeats.
- *
- * @param s string to inspect
- */
-export function firstRepeatedChar(s: string): string | undefined {
-  const seen = new Set<string>();
+// 1️⃣ Convert with the global Number constructor
+const n1 = Number("42");          // 42
 
-  for (const ch of s) {
-    if (seen.has(ch)) {
-      return ch;            // first repeat found
-    }
-    seen.add(ch);
-  }
+// 2️⃣ Use the unary plus – super terse
+const n2 = +"123";                // 123
 
-  return undefined;          // no repeats
-}
-console.log(firstRepeatedChar('abcda')); // 'a'
-console.log(firstRepeatedChar('hello world')); // 'l'
-console.log(firstRepeatedChar('abcdef')); // undefined
+// 3️⃣ (recommended for base‑10 integer strings)
+const n3 = parseInt("07", 10);    // 7
+
+// 4️⃣ If you need a float, use parseFloat
+const n4 = parseFloat("3.14");    // 3.14
+const toInt = (s: string | null | undefined): number | null =>
+  s == null ? null : parseInt(s, 10);
+
+const age = toInt(queryParamAge); // gives you a number or null if it's missing
