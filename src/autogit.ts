@@ -1,25 +1,38 @@
 /**
- * Returns true if `n` is a prime number.
- * Works with any non‑negative integer. For negative numbers or 0/1 it returns false.
+ * Returns true if `a` and `b` contain exactly the same characters
+ * (ignoring whitespace, punctuation, and case).
  */
-export function isPrime(n: number): boolean {
-  if (!Number.isInteger(n) || n < 2) return false;   // 0, 1, and non‑ints aren't prime
-  
-  // 2 and 3 are the only even/odd primes.
-  if (n === 2 || n === 3) return true;
+export function isAnagram(a: string, b: string): boolean {
+  // 1. Strip anything that isn’t a letter or a digit, and
+  //    normalize the case to lower‑case.
+  const norm = (s: string) =>
+    s.replace(/\W+/g, "") // removes non‑alphanumeric characters
+      .toLowerCase();
 
-  // Even numbers > 2 are not prime.
-  if (n % 2 === 0) return false;
+  const cleanA = norm(a);
+  const cleanB = norm(b);
 
-  // Check odd divisors up to √n.
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 3; i <= limit; i += 2) {
-    if (n % i === 0) return false;
+  // 2. Quick length check – if lengths differ, they can’t be anagrams.
+  if (cleanA.length !== cleanB.length) return false;
+
+  // 3. Count each character in a Map.
+  const counter = new Map<string, number>();
+
+  for (const ch of cleanA) {
+    counter.set(ch, (counter.get(ch) ?? 0) + 1);
   }
 
-  return true;
+  // 4. Decrement counts with characters from the second string.
+  for (const ch of cleanB) {
+    const cur = counter.get(ch);
+    if (!cur) return false;            // missing or too many of 'ch'
+    if (cur === 1) counter.delete(ch); // tidy up to keep map small
+    else counter.set(ch, cur - 1);
+  }
+
+  // 5. If the map is empty, the two strings were perfect anagrams.
+  return counter.size === 0;
 }
-console.log(isPrime(7));   // true
-console.log(isPrime(20));  // false
-console.log(isPrime(91));  // false (7 × 13)
-console.log(isPrime(97));  // true
+console.log(isAnagram("Listen", "Silent"));   // true
+console.log(isAnagram("Hello!", "Oleh!"));    // true
+console.log(isAnagram("Hello", "World"));     // false
