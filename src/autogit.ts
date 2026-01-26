@@ -1,27 +1,60 @@
-function decimalToBinary(num: number): string {
-  return num.toString(2);   // base‑2 string
-}
+type Node = string | number;              // whichever you prefer for vertex IDs
+type Graph = Record<Node, Node[]>;          // e.g., { 1: [2,3], 2: [4], … }
 
-console.log(decimalToBinary(42)); // "101010"
-function decimalToBinary(num: bigint): string {
-  if (num === 0n) return "0";
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['d', 'e'],
+  c: ['f'],
+  d: [],
+  e: ['c'],
+  f: [],
+};
+function dfsRecursive(
+  graph: Graph,
+  start: Node,
+  visited = new Set<Node>(),
+  order: Node[] = []
+): Node[] {
+  visited.add(start);        // 1️⃣ mark as visited
+  order.push(start);         // 2️⃣ record the visit order
 
-  let n = num;
-  let bits = "";
-
-  while (n > 0n) {
-    bits = (n & 1n ? "1" : "0") + bits; // prepend the low bit
-    n >>= 1n;                           // shift right
+  for (const neighbor of graph[start] ?? []) {
+    if (!visited.has(neighbor)) {
+      dfsRecursive(graph, neighbor, visited, order); // 3️⃣ recurse
+    }
   }
-
-  return bits;
+  return order;
 }
 
-console.log(decimalToBinary(42n)); // "101010"
-export function toBinary(value: number | bigint): string {
-  // Pick the right conversion automatically
-  if (typeof value === "bigint") {
-    return decimalToBinary(value);
+// usage
+const visitOrder = dfsRecursive(graph, 'a');
+console.log(visitOrder); // ['a', 'b', 'd', 'e', 'c', 'f']
+function dfsIterative(graph: Graph, start: Node): Node[] {
+  const stack: Node[] = [start];
+  const visited = new Set<Node>();
+  const order: Node[] = [];
+
+  while (stack.length) {
+    const node = stack.pop()!; // pop the top
+    if (visited.has(node)) continue; // skip if we've already seen it
+
+    visited.add(node);   // 1️⃣ mark
+    order.push(node);    // 2️⃣ record
+
+    // push neighbors in reverse order so that the first neighbor
+    // is processed first (mimics recursive order)
+    const neighbors = graph[node] ?? [];
+    for (let i = neighbors.length - 1; i >= 0; i--) {
+      const neighbor = neighbors[i];
+      if (!visited.has(neighbor)) stack.push(neighbor);
+    }
   }
-  return value.toString(2);
+  return order;
 }
+
+// usage
+const orderIter = dfsIterative(graph, 'a');
+console.log(orderIter); // ['a', 'b', 'd', 'e', 'c', 'f']
+// inside the while loop
+const prev = stack[stack.length - 1]; // last node that will lead to `node`
+order.push([prev, node] as [Node, Node]);
