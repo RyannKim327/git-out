@@ -1,56 +1,43 @@
-/**
- * Returns the longest strictly increasing subsequence of `arr`.
- *
- * Example:
- *   longestIncreasingSubsequence([10, 9, 2, 5, 3, 7, 101, 18])
- *   → [2, 3, 7, 101]
- */
-export function longestIncreasingSubsequence(arr: number[]): number[] {
-  if (arr.length === 0) return [];
-
-  // `tails` keeps the smallest tail value for all subsequences
-  // of a given length. `tails[i]` is the least possible tail of
-  // an increasing subsequence with length i+1.
-  const tails: number[] = [];
-  // `prevIndices` remembers, for each element, the index of its
-  // predecessor in the LIS that passes through that element.
-  const prevIndices: number[] = new Array(arr.length).fill(-1);
-  // `indicesAtLength` holds the index of the last element of the LIS
-  // of a given length, allowing us to reconstruct the sequence.
-  const indicesAtLength: number[] = [];
-
-  arr.forEach((val, idx) => {
-    // Binary search for the first tail that is >= val
-    let l = 0;
-    let r = tails.length;
-    while (l < r) {
-      const m = Math.floor((l + r) / 2);
-      if (tails[m] < val) l = m + 1;
-      else r = m;
-    }
-
-    // `l` is the length (0‑based) of the subsequence that will end at idx
-    if (l > 0) prevIndices[idx] = indicesAtLength[l - 1];
-
-    if (l === tails.length) {
-      tails.push(val);
-      indicesAtLength.push(idx);
-    } else {
-      tails[l] = val;
-      indicesAtLength[l] = idx;
-    }
-  });
-
-  // Reconstruct the LIS from the recorded indices
-  const lis: number[] = [];
-  let k = indicesAtLength[indicesAtLength.length - 1];
-  while (k !== -1) {
-    lis.push(arr[k]);
-    k = prevIndices[k];
+function stringLength(str: string): number {
+  let len = 0;
+  for (let i = 0; i < str.length; i++) {
+    len++;                // we still use str.length in the loop condition,
+                          // but we never read it as the "answer"
   }
-  lis.reverse();
-  return lis;
+  return len;
 }
-const data = [3, 10, 2, 1, 20];
-console.log(longestIncreasingSubsequence(data));
-// → [3, 10, 20]
+function stringLength(str: string): number {
+  let len = 0;
+  let code = str.codePointAt(0);
+  let idx = 0;
+  while (code !== undefined) {
+    len++;
+    idx++;
+    code = str.codePointAt(idx);
+  }
+  return len;
+}
+function stringLength(str: string): number {
+  let len = 0;
+  for (const _ of str) {
+    len++;
+  }
+  return len;
+}
+function stringLength(str: string): number {
+  if (str === '') return 0;
+  return 1 + stringLength(str.slice(1));
+}
+function stringLength(str: string): number {
+  const matches = str.match(/./gu);
+  return matches ? matches.length : 0;
+}
+function stringLength(str: string): number {
+  let idx = 0;
+  let len = 0;
+  while (str.charAt(idx) !== '') { // `charAt` returns '' past the end
+    len++;
+    idx++;
+  }
+  return len;
+}
