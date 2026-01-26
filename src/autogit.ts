@@ -1,61 +1,25 @@
-// A generic graph node – you can replace this with whatever you’re actually
-// storing.  Here we just keep a value and an array of child nodes.
-export interface TreeNode<T> {
-  value: T;
-  children: TreeNode<T>[];
-}
 /**
- * Performs a breadth‑first search up to a depth limit.
- *
- * @param root The starting node.
- * @param maxDepth The maximum path length to explore (0 = only the root).
- * @param filter A callback that decides whether a node should be “accepted”.
- *               It receives the node and its depth (root = 0).
- * @returns An array of all nodes that satisfy the filter within the depth bound.
+ * Returns true if `n` is a prime number.
+ * Works with any non‑negative integer. For negative numbers or 0/1 it returns false.
  */
-export function breadthLimitedSearch<T>(
-  root: TreeNode<T>,
-  maxDepth: number,
-  filter: (node: TreeNode<T>, depth: number) => boolean
-): TreeNode<T>[] {
-  const result: TreeNode<T>[] = [];
-  const queue: Array<{ node: TreeNode<T>; depth: number }> = [{ node: root, depth: 0 }];
+export function isPrime(n: number): boolean {
+  if (!Number.isInteger(n) || n < 2) return false;   // 0, 1, and non‑ints aren't prime
+  
+  // 2 and 3 are the only even/odd primes.
+  if (n === 2 || n === 3) return true;
 
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;           // FIFO
-    if (depth > maxDepth) continue;                  // depth guard
+  // Even numbers > 2 are not prime.
+  if (n % 2 === 0) return false;
 
-    if (filter(node, depth)) result.push(node);
-
-    // Push children *after* checking depth to avoid pushing out‑of‑range nodes
-    if (depth < maxDepth) {
-      for (const child of node.children) {
-        queue.push({ node: child, depth: depth + 1 });
-      }
-    }
+  // Check odd divisors up to √n.
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false;
   }
 
-  return result;
+  return true;
 }
-// Simple test tree
-const tree: TreeNode<string> = {
-  value: 'root',
-  children: [
-    { value: 'A', children: [] },
-    { value: 'B', children: [
-        { value: 'B1', children: [] },
-        { value: 'B2', children: [] },
-      ]
-    },
-    { value: 'C', children: [] }
-  ]
-};
-
-// Want all nodes that start with "B" and only dive 2 levels deep
-const matches = breadthLimitedSearch(
-  tree,
-  2,
-  (node, depth) => node.value.startsWith('B')
-);
-
-console.log(matches.map(n => n.value)); // ['B', 'B1', 'B2']
+console.log(isPrime(7));   // true
+console.log(isPrime(20));  // false
+console.log(isPrime(91));  // false (7 × 13)
+console.log(isPrime(97));  // true
