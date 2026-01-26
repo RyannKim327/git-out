@@ -1,28 +1,24 @@
-/**
- * Return true if `s` is a palindrome.
- *   - Works for regular strings and Unicode strings
- *   - Uses a two‑pointer scan; no extra arrays/strings are allocated
- *   - Time:  O(n)
- *   - Extra space: O(1)
- */
-function isPalindrome(s: string): boolean {
-    let left  = 0;
-    let right = s.length - 1;
+const scores: number[] = [12, 19, 3, 40, 27];
 
-    while (left < right) {
-        // Skip non‑alphanumeric characters & ignore case if you want
-        // if (!/[a-z0-9]/i.test(s.charAt(left))) { left++; continue; }
-        // if (!/[a-z0-9]/i.test(s.charAt(right))) { right--; continue; }
-
-        if (s[left] !== s[right]) {
-            return false;
-        }
-        left++;
-        right--;
-    }
-    return true;
+const max = Math.max(...scores);   // 40
+const max = scores.reduce((highest, current) => (current > highest ? current : highest), -Infinity);
+function findMax(arr: number[]): number | undefined {
+  if (arr.length === 0) return undefined;
+  return arr.reduce((m, n) => (n > m ? n : m), arr[0]);
 }
-console.log(isPalindrome("racecar"));        // true
-console.log(isPalindrome("hello"));          // false
-console.log(isPalindrome("A man a plan a canal Panama".replace(/\s+/g, '').toLowerCase()));
-// true, after normalizing whitespace and case
+function maxOfArray(arr: number[]): number {
+  if (arr.length === 0) throw new Error('Empty array');
+
+  let max = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] > max) max = arr[i];
+  }
+  return max;
+}
+const typed: Int32Array = new Int32Array([2, 5, 9, 1]);
+
+const max = Math.max.apply(null, typed as unknown as number[]);
+const numbers = [7, 42, -3, 13];
+console.log(Math.max(...numbers)); // 42
+console.log(findMax(numbers));     // 42
+console.log(maxOfArray(numbers));  // 42
