@@ -1,50 +1,21 @@
-interface ListNode<T = any> {
-  val: T;
-  next: ListNode<T> | null;
-}
-class ListNode<T = any> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-function nthFromEndNaive<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let size = 0;
-  for (let cur = head; cur; cur = cur.next) size++;
-
-  if (n > size) return null;          // not enough elements
-  let target = size - n;              // 0‑based index from start
-  let cur = head;
-  for (let i = 0; i < target; i++) cur = cur!.next;
-
-  return cur;
-}
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let fast = head;
-  // Move fast n steps forward
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;   // n is larger than list length
-    fast = fast.next;
+function countChar(str: string, ch: string): number {
+  let count = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === ch) count++;
   }
-
-  let slow = head!;          // head is guaranteed non‑null now
-  while (fast) {
-    fast = fast.next!;
-    slow = slow.next!;
-  }
-
-  return slow;
+  return count;
 }
-function buildList(nums: number[]) {
-  let dummy = new ListNode(0);
-  let cur = dummy;
-  for (const v of nums) {
-    cur.next = new ListNode(v);
-    cur = cur.next;
-  }
-  return dummy.next;
+const count = str.split(ch).length - 1;
+function countCharWithRegex(str: string, ch: string): number {
+  // Escape regex metacharacters in case ch is not a plain letter
+  const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(escaped, 'g');
+  const matches = str.match(re);
+  return matches ? matches.length : 0;
 }
-
-const list = buildList([1, 2, 3, 4, 5]);
-
-console.log(nthFromEnd(list, 1)!.val); // 5
-console.log(nthFromEnd(list, 3)!.val); // 3
-console.log(nthFromEnd(list, 5)!.val); // 1
-console.log(nthFromEnd(list, 6));      // null
+const count = [...str].reduce((acc, c) => acc + (c === ch ? 1 : 0), 0);
+const count = [...str.toUpperCase()].filter(c => c === ch.toUpperCase()).length;
+const test = "hello world, hello TypeScript!";
+console.log(countChar(test, "l")); // 8
+console.log(countChar(test, "H")); // 1
+console.log(countChar(test, "o")); // 3
