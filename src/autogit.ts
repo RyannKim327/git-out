@@ -1,63 +1,50 @@
-/**
- * Rabin‑Karp string search
- *
- * Parameters:
- *  pattern – the string we’re looking for
- *  text    – the string to search inside
- *
- * Returns:
- *  array of starting indices where pattern occurs (empty if no match)
- */
-export function rabinKarp(pattern: string, text: string): number[] {
-    // Edge cases
-    if (pattern.length === 0) return [];
-    if (pattern.length > text.length) return [];
-
-    const base = 256;               // number of possible characters (ASCII)
-    const mod = 101;                // a prime mod to keep numbers small
-
-    const m = pattern.length;
-    const n = text.length;
-
-    // Pre‑compute base^(m‑1) % mod  (the “high” power)
-    let basePower = 1;
-    for (let i = 0; i < m - 1; i++) {
-        basePower = (basePower * base) % mod;
-    }
-
-    // Compute hash for pattern and first window of text
-    let patHash = 0;
-    let txtHash = 0;
-    for (let i = 0; i < m; i++) {
-        patHash = (patHash * base + pattern.charCodeAt(i)) % mod;
-        txtHash = (txtHash * base + text.charCodeAt(i)) % mod;
-    }
-
-    const result: number[] = [];
-
-    // Slide the window over the text
-    for (let s = 0; s <= n - m; s++) {
-        // If the hash values match, verify the substring to confirm
-        if (patHash === txtHash) {
-            let match = true;
-            for (let k = 0; k < m; k++) {
-                if (text[s + k] !== pattern[k]) {
-                    match = false;
-                    break;
-                }
-            }
-            if (match) result.push(s);
-        }
-
-        // Compute hash for next window: remove leading char, add trailing char
-        if (s < n - m) {
-            txtHash = (txtHash - text.charCodeAt(s) * basePower) % mod;
-            if (txtHash < 0) txtHash += mod;                    // keep positive
-            txtHash = (txtHash * base + text.charCodeAt(s + m)) % mod;
-        }
-    }
-
-    return result;
+interface ListNode<T = any> {
+  val: T;
+  next: ListNode<T> | null;
 }
-const idx = rabinKarp('abc', 'xabcababc');
-console.log(idx);   // → [1, 6]
+class ListNode<T = any> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
+}
+function nthFromEndNaive<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let size = 0;
+  for (let cur = head; cur; cur = cur.next) size++;
+
+  if (n > size) return null;          // not enough elements
+  let target = size - n;              // 0‑based index from start
+  let cur = head;
+  for (let i = 0; i < target; i++) cur = cur!.next;
+
+  return cur;
+}
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let fast = head;
+  // Move fast n steps forward
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;   // n is larger than list length
+    fast = fast.next;
+  }
+
+  let slow = head!;          // head is guaranteed non‑null now
+  while (fast) {
+    fast = fast.next!;
+    slow = slow.next!;
+  }
+
+  return slow;
+}
+function buildList(nums: number[]) {
+  let dummy = new ListNode(0);
+  let cur = dummy;
+  for (const v of nums) {
+    cur.next = new ListNode(v);
+    cur = cur.next;
+  }
+  return dummy.next;
+}
+
+const list = buildList([1, 2, 3, 4, 5]);
+
+console.log(nthFromEnd(list, 1)!.val); // 5
+console.log(nthFromEnd(list, 3)!.val); // 3
+console.log(nthFromEnd(list, 5)!.val); // 1
+console.log(nthFromEnd(list, 6));      // null
