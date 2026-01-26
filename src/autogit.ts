@@ -1,43 +1,65 @@
-// Helper that normalises the string – handy if you want to ignore
-// spaces, punctuation, and case.
-function normalise(text: string): string {
-  return text
-    .toLowerCase()         // ignore case
-    .replace(/[^a-z0-9]/g, '');  // keep only alphanumerics
+// ---------- Basics ----------
+class ListNode {
+  val: number          // you can keep any data you need
+  next: ListNode | null = null;
+
+  constructor(val: number) {
+    this.val = val;
+  }
 }
 
-/**
- * Returns true if `input` is a palindrome.
- *
- * @param input – the string you want to test
- * @param {boolean} allowEmpty = false  – whether an empty string is considered a palindrome
- */
-function isPalindrome(
-  input: string,
-  allowEmpty = false,
-): boolean {
-  // Fast‑path for empty string
-  if (input.length === 0) return allowEmpty;
+// ---------- Intersection finder ----------
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  if (!headA || !headB) return null;
 
-  const s = normalise(input);
+  let ptrA: ListNode | null = headA;
+  let ptrB: ListNode | null = headB;
 
-  // Empty after normalisation may be true or false – decide here
-  if (s.length === 0) return false;
-
-  // Compare characters from both ends
-  let left = 0;
-  let right = s.length - 1;
-
-  while (left < right) {
-    if (s[left] !== s[right]) return false;
-    left++;
-    right--;
+  // After at most two passes through each list the pointers
+  // will either meet at the intersection or both become null.
+  while (ptrA !== ptrB) {
+    ptrA = ptrA ? ptrA.next : headB; // switch to the head of the other list
+    ptrB = ptrB ? ptrB.next : headA;
   }
 
-  return true;
+  return ptrA; // either the intersection node, or null
 }
 
-// Demo
-console.log(isPalindrome('RaceCar'));           // true
-console.log(isPalindrome('A man, a plan!'));    // true
-console.log(isPalindrome('hello world'));       // false
+// ---------- Quick demo ----------
+function buildLinkedList(values: number[], offset: number = 0) {
+  let head: ListNode | null = null;
+  let tail: ListNode | null = null;
+  for (let v of values) {
+    const node = new ListNode(v);
+    if (!head) head = node;
+    if (tail) tail.next = node;
+    tail = node;
+  }
+  return { head, tail };
+}
+
+// Common tail that will be shared by two lists
+const { head: shared, tail: sharedTail } = buildLinkedList([8, 10]);
+
+// First list: 3 → 7 → 8 → 10
+const { head: aHead } = buildLinkedList([3, 7]);
+if (aHead && sharedHead) {
+  // connect the shared tail
+  let node = aHead;
+  while (node.next) node = node.next;
+  node.next = shared;
+}
+
+// Second list: 99 → 1 → 8 → 10
+const { head: bHead } = buildLinkedList([99, 1]);
+if (bHead && sharedHead) {
+  let node = bHead;
+  while (node.next) node = node.next;
+  node.next = shared;
+}
+
+const intersection = getIntersectionNode(aHead, bHead);
+console.log(intersection?.val); // prints 8
