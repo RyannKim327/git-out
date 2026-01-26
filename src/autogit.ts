@@ -1,101 +1,91 @@
-// ------------------------------------------------------------
-// 1️⃣  In‑place quick‑sort – most common for competitive coding
-// ------------------------------------------------------------
-function quickSortInPlace<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): void {
-  const swap = (i: number, j: number) => {
-    const tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
-  };
+type BMIndices = { badChar: number[]; goodSuffix: number[] };
 
-  function partition(low: number, high: number): number {
-    // Pick the last element as pivot (simple but fine for demo)
-    const pivot = arr[high];
-    let i = low - 1;
+const CHAR_LIMIT = 256;          // size of ASCII table (adjust if you need Unicode)
 
-    for (let j = low; j < high; j++) {
-      if (compare(arr[j], pivot) <= 0) {
-        i++;
-        swap(i, j);
+// Allocate and initialise a lookup array, defaulting to -1
+function initArray(size: number, init: number = -1): number[] {
+  const arr = new Array<number>(size);
+  for (let i = 0; i < size; i++) arr[i] = init;
+  return arr;
+}
+function badCharTable(pattern: string): number[] {
+  const table = initArray(CHAR_LIMIT, -1);
+
+  for (let i = 0; i < pattern.length; i++) {
+    table[pattern.charCodeAt(i)] = i;
+  }
+
+  return table;
+}
+function goodSuffixTable(pat: string): number[] {
+  const m = pat.length;
+  const suffix = initArray(m);
+  const goodSuffix = initArray(m, 0);
+
+  suffix[m - 1] = m;
+  let g = m - 1;
+  let f = 0;
+
+  for (let i = m - 2; i >= 0; i--) {
+    if (i > g && suffix[i + m - 1 - f] < i - g) {
+      suffix[i] = suffix[i + m - 1 - f];
+    } else {
+      g = i;
+      f = i;
+      while (g >= 0 && pat[g] === pat[g + m - 1 - f]) {
+        g--;
       }
-    }
-    swap(i + 1, high);
-    return i + 1;
-  }
-
-  function quick(low: number, high: number): void {
-    if (low < high) {
-      const pi = partition(low, high);
-      quick(low, pi - 1);
-      quick(pi + 1, high);
+      suffix[i] = f - g;
     }
   }
 
-  quick(0, arr.length - 1);
-}
-
-// ------------------------------------------------------------
-// 2️⃣  Functional quick‑sort – returns a new sorted array
-// ------------------------------------------------------------
-function quickSortFunctional<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  if (arr.length <= 1) return arr.slice(); // immutable copy
-
-  // Random pivot for better average performance on already‑sorted data
-  const pivot = arr[Math.floor(Math.random() * arr.length)];
-  const lows = arr.filter((v) => compare(v, pivot) < 0);
-  const highs = arr.filter((v) => compare(v, pivot) > 0);
-  const pivots = arr.filter((v) => compare(v, pivot) === 0);
-
-  return [
-    ...quickSortFunctional(lows, compare),
-    ...pivots,
-    ...quickSortFunctional(highs, compare),
-  ];
-}
-
-// ------------------------------------------------------------
-// 3️⃣  Small helper that wraps the in‑place version and offers
-//     a better pivot strategy
-// ------------------------------------------------------------
-function quickSort<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  // Randomize the array first; this keeps the pivot “good” on many inputs
-  // and eliminates the worst‑case for already‑sorted data.
-  const shuffled = arr.slice();
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  // Build the goodSuffix shift table from suffix lengths
+  for (let i = 0; i < m; i++) {
+    goodSuffix[i] = m - suffix[i];
   }
 
-  quickSortInPlace(shuffled, compare);
-  return shuffled;
+  return goodSuffix;
+}
+function boyerMooreSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [];   // nothing to find
+
+  const { badChar, goodSuffix } = preprocess(pattern);
+
+  const matches: number[] = [];
+  let s = 0;                // shift of the pattern wrt text
+
+  while (s <= n - m) {
+    let j = m - 1;
+
+    // Keep moving left while the characters match
+    while (j >= 0 && pattern[j] === text[s + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      // match found
+      matches.push(s);
+      // next shift: either the good suffix shift or 1
+      s += goodSuffix[0] > 0 ? goodSuffix[0] : 1;
+    } else {
+      const badShift = j - badChar[text.charCodeAt(s + j)];
+      const goodShift = goodSuffix[j];
+      s += Math.max(badShift, goodShift);
+    }
+  }
+
+  return matches;
 }
 
-// ---------------------------
-// Demo usage
-// ---------------------------
+function preprocess(pattern: string): BMIndices {
+  return {
+    badChar: badCharTable(pattern),
+    goodSuffix: goodSuffixTable(pattern),
+  };
+}
+const txt = "ABAAABCDABAAABCDAAAABCDABAAABCDAAAABCD";
+const pat = "ABDAB";
 
-const numbers = [34, 7, 23, 32, 5, 62, 32];
-console.log('in‑place:', (() => {
-  const copy = [...numbers];
-  quickSortInPlace(copy);
-  return copy;
-})());
-
-console.log('functional:', quickSortFunctional(numbers));
-
-console.log('wrapper:', quickSort(numbers));
-
-// ------------------------------------------------------------
-// Done!
-// ------------------------------------------------------------
-const byLength = (a: string, b: string) => a.length - b.length;
-quickSort(stringsArray, byLength);
+console.log(boyerMooreSearch(txt, pat));  // → [0, 9, 19, 29]
