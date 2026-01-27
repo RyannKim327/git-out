@@ -1,98 +1,58 @@
-/* ──────────────────────────────────────────────────────
-   1️⃣  A tiny TypeScript helper that wraps the Fetch API
-─────────────────────────────────────────────────────── */
+// Majority element finder – works for any type that supports === comparison
+export function majorityElement<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
 
-const api = {
-  /* GET a JSON‑encoded resource */
-  async get<T>(url: string): Promise<T> {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
+  // 1st pass: find a candidate
+  let candidate = arr[0];
+  let count = 1;
 
-    if (!response.ok) {
-      const msg = `Fetching ${url} failed with status ${response.status}`;
-      console.warn(msg);
-      throw new Error(msg);
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === candidate) {
+      count++;
+    } else if (count === 0) {
+      candidate = arr[i];
+      count = 1;
+    } else {
+      count--;
     }
+  }
 
-    const json = await response.json();
-    return json as T;
-  },
+  // 2nd pass: verify that the candidate is really a majority
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
+  }
 
-  /* POST data as JSON */
-  async post<T, U>(url: string, body: T): Promise<U> {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const msg = `Posting to ${url} failed with status ${response.status}`;
-      console.warn(msg);
-      throw new Error(msg);
-    }
-
-    const json = await response.json();
-    return json as U;
-  },
-};
-
-/* ──────────────────────────────────────────────────────
-   2️⃣  A React‑Native component that uses the helper
-─────────────────────────────────────────────────────── */
-
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-
-type Todo = { userId: number; id: number; title: string; completed: boolean };
-
-// Example URL: https://jsonplaceholder.typicode.com/todos/1
-const TODO_URL = 'https://jsonplaceholder.typicode.com/todos/1';
-
-export default function AsyncExample() {
-  const [todo, setTodo] = useState<Todo | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    /*═════════════════════════════════════════════════
-       Run an “async task” when the component mounts
-     ════════════════════════════════════════════════*/
-    const fetchTodo = async () => {
-      try {
-        const data = await api.get<Todo>(TODO_URL);
-        setTodo(data);
-      } catch (e: any) {
-        setError(e.message ?? 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTodo();
-  }, []);
-
-  if (loading) return <ActivityIndicator style={styles.center} />;
-  if (error) return <Text style={styles.error}>❌ {error}</Text>;
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Todo #{todo?.id}</Text>
-      <Text style={styles.content}>{todo?.title}</Text>
-      <Text style={styles.status}>
-        {todo?.completed ? '✅ Completed' : '🔄 Pending'}
-      </Text>
-    </View>
-  );
+  return count > Math.floor(arr.length / 2) ? candidate : null;
 }
+const nums = [3, 1, 3, 3, 2, 3, 3];
+const maj = majorityElement(nums);
 
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },
-  center:      { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title:   { fontSize: 24, fontWeight: 'bold', marginBottom: 12 },
-  content: { fontSize: 18, marginBottom: 8 },
-  status:  { fontSize: 16, color: '#777' },
-  error:   { color: 'red', textAlign: 'center', margin: 20 },
-});
+console.log(maj); // → 3
+function majorityBySorting<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
+
+  const sorted = [...arr].sort(); // lexicographic for strings, numeric for numbers
+  const midVal = sorted[Math.floor(arr.length / 2)];
+
+  const count = sorted.reduce((c, v) => (v === midVal ? c + 1 : c), 0);
+  return count > Math.floor(arr.length / 2) ? midVal : null;
+}
+// A simple quick‑check
+export function testMajority() {
+  const cases: Array<[any[], any | null]> = [
+    [[1, 2, 1, 1, 3], 1],
+    [['a', 'b', 'a', 'a', 'c'], 'a'],
+    [[5, 5, 6, 6, 5], 5],
+    [[1, 2, 3], null],
+  ];
+
+  for (const [arr, expected] of cases) {
+    const result = majorityElement(arr);
+    if (result !== expected) {
+      console.error(`❌ Failed for ${JSON.stringify(arr)}: got ${result}`);
+    } else {
+      console.log(`✅ ${JSON.stringify(arr)} → ${result}`);
+    }
+  }
+}
