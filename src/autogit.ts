@@ -1,54 +1,60 @@
-/**
- * Merge two sorted slices of `arr` into a temporary array.
- *
- * @param arr  source array
- * @param tmp  temporary array of the same length
- * @param left  start index of the first slice
- * @param mid   end index (exclusive) of the first slice and start of the second
- * @param right end index (exclusive) of the second slice
- */
-function merge(
-  arr: number[],
-  tmp: number[],
-  left: number,
-  mid: number,
-  right: number
-): void {
-  let i = left;   // index in first slice
-  let j = mid;    // index in second slice
-  let k = left;   // index in tmp
+type Node = string | number;              // whichever you prefer for vertex IDs
+type Graph = Record<Node, Node[]>;          // e.g., { 1: [2,3], 2: [4], … }
 
-  // Copy the relevant segment to tmp
-  for (let idx = left; idx < right; idx++) tmp[idx] = arr[idx];
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['d', 'e'],
+  c: ['f'],
+  d: [],
+  e: ['c'],
+  f: [],
+};
+function dfsRecursive(
+  graph: Graph,
+  start: Node,
+  visited = new Set<Node>(),
+  order: Node[] = []
+): Node[] {
+  visited.add(start);        // 1️⃣ mark as visited
+  order.push(start);         // 2️⃣ record the visit order
 
-  // Merge back into arr
-  while (i < mid && j < right) {
-    arr[k++] = tmp[i] <= tmp[j] ? tmp[i++] : tmp[j++];
-  }
-  while (i < mid) arr[k++] = tmp[i++];
-  while (j < right) arr[k++] = tmp[j++];
-}
-
-/**
- * Iterative merge sort.
- *
- * @param arr  array to sort in‑place
- */
-function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  if (n < 2) return; // already sorted
-
-  const tmp = new Array<number>(n);
-
-  // Run size = 1, 2, 4, 8, ...
-  for (let run = 1; run < n; run *= 2) {
-    for (let left = 0; left < n; left += 2 * run) {
-      const mid = Math.min(left + run, n);
-      const right = Math.min(left + 2 * run, n);
-      if (mid < right) merge(arr, tmp, left, mid, right);
+  for (const neighbor of graph[start] ?? []) {
+    if (!visited.has(neighbor)) {
+      dfsRecursive(graph, neighbor, visited, order); // 3️⃣ recurse
     }
   }
+  return order;
 }
-const nums = [34, 7, 23, 32, 5, 62];
-mergeSortIterative(nums);
-console.log(nums); // [5, 7, 23, 32, 34, 62]
+
+// usage
+const visitOrder = dfsRecursive(graph, 'a');
+console.log(visitOrder); // ['a', 'b', 'd', 'e', 'c', 'f']
+function dfsIterative(graph: Graph, start: Node): Node[] {
+  const stack: Node[] = [start];
+  const visited = new Set<Node>();
+  const order: Node[] = [];
+
+  while (stack.length) {
+    const node = stack.pop()!; // pop the top
+    if (visited.has(node)) continue; // skip if we've already seen it
+
+    visited.add(node);   // 1️⃣ mark
+    order.push(node);    // 2️⃣ record
+
+    // push neighbors in reverse order so that the first neighbor
+    // is processed first (mimics recursive order)
+    const neighbors = graph[node] ?? [];
+    for (let i = neighbors.length - 1; i >= 0; i--) {
+      const neighbor = neighbors[i];
+      if (!visited.has(neighbor)) stack.push(neighbor);
+    }
+  }
+  return order;
+}
+
+// usage
+const orderIter = dfsIterative(graph, 'a');
+console.log(orderIter); // ['a', 'b', 'd', 'e', 'c', 'f']
+// inside the while loop
+const prev = stack[stack.length - 1]; // last node that will lead to `node`
+order.push([prev, node] as [Node, Node]);
