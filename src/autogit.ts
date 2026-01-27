@@ -1,29 +1,37 @@
-const nums = [1, 2, 2, 3, 4, 4, 5];
-const unique = [...new Set(nums)];   // [1, 2, 3,4,5]
-const vals = ['a', 'b', 'a', 'c', 'b'];
-const uniq = vals.filter((value, index, arr) => arr.indexOf(value) === index);
-// ['a','b','c']
-interface User {
-  id: number;
-  name: string;
+// factorial.ts
+import readline from 'readline';
+
+// Utility that returns the factorial of a non‑negative integer
+function factorial(n: number): number {
+  if (n < 0) throw new Error('Number must be non‑negative');
+  if (n === 0 || n === 1) return 1;
+  return n * factorial(n - 1);
 }
 
-const users: User[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob'   },
-  { id: 1, name: 'Alice'},
-  { id: 3, name: 'Carol'},
-];
+// Set up a readline interface to read from stdin
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
 
-const uniq = Array.from(
-  users.reduce((map, user) => map.set(user.id, user), new Map<number, User>())
-).map(entry => entry[1]);
+// Ask the user for a number
+rl.question('Enter a non‑negative integer: ', (answer) => {
+  const num = Number(answer.trim());
 
-// [{id:1,name:'Alice'}, {id:2,name:'Bob'}, {id:3,name:'Carol'}]
-const objs = [{x:1},{x:2},{x:1},{x:3}];
-const uniq = Array.from(
-  new Set(objs.map(o => JSON.stringify(o)))
-).map(str => JSON.parse(str));
-import { uniqBy } from 'lodash';
+  if (Number.isNaN(num) || !Number.isInteger(num)) {
+    console.log(`"${answer}" is not a valid integer.`);
+  } else {
+    try {
+      const result = factorial(num);
+      console.log(`Factorial of ${num} is ${result}`);
+    } catch (e) {
+      console.log(e.message);
+    }
+  }
 
-const uniqUsers = uniqBy(users, 'id');
+  rl.close();
+});
+npm install --save-dev @types/node
+npx ts-node factorial.ts
+tsc factorial.ts   # produces factorial.js
+node factorial.js
