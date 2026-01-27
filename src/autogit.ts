@@ -1,54 +1,19 @@
 /**
- * Merge two sorted slices of `arr` into a temporary array.
- *
- * @param arr  source array
- * @param tmp  temporary array of the same length
- * @param left  start index of the first slice
- * @param mid   end index (exclusive) of the first slice and start of the second
- * @param right end index (exclusive) of the second slice
+ * Minimal email validator.
+ * Covers most real‑world cases without being overly strict.
  */
-function merge(
-  arr: number[],
-  tmp: number[],
-  left: number,
-  mid: number,
-  right: number
-): void {
-  let i = left;   // index in first slice
-  let j = mid;    // index in second slice
-  let k = left;   // index in tmp
-
-  // Copy the relevant segment to tmp
-  for (let idx = left; idx < right; idx++) tmp[idx] = arr[idx];
-
-  // Merge back into arr
-  while (i < mid && j < right) {
-    arr[k++] = tmp[i] <= tmp[j] ? tmp[i++] : tmp[j++];
-  }
-  while (i < mid) arr[k++] = tmp[i++];
-  while (j < right) arr[k++] = tmp[j++];
+export function isValidEmail(email: string): boolean {
+  // 1. Basic structural check: local part @ domain
+  // 2. Local part: letters, digits, dots, hyphens, underscores, and plus
+  // 3. Domain: DNS‑style labels separated by dots; ends in 2‑63‑letter TLD
+  const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,64}$/;
+  return pattern.test(email);
 }
+import validator from 'validator';
 
-/**
- * Iterative merge sort.
- *
- * @param arr  array to sort in‑place
- */
-function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  if (n < 2) return; // already sorted
-
-  const tmp = new Array<number>(n);
-
-  // Run size = 1, 2, 4, 8, ...
-  for (let run = 1; run < n; run *= 2) {
-    for (let left = 0; left < n; left += 2 * run) {
-      const mid = Math.min(left + run, n);
-      const right = Math.min(left + 2 * run, n);
-      if (mid < right) merge(arr, tmp, left, mid, right);
-    }
-  }
+function isValidFullEmail(email: string): boolean {
+  return validator.isEmail(email);  // uses RFC‑compliant logic
 }
-const nums = [34, 7, 23, 32, 5, 62];
-mergeSortIterative(nums);
-console.log(nums); // [5, 7, 23, 32, 34, 62]
+console.log(isValidEmail('user@example.com'));   // true
+console.log(isValidEmail('bob.smith@sub.domain.co')); // true
+console.log(isValidEmail('invalid-email@'));    // false
