@@ -1,65 +1,60 @@
-// ---------------------------------------------------------
-//  FunRandomCron.ts
-//  A tiny demo that shows how to:
-//   • import node‑cron with types
-//   • schedule a repeating job
-//   • cancel a job on demand
-//   • use a more powerful CRON expression
-//   • log the next run time every time it fires
-// ---------------------------------------------------------
+/**
+ * Returns the max sum of any contiguous sub‑array of `nums`.
+ * If all numbers are negative, it will still return the best (least negative) value.
+ *
+ * @param nums Array of numbers
+ * @returns maximum sub‑array sum
+ */
+function maxSubArraySum(nums: number[]): number {
+  if (nums.length === 0) {
+    throw new Error('Array must contain at least one element');
+  }
 
-import cron, { ScheduledTask } from 'node‑cron';
-import { format } from 'date‑fns';
+  let bestSoFar = nums[0];      // best overall
+  let bestEndingHere = nums[0]; // best ending at current index
 
-// This job runs every 10 seconds—just to keep the console fire‑breathing.
-// In a real app you could do backups, recompute stats, notify users, etc.
-const repeatEveryTenSeconds: ScheduledTask = cron.schedule(
-  '*/10 * * * * *',                // <seconds> <minutes> <hours> <day> <month> <dow>
-  () => {
-    const now = new Date();
-    console.log(`[${format(now, 'HH:mm:ss.SSS')}] 10‑second heartbeat!`);
-    // Do your real work here.
-  },
-  { scheduled: true }              // starts immediately
-);
+  for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous sub‑array or start fresh at nums[i]
+    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
 
-// Also throw in a “Monday at 04:35” job just to show another flavour.
-const mondayMorning: ScheduledTask = cron.schedule(
-  '35 4 * * 1',                    // minute hour day-of-month month day-of-week
-  () => {
-    console.log(`🎉 Monday Special – It’s 04:35!`);
-  },
-  { scheduled: true, timezone: 'America/New_York' } // time‑zone support
-);
+    // Update the global best if needed
+    bestSoFar = Math.max(bestSoFar, bestEndingHere);
+  }
 
-// Show next run times.  Handy for debugging.
-function displayNextRun(job: ScheduledTask, name: string) {
-  console.log(` → ${name} next run at ${format(job.nextDates().toDate(), 'yyyy‑MM‑dd HH:mm:ss')}`);
+  return bestSoFar;
 }
-displayNextRun(repeatEveryTenSeconds, 'Heartbeat');
-displayNextRun(mondayMorning, 'Mon‑4:35 AM');
 
-// ---------------------------------------------------------
-//  Graceful shutdown inside this demo
-// ---------------------------------------------------------
-const shutdown = () => {
-  console.log('\n→ Shutting down cron jobs gracefully...');
-  repeatEveryTenSeconds.stop();
-  mondayMorning.stop();
-  console.log('→ All job timers cleared. Bye!');
-  process.exit(0);
-};
+/* Example usage */
+const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
+console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
+function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
+  let bestSoFar = nums[0], bestEndingHere = nums[0];
+  let start = 0, end = 0, tempStart = 0;
 
-// In a real app you’d hook this into SIGINT, SIGTERM, etc.
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
-# 1️⃣ Install the runtime dependencies
-npm install node-cron date-fns
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] > bestEndingHere + nums[i]) {
+      bestEndingHere = nums[i];
+      tempStart = i;          // potential new start
+    } else {
+      bestEndingHere += nums[i];
+    }
 
-# 2️⃣ Add TypeScript types, optional but handy
-npm install -D typescript @types/node-cron @types/date-fns
+    if (bestEndingHere > bestSoFar) {
+      bestSoFar = bestEndingHere;
+      start = tempStart;      // commit new start
+      end = i;
+    }
+  }
 
-# 3️⃣ Compile + run
-npx tsc FunRandomCron.ts
-node FunRandomCron.js
-npx ts-node FunRandomCron.ts
+  return {
+    maxSum: bestSoFar,
+    subArray: nums.slice(start, end + 1),
+    indices: [start, end]
+  };
+}
+console.log(maxSubArrayDetail(arr));
+// {
+//   maxSum: 6,
+//   subArray: [4, -1, 2, 1],
+//   indices: [3, 6]
+// }
