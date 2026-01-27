@@ -1,61 +1,28 @@
-// A generic graph node – you can replace this with whatever you’re actually
-// storing.  Here we just keep a value and an array of child nodes.
-export interface TreeNode<T> {
-  value: T;
-  children: TreeNode<T>[];
-}
 /**
- * Performs a breadth‑first search up to a depth limit.
+ * Binary search on a sorted array.
  *
- * @param root The starting node.
- * @param maxDepth The maximum path length to explore (0 = only the root).
- * @param filter A callback that decides whether a node should be “accepted”.
- *               It receives the node and its depth (root = 0).
- * @returns An array of all nodes that satisfy the filter within the depth bound.
+ * @param arr   Sorted array of comparable items.
+ * @param value Value to search for.
+ * @returns Index of value, or -1 if not found.
  */
-export function breadthLimitedSearch<T>(
-  root: TreeNode<T>,
-  maxDepth: number,
-  filter: (node: TreeNode<T>, depth: number) => boolean
-): TreeNode<T>[] {
-  const result: TreeNode<T>[] = [];
-  const queue: Array<{ node: TreeNode<T>; depth: number }> = [{ node: root, depth: 0 }];
+export function binarySearch<T>(arr: T[], value: T): number {
+  let low = 0;
+  let high = arr.length - 1;
 
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;           // FIFO
-    if (depth > maxDepth) continue;                  // depth guard
+  while (low <= high) {
+    // Middle index – floor division
+    const mid = Math.floor((low + high) / 2);
+    const midVal = arr[mid];
 
-    if (filter(node, depth)) result.push(node);
-
-    // Push children *after* checking depth to avoid pushing out‑of‑range nodes
-    if (depth < maxDepth) {
-      for (const child of node.children) {
-        queue.push({ node: child, depth: depth + 1 });
-      }
+    if (midVal === value) return mid;      // exact match
+    if (midVal < value) {
+      low = mid + 1;                       // value is in higher half
+    } else {
+      high = mid - 1;                      // value is in lower half
     }
   }
-
-  return result;
+  return -1;  // not found
 }
-// Simple test tree
-const tree: TreeNode<string> = {
-  value: 'root',
-  children: [
-    { value: 'A', children: [] },
-    { value: 'B', children: [
-        { value: 'B1', children: [] },
-        { value: 'B2', children: [] },
-      ]
-    },
-    { value: 'C', children: [] }
-  ]
-};
-
-// Want all nodes that start with "B" and only dive 2 levels deep
-const matches = breadthLimitedSearch(
-  tree,
-  2,
-  (node, depth) => node.value.startsWith('B')
-);
-
-console.log(matches.map(n => n.value)); // ['B', 'B1', 'B2']
+const nums = [3, 7, 12, 18, 24, 31, 42];
+const idx = binarySearch(nums, 18); // => 3
+const missing = binarySearch(nums, 5); // => -1
