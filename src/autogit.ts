@@ -1,91 +1,104 @@
-type BMIndices = { badChar: number[]; goodSuffix: number[] };
-
-const CHAR_LIMIT = 256;          // size of ASCII table (adjust if you need Unicode)
-
-// Allocate and initialise a lookup array, defaulting to -1
-function initArray(size: number, init: number = -1): number[] {
-  const arr = new Array<number>(size);
-  for (let i = 0; i < size; i++) arr[i] = init;
-  return arr;
+// ------------------------------------------------------------------
+//  Supporting types
+// ------------------------------------------------------------------
+/**
+ * The shape of a graph node.  The `id` is used for a visited set.
+ * `getNeighbours` must return raw references that `graph.getNode(id)` can resolve.
+ */
+interface Node {
+  readonly id: string;
+  getNeighbours(): Iterable<string>;
 }
-function badCharTable(pattern: string): number[] {
-  const table = initArray(CHAR_LIMIT, -1);
 
-  for (let i = 0; i < pattern.length; i++) {
-    table[pattern.charCodeAt(i)] = i;
-  }
-
-  return table;
+/**
+ * A tiny graph interface that lets us look up nodes by id.
+ * (You can replace this with your own representation; only the method
+ * `getNode` is required by the algorithm.)
+ */
+interface Graph {
+  /** Return the node instance for the supplied id or `undefined`. */
+  getNode(id: string): Node | undefined;
 }
-function goodSuffixTable(pat: string): number[] {
-  const m = pat.length;
-  const suffix = initArray(m);
-  const goodSuffix = initArray(m, 0);
 
-  suffix[m - 1] = m;
-  let g = m - 1;
-  let f = 0;
+/**
+ * A function tested against a node, returning true when the node is
+ * the thing you’re looking for.
+ */
+type Predicate = (node: Node) => boolean;
 
-  for (let i = m - 2; i >= 0; i--) {
-    if (i > g && suffix[i + m - 1 - f] < i - g) {
-      suffix[i] = suffix[i + m - 1 - f];
-    } else {
-      g = i;
-      f = i;
-      while (g >= 0 && pat[g] === pat[g + m - 1 - f]) {
-        g--;
-      }
-      suffix[i] = f - g;
+// ------------------------------------------------------------------
+//  Depth‑limited DFS (iterative)
+// ------------------------------------------------------------------
+/**
+ * Iterative depth‑limited depth‑first search.
+ *
+ * @param startId   id of the node where the search begins
+ * @param maxDepth  stop expanding after this many edges from `startId`
+ * @param graph     the graph interface
+ * @param satisfies a predicate that tells when a node is a solution
+ *
+ * @returns the first node that satisfies `satisfies`, or undefined
+ */
+export function depthLimitedSearch(
+  startId: string,
+  maxDepth: number,
+  graph: Graph,
+  satisfies: Predicate
+): Node | undefined {
+
+  // Guard against an empty or overly deep request
+  if (maxDepth < 0) return undefined;
+
+  // A stack holds tuples of (node, currentDepth).
+  const stack: Array<[Node, number]> = [];
+  const visited = new Set<string>();
+
+  const startNode = graph.getNode(startId);
+  if (!startNode) return undefined;   // start id is missing
+
+  stack.push([startNode, 0]);
+
+  while (stack.length) {
+    const [node, depth] = stack.pop()!;   // non‑empty promise
+
+    // Avoid revisiting the same node (important for cycles)
+    if (visited.has(node.id)) continue;
+    visited.add(node.id);
+
+    if (satisfies(node)) return node;    // found a match
+
+    if (depth === maxDepth) continue;    // reached depth limit
+
+    // Push neighbours onto the stack – order determines DFS order.
+    for (const neighId of node.getNeighbours()) {
+      const neighbour = graph.getNode(neighId);
+      if (neighbour) stack.push([neighbour, depth + 1]);
     }
   }
 
-  // Build the goodSuffix shift table from suffix lengths
-  for (let i = 0; i < m; i++) {
-    goodSuffix[i] = m - suffix[i];
-  }
-
-  return goodSuffix;
+  return undefined;   // nothing matched within the depth budget
 }
-function boyerMooreSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return [];   // nothing to find
-
-  const { badChar, goodSuffix } = preprocess(pattern);
-
-  const matches: number[] = [];
-  let s = 0;                // shift of the pattern wrt text
-
-  while (s <= n - m) {
-    let j = m - 1;
-
-    // Keep moving left while the characters match
-    while (j >= 0 && pattern[j] === text[s + j]) {
-      j--;
-    }
-
-    if (j < 0) {
-      // match found
-      matches.push(s);
-      // next shift: either the good suffix shift or 1
-      s += goodSuffix[0] > 0 ? goodSuffix[0] : 1;
-    } else {
-      const badShift = j - badChar[text.charCodeAt(s + j)];
-      const goodShift = goodSuffix[j];
-      s += Math.max(badShift, goodShift);
-    }
-  }
-
-  return matches;
+// A simple example graph implementation
+class SimpleNode implements Node {
+  constructor(public readonly id: string, private readonly neighIds: string[]) {}
+  getNeighbours() { return this.neighIds; }
+}
+class SimpleGraph implements Graph {
+  private readonly nodes = new Map<string, Node>();
+  addNode(node: Node) { this.nodes.set(node.id, node); }
+  getNode(id: string) { return this.nodes.get(id); }
 }
 
-function preprocess(pattern: string): BMIndices {
-  return {
-    badChar: badCharTable(pattern),
-    goodSuffix: goodSuffixTable(pattern),
-  };
-}
-const txt = "ABAAABCDABAAABCDAAAABCDABAAABCDAAAABCD";
-const pat = "ABDAB";
+// Build a tiny graph
+const g = new SimpleGraph();
+g.addNode(new SimpleNode('A', ['B', 'C']));
+g.addNode(new SimpleNode('B', ['D']));
+g.addNode(new SimpleNode('C', []));
+g.addNode(new SimpleNode('D', []));
 
-console.log(boyerMooreSearch(txt, pat));  // → [0, 9, 19, 29]
+// Define a search goal
+const goal = (n: Node) => n.id === 'D';
+
+// Run depth‑limited DFS limited to 2 edges from 'A'
+const result = depthLimitedSearch('A', 2, g, goal);
+console.log(result?.id); // → 'D'
