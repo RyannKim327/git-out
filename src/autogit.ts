@@ -1,47 +1,33 @@
 /**
- * Return true if `a` and `b` are anagrams.
+ * Bubble sort – O(n²) average / worst case.
  *
- *   * Ignore whitespace and punctuation.
- *   * Ignore case.
+ * @param arr – array that will be sorted (mutated)
+ * @returns the same array reference, now sorted ascending
  */
-function areAnagramsSorting(a: string, b: string): boolean {
-  const clean = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '').split('').sort().join('');
+function bubbleSort<T>(arr: T[]): T[] {
+  const n = arr.length;
 
-  return clean(a) === clean(b);
+  // Outer loop: go through the array n‑1 times
+  for (let i = 0; i < n - 1; i++) {
+    // Inner loop scans up to the unsorted part
+    // We can stop early when the array is already sorted
+    let swapped = false;
+
+    for (let j = 0; j < n - 1 - i; j++) {
+      // Use > so that equal values stay in place
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swapped = true;
+      }
+    }
+
+    // No swaps means the array is sorted
+    if (!swapped) break;
+  }
+
+  return arr;
 }
 
 // Example
-console.log(areAnagramsSorting('Listen', 'Silent')); // → true
-/**
- * Count characters and compare the two maps.
- * Complexity: O(n), with `n` = max(a.length, b.length).
- */
-function areAnagramsCounting(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '');
-
-  const strA = normalize(a);
-  const strB = normalize(b);
-
-  if (strA.length !== strB.length) return false;
-
-  const freq: Record<string, number> = {};
-
-  for (const ch of strA) {
-    freq[ch] = (freq[ch] ?? 0) + 1;
-  }
-
-  for (const ch of strB) {
-    if (!freq[ch]) return false; // missing or too many
-    freq[ch]! -= 1;
-  }
-
-  return true;
-}
-
-// Example
-console.log(areAnagramsCounting('Software', 'Oxfartswe')); // → true
-const anagrams = (a: string, b: string) =>
-  a.toLowerCase().replace(/\W/g, '').split('').sort().join('') ===
-  b.toLowerCase().replace(/\W/g, '').split('').sort().join('');
+const nums = [64, 34, 25, 12, 22, 11, 90];
+console.log(bubbleSort(nums)); // [11, 12, 22, 25, 34, 64, 90]
