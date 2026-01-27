@@ -1,149 +1,50 @@
-/* ------------------------------------------------------------ */
-/*  A generic node that holds a value and a reference to next   */
-/* ------------------------------------------------------------ */
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
+/**
+ * Interpolation search – O(log log n) in the ideal case,
+ * O(n) in the worst case (if the array is highly non‑uniform).
+ *
+ * @param arr   An array that is already sorted in ascending order.
+ * @param key   The value to look for.
+ * @returns     The index of `key` in `arr` or -1 if not present.
+ */
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  // Guard against empty array
+  if (arr.length === 0) return -1;
 
-/* ------------------------------------------------------------ */
-/*  A generic singly‑linked list                               */
-/* ------------------------------------------------------------ */
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+  let low = 0;
+  let high = arr.length - 1;
 
-  /* ---------- Properties ---------- */
-  get size(): number { return this._size; }
-  get isEmpty(): boolean { return this._size === 0; }
+  // Interpolation formula requires a strictly increasing array
+  // and a finite difference between the ends.
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Avoid division by zero when arr[low] == arr[high].
+    if (arr[low] === arr[high]) return arr[low] === key ? low : -1;
 
-  /* ---------- Core Operations ---------- */
+    // Estimate the position of the key inside the current bounds.
+    const pos =
+      low +
+      Math.floor(
+        ((high - low) * (key - arr[low])) / (arr[high] - arr[low]),
+      );
 
-  /** Push a value onto the **end** of the list */
-  push(value: T): void {
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
+    const value = arr[pos];
+
+    if (value === key) return pos;
+    if (value < key) {
+      low = pos + 1;          // Look in the right sub‑array
     } else {
-      this.tail!.next = node;
-      this.tail = node;
+      high = pos - 1;         // Look in the left sub‑array
     }
-    this._size++;
   }
 
-  /** Unshift a value onto the **head** of the list */
-  unshift(value: T): void {
-    const node = new ListNode(value, this.head);
-    this.head = node;
-    if (!this.tail) this.tail = node;
-    this._size++;
-  }
-
-  /** Remove and return the value at the head */
-  shift(): T | undefined {
-    if (!this.head) return undefined;
-    const value = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null;
-    this._size--;
-    return value;
-  }
-
-  /** Remove and return the value at the tail */
-  pop(): T | undefined {
-    if (!this.head) return undefined;
-    if (!this.tail) return undefined;
-
-    let current = this.head;
-    let prev: ListNode<T> | null = null;
-
-    while (current.next) {
-      prev = current;
-      current = current.next;
-    }
-
-    const value = current.value;
-    if (prev) {
-      prev.next = null;
-      this.tail = prev;
-    } else {
-      // list had only one element
-      this.head = this.tail = null;
-    }
-    this._size--;
-    return value;
-  }
-
-  /* ---------- Traversal & Search ---------- */
-
-  /** Find the first node whose value satisfies the predicate */
-  find(predicate: (value: T) => boolean): T | undefined {
-    let node = this.head;
-    while (node) {
-      if (predicate(node.value)) return node.value;
-      node = node.next;
-    }
-    return undefined;
-  }
-
-  /** Convert the list to an array (for debugging or display) */
-  toArray(): T[] {
-    const arr: T[] = [];
-    let node = this.head;
-    while (node) {
-      arr.push(node.value);
-      node = node.next;
-    }
-    return arr;
-  }
-
-  /* ---------- Utility ---------- */
-
-  /** Remove the first node that satisfies the predicate */
-  remove(predicate: (value: T) => boolean): boolean {
-    if (!this.head) return false;
-
-    if (predicate(this.head.value)) {
-      this.shift();
-      return true;
-    }
-
-    let prev = this.head;
-    let current = this.head.next;
-
-    while (current) {
-      if (predicate(current.value)) {
-        prev.next = current.next;
-        if (!current.next) this.tail = prev; // removed tail
-        this._size--;
-        return true;
-      }
-      prev = current;
-      current = current.next;
-    }
-
-    return false; // not found
-  }
+  return -1; // Not found
 }
-
-/* ------------------------------------------------------------ */
-/*  Usage example ------------------------------------------------ */
-const list = new LinkedList<number>();
-
-list.push(3);    // 3
-list.push(5);    // 3 → 5
-list.unshift(1); // 1 → 3 → 5
-
-console.log(list.toArray()); // [1, 3, 5]
-console.log(list.shift());   // 1
-console.log(list.pop());     // 5
-console.log(list.toArray()); // [3]
-console.log(list.find(v => v === 3)); // 3
-
-list.remove(v => v === 3);
-console.log(list.toArray()); // []
-
-/* ------------------------------------------------------------ */
+const nums = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91, 105];
+console.log(interpolationSearch(nums, 38)); // ➜ 6
+console.log(interpolationSearch(nums, 4));  // ➜ -1
+export function interpolationSearchBy<T, U extends number>(
+  arr: readonly T[],
+  key: U,
+  getKey: (item: T) => U,
+): number {
+  // Same logic, but cast / convert using getKey(item)
+}
