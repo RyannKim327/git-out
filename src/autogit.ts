@@ -1,50 +1,60 @@
 /**
- * Interpolation search – O(log log n) in the ideal case,
- * O(n) in the worst case (if the array is highly non‑uniform).
+ * Returns the max sum of any contiguous sub‑array of `nums`.
+ * If all numbers are negative, it will still return the best (least negative) value.
  *
- * @param arr   An array that is already sorted in ascending order.
- * @param key   The value to look for.
- * @returns     The index of `key` in `arr` or -1 if not present.
+ * @param nums Array of numbers
+ * @returns maximum sub‑array sum
  */
-export function interpolationSearch(arr: readonly number[], key: number): number {
-  // Guard against empty array
-  if (arr.length === 0) return -1;
+function maxSubArraySum(nums: number[]): number {
+  if (nums.length === 0) {
+    throw new Error('Array must contain at least one element');
+  }
 
-  let low = 0;
-  let high = arr.length - 1;
+  let bestSoFar = nums[0];      // best overall
+  let bestEndingHere = nums[0]; // best ending at current index
 
-  // Interpolation formula requires a strictly increasing array
-  // and a finite difference between the ends.
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    // Avoid division by zero when arr[low] == arr[high].
-    if (arr[low] === arr[high]) return arr[low] === key ? low : -1;
+  for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous sub‑array or start fresh at nums[i]
+    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
 
-    // Estimate the position of the key inside the current bounds.
-    const pos =
-      low +
-      Math.floor(
-        ((high - low) * (key - arr[low])) / (arr[high] - arr[low]),
-      );
+    // Update the global best if needed
+    bestSoFar = Math.max(bestSoFar, bestEndingHere);
+  }
 
-    const value = arr[pos];
+  return bestSoFar;
+}
 
-    if (value === key) return pos;
-    if (value < key) {
-      low = pos + 1;          // Look in the right sub‑array
+/* Example usage */
+const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
+console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
+function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
+  let bestSoFar = nums[0], bestEndingHere = nums[0];
+  let start = 0, end = 0, tempStart = 0;
+
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] > bestEndingHere + nums[i]) {
+      bestEndingHere = nums[i];
+      tempStart = i;          // potential new start
     } else {
-      high = pos - 1;         // Look in the left sub‑array
+      bestEndingHere += nums[i];
+    }
+
+    if (bestEndingHere > bestSoFar) {
+      bestSoFar = bestEndingHere;
+      start = tempStart;      // commit new start
+      end = i;
     }
   }
 
-  return -1; // Not found
+  return {
+    maxSum: bestSoFar,
+    subArray: nums.slice(start, end + 1),
+    indices: [start, end]
+  };
 }
-const nums = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91, 105];
-console.log(interpolationSearch(nums, 38)); // ➜ 6
-console.log(interpolationSearch(nums, 4));  // ➜ -1
-export function interpolationSearchBy<T, U extends number>(
-  arr: readonly T[],
-  key: U,
-  getKey: (item: T) => U,
-): number {
-  // Same logic, but cast / convert using getKey(item)
-}
+console.log(maxSubArrayDetail(arr));
+// {
+//   maxSum: 6,
+//   subArray: [4, -1, 2, 1],
+//   indices: [3, 6]
+// }
