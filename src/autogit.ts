@@ -1,51 +1,60 @@
-// Stack.ts
-export class Stack<T> {
-  // private backing store
-  private items: T[] = [];
+type Node = string | number;              // whichever you prefer for vertex IDs
+type Graph = Record<Node, Node[]>;          // e.g., { 1: [2,3], 2: [4], … }
 
-  /** Push an item onto the stack. */
-  push(item: T): void {
-    this.items.push(item);
-  }
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['d', 'e'],
+  c: ['f'],
+  d: [],
+  e: ['c'],
+  f: [],
+};
+function dfsRecursive(
+  graph: Graph,
+  start: Node,
+  visited = new Set<Node>(),
+  order: Node[] = []
+): Node[] {
+  visited.add(start);        // 1️⃣ mark as visited
+  order.push(start);         // 2️⃣ record the visit order
 
-  /** Remove the top item and return it.  Returns undefined if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
+  for (const neighbor of graph[start] ?? []) {
+    if (!visited.has(neighbor)) {
+      dfsRecursive(graph, neighbor, visited, order); // 3️⃣ recurse
+    }
   }
-
-  /** Peek at the top item without removing it.  Returns undefined if the stack is empty. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** Return true if the stack has no items. */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** Current number of elements in the stack. */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Optional: completely clear the stack. */
-  clear(): void {
-    this.items = [];
-  }
+  return order;
 }
-import { Stack } from "./Stack";
 
-const numberStack = new Stack<number>();
-numberStack.push(10);
-numberStack.push(20);
+// usage
+const visitOrder = dfsRecursive(graph, 'a');
+console.log(visitOrder); // ['a', 'b', 'd', 'e', 'c', 'f']
+function dfsIterative(graph: Graph, start: Node): Node[] {
+  const stack: Node[] = [start];
+  const visited = new Set<Node>();
+  const order: Node[] = [];
 
-console.log(numberStack.peek()); // 20
-console.log(numberStack.pop());  // 20
-console.log(numberStack.size()); // 1
-console.log(numberStack.isEmpty()); // false
+  while (stack.length) {
+    const node = stack.pop()!; // pop the top
+    if (visited.has(node)) continue; // skip if we've already seen it
 
-// Generic example with strings
-const wordStack = new Stack<string>();
-wordStack.push("hello");
-wordStack.push("world");
-console.log(wordStack.pop()); // world
+    visited.add(node);   // 1️⃣ mark
+    order.push(node);    // 2️⃣ record
+
+    // push neighbors in reverse order so that the first neighbor
+    // is processed first (mimics recursive order)
+    const neighbors = graph[node] ?? [];
+    for (let i = neighbors.length - 1; i >= 0; i--) {
+      const neighbor = neighbors[i];
+      if (!visited.has(neighbor)) stack.push(neighbor);
+    }
+  }
+  return order;
+}
+
+// usage
+const orderIter = dfsIterative(graph, 'a');
+console.log(orderIter); // ['a', 'b', 'd', 'e', 'c', 'f']
+// inside the while loop
+const prev = stack[stack.length - 1]; // last node that will lead to `node`
+order.push([prev, node] as [Node, Node]);
