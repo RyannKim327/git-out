@@ -1,60 +1,42 @@
-/**
- * Returns the max sum of any contiguous sub‑array of `nums`.
- * If all numbers are negative, it will still return the best (least negative) value.
- *
- * @param nums Array of numbers
- * @returns maximum sub‑array sum
- */
-function maxSubArraySum(nums: number[]): number {
-  if (nums.length === 0) {
-    throw new Error('Array must contain at least one element');
-  }
+// 1️⃣  Install the dependencies first:
+//     npm install axios @types/axios
 
-  let bestSoFar = nums[0];      // best overall
-  let bestEndingHere = nums[0]; // best ending at current index
+import axios, { AxiosError } from "axios";
 
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the previous sub‑array or start fresh at nums[i]
-    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
-
-    // Update the global best if needed
-    bestSoFar = Math.max(bestSoFar, bestEndingHere);
-  }
-
-  return bestSoFar;
+// 2️⃣  Define the shape of the data we expect back.
+interface User {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
 }
 
-/* Example usage */
-const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
-console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
-function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
-  let bestSoFar = nums[0], bestEndingHere = nums[0];
-  let start = 0, end = 0, tempStart = 0;
+// 3️⃣  Perform the request in an async function.
+async function fetchUsers(): Promise<User[]> {
+  const url = "https://jsonplaceholder.typicode.com/users";
 
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] > bestEndingHere + nums[i]) {
-      bestEndingHere = nums[i];
-      tempStart = i;          // potential new start
+  try {
+    // 4️⃣  Make the GET request
+    const response = await axios.get<User[]>(url);
+
+    // 5️⃣  Axios automatically parses JSON, so `data` has the correct type
+    return response.data;
+  } catch (err) {
+    // 6️⃣  Gracefully handle a possible Axios error
+    if (axios.isAxiosError(err)) {
+      const error = err as AxiosError;
+      console.error(
+        `Request failed! 🙁 Status: ${error.response?.status}  Message: ${error.message}`
+      );
     } else {
-      bestEndingHere += nums[i];
+      console.error("Unexpected error:", err);
     }
-
-    if (bestEndingHere > bestSoFar) {
-      bestSoFar = bestEndingHere;
-      start = tempStart;      // commit new start
-      end = i;
-    }
+    return []; // Return an empty array if something goes wrong
   }
-
-  return {
-    maxSum: bestSoFar,
-    subArray: nums.slice(start, end + 1),
-    indices: [start, end]
-  };
 }
-console.log(maxSubArrayDetail(arr));
-// {
-//   maxSum: 6,
-//   subArray: [4, -1, 2, 1],
-//   indices: [3, 6]
-// }
+
+// 7️⃣  Use the function somewhere in your app
+(async () => {
+  const users = await fetchUsers();
+  console.log("Fetched users:", users);
+})();
