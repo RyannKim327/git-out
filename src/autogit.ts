@@ -1,35 +1,26 @@
 /**
- * Recursively searches for `target` inside a sorted array.
+ * Returns the first non‑repeating character in `str`.
+ * If every character repeats, returns `undefined`.
  *
- * @param arr  The sorted array to search.
- * @param target The value we're looking for.
- * @param left  The leftmost index to consider (inclusive).
- * @param right The rightmost index to consider (inclusive).
- * @returns The index of `target`, or `-1` if it isn’t present.
+ * @param str – the string to check
  */
-function binarySearchRecursive(
-    arr: number[],
-    target: number,
-    left: number = 0,
-    right: number = arr.length - 1
-): number {
-    if (left > right) {          // Base case: empty search window
-        return -1;
-    }
+function firstNonRepeating(str: string): string | undefined {
+  // 1️⃣ Count how many times every character shows up
+  const freq = new Map<string, number>();
+  for (const ch of str) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  }
 
-    const mid = Math.floor((left + right) / 2);
-
-    if (arr[mid] === target) {
-        return mid;              // Found the target
-    } else if (arr[mid] > target) {
-        // Target is in the left half
-        return binarySearchRecursive(arr, target, left, mid - 1);
-    } else {
-        // Target is in the right half
-        return binarySearchRecursive(arr, target, mid + 1, right);
+  // 2️⃣ Scan again, looking for the first character whose count is 1
+  for (const ch of str) {
+    if (freq.get(ch) === 1) {
+      return ch;          // found it!
     }
+  }
+
+  return undefined;       // nothing unique found
 }
-const sorted = [3, 7, 11, 15, 23, 42, 56];
 
-console.log(binarySearchRecursive(sorted, 15)); // → 3
-console.log(binarySearchRecursive(sorted, 1));  // → -1
+// Demo
+console.log(firstNonRepeating("swiss"));   // → "w"
+console.log(firstNonRepeating("aabb"));    // → undefined
