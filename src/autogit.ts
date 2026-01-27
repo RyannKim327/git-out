@@ -1,71 +1,58 @@
-// kmp.ts
-/**
- * Builds the LPS (Longest Prefix Suffix) array for a pattern.
- * lps[i] = length of the longest proper prefix of pattern[0..i]
- * that is also a suffix of pattern[0..i].
- */
-export function buildLPS(pattern: string): number[] {
-    const lps = new Array(pattern.length).fill(0);
-    let length = 0;               // length of the previous longest prefix suffix
-    let i = 1;                    // lps[0] is always 0, so start from 1
+// Majority element finder – works for any type that supports === comparison
+export function majorityElement<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
 
-    while (i < pattern.length) {
-        if (pattern[i] === pattern[length]) {
-            length++;
-            lps[i] = length;
-            i++;
-        } else {
-            if (length !== 0) {
-                // Fall back to the previous longest prefix
-                length = lps[length - 1];
-                // No i++ here – we try the same i again with the new length
-            } else {
-                lps[i] = 0;
-                i++;
-            }
-        }
+  // 1st pass: find a candidate
+  let candidate = arr[0];
+  let count = 1;
+
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === candidate) {
+      count++;
+    } else if (count === 0) {
+      candidate = arr[i];
+      count = 1;
+    } else {
+      count--;
     }
-    return lps;
+  }
+
+  // 2nd pass: verify that the candidate is really a majority
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
+  }
+
+  return count > Math.floor(arr.length / 2) ? candidate : null;
 }
+const nums = [3, 1, 3, 3, 2, 3, 3];
+const maj = majorityElement(nums);
 
-/**
- * KMP search for all occurrences of pattern inside text.
- * Returns an array of 0‑based starting indices.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-    if (pattern.length === 0) return [];
+console.log(maj); // → 3
+function majorityBySorting<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
 
-    const lps = buildLPS(pattern);
-    const result: number[] = [];
-    let i = 0; // index for text
-    let j = 0; // index for pattern
+  const sorted = [...arr].sort(); // lexicographic for strings, numeric for numbers
+  const midVal = sorted[Math.floor(arr.length / 2)];
 
-    while (i < text.length) {
-        if (text[i] === pattern[j]) {
-            i++;
-            j++;
+  const count = sorted.reduce((c, v) => (v === midVal ? c + 1 : c), 0);
+  return count > Math.floor(arr.length / 2) ? midVal : null;
+}
+// A simple quick‑check
+export function testMajority() {
+  const cases: Array<[any[], any | null]> = [
+    [[1, 2, 1, 1, 3], 1],
+    [['a', 'b', 'a', 'a', 'c'], 'a'],
+    [[5, 5, 6, 6, 5], 5],
+    [[1, 2, 3], null],
+  ];
 
-            if (j === pattern.length) {
-                // pattern found – push starting index
-                result.push(i - j);
-                // continue searching for next possible match
-                j = lps[j - 1];
-            }
-        } else if (j !== 0) {
-            // Fallback on pattern using LPS table
-            j = lps[j - 1];
-        } else {
-            // No match at the current position of `text`
-            i++;
-        }
+  for (const [arr, expected] of cases) {
+    const result = majorityElement(arr);
+    if (result !== expected) {
+      console.error(`❌ Failed for ${JSON.stringify(arr)}: got ${result}`);
+    } else {
+      console.log(`✅ ${JSON.stringify(arr)} → ${result}`);
     }
-
-    return result;
+  }
 }
-import { kmpSearch } from "./kmp";
-
-const txt = "ABABDABACDABABCABAB";
-const pat = "ABABCABAB";
-
-const matches = kmpSearch(txt, pat);
-console.log(matches); // → [ 10 ]
