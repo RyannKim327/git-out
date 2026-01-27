@@ -1,25 +1,33 @@
-/**
- * Checks if `arr` is sorted in ascending order.
- *
- * @param arr          the array to test
- * @param compareFn    optional comparison function.  
- *                     Should return <0 if a < b, 0 if equal, >0 if a > b.
- *                     If omitted, the default `a - b` numeric compare is used.
- * @returns true if the array is in ascending order, false otherwise
- */
-export function isSortedAscending<T>(
-  arr: readonly T[],
-  compareFn: ((a: T, b: T) => number) = (a, b) =>
-    /* @ts-ignore */ a < b ? -1 : a > b ? 1 : 0
-): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    // If the current element is *before* the previous one, the array is out of order
-    if (compareFn(arr[i], arr[i - 1]) < 0) return false;
-  }
-  return true;
+// Basic node definition
+interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
-const names = ['Alice', 'Bob', 'Charlie'];
-console.log(isSortedAscending(names)); // true
 
-const mixed = [1, 3, 2, 4];
-console.log(isSortedAscending(mixed)); // false
+// Helper – takes the head of a list and returns the middle node.
+function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null;
+
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
+
+  // advance `fast` two steps for every one step `slow` takes
+  while (fast !== null && fast.next !== null) {
+    slow = slow!.next;          // will never be null here – just for TS safety
+    fast = fast.next.next;
+  }
+
+  // when fast runs out, slow is at the middle
+  return slow;
+}
+// Build a tiny list: 1 → 2 → 3 → 4 → 5
+const a: ListNode<number> = { value: 1, next: null };
+const b: ListNode<number> = { value: 2, next: null };
+const c: ListNode<number> = { value: 3, next: null };
+const d: ListNode<number> = { value: 4, next: null };
+const e: ListNode<number> = { value: 5, next: null };
+
+a.next = b; b.next = c; c.next = d; d.next = e;
+
+const middle = findMiddle(a);
+console.log(middle?.value); // logs 3
