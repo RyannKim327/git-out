@@ -1,58 +1,67 @@
-// Majority element finder – works for any type that supports === comparison
-export function majorityElement<T>(arr: T[]): T | null {
-  if (arr.length === 0) return null;
+class TreeNode<T = number> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
+}
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;
 
-  // 1st pass: find a candidate
-  let candidate = arr[0];
-  let count = 1;
+  function dfs(node: TreeNode | null): number {
+    if (!node) return 0;          // height of a null subtree is 0
 
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] === candidate) {
-      count++;
-    } else if (count === 0) {
-      candidate = arr[i];
-      count = 1;
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
+
+    // potential diameter that passes through this node
+    const localDiameter = leftHeight + rightHeight;
+    if (localDiameter > maxDiameter) maxDiameter = localDiameter;
+
+    // height is max child height + 1 edge to the child
+    return Math.max(leftHeight, rightHeight) + 1;
+  }
+
+  dfs(root);
+  return maxDiameter;  // edges count
+}
+// Build a tree:
+//        1
+//       / \
+//      2   3
+//     / \     
+//    4   5  
+const root = new TreeNode(1,
+              new TreeNode(2,
+                new TreeNode(4),
+                new TreeNode(5)
+              ),
+              new TreeNode(3)
+            );
+
+console.log(diameterOfBinaryTree(root)); // → 3
+function diameterIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let maxDiameter = 0;
+  const stack = [{ node: root, visited: false, height: 0 }];
+
+  while (stack.length) {
+    const frame = stack.pop()!;
+    if (!frame.node) continue;
+
+    if (frame.visited) {
+      // Children already processed – compute height & diameter
+      const leftHeight = frame.node.left?.height ?? 0;
+      const rightHeight = frame.node.right?.height ?? 0;
+
+      maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
+      frame.node.height = Math.max(leftHeight, rightHeight) + 1;
     } else {
-      count--;
+      // First visit: push back as visited and push children
+      stack.push({ node: frame.node, visited: true, height: 0 });
+      if (frame.node.right) stack.push({ node: frame.node.right, visited: false, height: 0 });
+      if (frame.node.left) stack.push({ node: frame.node.left, visited: false, height: 0 });
     }
   }
-
-  // 2nd pass: verify that the candidate is really a majority
-  count = 0;
-  for (const v of arr) {
-    if (v === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
-}
-const nums = [3, 1, 3, 3, 2, 3, 3];
-const maj = majorityElement(nums);
-
-console.log(maj); // → 3
-function majorityBySorting<T>(arr: T[]): T | null {
-  if (arr.length === 0) return null;
-
-  const sorted = [...arr].sort(); // lexicographic for strings, numeric for numbers
-  const midVal = sorted[Math.floor(arr.length / 2)];
-
-  const count = sorted.reduce((c, v) => (v === midVal ? c + 1 : c), 0);
-  return count > Math.floor(arr.length / 2) ? midVal : null;
-}
-// A simple quick‑check
-export function testMajority() {
-  const cases: Array<[any[], any | null]> = [
-    [[1, 2, 1, 1, 3], 1],
-    [['a', 'b', 'a', 'a', 'c'], 'a'],
-    [[5, 5, 6, 6, 5], 5],
-    [[1, 2, 3], null],
-  ];
-
-  for (const [arr, expected] of cases) {
-    const result = majorityElement(arr);
-    if (result !== expected) {
-      console.error(`❌ Failed for ${JSON.stringify(arr)}: got ${result}`);
-    } else {
-      console.log(`✅ ${JSON.stringify(arr)} → ${result}`);
-    }
-  }
+  return maxDiameter;
 }
