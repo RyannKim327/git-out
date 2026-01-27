@@ -1,65 +1,85 @@
-// ---------- Basics ----------
-class ListNode {
-  val: number          // you can keep any data you need
-  next: ListNode | null = null;
+/**
+ * `AdjacencyList` is a mapping from a node key to the keys of its neighbors.
+ * It works for directed or undirected graphs – just decide how you add edges.
+ */
+export type AdjacencyList<K extends string | number> = Record<
+  K,
+  K[] // List of outgoing neighbor keys
+>;
+const graph: AdjacencyList<string> = {
+  A: ['B', 'C'],
+  B: ['A', 'D'],
+  C: ['A', 'D'],
+  D: ['B', 'C', 'E'],
+  E: ['D'],
+};
+class Queue<T> {
+  private data: T[] = [];
+  private head = 0;
+  private tail = 0;
 
-  constructor(val: number) {
-    this.val = val;
-  }
-}
-
-// ---------- Intersection finder ----------
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  if (!headA || !headB) return null;
-
-  let ptrA: ListNode | null = headA;
-  let ptrB: ListNode | null = headB;
-
-  // After at most two passes through each list the pointers
-  // will either meet at the intersection or both become null.
-  while (ptrA !== ptrB) {
-    ptrA = ptrA ? ptrA.next : headB; // switch to the head of the other list
-    ptrB = ptrB ? ptrB.next : headA;
+  enqueue(item: T) {
+    this.data[this.tail++] = item;
   }
 
-  return ptrA; // either the intersection node, or null
-}
-
-// ---------- Quick demo ----------
-function buildLinkedList(values: number[], offset: number = 0) {
-  let head: ListNode | null = null;
-  let tail: ListNode | null = null;
-  for (let v of values) {
-    const node = new ListNode(v);
-    if (!head) head = node;
-    if (tail) tail.next = node;
-    tail = node;
+  dequeue(): T | undefined {
+    if (this.isEmpty()) return undefined;
+    const item = this.data[this.head];
+    // Optional: free memory if the queue shrinks a lot
+    if (this.head % 64 === 0) this.data = this.data.slice(this.head);
+    this.head++;
+    return item;
   }
-  return { head, tail };
+
+  isEmpty() {
+    return this.head >= this.tail;
+  }
 }
+/**
+ * Breadth‑first search on an adjacency list.
+ *
+ * @param graph      the graph (adjacency list)
+ * @param start      the node to start from
+ * @param target     optional: stop when this node is reached
+ * @returns          { distance: Map<node, number>, parent: Map<node, node | null>, found?: node }
+ */
+export function bfs<K extends string | number>(
+  graph: AdjacencyList<K>,
+  start: K,
+  target?: K,
+) {
+  const distance = new Map<K, number>();
+  const parent = new Map<K, K | null>();
 
-// Common tail that will be shared by two lists
-const { head: shared, tail: sharedTail } = buildLinkedList([8, 10]);
+  const queue = new Queue<K>();
+  queue.enqueue(start);
+  distance.set(start, 0);
+  parent.set(start, null);
 
-// First list: 3 → 7 → 8 → 10
-const { head: aHead } = buildLinkedList([3, 7]);
-if (aHead && sharedHead) {
-  // connect the shared tail
-  let node = aHead;
-  while (node.next) node = node.next;
-  node.next = shared;
+  while (!queue.isEmpty()) {
+    const current = queue.dequeue()!;
+    const curDist = distance.get(current)!;
+
+    // Optional early‑exit
+    if (target !== undefined && current === target) {
+      return { distance, parent, found: current };
+    }
+
+    for (const neighbor of graph[current] ?? []) {
+      if (!distance.has(neighbor)) {                // not visited
+        distance.set(neighbor, curDist + 1);
+        parent.set(neighbor, current);
+        queue.enqueue(neighbor);
+      }
+    }
+  }
+
+  return { distance, parent, found: target }; // target not found
 }
-
-// Second list: 99 → 1 → 8 → 10
-const { head: bHead } = buildLinkedList([99, 1]);
-if (bHead && sharedHead) {
-  let node = bHead;
-  while (node.next) node = node.next;
-  node.next = shared;
-}
-
-const intersection = getIntersectionNode(aHead, bHead);
-console.log(intersection?.val); // prints 8
+const result = bfs(graph, 'A', 'E');
+console.log('Distance map:', result.distance);
+console.log('Parent map:', result.parent);
+console.log('Target found?', result.found !== undefined);
+Distance map: Map(5) { 'A' => 0, 'B' => 1, 'C' => 1, 'D' => 2, 'E' => 3 }
+Parent map: Map(5) { 'A' => null, 'B' => 'A', 'C' => 'A', 'D' => 'B', 'E' => 'D' }
+Target found? true
