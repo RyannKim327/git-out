@@ -1,19 +1,35 @@
 /**
- * Minimal email validator.
- * Covers most real‑world cases without being overly strict.
+ * Recursively searches for `target` inside a sorted array.
+ *
+ * @param arr  The sorted array to search.
+ * @param target The value we're looking for.
+ * @param left  The leftmost index to consider (inclusive).
+ * @param right The rightmost index to consider (inclusive).
+ * @returns The index of `target`, or `-1` if it isn’t present.
  */
-export function isValidEmail(email: string): boolean {
-  // 1. Basic structural check: local part @ domain
-  // 2. Local part: letters, digits, dots, hyphens, underscores, and plus
-  // 3. Domain: DNS‑style labels separated by dots; ends in 2‑63‑letter TLD
-  const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,64}$/;
-  return pattern.test(email);
-}
-import validator from 'validator';
+function binarySearchRecursive(
+    arr: number[],
+    target: number,
+    left: number = 0,
+    right: number = arr.length - 1
+): number {
+    if (left > right) {          // Base case: empty search window
+        return -1;
+    }
 
-function isValidFullEmail(email: string): boolean {
-  return validator.isEmail(email);  // uses RFC‑compliant logic
+    const mid = Math.floor((left + right) / 2);
+
+    if (arr[mid] === target) {
+        return mid;              // Found the target
+    } else if (arr[mid] > target) {
+        // Target is in the left half
+        return binarySearchRecursive(arr, target, left, mid - 1);
+    } else {
+        // Target is in the right half
+        return binarySearchRecursive(arr, target, mid + 1, right);
+    }
 }
-console.log(isValidEmail('user@example.com'));   // true
-console.log(isValidEmail('bob.smith@sub.domain.co')); // true
-console.log(isValidEmail('invalid-email@'));    // false
+const sorted = [3, 7, 11, 15, 23, 42, 56];
+
+console.log(binarySearchRecursive(sorted, 15)); // → 3
+console.log(binarySearchRecursive(sorted, 1));  // → -1
