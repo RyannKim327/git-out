@@ -1,43 +1,50 @@
-/**
- * Counting sort for integer arrays (can include negatives).
- * @param arr The input array of numbers.
- * @returns A new sorted array.
- */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
-
-  // 1) Determine min and max to find the range.
-  let min = arr[0];
-  let max = arr[0];
-  for (const v of arr) {
-    if (v < min) min = v;
-    else if (v > max) max = v;
-  }
-
-  const range = max - min + 1;          // how many distinct integer values
-  const count = new Array<number>(range).fill(0);
-
-  // 2) Count each value
-  for (const v of arr) {
-    count[v - min]++;                   // offset by min so array starts at 0
-  }
-
-  // 3) Convert counts to cumulative counts
-  for (let i = 1; i < range; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 4) Allocate result array
-  const output = new Array<number>(arr.length);
-
-  // 5) Place elements into output in stable order
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const v = arr[i];
-    const idx = v - min;
-    const pos = count[idx] - 1;         // final index for this element
-    output[pos] = v;
-    count[idx]--;                       // decrease count for next instance
-  }
-
-  return output;
+interface ListNode<T = any> {
+  val: T;
+  next: ListNode<T> | null;
 }
+class ListNode<T = any> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
+}
+function nthFromEndNaive<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let size = 0;
+  for (let cur = head; cur; cur = cur.next) size++;
+
+  if (n > size) return null;          // not enough elements
+  let target = size - n;              // 0‑based index from start
+  let cur = head;
+  for (let i = 0; i < target; i++) cur = cur!.next;
+
+  return cur;
+}
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let fast = head;
+  // Move fast n steps forward
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;   // n is larger than list length
+    fast = fast.next;
+  }
+
+  let slow = head!;          // head is guaranteed non‑null now
+  while (fast) {
+    fast = fast.next!;
+    slow = slow.next!;
+  }
+
+  return slow;
+}
+function buildList(nums: number[]) {
+  let dummy = new ListNode(0);
+  let cur = dummy;
+  for (const v of nums) {
+    cur.next = new ListNode(v);
+    cur = cur.next;
+  }
+  return dummy.next;
+}
+
+const list = buildList([1, 2, 3, 4, 5]);
+
+console.log(nthFromEnd(list, 1)!.val); // 5
+console.log(nthFromEnd(list, 3)!.val); // 3
+console.log(nthFromEnd(list, 5)!.val); // 1
+console.log(nthFromEnd(list, 6));      // null
