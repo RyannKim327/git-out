@@ -1,28 +1,35 @@
 /**
- * Return true if `s` is a palindrome.
- *   - Works for regular strings and Unicode strings
- *   - Uses a two‑pointer scan; no extra arrays/strings are allocated
- *   - Time:  O(n)
- *   - Extra space: O(1)
+ * Recursively searches for `target` inside a sorted array.
+ *
+ * @param arr  The sorted array to search.
+ * @param target The value we're looking for.
+ * @param left  The leftmost index to consider (inclusive).
+ * @param right The rightmost index to consider (inclusive).
+ * @returns The index of `target`, or `-1` if it isn’t present.
  */
-function isPalindrome(s: string): boolean {
-    let left  = 0;
-    let right = s.length - 1;
-
-    while (left < right) {
-        // Skip non‑alphanumeric characters & ignore case if you want
-        // if (!/[a-z0-9]/i.test(s.charAt(left))) { left++; continue; }
-        // if (!/[a-z0-9]/i.test(s.charAt(right))) { right--; continue; }
-
-        if (s[left] !== s[right]) {
-            return false;
-        }
-        left++;
-        right--;
+function binarySearchRecursive(
+    arr: number[],
+    target: number,
+    left: number = 0,
+    right: number = arr.length - 1
+): number {
+    if (left > right) {          // Base case: empty search window
+        return -1;
     }
-    return true;
+
+    const mid = Math.floor((left + right) / 2);
+
+    if (arr[mid] === target) {
+        return mid;              // Found the target
+    } else if (arr[mid] > target) {
+        // Target is in the left half
+        return binarySearchRecursive(arr, target, left, mid - 1);
+    } else {
+        // Target is in the right half
+        return binarySearchRecursive(arr, target, mid + 1, right);
+    }
 }
-console.log(isPalindrome("racecar"));        // true
-console.log(isPalindrome("hello"));          // false
-console.log(isPalindrome("A man a plan a canal Panama".replace(/\s+/g, '').toLowerCase()));
-// true, after normalizing whitespace and case
+const sorted = [3, 7, 11, 15, 23, 42, 56];
+
+console.log(binarySearchRecursive(sorted, 15)); // → 3
+console.log(binarySearchRecursive(sorted, 1));  // → -1
