@@ -1,24 +1,55 @@
-const numbers: number[] = [5, 2, 9, 1, 5, 6];
+/**
+ * Returns the median of two sorted arrays.
+ *
+ * @param nums1 First sorted array
+ * @param nums2 Second sorted array
+ * @returns Median value (number)
+ */
+export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Make sure nums1 is the smaller array; binary search will run on it.
+  if (nums1.length > nums2.length) {
+    return findMedianSortedArrays(nums2, nums1);
+  }
 
-// sort in place (mutates the original array)
-numbers.sort((a, b) => a - b);
-console.log(numbers); // [1, 2, 5, 5, 6, 9]
-numbers.sort((a, b) => b - a);
-console.log(numbers); // [9, 6, 5, 5, 2, 1]
-const sorted = [...numbers].sort((a, b) => a - b);
-// or
-const sorted = numbers.slice().sort((a, b) => a - b);
-interface Item { value: number; rank: number }
+  const m = nums1.length;
+  const n = nums2.length;
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-const items: Item[] = [
-  { value: 10, rank: 2 },
-  { value: 12, rank: 1 },
-  { value: 10, rank: 1 }
-];
+  let low = 0;
+  let high = m;
 
-items.sort((x, y) => {
-  if (x.value === y.value) return x.rank - y.rank; // tie‑break on rank
-  return x.value - y.value;
-});
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2);   // Count from nums1
+    const j = halfLen - i;                    // Count from nums2
 
-console.log(items);
+    // If i is too small → move right
+    if (i < m && nums2[j - 1] > nums1[i]) {
+      low = i + 1;
+    }
+    // If i is too big → move left
+    else if (i > 0 && nums1[i - 1] > nums2[j]) {
+      high = i - 1;
+    }
+    // Found perfect i
+    else {
+      let maxLeft;
+      if (i === 0) maxLeft = nums2[j - 1];
+      else if (j === 0) maxLeft = nums1[i - 1];
+      else maxLeft = Math.max(nums1[i - 1], nums2[j - 1]);
+
+      // Odd total length – median is max of left side
+      if ((m + n) % 2 === 1) return maxLeft;
+
+      // Even total length – median is average of maxLeft and minRight
+      let minRight;
+      if (i === m) minRight = nums2[j];
+      else if (j === n) minRight = nums1[i];
+      else minRight = Math.min(nums1[i], nums2[j]);
+
+      return (maxLeft + minRight) / 2;
+    }
+  }
+
+  // If we get here, input arrays weren’t valid (empty, unsorted, etc.)
+  throw new Error('Input arrays are not valid.');
+}
