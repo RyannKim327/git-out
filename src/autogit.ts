@@ -1,55 +1,75 @@
-/**
- * Merge‑sort for array of T values.
- *
- * @param arr  Input array – left untouched.
- * @param cmp  Optional comparison function. If omitted, values are compared with < >.
- * @returns A new sorted array.
- */
-export function mergeSort<T>(arr: readonly T[], cmp?: (a: T, b: T) => number): T[] {
-  // Base case: arrays of size 0 or 1 are already sorted.
-  if (arr.length <= 1) return [...arr];
-
-  // Helper to merge two already‑sorted halves.
-  const merge = (left: T[], right: T[]): T[] => {
-    const result: T[] = [];
-    let i = 0, j = 0;
-
-    while (i < left.length && j < right.length) {
-      const l = left[i];
-      const r = right[j];
-      const comp = cmp
-        ? cmp(l, r)
-        : (l as any) < (r as any)
-          ? -1
-          : (l as any) > (r as any)
-          ? 1
-          : 0;
-
-      if (comp <= 0) {
-        result.push(l);
-        i++;
-      } else {
-        result.push(r);
-        j++;
-      }
-    }
-
-    // Push any remaining items from left or right.
-    return result.concat(left.slice(i), right.slice(j));
-  };
-
-  // Split the array into two halves.
-  const middle = Math.floor(arr.length / 2);
-  const left = mergeSort(arr.slice(0, middle), cmp);
-  const right = mergeSort(arr.slice(middle), cmp);
-
-  // Merge back together.
-  return merge(left, right);
+// ──────────────────────────────────────────────────────────────
+// 1.  Types for the graph
+// ──────────────────────────────────────────────────────────────
+interface Node<T = void> {
+  value: T;
+  neighbours: Node<T>[];
 }
-const numbers = [42, 1, 23, 4, 16];
-const sorted = mergeSort(numbers);   // [1, 4, 16, 23, 42]
-console.log(sorted);
-console.log(numbers);  // still [42, 1, 23, 4, 16]
-const words = ["banana", "Apple", "cherry"];
-const sortedWords = mergeSort(words, (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-console.log(sortedWords); // ["Apple", "banana", "cherry"]
+
+// A small helper to create nodes
+function createNode<T>(value: T): Node<T> {
+  return { value, neighbours: [] };
+}
+
+function addEdge<T>(from: Node<T>, to: Node<T>): void {
+  from.neighbours.push(to);
+  to.neighbours.push(from);    // undirected; drop this line for directed graphs
+}
+
+// ──────────────────────────────────────────────────────────────
+// 2.  Depth‑limited search (recursive DFS style)
+// ──────────────────────────────────────────────────────────────
+/**
+ * Searches `startNode` for a node whose value satisfies `goalPredicate`,
+ * but stops expanding any node that appears deeper than `limit` levels.
+ *
+ * @param start      the node to start from
+ * @param goal       a predicate; if it returns true the node is considered the goal
+ * @param limit      max depth to explore
+ * @param visited    internal, tracks visited nodes
+ * @param depth      internal, current depth
+ * @returns          the goal node if found, or null
+ */
+function depthLimitedSearch<T>(
+  start: Node<T>,
+  goal: (value: T) => boolean,
+  limit: number,
+  visited = new Set<Node<T>>(),
+  depth = 0
+): Node<T> | null {
+  if (depth > limit) return null;               // over the limit
+
+  visited.add(start);
+  if (goal(start.value)) return start;          // goal reached
+
+  for (const neighbour of start.neighbours) {
+    if (!visited.has(neighbour)) {
+      const result = depthLimitedSearch(neighbour, goal, limit, visited, depth + 1);
+      if (result !== null) return result;      // propagate success upwards
+    }
+  }
+
+  return null;                                  // no goal found within this branch
+}
+
+// ──────────────────────────────────────────────────────────────
+// 3.  Example usage
+// ──────────────────────────────────────────────────────────────
+/*
+// Build a tiny graph
+const a = createNode('A');
+const b = createNode('B');
+const c = createNode('C');
+const d = createNode('D');
+const e = createNode('E');
+
+addEdge(a, b);
+addEdge(a, c);
+addEdge(b, d);
+addEdge(c, e);
+
+// Find node 'E' but stop after exploring 2 edges from 'A'
+const found = depthLimitedSearch(a, val => val === 'E', 2);
+
+console.log(found ? `Found ${found.value}` : 'Not found within depth limit');
+*/
