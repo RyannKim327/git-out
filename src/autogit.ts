@@ -1,63 +1,67 @@
-/**
- * Rabin‑Karp string search
- *
- * Parameters:
- *  pattern – the string we’re looking for
- *  text    – the string to search inside
- *
- * Returns:
- *  array of starting indices where pattern occurs (empty if no match)
- */
-export function rabinKarp(pattern: string, text: string): number[] {
-    // Edge cases
-    if (pattern.length === 0) return [];
-    if (pattern.length > text.length) return [];
-
-    const base = 256;               // number of possible characters (ASCII)
-    const mod = 101;                // a prime mod to keep numbers small
-
-    const m = pattern.length;
-    const n = text.length;
-
-    // Pre‑compute base^(m‑1) % mod  (the “high” power)
-    let basePower = 1;
-    for (let i = 0; i < m - 1; i++) {
-        basePower = (basePower * base) % mod;
-    }
-
-    // Compute hash for pattern and first window of text
-    let patHash = 0;
-    let txtHash = 0;
-    for (let i = 0; i < m; i++) {
-        patHash = (patHash * base + pattern.charCodeAt(i)) % mod;
-        txtHash = (txtHash * base + text.charCodeAt(i)) % mod;
-    }
-
-    const result: number[] = [];
-
-    // Slide the window over the text
-    for (let s = 0; s <= n - m; s++) {
-        // If the hash values match, verify the substring to confirm
-        if (patHash === txtHash) {
-            let match = true;
-            for (let k = 0; k < m; k++) {
-                if (text[s + k] !== pattern[k]) {
-                    match = false;
-                    break;
-                }
-            }
-            if (match) result.push(s);
-        }
-
-        // Compute hash for next window: remove leading char, add trailing char
-        if (s < n - m) {
-            txtHash = (txtHash - text.charCodeAt(s) * basePower) % mod;
-            if (txtHash < 0) txtHash += mod;                    // keep positive
-            txtHash = (txtHash * base + text.charCodeAt(s + m)) % mod;
-        }
-    }
-
-    return result;
+class TreeNode<T = number> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
 }
-const idx = rabinKarp('abc', 'xabcababc');
-console.log(idx);   // → [1, 6]
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;
+
+  function dfs(node: TreeNode | null): number {
+    if (!node) return 0;          // height of a null subtree is 0
+
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
+
+    // potential diameter that passes through this node
+    const localDiameter = leftHeight + rightHeight;
+    if (localDiameter > maxDiameter) maxDiameter = localDiameter;
+
+    // height is max child height + 1 edge to the child
+    return Math.max(leftHeight, rightHeight) + 1;
+  }
+
+  dfs(root);
+  return maxDiameter;  // edges count
+}
+// Build a tree:
+//        1
+//       / \
+//      2   3
+//     / \     
+//    4   5  
+const root = new TreeNode(1,
+              new TreeNode(2,
+                new TreeNode(4),
+                new TreeNode(5)
+              ),
+              new TreeNode(3)
+            );
+
+console.log(diameterOfBinaryTree(root)); // → 3
+function diameterIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let maxDiameter = 0;
+  const stack = [{ node: root, visited: false, height: 0 }];
+
+  while (stack.length) {
+    const frame = stack.pop()!;
+    if (!frame.node) continue;
+
+    if (frame.visited) {
+      // Children already processed – compute height & diameter
+      const leftHeight = frame.node.left?.height ?? 0;
+      const rightHeight = frame.node.right?.height ?? 0;
+
+      maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
+      frame.node.height = Math.max(leftHeight, rightHeight) + 1;
+    } else {
+      // First visit: push back as visited and push children
+      stack.push({ node: frame.node, visited: true, height: 0 });
+      if (frame.node.right) stack.push({ node: frame.node.right, visited: false, height: 0 });
+      if (frame.node.left) stack.push({ node: frame.node.left, visited: false, height: 0 });
+    }
+  }
+  return maxDiameter;
+}
