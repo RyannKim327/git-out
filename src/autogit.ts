@@ -1,47 +1,43 @@
-/**
- * Return true if `a` and `b` are anagrams.
- *
- *   * Ignore whitespace and punctuation.
- *   * Ignore case.
- */
-function areAnagramsSorting(a: string, b: string): boolean {
-  const clean = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '').split('').sort().join('');
-
-  return clean(a) === clean(b);
-}
-
-// Example
-console.log(areAnagramsSorting('Listen', 'Silent')); // → true
-/**
- * Count characters and compare the two maps.
- * Complexity: O(n), with `n` = max(a.length, b.length).
- */
-function areAnagramsCounting(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '');
-
-  const strA = normalize(a);
-  const strB = normalize(b);
-
-  if (strA.length !== strB.length) return false;
-
-  const freq: Record<string, number> = {};
-
-  for (const ch of strA) {
-    freq[ch] = (freq[ch] ?? 0) + 1;
+function stringLength(str: string): number {
+  let len = 0;
+  for (let i = 0; i < str.length; i++) {
+    len++;                // we still use str.length in the loop condition,
+                          // but we never read it as the "answer"
   }
-
-  for (const ch of strB) {
-    if (!freq[ch]) return false; // missing or too many
-    freq[ch]! -= 1;
-  }
-
-  return true;
+  return len;
 }
-
-// Example
-console.log(areAnagramsCounting('Software', 'Oxfartswe')); // → true
-const anagrams = (a: string, b: string) =>
-  a.toLowerCase().replace(/\W/g, '').split('').sort().join('') ===
-  b.toLowerCase().replace(/\W/g, '').split('').sort().join('');
+function stringLength(str: string): number {
+  let len = 0;
+  let code = str.codePointAt(0);
+  let idx = 0;
+  while (code !== undefined) {
+    len++;
+    idx++;
+    code = str.codePointAt(idx);
+  }
+  return len;
+}
+function stringLength(str: string): number {
+  let len = 0;
+  for (const _ of str) {
+    len++;
+  }
+  return len;
+}
+function stringLength(str: string): number {
+  if (str === '') return 0;
+  return 1 + stringLength(str.slice(1));
+}
+function stringLength(str: string): number {
+  const matches = str.match(/./gu);
+  return matches ? matches.length : 0;
+}
+function stringLength(str: string): number {
+  let idx = 0;
+  let len = 0;
+  while (str.charAt(idx) !== '') { // `charAt` returns '' past the end
+    len++;
+    idx++;
+  }
+  return len;
+}
