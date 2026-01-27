@@ -1,29 +1,24 @@
-const nums = [1, 2, 2, 3, 4, 4, 5];
-const unique = [...new Set(nums)];   // [1, 2, 3,4,5]
-const vals = ['a', 'b', 'a', 'c', 'b'];
-const uniq = vals.filter((value, index, arr) => arr.indexOf(value) === index);
-// ['a','b','c']
-interface User {
-  id: number;
-  name: string;
+const scores: number[] = [12, 19, 3, 40, 27];
+
+const max = Math.max(...scores);   // 40
+const max = scores.reduce((highest, current) => (current > highest ? current : highest), -Infinity);
+function findMax(arr: number[]): number | undefined {
+  if (arr.length === 0) return undefined;
+  return arr.reduce((m, n) => (n > m ? n : m), arr[0]);
 }
+function maxOfArray(arr: number[]): number {
+  if (arr.length === 0) throw new Error('Empty array');
 
-const users: User[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob'   },
-  { id: 1, name: 'Alice'},
-  { id: 3, name: 'Carol'},
-];
+  let max = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] > max) max = arr[i];
+  }
+  return max;
+}
+const typed: Int32Array = new Int32Array([2, 5, 9, 1]);
 
-const uniq = Array.from(
-  users.reduce((map, user) => map.set(user.id, user), new Map<number, User>())
-).map(entry => entry[1]);
-
-// [{id:1,name:'Alice'}, {id:2,name:'Bob'}, {id:3,name:'Carol'}]
-const objs = [{x:1},{x:2},{x:1},{x:3}];
-const uniq = Array.from(
-  new Set(objs.map(o => JSON.stringify(o)))
-).map(str => JSON.parse(str));
-import { uniqBy } from 'lodash';
-
-const uniqUsers = uniqBy(users, 'id');
+const max = Math.max.apply(null, typed as unknown as number[]);
+const numbers = [7, 42, -3, 13];
+console.log(Math.max(...numbers)); // 42
+console.log(findMax(numbers));     // 42
+console.log(maxOfArray(numbers));  // 42
