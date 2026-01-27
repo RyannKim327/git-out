@@ -1,58 +1,68 @@
 /**
- * Returns a random integer between min (inclusive) and max (inclusive).
- *
- * @param min – lower bound, inclusive
- * @param max – upper bound, inclusive
+ * Stable counting sort of `arr` by the digit in position `exp`
+ * (exp = 1 → units, 10 → tens, 100 → hundreds, …)
  */
-function randomInt(min: number, max: number): number {
-  // Clamp values to integers just in case
-  const lo = Math.ceil(min);
-  const hi = Math.floor(max);
+function countingSortByDigit(arr: number[], exp: number): void {
+  const n = arr.length;
+  const output = new Array<number>(n);
+  const count = new Array<number>(10).fill(0);   // base 10 → digits 0‑9
 
-  // Math.random returns a float in [0, 1)
-  const r = Math.random() * (hi - lo + 1);
-  return Math.floor(r) + lo;
-}
-const diceRoll = randomInt(1, 6);   // 1‑6
-const randomIndex = randomInt(0, array.length - 1);
-function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min;
-}
-function secureRandomInt(min: number, max: number): number {
-  const lo = Math.ceil(min);
-  const hi = Math.floor(max);
-
-  // Number of values in our range
-  const range = hi - lo + 1;
-  // Enough bytes to hold the full range
-  const bytesNeeded = Math.ceil(Math.log2(range) / 8);
-
-  // Read random unsigned bytes
-  const rand = new Uint8Array(bytesNeeded);
-  crypto.getRandomValues(rand);
-
-  // Convert bytes to a number
-  let value = 0;
-  for (let i = 0; i < bytesNeeded; i++) {
-    value = (value << 8) | rand[i];
+  /* Count occurrences of each digit */
+  for (let i = 0; i < n; i++) {
+    const digit = Math.floor(arr[i] / exp) % 10;
+    count[digit] += 1;
   }
 
-  // Map into the desired range
-  return (value % range) + lo;
-}
-function randomChoice<T>(arr: T[]): T {
-  if (arr.length === 0) {
-    throw new RangeError('Cannot choose from an empty array');
+  /* Transform counts into starting indices */
+  for (let i = 1; i < 10; i++) {
+    count[i] += count[i - 1];
   }
-  const idx = randomInt(0, arr.length - 1);
-  return arr[idx];
-}
-const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
-function randomToken(length = 8): string {
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars[randomInt(0, chars.length - 1)];
+  /* Build the output array from the end to preserve stability */
+  for (let i = n - 1; i >= 0; i--) {
+    const digit = Math.floor(arr[i] / exp) % 10;
+    const pos = --count[digit];
+    output[pos] = arr[i];
   }
-  return result;
+
+  /* Copy back to the original array */
+  for (let i = 0; i < n; i++) {
+    arr[i] = output[i];
+  }
+}
+/**
+ * Radix sort for an array of non‑negative integers.
+ * Complexity: O(d · (n + k)) where d = number of digits, k = base (10).
+ */
+export function radixSort(arr: number[]): number[] {
+  if (arr.length < 2) return arr;            // already sorted
+
+  // Find the maximum number to know how many digits we need
+  const maxVal = Math.max(...arr);
+
+  // Start with the least significant digit (exp = 1)
+  for (let exp = 1; exp <= maxVal; exp *= 10) {
+    countingSortByDigit(arr, exp);
+  }
+
+  return arr; // sorted array (in‑place)
+}
+const data = [170, 45, 75, 90, 802, 24, 2, 66];
+
+radixSort(data);
+console.log(data); // [2, 24, 45, 66, 75, 90, 170, 802]
+export function radixSortMixed(arr: number[]): number[] {
+  const positives: number[] = [];
+  const negatives: number[] = [];
+
+  for (const v of arr) {
+    if (v >= 0) positives.push(v);
+    else negatives.push(-v);  // work with absolute values
+  }
+
+  radixSort(positives);
+  radixSort(negatives);
+
+  const sortedNegatives = negatives.reverse().map(v => -v);
+  return [...sortedNegatives, ...positives];
 }
