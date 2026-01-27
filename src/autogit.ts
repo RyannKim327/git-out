@@ -1,17 +1,20 @@
-/**
- * Reverses the order of words in a string.
- *
- *      "Hello world again"  →  "again world Hello"
- *
- * Words are defined as sequences of non‑whitespace characters.
- */
-function reverseWords(s: string): string {
-  return s
-    .trim()                // remove leading/trailing blanks
-    .split(/\s+/)          // break into words (any amount of whitespace)
-    .reverse()             // flip the array
-    .join(' ');            // stitch back together
-}
+function mean(values: number[]): number {
+  if (values.length === 0) return NaN;          // empty list → no mean
 
-// demo
-console.log(reverseWords('Hello world again')); // “again world Hello”
+  // total everything up
+  const sum = values.reduce((acc, cur) => acc + cur, 0);
+
+  // divide by how many there are
+  return sum / values.length;
+}
+function meanLoop(values: number[]): number {
+  if (values.length === 0) return NaN;
+
+  let sum = 0;
+  for (const v of values) {
+    sum += v;
+  }
+  return sum / values.length;
+}
+console.log(mean([1, 2, 3, 4, 5])); // 3
+console.log(mean([]));              // NaN
