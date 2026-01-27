@@ -1,33 +1,71 @@
-// Basic node definition
-interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
+// kmp.ts
+/**
+ * Builds the LPS (Longest Prefix Suffix) array for a pattern.
+ * lps[i] = length of the longest proper prefix of pattern[0..i]
+ * that is also a suffix of pattern[0..i].
+ */
+export function buildLPS(pattern: string): number[] {
+    const lps = new Array(pattern.length).fill(0);
+    let length = 0;               // length of the previous longest prefix suffix
+    let i = 1;                    // lps[0] is always 0, so start from 1
+
+    while (i < pattern.length) {
+        if (pattern[i] === pattern[length]) {
+            length++;
+            lps[i] = length;
+            i++;
+        } else {
+            if (length !== 0) {
+                // Fall back to the previous longest prefix
+                length = lps[length - 1];
+                // No i++ here – we try the same i again with the new length
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+    return lps;
 }
 
-// Helper – takes the head of a list and returns the middle node.
-function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null;
+/**
+ * KMP search for all occurrences of pattern inside text.
+ * Returns an array of 0‑based starting indices.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+    if (pattern.length === 0) return [];
 
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+    const lps = buildLPS(pattern);
+    const result: number[] = [];
+    let i = 0; // index for text
+    let j = 0; // index for pattern
 
-  // advance `fast` two steps for every one step `slow` takes
-  while (fast !== null && fast.next !== null) {
-    slow = slow!.next;          // will never be null here – just for TS safety
-    fast = fast.next.next;
-  }
+    while (i < text.length) {
+        if (text[i] === pattern[j]) {
+            i++;
+            j++;
 
-  // when fast runs out, slow is at the middle
-  return slow;
+            if (j === pattern.length) {
+                // pattern found – push starting index
+                result.push(i - j);
+                // continue searching for next possible match
+                j = lps[j - 1];
+            }
+        } else if (j !== 0) {
+            // Fallback on pattern using LPS table
+            j = lps[j - 1];
+        } else {
+            // No match at the current position of `text`
+            i++;
+        }
+    }
+
+    return result;
 }
-// Build a tiny list: 1 → 2 → 3 → 4 → 5
-const a: ListNode<number> = { value: 1, next: null };
-const b: ListNode<number> = { value: 2, next: null };
-const c: ListNode<number> = { value: 3, next: null };
-const d: ListNode<number> = { value: 4, next: null };
-const e: ListNode<number> = { value: 5, next: null };
+import { kmpSearch } from "./kmp";
 
-a.next = b; b.next = c; c.next = d; d.next = e;
+const txt = "ABABDABACDABABCABAB";
+const pat = "ABABCABAB";
 
-const middle = findMiddle(a);
-console.log(middle?.value); // logs 3
+const matches = kmpSearch(txt, pat);
+console.log(matches); // → [ 10 ]
