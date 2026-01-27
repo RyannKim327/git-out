@@ -1,33 +1,28 @@
-/**
- * Bubble sort – O(n²) average / worst case.
- *
- * @param arr – array that will be sorted (mutated)
- * @returns the same array reference, now sorted ascending
- */
-function bubbleSort<T>(arr: T[]): T[] {
-  const n = arr.length;
+const original = [1, 2, 3, 4, 5];
 
-  // Outer loop: go through the array n‑1 times
-  for (let i = 0; i < n - 1; i++) {
-    // Inner loop scans up to the unsorted part
-    // We can stop early when the array is already sorted
-    let swapped = false;
-
-    for (let j = 0; j < n - 1 - i; j++) {
-      // Use > so that equal values stay in place
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
-    }
-
-    // No swaps means the array is sorted
-    if (!swapped) break;
+const reversed = [...original].reverse(); // creates a new array, keeps `original` intact
+// or, if you don’t mind mutating the original array
+original.reverse();
+const copy = [...original];  // spread operator makes a new array
+copy.reverse();              // now you have the reversed copy
+function reverseArray<T>(arr: T[]): T[] {
+  const result: T[] = [];
+  for (let i = arr.length - 1; i >= 0; i--) {
+    result.push(arr[i]);
   }
-
-  return arr;
+  return result;
 }
 
-// Example
-const nums = [64, 34, 25, 12, 22, 11, 90];
-console.log(bubbleSort(nums)); // [11, 12, 22, 25, 34, 64, 90]
+const reverseManual = reverseArray(original);
+function reverseInPlace<T>(arr: T[]): void {
+  let left = 0;
+  let right = arr.length - 1;
+  while (left < right) {
+    // swap
+    [arr[left], arr[right]] = [arr[right], arr[left]];
+    left++;
+    right--;
+  }
+}
+
+reverseInPlace(original); // `original` is now reversed
