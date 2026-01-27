@@ -1,35 +1,33 @@
 /**
- * Recursively searches for `target` inside a sorted array.
+ * Bubble sort – O(n²) average / worst case.
  *
- * @param arr  The sorted array to search.
- * @param target The value we're looking for.
- * @param left  The leftmost index to consider (inclusive).
- * @param right The rightmost index to consider (inclusive).
- * @returns The index of `target`, or `-1` if it isn’t present.
+ * @param arr – array that will be sorted (mutated)
+ * @returns the same array reference, now sorted ascending
  */
-function binarySearchRecursive(
-    arr: number[],
-    target: number,
-    left: number = 0,
-    right: number = arr.length - 1
-): number {
-    if (left > right) {          // Base case: empty search window
-        return -1;
+function bubbleSort<T>(arr: T[]): T[] {
+  const n = arr.length;
+
+  // Outer loop: go through the array n‑1 times
+  for (let i = 0; i < n - 1; i++) {
+    // Inner loop scans up to the unsorted part
+    // We can stop early when the array is already sorted
+    let swapped = false;
+
+    for (let j = 0; j < n - 1 - i; j++) {
+      // Use > so that equal values stay in place
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swapped = true;
+      }
     }
 
-    const mid = Math.floor((left + right) / 2);
+    // No swaps means the array is sorted
+    if (!swapped) break;
+  }
 
-    if (arr[mid] === target) {
-        return mid;              // Found the target
-    } else if (arr[mid] > target) {
-        // Target is in the left half
-        return binarySearchRecursive(arr, target, left, mid - 1);
-    } else {
-        // Target is in the right half
-        return binarySearchRecursive(arr, target, mid + 1, right);
-    }
+  return arr;
 }
-const sorted = [3, 7, 11, 15, 23, 42, 56];
 
-console.log(binarySearchRecursive(sorted, 15)); // → 3
-console.log(binarySearchRecursive(sorted, 1));  // → -1
+// Example
+const nums = [64, 34, 25, 12, 22, 11, 90];
+console.log(bubbleSort(nums)); // [11, 12, 22, 25, 34, 64, 90]
