@@ -1,55 +1,91 @@
-/**
- * Returns the median of two sorted arrays.
- *
- * @param nums1 First sorted array
- * @param nums2 Second sorted array
- * @returns Median value (number)
- */
-export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Make sure nums1 is the smaller array; binary search will run on it.
-  if (nums1.length > nums2.length) {
-    return findMedianSortedArrays(nums2, nums1);
-  }
+type BMIndices = { badChar: number[]; goodSuffix: number[] };
 
-  const m = nums1.length;
-  const n = nums2.length;
-  const halfLen = Math.floor((m + n + 1) / 2);
+const CHAR_LIMIT = 256;          // size of ASCII table (adjust if you need Unicode)
 
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);   // Count from nums1
-    const j = halfLen - i;                    // Count from nums2
-
-    // If i is too small → move right
-    if (i < m && nums2[j - 1] > nums1[i]) {
-      low = i + 1;
-    }
-    // If i is too big → move left
-    else if (i > 0 && nums1[i - 1] > nums2[j]) {
-      high = i - 1;
-    }
-    // Found perfect i
-    else {
-      let maxLeft;
-      if (i === 0) maxLeft = nums2[j - 1];
-      else if (j === 0) maxLeft = nums1[i - 1];
-      else maxLeft = Math.max(nums1[i - 1], nums2[j - 1]);
-
-      // Odd total length – median is max of left side
-      if ((m + n) % 2 === 1) return maxLeft;
-
-      // Even total length – median is average of maxLeft and minRight
-      let minRight;
-      if (i === m) minRight = nums2[j];
-      else if (j === n) minRight = nums1[i];
-      else minRight = Math.min(nums1[i], nums2[j]);
-
-      return (maxLeft + minRight) / 2;
-    }
-  }
-
-  // If we get here, input arrays weren’t valid (empty, unsorted, etc.)
-  throw new Error('Input arrays are not valid.');
+// Allocate and initialise a lookup array, defaulting to -1
+function initArray(size: number, init: number = -1): number[] {
+  const arr = new Array<number>(size);
+  for (let i = 0; i < size; i++) arr[i] = init;
+  return arr;
 }
+function badCharTable(pattern: string): number[] {
+  const table = initArray(CHAR_LIMIT, -1);
+
+  for (let i = 0; i < pattern.length; i++) {
+    table[pattern.charCodeAt(i)] = i;
+  }
+
+  return table;
+}
+function goodSuffixTable(pat: string): number[] {
+  const m = pat.length;
+  const suffix = initArray(m);
+  const goodSuffix = initArray(m, 0);
+
+  suffix[m - 1] = m;
+  let g = m - 1;
+  let f = 0;
+
+  for (let i = m - 2; i >= 0; i--) {
+    if (i > g && suffix[i + m - 1 - f] < i - g) {
+      suffix[i] = suffix[i + m - 1 - f];
+    } else {
+      g = i;
+      f = i;
+      while (g >= 0 && pat[g] === pat[g + m - 1 - f]) {
+        g--;
+      }
+      suffix[i] = f - g;
+    }
+  }
+
+  // Build the goodSuffix shift table from suffix lengths
+  for (let i = 0; i < m; i++) {
+    goodSuffix[i] = m - suffix[i];
+  }
+
+  return goodSuffix;
+}
+function boyerMooreSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [];   // nothing to find
+
+  const { badChar, goodSuffix } = preprocess(pattern);
+
+  const matches: number[] = [];
+  let s = 0;                // shift of the pattern wrt text
+
+  while (s <= n - m) {
+    let j = m - 1;
+
+    // Keep moving left while the characters match
+    while (j >= 0 && pattern[j] === text[s + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      // match found
+      matches.push(s);
+      // next shift: either the good suffix shift or 1
+      s += goodSuffix[0] > 0 ? goodSuffix[0] : 1;
+    } else {
+      const badShift = j - badChar[text.charCodeAt(s + j)];
+      const goodShift = goodSuffix[j];
+      s += Math.max(badShift, goodShift);
+    }
+  }
+
+  return matches;
+}
+
+function preprocess(pattern: string): BMIndices {
+  return {
+    badChar: badCharTable(pattern),
+    goodSuffix: goodSuffixTable(pattern),
+  };
+}
+const txt = "ABAAABCDABAAABCDAAAABCDABAAABCDAAAABCD";
+const pat = "ABDAB";
+
+console.log(boyerMooreSearch(txt, pat));  // → [0, 9, 19, 29]
