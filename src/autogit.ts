@@ -1,51 +1,54 @@
-function isPalindrome(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
-  // Normalise if requested
-  const src = ignoreCase
-    ? s.toLowerCase()
-    : s;
+/**
+ * Merge two sorted slices of `arr` into a temporary array.
+ *
+ * @param arr  source array
+ * @param tmp  temporary array of the same length
+ * @param left  start index of the first slice
+ * @param mid   end index (exclusive) of the first slice and start of the second
+ * @param right end index (exclusive) of the second slice
+ */
+function merge(
+  arr: number[],
+  tmp: number[],
+  left: number,
+  mid: number,
+  right: number
+): void {
+  let i = left;   // index in first slice
+  let j = mid;    // index in second slice
+  let k = left;   // index in tmp
 
-  // Optionally strip out anything that isn’t a letter or a digit
-  const text = ignoreNonAlpha
-    ? src.replace(/[^a-z0-9]/gi, '')
-    : src;
+  // Copy the relevant segment to tmp
+  for (let idx = left; idx < right; idx++) tmp[idx] = arr[idx];
 
-  let left = 0;
-  let right = text.length - 1;
-
-  while (left < right) {
-    if (text[left] !== text[right]) return false;
-    left++;
-    right--;
+  // Merge back into arr
+  while (i < mid && j < right) {
+    arr[k++] = tmp[i] <= tmp[j] ? tmp[i++] : tmp[j++];
   }
-  return true;
+  while (i < mid) arr[k++] = tmp[i++];
+  while (j < right) arr[k++] = tmp[j++];
 }
-console.log(isPalindrome('Racecar'));          // true
-console.log(isPalindrome('A man, a plan!'));   // false
-console.log(isPalindrome('A man, a plan!', true, true)); // true
-function isPalindromeReverse(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
-  const cleaned = ignoreNonAlpha
-    ? s.replace(/[^a-z0-9]/gi, '')
-    : s;
 
-  const cmp = ignoreCase ? cleaned.toLowerCase() : cleaned;
-  const reversed = cmp.split('').reverse().join('');
-  return cmp === reversed;
+/**
+ * Iterative merge sort.
+ *
+ * @param arr  array to sort in‑place
+ */
+function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  if (n < 2) return; // already sorted
+
+  const tmp = new Array<number>(n);
+
+  // Run size = 1, 2, 4, 8, ...
+  for (let run = 1; run < n; run *= 2) {
+    for (let left = 0; left < n; left += 2 * run) {
+      const mid = Math.min(left + run, n);
+      const right = Math.min(left + 2 * run, n);
+      if (mid < right) merge(arr, tmp, left, mid, right);
+    }
+  }
 }
-console.log(isPalindromeReverse('Madam In Eden, I’m Adam', true, true)); // true
-const isPalindromeLazy = (s: string, ignoreCase = true, ignoreNonAlpha = false): boolean =>
-  (ignoreNonAlpha ? s.replace(/[^a-z0-9]/gi, '') : s)
-    .toLowerCase()
-    .split('')
-    .every((c, i, a) => c === a[a.length - i - 1]);
-const tests = [
-  { str: 'Radar', expect: true },
-  { str: 'Madam Anna', expect: false },
-  { str: 'Madam Anna', expect: true, options: { ignoreNonAlpha: true } },
-  { str: '12321', expect: true },
-  { str: 'Was it a cat I saw?', expect: true, options: { ignoreNonAlpha: true, ignoreCase: true } },
-];
-
-tests.forEach(({ str, expect, options }) => {
-  const result = isPalindrome(str, ...(options ? [options.ignoreCase, options.ignoreNonAlpha] : []));
-  console.assert(result === expect, `❌ ${str} should be ${expect}`);
-});
+const nums = [34, 7, 23, 32, 5, 62];
+mergeSortIterative(nums);
+console.log(nums); // [5, 7, 23, 32, 34, 62]
