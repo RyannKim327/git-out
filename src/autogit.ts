@@ -1,39 +1,98 @@
-/**
- * Returns the largest prime divisor of `n`.
- * If `n` is 0 or 1, returns `undefined`.
- */
-function largestPrimeFactor(n: number): number | undefined {
-  if (n < 2) return undefined;          // no prime factors for 0 or 1
+/* ──────────────────────────────────────────────────────
+   1️⃣  A tiny TypeScript helper that wraps the Fetch API
+─────────────────────────────────────────────────────── */
 
-  let num = Math.abs(n);                 // work with a positive number
-  let maxFactor = 1;
+const api = {
+  /* GET a JSON‑encoded resource */
+  async get<T>(url: string): Promise<T> {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
 
-  // Handle the factor 2 separately to keep the loop odd.
-  while (num % 2 === 0) {
-    maxFactor = 2;
-    num /= 2;
-  }
-
-  // Now only odd factors are possible.
-  let divisor = 3;
-  const sqrtLimit = Math.sqrt(num);
-  while (divisor <= sqrtLimit) {
-    while (num % divisor === 0) {
-      maxFactor = divisor;
-      num /= divisor;
+    if (!response.ok) {
+      const msg = `Fetching ${url} failed with status ${response.status}`;
+      console.warn(msg);
+      throw new Error(msg);
     }
-    divisor += 2;                       // skip even numbers
-  }
 
-  // If after the loop num > 1, it itself is a prime factor larger than all found.
-  if (num > 1) {
-    maxFactor = num;
-  }
+    const json = await response.json();
+    return json as T;
+  },
 
-  return maxFactor;
+  /* POST data as JSON */
+  async post<T, U>(url: string, body: T): Promise<U> {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const msg = `Posting to ${url} failed with status ${response.status}`;
+      console.warn(msg);
+      throw new Error(msg);
+    }
+
+    const json = await response.json();
+    return json as U;
+  },
+};
+
+/* ──────────────────────────────────────────────────────
+   2️⃣  A React‑Native component that uses the helper
+─────────────────────────────────────────────────────── */
+
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+
+type Todo = { userId: number; id: number; title: string; completed: boolean };
+
+// Example URL: https://jsonplaceholder.typicode.com/todos/1
+const TODO_URL = 'https://jsonplaceholder.typicode.com/todos/1';
+
+export default function AsyncExample() {
+  const [todo, setTodo] = useState<Todo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    /*═════════════════════════════════════════════════
+       Run an “async task” when the component mounts
+     ════════════════════════════════════════════════*/
+    const fetchTodo = async () => {
+      try {
+        const data = await api.get<Todo>(TODO_URL);
+        setTodo(data);
+      } catch (e: any) {
+        setError(e.message ?? 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTodo();
+  }, []);
+
+  if (loading) return <ActivityIndicator style={styles.center} />;
+  if (error) return <Text style={styles.error}>❌ {error}</Text>;
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Todo #{todo?.id}</Text>
+      <Text style={styles.content}>{todo?.title}</Text>
+      <Text style={styles.status}>
+        {todo?.completed ? '✅ Completed' : '🔄 Pending'}
+      </Text>
+    </View>
+  );
 }
-console.log(largestPrimeFactor(2));                // 2
-console.log(largestPrimeFactor(28));               // 7
-console.log(largestPrimeFactor(1000003));          // 1000003 (its prime)
-console.log(largestPrimeFactor(123456));           // 643
-console.log(largestPrimeFactor(-84));              // 7
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },
+  center:      { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  title:   { fontSize: 24, fontWeight: 'bold', marginBottom: 12 },
+  content: { fontSize: 18, marginBottom: 8 },
+  status:  { fontSize: 16, color: '#777' },
+  error:   { color: 'red', textAlign: 'center', margin: 20 },
+});
