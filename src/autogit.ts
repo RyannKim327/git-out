@@ -1,20 +1,10 @@
-function mean(values: number[]): number {
-  if (values.length === 0) return NaN;          // empty list → no mean
-
-  // total everything up
-  const sum = values.reduce((acc, cur) => acc + cur, 0);
-
-  // divide by how many there are
-  return sum / values.length;
+function removeVowels(str: string): string {
+  // /[aeiou]/i finds a, e, i, o, u in either case
+  return str.replace(/[aeiou]/gi, '');
 }
-function meanLoop(values: number[]): number {
-  if (values.length === 0) return NaN;
-
-  let sum = 0;
-  for (const v of values) {
-    sum += v;
-  }
-  return sum / values.length;
+console.log(removeVowels('Hello, World!')); // "Hll, Wrld!"
+function removeVowels(str: string): string {
+  const vowels = new Set('aeiouAEIOU');
+  return str.split('').filter(ch => !vowels.has(ch)).join('');
 }
-console.log(mean([1, 2, 3, 4, 5])); // 3
-console.log(mean([]));              // NaN
+return str.replace(/[aeiouáéíóúAEIOUÁÉÍÓÚ]/gi, '');
