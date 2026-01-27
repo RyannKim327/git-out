@@ -1,45 +1,29 @@
-function secondLargest(nums: number[]): number | null {
-  if (nums.length < 2) {            // not enough numbers
-    return null;                    // or throw an error, or whatever feels right
-  }
-
-  let largest = Number.NEGATIVE_INFINITY;
-  let second  = Number.NEGATIVE_INFINITY;
-
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;   // old largest becomes second
-      largest = n;
-    } else if (n > second && n < largest) {   // distinct from largest
-      second = n;
-    }
-  }
-
-  // After the loop, `second` holds the second largest *distinct* value
-  return second === Number.NEGATIVE_INFINITY ? null : second;
+const nums = [1, 2, 2, 3, 4, 4, 5];
+const unique = [...new Set(nums)];   // [1, 2, 3,4,5]
+const vals = ['a', 'b', 'a', 'c', 'b'];
+const uniq = vals.filter((value, index, arr) => arr.indexOf(value) === index);
+// ['a','b','c']
+interface User {
+  id: number;
+  name: string;
 }
-else if (n > second) {   // allow n == largest to fill second slot
-  second = n;
-}
-function secondLargestSorted(nums: number[]): number | null {
-  if (nums.length < 2) return null;
-  const sorted = [...nums].sort((a, b) => b - a); // descending
-  // handle duplicates if you want distinct values
-  return sorted[1];
-}
-function secondLargest(nums: number[]): number | null {
-  if (nums.length < 2) return null;
 
-  let largest = Number.NEGATIVE_INFINITY;
-  let second  = Number.NEGATIVE_INFINITY;
+const users: User[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob'   },
+  { id: 1, name: 'Alice'},
+  { id: 3, name: 'Carol'},
+];
 
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;
-      largest = n;
-    } else if (n > second && n < largest) {
-      second = n;
-    }
-  }
-  return second === Number.NEGATIVE_INFINITY ? null : second;
-}
+const uniq = Array.from(
+  users.reduce((map, user) => map.set(user.id, user), new Map<number, User>())
+).map(entry => entry[1]);
+
+// [{id:1,name:'Alice'}, {id:2,name:'Bob'}, {id:3,name:'Carol'}]
+const objs = [{x:1},{x:2},{x:1},{x:3}];
+const uniq = Array.from(
+  new Set(objs.map(o => JSON.stringify(o)))
+).map(str => JSON.parse(str));
+import { uniqBy } from 'lodash';
+
+const uniqUsers = uniqBy(users, 'id');
