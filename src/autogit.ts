@@ -1,104 +1,94 @@
-// ------------------------------------------------------------------
-//  Supporting types
-// ------------------------------------------------------------------
-/**
- * The shape of a graph node.  The `id` is used for a visited set.
- * `getNeighbours` must return raw references that `graph.getNode(id)` can resolve.
- */
-interface Node {
-  readonly id: string;
-  getNeighbours(): Iterable<string>;
+// A tiny helper interface when you want a custom comparator
+export interface Comparable<T> {
+  compareTo(other: T): number;   // negative if this < other
 }
-
 /**
- * A tiny graph interface that lets us look up nodes by id.
- * (You can replace this with your own representation; only the method
- * `getNode` is required by the algorithm.)
+ * Heap‑sort: in‑place, O(n log n) time, O(1) auxiliary space.
+ * @param arr  The array to sort.
+ * @param compare  Optional comparator: (a, b) => number
+ *                 (negative if a < b, zero if equal, positive if a > b).
+ *                 If omitted, the array is assumed to contain values
+ *                 that support the `<` operator.
  */
-interface Graph {
-  /** Return the node instance for the supplied id or `undefined`. */
-  getNode(id: string): Node | undefined;
-}
+export function heapSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): void {
+  const cmp = compare ?? defaultCompare;
 
-/**
- * A function tested against a node, returning true when the node is
- * the thing you’re looking for.
- */
-type Predicate = (node: Node) => boolean;
-
-// ------------------------------------------------------------------
-//  Depth‑limited DFS (iterative)
-// ------------------------------------------------------------------
-/**
- * Iterative depth‑limited depth‑first search.
- *
- * @param startId   id of the node where the search begins
- * @param maxDepth  stop expanding after this many edges from `startId`
- * @param graph     the graph interface
- * @param satisfies a predicate that tells when a node is a solution
- *
- * @returns the first node that satisfies `satisfies`, or undefined
- */
-export function depthLimitedSearch(
-  startId: string,
-  maxDepth: number,
-  graph: Graph,
-  satisfies: Predicate
-): Node | undefined {
-
-  // Guard against an empty or overly deep request
-  if (maxDepth < 0) return undefined;
-
-  // A stack holds tuples of (node, currentDepth).
-  const stack: Array<[Node, number]> = [];
-  const visited = new Set<string>();
-
-  const startNode = graph.getNode(startId);
-  if (!startNode) return undefined;   // start id is missing
-
-  stack.push([startNode, 0]);
-
-  while (stack.length) {
-    const [node, depth] = stack.pop()!;   // non‑empty promise
-
-    // Avoid revisiting the same node (important for cycles)
-    if (visited.has(node.id)) continue;
-    visited.add(node.id);
-
-    if (satisfies(node)) return node;    // found a match
-
-    if (depth === maxDepth) continue;    // reached depth limit
-
-    // Push neighbours onto the stack – order determines DFS order.
-    for (const neighId of node.getNeighbours()) {
-      const neighbour = graph.getNode(neighId);
-      if (neighbour) stack.push([neighbour, depth + 1]);
-    }
+  // 1. Build a max‑heap
+  for (let i = Math.floor(arr.length / 2) - 1; i >= 0; i--) {
+    siftDown(arr, i, arr.length, cmp);
   }
 
-  return undefined;   // nothing matched within the depth budget
+  // 2. Repeatedly swap the max element to the end and restore heap
+  for (let end = arr.length - 1; end > 0; end--) {
+    [arr[0], arr[end]] = [arr[end], arr[0]];
+    siftDown(arr, 0, end, cmp);  // `end` is the new heap size
+  }
+
+  /** Comparator that works on primitive numbers or strings … */
+  function defaultCompare(a: any, b: any): number {
+    return a < b ? -1 : a > b ? 1 : 0;   // 0 when equal
+  }
 }
-// A simple example graph implementation
-class SimpleNode implements Node {
-  constructor(public readonly id: string, private readonly neighIds: string[]) {}
-  getNeighbours() { return this.neighIds; }
+function siftDown<T>(
+  arr: T[],
+  start: number,
+  heapSize: number,
+  compare: (a: T, b: T) => number
+): void {
+  let root = start;
+
+  while (true) {
+    const left = 2 * root + 1;
+    const right = left + 1;
+    let swap: number | null = null;
+
+    // Is there a left child larger than root?
+    if (left < heapSize && compare(arr[left], arr[root]) > 0) {
+      swap = left;
+    }
+
+    // Is there a right child that beats the current swap?
+    if (
+      right < heapSize &&
+      (swap === null || compare(arr[right], arr[swap]) > 0)
+    ) {
+      swap = right;
+    }
+
+    // Nothing to swap → we’re done
+    if (swap === null) break;
+
+    [arr[root], arr[swap]] = [arr[swap], arr[root]];
+    root = swap;
+  }
 }
-class SimpleGraph implements Graph {
-  private readonly nodes = new Map<string, Node>();
-  addNode(node: Node) { this.nodes.set(node.id, node); }
-  getNode(id: string) { return this.nodes.get(id); }
+// Numbers
+const nums = [12, 11, 13, 5, 6, 7];
+heapSort(nums);
+console.log(nums);   // [5, 6, 7, 11, 12, 13]
+
+// Strings (lexicographic)
+let words = ["pear", "apple", "orange", "banana"];
+heapSort(words);
+console.log(words);  // ["apple", "banana", "orange", "pear"]
+
+// Custom objects with a `compareTo` method
+class Person {
+  constructor(public name: string, public age: number) {}
+  compareTo(other: Person) {
+    return this.age - other.age;  // ascending by age
+  }
 }
 
-// Build a tiny graph
-const g = new SimpleGraph();
-g.addNode(new SimpleNode('A', ['B', 'C']));
-g.addNode(new SimpleNode('B', ['D']));
-g.addNode(new SimpleNode('C', []));
-g.addNode(new SimpleNode('D', []));
+const people = [
+  new Person("Bob", 30),
+  new Person("Alice", 25),
+  new Person("Charlie", 35)
+];
 
-// Define a search goal
-const goal = (n: Node) => n.id === 'D';
-
-// Run depth‑limited DFS limited to 2 edges from 'A'
-const result = depthLimitedSearch('A', 2, g, goal);
-console.log(result?.id); // → 'D'
+// Provide the comparator manually
+heapSort(people, (a, b) => a.compareTo(b));
+console.log(people.map(p => `${p.name}(${p.age})`));  // Alice(25) Bob(30) Charlie(35)
