@@ -1,69 +1,25 @@
-type Edge = { from: number; to: number; weight: number };
+/**
+ * Returns true if `n` is a prime number.
+ * Works with any non‑negative integer. For negative numbers or 0/1 it returns false.
+ */
+export function isPrime(n: number): boolean {
+  if (!Number.isInteger(n) || n < 2) return false;   // 0, 1, and non‑ints aren't prime
+  
+  // 2 and 3 are the only even/odd primes.
+  if (n === 2 || n === 3) return true;
 
-interface BellmanFordResult {
-  dist: number[];          // shortest distance from source to each vertex   (Infinity = unreachable)
-  prev: (number | null)[]; // previous vertex on the shortest path, or null
-  hasNegativeCycle: boolean; // true if a negative cycle was detected
-}
+  // Even numbers > 2 are not prime.
+  if (n % 2 === 0) return false;
 
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult {
-  const dist = Array(vertexCount).fill(Infinity);
-  const prev = Array<number | null>(vertexCount).fill(null);
-
-  dist[source] = 0;
-
-  // 1️⃣ Relax every edge |V|‑1 times
-  for (let i = 0; i < vertexCount - 1; i++) {
-    let updated = false;
-    for (const {from, to, weight} of edges) {
-      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-        dist[to] = dist[from] + weight;
-        prev[to] = from;
-        updated = true;
-      }
-    }
-    // If no distance changed, we’re done early
-    if (!updated) break;
+  // Check odd divisors up to √n.
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false;
   }
 
-  // 2️⃣ Check for negative cycles
-  let hasNegativeCycle = false;
-  for (const {from, to, weight} of edges) {
-    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-      hasNegativeCycle = true;
-      break;
-    }
-  }
-
-  return {dist, prev, hasNegativeCycle};
+  return true;
 }
-function reconstructPath(prev: (number | null)[], target: number): number[] {
-  const path: number[] = [];
-  let cur: number | null = target;
-
-  while (cur !== null) {
-    path.push(cur);
-    cur = prev[cur];
-  }
-  path.reverse();
-  return path;
-}
-const edges: Edge[] = [
-  {from: 0, to: 1, weight: 5},
-  {from: 1, to: 2, weight: -2},
-  // ...
-];
-const {dist, prev, hasNegativeCycle} = bellmanFord(5, edges, 0);
-
-console.log(dist);               // shortest distances
-console.log(hasNegativeCycle);    // useful flag
-console.log(reconstructPath(prev, 4)); // path from 0 to 4
+console.log(isPrime(7));   // true
+console.log(isPrime(20));  // false
+console.log(isPrime(91));  // false (7 × 13)
+console.log(isPrime(97));  // true
