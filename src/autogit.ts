@@ -1,50 +1,28 @@
-interface ListNode<T = any> {
-  val: T;
-  next: ListNode<T> | null;
-}
-class ListNode<T = any> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-function nthFromEndNaive<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let size = 0;
-  for (let cur = head; cur; cur = cur.next) size++;
+const original = [1, 2, 3, 4, 5];
 
-  if (n > size) return null;          // not enough elements
-  let target = size - n;              // 0‑based index from start
-  let cur = head;
-  for (let i = 0; i < target; i++) cur = cur!.next;
-
-  return cur;
-}
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let fast = head;
-  // Move fast n steps forward
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;   // n is larger than list length
-    fast = fast.next;
+const reversed = [...original].reverse(); // creates a new array, keeps `original` intact
+// or, if you don’t mind mutating the original array
+original.reverse();
+const copy = [...original];  // spread operator makes a new array
+copy.reverse();              // now you have the reversed copy
+function reverseArray<T>(arr: T[]): T[] {
+  const result: T[] = [];
+  for (let i = arr.length - 1; i >= 0; i--) {
+    result.push(arr[i]);
   }
-
-  let slow = head!;          // head is guaranteed non‑null now
-  while (fast) {
-    fast = fast.next!;
-    slow = slow.next!;
-  }
-
-  return slow;
-}
-function buildList(nums: number[]) {
-  let dummy = new ListNode(0);
-  let cur = dummy;
-  for (const v of nums) {
-    cur.next = new ListNode(v);
-    cur = cur.next;
-  }
-  return dummy.next;
+  return result;
 }
 
-const list = buildList([1, 2, 3, 4, 5]);
+const reverseManual = reverseArray(original);
+function reverseInPlace<T>(arr: T[]): void {
+  let left = 0;
+  let right = arr.length - 1;
+  while (left < right) {
+    // swap
+    [arr[left], arr[right]] = [arr[right], arr[left]];
+    left++;
+    right--;
+  }
+}
 
-console.log(nthFromEnd(list, 1)!.val); // 5
-console.log(nthFromEnd(list, 3)!.val); // 3
-console.log(nthFromEnd(list, 5)!.val); // 1
-console.log(nthFromEnd(list, 6));      // null
+reverseInPlace(original); // `original` is now reversed
