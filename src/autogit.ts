@@ -1,50 +1,43 @@
-// A minimal binary‑tree node definition
-interface TreeNode {
-  value: number;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
-
-/**
- * Recursively sums the values of every node in a binary tree.
- * @param root – the root of the tree
- * @returns the total sum of all node values
- */
-function sumTree(root: TreeNode | null | undefined): number {
-  if (!root) return 0;
-  return root.value + sumTree(root.left) + sumTree(root.right);
-}
-
-/*--- Example usage -------------------------------------------------------*/
-// Construct a small tree:
-//
-//        4
-//       / \
-//      2   5
-//     / \
-//    1   3
-const tree: TreeNode = {
-  value: 4,
-  left: {
-    value: 2,
-    left: { value: 1, left: null, right: null },
-    right: { value: 3, left: null, right: null },
-  },
-  right: { value: 5, left: null, right: null },
-};
-
-console.log(sumTree(tree)); // 15
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let total = 0;
-  const stack: Array<TreeNode> = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.value;
-    if (node.left) stack.push(node.left);
-    if (node.right) stack.push(node.right);
+function stringLength(str: string): number {
+  let len = 0;
+  for (let i = 0; i < str.length; i++) {
+    len++;                // we still use str.length in the loop condition,
+                          // but we never read it as the "answer"
   }
-
-  return total;
+  return len;
+}
+function stringLength(str: string): number {
+  let len = 0;
+  let code = str.codePointAt(0);
+  let idx = 0;
+  while (code !== undefined) {
+    len++;
+    idx++;
+    code = str.codePointAt(idx);
+  }
+  return len;
+}
+function stringLength(str: string): number {
+  let len = 0;
+  for (const _ of str) {
+    len++;
+  }
+  return len;
+}
+function stringLength(str: string): number {
+  if (str === '') return 0;
+  return 1 + stringLength(str.slice(1));
+}
+function stringLength(str: string): number {
+  const matches = str.match(/./gu);
+  return matches ? matches.length : 0;
+}
+function stringLength(str: string): number {
+  let idx = 0;
+  let len = 0;
+  while (str.charAt(idx) !== '') { // `charAt` returns '' past the end
+    len++;
+    idx++;
+  }
+  return len;
 }
