@@ -1,21 +1,10 @@
-/**
- * Returns the first repeated character in `s`, or `undefined`
- * if nothing repeats.
- *
- * @param s string to inspect
- */
-export function firstRepeatedChar(s: string): string | undefined {
-  const seen = new Set<string>();
-
-  for (const ch of s) {
-    if (seen.has(ch)) {
-      return ch;            // first repeat found
-    }
-    seen.add(ch);
-  }
-
-  return undefined;          // no repeats
+function removeVowels(str: string): string {
+  // /[aeiou]/i finds a, e, i, o, u in either case
+  return str.replace(/[aeiou]/gi, '');
 }
-console.log(firstRepeatedChar('abcda')); // 'a'
-console.log(firstRepeatedChar('hello world')); // 'l'
-console.log(firstRepeatedChar('abcdef')); // undefined
+console.log(removeVowels('Hello, World!')); // "Hll, Wrld!"
+function removeVowels(str: string): string {
+  const vowels = new Set('aeiouAEIOU');
+  return str.split('').filter(ch => !vowels.has(ch)).join('');
+}
+return str.replace(/[aeiouáéíóúAEIOUÁÉÍÓÚ]/gi, '');
