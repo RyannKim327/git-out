@@ -1,68 +1,30 @@
-/**
- * Stable counting sort of `arr` by the digit in position `exp`
- * (exp = 1 → units, 10 → tens, 100 → hundreds, …)
- */
-function countingSortByDigit(arr: number[], exp: number): void {
-  const n = arr.length;
-  const output = new Array<number>(n);
-  const count = new Array<number>(10).fill(0);   // base 10 → digits 0‑9
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
 
-  /* Count occurrences of each digit */
-  for (let i = 0; i < n; i++) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    count[digit] += 1;
-  }
+const intersection = a.filter(x => b.includes(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
 
-  /* Transform counts into starting indices */
-  for (let i = 1; i < 10; i++) {
-    count[i] += count[i - 1];
-  }
+const setB = new Set(b);
+const intersection = a.filter(x => setB.has(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 3, 4];
+const b = [3, 4, 5, 6];
 
-  /* Build the output array from the end to preserve stability */
-  for (let i = n - 1; i >= 0; i--) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    const pos = --count[digit];
-    output[pos] = arr[i];
-  }
+const [small, large] = a.length < b.length ? [a, b] : [b, a];
+const setSmall = new Set(small);
 
-  /* Copy back to the original array */
-  for (let i = 0; i < n; i++) {
-    arr[i] = output[i];
-  }
-}
-/**
- * Radix sort for an array of non‑negative integers.
- * Complexity: O(d · (n + k)) where d = number of digits, k = base (10).
- */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length < 2) return arr;            // already sorted
+const intersection = large.filter(x => setSmall.has(x));
+console.log(intersection); // [3, 4]
+const a = [1, 2, 2, 3, 4];
+const b = [2, 3, 3, 5];
 
-  // Find the maximum number to know how many digits we need
-  const maxVal = Math.max(...arr);
+const intersection = Array.from(
+  new Set(a.filter(x => new Set(b).has(x)))
+);
+console.log(intersection); // [2, 3]
+import _ from 'lodash';
 
-  // Start with the least significant digit (exp = 1)
-  for (let exp = 1; exp <= maxVal; exp *= 10) {
-    countingSortByDigit(arr, exp);
-  }
-
-  return arr; // sorted array (in‑place)
-}
-const data = [170, 45, 75, 90, 802, 24, 2, 66];
-
-radixSort(data);
-console.log(data); // [2, 24, 45, 66, 75, 90, 170, 802]
-export function radixSortMixed(arr: number[]): number[] {
-  const positives: number[] = [];
-  const negatives: number[] = [];
-
-  for (const v of arr) {
-    if (v >= 0) positives.push(v);
-    else negatives.push(-v);  // work with absolute values
-  }
-
-  radixSort(positives);
-  radixSort(negatives);
-
-  const sortedNegatives = negatives.reverse().map(v => -v);
-  return [...sortedNegatives, ...positives];
-}
+const intersection = _.intersection([1, 2, 3], [2, 3, 4]);
+console.log(intersection); // [2, 3]
