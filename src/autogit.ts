@@ -1,33 +1,21 @@
 /**
- * Sorts an array of numbers (or any comparable type) in place
- * using the classic selection‑sort algorithm.
+ * Returns the first repeated character in `s`, or `undefined`
+ * if nothing repeats.
  *
- * @param arr – the array to sort
- * @returns the same array reference, now sorted
+ * @param s string to inspect
  */
-export function selectionSort<T>(arr: T[]): T[] {
-    const n = arr.length;
+export function firstRepeatedChar(s: string): string | undefined {
+  const seen = new Set<string>();
 
-    for (let i = 0; i < n - 1; i++) {
-        // Assume the smallest element starts at i
-        let minIndex = i;
-
-        // Scan the unsorted suffix to find the real minimum
-        for (let j = i + 1; j < n; j++) {
-            if (arr[j] < arr[minIndex]) {
-                minIndex = j;
-            }
-        }
-
-        // If the minimum isn’t already in position i, swap
-        if (minIndex !== i) {
-            [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-        }
+  for (const ch of s) {
+    if (seen.has(ch)) {
+      return ch;            // first repeat found
     }
+    seen.add(ch);
+  }
 
-    return arr;
+  return undefined;          // no repeats
 }
-const unsorted = [64, 25, 12, 22, 11];
-console.log('Before:', unsorted);
-selectionSort(unsorted);
-console.log('After :', unsorted);
+console.log(firstRepeatedChar('abcda')); // 'a'
+console.log(firstRepeatedChar('hello world')); // 'l'
+console.log(firstRepeatedChar('abcdef')); // undefined
