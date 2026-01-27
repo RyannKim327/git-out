@@ -1,58 +1,61 @@
-// Majority element finder – works for any type that supports === comparison
-export function majorityElement<T>(arr: T[]): T | null {
-  if (arr.length === 0) return null;
+// A generic graph node – you can replace this with whatever you’re actually
+// storing.  Here we just keep a value and an array of child nodes.
+export interface TreeNode<T> {
+  value: T;
+  children: TreeNode<T>[];
+}
+/**
+ * Performs a breadth‑first search up to a depth limit.
+ *
+ * @param root The starting node.
+ * @param maxDepth The maximum path length to explore (0 = only the root).
+ * @param filter A callback that decides whether a node should be “accepted”.
+ *               It receives the node and its depth (root = 0).
+ * @returns An array of all nodes that satisfy the filter within the depth bound.
+ */
+export function breadthLimitedSearch<T>(
+  root: TreeNode<T>,
+  maxDepth: number,
+  filter: (node: TreeNode<T>, depth: number) => boolean
+): TreeNode<T>[] {
+  const result: TreeNode<T>[] = [];
+  const queue: Array<{ node: TreeNode<T>; depth: number }> = [{ node: root, depth: 0 }];
 
-  // 1st pass: find a candidate
-  let candidate = arr[0];
-  let count = 1;
+  while (queue.length) {
+    const { node, depth } = queue.shift()!;           // FIFO
+    if (depth > maxDepth) continue;                  // depth guard
 
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] === candidate) {
-      count++;
-    } else if (count === 0) {
-      candidate = arr[i];
-      count = 1;
-    } else {
-      count--;
+    if (filter(node, depth)) result.push(node);
+
+    // Push children *after* checking depth to avoid pushing out‑of‑range nodes
+    if (depth < maxDepth) {
+      for (const child of node.children) {
+        queue.push({ node: child, depth: depth + 1 });
+      }
     }
   }
 
-  // 2nd pass: verify that the candidate is really a majority
-  count = 0;
-  for (const v of arr) {
-    if (v === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
+  return result;
 }
-const nums = [3, 1, 3, 3, 2, 3, 3];
-const maj = majorityElement(nums);
+// Simple test tree
+const tree: TreeNode<string> = {
+  value: 'root',
+  children: [
+    { value: 'A', children: [] },
+    { value: 'B', children: [
+        { value: 'B1', children: [] },
+        { value: 'B2', children: [] },
+      ]
+    },
+    { value: 'C', children: [] }
+  ]
+};
 
-console.log(maj); // → 3
-function majorityBySorting<T>(arr: T[]): T | null {
-  if (arr.length === 0) return null;
+// Want all nodes that start with "B" and only dive 2 levels deep
+const matches = breadthLimitedSearch(
+  tree,
+  2,
+  (node, depth) => node.value.startsWith('B')
+);
 
-  const sorted = [...arr].sort(); // lexicographic for strings, numeric for numbers
-  const midVal = sorted[Math.floor(arr.length / 2)];
-
-  const count = sorted.reduce((c, v) => (v === midVal ? c + 1 : c), 0);
-  return count > Math.floor(arr.length / 2) ? midVal : null;
-}
-// A simple quick‑check
-export function testMajority() {
-  const cases: Array<[any[], any | null]> = [
-    [[1, 2, 1, 1, 3], 1],
-    [['a', 'b', 'a', 'a', 'c'], 'a'],
-    [[5, 5, 6, 6, 5], 5],
-    [[1, 2, 3], null],
-  ];
-
-  for (const [arr, expected] of cases) {
-    const result = majorityElement(arr);
-    if (result !== expected) {
-      console.error(`❌ Failed for ${JSON.stringify(arr)}: got ${result}`);
-    } else {
-      console.log(`✅ ${JSON.stringify(arr)} → ${result}`);
-    }
-  }
-}
+console.log(matches.map(n => n.value)); // ['B', 'B1', 'B2']
