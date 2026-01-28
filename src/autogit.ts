@@ -1,44 +1,50 @@
+// A minimal binary‑tree node definition
+interface TreeNode {
+  value: number;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
+}
+
 /**
- * Return the longest common prefix of an array of strings.
- *
- * @param arr – list of strings to compare
- * @returns the longest common prefix, or an empty string if none exists
+ * Recursively sums the values of every node in a binary tree.
+ * @param root – the root of the tree
+ * @returns the total sum of all node values
  */
-function longestCommonPrefix(arr: string[]): string {
-  if (!arr.length) return "";
+function sumTree(root: TreeNode | null | undefined): number {
+  if (!root) return 0;
+  return root.value + sumTree(root.left) + sumTree(root.right);
+}
 
-  // The classic “compare the first and last after sorting” trick.
-  // It guarantees we only have to check the two outermost strings,
-  // because any common prefix must be common to all.
-  const sorted = [...arr].sort();                  // sort lexicographically
-  const first = sorted[0];
-  const last  = sorted[sorted.length - 1];
+/*--- Example usage -------------------------------------------------------*/
+// Construct a small tree:
+//
+//        4
+//       / \
+//      2   5
+//     / \
+//    1   3
+const tree: TreeNode = {
+  value: 4,
+  left: {
+    value: 2,
+    left: { value: 1, left: null, right: null },
+    right: { value: 3, left: null, right: null },
+  },
+  right: { value: 5, left: null, right: null },
+};
 
-  let i = 0;
-  const minLen = Math.min(first.length, last.length);
+console.log(sumTree(tree)); // 15
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let total = 0;
+  const stack: Array<TreeNode> = [root];
 
-  while (i < minLen && first.charAt(i) === last.charAt(i)) {
-    i++;
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.value;
+    if (node.left) stack.push(node.left);
+    if (node.right) stack.push(node.right);
   }
 
-  return first.substring(0, i);
+  return total;
 }
-function lcpScan(arr: string[]): string {
-  if (!arr.length) return "";
-
-  let prefix = arr[0];
-
-  for (const s of arr.slice(1)) {
-    // shrink prefix until it’s a prefix of s
-    while (!s.startsWith(prefix)) {
-      prefix = prefix.slice(0, -1);
-      if (!prefix) return "";
-    }
-  }
-  return prefix;
-}
-const words = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(words)); // → "fl"
-
-const zoo = ["dog", "racecar", "car"];
-console.log(longestCommonPrefix(zoo));   // → ""
