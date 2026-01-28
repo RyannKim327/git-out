@@ -1,75 +1,60 @@
 /**
- * Tarjan's algorithm to find all strongly connected components (SCCs) of a directed graph.
+ * Returns the max sum of any contiguous sub‑array of `nums`.
+ * If all numbers are negative, it will still return the best (least negative) value.
  *
- * @param adjacencyList A Map where each key is a node id and the value is an array of adjacent node ids.
- * @returns An array of components, each component is an array of node ids belonging to the same SCC.
+ * @param nums Array of numbers
+ * @returns maximum sub‑array sum
  */
-export function stronglyConnectedComponents(
-  adjacencyList: Map<number, number[]>
-): number[][] {
-  const indexMap = new Map<number, number>();   // node -> index
-  const lowlinkMap = new Map<number, number>(); // node -> lowlink
-  const onStack = new Set<number>();            // nodes currently in the stack
-  const stack: number[] = [];                   // stack of nodes
-  const components: number[][] = [];
-  let currentIndex = 0;
+function maxSubArraySum(nums: number[]): number {
+  if (nums.length === 0) {
+    throw new Error('Array must contain at least one element');
+  }
 
-  const strongConnect = (node: number) => {
-    // 1. set the depth index for this node
-    indexMap.set(node, currentIndex);
-    lowlinkMap.set(node, currentIndex);
-    currentIndex++;
-    stack.push(node);
-    onStack.add(node);
+  let bestSoFar = nums[0];      // best overall
+  let bestEndingHere = nums[0]; // best ending at current index
 
-    // 2. consider successors of node
-    const neighbors = adjacencyList.get(node) ?? [];
-    for (const succ of neighbors) {
-      if (!indexMap.has(succ)) {
-        // (a) Successor has not yet been visited; recurse on it
-        strongConnect(succ);
-        // Update lowlink
-        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, lowlinkMap.get(succ)!));
-      } else if (onStack.has(succ)) {
-        // (b) Successor is in stack → part of current SCC
-        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, indexMap.get(succ)!));
-      }
-      // (c) else: successor has been visited and is not in stack – ignore
+  for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous sub‑array or start fresh at nums[i]
+    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
+
+    // Update the global best if needed
+    bestSoFar = Math.max(bestSoFar, bestEndingHere);
+  }
+
+  return bestSoFar;
+}
+
+/* Example usage */
+const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
+console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
+function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
+  let bestSoFar = nums[0], bestEndingHere = nums[0];
+  let start = 0, end = 0, tempStart = 0;
+
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] > bestEndingHere + nums[i]) {
+      bestEndingHere = nums[i];
+      tempStart = i;          // potential new start
+    } else {
+      bestEndingHere += nums[i];
     }
 
-    // 3. If node is a root node, pop the stack and generate an SCC
-    if (lowlinkMap.get(node) === indexMap.get(node)) {
-      const component: number[] = [];
-      let w: number | undefined;
-      do {
-        w = stack.pop();
-        onStack.delete(w!);
-        component.push(w!);
-      } while (w !== node);
-      components.push(component);
-    }
-  };
-
-  // Run strongConnect on every node that has not yet been visited
-  for (const node of adjacencyList.keys()) {
-    if (!indexMap.has(node)) {
-      strongConnect(node);
+    if (bestEndingHere > bestSoFar) {
+      bestSoFar = bestEndingHere;
+      start = tempStart;      // commit new start
+      end = i;
     }
   }
 
-  return components;
+  return {
+    maxSum: bestSoFar,
+    subArray: nums.slice(start, end + 1),
+    indices: [start, end]
+  };
 }
-import { stronglyConnectedComponents } from './tarjan';
-
-const graph = new Map<number, number[]>();
-graph.set(0, [1]);
-graph.set(1, [2, 3]);
-graph.set(2, [0, 3]);
-graph.set(3, [4]);
-graph.set(4, [5]);
-graph.set(5, [3]);
-
-const sccs = stronglyConnectedComponents(graph);
-console.log(sccs);
-// → [ [ 4, 5, 3 ], [ 0, 1, 2 ] ]
-// (order may vary)
+console.log(maxSubArrayDetail(arr));
+// {
+//   maxSum: 6,
+//   subArray: [4, -1, 2, 1],
+//   indices: [3, 6]
+// }
