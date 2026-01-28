@@ -1,43 +1,65 @@
-/**
- * Counting sort for integer arrays (can include negatives).
- * @param arr The input array of numbers.
- * @returns A new sorted array.
- */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+// ---------------------------------------------------------
+//  FunRandomCron.ts
+//  A tiny demo that shows how to:
+//   • import node‑cron with types
+//   • schedule a repeating job
+//   • cancel a job on demand
+//   • use a more powerful CRON expression
+//   • log the next run time every time it fires
+// ---------------------------------------------------------
 
-  // 1) Determine min and max to find the range.
-  let min = arr[0];
-  let max = arr[0];
-  for (const v of arr) {
-    if (v < min) min = v;
-    else if (v > max) max = v;
-  }
+import cron, { ScheduledTask } from 'node‑cron';
+import { format } from 'date‑fns';
 
-  const range = max - min + 1;          // how many distinct integer values
-  const count = new Array<number>(range).fill(0);
+// This job runs every 10 seconds—just to keep the console fire‑breathing.
+// In a real app you could do backups, recompute stats, notify users, etc.
+const repeatEveryTenSeconds: ScheduledTask = cron.schedule(
+  '*/10 * * * * *',                // <seconds> <minutes> <hours> <day> <month> <dow>
+  () => {
+    const now = new Date();
+    console.log(`[${format(now, 'HH:mm:ss.SSS')}] 10‑second heartbeat!`);
+    // Do your real work here.
+  },
+  { scheduled: true }              // starts immediately
+);
 
-  // 2) Count each value
-  for (const v of arr) {
-    count[v - min]++;                   // offset by min so array starts at 0
-  }
+// Also throw in a “Monday at 04:35” job just to show another flavour.
+const mondayMorning: ScheduledTask = cron.schedule(
+  '35 4 * * 1',                    // minute hour day-of-month month day-of-week
+  () => {
+    console.log(`🎉 Monday Special – It’s 04:35!`);
+  },
+  { scheduled: true, timezone: 'America/New_York' } // time‑zone support
+);
 
-  // 3) Convert counts to cumulative counts
-  for (let i = 1; i < range; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 4) Allocate result array
-  const output = new Array<number>(arr.length);
-
-  // 5) Place elements into output in stable order
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const v = arr[i];
-    const idx = v - min;
-    const pos = count[idx] - 1;         // final index for this element
-    output[pos] = v;
-    count[idx]--;                       // decrease count for next instance
-  }
-
-  return output;
+// Show next run times.  Handy for debugging.
+function displayNextRun(job: ScheduledTask, name: string) {
+  console.log(` → ${name} next run at ${format(job.nextDates().toDate(), 'yyyy‑MM‑dd HH:mm:ss')}`);
 }
+displayNextRun(repeatEveryTenSeconds, 'Heartbeat');
+displayNextRun(mondayMorning, 'Mon‑4:35 AM');
+
+// ---------------------------------------------------------
+//  Graceful shutdown inside this demo
+// ---------------------------------------------------------
+const shutdown = () => {
+  console.log('\n→ Shutting down cron jobs gracefully...');
+  repeatEveryTenSeconds.stop();
+  mondayMorning.stop();
+  console.log('→ All job timers cleared. Bye!');
+  process.exit(0);
+};
+
+// In a real app you’d hook this into SIGINT, SIGTERM, etc.
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+# 1️⃣ Install the runtime dependencies
+npm install node-cron date-fns
+
+# 2️⃣ Add TypeScript types, optional but handy
+npm install -D typescript @types/node-cron @types/date-fns
+
+# 3️⃣ Compile + run
+npx tsc FunRandomCron.ts
+node FunRandomCron.js
+npx ts-node FunRandomCron.ts
