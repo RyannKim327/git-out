@@ -1,56 +1,47 @@
 /**
- * Returns the longest strictly increasing subsequence of `arr`.
+ * Count how many times a whole word appears in a string.
  *
- * Example:
- *   longestIncreasingSubsequence([10, 9, 2, 5, 3, 7, 101, 18])
- *   → [2, 3, 7, 101]
+ * @param haystack  The text to search.
+ * @param needle    The word you’re looking for.
+ * @param caseSensitive  If false, treat both inputs as lower‑case.
+ * @returns Number of matches.
  */
-export function longestIncreasingSubsequence(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+function countWord(
+  haystack: string,
+  needle: string,
+  caseSensitive = false
+): number {
+  if (!needle) return 0;
 
-  // `tails` keeps the smallest tail value for all subsequences
-  // of a given length. `tails[i]` is the least possible tail of
-  // an increasing subsequence with length i+1.
-  const tails: number[] = [];
-  // `prevIndices` remembers, for each element, the index of its
-  // predecessor in the LIS that passes through that element.
-  const prevIndices: number[] = new Array(arr.length).fill(-1);
-  // `indicesAtLength` holds the index of the last element of the LIS
-  // of a given length, allowing us to reconstruct the sequence.
-  const indicesAtLength: number[] = [];
-
-  arr.forEach((val, idx) => {
-    // Binary search for the first tail that is >= val
-    let l = 0;
-    let r = tails.length;
-    while (l < r) {
-      const m = Math.floor((l + r) / 2);
-      if (tails[m] < val) l = m + 1;
-      else r = m;
-    }
-
-    // `l` is the length (0‑based) of the subsequence that will end at idx
-    if (l > 0) prevIndices[idx] = indicesAtLength[l - 1];
-
-    if (l === tails.length) {
-      tails.push(val);
-      indicesAtLength.push(idx);
-    } else {
-      tails[l] = val;
-      indicesAtLength[l] = idx;
-    }
-  });
-
-  // Reconstruct the LIS from the recorded indices
-  const lis: number[] = [];
-  let k = indicesAtLength[indicesAtLength.length - 1];
-  while (k !== -1) {
-    lis.push(arr[k]);
-    k = prevIndices[k];
-  }
-  lis.reverse();
-  return lis;
+  const flags = caseSensitive ? 'g' : 'gi';
+  // \b ensures we only match whole words
+  const re = new RegExp(`\\b${escapeRegExp(needle)}\\b`, flags);
+  const matches = haystack.match(re);
+  return matches ? matches.length : 0;
 }
-const data = [3, 10, 2, 1, 20];
-console.log(longestIncreasingSubsequence(data));
-// → [3, 10, 20]
+
+/** Helper to escape regex meta‑characters in the needle. */
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+const text = 'The quick brown fox jumps over the lazy dog. The fox was quick.';
+
+console.log(countWord(text, 'quick'));   // 2
+console.log(countWord(text, 'the'));     // 2 (case‑insensitive)
+console.log(countWord(text, 'the', true)); // 1 (case‑sensitive)
+function countWordUsingSplit(
+  text: string,
+  word: string,
+  caseSensitive = false
+): number {
+  if (!word) return 0;
+
+  const base = caseSensitive ? text : text.toLowerCase();
+  const target = caseSensitive ? word : word.toLowerCase();
+
+  // Split on whitespace and punctuation
+  const tokens = base.split(/\W+/).filter(Boolean);
+  return tokens.filter(t => t === target).length;
+}
+const re = new RegExp(escapeRegExp(substring), 'g'); // add gi for case‑insensitive
+const count = (text.match(re) || []).length;
