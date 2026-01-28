@@ -1,27 +1,24 @@
-function decimalToBinary(num: number): string {
-  return num.toString(2);   // base‑2 string
+export function reverseString(s: string): string {
+  return s.split('').reverse().join('');
 }
-
-console.log(decimalToBinary(42)); // "101010"
-function decimalToBinary(num: bigint): string {
-  if (num === 0n) return "0";
-
-  let n = num;
-  let bits = "";
-
-  while (n > 0n) {
-    bits = (n & 1n ? "1" : "0") + bits; // prepend the low bit
-    n >>= 1n;                           // shift right
+export function reverseStringManual(s: string): string {
+  let result = '';
+  for (let i = s.length - 1; i >= 0; i--) {
+    result += s[i];
   }
-
-  return bits;
+  return result;
 }
-
-console.log(decimalToBinary(42n)); // "101010"
-export function toBinary(value: number | bigint): string {
-  // Pick the right conversion automatically
-  if (typeof value === "bigint") {
-    return decimalToBinary(value);
+export function reverseStringRecursive(s: string): string {
+  if (s.length <= 1) return s;
+  return reverseStringRecursive(s.slice(1)) + s[0];
+}
+export function reverseStringLoop(s: string): string {
+  const chars = [...s];          // same as s.split('')
+  for (let i = 0, j = chars.length - 1; i < j; i++, j--) {
+    [chars[i], chars[j]] = [chars[j], chars[i]];
   }
-  return value.toString(2);
+  return chars.join('');
 }
+console.log(reverseString('hello'));          // 'olleh'
+console.log(reverseStringManual('world'));    // 'dlrow'
+console.log(reverseStringRecursive('TypeScript')); // 'tpircSepyT'
