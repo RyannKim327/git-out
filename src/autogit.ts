@@ -1,25 +1,24 @@
-/**
- * Returns true if `n` is a prime number.
- * Works with any non‑negative integer. For negative numbers or 0/1 it returns false.
- */
-export function isPrime(n: number): boolean {
-  if (!Number.isInteger(n) || n < 2) return false;   // 0, 1, and non‑ints aren't prime
-  
-  // 2 and 3 are the only even/odd primes.
-  if (n === 2 || n === 3) return true;
-
-  // Even numbers > 2 are not prime.
-  if (n % 2 === 0) return false;
-
-  // Check odd divisors up to √n.
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 3; i <= limit; i += 2) {
-    if (n % i === 0) return false;
-  }
-
-  return true;
+export function reverseString(s: string): string {
+  return s.split('').reverse().join('');
 }
-console.log(isPrime(7));   // true
-console.log(isPrime(20));  // false
-console.log(isPrime(91));  // false (7 × 13)
-console.log(isPrime(97));  // true
+export function reverseStringManual(s: string): string {
+  let result = '';
+  for (let i = s.length - 1; i >= 0; i--) {
+    result += s[i];
+  }
+  return result;
+}
+export function reverseStringRecursive(s: string): string {
+  if (s.length <= 1) return s;
+  return reverseStringRecursive(s.slice(1)) + s[0];
+}
+export function reverseStringLoop(s: string): string {
+  const chars = [...s];          // same as s.split('')
+  for (let i = 0, j = chars.length - 1; i < j; i++, j--) {
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join('');
+}
+console.log(reverseString('hello'));          // 'olleh'
+console.log(reverseStringManual('world'));    // 'dlrow'
+console.log(reverseStringRecursive('TypeScript')); // 'tpircSepyT'
