@@ -1,25 +1,44 @@
+// src/apiFetch.ts
+export interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
 /**
- * Returns true if `n` is a prime number.
- * Works with any non‑negative integer. For negative numbers or 0/1 it returns false.
+ * Pulls a single todo item from the JSON‑Placeholder API.
+ *
+ * @param todoId  the numeric ID of the todo to fetch
+ * @returns          a promise that resolves to the Todo object
  */
-export function isPrime(n: number): boolean {
-  if (!Number.isInteger(n) || n < 2) return false;   // 0, 1, and non‑ints aren't prime
-  
-  // 2 and 3 are the only even/odd primes.
-  if (n === 2 || n === 3) return true;
+export async function getTodoById(todoId: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${todoId}`;
 
-  // Even numbers > 2 are not prime.
-  if (n % 2 === 0) return false;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { "Accept": "application/json" },
+  });
 
-  // Check odd divisors up to √n.
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 3; i <= limit; i += 2) {
-    if (n % i === 0) return false;
+  if (!response.ok) {
+    throw new Error(`API responded with ${response.status} ${response.statusText}`);
   }
 
-  return true;
+  // `response.json()` already resolves to a `Promise<any>`, so we cast
+  // to `Todo` to satisfy TypeScript.
+  const data = (await response.json()) as Todo;
+  return data;
 }
-console.log(isPrime(7));   // true
-console.log(isPrime(20));  // false
-console.log(isPrime(91));  // false (7 × 13)
-console.log(isPrime(97));  // true
+// src/start.ts
+import { getTodoById, Todo } from "./apiFetch";
+
+async function main(): Promise<void> {
+  try {
+    const todo: Todo = await getTodoById(1);
+    console.log("Fetched todo:", todo);
+  } catch (err) {
+    console.error("Failed to fetch todo:", err);
+  }
+}
+
+main().catch((outerErr) => console.error("Unhandled error:", outerErr));
