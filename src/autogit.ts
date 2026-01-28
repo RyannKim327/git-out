@@ -1,47 +1,75 @@
 /**
- * Count how many times a whole word appears in a string.
+ * Tarjan's algorithm to find all strongly connected components (SCCs) of a directed graph.
  *
- * @param haystack  The text to search.
- * @param needle    The word you’re looking for.
- * @param caseSensitive  If false, treat both inputs as lower‑case.
- * @returns Number of matches.
+ * @param adjacencyList A Map where each key is a node id and the value is an array of adjacent node ids.
+ * @returns An array of components, each component is an array of node ids belonging to the same SCC.
  */
-function countWord(
-  haystack: string,
-  needle: string,
-  caseSensitive = false
-): number {
-  if (!needle) return 0;
+export function stronglyConnectedComponents(
+  adjacencyList: Map<number, number[]>
+): number[][] {
+  const indexMap = new Map<number, number>();   // node -> index
+  const lowlinkMap = new Map<number, number>(); // node -> lowlink
+  const onStack = new Set<number>();            // nodes currently in the stack
+  const stack: number[] = [];                   // stack of nodes
+  const components: number[][] = [];
+  let currentIndex = 0;
 
-  const flags = caseSensitive ? 'g' : 'gi';
-  // \b ensures we only match whole words
-  const re = new RegExp(`\\b${escapeRegExp(needle)}\\b`, flags);
-  const matches = haystack.match(re);
-  return matches ? matches.length : 0;
+  const strongConnect = (node: number) => {
+    // 1. set the depth index for this node
+    indexMap.set(node, currentIndex);
+    lowlinkMap.set(node, currentIndex);
+    currentIndex++;
+    stack.push(node);
+    onStack.add(node);
+
+    // 2. consider successors of node
+    const neighbors = adjacencyList.get(node) ?? [];
+    for (const succ of neighbors) {
+      if (!indexMap.has(succ)) {
+        // (a) Successor has not yet been visited; recurse on it
+        strongConnect(succ);
+        // Update lowlink
+        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, lowlinkMap.get(succ)!));
+      } else if (onStack.has(succ)) {
+        // (b) Successor is in stack → part of current SCC
+        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, indexMap.get(succ)!));
+      }
+      // (c) else: successor has been visited and is not in stack – ignore
+    }
+
+    // 3. If node is a root node, pop the stack and generate an SCC
+    if (lowlinkMap.get(node) === indexMap.get(node)) {
+      const component: number[] = [];
+      let w: number | undefined;
+      do {
+        w = stack.pop();
+        onStack.delete(w!);
+        component.push(w!);
+      } while (w !== node);
+      components.push(component);
+    }
+  };
+
+  // Run strongConnect on every node that has not yet been visited
+  for (const node of adjacencyList.keys()) {
+    if (!indexMap.has(node)) {
+      strongConnect(node);
+    }
+  }
+
+  return components;
 }
+import { stronglyConnectedComponents } from './tarjan';
 
-/** Helper to escape regex meta‑characters in the needle. */
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-const text = 'The quick brown fox jumps over the lazy dog. The fox was quick.';
+const graph = new Map<number, number[]>();
+graph.set(0, [1]);
+graph.set(1, [2, 3]);
+graph.set(2, [0, 3]);
+graph.set(3, [4]);
+graph.set(4, [5]);
+graph.set(5, [3]);
 
-console.log(countWord(text, 'quick'));   // 2
-console.log(countWord(text, 'the'));     // 2 (case‑insensitive)
-console.log(countWord(text, 'the', true)); // 1 (case‑sensitive)
-function countWordUsingSplit(
-  text: string,
-  word: string,
-  caseSensitive = false
-): number {
-  if (!word) return 0;
-
-  const base = caseSensitive ? text : text.toLowerCase();
-  const target = caseSensitive ? word : word.toLowerCase();
-
-  // Split on whitespace and punctuation
-  const tokens = base.split(/\W+/).filter(Boolean);
-  return tokens.filter(t => t === target).length;
-}
-const re = new RegExp(escapeRegExp(substring), 'g'); // add gi for case‑insensitive
-const count = (text.match(re) || []).length;
+const sccs = stronglyConnectedComponents(graph);
+console.log(sccs);
+// → [ [ 4, 5, 3 ], [ 0, 1, 2 ] ]
+// (order may vary)
