@@ -1,50 +1,60 @@
-// A minimal binary‑tree node definition
-interface TreeNode {
-  value: number;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
+type Node = string | number;              // whichever you prefer for vertex IDs
+type Graph = Record<Node, Node[]>;          // e.g., { 1: [2,3], 2: [4], … }
 
-/**
- * Recursively sums the values of every node in a binary tree.
- * @param root – the root of the tree
- * @returns the total sum of all node values
- */
-function sumTree(root: TreeNode | null | undefined): number {
-  if (!root) return 0;
-  return root.value + sumTree(root.left) + sumTree(root.right);
-}
-
-/*--- Example usage -------------------------------------------------------*/
-// Construct a small tree:
-//
-//        4
-//       / \
-//      2   5
-//     / \
-//    1   3
-const tree: TreeNode = {
-  value: 4,
-  left: {
-    value: 2,
-    left: { value: 1, left: null, right: null },
-    right: { value: 3, left: null, right: null },
-  },
-  right: { value: 5, left: null, right: null },
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['d', 'e'],
+  c: ['f'],
+  d: [],
+  e: ['c'],
+  f: [],
 };
+function dfsRecursive(
+  graph: Graph,
+  start: Node,
+  visited = new Set<Node>(),
+  order: Node[] = []
+): Node[] {
+  visited.add(start);        // 1️⃣ mark as visited
+  order.push(start);         // 2️⃣ record the visit order
 
-console.log(sumTree(tree)); // 15
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let total = 0;
-  const stack: Array<TreeNode> = [root];
+  for (const neighbor of graph[start] ?? []) {
+    if (!visited.has(neighbor)) {
+      dfsRecursive(graph, neighbor, visited, order); // 3️⃣ recurse
+    }
+  }
+  return order;
+}
+
+// usage
+const visitOrder = dfsRecursive(graph, 'a');
+console.log(visitOrder); // ['a', 'b', 'd', 'e', 'c', 'f']
+function dfsIterative(graph: Graph, start: Node): Node[] {
+  const stack: Node[] = [start];
+  const visited = new Set<Node>();
+  const order: Node[] = [];
 
   while (stack.length) {
-    const node = stack.pop()!;
-    total += node.value;
-    if (node.left) stack.push(node.left);
-    if (node.right) stack.push(node.right);
-  }
+    const node = stack.pop()!; // pop the top
+    if (visited.has(node)) continue; // skip if we've already seen it
 
-  return total;
+    visited.add(node);   // 1️⃣ mark
+    order.push(node);    // 2️⃣ record
+
+    // push neighbors in reverse order so that the first neighbor
+    // is processed first (mimics recursive order)
+    const neighbors = graph[node] ?? [];
+    for (let i = neighbors.length - 1; i >= 0; i--) {
+      const neighbor = neighbors[i];
+      if (!visited.has(neighbor)) stack.push(neighbor);
+    }
+  }
+  return order;
 }
+
+// usage
+const orderIter = dfsIterative(graph, 'a');
+console.log(orderIter); // ['a', 'b', 'd', 'e', 'c', 'f']
+// inside the while loop
+const prev = stack[stack.length - 1]; // last node that will lead to `node`
+order.push([prev, node] as [Node, Node]);
