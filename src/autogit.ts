@@ -1,58 +1,93 @@
 /**
- * Returns a random integer between min (inclusive) and max (inclusive).
- *
- * @param min – lower bound, inclusive
- * @param max – upper bound, inclusive
+ * Represents a node in the beam frontier.
+ * Keeps the actual state and the path taken to reach it.
  */
-function randomInt(min: number, max: number): number {
-  // Clamp values to integers just in case
-  const lo = Math.ceil(min);
-  const hi = Math.floor(max);
-
-  // Math.random returns a float in [0, 1)
-  const r = Math.random() * (hi - lo + 1);
-  return Math.floor(r) + lo;
+export interface BeamNode<T> {
+  /** The actual state */
+  state: T;
+  /** The sequence of states that led to this node (incl. this state) */
+  path: T[];
 }
-const diceRoll = randomInt(1, 6);   // 1‑6
-const randomIndex = randomInt(0, array.length - 1);
-function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min;
-}
-function secureRandomInt(min: number, max: number): number {
-  const lo = Math.ceil(min);
-  const hi = Math.floor(max);
 
-  // Number of values in our range
-  const range = hi - lo + 1;
-  // Enough bytes to hold the full range
-  const bytesNeeded = Math.ceil(Math.log2(range) / 8);
+/**
+ * Performs a beam search.
+ *
+ * @param startNodes   Initial frontier. Usually a single root node, but you can start with many.
+ * @param getSuccessors   Function that returns the child nodes of a parent.
+ * @param score          Score function – higher is better.
+ * @param beamWidth      How many nodes to keep after each expansion.
+ * @param maxDepth       Optional depth cutoff (in terms of edges traversed).
+ * @param isGoal         Optional goal‑test predicate.
+ * @returns The first goal node found (or undefined if none).
+ */
+export function beamSearch<T>(
+  startNodes: T[],
+  getSuccessors: (node: T) => T[],
+  score: (node: T) => number,
+  beamWidth: number,
+  maxDepth?: number,
+  isGoal?: (node: T) => boolean
+): BeamNode<T> | undefined {
 
-  // Read random unsigned bytes
-  const rand = new Uint8Array(bytesNeeded);
-  crypto.getRandomValues(rand);
+  // Ensure we keep a lightweight copy for sorting.
+  let frontier: BeamNode<T> = startNodes.map(state => ({ state, path: [state] }));
 
-  // Convert bytes to a number
-  let value = 0;
-  for (let i = 0; i < bytesNeeded; i++) {
-    value = (value << 8) | rand[i];
+  for (let depth = 0; depth < (maxDepth ?? Infinity); depth++) {
+    if (frontier.length === 0) break; // nothing to expand
+
+    // Expand every node in the frontier
+    const expansions: BeamNode<T>[] = [];
+    for (const node of frontier) {
+      const succ = getSuccessors(node.state);
+      for (const child of succ) {
+        expansions.push({
+          state: child,
+          path: [...node.path, child]
+        });
+      }
+    }
+
+    // Optional goal check as soon as we generate expansions
+    if (isGoal) {
+      for (const node of expansions) {
+        if (isGoal(node.state)) return node;
+      }
+    }
+
+    // Sort by score, keep top `beamWidth`
+    expansions.sort((a, b) => score(b.state) - score(a.state)); // descending
+    frontier = expansions.slice(0, beamWidth);
   }
 
-  // Map into the desired range
-  return (value % range) + lo;
+  return undefined; // no goal reached within limits
 }
-function randomChoice<T>(arr: T[]): T {
-  if (arr.length === 0) {
-    throw new RangeError('Cannot choose from an empty array');
-  }
-  const idx = randomInt(0, arr.length - 1);
-  return arr[idx];
-}
-const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+// Example: find a numeric sequence that sums to 15
+type MyState = number; // current sum
 
-function randomToken(length = 8): string {
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars[randomInt(0, chars.length - 1)];
-  }
-  return result;
+const start = 0;
+
+const getSucc = (sum: MyState) => {
+  return [sum + 1, sum + 2, sum + 3]; // could be any branching scheme
+};
+
+const score = (sum: MyState) => {
+  // The closer to 15 without overshooting, the better
+  return Math.max(0, 15 - sum);
+};
+
+const isGoal = (sum: MyState) => sum === 15;
+
+const result = beamSearch(
+  [start],
+  getSucc,
+  score,
+  beamWidth = 3,
+  maxDepth = 10,
+  isGoal
+);
+
+if (result) {
+  console.log(`Reached 15 via ${result.path.join(' -> ')}`);
+} else {
+  console.log('No path found within depth limit');
 }
