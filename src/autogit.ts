@@ -1,43 +1,47 @@
 /**
- * Counting sort for integer arrays (can include negatives).
- * @param arr The input array of numbers.
- * @returns A new sorted array.
+ * Return true if `a` and `b` are anagrams.
+ *
+ *   * Ignore whitespace and punctuation.
+ *   * Ignore case.
  */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+function areAnagramsSorting(a: string, b: string): boolean {
+  const clean = (s: string) =>
+    s.toLowerCase().replace(/\W/g, '').split('').sort().join('');
 
-  // 1) Determine min and max to find the range.
-  let min = arr[0];
-  let max = arr[0];
-  for (const v of arr) {
-    if (v < min) min = v;
-    else if (v > max) max = v;
-  }
-
-  const range = max - min + 1;          // how many distinct integer values
-  const count = new Array<number>(range).fill(0);
-
-  // 2) Count each value
-  for (const v of arr) {
-    count[v - min]++;                   // offset by min so array starts at 0
-  }
-
-  // 3) Convert counts to cumulative counts
-  for (let i = 1; i < range; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 4) Allocate result array
-  const output = new Array<number>(arr.length);
-
-  // 5) Place elements into output in stable order
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const v = arr[i];
-    const idx = v - min;
-    const pos = count[idx] - 1;         // final index for this element
-    output[pos] = v;
-    count[idx]--;                       // decrease count for next instance
-  }
-
-  return output;
+  return clean(a) === clean(b);
 }
+
+// Example
+console.log(areAnagramsSorting('Listen', 'Silent')); // → true
+/**
+ * Count characters and compare the two maps.
+ * Complexity: O(n), with `n` = max(a.length, b.length).
+ */
+function areAnagramsCounting(a: string, b: string): boolean {
+  const normalize = (s: string) =>
+    s.toLowerCase().replace(/\W/g, '');
+
+  const strA = normalize(a);
+  const strB = normalize(b);
+
+  if (strA.length !== strB.length) return false;
+
+  const freq: Record<string, number> = {};
+
+  for (const ch of strA) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
+  }
+
+  for (const ch of strB) {
+    if (!freq[ch]) return false; // missing or too many
+    freq[ch]! -= 1;
+  }
+
+  return true;
+}
+
+// Example
+console.log(areAnagramsCounting('Software', 'Oxfartswe')); // → true
+const anagrams = (a: string, b: string) =>
+  a.toLowerCase().replace(/\W/g, '').split('').sort().join('') ===
+  b.toLowerCase().replace(/\W/g, '').split('').sort().join('');
