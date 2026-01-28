@@ -1,56 +1,51 @@
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr = head;
+function isPalindrome(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
+  // Normalise if requested
+  const src = ignoreCase
+    ? s.toLowerCase()
+    : s;
 
-  while (curr !== null) {
-    const next = curr.next;   // remember where we’re headed
-    curr.next = prev;         // flip the link
-    prev = curr;              // move prev forward
-    curr = next;              // move curr forward
+  // Optionally strip out anything that isn’t a letter or a digit
+  const text = ignoreNonAlpha
+    ? src.replace(/[^a-z0-9]/gi, '')
+    : src;
+
+  let left = 0;
+  let right = text.length - 1;
+
+  while (left < right) {
+    if (text[left] !== text[right]) return false;
+    left++;
+    right--;
   }
-
-  // At the end of the loop, `prev` is the new head
-  return prev;
+  return true;
 }
-// Helper to print the list
-function printList<T>(head: ListNode<T> | null): void {
-  const values = [];
-  let curr = head;
-  while (curr) {
-    values.push(curr.val);
-    curr = curr.next;
-  }
-  console.log(values.join(' → ') + ' → null');
+console.log(isPalindrome('Racecar'));          // true
+console.log(isPalindrome('A man, a plan!'));   // false
+console.log(isPalindrome('A man, a plan!', true, true)); // true
+function isPalindromeReverse(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
+  const cleaned = ignoreNonAlpha
+    ? s.replace(/[^a-z0-9]/gi, '')
+    : s;
+
+  const cmp = ignoreCase ? cleaned.toLowerCase() : cleaned;
+  const reversed = cmp.split('').reverse().join('');
+  return cmp === reversed;
 }
+console.log(isPalindromeReverse('Madam In Eden, I’m Adam', true, true)); // true
+const isPalindromeLazy = (s: string, ignoreCase = true, ignoreNonAlpha = false): boolean =>
+  (ignoreNonAlpha ? s.replace(/[^a-z0-9]/gi, '') : s)
+    .toLowerCase()
+    .split('')
+    .every((c, i, a) => c === a[a.length - i - 1]);
+const tests = [
+  { str: 'Radar', expect: true },
+  { str: 'Madam Anna', expect: false },
+  { str: 'Madam Anna', expect: true, options: { ignoreNonAlpha: true } },
+  { str: '12321', expect: true },
+  { str: 'Was it a cat I saw?', expect: true, options: { ignoreNonAlpha: true, ignoreCase: true } },
+];
 
-// Build 1 → 2 → 3 → null
-const head = new ListNode(1,
-             new ListNode(2,
-               new ListNode(3)));
-
-console.log('Original list:');
-printList(head);
-
-const reversed = reverseList(head);
-
-console.log('Reversed list:');
-printList(reversed);
-Original list:
-1 → 2 → 3 → null
-Reversed list:
-3 → 2 → 1 → null
-export function reverseListRec<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head || !head.next) return head;         // base case
-
-  const newHead = reverseListRec(head.next);     // reverse rest of list
-  head.next.next = head;                        // make the next node point to us
-  head.next = null;                             // sever old link
-
-  return newHead;                               // new head propagates upward
-}
+tests.forEach(({ str, expect, options }) => {
+  const result = isPalindrome(str, ...(options ? [options.ignoreCase, options.ignoreNonAlpha] : []));
+  console.assert(result === expect, `❌ ${str} should be ${expect}`);
+});
