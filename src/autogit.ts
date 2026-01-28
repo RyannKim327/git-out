@@ -1,28 +1,44 @@
 /**
- * Binary search on a sorted array.
+ * Return the longest common prefix of an array of strings.
  *
- * @param arr   Sorted array of comparable items.
- * @param value Value to search for.
- * @returns Index of value, or -1 if not found.
+ * @param arr – list of strings to compare
+ * @returns the longest common prefix, or an empty string if none exists
  */
-export function binarySearch<T>(arr: T[], value: T): number {
-  let low = 0;
-  let high = arr.length - 1;
+function longestCommonPrefix(arr: string[]): string {
+  if (!arr.length) return "";
 
-  while (low <= high) {
-    // Middle index – floor division
-    const mid = Math.floor((low + high) / 2);
-    const midVal = arr[mid];
+  // The classic “compare the first and last after sorting” trick.
+  // It guarantees we only have to check the two outermost strings,
+  // because any common prefix must be common to all.
+  const sorted = [...arr].sort();                  // sort lexicographically
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
 
-    if (midVal === value) return mid;      // exact match
-    if (midVal < value) {
-      low = mid + 1;                       // value is in higher half
-    } else {
-      high = mid - 1;                      // value is in lower half
+  let i = 0;
+  const minLen = Math.min(first.length, last.length);
+
+  while (i < minLen && first.charAt(i) === last.charAt(i)) {
+    i++;
+  }
+
+  return first.substring(0, i);
+}
+function lcpScan(arr: string[]): string {
+  if (!arr.length) return "";
+
+  let prefix = arr[0];
+
+  for (const s of arr.slice(1)) {
+    // shrink prefix until it’s a prefix of s
+    while (!s.startsWith(prefix)) {
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return "";
     }
   }
-  return -1;  // not found
+  return prefix;
 }
-const nums = [3, 7, 12, 18, 24, 31, 42];
-const idx = binarySearch(nums, 18); // => 3
-const missing = binarySearch(nums, 5); // => -1
+const words = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(words)); // → "fl"
+
+const zoo = ["dog", "racecar", "car"];
+console.log(longestCommonPrefix(zoo));   // → ""
