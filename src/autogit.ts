@@ -1,55 +1,53 @@
 /**
- * Merge‑sort for array of T values.
- *
- * @param arr  Input array – left untouched.
- * @param cmp  Optional comparison function. If omitted, values are compared with < >.
- * @returns A new sorted array.
+ * Node for a singly linked list.
  */
-export function mergeSort<T>(arr: readonly T[], cmp?: (a: T, b: T) => number): T[] {
-  // Base case: arrays of size 0 or 1 are already sorted.
-  if (arr.length <= 1) return [...arr];
-
-  // Helper to merge two already‑sorted halves.
-  const merge = (left: T[], right: T[]): T[] => {
-    const result: T[] = [];
-    let i = 0, j = 0;
-
-    while (i < left.length && j < right.length) {
-      const l = left[i];
-      const r = right[j];
-      const comp = cmp
-        ? cmp(l, r)
-        : (l as any) < (r as any)
-          ? -1
-          : (l as any) > (r as any)
-          ? 1
-          : 0;
-
-      if (comp <= 0) {
-        result.push(l);
-        i++;
-      } else {
-        result.push(r);
-        j++;
-      }
-    }
-
-    // Push any remaining items from left or right.
-    return result.concat(left.slice(i), right.slice(j));
-  };
-
-  // Split the array into two halves.
-  const middle = Math.floor(arr.length / 2);
-  const left = mergeSort(arr.slice(0, middle), cmp);
-  const right = mergeSort(arr.slice(middle), cmp);
-
-  // Merge back together.
-  return merge(left, right);
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-const numbers = [42, 1, 23, 4, 16];
-const sorted = mergeSort(numbers);   // [1, 4, 16, 23, 42]
-console.log(sorted);
-console.log(numbers);  // still [42, 1, 23, 4, 16]
-const words = ["banana", "Apple", "cherry"];
-const sortedWords = mergeSort(words, (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-console.log(sortedWords); // ["Apple", "banana", "cherry"]
+
+/**
+ * Detects if a linked list contains a cycle.
+ *
+ * @param head The head of the list.
+ * @returns true if a cycle exists, false otherwise.
+ */
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  let slow = head;
+  let fast = head;
+
+  while (fast !== null && fast.next !== null) {
+    slow = slow!.next;          // move one step
+    fast = fast.next.next;      // move two steps
+    if (slow === fast) {        // same reference → cycle
+      return true;
+    }
+  }
+
+  return false;                 // fast hit the end → no cycle
+}
+// 1 → 2 → 3 → 4 → 5
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+const d = new ListNode(4);
+const e = new ListNode(5);
+
+a.next = b; b.next = c; c.next = d; d.next = e;
+
+// no cycle
+console.log(hasCycle(a)); // false
+
+// Introduce a cycle: e.next = c (3rd node)
+e.next = c;
+console.log(hasCycle(a)); // true
+function hasCycleSet<T>(head: ListNode<T> | null): boolean {
+  const visited = new Set<ListNode<T>>();
+
+  let current = head;
+  while (current !== null) {
+    if (visited.has(current)) return true; // already seen → cycle
+    visited.add(current);
+    current = current.next;
+  }
+  return false; // reached null → acyclic
+}
