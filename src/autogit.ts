@@ -1,39 +1,53 @@
 /**
- * Returns the largest prime divisor of `n`.
- * If `n` is 0 or 1, returns `undefined`.
+ * Node for a singly linked list.
  */
-function largestPrimeFactor(n: number): number | undefined {
-  if (n < 2) return undefined;          // no prime factors for 0 or 1
-
-  let num = Math.abs(n);                 // work with a positive number
-  let maxFactor = 1;
-
-  // Handle the factor 2 separately to keep the loop odd.
-  while (num % 2 === 0) {
-    maxFactor = 2;
-    num /= 2;
-  }
-
-  // Now only odd factors are possible.
-  let divisor = 3;
-  const sqrtLimit = Math.sqrt(num);
-  while (divisor <= sqrtLimit) {
-    while (num % divisor === 0) {
-      maxFactor = divisor;
-      num /= divisor;
-    }
-    divisor += 2;                       // skip even numbers
-  }
-
-  // If after the loop num > 1, it itself is a prime factor larger than all found.
-  if (num > 1) {
-    maxFactor = num;
-  }
-
-  return maxFactor;
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-console.log(largestPrimeFactor(2));                // 2
-console.log(largestPrimeFactor(28));               // 7
-console.log(largestPrimeFactor(1000003));          // 1000003 (its prime)
-console.log(largestPrimeFactor(123456));           // 643
-console.log(largestPrimeFactor(-84));              // 7
+
+/**
+ * Detects if a linked list contains a cycle.
+ *
+ * @param head The head of the list.
+ * @returns true if a cycle exists, false otherwise.
+ */
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  let slow = head;
+  let fast = head;
+
+  while (fast !== null && fast.next !== null) {
+    slow = slow!.next;          // move one step
+    fast = fast.next.next;      // move two steps
+    if (slow === fast) {        // same reference → cycle
+      return true;
+    }
+  }
+
+  return false;                 // fast hit the end → no cycle
+}
+// 1 → 2 → 3 → 4 → 5
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+const d = new ListNode(4);
+const e = new ListNode(5);
+
+a.next = b; b.next = c; c.next = d; d.next = e;
+
+// no cycle
+console.log(hasCycle(a)); // false
+
+// Introduce a cycle: e.next = c (3rd node)
+e.next = c;
+console.log(hasCycle(a)); // true
+function hasCycleSet<T>(head: ListNode<T> | null): boolean {
+  const visited = new Set<ListNode<T>>();
+
+  let current = head;
+  while (current !== null) {
+    if (visited.has(current)) return true; // already seen → cycle
+    visited.add(current);
+    current = current.next;
+  }
+  return false; // reached null → acyclic
+}
