@@ -1,60 +1,28 @@
 /**
- * Returns the max sum of any contiguous sub‑array of `nums`.
- * If all numbers are negative, it will still return the best (least negative) value.
- *
- * @param nums Array of numbers
- * @returns maximum sub‑array sum
+ * Return true if `s` is a palindrome.
+ *   - Works for regular strings and Unicode strings
+ *   - Uses a two‑pointer scan; no extra arrays/strings are allocated
+ *   - Time:  O(n)
+ *   - Extra space: O(1)
  */
-function maxSubArraySum(nums: number[]): number {
-  if (nums.length === 0) {
-    throw new Error('Array must contain at least one element');
-  }
+function isPalindrome(s: string): boolean {
+    let left  = 0;
+    let right = s.length - 1;
 
-  let bestSoFar = nums[0];      // best overall
-  let bestEndingHere = nums[0]; // best ending at current index
+    while (left < right) {
+        // Skip non‑alphanumeric characters & ignore case if you want
+        // if (!/[a-z0-9]/i.test(s.charAt(left))) { left++; continue; }
+        // if (!/[a-z0-9]/i.test(s.charAt(right))) { right--; continue; }
 
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the previous sub‑array or start fresh at nums[i]
-    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
-
-    // Update the global best if needed
-    bestSoFar = Math.max(bestSoFar, bestEndingHere);
-  }
-
-  return bestSoFar;
-}
-
-/* Example usage */
-const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
-console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
-function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
-  let bestSoFar = nums[0], bestEndingHere = nums[0];
-  let start = 0, end = 0, tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] > bestEndingHere + nums[i]) {
-      bestEndingHere = nums[i];
-      tempStart = i;          // potential new start
-    } else {
-      bestEndingHere += nums[i];
+        if (s[left] !== s[right]) {
+            return false;
+        }
+        left++;
+        right--;
     }
-
-    if (bestEndingHere > bestSoFar) {
-      bestSoFar = bestEndingHere;
-      start = tempStart;      // commit new start
-      end = i;
-    }
-  }
-
-  return {
-    maxSum: bestSoFar,
-    subArray: nums.slice(start, end + 1),
-    indices: [start, end]
-  };
+    return true;
 }
-console.log(maxSubArrayDetail(arr));
-// {
-//   maxSum: 6,
-//   subArray: [4, -1, 2, 1],
-//   indices: [3, 6]
-// }
+console.log(isPalindrome("racecar"));        // true
+console.log(isPalindrome("hello"));          // false
+console.log(isPalindrome("A man a plan a canal Panama".replace(/\s+/g, '').toLowerCase()));
+// true, after normalizing whitespace and case
