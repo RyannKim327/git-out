@@ -1,75 +1,60 @@
-// ──────────────────────────────────────────────────────────────
-// 1.  Types for the graph
-// ──────────────────────────────────────────────────────────────
-interface Node<T = void> {
-  value: T;
-  neighbours: Node<T>[];
-}
-
-// A small helper to create nodes
-function createNode<T>(value: T): Node<T> {
-  return { value, neighbours: [] };
-}
-
-function addEdge<T>(from: Node<T>, to: Node<T>): void {
-  from.neighbours.push(to);
-  to.neighbours.push(from);    // undirected; drop this line for directed graphs
-}
-
-// ──────────────────────────────────────────────────────────────
-// 2.  Depth‑limited search (recursive DFS style)
-// ──────────────────────────────────────────────────────────────
 /**
- * Searches `startNode` for a node whose value satisfies `goalPredicate`,
- * but stops expanding any node that appears deeper than `limit` levels.
- *
- * @param start      the node to start from
- * @param goal       a predicate; if it returns true the node is considered the goal
- * @param limit      max depth to explore
- * @param visited    internal, tracks visited nodes
- * @param depth      internal, current depth
- * @returns          the goal node if found, or null
+ * Fibonacci search for a sorted array of numbers.
+ * @param arr  The sorted array to search.
+ * @param target The value to locate.
+ * @returns The index of `target` in `arr`, or -1 if not found.
  */
-function depthLimitedSearch<T>(
-  start: Node<T>,
-  goal: (value: T) => boolean,
-  limit: number,
-  visited = new Set<Node<T>>(),
-  depth = 0
-): Node<T> | null {
-  if (depth > limit) return null;               // over the limit
+export function fibonacciSearch(arr: number[], target: number): number {
+  const n = arr.length;
+  if (n === 0) return -1;
 
-  visited.add(start);
-  if (goal(start.value)) return start;          // goal reached
+  // 1. Build the smallest Fibonacci number >= n
+  let fibMm2 = 0;   // (m-2)th Fibonacci
+  let fibMm1 = 1;   // (m-1)th Fibonacci
+  let fibM   = fibMm2 + fibMm1; // mth Fibonacci
 
-  for (const neighbour of start.neighbours) {
-    if (!visited.has(neighbour)) {
-      const result = depthLimitedSearch(neighbour, goal, limit, visited, depth + 1);
-      if (result !== null) return result;      // propagate success upwards
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
+  }
+
+  // Marks the range to be searched
+  let offset = -1; // Element before the beginning (virtual)
+
+  // 2. While there is an element to inspect
+  while (fibM > 1) {
+    // Determines the index to compare
+    const i = Math.min(offset + fibMm2, n - 1);
+
+    if (arr[i] < target) {
+      // Move three steps ahead
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else if (arr[i] > target) {
+      // Move one step back
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
+    } else {
+      return i; // Found
     }
   }
 
-  return null;                                  // no goal found within this branch
+  // We are left with a single element
+  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
+  }
+
+  return -1; // Not found
 }
+import { fibonacciSearch } from './fibonacci-search';
 
-// ──────────────────────────────────────────────────────────────
-// 3.  Example usage
-// ──────────────────────────────────────────────────────────────
-/*
-// Build a tiny graph
-const a = createNode('A');
-const b = createNode('B');
-const c = createNode('C');
-const d = createNode('D');
-const e = createNode('E');
+const data = [3, 8, 10, 15, 20, 23, 27, 35, 41, 55, 68, 73, 82, 91, 97];
+const target = 55;
 
-addEdge(a, b);
-addEdge(a, c);
-addEdge(b, d);
-addEdge(c, e);
-
-// Find node 'E' but stop after exploring 2 edges from 'A'
-const found = depthLimitedSearch(a, val => val === 'E', 2);
-
-console.log(found ? `Found ${found.value}` : 'Not found within depth limit');
-*/
+const idx = fibonacciSearch(data, target);
+console.log(idx); // → 9
+console.log(fibonacciSearch(data, 22)); // → -1
