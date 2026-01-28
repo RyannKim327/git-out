@@ -1,69 +1,33 @@
-/**
- * Builds the BMH bad‑character shift table.
- *
- * For every byte value (0‑255) we store how many positions the algorithm
- * can safely skip when encountering that byte while scanning from the
- * rightmost side of the pattern.
- */
-function makeShiftTable(pattern: string): Uint8Array {
-  const m = pattern.length;
-  const table = new Uint8Array(256);
-  // Default shift is pattern length (skip the whole pattern).
-  table.fill(m);
-
-  // For every non‑last character we set shift = m - i - 1
-  for (let i = 0; i < m - 1; ++i) {
-    const c = pattern.charCodeAt(i);
-    table[c] = m - i - 1;
-  }
-  return table;
+// Basic node definition
+interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
 
-/**
- * Boyer‑Moore‑Horspool search.
- *
- * @param text    The text where we look for the pattern.
- * @param pattern The pattern to find.
- * @returns       An array of zero‑based start indices where `pattern`
- *                is found in `text`.  Empty array if no match.
- */
-export function bmhSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
+// Helper – takes the head of a list and returns the middle node.
+function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null;
 
-  // Quick exits
-  if (m === 0) return [];          // Empty pattern => nothing meaningful
-  if (m > n) return [];            // Pattern longer than text => impossible
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-  const shiftTable = makeShiftTable(pattern);
-  const result: number[] = [];
-
-  let i = 0; // Current offset in `text` aligning the end of the pattern
-  while (i <= n - m) {
-    // Compare pattern from the end backward
-    let j = m - 1;
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j -= 1;
-    }
-
-    if (j < 0) {               // All characters matched
-      result.push(i);
-      i += 1;                  // For overlapping matches we shift by 1
-    } else {
-      const shiftVal = shiftTable[text.charCodeAt(i + m - 1)];
-      i += shiftVal;
-    }
+  // advance `fast` two steps for every one step `slow` takes
+  while (fast !== null && fast.next !== null) {
+    slow = slow!.next;          // will never be null here – just for TS safety
+    fast = fast.next.next;
   }
 
-  return result;
+  // when fast runs out, slow is at the middle
+  return slow;
 }
+// Build a tiny list: 1 → 2 → 3 → 4 → 5
+const a: ListNode<number> = { value: 1, next: null };
+const b: ListNode<number> = { value: 2, next: null };
+const c: ListNode<number> = { value: 3, next: null };
+const d: ListNode<number> = { value: 4, next: null };
+const e: ListNode<number> = { value: 5, next: null };
 
-/* ---------- Example usage --------------------------------- */
+a.next = b; b.next = c; c.next = d; d.next = e;
 
-const haystack = "abacababcab";
-const needle  = "cab";
-
-const indices = bmhSearch(haystack, needle);
-console.log(`Pattern found at indices: ${indices.join(", ")}`);
-// -> "Pattern found at indices: 3, 8"
-
+const middle = findMiddle(a);
+console.log(middle?.value); // logs 3
