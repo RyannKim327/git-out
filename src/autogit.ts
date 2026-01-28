@@ -1,44 +1,45 @@
-// src/apiFetch.ts
-export interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
-/**
- * Pulls a single todo item from the JSON‑Placeholder API.
- *
- * @param todoId  the numeric ID of the todo to fetch
- * @returns          a promise that resolves to the Todo object
- */
-export async function getTodoById(todoId: number): Promise<Todo> {
-  const url = `https://jsonplaceholder.typicode.com/todos/${todoId}`;
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: { "Accept": "application/json" },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API responded with ${response.status} ${response.statusText}`);
+function secondLargest(nums: number[]): number | null {
+  if (nums.length < 2) {            // not enough numbers
+    return null;                    // or throw an error, or whatever feels right
   }
 
-  // `response.json()` already resolves to a `Promise<any>`, so we cast
-  // to `Todo` to satisfy TypeScript.
-  const data = (await response.json()) as Todo;
-  return data;
-}
-// src/start.ts
-import { getTodoById, Todo } from "./apiFetch";
+  let largest = Number.NEGATIVE_INFINITY;
+  let second  = Number.NEGATIVE_INFINITY;
 
-async function main(): Promise<void> {
-  try {
-    const todo: Todo = await getTodoById(1);
-    console.log("Fetched todo:", todo);
-  } catch (err) {
-    console.error("Failed to fetch todo:", err);
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;   // old largest becomes second
+      largest = n;
+    } else if (n > second && n < largest) {   // distinct from largest
+      second = n;
+    }
   }
-}
 
-main().catch((outerErr) => console.error("Unhandled error:", outerErr));
+  // After the loop, `second` holds the second largest *distinct* value
+  return second === Number.NEGATIVE_INFINITY ? null : second;
+}
+else if (n > second) {   // allow n == largest to fill second slot
+  second = n;
+}
+function secondLargestSorted(nums: number[]): number | null {
+  if (nums.length < 2) return null;
+  const sorted = [...nums].sort((a, b) => b - a); // descending
+  // handle duplicates if you want distinct values
+  return sorted[1];
+}
+function secondLargest(nums: number[]): number | null {
+  if (nums.length < 2) return null;
+
+  let largest = Number.NEGATIVE_INFINITY;
+  let second  = Number.NEGATIVE_INFINITY;
+
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;
+      largest = n;
+    } else if (n > second && n < largest) {
+      second = n;
+    }
+  }
+  return second === Number.NEGATIVE_INFINITY ? null : second;
+}
