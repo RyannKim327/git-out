@@ -1,70 +1,71 @@
-function longestCommonSubstring(a: string, b: string): string {
-  if (!a || !b) return '';
+// kmp.ts
+/**
+ * Builds the LPS (Longest Prefix Suffix) array for a pattern.
+ * lps[i] = length of the longest proper prefix of pattern[0..i]
+ * that is also a suffix of pattern[0..i].
+ */
+export function buildLPS(pattern: string): number[] {
+    const lps = new Array(pattern.length).fill(0);
+    let length = 0;               // length of the previous longest prefix suffix
+    let i = 1;                    // lps[0] is always 0, so start from 1
 
-  let maxLen = 0;
-  let maxStart = 0;          // start index inside `a`
-
-  const aLen = a.length;
-  const bLen = b.length;
-
-  // Pick the shorter string as the outer loop to reduce the number of starts
-  const [short, long] = aLen < bLen ? [a, b] : [b, a];
-  const shortLen = short.length;
-  const longLen = long.length;
-
-  for (let i = 0; i < shortLen; i++) {
-    for (let j = 0; j < longLen; j++) {
-      let length = 0;
-      while (
-        i + length < shortLen &&
-        j + length < longLen &&
-        short[i + length] === long[j + length]
-      ) {
-        length++;
-      }
-      if (length > maxLen) {
-        maxLen = length;
-        maxStart = i;           // starts in `short`
-      }
-    }
-  }
-
-  // Return the slice from the original string that contains the substring
-  const result = short.substr(maxStart, maxLen);
-  // If we swapped the strings we need to return the same slice from the original `a`
-  return aLen < bLen ? result : result; // same, just explicit
-}
-console.log(longestCommonSubstring('abxabc', 'abcaby')); // → 'abc'
-function longestCommonSubstringDP(s1: string, s2: string): string {
-  const n = s1.length;
-  const m = s2.length;
-  if (!n || !m) return '';
-
-  // 2‑row DP to save memory – only previous row needed for current row calculation
-  let prev = new Array(m + 1).fill(0);
-  let curr = new Array(m + 1).fill(0);
-
-  let maxLen = 0;
-  let maxEndIdxS1 = 0; // end index in s1 of longest common substring
-
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (s1[i - 1] === s2[j - 1]) {
-        curr[j] = prev[j - 1] + 1; // extend the previous match
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          maxEndIdxS1 = i; // i is 1‑based
+    while (i < pattern.length) {
+        if (pattern[i] === pattern[length]) {
+            length++;
+            lps[i] = length;
+            i++;
+        } else {
+            if (length !== 0) {
+                // Fall back to the previous longest prefix
+                length = lps[length - 1];
+                // No i++ here – we try the same i again with the new length
+            } else {
+                lps[i] = 0;
+                i++;
+            }
         }
-      } else {
-        curr[j] = 0;
-      }
     }
-    // swap rows for next iteration
-    [prev, curr] = [curr, prev];
-    curr.fill(0); // reset current row
-  }
-
-  // Extract the substring from s1 using the end index and length
-  return s1.slice(maxEndIdxS1 - maxLen, maxEndIdxS1);
+    return lps;
 }
-console.log(longestCommonSubstringDP('abxabc', 'abcaby')); // → 'abc'
+
+/**
+ * KMP search for all occurrences of pattern inside text.
+ * Returns an array of 0‑based starting indices.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+    if (pattern.length === 0) return [];
+
+    const lps = buildLPS(pattern);
+    const result: number[] = [];
+    let i = 0; // index for text
+    let j = 0; // index for pattern
+
+    while (i < text.length) {
+        if (text[i] === pattern[j]) {
+            i++;
+            j++;
+
+            if (j === pattern.length) {
+                // pattern found – push starting index
+                result.push(i - j);
+                // continue searching for next possible match
+                j = lps[j - 1];
+            }
+        } else if (j !== 0) {
+            // Fallback on pattern using LPS table
+            j = lps[j - 1];
+        } else {
+            // No match at the current position of `text`
+            i++;
+        }
+    }
+
+    return result;
+}
+import { kmpSearch } from "./kmp";
+
+const txt = "ABABDABACDABABCABAB";
+const pat = "ABABCABAB";
+
+const matches = kmpSearch(txt, pat);
+console.log(matches); // → [ 10 ]
