@@ -1,56 +1,70 @@
-/**
- * Returns the longest strictly increasing subsequence of `arr`.
- *
- * Example:
- *   longestIncreasingSubsequence([10, 9, 2, 5, 3, 7, 101, 18])
- *   → [2, 3, 7, 101]
- */
-export function longestIncreasingSubsequence(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+function longestCommonSubstring(a: string, b: string): string {
+  if (!a || !b) return '';
 
-  // `tails` keeps the smallest tail value for all subsequences
-  // of a given length. `tails[i]` is the least possible tail of
-  // an increasing subsequence with length i+1.
-  const tails: number[] = [];
-  // `prevIndices` remembers, for each element, the index of its
-  // predecessor in the LIS that passes through that element.
-  const prevIndices: number[] = new Array(arr.length).fill(-1);
-  // `indicesAtLength` holds the index of the last element of the LIS
-  // of a given length, allowing us to reconstruct the sequence.
-  const indicesAtLength: number[] = [];
+  let maxLen = 0;
+  let maxStart = 0;          // start index inside `a`
 
-  arr.forEach((val, idx) => {
-    // Binary search for the first tail that is >= val
-    let l = 0;
-    let r = tails.length;
-    while (l < r) {
-      const m = Math.floor((l + r) / 2);
-      if (tails[m] < val) l = m + 1;
-      else r = m;
+  const aLen = a.length;
+  const bLen = b.length;
+
+  // Pick the shorter string as the outer loop to reduce the number of starts
+  const [short, long] = aLen < bLen ? [a, b] : [b, a];
+  const shortLen = short.length;
+  const longLen = long.length;
+
+  for (let i = 0; i < shortLen; i++) {
+    for (let j = 0; j < longLen; j++) {
+      let length = 0;
+      while (
+        i + length < shortLen &&
+        j + length < longLen &&
+        short[i + length] === long[j + length]
+      ) {
+        length++;
+      }
+      if (length > maxLen) {
+        maxLen = length;
+        maxStart = i;           // starts in `short`
+      }
     }
-
-    // `l` is the length (0‑based) of the subsequence that will end at idx
-    if (l > 0) prevIndices[idx] = indicesAtLength[l - 1];
-
-    if (l === tails.length) {
-      tails.push(val);
-      indicesAtLength.push(idx);
-    } else {
-      tails[l] = val;
-      indicesAtLength[l] = idx;
-    }
-  });
-
-  // Reconstruct the LIS from the recorded indices
-  const lis: number[] = [];
-  let k = indicesAtLength[indicesAtLength.length - 1];
-  while (k !== -1) {
-    lis.push(arr[k]);
-    k = prevIndices[k];
   }
-  lis.reverse();
-  return lis;
+
+  // Return the slice from the original string that contains the substring
+  const result = short.substr(maxStart, maxLen);
+  // If we swapped the strings we need to return the same slice from the original `a`
+  return aLen < bLen ? result : result; // same, just explicit
 }
-const data = [3, 10, 2, 1, 20];
-console.log(longestIncreasingSubsequence(data));
-// → [3, 10, 20]
+console.log(longestCommonSubstring('abxabc', 'abcaby')); // → 'abc'
+function longestCommonSubstringDP(s1: string, s2: string): string {
+  const n = s1.length;
+  const m = s2.length;
+  if (!n || !m) return '';
+
+  // 2‑row DP to save memory – only previous row needed for current row calculation
+  let prev = new Array(m + 1).fill(0);
+  let curr = new Array(m + 1).fill(0);
+
+  let maxLen = 0;
+  let maxEndIdxS1 = 0; // end index in s1 of longest common substring
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        curr[j] = prev[j - 1] + 1; // extend the previous match
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          maxEndIdxS1 = i; // i is 1‑based
+        }
+      } else {
+        curr[j] = 0;
+      }
+    }
+    // swap rows for next iteration
+    [prev, curr] = [curr, prev];
+    curr.fill(0); // reset current row
+  }
+
+  // Extract the substring from s1 using the end index and length
+  return s1.slice(maxEndIdxS1 - maxLen, maxEndIdxS1);
+}
+console.log(longestCommonSubstringDP('abxabc', 'abcaby')); // → 'abc'
