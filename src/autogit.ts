@@ -1,69 +1,60 @@
 /**
- * Topological sort (Kahn's algorithm).
- * @param graph – adjacency list: node → list of successors.  Nodes that don’t appear as keys are treated as isolated vertices.
- * @returns an array of nodes in topological order.
- * @throws Error if the graph contains a cycle.
+ * Returns the max sum of any contiguous sub‑array of `nums`.
+ * If all numbers are negative, it will still return the best (least negative) value.
+ *
+ * @param nums Array of numbers
+ * @returns maximum sub‑array sum
  */
-export function topologicalSort<T extends string | number | symbol>(
-  graph: Partial<Record<T, readonly T[]>>,
-): T[] {
-  // 1. Compute indegree of each vertex
-  const indegree = new Map<T, number>();
-  const nodes = new Set<T>();
-
-  // First pass: collect all vertices (keys + targets)
-  for (const [u, adj] of Object.entries(graph) as [T, T[]][]) {
-    nodes.add(u);
-    for (const v of adj) nodes.add(v);
+function maxSubArraySum(nums: number[]): number {
+  if (nums.length === 0) {
+    throw new Error('Array must contain at least one element');
   }
 
-  // Initialise indegree map
-  for (const node of nodes) indegree.set(node, 0);
+  let bestSoFar = nums[0];      // best overall
+  let bestEndingHere = nums[0]; // best ending at current index
 
-  // Second pass: count incoming edges
-  for (const adj of Object.values(graph)) {
-    for (const v of adj) {
-      indegree.set(v, (indegree.get(v) ?? 0) + 1);
-    }
+  for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous sub‑array or start fresh at nums[i]
+    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
+
+    // Update the global best if needed
+    bestSoFar = Math.max(bestSoFar, bestEndingHere);
   }
 
-  // 2. Initialise a queue of all nodes with indegree 0
-  const queue: T[] = [];
-  for (const [node, d] of indegree.entries()) {
-    if (d === 0) queue.push(node);
-  }
-
-  const order: T[] = [];
-
-  // 3. Process the queue
-  while (queue.length) {
-    const u = queue.shift() as T; // queue is never empty here
-    order.push(u);
-
-    const successors = graph[u] ?? [];
-    for (const v of successors) {
-      const d = indegree.get(v)! - 1;
-      indegree.set(v, d);
-      if (d === 0) queue.push(v);
-    }
-  }
-
-  // 4. If we processed all vertices, we succeeded; otherwise a cycle exists
-  if (order.length !== nodes.size) {
-    throw new Error('Graph contains a cycle – no topological ordering possible.');
-  }
-
-  return order;
+  return bestSoFar;
 }
-const pkgGraph = {
-  // A package can depend on other packages (edges go “downward”)
-  'express': ['body-parser', 'morgan'],
-  'body-parser': ['raw-body'],
-  'morgan': ['stream-http'],
-  'stream-http': [],
-  'raw-body': [],
-  'lodash': [],          // independent package
-};
 
-console.log(topologicalSort(pkgGraph));
-// Possible output: ['lodash', 'stream-http', 'morgan', 'raw-body', 'body-parser', 'express']
+/* Example usage */
+const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
+console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
+function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
+  let bestSoFar = nums[0], bestEndingHere = nums[0];
+  let start = 0, end = 0, tempStart = 0;
+
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] > bestEndingHere + nums[i]) {
+      bestEndingHere = nums[i];
+      tempStart = i;          // potential new start
+    } else {
+      bestEndingHere += nums[i];
+    }
+
+    if (bestEndingHere > bestSoFar) {
+      bestSoFar = bestEndingHere;
+      start = tempStart;      // commit new start
+      end = i;
+    }
+  }
+
+  return {
+    maxSum: bestSoFar,
+    subArray: nums.slice(start, end + 1),
+    indices: [start, end]
+  };
+}
+console.log(maxSubArrayDetail(arr));
+// {
+//   maxSum: 6,
+//   subArray: [4, -1, 2, 1],
+//   indices: [3, 6]
+// }
