@@ -1,101 +1,61 @@
-// ------------------------------------------------------------
-// 1️⃣  In‑place quick‑sort – most common for competitive coding
-// ------------------------------------------------------------
-function quickSortInPlace<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): void {
-  const swap = (i: number, j: number) => {
-    const tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
-  };
+// A generic graph node – you can replace this with whatever you’re actually
+// storing.  Here we just keep a value and an array of child nodes.
+export interface TreeNode<T> {
+  value: T;
+  children: TreeNode<T>[];
+}
+/**
+ * Performs a breadth‑first search up to a depth limit.
+ *
+ * @param root The starting node.
+ * @param maxDepth The maximum path length to explore (0 = only the root).
+ * @param filter A callback that decides whether a node should be “accepted”.
+ *               It receives the node and its depth (root = 0).
+ * @returns An array of all nodes that satisfy the filter within the depth bound.
+ */
+export function breadthLimitedSearch<T>(
+  root: TreeNode<T>,
+  maxDepth: number,
+  filter: (node: TreeNode<T>, depth: number) => boolean
+): TreeNode<T>[] {
+  const result: TreeNode<T>[] = [];
+  const queue: Array<{ node: TreeNode<T>; depth: number }> = [{ node: root, depth: 0 }];
 
-  function partition(low: number, high: number): number {
-    // Pick the last element as pivot (simple but fine for demo)
-    const pivot = arr[high];
-    let i = low - 1;
+  while (queue.length) {
+    const { node, depth } = queue.shift()!;           // FIFO
+    if (depth > maxDepth) continue;                  // depth guard
 
-    for (let j = low; j < high; j++) {
-      if (compare(arr[j], pivot) <= 0) {
-        i++;
-        swap(i, j);
+    if (filter(node, depth)) result.push(node);
+
+    // Push children *after* checking depth to avoid pushing out‑of‑range nodes
+    if (depth < maxDepth) {
+      for (const child of node.children) {
+        queue.push({ node: child, depth: depth + 1 });
       }
     }
-    swap(i + 1, high);
-    return i + 1;
   }
 
-  function quick(low: number, high: number): void {
-    if (low < high) {
-      const pi = partition(low, high);
-      quick(low, pi - 1);
-      quick(pi + 1, high);
-    }
-  }
-
-  quick(0, arr.length - 1);
+  return result;
 }
+// Simple test tree
+const tree: TreeNode<string> = {
+  value: 'root',
+  children: [
+    { value: 'A', children: [] },
+    { value: 'B', children: [
+        { value: 'B1', children: [] },
+        { value: 'B2', children: [] },
+      ]
+    },
+    { value: 'C', children: [] }
+  ]
+};
 
-// ------------------------------------------------------------
-// 2️⃣  Functional quick‑sort – returns a new sorted array
-// ------------------------------------------------------------
-function quickSortFunctional<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  if (arr.length <= 1) return arr.slice(); // immutable copy
+// Want all nodes that start with "B" and only dive 2 levels deep
+const matches = breadthLimitedSearch(
+  tree,
+  2,
+  (node, depth) => node.value.startsWith('B')
+);
 
-  // Random pivot for better average performance on already‑sorted data
-  const pivot = arr[Math.floor(Math.random() * arr.length)];
-  const lows = arr.filter((v) => compare(v, pivot) < 0);
-  const highs = arr.filter((v) => compare(v, pivot) > 0);
-  const pivots = arr.filter((v) => compare(v, pivot) === 0);
-
-  return [
-    ...quickSortFunctional(lows, compare),
-    ...pivots,
-    ...quickSortFunctional(highs, compare),
-  ];
-}
-
-// ------------------------------------------------------------
-// 3️⃣  Small helper that wraps the in‑place version and offers
-//     a better pivot strategy
-// ------------------------------------------------------------
-function quickSort<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  // Randomize the array first; this keeps the pivot “good” on many inputs
-  // and eliminates the worst‑case for already‑sorted data.
-  const shuffled = arr.slice();
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-
-  quickSortInPlace(shuffled, compare);
-  return shuffled;
-}
-
-// ---------------------------
-// Demo usage
-// ---------------------------
-
-const numbers = [34, 7, 23, 32, 5, 62, 32];
-console.log('in‑place:', (() => {
-  const copy = [...numbers];
-  quickSortInPlace(copy);
-  return copy;
-})());
-
-console.log('functional:', quickSortFunctional(numbers));
-
-console.log('wrapper:', quickSort(numbers));
-
-// ------------------------------------------------------------
-// Done!
-// ------------------------------------------------------------
-const byLength = (a: string, b: string) => a.length - b.length;
-quickSort(stringsArray, byLength);
+console.log(matches.map(n => n.value)); // ['B', 'B1', 'B2']
