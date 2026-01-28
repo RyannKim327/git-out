@@ -1,35 +1,21 @@
-/**
- * Recursively searches for `target` inside a sorted array.
- *
- * @param arr  The sorted array to search.
- * @param target The value we're looking for.
- * @param left  The leftmost index to consider (inclusive).
- * @param right The rightmost index to consider (inclusive).
- * @returns The index of `target`, or `-1` if it isn’t present.
- */
-function binarySearchRecursive(
-    arr: number[],
-    target: number,
-    left: number = 0,
-    right: number = arr.length - 1
-): number {
-    if (left > right) {          // Base case: empty search window
-        return -1;
-    }
-
-    const mid = Math.floor((left + right) / 2);
-
-    if (arr[mid] === target) {
-        return mid;              // Found the target
-    } else if (arr[mid] > target) {
-        // Target is in the left half
-        return binarySearchRecursive(arr, target, left, mid - 1);
-    } else {
-        // Target is in the right half
-        return binarySearchRecursive(arr, target, mid + 1, right);
-    }
+function countChar(str: string, ch: string): number {
+  let count = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === ch) count++;
+  }
+  return count;
 }
-const sorted = [3, 7, 11, 15, 23, 42, 56];
-
-console.log(binarySearchRecursive(sorted, 15)); // → 3
-console.log(binarySearchRecursive(sorted, 1));  // → -1
+const count = str.split(ch).length - 1;
+function countCharWithRegex(str: string, ch: string): number {
+  // Escape regex metacharacters in case ch is not a plain letter
+  const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(escaped, 'g');
+  const matches = str.match(re);
+  return matches ? matches.length : 0;
+}
+const count = [...str].reduce((acc, c) => acc + (c === ch ? 1 : 0), 0);
+const count = [...str.toUpperCase()].filter(c => c === ch.toUpperCase()).length;
+const test = "hello world, hello TypeScript!";
+console.log(countChar(test, "l")); // 8
+console.log(countChar(test, "H")); // 1
+console.log(countChar(test, "o")); // 3
