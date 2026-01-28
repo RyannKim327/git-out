@@ -1,25 +1,58 @@
-/**
- * Checks if `arr` is sorted in ascending order.
- *
- * @param arr          the array to test
- * @param compareFn    optional comparison function.  
- *                     Should return <0 if a < b, 0 if equal, >0 if a > b.
- *                     If omitted, the default `a - b` numeric compare is used.
- * @returns true if the array is in ascending order, false otherwise
- */
-export function isSortedAscending<T>(
-  arr: readonly T[],
-  compareFn: ((a: T, b: T) => number) = (a, b) =>
-    /* @ts-ignore */ a < b ? -1 : a > b ? 1 : 0
-): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    // If the current element is *before* the previous one, the array is out of order
-    if (compareFn(arr[i], arr[i - 1]) < 0) return false;
-  }
-  return true;
-}
-const names = ['Alice', 'Bob', 'Charlie'];
-console.log(isSortedAscending(names)); // true
+// Majority element finder – works for any type that supports === comparison
+export function majorityElement<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
 
-const mixed = [1, 3, 2, 4];
-console.log(isSortedAscending(mixed)); // false
+  // 1st pass: find a candidate
+  let candidate = arr[0];
+  let count = 1;
+
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === candidate) {
+      count++;
+    } else if (count === 0) {
+      candidate = arr[i];
+      count = 1;
+    } else {
+      count--;
+    }
+  }
+
+  // 2nd pass: verify that the candidate is really a majority
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
+  }
+
+  return count > Math.floor(arr.length / 2) ? candidate : null;
+}
+const nums = [3, 1, 3, 3, 2, 3, 3];
+const maj = majorityElement(nums);
+
+console.log(maj); // → 3
+function majorityBySorting<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
+
+  const sorted = [...arr].sort(); // lexicographic for strings, numeric for numbers
+  const midVal = sorted[Math.floor(arr.length / 2)];
+
+  const count = sorted.reduce((c, v) => (v === midVal ? c + 1 : c), 0);
+  return count > Math.floor(arr.length / 2) ? midVal : null;
+}
+// A simple quick‑check
+export function testMajority() {
+  const cases: Array<[any[], any | null]> = [
+    [[1, 2, 1, 1, 3], 1],
+    [['a', 'b', 'a', 'a', 'c'], 'a'],
+    [[5, 5, 6, 6, 5], 5],
+    [[1, 2, 3], null],
+  ];
+
+  for (const [arr, expected] of cases) {
+    const result = majorityElement(arr);
+    if (result !== expected) {
+      console.error(`❌ Failed for ${JSON.stringify(arr)}: got ${result}`);
+    } else {
+      console.log(`✅ ${JSON.stringify(arr)} → ${result}`);
+    }
+  }
+}
