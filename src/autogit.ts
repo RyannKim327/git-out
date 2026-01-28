@@ -1,44 +1,58 @@
 /**
- * Return the longest common prefix of an array of strings.
+ * Returns a random integer between min (inclusive) and max (inclusive).
  *
- * @param arr – list of strings to compare
- * @returns the longest common prefix, or an empty string if none exists
+ * @param min – lower bound, inclusive
+ * @param max – upper bound, inclusive
  */
-function longestCommonPrefix(arr: string[]): string {
-  if (!arr.length) return "";
+function randomInt(min: number, max: number): number {
+  // Clamp values to integers just in case
+  const lo = Math.ceil(min);
+  const hi = Math.floor(max);
 
-  // The classic “compare the first and last after sorting” trick.
-  // It guarantees we only have to check the two outermost strings,
-  // because any common prefix must be common to all.
-  const sorted = [...arr].sort();                  // sort lexicographically
-  const first = sorted[0];
-  const last  = sorted[sorted.length - 1];
+  // Math.random returns a float in [0, 1)
+  const r = Math.random() * (hi - lo + 1);
+  return Math.floor(r) + lo;
+}
+const diceRoll = randomInt(1, 6);   // 1‑6
+const randomIndex = randomInt(0, array.length - 1);
+function randomFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min;
+}
+function secureRandomInt(min: number, max: number): number {
+  const lo = Math.ceil(min);
+  const hi = Math.floor(max);
 
-  let i = 0;
-  const minLen = Math.min(first.length, last.length);
+  // Number of values in our range
+  const range = hi - lo + 1;
+  // Enough bytes to hold the full range
+  const bytesNeeded = Math.ceil(Math.log2(range) / 8);
 
-  while (i < minLen && first.charAt(i) === last.charAt(i)) {
-    i++;
+  // Read random unsigned bytes
+  const rand = new Uint8Array(bytesNeeded);
+  crypto.getRandomValues(rand);
+
+  // Convert bytes to a number
+  let value = 0;
+  for (let i = 0; i < bytesNeeded; i++) {
+    value = (value << 8) | rand[i];
   }
 
-  return first.substring(0, i);
+  // Map into the desired range
+  return (value % range) + lo;
 }
-function lcpScan(arr: string[]): string {
-  if (!arr.length) return "";
-
-  let prefix = arr[0];
-
-  for (const s of arr.slice(1)) {
-    // shrink prefix until it’s a prefix of s
-    while (!s.startsWith(prefix)) {
-      prefix = prefix.slice(0, -1);
-      if (!prefix) return "";
-    }
+function randomChoice<T>(arr: T[]): T {
+  if (arr.length === 0) {
+    throw new RangeError('Cannot choose from an empty array');
   }
-  return prefix;
+  const idx = randomInt(0, arr.length - 1);
+  return arr[idx];
 }
-const words = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(words)); // → "fl"
+const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
-const zoo = ["dog", "racecar", "car"];
-console.log(longestCommonPrefix(zoo));   // → ""
+function randomToken(length = 8): string {
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars[randomInt(0, chars.length - 1)];
+  }
+  return result;
+}
