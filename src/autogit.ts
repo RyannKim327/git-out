@@ -1,50 +1,124 @@
-interface ListNode<T = any> {
-  val: T;
-  next: ListNode<T> | null;
-}
-class ListNode<T = any> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-function nthFromEndNaive<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let size = 0;
-  for (let cur = head; cur; cur = cur.next) size++;
+class TreeNode<T> {
+  /** Value stored in the node. */
+  value: T
 
-  if (n > size) return null;          // not enough elements
-  let target = size - n;              // 0‑based index from start
-  let cur = head;
-  for (let i = 0; i < target; i++) cur = cur!.next;
+  /** Left child (values < this.value). */
+  left: TreeNode<T> | null = null
 
-  return cur;
+  /** Right child (values > this.value). */
+  right: TreeNode<T> | null = null
+
+  constructor(value: T) {
+    this.value = value
+  }
 }
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let fast = head;
-  // Move fast n steps forward
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;   // n is larger than list length
-    fast = fast.next;
+class BinaryTree<T> {
+  root: TreeNode<T> | null = null
+
+  /* --------------------------------- */
+  /* Core helpers (private) */
+  /* --------------------------------- */
+
+  /** Simple comparison that works for numbers or strings. */
+  private compare(a: T, b: T): number {
+    if (a === b) return 0
+    return a < b ? -1 : 1
   }
 
-  let slow = head!;          // head is guaranteed non‑null now
-  while (fast) {
-    fast = fast.next!;
-    slow = slow.next!;
+  /* --------------------------------- */
+  /* Public API */
+  /* --------------------------------- */
+
+  /** Insert a value into the tree. */
+  insert(value: T): void {
+    this.root = this.insertRec(this.root, value)
+  }
+  private insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
+    if (!node) return new TreeNode(value)
+
+    if (this.compare(value, node.value) < 0) {
+      node.left = this.insertRec(node.left, value)
+    } else if (this.compare(value, node.value) > 0) {
+      node.right = this.insertRec(node.right, value)
+    }
+    // (duplicates are ignored for a classic BST – change if you need them)
+    return node
   }
 
-  return slow;
-}
-function buildList(nums: number[]) {
-  let dummy = new ListNode(0);
-  let cur = dummy;
-  for (const v of nums) {
-    cur.next = new ListNode(v);
-    cur = cur.next;
+  /** Search for a value, return the node or null. */
+  find(value: T): TreeNode<T> | null {
+    return this.findRec(this.root, value)
   }
-  return dummy.next;
+  private findRec(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
+    if (!node) return null
+    const cmp = this.compare(value, node.value)
+    if (cmp === 0) return node
+    return cmp < 0 ? this.findRec(node.left, value) : this.findRec(node.right, value)
+  }
+
+  /** Depth‑first in‑order traversal — gives you sorted values. */
+  inorder(callback: (node: TreeNode<T>) => void): void {
+    this.inorderRec(this.root, callback)
+  }
+  private inorderRec(node: TreeNode<T> | null, callback: (node: TreeNode<T>) => void): void {
+    if (!node) return
+    this.inorderRec(node.left, callback)
+    callback(node)
+    this.inorderRec(node.right, callback)
+  }
+
+  /** Remove a value from the tree (simple BST delete). */
+  delete(value: T): void {
+    this.root = this.deleteRec(this.root, value)
+  }
+  private deleteRec(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
+    if (!node) return null
+
+    const cmp = this.compare(value, node.value)
+    if (cmp < 0) {
+      node.left = this.deleteRec(node.left, value)
+      return node
+    }
+    if (cmp > 0) {
+      node.right = this.deleteRec(node.right, value)
+      return node
+    }
+
+    // Node to delete found.
+
+    // 1️⃣ No children
+    if (!node.left && !node.right) return null
+
+    // 2️⃣ One child
+    if (!node.left) return node.right
+    if (!node.right) return node.left
+
+    // 3️⃣ Two children – replace with inorder successor
+    const successor = this.minNode(node.right)!
+    node.value = successor.value
+    node.right = this.deleteRec(node.right, successor.value)
+    return node
+  }
+
+  /** Find the minimum node in a subtree (used in delete). */
+  private minNode(node: TreeNode<T> | null): TreeNode<T> | null {
+    let current = node
+    while (current?.left) current = current.left
+    return current
+  }
 }
+const bst = new BinaryTree<number>()
 
-const list = buildList([1, 2, 3, 4, 5]);
+// Insert values
+[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v))
 
-console.log(nthFromEnd(list, 1)!.val); // 5
-console.log(nthFromEnd(list, 3)!.val); // 3
-console.log(nthFromEnd(list, 5)!.val); // 1
-console.log(nthFromEnd(list, 6));      // null
+// In‑order prints 1 3 5 7 8 9 10
+bst.inorder(n => console.log(n.value))
+
+// Search
+const node = bst.find(5)
+console.log(node ? `Found ${node.value}` : 'Not found')
+
+// Delete
+bst.delete(7)                // Remove root node
+bst.inorder(n => console.log(n.value)) // 1 3 5 8 9 10
