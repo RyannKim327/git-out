@@ -1,55 +1,25 @@
 /**
- * Returns the median of two sorted arrays.
- *
- * @param nums1 First sorted array
- * @param nums2 Second sorted array
- * @returns Median value (number)
+ * Returns true if `n` is a prime number.
+ * Works with any non‑negative integer. For negative numbers or 0/1 it returns false.
  */
-export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Make sure nums1 is the smaller array; binary search will run on it.
-  if (nums1.length > nums2.length) {
-    return findMedianSortedArrays(nums2, nums1);
+export function isPrime(n: number): boolean {
+  if (!Number.isInteger(n) || n < 2) return false;   // 0, 1, and non‑ints aren't prime
+  
+  // 2 and 3 are the only even/odd primes.
+  if (n === 2 || n === 3) return true;
+
+  // Even numbers > 2 are not prime.
+  if (n % 2 === 0) return false;
+
+  // Check odd divisors up to √n.
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false;
   }
 
-  const m = nums1.length;
-  const n = nums2.length;
-  const halfLen = Math.floor((m + n + 1) / 2);
-
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);   // Count from nums1
-    const j = halfLen - i;                    // Count from nums2
-
-    // If i is too small → move right
-    if (i < m && nums2[j - 1] > nums1[i]) {
-      low = i + 1;
-    }
-    // If i is too big → move left
-    else if (i > 0 && nums1[i - 1] > nums2[j]) {
-      high = i - 1;
-    }
-    // Found perfect i
-    else {
-      let maxLeft;
-      if (i === 0) maxLeft = nums2[j - 1];
-      else if (j === 0) maxLeft = nums1[i - 1];
-      else maxLeft = Math.max(nums1[i - 1], nums2[j - 1]);
-
-      // Odd total length – median is max of left side
-      if ((m + n) % 2 === 1) return maxLeft;
-
-      // Even total length – median is average of maxLeft and minRight
-      let minRight;
-      if (i === m) minRight = nums2[j];
-      else if (j === n) minRight = nums1[i];
-      else minRight = Math.min(nums1[i], nums2[j]);
-
-      return (maxLeft + minRight) / 2;
-    }
-  }
-
-  // If we get here, input arrays weren’t valid (empty, unsorted, etc.)
-  throw new Error('Input arrays are not valid.');
+  return true;
 }
+console.log(isPrime(7));   // true
+console.log(isPrime(20));  // false
+console.log(isPrime(91));  // false (7 × 13)
+console.log(isPrime(97));  // true
