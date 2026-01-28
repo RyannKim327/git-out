@@ -1,69 +1,101 @@
-/**
- * Topological sort (Kahn's algorithm).
- * @param graph – adjacency list: node → list of successors.  Nodes that don’t appear as keys are treated as isolated vertices.
- * @returns an array of nodes in topological order.
- * @throws Error if the graph contains a cycle.
- */
-export function topologicalSort<T extends string | number | symbol>(
-  graph: Partial<Record<T, readonly T[]>>,
-): T[] {
-  // 1. Compute indegree of each vertex
-  const indegree = new Map<T, number>();
-  const nodes = new Set<T>();
+// ------------------------------------------------------------
+// 1️⃣  In‑place quick‑sort – most common for competitive coding
+// ------------------------------------------------------------
+function quickSortInPlace<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): void {
+  const swap = (i: number, j: number) => {
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  };
 
-  // First pass: collect all vertices (keys + targets)
-  for (const [u, adj] of Object.entries(graph) as [T, T[]][]) {
-    nodes.add(u);
-    for (const v of adj) nodes.add(v);
+  function partition(low: number, high: number): number {
+    // Pick the last element as pivot (simple but fine for demo)
+    const pivot = arr[high];
+    let i = low - 1;
+
+    for (let j = low; j < high; j++) {
+      if (compare(arr[j], pivot) <= 0) {
+        i++;
+        swap(i, j);
+      }
+    }
+    swap(i + 1, high);
+    return i + 1;
   }
 
-  // Initialise indegree map
-  for (const node of nodes) indegree.set(node, 0);
-
-  // Second pass: count incoming edges
-  for (const adj of Object.values(graph)) {
-    for (const v of adj) {
-      indegree.set(v, (indegree.get(v) ?? 0) + 1);
+  function quick(low: number, high: number): void {
+    if (low < high) {
+      const pi = partition(low, high);
+      quick(low, pi - 1);
+      quick(pi + 1, high);
     }
   }
 
-  // 2. Initialise a queue of all nodes with indegree 0
-  const queue: T[] = [];
-  for (const [node, d] of indegree.entries()) {
-    if (d === 0) queue.push(node);
-  }
-
-  const order: T[] = [];
-
-  // 3. Process the queue
-  while (queue.length) {
-    const u = queue.shift() as T; // queue is never empty here
-    order.push(u);
-
-    const successors = graph[u] ?? [];
-    for (const v of successors) {
-      const d = indegree.get(v)! - 1;
-      indegree.set(v, d);
-      if (d === 0) queue.push(v);
-    }
-  }
-
-  // 4. If we processed all vertices, we succeeded; otherwise a cycle exists
-  if (order.length !== nodes.size) {
-    throw new Error('Graph contains a cycle – no topological ordering possible.');
-  }
-
-  return order;
+  quick(0, arr.length - 1);
 }
-const pkgGraph = {
-  // A package can depend on other packages (edges go “downward”)
-  'express': ['body-parser', 'morgan'],
-  'body-parser': ['raw-body'],
-  'morgan': ['stream-http'],
-  'stream-http': [],
-  'raw-body': [],
-  'lodash': [],          // independent package
-};
 
-console.log(topologicalSort(pkgGraph));
-// Possible output: ['lodash', 'stream-http', 'morgan', 'raw-body', 'body-parser', 'express']
+// ------------------------------------------------------------
+// 2️⃣  Functional quick‑sort – returns a new sorted array
+// ------------------------------------------------------------
+function quickSortFunctional<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  if (arr.length <= 1) return arr.slice(); // immutable copy
+
+  // Random pivot for better average performance on already‑sorted data
+  const pivot = arr[Math.floor(Math.random() * arr.length)];
+  const lows = arr.filter((v) => compare(v, pivot) < 0);
+  const highs = arr.filter((v) => compare(v, pivot) > 0);
+  const pivots = arr.filter((v) => compare(v, pivot) === 0);
+
+  return [
+    ...quickSortFunctional(lows, compare),
+    ...pivots,
+    ...quickSortFunctional(highs, compare),
+  ];
+}
+
+// ------------------------------------------------------------
+// 3️⃣  Small helper that wraps the in‑place version and offers
+//     a better pivot strategy
+// ------------------------------------------------------------
+function quickSort<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  // Randomize the array first; this keeps the pivot “good” on many inputs
+  // and eliminates the worst‑case for already‑sorted data.
+  const shuffled = arr.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  quickSortInPlace(shuffled, compare);
+  return shuffled;
+}
+
+// ---------------------------
+// Demo usage
+// ---------------------------
+
+const numbers = [34, 7, 23, 32, 5, 62, 32];
+console.log('in‑place:', (() => {
+  const copy = [...numbers];
+  quickSortInPlace(copy);
+  return copy;
+})());
+
+console.log('functional:', quickSortFunctional(numbers));
+
+console.log('wrapper:', quickSort(numbers));
+
+// ------------------------------------------------------------
+// Done!
+// ------------------------------------------------------------
+const byLength = (a: string, b: string) => a.length - b.length;
+quickSort(stringsArray, byLength);
