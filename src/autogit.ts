@@ -1,93 +1,69 @@
 /**
- * Represents a node in the beam frontier.
- * Keeps the actual state and the path taken to reach it.
+ * Topological sort (Kahn's algorithm).
+ * @param graph – adjacency list: node → list of successors.  Nodes that don’t appear as keys are treated as isolated vertices.
+ * @returns an array of nodes in topological order.
+ * @throws Error if the graph contains a cycle.
  */
-export interface BeamNode<T> {
-  /** The actual state */
-  state: T;
-  /** The sequence of states that led to this node (incl. this state) */
-  path: T[];
-}
+export function topologicalSort<T extends string | number | symbol>(
+  graph: Partial<Record<T, readonly T[]>>,
+): T[] {
+  // 1. Compute indegree of each vertex
+  const indegree = new Map<T, number>();
+  const nodes = new Set<T>();
 
-/**
- * Performs a beam search.
- *
- * @param startNodes   Initial frontier. Usually a single root node, but you can start with many.
- * @param getSuccessors   Function that returns the child nodes of a parent.
- * @param score          Score function – higher is better.
- * @param beamWidth      How many nodes to keep after each expansion.
- * @param maxDepth       Optional depth cutoff (in terms of edges traversed).
- * @param isGoal         Optional goal‑test predicate.
- * @returns The first goal node found (or undefined if none).
- */
-export function beamSearch<T>(
-  startNodes: T[],
-  getSuccessors: (node: T) => T[],
-  score: (node: T) => number,
-  beamWidth: number,
-  maxDepth?: number,
-  isGoal?: (node: T) => boolean
-): BeamNode<T> | undefined {
-
-  // Ensure we keep a lightweight copy for sorting.
-  let frontier: BeamNode<T> = startNodes.map(state => ({ state, path: [state] }));
-
-  for (let depth = 0; depth < (maxDepth ?? Infinity); depth++) {
-    if (frontier.length === 0) break; // nothing to expand
-
-    // Expand every node in the frontier
-    const expansions: BeamNode<T>[] = [];
-    for (const node of frontier) {
-      const succ = getSuccessors(node.state);
-      for (const child of succ) {
-        expansions.push({
-          state: child,
-          path: [...node.path, child]
-        });
-      }
-    }
-
-    // Optional goal check as soon as we generate expansions
-    if (isGoal) {
-      for (const node of expansions) {
-        if (isGoal(node.state)) return node;
-      }
-    }
-
-    // Sort by score, keep top `beamWidth`
-    expansions.sort((a, b) => score(b.state) - score(a.state)); // descending
-    frontier = expansions.slice(0, beamWidth);
+  // First pass: collect all vertices (keys + targets)
+  for (const [u, adj] of Object.entries(graph) as [T, T[]][]) {
+    nodes.add(u);
+    for (const v of adj) nodes.add(v);
   }
 
-  return undefined; // no goal reached within limits
+  // Initialise indegree map
+  for (const node of nodes) indegree.set(node, 0);
+
+  // Second pass: count incoming edges
+  for (const adj of Object.values(graph)) {
+    for (const v of adj) {
+      indegree.set(v, (indegree.get(v) ?? 0) + 1);
+    }
+  }
+
+  // 2. Initialise a queue of all nodes with indegree 0
+  const queue: T[] = [];
+  for (const [node, d] of indegree.entries()) {
+    if (d === 0) queue.push(node);
+  }
+
+  const order: T[] = [];
+
+  // 3. Process the queue
+  while (queue.length) {
+    const u = queue.shift() as T; // queue is never empty here
+    order.push(u);
+
+    const successors = graph[u] ?? [];
+    for (const v of successors) {
+      const d = indegree.get(v)! - 1;
+      indegree.set(v, d);
+      if (d === 0) queue.push(v);
+    }
+  }
+
+  // 4. If we processed all vertices, we succeeded; otherwise a cycle exists
+  if (order.length !== nodes.size) {
+    throw new Error('Graph contains a cycle – no topological ordering possible.');
+  }
+
+  return order;
 }
-// Example: find a numeric sequence that sums to 15
-type MyState = number; // current sum
-
-const start = 0;
-
-const getSucc = (sum: MyState) => {
-  return [sum + 1, sum + 2, sum + 3]; // could be any branching scheme
+const pkgGraph = {
+  // A package can depend on other packages (edges go “downward”)
+  'express': ['body-parser', 'morgan'],
+  'body-parser': ['raw-body'],
+  'morgan': ['stream-http'],
+  'stream-http': [],
+  'raw-body': [],
+  'lodash': [],          // independent package
 };
 
-const score = (sum: MyState) => {
-  // The closer to 15 without overshooting, the better
-  return Math.max(0, 15 - sum);
-};
-
-const isGoal = (sum: MyState) => sum === 15;
-
-const result = beamSearch(
-  [start],
-  getSucc,
-  score,
-  beamWidth = 3,
-  maxDepth = 10,
-  isGoal
-);
-
-if (result) {
-  console.log(`Reached 15 via ${result.path.join(' -> ')}`);
-} else {
-  console.log('No path found within depth limit');
-}
+console.log(topologicalSort(pkgGraph));
+// Possible output: ['lodash', 'stream-http', 'morgan', 'raw-body', 'body-parser', 'express']
