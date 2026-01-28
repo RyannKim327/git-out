@@ -1,43 +1,44 @@
-// Helper that normalises the string – handy if you want to ignore
-// spaces, punctuation, and case.
-function normalise(text: string): string {
-  return text
-    .toLowerCase()         // ignore case
-    .replace(/[^a-z0-9]/g, '');  // keep only alphanumerics
-}
-
 /**
- * Returns true if `input` is a palindrome.
+ * Return the longest common prefix of an array of strings.
  *
- * @param input – the string you want to test
- * @param {boolean} allowEmpty = false  – whether an empty string is considered a palindrome
+ * @param arr – list of strings to compare
+ * @returns the longest common prefix, or an empty string if none exists
  */
-function isPalindrome(
-  input: string,
-  allowEmpty = false,
-): boolean {
-  // Fast‑path for empty string
-  if (input.length === 0) return allowEmpty;
+function longestCommonPrefix(arr: string[]): string {
+  if (!arr.length) return "";
 
-  const s = normalise(input);
+  // The classic “compare the first and last after sorting” trick.
+  // It guarantees we only have to check the two outermost strings,
+  // because any common prefix must be common to all.
+  const sorted = [...arr].sort();                  // sort lexicographically
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
 
-  // Empty after normalisation may be true or false – decide here
-  if (s.length === 0) return false;
+  let i = 0;
+  const minLen = Math.min(first.length, last.length);
 
-  // Compare characters from both ends
-  let left = 0;
-  let right = s.length - 1;
-
-  while (left < right) {
-    if (s[left] !== s[right]) return false;
-    left++;
-    right--;
+  while (i < minLen && first.charAt(i) === last.charAt(i)) {
+    i++;
   }
 
-  return true;
+  return first.substring(0, i);
 }
+function lcpScan(arr: string[]): string {
+  if (!arr.length) return "";
 
-// Demo
-console.log(isPalindrome('RaceCar'));           // true
-console.log(isPalindrome('A man, a plan!'));    // true
-console.log(isPalindrome('hello world'));       // false
+  let prefix = arr[0];
+
+  for (const s of arr.slice(1)) {
+    // shrink prefix until it’s a prefix of s
+    while (!s.startsWith(prefix)) {
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return "";
+    }
+  }
+  return prefix;
+}
+const words = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(words)); // → "fl"
+
+const zoo = ["dog", "racecar", "car"];
+console.log(longestCommonPrefix(zoo));   // → ""
