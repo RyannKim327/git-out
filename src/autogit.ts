@@ -1,37 +1,47 @@
-// factorial.ts
-import readline from 'readline';
+/**
+ * Count how many times a whole word appears in a string.
+ *
+ * @param haystack  The text to search.
+ * @param needle    The word you’re looking for.
+ * @param caseSensitive  If false, treat both inputs as lower‑case.
+ * @returns Number of matches.
+ */
+function countWord(
+  haystack: string,
+  needle: string,
+  caseSensitive = false
+): number {
+  if (!needle) return 0;
 
-// Utility that returns the factorial of a non‑negative integer
-function factorial(n: number): number {
-  if (n < 0) throw new Error('Number must be non‑negative');
-  if (n === 0 || n === 1) return 1;
-  return n * factorial(n - 1);
+  const flags = caseSensitive ? 'g' : 'gi';
+  // \b ensures we only match whole words
+  const re = new RegExp(`\\b${escapeRegExp(needle)}\\b`, flags);
+  const matches = haystack.match(re);
+  return matches ? matches.length : 0;
 }
 
-// Set up a readline interface to read from stdin
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
+/** Helper to escape regex meta‑characters in the needle. */
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+const text = 'The quick brown fox jumps over the lazy dog. The fox was quick.';
 
-// Ask the user for a number
-rl.question('Enter a non‑negative integer: ', (answer) => {
-  const num = Number(answer.trim());
+console.log(countWord(text, 'quick'));   // 2
+console.log(countWord(text, 'the'));     // 2 (case‑insensitive)
+console.log(countWord(text, 'the', true)); // 1 (case‑sensitive)
+function countWordUsingSplit(
+  text: string,
+  word: string,
+  caseSensitive = false
+): number {
+  if (!word) return 0;
 
-  if (Number.isNaN(num) || !Number.isInteger(num)) {
-    console.log(`"${answer}" is not a valid integer.`);
-  } else {
-    try {
-      const result = factorial(num);
-      console.log(`Factorial of ${num} is ${result}`);
-    } catch (e) {
-      console.log(e.message);
-    }
-  }
+  const base = caseSensitive ? text : text.toLowerCase();
+  const target = caseSensitive ? word : word.toLowerCase();
 
-  rl.close();
-});
-npm install --save-dev @types/node
-npx ts-node factorial.ts
-tsc factorial.ts   # produces factorial.js
-node factorial.js
+  // Split on whitespace and punctuation
+  const tokens = base.split(/\W+/).filter(Boolean);
+  return tokens.filter(t => t === target).length;
+}
+const re = new RegExp(escapeRegExp(substring), 'g'); // add gi for case‑insensitive
+const count = (text.match(re) || []).length;
