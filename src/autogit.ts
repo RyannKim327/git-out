@@ -1,149 +1,42 @@
-/* ------------------------------------------------------------ */
-/*  A generic node that holds a value and a reference to next   */
-/* ------------------------------------------------------------ */
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
+// 1️⃣  Install the dependencies first:
+//     npm install axios @types/axios
+
+import axios, { AxiosError } from "axios";
+
+// 2️⃣  Define the shape of the data we expect back.
+interface User {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
 }
 
-/* ------------------------------------------------------------ */
-/*  A generic singly‑linked list                               */
-/* ------------------------------------------------------------ */
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+// 3️⃣  Perform the request in an async function.
+async function fetchUsers(): Promise<User[]> {
+  const url = "https://jsonplaceholder.typicode.com/users";
 
-  /* ---------- Properties ---------- */
-  get size(): number { return this._size; }
-  get isEmpty(): boolean { return this._size === 0; }
+  try {
+    // 4️⃣  Make the GET request
+    const response = await axios.get<User[]>(url);
 
-  /* ---------- Core Operations ---------- */
-
-  /** Push a value onto the **end** of the list */
-  push(value: T): void {
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
+    // 5️⃣  Axios automatically parses JSON, so `data` has the correct type
+    return response.data;
+  } catch (err) {
+    // 6️⃣  Gracefully handle a possible Axios error
+    if (axios.isAxiosError(err)) {
+      const error = err as AxiosError;
+      console.error(
+        `Request failed! 🙁 Status: ${error.response?.status}  Message: ${error.message}`
+      );
     } else {
-      this.tail!.next = node;
-      this.tail = node;
+      console.error("Unexpected error:", err);
     }
-    this._size++;
-  }
-
-  /** Unshift a value onto the **head** of the list */
-  unshift(value: T): void {
-    const node = new ListNode(value, this.head);
-    this.head = node;
-    if (!this.tail) this.tail = node;
-    this._size++;
-  }
-
-  /** Remove and return the value at the head */
-  shift(): T | undefined {
-    if (!this.head) return undefined;
-    const value = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null;
-    this._size--;
-    return value;
-  }
-
-  /** Remove and return the value at the tail */
-  pop(): T | undefined {
-    if (!this.head) return undefined;
-    if (!this.tail) return undefined;
-
-    let current = this.head;
-    let prev: ListNode<T> | null = null;
-
-    while (current.next) {
-      prev = current;
-      current = current.next;
-    }
-
-    const value = current.value;
-    if (prev) {
-      prev.next = null;
-      this.tail = prev;
-    } else {
-      // list had only one element
-      this.head = this.tail = null;
-    }
-    this._size--;
-    return value;
-  }
-
-  /* ---------- Traversal & Search ---------- */
-
-  /** Find the first node whose value satisfies the predicate */
-  find(predicate: (value: T) => boolean): T | undefined {
-    let node = this.head;
-    while (node) {
-      if (predicate(node.value)) return node.value;
-      node = node.next;
-    }
-    return undefined;
-  }
-
-  /** Convert the list to an array (for debugging or display) */
-  toArray(): T[] {
-    const arr: T[] = [];
-    let node = this.head;
-    while (node) {
-      arr.push(node.value);
-      node = node.next;
-    }
-    return arr;
-  }
-
-  /* ---------- Utility ---------- */
-
-  /** Remove the first node that satisfies the predicate */
-  remove(predicate: (value: T) => boolean): boolean {
-    if (!this.head) return false;
-
-    if (predicate(this.head.value)) {
-      this.shift();
-      return true;
-    }
-
-    let prev = this.head;
-    let current = this.head.next;
-
-    while (current) {
-      if (predicate(current.value)) {
-        prev.next = current.next;
-        if (!current.next) this.tail = prev; // removed tail
-        this._size--;
-        return true;
-      }
-      prev = current;
-      current = current.next;
-    }
-
-    return false; // not found
+    return []; // Return an empty array if something goes wrong
   }
 }
 
-/* ------------------------------------------------------------ */
-/*  Usage example ------------------------------------------------ */
-const list = new LinkedList<number>();
-
-list.push(3);    // 3
-list.push(5);    // 3 → 5
-list.unshift(1); // 1 → 3 → 5
-
-console.log(list.toArray()); // [1, 3, 5]
-console.log(list.shift());   // 1
-console.log(list.pop());     // 5
-console.log(list.toArray()); // [3]
-console.log(list.find(v => v === 3)); // 3
-
-list.remove(v => v === 3);
-console.log(list.toArray()); // []
-
-/* ------------------------------------------------------------ */
+// 7️⃣  Use the function somewhere in your app
+(async () => {
+  const users = await fetchUsers();
+  console.log("Fetched users:", users);
+})();
