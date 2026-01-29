@@ -1,33 +1,55 @@
-// Basic node definition
-interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-}
-
-// Helper – takes the head of a list and returns the middle node.
-function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null;
-
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
-
-  // advance `fast` two steps for every one step `slow` takes
-  while (fast !== null && fast.next !== null) {
-    slow = slow!.next;          // will never be null here – just for TS safety
-    fast = fast.next.next;
+/**
+ * Returns the median of two sorted arrays.
+ *
+ * @param nums1 First sorted array
+ * @param nums2 Second sorted array
+ * @returns Median value (number)
+ */
+export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Make sure nums1 is the smaller array; binary search will run on it.
+  if (nums1.length > nums2.length) {
+    return findMedianSortedArrays(nums2, nums1);
   }
 
-  // when fast runs out, slow is at the middle
-  return slow;
+  const m = nums1.length;
+  const n = nums2.length;
+  const halfLen = Math.floor((m + n + 1) / 2);
+
+  let low = 0;
+  let high = m;
+
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2);   // Count from nums1
+    const j = halfLen - i;                    // Count from nums2
+
+    // If i is too small → move right
+    if (i < m && nums2[j - 1] > nums1[i]) {
+      low = i + 1;
+    }
+    // If i is too big → move left
+    else if (i > 0 && nums1[i - 1] > nums2[j]) {
+      high = i - 1;
+    }
+    // Found perfect i
+    else {
+      let maxLeft;
+      if (i === 0) maxLeft = nums2[j - 1];
+      else if (j === 0) maxLeft = nums1[i - 1];
+      else maxLeft = Math.max(nums1[i - 1], nums2[j - 1]);
+
+      // Odd total length – median is max of left side
+      if ((m + n) % 2 === 1) return maxLeft;
+
+      // Even total length – median is average of maxLeft and minRight
+      let minRight;
+      if (i === m) minRight = nums2[j];
+      else if (j === n) minRight = nums1[i];
+      else minRight = Math.min(nums1[i], nums2[j]);
+
+      return (maxLeft + minRight) / 2;
+    }
+  }
+
+  // If we get here, input arrays weren’t valid (empty, unsorted, etc.)
+  throw new Error('Input arrays are not valid.');
 }
-// Build a tiny list: 1 → 2 → 3 → 4 → 5
-const a: ListNode<number> = { value: 1, next: null };
-const b: ListNode<number> = { value: 2, next: null };
-const c: ListNode<number> = { value: 3, next: null };
-const d: ListNode<number> = { value: 4, next: null };
-const e: ListNode<number> = { value: 5, next: null };
-
-a.next = b; b.next = c; c.next = d; d.next = e;
-
-const middle = findMiddle(a);
-console.log(middle?.value); // logs 3
