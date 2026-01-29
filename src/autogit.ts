@@ -1,60 +1,63 @@
 /**
- * Fibonacci search for a sorted array of numbers.
- * @param arr  The sorted array to search.
- * @param target The value to locate.
- * @returns The index of `target` in `arr`, or -1 if not found.
+ * Rabin‑Karp string search
+ *
+ * Parameters:
+ *  pattern – the string we’re looking for
+ *  text    – the string to search inside
+ *
+ * Returns:
+ *  array of starting indices where pattern occurs (empty if no match)
  */
-export function fibonacciSearch(arr: number[], target: number): number {
-  const n = arr.length;
-  if (n === 0) return -1;
+export function rabinKarp(pattern: string, text: string): number[] {
+    // Edge cases
+    if (pattern.length === 0) return [];
+    if (pattern.length > text.length) return [];
 
-  // 1. Build the smallest Fibonacci number >= n
-  let fibMm2 = 0;   // (m-2)th Fibonacci
-  let fibMm1 = 1;   // (m-1)th Fibonacci
-  let fibM   = fibMm2 + fibMm1; // mth Fibonacci
+    const base = 256;               // number of possible characters (ASCII)
+    const mod = 101;                // a prime mod to keep numbers small
 
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM   = fibMm2 + fibMm1;
-  }
+    const m = pattern.length;
+    const n = text.length;
 
-  // Marks the range to be searched
-  let offset = -1; // Element before the beginning (virtual)
-
-  // 2. While there is an element to inspect
-  while (fibM > 1) {
-    // Determines the index to compare
-    const i = Math.min(offset + fibMm2, n - 1);
-
-    if (arr[i] < target) {
-      // Move three steps ahead
-      fibM   = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i;
-    } else if (arr[i] > target) {
-      // Move one step back
-      fibM   = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
-    } else {
-      return i; // Found
+    // Pre‑compute base^(m‑1) % mod  (the “high” power)
+    let basePower = 1;
+    for (let i = 0; i < m - 1; i++) {
+        basePower = (basePower * base) % mod;
     }
-  }
 
-  // We are left with a single element
-  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
-    return offset + 1;
-  }
+    // Compute hash for pattern and first window of text
+    let patHash = 0;
+    let txtHash = 0;
+    for (let i = 0; i < m; i++) {
+        patHash = (patHash * base + pattern.charCodeAt(i)) % mod;
+        txtHash = (txtHash * base + text.charCodeAt(i)) % mod;
+    }
 
-  return -1; // Not found
+    const result: number[] = [];
+
+    // Slide the window over the text
+    for (let s = 0; s <= n - m; s++) {
+        // If the hash values match, verify the substring to confirm
+        if (patHash === txtHash) {
+            let match = true;
+            for (let k = 0; k < m; k++) {
+                if (text[s + k] !== pattern[k]) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) result.push(s);
+        }
+
+        // Compute hash for next window: remove leading char, add trailing char
+        if (s < n - m) {
+            txtHash = (txtHash - text.charCodeAt(s) * basePower) % mod;
+            if (txtHash < 0) txtHash += mod;                    // keep positive
+            txtHash = (txtHash * base + text.charCodeAt(s + m)) % mod;
+        }
+    }
+
+    return result;
 }
-import { fibonacciSearch } from './fibonacci-search';
-
-const data = [3, 8, 10, 15, 20, 23, 27, 35, 41, 55, 68, 73, 82, 91, 97];
-const target = 55;
-
-const idx = fibonacciSearch(data, target);
-console.log(idx); // → 9
-console.log(fibonacciSearch(data, 22)); // → -1
+const idx = rabinKarp('abc', 'xabcababc');
+console.log(idx);   // → [1, 6]
