@@ -1,69 +1,52 @@
-/**
- * Topological sort (Kahn's algorithm).
- * @param graph – adjacency list: node → list of successors.  Nodes that don’t appear as keys are treated as isolated vertices.
- * @returns an array of nodes in topological order.
- * @throws Error if the graph contains a cycle.
- */
-export function topologicalSort<T extends string | number | symbol>(
-  graph: Partial<Record<T, readonly T[]>>,
-): T[] {
-  // 1. Compute indegree of each vertex
-  const indegree = new Map<T, number>();
-  const nodes = new Set<T>();
+/** Basic node structure for a binary tree. */
+class TreeNode {
+  /** Value stored in the node (use `any` if you need non‑numeric data). */
+  val: number
+  /** Left child, or null if none. */
+  left: TreeNode | null
+  /** Right child, or null if none. */
+  right: TreeNode | null
 
-  // First pass: collect all vertices (keys + targets)
-  for (const [u, adj] of Object.entries(graph) as [T, T[]][]) {
-    nodes.add(u);
-    for (const v of adj) nodes.add(v);
+  constructor(val: number, left?: TreeNode | null, right?: TreeNode | null) {
+    this.val = val
+    this.left = left ?? null
+    this.right = right ?? null
   }
-
-  // Initialise indegree map
-  for (const node of nodes) indegree.set(node, 0);
-
-  // Second pass: count incoming edges
-  for (const adj of Object.values(graph)) {
-    for (const v of adj) {
-      indegree.set(v, (indegree.get(v) ?? 0) + 1);
-    }
-  }
-
-  // 2. Initialise a queue of all nodes with indegree 0
-  const queue: T[] = [];
-  for (const [node, d] of indegree.entries()) {
-    if (d === 0) queue.push(node);
-  }
-
-  const order: T[] = [];
-
-  // 3. Process the queue
-  while (queue.length) {
-    const u = queue.shift() as T; // queue is never empty here
-    order.push(u);
-
-    const successors = graph[u] ?? [];
-    for (const v of successors) {
-      const d = indegree.get(v)! - 1;
-      indegree.set(v, d);
-      if (d === 0) queue.push(v);
-    }
-  }
-
-  // 4. If we processed all vertices, we succeeded; otherwise a cycle exists
-  if (order.length !== nodes.size) {
-    throw new Error('Graph contains a cycle – no topological ordering possible.');
-  }
-
-  return order;
 }
-const pkgGraph = {
-  // A package can depend on other packages (edges go “downward”)
-  'express': ['body-parser', 'morgan'],
-  'body-parser': ['raw-body'],
-  'morgan': ['stream-http'],
-  'stream-http': [],
-  'raw-body': [],
-  'lodash': [],          // independent package
-};
 
-console.log(topologicalSort(pkgGraph));
-// Possible output: ['lodash', 'stream-http', 'morgan', 'raw-body', 'body-parser', 'express']
+/* ------------------------------------------------------------------ */
+/*  Recursive depth‑first search.  Returns the longest path length.    */
+function maxDepth(root: TreeNode | null): number {
+  if (!root) return 0                    // leaf + null = depth 0
+  const leftDepth  = maxDepth(root.left) // depth goes 1, 2, … from here
+  const rightDepth = maxDepth(root.right)
+  return Math.max(leftDepth, rightDepth) + 1
+}
+
+/* ------------------------------------------------------------------ */
+/*  Iterative breadth‑first search (queue).  Same result, no stack.   */
+function maxDepthIter(root: TreeNode | null): number {
+  if (!root) return 0
+  let max = 0
+  const queue: Array<{ node: TreeNode; depth: number }> = [
+    { node: root, depth: 1 },
+  ]
+
+  while (queue.length) {
+    const { node, depth } = queue.shift()!
+    max = Math.max(max, depth)
+    if (node.left)  queue.push({ node: node.left, depth: depth + 1 })
+    if (node.right) queue.push({ node: node.right, depth: depth + 1 })
+  }
+  return max
+}
+
+/* ------------------------------------------------------------------ */
+/*  Example usage ---------------------------------------------------- */
+const root = new TreeNode(1,
+  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
+  new TreeNode(3, null, new TreeNode(6))
+)
+
+console.log('Recursive depth:', maxDepth(root))      // → 3
+console.log('Iterative depth:', maxDepthIter(root)) // → 3
