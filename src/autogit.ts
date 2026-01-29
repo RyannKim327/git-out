@@ -1,55 +1,70 @@
-/**
- * Returns the median of two sorted arrays.
- *
- * @param nums1 First sorted array
- * @param nums2 Second sorted array
- * @returns Median value (number)
- */
-export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Make sure nums1 is the smaller array; binary search will run on it.
-  if (nums1.length > nums2.length) {
-    return findMedianSortedArrays(nums2, nums1);
-  }
+function longestCommonSubstring(a: string, b: string): string {
+  if (!a || !b) return '';
 
-  const m = nums1.length;
-  const n = nums2.length;
-  const halfLen = Math.floor((m + n + 1) / 2);
+  let maxLen = 0;
+  let maxStart = 0;          // start index inside `a`
 
-  let low = 0;
-  let high = m;
+  const aLen = a.length;
+  const bLen = b.length;
 
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);   // Count from nums1
-    const j = halfLen - i;                    // Count from nums2
+  // Pick the shorter string as the outer loop to reduce the number of starts
+  const [short, long] = aLen < bLen ? [a, b] : [b, a];
+  const shortLen = short.length;
+  const longLen = long.length;
 
-    // If i is too small → move right
-    if (i < m && nums2[j - 1] > nums1[i]) {
-      low = i + 1;
-    }
-    // If i is too big → move left
-    else if (i > 0 && nums1[i - 1] > nums2[j]) {
-      high = i - 1;
-    }
-    // Found perfect i
-    else {
-      let maxLeft;
-      if (i === 0) maxLeft = nums2[j - 1];
-      else if (j === 0) maxLeft = nums1[i - 1];
-      else maxLeft = Math.max(nums1[i - 1], nums2[j - 1]);
-
-      // Odd total length – median is max of left side
-      if ((m + n) % 2 === 1) return maxLeft;
-
-      // Even total length – median is average of maxLeft and minRight
-      let minRight;
-      if (i === m) minRight = nums2[j];
-      else if (j === n) minRight = nums1[i];
-      else minRight = Math.min(nums1[i], nums2[j]);
-
-      return (maxLeft + minRight) / 2;
+  for (let i = 0; i < shortLen; i++) {
+    for (let j = 0; j < longLen; j++) {
+      let length = 0;
+      while (
+        i + length < shortLen &&
+        j + length < longLen &&
+        short[i + length] === long[j + length]
+      ) {
+        length++;
+      }
+      if (length > maxLen) {
+        maxLen = length;
+        maxStart = i;           // starts in `short`
+      }
     }
   }
 
-  // If we get here, input arrays weren’t valid (empty, unsorted, etc.)
-  throw new Error('Input arrays are not valid.');
+  // Return the slice from the original string that contains the substring
+  const result = short.substr(maxStart, maxLen);
+  // If we swapped the strings we need to return the same slice from the original `a`
+  return aLen < bLen ? result : result; // same, just explicit
 }
+console.log(longestCommonSubstring('abxabc', 'abcaby')); // → 'abc'
+function longestCommonSubstringDP(s1: string, s2: string): string {
+  const n = s1.length;
+  const m = s2.length;
+  if (!n || !m) return '';
+
+  // 2‑row DP to save memory – only previous row needed for current row calculation
+  let prev = new Array(m + 1).fill(0);
+  let curr = new Array(m + 1).fill(0);
+
+  let maxLen = 0;
+  let maxEndIdxS1 = 0; // end index in s1 of longest common substring
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        curr[j] = prev[j - 1] + 1; // extend the previous match
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          maxEndIdxS1 = i; // i is 1‑based
+        }
+      } else {
+        curr[j] = 0;
+      }
+    }
+    // swap rows for next iteration
+    [prev, curr] = [curr, prev];
+    curr.fill(0); // reset current row
+  }
+
+  // Extract the substring from s1 using the end index and length
+  return s1.slice(maxEndIdxS1 - maxLen, maxEndIdxS1);
+}
+console.log(longestCommonSubstringDP('abxabc', 'abcaby')); // → 'abc'
