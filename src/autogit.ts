@@ -1,42 +1,24 @@
-// 1️⃣  Install the dependencies first:
-//     npm install axios @types/axios
+const numbers: number[] = [5, 2, 9, 1, 5, 6];
 
-import axios, { AxiosError } from "axios";
+// sort in place (mutates the original array)
+numbers.sort((a, b) => a - b);
+console.log(numbers); // [1, 2, 5, 5, 6, 9]
+numbers.sort((a, b) => b - a);
+console.log(numbers); // [9, 6, 5, 5, 2, 1]
+const sorted = [...numbers].sort((a, b) => a - b);
+// or
+const sorted = numbers.slice().sort((a, b) => a - b);
+interface Item { value: number; rank: number }
 
-// 2️⃣  Define the shape of the data we expect back.
-interface User {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-}
+const items: Item[] = [
+  { value: 10, rank: 2 },
+  { value: 12, rank: 1 },
+  { value: 10, rank: 1 }
+];
 
-// 3️⃣  Perform the request in an async function.
-async function fetchUsers(): Promise<User[]> {
-  const url = "https://jsonplaceholder.typicode.com/users";
+items.sort((x, y) => {
+  if (x.value === y.value) return x.rank - y.rank; // tie‑break on rank
+  return x.value - y.value;
+});
 
-  try {
-    // 4️⃣  Make the GET request
-    const response = await axios.get<User[]>(url);
-
-    // 5️⃣  Axios automatically parses JSON, so `data` has the correct type
-    return response.data;
-  } catch (err) {
-    // 6️⃣  Gracefully handle a possible Axios error
-    if (axios.isAxiosError(err)) {
-      const error = err as AxiosError;
-      console.error(
-        `Request failed! 🙁 Status: ${error.response?.status}  Message: ${error.message}`
-      );
-    } else {
-      console.error("Unexpected error:", err);
-    }
-    return []; // Return an empty array if something goes wrong
-  }
-}
-
-// 7️⃣  Use the function somewhere in your app
-(async () => {
-  const users = await fetchUsers();
-  console.log("Fetched users:", users);
-})();
+console.log(items);
