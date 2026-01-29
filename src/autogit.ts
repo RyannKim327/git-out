@@ -1,91 +1,69 @@
-interface ListNode {
-  val: number;          // or whatever type you prefer
-  next: ListNode | null;
-}
+/**
+ * Topological sort (Kahn's algorithm).
+ * @param graph – adjacency list: node → list of successors.  Nodes that don’t appear as keys are treated as isolated vertices.
+ * @returns an array of nodes in topological order.
+ * @throws Error if the graph contains a cycle.
+ */
+export function topologicalSort<T extends string | number | symbol>(
+  graph: Partial<Record<T, readonly T[]>>,
+): T[] {
+  // 1. Compute indegree of each vertex
+  const indegree = new Map<T, number>();
+  const nodes = new Set<T>();
 
-function isPalindromeIterative(head: ListNode | null): boolean {
-  if (!head) return true;
-
-  const stack: number[] = [];
-  let cur: ListNode | null = head;
-
-  // Push all values on the stack
-  while (cur) {
-    stack.push(cur.val);
-    cur = cur.next;
+  // First pass: collect all vertices (keys + targets)
+  for (const [u, adj] of Object.entries(graph) as [T, T[]][]) {
+    nodes.add(u);
+    for (const v of adj) nodes.add(v);
   }
 
-  // Compare while traversing again
-  cur = head;
-  while (cur) {
-    if (cur.val !== stack.pop()) {
-      return false;
+  // Initialise indegree map
+  for (const node of nodes) indegree.set(node, 0);
+
+  // Second pass: count incoming edges
+  for (const adj of Object.values(graph)) {
+    for (const v of adj) {
+      indegree.set(v, (indegree.get(v) ?? 0) + 1);
     }
-    cur = cur.next;
   }
 
-  return true;
+  // 2. Initialise a queue of all nodes with indegree 0
+  const queue: T[] = [];
+  for (const [node, d] of indegree.entries()) {
+    if (d === 0) queue.push(node);
+  }
+
+  const order: T[] = [];
+
+  // 3. Process the queue
+  while (queue.length) {
+    const u = queue.shift() as T; // queue is never empty here
+    order.push(u);
+
+    const successors = graph[u] ?? [];
+    for (const v of successors) {
+      const d = indegree.get(v)! - 1;
+      indegree.set(v, d);
+      if (d === 0) queue.push(v);
+    }
+  }
+
+  // 4. If we processed all vertices, we succeeded; otherwise a cycle exists
+  if (order.length !== nodes.size) {
+    throw new Error('Graph contains a cycle – no topological ordering possible.');
+  }
+
+  return order;
 }
-function isPalindromeOptimized(head: ListNode | null): boolean {
-  if (!head || !head.next) return true;
+const pkgGraph = {
+  // A package can depend on other packages (edges go “downward”)
+  'express': ['body-parser', 'morgan'],
+  'body-parser': ['raw-body'],
+  'morgan': ['stream-http'],
+  'stream-http': [],
+  'raw-body': [],
+  'lodash': [],          // independent package
+};
 
-  // 1. Find the middle (slow will point to middle)
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  // 2. Reverse the second half
-  let prev: ListNode | null = null;
-  let curr = slow.next;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  // `prev` is now the head of the reversed second half
-
-  // 3. Compare the two halves
-  let first = head;
-  let second = prev;
-  let result = true;
-  while (result && second) {        // second will be shorter or equal
-    if (first.val !== second.val) result = false;
-    first = first.next!;
-    second = second.next!;
-  }
-
-  // 4. (Optional) Restore the list
-  // Reverse the second half again to bring the list back to original
-  curr = prev;
-  prev = null;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  slow.next = prev;
-
-  return result;
-}
-function buildList(arr: number[]): ListNode | null {
-  let dummy: ListNode = { val: 0, next: null };
-  let tail = dummy;
-  for (const v of arr) {
-    tail.next = { val: v, next: null };
-    tail = tail.next;
-  }
-  return dummy.next;
-}
-
-const a = buildList([1, 2, 3, 2, 1]);
-console.log(isPalindromeIterative(a));   // true
-console.log(isPalindromeOptimized(a));   // true
-
-const b = buildList([1, 2, 3, 4]);
-console.log(isPalindromeIterative(b));   // false
-console.log(isPalindromeOptimized(b));   // false
+console.log(topologicalSort(pkgGraph));
+// Possible output: ['lodash', 'stream-http', 'morgan', 'raw-body', 'body-parser', 'express']
