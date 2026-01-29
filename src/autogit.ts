@@ -1,52 +1,149 @@
-/** Basic node structure for a binary tree. */
-class TreeNode {
-  /** Value stored in the node (use `any` if you need non‑numeric data). */
-  val: number
-  /** Left child, or null if none. */
-  left: TreeNode | null
-  /** Right child, or null if none. */
-  right: TreeNode | null
+/* ------------------------------------------------------------ */
+/*  A generic node that holds a value and a reference to next   */
+/* ------------------------------------------------------------ */
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
+}
 
-  constructor(val: number, left?: TreeNode | null, right?: TreeNode | null) {
-    this.val = val
-    this.left = left ?? null
-    this.right = right ?? null
+/* ------------------------------------------------------------ */
+/*  A generic singly‑linked list                               */
+/* ------------------------------------------------------------ */
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
+
+  /* ---------- Properties ---------- */
+  get size(): number { return this._size; }
+  get isEmpty(): boolean { return this._size === 0; }
+
+  /* ---------- Core Operations ---------- */
+
+  /** Push a value onto the **end** of the list */
+  push(value: T): void {
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      this.tail!.next = node;
+      this.tail = node;
+    }
+    this._size++;
+  }
+
+  /** Unshift a value onto the **head** of the list */
+  unshift(value: T): void {
+    const node = new ListNode(value, this.head);
+    this.head = node;
+    if (!this.tail) this.tail = node;
+    this._size++;
+  }
+
+  /** Remove and return the value at the head */
+  shift(): T | undefined {
+    if (!this.head) return undefined;
+    const value = this.head.value;
+    this.head = this.head.next;
+    if (!this.head) this.tail = null;
+    this._size--;
+    return value;
+  }
+
+  /** Remove and return the value at the tail */
+  pop(): T | undefined {
+    if (!this.head) return undefined;
+    if (!this.tail) return undefined;
+
+    let current = this.head;
+    let prev: ListNode<T> | null = null;
+
+    while (current.next) {
+      prev = current;
+      current = current.next;
+    }
+
+    const value = current.value;
+    if (prev) {
+      prev.next = null;
+      this.tail = prev;
+    } else {
+      // list had only one element
+      this.head = this.tail = null;
+    }
+    this._size--;
+    return value;
+  }
+
+  /* ---------- Traversal & Search ---------- */
+
+  /** Find the first node whose value satisfies the predicate */
+  find(predicate: (value: T) => boolean): T | undefined {
+    let node = this.head;
+    while (node) {
+      if (predicate(node.value)) return node.value;
+      node = node.next;
+    }
+    return undefined;
+  }
+
+  /** Convert the list to an array (for debugging or display) */
+  toArray(): T[] {
+    const arr: T[] = [];
+    let node = this.head;
+    while (node) {
+      arr.push(node.value);
+      node = node.next;
+    }
+    return arr;
+  }
+
+  /* ---------- Utility ---------- */
+
+  /** Remove the first node that satisfies the predicate */
+  remove(predicate: (value: T) => boolean): boolean {
+    if (!this.head) return false;
+
+    if (predicate(this.head.value)) {
+      this.shift();
+      return true;
+    }
+
+    let prev = this.head;
+    let current = this.head.next;
+
+    while (current) {
+      if (predicate(current.value)) {
+        prev.next = current.next;
+        if (!current.next) this.tail = prev; // removed tail
+        this._size--;
+        return true;
+      }
+      prev = current;
+      current = current.next;
+    }
+
+    return false; // not found
   }
 }
 
-/* ------------------------------------------------------------------ */
-/*  Recursive depth‑first search.  Returns the longest path length.    */
-function maxDepth(root: TreeNode | null): number {
-  if (!root) return 0                    // leaf + null = depth 0
-  const leftDepth  = maxDepth(root.left) // depth goes 1, 2, … from here
-  const rightDepth = maxDepth(root.right)
-  return Math.max(leftDepth, rightDepth) + 1
-}
+/* ------------------------------------------------------------ */
+/*  Usage example ------------------------------------------------ */
+const list = new LinkedList<number>();
 
-/* ------------------------------------------------------------------ */
-/*  Iterative breadth‑first search (queue).  Same result, no stack.   */
-function maxDepthIter(root: TreeNode | null): number {
-  if (!root) return 0
-  let max = 0
-  const queue: Array<{ node: TreeNode; depth: number }> = [
-    { node: root, depth: 1 },
-  ]
+list.push(3);    // 3
+list.push(5);    // 3 → 5
+list.unshift(1); // 1 → 3 → 5
 
-  while (queue.length) {
-    const { node, depth } = queue.shift()!
-    max = Math.max(max, depth)
-    if (node.left)  queue.push({ node: node.left, depth: depth + 1 })
-    if (node.right) queue.push({ node: node.right, depth: depth + 1 })
-  }
-  return max
-}
+console.log(list.toArray()); // [1, 3, 5]
+console.log(list.shift());   // 1
+console.log(list.pop());     // 5
+console.log(list.toArray()); // [3]
+console.log(list.find(v => v === 3)); // 3
 
-/* ------------------------------------------------------------------ */
-/*  Example usage ---------------------------------------------------- */
-const root = new TreeNode(1,
-  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-  new TreeNode(3, null, new TreeNode(6))
-)
+list.remove(v => v === 3);
+console.log(list.toArray()); // []
 
-console.log('Recursive depth:', maxDepth(root))      // → 3
-console.log('Iterative depth:', maxDepthIter(root)) // → 3
+/* ------------------------------------------------------------ */
