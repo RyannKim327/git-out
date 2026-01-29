@@ -1,101 +1,53 @@
-// ------------------------------------------------------------
-// 1️⃣  In‑place quick‑sort – most common for competitive coding
-// ------------------------------------------------------------
-function quickSortInPlace<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): void {
-  const swap = (i: number, j: number) => {
-    const tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
-  };
-
-  function partition(low: number, high: number): number {
-    // Pick the last element as pivot (simple but fine for demo)
-    const pivot = arr[high];
-    let i = low - 1;
-
-    for (let j = low; j < high; j++) {
-      if (compare(arr[j], pivot) <= 0) {
-        i++;
-        swap(i, j);
-      }
-    }
-    swap(i + 1, high);
-    return i + 1;
+/**
+ * Returns the area of a triangle.
+ *
+ * You can provide:
+ *   • base & height (Cartesian geometry)
+ *   • three side lengths (Heron's formula)
+ *
+ * @param base   Base of the triangle (required if you give height)
+ * @param height Height of the triangle
+ * @param a      Length of side a
+ * @param b      Length of side b
+ * @param c      Length of side c
+ * @returns      The area, or NaN if the input is invalid.
+ */
+export function triangleArea({
+  base,
+  height,
+  a,
+  b,
+  c,
+}: {
+  base?: number;
+  height?: number;
+  a?: number;
+  b?: number;
+  c?: number;
+}): number {
+  // Cartesian: base * height / 2
+  if (base !== undefined && height !== undefined) {
+    if (base <= 0 || height <= 0) return NaN;
+    return (base * height) / 2;
   }
 
-  function quick(low: number, high: number): void {
-    if (low < high) {
-      const pi = partition(low, high);
-      quick(low, pi - 1);
-      quick(pi + 1, high);
-    }
+  // Heron: given three sides
+  if (a !== undefined && b !== undefined && c !== undefined) {
+    if (a <= 0 || b <= 0 || c <= 0) return NaN;
+    // Check triangle inequality: the sum of any two sides must exceed the third
+    if (a + b <= c || a + c <= b || b + c <= a) return NaN;
+
+    const s = (a + b + c) / 2; // semi‑perimeter
+    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
   }
 
-  quick(0, arr.length - 1);
+  // If the required parameters aren’t supplied
+  return NaN;
 }
+// Base + height
+const area1 = triangleArea({ base: 10, height: 5 }); // 25
 
-// ------------------------------------------------------------
-// 2️⃣  Functional quick‑sort – returns a new sorted array
-// ------------------------------------------------------------
-function quickSortFunctional<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  if (arr.length <= 1) return arr.slice(); // immutable copy
+// Three sides
+const area2 = triangleArea({ a: 3, b: 4, c: 5 }); // 6
 
-  // Random pivot for better average performance on already‑sorted data
-  const pivot = arr[Math.floor(Math.random() * arr.length)];
-  const lows = arr.filter((v) => compare(v, pivot) < 0);
-  const highs = arr.filter((v) => compare(v, pivot) > 0);
-  const pivots = arr.filter((v) => compare(v, pivot) === 0);
-
-  return [
-    ...quickSortFunctional(lows, compare),
-    ...pivots,
-    ...quickSortFunctional(highs, compare),
-  ];
-}
-
-// ------------------------------------------------------------
-// 3️⃣  Small helper that wraps the in‑place version and offers
-//     a better pivot strategy
-// ------------------------------------------------------------
-function quickSort<T>(
-  arr: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  // Randomize the array first; this keeps the pivot “good” on many inputs
-  // and eliminates the worst‑case for already‑sorted data.
-  const shuffled = arr.slice();
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-
-  quickSortInPlace(shuffled, compare);
-  return shuffled;
-}
-
-// ---------------------------
-// Demo usage
-// ---------------------------
-
-const numbers = [34, 7, 23, 32, 5, 62, 32];
-console.log('in‑place:', (() => {
-  const copy = [...numbers];
-  quickSortInPlace(copy);
-  return copy;
-})());
-
-console.log('functional:', quickSortFunctional(numbers));
-
-console.log('wrapper:', quickSort(numbers));
-
-// ------------------------------------------------------------
-// Done!
-// ------------------------------------------------------------
-const byLength = (a: string, b: string) => a.length - b.length;
-quickSort(stringsArray, byLength);
+console.log(area1, area2);
