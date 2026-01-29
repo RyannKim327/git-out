@@ -1,53 +1,60 @@
 /**
- * Node for a singly linked list.
+ * Fibonacci search for a sorted array of numbers.
+ * @param arr  The sorted array to search.
+ * @param target The value to locate.
+ * @returns The index of `target` in `arr`, or -1 if not found.
  */
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+export function fibonacciSearch(arr: number[], target: number): number {
+  const n = arr.length;
+  if (n === 0) return -1;
 
-/**
- * Detects if a linked list contains a cycle.
- *
- * @param head The head of the list.
- * @returns true if a cycle exists, false otherwise.
- */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  let slow = head;
-  let fast = head;
+  // 1. Build the smallest Fibonacci number >= n
+  let fibMm2 = 0;   // (m-2)th Fibonacci
+  let fibMm1 = 1;   // (m-1)th Fibonacci
+  let fibM   = fibMm2 + fibMm1; // mth Fibonacci
 
-  while (fast !== null && fast.next !== null) {
-    slow = slow!.next;          // move one step
-    fast = fast.next.next;      // move two steps
-    if (slow === fast) {        // same reference → cycle
-      return true;
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
+  }
+
+  // Marks the range to be searched
+  let offset = -1; // Element before the beginning (virtual)
+
+  // 2. While there is an element to inspect
+  while (fibM > 1) {
+    // Determines the index to compare
+    const i = Math.min(offset + fibMm2, n - 1);
+
+    if (arr[i] < target) {
+      // Move three steps ahead
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else if (arr[i] > target) {
+      // Move one step back
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
+    } else {
+      return i; // Found
     }
   }
 
-  return false;                 // fast hit the end → no cycle
-}
-// 1 → 2 → 3 → 4 → 5
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-const d = new ListNode(4);
-const e = new ListNode(5);
-
-a.next = b; b.next = c; c.next = d; d.next = e;
-
-// no cycle
-console.log(hasCycle(a)); // false
-
-// Introduce a cycle: e.next = c (3rd node)
-e.next = c;
-console.log(hasCycle(a)); // true
-function hasCycleSet<T>(head: ListNode<T> | null): boolean {
-  const visited = new Set<ListNode<T>>();
-
-  let current = head;
-  while (current !== null) {
-    if (visited.has(current)) return true; // already seen → cycle
-    visited.add(current);
-    current = current.next;
+  // We are left with a single element
+  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
   }
-  return false; // reached null → acyclic
+
+  return -1; // Not found
 }
+import { fibonacciSearch } from './fibonacci-search';
+
+const data = [3, 8, 10, 15, 20, 23, 27, 35, 41, 55, 68, 73, 82, 91, 97];
+const target = 55;
+
+const idx = fibonacciSearch(data, target);
+console.log(idx); // → 9
+console.log(fibonacciSearch(data, 22)); // → -1
