@@ -1,27 +1,39 @@
-function decimalToBinary(num: number): string {
-  return num.toString(2);   // base‑2 string
-}
+/**
+ * Returns the largest prime divisor of `n`.
+ * If `n` is 0 or 1, returns `undefined`.
+ */
+function largestPrimeFactor(n: number): number | undefined {
+  if (n < 2) return undefined;          // no prime factors for 0 or 1
 
-console.log(decimalToBinary(42)); // "101010"
-function decimalToBinary(num: bigint): string {
-  if (num === 0n) return "0";
+  let num = Math.abs(n);                 // work with a positive number
+  let maxFactor = 1;
 
-  let n = num;
-  let bits = "";
-
-  while (n > 0n) {
-    bits = (n & 1n ? "1" : "0") + bits; // prepend the low bit
-    n >>= 1n;                           // shift right
+  // Handle the factor 2 separately to keep the loop odd.
+  while (num % 2 === 0) {
+    maxFactor = 2;
+    num /= 2;
   }
 
-  return bits;
-}
-
-console.log(decimalToBinary(42n)); // "101010"
-export function toBinary(value: number | bigint): string {
-  // Pick the right conversion automatically
-  if (typeof value === "bigint") {
-    return decimalToBinary(value);
+  // Now only odd factors are possible.
+  let divisor = 3;
+  const sqrtLimit = Math.sqrt(num);
+  while (divisor <= sqrtLimit) {
+    while (num % divisor === 0) {
+      maxFactor = divisor;
+      num /= divisor;
+    }
+    divisor += 2;                       // skip even numbers
   }
-  return value.toString(2);
+
+  // If after the loop num > 1, it itself is a prime factor larger than all found.
+  if (num > 1) {
+    maxFactor = num;
+  }
+
+  return maxFactor;
 }
+console.log(largestPrimeFactor(2));                // 2
+console.log(largestPrimeFactor(28));               // 7
+console.log(largestPrimeFactor(1000003));          // 1000003 (its prime)
+console.log(largestPrimeFactor(123456));           // 643
+console.log(largestPrimeFactor(-84));              // 7
