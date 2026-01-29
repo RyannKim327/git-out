@@ -1,42 +1,55 @@
-// 1️⃣  Install the dependencies first:
-//     npm install axios @types/axios
+/**
+ * Merge‑sort for array of T values.
+ *
+ * @param arr  Input array – left untouched.
+ * @param cmp  Optional comparison function. If omitted, values are compared with < >.
+ * @returns A new sorted array.
+ */
+export function mergeSort<T>(arr: readonly T[], cmp?: (a: T, b: T) => number): T[] {
+  // Base case: arrays of size 0 or 1 are already sorted.
+  if (arr.length <= 1) return [...arr];
 
-import axios, { AxiosError } from "axios";
+  // Helper to merge two already‑sorted halves.
+  const merge = (left: T[], right: T[]): T[] => {
+    const result: T[] = [];
+    let i = 0, j = 0;
 
-// 2️⃣  Define the shape of the data we expect back.
-interface User {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-}
+    while (i < left.length && j < right.length) {
+      const l = left[i];
+      const r = right[j];
+      const comp = cmp
+        ? cmp(l, r)
+        : (l as any) < (r as any)
+          ? -1
+          : (l as any) > (r as any)
+          ? 1
+          : 0;
 
-// 3️⃣  Perform the request in an async function.
-async function fetchUsers(): Promise<User[]> {
-  const url = "https://jsonplaceholder.typicode.com/users";
-
-  try {
-    // 4️⃣  Make the GET request
-    const response = await axios.get<User[]>(url);
-
-    // 5️⃣  Axios automatically parses JSON, so `data` has the correct type
-    return response.data;
-  } catch (err) {
-    // 6️⃣  Gracefully handle a possible Axios error
-    if (axios.isAxiosError(err)) {
-      const error = err as AxiosError;
-      console.error(
-        `Request failed! 🙁 Status: ${error.response?.status}  Message: ${error.message}`
-      );
-    } else {
-      console.error("Unexpected error:", err);
+      if (comp <= 0) {
+        result.push(l);
+        i++;
+      } else {
+        result.push(r);
+        j++;
+      }
     }
-    return []; // Return an empty array if something goes wrong
-  }
-}
 
-// 7️⃣  Use the function somewhere in your app
-(async () => {
-  const users = await fetchUsers();
-  console.log("Fetched users:", users);
-})();
+    // Push any remaining items from left or right.
+    return result.concat(left.slice(i), right.slice(j));
+  };
+
+  // Split the array into two halves.
+  const middle = Math.floor(arr.length / 2);
+  const left = mergeSort(arr.slice(0, middle), cmp);
+  const right = mergeSort(arr.slice(middle), cmp);
+
+  // Merge back together.
+  return merge(left, right);
+}
+const numbers = [42, 1, 23, 4, 16];
+const sorted = mergeSort(numbers);   // [1, 4, 16, 23, 42]
+console.log(sorted);
+console.log(numbers);  // still [42, 1, 23, 4, 16]
+const words = ["banana", "Apple", "cherry"];
+const sortedWords = mergeSort(words, (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+console.log(sortedWords); // ["Apple", "banana", "cherry"]
