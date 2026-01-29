@@ -1,63 +1,25 @@
 /**
- * Rabin‑Karp string search
- *
- * Parameters:
- *  pattern – the string we’re looking for
- *  text    – the string to search inside
- *
- * Returns:
- *  array of starting indices where pattern occurs (empty if no match)
+ * Returns true if `n` is a prime number.
+ * Works with any non‑negative integer. For negative numbers or 0/1 it returns false.
  */
-export function rabinKarp(pattern: string, text: string): number[] {
-    // Edge cases
-    if (pattern.length === 0) return [];
-    if (pattern.length > text.length) return [];
+export function isPrime(n: number): boolean {
+  if (!Number.isInteger(n) || n < 2) return false;   // 0, 1, and non‑ints aren't prime
+  
+  // 2 and 3 are the only even/odd primes.
+  if (n === 2 || n === 3) return true;
 
-    const base = 256;               // number of possible characters (ASCII)
-    const mod = 101;                // a prime mod to keep numbers small
+  // Even numbers > 2 are not prime.
+  if (n % 2 === 0) return false;
 
-    const m = pattern.length;
-    const n = text.length;
+  // Check odd divisors up to √n.
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false;
+  }
 
-    // Pre‑compute base^(m‑1) % mod  (the “high” power)
-    let basePower = 1;
-    for (let i = 0; i < m - 1; i++) {
-        basePower = (basePower * base) % mod;
-    }
-
-    // Compute hash for pattern and first window of text
-    let patHash = 0;
-    let txtHash = 0;
-    for (let i = 0; i < m; i++) {
-        patHash = (patHash * base + pattern.charCodeAt(i)) % mod;
-        txtHash = (txtHash * base + text.charCodeAt(i)) % mod;
-    }
-
-    const result: number[] = [];
-
-    // Slide the window over the text
-    for (let s = 0; s <= n - m; s++) {
-        // If the hash values match, verify the substring to confirm
-        if (patHash === txtHash) {
-            let match = true;
-            for (let k = 0; k < m; k++) {
-                if (text[s + k] !== pattern[k]) {
-                    match = false;
-                    break;
-                }
-            }
-            if (match) result.push(s);
-        }
-
-        // Compute hash for next window: remove leading char, add trailing char
-        if (s < n - m) {
-            txtHash = (txtHash - text.charCodeAt(s) * basePower) % mod;
-            if (txtHash < 0) txtHash += mod;                    // keep positive
-            txtHash = (txtHash * base + text.charCodeAt(s + m)) % mod;
-        }
-    }
-
-    return result;
+  return true;
 }
-const idx = rabinKarp('abc', 'xabcababc');
-console.log(idx);   // → [1, 6]
+console.log(isPrime(7));   // true
+console.log(isPrime(20));  // false
+console.log(isPrime(91));  // false (7 × 13)
+console.log(isPrime(97));  // true
