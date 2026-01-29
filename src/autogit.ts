@@ -1,124 +1,63 @@
-class TreeNode<T> {
-  /** Value stored in the node. */
-  value: T
+/**
+ * Rabin‑Karp string search
+ *
+ * Parameters:
+ *  pattern – the string we’re looking for
+ *  text    – the string to search inside
+ *
+ * Returns:
+ *  array of starting indices where pattern occurs (empty if no match)
+ */
+export function rabinKarp(pattern: string, text: string): number[] {
+    // Edge cases
+    if (pattern.length === 0) return [];
+    if (pattern.length > text.length) return [];
 
-  /** Left child (values < this.value). */
-  left: TreeNode<T> | null = null
+    const base = 256;               // number of possible characters (ASCII)
+    const mod = 101;                // a prime mod to keep numbers small
 
-  /** Right child (values > this.value). */
-  right: TreeNode<T> | null = null
+    const m = pattern.length;
+    const n = text.length;
 
-  constructor(value: T) {
-    this.value = value
-  }
+    // Pre‑compute base^(m‑1) % mod  (the “high” power)
+    let basePower = 1;
+    for (let i = 0; i < m - 1; i++) {
+        basePower = (basePower * base) % mod;
+    }
+
+    // Compute hash for pattern and first window of text
+    let patHash = 0;
+    let txtHash = 0;
+    for (let i = 0; i < m; i++) {
+        patHash = (patHash * base + pattern.charCodeAt(i)) % mod;
+        txtHash = (txtHash * base + text.charCodeAt(i)) % mod;
+    }
+
+    const result: number[] = [];
+
+    // Slide the window over the text
+    for (let s = 0; s <= n - m; s++) {
+        // If the hash values match, verify the substring to confirm
+        if (patHash === txtHash) {
+            let match = true;
+            for (let k = 0; k < m; k++) {
+                if (text[s + k] !== pattern[k]) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) result.push(s);
+        }
+
+        // Compute hash for next window: remove leading char, add trailing char
+        if (s < n - m) {
+            txtHash = (txtHash - text.charCodeAt(s) * basePower) % mod;
+            if (txtHash < 0) txtHash += mod;                    // keep positive
+            txtHash = (txtHash * base + text.charCodeAt(s + m)) % mod;
+        }
+    }
+
+    return result;
 }
-class BinaryTree<T> {
-  root: TreeNode<T> | null = null
-
-  /* --------------------------------- */
-  /* Core helpers (private) */
-  /* --------------------------------- */
-
-  /** Simple comparison that works for numbers or strings. */
-  private compare(a: T, b: T): number {
-    if (a === b) return 0
-    return a < b ? -1 : 1
-  }
-
-  /* --------------------------------- */
-  /* Public API */
-  /* --------------------------------- */
-
-  /** Insert a value into the tree. */
-  insert(value: T): void {
-    this.root = this.insertRec(this.root, value)
-  }
-  private insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
-    if (!node) return new TreeNode(value)
-
-    if (this.compare(value, node.value) < 0) {
-      node.left = this.insertRec(node.left, value)
-    } else if (this.compare(value, node.value) > 0) {
-      node.right = this.insertRec(node.right, value)
-    }
-    // (duplicates are ignored for a classic BST – change if you need them)
-    return node
-  }
-
-  /** Search for a value, return the node or null. */
-  find(value: T): TreeNode<T> | null {
-    return this.findRec(this.root, value)
-  }
-  private findRec(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
-    if (!node) return null
-    const cmp = this.compare(value, node.value)
-    if (cmp === 0) return node
-    return cmp < 0 ? this.findRec(node.left, value) : this.findRec(node.right, value)
-  }
-
-  /** Depth‑first in‑order traversal — gives you sorted values. */
-  inorder(callback: (node: TreeNode<T>) => void): void {
-    this.inorderRec(this.root, callback)
-  }
-  private inorderRec(node: TreeNode<T> | null, callback: (node: TreeNode<T>) => void): void {
-    if (!node) return
-    this.inorderRec(node.left, callback)
-    callback(node)
-    this.inorderRec(node.right, callback)
-  }
-
-  /** Remove a value from the tree (simple BST delete). */
-  delete(value: T): void {
-    this.root = this.deleteRec(this.root, value)
-  }
-  private deleteRec(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
-    if (!node) return null
-
-    const cmp = this.compare(value, node.value)
-    if (cmp < 0) {
-      node.left = this.deleteRec(node.left, value)
-      return node
-    }
-    if (cmp > 0) {
-      node.right = this.deleteRec(node.right, value)
-      return node
-    }
-
-    // Node to delete found.
-
-    // 1️⃣ No children
-    if (!node.left && !node.right) return null
-
-    // 2️⃣ One child
-    if (!node.left) return node.right
-    if (!node.right) return node.left
-
-    // 3️⃣ Two children – replace with inorder successor
-    const successor = this.minNode(node.right)!
-    node.value = successor.value
-    node.right = this.deleteRec(node.right, successor.value)
-    return node
-  }
-
-  /** Find the minimum node in a subtree (used in delete). */
-  private minNode(node: TreeNode<T> | null): TreeNode<T> | null {
-    let current = node
-    while (current?.left) current = current.left
-    return current
-  }
-}
-const bst = new BinaryTree<number>()
-
-// Insert values
-[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v))
-
-// In‑order prints 1 3 5 7 8 9 10
-bst.inorder(n => console.log(n.value))
-
-// Search
-const node = bst.find(5)
-console.log(node ? `Found ${node.value}` : 'Not found')
-
-// Delete
-bst.delete(7)                // Remove root node
-bst.inorder(n => console.log(n.value)) // 1 3 5 8 9 10
+const idx = rabinKarp('abc', 'xabcababc');
+console.log(idx);   // → [1, 6]
