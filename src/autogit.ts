@@ -1,25 +1,50 @@
-/**
- * Returns true if `n` is a prime number.
- * Works with any non‑negative integer. For negative numbers or 0/1 it returns false.
- */
-export function isPrime(n: number): boolean {
-  if (!Number.isInteger(n) || n < 2) return false;   // 0, 1, and non‑ints aren't prime
-  
-  // 2 and 3 are the only even/odd primes.
-  if (n === 2 || n === 3) return true;
+interface ListNode<T = any> {
+  val: T;
+  next: ListNode<T> | null;
+}
+class ListNode<T = any> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
+}
+function nthFromEndNaive<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let size = 0;
+  for (let cur = head; cur; cur = cur.next) size++;
 
-  // Even numbers > 2 are not prime.
-  if (n % 2 === 0) return false;
+  if (n > size) return null;          // not enough elements
+  let target = size - n;              // 0‑based index from start
+  let cur = head;
+  for (let i = 0; i < target; i++) cur = cur!.next;
 
-  // Check odd divisors up to √n.
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 3; i <= limit; i += 2) {
-    if (n % i === 0) return false;
+  return cur;
+}
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let fast = head;
+  // Move fast n steps forward
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;   // n is larger than list length
+    fast = fast.next;
   }
 
-  return true;
+  let slow = head!;          // head is guaranteed non‑null now
+  while (fast) {
+    fast = fast.next!;
+    slow = slow.next!;
+  }
+
+  return slow;
 }
-console.log(isPrime(7));   // true
-console.log(isPrime(20));  // false
-console.log(isPrime(91));  // false (7 × 13)
-console.log(isPrime(97));  // true
+function buildList(nums: number[]) {
+  let dummy = new ListNode(0);
+  let cur = dummy;
+  for (const v of nums) {
+    cur.next = new ListNode(v);
+    cur = cur.next;
+  }
+  return dummy.next;
+}
+
+const list = buildList([1, 2, 3, 4, 5]);
+
+console.log(nthFromEnd(list, 1)!.val); // 5
+console.log(nthFromEnd(list, 3)!.val); // 3
+console.log(nthFromEnd(list, 5)!.val); // 1
+console.log(nthFromEnd(list, 6));      // null
