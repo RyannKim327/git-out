@@ -1,91 +1,101 @@
-interface ListNode {
-  val: number;          // or whatever type you prefer
-  next: ListNode | null;
-}
+// ------------------------------------------------------------
+// 1️⃣  In‑place quick‑sort – most common for competitive coding
+// ------------------------------------------------------------
+function quickSortInPlace<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): void {
+  const swap = (i: number, j: number) => {
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  };
 
-function isPalindromeIterative(head: ListNode | null): boolean {
-  if (!head) return true;
+  function partition(low: number, high: number): number {
+    // Pick the last element as pivot (simple but fine for demo)
+    const pivot = arr[high];
+    let i = low - 1;
 
-  const stack: number[] = [];
-  let cur: ListNode | null = head;
-
-  // Push all values on the stack
-  while (cur) {
-    stack.push(cur.val);
-    cur = cur.next;
-  }
-
-  // Compare while traversing again
-  cur = head;
-  while (cur) {
-    if (cur.val !== stack.pop()) {
-      return false;
+    for (let j = low; j < high; j++) {
+      if (compare(arr[j], pivot) <= 0) {
+        i++;
+        swap(i, j);
+      }
     }
-    cur = cur.next;
+    swap(i + 1, high);
+    return i + 1;
   }
 
-  return true;
-}
-function isPalindromeOptimized(head: ListNode | null): boolean {
-  if (!head || !head.next) return true;
-
-  // 1. Find the middle (slow will point to middle)
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+  function quick(low: number, high: number): void {
+    if (low < high) {
+      const pi = partition(low, high);
+      quick(low, pi - 1);
+      quick(pi + 1, high);
+    }
   }
 
-  // 2. Reverse the second half
-  let prev: ListNode | null = null;
-  let curr = slow.next;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  // `prev` is now the head of the reversed second half
-
-  // 3. Compare the two halves
-  let first = head;
-  let second = prev;
-  let result = true;
-  while (result && second) {        // second will be shorter or equal
-    if (first.val !== second.val) result = false;
-    first = first.next!;
-    second = second.next!;
-  }
-
-  // 4. (Optional) Restore the list
-  // Reverse the second half again to bring the list back to original
-  curr = prev;
-  prev = null;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  slow.next = prev;
-
-  return result;
-}
-function buildList(arr: number[]): ListNode | null {
-  let dummy: ListNode = { val: 0, next: null };
-  let tail = dummy;
-  for (const v of arr) {
-    tail.next = { val: v, next: null };
-    tail = tail.next;
-  }
-  return dummy.next;
+  quick(0, arr.length - 1);
 }
 
-const a = buildList([1, 2, 3, 2, 1]);
-console.log(isPalindromeIterative(a));   // true
-console.log(isPalindromeOptimized(a));   // true
+// ------------------------------------------------------------
+// 2️⃣  Functional quick‑sort – returns a new sorted array
+// ------------------------------------------------------------
+function quickSortFunctional<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  if (arr.length <= 1) return arr.slice(); // immutable copy
 
-const b = buildList([1, 2, 3, 4]);
-console.log(isPalindromeIterative(b));   // false
-console.log(isPalindromeOptimized(b));   // false
+  // Random pivot for better average performance on already‑sorted data
+  const pivot = arr[Math.floor(Math.random() * arr.length)];
+  const lows = arr.filter((v) => compare(v, pivot) < 0);
+  const highs = arr.filter((v) => compare(v, pivot) > 0);
+  const pivots = arr.filter((v) => compare(v, pivot) === 0);
+
+  return [
+    ...quickSortFunctional(lows, compare),
+    ...pivots,
+    ...quickSortFunctional(highs, compare),
+  ];
+}
+
+// ------------------------------------------------------------
+// 3️⃣  Small helper that wraps the in‑place version and offers
+//     a better pivot strategy
+// ------------------------------------------------------------
+function quickSort<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  // Randomize the array first; this keeps the pivot “good” on many inputs
+  // and eliminates the worst‑case for already‑sorted data.
+  const shuffled = arr.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  quickSortInPlace(shuffled, compare);
+  return shuffled;
+}
+
+// ---------------------------
+// Demo usage
+// ---------------------------
+
+const numbers = [34, 7, 23, 32, 5, 62, 32];
+console.log('in‑place:', (() => {
+  const copy = [...numbers];
+  quickSortInPlace(copy);
+  return copy;
+})());
+
+console.log('functional:', quickSortFunctional(numbers));
+
+console.log('wrapper:', quickSort(numbers));
+
+// ------------------------------------------------------------
+// Done!
+// ------------------------------------------------------------
+const byLength = (a: string, b: string) => a.length - b.length;
+quickSort(stringsArray, byLength);
