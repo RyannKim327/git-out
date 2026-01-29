@@ -1,53 +1,93 @@
 /**
- * Node for a singly linked list.
+ * Represents a node in the beam frontier.
+ * Keeps the actual state and the path taken to reach it.
  */
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+export interface BeamNode<T> {
+  /** The actual state */
+  state: T;
+  /** The sequence of states that led to this node (incl. this state) */
+  path: T[];
 }
 
 /**
- * Detects if a linked list contains a cycle.
+ * Performs a beam search.
  *
- * @param head The head of the list.
- * @returns true if a cycle exists, false otherwise.
+ * @param startNodes   Initial frontier. Usually a single root node, but you can start with many.
+ * @param getSuccessors   Function that returns the child nodes of a parent.
+ * @param score          Score function – higher is better.
+ * @param beamWidth      How many nodes to keep after each expansion.
+ * @param maxDepth       Optional depth cutoff (in terms of edges traversed).
+ * @param isGoal         Optional goal‑test predicate.
+ * @returns The first goal node found (or undefined if none).
  */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  let slow = head;
-  let fast = head;
+export function beamSearch<T>(
+  startNodes: T[],
+  getSuccessors: (node: T) => T[],
+  score: (node: T) => number,
+  beamWidth: number,
+  maxDepth?: number,
+  isGoal?: (node: T) => boolean
+): BeamNode<T> | undefined {
 
-  while (fast !== null && fast.next !== null) {
-    slow = slow!.next;          // move one step
-    fast = fast.next.next;      // move two steps
-    if (slow === fast) {        // same reference → cycle
-      return true;
+  // Ensure we keep a lightweight copy for sorting.
+  let frontier: BeamNode<T> = startNodes.map(state => ({ state, path: [state] }));
+
+  for (let depth = 0; depth < (maxDepth ?? Infinity); depth++) {
+    if (frontier.length === 0) break; // nothing to expand
+
+    // Expand every node in the frontier
+    const expansions: BeamNode<T>[] = [];
+    for (const node of frontier) {
+      const succ = getSuccessors(node.state);
+      for (const child of succ) {
+        expansions.push({
+          state: child,
+          path: [...node.path, child]
+        });
+      }
     }
+
+    // Optional goal check as soon as we generate expansions
+    if (isGoal) {
+      for (const node of expansions) {
+        if (isGoal(node.state)) return node;
+      }
+    }
+
+    // Sort by score, keep top `beamWidth`
+    expansions.sort((a, b) => score(b.state) - score(a.state)); // descending
+    frontier = expansions.slice(0, beamWidth);
   }
 
-  return false;                 // fast hit the end → no cycle
+  return undefined; // no goal reached within limits
 }
-// 1 → 2 → 3 → 4 → 5
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-const d = new ListNode(4);
-const e = new ListNode(5);
+// Example: find a numeric sequence that sums to 15
+type MyState = number; // current sum
 
-a.next = b; b.next = c; c.next = d; d.next = e;
+const start = 0;
 
-// no cycle
-console.log(hasCycle(a)); // false
+const getSucc = (sum: MyState) => {
+  return [sum + 1, sum + 2, sum + 3]; // could be any branching scheme
+};
 
-// Introduce a cycle: e.next = c (3rd node)
-e.next = c;
-console.log(hasCycle(a)); // true
-function hasCycleSet<T>(head: ListNode<T> | null): boolean {
-  const visited = new Set<ListNode<T>>();
+const score = (sum: MyState) => {
+  // The closer to 15 without overshooting, the better
+  return Math.max(0, 15 - sum);
+};
 
-  let current = head;
-  while (current !== null) {
-    if (visited.has(current)) return true; // already seen → cycle
-    visited.add(current);
-    current = current.next;
-  }
-  return false; // reached null → acyclic
+const isGoal = (sum: MyState) => sum === 15;
+
+const result = beamSearch(
+  [start],
+  getSucc,
+  score,
+  beamWidth = 3,
+  maxDepth = 10,
+  isGoal
+);
+
+if (result) {
+  console.log(`Reached 15 via ${result.path.join(' -> ')}`);
+} else {
+  console.log('No path found within depth limit');
 }
