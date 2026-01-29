@@ -1,55 +1,35 @@
 /**
- * Merge‑sort for array of T values.
+ * Recursively searches for `target` inside a sorted array.
  *
- * @param arr  Input array – left untouched.
- * @param cmp  Optional comparison function. If omitted, values are compared with < >.
- * @returns A new sorted array.
+ * @param arr  The sorted array to search.
+ * @param target The value we're looking for.
+ * @param left  The leftmost index to consider (inclusive).
+ * @param right The rightmost index to consider (inclusive).
+ * @returns The index of `target`, or `-1` if it isn’t present.
  */
-export function mergeSort<T>(arr: readonly T[], cmp?: (a: T, b: T) => number): T[] {
-  // Base case: arrays of size 0 or 1 are already sorted.
-  if (arr.length <= 1) return [...arr];
-
-  // Helper to merge two already‑sorted halves.
-  const merge = (left: T[], right: T[]): T[] => {
-    const result: T[] = [];
-    let i = 0, j = 0;
-
-    while (i < left.length && j < right.length) {
-      const l = left[i];
-      const r = right[j];
-      const comp = cmp
-        ? cmp(l, r)
-        : (l as any) < (r as any)
-          ? -1
-          : (l as any) > (r as any)
-          ? 1
-          : 0;
-
-      if (comp <= 0) {
-        result.push(l);
-        i++;
-      } else {
-        result.push(r);
-        j++;
-      }
+function binarySearchRecursive(
+    arr: number[],
+    target: number,
+    left: number = 0,
+    right: number = arr.length - 1
+): number {
+    if (left > right) {          // Base case: empty search window
+        return -1;
     }
 
-    // Push any remaining items from left or right.
-    return result.concat(left.slice(i), right.slice(j));
-  };
+    const mid = Math.floor((left + right) / 2);
 
-  // Split the array into two halves.
-  const middle = Math.floor(arr.length / 2);
-  const left = mergeSort(arr.slice(0, middle), cmp);
-  const right = mergeSort(arr.slice(middle), cmp);
-
-  // Merge back together.
-  return merge(left, right);
+    if (arr[mid] === target) {
+        return mid;              // Found the target
+    } else if (arr[mid] > target) {
+        // Target is in the left half
+        return binarySearchRecursive(arr, target, left, mid - 1);
+    } else {
+        // Target is in the right half
+        return binarySearchRecursive(arr, target, mid + 1, right);
+    }
 }
-const numbers = [42, 1, 23, 4, 16];
-const sorted = mergeSort(numbers);   // [1, 4, 16, 23, 42]
-console.log(sorted);
-console.log(numbers);  // still [42, 1, 23, 4, 16]
-const words = ["banana", "Apple", "cherry"];
-const sortedWords = mergeSort(words, (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-console.log(sortedWords); // ["Apple", "banana", "cherry"]
+const sorted = [3, 7, 11, 15, 23, 42, 56];
+
+console.log(binarySearchRecursive(sorted, 15)); // → 3
+console.log(binarySearchRecursive(sorted, 1));  // → -1
