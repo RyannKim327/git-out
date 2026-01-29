@@ -1,25 +1,39 @@
-/**
- * Returns true if `n` is a prime number.
- * Works with any non‑negative integer. For negative numbers or 0/1 it returns false.
- */
-export function isPrime(n: number): boolean {
-  if (!Number.isInteger(n) || n < 2) return false;   // 0, 1, and non‑ints aren't prime
-  
-  // 2 and 3 are the only even/odd primes.
-  if (n === 2 || n === 3) return true;
+const original = [1, 2, 3, 4, 5];
 
-  // Even numbers > 2 are not prime.
-  if (n % 2 === 0) return false;
+// remove every 3
+const withoutThree = original.filter(v => v !== 3);
 
-  // Check odd divisors up to √n.
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 3; i <= limit; i += 2) {
-    if (n % i === 0) return false;
-  }
+console.log(original);       // [1, 2, 3, 4, 5]
+console.log(withoutThree);   // [1, 2, 4, 5]
+const removeFirstThree = original.filter((v, i) => v !== 3 || i !== 1);
+const arr = [1, 2, 3, 4, 5];
 
-  return true;
+// find the index you want to remove
+const idx = arr.indexOf(3);
+if (idx !== -1) {
+  arr.splice(idx, 1);      // remove 1 element at idx
 }
-console.log(isPrime(7));   // true
-console.log(isPrime(20));  // false
-console.log(isPrime(91));  // false (7 × 13)
-console.log(isPrime(97));  // true
+console.log(arr);           // [1, 2, 4, 5]
+let i = 0;
+while (i < arr.length) {
+  if (arr[i] === 3) {
+    arr.splice(i, 1);
+  } else {
+    i++;
+  }
+}
+function removeAtIndex<T>(arr: T[], idx: number): T[] {
+  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
+}
+
+const withoutIdx = removeAtIndex(original, 2);
+const set = new Set(original);
+set.delete(3);
+const arrFromSet = Array.from(set);
+interface Person { id: number; name: string }
+const people = [{ id: 1 }, { id: 2 }, { id: 3 }];
+
+const withoutId2 = people.filter(p => p.id !== 2);   // immutable
+// or
+const idx = people.findIndex(p => p.id === 2);
+if (idx !== -1) people.splice(idx, 1);               // mutate
