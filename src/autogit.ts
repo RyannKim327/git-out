@@ -1,39 +1,51 @@
-const original = [1, 2, 3, 4, 5];
+function isPalindrome(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
+  // Normalise if requested
+  const src = ignoreCase
+    ? s.toLowerCase()
+    : s;
 
-// remove every 3
-const withoutThree = original.filter(v => v !== 3);
+  // Optionally strip out anything that isn’t a letter or a digit
+  const text = ignoreNonAlpha
+    ? src.replace(/[^a-z0-9]/gi, '')
+    : src;
 
-console.log(original);       // [1, 2, 3, 4, 5]
-console.log(withoutThree);   // [1, 2, 4, 5]
-const removeFirstThree = original.filter((v, i) => v !== 3 || i !== 1);
-const arr = [1, 2, 3, 4, 5];
+  let left = 0;
+  let right = text.length - 1;
 
-// find the index you want to remove
-const idx = arr.indexOf(3);
-if (idx !== -1) {
-  arr.splice(idx, 1);      // remove 1 element at idx
-}
-console.log(arr);           // [1, 2, 4, 5]
-let i = 0;
-while (i < arr.length) {
-  if (arr[i] === 3) {
-    arr.splice(i, 1);
-  } else {
-    i++;
+  while (left < right) {
+    if (text[left] !== text[right]) return false;
+    left++;
+    right--;
   }
+  return true;
 }
-function removeAtIndex<T>(arr: T[], idx: number): T[] {
-  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
+console.log(isPalindrome('Racecar'));          // true
+console.log(isPalindrome('A man, a plan!'));   // false
+console.log(isPalindrome('A man, a plan!', true, true)); // true
+function isPalindromeReverse(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
+  const cleaned = ignoreNonAlpha
+    ? s.replace(/[^a-z0-9]/gi, '')
+    : s;
+
+  const cmp = ignoreCase ? cleaned.toLowerCase() : cleaned;
+  const reversed = cmp.split('').reverse().join('');
+  return cmp === reversed;
 }
+console.log(isPalindromeReverse('Madam In Eden, I’m Adam', true, true)); // true
+const isPalindromeLazy = (s: string, ignoreCase = true, ignoreNonAlpha = false): boolean =>
+  (ignoreNonAlpha ? s.replace(/[^a-z0-9]/gi, '') : s)
+    .toLowerCase()
+    .split('')
+    .every((c, i, a) => c === a[a.length - i - 1]);
+const tests = [
+  { str: 'Radar', expect: true },
+  { str: 'Madam Anna', expect: false },
+  { str: 'Madam Anna', expect: true, options: { ignoreNonAlpha: true } },
+  { str: '12321', expect: true },
+  { str: 'Was it a cat I saw?', expect: true, options: { ignoreNonAlpha: true, ignoreCase: true } },
+];
 
-const withoutIdx = removeAtIndex(original, 2);
-const set = new Set(original);
-set.delete(3);
-const arrFromSet = Array.from(set);
-interface Person { id: number; name: string }
-const people = [{ id: 1 }, { id: 2 }, { id: 3 }];
-
-const withoutId2 = people.filter(p => p.id !== 2);   // immutable
-// or
-const idx = people.findIndex(p => p.id === 2);
-if (idx !== -1) people.splice(idx, 1);               // mutate
+tests.forEach(({ str, expect, options }) => {
+  const result = isPalindrome(str, ...(options ? [options.ignoreCase, options.ignoreNonAlpha] : []));
+  console.assert(result === expect, `❌ ${str} should be ${expect}`);
+});
