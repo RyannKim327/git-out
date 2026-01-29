@@ -1,93 +1,39 @@
-/**
- * Represents a node in the beam frontier.
- * Keeps the actual state and the path taken to reach it.
- */
-export interface BeamNode<T> {
-  /** The actual state */
-  state: T;
-  /** The sequence of states that led to this node (incl. this state) */
-  path: T[];
+function factorialRecursive(n: number): number {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
 }
-
-/**
- * Performs a beam search.
- *
- * @param startNodes   Initial frontier. Usually a single root node, but you can start with many.
- * @param getSuccessors   Function that returns the child nodes of a parent.
- * @param score          Score function – higher is better.
- * @param beamWidth      How many nodes to keep after each expansion.
- * @param maxDepth       Optional depth cutoff (in terms of edges traversed).
- * @param isGoal         Optional goal‑test predicate.
- * @returns The first goal node found (or undefined if none).
- */
-export function beamSearch<T>(
-  startNodes: T[],
-  getSuccessors: (node: T) => T[],
-  score: (node: T) => number,
-  beamWidth: number,
-  maxDepth?: number,
-  isGoal?: (node: T) => boolean
-): BeamNode<T> | undefined {
-
-  // Ensure we keep a lightweight copy for sorting.
-  let frontier: BeamNode<T> = startNodes.map(state => ({ state, path: [state] }));
-
-  for (let depth = 0; depth < (maxDepth ?? Infinity); depth++) {
-    if (frontier.length === 0) break; // nothing to expand
-
-    // Expand every node in the frontier
-    const expansions: BeamNode<T>[] = [];
-    for (const node of frontier) {
-      const succ = getSuccessors(node.state);
-      for (const child of succ) {
-        expansions.push({
-          state: child,
-          path: [...node.path, child]
-        });
-      }
-    }
-
-    // Optional goal check as soon as we generate expansions
-    if (isGoal) {
-      for (const node of expansions) {
-        if (isGoal(node.state)) return node;
-      }
-    }
-
-    // Sort by score, keep top `beamWidth`
-    expansions.sort((a, b) => score(b.state) - score(a.state)); // descending
-    frontier = expansions.slice(0, beamWidth);
+console.log(factorialRecursive(5)); // 120
+function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-
-  return undefined; // no goal reached within limits
+  return result;
 }
-// Example: find a numeric sequence that sums to 15
-type MyState = number; // current sum
-
-const start = 0;
-
-const getSucc = (sum: MyState) => {
-  return [sum + 1, sum + 2, sum + 3]; // could be any branching scheme
-};
-
-const score = (sum: MyState) => {
-  // The closer to 15 without overshooting, the better
-  return Math.max(0, 15 - sum);
-};
-
-const isGoal = (sum: MyState) => sum === 15;
-
-const result = beamSearch(
-  [start],
-  getSucc,
-  score,
-  beamWidth = 3,
-  maxDepth = 10,
-  isGoal
-);
-
-if (result) {
-  console.log(`Reached 15 via ${result.path.join(' -> ')}`);
-} else {
-  console.log('No path found within depth limit');
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1n;
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
 }
+console.log(factorialBigInt(20));        // 2432902008176640000n
+console.log(factorialBigInt(100));       // 9.332621544e+157n (full bigint printed)
+const factorialMemo = (() => {
+  const cache: Record<number, number> = {0: 1, 1: 1};
+
+  const inner = (n: number): number => {
+    if (n in cache) return cache[n];
+    cache[n] = n * inner(n - 1);
+    return cache[n];
+  };
+
+  return inner;
+})();
+console.assert(factorialIterative(0) === 1);
+console.assert(factorialIterative(6) === 720);
+
+console.assert(factorialBigInt(5).toString() === '120');
+console.assert(factorialBigInt(30).toString().startsWith('265252859...'));
