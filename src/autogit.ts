@@ -1,51 +1,33 @@
-function isPalindrome(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
-  // Normalise if requested
-  const src = ignoreCase
-    ? s.toLowerCase()
-    : s;
+// Basic node definition
+interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
+}
 
-  // Optionally strip out anything that isn’t a letter or a digit
-  const text = ignoreNonAlpha
-    ? src.replace(/[^a-z0-9]/gi, '')
-    : src;
+// Helper – takes the head of a list and returns the middle node.
+function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null;
 
-  let left = 0;
-  let right = text.length - 1;
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-  while (left < right) {
-    if (text[left] !== text[right]) return false;
-    left++;
-    right--;
+  // advance `fast` two steps for every one step `slow` takes
+  while (fast !== null && fast.next !== null) {
+    slow = slow!.next;          // will never be null here – just for TS safety
+    fast = fast.next.next;
   }
-  return true;
-}
-console.log(isPalindrome('Racecar'));          // true
-console.log(isPalindrome('A man, a plan!'));   // false
-console.log(isPalindrome('A man, a plan!', true, true)); // true
-function isPalindromeReverse(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
-  const cleaned = ignoreNonAlpha
-    ? s.replace(/[^a-z0-9]/gi, '')
-    : s;
 
-  const cmp = ignoreCase ? cleaned.toLowerCase() : cleaned;
-  const reversed = cmp.split('').reverse().join('');
-  return cmp === reversed;
+  // when fast runs out, slow is at the middle
+  return slow;
 }
-console.log(isPalindromeReverse('Madam In Eden, I’m Adam', true, true)); // true
-const isPalindromeLazy = (s: string, ignoreCase = true, ignoreNonAlpha = false): boolean =>
-  (ignoreNonAlpha ? s.replace(/[^a-z0-9]/gi, '') : s)
-    .toLowerCase()
-    .split('')
-    .every((c, i, a) => c === a[a.length - i - 1]);
-const tests = [
-  { str: 'Radar', expect: true },
-  { str: 'Madam Anna', expect: false },
-  { str: 'Madam Anna', expect: true, options: { ignoreNonAlpha: true } },
-  { str: '12321', expect: true },
-  { str: 'Was it a cat I saw?', expect: true, options: { ignoreNonAlpha: true, ignoreCase: true } },
-];
+// Build a tiny list: 1 → 2 → 3 → 4 → 5
+const a: ListNode<number> = { value: 1, next: null };
+const b: ListNode<number> = { value: 2, next: null };
+const c: ListNode<number> = { value: 3, next: null };
+const d: ListNode<number> = { value: 4, next: null };
+const e: ListNode<number> = { value: 5, next: null };
 
-tests.forEach(({ str, expect, options }) => {
-  const result = isPalindrome(str, ...(options ? [options.ignoreCase, options.ignoreNonAlpha] : []));
-  console.assert(result === expect, `❌ ${str} should be ${expect}`);
-});
+a.next = b; b.next = c; c.next = d; d.next = e;
+
+const middle = findMiddle(a);
+console.log(middle?.value); // logs 3
