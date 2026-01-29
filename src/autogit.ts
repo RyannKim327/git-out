@@ -1,63 +1,94 @@
-// Node type – each element points to the next one
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
+// A tiny helper interface when you want a custom comparator
+export interface Comparable<T> {
+  compareTo(other: T): number;   // negative if this < other
 }
+/**
+ * Heap‑sort: in‑place, O(n log n) time, O(1) auxiliary space.
+ * @param arr  The array to sort.
+ * @param compare  Optional comparator: (a, b) => number
+ *                 (negative if a < b, zero if equal, positive if a > b).
+ *                 If omitted, the array is assumed to contain values
+ *                 that support the `<` operator.
+ */
+export function heapSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): void {
+  const cmp = compare ?? defaultCompare;
 
-// The queue itself
-class LinkedListQueue<T> {
-  private head: ListNode<T> | null = null; // dequeue from here
-  private tail: ListNode<T> | null = null; // enqueue at here
-  private _size: number = 0;
+  // 1. Build a max‑heap
+  for (let i = Math.floor(arr.length / 2) - 1; i >= 0; i--) {
+    siftDown(arr, i, arr.length, cmp);
+  }
 
-  /** Add an item to the back of the queue */
-  enqueue(value: T): void {
-    const newNode = new ListNode(value);
-    if (this.tail) {
-      this.tail.next = newNode;   // link the old tail to the new node
-    } else {
-      // Empty queue – head and tail both point to the new node
-      this.head = newNode;
+  // 2. Repeatedly swap the max element to the end and restore heap
+  for (let end = arr.length - 1; end > 0; end--) {
+    [arr[0], arr[end]] = [arr[end], arr[0]];
+    siftDown(arr, 0, end, cmp);  // `end` is the new heap size
+  }
+
+  /** Comparator that works on primitive numbers or strings … */
+  function defaultCompare(a: any, b: any): number {
+    return a < b ? -1 : a > b ? 1 : 0;   // 0 when equal
+  }
+}
+function siftDown<T>(
+  arr: T[],
+  start: number,
+  heapSize: number,
+  compare: (a: T, b: T) => number
+): void {
+  let root = start;
+
+  while (true) {
+    const left = 2 * root + 1;
+    const right = left + 1;
+    let swap: number | null = null;
+
+    // Is there a left child larger than root?
+    if (left < heapSize && compare(arr[left], arr[root]) > 0) {
+      swap = left;
     }
-    this.tail = newNode;
-    this._size++;
-  }
 
-  /** Remove and return the item from the front of the queue.
-      Returns undefined if the queue is empty. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined;
+    // Is there a right child that beats the current swap?
+    if (
+      right < heapSize &&
+      (swap === null || compare(arr[right], arr[swap]) > 0)
+    ) {
+      swap = right;
+    }
 
-    const value = this.head.value;
-    this.head = this.head.next;          // move head forward
-    if (!this.head) this.tail = null;    // queue became empty
-    this._size--;
-    return value;
-  }
+    // Nothing to swap → we’re done
+    if (swap === null) break;
 
-  /** Peek at the front without removing it. */
-  peek(): T | undefined {
-    return this.head?.value;
-  }
-
-  /** Number of items in the queue */
-  get size(): number {
-    return this._size;
-  }
-
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this.size === 0;
+    [arr[root], arr[swap]] = [arr[swap], arr[root]];
+    root = swap;
   }
 }
-const q = new LinkedListQueue<number>();
+// Numbers
+const nums = [12, 11, 13, 5, 6, 7];
+heapSort(nums);
+console.log(nums);   // [5, 6, 7, 11, 12, 13]
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+// Strings (lexicographic)
+let words = ["pear", "apple", "orange", "banana"];
+heapSort(words);
+console.log(words);  // ["apple", "banana", "orange", "pear"]
 
-console.log(q.peek()); // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.isEmpty()); // false
-console.log(q.dequeue()); // 30
-console.log(q.isEmpty()); // true
+// Custom objects with a `compareTo` method
+class Person {
+  constructor(public name: string, public age: number) {}
+  compareTo(other: Person) {
+    return this.age - other.age;  // ascending by age
+  }
+}
+
+const people = [
+  new Person("Bob", 30),
+  new Person("Alice", 25),
+  new Person("Charlie", 35)
+];
+
+// Provide the comparator manually
+heapSort(people, (a, b) => a.compareTo(b));
+console.log(people.map(p => `${p.name}(${p.age})`));  // Alice(25) Bob(30) Charlie(35)
