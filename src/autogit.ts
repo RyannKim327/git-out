@@ -1,60 +1,70 @@
-type Node = string | number;              // whichever you prefer for vertex IDs
-type Graph = Record<Node, Node[]>;          // e.g., { 1: [2,3], 2: [4], … }
+function longestCommonSubstring(a: string, b: string): string {
+  if (!a || !b) return '';
 
-const graph: Graph = {
-  a: ['b', 'c'],
-  b: ['d', 'e'],
-  c: ['f'],
-  d: [],
-  e: ['c'],
-  f: [],
-};
-function dfsRecursive(
-  graph: Graph,
-  start: Node,
-  visited = new Set<Node>(),
-  order: Node[] = []
-): Node[] {
-  visited.add(start);        // 1️⃣ mark as visited
-  order.push(start);         // 2️⃣ record the visit order
+  let maxLen = 0;
+  let maxStart = 0;          // start index inside `a`
 
-  for (const neighbor of graph[start] ?? []) {
-    if (!visited.has(neighbor)) {
-      dfsRecursive(graph, neighbor, visited, order); // 3️⃣ recurse
+  const aLen = a.length;
+  const bLen = b.length;
+
+  // Pick the shorter string as the outer loop to reduce the number of starts
+  const [short, long] = aLen < bLen ? [a, b] : [b, a];
+  const shortLen = short.length;
+  const longLen = long.length;
+
+  for (let i = 0; i < shortLen; i++) {
+    for (let j = 0; j < longLen; j++) {
+      let length = 0;
+      while (
+        i + length < shortLen &&
+        j + length < longLen &&
+        short[i + length] === long[j + length]
+      ) {
+        length++;
+      }
+      if (length > maxLen) {
+        maxLen = length;
+        maxStart = i;           // starts in `short`
+      }
     }
   }
-  return order;
+
+  // Return the slice from the original string that contains the substring
+  const result = short.substr(maxStart, maxLen);
+  // If we swapped the strings we need to return the same slice from the original `a`
+  return aLen < bLen ? result : result; // same, just explicit
 }
+console.log(longestCommonSubstring('abxabc', 'abcaby')); // → 'abc'
+function longestCommonSubstringDP(s1: string, s2: string): string {
+  const n = s1.length;
+  const m = s2.length;
+  if (!n || !m) return '';
 
-// usage
-const visitOrder = dfsRecursive(graph, 'a');
-console.log(visitOrder); // ['a', 'b', 'd', 'e', 'c', 'f']
-function dfsIterative(graph: Graph, start: Node): Node[] {
-  const stack: Node[] = [start];
-  const visited = new Set<Node>();
-  const order: Node[] = [];
+  // 2‑row DP to save memory – only previous row needed for current row calculation
+  let prev = new Array(m + 1).fill(0);
+  let curr = new Array(m + 1).fill(0);
 
-  while (stack.length) {
-    const node = stack.pop()!; // pop the top
-    if (visited.has(node)) continue; // skip if we've already seen it
+  let maxLen = 0;
+  let maxEndIdxS1 = 0; // end index in s1 of longest common substring
 
-    visited.add(node);   // 1️⃣ mark
-    order.push(node);    // 2️⃣ record
-
-    // push neighbors in reverse order so that the first neighbor
-    // is processed first (mimics recursive order)
-    const neighbors = graph[node] ?? [];
-    for (let i = neighbors.length - 1; i >= 0; i--) {
-      const neighbor = neighbors[i];
-      if (!visited.has(neighbor)) stack.push(neighbor);
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        curr[j] = prev[j - 1] + 1; // extend the previous match
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          maxEndIdxS1 = i; // i is 1‑based
+        }
+      } else {
+        curr[j] = 0;
+      }
     }
+    // swap rows for next iteration
+    [prev, curr] = [curr, prev];
+    curr.fill(0); // reset current row
   }
-  return order;
-}
 
-// usage
-const orderIter = dfsIterative(graph, 'a');
-console.log(orderIter); // ['a', 'b', 'd', 'e', 'c', 'f']
-// inside the while loop
-const prev = stack[stack.length - 1]; // last node that will lead to `node`
-order.push([prev, node] as [Node, Node]);
+  // Extract the substring from s1 using the end index and length
+  return s1.slice(maxEndIdxS1 - maxLen, maxEndIdxS1);
+}
+console.log(longestCommonSubstringDP('abxabc', 'abcaby')); // → 'abc'
