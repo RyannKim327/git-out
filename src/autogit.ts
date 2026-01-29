@@ -1,28 +1,28 @@
-const original = [1, 2, 3, 4, 5];
+/**
+ * Return true if `s` is a palindrome.
+ *   - Works for regular strings and Unicode strings
+ *   - Uses a two‑pointer scan; no extra arrays/strings are allocated
+ *   - Time:  O(n)
+ *   - Extra space: O(1)
+ */
+function isPalindrome(s: string): boolean {
+    let left  = 0;
+    let right = s.length - 1;
 
-const reversed = [...original].reverse(); // creates a new array, keeps `original` intact
-// or, if you don’t mind mutating the original array
-original.reverse();
-const copy = [...original];  // spread operator makes a new array
-copy.reverse();              // now you have the reversed copy
-function reverseArray<T>(arr: T[]): T[] {
-  const result: T[] = [];
-  for (let i = arr.length - 1; i >= 0; i--) {
-    result.push(arr[i]);
-  }
-  return result;
+    while (left < right) {
+        // Skip non‑alphanumeric characters & ignore case if you want
+        // if (!/[a-z0-9]/i.test(s.charAt(left))) { left++; continue; }
+        // if (!/[a-z0-9]/i.test(s.charAt(right))) { right--; continue; }
+
+        if (s[left] !== s[right]) {
+            return false;
+        }
+        left++;
+        right--;
+    }
+    return true;
 }
-
-const reverseManual = reverseArray(original);
-function reverseInPlace<T>(arr: T[]): void {
-  let left = 0;
-  let right = arr.length - 1;
-  while (left < right) {
-    // swap
-    [arr[left], arr[right]] = [arr[right], arr[left]];
-    left++;
-    right--;
-  }
-}
-
-reverseInPlace(original); // `original` is now reversed
+console.log(isPalindrome("racecar"));        // true
+console.log(isPalindrome("hello"));          // false
+console.log(isPalindrome("A man a plan a canal Panama".replace(/\s+/g, '').toLowerCase()));
+// true, after normalizing whitespace and case
