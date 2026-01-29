@@ -1,40 +1,63 @@
-export interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
-}
-export function countLeaves<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                     // empty tree
+/**
+ * Rabin‑Karp string search
+ *
+ * Parameters:
+ *  pattern – the string we’re looking for
+ *  text    – the string to search inside
+ *
+ * Returns:
+ *  array of starting indices where pattern occurs (empty if no match)
+ */
+export function rabinKarp(pattern: string, text: string): number[] {
+    // Edge cases
+    if (pattern.length === 0) return [];
+    if (pattern.length > text.length) return [];
 
-  // If the node has no children, it’s a leaf
-  if (!root.left && !root.right) return 1;
+    const base = 256;               // number of possible characters (ASCII)
+    const mod = 101;                // a prime mod to keep numbers small
 
-  // Otherwise recurse on children and sum the results
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-export function countLeavesIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
+    const m = pattern.length;
+    const n = text.length;
 
-  let stack: TreeNode<T>[] = [root];
-  let leaves = 0;
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node.left && !node.right) {
-      leaves++;                // it’s a leaf
-    } else {
-      if (node.left) stack.push(node.left);
-      if (node.right) stack.push(node.right);
+    // Pre‑compute base^(m‑1) % mod  (the “high” power)
+    let basePower = 1;
+    for (let i = 0; i < m - 1; i++) {
+        basePower = (basePower * base) % mod;
     }
-  }
 
-  return leaves;
+    // Compute hash for pattern and first window of text
+    let patHash = 0;
+    let txtHash = 0;
+    for (let i = 0; i < m; i++) {
+        patHash = (patHash * base + pattern.charCodeAt(i)) % mod;
+        txtHash = (txtHash * base + text.charCodeAt(i)) % mod;
+    }
+
+    const result: number[] = [];
+
+    // Slide the window over the text
+    for (let s = 0; s <= n - m; s++) {
+        // If the hash values match, verify the substring to confirm
+        if (patHash === txtHash) {
+            let match = true;
+            for (let k = 0; k < m; k++) {
+                if (text[s + k] !== pattern[k]) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) result.push(s);
+        }
+
+        // Compute hash for next window: remove leading char, add trailing char
+        if (s < n - m) {
+            txtHash = (txtHash - text.charCodeAt(s) * basePower) % mod;
+            if (txtHash < 0) txtHash += mod;                    // keep positive
+            txtHash = (txtHash * base + text.charCodeAt(s + m)) % mod;
+        }
+    }
+
+    return result;
 }
-const tree: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3, right: { value: 6 } }
-};
-
-console.log(countLeaves(tree));          // → 3  (nodes 4, 5, 6)
-console.log(countLeavesIter(tree));      // → 3
+const idx = rabinKarp('abc', 'xabcababc');
+console.log(idx);   // → [1, 6]
