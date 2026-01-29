@@ -1,39 +1,37 @@
-function factorialRecursive(n: number): number {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
+// factorial.ts
+import readline from 'readline';
+
+// Utility that returns the factorial of a non‑negative integer
+function factorial(n: number): number {
+  if (n < 0) throw new Error('Number must be non‑negative');
+  if (n === 0 || n === 1) return 1;
+  return n * factorial(n - 1);
 }
-console.log(factorialRecursive(5)); // 120
-function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+
+// Set up a readline interface to read from stdin
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+// Ask the user for a number
+rl.question('Enter a non‑negative integer: ', (answer) => {
+  const num = Number(answer.trim());
+
+  if (Number.isNaN(num) || !Number.isInteger(num)) {
+    console.log(`"${answer}" is not a valid integer.`);
+  } else {
+    try {
+      const result = factorial(num);
+      console.log(`Factorial of ${num} is ${result}`);
+    } catch (e) {
+      console.log(e.message);
+    }
   }
-  return result;
-}
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1n;
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
-}
-console.log(factorialBigInt(20));        // 2432902008176640000n
-console.log(factorialBigInt(100));       // 9.332621544e+157n (full bigint printed)
-const factorialMemo = (() => {
-  const cache: Record<number, number> = {0: 1, 1: 1};
 
-  const inner = (n: number): number => {
-    if (n in cache) return cache[n];
-    cache[n] = n * inner(n - 1);
-    return cache[n];
-  };
-
-  return inner;
-})();
-console.assert(factorialIterative(0) === 1);
-console.assert(factorialIterative(6) === 720);
-
-console.assert(factorialBigInt(5).toString() === '120');
-console.assert(factorialBigInt(30).toString().startsWith('265252859...'));
+  rl.close();
+});
+npm install --save-dev @types/node
+npx ts-node factorial.ts
+tsc factorial.ts   # produces factorial.js
+node factorial.js
