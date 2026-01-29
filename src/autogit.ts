@@ -1,53 +1,69 @@
 /**
- * Returns the area of a triangle.
- *
- * You can provide:
- *   • base & height (Cartesian geometry)
- *   • three side lengths (Heron's formula)
- *
- * @param base   Base of the triangle (required if you give height)
- * @param height Height of the triangle
- * @param a      Length of side a
- * @param b      Length of side b
- * @param c      Length of side c
- * @returns      The area, or NaN if the input is invalid.
+ * Topological sort (Kahn's algorithm).
+ * @param graph – adjacency list: node → list of successors.  Nodes that don’t appear as keys are treated as isolated vertices.
+ * @returns an array of nodes in topological order.
+ * @throws Error if the graph contains a cycle.
  */
-export function triangleArea({
-  base,
-  height,
-  a,
-  b,
-  c,
-}: {
-  base?: number;
-  height?: number;
-  a?: number;
-  b?: number;
-  c?: number;
-}): number {
-  // Cartesian: base * height / 2
-  if (base !== undefined && height !== undefined) {
-    if (base <= 0 || height <= 0) return NaN;
-    return (base * height) / 2;
+export function topologicalSort<T extends string | number | symbol>(
+  graph: Partial<Record<T, readonly T[]>>,
+): T[] {
+  // 1. Compute indegree of each vertex
+  const indegree = new Map<T, number>();
+  const nodes = new Set<T>();
+
+  // First pass: collect all vertices (keys + targets)
+  for (const [u, adj] of Object.entries(graph) as [T, T[]][]) {
+    nodes.add(u);
+    for (const v of adj) nodes.add(v);
   }
 
-  // Heron: given three sides
-  if (a !== undefined && b !== undefined && c !== undefined) {
-    if (a <= 0 || b <= 0 || c <= 0) return NaN;
-    // Check triangle inequality: the sum of any two sides must exceed the third
-    if (a + b <= c || a + c <= b || b + c <= a) return NaN;
+  // Initialise indegree map
+  for (const node of nodes) indegree.set(node, 0);
 
-    const s = (a + b + c) / 2; // semi‑perimeter
-    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  // Second pass: count incoming edges
+  for (const adj of Object.values(graph)) {
+    for (const v of adj) {
+      indegree.set(v, (indegree.get(v) ?? 0) + 1);
+    }
   }
 
-  // If the required parameters aren’t supplied
-  return NaN;
+  // 2. Initialise a queue of all nodes with indegree 0
+  const queue: T[] = [];
+  for (const [node, d] of indegree.entries()) {
+    if (d === 0) queue.push(node);
+  }
+
+  const order: T[] = [];
+
+  // 3. Process the queue
+  while (queue.length) {
+    const u = queue.shift() as T; // queue is never empty here
+    order.push(u);
+
+    const successors = graph[u] ?? [];
+    for (const v of successors) {
+      const d = indegree.get(v)! - 1;
+      indegree.set(v, d);
+      if (d === 0) queue.push(v);
+    }
+  }
+
+  // 4. If we processed all vertices, we succeeded; otherwise a cycle exists
+  if (order.length !== nodes.size) {
+    throw new Error('Graph contains a cycle – no topological ordering possible.');
+  }
+
+  return order;
 }
-// Base + height
-const area1 = triangleArea({ base: 10, height: 5 }); // 25
+const pkgGraph = {
+  // A package can depend on other packages (edges go “downward”)
+  'express': ['body-parser', 'morgan'],
+  'body-parser': ['raw-body'],
+  'morgan': ['stream-http'],
+  'stream-http': [],
+  'raw-body': [],
+  'lodash': [],          // independent package
+};
 
-// Three sides
-const area2 = triangleArea({ a: 3, b: 4, c: 5 }); // 6
-
-console.log(area1, area2);
+console.log(topologicalSort(pkgGraph));
+// Possible output: ['lodash', 'stream-http', 'morgan', 'raw-body', 'body-parser', 'express']
