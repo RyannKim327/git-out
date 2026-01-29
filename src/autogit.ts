@@ -1,28 +1,40 @@
-/**
- * Binary search on a sorted array.
- *
- * @param arr   Sorted array of comparable items.
- * @param value Value to search for.
- * @returns Index of value, or -1 if not found.
- */
-export function binarySearch<T>(arr: T[], value: T): number {
-  let low = 0;
-  let high = arr.length - 1;
+export interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
+}
+export function countLeaves<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                     // empty tree
 
-  while (low <= high) {
-    // Middle index – floor division
-    const mid = Math.floor((low + high) / 2);
-    const midVal = arr[mid];
+  // If the node has no children, it’s a leaf
+  if (!root.left && !root.right) return 1;
 
-    if (midVal === value) return mid;      // exact match
-    if (midVal < value) {
-      low = mid + 1;                       // value is in higher half
+  // Otherwise recurse on children and sum the results
+  return countLeaves(root.left) + countLeaves(root.right);
+}
+export function countLeavesIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let stack: TreeNode<T>[] = [root];
+  let leaves = 0;
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node.left && !node.right) {
+      leaves++;                // it’s a leaf
     } else {
-      high = mid - 1;                      // value is in lower half
+      if (node.left) stack.push(node.left);
+      if (node.right) stack.push(node.right);
     }
   }
-  return -1;  // not found
+
+  return leaves;
 }
-const nums = [3, 7, 12, 18, 24, 31, 42];
-const idx = binarySearch(nums, 18); // => 3
-const missing = binarySearch(nums, 5); // => -1
+const tree: TreeNode = {
+  value: 1,
+  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
+  right: { value: 3, right: { value: 6 } }
+};
+
+console.log(countLeaves(tree));          // → 3  (nodes 4, 5, 6)
+console.log(countLeavesIter(tree));      // → 3
