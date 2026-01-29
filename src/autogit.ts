@@ -1,99 +1,85 @@
 /**
- * A single node inside the trie.
- * 
- * - `children` holds the outgoing edges keyed by the character they represent.
- * - `isEnd` marks that a full word ends at this node.
+ * `AdjacencyList` is a mapping from a node key to the keys of its neighbors.
+ * It works for directed or undirected graphs – just decide how you add edges.
  */
-class TrieNode {
-  public children: Map<string, TrieNode> = new Map();
-  public isEnd: boolean = false;
-}
+export type AdjacencyList<K extends string | number> = Record<
+  K,
+  K[] // List of outgoing neighbor keys
+>;
+const graph: AdjacencyList<string> = {
+  A: ['B', 'C'],
+  B: ['A', 'D'],
+  C: ['A', 'D'],
+  D: ['B', 'C', 'E'],
+  E: ['D'],
+};
+class Queue<T> {
+  private data: T[] = [];
+  private head = 0;
+  private tail = 0;
 
+  enqueue(item: T) {
+    this.data[this.tail++] = item;
+  }
+
+  dequeue(): T | undefined {
+    if (this.isEmpty()) return undefined;
+    const item = this.data[this.head];
+    // Optional: free memory if the queue shrinks a lot
+    if (this.head % 64 === 0) this.data = this.data.slice(this.head);
+    this.head++;
+    return item;
+  }
+
+  isEmpty() {
+    return this.head >= this.tail;
+  }
+}
 /**
- * The trie itself.
+ * Breadth‑first search on an adjacency list.
+ *
+ * @param graph      the graph (adjacency list)
+ * @param start      the node to start from
+ * @param target     optional: stop when this node is reached
+ * @returns          { distance: Map<node, number>, parent: Map<node, node | null>, found?: node }
  */
-export class Trie {
-  private root: TrieNode = new TrieNode();
+export function bfs<K extends string | number>(
+  graph: AdjacencyList<K>,
+  start: K,
+  target?: K,
+) {
+  const distance = new Map<K, number>();
+  const parent = new Map<K, K | null>();
 
-  /**
-   * Add a word to the trie.
-   */
-  insert(word: string): void {
-    let node = this.root;
-    for (const ch of word) {
-      let child = node.children.get(ch);
-      if (!child) {
-        child = new TrieNode();
-        node.children.set(ch, child);
+  const queue = new Queue<K>();
+  queue.enqueue(start);
+  distance.set(start, 0);
+  parent.set(start, null);
+
+  while (!queue.isEmpty()) {
+    const current = queue.dequeue()!;
+    const curDist = distance.get(current)!;
+
+    // Optional early‑exit
+    if (target !== undefined && current === target) {
+      return { distance, parent, found: current };
+    }
+
+    for (const neighbor of graph[current] ?? []) {
+      if (!distance.has(neighbor)) {                // not visited
+        distance.set(neighbor, curDist + 1);
+        parent.set(neighbor, current);
+        queue.enqueue(neighbor);
       }
-      node = child;
     }
-    node.isEnd = true;
   }
 
-  /**
-   * Does the trie contain the exact word?
-   */
-  search(word: string): boolean {
-    const node = this._findNode(word);
-    return node ? node.isEnd : false;
-  }
-
-  /**
-   * Does any stored word start with the given prefix?
-   */
-  startsWith(prefix: string): boolean {
-    return Boolean(this._findNode(prefix));
-  }
-
-  /**
-   * Optional: remove a word.  The implementation keeps the trie shrunken
-   * by pruning leaf nodes that become unused.
-   */
-  delete(word: string): boolean {
-    const stack: Array<{node: TrieNode, ch: string}> = [];
-    let node = this.root;
-
-    for (const ch of word) {
-      const child = node.children.get(ch);
-      if (!child) return false;        // word not present
-      stack.push({ node, ch });
-      node = child;
-    }
-
-    if (!node.isEnd) return false;      // word not present
-    node.isEnd = false;
-
-    // prune if the node has no children
-    while (stack.length && !node.children.size && !node.isEnd) {
-      const { node: parent, ch } = stack.pop()!;
-      parent.children.delete(ch);
-      node = parent;
-    }
-
-    return true;
-  }
-
-  /** Helper that walks the trie and returns the last node for a key. */
-  private _findNode(key: string): TrieNode | null {
-    let node = this.root;
-    for (const ch of key) {
-      node = node.children.get(ch) ?? null;
-      if (!node) return null;
-    }
-    return node;
-  }
+  return { distance, parent, found: target }; // target not found
 }
-const t = new Trie();
-t.insert("hello");
-t.insert("helium");
-t.insert("help");
-
-console.log(t.search("help"));    // true
-console.log(t.search("heal"));    // false
-console.log(t.startsWith("hel")); // true
-console.log(t.startsWith("hep")); // false
-
-t.delete("help");
-console.log(t.search("help"));    // false
-console.log(t.startsWith("hel")); // true (because "hello" and "helium" stay)
+const result = bfs(graph, 'A', 'E');
+console.log('Distance map:', result.distance);
+console.log('Parent map:', result.parent);
+console.log('Target found?', result.found !== undefined);
+Distance map: Map(5) { 'A' => 0, 'B' => 1, 'C' => 1, 'D' => 2, 'E' => 3 }
+Parent map: Map(5) { 'A' => null, 'B' => 'A', 'C' => 'A', 'D' => 'B', 'E' => 'D' }
+Target found? true
