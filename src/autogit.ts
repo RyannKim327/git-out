@@ -1,39 +1,56 @@
 /**
- * Returns the largest prime divisor of `n`.
- * If `n` is 0 or 1, returns `undefined`.
+ * Returns the longest strictly increasing subsequence of `arr`.
+ *
+ * Example:
+ *   longestIncreasingSubsequence([10, 9, 2, 5, 3, 7, 101, 18])
+ *   → [2, 3, 7, 101]
  */
-function largestPrimeFactor(n: number): number | undefined {
-  if (n < 2) return undefined;          // no prime factors for 0 or 1
+export function longestIncreasingSubsequence(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-  let num = Math.abs(n);                 // work with a positive number
-  let maxFactor = 1;
+  // `tails` keeps the smallest tail value for all subsequences
+  // of a given length. `tails[i]` is the least possible tail of
+  // an increasing subsequence with length i+1.
+  const tails: number[] = [];
+  // `prevIndices` remembers, for each element, the index of its
+  // predecessor in the LIS that passes through that element.
+  const prevIndices: number[] = new Array(arr.length).fill(-1);
+  // `indicesAtLength` holds the index of the last element of the LIS
+  // of a given length, allowing us to reconstruct the sequence.
+  const indicesAtLength: number[] = [];
 
-  // Handle the factor 2 separately to keep the loop odd.
-  while (num % 2 === 0) {
-    maxFactor = 2;
-    num /= 2;
-  }
-
-  // Now only odd factors are possible.
-  let divisor = 3;
-  const sqrtLimit = Math.sqrt(num);
-  while (divisor <= sqrtLimit) {
-    while (num % divisor === 0) {
-      maxFactor = divisor;
-      num /= divisor;
+  arr.forEach((val, idx) => {
+    // Binary search for the first tail that is >= val
+    let l = 0;
+    let r = tails.length;
+    while (l < r) {
+      const m = Math.floor((l + r) / 2);
+      if (tails[m] < val) l = m + 1;
+      else r = m;
     }
-    divisor += 2;                       // skip even numbers
-  }
 
-  // If after the loop num > 1, it itself is a prime factor larger than all found.
-  if (num > 1) {
-    maxFactor = num;
-  }
+    // `l` is the length (0‑based) of the subsequence that will end at idx
+    if (l > 0) prevIndices[idx] = indicesAtLength[l - 1];
 
-  return maxFactor;
+    if (l === tails.length) {
+      tails.push(val);
+      indicesAtLength.push(idx);
+    } else {
+      tails[l] = val;
+      indicesAtLength[l] = idx;
+    }
+  });
+
+  // Reconstruct the LIS from the recorded indices
+  const lis: number[] = [];
+  let k = indicesAtLength[indicesAtLength.length - 1];
+  while (k !== -1) {
+    lis.push(arr[k]);
+    k = prevIndices[k];
+  }
+  lis.reverse();
+  return lis;
 }
-console.log(largestPrimeFactor(2));                // 2
-console.log(largestPrimeFactor(28));               // 7
-console.log(largestPrimeFactor(1000003));          // 1000003 (its prime)
-console.log(largestPrimeFactor(123456));           // 643
-console.log(largestPrimeFactor(-84));              // 7
+const data = [3, 10, 2, 1, 20];
+console.log(longestIncreasingSubsequence(data));
+// → [3, 10, 20]
