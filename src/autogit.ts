@@ -1,69 +1,39 @@
 /**
- * Topological sort (Kahn's algorithm).
- * @param graph – adjacency list: node → list of successors.  Nodes that don’t appear as keys are treated as isolated vertices.
- * @returns an array of nodes in topological order.
- * @throws Error if the graph contains a cycle.
+ * Returns the largest prime divisor of `n`.
+ * If `n` is 0 or 1, returns `undefined`.
  */
-export function topologicalSort<T extends string | number | symbol>(
-  graph: Partial<Record<T, readonly T[]>>,
-): T[] {
-  // 1. Compute indegree of each vertex
-  const indegree = new Map<T, number>();
-  const nodes = new Set<T>();
+function largestPrimeFactor(n: number): number | undefined {
+  if (n < 2) return undefined;          // no prime factors for 0 or 1
 
-  // First pass: collect all vertices (keys + targets)
-  for (const [u, adj] of Object.entries(graph) as [T, T[]][]) {
-    nodes.add(u);
-    for (const v of adj) nodes.add(v);
+  let num = Math.abs(n);                 // work with a positive number
+  let maxFactor = 1;
+
+  // Handle the factor 2 separately to keep the loop odd.
+  while (num % 2 === 0) {
+    maxFactor = 2;
+    num /= 2;
   }
 
-  // Initialise indegree map
-  for (const node of nodes) indegree.set(node, 0);
-
-  // Second pass: count incoming edges
-  for (const adj of Object.values(graph)) {
-    for (const v of adj) {
-      indegree.set(v, (indegree.get(v) ?? 0) + 1);
+  // Now only odd factors are possible.
+  let divisor = 3;
+  const sqrtLimit = Math.sqrt(num);
+  while (divisor <= sqrtLimit) {
+    while (num % divisor === 0) {
+      maxFactor = divisor;
+      num /= divisor;
     }
+    divisor += 2;                       // skip even numbers
   }
 
-  // 2. Initialise a queue of all nodes with indegree 0
-  const queue: T[] = [];
-  for (const [node, d] of indegree.entries()) {
-    if (d === 0) queue.push(node);
+  // If after the loop num > 1, it itself is a prime factor larger than all found.
+  if (num > 1) {
+    maxFactor = num;
   }
 
-  const order: T[] = [];
-
-  // 3. Process the queue
-  while (queue.length) {
-    const u = queue.shift() as T; // queue is never empty here
-    order.push(u);
-
-    const successors = graph[u] ?? [];
-    for (const v of successors) {
-      const d = indegree.get(v)! - 1;
-      indegree.set(v, d);
-      if (d === 0) queue.push(v);
-    }
-  }
-
-  // 4. If we processed all vertices, we succeeded; otherwise a cycle exists
-  if (order.length !== nodes.size) {
-    throw new Error('Graph contains a cycle – no topological ordering possible.');
-  }
-
-  return order;
+  return maxFactor;
 }
-const pkgGraph = {
-  // A package can depend on other packages (edges go “downward”)
-  'express': ['body-parser', 'morgan'],
-  'body-parser': ['raw-body'],
-  'morgan': ['stream-http'],
-  'stream-http': [],
-  'raw-body': [],
-  'lodash': [],          // independent package
-};
-
-console.log(topologicalSort(pkgGraph));
-// Possible output: ['lodash', 'stream-http', 'morgan', 'raw-body', 'body-parser', 'express']
+console.log(largestPrimeFactor(2));                // 2
+console.log(largestPrimeFactor(28));               // 7
+console.log(largestPrimeFactor(1000003));          // 1000003 (its prime)
+console.log(largestPrimeFactor(123456));           // 643
+console.log(largestPrimeFactor(-84));              // 7
