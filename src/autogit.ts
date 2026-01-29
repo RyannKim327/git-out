@@ -1,69 +1,67 @@
-type Edge = { from: number; to: number; weight: number };
+/**
+ * Returns the k‑th smallest element (1‑based index).
+ * O(n log n) by quick‑sort.
+ */
+export function kthSmallestSort(arr: number[], k: number): number {
+  if (!arr.length) throw new Error('Array is empty');
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
 
-interface BellmanFordResult {
-  dist: number[];          // shortest distance from source to each vertex   (Infinity = unreachable)
-  prev: (number | null)[]; // previous vertex on the shortest path, or null
-  hasNegativeCycle: boolean; // true if a negative cycle was detected
+  // Create a copy so the original array stays untouched
+  const copy = [...arr].sort((a, b) => a - b);
+  return copy[k - 1];
 }
 
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult {
-  const dist = Array(vertexCount).fill(Infinity);
-  const prev = Array<number | null>(vertexCount).fill(null);
+/**
+ * Returns the k‑th smallest element in expected linear time via QuickSelect.
+ * Stable but not guaranteed worst‑case performance.
+ */
+export function kthSmallestQuickSelect(arr: number[], k: number): number {
+  if (!arr.length) throw new Error('Array is empty');
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
 
-  dist[source] = 0;
+  // Recursive helper
+  function quickSelect(nums: number[], left: number, right: number, kth: number): number {
+    if (left === right) return nums[left];
 
-  // 1️⃣ Relax every edge |V|‑1 times
-  for (let i = 0; i < vertexCount - 1; i++) {
-    let updated = false;
-    for (const {from, to, weight} of edges) {
-      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-        dist[to] = dist[from] + weight;
-        prev[to] = from;
-        updated = true;
+    let pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
+    pivotIndex = partition(nums, left, right, pivotIndex);
+
+    const leftSize = pivotIndex - left + 1;
+    if (kth < leftSize) return quickSelect(nums, left, pivotIndex - 1, kth);
+    if (kth === leftSize) return nums[pivotIndex];
+    return quickSelect(nums, pivotIndex + 1, right, kth - leftSize);
+  }
+
+  function partition(nums: number[], left: number, right: number, pivotIndex: number): number {
+    const pivotValue = nums[pivotIndex];
+    // Move pivot to end
+    [nums[pivotIndex], nums[right]] = [nums[right], nums[pivotIndex]];
+    let storeIndex = left;
+
+    for (let i = left; i < right; i++) {
+      if (nums[i] < pivotValue) {
+        [nums[storeIndex], nums[i]] = [nums[i], nums[storeIndex]];
+        storeIndex++;
       }
     }
-    // If no distance changed, we’re done early
-    if (!updated) break;
+    // Move pivot to its final place
+    [nums[right], nums[storeIndex]] = [nums[storeIndex], nums[right]];
+    return storeIndex;
   }
 
-  // 2️⃣ Check for negative cycles
-  let hasNegativeCycle = false;
-  for (const {from, to, weight} of edges) {
-    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-      hasNegativeCycle = true;
-      break;
-    }
-  }
-
-  return {dist, prev, hasNegativeCycle};
+  // Clone the array so we don't mutate the caller's array
+  const clone = [...arr];
+  return quickSelect(clone, 0, clone.length - 1, k);
 }
-function reconstructPath(prev: (number | null)[], target: number): number[] {
-  const path: number[] = [];
-  let cur: number | null = target;
+const data = [7, 2, 5, 3, 9, 1];
+const kth = 3; // 3rd smallest
 
-  while (cur !== null) {
-    path.push(cur);
-    cur = prev[cur];
-  }
-  path.reverse();
-  return path;
+console.log(kthSmallestSort(data, kth));          // 5
+console.log(kthSmallestQuickSelect(data, kth));   // 5
+export function kthSmallest<T>(
+  arr: T[],
+  k: number,
+  cmp: (a: T, b: T) => number,
+): T {
+  // ...same logic, replace numeric comparisons with cmp(...)
 }
-const edges: Edge[] = [
-  {from: 0, to: 1, weight: 5},
-  {from: 1, to: 2, weight: -2},
-  // ...
-];
-const {dist, prev, hasNegativeCycle} = bellmanFord(5, edges, 0);
-
-console.log(dist);               // shortest distances
-console.log(hasNegativeCycle);    // useful flag
-console.log(reconstructPath(prev, 4)); // path from 0 to 4
