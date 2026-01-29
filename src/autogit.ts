@@ -1,39 +1,25 @@
 /**
- * Returns the largest prime divisor of `n`.
- * If `n` is 0 or 1, returns `undefined`.
+ * Checks if `arr` is sorted in ascending order.
+ *
+ * @param arr          the array to test
+ * @param compareFn    optional comparison function.  
+ *                     Should return <0 if a < b, 0 if equal, >0 if a > b.
+ *                     If omitted, the default `a - b` numeric compare is used.
+ * @returns true if the array is in ascending order, false otherwise
  */
-function largestPrimeFactor(n: number): number | undefined {
-  if (n < 2) return undefined;          // no prime factors for 0 or 1
-
-  let num = Math.abs(n);                 // work with a positive number
-  let maxFactor = 1;
-
-  // Handle the factor 2 separately to keep the loop odd.
-  while (num % 2 === 0) {
-    maxFactor = 2;
-    num /= 2;
+export function isSortedAscending<T>(
+  arr: readonly T[],
+  compareFn: ((a: T, b: T) => number) = (a, b) =>
+    /* @ts-ignore */ a < b ? -1 : a > b ? 1 : 0
+): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    // If the current element is *before* the previous one, the array is out of order
+    if (compareFn(arr[i], arr[i - 1]) < 0) return false;
   }
-
-  // Now only odd factors are possible.
-  let divisor = 3;
-  const sqrtLimit = Math.sqrt(num);
-  while (divisor <= sqrtLimit) {
-    while (num % divisor === 0) {
-      maxFactor = divisor;
-      num /= divisor;
-    }
-    divisor += 2;                       // skip even numbers
-  }
-
-  // If after the loop num > 1, it itself is a prime factor larger than all found.
-  if (num > 1) {
-    maxFactor = num;
-  }
-
-  return maxFactor;
+  return true;
 }
-console.log(largestPrimeFactor(2));                // 2
-console.log(largestPrimeFactor(28));               // 7
-console.log(largestPrimeFactor(1000003));          // 1000003 (its prime)
-console.log(largestPrimeFactor(123456));           // 643
-console.log(largestPrimeFactor(-84));              // 7
+const names = ['Alice', 'Bob', 'Charlie'];
+console.log(isSortedAscending(names)); // true
+
+const mixed = [1, 3, 2, 4];
+console.log(isSortedAscending(mixed)); // false
