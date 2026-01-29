@@ -1,35 +1,99 @@
 /**
- * Recursively searches for `target` inside a sorted array.
- *
- * @param arr  The sorted array to search.
- * @param target The value we're looking for.
- * @param left  The leftmost index to consider (inclusive).
- * @param right The rightmost index to consider (inclusive).
- * @returns The index of `target`, or `-1` if it isn’t present.
+ * A single node inside the trie.
+ * 
+ * - `children` holds the outgoing edges keyed by the character they represent.
+ * - `isEnd` marks that a full word ends at this node.
  */
-function binarySearchRecursive(
-    arr: number[],
-    target: number,
-    left: number = 0,
-    right: number = arr.length - 1
-): number {
-    if (left > right) {          // Base case: empty search window
-        return -1;
-    }
-
-    const mid = Math.floor((left + right) / 2);
-
-    if (arr[mid] === target) {
-        return mid;              // Found the target
-    } else if (arr[mid] > target) {
-        // Target is in the left half
-        return binarySearchRecursive(arr, target, left, mid - 1);
-    } else {
-        // Target is in the right half
-        return binarySearchRecursive(arr, target, mid + 1, right);
-    }
+class TrieNode {
+  public children: Map<string, TrieNode> = new Map();
+  public isEnd: boolean = false;
 }
-const sorted = [3, 7, 11, 15, 23, 42, 56];
 
-console.log(binarySearchRecursive(sorted, 15)); // → 3
-console.log(binarySearchRecursive(sorted, 1));  // → -1
+/**
+ * The trie itself.
+ */
+export class Trie {
+  private root: TrieNode = new TrieNode();
+
+  /**
+   * Add a word to the trie.
+   */
+  insert(word: string): void {
+    let node = this.root;
+    for (const ch of word) {
+      let child = node.children.get(ch);
+      if (!child) {
+        child = new TrieNode();
+        node.children.set(ch, child);
+      }
+      node = child;
+    }
+    node.isEnd = true;
+  }
+
+  /**
+   * Does the trie contain the exact word?
+   */
+  search(word: string): boolean {
+    const node = this._findNode(word);
+    return node ? node.isEnd : false;
+  }
+
+  /**
+   * Does any stored word start with the given prefix?
+   */
+  startsWith(prefix: string): boolean {
+    return Boolean(this._findNode(prefix));
+  }
+
+  /**
+   * Optional: remove a word.  The implementation keeps the trie shrunken
+   * by pruning leaf nodes that become unused.
+   */
+  delete(word: string): boolean {
+    const stack: Array<{node: TrieNode, ch: string}> = [];
+    let node = this.root;
+
+    for (const ch of word) {
+      const child = node.children.get(ch);
+      if (!child) return false;        // word not present
+      stack.push({ node, ch });
+      node = child;
+    }
+
+    if (!node.isEnd) return false;      // word not present
+    node.isEnd = false;
+
+    // prune if the node has no children
+    while (stack.length && !node.children.size && !node.isEnd) {
+      const { node: parent, ch } = stack.pop()!;
+      parent.children.delete(ch);
+      node = parent;
+    }
+
+    return true;
+  }
+
+  /** Helper that walks the trie and returns the last node for a key. */
+  private _findNode(key: string): TrieNode | null {
+    let node = this.root;
+    for (const ch of key) {
+      node = node.children.get(ch) ?? null;
+      if (!node) return null;
+    }
+    return node;
+  }
+}
+const t = new Trie();
+t.insert("hello");
+t.insert("helium");
+t.insert("help");
+
+console.log(t.search("help"));    // true
+console.log(t.search("heal"));    // false
+console.log(t.startsWith("hel")); // true
+console.log(t.startsWith("hep")); // false
+
+t.delete("help");
+console.log(t.search("help"));    // false
+console.log(t.startsWith("hel")); // true (because "hello" and "helium" stay)
