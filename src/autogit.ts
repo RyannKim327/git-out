@@ -1,60 +1,58 @@
 /**
- * Returns the max sum of any contiguous sub‑array of `nums`.
- * If all numbers are negative, it will still return the best (least negative) value.
+ * Returns a random integer between min (inclusive) and max (inclusive).
  *
- * @param nums Array of numbers
- * @returns maximum sub‑array sum
+ * @param min – lower bound, inclusive
+ * @param max – upper bound, inclusive
  */
-function maxSubArraySum(nums: number[]): number {
-  if (nums.length === 0) {
-    throw new Error('Array must contain at least one element');
-  }
+function randomInt(min: number, max: number): number {
+  // Clamp values to integers just in case
+  const lo = Math.ceil(min);
+  const hi = Math.floor(max);
 
-  let bestSoFar = nums[0];      // best overall
-  let bestEndingHere = nums[0]; // best ending at current index
-
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the previous sub‑array or start fresh at nums[i]
-    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
-
-    // Update the global best if needed
-    bestSoFar = Math.max(bestSoFar, bestEndingHere);
-  }
-
-  return bestSoFar;
+  // Math.random returns a float in [0, 1)
+  const r = Math.random() * (hi - lo + 1);
+  return Math.floor(r) + lo;
 }
+const diceRoll = randomInt(1, 6);   // 1‑6
+const randomIndex = randomInt(0, array.length - 1);
+function randomFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min;
+}
+function secureRandomInt(min: number, max: number): number {
+  const lo = Math.ceil(min);
+  const hi = Math.floor(max);
 
-/* Example usage */
-const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
-console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
-function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
-  let bestSoFar = nums[0], bestEndingHere = nums[0];
-  let start = 0, end = 0, tempStart = 0;
+  // Number of values in our range
+  const range = hi - lo + 1;
+  // Enough bytes to hold the full range
+  const bytesNeeded = Math.ceil(Math.log2(range) / 8);
 
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] > bestEndingHere + nums[i]) {
-      bestEndingHere = nums[i];
-      tempStart = i;          // potential new start
-    } else {
-      bestEndingHere += nums[i];
-    }
+  // Read random unsigned bytes
+  const rand = new Uint8Array(bytesNeeded);
+  crypto.getRandomValues(rand);
 
-    if (bestEndingHere > bestSoFar) {
-      bestSoFar = bestEndingHere;
-      start = tempStart;      // commit new start
-      end = i;
-    }
+  // Convert bytes to a number
+  let value = 0;
+  for (let i = 0; i < bytesNeeded; i++) {
+    value = (value << 8) | rand[i];
   }
 
-  return {
-    maxSum: bestSoFar,
-    subArray: nums.slice(start, end + 1),
-    indices: [start, end]
-  };
+  // Map into the desired range
+  return (value % range) + lo;
 }
-console.log(maxSubArrayDetail(arr));
-// {
-//   maxSum: 6,
-//   subArray: [4, -1, 2, 1],
-//   indices: [3, 6]
-// }
+function randomChoice<T>(arr: T[]): T {
+  if (arr.length === 0) {
+    throw new RangeError('Cannot choose from an empty array');
+  }
+  const idx = randomInt(0, arr.length - 1);
+  return arr[idx];
+}
+const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+function randomToken(length = 8): string {
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars[randomInt(0, chars.length - 1)];
+  }
+  return result;
+}
