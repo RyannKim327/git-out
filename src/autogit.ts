@@ -1,56 +1,69 @@
-/**
- * Returns the longest strictly increasing subsequence of `arr`.
- *
- * Example:
- *   longestIncreasingSubsequence([10, 9, 2, 5, 3, 7, 101, 18])
- *   → [2, 3, 7, 101]
- */
-export function longestIncreasingSubsequence(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+type Edge = { from: number; to: number; weight: number };
 
-  // `tails` keeps the smallest tail value for all subsequences
-  // of a given length. `tails[i]` is the least possible tail of
-  // an increasing subsequence with length i+1.
-  const tails: number[] = [];
-  // `prevIndices` remembers, for each element, the index of its
-  // predecessor in the LIS that passes through that element.
-  const prevIndices: number[] = new Array(arr.length).fill(-1);
-  // `indicesAtLength` holds the index of the last element of the LIS
-  // of a given length, allowing us to reconstruct the sequence.
-  const indicesAtLength: number[] = [];
-
-  arr.forEach((val, idx) => {
-    // Binary search for the first tail that is >= val
-    let l = 0;
-    let r = tails.length;
-    while (l < r) {
-      const m = Math.floor((l + r) / 2);
-      if (tails[m] < val) l = m + 1;
-      else r = m;
-    }
-
-    // `l` is the length (0‑based) of the subsequence that will end at idx
-    if (l > 0) prevIndices[idx] = indicesAtLength[l - 1];
-
-    if (l === tails.length) {
-      tails.push(val);
-      indicesAtLength.push(idx);
-    } else {
-      tails[l] = val;
-      indicesAtLength[l] = idx;
-    }
-  });
-
-  // Reconstruct the LIS from the recorded indices
-  const lis: number[] = [];
-  let k = indicesAtLength[indicesAtLength.length - 1];
-  while (k !== -1) {
-    lis.push(arr[k]);
-    k = prevIndices[k];
-  }
-  lis.reverse();
-  return lis;
+interface BellmanFordResult {
+  dist: number[];          // shortest distance from source to each vertex   (Infinity = unreachable)
+  prev: (number | null)[]; // previous vertex on the shortest path, or null
+  hasNegativeCycle: boolean; // true if a negative cycle was detected
 }
-const data = [3, 10, 2, 1, 20];
-console.log(longestIncreasingSubsequence(data));
-// → [3, 10, 20]
+
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult {
+  const dist = Array(vertexCount).fill(Infinity);
+  const prev = Array<number | null>(vertexCount).fill(null);
+
+  dist[source] = 0;
+
+  // 1️⃣ Relax every edge |V|‑1 times
+  for (let i = 0; i < vertexCount - 1; i++) {
+    let updated = false;
+    for (const {from, to, weight} of edges) {
+      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+        dist[to] = dist[from] + weight;
+        prev[to] = from;
+        updated = true;
+      }
+    }
+    // If no distance changed, we’re done early
+    if (!updated) break;
+  }
+
+  // 2️⃣ Check for negative cycles
+  let hasNegativeCycle = false;
+  for (const {from, to, weight} of edges) {
+    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+      hasNegativeCycle = true;
+      break;
+    }
+  }
+
+  return {dist, prev, hasNegativeCycle};
+}
+function reconstructPath(prev: (number | null)[], target: number): number[] {
+  const path: number[] = [];
+  let cur: number | null = target;
+
+  while (cur !== null) {
+    path.push(cur);
+    cur = prev[cur];
+  }
+  path.reverse();
+  return path;
+}
+const edges: Edge[] = [
+  {from: 0, to: 1, weight: 5},
+  {from: 1, to: 2, weight: -2},
+  // ...
+];
+const {dist, prev, hasNegativeCycle} = bellmanFord(5, edges, 0);
+
+console.log(dist);               // shortest distances
+console.log(hasNegativeCycle);    // useful flag
+console.log(reconstructPath(prev, 4)); // path from 0 to 4
