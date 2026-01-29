@@ -1,49 +1,63 @@
-/**
- * Return the longest common subsequence of `a` and `b`.
- *
- * @param a - first string
- * @param b - second string
- * @returns the LCS (may be empty if nothing matches)
- */
-export function lcs(a: string, b: string): string {
-  const n = a.length;
-  const m = b.length;
-
-  // dp[i][j] = length of LCS of a[0..i-1] and b[0..j-1]
-  const dp: number[][] = Array.from({ length: n + 1 }, () =>
-    new Array(m + 1).fill(0)
-  );
-
-  // Fill table
-  for (let i = 1; i <= n; i++) {
-    const ca = a.charAt(i - 1);
-    for (let j = 1; j <= m; j++) {
-      if (ca === b.charAt(j - 1)) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
-
-  // Reconstruct the LCS from the table
-  let i = n, j = m;
-  const chars: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a.charAt(i - 1) === b.charAt(j - 1)) {
-      chars.push(a.charAt(i - 1)); // or b.charAt(j - 1)
-      i--; j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;                        // move up
-    } else {
-      j--;                        // move left
-    }
-  }
-
-  return chars.reverse().join('');
+// Node type – each element points to the next one
+class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
 }
-const s1 = 'ABCBDAB';
-const s2 = 'BDCABC';
 
-console.log(lcs(s1, s2)); // -> "BCAB"
+// The queue itself
+class LinkedListQueue<T> {
+  private head: ListNode<T> | null = null; // dequeue from here
+  private tail: ListNode<T> | null = null; // enqueue at here
+  private _size: number = 0;
+
+  /** Add an item to the back of the queue */
+  enqueue(value: T): void {
+    const newNode = new ListNode(value);
+    if (this.tail) {
+      this.tail.next = newNode;   // link the old tail to the new node
+    } else {
+      // Empty queue – head and tail both point to the new node
+      this.head = newNode;
+    }
+    this.tail = newNode;
+    this._size++;
+  }
+
+  /** Remove and return the item from the front of the queue.
+      Returns undefined if the queue is empty. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined;
+
+    const value = this.head.value;
+    this.head = this.head.next;          // move head forward
+    if (!this.head) this.tail = null;    // queue became empty
+    this._size--;
+    return value;
+  }
+
+  /** Peek at the front without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  /** Number of items in the queue */
+  get size(): number {
+    return this._size;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this.size === 0;
+  }
+}
+const q = new LinkedListQueue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek()); // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.isEmpty()); // false
+console.log(q.dequeue()); // 30
+console.log(q.isEmpty()); // true
