@@ -1,28 +1,40 @@
-/**
- * Return true if `s` is a palindrome.
- *   - Works for regular strings and Unicode strings
- *   - Uses a two‑pointer scan; no extra arrays/strings are allocated
- *   - Time:  O(n)
- *   - Extra space: O(1)
- */
-function isPalindrome(s: string): boolean {
-    let left  = 0;
-    let right = s.length - 1;
-
-    while (left < right) {
-        // Skip non‑alphanumeric characters & ignore case if you want
-        // if (!/[a-z0-9]/i.test(s.charAt(left))) { left++; continue; }
-        // if (!/[a-z0-9]/i.test(s.charAt(right))) { right--; continue; }
-
-        if (s[left] !== s[right]) {
-            return false;
-        }
-        left++;
-        right--;
-    }
-    return true;
+export interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
-console.log(isPalindrome("racecar"));        // true
-console.log(isPalindrome("hello"));          // false
-console.log(isPalindrome("A man a plan a canal Panama".replace(/\s+/g, '').toLowerCase()));
-// true, after normalizing whitespace and case
+export function countLeaves<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                     // empty tree
+
+  // If the node has no children, it’s a leaf
+  if (!root.left && !root.right) return 1;
+
+  // Otherwise recurse on children and sum the results
+  return countLeaves(root.left) + countLeaves(root.right);
+}
+export function countLeavesIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let stack: TreeNode<T>[] = [root];
+  let leaves = 0;
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node.left && !node.right) {
+      leaves++;                // it’s a leaf
+    } else {
+      if (node.left) stack.push(node.left);
+      if (node.right) stack.push(node.right);
+    }
+  }
+
+  return leaves;
+}
+const tree: TreeNode = {
+  value: 1,
+  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
+  right: { value: 3, right: { value: 6 } }
+};
+
+console.log(countLeaves(tree));          // → 3  (nodes 4, 5, 6)
+console.log(countLeavesIter(tree));      // → 3
