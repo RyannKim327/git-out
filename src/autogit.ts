@@ -1,55 +1,101 @@
-/**
- * Merge‑sort for array of T values.
- *
- * @param arr  Input array – left untouched.
- * @param cmp  Optional comparison function. If omitted, values are compared with < >.
- * @returns A new sorted array.
- */
-export function mergeSort<T>(arr: readonly T[], cmp?: (a: T, b: T) => number): T[] {
-  // Base case: arrays of size 0 or 1 are already sorted.
-  if (arr.length <= 1) return [...arr];
-
-  // Helper to merge two already‑sorted halves.
-  const merge = (left: T[], right: T[]): T[] => {
-    const result: T[] = [];
-    let i = 0, j = 0;
-
-    while (i < left.length && j < right.length) {
-      const l = left[i];
-      const r = right[j];
-      const comp = cmp
-        ? cmp(l, r)
-        : (l as any) < (r as any)
-          ? -1
-          : (l as any) > (r as any)
-          ? 1
-          : 0;
-
-      if (comp <= 0) {
-        result.push(l);
-        i++;
-      } else {
-        result.push(r);
-        j++;
-      }
-    }
-
-    // Push any remaining items from left or right.
-    return result.concat(left.slice(i), right.slice(j));
+// ------------------------------------------------------------
+// 1️⃣  In‑place quick‑sort – most common for competitive coding
+// ------------------------------------------------------------
+function quickSortInPlace<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): void {
+  const swap = (i: number, j: number) => {
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
   };
 
-  // Split the array into two halves.
-  const middle = Math.floor(arr.length / 2);
-  const left = mergeSort(arr.slice(0, middle), cmp);
-  const right = mergeSort(arr.slice(middle), cmp);
+  function partition(low: number, high: number): number {
+    // Pick the last element as pivot (simple but fine for demo)
+    const pivot = arr[high];
+    let i = low - 1;
 
-  // Merge back together.
-  return merge(left, right);
+    for (let j = low; j < high; j++) {
+      if (compare(arr[j], pivot) <= 0) {
+        i++;
+        swap(i, j);
+      }
+    }
+    swap(i + 1, high);
+    return i + 1;
+  }
+
+  function quick(low: number, high: number): void {
+    if (low < high) {
+      const pi = partition(low, high);
+      quick(low, pi - 1);
+      quick(pi + 1, high);
+    }
+  }
+
+  quick(0, arr.length - 1);
 }
-const numbers = [42, 1, 23, 4, 16];
-const sorted = mergeSort(numbers);   // [1, 4, 16, 23, 42]
-console.log(sorted);
-console.log(numbers);  // still [42, 1, 23, 4, 16]
-const words = ["banana", "Apple", "cherry"];
-const sortedWords = mergeSort(words, (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-console.log(sortedWords); // ["Apple", "banana", "cherry"]
+
+// ------------------------------------------------------------
+// 2️⃣  Functional quick‑sort – returns a new sorted array
+// ------------------------------------------------------------
+function quickSortFunctional<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  if (arr.length <= 1) return arr.slice(); // immutable copy
+
+  // Random pivot for better average performance on already‑sorted data
+  const pivot = arr[Math.floor(Math.random() * arr.length)];
+  const lows = arr.filter((v) => compare(v, pivot) < 0);
+  const highs = arr.filter((v) => compare(v, pivot) > 0);
+  const pivots = arr.filter((v) => compare(v, pivot) === 0);
+
+  return [
+    ...quickSortFunctional(lows, compare),
+    ...pivots,
+    ...quickSortFunctional(highs, compare),
+  ];
+}
+
+// ------------------------------------------------------------
+// 3️⃣  Small helper that wraps the in‑place version and offers
+//     a better pivot strategy
+// ------------------------------------------------------------
+function quickSort<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  // Randomize the array first; this keeps the pivot “good” on many inputs
+  // and eliminates the worst‑case for already‑sorted data.
+  const shuffled = arr.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  quickSortInPlace(shuffled, compare);
+  return shuffled;
+}
+
+// ---------------------------
+// Demo usage
+// ---------------------------
+
+const numbers = [34, 7, 23, 32, 5, 62, 32];
+console.log('in‑place:', (() => {
+  const copy = [...numbers];
+  quickSortInPlace(copy);
+  return copy;
+})());
+
+console.log('functional:', quickSortFunctional(numbers));
+
+console.log('wrapper:', quickSort(numbers));
+
+// ------------------------------------------------------------
+// Done!
+// ------------------------------------------------------------
+const byLength = (a: string, b: string) => a.length - b.length;
+quickSort(stringsArray, byLength);
