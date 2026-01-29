@@ -1,67 +1,55 @@
 /**
- * Returns the k‑th smallest element (1‑based index).
- * O(n log n) by quick‑sort.
+ * Merge‑sort for array of T values.
+ *
+ * @param arr  Input array – left untouched.
+ * @param cmp  Optional comparison function. If omitted, values are compared with < >.
+ * @returns A new sorted array.
  */
-export function kthSmallestSort(arr: number[], k: number): number {
-  if (!arr.length) throw new Error('Array is empty');
-  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
+export function mergeSort<T>(arr: readonly T[], cmp?: (a: T, b: T) => number): T[] {
+  // Base case: arrays of size 0 or 1 are already sorted.
+  if (arr.length <= 1) return [...arr];
 
-  // Create a copy so the original array stays untouched
-  const copy = [...arr].sort((a, b) => a - b);
-  return copy[k - 1];
-}
+  // Helper to merge two already‑sorted halves.
+  const merge = (left: T[], right: T[]): T[] => {
+    const result: T[] = [];
+    let i = 0, j = 0;
 
-/**
- * Returns the k‑th smallest element in expected linear time via QuickSelect.
- * Stable but not guaranteed worst‑case performance.
- */
-export function kthSmallestQuickSelect(arr: number[], k: number): number {
-  if (!arr.length) throw new Error('Array is empty');
-  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
+    while (i < left.length && j < right.length) {
+      const l = left[i];
+      const r = right[j];
+      const comp = cmp
+        ? cmp(l, r)
+        : (l as any) < (r as any)
+          ? -1
+          : (l as any) > (r as any)
+          ? 1
+          : 0;
 
-  // Recursive helper
-  function quickSelect(nums: number[], left: number, right: number, kth: number): number {
-    if (left === right) return nums[left];
-
-    let pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
-    pivotIndex = partition(nums, left, right, pivotIndex);
-
-    const leftSize = pivotIndex - left + 1;
-    if (kth < leftSize) return quickSelect(nums, left, pivotIndex - 1, kth);
-    if (kth === leftSize) return nums[pivotIndex];
-    return quickSelect(nums, pivotIndex + 1, right, kth - leftSize);
-  }
-
-  function partition(nums: number[], left: number, right: number, pivotIndex: number): number {
-    const pivotValue = nums[pivotIndex];
-    // Move pivot to end
-    [nums[pivotIndex], nums[right]] = [nums[right], nums[pivotIndex]];
-    let storeIndex = left;
-
-    for (let i = left; i < right; i++) {
-      if (nums[i] < pivotValue) {
-        [nums[storeIndex], nums[i]] = [nums[i], nums[storeIndex]];
-        storeIndex++;
+      if (comp <= 0) {
+        result.push(l);
+        i++;
+      } else {
+        result.push(r);
+        j++;
       }
     }
-    // Move pivot to its final place
-    [nums[right], nums[storeIndex]] = [nums[storeIndex], nums[right]];
-    return storeIndex;
-  }
 
-  // Clone the array so we don't mutate the caller's array
-  const clone = [...arr];
-  return quickSelect(clone, 0, clone.length - 1, k);
-}
-const data = [7, 2, 5, 3, 9, 1];
-const kth = 3; // 3rd smallest
+    // Push any remaining items from left or right.
+    return result.concat(left.slice(i), right.slice(j));
+  };
 
-console.log(kthSmallestSort(data, kth));          // 5
-console.log(kthSmallestQuickSelect(data, kth));   // 5
-export function kthSmallest<T>(
-  arr: T[],
-  k: number,
-  cmp: (a: T, b: T) => number,
-): T {
-  // ...same logic, replace numeric comparisons with cmp(...)
+  // Split the array into two halves.
+  const middle = Math.floor(arr.length / 2);
+  const left = mergeSort(arr.slice(0, middle), cmp);
+  const right = mergeSort(arr.slice(middle), cmp);
+
+  // Merge back together.
+  return merge(left, right);
 }
+const numbers = [42, 1, 23, 4, 16];
+const sorted = mergeSort(numbers);   // [1, 4, 16, 23, 42]
+console.log(sorted);
+console.log(numbers);  // still [42, 1, 23, 4, 16]
+const words = ["banana", "Apple", "cherry"];
+const sortedWords = mergeSort(words, (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+console.log(sortedWords); // ["Apple", "banana", "cherry"]
