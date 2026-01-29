@@ -1,37 +1,39 @@
-// factorial.ts
-import readline from 'readline';
+/**
+ * Returns the largest prime divisor of `n`.
+ * If `n` is 0 or 1, returns `undefined`.
+ */
+function largestPrimeFactor(n: number): number | undefined {
+  if (n < 2) return undefined;          // no prime factors for 0 or 1
 
-// Utility that returns the factorial of a non‑negative integer
-function factorial(n: number): number {
-  if (n < 0) throw new Error('Number must be non‑negative');
-  if (n === 0 || n === 1) return 1;
-  return n * factorial(n - 1);
-}
+  let num = Math.abs(n);                 // work with a positive number
+  let maxFactor = 1;
 
-// Set up a readline interface to read from stdin
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-// Ask the user for a number
-rl.question('Enter a non‑negative integer: ', (answer) => {
-  const num = Number(answer.trim());
-
-  if (Number.isNaN(num) || !Number.isInteger(num)) {
-    console.log(`"${answer}" is not a valid integer.`);
-  } else {
-    try {
-      const result = factorial(num);
-      console.log(`Factorial of ${num} is ${result}`);
-    } catch (e) {
-      console.log(e.message);
-    }
+  // Handle the factor 2 separately to keep the loop odd.
+  while (num % 2 === 0) {
+    maxFactor = 2;
+    num /= 2;
   }
 
-  rl.close();
-});
-npm install --save-dev @types/node
-npx ts-node factorial.ts
-tsc factorial.ts   # produces factorial.js
-node factorial.js
+  // Now only odd factors are possible.
+  let divisor = 3;
+  const sqrtLimit = Math.sqrt(num);
+  while (divisor <= sqrtLimit) {
+    while (num % divisor === 0) {
+      maxFactor = divisor;
+      num /= divisor;
+    }
+    divisor += 2;                       // skip even numbers
+  }
+
+  // If after the loop num > 1, it itself is a prime factor larger than all found.
+  if (num > 1) {
+    maxFactor = num;
+  }
+
+  return maxFactor;
+}
+console.log(largestPrimeFactor(2));                // 2
+console.log(largestPrimeFactor(28));               // 7
+console.log(largestPrimeFactor(1000003));          // 1000003 (its prime)
+console.log(largestPrimeFactor(123456));           // 643
+console.log(largestPrimeFactor(-84));              // 7
