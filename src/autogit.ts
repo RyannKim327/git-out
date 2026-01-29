@@ -1,43 +1,33 @@
-// Helper that normalises the string – handy if you want to ignore
-// spaces, punctuation, and case.
-function normalise(text: string): string {
-  return text
-    .toLowerCase()         // ignore case
-    .replace(/[^a-z0-9]/g, '');  // keep only alphanumerics
+// Basic node definition
+interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
 
-/**
- * Returns true if `input` is a palindrome.
- *
- * @param input – the string you want to test
- * @param {boolean} allowEmpty = false  – whether an empty string is considered a palindrome
- */
-function isPalindrome(
-  input: string,
-  allowEmpty = false,
-): boolean {
-  // Fast‑path for empty string
-  if (input.length === 0) return allowEmpty;
+// Helper – takes the head of a list and returns the middle node.
+function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null;
 
-  const s = normalise(input);
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-  // Empty after normalisation may be true or false – decide here
-  if (s.length === 0) return false;
-
-  // Compare characters from both ends
-  let left = 0;
-  let right = s.length - 1;
-
-  while (left < right) {
-    if (s[left] !== s[right]) return false;
-    left++;
-    right--;
+  // advance `fast` two steps for every one step `slow` takes
+  while (fast !== null && fast.next !== null) {
+    slow = slow!.next;          // will never be null here – just for TS safety
+    fast = fast.next.next;
   }
 
-  return true;
+  // when fast runs out, slow is at the middle
+  return slow;
 }
+// Build a tiny list: 1 → 2 → 3 → 4 → 5
+const a: ListNode<number> = { value: 1, next: null };
+const b: ListNode<number> = { value: 2, next: null };
+const c: ListNode<number> = { value: 3, next: null };
+const d: ListNode<number> = { value: 4, next: null };
+const e: ListNode<number> = { value: 5, next: null };
 
-// Demo
-console.log(isPalindrome('RaceCar'));           // true
-console.log(isPalindrome('A man, a plan!'));    // true
-console.log(isPalindrome('hello world'));       // false
+a.next = b; b.next = c; c.next = d; d.next = e;
+
+const middle = findMiddle(a);
+console.log(middle?.value); // logs 3
