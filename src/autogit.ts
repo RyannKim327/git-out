@@ -1,63 +1,53 @@
 /**
- * Rabin‑Karp string search
- *
- * Parameters:
- *  pattern – the string we’re looking for
- *  text    – the string to search inside
- *
- * Returns:
- *  array of starting indices where pattern occurs (empty if no match)
+ * Node for a singly linked list.
  */
-export function rabinKarp(pattern: string, text: string): number[] {
-    // Edge cases
-    if (pattern.length === 0) return [];
-    if (pattern.length > text.length) return [];
-
-    const base = 256;               // number of possible characters (ASCII)
-    const mod = 101;                // a prime mod to keep numbers small
-
-    const m = pattern.length;
-    const n = text.length;
-
-    // Pre‑compute base^(m‑1) % mod  (the “high” power)
-    let basePower = 1;
-    for (let i = 0; i < m - 1; i++) {
-        basePower = (basePower * base) % mod;
-    }
-
-    // Compute hash for pattern and first window of text
-    let patHash = 0;
-    let txtHash = 0;
-    for (let i = 0; i < m; i++) {
-        patHash = (patHash * base + pattern.charCodeAt(i)) % mod;
-        txtHash = (txtHash * base + text.charCodeAt(i)) % mod;
-    }
-
-    const result: number[] = [];
-
-    // Slide the window over the text
-    for (let s = 0; s <= n - m; s++) {
-        // If the hash values match, verify the substring to confirm
-        if (patHash === txtHash) {
-            let match = true;
-            for (let k = 0; k < m; k++) {
-                if (text[s + k] !== pattern[k]) {
-                    match = false;
-                    break;
-                }
-            }
-            if (match) result.push(s);
-        }
-
-        // Compute hash for next window: remove leading char, add trailing char
-        if (s < n - m) {
-            txtHash = (txtHash - text.charCodeAt(s) * basePower) % mod;
-            if (txtHash < 0) txtHash += mod;                    // keep positive
-            txtHash = (txtHash * base + text.charCodeAt(s + m)) % mod;
-        }
-    }
-
-    return result;
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-const idx = rabinKarp('abc', 'xabcababc');
-console.log(idx);   // → [1, 6]
+
+/**
+ * Detects if a linked list contains a cycle.
+ *
+ * @param head The head of the list.
+ * @returns true if a cycle exists, false otherwise.
+ */
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  let slow = head;
+  let fast = head;
+
+  while (fast !== null && fast.next !== null) {
+    slow = slow!.next;          // move one step
+    fast = fast.next.next;      // move two steps
+    if (slow === fast) {        // same reference → cycle
+      return true;
+    }
+  }
+
+  return false;                 // fast hit the end → no cycle
+}
+// 1 → 2 → 3 → 4 → 5
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+const d = new ListNode(4);
+const e = new ListNode(5);
+
+a.next = b; b.next = c; c.next = d; d.next = e;
+
+// no cycle
+console.log(hasCycle(a)); // false
+
+// Introduce a cycle: e.next = c (3rd node)
+e.next = c;
+console.log(hasCycle(a)); // true
+function hasCycleSet<T>(head: ListNode<T> | null): boolean {
+  const visited = new Set<ListNode<T>>();
+
+  let current = head;
+  while (current !== null) {
+    if (visited.has(current)) return true; // already seen → cycle
+    visited.add(current);
+    current = current.next;
+  }
+  return false; // reached null → acyclic
+}
