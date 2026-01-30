@@ -1,40 +1,24 @@
-export interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
-}
-export function countLeaves<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                     // empty tree
+const numbers: number[] = [5, 2, 9, 1, 5, 6];
 
-  // If the node has no children, it’s a leaf
-  if (!root.left && !root.right) return 1;
+// sort in place (mutates the original array)
+numbers.sort((a, b) => a - b);
+console.log(numbers); // [1, 2, 5, 5, 6, 9]
+numbers.sort((a, b) => b - a);
+console.log(numbers); // [9, 6, 5, 5, 2, 1]
+const sorted = [...numbers].sort((a, b) => a - b);
+// or
+const sorted = numbers.slice().sort((a, b) => a - b);
+interface Item { value: number; rank: number }
 
-  // Otherwise recurse on children and sum the results
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-export function countLeavesIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
+const items: Item[] = [
+  { value: 10, rank: 2 },
+  { value: 12, rank: 1 },
+  { value: 10, rank: 1 }
+];
 
-  let stack: TreeNode<T>[] = [root];
-  let leaves = 0;
+items.sort((x, y) => {
+  if (x.value === y.value) return x.rank - y.rank; // tie‑break on rank
+  return x.value - y.value;
+});
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node.left && !node.right) {
-      leaves++;                // it’s a leaf
-    } else {
-      if (node.left) stack.push(node.left);
-      if (node.right) stack.push(node.right);
-    }
-  }
-
-  return leaves;
-}
-const tree: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3, right: { value: 6 } }
-};
-
-console.log(countLeaves(tree));          // → 3  (nodes 4, 5, 6)
-console.log(countLeavesIter(tree));      // → 3
+console.log(items);
