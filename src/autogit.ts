@@ -1,75 +1,55 @@
-// ──────────────────────────────────────────────────────────────
-// 1.  Types for the graph
-// ──────────────────────────────────────────────────────────────
-interface Node<T = void> {
-  value: T;
-  neighbours: Node<T>[];
-}
-
-// A small helper to create nodes
-function createNode<T>(value: T): Node<T> {
-  return { value, neighbours: [] };
-}
-
-function addEdge<T>(from: Node<T>, to: Node<T>): void {
-  from.neighbours.push(to);
-  to.neighbours.push(from);    // undirected; drop this line for directed graphs
-}
-
-// ──────────────────────────────────────────────────────────────
-// 2.  Depth‑limited search (recursive DFS style)
-// ──────────────────────────────────────────────────────────────
 /**
- * Searches `startNode` for a node whose value satisfies `goalPredicate`,
- * but stops expanding any node that appears deeper than `limit` levels.
+ * Insertion sort – stable, O(n²) average / worst‑case.
  *
- * @param start      the node to start from
- * @param goal       a predicate; if it returns true the node is considered the goal
- * @param limit      max depth to explore
- * @param visited    internal, tracks visited nodes
- * @param depth      internal, current depth
- * @returns          the goal node if found, or null
+ * @param arr   - Array to sort (mutable, in‑place).
+ * @param cmp   - Optional compare function (a < b → negative,
+ *                a > b → positive, a == b → 0).
+ *                If omitted, the default numeric or string
+ *                comparison is used.
+ * @returns     - The same array reference, now sorted.
  */
-function depthLimitedSearch<T>(
-  start: Node<T>,
-  goal: (value: T) => boolean,
-  limit: number,
-  visited = new Set<Node<T>>(),
-  depth = 0
-): Node<T> | null {
-  if (depth > limit) return null;               // over the limit
+function insertionSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): T[] {
+  // Default comparator: JavaScript's <= works for numbers & strings.
+  const compare = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
-  visited.add(start);
-  if (goal(start.value)) return start;          // goal reached
+  // Work from the second element onward – the sub‑array `[0, i)` is sorted.
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-  for (const neighbour of start.neighbours) {
-    if (!visited.has(neighbour)) {
-      const result = depthLimitedSearch(neighbour, goal, limit, visited, depth + 1);
-      if (result !== null) return result;      // propagate success upwards
+    // Shift larger elements rightward until the right spot is found.
+    while (j >= 0 && compare(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
     }
+
+    // Put the key into its correct place.
+    arr[j + 1] = key;
   }
 
-  return null;                                  // no goal found within this branch
+  return arr;
 }
+// Numbers
+const nums = [21, 4, 18, 15, 6];
+console.log(insertionSort(nums));          // [4, 6, 15, 18, 21]
 
-// ──────────────────────────────────────────────────────────────
-// 3.  Example usage
-// ──────────────────────────────────────────────────────────────
-/*
-// Build a tiny graph
-const a = createNode('A');
-const b = createNode('B');
-const c = createNode('C');
-const d = createNode('D');
-const e = createNode('E');
+// Strings
+const words = ['peach', 'apple', 'banana'];
+console.log(insertionSort(words));          // ['apple', 'banana', 'peach']
 
-addEdge(a, b);
-addEdge(a, c);
-addEdge(b, d);
-addEdge(c, e);
+// Custom objects – sort by `age`
+interface Person { name: string; age: number; }
+const people: Person[] = [
+  { name: 'Ann', age: 33 },
+  { name: 'Bob', age: 24 },
+  { name: 'Cleo', age: 41 },
+];
 
-// Find node 'E' but stop after exploring 2 edges from 'A'
-const found = depthLimitedSearch(a, val => val === 'E', 2);
-
-console.log(found ? `Found ${found.value}` : 'Not found within depth limit');
-*/
+console.log(
+  insertionSort(people, (a, b) => a.age - b.age)
+); // [{name:'Bob',age:24}, {name:'Ann',age:33}, {name:'Cleo',age:41}]
+console.assert(JSON.stringify(insertionSort([5, 4, 3, 2, 1])) === '[1,2,3,4,5]');
+console.assert(JSON.stringify(insertionSort([{x:2}, {x:1}], (a,b)=>a.x-b.x)) === '[{"x":1},{"x":2}]');
