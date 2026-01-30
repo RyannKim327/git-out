@@ -1,43 +1,39 @@
-function stringLength(str: string): number {
-  let len = 0;
-  for (let i = 0; i < str.length; i++) {
-    len++;                // we still use str.length in the loop condition,
-                          // but we never read it as the "answer"
+function factorialRecursive(n: number): number {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
+}
+console.log(factorialRecursive(5)); // 120
+function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-  return len;
+  return result;
 }
-function stringLength(str: string): number {
-  let len = 0;
-  let code = str.codePointAt(0);
-  let idx = 0;
-  while (code !== undefined) {
-    len++;
-    idx++;
-    code = str.codePointAt(idx);
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1n;
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
   }
-  return len;
+  return result;
 }
-function stringLength(str: string): number {
-  let len = 0;
-  for (const _ of str) {
-    len++;
-  }
-  return len;
-}
-function stringLength(str: string): number {
-  if (str === '') return 0;
-  return 1 + stringLength(str.slice(1));
-}
-function stringLength(str: string): number {
-  const matches = str.match(/./gu);
-  return matches ? matches.length : 0;
-}
-function stringLength(str: string): number {
-  let idx = 0;
-  let len = 0;
-  while (str.charAt(idx) !== '') { // `charAt` returns '' past the end
-    len++;
-    idx++;
-  }
-  return len;
-}
+console.log(factorialBigInt(20));        // 2432902008176640000n
+console.log(factorialBigInt(100));       // 9.332621544e+157n (full bigint printed)
+const factorialMemo = (() => {
+  const cache: Record<number, number> = {0: 1, 1: 1};
+
+  const inner = (n: number): number => {
+    if (n in cache) return cache[n];
+    cache[n] = n * inner(n - 1);
+    return cache[n];
+  };
+
+  return inner;
+})();
+console.assert(factorialIterative(0) === 1);
+console.assert(factorialIterative(6) === 720);
+
+console.assert(factorialBigInt(5).toString() === '120');
+console.assert(factorialBigInt(30).toString().startsWith('265252859...'));
