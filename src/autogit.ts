@@ -1,55 +1,63 @@
-/**
- * Insertion sort – stable, O(n²) average / worst‑case.
- *
- * @param arr   - Array to sort (mutable, in‑place).
- * @param cmp   - Optional compare function (a < b → negative,
- *                a > b → positive, a == b → 0).
- *                If omitted, the default numeric or string
- *                comparison is used.
- * @returns     - The same array reference, now sorted.
- */
-function insertionSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  // Default comparator: JavaScript's <= works for numbers & strings.
-  const compare = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+// Node type – each element points to the next one
+class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
+}
 
-  // Work from the second element onward – the sub‑array `[0, i)` is sorted.
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+// The queue itself
+class LinkedListQueue<T> {
+  private head: ListNode<T> | null = null; // dequeue from here
+  private tail: ListNode<T> | null = null; // enqueue at here
+  private _size: number = 0;
 
-    // Shift larger elements rightward until the right spot is found.
-    while (j >= 0 && compare(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
+  /** Add an item to the back of the queue */
+  enqueue(value: T): void {
+    const newNode = new ListNode(value);
+    if (this.tail) {
+      this.tail.next = newNode;   // link the old tail to the new node
+    } else {
+      // Empty queue – head and tail both point to the new node
+      this.head = newNode;
     }
-
-    // Put the key into its correct place.
-    arr[j + 1] = key;
+    this.tail = newNode;
+    this._size++;
   }
 
-  return arr;
+  /** Remove and return the item from the front of the queue.
+      Returns undefined if the queue is empty. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined;
+
+    const value = this.head.value;
+    this.head = this.head.next;          // move head forward
+    if (!this.head) this.tail = null;    // queue became empty
+    this._size--;
+    return value;
+  }
+
+  /** Peek at the front without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  /** Number of items in the queue */
+  get size(): number {
+    return this._size;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this.size === 0;
+  }
 }
-// Numbers
-const nums = [21, 4, 18, 15, 6];
-console.log(insertionSort(nums));          // [4, 6, 15, 18, 21]
+const q = new LinkedListQueue<number>();
 
-// Strings
-const words = ['peach', 'apple', 'banana'];
-console.log(insertionSort(words));          // ['apple', 'banana', 'peach']
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
 
-// Custom objects – sort by `age`
-interface Person { name: string; age: number; }
-const people: Person[] = [
-  { name: 'Ann', age: 33 },
-  { name: 'Bob', age: 24 },
-  { name: 'Cleo', age: 41 },
-];
-
-console.log(
-  insertionSort(people, (a, b) => a.age - b.age)
-); // [{name:'Bob',age:24}, {name:'Ann',age:33}, {name:'Cleo',age:41}]
-console.assert(JSON.stringify(insertionSort([5, 4, 3, 2, 1])) === '[1,2,3,4,5]');
-console.assert(JSON.stringify(insertionSort([{x:2}, {x:1}], (a,b)=>a.x-b.x)) === '[{"x":1},{"x":2}]');
+console.log(q.peek()); // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.isEmpty()); // false
+console.log(q.dequeue()); // 30
+console.log(q.isEmpty()); // true
