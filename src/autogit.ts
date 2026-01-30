@@ -1,43 +1,35 @@
 /**
- * Counting sort for integer arrays (can include negatives).
- * @param arr The input array of numbers.
- * @returns A new sorted array.
+ * Recursively searches for `target` inside a sorted array.
+ *
+ * @param arr  The sorted array to search.
+ * @param target The value we're looking for.
+ * @param left  The leftmost index to consider (inclusive).
+ * @param right The rightmost index to consider (inclusive).
+ * @returns The index of `target`, or `-1` if it isn’t present.
  */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+function binarySearchRecursive(
+    arr: number[],
+    target: number,
+    left: number = 0,
+    right: number = arr.length - 1
+): number {
+    if (left > right) {          // Base case: empty search window
+        return -1;
+    }
 
-  // 1) Determine min and max to find the range.
-  let min = arr[0];
-  let max = arr[0];
-  for (const v of arr) {
-    if (v < min) min = v;
-    else if (v > max) max = v;
-  }
+    const mid = Math.floor((left + right) / 2);
 
-  const range = max - min + 1;          // how many distinct integer values
-  const count = new Array<number>(range).fill(0);
-
-  // 2) Count each value
-  for (const v of arr) {
-    count[v - min]++;                   // offset by min so array starts at 0
-  }
-
-  // 3) Convert counts to cumulative counts
-  for (let i = 1; i < range; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 4) Allocate result array
-  const output = new Array<number>(arr.length);
-
-  // 5) Place elements into output in stable order
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const v = arr[i];
-    const idx = v - min;
-    const pos = count[idx] - 1;         // final index for this element
-    output[pos] = v;
-    count[idx]--;                       // decrease count for next instance
-  }
-
-  return output;
+    if (arr[mid] === target) {
+        return mid;              // Found the target
+    } else if (arr[mid] > target) {
+        // Target is in the left half
+        return binarySearchRecursive(arr, target, left, mid - 1);
+    } else {
+        // Target is in the right half
+        return binarySearchRecursive(arr, target, mid + 1, right);
+    }
 }
+const sorted = [3, 7, 11, 15, 23, 42, 56];
+
+console.log(binarySearchRecursive(sorted, 15)); // → 3
+console.log(binarySearchRecursive(sorted, 1));  // → -1
