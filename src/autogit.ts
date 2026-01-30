@@ -1,51 +1,58 @@
-// Stack.ts
-export class Stack<T> {
-  // private backing store
-  private items: T[] = [];
+// Majority element finder – works for any type that supports === comparison
+export function majorityElement<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
 
-  /** Push an item onto the stack. */
-  push(item: T): void {
-    this.items.push(item);
+  // 1st pass: find a candidate
+  let candidate = arr[0];
+  let count = 1;
+
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === candidate) {
+      count++;
+    } else if (count === 0) {
+      candidate = arr[i];
+      count = 1;
+    } else {
+      count--;
+    }
   }
 
-  /** Remove the top item and return it.  Returns undefined if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
+  // 2nd pass: verify that the candidate is really a majority
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
   }
 
-  /** Peek at the top item without removing it.  Returns undefined if the stack is empty. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
+  return count > Math.floor(arr.length / 2) ? candidate : null;
+}
+const nums = [3, 1, 3, 3, 2, 3, 3];
+const maj = majorityElement(nums);
 
-  /** Return true if the stack has no items. */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
+console.log(maj); // → 3
+function majorityBySorting<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
 
-  /** Current number of elements in the stack. */
-  size(): number {
-    return this.items.length;
-  }
+  const sorted = [...arr].sort(); // lexicographic for strings, numeric for numbers
+  const midVal = sorted[Math.floor(arr.length / 2)];
 
-  /** Optional: completely clear the stack. */
-  clear(): void {
-    this.items = [];
+  const count = sorted.reduce((c, v) => (v === midVal ? c + 1 : c), 0);
+  return count > Math.floor(arr.length / 2) ? midVal : null;
+}
+// A simple quick‑check
+export function testMajority() {
+  const cases: Array<[any[], any | null]> = [
+    [[1, 2, 1, 1, 3], 1],
+    [['a', 'b', 'a', 'a', 'c'], 'a'],
+    [[5, 5, 6, 6, 5], 5],
+    [[1, 2, 3], null],
+  ];
+
+  for (const [arr, expected] of cases) {
+    const result = majorityElement(arr);
+    if (result !== expected) {
+      console.error(`❌ Failed for ${JSON.stringify(arr)}: got ${result}`);
+    } else {
+      console.log(`✅ ${JSON.stringify(arr)} → ${result}`);
+    }
   }
 }
-import { Stack } from "./Stack";
-
-const numberStack = new Stack<number>();
-numberStack.push(10);
-numberStack.push(20);
-
-console.log(numberStack.peek()); // 20
-console.log(numberStack.pop());  // 20
-console.log(numberStack.size()); // 1
-console.log(numberStack.isEmpty()); // false
-
-// Generic example with strings
-const wordStack = new Stack<string>();
-wordStack.push("hello");
-wordStack.push("world");
-console.log(wordStack.pop()); // world
