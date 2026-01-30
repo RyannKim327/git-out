@@ -1,75 +1,40 @@
-// ──────────────────────────────────────────────────────────────
-// 1.  Types for the graph
-// ──────────────────────────────────────────────────────────────
-interface Node<T = void> {
+export interface TreeNode<T = number> {
   value: T;
-  neighbours: Node<T>[];
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
+export function countLeaves<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                     // empty tree
 
-// A small helper to create nodes
-function createNode<T>(value: T): Node<T> {
-  return { value, neighbours: [] };
+  // If the node has no children, it’s a leaf
+  if (!root.left && !root.right) return 1;
+
+  // Otherwise recurse on children and sum the results
+  return countLeaves(root.left) + countLeaves(root.right);
 }
+export function countLeavesIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
 
-function addEdge<T>(from: Node<T>, to: Node<T>): void {
-  from.neighbours.push(to);
-  to.neighbours.push(from);    // undirected; drop this line for directed graphs
-}
+  let stack: TreeNode<T>[] = [root];
+  let leaves = 0;
 
-// ──────────────────────────────────────────────────────────────
-// 2.  Depth‑limited search (recursive DFS style)
-// ──────────────────────────────────────────────────────────────
-/**
- * Searches `startNode` for a node whose value satisfies `goalPredicate`,
- * but stops expanding any node that appears deeper than `limit` levels.
- *
- * @param start      the node to start from
- * @param goal       a predicate; if it returns true the node is considered the goal
- * @param limit      max depth to explore
- * @param visited    internal, tracks visited nodes
- * @param depth      internal, current depth
- * @returns          the goal node if found, or null
- */
-function depthLimitedSearch<T>(
-  start: Node<T>,
-  goal: (value: T) => boolean,
-  limit: number,
-  visited = new Set<Node<T>>(),
-  depth = 0
-): Node<T> | null {
-  if (depth > limit) return null;               // over the limit
-
-  visited.add(start);
-  if (goal(start.value)) return start;          // goal reached
-
-  for (const neighbour of start.neighbours) {
-    if (!visited.has(neighbour)) {
-      const result = depthLimitedSearch(neighbour, goal, limit, visited, depth + 1);
-      if (result !== null) return result;      // propagate success upwards
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node.left && !node.right) {
+      leaves++;                // it’s a leaf
+    } else {
+      if (node.left) stack.push(node.left);
+      if (node.right) stack.push(node.right);
     }
   }
 
-  return null;                                  // no goal found within this branch
+  return leaves;
 }
+const tree: TreeNode = {
+  value: 1,
+  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
+  right: { value: 3, right: { value: 6 } }
+};
 
-// ──────────────────────────────────────────────────────────────
-// 3.  Example usage
-// ──────────────────────────────────────────────────────────────
-/*
-// Build a tiny graph
-const a = createNode('A');
-const b = createNode('B');
-const c = createNode('C');
-const d = createNode('D');
-const e = createNode('E');
-
-addEdge(a, b);
-addEdge(a, c);
-addEdge(b, d);
-addEdge(c, e);
-
-// Find node 'E' but stop after exploring 2 edges from 'A'
-const found = depthLimitedSearch(a, val => val === 'E', 2);
-
-console.log(found ? `Found ${found.value}` : 'Not found within depth limit');
-*/
+console.log(countLeaves(tree));          // → 3  (nodes 4, 5, 6)
+console.log(countLeavesIter(tree));      // → 3
