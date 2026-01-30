@@ -1,53 +1,43 @@
 /**
- * Returns the area of a triangle.
- *
- * You can provide:
- *   • base & height (Cartesian geometry)
- *   • three side lengths (Heron's formula)
- *
- * @param base   Base of the triangle (required if you give height)
- * @param height Height of the triangle
- * @param a      Length of side a
- * @param b      Length of side b
- * @param c      Length of side c
- * @returns      The area, or NaN if the input is invalid.
+ * Counting sort for integer arrays (can include negatives).
+ * @param arr The input array of numbers.
+ * @returns A new sorted array.
  */
-export function triangleArea({
-  base,
-  height,
-  a,
-  b,
-  c,
-}: {
-  base?: number;
-  height?: number;
-  a?: number;
-  b?: number;
-  c?: number;
-}): number {
-  // Cartesian: base * height / 2
-  if (base !== undefined && height !== undefined) {
-    if (base <= 0 || height <= 0) return NaN;
-    return (base * height) / 2;
+export function countingSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
+
+  // 1) Determine min and max to find the range.
+  let min = arr[0];
+  let max = arr[0];
+  for (const v of arr) {
+    if (v < min) min = v;
+    else if (v > max) max = v;
   }
 
-  // Heron: given three sides
-  if (a !== undefined && b !== undefined && c !== undefined) {
-    if (a <= 0 || b <= 0 || c <= 0) return NaN;
-    // Check triangle inequality: the sum of any two sides must exceed the third
-    if (a + b <= c || a + c <= b || b + c <= a) return NaN;
+  const range = max - min + 1;          // how many distinct integer values
+  const count = new Array<number>(range).fill(0);
 
-    const s = (a + b + c) / 2; // semi‑perimeter
-    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  // 2) Count each value
+  for (const v of arr) {
+    count[v - min]++;                   // offset by min so array starts at 0
   }
 
-  // If the required parameters aren’t supplied
-  return NaN;
+  // 3) Convert counts to cumulative counts
+  for (let i = 1; i < range; i++) {
+    count[i] += count[i - 1];
+  }
+
+  // 4) Allocate result array
+  const output = new Array<number>(arr.length);
+
+  // 5) Place elements into output in stable order
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const v = arr[i];
+    const idx = v - min;
+    const pos = count[idx] - 1;         // final index for this element
+    output[pos] = v;
+    count[idx]--;                       // decrease count for next instance
+  }
+
+  return output;
 }
-// Base + height
-const area1 = triangleArea({ base: 10, height: 5 }); // 25
-
-// Three sides
-const area2 = triangleArea({ a: 3, b: 4, c: 5 }); // 6
-
-console.log(area1, area2);
