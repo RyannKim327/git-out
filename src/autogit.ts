@@ -1,13 +1,19 @@
-// 1. Regular expression – removes *any* whitespace (spaces, tabs, newlines)
-const noSpace = str.replace(/\s+/g, '');
+/**
+ * Minimal email validator.
+ * Covers most real‑world cases without being overly strict.
+ */
+export function isValidEmail(email: string): boolean {
+  // 1. Basic structural check: local part @ domain
+  // 2. Local part: letters, digits, dots, hyphens, underscores, and plus
+  // 3. Domain: DNS‑style labels separated by dots; ends in 2‑63‑letter TLD
+  const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,64}$/;
+  return pattern.test(email);
+}
+import validator from 'validator';
 
-// 2. If you only want literal space characters:
-const noSpaceLiteral = str.replace(/ +/g, '');   // or / /g
-
-// 3. Split/join – handy when you only want spaces:
-const noSpaceSplit = str.split(' ').join('');
-
-// 4. Using `Array.filter` to keep non‑space characters:
-const noSpaceArray = str.split('').filter(c => c !== ' ').join('');
-const original = 'Hello  world!\nThis is\tgood.';
-console.log(original.replace(/\s+/g, ''));  // "Helloworld!Thisisgood."
+function isValidFullEmail(email: string): boolean {
+  return validator.isEmail(email);  // uses RFC‑compliant logic
+}
+console.log(isValidEmail('user@example.com'));   // true
+console.log(isValidEmail('bob.smith@sub.domain.co')); // true
+console.log(isValidEmail('invalid-email@'));    // false
