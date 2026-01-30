@@ -1,40 +1,19 @@
-export interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+/**
+ * Minimal email validator.
+ * Covers most real‑world cases without being overly strict.
+ */
+export function isValidEmail(email: string): boolean {
+  // 1. Basic structural check: local part @ domain
+  // 2. Local part: letters, digits, dots, hyphens, underscores, and plus
+  // 3. Domain: DNS‑style labels separated by dots; ends in 2‑63‑letter TLD
+  const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,64}$/;
+  return pattern.test(email);
 }
-export function countLeaves<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                     // empty tree
+import validator from 'validator';
 
-  // If the node has no children, it’s a leaf
-  if (!root.left && !root.right) return 1;
-
-  // Otherwise recurse on children and sum the results
-  return countLeaves(root.left) + countLeaves(root.right);
+function isValidFullEmail(email: string): boolean {
+  return validator.isEmail(email);  // uses RFC‑compliant logic
 }
-export function countLeavesIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
-
-  let stack: TreeNode<T>[] = [root];
-  let leaves = 0;
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node.left && !node.right) {
-      leaves++;                // it’s a leaf
-    } else {
-      if (node.left) stack.push(node.left);
-      if (node.right) stack.push(node.right);
-    }
-  }
-
-  return leaves;
-}
-const tree: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3, right: { value: 6 } }
-};
-
-console.log(countLeaves(tree));          // → 3  (nodes 4, 5, 6)
-console.log(countLeavesIter(tree));      // → 3
+console.log(isValidEmail('user@example.com'));   // true
+console.log(isValidEmail('bob.smith@sub.domain.co')); // true
+console.log(isValidEmail('invalid-email@'));    // false
