@@ -1,61 +1,91 @@
-// A generic graph node – you can replace this with whatever you’re actually
-// storing.  Here we just keep a value and an array of child nodes.
-export interface TreeNode<T> {
-  value: T;
-  children: TreeNode<T>[];
+interface ListNode {
+  val: number;          // or whatever type you prefer
+  next: ListNode | null;
 }
-/**
- * Performs a breadth‑first search up to a depth limit.
- *
- * @param root The starting node.
- * @param maxDepth The maximum path length to explore (0 = only the root).
- * @param filter A callback that decides whether a node should be “accepted”.
- *               It receives the node and its depth (root = 0).
- * @returns An array of all nodes that satisfy the filter within the depth bound.
- */
-export function breadthLimitedSearch<T>(
-  root: TreeNode<T>,
-  maxDepth: number,
-  filter: (node: TreeNode<T>, depth: number) => boolean
-): TreeNode<T>[] {
-  const result: TreeNode<T>[] = [];
-  const queue: Array<{ node: TreeNode<T>; depth: number }> = [{ node: root, depth: 0 }];
 
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;           // FIFO
-    if (depth > maxDepth) continue;                  // depth guard
+function isPalindromeIterative(head: ListNode | null): boolean {
+  if (!head) return true;
 
-    if (filter(node, depth)) result.push(node);
+  const stack: number[] = [];
+  let cur: ListNode | null = head;
 
-    // Push children *after* checking depth to avoid pushing out‑of‑range nodes
-    if (depth < maxDepth) {
-      for (const child of node.children) {
-        queue.push({ node: child, depth: depth + 1 });
-      }
-    }
+  // Push all values on the stack
+  while (cur) {
+    stack.push(cur.val);
+    cur = cur.next;
   }
+
+  // Compare while traversing again
+  cur = head;
+  while (cur) {
+    if (cur.val !== stack.pop()) {
+      return false;
+    }
+    cur = cur.next;
+  }
+
+  return true;
+}
+function isPalindromeOptimized(head: ListNode | null): boolean {
+  if (!head || !head.next) return true;
+
+  // 1. Find the middle (slow will point to middle)
+  let slow = head;
+  let fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
+  }
+
+  // 2. Reverse the second half
+  let prev: ListNode | null = null;
+  let curr = slow.next;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  // `prev` is now the head of the reversed second half
+
+  // 3. Compare the two halves
+  let first = head;
+  let second = prev;
+  let result = true;
+  while (result && second) {        // second will be shorter or equal
+    if (first.val !== second.val) result = false;
+    first = first.next!;
+    second = second.next!;
+  }
+
+  // 4. (Optional) Restore the list
+  // Reverse the second half again to bring the list back to original
+  curr = prev;
+  prev = null;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  slow.next = prev;
 
   return result;
 }
-// Simple test tree
-const tree: TreeNode<string> = {
-  value: 'root',
-  children: [
-    { value: 'A', children: [] },
-    { value: 'B', children: [
-        { value: 'B1', children: [] },
-        { value: 'B2', children: [] },
-      ]
-    },
-    { value: 'C', children: [] }
-  ]
-};
+function buildList(arr: number[]): ListNode | null {
+  let dummy: ListNode = { val: 0, next: null };
+  let tail = dummy;
+  for (const v of arr) {
+    tail.next = { val: v, next: null };
+    tail = tail.next;
+  }
+  return dummy.next;
+}
 
-// Want all nodes that start with "B" and only dive 2 levels deep
-const matches = breadthLimitedSearch(
-  tree,
-  2,
-  (node, depth) => node.value.startsWith('B')
-);
+const a = buildList([1, 2, 3, 2, 1]);
+console.log(isPalindromeIterative(a));   // true
+console.log(isPalindromeOptimized(a));   // true
 
-console.log(matches.map(n => n.value)); // ['B', 'B1', 'B2']
+const b = buildList([1, 2, 3, 4]);
+console.log(isPalindromeIterative(b));   // false
+console.log(isPalindromeOptimized(b));   // false
