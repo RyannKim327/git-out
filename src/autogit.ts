@@ -1,29 +1,51 @@
-const nums = [1, 2, 2, 3, 4, 4, 5];
-const unique = [...new Set(nums)];   // [1, 2, 3,4,5]
-const vals = ['a', 'b', 'a', 'c', 'b'];
-const uniq = vals.filter((value, index, arr) => arr.indexOf(value) === index);
-// ['a','b','c']
-interface User {
-  id: number;
-  name: string;
-}
+function isPalindrome(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
+  // Normalise if requested
+  const src = ignoreCase
+    ? s.toLowerCase()
+    : s;
 
-const users: User[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob'   },
-  { id: 1, name: 'Alice'},
-  { id: 3, name: 'Carol'},
+  // Optionally strip out anything that isn’t a letter or a digit
+  const text = ignoreNonAlpha
+    ? src.replace(/[^a-z0-9]/gi, '')
+    : src;
+
+  let left = 0;
+  let right = text.length - 1;
+
+  while (left < right) {
+    if (text[left] !== text[right]) return false;
+    left++;
+    right--;
+  }
+  return true;
+}
+console.log(isPalindrome('Racecar'));          // true
+console.log(isPalindrome('A man, a plan!'));   // false
+console.log(isPalindrome('A man, a plan!', true, true)); // true
+function isPalindromeReverse(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
+  const cleaned = ignoreNonAlpha
+    ? s.replace(/[^a-z0-9]/gi, '')
+    : s;
+
+  const cmp = ignoreCase ? cleaned.toLowerCase() : cleaned;
+  const reversed = cmp.split('').reverse().join('');
+  return cmp === reversed;
+}
+console.log(isPalindromeReverse('Madam In Eden, I’m Adam', true, true)); // true
+const isPalindromeLazy = (s: string, ignoreCase = true, ignoreNonAlpha = false): boolean =>
+  (ignoreNonAlpha ? s.replace(/[^a-z0-9]/gi, '') : s)
+    .toLowerCase()
+    .split('')
+    .every((c, i, a) => c === a[a.length - i - 1]);
+const tests = [
+  { str: 'Radar', expect: true },
+  { str: 'Madam Anna', expect: false },
+  { str: 'Madam Anna', expect: true, options: { ignoreNonAlpha: true } },
+  { str: '12321', expect: true },
+  { str: 'Was it a cat I saw?', expect: true, options: { ignoreNonAlpha: true, ignoreCase: true } },
 ];
 
-const uniq = Array.from(
-  users.reduce((map, user) => map.set(user.id, user), new Map<number, User>())
-).map(entry => entry[1]);
-
-// [{id:1,name:'Alice'}, {id:2,name:'Bob'}, {id:3,name:'Carol'}]
-const objs = [{x:1},{x:2},{x:1},{x:3}];
-const uniq = Array.from(
-  new Set(objs.map(o => JSON.stringify(o)))
-).map(str => JSON.parse(str));
-import { uniqBy } from 'lodash';
-
-const uniqUsers = uniqBy(users, 'id');
+tests.forEach(({ str, expect, options }) => {
+  const result = isPalindrome(str, ...(options ? [options.ignoreCase, options.ignoreNonAlpha] : []));
+  console.assert(result === expect, `❌ ${str} should be ${expect}`);
+});
