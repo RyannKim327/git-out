@@ -1,47 +1,48 @@
 /**
- * Return true if `a` and `b` are anagrams.
- *
- *   * Ignore whitespace and punctuation.
- *   * Ignore case.
+ * Randomised quick‑sort for numbers (works for any type T that can be compared)
+ * with an optional compare function.
  */
-function areAnagramsSorting(a: string, b: string): boolean {
-  const clean = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '').split('').sort().join('');
+function randomQuickSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
 
-  return clean(a) === clean(b);
-}
+  function sort(start: number, end: number): void {
+    if (end - start <= 1) return;              // 0 or 1 element
 
-// Example
-console.log(areAnagramsSorting('Listen', 'Silent')); // → true
-/**
- * Count characters and compare the two maps.
- * Complexity: O(n), with `n` = max(a.length, b.length).
- */
-function areAnagramsCounting(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '');
+    // Pick a random pivot index in [start, end-1]
+    const pivotIndex = start + Math.floor(Math.random() * (end - start));
+    const pivotValue = arr[pivotIndex];
 
-  const strA = normalize(a);
-  const strB = normalize(b);
+    // Move pivot to the end for convenience
+    [arr[pivotIndex], arr[end - 1]] = [arr[end - 1], arr[pivotIndex]];
 
-  if (strA.length !== strB.length) return false;
+    // Partition: all < pivot on the left, others on the right
+    let storeIndex = start;
+    for (let i = start; i < end - 1; i++) {
+      if (cmp(arr[i], pivotValue) < 0) {
+        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
+        storeIndex++;
+      }
+    }
 
-  const freq: Record<string, number> = {};
+    // Place pivot in its final position
+    [arr[storeIndex], arr[end - 1]] = [arr[end - 1], arr[storeIndex]];
 
-  for (const ch of strA) {
-    freq[ch] = (freq[ch] ?? 0) + 1;
+    // Recurse on partitions
+    sort(start, storeIndex);
+    sort(storeIndex + 1, end);
   }
 
-  for (const ch of strB) {
-    if (!freq[ch]) return false; // missing or too many
-    freq[ch]! -= 1;
-  }
-
-  return true;
+  // Make a copy to keep input immutable
+  const copy = arr.slice();
+  sort(0, copy.length);
+  return copy;
 }
 
-// Example
-console.log(areAnagramsCounting('Software', 'Oxfartswe')); // → true
-const anagrams = (a: string, b: string) =>
-  a.toLowerCase().replace(/\W/g, '').split('').sort().join('') ===
-  b.toLowerCase().replace(/\W/g, '').split('').sort().join('');
+/* ----- Usage example ----- */
+const unsorted = [7, 2, 9, 4, 3, 1, 5, 6];
+const sorted = randomQuickSort(unsorted);
+console.log('original:', unsorted);
+console.log('sorted  :', sorted);
