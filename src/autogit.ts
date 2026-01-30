@@ -1,54 +1,56 @@
 /**
- * Merge two sorted slices of `arr` into a temporary array.
+ * Returns the longest strictly increasing subsequence of `arr`.
  *
- * @param arr  source array
- * @param tmp  temporary array of the same length
- * @param left  start index of the first slice
- * @param mid   end index (exclusive) of the first slice and start of the second
- * @param right end index (exclusive) of the second slice
+ * Example:
+ *   longestIncreasingSubsequence([10, 9, 2, 5, 3, 7, 101, 18])
+ *   → [2, 3, 7, 101]
  */
-function merge(
-  arr: number[],
-  tmp: number[],
-  left: number,
-  mid: number,
-  right: number
-): void {
-  let i = left;   // index in first slice
-  let j = mid;    // index in second slice
-  let k = left;   // index in tmp
+export function longestIncreasingSubsequence(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-  // Copy the relevant segment to tmp
-  for (let idx = left; idx < right; idx++) tmp[idx] = arr[idx];
+  // `tails` keeps the smallest tail value for all subsequences
+  // of a given length. `tails[i]` is the least possible tail of
+  // an increasing subsequence with length i+1.
+  const tails: number[] = [];
+  // `prevIndices` remembers, for each element, the index of its
+  // predecessor in the LIS that passes through that element.
+  const prevIndices: number[] = new Array(arr.length).fill(-1);
+  // `indicesAtLength` holds the index of the last element of the LIS
+  // of a given length, allowing us to reconstruct the sequence.
+  const indicesAtLength: number[] = [];
 
-  // Merge back into arr
-  while (i < mid && j < right) {
-    arr[k++] = tmp[i] <= tmp[j] ? tmp[i++] : tmp[j++];
-  }
-  while (i < mid) arr[k++] = tmp[i++];
-  while (j < right) arr[k++] = tmp[j++];
-}
-
-/**
- * Iterative merge sort.
- *
- * @param arr  array to sort in‑place
- */
-function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  if (n < 2) return; // already sorted
-
-  const tmp = new Array<number>(n);
-
-  // Run size = 1, 2, 4, 8, ...
-  for (let run = 1; run < n; run *= 2) {
-    for (let left = 0; left < n; left += 2 * run) {
-      const mid = Math.min(left + run, n);
-      const right = Math.min(left + 2 * run, n);
-      if (mid < right) merge(arr, tmp, left, mid, right);
+  arr.forEach((val, idx) => {
+    // Binary search for the first tail that is >= val
+    let l = 0;
+    let r = tails.length;
+    while (l < r) {
+      const m = Math.floor((l + r) / 2);
+      if (tails[m] < val) l = m + 1;
+      else r = m;
     }
+
+    // `l` is the length (0‑based) of the subsequence that will end at idx
+    if (l > 0) prevIndices[idx] = indicesAtLength[l - 1];
+
+    if (l === tails.length) {
+      tails.push(val);
+      indicesAtLength.push(idx);
+    } else {
+      tails[l] = val;
+      indicesAtLength[l] = idx;
+    }
+  });
+
+  // Reconstruct the LIS from the recorded indices
+  const lis: number[] = [];
+  let k = indicesAtLength[indicesAtLength.length - 1];
+  while (k !== -1) {
+    lis.push(arr[k]);
+    k = prevIndices[k];
   }
+  lis.reverse();
+  return lis;
 }
-const nums = [34, 7, 23, 32, 5, 62];
-mergeSortIterative(nums);
-console.log(nums); // [5, 7, 23, 32, 34, 62]
+const data = [3, 10, 2, 1, 20];
+console.log(longestIncreasingSubsequence(data));
+// → [3, 10, 20]
