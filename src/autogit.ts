@@ -1,65 +1,54 @@
-// ---------- Basics ----------
-class ListNode {
-  val: number          // you can keep any data you need
-  next: ListNode | null = null;
+/**
+ * Merge two sorted slices of `arr` into a temporary array.
+ *
+ * @param arr  source array
+ * @param tmp  temporary array of the same length
+ * @param left  start index of the first slice
+ * @param mid   end index (exclusive) of the first slice and start of the second
+ * @param right end index (exclusive) of the second slice
+ */
+function merge(
+  arr: number[],
+  tmp: number[],
+  left: number,
+  mid: number,
+  right: number
+): void {
+  let i = left;   // index in first slice
+  let j = mid;    // index in second slice
+  let k = left;   // index in tmp
 
-  constructor(val: number) {
-    this.val = val;
+  // Copy the relevant segment to tmp
+  for (let idx = left; idx < right; idx++) tmp[idx] = arr[idx];
+
+  // Merge back into arr
+  while (i < mid && j < right) {
+    arr[k++] = tmp[i] <= tmp[j] ? tmp[i++] : tmp[j++];
+  }
+  while (i < mid) arr[k++] = tmp[i++];
+  while (j < right) arr[k++] = tmp[j++];
+}
+
+/**
+ * Iterative merge sort.
+ *
+ * @param arr  array to sort in‑place
+ */
+function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  if (n < 2) return; // already sorted
+
+  const tmp = new Array<number>(n);
+
+  // Run size = 1, 2, 4, 8, ...
+  for (let run = 1; run < n; run *= 2) {
+    for (let left = 0; left < n; left += 2 * run) {
+      const mid = Math.min(left + run, n);
+      const right = Math.min(left + 2 * run, n);
+      if (mid < right) merge(arr, tmp, left, mid, right);
+    }
   }
 }
-
-// ---------- Intersection finder ----------
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  if (!headA || !headB) return null;
-
-  let ptrA: ListNode | null = headA;
-  let ptrB: ListNode | null = headB;
-
-  // After at most two passes through each list the pointers
-  // will either meet at the intersection or both become null.
-  while (ptrA !== ptrB) {
-    ptrA = ptrA ? ptrA.next : headB; // switch to the head of the other list
-    ptrB = ptrB ? ptrB.next : headA;
-  }
-
-  return ptrA; // either the intersection node, or null
-}
-
-// ---------- Quick demo ----------
-function buildLinkedList(values: number[], offset: number = 0) {
-  let head: ListNode | null = null;
-  let tail: ListNode | null = null;
-  for (let v of values) {
-    const node = new ListNode(v);
-    if (!head) head = node;
-    if (tail) tail.next = node;
-    tail = node;
-  }
-  return { head, tail };
-}
-
-// Common tail that will be shared by two lists
-const { head: shared, tail: sharedTail } = buildLinkedList([8, 10]);
-
-// First list: 3 → 7 → 8 → 10
-const { head: aHead } = buildLinkedList([3, 7]);
-if (aHead && sharedHead) {
-  // connect the shared tail
-  let node = aHead;
-  while (node.next) node = node.next;
-  node.next = shared;
-}
-
-// Second list: 99 → 1 → 8 → 10
-const { head: bHead } = buildLinkedList([99, 1]);
-if (bHead && sharedHead) {
-  let node = bHead;
-  while (node.next) node = node.next;
-  node.next = shared;
-}
-
-const intersection = getIntersectionNode(aHead, bHead);
-console.log(intersection?.val); // prints 8
+const nums = [34, 7, 23, 32, 5, 62];
+mergeSortIterative(nums);
+console.log(nums); // [5, 7, 23, 32, 34, 62]
