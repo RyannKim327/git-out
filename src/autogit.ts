@@ -1,30 +1,26 @@
-const a = [1, 2, 3, 4];
-const b = [3, 4, 5, 6];
+/**
+ * Returns the first non‑repeating character in `str`.
+ * If every character repeats, returns `undefined`.
+ *
+ * @param str – the string to check
+ */
+function firstNonRepeating(str: string): string | undefined {
+  // 1️⃣ Count how many times every character shows up
+  const freq = new Map<string, number>();
+  for (const ch of str) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  }
 
-const intersection = a.filter(x => b.includes(x));
-console.log(intersection); // [3, 4]
-const a = [1, 2, 3, 4];
-const b = [3, 4, 5, 6];
+  // 2️⃣ Scan again, looking for the first character whose count is 1
+  for (const ch of str) {
+    if (freq.get(ch) === 1) {
+      return ch;          // found it!
+    }
+  }
 
-const setB = new Set(b);
-const intersection = a.filter(x => setB.has(x));
-console.log(intersection); // [3, 4]
-const a = [1, 2, 3, 4];
-const b = [3, 4, 5, 6];
+  return undefined;       // nothing unique found
+}
 
-const [small, large] = a.length < b.length ? [a, b] : [b, a];
-const setSmall = new Set(small);
-
-const intersection = large.filter(x => setSmall.has(x));
-console.log(intersection); // [3, 4]
-const a = [1, 2, 2, 3, 4];
-const b = [2, 3, 3, 5];
-
-const intersection = Array.from(
-  new Set(a.filter(x => new Set(b).has(x)))
-);
-console.log(intersection); // [2, 3]
-import _ from 'lodash';
-
-const intersection = _.intersection([1, 2, 3], [2, 3, 4]);
-console.log(intersection); // [2, 3]
+// Demo
+console.log(firstNonRepeating("swiss"));   // → "w"
+console.log(firstNonRepeating("aabb"));    // → undefined
