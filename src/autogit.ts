@@ -1,42 +1,10 @@
-// --------------------------------------------------
-// Types
-// --------------------------------------------------
-interface User {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
+function removeVowels(str: string): string {
+  // /[aeiou]/i finds a, e, i, o, u in either case
+  return str.replace(/[aeiou]/gi, '');
 }
-
-// --------------------------------------------------
-// Helper: generic fetch wrapper with type inference
-// --------------------------------------------------
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-
-  // Throw if status is not in the 200–299 range
-  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-  // Let the compiler infer the returned shape
-  return response.json() as Promise<T>;
+console.log(removeVowels('Hello, World!')); // "Hll, Wrld!"
+function removeVowels(str: string): string {
+  const vowels = new Set('aeiouAEIOU');
+  return str.split('').filter(ch => !vowels.has(ch)).join('');
 }
-
-// --------------------------------------------------
-// Main logic
-// --------------------------------------------------
-async function main() {
-  try {
-    const users = await fetchJson<User[]>(
-      'https://jsonplaceholder.typicode.com/users'
-    );
-
-    users.forEach((u) => console.log(`${u.name} (${u.email})`));
-  } catch (err) {
-    console.error('Fetching failed:', err);
-  }
-}
-
-// --------------------------------------------------
-// Kick it off
-// --------------------------------------------------
-main();
+return str.replace(/[aeiouáéíóúAEIOUÁÉÍÓÚ]/gi, '');
