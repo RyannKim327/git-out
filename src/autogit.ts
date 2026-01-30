@@ -1,9 +1,13 @@
-function factorial(n: number): number {
-  if (n <= 1) return 1;   // base case: 0! = 1 and 1! = 1
-  return n * factorial(n - 1);
-}
-console.log(factorial(5)); // 120
-function factorialBig(n: bigint): bigint {
-  if (n <= 1n) return 1n;
-  return n * factorialBig(n - 1n);
-}
+// 1. Regular expression – removes *any* whitespace (spaces, tabs, newlines)
+const noSpace = str.replace(/\s+/g, '');
+
+// 2. If you only want literal space characters:
+const noSpaceLiteral = str.replace(/ +/g, '');   // or / /g
+
+// 3. Split/join – handy when you only want spaces:
+const noSpaceSplit = str.split(' ').join('');
+
+// 4. Using `Array.filter` to keep non‑space characters:
+const noSpaceArray = str.split('').filter(c => c !== ' ').join('');
+const original = 'Hello  world!\nThis is\tgood.';
+console.log(original.replace(/\s+/g, ''));  // "Helloworld!Thisisgood."
