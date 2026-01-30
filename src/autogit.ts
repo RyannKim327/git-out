@@ -1,63 +1,39 @@
-// Node type – each element points to the next one
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
+/**
+ * Returns the largest prime divisor of `n`.
+ * If `n` is 0 or 1, returns `undefined`.
+ */
+function largestPrimeFactor(n: number): number | undefined {
+  if (n < 2) return undefined;          // no prime factors for 0 or 1
 
-// The queue itself
-class LinkedListQueue<T> {
-  private head: ListNode<T> | null = null; // dequeue from here
-  private tail: ListNode<T> | null = null; // enqueue at here
-  private _size: number = 0;
+  let num = Math.abs(n);                 // work with a positive number
+  let maxFactor = 1;
 
-  /** Add an item to the back of the queue */
-  enqueue(value: T): void {
-    const newNode = new ListNode(value);
-    if (this.tail) {
-      this.tail.next = newNode;   // link the old tail to the new node
-    } else {
-      // Empty queue – head and tail both point to the new node
-      this.head = newNode;
+  // Handle the factor 2 separately to keep the loop odd.
+  while (num % 2 === 0) {
+    maxFactor = 2;
+    num /= 2;
+  }
+
+  // Now only odd factors are possible.
+  let divisor = 3;
+  const sqrtLimit = Math.sqrt(num);
+  while (divisor <= sqrtLimit) {
+    while (num % divisor === 0) {
+      maxFactor = divisor;
+      num /= divisor;
     }
-    this.tail = newNode;
-    this._size++;
+    divisor += 2;                       // skip even numbers
   }
 
-  /** Remove and return the item from the front of the queue.
-      Returns undefined if the queue is empty. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined;
-
-    const value = this.head.value;
-    this.head = this.head.next;          // move head forward
-    if (!this.head) this.tail = null;    // queue became empty
-    this._size--;
-    return value;
+  // If after the loop num > 1, it itself is a prime factor larger than all found.
+  if (num > 1) {
+    maxFactor = num;
   }
 
-  /** Peek at the front without removing it. */
-  peek(): T | undefined {
-    return this.head?.value;
-  }
-
-  /** Number of items in the queue */
-  get size(): number {
-    return this._size;
-  }
-
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this.size === 0;
-  }
+  return maxFactor;
 }
-const q = new LinkedListQueue<number>();
-
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
-
-console.log(q.peek()); // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.isEmpty()); // false
-console.log(q.dequeue()); // 30
-console.log(q.isEmpty()); // true
+console.log(largestPrimeFactor(2));                // 2
+console.log(largestPrimeFactor(28));               // 7
+console.log(largestPrimeFactor(1000003));          // 1000003 (its prime)
+console.log(largestPrimeFactor(123456));           // 643
+console.log(largestPrimeFactor(-84));              // 7
