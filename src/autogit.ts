@@ -1,35 +1,149 @@
-/**
- * Recursively searches for `target` inside a sorted array.
- *
- * @param arr  The sorted array to search.
- * @param target The value we're looking for.
- * @param left  The leftmost index to consider (inclusive).
- * @param right The rightmost index to consider (inclusive).
- * @returns The index of `target`, or `-1` if it isn’t present.
- */
-function binarySearchRecursive(
-    arr: number[],
-    target: number,
-    left: number = 0,
-    right: number = arr.length - 1
-): number {
-    if (left > right) {          // Base case: empty search window
-        return -1;
-    }
-
-    const mid = Math.floor((left + right) / 2);
-
-    if (arr[mid] === target) {
-        return mid;              // Found the target
-    } else if (arr[mid] > target) {
-        // Target is in the left half
-        return binarySearchRecursive(arr, target, left, mid - 1);
-    } else {
-        // Target is in the right half
-        return binarySearchRecursive(arr, target, mid + 1, right);
-    }
+/* ------------------------------------------------------------ */
+/*  A generic node that holds a value and a reference to next   */
+/* ------------------------------------------------------------ */
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
-const sorted = [3, 7, 11, 15, 23, 42, 56];
 
-console.log(binarySearchRecursive(sorted, 15)); // → 3
-console.log(binarySearchRecursive(sorted, 1));  // → -1
+/* ------------------------------------------------------------ */
+/*  A generic singly‑linked list                               */
+/* ------------------------------------------------------------ */
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
+
+  /* ---------- Properties ---------- */
+  get size(): number { return this._size; }
+  get isEmpty(): boolean { return this._size === 0; }
+
+  /* ---------- Core Operations ---------- */
+
+  /** Push a value onto the **end** of the list */
+  push(value: T): void {
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      this.tail!.next = node;
+      this.tail = node;
+    }
+    this._size++;
+  }
+
+  /** Unshift a value onto the **head** of the list */
+  unshift(value: T): void {
+    const node = new ListNode(value, this.head);
+    this.head = node;
+    if (!this.tail) this.tail = node;
+    this._size++;
+  }
+
+  /** Remove and return the value at the head */
+  shift(): T | undefined {
+    if (!this.head) return undefined;
+    const value = this.head.value;
+    this.head = this.head.next;
+    if (!this.head) this.tail = null;
+    this._size--;
+    return value;
+  }
+
+  /** Remove and return the value at the tail */
+  pop(): T | undefined {
+    if (!this.head) return undefined;
+    if (!this.tail) return undefined;
+
+    let current = this.head;
+    let prev: ListNode<T> | null = null;
+
+    while (current.next) {
+      prev = current;
+      current = current.next;
+    }
+
+    const value = current.value;
+    if (prev) {
+      prev.next = null;
+      this.tail = prev;
+    } else {
+      // list had only one element
+      this.head = this.tail = null;
+    }
+    this._size--;
+    return value;
+  }
+
+  /* ---------- Traversal & Search ---------- */
+
+  /** Find the first node whose value satisfies the predicate */
+  find(predicate: (value: T) => boolean): T | undefined {
+    let node = this.head;
+    while (node) {
+      if (predicate(node.value)) return node.value;
+      node = node.next;
+    }
+    return undefined;
+  }
+
+  /** Convert the list to an array (for debugging or display) */
+  toArray(): T[] {
+    const arr: T[] = [];
+    let node = this.head;
+    while (node) {
+      arr.push(node.value);
+      node = node.next;
+    }
+    return arr;
+  }
+
+  /* ---------- Utility ---------- */
+
+  /** Remove the first node that satisfies the predicate */
+  remove(predicate: (value: T) => boolean): boolean {
+    if (!this.head) return false;
+
+    if (predicate(this.head.value)) {
+      this.shift();
+      return true;
+    }
+
+    let prev = this.head;
+    let current = this.head.next;
+
+    while (current) {
+      if (predicate(current.value)) {
+        prev.next = current.next;
+        if (!current.next) this.tail = prev; // removed tail
+        this._size--;
+        return true;
+      }
+      prev = current;
+      current = current.next;
+    }
+
+    return false; // not found
+  }
+}
+
+/* ------------------------------------------------------------ */
+/*  Usage example ------------------------------------------------ */
+const list = new LinkedList<number>();
+
+list.push(3);    // 3
+list.push(5);    // 3 → 5
+list.unshift(1); // 1 → 3 → 5
+
+console.log(list.toArray()); // [1, 3, 5]
+console.log(list.shift());   // 1
+console.log(list.pop());     // 5
+console.log(list.toArray()); // [3]
+console.log(list.find(v => v === 3)); // 3
+
+list.remove(v => v === 3);
+console.log(list.toArray()); // []
+
+/* ------------------------------------------------------------ */
