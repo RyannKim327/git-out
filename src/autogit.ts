@@ -1,15 +1,35 @@
-// 1️⃣ Convert with the global Number constructor
-const n1 = Number("42");          // 42
+/**
+ * Recursively searches for `target` inside a sorted array.
+ *
+ * @param arr  The sorted array to search.
+ * @param target The value we're looking for.
+ * @param left  The leftmost index to consider (inclusive).
+ * @param right The rightmost index to consider (inclusive).
+ * @returns The index of `target`, or `-1` if it isn’t present.
+ */
+function binarySearchRecursive(
+    arr: number[],
+    target: number,
+    left: number = 0,
+    right: number = arr.length - 1
+): number {
+    if (left > right) {          // Base case: empty search window
+        return -1;
+    }
 
-// 2️⃣ Use the unary plus – super terse
-const n2 = +"123";                // 123
+    const mid = Math.floor((left + right) / 2);
 
-// 3️⃣ (recommended for base‑10 integer strings)
-const n3 = parseInt("07", 10);    // 7
+    if (arr[mid] === target) {
+        return mid;              // Found the target
+    } else if (arr[mid] > target) {
+        // Target is in the left half
+        return binarySearchRecursive(arr, target, left, mid - 1);
+    } else {
+        // Target is in the right half
+        return binarySearchRecursive(arr, target, mid + 1, right);
+    }
+}
+const sorted = [3, 7, 11, 15, 23, 42, 56];
 
-// 4️⃣ If you need a float, use parseFloat
-const n4 = parseFloat("3.14");    // 3.14
-const toInt = (s: string | null | undefined): number | null =>
-  s == null ? null : parseInt(s, 10);
-
-const age = toInt(queryParamAge); // gives you a number or null if it's missing
+console.log(binarySearchRecursive(sorted, 15)); // → 3
+console.log(binarySearchRecursive(sorted, 1));  // → -1
