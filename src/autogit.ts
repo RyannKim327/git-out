@@ -1,85 +1,43 @@
-/**
- * `AdjacencyList` is a mapping from a node key to the keys of its neighbors.
- * It works for directed or undirected graphs – just decide how you add edges.
- */
-export type AdjacencyList<K extends string | number> = Record<
-  K,
-  K[] // List of outgoing neighbor keys
->;
-const graph: AdjacencyList<string> = {
-  A: ['B', 'C'],
-  B: ['A', 'D'],
-  C: ['A', 'D'],
-  D: ['B', 'C', 'E'],
-  E: ['D'],
-};
-class Queue<T> {
-  private data: T[] = [];
-  private head = 0;
-  private tail = 0;
-
-  enqueue(item: T) {
-    this.data[this.tail++] = item;
-  }
-
-  dequeue(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    const item = this.data[this.head];
-    // Optional: free memory if the queue shrinks a lot
-    if (this.head % 64 === 0) this.data = this.data.slice(this.head);
-    this.head++;
-    return item;
-  }
-
-  isEmpty() {
-    return this.head >= this.tail;
-  }
+// Helper that normalises the string – handy if you want to ignore
+// spaces, punctuation, and case.
+function normalise(text: string): string {
+  return text
+    .toLowerCase()         // ignore case
+    .replace(/[^a-z0-9]/g, '');  // keep only alphanumerics
 }
+
 /**
- * Breadth‑first search on an adjacency list.
+ * Returns true if `input` is a palindrome.
  *
- * @param graph      the graph (adjacency list)
- * @param start      the node to start from
- * @param target     optional: stop when this node is reached
- * @returns          { distance: Map<node, number>, parent: Map<node, node | null>, found?: node }
+ * @param input – the string you want to test
+ * @param {boolean} allowEmpty = false  – whether an empty string is considered a palindrome
  */
-export function bfs<K extends string | number>(
-  graph: AdjacencyList<K>,
-  start: K,
-  target?: K,
-) {
-  const distance = new Map<K, number>();
-  const parent = new Map<K, K | null>();
+function isPalindrome(
+  input: string,
+  allowEmpty = false,
+): boolean {
+  // Fast‑path for empty string
+  if (input.length === 0) return allowEmpty;
 
-  const queue = new Queue<K>();
-  queue.enqueue(start);
-  distance.set(start, 0);
-  parent.set(start, null);
+  const s = normalise(input);
 
-  while (!queue.isEmpty()) {
-    const current = queue.dequeue()!;
-    const curDist = distance.get(current)!;
+  // Empty after normalisation may be true or false – decide here
+  if (s.length === 0) return false;
 
-    // Optional early‑exit
-    if (target !== undefined && current === target) {
-      return { distance, parent, found: current };
-    }
+  // Compare characters from both ends
+  let left = 0;
+  let right = s.length - 1;
 
-    for (const neighbor of graph[current] ?? []) {
-      if (!distance.has(neighbor)) {                // not visited
-        distance.set(neighbor, curDist + 1);
-        parent.set(neighbor, current);
-        queue.enqueue(neighbor);
-      }
-    }
+  while (left < right) {
+    if (s[left] !== s[right]) return false;
+    left++;
+    right--;
   }
 
-  return { distance, parent, found: target }; // target not found
+  return true;
 }
-const result = bfs(graph, 'A', 'E');
-console.log('Distance map:', result.distance);
-console.log('Parent map:', result.parent);
-console.log('Target found?', result.found !== undefined);
-Distance map: Map(5) { 'A' => 0, 'B' => 1, 'C' => 1, 'D' => 2, 'E' => 3 }
-Parent map: Map(5) { 'A' => null, 'B' => 'A', 'C' => 'A', 'D' => 'B', 'E' => 'D' }
-Target found? true
+
+// Demo
+console.log(isPalindrome('RaceCar'));           // true
+console.log(isPalindrome('A man, a plan!'));    // true
+console.log(isPalindrome('hello world'));       // false
