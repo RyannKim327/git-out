@@ -1,60 +1,28 @@
 /**
- * Returns the max sum of any contiguous sub‑array of `nums`.
- * If all numbers are negative, it will still return the best (least negative) value.
+ * Binary search on a sorted array.
  *
- * @param nums Array of numbers
- * @returns maximum sub‑array sum
+ * @param arr   Sorted array of comparable items.
+ * @param value Value to search for.
+ * @returns Index of value, or -1 if not found.
  */
-function maxSubArraySum(nums: number[]): number {
-  if (nums.length === 0) {
-    throw new Error('Array must contain at least one element');
-  }
+export function binarySearch<T>(arr: T[], value: T): number {
+  let low = 0;
+  let high = arr.length - 1;
 
-  let bestSoFar = nums[0];      // best overall
-  let bestEndingHere = nums[0]; // best ending at current index
+  while (low <= high) {
+    // Middle index – floor division
+    const mid = Math.floor((low + high) / 2);
+    const midVal = arr[mid];
 
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the previous sub‑array or start fresh at nums[i]
-    bestEndingHere = Math.max(nums[i], bestEndingHere + nums[i]);
-
-    // Update the global best if needed
-    bestSoFar = Math.max(bestSoFar, bestEndingHere);
-  }
-
-  return bestSoFar;
-}
-
-/* Example usage */
-const arr = [−2, 1, −3, 4, −1, 2, 1, −5, 4];
-console.log(maxSubArraySum(arr)); // outputs 6 (sub‑array [4, -1, 2, 1])
-function maxSubArrayDetail(nums: number[]): { maxSum: number, subArray: number[], indices: [number, number] } {
-  let bestSoFar = nums[0], bestEndingHere = nums[0];
-  let start = 0, end = 0, tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] > bestEndingHere + nums[i]) {
-      bestEndingHere = nums[i];
-      tempStart = i;          // potential new start
+    if (midVal === value) return mid;      // exact match
+    if (midVal < value) {
+      low = mid + 1;                       // value is in higher half
     } else {
-      bestEndingHere += nums[i];
-    }
-
-    if (bestEndingHere > bestSoFar) {
-      bestSoFar = bestEndingHere;
-      start = tempStart;      // commit new start
-      end = i;
+      high = mid - 1;                      // value is in lower half
     }
   }
-
-  return {
-    maxSum: bestSoFar,
-    subArray: nums.slice(start, end + 1),
-    indices: [start, end]
-  };
+  return -1;  // not found
 }
-console.log(maxSubArrayDetail(arr));
-// {
-//   maxSum: 6,
-//   subArray: [4, -1, 2, 1],
-//   indices: [3, 6]
-// }
+const nums = [3, 7, 12, 18, 24, 31, 42];
+const idx = binarySearch(nums, 18); // => 3
+const missing = binarySearch(nums, 5); // => -1
