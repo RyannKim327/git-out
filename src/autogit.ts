@@ -1,51 +1,101 @@
-function isPalindrome(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
-  // Normalise if requested
-  const src = ignoreCase
-    ? s.toLowerCase()
-    : s;
+// ------------------------------------------------------------
+// 1️⃣  In‑place quick‑sort – most common for competitive coding
+// ------------------------------------------------------------
+function quickSortInPlace<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): void {
+  const swap = (i: number, j: number) => {
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  };
 
-  // Optionally strip out anything that isn’t a letter or a digit
-  const text = ignoreNonAlpha
-    ? src.replace(/[^a-z0-9]/gi, '')
-    : src;
+  function partition(low: number, high: number): number {
+    // Pick the last element as pivot (simple but fine for demo)
+    const pivot = arr[high];
+    let i = low - 1;
 
-  let left = 0;
-  let right = text.length - 1;
-
-  while (left < right) {
-    if (text[left] !== text[right]) return false;
-    left++;
-    right--;
+    for (let j = low; j < high; j++) {
+      if (compare(arr[j], pivot) <= 0) {
+        i++;
+        swap(i, j);
+      }
+    }
+    swap(i + 1, high);
+    return i + 1;
   }
-  return true;
-}
-console.log(isPalindrome('Racecar'));          // true
-console.log(isPalindrome('A man, a plan!'));   // false
-console.log(isPalindrome('A man, a plan!', true, true)); // true
-function isPalindromeReverse(s: string, ignoreCase = true, ignoreNonAlpha = false): boolean {
-  const cleaned = ignoreNonAlpha
-    ? s.replace(/[^a-z0-9]/gi, '')
-    : s;
 
-  const cmp = ignoreCase ? cleaned.toLowerCase() : cleaned;
-  const reversed = cmp.split('').reverse().join('');
-  return cmp === reversed;
-}
-console.log(isPalindromeReverse('Madam In Eden, I’m Adam', true, true)); // true
-const isPalindromeLazy = (s: string, ignoreCase = true, ignoreNonAlpha = false): boolean =>
-  (ignoreNonAlpha ? s.replace(/[^a-z0-9]/gi, '') : s)
-    .toLowerCase()
-    .split('')
-    .every((c, i, a) => c === a[a.length - i - 1]);
-const tests = [
-  { str: 'Radar', expect: true },
-  { str: 'Madam Anna', expect: false },
-  { str: 'Madam Anna', expect: true, options: { ignoreNonAlpha: true } },
-  { str: '12321', expect: true },
-  { str: 'Was it a cat I saw?', expect: true, options: { ignoreNonAlpha: true, ignoreCase: true } },
-];
+  function quick(low: number, high: number): void {
+    if (low < high) {
+      const pi = partition(low, high);
+      quick(low, pi - 1);
+      quick(pi + 1, high);
+    }
+  }
 
-tests.forEach(({ str, expect, options }) => {
-  const result = isPalindrome(str, ...(options ? [options.ignoreCase, options.ignoreNonAlpha] : []));
-  console.assert(result === expect, `❌ ${str} should be ${expect}`);
-});
+  quick(0, arr.length - 1);
+}
+
+// ------------------------------------------------------------
+// 2️⃣  Functional quick‑sort – returns a new sorted array
+// ------------------------------------------------------------
+function quickSortFunctional<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  if (arr.length <= 1) return arr.slice(); // immutable copy
+
+  // Random pivot for better average performance on already‑sorted data
+  const pivot = arr[Math.floor(Math.random() * arr.length)];
+  const lows = arr.filter((v) => compare(v, pivot) < 0);
+  const highs = arr.filter((v) => compare(v, pivot) > 0);
+  const pivots = arr.filter((v) => compare(v, pivot) === 0);
+
+  return [
+    ...quickSortFunctional(lows, compare),
+    ...pivots,
+    ...quickSortFunctional(highs, compare),
+  ];
+}
+
+// ------------------------------------------------------------
+// 3️⃣  Small helper that wraps the in‑place version and offers
+//     a better pivot strategy
+// ------------------------------------------------------------
+function quickSort<T>(
+  arr: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  // Randomize the array first; this keeps the pivot “good” on many inputs
+  // and eliminates the worst‑case for already‑sorted data.
+  const shuffled = arr.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  quickSortInPlace(shuffled, compare);
+  return shuffled;
+}
+
+// ---------------------------
+// Demo usage
+// ---------------------------
+
+const numbers = [34, 7, 23, 32, 5, 62, 32];
+console.log('in‑place:', (() => {
+  const copy = [...numbers];
+  quickSortInPlace(copy);
+  return copy;
+})());
+
+console.log('functional:', quickSortFunctional(numbers));
+
+console.log('wrapper:', quickSort(numbers));
+
+// ------------------------------------------------------------
+// Done!
+// ------------------------------------------------------------
+const byLength = (a: string, b: string) => a.length - b.length;
+quickSort(stringsArray, byLength);
