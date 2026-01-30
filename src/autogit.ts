@@ -1,149 +1,60 @@
-/* ------------------------------------------------------------ */
-/*  A generic node that holds a value and a reference to next   */
-/* ------------------------------------------------------------ */
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
+type Node = string | number;              // whichever you prefer for vertex IDs
+type Graph = Record<Node, Node[]>;          // e.g., { 1: [2,3], 2: [4], … }
+
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['d', 'e'],
+  c: ['f'],
+  d: [],
+  e: ['c'],
+  f: [],
+};
+function dfsRecursive(
+  graph: Graph,
+  start: Node,
+  visited = new Set<Node>(),
+  order: Node[] = []
+): Node[] {
+  visited.add(start);        // 1️⃣ mark as visited
+  order.push(start);         // 2️⃣ record the visit order
+
+  for (const neighbor of graph[start] ?? []) {
+    if (!visited.has(neighbor)) {
+      dfsRecursive(graph, neighbor, visited, order); // 3️⃣ recurse
+    }
+  }
+  return order;
 }
 
-/* ------------------------------------------------------------ */
-/*  A generic singly‑linked list                               */
-/* ------------------------------------------------------------ */
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+// usage
+const visitOrder = dfsRecursive(graph, 'a');
+console.log(visitOrder); // ['a', 'b', 'd', 'e', 'c', 'f']
+function dfsIterative(graph: Graph, start: Node): Node[] {
+  const stack: Node[] = [start];
+  const visited = new Set<Node>();
+  const order: Node[] = [];
 
-  /* ---------- Properties ---------- */
-  get size(): number { return this._size; }
-  get isEmpty(): boolean { return this._size === 0; }
+  while (stack.length) {
+    const node = stack.pop()!; // pop the top
+    if (visited.has(node)) continue; // skip if we've already seen it
 
-  /* ---------- Core Operations ---------- */
+    visited.add(node);   // 1️⃣ mark
+    order.push(node);    // 2️⃣ record
 
-  /** Push a value onto the **end** of the list */
-  push(value: T): void {
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      this.tail!.next = node;
-      this.tail = node;
+    // push neighbors in reverse order so that the first neighbor
+    // is processed first (mimics recursive order)
+    const neighbors = graph[node] ?? [];
+    for (let i = neighbors.length - 1; i >= 0; i--) {
+      const neighbor = neighbors[i];
+      if (!visited.has(neighbor)) stack.push(neighbor);
     }
-    this._size++;
   }
-
-  /** Unshift a value onto the **head** of the list */
-  unshift(value: T): void {
-    const node = new ListNode(value, this.head);
-    this.head = node;
-    if (!this.tail) this.tail = node;
-    this._size++;
-  }
-
-  /** Remove and return the value at the head */
-  shift(): T | undefined {
-    if (!this.head) return undefined;
-    const value = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null;
-    this._size--;
-    return value;
-  }
-
-  /** Remove and return the value at the tail */
-  pop(): T | undefined {
-    if (!this.head) return undefined;
-    if (!this.tail) return undefined;
-
-    let current = this.head;
-    let prev: ListNode<T> | null = null;
-
-    while (current.next) {
-      prev = current;
-      current = current.next;
-    }
-
-    const value = current.value;
-    if (prev) {
-      prev.next = null;
-      this.tail = prev;
-    } else {
-      // list had only one element
-      this.head = this.tail = null;
-    }
-    this._size--;
-    return value;
-  }
-
-  /* ---------- Traversal & Search ---------- */
-
-  /** Find the first node whose value satisfies the predicate */
-  find(predicate: (value: T) => boolean): T | undefined {
-    let node = this.head;
-    while (node) {
-      if (predicate(node.value)) return node.value;
-      node = node.next;
-    }
-    return undefined;
-  }
-
-  /** Convert the list to an array (for debugging or display) */
-  toArray(): T[] {
-    const arr: T[] = [];
-    let node = this.head;
-    while (node) {
-      arr.push(node.value);
-      node = node.next;
-    }
-    return arr;
-  }
-
-  /* ---------- Utility ---------- */
-
-  /** Remove the first node that satisfies the predicate */
-  remove(predicate: (value: T) => boolean): boolean {
-    if (!this.head) return false;
-
-    if (predicate(this.head.value)) {
-      this.shift();
-      return true;
-    }
-
-    let prev = this.head;
-    let current = this.head.next;
-
-    while (current) {
-      if (predicate(current.value)) {
-        prev.next = current.next;
-        if (!current.next) this.tail = prev; // removed tail
-        this._size--;
-        return true;
-      }
-      prev = current;
-      current = current.next;
-    }
-
-    return false; // not found
-  }
+  return order;
 }
 
-/* ------------------------------------------------------------ */
-/*  Usage example ------------------------------------------------ */
-const list = new LinkedList<number>();
-
-list.push(3);    // 3
-list.push(5);    // 3 → 5
-list.unshift(1); // 1 → 3 → 5
-
-console.log(list.toArray()); // [1, 3, 5]
-console.log(list.shift());   // 1
-console.log(list.pop());     // 5
-console.log(list.toArray()); // [3]
-console.log(list.find(v => v === 3)); // 3
-
-list.remove(v => v === 3);
-console.log(list.toArray()); // []
-
-/* ------------------------------------------------------------ */
+// usage
+const orderIter = dfsIterative(graph, 'a');
+console.log(orderIter); // ['a', 'b', 'd', 'e', 'c', 'f']
+// inside the while loop
+const prev = stack[stack.length - 1]; // last node that will lead to `node`
+order.push([prev, node] as [Node, Node]);
