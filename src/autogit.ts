@@ -1,13 +1,42 @@
-const raw = "  hello  world \n\t!";
-const cleaned = raw.replace(/\s+/g, "");   // ↓
-console.log(cleaned);   // "helloworld!"
-const raw = "   hello world   ";
-const trimmed = raw.trim();
-console.log(trimmed);   // "hello world"
-const left = raw.trimStart();  // "hello world   "
-const right = raw.trimEnd();   // "   hello world"
-const messy = "This   is\nan\t  example.";
-const normalised = messy.replace(/\s+/g, " ").trim();
-console.log(normalised);   // "This is an example."
-const raw = "  a b  ";
-const withoutSpaces = raw.replaceAll(" ", "");
+// --------------------------------------------------
+// Types
+// --------------------------------------------------
+interface User {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+}
+
+// --------------------------------------------------
+// Helper: generic fetch wrapper with type inference
+// --------------------------------------------------
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+
+  // Throw if status is not in the 200–299 range
+  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+  // Let the compiler infer the returned shape
+  return response.json() as Promise<T>;
+}
+
+// --------------------------------------------------
+// Main logic
+// --------------------------------------------------
+async function main() {
+  try {
+    const users = await fetchJson<User[]>(
+      'https://jsonplaceholder.typicode.com/users'
+    );
+
+    users.forEach((u) => console.log(`${u.name} (${u.email})`));
+  } catch (err) {
+    console.error('Fetching failed:', err);
+  }
+}
+
+// --------------------------------------------------
+// Kick it off
+// --------------------------------------------------
+main();
