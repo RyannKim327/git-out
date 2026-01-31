@@ -1,55 +1,85 @@
 /**
- * Returns the median of two sorted arrays.
- *
- * @param nums1 First sorted array
- * @param nums2 Second sorted array
- * @returns Median value (number)
+ * `AdjacencyList` is a mapping from a node key to the keys of its neighbors.
+ * It works for directed or undirected graphs – just decide how you add edges.
  */
-export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Make sure nums1 is the smaller array; binary search will run on it.
-  if (nums1.length > nums2.length) {
-    return findMedianSortedArrays(nums2, nums1);
+export type AdjacencyList<K extends string | number> = Record<
+  K,
+  K[] // List of outgoing neighbor keys
+>;
+const graph: AdjacencyList<string> = {
+  A: ['B', 'C'],
+  B: ['A', 'D'],
+  C: ['A', 'D'],
+  D: ['B', 'C', 'E'],
+  E: ['D'],
+};
+class Queue<T> {
+  private data: T[] = [];
+  private head = 0;
+  private tail = 0;
+
+  enqueue(item: T) {
+    this.data[this.tail++] = item;
   }
 
-  const m = nums1.length;
-  const n = nums2.length;
-  const halfLen = Math.floor((m + n + 1) / 2);
-
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);   // Count from nums1
-    const j = halfLen - i;                    // Count from nums2
-
-    // If i is too small → move right
-    if (i < m && nums2[j - 1] > nums1[i]) {
-      low = i + 1;
-    }
-    // If i is too big → move left
-    else if (i > 0 && nums1[i - 1] > nums2[j]) {
-      high = i - 1;
-    }
-    // Found perfect i
-    else {
-      let maxLeft;
-      if (i === 0) maxLeft = nums2[j - 1];
-      else if (j === 0) maxLeft = nums1[i - 1];
-      else maxLeft = Math.max(nums1[i - 1], nums2[j - 1]);
-
-      // Odd total length – median is max of left side
-      if ((m + n) % 2 === 1) return maxLeft;
-
-      // Even total length – median is average of maxLeft and minRight
-      let minRight;
-      if (i === m) minRight = nums2[j];
-      else if (j === n) minRight = nums1[i];
-      else minRight = Math.min(nums1[i], nums2[j]);
-
-      return (maxLeft + minRight) / 2;
-    }
+  dequeue(): T | undefined {
+    if (this.isEmpty()) return undefined;
+    const item = this.data[this.head];
+    // Optional: free memory if the queue shrinks a lot
+    if (this.head % 64 === 0) this.data = this.data.slice(this.head);
+    this.head++;
+    return item;
   }
 
-  // If we get here, input arrays weren’t valid (empty, unsorted, etc.)
-  throw new Error('Input arrays are not valid.');
+  isEmpty() {
+    return this.head >= this.tail;
+  }
 }
+/**
+ * Breadth‑first search on an adjacency list.
+ *
+ * @param graph      the graph (adjacency list)
+ * @param start      the node to start from
+ * @param target     optional: stop when this node is reached
+ * @returns          { distance: Map<node, number>, parent: Map<node, node | null>, found?: node }
+ */
+export function bfs<K extends string | number>(
+  graph: AdjacencyList<K>,
+  start: K,
+  target?: K,
+) {
+  const distance = new Map<K, number>();
+  const parent = new Map<K, K | null>();
+
+  const queue = new Queue<K>();
+  queue.enqueue(start);
+  distance.set(start, 0);
+  parent.set(start, null);
+
+  while (!queue.isEmpty()) {
+    const current = queue.dequeue()!;
+    const curDist = distance.get(current)!;
+
+    // Optional early‑exit
+    if (target !== undefined && current === target) {
+      return { distance, parent, found: current };
+    }
+
+    for (const neighbor of graph[current] ?? []) {
+      if (!distance.has(neighbor)) {                // not visited
+        distance.set(neighbor, curDist + 1);
+        parent.set(neighbor, current);
+        queue.enqueue(neighbor);
+      }
+    }
+  }
+
+  return { distance, parent, found: target }; // target not found
+}
+const result = bfs(graph, 'A', 'E');
+console.log('Distance map:', result.distance);
+console.log('Parent map:', result.parent);
+console.log('Target found?', result.found !== undefined);
+Distance map: Map(5) { 'A' => 0, 'B' => 1, 'C' => 1, 'D' => 2, 'E' => 3 }
+Parent map: Map(5) { 'A' => null, 'B' => 'A', 'C' => 'A', 'D' => 'B', 'E' => 'D' }
+Target found? true
