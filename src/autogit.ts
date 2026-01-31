@@ -1,50 +1,54 @@
 /**
- * Interpolation search – O(log log n) in the ideal case,
- * O(n) in the worst case (if the array is highly non‑uniform).
+ * Merge two sorted slices of `arr` into a temporary array.
  *
- * @param arr   An array that is already sorted in ascending order.
- * @param key   The value to look for.
- * @returns     The index of `key` in `arr` or -1 if not present.
+ * @param arr  source array
+ * @param tmp  temporary array of the same length
+ * @param left  start index of the first slice
+ * @param mid   end index (exclusive) of the first slice and start of the second
+ * @param right end index (exclusive) of the second slice
  */
-export function interpolationSearch(arr: readonly number[], key: number): number {
-  // Guard against empty array
-  if (arr.length === 0) return -1;
+function merge(
+  arr: number[],
+  tmp: number[],
+  left: number,
+  mid: number,
+  right: number
+): void {
+  let i = left;   // index in first slice
+  let j = mid;    // index in second slice
+  let k = left;   // index in tmp
 
-  let low = 0;
-  let high = arr.length - 1;
+  // Copy the relevant segment to tmp
+  for (let idx = left; idx < right; idx++) tmp[idx] = arr[idx];
 
-  // Interpolation formula requires a strictly increasing array
-  // and a finite difference between the ends.
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    // Avoid division by zero when arr[low] == arr[high].
-    if (arr[low] === arr[high]) return arr[low] === key ? low : -1;
+  // Merge back into arr
+  while (i < mid && j < right) {
+    arr[k++] = tmp[i] <= tmp[j] ? tmp[i++] : tmp[j++];
+  }
+  while (i < mid) arr[k++] = tmp[i++];
+  while (j < right) arr[k++] = tmp[j++];
+}
 
-    // Estimate the position of the key inside the current bounds.
-    const pos =
-      low +
-      Math.floor(
-        ((high - low) * (key - arr[low])) / (arr[high] - arr[low]),
-      );
+/**
+ * Iterative merge sort.
+ *
+ * @param arr  array to sort in‑place
+ */
+function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  if (n < 2) return; // already sorted
 
-    const value = arr[pos];
+  const tmp = new Array<number>(n);
 
-    if (value === key) return pos;
-    if (value < key) {
-      low = pos + 1;          // Look in the right sub‑array
-    } else {
-      high = pos - 1;         // Look in the left sub‑array
+  // Run size = 1, 2, 4, 8, ...
+  for (let run = 1; run < n; run *= 2) {
+    for (let left = 0; left < n; left += 2 * run) {
+      const mid = Math.min(left + run, n);
+      const right = Math.min(left + 2 * run, n);
+      if (mid < right) merge(arr, tmp, left, mid, right);
     }
   }
-
-  return -1; // Not found
 }
-const nums = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91, 105];
-console.log(interpolationSearch(nums, 38)); // ➜ 6
-console.log(interpolationSearch(nums, 4));  // ➜ -1
-export function interpolationSearchBy<T, U extends number>(
-  arr: readonly T[],
-  key: U,
-  getKey: (item: T) => U,
-): number {
-  // Same logic, but cast / convert using getKey(item)
-}
+const nums = [34, 7, 23, 32, 5, 62];
+mergeSortIterative(nums);
+console.log(nums); // [5, 7, 23, 32, 34, 62]
