@@ -1,85 +1,58 @@
-/**
- * Simple representation of a DAG.
- *   vertices – an array of node identifiers (any type, but usually string or number)
- *   edges    – a map from a vertex to a list of outgoing neighbours
- */
-interface Graph<V> {
-  vertices: V[];
-  edges: Map<V, V[]>;
+// Majority element finder – works for any type that supports === comparison
+export function majorityElement<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
+
+  // 1st pass: find a candidate
+  let candidate = arr[0];
+  let count = 1;
+
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === candidate) {
+      count++;
+    } else if (count === 0) {
+      candidate = arr[i];
+      count = 1;
+    } else {
+      count--;
+    }
+  }
+
+  // 2nd pass: verify that the candidate is really a majority
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
+  }
+
+  return count > Math.floor(arr.length / 2) ? candidate : null;
 }
+const nums = [3, 1, 3, 3, 2, 3, 3];
+const maj = majorityElement(nums);
 
-/**
- * Kahn’s topological sort.
- * @param graph – a DAG
- * @returns a list of vertices sorted topologically
- * @throws Error if the graph contains a cycle
- */
-function topologicalSort<V>(graph: Graph<V>): V[] {
-  // Compute indegree of each vertex
-  const indegree = new Map<V, number>();
-  graph.vertices.forEach(v => indegree.set(v, 0));
+console.log(maj); // → 3
+function majorityBySorting<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
 
-  graph.edges.forEach((neighbours, from) => {
-    neighbours.forEach(to => {
-      indegree.set(to, (indegree.get(to) || 0) + 1);
-    });
-  });
+  const sorted = [...arr].sort(); // lexicographic for strings, numeric for numbers
+  const midVal = sorted[Math.floor(arr.length / 2)];
 
-  // Queue of vertices with indegree 0
-  const queue: V[] = [];
-  indegree.forEach((deg, v) => {
-    if (deg === 0) queue.push(v);
-  });
-
-  const order: V[] = [];
-  while (queue.length) {
-    const v = queue.shift()!;
-    order.push(v);
-
-    const neighbours = graph.edges.get(v) ?? [];
-    neighbours.forEach(to => {
-      indegree.set(to, (indegree.get(to) || 0) - 1);
-      if (indegree.get(to) === 0) queue.push(to);
-    });
-  }
-
-  // If we processed fewer vertices than exist, a cycle is present
-  if (order.length !== graph.vertices.length) {
-    throw new Error('Graph contains a cycle – topological sort not possible');
-  }
-
-  return order;
+  const count = sorted.reduce((c, v) => (v === midVal ? c + 1 : c), 0);
+  return count > Math.floor(arr.length / 2) ? midVal : null;
 }
-A → C
-B → C
-C → D
-const g: Graph<string> = {
-  vertices: ['A', 'B', 'C', 'D'],
-  edges: new Map([
-    ['A', ['C']],
-    ['B', ['C']],
-    ['C', ['D']],
-    // D has no outgoing edges
-  ]),
-};
+// A simple quick‑check
+export function testMajority() {
+  const cases: Array<[any[], any | null]> = [
+    [[1, 2, 1, 1, 3], 1],
+    [['a', 'b', 'a', 'a', 'c'], 'a'],
+    [[5, 5, 6, 6, 5], 5],
+    [[1, 2, 3], null],
+  ];
 
-console.log(topologicalSort(g)); // → ['A', 'B', 'C', 'D'] (or ['B', 'A', 'C', 'D'])
-function topologicalSortDFS<V>(graph: Graph<V>): V[] {
-  const visited = new Set<V>();
-  const temp = new Set<V>();          // to detect cycles
-  const stack: V[] = [];
-
-  function visit(v: V) {
-    if (temp.has(v)) throw new Error('Cycle detected');
-    if (visited.has(v)) return;
-
-    temp.add(v);
-    (graph.edges.get(v) ?? []).forEach(visit);
-    temp.delete(v);
-    visited.add(v);
-    stack.push(v);                    // push after children – this yields reverse order
+  for (const [arr, expected] of cases) {
+    const result = majorityElement(arr);
+    if (result !== expected) {
+      console.error(`❌ Failed for ${JSON.stringify(arr)}: got ${result}`);
+    } else {
+      console.log(`✅ ${JSON.stringify(arr)} → ${result}`);
+    }
   }
-
-  graph.vertices.forEach(visit);
-  return stack.reverse();             // reverse to get the correct order
 }
