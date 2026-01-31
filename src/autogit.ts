@@ -1,29 +1,38 @@
-const nums = [1, 2, 2, 3, 4, 4, 5];
-const unique = [...new Set(nums)];   // [1, 2, 3,4,5]
-const vals = ['a', 'b', 'a', 'c', 'b'];
-const uniq = vals.filter((value, index, arr) => arr.indexOf(value) === index);
-// ['a','b','c']
-interface User {
-  id: number;
-  name: string;
+/**
+ * @param s The string to test.
+ * @param options
+ *   - ignoreCase: whether to treat “A” and “a” as the same (default: true)
+ *   - ignoreNonAlphaNum: whether to strip out spaces, punctuation, etc. (default: true)
+ * @returns true if `s` reads the same forward and backward under the chosen options.
+ */
+function isPalindrome(
+  s: string,
+  options: { ignoreCase?: boolean; ignoreNonAlphaNum?: boolean } = {}
+): boolean {
+  const { ignoreCase = true, ignoreNonAlphaNum = true } = options;
+
+  // Optional: strip out anything other than letters/digits
+  let cleaned = ignoreNonAlphaNum
+    ? s.replace(/[^A-Za-z0-9]/g, '')
+    : s;
+
+  // Optional: standardise case
+  if (ignoreCase) cleaned = cleaned.toLowerCase();
+
+  // Fast exit on single‑character strings (or empty)
+  if (cleaned.length < 2) return true;
+
+  // Compare characters from both ends
+  let left = 0;
+  let right = cleaned.length - 1;
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) return false;
+    left++;
+    right--;
+  }
+  return true;
 }
-
-const users: User[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob'   },
-  { id: 1, name: 'Alice'},
-  { id: 3, name: 'Carol'},
-];
-
-const uniq = Array.from(
-  users.reduce((map, user) => map.set(user.id, user), new Map<number, User>())
-).map(entry => entry[1]);
-
-// [{id:1,name:'Alice'}, {id:2,name:'Bob'}, {id:3,name:'Carol'}]
-const objs = [{x:1},{x:2},{x:1},{x:3}];
-const uniq = Array.from(
-  new Set(objs.map(o => JSON.stringify(o)))
-).map(str => JSON.parse(str));
-import { uniqBy } from 'lodash';
-
-const uniqUsers = uniqBy(users, 'id');
+console.log(isPalindrome('Racecar'));           // true
+console.log(isPalindrome('hello'));             // false
+console.log(isPalindrome('A man, a plan, a canal, Panama')); // true
+console.log(isPalindrome('No lemon, no melon', { ignoreNonAlphaNum: true, ignoreCase: true })); // true
