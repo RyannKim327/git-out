@@ -1,43 +1,25 @@
-function stringLength(str: string): number {
-  let len = 0;
-  for (let i = 0; i < str.length; i++) {
-    len++;                // we still use str.length in the loop condition,
-                          // but we never read it as the "answer"
+/**
+ * Returns true if `n` is a prime number.
+ * Works with any non‑negative integer. For negative numbers or 0/1 it returns false.
+ */
+export function isPrime(n: number): boolean {
+  if (!Number.isInteger(n) || n < 2) return false;   // 0, 1, and non‑ints aren't prime
+  
+  // 2 and 3 are the only even/odd primes.
+  if (n === 2 || n === 3) return true;
+
+  // Even numbers > 2 are not prime.
+  if (n % 2 === 0) return false;
+
+  // Check odd divisors up to √n.
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false;
   }
-  return len;
+
+  return true;
 }
-function stringLength(str: string): number {
-  let len = 0;
-  let code = str.codePointAt(0);
-  let idx = 0;
-  while (code !== undefined) {
-    len++;
-    idx++;
-    code = str.codePointAt(idx);
-  }
-  return len;
-}
-function stringLength(str: string): number {
-  let len = 0;
-  for (const _ of str) {
-    len++;
-  }
-  return len;
-}
-function stringLength(str: string): number {
-  if (str === '') return 0;
-  return 1 + stringLength(str.slice(1));
-}
-function stringLength(str: string): number {
-  const matches = str.match(/./gu);
-  return matches ? matches.length : 0;
-}
-function stringLength(str: string): number {
-  let idx = 0;
-  let len = 0;
-  while (str.charAt(idx) !== '') { // `charAt` returns '' past the end
-    len++;
-    idx++;
-  }
-  return len;
-}
+console.log(isPrime(7));   // true
+console.log(isPrime(20));  // false
+console.log(isPrime(91));  // false (7 × 13)
+console.log(isPrime(97));  // true
