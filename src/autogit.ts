@@ -1,50 +1,50 @@
-// A minimal binary‑tree node definition
-interface TreeNode {
-  value: number;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
+interface ListNode<T = any> {
+  val: T;
+  next: ListNode<T> | null;
 }
-
-/**
- * Recursively sums the values of every node in a binary tree.
- * @param root – the root of the tree
- * @returns the total sum of all node values
- */
-function sumTree(root: TreeNode | null | undefined): number {
-  if (!root) return 0;
-  return root.value + sumTree(root.left) + sumTree(root.right);
+class ListNode<T = any> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
+function nthFromEndNaive<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let size = 0;
+  for (let cur = head; cur; cur = cur.next) size++;
 
-/*--- Example usage -------------------------------------------------------*/
-// Construct a small tree:
-//
-//        4
-//       / \
-//      2   5
-//     / \
-//    1   3
-const tree: TreeNode = {
-  value: 4,
-  left: {
-    value: 2,
-    left: { value: 1, left: null, right: null },
-    right: { value: 3, left: null, right: null },
-  },
-  right: { value: 5, left: null, right: null },
-};
+  if (n > size) return null;          // not enough elements
+  let target = size - n;              // 0‑based index from start
+  let cur = head;
+  for (let i = 0; i < target; i++) cur = cur!.next;
 
-console.log(sumTree(tree)); // 15
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let total = 0;
-  const stack: Array<TreeNode> = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.value;
-    if (node.left) stack.push(node.left);
-    if (node.right) stack.push(node.right);
+  return cur;
+}
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let fast = head;
+  // Move fast n steps forward
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;   // n is larger than list length
+    fast = fast.next;
   }
 
-  return total;
+  let slow = head!;          // head is guaranteed non‑null now
+  while (fast) {
+    fast = fast.next!;
+    slow = slow.next!;
+  }
+
+  return slow;
 }
+function buildList(nums: number[]) {
+  let dummy = new ListNode(0);
+  let cur = dummy;
+  for (const v of nums) {
+    cur.next = new ListNode(v);
+    cur = cur.next;
+  }
+  return dummy.next;
+}
+
+const list = buildList([1, 2, 3, 4, 5]);
+
+console.log(nthFromEnd(list, 1)!.val); // 5
+console.log(nthFromEnd(list, 3)!.val); // 3
+console.log(nthFromEnd(list, 5)!.val); // 1
+console.log(nthFromEnd(list, 6));      // null
