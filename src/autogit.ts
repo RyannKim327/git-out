@@ -1,64 +1,33 @@
-// ────────────────────────
-// Node definition
-// ────────────────────────
-class Node<T> {
-  value: T;
-  next: Node<T> | null = null;
+/**
+ * Sorts an array of numbers (or any comparable type) in place
+ * using the classic selection‑sort algorithm.
+ *
+ * @param arr – the array to sort
+ * @returns the same array reference, now sorted
+ */
+export function selectionSort<T>(arr: T[]): T[] {
+    const n = arr.length;
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
+    for (let i = 0; i < n - 1; i++) {
+        // Assume the smallest element starts at i
+        let minIndex = i;
 
-// ────────────────────────
-// LinkedList implementation
-// ────────────────────────
-class LinkedList<T> {
-  head: Node<T> | null = null;
-  tail: Node<T> | null = null;
+        // Scan the unsorted suffix to find the real minimum
+        for (let j = i + 1; j < n; j++) {
+            if (arr[j] < arr[minIndex]) {
+                minIndex = j;
+            }
+        }
 
-  // Append new value to list
-  push(value: T): void {
-    const newNode = new Node(value);
-    if (!this.head) {
-      this.head = this.tail = newNode;
-      return;
+        // If the minimum isn’t already in position i, swap
+        if (minIndex !== i) {
+            [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+        }
     }
-    this.tail!.next = newNode;  // non‑null assertion is safe here
-    this.tail = newNode;
-  }
 
-  // ────── length (iterative)
-  // Return number of nodes
-  length(): number {
-    let count = 0;
-    let current = this.head;
-    while (current !== null) {
-      count++;
-      current = current.next;
-    }
-    return count;
-  }
-
-  // ────── length (recursive helper)
-  private _recursiveLength(node: Node<T> | null): number {
-    if (!node) return 0;
-    return 1 + this._recursiveLength(node.next);
-  }
-
-  // Public wrapper for the recursive version
-  recursiveLength(): number {
-    return this._recursiveLength(this.head);
-  }
+    return arr;
 }
-
-// ────────────────────────
-// Demo
-// ────────────────────────
-const list = new LinkedList<number>();
-list.push(1);
-list.push(2);
-list.push(3);
-
-console.log('Iterative length:', list.length());          // 3
-console.log('Recursive length:', list.recursiveLength()); // 3
+const unsorted = [64, 25, 12, 22, 11];
+console.log('Before:', unsorted);
+selectionSort(unsorted);
+console.log('After :', unsorted);
