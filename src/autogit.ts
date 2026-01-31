@@ -1,48 +1,65 @@
-/**
- * Randomised quick‑sort for numbers (works for any type T that can be compared)
- * with an optional compare function.
- */
-function randomQuickSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
+// ---------- Basics ----------
+class ListNode {
+  val: number          // you can keep any data you need
+  next: ListNode | null = null;
 
-  function sort(start: number, end: number): void {
-    if (end - start <= 1) return;              // 0 or 1 element
-
-    // Pick a random pivot index in [start, end-1]
-    const pivotIndex = start + Math.floor(Math.random() * (end - start));
-    const pivotValue = arr[pivotIndex];
-
-    // Move pivot to the end for convenience
-    [arr[pivotIndex], arr[end - 1]] = [arr[end - 1], arr[pivotIndex]];
-
-    // Partition: all < pivot on the left, others on the right
-    let storeIndex = start;
-    for (let i = start; i < end - 1; i++) {
-      if (cmp(arr[i], pivotValue) < 0) {
-        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
-        storeIndex++;
-      }
-    }
-
-    // Place pivot in its final position
-    [arr[storeIndex], arr[end - 1]] = [arr[end - 1], arr[storeIndex]];
-
-    // Recurse on partitions
-    sort(start, storeIndex);
-    sort(storeIndex + 1, end);
+  constructor(val: number) {
+    this.val = val;
   }
-
-  // Make a copy to keep input immutable
-  const copy = arr.slice();
-  sort(0, copy.length);
-  return copy;
 }
 
-/* ----- Usage example ----- */
-const unsorted = [7, 2, 9, 4, 3, 1, 5, 6];
-const sorted = randomQuickSort(unsorted);
-console.log('original:', unsorted);
-console.log('sorted  :', sorted);
+// ---------- Intersection finder ----------
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  if (!headA || !headB) return null;
+
+  let ptrA: ListNode | null = headA;
+  let ptrB: ListNode | null = headB;
+
+  // After at most two passes through each list the pointers
+  // will either meet at the intersection or both become null.
+  while (ptrA !== ptrB) {
+    ptrA = ptrA ? ptrA.next : headB; // switch to the head of the other list
+    ptrB = ptrB ? ptrB.next : headA;
+  }
+
+  return ptrA; // either the intersection node, or null
+}
+
+// ---------- Quick demo ----------
+function buildLinkedList(values: number[], offset: number = 0) {
+  let head: ListNode | null = null;
+  let tail: ListNode | null = null;
+  for (let v of values) {
+    const node = new ListNode(v);
+    if (!head) head = node;
+    if (tail) tail.next = node;
+    tail = node;
+  }
+  return { head, tail };
+}
+
+// Common tail that will be shared by two lists
+const { head: shared, tail: sharedTail } = buildLinkedList([8, 10]);
+
+// First list: 3 → 7 → 8 → 10
+const { head: aHead } = buildLinkedList([3, 7]);
+if (aHead && sharedHead) {
+  // connect the shared tail
+  let node = aHead;
+  while (node.next) node = node.next;
+  node.next = shared;
+}
+
+// Second list: 99 → 1 → 8 → 10
+const { head: bHead } = buildLinkedList([99, 1]);
+if (bHead && sharedHead) {
+  let node = bHead;
+  while (node.next) node = node.next;
+  node.next = shared;
+}
+
+const intersection = getIntersectionNode(aHead, bHead);
+console.log(intersection?.val); // prints 8
