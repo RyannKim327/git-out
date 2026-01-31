@@ -1,33 +1,51 @@
-// Basic node definition
-interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-}
+// Stack.ts
+export class Stack<T> {
+  // private backing store
+  private items: T[] = [];
 
-// Helper – takes the head of a list and returns the middle node.
-function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null;
-
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
-
-  // advance `fast` two steps for every one step `slow` takes
-  while (fast !== null && fast.next !== null) {
-    slow = slow!.next;          // will never be null here – just for TS safety
-    fast = fast.next.next;
+  /** Push an item onto the stack. */
+  push(item: T): void {
+    this.items.push(item);
   }
 
-  // when fast runs out, slow is at the middle
-  return slow;
+  /** Remove the top item and return it.  Returns undefined if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  /** Peek at the top item without removing it.  Returns undefined if the stack is empty. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Return true if the stack has no items. */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Current number of elements in the stack. */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Optional: completely clear the stack. */
+  clear(): void {
+    this.items = [];
+  }
 }
-// Build a tiny list: 1 → 2 → 3 → 4 → 5
-const a: ListNode<number> = { value: 1, next: null };
-const b: ListNode<number> = { value: 2, next: null };
-const c: ListNode<number> = { value: 3, next: null };
-const d: ListNode<number> = { value: 4, next: null };
-const e: ListNode<number> = { value: 5, next: null };
+import { Stack } from "./Stack";
 
-a.next = b; b.next = c; c.next = d; d.next = e;
+const numberStack = new Stack<number>();
+numberStack.push(10);
+numberStack.push(20);
 
-const middle = findMiddle(a);
-console.log(middle?.value); // logs 3
+console.log(numberStack.peek()); // 20
+console.log(numberStack.pop());  // 20
+console.log(numberStack.size()); // 1
+console.log(numberStack.isEmpty()); // false
+
+// Generic example with strings
+const wordStack = new Stack<string>();
+wordStack.push("hello");
+wordStack.push("world");
+console.log(wordStack.pop()); // world
