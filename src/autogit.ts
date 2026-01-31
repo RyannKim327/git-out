@@ -1,9 +1,10 @@
-function factorial(n: number): number {
-  if (n <= 1) return 1;   // base case: 0! = 1 and 1! = 1
-  return n * factorial(n - 1);
+function removeVowels(str: string): string {
+  // /[aeiou]/i finds a, e, i, o, u in either case
+  return str.replace(/[aeiou]/gi, '');
 }
-console.log(factorial(5)); // 120
-function factorialBig(n: bigint): bigint {
-  if (n <= 1n) return 1n;
-  return n * factorialBig(n - 1n);
+console.log(removeVowels('Hello, World!')); // "Hll, Wrld!"
+function removeVowels(str: string): string {
+  const vowels = new Set('aeiouAEIOU');
+  return str.split('').filter(ch => !vowels.has(ch)).join('');
 }
+return str.replace(/[aeiouáéíóúAEIOUÁÉÍÓÚ]/gi, '');
