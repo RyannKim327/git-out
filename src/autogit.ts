@@ -1,91 +1,39 @@
-type BMIndices = { badChar: number[]; goodSuffix: number[] };
+const original = [1, 2, 3, 4, 5];
 
-const CHAR_LIMIT = 256;          // size of ASCII table (adjust if you need Unicode)
+// remove every 3
+const withoutThree = original.filter(v => v !== 3);
 
-// Allocate and initialise a lookup array, defaulting to -1
-function initArray(size: number, init: number = -1): number[] {
-  const arr = new Array<number>(size);
-  for (let i = 0; i < size; i++) arr[i] = init;
-  return arr;
+console.log(original);       // [1, 2, 3, 4, 5]
+console.log(withoutThree);   // [1, 2, 4, 5]
+const removeFirstThree = original.filter((v, i) => v !== 3 || i !== 1);
+const arr = [1, 2, 3, 4, 5];
+
+// find the index you want to remove
+const idx = arr.indexOf(3);
+if (idx !== -1) {
+  arr.splice(idx, 1);      // remove 1 element at idx
 }
-function badCharTable(pattern: string): number[] {
-  const table = initArray(CHAR_LIMIT, -1);
-
-  for (let i = 0; i < pattern.length; i++) {
-    table[pattern.charCodeAt(i)] = i;
+console.log(arr);           // [1, 2, 4, 5]
+let i = 0;
+while (i < arr.length) {
+  if (arr[i] === 3) {
+    arr.splice(i, 1);
+  } else {
+    i++;
   }
-
-  return table;
 }
-function goodSuffixTable(pat: string): number[] {
-  const m = pat.length;
-  const suffix = initArray(m);
-  const goodSuffix = initArray(m, 0);
-
-  suffix[m - 1] = m;
-  let g = m - 1;
-  let f = 0;
-
-  for (let i = m - 2; i >= 0; i--) {
-    if (i > g && suffix[i + m - 1 - f] < i - g) {
-      suffix[i] = suffix[i + m - 1 - f];
-    } else {
-      g = i;
-      f = i;
-      while (g >= 0 && pat[g] === pat[g + m - 1 - f]) {
-        g--;
-      }
-      suffix[i] = f - g;
-    }
-  }
-
-  // Build the goodSuffix shift table from suffix lengths
-  for (let i = 0; i < m; i++) {
-    goodSuffix[i] = m - suffix[i];
-  }
-
-  return goodSuffix;
-}
-function boyerMooreSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return [];   // nothing to find
-
-  const { badChar, goodSuffix } = preprocess(pattern);
-
-  const matches: number[] = [];
-  let s = 0;                // shift of the pattern wrt text
-
-  while (s <= n - m) {
-    let j = m - 1;
-
-    // Keep moving left while the characters match
-    while (j >= 0 && pattern[j] === text[s + j]) {
-      j--;
-    }
-
-    if (j < 0) {
-      // match found
-      matches.push(s);
-      // next shift: either the good suffix shift or 1
-      s += goodSuffix[0] > 0 ? goodSuffix[0] : 1;
-    } else {
-      const badShift = j - badChar[text.charCodeAt(s + j)];
-      const goodShift = goodSuffix[j];
-      s += Math.max(badShift, goodShift);
-    }
-  }
-
-  return matches;
+function removeAtIndex<T>(arr: T[], idx: number): T[] {
+  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
 }
 
-function preprocess(pattern: string): BMIndices {
-  return {
-    badChar: badCharTable(pattern),
-    goodSuffix: goodSuffixTable(pattern),
-  };
-}
-const txt = "ABAAABCDABAAABCDAAAABCDABAAABCDAAAABCD";
-const pat = "ABDAB";
+const withoutIdx = removeAtIndex(original, 2);
+const set = new Set(original);
+set.delete(3);
+const arrFromSet = Array.from(set);
+interface Person { id: number; name: string }
+const people = [{ id: 1 }, { id: 2 }, { id: 3 }];
 
-console.log(boyerMooreSearch(txt, pat));  // → [0, 9, 19, 29]
+const withoutId2 = people.filter(p => p.id !== 2);   // immutable
+// or
+const idx = people.findIndex(p => p.id === 2);
+if (idx !== -1) people.splice(idx, 1);               // mutate
