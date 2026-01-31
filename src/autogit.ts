@@ -1,37 +1,49 @@
-// factorial.ts
-import readline from 'readline';
+/**
+ * Return the longest common subsequence of `a` and `b`.
+ *
+ * @param a - first string
+ * @param b - second string
+ * @returns the LCS (may be empty if nothing matches)
+ */
+export function lcs(a: string, b: string): string {
+  const n = a.length;
+  const m = b.length;
 
-// Utility that returns the factorial of a non‑negative integer
-function factorial(n: number): number {
-  if (n < 0) throw new Error('Number must be non‑negative');
-  if (n === 0 || n === 1) return 1;
-  return n * factorial(n - 1);
-}
+  // dp[i][j] = length of LCS of a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array.from({ length: n + 1 }, () =>
+    new Array(m + 1).fill(0)
+  );
 
-// Set up a readline interface to read from stdin
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-// Ask the user for a number
-rl.question('Enter a non‑negative integer: ', (answer) => {
-  const num = Number(answer.trim());
-
-  if (Number.isNaN(num) || !Number.isInteger(num)) {
-    console.log(`"${answer}" is not a valid integer.`);
-  } else {
-    try {
-      const result = factorial(num);
-      console.log(`Factorial of ${num} is ${result}`);
-    } catch (e) {
-      console.log(e.message);
+  // Fill table
+  for (let i = 1; i <= n; i++) {
+    const ca = a.charAt(i - 1);
+    for (let j = 1; j <= m; j++) {
+      if (ca === b.charAt(j - 1)) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
   }
 
-  rl.close();
-});
-npm install --save-dev @types/node
-npx ts-node factorial.ts
-tsc factorial.ts   # produces factorial.js
-node factorial.js
+  // Reconstruct the LCS from the table
+  let i = n, j = m;
+  const chars: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a.charAt(i - 1) === b.charAt(j - 1)) {
+      chars.push(a.charAt(i - 1)); // or b.charAt(j - 1)
+      i--; j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;                        // move up
+    } else {
+      j--;                        // move left
+    }
+  }
+
+  return chars.reverse().join('');
+}
+const s1 = 'ABCBDAB';
+const s2 = 'BDCABC';
+
+console.log(lcs(s1, s2)); // -> "BCAB"
