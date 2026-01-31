@@ -1,40 +1,64 @@
-export interface TreeNode<T = number> {
+// ────────────────────────
+// Node definition
+// ────────────────────────
+class Node<T> {
   value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+  next: Node<T> | null = null;
+
+  constructor(value: T) {
+    this.value = value;
+  }
 }
-export function countLeaves<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                     // empty tree
 
-  // If the node has no children, it’s a leaf
-  if (!root.left && !root.right) return 1;
+// ────────────────────────
+// LinkedList implementation
+// ────────────────────────
+class LinkedList<T> {
+  head: Node<T> | null = null;
+  tail: Node<T> | null = null;
 
-  // Otherwise recurse on children and sum the results
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-export function countLeavesIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
-
-  let stack: TreeNode<T>[] = [root];
-  let leaves = 0;
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node.left && !node.right) {
-      leaves++;                // it’s a leaf
-    } else {
-      if (node.left) stack.push(node.left);
-      if (node.right) stack.push(node.right);
+  // Append new value to list
+  push(value: T): void {
+    const newNode = new Node(value);
+    if (!this.head) {
+      this.head = this.tail = newNode;
+      return;
     }
+    this.tail!.next = newNode;  // non‑null assertion is safe here
+    this.tail = newNode;
   }
 
-  return leaves;
-}
-const tree: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3, right: { value: 6 } }
-};
+  // ────── length (iterative)
+  // Return number of nodes
+  length(): number {
+    let count = 0;
+    let current = this.head;
+    while (current !== null) {
+      count++;
+      current = current.next;
+    }
+    return count;
+  }
 
-console.log(countLeaves(tree));          // → 3  (nodes 4, 5, 6)
-console.log(countLeavesIter(tree));      // → 3
+  // ────── length (recursive helper)
+  private _recursiveLength(node: Node<T> | null): number {
+    if (!node) return 0;
+    return 1 + this._recursiveLength(node.next);
+  }
+
+  // Public wrapper for the recursive version
+  recursiveLength(): number {
+    return this._recursiveLength(this.head);
+  }
+}
+
+// ────────────────────────
+// Demo
+// ────────────────────────
+const list = new LinkedList<number>();
+list.push(1);
+list.push(2);
+list.push(3);
+
+console.log('Iterative length:', list.length());          // 3
+console.log('Recursive length:', list.recursiveLength()); // 3
