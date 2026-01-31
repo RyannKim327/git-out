@@ -1,99 +1,38 @@
 /**
- * A single node inside the trie.
- * 
- * - `children` holds the outgoing edges keyed by the character they represent.
- * - `isEnd` marks that a full word ends at this node.
+ * Returns true if `a` and `b` contain exactly the same characters
+ * (ignoring whitespace, punctuation, and case).
  */
-class TrieNode {
-  public children: Map<string, TrieNode> = new Map();
-  public isEnd: boolean = false;
+export function isAnagram(a: string, b: string): boolean {
+  // 1. Strip anything that isn’t a letter or a digit, and
+  //    normalize the case to lower‑case.
+  const norm = (s: string) =>
+    s.replace(/\W+/g, "") // removes non‑alphanumeric characters
+      .toLowerCase();
+
+  const cleanA = norm(a);
+  const cleanB = norm(b);
+
+  // 2. Quick length check – if lengths differ, they can’t be anagrams.
+  if (cleanA.length !== cleanB.length) return false;
+
+  // 3. Count each character in a Map.
+  const counter = new Map<string, number>();
+
+  for (const ch of cleanA) {
+    counter.set(ch, (counter.get(ch) ?? 0) + 1);
+  }
+
+  // 4. Decrement counts with characters from the second string.
+  for (const ch of cleanB) {
+    const cur = counter.get(ch);
+    if (!cur) return false;            // missing or too many of 'ch'
+    if (cur === 1) counter.delete(ch); // tidy up to keep map small
+    else counter.set(ch, cur - 1);
+  }
+
+  // 5. If the map is empty, the two strings were perfect anagrams.
+  return counter.size === 0;
 }
-
-/**
- * The trie itself.
- */
-export class Trie {
-  private root: TrieNode = new TrieNode();
-
-  /**
-   * Add a word to the trie.
-   */
-  insert(word: string): void {
-    let node = this.root;
-    for (const ch of word) {
-      let child = node.children.get(ch);
-      if (!child) {
-        child = new TrieNode();
-        node.children.set(ch, child);
-      }
-      node = child;
-    }
-    node.isEnd = true;
-  }
-
-  /**
-   * Does the trie contain the exact word?
-   */
-  search(word: string): boolean {
-    const node = this._findNode(word);
-    return node ? node.isEnd : false;
-  }
-
-  /**
-   * Does any stored word start with the given prefix?
-   */
-  startsWith(prefix: string): boolean {
-    return Boolean(this._findNode(prefix));
-  }
-
-  /**
-   * Optional: remove a word.  The implementation keeps the trie shrunken
-   * by pruning leaf nodes that become unused.
-   */
-  delete(word: string): boolean {
-    const stack: Array<{node: TrieNode, ch: string}> = [];
-    let node = this.root;
-
-    for (const ch of word) {
-      const child = node.children.get(ch);
-      if (!child) return false;        // word not present
-      stack.push({ node, ch });
-      node = child;
-    }
-
-    if (!node.isEnd) return false;      // word not present
-    node.isEnd = false;
-
-    // prune if the node has no children
-    while (stack.length && !node.children.size && !node.isEnd) {
-      const { node: parent, ch } = stack.pop()!;
-      parent.children.delete(ch);
-      node = parent;
-    }
-
-    return true;
-  }
-
-  /** Helper that walks the trie and returns the last node for a key. */
-  private _findNode(key: string): TrieNode | null {
-    let node = this.root;
-    for (const ch of key) {
-      node = node.children.get(ch) ?? null;
-      if (!node) return null;
-    }
-    return node;
-  }
-}
-const t = new Trie();
-t.insert("hello");
-t.insert("helium");
-t.insert("help");
-
-console.log(t.search("help"));    // true
-console.log(t.search("heal"));    // false
-console.log(t.startsWith("hel")); // true
-console.log(t.startsWith("hep")); // false
-
-t.delete("help");
-console.log(t.search("help"));    // false
-console.log(t.startsWith("hel")); // true (because "hello" and "helium" stay)
+console.log(isAnagram("Listen", "Silent"));   // true
+console.log(isAnagram("Hello!", "Oleh!"));    // true
+console.log(isAnagram("Hello", "World"));     // false
