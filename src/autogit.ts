@@ -1,75 +1,53 @@
 /**
- * Tarjan's algorithm to find all strongly connected components (SCCs) of a directed graph.
+ * Returns the area of a triangle.
  *
- * @param adjacencyList A Map where each key is a node id and the value is an array of adjacent node ids.
- * @returns An array of components, each component is an array of node ids belonging to the same SCC.
+ * You can provide:
+ *   • base & height (Cartesian geometry)
+ *   • three side lengths (Heron's formula)
+ *
+ * @param base   Base of the triangle (required if you give height)
+ * @param height Height of the triangle
+ * @param a      Length of side a
+ * @param b      Length of side b
+ * @param c      Length of side c
+ * @returns      The area, or NaN if the input is invalid.
  */
-export function stronglyConnectedComponents(
-  adjacencyList: Map<number, number[]>
-): number[][] {
-  const indexMap = new Map<number, number>();   // node -> index
-  const lowlinkMap = new Map<number, number>(); // node -> lowlink
-  const onStack = new Set<number>();            // nodes currently in the stack
-  const stack: number[] = [];                   // stack of nodes
-  const components: number[][] = [];
-  let currentIndex = 0;
-
-  const strongConnect = (node: number) => {
-    // 1. set the depth index for this node
-    indexMap.set(node, currentIndex);
-    lowlinkMap.set(node, currentIndex);
-    currentIndex++;
-    stack.push(node);
-    onStack.add(node);
-
-    // 2. consider successors of node
-    const neighbors = adjacencyList.get(node) ?? [];
-    for (const succ of neighbors) {
-      if (!indexMap.has(succ)) {
-        // (a) Successor has not yet been visited; recurse on it
-        strongConnect(succ);
-        // Update lowlink
-        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, lowlinkMap.get(succ)!));
-      } else if (onStack.has(succ)) {
-        // (b) Successor is in stack → part of current SCC
-        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, indexMap.get(succ)!));
-      }
-      // (c) else: successor has been visited and is not in stack – ignore
-    }
-
-    // 3. If node is a root node, pop the stack and generate an SCC
-    if (lowlinkMap.get(node) === indexMap.get(node)) {
-      const component: number[] = [];
-      let w: number | undefined;
-      do {
-        w = stack.pop();
-        onStack.delete(w!);
-        component.push(w!);
-      } while (w !== node);
-      components.push(component);
-    }
-  };
-
-  // Run strongConnect on every node that has not yet been visited
-  for (const node of adjacencyList.keys()) {
-    if (!indexMap.has(node)) {
-      strongConnect(node);
-    }
+export function triangleArea({
+  base,
+  height,
+  a,
+  b,
+  c,
+}: {
+  base?: number;
+  height?: number;
+  a?: number;
+  b?: number;
+  c?: number;
+}): number {
+  // Cartesian: base * height / 2
+  if (base !== undefined && height !== undefined) {
+    if (base <= 0 || height <= 0) return NaN;
+    return (base * height) / 2;
   }
 
-  return components;
+  // Heron: given three sides
+  if (a !== undefined && b !== undefined && c !== undefined) {
+    if (a <= 0 || b <= 0 || c <= 0) return NaN;
+    // Check triangle inequality: the sum of any two sides must exceed the third
+    if (a + b <= c || a + c <= b || b + c <= a) return NaN;
+
+    const s = (a + b + c) / 2; // semi‑perimeter
+    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  }
+
+  // If the required parameters aren’t supplied
+  return NaN;
 }
-import { stronglyConnectedComponents } from './tarjan';
+// Base + height
+const area1 = triangleArea({ base: 10, height: 5 }); // 25
 
-const graph = new Map<number, number[]>();
-graph.set(0, [1]);
-graph.set(1, [2, 3]);
-graph.set(2, [0, 3]);
-graph.set(3, [4]);
-graph.set(4, [5]);
-graph.set(5, [3]);
+// Three sides
+const area2 = triangleArea({ a: 3, b: 4, c: 5 }); // 6
 
-const sccs = stronglyConnectedComponents(graph);
-console.log(sccs);
-// → [ [ 4, 5, 3 ], [ 0, 1, 2 ] ]
-// (order may vary)
+console.log(area1, area2);
