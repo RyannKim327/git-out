@@ -1,37 +1,45 @@
-// factorial.ts
-import readline from 'readline';
+function secondLargest(nums: number[]): number | null {
+  if (nums.length < 2) {            // not enough numbers
+    return null;                    // or throw an error, or whatever feels right
+  }
 
-// Utility that returns the factorial of a non‑negative integer
-function factorial(n: number): number {
-  if (n < 0) throw new Error('Number must be non‑negative');
-  if (n === 0 || n === 1) return 1;
-  return n * factorial(n - 1);
-}
+  let largest = Number.NEGATIVE_INFINITY;
+  let second  = Number.NEGATIVE_INFINITY;
 
-// Set up a readline interface to read from stdin
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-// Ask the user for a number
-rl.question('Enter a non‑negative integer: ', (answer) => {
-  const num = Number(answer.trim());
-
-  if (Number.isNaN(num) || !Number.isInteger(num)) {
-    console.log(`"${answer}" is not a valid integer.`);
-  } else {
-    try {
-      const result = factorial(num);
-      console.log(`Factorial of ${num} is ${result}`);
-    } catch (e) {
-      console.log(e.message);
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;   // old largest becomes second
+      largest = n;
+    } else if (n > second && n < largest) {   // distinct from largest
+      second = n;
     }
   }
 
-  rl.close();
-});
-npm install --save-dev @types/node
-npx ts-node factorial.ts
-tsc factorial.ts   # produces factorial.js
-node factorial.js
+  // After the loop, `second` holds the second largest *distinct* value
+  return second === Number.NEGATIVE_INFINITY ? null : second;
+}
+else if (n > second) {   // allow n == largest to fill second slot
+  second = n;
+}
+function secondLargestSorted(nums: number[]): number | null {
+  if (nums.length < 2) return null;
+  const sorted = [...nums].sort((a, b) => b - a); // descending
+  // handle duplicates if you want distinct values
+  return sorted[1];
+}
+function secondLargest(nums: number[]): number | null {
+  if (nums.length < 2) return null;
+
+  let largest = Number.NEGATIVE_INFINITY;
+  let second  = Number.NEGATIVE_INFINITY;
+
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;
+      largest = n;
+    } else if (n > second && n < largest) {
+      second = n;
+    }
+  }
+  return second === Number.NEGATIVE_INFINITY ? null : second;
+}
