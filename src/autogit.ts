@@ -1,58 +1,95 @@
-// Majority element finder – works for any type that supports === comparison
-export function majorityElement<T>(arr: T[]): T | null {
-  if (arr.length === 0) return null;
+/* ------------------------------------------------------------------
+   Interface that a node must support for the search.
+   ------------------------------------------------------------------ */
+export interface Searchable<Node> {
+  // Return an array (or any iterable) of child nodes.
+  getChildren(): Iterable<Node>;
 
-  // 1st pass: find a candidate
-  let candidate = arr[0];
-  let count = 1;
+  // Optional: a quick way to decide if this node is the goal.
+  // If omitted, the caller supplies a separate predicate below.
+  isGoal?(): boolean;
+}
 
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] === candidate) {
-      count++;
-    } else if (count === 0) {
-      candidate = arr[i];
-      count = 1;
-    } else {
-      count--;
+/* ------------------------------------------------------------------
+   Breadth‑Limited Search
+
+   Parameters
+     start   : node to begin the search
+     maxDepth: maximum depth (root is depth 0)
+     goal   : optional predicate; if the node has `isGoal`, that
+              method is used instead
+
+   Returns
+     The found node, or `undefined` if nothing was discovered within
+     the depth limit.
+   ------------------------------------------------------------------ */
+export function breadthLimitedSearch<Node extends Searchable<Node>>(
+  start: Node,
+  maxDepth: number,
+  goal?: (node: Node) => boolean
+): Node | undefined {
+
+  // Queue entries store the node and its depth
+  interface QueueEntry {
+    node: Node;
+    depth: number;
+  }
+
+  const queue: QueueEntry[] = [{ node: start, depth: 0 }];
+  const seen = new Set<Node>();
+
+  while (queue.length) {
+    const { node, depth } = queue.shift()!;
+
+    // Skip any repeated nodes – this protects against cycles
+    if (seen.has(node)) continue;
+    seen.add(node);
+
+    // Goal test – prefer the node’s own method if present
+    const isGoal =
+      goal ? goal(node) : node.isGoal ? node.isGoal() : false;
+    if (isGoal) return node;
+
+    // Stop expanding deeper than maxDepth
+    if (depth < maxDepth) {
+      for (const child of node.getChildren()) {
+        queue.push({ node: child, depth: depth + 1 });
+      }
     }
   }
 
-  // 2nd pass: verify that the candidate is really a majority
-  count = 0;
-  for (const v of arr) {
-    if (v === candidate) count++;
+  // Nothing matched within the limit
+  return undefined;
+}
+// 1. A concrete node type
+class TreeNode implements Searchable<TreeNode> {
+  constructor(
+    public value: number,
+    private children: TreeNode[] = []
+  ) {}
+
+  getChildren(): TreeNode[] {
+    return this.children;
   }
 
-  return count > Math.floor(arr.length / 2) ? candidate : null;
-}
-const nums = [3, 1, 3, 3, 2, 3, 3];
-const maj = majorityElement(nums);
+  // Optional helper that the search will call first
+  isGoal(): boolean {
+    return this.value === 42;
+  }
 
-console.log(maj); // → 3
-function majorityBySorting<T>(arr: T[]): T | null {
-  if (arr.length === 0) return null;
-
-  const sorted = [...arr].sort(); // lexicographic for strings, numeric for numbers
-  const midVal = sorted[Math.floor(arr.length / 2)];
-
-  const count = sorted.reduce((c, v) => (v === midVal ? c + 1 : c), 0);
-  return count > Math.floor(arr.length / 2) ? midVal : null;
-}
-// A simple quick‑check
-export function testMajority() {
-  const cases: Array<[any[], any | null]> = [
-    [[1, 2, 1, 1, 3], 1],
-    [['a', 'b', 'a', 'a', 'c'], 'a'],
-    [[5, 5, 6, 6, 5], 5],
-    [[1, 2, 3], null],
-  ];
-
-  for (const [arr, expected] of cases) {
-    const result = majorityElement(arr);
-    if (result !== expected) {
-      console.error(`❌ Failed for ${JSON.stringify(arr)}: got ${result}`);
-    } else {
-      console.log(`✅ ${JSON.stringify(arr)} → ${result}`);
-    }
+  add(child: TreeNode) {
+    this.children.push(child);
   }
 }
+
+// 2. Build a little tree
+const root = new TreeNode(1);
+const a = new TreeNode(2);
+const b = new TreeNode(3);
+root.add(a); root.add(b);
+a.add(new TreeNode(4));
+b.add(new TreeNode(42)); // the goal
+
+// 3. Run the search
+const found = breadthLimitedSearch(root, 3);
+console.log(found?.value ?? 'not found'); // prints 42
