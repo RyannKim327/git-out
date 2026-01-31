@@ -1,43 +1,54 @@
 /**
- * Counting sort for integer arrays (can include negatives).
- * @param arr The input array of numbers.
- * @returns A new sorted array.
+ * Merge two sorted slices of `arr` into a temporary array.
+ *
+ * @param arr  source array
+ * @param tmp  temporary array of the same length
+ * @param left  start index of the first slice
+ * @param mid   end index (exclusive) of the first slice and start of the second
+ * @param right end index (exclusive) of the second slice
  */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+function merge(
+  arr: number[],
+  tmp: number[],
+  left: number,
+  mid: number,
+  right: number
+): void {
+  let i = left;   // index in first slice
+  let j = mid;    // index in second slice
+  let k = left;   // index in tmp
 
-  // 1) Determine min and max to find the range.
-  let min = arr[0];
-  let max = arr[0];
-  for (const v of arr) {
-    if (v < min) min = v;
-    else if (v > max) max = v;
+  // Copy the relevant segment to tmp
+  for (let idx = left; idx < right; idx++) tmp[idx] = arr[idx];
+
+  // Merge back into arr
+  while (i < mid && j < right) {
+    arr[k++] = tmp[i] <= tmp[j] ? tmp[i++] : tmp[j++];
   }
-
-  const range = max - min + 1;          // how many distinct integer values
-  const count = new Array<number>(range).fill(0);
-
-  // 2) Count each value
-  for (const v of arr) {
-    count[v - min]++;                   // offset by min so array starts at 0
-  }
-
-  // 3) Convert counts to cumulative counts
-  for (let i = 1; i < range; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 4) Allocate result array
-  const output = new Array<number>(arr.length);
-
-  // 5) Place elements into output in stable order
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const v = arr[i];
-    const idx = v - min;
-    const pos = count[idx] - 1;         // final index for this element
-    output[pos] = v;
-    count[idx]--;                       // decrease count for next instance
-  }
-
-  return output;
+  while (i < mid) arr[k++] = tmp[i++];
+  while (j < right) arr[k++] = tmp[j++];
 }
+
+/**
+ * Iterative merge sort.
+ *
+ * @param arr  array to sort in‑place
+ */
+function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  if (n < 2) return; // already sorted
+
+  const tmp = new Array<number>(n);
+
+  // Run size = 1, 2, 4, 8, ...
+  for (let run = 1; run < n; run *= 2) {
+    for (let left = 0; left < n; left += 2 * run) {
+      const mid = Math.min(left + run, n);
+      const right = Math.min(left + 2 * run, n);
+      if (mid < right) merge(arr, tmp, left, mid, right);
+    }
+  }
+}
+const nums = [34, 7, 23, 32, 5, 62];
+mergeSortIterative(nums);
+console.log(nums); // [5, 7, 23, 32, 34, 62]
