@@ -1,21 +1,37 @@
-function countChar(str: string, ch: string): number {
-  let count = 0;
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === ch) count++;
+// factorial.ts
+import readline from 'readline';
+
+// Utility that returns the factorial of a non‑negative integer
+function factorial(n: number): number {
+  if (n < 0) throw new Error('Number must be non‑negative');
+  if (n === 0 || n === 1) return 1;
+  return n * factorial(n - 1);
+}
+
+// Set up a readline interface to read from stdin
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+// Ask the user for a number
+rl.question('Enter a non‑negative integer: ', (answer) => {
+  const num = Number(answer.trim());
+
+  if (Number.isNaN(num) || !Number.isInteger(num)) {
+    console.log(`"${answer}" is not a valid integer.`);
+  } else {
+    try {
+      const result = factorial(num);
+      console.log(`Factorial of ${num} is ${result}`);
+    } catch (e) {
+      console.log(e.message);
+    }
   }
-  return count;
-}
-const count = str.split(ch).length - 1;
-function countCharWithRegex(str: string, ch: string): number {
-  // Escape regex metacharacters in case ch is not a plain letter
-  const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp(escaped, 'g');
-  const matches = str.match(re);
-  return matches ? matches.length : 0;
-}
-const count = [...str].reduce((acc, c) => acc + (c === ch ? 1 : 0), 0);
-const count = [...str.toUpperCase()].filter(c => c === ch.toUpperCase()).length;
-const test = "hello world, hello TypeScript!";
-console.log(countChar(test, "l")); // 8
-console.log(countChar(test, "H")); // 1
-console.log(countChar(test, "o")); // 3
+
+  rl.close();
+});
+npm install --save-dev @types/node
+npx ts-node factorial.ts
+tsc factorial.ts   # produces factorial.js
+node factorial.js
