@@ -1,119 +1,68 @@
-// An adjacency map: node ID → list of neighbouring node IDs
-type Graph = Record<string, string[]>;
-
-// Keeps track of visited nodes and the node from which we reached them
-interface VisitedMap {
-  [node: string]: string | null;      // null = source node itself
-}
-enqueue start into frontierStart
-enqueue goal  into frontierGoal
-mark start as visitedFromStart (predecessor = null)
-mark goal  as visitedFromGoal (predecessor = null)
-
-while both queues not empty:
-    # Expand one layer from the start side
-    if expand(frontierStart, visitedFromStart, visitedFromGoal): return result
-
-    # Expand one layer from the goal side
-    if expand(frontierGoal, visitedFromGoal, visitedFromStart):   return result
-
-return no path
 /**
- * Bidirectional BFS.
- *
- * @param graph  adjacency map
- * @param start  ID of start node
- * @param goal   ID of goal node
- * @returns a list of node IDs from start to goal, or null if no path
+ * Stable counting sort of `arr` by the digit in position `exp`
+ * (exp = 1 → units, 10 → tens, 100 → hundreds, …)
  */
-function bidirectionalBFS(graph: Graph, start: string, goal: string): string[] | null {
-  if (start === goal) return [start];
+function countingSortByDigit(arr: number[], exp: number): void {
+  const n = arr.length;
+  const output = new Array<number>(n);
+  const count = new Array<number>(10).fill(0);   // base 10 → digits 0‑9
 
-  const visitedStart: VisitedMap = { [start]: null };
-  const visitedGoal: VisitedMap   = { [goal] : null };
-
-  const frontierStart: string[] = [start];
-  const frontierGoal: string[]  = [goal];
-
-  const expand = (
-    frontier: string[],
-    visitedThis: VisitedMap,
-    visitedOther: VisitedMap
-  ): string[] | null => {
-    const nextLayer: string[] = [];
-
-    for (const current of frontier) {
-      for (const neighbor of graph[current] || []) {
-        // Already visited from this side → skip
-        if (current in visitedThis && neighbor in visitedThis) continue;
-
-        // New node for this side
-        if (!(neighbor in visitedThis)) {
-          visitedThis[neighbor] = current;
-          nextLayer.push(neighbor);
-        }
-
-        // If neighbour is in the opposite frontier → frontiers meet
-        if (neighbor in visitedOther) {
-          return reconstructPath(
-            start,
-            goal,
-            visitedStart,
-            visitedGoal,
-            neighbor
-          );
-        }
-      }
-    }
-
-    frontier.splice(0, frontier.length, ...nextLayer);
-    return null;
-  };
-
-  while (frontierStart.length && frontierGoal.length) {
-    const resStart = expand(frontierStart, visitedStart, visitedGoal);
-    if (resStart) return resStart;
-
-    const resGoal = expand(frontierGoal, visitedGoal, visitedStart);
-    if (resGoal) return resGoal;
+  /* Count occurrences of each digit */
+  for (let i = 0; i < n; i++) {
+    const digit = Math.floor(arr[i] / exp) % 10;
+    count[digit] += 1;
   }
 
-  return null; // no path found
-}
+  /* Transform counts into starting indices */
+  for (let i = 1; i < 10; i++) {
+    count[i] += count[i - 1];
+  }
 
+  /* Build the output array from the end to preserve stability */
+  for (let i = n - 1; i >= 0; i--) {
+    const digit = Math.floor(arr[i] / exp) % 10;
+    const pos = --count[digit];
+    output[pos] = arr[i];
+  }
+
+  /* Copy back to the original array */
+  for (let i = 0; i < n; i++) {
+    arr[i] = output[i];
+  }
+}
 /**
- * Reconstruct the path once the frontiers have met at `meetingNode`.
+ * Radix sort for an array of non‑negative integers.
+ * Complexity: O(d · (n + k)) where d = number of digits, k = base (10).
  */
-function reconstructPath(
-  start: string,
-  goal: string,
-  visitedStart: VisitedMap,
-  visitedGoal: VisitedMap,
-  meetingNode: string
-): string[] {
-  const partFromStart: string[] = [meetingNode];
-  let node = meetingNode;
-  while (visitedStart[node]) {
-    node = visitedStart[node]!;
-    partFromStart.unshift(node);
+export function radixSort(arr: number[]): number[] {
+  if (arr.length < 2) return arr;            // already sorted
+
+  // Find the maximum number to know how many digits we need
+  const maxVal = Math.max(...arr);
+
+  // Start with the least significant digit (exp = 1)
+  for (let exp = 1; exp <= maxVal; exp *= 10) {
+    countingSortByDigit(arr, exp);
   }
 
-  const partFromGoal: string[] = [];
-  node = meetingNode;
-  while (visitedGoal[node]) {
-    node = visitedGoal[node]!;
-    partFromGoal.push(node);
-  }
-
-  // Avoid duplicating the meeting node
-  return [...partFromStart, ...partFromGoal];
+  return arr; // sorted array (in‑place)
 }
-const graph: Graph = {
-  a: ['b', 'c'],
-  b: ['a', 'd'],
-  c: ['a', 'd'],
-  d: ['b', 'c', 'e'],
-  e: ['d'],
-};
+const data = [170, 45, 75, 90, 802, 24, 2, 66];
 
-console.log(bidirectionalBFS(graph, 'a', 'e')); // ["a", "b", "d", "e"]
+radixSort(data);
+console.log(data); // [2, 24, 45, 66, 75, 90, 170, 802]
+export function radixSortMixed(arr: number[]): number[] {
+  const positives: number[] = [];
+  const negatives: number[] = [];
+
+  for (const v of arr) {
+    if (v >= 0) positives.push(v);
+    else negatives.push(-v);  // work with absolute values
+  }
+
+  radixSort(positives);
+  radixSort(negatives);
+
+  const sortedNegatives = negatives.reverse().map(v => -v);
+  return [...sortedNegatives, ...positives];
+}
