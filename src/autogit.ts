@@ -1,20 +1,44 @@
-function mean(values: number[]): number {
-  if (values.length === 0) return NaN;          // empty list → no mean
-
-  // total everything up
-  const sum = values.reduce((acc, cur) => acc + cur, 0);
-
-  // divide by how many there are
-  return sum / values.length;
+// src/apiFetch.ts
+export interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
-function meanLoop(values: number[]): number {
-  if (values.length === 0) return NaN;
 
-  let sum = 0;
-  for (const v of values) {
-    sum += v;
+/**
+ * Pulls a single todo item from the JSON‑Placeholder API.
+ *
+ * @param todoId  the numeric ID of the todo to fetch
+ * @returns          a promise that resolves to the Todo object
+ */
+export async function getTodoById(todoId: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${todoId}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { "Accept": "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`API responded with ${response.status} ${response.statusText}`);
   }
-  return sum / values.length;
+
+  // `response.json()` already resolves to a `Promise<any>`, so we cast
+  // to `Todo` to satisfy TypeScript.
+  const data = (await response.json()) as Todo;
+  return data;
 }
-console.log(mean([1, 2, 3, 4, 5])); // 3
-console.log(mean([]));              // NaN
+// src/start.ts
+import { getTodoById, Todo } from "./apiFetch";
+
+async function main(): Promise<void> {
+  try {
+    const todo: Todo = await getTodoById(1);
+    console.log("Fetched todo:", todo);
+  } catch (err) {
+    console.error("Failed to fetch todo:", err);
+  }
+}
+
+main().catch((outerErr) => console.error("Unhandled error:", outerErr));
