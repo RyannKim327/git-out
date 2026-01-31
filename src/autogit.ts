@@ -1,30 +1,43 @@
-const a = [1, 2, 3, 4];
-const b = [3, 4, 5, 6];
+// Helper that normalises the string – handy if you want to ignore
+// spaces, punctuation, and case.
+function normalise(text: string): string {
+  return text
+    .toLowerCase()         // ignore case
+    .replace(/[^a-z0-9]/g, '');  // keep only alphanumerics
+}
 
-const intersection = a.filter(x => b.includes(x));
-console.log(intersection); // [3, 4]
-const a = [1, 2, 3, 4];
-const b = [3, 4, 5, 6];
+/**
+ * Returns true if `input` is a palindrome.
+ *
+ * @param input – the string you want to test
+ * @param {boolean} allowEmpty = false  – whether an empty string is considered a palindrome
+ */
+function isPalindrome(
+  input: string,
+  allowEmpty = false,
+): boolean {
+  // Fast‑path for empty string
+  if (input.length === 0) return allowEmpty;
 
-const setB = new Set(b);
-const intersection = a.filter(x => setB.has(x));
-console.log(intersection); // [3, 4]
-const a = [1, 2, 3, 4];
-const b = [3, 4, 5, 6];
+  const s = normalise(input);
 
-const [small, large] = a.length < b.length ? [a, b] : [b, a];
-const setSmall = new Set(small);
+  // Empty after normalisation may be true or false – decide here
+  if (s.length === 0) return false;
 
-const intersection = large.filter(x => setSmall.has(x));
-console.log(intersection); // [3, 4]
-const a = [1, 2, 2, 3, 4];
-const b = [2, 3, 3, 5];
+  // Compare characters from both ends
+  let left = 0;
+  let right = s.length - 1;
 
-const intersection = Array.from(
-  new Set(a.filter(x => new Set(b).has(x)))
-);
-console.log(intersection); // [2, 3]
-import _ from 'lodash';
+  while (left < right) {
+    if (s[left] !== s[right]) return false;
+    left++;
+    right--;
+  }
 
-const intersection = _.intersection([1, 2, 3], [2, 3, 4]);
-console.log(intersection); // [2, 3]
+  return true;
+}
+
+// Demo
+console.log(isPalindrome('RaceCar'));           // true
+console.log(isPalindrome('A man, a plan!'));    // true
+console.log(isPalindrome('hello world'));       // false
