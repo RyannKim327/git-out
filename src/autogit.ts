@@ -1,29 +1,40 @@
-/**
- * Returns the intersection of two arrays.
- * @param a  First array.
- * @param b  Second array.
- * @returns  Array containing elements that are present in **both** a and b.
- */
-function intersection<T>(a: T[], b: T[]): T[] {
-  // Turn the first array into a Set for O(1) look‑ups.
-  const aSet = new Set(a);
+export interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
+}
+export function countLeaves<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                     // empty tree
 
-  // Keep only the items from `b` that are also in `aSet`.
-  const result: T[] = [];
-  for (const item of b) {
-    if (aSet.has(item)) {
-      result.push(item);
-      // Optional: remove the item so we don’t collect duplicates if
-      // `a` or `b` contains repeated entries
-      aSet.delete(item);
+  // If the node has no children, it’s a leaf
+  if (!root.left && !root.right) return 1;
+
+  // Otherwise recurse on children and sum the results
+  return countLeaves(root.left) + countLeaves(root.right);
+}
+export function countLeavesIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let stack: TreeNode<T>[] = [root];
+  let leaves = 0;
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node.left && !node.right) {
+      leaves++;                // it’s a leaf
+    } else {
+      if (node.left) stack.push(node.left);
+      if (node.right) stack.push(node.right);
     }
   }
-  return result;
+
+  return leaves;
 }
-console.log(intersection([1, 2, 3, 4], [3, 4, 5, 6])); // → [3, 4]
+const tree: TreeNode = {
+  value: 1,
+  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
+  right: { value: 3, right: { value: 6 } }
+};
 
-console.log(intersection(['foo', 'bar'], ['bar', 'baz', 'foo'])); // → ['bar', 'foo']
-
-// With duplicates
-console.log(intersection([1, 2, 2], [2, 2, 3])); // → [2]
-const intersection = (a: any[], b: any[]) => a.filter(x => b.includes(x));
+console.log(countLeaves(tree));          // → 3  (nodes 4, 5, 6)
+console.log(countLeavesIter(tree));      // → 3
