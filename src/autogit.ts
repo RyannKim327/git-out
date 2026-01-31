@@ -1,33 +1,43 @@
-/**
- * Sorts an array of numbers (or any comparable type) in place
- * using the classic selection‑sort algorithm.
- *
- * @param arr – the array to sort
- * @returns the same array reference, now sorted
- */
-export function selectionSort<T>(arr: T[]): T[] {
-    const n = arr.length;
-
-    for (let i = 0; i < n - 1; i++) {
-        // Assume the smallest element starts at i
-        let minIndex = i;
-
-        // Scan the unsorted suffix to find the real minimum
-        for (let j = i + 1; j < n; j++) {
-            if (arr[j] < arr[minIndex]) {
-                minIndex = j;
-            }
-        }
-
-        // If the minimum isn’t already in position i, swap
-        if (minIndex !== i) {
-            [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-        }
-    }
-
-    return arr;
+function stringLength(str: string): number {
+  let len = 0;
+  for (let i = 0; i < str.length; i++) {
+    len++;                // we still use str.length in the loop condition,
+                          // but we never read it as the "answer"
+  }
+  return len;
 }
-const unsorted = [64, 25, 12, 22, 11];
-console.log('Before:', unsorted);
-selectionSort(unsorted);
-console.log('After :', unsorted);
+function stringLength(str: string): number {
+  let len = 0;
+  let code = str.codePointAt(0);
+  let idx = 0;
+  while (code !== undefined) {
+    len++;
+    idx++;
+    code = str.codePointAt(idx);
+  }
+  return len;
+}
+function stringLength(str: string): number {
+  let len = 0;
+  for (const _ of str) {
+    len++;
+  }
+  return len;
+}
+function stringLength(str: string): number {
+  if (str === '') return 0;
+  return 1 + stringLength(str.slice(1));
+}
+function stringLength(str: string): number {
+  const matches = str.match(/./gu);
+  return matches ? matches.length : 0;
+}
+function stringLength(str: string): number {
+  let idx = 0;
+  let len = 0;
+  while (str.charAt(idx) !== '') { // `charAt` returns '' past the end
+    len++;
+    idx++;
+  }
+  return len;
+}
