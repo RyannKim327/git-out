@@ -1,75 +1,35 @@
-// ──────────────────────────────────────────────────────────────
-// 1.  Types for the graph
-// ──────────────────────────────────────────────────────────────
-interface Node<T = void> {
-  value: T;
-  neighbours: Node<T>[];
-}
-
-// A small helper to create nodes
-function createNode<T>(value: T): Node<T> {
-  return { value, neighbours: [] };
-}
-
-function addEdge<T>(from: Node<T>, to: Node<T>): void {
-  from.neighbours.push(to);
-  to.neighbours.push(from);    // undirected; drop this line for directed graphs
-}
-
-// ──────────────────────────────────────────────────────────────
-// 2.  Depth‑limited search (recursive DFS style)
-// ──────────────────────────────────────────────────────────────
 /**
- * Searches `startNode` for a node whose value satisfies `goalPredicate`,
- * but stops expanding any node that appears deeper than `limit` levels.
+ * Recursively searches for `target` inside a sorted array.
  *
- * @param start      the node to start from
- * @param goal       a predicate; if it returns true the node is considered the goal
- * @param limit      max depth to explore
- * @param visited    internal, tracks visited nodes
- * @param depth      internal, current depth
- * @returns          the goal node if found, or null
+ * @param arr  The sorted array to search.
+ * @param target The value we're looking for.
+ * @param left  The leftmost index to consider (inclusive).
+ * @param right The rightmost index to consider (inclusive).
+ * @returns The index of `target`, or `-1` if it isn’t present.
  */
-function depthLimitedSearch<T>(
-  start: Node<T>,
-  goal: (value: T) => boolean,
-  limit: number,
-  visited = new Set<Node<T>>(),
-  depth = 0
-): Node<T> | null {
-  if (depth > limit) return null;               // over the limit
-
-  visited.add(start);
-  if (goal(start.value)) return start;          // goal reached
-
-  for (const neighbour of start.neighbours) {
-    if (!visited.has(neighbour)) {
-      const result = depthLimitedSearch(neighbour, goal, limit, visited, depth + 1);
-      if (result !== null) return result;      // propagate success upwards
+function binarySearchRecursive(
+    arr: number[],
+    target: number,
+    left: number = 0,
+    right: number = arr.length - 1
+): number {
+    if (left > right) {          // Base case: empty search window
+        return -1;
     }
-  }
 
-  return null;                                  // no goal found within this branch
+    const mid = Math.floor((left + right) / 2);
+
+    if (arr[mid] === target) {
+        return mid;              // Found the target
+    } else if (arr[mid] > target) {
+        // Target is in the left half
+        return binarySearchRecursive(arr, target, left, mid - 1);
+    } else {
+        // Target is in the right half
+        return binarySearchRecursive(arr, target, mid + 1, right);
+    }
 }
+const sorted = [3, 7, 11, 15, 23, 42, 56];
 
-// ──────────────────────────────────────────────────────────────
-// 3.  Example usage
-// ──────────────────────────────────────────────────────────────
-/*
-// Build a tiny graph
-const a = createNode('A');
-const b = createNode('B');
-const c = createNode('C');
-const d = createNode('D');
-const e = createNode('E');
-
-addEdge(a, b);
-addEdge(a, c);
-addEdge(b, d);
-addEdge(c, e);
-
-// Find node 'E' but stop after exploring 2 edges from 'A'
-const found = depthLimitedSearch(a, val => val === 'E', 2);
-
-console.log(found ? `Found ${found.value}` : 'Not found within depth limit');
-*/
+console.log(binarySearchRecursive(sorted, 15)); // → 3
+console.log(binarySearchRecursive(sorted, 1));  // → -1
