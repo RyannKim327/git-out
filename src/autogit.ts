@@ -1,32 +1,29 @@
 /**
- * Bubble sort – compares adjacent elements and swaps them if they're out of order.
- *
- * @param arr – The array of numbers (or any type that implements `<`),
- *              sorted in place and also returned for convenience.
- * @returns The sorted array.
+ * Returns the intersection of two arrays.
+ * @param a  First array.
+ * @param b  Second array.
+ * @returns  Array containing elements that are present in **both** a and b.
  */
-export function bubbleSort<T>(arr: T[]): T[] {
-  const n = arr.length;
+function intersection<T>(a: T[], b: T[]): T[] {
+  // Turn the first array into a Set for O(1) look‑ups.
+  const aSet = new Set(a);
 
-  // Outer loop – each pass guarantees that the largest element among the
-  // unsorted portion moves to its final position at the end of the array.
-  for (let i = 0; i < n - 1; i++) {
-    // Inner loop – only needs to run up to the last unsorted element.
-    for (let j = 0; j < n - i - 1; j++) {
-      // If the current element is greater than the next one, swap them.
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-      }
+  // Keep only the items from `b` that are also in `aSet`.
+  const result: T[] = [];
+  for (const item of b) {
+    if (aSet.has(item)) {
+      result.push(item);
+      // Optional: remove the item so we don’t collect duplicates if
+      // `a` or `b` contains repeated entries
+      aSet.delete(item);
     }
   }
-
-  return arr;
+  return result;
 }
-import { bubbleSort } from './bubbleSort';
+console.log(intersection([1, 2, 3, 4], [3, 4, 5, 6])); // → [3, 4]
 
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-console.log('Before:', numbers);
+console.log(intersection(['foo', 'bar'], ['bar', 'baz', 'foo'])); // → ['bar', 'foo']
 
-bubbleSort(numbers);
-
-console.log('After:', numbers);   // [11, 12, 22, 25, 34, 64, 90]
+// With duplicates
+console.log(intersection([1, 2, 2], [2, 2, 3])); // → [2]
+const intersection = (a: any[], b: any[]) => a.filter(x => b.includes(x));
