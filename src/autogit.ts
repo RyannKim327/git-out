@@ -1,38 +1,27 @@
-/**
- * Returns true if `a` and `b` contain exactly the same characters
- * (ignoring whitespace, punctuation, and case).
- */
-export function isAnagram(a: string, b: string): boolean {
-  // 1. Strip anything that isn’t a letter or a digit, and
-  //    normalize the case to lower‑case.
-  const norm = (s: string) =>
-    s.replace(/\W+/g, "") // removes non‑alphanumeric characters
-      .toLowerCase();
-
-  const cleanA = norm(a);
-  const cleanB = norm(b);
-
-  // 2. Quick length check – if lengths differ, they can’t be anagrams.
-  if (cleanA.length !== cleanB.length) return false;
-
-  // 3. Count each character in a Map.
-  const counter = new Map<string, number>();
-
-  for (const ch of cleanA) {
-    counter.set(ch, (counter.get(ch) ?? 0) + 1);
-  }
-
-  // 4. Decrement counts with characters from the second string.
-  for (const ch of cleanB) {
-    const cur = counter.get(ch);
-    if (!cur) return false;            // missing or too many of 'ch'
-    if (cur === 1) counter.delete(ch); // tidy up to keep map small
-    else counter.set(ch, cur - 1);
-  }
-
-  // 5. If the map is empty, the two strings were perfect anagrams.
-  return counter.size === 0;
+function decimalToBinary(num: number): string {
+  return num.toString(2);   // base‑2 string
 }
-console.log(isAnagram("Listen", "Silent"));   // true
-console.log(isAnagram("Hello!", "Oleh!"));    // true
-console.log(isAnagram("Hello", "World"));     // false
+
+console.log(decimalToBinary(42)); // "101010"
+function decimalToBinary(num: bigint): string {
+  if (num === 0n) return "0";
+
+  let n = num;
+  let bits = "";
+
+  while (n > 0n) {
+    bits = (n & 1n ? "1" : "0") + bits; // prepend the low bit
+    n >>= 1n;                           // shift right
+  }
+
+  return bits;
+}
+
+console.log(decimalToBinary(42n)); // "101010"
+export function toBinary(value: number | bigint): string {
+  // Pick the right conversion automatically
+  if (typeof value === "bigint") {
+    return decimalToBinary(value);
+  }
+  return value.toString(2);
+}
