@@ -1,91 +1,75 @@
-interface ListNode {
-  val: number;          // or whatever type you prefer
-  next: ListNode | null;
-}
+/**
+ * Tarjan's algorithm to find all strongly connected components (SCCs) of a directed graph.
+ *
+ * @param adjacencyList A Map where each key is a node id and the value is an array of adjacent node ids.
+ * @returns An array of components, each component is an array of node ids belonging to the same SCC.
+ */
+export function stronglyConnectedComponents(
+  adjacencyList: Map<number, number[]>
+): number[][] {
+  const indexMap = new Map<number, number>();   // node -> index
+  const lowlinkMap = new Map<number, number>(); // node -> lowlink
+  const onStack = new Set<number>();            // nodes currently in the stack
+  const stack: number[] = [];                   // stack of nodes
+  const components: number[][] = [];
+  let currentIndex = 0;
 
-function isPalindromeIterative(head: ListNode | null): boolean {
-  if (!head) return true;
+  const strongConnect = (node: number) => {
+    // 1. set the depth index for this node
+    indexMap.set(node, currentIndex);
+    lowlinkMap.set(node, currentIndex);
+    currentIndex++;
+    stack.push(node);
+    onStack.add(node);
 
-  const stack: number[] = [];
-  let cur: ListNode | null = head;
-
-  // Push all values on the stack
-  while (cur) {
-    stack.push(cur.val);
-    cur = cur.next;
-  }
-
-  // Compare while traversing again
-  cur = head;
-  while (cur) {
-    if (cur.val !== stack.pop()) {
-      return false;
+    // 2. consider successors of node
+    const neighbors = adjacencyList.get(node) ?? [];
+    for (const succ of neighbors) {
+      if (!indexMap.has(succ)) {
+        // (a) Successor has not yet been visited; recurse on it
+        strongConnect(succ);
+        // Update lowlink
+        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, lowlinkMap.get(succ)!));
+      } else if (onStack.has(succ)) {
+        // (b) Successor is in stack → part of current SCC
+        lowlinkMap.set(node, Math.min(lowlinkMap.get(node)!, indexMap.get(succ)!));
+      }
+      // (c) else: successor has been visited and is not in stack – ignore
     }
-    cur = cur.next;
+
+    // 3. If node is a root node, pop the stack and generate an SCC
+    if (lowlinkMap.get(node) === indexMap.get(node)) {
+      const component: number[] = [];
+      let w: number | undefined;
+      do {
+        w = stack.pop();
+        onStack.delete(w!);
+        component.push(w!);
+      } while (w !== node);
+      components.push(component);
+    }
+  };
+
+  // Run strongConnect on every node that has not yet been visited
+  for (const node of adjacencyList.keys()) {
+    if (!indexMap.has(node)) {
+      strongConnect(node);
+    }
   }
 
-  return true;
+  return components;
 }
-function isPalindromeOptimized(head: ListNode | null): boolean {
-  if (!head || !head.next) return true;
+import { stronglyConnectedComponents } from './tarjan';
 
-  // 1. Find the middle (slow will point to middle)
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
+const graph = new Map<number, number[]>();
+graph.set(0, [1]);
+graph.set(1, [2, 3]);
+graph.set(2, [0, 3]);
+graph.set(3, [4]);
+graph.set(4, [5]);
+graph.set(5, [3]);
 
-  // 2. Reverse the second half
-  let prev: ListNode | null = null;
-  let curr = slow.next;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  // `prev` is now the head of the reversed second half
-
-  // 3. Compare the two halves
-  let first = head;
-  let second = prev;
-  let result = true;
-  while (result && second) {        // second will be shorter or equal
-    if (first.val !== second.val) result = false;
-    first = first.next!;
-    second = second.next!;
-  }
-
-  // 4. (Optional) Restore the list
-  // Reverse the second half again to bring the list back to original
-  curr = prev;
-  prev = null;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  slow.next = prev;
-
-  return result;
-}
-function buildList(arr: number[]): ListNode | null {
-  let dummy: ListNode = { val: 0, next: null };
-  let tail = dummy;
-  for (const v of arr) {
-    tail.next = { val: v, next: null };
-    tail = tail.next;
-  }
-  return dummy.next;
-}
-
-const a = buildList([1, 2, 3, 2, 1]);
-console.log(isPalindromeIterative(a));   // true
-console.log(isPalindromeOptimized(a));   // true
-
-const b = buildList([1, 2, 3, 4]);
-console.log(isPalindromeIterative(b));   // false
-console.log(isPalindromeOptimized(b));   // false
+const sccs = stronglyConnectedComponents(graph);
+console.log(sccs);
+// → [ [ 4, 5, 3 ], [ 0, 1, 2 ] ]
+// (order may vary)
