@@ -1,47 +1,42 @@
-/**
- * Return true if `a` and `b` are anagrams.
- *
- *   * Ignore whitespace and punctuation.
- *   * Ignore case.
- */
-function areAnagramsSorting(a: string, b: string): boolean {
-  const clean = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '').split('').sort().join('');
+// 1️⃣  Install the dependencies first:
+//     npm install axios @types/axios
 
-  return clean(a) === clean(b);
+import axios, { AxiosError } from "axios";
+
+// 2️⃣  Define the shape of the data we expect back.
+interface User {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
 }
 
-// Example
-console.log(areAnagramsSorting('Listen', 'Silent')); // → true
-/**
- * Count characters and compare the two maps.
- * Complexity: O(n), with `n` = max(a.length, b.length).
- */
-function areAnagramsCounting(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s.toLowerCase().replace(/\W/g, '');
+// 3️⃣  Perform the request in an async function.
+async function fetchUsers(): Promise<User[]> {
+  const url = "https://jsonplaceholder.typicode.com/users";
 
-  const strA = normalize(a);
-  const strB = normalize(b);
+  try {
+    // 4️⃣  Make the GET request
+    const response = await axios.get<User[]>(url);
 
-  if (strA.length !== strB.length) return false;
-
-  const freq: Record<string, number> = {};
-
-  for (const ch of strA) {
-    freq[ch] = (freq[ch] ?? 0) + 1;
+    // 5️⃣  Axios automatically parses JSON, so `data` has the correct type
+    return response.data;
+  } catch (err) {
+    // 6️⃣  Gracefully handle a possible Axios error
+    if (axios.isAxiosError(err)) {
+      const error = err as AxiosError;
+      console.error(
+        `Request failed! 🙁 Status: ${error.response?.status}  Message: ${error.message}`
+      );
+    } else {
+      console.error("Unexpected error:", err);
+    }
+    return []; // Return an empty array if something goes wrong
   }
-
-  for (const ch of strB) {
-    if (!freq[ch]) return false; // missing or too many
-    freq[ch]! -= 1;
-  }
-
-  return true;
 }
 
-// Example
-console.log(areAnagramsCounting('Software', 'Oxfartswe')); // → true
-const anagrams = (a: string, b: string) =>
-  a.toLowerCase().replace(/\W/g, '').split('').sort().join('') ===
-  b.toLowerCase().replace(/\W/g, '').split('').sort().join('');
+// 7️⃣  Use the function somewhere in your app
+(async () => {
+  const users = await fetchUsers();
+  console.log("Fetched users:", users);
+})();
