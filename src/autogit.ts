@@ -1,95 +1,64 @@
-/* ------------------------------------------------------------------
-   Interface that a node must support for the search.
-   ------------------------------------------------------------------ */
-export interface Searchable<Node> {
-  // Return an array (or any iterable) of child nodes.
-  getChildren(): Iterable<Node>;
+// ────────────────────────
+// Node definition
+// ────────────────────────
+class Node<T> {
+  value: T;
+  next: Node<T> | null = null;
 
-  // Optional: a quick way to decide if this node is the goal.
-  // If omitted, the caller supplies a separate predicate below.
-  isGoal?(): boolean;
+  constructor(value: T) {
+    this.value = value;
+  }
 }
 
-/* ------------------------------------------------------------------
-   Breadth‑Limited Search
+// ────────────────────────
+// LinkedList implementation
+// ────────────────────────
+class LinkedList<T> {
+  head: Node<T> | null = null;
+  tail: Node<T> | null = null;
 
-   Parameters
-     start   : node to begin the search
-     maxDepth: maximum depth (root is depth 0)
-     goal   : optional predicate; if the node has `isGoal`, that
-              method is used instead
-
-   Returns
-     The found node, or `undefined` if nothing was discovered within
-     the depth limit.
-   ------------------------------------------------------------------ */
-export function breadthLimitedSearch<Node extends Searchable<Node>>(
-  start: Node,
-  maxDepth: number,
-  goal?: (node: Node) => boolean
-): Node | undefined {
-
-  // Queue entries store the node and its depth
-  interface QueueEntry {
-    node: Node;
-    depth: number;
-  }
-
-  const queue: QueueEntry[] = [{ node: start, depth: 0 }];
-  const seen = new Set<Node>();
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;
-
-    // Skip any repeated nodes – this protects against cycles
-    if (seen.has(node)) continue;
-    seen.add(node);
-
-    // Goal test – prefer the node’s own method if present
-    const isGoal =
-      goal ? goal(node) : node.isGoal ? node.isGoal() : false;
-    if (isGoal) return node;
-
-    // Stop expanding deeper than maxDepth
-    if (depth < maxDepth) {
-      for (const child of node.getChildren()) {
-        queue.push({ node: child, depth: depth + 1 });
-      }
+  // Append new value to list
+  push(value: T): void {
+    const newNode = new Node(value);
+    if (!this.head) {
+      this.head = this.tail = newNode;
+      return;
     }
+    this.tail!.next = newNode;  // non‑null assertion is safe here
+    this.tail = newNode;
   }
 
-  // Nothing matched within the limit
-  return undefined;
+  // ────── length (iterative)
+  // Return number of nodes
+  length(): number {
+    let count = 0;
+    let current = this.head;
+    while (current !== null) {
+      count++;
+      current = current.next;
+    }
+    return count;
+  }
+
+  // ────── length (recursive helper)
+  private _recursiveLength(node: Node<T> | null): number {
+    if (!node) return 0;
+    return 1 + this._recursiveLength(node.next);
+  }
+
+  // Public wrapper for the recursive version
+  recursiveLength(): number {
+    return this._recursiveLength(this.head);
+  }
 }
-// 1. A concrete node type
-class TreeNode implements Searchable<TreeNode> {
-  constructor(
-    public value: number,
-    private children: TreeNode[] = []
-  ) {}
 
-  getChildren(): TreeNode[] {
-    return this.children;
-  }
+// ────────────────────────
+// Demo
+// ────────────────────────
+const list = new LinkedList<number>();
+list.push(1);
+list.push(2);
+list.push(3);
 
-  // Optional helper that the search will call first
-  isGoal(): boolean {
-    return this.value === 42;
-  }
-
-  add(child: TreeNode) {
-    this.children.push(child);
-  }
-}
-
-// 2. Build a little tree
-const root = new TreeNode(1);
-const a = new TreeNode(2);
-const b = new TreeNode(3);
-root.add(a); root.add(b);
-a.add(new TreeNode(4));
-b.add(new TreeNode(42)); // the goal
-
-// 3. Run the search
-const found = breadthLimitedSearch(root, 3);
-console.log(found?.value ?? 'not found'); // prints 42
+console.log('Iterative length:', list.length());          // 3
+console.log('Recursive length:', list.recursiveLength()); // 3
