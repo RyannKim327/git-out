@@ -1,57 +1,50 @@
-function secondLargestSort(arr: number[]): number | null {
-  // Defensive copy so we don’t mutate the caller’s data
-  const sorted = [...arr].sort((a, b) => b - a); // descending
+/**
+ * Random sort – a quick‑sort implementation that picks a random
+ * pivot for each split.
+ *
+ * The algorithm is deterministic in complexity (O(n log n) on average),
+ * but the pivot choice is completely random, which can be useful for
+ * teaching purposes or for avoiding worst‑case sequences.
+ */
 
-  // Find the first element that isn’t equal to the maximum
-  let i = 1;
-  while (i < sorted.length && sorted[i] === sorted[0]) {
-    i++;
+function randomQuickSort<T>(input: T[], compare?: (a: T, b: T) => number): T[] {
+  // If there are 0 or 1 elements, it's already sorted.
+  if (input.length <= 1) {
+    return [...input];
   }
 
-  return i < sorted.length ? sorted[i] : null;
-}
-console.log(secondLargestSort([3, 1, 4, 4, 5])); // 4
-console.log(secondLargestSort([10]));            // null
-function secondLargestTwoPass(arr: number[]): number | null {
-  if (arr.length < 2) return null;
+  // Choose a random pivot index.
+  const pivotIndex = Math.floor(Math.random() * input.length);
+  const pivot = input[pivotIndex];
 
-  let max = -Infinity;
-  let secondMax = -Infinity;
+  // Helper to decide the order.
+  const cmp = compare ||
+    // Default to numeric or string comparison.
+    ((a: T, b: T) => (a as any) < b ? -1 : (a as any) > b ? 1 : 0);
 
-  // First pass: find the maximum
-  for (const v of arr) {
-    if (v > max) max = v;
-  }
+  // Partition the array into two bins: <= pivot and > pivot.
+  const smaller: T[] = [];
+  const larger: T[] = [];
 
-  // Second pass: find the largest value that is < max
-  for (const v of arr) {
-    if (v < max && v > secondMax) secondMax = v;
-  }
-
-  return secondMax === -Infinity ? null : secondMax;
-}
-console.log(secondLargestTwoPass([7, 3, 9, 1, 9])); // 7
-function secondLargest(arr: number[]): number | null {
-  if (arr.length < 2) return null;
-
-  let max = -Infinity;
-  let secondMax = -Infinity;
-
-  for (const v of arr) {
-    if (v > max) {
-      secondMax = max; // the old max becomes second max
-      max = v;
-    } else if (v < max && v > secondMax) {
-      secondMax = v;
+  for (let i = 0; i < input.length; i++) {
+    if (i === pivotIndex) continue; // skip the pivot itself
+    const item = input[i];
+    if (cmp(item, pivot) <= 0) {
+      smaller.push(item);
+    } else {
+      larger.push(item);
     }
   }
 
-  return secondMax === -Infinity ? null : secondMax;
+  // Recursively sort each sub‑array and concatenate the results.
+  return [
+    ...randomQuickSort(smaller, compare),
+    pivot,
+    ...randomQuickSort(larger, compare),
+  ];
 }
-console.log(secondLargest([5, 12, 7, 12, 9]));   // 9
-console.log(secondLargest([3]));                // null
-console.log(secondLargest([2, 2, 2]));          // null (no distinct second largest)
-function findSecondLargest(arr: number[]): number | null {
-  // Pick whichever implementation feels best
-  return secondLargest(arr);
-}
+
+/* --- Example usage ----------------------------------------------------- */
+const nums = [23, 4, 42, 8, 15, 16, 42, 23, 4, 17];
+console.log('Unsorted:', nums);
+console.log('Sorted:', randomQuickSort(nums));
