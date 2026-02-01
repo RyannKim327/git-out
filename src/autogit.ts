@@ -1,50 +1,75 @@
-/**
- * Random sort – a quick‑sort implementation that picks a random
- * pivot for each split.
- *
- * The algorithm is deterministic in complexity (O(n log n) on average),
- * but the pivot choice is completely random, which can be useful for
- * teaching purposes or for avoiding worst‑case sequences.
- */
+/** Build the "lps" (longest‑prefix‑which‑is‑also‑suffix) table for the pattern */
+function buildLPS(pattern: string): number[] {
+  const lps = new Array(pattern.length).fill(0);
+  let len = 0;              // length of previous longest prefix suffix
+  let i = 1;                // we start from the second character
 
-function randomQuickSort<T>(input: T[], compare?: (a: T, b: T) => number): T[] {
-  // If there are 0 or 1 elements, it's already sorted.
-  if (input.length <= 1) {
-    return [...input];
-  }
-
-  // Choose a random pivot index.
-  const pivotIndex = Math.floor(Math.random() * input.length);
-  const pivot = input[pivotIndex];
-
-  // Helper to decide the order.
-  const cmp = compare ||
-    // Default to numeric or string comparison.
-    ((a: T, b: T) => (a as any) < b ? -1 : (a as any) > b ? 1 : 0);
-
-  // Partition the array into two bins: <= pivot and > pivot.
-  const smaller: T[] = [];
-  const larger: T[] = [];
-
-  for (let i = 0; i < input.length; i++) {
-    if (i === pivotIndex) continue; // skip the pivot itself
-    const item = input[i];
-    if (cmp(item, pivot) <= 0) {
-      smaller.push(item);
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
     } else {
-      larger.push(item);
+      if (len !== 0) {
+        len = lps[len - 1];  // fallback in the pattern
+      } else {
+        lps[i] = 0;
+        i++;
+      }
     }
   }
-
-  // Recursively sort each sub‑array and concatenate the results.
-  return [
-    ...randomQuickSort(smaller, compare),
-    pivot,
-    ...randomQuickSort(larger, compare),
-  ];
+  return lps;
 }
 
-/* --- Example usage ----------------------------------------------------- */
-const nums = [23, 4, 42, 8, 15, 16, 42, 23, 4, 17];
-console.log('Unsorted:', nums);
-console.log('Sorted:', randomQuickSort(nums));
+/** Find the first occurrence of `pattern` in `text` (returns -1 if not found) */
+function kmpSearch(text: string, pattern: string): number {
+  if (!pattern) return 0; // empty pattern matches at start
+
+  const lps = buildLPS(pattern);
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) return i - j; // match found
+    } else {
+      if (j !== 0) {
+        j = lps[j - 1]; // shift pattern without re‑examining matched chars
+      } else {
+        i++;           // no match, move on in the text
+      }
+    }
+  }
+  return -1; // no match
+}
+
+/** Optional: return *all* starting indices of matches */
+function kmpAllMatches(text: string, pattern: string): number[] {
+  const indices: number[] = [];
+  if (!pattern) return [0];
+
+  const lps = buildLPS(pattern);
+  let i = 0, j = 0;
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) {
+        indices.push(i - j);
+        j = lps[j - 1]; // continue searching for next possible match
+      }
+    } else {
+      if (j !== 0) j = lps[j - 1];
+      else i++;
+    }
+  }
+  return indices;
+}
+const txt = "ABABDABACDABABCABAB";
+const pat = "ABABCABAB";
+
+const firstIdx = kmpSearch(txt, pat);          // returns 10
+const allIdx   = kmpAllMatches(txt, pat);     // returns [10]
