@@ -1,78 +1,50 @@
-// 1️⃣  A tiny node definition
-interface ListNode<T> {
-  val: T;
-  next?: ListNode<T>;
-}
+/**
+ * Random sort – a quick‑sort implementation that picks a random
+ * pivot for each split.
+ *
+ * The algorithm is deterministic in complexity (O(n log n) on average),
+ * but the pivot choice is completely random, which can be useful for
+ * teaching purposes or for avoiding worst‑case sequences.
+ */
 
-// 2️⃣  Helper: walk a list and collect values (for demo)
-const listToArray = <T>(head: ListNode<T> | undefined): T[] => {
-  const arr: T[] = [];
-  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
-  return arr;
-};
-
-// 3️⃣  The trick: two pointers, fast and slow
-function middle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  if (!head) return undefined; // empty list—no middle
-
-  let fast = head;
-  let slow = head;
-
-  // advance fast every two steps, slow every one
-  while (fast.next && fast.next.next) {
-    fast = fast.next.next; // jump 2
-    slow = slow.next as ListNode<T>; // jump 1
+function randomQuickSort<T>(input: T[], compare?: (a: T, b: T) => number): T[] {
+  // If there are 0 or 1 elements, it's already sorted.
+  if (input.length <= 1) {
+    return [...input];
   }
 
-  // If fast has a next (odd length), move slow one more
-  if (fast.next) slow = slow.next as ListNode<T>;
+  // Choose a random pivot index.
+  const pivotIndex = Math.floor(Math.random() * input.length);
+  const pivot = input[pivotIndex];
 
-  return slow;
-}
+  // Helper to decide the order.
+  const cmp = compare ||
+    // Default to numeric or string comparison.
+    ((a: T, b: T) => (a as any) < b ? -1 : (a as any) > b ? 1 : 0);
 
-// 4️⃣  Demo: build a list so we can see it in action
-const nodes: ListNode<number>[] = [1, 2, 3, 4, 5].map(
-  (v) => ({ val: v })
-);
-for (let i = 0; i < nodes.length - 1; i++) nodes[i].next = nodes[i + 1];
-const head = nodes[0];
+  // Partition the array into two bins: <= pivot and > pivot.
+  const smaller: T[] = [];
+  const larger: T[] = [];
 
-console.log("Full list:", listToArray(head));         // 1,2,3,4,5
-console.log("Middle node:", middle(head)?.val);        // 3
-
-// Try an even‑length list
-const even: ListNode<number>[] = [10, 20, 30, 40].map(
-  (v) => ({ val: v })
-);
-for (let i = 0; i < even.length - 1; i++) even[i].next = even[i + 1];
-console.log("Middle of even list:", middle(even)?.val); // 20 (or 30 if you prefer that half)
-class LinkedList<T> {
-  head?: ListNode<T>;
-
-  // push to the tail
-  push(val: T) {
-    const node: ListNode<T> = { val };
-    if (!this.head) {
-      this.head = node;
+  for (let i = 0; i < input.length; i++) {
+    if (i === pivotIndex) continue; // skip the pivot itself
+    const item = input[i];
+    if (cmp(item, pivot) <= 0) {
+      smaller.push(item);
     } else {
-      let cur = this.head;
-      while (cur.next) cur = cur.next;
-      cur.next = node;
+      larger.push(item);
     }
   }
 
-  // returns the middle node (or the first of two middles for even length)
-  middle(): ListNode<T> | undefined {
-    return middle(this.head);
-  }
-
-  toArray(): T[] {
-    return listToArray(this.head);
-  }
+  // Recursively sort each sub‑array and concatenate the results.
+  return [
+    ...randomQuickSort(smaller, compare),
+    pivot,
+    ...randomQuickSort(larger, compare),
+  ];
 }
 
-// Usage:
-const ll = new LinkedList<number>();
-[1, 2, 3, 4, 5].forEach(v => ll.push(v));
-console.log(ll.toArray());       // [1,2,3,4,5]
-console.log(ll.middle()?.val);   // 3
+/* --- Example usage ----------------------------------------------------- */
+const nums = [23, 4, 42, 8, 15, 16, 42, 23, 4, 17];
+console.log('Unsorted:', nums);
+console.log('Sorted:', randomQuickSort(nums));
