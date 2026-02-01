@@ -1,30 +1,26 @@
 /**
- * Reverse the order of words in a string.
+ * Returns the first non‑repeating character in `str`.
+ * If every character repeats, returns `undefined`.
  *
- * Words are anything separated by whitespace (space, tab, etc.).
- * Leading/trailing whitespace is trimmed for a clean result, but
- * consecutive internal spaces are collapsed to a single space – you can keep
- * them if you prefer by tweaking the regex.
- *
- * @param s  The input string.
- * @returns   The string with the words reversed.
+ * @param str – the string to check
  */
-function reverseWords(s: string): string {
-  // 1. Trim surrounding whitespace, then split on any sequence of whitespace.
-  const words = s.trim().split(/\s+/);
+function firstNonRepeating(str: string): string | undefined {
+  // 1️⃣ Count how many times every character shows up
+  const freq = new Map<string, number>();
+  for (const ch of str) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  }
 
-  // 2. Reverse the array in place.
-  words.reverse();
+  // 2️⃣ Scan again, looking for the first character whose count is 1
+  for (const ch of str) {
+    if (freq.get(ch) === 1) {
+      return ch;          // found it!
+    }
+  }
 
-  // 3. Join back with a single space (change if you need a different separator).
-  return words.join(' ');
+  return undefined;       // nothing unique found
 }
 
 // Demo
-const original = "  the quick brown   fox jumps over the lazy dog  ";
-const reversed = reverseWords(original);
-
-console.log("Original:", original);
-console.log("Reversed:", reversed);
-// Output: "dog lazy the over jumps fox brown quick the"
-const words = s.split(/\s+/);
+console.log(firstNonRepeating("swiss"));   // → "w"
+console.log(firstNonRepeating("aabb"));    // → undefined
