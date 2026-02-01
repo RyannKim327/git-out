@@ -1,45 +1,48 @@
 /**
- * Return the largest prime factor of |n|.
- *
- * @param n Any integer. Negative values are treated as |n|.
- * @returns   The largest prime factor of n, or `0` if n has no prime factors
- * (i.e. n is 0, 1, or –1).
+ * Randomised quick‑sort for numbers (works for any type T that can be compared)
+ * with an optional compare function.
  */
-function largestPrimeFactor(n: number): number {
-  if (n === 0 || n === 1 || n === -1) return 0;
+function randomQuickSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
 
-  let num = Math.abs(n);          // work with the absolute value
-  let lastPrime = 0;              // keep the biggest factor we’ve seen
+  function sort(start: number, end: number): void {
+    if (end - start <= 1) return;              // 0 or 1 element
 
-  // Treat 2 separately – it’s the only even prime
-  while (num % 2 === 0) {
-    lastPrime = 2;
-    num >>= 1;                    // divide by 2
-  }
+    // Pick a random pivot index in [start, end-1]
+    const pivotIndex = start + Math.floor(Math.random() * (end - start));
+    const pivotValue = arr[pivotIndex];
 
-  // Now n is odd. Try only odd divisors.
-  // We only need to go up to sqrt(num) because if num still > 1 after that,
-  // num itself is prime and the largest factor.
-  for (let d = 3; d * d <= num; d += 2) {
-    while (num % d === 0) {
-      lastPrime = d;
-      num /= d;
+    // Move pivot to the end for convenience
+    [arr[pivotIndex], arr[end - 1]] = [arr[end - 1], arr[pivotIndex]];
+
+    // Partition: all < pivot on the left, others on the right
+    let storeIndex = start;
+    for (let i = start; i < end - 1; i++) {
+      if (cmp(arr[i], pivotValue) < 0) {
+        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
+        storeIndex++;
+      }
     }
+
+    // Place pivot in its final position
+    [arr[storeIndex], arr[end - 1]] = [arr[end - 1], arr[storeIndex]];
+
+    // Recurse on partitions
+    sort(start, storeIndex);
+    sort(storeIndex + 1, end);
   }
 
-  // If after the loop num > 1, it means num itself is prime
-  // and larger than any divisor we found earlier.
-  if (num > 1) lastPrime = num;
-
-  return lastPrime;
+  // Make a copy to keep input immutable
+  const copy = arr.slice();
+  sort(0, copy.length);
+  return copy;
 }
 
-/* ----- quick sanity checks ----- */
-console.log(largestPrimeFactor(13195));   // 29  (13195 = 5 × 7 × 13 × 29)
-console.log(largestPrimeFactor(600851475143)); // 6857 (the known answer to Project Euler #3)
-Console.log(largestPrimeFactor(13));      // 13
-Console.log(largestPrimeFactor(4));       // 2
-Console.log(largestPrimeFactor(1));       // 0
-function largestPrimeFactorBigInt(n: bigint): bigint {
-  // identical logic, but using bigint operations
-}
+/* ----- Usage example ----- */
+const unsorted = [7, 2, 9, 4, 3, 1, 5, 6];
+const sorted = randomQuickSort(unsorted);
+console.log('original:', unsorted);
+console.log('sorted  :', sorted);
