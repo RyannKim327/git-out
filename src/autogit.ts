@@ -1,43 +1,45 @@
-interface BinaryTreeNode<T = number> {
-  val: T;                  // The payload – can be any type you need
-  left?: BinaryTreeNode<T>;
-  right?: BinaryTreeNode<T>;
-}
-function maxDepthRecursive<T>(root?: BinaryTreeNode<T>): number {
-  if (!root) return 0; // An empty tree has depth 0
+/**
+ * Return the largest prime factor of |n|.
+ *
+ * @param n Any integer. Negative values are treated as |n|.
+ * @returns   The largest prime factor of n, or `0` if n has no prime factors
+ * (i.e. n is 0, 1, or –1).
+ */
+function largestPrimeFactor(n: number): number {
+  if (n === 0 || n === 1 || n === -1) return 0;
 
-  const leftDepth  = maxDepthRecursive(root.left);
-  const rightDepth = maxDepthRecursive(root.right);
+  let num = Math.abs(n);          // work with the absolute value
+  let lastPrime = 0;              // keep the biggest factor we’ve seen
 
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthBFS<T>(root?: BinaryTreeNode<T>): number {
-  if (!root) return 0;
-
-  const queue: Array<{ node: BinaryTreeNode<T>; depth: number }> = [{ node: root, depth: 1 }];
-  let maxDepth = 0;
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!; // Non‑null assertion: queue never empty here
-    maxDepth = Math.max(maxDepth, depth);
-
-    if (node.left)  queue.push({ node: node.left, depth: depth + 1 });
-    if (node.right) queue.push({ node: node.right, depth: depth + 1 });
+  // Treat 2 separately – it’s the only even prime
+  while (num % 2 === 0) {
+    lastPrime = 2;
+    num >>= 1;                    // divide by 2
   }
 
-  return maxDepth;
-}
-// Example tree:
-//        1
-//       / \
-//      2   3
-//     /
-//    4
-const tree: BinaryTreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3 }
-};
+  // Now n is odd. Try only odd divisors.
+  // We only need to go up to sqrt(num) because if num still > 1 after that,
+  // num itself is prime and the largest factor.
+  for (let d = 3; d * d <= num; d += 2) {
+    while (num % d === 0) {
+      lastPrime = d;
+      num /= d;
+    }
+  }
 
-console.log(maxDepthRecursive(tree)); // 3
-console.log(maxDepthBFS(tree));       // 3
+  // If after the loop num > 1, it means num itself is prime
+  // and larger than any divisor we found earlier.
+  if (num > 1) lastPrime = num;
+
+  return lastPrime;
+}
+
+/* ----- quick sanity checks ----- */
+console.log(largestPrimeFactor(13195));   // 29  (13195 = 5 × 7 × 13 × 29)
+console.log(largestPrimeFactor(600851475143)); // 6857 (the known answer to Project Euler #3)
+Console.log(largestPrimeFactor(13));      // 13
+Console.log(largestPrimeFactor(4));       // 2
+Console.log(largestPrimeFactor(1));       // 0
+function largestPrimeFactorBigInt(n: bigint): bigint {
+  // identical logic, but using bigint operations
+}
