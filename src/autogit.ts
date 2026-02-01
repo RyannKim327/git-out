@@ -1,87 +1,56 @@
-// A directed graph: adjacency list
-type Graph = Record<string, string[]>;
+// ------------------------------------------------------------------
+// 1) Basic types – tweak these to match your own representation.
+// ------------------------------------------------------------------
+interface Node<T> {
+  /** Value that identifies the node – can be an id, a name, … */
+  id: string;
+  /** Children (or neighbours) – the graph may be directed or undirected. */
+  children?: Array<Node<T>>;
+}
 
-// Example: a tiny graph
-const graph: Graph = {
-  A: ["B"],
-  B: ["C"],
-  C: ["A", "D"],
-  D: ["C", "E"],
-  E: [],
-};
-/**
- * Finds all strongly connected components of a directed graph.
- * @param graph The adjacency list of the graph.
- * @returns An array of SCCs; each SCC is an array of vertex IDs.
- */
-function tarjanSCC(graph: Graph): string[][] {
-  let index = 0;                     // global index counter
-  const stack: string[] = [];        // DFS stack
-  const onStack = new Set<string>(); // quick membership check
+// A very simple match predicate. Replace it with whatever checks your
+// problem needs (e.g. `node.id === targetId`).
+type MatchFn<T> = (node: Node<T>) => boolean;
 
-  // Maps vertex → its index in DFS tree
-  const indices = new Map<string, number>();
-  // Maps vertex → its lowlink value
-  const lowlink = new Map<string, number>();
-  // Result: array of SCCs
-  const sccs: string[][] = [];
+// ------------------------------------------------------------------
+// 2) Depth‑limited search – iterative (uses an explicit stack).
+// ------------------------------------------------------------------
+export function depthLimitedSearch<T>(
+  start: Node<T>,          // The root (or any arbitrary start node)
+  match: MatchFn<T>,      // Predicate to decide if the node is a goal
+  limit: number            // Maximum depth that may be explored
+): Node<T> | null {
 
-  function strongConnect(v: string) {
-    // Step 1: set the depth index for v
-    indices.set(v, index);
-    lowlink.set(v, index);
-    index++;
-    stack.push(v);
-    onStack.add(v);
+  // Stack holds tuples  : [current node, current depth]
+  const stack: Array<[Node<T>, number]> = [[start, 0]];
 
-    // Step 2: consider each successor
-    for (const w of graph[v] ?? []) {
-      if (!indices.has(w)) {
-        // Successor w has not yet been visited; recurse on it.
-        strongConnect(w);
-        // After recursion: update lowlink of v
-        lowlink.set(v, Math.min(lowlink.get(v)!, lowlink.get(w)!));
-      } else if (onStack.has(w)) {
-        // Successor w is in stack → part of current SCC
-        lowlink.set(v, Math.min(lowlink.get(v)!, indices.get(w)!));
+  while (stack.length > 0) {
+    const [node, depth] = stack.pop()!;   // `!` is safe – we just checked length
+
+    // 1️⃣  Goal check
+    if (match(node)) {
+      return node;
+    }
+
+    // 2️⃣  Depth test – we only enqueue children if we still have room
+    if (depth < limit && node.children) {
+      // Push children onto stack – last child examined first (DFS order)
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        stack.push([node.children[i], depth + 1]);
       }
     }
-
-    // Step 3: If v is a root node, pop the stack and generate an SCC
-    if (lowlink.get(v)! === indices.get(v)!) {
-      const scc: string[] = [];
-      let w: string | undefined;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        scc.push(w);
-      } while (w !== v);
-      sccs.push(scc);
-    }
   }
 
-  // Kick off DFS for each vertex that hasn't been visited yet
-  for (const v of Object.keys(graph)) {
-    if (!indices.has(v)) {
-      strongConnect(v);
-    }
-  }
-
-  return sccs;
+  // No goal found within the depth budget
+  return null;
 }
-const sccs = tarjanSCC(graph);
-console.log("Strongly connected components:");
-sccs.forEach((scc, i) => {
-  console.log(`  ${i + 1}. [${scc.join(", ")}]`);
-});
-Strongly connected components:
-  1. [A, C, B]
-  2. [E]
-  3. [D]
-type Vertex = number;
+const tree: Node<number> = {
+  id: 'root',
+  children: [
+    { id: 'a', children: [{ id: 'a1' }, { id: 'a2' }] },
+    { id: 'b', children: [{ id: 'b1' }, { id: 'b2' }] },
+  ],
+};
 
-// * Update the graph type:
-type Graph = Record<Vertex, Vertex[]>;
-
-// * Replace string‑specific typing in the function:
-function tarjanSCC(graph: Graph): Vertex[][] { ... }
+const found = depthLimitedSearch(tree, node => node.id === 'a2', /* limit */ 2);
+console.log(found?.id ?? 'not found'); // → a2
