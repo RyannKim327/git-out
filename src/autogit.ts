@@ -1,53 +1,48 @@
 /**
- * Simpler Rabin–Karp – uses a 32‑bit unsigned int hash.
- * For stronger use (large text / collision safety) switch to BigInt or a
- * larger mod (e.g., 1_000_000_007).
+ * Returns the longest common subsequence (LCS) of two strings.
+ * @param a First string
+ * @param b Second string
+ * @returns { subsequence: string; length: number }
  */
-export function rabinKarp(
-    text: string,
-    pattern: string,
-    base: number = 256,               // alphabet size
-    mod: number = 1_000_000_007       // a large prime
-): number[] {
-    const n = text.length;
-    const m = pattern.length;
-    if (m === 0 || n < m) return [];
+function longestCommonSubsequence(a: string, b: string) {
+  const m = a.length;
+  const n = b.length;
 
-    const result: number[] = [];
+  // 1. Build DP matrix (m+1) x (n+1) filled with 0
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-    /* Pre‑compute base^(m-1) % mod   (the weight of the leading char) */
-    let power = 1;
-    for (let i = 0; i < m - 1; i++) power = (power * base) % mod;
-
-    /* Hashes of pattern and first window */
-    let patternHash = 0;
-    let windowHash = 0;
-    for (let i = 0; i < m; i++) {
-        patternHash = (patternHash * base + pattern.charCodeAt(i)) % mod;
-        windowHash  = (windowHash  * base + text.charCodeAt(i))  % mod;
+  // 2. Fill DP matrix
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
+  }
 
-    /* Slide the window */
-    for (let i = 0; i <= n - m; i++) {
-        /* If hashes match – do a literal check to avoid false positives */
-        if (patternHash === windowHash) {
-            if (text.substr(i, m) === pattern) result.push(i);
-        }
-
-        /* Re‑hash: remove leading char, add trailing char */
-        if (i < n - m) {
-            const leading = text.charCodeAt(i) * power % mod;
-            windowHash = (windowHash - leading + mod) % mod;   // avoid negative
-            windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
-        }
+  // 3. Back‑track to rebuild the subsequence
+  let i = m, j = n;
+  const subseq: string[] = [];
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      subseq.push(a[i - 1]); // same char belongs to LCS
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;            // move up
+    } else {
+      j--;            // move left
     }
+  }
 
-    return result;
+  return {
+    subsequence: subseq.reverse().join(''),
+    length: dp[m][n]
+  };
 }
-import { rabinKarp } from './rabinKarp';
 
-const text = "ababcabcabababd";
-const pattern = "ababd";
-
-const matches = rabinKarp(text, pattern);  // → [10]
-console.log("Match at indices: ", matches);
+// Quick demo
+const { subsequence, length } = longestCommonSubsequence('AGCAT', 'GAC');
+console.log(`Longest common subsequence: ${subsequence} (length ${length})`);
