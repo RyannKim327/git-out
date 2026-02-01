@@ -1,19 +1,20 @@
-/**
- * Minimal email validator.
- * Covers most real‑world cases without being overly strict.
- */
-export function isValidEmail(email: string): boolean {
-  // 1. Basic structural check: local part @ domain
-  // 2. Local part: letters, digits, dots, hyphens, underscores, and plus
-  // 3. Domain: DNS‑style labels separated by dots; ends in 2‑63‑letter TLD
-  const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,64}$/;
-  return pattern.test(email);
-}
-import validator from 'validator';
+function mean(values: number[]): number {
+  if (values.length === 0) return NaN;          // empty list → no mean
 
-function isValidFullEmail(email: string): boolean {
-  return validator.isEmail(email);  // uses RFC‑compliant logic
+  // total everything up
+  const sum = values.reduce((acc, cur) => acc + cur, 0);
+
+  // divide by how many there are
+  return sum / values.length;
 }
-console.log(isValidEmail('user@example.com'));   // true
-console.log(isValidEmail('bob.smith@sub.domain.co')); // true
-console.log(isValidEmail('invalid-email@'));    // false
+function meanLoop(values: number[]): number {
+  if (values.length === 0) return NaN;
+
+  let sum = 0;
+  for (const v of values) {
+    sum += v;
+  }
+  return sum / values.length;
+}
+console.log(mean([1, 2, 3, 4, 5])); // 3
+console.log(mean([]));              // NaN
