@@ -1,44 +1,13 @@
-// src/apiFetch.ts
-export interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
+// 1. Regular expression – removes *any* whitespace (spaces, tabs, newlines)
+const noSpace = str.replace(/\s+/g, '');
 
-/**
- * Pulls a single todo item from the JSON‑Placeholder API.
- *
- * @param todoId  the numeric ID of the todo to fetch
- * @returns          a promise that resolves to the Todo object
- */
-export async function getTodoById(todoId: number): Promise<Todo> {
-  const url = `https://jsonplaceholder.typicode.com/todos/${todoId}`;
+// 2. If you only want literal space characters:
+const noSpaceLiteral = str.replace(/ +/g, '');   // or / /g
 
-  const response = await fetch(url, {
-    method: "GET",
-    headers: { "Accept": "application/json" },
-  });
+// 3. Split/join – handy when you only want spaces:
+const noSpaceSplit = str.split(' ').join('');
 
-  if (!response.ok) {
-    throw new Error(`API responded with ${response.status} ${response.statusText}`);
-  }
-
-  // `response.json()` already resolves to a `Promise<any>`, so we cast
-  // to `Todo` to satisfy TypeScript.
-  const data = (await response.json()) as Todo;
-  return data;
-}
-// src/start.ts
-import { getTodoById, Todo } from "./apiFetch";
-
-async function main(): Promise<void> {
-  try {
-    const todo: Todo = await getTodoById(1);
-    console.log("Fetched todo:", todo);
-  } catch (err) {
-    console.error("Failed to fetch todo:", err);
-  }
-}
-
-main().catch((outerErr) => console.error("Unhandled error:", outerErr));
+// 4. Using `Array.filter` to keep non‑space characters:
+const noSpaceArray = str.split('').filter(c => c !== ' ').join('');
+const original = 'Hello  world!\nThis is\tgood.';
+console.log(original.replace(/\s+/g, ''));  // "Helloworld!Thisisgood."
