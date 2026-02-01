@@ -1,56 +1,55 @@
 /**
- * Returns the longest strictly increasing subsequence of `arr`.
+ * Selection sort – sorts an array in‑place in ascending order.
  *
- * Example:
- *   longestIncreasingSubsequence([10, 9, 2, 5, 3, 7, 101, 18])
- *   → [2, 3, 7, 101]
+ * @param array   The array to sort.  It will be mutated.
+ * @param compare Callback used to decide order. If omitted, a natural
+ *                ascending numeric/string comparison is used.
+ * @returns The same array instance, now sorted.
  */
-export function longestIncreasingSubsequence(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+export function selectionSort<T>(
+  array: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  const len = array.length;
 
-  // `tails` keeps the smallest tail value for all subsequences
-  // of a given length. `tails[i]` is the least possible tail of
-  // an increasing subsequence with length i+1.
-  const tails: number[] = [];
-  // `prevIndices` remembers, for each element, the index of its
-  // predecessor in the LIS that passes through that element.
-  const prevIndices: number[] = new Array(arr.length).fill(-1);
-  // `indicesAtLength` holds the index of the last element of the LIS
-  // of a given length, allowing us to reconstruct the sequence.
-  const indicesAtLength: number[] = [];
-
-  arr.forEach((val, idx) => {
-    // Binary search for the first tail that is >= val
-    let l = 0;
-    let r = tails.length;
-    while (l < r) {
-      const m = Math.floor((l + r) / 2);
-      if (tails[m] < val) l = m + 1;
-      else r = m;
-    }
-
-    // `l` is the length (0‑based) of the subsequence that will end at idx
-    if (l > 0) prevIndices[idx] = indicesAtLength[l - 1];
-
-    if (l === tails.length) {
-      tails.push(val);
-      indicesAtLength.push(idx);
-    } else {
-      tails[l] = val;
-      indicesAtLength[l] = idx;
-    }
+  // default comparer: numeric or string ascending
+  const cmp = compare ?? ((a: any, b: any) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
   });
 
-  // Reconstruct the LIS from the recorded indices
-  const lis: number[] = [];
-  let k = indicesAtLength[indicesAtLength.length - 1];
-  while (k !== -1) {
-    lis.push(arr[k]);
-    k = prevIndices[k];
+  for (let i = 0; i < len - 1; i++) {
+    // assume min at current position
+    let minIdx = i;
+
+    // find the smallest element in the unsorted portion
+    for (let j = i + 1; j < len; j++) {
+      if (cmp(array[j], array[minIdx]) < 0) {
+        minIdx = j;
+      }
+    }
+
+    // swap if we found a smaller element
+    if (minIdx !== i) {
+      const temp = array[i];
+      array[i] = array[minIdx];
+      array[minIdx] = temp;
+    }
   }
-  lis.reverse();
-  return lis;
+
+  return array;
 }
-const data = [3, 10, 2, 1, 20];
-console.log(longestIncreasingSubsequence(data));
-// → [3, 10, 20]
+// simple numeric sorting
+let nums = [64, 25, 12, 22, 11];
+selectionSort(nums);
+console.log(nums); // [11, 12, 22, 25, 64]
+
+// sorting strings
+let words = ["banana", "avocado", "cherry"];
+selectionSort(words);
+console.log(words); // ["avocado", "banana", "cherry"]
+
+// custom comparator – descending numbers
+selectionSort(nums, (a, b) => b - a);
+console.log(nums); // [64, 25, 22, 12, 11]
