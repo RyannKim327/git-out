@@ -1,26 +1,29 @@
 /**
- * Returns the first non‑repeating character in `str`.
- * If every character repeats, returns `undefined`.
- *
- * @param str – the string to check
+ * Returns the intersection of two arrays.
+ * @param a  First array.
+ * @param b  Second array.
+ * @returns  Array containing elements that are present in **both** a and b.
  */
-function firstNonRepeating(str: string): string | undefined {
-  // 1️⃣ Count how many times every character shows up
-  const freq = new Map<string, number>();
-  for (const ch of str) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
+function intersection<T>(a: T[], b: T[]): T[] {
+  // Turn the first array into a Set for O(1) look‑ups.
+  const aSet = new Set(a);
 
-  // 2️⃣ Scan again, looking for the first character whose count is 1
-  for (const ch of str) {
-    if (freq.get(ch) === 1) {
-      return ch;          // found it!
+  // Keep only the items from `b` that are also in `aSet`.
+  const result: T[] = [];
+  for (const item of b) {
+    if (aSet.has(item)) {
+      result.push(item);
+      // Optional: remove the item so we don’t collect duplicates if
+      // `a` or `b` contains repeated entries
+      aSet.delete(item);
     }
   }
-
-  return undefined;       // nothing unique found
+  return result;
 }
+console.log(intersection([1, 2, 3, 4], [3, 4, 5, 6])); // → [3, 4]
 
-// Demo
-console.log(firstNonRepeating("swiss"));   // → "w"
-console.log(firstNonRepeating("aabb"));    // → undefined
+console.log(intersection(['foo', 'bar'], ['bar', 'baz', 'foo'])); // → ['bar', 'foo']
+
+// With duplicates
+console.log(intersection([1, 2, 2], [2, 2, 3])); // → [2]
+const intersection = (a: any[], b: any[]) => a.filter(x => b.includes(x));
