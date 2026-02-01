@@ -1,43 +1,50 @@
-interface BinaryTreeNode<T = number> {
-  val: T;                  // The payload – can be any type you need
-  left?: BinaryTreeNode<T>;
-  right?: BinaryTreeNode<T>;
+// A minimal binary‑tree node definition
+interface TreeNode {
+  value: number;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
-function maxDepthRecursive<T>(root?: BinaryTreeNode<T>): number {
-  if (!root) return 0; // An empty tree has depth 0
 
-  const leftDepth  = maxDepthRecursive(root.left);
-  const rightDepth = maxDepthRecursive(root.right);
-
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthBFS<T>(root?: BinaryTreeNode<T>): number {
+/**
+ * Recursively sums the values of every node in a binary tree.
+ * @param root – the root of the tree
+ * @returns the total sum of all node values
+ */
+function sumTree(root: TreeNode | null | undefined): number {
   if (!root) return 0;
-
-  const queue: Array<{ node: BinaryTreeNode<T>; depth: number }> = [{ node: root, depth: 1 }];
-  let maxDepth = 0;
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!; // Non‑null assertion: queue never empty here
-    maxDepth = Math.max(maxDepth, depth);
-
-    if (node.left)  queue.push({ node: node.left, depth: depth + 1 });
-    if (node.right) queue.push({ node: node.right, depth: depth + 1 });
-  }
-
-  return maxDepth;
+  return root.value + sumTree(root.left) + sumTree(root.right);
 }
-// Example tree:
-//        1
+
+/*--- Example usage -------------------------------------------------------*/
+// Construct a small tree:
+//
+//        4
 //       / \
-//      2   3
-//     /
-//    4
-const tree: BinaryTreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3 }
+//      2   5
+//     / \
+//    1   3
+const tree: TreeNode = {
+  value: 4,
+  left: {
+    value: 2,
+    left: { value: 1, left: null, right: null },
+    right: { value: 3, left: null, right: null },
+  },
+  right: { value: 5, left: null, right: null },
 };
 
-console.log(maxDepthRecursive(tree)); // 3
-console.log(maxDepthBFS(tree));       // 3
+console.log(sumTree(tree)); // 15
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let total = 0;
+  const stack: Array<TreeNode> = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.value;
+    if (node.left) stack.push(node.left);
+    if (node.right) stack.push(node.right);
+  }
+
+  return total;
+}
