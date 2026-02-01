@@ -1,63 +1,30 @@
 /**
- * Rabin‑Karp string search
+ * Reverse the order of words in a string.
  *
- * Parameters:
- *  pattern – the string we’re looking for
- *  text    – the string to search inside
+ * Words are anything separated by whitespace (space, tab, etc.).
+ * Leading/trailing whitespace is trimmed for a clean result, but
+ * consecutive internal spaces are collapsed to a single space – you can keep
+ * them if you prefer by tweaking the regex.
  *
- * Returns:
- *  array of starting indices where pattern occurs (empty if no match)
+ * @param s  The input string.
+ * @returns   The string with the words reversed.
  */
-export function rabinKarp(pattern: string, text: string): number[] {
-    // Edge cases
-    if (pattern.length === 0) return [];
-    if (pattern.length > text.length) return [];
+function reverseWords(s: string): string {
+  // 1. Trim surrounding whitespace, then split on any sequence of whitespace.
+  const words = s.trim().split(/\s+/);
 
-    const base = 256;               // number of possible characters (ASCII)
-    const mod = 101;                // a prime mod to keep numbers small
+  // 2. Reverse the array in place.
+  words.reverse();
 
-    const m = pattern.length;
-    const n = text.length;
-
-    // Pre‑compute base^(m‑1) % mod  (the “high” power)
-    let basePower = 1;
-    for (let i = 0; i < m - 1; i++) {
-        basePower = (basePower * base) % mod;
-    }
-
-    // Compute hash for pattern and first window of text
-    let patHash = 0;
-    let txtHash = 0;
-    for (let i = 0; i < m; i++) {
-        patHash = (patHash * base + pattern.charCodeAt(i)) % mod;
-        txtHash = (txtHash * base + text.charCodeAt(i)) % mod;
-    }
-
-    const result: number[] = [];
-
-    // Slide the window over the text
-    for (let s = 0; s <= n - m; s++) {
-        // If the hash values match, verify the substring to confirm
-        if (patHash === txtHash) {
-            let match = true;
-            for (let k = 0; k < m; k++) {
-                if (text[s + k] !== pattern[k]) {
-                    match = false;
-                    break;
-                }
-            }
-            if (match) result.push(s);
-        }
-
-        // Compute hash for next window: remove leading char, add trailing char
-        if (s < n - m) {
-            txtHash = (txtHash - text.charCodeAt(s) * basePower) % mod;
-            if (txtHash < 0) txtHash += mod;                    // keep positive
-            txtHash = (txtHash * base + text.charCodeAt(s + m)) % mod;
-        }
-    }
-
-    return result;
+  // 3. Join back with a single space (change if you need a different separator).
+  return words.join(' ');
 }
-const idx = rabinKarp('abc', 'xabcababc');
-console.log(idx);   // → [1, 6]
+
+// Demo
+const original = "  the quick brown   fox jumps over the lazy dog  ";
+const reversed = reverseWords(original);
+
+console.log("Original:", original);
+console.log("Reversed:", reversed);
+// Output: "dog lazy the over jumps fox brown quick the"
+const words = s.split(/\s+/);
