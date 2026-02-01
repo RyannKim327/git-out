@@ -1,87 +1,56 @@
-// A directed graph: adjacency list
-type Graph = Record<string, string[]>;
-
-// Example: a tiny graph
-const graph: Graph = {
-  A: ["B"],
-  B: ["C"],
-  C: ["A", "D"],
-  D: ["C", "E"],
-  E: [],
-};
 /**
- * Finds all strongly connected components of a directed graph.
- * @param graph The adjacency list of the graph.
- * @returns An array of SCCs; each SCC is an array of vertex IDs.
+ * Returns the longest strictly increasing subsequence of `arr`.
+ *
+ * Example:
+ *   longestIncreasingSubsequence([10, 9, 2, 5, 3, 7, 101, 18])
+ *   → [2, 3, 7, 101]
  */
-function tarjanSCC(graph: Graph): string[][] {
-  let index = 0;                     // global index counter
-  const stack: string[] = [];        // DFS stack
-  const onStack = new Set<string>(); // quick membership check
+export function longestIncreasingSubsequence(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-  // Maps vertex → its index in DFS tree
-  const indices = new Map<string, number>();
-  // Maps vertex → its lowlink value
-  const lowlink = new Map<string, number>();
-  // Result: array of SCCs
-  const sccs: string[][] = [];
+  // `tails` keeps the smallest tail value for all subsequences
+  // of a given length. `tails[i]` is the least possible tail of
+  // an increasing subsequence with length i+1.
+  const tails: number[] = [];
+  // `prevIndices` remembers, for each element, the index of its
+  // predecessor in the LIS that passes through that element.
+  const prevIndices: number[] = new Array(arr.length).fill(-1);
+  // `indicesAtLength` holds the index of the last element of the LIS
+  // of a given length, allowing us to reconstruct the sequence.
+  const indicesAtLength: number[] = [];
 
-  function strongConnect(v: string) {
-    // Step 1: set the depth index for v
-    indices.set(v, index);
-    lowlink.set(v, index);
-    index++;
-    stack.push(v);
-    onStack.add(v);
-
-    // Step 2: consider each successor
-    for (const w of graph[v] ?? []) {
-      if (!indices.has(w)) {
-        // Successor w has not yet been visited; recurse on it.
-        strongConnect(w);
-        // After recursion: update lowlink of v
-        lowlink.set(v, Math.min(lowlink.get(v)!, lowlink.get(w)!));
-      } else if (onStack.has(w)) {
-        // Successor w is in stack → part of current SCC
-        lowlink.set(v, Math.min(lowlink.get(v)!, indices.get(w)!));
-      }
+  arr.forEach((val, idx) => {
+    // Binary search for the first tail that is >= val
+    let l = 0;
+    let r = tails.length;
+    while (l < r) {
+      const m = Math.floor((l + r) / 2);
+      if (tails[m] < val) l = m + 1;
+      else r = m;
     }
 
-    // Step 3: If v is a root node, pop the stack and generate an SCC
-    if (lowlink.get(v)! === indices.get(v)!) {
-      const scc: string[] = [];
-      let w: string | undefined;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        scc.push(w);
-      } while (w !== v);
-      sccs.push(scc);
+    // `l` is the length (0‑based) of the subsequence that will end at idx
+    if (l > 0) prevIndices[idx] = indicesAtLength[l - 1];
+
+    if (l === tails.length) {
+      tails.push(val);
+      indicesAtLength.push(idx);
+    } else {
+      tails[l] = val;
+      indicesAtLength[l] = idx;
     }
+  });
+
+  // Reconstruct the LIS from the recorded indices
+  const lis: number[] = [];
+  let k = indicesAtLength[indicesAtLength.length - 1];
+  while (k !== -1) {
+    lis.push(arr[k]);
+    k = prevIndices[k];
   }
-
-  // Kick off DFS for each vertex that hasn't been visited yet
-  for (const v of Object.keys(graph)) {
-    if (!indices.has(v)) {
-      strongConnect(v);
-    }
-  }
-
-  return sccs;
+  lis.reverse();
+  return lis;
 }
-const sccs = tarjanSCC(graph);
-console.log("Strongly connected components:");
-sccs.forEach((scc, i) => {
-  console.log(`  ${i + 1}. [${scc.join(", ")}]`);
-});
-Strongly connected components:
-  1. [A, C, B]
-  2. [E]
-  3. [D]
-type Vertex = number;
-
-// * Update the graph type:
-type Graph = Record<Vertex, Vertex[]>;
-
-// * Replace string‑specific typing in the function:
-function tarjanSCC(graph: Graph): Vertex[][] { ... }
+const data = [3, 10, 2, 1, 20];
+console.log(longestIncreasingSubsequence(data));
+// → [3, 10, 20]
