@@ -1,78 +1,65 @@
-// 1️⃣  A tiny node definition
-interface ListNode<T> {
-  val: T;
-  next?: ListNode<T>;
-}
+// ---------- Basics ----------
+class ListNode {
+  val: number          // you can keep any data you need
+  next: ListNode | null = null;
 
-// 2️⃣  Helper: walk a list and collect values (for demo)
-const listToArray = <T>(head: ListNode<T> | undefined): T[] => {
-  const arr: T[] = [];
-  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
-  return arr;
-};
-
-// 3️⃣  The trick: two pointers, fast and slow
-function middle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  if (!head) return undefined; // empty list—no middle
-
-  let fast = head;
-  let slow = head;
-
-  // advance fast every two steps, slow every one
-  while (fast.next && fast.next.next) {
-    fast = fast.next.next; // jump 2
-    slow = slow.next as ListNode<T>; // jump 1
-  }
-
-  // If fast has a next (odd length), move slow one more
-  if (fast.next) slow = slow.next as ListNode<T>;
-
-  return slow;
-}
-
-// 4️⃣  Demo: build a list so we can see it in action
-const nodes: ListNode<number>[] = [1, 2, 3, 4, 5].map(
-  (v) => ({ val: v })
-);
-for (let i = 0; i < nodes.length - 1; i++) nodes[i].next = nodes[i + 1];
-const head = nodes[0];
-
-console.log("Full list:", listToArray(head));         // 1,2,3,4,5
-console.log("Middle node:", middle(head)?.val);        // 3
-
-// Try an even‑length list
-const even: ListNode<number>[] = [10, 20, 30, 40].map(
-  (v) => ({ val: v })
-);
-for (let i = 0; i < even.length - 1; i++) even[i].next = even[i + 1];
-console.log("Middle of even list:", middle(even)?.val); // 20 (or 30 if you prefer that half)
-class LinkedList<T> {
-  head?: ListNode<T>;
-
-  // push to the tail
-  push(val: T) {
-    const node: ListNode<T> = { val };
-    if (!this.head) {
-      this.head = node;
-    } else {
-      let cur = this.head;
-      while (cur.next) cur = cur.next;
-      cur.next = node;
-    }
-  }
-
-  // returns the middle node (or the first of two middles for even length)
-  middle(): ListNode<T> | undefined {
-    return middle(this.head);
-  }
-
-  toArray(): T[] {
-    return listToArray(this.head);
+  constructor(val: number) {
+    this.val = val;
   }
 }
 
-// Usage:
-const ll = new LinkedList<number>();
-[1, 2, 3, 4, 5].forEach(v => ll.push(v));
-console.log(ll.toArray());       // [1,2,3,4,5]
-console.log(ll.middle()?.val);   // 3
+// ---------- Intersection finder ----------
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  if (!headA || !headB) return null;
+
+  let ptrA: ListNode | null = headA;
+  let ptrB: ListNode | null = headB;
+
+  // After at most two passes through each list the pointers
+  // will either meet at the intersection or both become null.
+  while (ptrA !== ptrB) {
+    ptrA = ptrA ? ptrA.next : headB; // switch to the head of the other list
+    ptrB = ptrB ? ptrB.next : headA;
+  }
+
+  return ptrA; // either the intersection node, or null
+}
+
+// ---------- Quick demo ----------
+function buildLinkedList(values: number[], offset: number = 0) {
+  let head: ListNode | null = null;
+  let tail: ListNode | null = null;
+  for (let v of values) {
+    const node = new ListNode(v);
+    if (!head) head = node;
+    if (tail) tail.next = node;
+    tail = node;
+  }
+  return { head, tail };
+}
+
+// Common tail that will be shared by two lists
+const { head: shared, tail: sharedTail } = buildLinkedList([8, 10]);
+
+// First list: 3 → 7 → 8 → 10
+const { head: aHead } = buildLinkedList([3, 7]);
+if (aHead && sharedHead) {
+  // connect the shared tail
+  let node = aHead;
+  while (node.next) node = node.next;
+  node.next = shared;
+}
+
+// Second list: 99 → 1 → 8 → 10
+const { head: bHead } = buildLinkedList([99, 1]);
+if (bHead && sharedHead) {
+  let node = bHead;
+  while (node.next) node = node.next;
+  node.next = shared;
+}
+
+const intersection = getIntersectionNode(aHead, bHead);
+console.log(intersection?.val); // prints 8
