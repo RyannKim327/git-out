@@ -1,31 +1,43 @@
-/**
- * Counts how many code units a string contains.
- * @param s The string to measure.
- * @returns The length as a number.
- */
-function getStringLength(s: string): number {
-  let count = 0;
+interface BinaryTreeNode<T = number> {
+  val: T;                  // The payload – can be any type you need
+  left?: BinaryTreeNode<T>;
+  right?: BinaryTreeNode<T>;
+}
+function maxDepthRecursive<T>(root?: BinaryTreeNode<T>): number {
+  if (!root) return 0; // An empty tree has depth 0
 
-  // Keep stepping forward until we encounter an undefined slot.
-  while (s[count] !== undefined) {
-    count++;
+  const leftDepth  = maxDepthRecursive(root.left);
+  const rightDepth = maxDepthRecursive(root.right);
+
+  return Math.max(leftDepth, rightDepth) + 1;
+}
+function maxDepthBFS<T>(root?: BinaryTreeNode<T>): number {
+  if (!root) return 0;
+
+  const queue: Array<{ node: BinaryTreeNode<T>; depth: number }> = [{ node: root, depth: 1 }];
+  let maxDepth = 0;
+
+  while (queue.length) {
+    const { node, depth } = queue.shift()!; // Non‑null assertion: queue never empty here
+    maxDepth = Math.max(maxDepth, depth);
+
+    if (node.left)  queue.push({ node: node.left, depth: depth + 1 });
+    if (node.right) queue.push({ node: node.right, depth: depth + 1 });
   }
 
-  return count;
+  return maxDepth;
 }
-function getStringLengthUsingForOf(s: string): number {
-  let count = 0;
-  for (const _ of s) {
-    count++;        // `_` is just a throwaway variable
-  }
-  return count;    // this is the number of Unicode code points we iterated over
-}
-function getStringLengthRecursive(s: string, idx = 0): number {
-  return s[idx] === undefined
-    ? idx
-    : getStringLengthRecursive(s, idx + 1);
-}
-const demo = "Hello, 👋🌍";
+// Example tree:
+//        1
+//       / \
+//      2   3
+//     /
+//    4
+const tree: BinaryTreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 } },
+  right: { val: 3 }
+};
 
-console.log(getStringLength(demo));                    // 13 (code units)
-console.log(getStringLengthUsingForOf(demo));          // 10 (code points)
+console.log(maxDepthRecursive(tree)); // 3
+console.log(maxDepthBFS(tree));       // 3
