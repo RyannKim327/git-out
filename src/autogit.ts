@@ -1,56 +1,50 @@
-// ------------------------------------------------------------------
-// 1) Basic types – tweak these to match your own representation.
-// ------------------------------------------------------------------
-interface Node<T> {
-  /** Value that identifies the node – can be an id, a name, … */
-  id: string;
-  /** Children (or neighbours) – the graph may be directed or undirected. */
-  children?: Array<Node<T>>;
-}
+/**
+ * Random sort – a quick‑sort implementation that picks a random
+ * pivot for each split.
+ *
+ * The algorithm is deterministic in complexity (O(n log n) on average),
+ * but the pivot choice is completely random, which can be useful for
+ * teaching purposes or for avoiding worst‑case sequences.
+ */
 
-// A very simple match predicate. Replace it with whatever checks your
-// problem needs (e.g. `node.id === targetId`).
-type MatchFn<T> = (node: Node<T>) => boolean;
+function randomQuickSort<T>(input: T[], compare?: (a: T, b: T) => number): T[] {
+  // If there are 0 or 1 elements, it's already sorted.
+  if (input.length <= 1) {
+    return [...input];
+  }
 
-// ------------------------------------------------------------------
-// 2) Depth‑limited search – iterative (uses an explicit stack).
-// ------------------------------------------------------------------
-export function depthLimitedSearch<T>(
-  start: Node<T>,          // The root (or any arbitrary start node)
-  match: MatchFn<T>,      // Predicate to decide if the node is a goal
-  limit: number            // Maximum depth that may be explored
-): Node<T> | null {
+  // Choose a random pivot index.
+  const pivotIndex = Math.floor(Math.random() * input.length);
+  const pivot = input[pivotIndex];
 
-  // Stack holds tuples  : [current node, current depth]
-  const stack: Array<[Node<T>, number]> = [[start, 0]];
+  // Helper to decide the order.
+  const cmp = compare ||
+    // Default to numeric or string comparison.
+    ((a: T, b: T) => (a as any) < b ? -1 : (a as any) > b ? 1 : 0);
 
-  while (stack.length > 0) {
-    const [node, depth] = stack.pop()!;   // `!` is safe – we just checked length
+  // Partition the array into two bins: <= pivot and > pivot.
+  const smaller: T[] = [];
+  const larger: T[] = [];
 
-    // 1️⃣  Goal check
-    if (match(node)) {
-      return node;
-    }
-
-    // 2️⃣  Depth test – we only enqueue children if we still have room
-    if (depth < limit && node.children) {
-      // Push children onto stack – last child examined first (DFS order)
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        stack.push([node.children[i], depth + 1]);
-      }
+  for (let i = 0; i < input.length; i++) {
+    if (i === pivotIndex) continue; // skip the pivot itself
+    const item = input[i];
+    if (cmp(item, pivot) <= 0) {
+      smaller.push(item);
+    } else {
+      larger.push(item);
     }
   }
 
-  // No goal found within the depth budget
-  return null;
+  // Recursively sort each sub‑array and concatenate the results.
+  return [
+    ...randomQuickSort(smaller, compare),
+    pivot,
+    ...randomQuickSort(larger, compare),
+  ];
 }
-const tree: Node<number> = {
-  id: 'root',
-  children: [
-    { id: 'a', children: [{ id: 'a1' }, { id: 'a2' }] },
-    { id: 'b', children: [{ id: 'b1' }, { id: 'b2' }] },
-  ],
-};
 
-const found = depthLimitedSearch(tree, node => node.id === 'a2', /* limit */ 2);
-console.log(found?.id ?? 'not found'); // → a2
+/* --- Example usage ----------------------------------------------------- */
+const nums = [23, 4, 42, 8, 15, 16, 42, 23, 4, 17];
+console.log('Unsorted:', nums);
+console.log('Sorted:', randomQuickSort(nums));
