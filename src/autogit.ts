@@ -1,48 +1,87 @@
+// A directed graph: adjacency list
+type Graph = Record<string, string[]>;
+
+// Example: a tiny graph
+const graph: Graph = {
+  A: ["B"],
+  B: ["C"],
+  C: ["A", "D"],
+  D: ["C", "E"],
+  E: [],
+};
 /**
- * Returns the longest common subsequence (LCS) of two strings.
- * @param a First string
- * @param b Second string
- * @returns { subsequence: string; length: number }
+ * Finds all strongly connected components of a directed graph.
+ * @param graph The adjacency list of the graph.
+ * @returns An array of SCCs; each SCC is an array of vertex IDs.
  */
-function longestCommonSubsequence(a: string, b: string) {
-  const m = a.length;
-  const n = b.length;
+function tarjanSCC(graph: Graph): string[][] {
+  let index = 0;                     // global index counter
+  const stack: string[] = [];        // DFS stack
+  const onStack = new Set<string>(); // quick membership check
 
-  // 1. Build DP matrix (m+1) x (n+1) filled with 0
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  // Maps vertex → its index in DFS tree
+  const indices = new Map<string, number>();
+  // Maps vertex → its lowlink value
+  const lowlink = new Map<string, number>();
+  // Result: array of SCCs
+  const sccs: string[][] = [];
 
-  // 2. Fill DP matrix
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+  function strongConnect(v: string) {
+    // Step 1: set the depth index for v
+    indices.set(v, index);
+    lowlink.set(v, index);
+    index++;
+    stack.push(v);
+    onStack.add(v);
+
+    // Step 2: consider each successor
+    for (const w of graph[v] ?? []) {
+      if (!indices.has(w)) {
+        // Successor w has not yet been visited; recurse on it.
+        strongConnect(w);
+        // After recursion: update lowlink of v
+        lowlink.set(v, Math.min(lowlink.get(v)!, lowlink.get(w)!));
+      } else if (onStack.has(w)) {
+        // Successor w is in stack → part of current SCC
+        lowlink.set(v, Math.min(lowlink.get(v)!, indices.get(w)!));
       }
     }
-  }
 
-  // 3. Back‑track to rebuild the subsequence
-  let i = m, j = n;
-  const subseq: string[] = [];
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      subseq.push(a[i - 1]); // same char belongs to LCS
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;            // move up
-    } else {
-      j--;            // move left
+    // Step 3: If v is a root node, pop the stack and generate an SCC
+    if (lowlink.get(v)! === indices.get(v)!) {
+      const scc: string[] = [];
+      let w: string | undefined;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        scc.push(w);
+      } while (w !== v);
+      sccs.push(scc);
     }
   }
 
-  return {
-    subsequence: subseq.reverse().join(''),
-    length: dp[m][n]
-  };
-}
+  // Kick off DFS for each vertex that hasn't been visited yet
+  for (const v of Object.keys(graph)) {
+    if (!indices.has(v)) {
+      strongConnect(v);
+    }
+  }
 
-// Quick demo
-const { subsequence, length } = longestCommonSubsequence('AGCAT', 'GAC');
-console.log(`Longest common subsequence: ${subsequence} (length ${length})`);
+  return sccs;
+}
+const sccs = tarjanSCC(graph);
+console.log("Strongly connected components:");
+sccs.forEach((scc, i) => {
+  console.log(`  ${i + 1}. [${scc.join(", ")}]`);
+});
+Strongly connected components:
+  1. [A, C, B]
+  2. [E]
+  3. [D]
+type Vertex = number;
+
+// * Update the graph type:
+type Graph = Record<Vertex, Vertex[]>;
+
+// * Replace string‑specific typing in the function:
+function tarjanSCC(graph: Graph): Vertex[][] { ... }
