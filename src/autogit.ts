@@ -1,19 +1,53 @@
 /**
- * Minimal email validator.
- * Covers most real‑world cases without being overly strict.
+ * Simpler Rabin–Karp – uses a 32‑bit unsigned int hash.
+ * For stronger use (large text / collision safety) switch to BigInt or a
+ * larger mod (e.g., 1_000_000_007).
  */
-export function isValidEmail(email: string): boolean {
-  // 1. Basic structural check: local part @ domain
-  // 2. Local part: letters, digits, dots, hyphens, underscores, and plus
-  // 3. Domain: DNS‑style labels separated by dots; ends in 2‑63‑letter TLD
-  const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,64}$/;
-  return pattern.test(email);
-}
-import validator from 'validator';
+export function rabinKarp(
+    text: string,
+    pattern: string,
+    base: number = 256,               // alphabet size
+    mod: number = 1_000_000_007       // a large prime
+): number[] {
+    const n = text.length;
+    const m = pattern.length;
+    if (m === 0 || n < m) return [];
 
-function isValidFullEmail(email: string): boolean {
-  return validator.isEmail(email);  // uses RFC‑compliant logic
+    const result: number[] = [];
+
+    /* Pre‑compute base^(m-1) % mod   (the weight of the leading char) */
+    let power = 1;
+    for (let i = 0; i < m - 1; i++) power = (power * base) % mod;
+
+    /* Hashes of pattern and first window */
+    let patternHash = 0;
+    let windowHash = 0;
+    for (let i = 0; i < m; i++) {
+        patternHash = (patternHash * base + pattern.charCodeAt(i)) % mod;
+        windowHash  = (windowHash  * base + text.charCodeAt(i))  % mod;
+    }
+
+    /* Slide the window */
+    for (let i = 0; i <= n - m; i++) {
+        /* If hashes match – do a literal check to avoid false positives */
+        if (patternHash === windowHash) {
+            if (text.substr(i, m) === pattern) result.push(i);
+        }
+
+        /* Re‑hash: remove leading char, add trailing char */
+        if (i < n - m) {
+            const leading = text.charCodeAt(i) * power % mod;
+            windowHash = (windowHash - leading + mod) % mod;   // avoid negative
+            windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
+        }
+    }
+
+    return result;
 }
-console.log(isValidEmail('user@example.com'));   // true
-console.log(isValidEmail('bob.smith@sub.domain.co')); // true
-console.log(isValidEmail('invalid-email@'));    // false
+import { rabinKarp } from './rabinKarp';
+
+const text = "ababcabcabababd";
+const pattern = "ababd";
+
+const matches = rabinKarp(text, pattern);  // → [10]
+console.log("Match at indices: ", matches);
