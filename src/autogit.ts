@@ -1,61 +1,44 @@
+// src/apiFetch.ts
+export interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
 /**
- * Sorts an array of numbers in ascending order using insertion sort.
- * The algorithm works in place – the input array is mutated.
+ * Pulls a single todo item from the JSON‑Placeholder API.
  *
- * @param arr - The numeric array to be sorted.
- * @returns The same array, now sorted.
+ * @param todoId  the numeric ID of the todo to fetch
+ * @returns          a promise that resolves to the Todo object
  */
-export function insertionSort(arr: number[]): number[] {
-  // Start from the second element; the first element is “sorted” by definition
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];            // The value we’re going to insert
-    let j = i - 1;
+export async function getTodoById(todoId: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${todoId}`;
 
-    // Shift elements that are greater than the key to the right
-    while (j >= 0 && arr[j] > key) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { "Accept": "application/json" },
+  });
 
-    // Insert the key into its correct position
-    arr[j + 1] = key;
+  if (!response.ok) {
+    throw new Error(`API responded with ${response.status} ${response.statusText}`);
   }
 
-  return arr;
+  // `response.json()` already resolves to a `Promise<any>`, so we cast
+  // to `Todo` to satisfy TypeScript.
+  const data = (await response.json()) as Todo;
+  return data;
 }
-export function insertionSort<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+// src/start.ts
+import { getTodoById, Todo } from "./apiFetch";
 
-    // While j is in range and key is less than arr[j], shift arr[j] right
-    while (j >= 0 && compareFn(key, arr[j]) < 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    arr[j + 1] = key;
+async function main(): Promise<void> {
+  try {
+    const todo: Todo = await getTodoById(1);
+    console.log("Fetched todo:", todo);
+  } catch (err) {
+    console.error("Failed to fetch todo:", err);
   }
-
-  return arr;
 }
-// Numbers
-const nums = [64, 25, 12, 22, 11];
-insertionSort(nums);          // => [11, 12, 22, 25, 64]
 
-// Strings
-const words = ['banana', 'apple', 'cherry'];
-insertionSort(words);          // => ['apple', 'banana', 'cherry']
-
-// Custom objects
-const people = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 24 },
-  { name: 'Catherine', age: 27 }
-];
-
-insertionSort(people, (a, b) => a.age - b.age);
-// => sorted by age
+main().catch((outerErr) => console.error("Unhandled error:", outerErr));
