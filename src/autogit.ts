@@ -1,65 +1,50 @@
-// ---------- Basics ----------
-class ListNode {
-  val: number          // you can keep any data you need
-  next: ListNode | null = null;
+/**
+ * Interpolation search – O(log log n) in the ideal case,
+ * O(n) in the worst case (if the array is highly non‑uniform).
+ *
+ * @param arr   An array that is already sorted in ascending order.
+ * @param key   The value to look for.
+ * @returns     The index of `key` in `arr` or -1 if not present.
+ */
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  // Guard against empty array
+  if (arr.length === 0) return -1;
 
-  constructor(val: number) {
-    this.val = val;
+  let low = 0;
+  let high = arr.length - 1;
+
+  // Interpolation formula requires a strictly increasing array
+  // and a finite difference between the ends.
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Avoid division by zero when arr[low] == arr[high].
+    if (arr[low] === arr[high]) return arr[low] === key ? low : -1;
+
+    // Estimate the position of the key inside the current bounds.
+    const pos =
+      low +
+      Math.floor(
+        ((high - low) * (key - arr[low])) / (arr[high] - arr[low]),
+      );
+
+    const value = arr[pos];
+
+    if (value === key) return pos;
+    if (value < key) {
+      low = pos + 1;          // Look in the right sub‑array
+    } else {
+      high = pos - 1;         // Look in the left sub‑array
+    }
   }
+
+  return -1; // Not found
 }
-
-// ---------- Intersection finder ----------
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  if (!headA || !headB) return null;
-
-  let ptrA: ListNode | null = headA;
-  let ptrB: ListNode | null = headB;
-
-  // After at most two passes through each list the pointers
-  // will either meet at the intersection or both become null.
-  while (ptrA !== ptrB) {
-    ptrA = ptrA ? ptrA.next : headB; // switch to the head of the other list
-    ptrB = ptrB ? ptrB.next : headA;
-  }
-
-  return ptrA; // either the intersection node, or null
+const nums = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91, 105];
+console.log(interpolationSearch(nums, 38)); // ➜ 6
+console.log(interpolationSearch(nums, 4));  // ➜ -1
+export function interpolationSearchBy<T, U extends number>(
+  arr: readonly T[],
+  key: U,
+  getKey: (item: T) => U,
+): number {
+  // Same logic, but cast / convert using getKey(item)
 }
-
-// ---------- Quick demo ----------
-function buildLinkedList(values: number[], offset: number = 0) {
-  let head: ListNode | null = null;
-  let tail: ListNode | null = null;
-  for (let v of values) {
-    const node = new ListNode(v);
-    if (!head) head = node;
-    if (tail) tail.next = node;
-    tail = node;
-  }
-  return { head, tail };
-}
-
-// Common tail that will be shared by two lists
-const { head: shared, tail: sharedTail } = buildLinkedList([8, 10]);
-
-// First list: 3 → 7 → 8 → 10
-const { head: aHead } = buildLinkedList([3, 7]);
-if (aHead && sharedHead) {
-  // connect the shared tail
-  let node = aHead;
-  while (node.next) node = node.next;
-  node.next = shared;
-}
-
-// Second list: 99 → 1 → 8 → 10
-const { head: bHead } = buildLinkedList([99, 1]);
-if (bHead && sharedHead) {
-  let node = bHead;
-  while (node.next) node = node.next;
-  node.next = shared;
-}
-
-const intersection = getIntersectionNode(aHead, bHead);
-console.log(intersection?.val); // prints 8
