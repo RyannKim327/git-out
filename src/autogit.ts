@@ -1,67 +1,48 @@
-class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
-}
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;
+/**
+ * Returns the longest common subsequence (LCS) of two strings.
+ * @param a First string
+ * @param b Second string
+ * @returns { subsequence: string; length: number }
+ */
+function longestCommonSubsequence(a: string, b: string) {
+  const m = a.length;
+  const n = b.length;
 
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;          // height of a null subtree is 0
+  // 1. Build DP matrix (m+1) x (n+1) filled with 0
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
-
-    // potential diameter that passes through this node
-    const localDiameter = leftHeight + rightHeight;
-    if (localDiameter > maxDiameter) maxDiameter = localDiameter;
-
-    // height is max child height + 1 edge to the child
-    return Math.max(leftHeight, rightHeight) + 1;
-  }
-
-  dfs(root);
-  return maxDiameter;  // edges count
-}
-// Build a tree:
-//        1
-//       / \
-//      2   3
-//     / \     
-//    4   5  
-const root = new TreeNode(1,
-              new TreeNode(2,
-                new TreeNode(4),
-                new TreeNode(5)
-              ),
-              new TreeNode(3)
-            );
-
-console.log(diameterOfBinaryTree(root)); // → 3
-function diameterIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let maxDiameter = 0;
-  const stack = [{ node: root, visited: false, height: 0 }];
-
-  while (stack.length) {
-    const frame = stack.pop()!;
-    if (!frame.node) continue;
-
-    if (frame.visited) {
-      // Children already processed – compute height & diameter
-      const leftHeight = frame.node.left?.height ?? 0;
-      const rightHeight = frame.node.right?.height ?? 0;
-
-      maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
-      frame.node.height = Math.max(leftHeight, rightHeight) + 1;
-    } else {
-      // First visit: push back as visited and push children
-      stack.push({ node: frame.node, visited: true, height: 0 });
-      if (frame.node.right) stack.push({ node: frame.node.right, visited: false, height: 0 });
-      if (frame.node.left) stack.push({ node: frame.node.left, visited: false, height: 0 });
+  // 2. Fill DP matrix
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
   }
-  return maxDiameter;
+
+  // 3. Back‑track to rebuild the subsequence
+  let i = m, j = n;
+  const subseq: string[] = [];
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      subseq.push(a[i - 1]); // same char belongs to LCS
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;            // move up
+    } else {
+      j--;            // move left
+    }
+  }
+
+  return {
+    subsequence: subseq.reverse().join(''),
+    length: dp[m][n]
+  };
 }
+
+// Quick demo
+const { subsequence, length } = longestCommonSubsequence('AGCAT', 'GAC');
+console.log(`Longest common subsequence: ${subsequence} (length ${length})`);
