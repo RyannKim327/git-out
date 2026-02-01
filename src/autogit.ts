@@ -1,55 +1,31 @@
 /**
- * Selection sort – sorts an array in‑place in ascending order.
- *
- * @param array   The array to sort.  It will be mutated.
- * @param compare Callback used to decide order. If omitted, a natural
- *                ascending numeric/string comparison is used.
- * @returns The same array instance, now sorted.
+ * Counts how many code units a string contains.
+ * @param s The string to measure.
+ * @returns The length as a number.
  */
-export function selectionSort<T>(
-  array: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  const len = array.length;
+function getStringLength(s: string): number {
+  let count = 0;
 
-  // default comparer: numeric or string ascending
-  const cmp = compare ?? ((a: any, b: any) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
-
-  for (let i = 0; i < len - 1; i++) {
-    // assume min at current position
-    let minIdx = i;
-
-    // find the smallest element in the unsorted portion
-    for (let j = i + 1; j < len; j++) {
-      if (cmp(array[j], array[minIdx]) < 0) {
-        minIdx = j;
-      }
-    }
-
-    // swap if we found a smaller element
-    if (minIdx !== i) {
-      const temp = array[i];
-      array[i] = array[minIdx];
-      array[minIdx] = temp;
-    }
+  // Keep stepping forward until we encounter an undefined slot.
+  while (s[count] !== undefined) {
+    count++;
   }
 
-  return array;
+  return count;
 }
-// simple numeric sorting
-let nums = [64, 25, 12, 22, 11];
-selectionSort(nums);
-console.log(nums); // [11, 12, 22, 25, 64]
+function getStringLengthUsingForOf(s: string): number {
+  let count = 0;
+  for (const _ of s) {
+    count++;        // `_` is just a throwaway variable
+  }
+  return count;    // this is the number of Unicode code points we iterated over
+}
+function getStringLengthRecursive(s: string, idx = 0): number {
+  return s[idx] === undefined
+    ? idx
+    : getStringLengthRecursive(s, idx + 1);
+}
+const demo = "Hello, 👋🌍";
 
-// sorting strings
-let words = ["banana", "avocado", "cherry"];
-selectionSort(words);
-console.log(words); // ["avocado", "banana", "cherry"]
-
-// custom comparator – descending numbers
-selectionSort(nums, (a, b) => b - a);
-console.log(nums); // [64, 25, 22, 12, 11]
+console.log(getStringLength(demo));                    // 13 (code units)
+console.log(getStringLengthUsingForOf(demo));          // 10 (code points)
