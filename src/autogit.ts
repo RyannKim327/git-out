@@ -1,60 +1,45 @@
 /**
- * Calculates n! recursively.
+ * Return the largest prime factor of |n|.
  *
- * @param n - The non‑negative integer whose factorial to compute.
- * @returns n! as a number (or NaN if n < 0).
+ * @param n Any integer. Negative values are treated as |n|.
+ * @returns   The largest prime factor of n, or `0` if n has no prime factors
+ * (i.e. n is 0, 1, or –1).
  */
-function factorialRecursive(n: number): number {
-  if (n < 0) return NaN;        // keep it simple: no negative factorials
-  if (n <= 1) return 1;
-  return n * factorialRecursive(n - 1);
-}
+function largestPrimeFactor(n: number): number {
+  if (n === 0 || n === 1 || n === -1) return 0;
 
-// Example:
-console.log(factorialRecursive(5)); // 120
-/**
- * Calculates n! iteratively.
- *
- * @param n - The non‑negative integer to factorialize.
- * @returns n! as a number (or NaN if n < 0).
- */
-function factorialIterative(n: number): number {
-  if (n < 0) return NaN;
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+  let num = Math.abs(n);          // work with the absolute value
+  let lastPrime = 0;              // keep the biggest factor we’ve seen
+
+  // Treat 2 separately – it’s the only even prime
+  while (num % 2 === 0) {
+    lastPrime = 2;
+    num >>= 1;                    // divide by 2
   }
-  return result;
-}
 
-// Example:
-console.log(factorialIterative(10)); // 3628800
-/**
- * Calculates n! exactly using BigInt.
- *
- * @param n - The non‑negative integer to factorialize.
- * @returns n! as a BigInt (or NaN if n < 0).
- */
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error("Factorial isn't defined for negative numbers");
-  let result = 1n;
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
+  // Now n is odd. Try only odd divisors.
+  // We only need to go up to sqrt(num) because if num still > 1 after that,
+  // num itself is prime and the largest factor.
+  for (let d = 3; d * d <= num; d += 2) {
+    while (num % d === 0) {
+      lastPrime = d;
+      num /= d;
+    }
   }
-  return result;
+
+  // If after the loop num > 1, it means num itself is prime
+  // and larger than any divisor we found earlier.
+  if (num > 1) lastPrime = num;
+
+  return lastPrime;
 }
 
-// Example:
-console.log(factorialBigInt(20)); // 2432902008176640000n
-const factorialMemo = new Map<number, number | bigint>();
-
-function factorialMemoized(n: number): number | bigint {
-  if (n < 0) throw new Error("Negative input");
-  if (n <= 1) return 1;
-  if (factorialMemo.has(n)) return factorialMemo.get(n)!;
-  
-  // choose number or bigint based on the expected size
-  const answer = n * factorialMemoized(n - 1);
-  factorialMemo.set(n, answer);
-  return answer;
+/* ----- quick sanity checks ----- */
+console.log(largestPrimeFactor(13195));   // 29  (13195 = 5 × 7 × 13 × 29)
+console.log(largestPrimeFactor(600851475143)); // 6857 (the known answer to Project Euler #3)
+Console.log(largestPrimeFactor(13));      // 13
+Console.log(largestPrimeFactor(4));       // 2
+Console.log(largestPrimeFactor(1));       // 0
+function largestPrimeFactorBigInt(n: bigint): bigint {
+  // identical logic, but using bigint operations
 }
