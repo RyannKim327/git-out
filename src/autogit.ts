@@ -1,50 +1,60 @@
 /**
- * Interpolation search – O(log log n) in the ideal case,
- * O(n) in the worst case (if the array is highly non‑uniform).
+ * Calculates n! recursively.
  *
- * @param arr   An array that is already sorted in ascending order.
- * @param key   The value to look for.
- * @returns     The index of `key` in `arr` or -1 if not present.
+ * @param n - The non‑negative integer whose factorial to compute.
+ * @returns n! as a number (or NaN if n < 0).
  */
-export function interpolationSearch(arr: readonly number[], key: number): number {
-  // Guard against empty array
-  if (arr.length === 0) return -1;
-
-  let low = 0;
-  let high = arr.length - 1;
-
-  // Interpolation formula requires a strictly increasing array
-  // and a finite difference between the ends.
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    // Avoid division by zero when arr[low] == arr[high].
-    if (arr[low] === arr[high]) return arr[low] === key ? low : -1;
-
-    // Estimate the position of the key inside the current bounds.
-    const pos =
-      low +
-      Math.floor(
-        ((high - low) * (key - arr[low])) / (arr[high] - arr[low]),
-      );
-
-    const value = arr[pos];
-
-    if (value === key) return pos;
-    if (value < key) {
-      low = pos + 1;          // Look in the right sub‑array
-    } else {
-      high = pos - 1;         // Look in the left sub‑array
-    }
-  }
-
-  return -1; // Not found
+function factorialRecursive(n: number): number {
+  if (n < 0) return NaN;        // keep it simple: no negative factorials
+  if (n <= 1) return 1;
+  return n * factorialRecursive(n - 1);
 }
-const nums = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91, 105];
-console.log(interpolationSearch(nums, 38)); // ➜ 6
-console.log(interpolationSearch(nums, 4));  // ➜ -1
-export function interpolationSearchBy<T, U extends number>(
-  arr: readonly T[],
-  key: U,
-  getKey: (item: T) => U,
-): number {
-  // Same logic, but cast / convert using getKey(item)
+
+// Example:
+console.log(factorialRecursive(5)); // 120
+/**
+ * Calculates n! iteratively.
+ *
+ * @param n - The non‑negative integer to factorialize.
+ * @returns n! as a number (or NaN if n < 0).
+ */
+function factorialIterative(n: number): number {
+  if (n < 0) return NaN;
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
+}
+
+// Example:
+console.log(factorialIterative(10)); // 3628800
+/**
+ * Calculates n! exactly using BigInt.
+ *
+ * @param n - The non‑negative integer to factorialize.
+ * @returns n! as a BigInt (or NaN if n < 0).
+ */
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error("Factorial isn't defined for negative numbers");
+  let result = 1n;
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
+}
+
+// Example:
+console.log(factorialBigInt(20)); // 2432902008176640000n
+const factorialMemo = new Map<number, number | bigint>();
+
+function factorialMemoized(n: number): number | bigint {
+  if (n < 0) throw new Error("Negative input");
+  if (n <= 1) return 1;
+  if (factorialMemo.has(n)) return factorialMemo.get(n)!;
+  
+  // choose number or bigint based on the expected size
+  const answer = n * factorialMemoized(n - 1);
+  factorialMemo.set(n, answer);
+  return answer;
 }
