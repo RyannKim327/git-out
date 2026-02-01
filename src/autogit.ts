@@ -1,85 +1,50 @@
 /**
- * Simple representation of a DAG.
- *   vertices – an array of node identifiers (any type, but usually string or number)
- *   edges    – a map from a vertex to a list of outgoing neighbours
+ * Interpolation search – O(log log n) in the ideal case,
+ * O(n) in the worst case (if the array is highly non‑uniform).
+ *
+ * @param arr   An array that is already sorted in ascending order.
+ * @param key   The value to look for.
+ * @returns     The index of `key` in `arr` or -1 if not present.
  */
-interface Graph<V> {
-  vertices: V[];
-  edges: Map<V, V[]>;
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  // Guard against empty array
+  if (arr.length === 0) return -1;
+
+  let low = 0;
+  let high = arr.length - 1;
+
+  // Interpolation formula requires a strictly increasing array
+  // and a finite difference between the ends.
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Avoid division by zero when arr[low] == arr[high].
+    if (arr[low] === arr[high]) return arr[low] === key ? low : -1;
+
+    // Estimate the position of the key inside the current bounds.
+    const pos =
+      low +
+      Math.floor(
+        ((high - low) * (key - arr[low])) / (arr[high] - arr[low]),
+      );
+
+    const value = arr[pos];
+
+    if (value === key) return pos;
+    if (value < key) {
+      low = pos + 1;          // Look in the right sub‑array
+    } else {
+      high = pos - 1;         // Look in the left sub‑array
+    }
+  }
+
+  return -1; // Not found
 }
-
-/**
- * Kahn’s topological sort.
- * @param graph – a DAG
- * @returns a list of vertices sorted topologically
- * @throws Error if the graph contains a cycle
- */
-function topologicalSort<V>(graph: Graph<V>): V[] {
-  // Compute indegree of each vertex
-  const indegree = new Map<V, number>();
-  graph.vertices.forEach(v => indegree.set(v, 0));
-
-  graph.edges.forEach((neighbours, from) => {
-    neighbours.forEach(to => {
-      indegree.set(to, (indegree.get(to) || 0) + 1);
-    });
-  });
-
-  // Queue of vertices with indegree 0
-  const queue: V[] = [];
-  indegree.forEach((deg, v) => {
-    if (deg === 0) queue.push(v);
-  });
-
-  const order: V[] = [];
-  while (queue.length) {
-    const v = queue.shift()!;
-    order.push(v);
-
-    const neighbours = graph.edges.get(v) ?? [];
-    neighbours.forEach(to => {
-      indegree.set(to, (indegree.get(to) || 0) - 1);
-      if (indegree.get(to) === 0) queue.push(to);
-    });
-  }
-
-  // If we processed fewer vertices than exist, a cycle is present
-  if (order.length !== graph.vertices.length) {
-    throw new Error('Graph contains a cycle – topological sort not possible');
-  }
-
-  return order;
-}
-A → C
-B → C
-C → D
-const g: Graph<string> = {
-  vertices: ['A', 'B', 'C', 'D'],
-  edges: new Map([
-    ['A', ['C']],
-    ['B', ['C']],
-    ['C', ['D']],
-    // D has no outgoing edges
-  ]),
-};
-
-console.log(topologicalSort(g)); // → ['A', 'B', 'C', 'D'] (or ['B', 'A', 'C', 'D'])
-function topologicalSortDFS<V>(graph: Graph<V>): V[] {
-  const visited = new Set<V>();
-  const temp = new Set<V>();          // to detect cycles
-  const stack: V[] = [];
-
-  function visit(v: V) {
-    if (temp.has(v)) throw new Error('Cycle detected');
-    if (visited.has(v)) return;
-
-    temp.add(v);
-    (graph.edges.get(v) ?? []).forEach(visit);
-    temp.delete(v);
-    visited.add(v);
-    stack.push(v);                    // push after children – this yields reverse order
-  }
-
-  graph.vertices.forEach(visit);
-  return stack.reverse();             // reverse to get the correct order
+const nums = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91, 105];
+console.log(interpolationSearch(nums, 38)); // ➜ 6
+console.log(interpolationSearch(nums, 4));  // ➜ -1
+export function interpolationSearchBy<T, U extends number>(
+  arr: readonly T[],
+  key: U,
+  getKey: (item: T) => U,
+): number {
+  // Same logic, but cast / convert using getKey(item)
 }
