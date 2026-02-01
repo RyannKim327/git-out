@@ -1,50 +1,53 @@
 /**
- * Random sort – a quick‑sort implementation that picks a random
- * pivot for each split.
- *
- * The algorithm is deterministic in complexity (O(n log n) on average),
- * but the pivot choice is completely random, which can be useful for
- * teaching purposes or for avoiding worst‑case sequences.
+ * Simpler Rabin–Karp – uses a 32‑bit unsigned int hash.
+ * For stronger use (large text / collision safety) switch to BigInt or a
+ * larger mod (e.g., 1_000_000_007).
  */
+export function rabinKarp(
+    text: string,
+    pattern: string,
+    base: number = 256,               // alphabet size
+    mod: number = 1_000_000_007       // a large prime
+): number[] {
+    const n = text.length;
+    const m = pattern.length;
+    if (m === 0 || n < m) return [];
 
-function randomQuickSort<T>(input: T[], compare?: (a: T, b: T) => number): T[] {
-  // If there are 0 or 1 elements, it's already sorted.
-  if (input.length <= 1) {
-    return [...input];
-  }
+    const result: number[] = [];
 
-  // Choose a random pivot index.
-  const pivotIndex = Math.floor(Math.random() * input.length);
-  const pivot = input[pivotIndex];
+    /* Pre‑compute base^(m-1) % mod   (the weight of the leading char) */
+    let power = 1;
+    for (let i = 0; i < m - 1; i++) power = (power * base) % mod;
 
-  // Helper to decide the order.
-  const cmp = compare ||
-    // Default to numeric or string comparison.
-    ((a: T, b: T) => (a as any) < b ? -1 : (a as any) > b ? 1 : 0);
-
-  // Partition the array into two bins: <= pivot and > pivot.
-  const smaller: T[] = [];
-  const larger: T[] = [];
-
-  for (let i = 0; i < input.length; i++) {
-    if (i === pivotIndex) continue; // skip the pivot itself
-    const item = input[i];
-    if (cmp(item, pivot) <= 0) {
-      smaller.push(item);
-    } else {
-      larger.push(item);
+    /* Hashes of pattern and first window */
+    let patternHash = 0;
+    let windowHash = 0;
+    for (let i = 0; i < m; i++) {
+        patternHash = (patternHash * base + pattern.charCodeAt(i)) % mod;
+        windowHash  = (windowHash  * base + text.charCodeAt(i))  % mod;
     }
-  }
 
-  // Recursively sort each sub‑array and concatenate the results.
-  return [
-    ...randomQuickSort(smaller, compare),
-    pivot,
-    ...randomQuickSort(larger, compare),
-  ];
+    /* Slide the window */
+    for (let i = 0; i <= n - m; i++) {
+        /* If hashes match – do a literal check to avoid false positives */
+        if (patternHash === windowHash) {
+            if (text.substr(i, m) === pattern) result.push(i);
+        }
+
+        /* Re‑hash: remove leading char, add trailing char */
+        if (i < n - m) {
+            const leading = text.charCodeAt(i) * power % mod;
+            windowHash = (windowHash - leading + mod) % mod;   // avoid negative
+            windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
+        }
+    }
+
+    return result;
 }
+import { rabinKarp } from './rabinKarp';
 
-/* --- Example usage ----------------------------------------------------- */
-const nums = [23, 4, 42, 8, 15, 16, 42, 23, 4, 17];
-console.log('Unsorted:', nums);
-console.log('Sorted:', randomQuickSort(nums));
+const text = "ababcabcabababd";
+const pattern = "ababd";
+
+const matches = rabinKarp(text, pattern);  // → [10]
+console.log("Match at indices: ", matches);
