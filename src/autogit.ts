@@ -1,34 +1,29 @@
-function isAnagramSort(a: string, b: string): boolean {
-  // Normalize (optional – depends on your use‑case)
-  const normalize = (s: string) =>
-    s.replace(/\s+/g, '').toLowerCase(); // trim spaces, lower‑case
+/**
+ * Returns the intersection of two arrays.
+ * @param a  First array.
+ * @param b  Second array.
+ * @returns  Array containing elements that are present in **both** a and b.
+ */
+function intersection<T>(a: T[], b: T[]): T[] {
+  // Turn the first array into a Set for O(1) look‑ups.
+  const aSet = new Set(a);
 
-  const sa = normalize(a).split('').sort().join('');
-  const sb = normalize(b).split('').sort().join('');
-
-  return sa === sb;
-}
-function isAnagramMap(a: string, b: string): boolean {
-  // Quick length check (no need to normalize again here)
-  if (a.length !== b.length) return false;
-
-  const count = new Map<string, number>();
-
-  for (let i = 0; i < a.length; i++) {
-    const ca = a[i];
-    const cb = b[i];
-
-    count.set(ca, (count.get(ca) || 0) + 1);
-    count.set(cb, (count.get(cb) || 0) - 1);
+  // Keep only the items from `b` that are also in `aSet`.
+  const result: T[] = [];
+  for (const item of b) {
+    if (aSet.has(item)) {
+      result.push(item);
+      // Optional: remove the item so we don’t collect duplicates if
+      // `a` or `b` contains repeated entries
+      aSet.delete(item);
+    }
   }
-
-  // All counts must net to 0
-  for (const val of count.values()) {
-    if (val !== 0) return false;
-  }
-  return true;
+  return result;
 }
-const a = 'listen';
-const b = 'silent';
-console.log(isAnagramSort(a, b)); // true
-console.log(isAnagramMap(a, b));  // true
+console.log(intersection([1, 2, 3, 4], [3, 4, 5, 6])); // → [3, 4]
+
+console.log(intersection(['foo', 'bar'], ['bar', 'baz', 'foo'])); // → ['bar', 'foo']
+
+// With duplicates
+console.log(intersection([1, 2, 2], [2, 2, 3])); // → [2]
+const intersection = (a: any[], b: any[]) => a.filter(x => b.includes(x));
