@@ -1,55 +1,57 @@
-/**
- * Selection sort – sorts an array in‑place in ascending order.
- *
- * @param array   The array to sort.  It will be mutated.
- * @param compare Callback used to decide order. If omitted, a natural
- *                ascending numeric/string comparison is used.
- * @returns The same array instance, now sorted.
- */
-export function selectionSort<T>(
-  array: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  const len = array.length;
+function secondLargestSort(arr: number[]): number | null {
+  // Defensive copy so we don’t mutate the caller’s data
+  const sorted = [...arr].sort((a, b) => b - a); // descending
 
-  // default comparer: numeric or string ascending
-  const cmp = compare ?? ((a: any, b: any) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
+  // Find the first element that isn’t equal to the maximum
+  let i = 1;
+  while (i < sorted.length && sorted[i] === sorted[0]) {
+    i++;
+  }
 
-  for (let i = 0; i < len - 1; i++) {
-    // assume min at current position
-    let minIdx = i;
+  return i < sorted.length ? sorted[i] : null;
+}
+console.log(secondLargestSort([3, 1, 4, 4, 5])); // 4
+console.log(secondLargestSort([10]));            // null
+function secondLargestTwoPass(arr: number[]): number | null {
+  if (arr.length < 2) return null;
 
-    // find the smallest element in the unsorted portion
-    for (let j = i + 1; j < len; j++) {
-      if (cmp(array[j], array[minIdx]) < 0) {
-        minIdx = j;
-      }
-    }
+  let max = -Infinity;
+  let secondMax = -Infinity;
 
-    // swap if we found a smaller element
-    if (minIdx !== i) {
-      const temp = array[i];
-      array[i] = array[minIdx];
-      array[minIdx] = temp;
+  // First pass: find the maximum
+  for (const v of arr) {
+    if (v > max) max = v;
+  }
+
+  // Second pass: find the largest value that is < max
+  for (const v of arr) {
+    if (v < max && v > secondMax) secondMax = v;
+  }
+
+  return secondMax === -Infinity ? null : secondMax;
+}
+console.log(secondLargestTwoPass([7, 3, 9, 1, 9])); // 7
+function secondLargest(arr: number[]): number | null {
+  if (arr.length < 2) return null;
+
+  let max = -Infinity;
+  let secondMax = -Infinity;
+
+  for (const v of arr) {
+    if (v > max) {
+      secondMax = max; // the old max becomes second max
+      max = v;
+    } else if (v < max && v > secondMax) {
+      secondMax = v;
     }
   }
 
-  return array;
+  return secondMax === -Infinity ? null : secondMax;
 }
-// simple numeric sorting
-let nums = [64, 25, 12, 22, 11];
-selectionSort(nums);
-console.log(nums); // [11, 12, 22, 25, 64]
-
-// sorting strings
-let words = ["banana", "avocado", "cherry"];
-selectionSort(words);
-console.log(words); // ["avocado", "banana", "cherry"]
-
-// custom comparator – descending numbers
-selectionSort(nums, (a, b) => b - a);
-console.log(nums); // [64, 25, 22, 12, 11]
+console.log(secondLargest([5, 12, 7, 12, 9]));   // 9
+console.log(secondLargest([3]));                // null
+console.log(secondLargest([2, 2, 2]));          // null (no distinct second largest)
+function findSecondLargest(arr: number[]): number | null {
+  // Pick whichever implementation feels best
+  return secondLargest(arr);
+}
