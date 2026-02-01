@@ -1,30 +1,47 @@
-// src/scheduler.ts
-import { schedule, Job } from 'node-cron';
-import { randomInt } from 'crypto';
+/**
+ * Return true if `a` and `b` are anagrams.
+ *
+ *   * Ignore whitespace and punctuation.
+ *   * Ignore case.
+ */
+function areAnagramsSorting(a: string, b: string): boolean {
+  const clean = (s: string) =>
+    s.toLowerCase().replace(/\W/g, '').split('').sort().join('');
 
-// Helper: format the current date/time nicely
-const fmtDate = (date: Date): string => {
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
-         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-};
+  return clean(a) === clean(b);
+}
 
-// Cron expression – every 5 minutes, on the minute.
-// (Syntax: `m h dom mon dow`)
-// Example: 0 12 * * * → every day at 12:00.
-const cronExpr = '*/5 * * * *';
+// Example
+console.log(areAnagramsSorting('Listen', 'Silent')); // → true
+/**
+ * Count characters and compare the two maps.
+ * Complexity: O(n), with `n` = max(a.length, b.length).
+ */
+function areAnagramsCounting(a: string, b: string): boolean {
+  const normalize = (s: string) =>
+    s.toLowerCase().replace(/\W/g, '');
 
-const job: Job = schedule(cronExpr, () => {
-  const now = new Date();
-  const rand = randomInt(1_000_000); // 0 <= rand < 1,000,000
-  console.log(`[${fmtDate(now)}] Random number: ${rand}`);
-}, {
-  scheduled: true, // start scheduling immediately
-  timezone: 'UTC'  // adjust if you need a different zone
-});
+  const strA = normalize(a);
+  const strB = normalize(b);
 
-// Optional: make the process stay alive but not block exit
-job.task?.unref?.();
+  if (strA.length !== strB.length) return false;
 
-// If you ran the script normally (`node src/scheduler.js` after TS‑compile),
-// the job will keep running. Exit manually when you're done.
+  const freq: Record<string, number> = {};
+
+  for (const ch of strA) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
+  }
+
+  for (const ch of strB) {
+    if (!freq[ch]) return false; // missing or too many
+    freq[ch]! -= 1;
+  }
+
+  return true;
+}
+
+// Example
+console.log(areAnagramsCounting('Software', 'Oxfartswe')); // → true
+const anagrams = (a: string, b: string) =>
+  a.toLowerCase().replace(/\W/g, '').split('').sort().join('') ===
+  b.toLowerCase().replace(/\W/g, '').split('').sort().join('');
