@@ -1,119 +1,78 @@
-// An adjacency map: node ID → list of neighbouring node IDs
-type Graph = Record<string, string[]>;
-
-// Keeps track of visited nodes and the node from which we reached them
-interface VisitedMap {
-  [node: string]: string | null;      // null = source node itself
-}
-enqueue start into frontierStart
-enqueue goal  into frontierGoal
-mark start as visitedFromStart (predecessor = null)
-mark goal  as visitedFromGoal (predecessor = null)
-
-while both queues not empty:
-    # Expand one layer from the start side
-    if expand(frontierStart, visitedFromStart, visitedFromGoal): return result
-
-    # Expand one layer from the goal side
-    if expand(frontierGoal, visitedFromGoal, visitedFromStart):   return result
-
-return no path
-/**
- * Bidirectional BFS.
- *
- * @param graph  adjacency map
- * @param start  ID of start node
- * @param goal   ID of goal node
- * @returns a list of node IDs from start to goal, or null if no path
- */
-function bidirectionalBFS(graph: Graph, start: string, goal: string): string[] | null {
-  if (start === goal) return [start];
-
-  const visitedStart: VisitedMap = { [start]: null };
-  const visitedGoal: VisitedMap   = { [goal] : null };
-
-  const frontierStart: string[] = [start];
-  const frontierGoal: string[]  = [goal];
-
-  const expand = (
-    frontier: string[],
-    visitedThis: VisitedMap,
-    visitedOther: VisitedMap
-  ): string[] | null => {
-    const nextLayer: string[] = [];
-
-    for (const current of frontier) {
-      for (const neighbor of graph[current] || []) {
-        // Already visited from this side → skip
-        if (current in visitedThis && neighbor in visitedThis) continue;
-
-        // New node for this side
-        if (!(neighbor in visitedThis)) {
-          visitedThis[neighbor] = current;
-          nextLayer.push(neighbor);
-        }
-
-        // If neighbour is in the opposite frontier → frontiers meet
-        if (neighbor in visitedOther) {
-          return reconstructPath(
-            start,
-            goal,
-            visitedStart,
-            visitedGoal,
-            neighbor
-          );
-        }
-      }
-    }
-
-    frontier.splice(0, frontier.length, ...nextLayer);
-    return null;
-  };
-
-  while (frontierStart.length && frontierGoal.length) {
-    const resStart = expand(frontierStart, visitedStart, visitedGoal);
-    if (resStart) return resStart;
-
-    const resGoal = expand(frontierGoal, visitedGoal, visitedStart);
-    if (resGoal) return resGoal;
-  }
-
-  return null; // no path found
+// 1️⃣  A tiny node definition
+interface ListNode<T> {
+  val: T;
+  next?: ListNode<T>;
 }
 
-/**
- * Reconstruct the path once the frontiers have met at `meetingNode`.
- */
-function reconstructPath(
-  start: string,
-  goal: string,
-  visitedStart: VisitedMap,
-  visitedGoal: VisitedMap,
-  meetingNode: string
-): string[] {
-  const partFromStart: string[] = [meetingNode];
-  let node = meetingNode;
-  while (visitedStart[node]) {
-    node = visitedStart[node]!;
-    partFromStart.unshift(node);
-  }
-
-  const partFromGoal: string[] = [];
-  node = meetingNode;
-  while (visitedGoal[node]) {
-    node = visitedGoal[node]!;
-    partFromGoal.push(node);
-  }
-
-  // Avoid duplicating the meeting node
-  return [...partFromStart, ...partFromGoal];
-}
-const graph: Graph = {
-  a: ['b', 'c'],
-  b: ['a', 'd'],
-  c: ['a', 'd'],
-  d: ['b', 'c', 'e'],
-  e: ['d'],
+// 2️⃣  Helper: walk a list and collect values (for demo)
+const listToArray = <T>(head: ListNode<T> | undefined): T[] => {
+  const arr: T[] = [];
+  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
+  return arr;
 };
 
-console.log(bidirectionalBFS(graph, 'a', 'e')); // ["a", "b", "d", "e"]
+// 3️⃣  The trick: two pointers, fast and slow
+function middle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
+  if (!head) return undefined; // empty list—no middle
+
+  let fast = head;
+  let slow = head;
+
+  // advance fast every two steps, slow every one
+  while (fast.next && fast.next.next) {
+    fast = fast.next.next; // jump 2
+    slow = slow.next as ListNode<T>; // jump 1
+  }
+
+  // If fast has a next (odd length), move slow one more
+  if (fast.next) slow = slow.next as ListNode<T>;
+
+  return slow;
+}
+
+// 4️⃣  Demo: build a list so we can see it in action
+const nodes: ListNode<number>[] = [1, 2, 3, 4, 5].map(
+  (v) => ({ val: v })
+);
+for (let i = 0; i < nodes.length - 1; i++) nodes[i].next = nodes[i + 1];
+const head = nodes[0];
+
+console.log("Full list:", listToArray(head));         // 1,2,3,4,5
+console.log("Middle node:", middle(head)?.val);        // 3
+
+// Try an even‑length list
+const even: ListNode<number>[] = [10, 20, 30, 40].map(
+  (v) => ({ val: v })
+);
+for (let i = 0; i < even.length - 1; i++) even[i].next = even[i + 1];
+console.log("Middle of even list:", middle(even)?.val); // 20 (or 30 if you prefer that half)
+class LinkedList<T> {
+  head?: ListNode<T>;
+
+  // push to the tail
+  push(val: T) {
+    const node: ListNode<T> = { val };
+    if (!this.head) {
+      this.head = node;
+    } else {
+      let cur = this.head;
+      while (cur.next) cur = cur.next;
+      cur.next = node;
+    }
+  }
+
+  // returns the middle node (or the first of two middles for even length)
+  middle(): ListNode<T> | undefined {
+    return middle(this.head);
+  }
+
+  toArray(): T[] {
+    return listToArray(this.head);
+  }
+}
+
+// Usage:
+const ll = new LinkedList<number>();
+[1, 2, 3, 4, 5].forEach(v => ll.push(v));
+console.log(ll.toArray());       // [1,2,3,4,5]
+console.log(ll.middle()?.val);   // 3
