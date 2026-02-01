@@ -1,48 +1,37 @@
-/**
- * Returns the longest common subsequence (LCS) of two strings.
- * @param a First string
- * @param b Second string
- * @returns { subsequence: string; length: number }
- */
-function longestCommonSubsequence(a: string, b: string) {
-  const m = a.length;
-  const n = b.length;
+// TypeScript example that fetches JSON and validates the shape of the response
 
-  // 1. Build DP matrix (m+1) x (n+1) filled with 0
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-
-  // 2. Fill DP matrix
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
-
-  // 3. Back‑track to rebuild the subsequence
-  let i = m, j = n;
-  const subseq: string[] = [];
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      subseq.push(a[i - 1]); // same char belongs to LCS
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;            // move up
-    } else {
-      j--;            // move left
-    }
-  }
-
-  return {
-    subsequence: subseq.reverse().join(''),
-    length: dp[m][n]
-  };
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
 
-// Quick demo
-const { subsequence, length } = longestCommonSubsequence('AGCAT', 'GAC');
-console.log(`Longest common subsequence: ${subsequence} (length ${length})`);
+/**
+ * Fetch a Todo by ID.
+ *
+ * @param id The ID of the todo to fetch.
+ * @returns A promise that resolves to a Todo object.
+ */
+async function fetchTodo(id: number): Promise<Todo> {
+  const response = await fetch(`https://jsonplaceholder.typicode.com/todos/${id}`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to load todo #${id}: ${response.status} ${response.statusText}`);
+  }
+
+  // TypeScript's `as` ensures the runtime shape matches the interface
+  const data = (await response.json()) as Todo;
+
+  // Quick sanity check
+  if (typeof data.completed !== "boolean") {
+    throw new Error("data format unexpected");
+  }
+
+  return data;
+}
+
+// Usage example (you can place this in a main function or wherever you need it)
+fetchTodo(1)
+  .then(todo => console.log(`Todo #${todo.id}: ${todo.title} (completed: ${todo.completed})`))
+  .catch(err => console.error(err));
