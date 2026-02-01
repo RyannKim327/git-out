@@ -1,67 +1,85 @@
-class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+/**
+ * Simple representation of a DAG.
+ *   vertices – an array of node identifiers (any type, but usually string or number)
+ *   edges    – a map from a vertex to a list of outgoing neighbours
+ */
+interface Graph<V> {
+  vertices: V[];
+  edges: Map<V, V[]>;
 }
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;
 
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;          // height of a null subtree is 0
+/**
+ * Kahn’s topological sort.
+ * @param graph – a DAG
+ * @returns a list of vertices sorted topologically
+ * @throws Error if the graph contains a cycle
+ */
+function topologicalSort<V>(graph: Graph<V>): V[] {
+  // Compute indegree of each vertex
+  const indegree = new Map<V, number>();
+  graph.vertices.forEach(v => indegree.set(v, 0));
 
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
+  graph.edges.forEach((neighbours, from) => {
+    neighbours.forEach(to => {
+      indegree.set(to, (indegree.get(to) || 0) + 1);
+    });
+  });
 
-    // potential diameter that passes through this node
-    const localDiameter = leftHeight + rightHeight;
-    if (localDiameter > maxDiameter) maxDiameter = localDiameter;
+  // Queue of vertices with indegree 0
+  const queue: V[] = [];
+  indegree.forEach((deg, v) => {
+    if (deg === 0) queue.push(v);
+  });
 
-    // height is max child height + 1 edge to the child
-    return Math.max(leftHeight, rightHeight) + 1;
+  const order: V[] = [];
+  while (queue.length) {
+    const v = queue.shift()!;
+    order.push(v);
+
+    const neighbours = graph.edges.get(v) ?? [];
+    neighbours.forEach(to => {
+      indegree.set(to, (indegree.get(to) || 0) - 1);
+      if (indegree.get(to) === 0) queue.push(to);
+    });
   }
 
-  dfs(root);
-  return maxDiameter;  // edges count
-}
-// Build a tree:
-//        1
-//       / \
-//      2   3
-//     / \     
-//    4   5  
-const root = new TreeNode(1,
-              new TreeNode(2,
-                new TreeNode(4),
-                new TreeNode(5)
-              ),
-              new TreeNode(3)
-            );
-
-console.log(diameterOfBinaryTree(root)); // → 3
-function diameterIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let maxDiameter = 0;
-  const stack = [{ node: root, visited: false, height: 0 }];
-
-  while (stack.length) {
-    const frame = stack.pop()!;
-    if (!frame.node) continue;
-
-    if (frame.visited) {
-      // Children already processed – compute height & diameter
-      const leftHeight = frame.node.left?.height ?? 0;
-      const rightHeight = frame.node.right?.height ?? 0;
-
-      maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight);
-      frame.node.height = Math.max(leftHeight, rightHeight) + 1;
-    } else {
-      // First visit: push back as visited and push children
-      stack.push({ node: frame.node, visited: true, height: 0 });
-      if (frame.node.right) stack.push({ node: frame.node.right, visited: false, height: 0 });
-      if (frame.node.left) stack.push({ node: frame.node.left, visited: false, height: 0 });
-    }
+  // If we processed fewer vertices than exist, a cycle is present
+  if (order.length !== graph.vertices.length) {
+    throw new Error('Graph contains a cycle – topological sort not possible');
   }
-  return maxDiameter;
+
+  return order;
+}
+A → C
+B → C
+C → D
+const g: Graph<string> = {
+  vertices: ['A', 'B', 'C', 'D'],
+  edges: new Map([
+    ['A', ['C']],
+    ['B', ['C']],
+    ['C', ['D']],
+    // D has no outgoing edges
+  ]),
+};
+
+console.log(topologicalSort(g)); // → ['A', 'B', 'C', 'D'] (or ['B', 'A', 'C', 'D'])
+function topologicalSortDFS<V>(graph: Graph<V>): V[] {
+  const visited = new Set<V>();
+  const temp = new Set<V>();          // to detect cycles
+  const stack: V[] = [];
+
+  function visit(v: V) {
+    if (temp.has(v)) throw new Error('Cycle detected');
+    if (visited.has(v)) return;
+
+    temp.add(v);
+    (graph.edges.get(v) ?? []).forEach(visit);
+    temp.delete(v);
+    visited.add(v);
+    stack.push(v);                    // push after children – this yields reverse order
+  }
+
+  graph.vertices.forEach(visit);
+  return stack.reverse();             // reverse to get the correct order
 }
