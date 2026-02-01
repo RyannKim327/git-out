@@ -1,139 +1,63 @@
-// 1️⃣  Types ---------------------------------------------------------------
-
 /**
- * A simple graph node.  The generic parameter `T` lets you store any
- * payload with the node (e.g., a string label, a number, an object, …).
+ * Rabin‑Karp string search
+ *
+ * Parameters:
+ *  pattern – the string we’re looking for
+ *  text    – the string to search inside
+ *
+ * Returns:
+ *  array of starting indices where pattern occurs (empty if no match)
  */
-export interface Node<T> {
-    id: string;          // unique key for the node
-    value: T;            // whatever you want to keep with it
-    neighbors: Node<T>[]; // adjacency list
-}
+export function rabinKarp(pattern: string, text: string): number[] {
+    // Edge cases
+    if (pattern.length === 0) return [];
+    if (pattern.length > text.length) return [];
 
-/**
- * A helper that produces a queue with the three essential ops.
- * We keep a head index instead of shifting the array for O(1) time.
- */
-class Queue<T> {
-    private items: T[] = [];
-    private head: number = 0;
+    const base = 256;               // number of possible characters (ASCII)
+    const mod = 101;                // a prime mod to keep numbers small
 
-    push(item: T) { this.items.push(item); }
+    const m = pattern.length;
+    const n = text.length;
 
-    shift(): T | undefined {
-        if (this.head >= this.items.length) return undefined;
-        const item = this.items[this.head++];
-        // Do a bit of housekeeping to keep the array from growing forever.
-        if (this.head > 1000) {                                   
-            this.items = this.items.slice(this.head);
-            this.head = 0;
-        }
-        return item;
+    // Pre‑compute base^(m‑1) % mod  (the “high” power)
+    let basePower = 1;
+    for (let i = 0; i < m - 1; i++) {
+        basePower = (basePower * base) % mod;
     }
 
-    size() { return this.items.length - this.head; }
+    // Compute hash for pattern and first window of text
+    let patHash = 0;
+    let txtHash = 0;
+    for (let i = 0; i < m; i++) {
+        patHash = (patHash * base + pattern.charCodeAt(i)) % mod;
+        txtHash = (txtHash * base + text.charCodeAt(i)) % mod;
+    }
 
-    isEmpty() { return this.size() === 0; }
-}
+    const result: number[] = [];
 
-
-// 2️⃣  Breadth‑First Search -----------------------------------------------
-
-/**
- * Returns an array of nodes in the order they were visited.
- * `start` is the node to begin from.
- * Optional `getNeighbors` allows you to supply a custom adjacency function.
- */
-export function bfs<T>(
-    start: Node<T>,
-    getNeighbors?: (node: Node<T>) => Iterable<Node<T>>
-): Node<T>[] {
-
-    const visited = new Set<string>();
-    const queue = new Queue<Node<T>>();
-    const order: Node<T>[] = [];
-
-    visited.add(start.id);
-    queue.push(start);
-
-    while (!queue.isEmpty()) {
-        const current = queue.shift()!;   // non‑undefined because we checked queue.isEmpty()
-        order.push(current);
-
-        const neighbors = getNeighbors
-            ? getNeighbors(current)
-            : current.neighbors;          // fallback to adjacency list
-
-        for (const nb of neighbors) {
-            if (!visited.has(nb.id)) {
-                visited.add(nb.id);
-                queue.push(nb);
+    // Slide the window over the text
+    for (let s = 0; s <= n - m; s++) {
+        // If the hash values match, verify the substring to confirm
+        if (patHash === txtHash) {
+            let match = true;
+            for (let k = 0; k < m; k++) {
+                if (text[s + k] !== pattern[k]) {
+                    match = false;
+                    break;
+                }
             }
+            if (match) result.push(s);
+        }
+
+        // Compute hash for next window: remove leading char, add trailing char
+        if (s < n - m) {
+            txtHash = (txtHash - text.charCodeAt(s) * basePower) % mod;
+            if (txtHash < 0) txtHash += mod;                    // keep positive
+            txtHash = (txtHash * base + text.charCodeAt(s + m)) % mod;
         }
     }
 
-    return order;
+    return result;
 }
-
-
-// 3️⃣  Example:  undirected graph -----------------------------------------
-
-// Helper to wire nodes together
-function link<T>(a: Node<T>, b: Node<T>) {
-    a.neighbors.push(b);
-    b.neighbors.push(a);
-}
-
-// Create a small graph
-const a = { id: 'A', value: 1, neighbors: [] } as Node<number>;
-const b = { id: 'B', value: 2, neighbors: [] } as Node<number>;
-const c = { id: 'C', value: 3, neighbors: [] } as Node<number>;
-const d = { id: 'D', value: 4, neighbors: [] } as Node<number>;
-const e = { id: 'E', value: 5, neighbors: [] } as Node<number>;
-
-link(a, b);
-link(a, c);
-link(b, d);
-link(c, d);
-link(d, e);
-
-// Run BFS
-const bfsResult = bfs(a);          // depth‑first will visit A → B → C → D → E
-console.log('BFS order:', bfsResult.map(n => n.id));
-
-// 4️⃣  Tweaking with a custom neighbor fetch ------------------------------
-
-/**
- * Suppose your graph data is stored in an adjacency map:
- *   { 'A': ['B', 'C'], ... }
- * You can adapt BFS by supplying a `getNeighbors` callback.
- */
-const adjacency: Record<string, string[]> = {
-    A: ['B', 'C'],
-    B: ['A', 'D'],
-    C: ['A', 'D'],
-    D: ['B', 'C', 'E'],
-    E: ['D']
-};
-
-const nodes = Object.fromEntries(
-    Object.keys(adjacency).map(id => [id, { id, value: id, neighbors: [] } as Node<string>])
-);
-
-// Convert adjacency graph to node objects (without circular refs)
-for (const [id, nbrs] of Object.entries(adjacency)) {
-    const node = nodes[id]!;
-    node.neighbors = nbrs.map(n => nodes[n]!);
-}
-
-// Or just keep the adjacency map and pull neighbors on the fly:
-const bfsFromMap = (startId: string): string[] => {
-    const startNode = nodes[startId]!;
-    const path = bfs(startNode, n => adjacency[n.id].map(id => nodes[id]!));
-    return path.map(n => n.id);
-};
-
-console.log('BFS from map:', bfsFromMap('A'));
-
-// -------------------------------------------------------------------------
-
+const idx = rabinKarp('abc', 'xabcababc');
+console.log(idx);   // → [1, 6]
