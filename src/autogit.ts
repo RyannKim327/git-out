@@ -1,32 +1,34 @@
-/**
- * Bubble sort – compares adjacent elements and swaps them if they're out of order.
- *
- * @param arr – The array of numbers (or any type that implements `<`),
- *              sorted in place and also returned for convenience.
- * @returns The sorted array.
- */
-export function bubbleSort<T>(arr: T[]): T[] {
-  const n = arr.length;
+function isAnagramSort(a: string, b: string): boolean {
+  // Normalize (optional – depends on your use‑case)
+  const normalize = (s: string) =>
+    s.replace(/\s+/g, '').toLowerCase(); // trim spaces, lower‑case
 
-  // Outer loop – each pass guarantees that the largest element among the
-  // unsorted portion moves to its final position at the end of the array.
-  for (let i = 0; i < n - 1; i++) {
-    // Inner loop – only needs to run up to the last unsorted element.
-    for (let j = 0; j < n - i - 1; j++) {
-      // If the current element is greater than the next one, swap them.
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-      }
-    }
+  const sa = normalize(a).split('').sort().join('');
+  const sb = normalize(b).split('').sort().join('');
+
+  return sa === sb;
+}
+function isAnagramMap(a: string, b: string): boolean {
+  // Quick length check (no need to normalize again here)
+  if (a.length !== b.length) return false;
+
+  const count = new Map<string, number>();
+
+  for (let i = 0; i < a.length; i++) {
+    const ca = a[i];
+    const cb = b[i];
+
+    count.set(ca, (count.get(ca) || 0) + 1);
+    count.set(cb, (count.get(cb) || 0) - 1);
   }
 
-  return arr;
+  // All counts must net to 0
+  for (const val of count.values()) {
+    if (val !== 0) return false;
+  }
+  return true;
 }
-import { bubbleSort } from './bubbleSort';
-
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-console.log('Before:', numbers);
-
-bubbleSort(numbers);
-
-console.log('After:', numbers);   // [11, 12, 22, 25, 34, 64, 90]
+const a = 'listen';
+const b = 'silent';
+console.log(isAnagramSort(a, b)); // true
+console.log(isAnagramMap(a, b));  // true
