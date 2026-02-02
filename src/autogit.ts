@@ -1,68 +1,59 @@
-// A minimal list node
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null,
-  ) {}
-}
 /**
- * Reverses a linked list.
- * @param head The original list head.
- * @returns New head of the reversed list.
+ * Shell sort – a simple in‑place comparison sort.
+ *
+ * @template T          – The element type stored in the array.
+ * @param array         – Array to be sorted (mutated).
+ * @param compareFn     – Optional comparison function.  
+ *                        Should return a negative number if a < b,
+ *                        zero if a == b, and a positive number if a > b.
+ *                        Default is numeric ascending order.
+ *
+ * @returns The same array, now sorted.
+ *
+ * Example:
+ *   const nums = [23, 12, 1, 2, 8, 15];
+ *   shellSort(nums);                 // → [1,2,8,12,15,23]
+ *
+ *   const words = ["pear","apple","orange"];
+ *   shellSort(words, (a,b) => a.localeCompare(b));  // → ["apple","orange","pear"]
  */
-export function reverseListIterative<T>(
-  head: ListNode<T> | null,
-): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let current = head;
+export function shellSort<T>(
+  array: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a as unknown as number) - (b as unknown as number)
+): T[] {
+  const n = array.length;
+  // Basic Shell sequence: n/2, n/4, ..., 1
+  // (You could use a more sophisticated sequence, e.g. Hibbard, Pratt, or Knuth.)
+  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Perform a gapped insertion sort for this gap size
+    for (let i = gap; i < n; i++) {
+      const current = array[i];
+      let j = i;
 
-  while (current !== null) {
-    const next = current.next;   // remember the next node
-    current.next = prev;         // reverse the link
-    prev = current;              // move `prev` one step forward
-    current = next;              // advance to the next node
+      // Shift earlier gap‑separated elements up until the correct location for current
+      while (j >= gap && compareFn(array[j - gap], current) > 0) {
+        array[j] = array[j - gap];
+        j -= gap;
+      }
+      array[j] = current;
+    }
   }
-
-  return prev; // new head
+  return array;
 }
-/**
- * Reverses a linked list recursively.
- * @param node Current node being processed.
- * @returns New head of the reversed list.
- */
-export function reverseListRecursive<T>(
-  node: ListNode<T> | null,
-  newHead: ListNode<T> | null = null,
-): ListNode<T> | null {
-  if (node === null) return newHead;   // base case: original list exhausted
+import { shellSort } from "./shellSort";
 
-  const next = node.next;              // keep reference to the next node
-  node.next = newHead;                 // attach current node before the “new head”
-  return reverseListRecursive(next, node);
-}
-// Helper to build a list from an array
-function buildList<T>(arr: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = new ListNode(arr[i], head);
-  }
-  return head;
-}
+const planets = [
+  { name: "Jupiter", radius: 69911 },
+  { name: "Earth", radius: 6371 },
+  { name: "Mars", radius: 3389 },
+  { name: "Saturn", radius: 58232 },
+];
 
-// Helper to turn a list back into an array (for easy checking)
-function listToArray<T>(head: ListNode<T> | null): T[] {
-  const result: T[] = [];
-  for (let cur = head; cur; cur = cur.next) result.push(cur.val);
-  return result;
-}
-
-// Example usage
-const nums = [1, 2, 3, 4, 5];
-const list = buildList(nums);
-
-const reversedIter = reverseListIterative(list);
-console.log(listToArray(reversedIter)); // [5,4,3,2,1]
-
-const original = buildList(nums); // rebuild, since the list was mutated
-const reversedRec = reverseListRecursive(original);
-console.log(listToArray(reversedRec)); // [5,4,3,2,1]
+shellSort(planets, (a, b) => a.radius - b.radius);
+console.log(planets);
+// → [
+//      { name: "Mars", radius: 3389 },
+//      { name: "Earth", radius: 6371 },
+//      { name: "Saturn", radius: 58232 },
+//      { name: "Jupiter", radius: 69911 }
+//    ]
