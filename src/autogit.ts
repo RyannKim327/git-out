@@ -1,45 +1,59 @@
 /**
- * Return the largest prime factor of |n|.
+ * Shell sort – a simple in‑place comparison sort.
  *
- * @param n Any integer. Negative values are treated as |n|.
- * @returns   The largest prime factor of n, or `0` if n has no prime factors
- * (i.e. n is 0, 1, or –1).
+ * @template T          – The element type stored in the array.
+ * @param array         – Array to be sorted (mutated).
+ * @param compareFn     – Optional comparison function.  
+ *                        Should return a negative number if a < b,
+ *                        zero if a == b, and a positive number if a > b.
+ *                        Default is numeric ascending order.
+ *
+ * @returns The same array, now sorted.
+ *
+ * Example:
+ *   const nums = [23, 12, 1, 2, 8, 15];
+ *   shellSort(nums);                 // → [1,2,8,12,15,23]
+ *
+ *   const words = ["pear","apple","orange"];
+ *   shellSort(words, (a,b) => a.localeCompare(b));  // → ["apple","orange","pear"]
  */
-function largestPrimeFactor(n: number): number {
-  if (n === 0 || n === 1 || n === -1) return 0;
+export function shellSort<T>(
+  array: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a as unknown as number) - (b as unknown as number)
+): T[] {
+  const n = array.length;
+  // Basic Shell sequence: n/2, n/4, ..., 1
+  // (You could use a more sophisticated sequence, e.g. Hibbard, Pratt, or Knuth.)
+  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Perform a gapped insertion sort for this gap size
+    for (let i = gap; i < n; i++) {
+      const current = array[i];
+      let j = i;
 
-  let num = Math.abs(n);          // work with the absolute value
-  let lastPrime = 0;              // keep the biggest factor we’ve seen
-
-  // Treat 2 separately – it’s the only even prime
-  while (num % 2 === 0) {
-    lastPrime = 2;
-    num >>= 1;                    // divide by 2
-  }
-
-  // Now n is odd. Try only odd divisors.
-  // We only need to go up to sqrt(num) because if num still > 1 after that,
-  // num itself is prime and the largest factor.
-  for (let d = 3; d * d <= num; d += 2) {
-    while (num % d === 0) {
-      lastPrime = d;
-      num /= d;
+      // Shift earlier gap‑separated elements up until the correct location for current
+      while (j >= gap && compareFn(array[j - gap], current) > 0) {
+        array[j] = array[j - gap];
+        j -= gap;
+      }
+      array[j] = current;
     }
   }
-
-  // If after the loop num > 1, it means num itself is prime
-  // and larger than any divisor we found earlier.
-  if (num > 1) lastPrime = num;
-
-  return lastPrime;
+  return array;
 }
+import { shellSort } from "./shellSort";
 
-/* ----- quick sanity checks ----- */
-console.log(largestPrimeFactor(13195));   // 29  (13195 = 5 × 7 × 13 × 29)
-console.log(largestPrimeFactor(600851475143)); // 6857 (the known answer to Project Euler #3)
-Console.log(largestPrimeFactor(13));      // 13
-Console.log(largestPrimeFactor(4));       // 2
-Console.log(largestPrimeFactor(1));       // 0
-function largestPrimeFactorBigInt(n: bigint): bigint {
-  // identical logic, but using bigint operations
-}
+const planets = [
+  { name: "Jupiter", radius: 69911 },
+  { name: "Earth", radius: 6371 },
+  { name: "Mars", radius: 3389 },
+  { name: "Saturn", radius: 58232 },
+];
+
+shellSort(planets, (a, b) => a.radius - b.radius);
+console.log(planets);
+// → [
+//      { name: "Mars", radius: 3389 },
+//      { name: "Earth", radius: 6371 },
+//      { name: "Saturn", radius: 58232 },
+//      { name: "Jupiter", radius: 69911 }
+//    ]
