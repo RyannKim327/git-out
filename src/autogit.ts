@@ -1,44 +1,45 @@
-export interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-}
-/**
- * Returns the nth node from the end of a singly‑linked list.
- *
- * @param head  The head of the list (may be null).
- * @param n 1‑based index counting from the last node.
- * @returns   The node itself, or null if n is out of bounds.
- */
-export function getNthFromEnd<T>(
-  head: ListNode<T> | null,
-  n: number
-): ListNode<T> | null {
-  if (n <= 0) return null;                // n must be positive
+class Stack<T> {
+  private items: T[] = [];      // underlying array
 
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
-
-  // Advance `fast` n steps ahead.
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;              // n is larger than the list length
-    fast = fast.next;
+  /** Push a value onto the top of the stack. */
+  push(value: T): void {
+    this.items.push(value);
   }
 
-  // Move both pointers until `fast` reaches the end.
-  while (fast) {
-    fast = fast.next;
-    slow = slow?.next ?? null;
+  /** Remove and return the top value.  Returns `undefined` if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
   }
 
-  // `slow` is now the nth from the end.
-  return slow;
-}
-// Build a tiny list: 10 → 20 → 30 → 40 → 50
-const node5: ListNode<number> = { value: 50, next: null };
-const node4: ListNode<number> = { value: 40, next: node5 };
-const node3: ListNode<number> = { value: 30, next: node4 };
-const node2: ListNode<number> = { value: 20, next: node3 };
-const head: ListNode<number> = { value: 10, next: node2 };
+  /** Peek at the top value without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
 
-const thirdFromEnd = getNthFromEnd(head, 3);
-console.log(thirdFromEnd?.value); // 30
+  /** Number of elements in the stack. */
+  get size(): number {
+    return this.items.length;
+  }
+
+  /** True if the stack contains no items. */
+  get isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Optional: clear all items. */
+  clear(): void {
+    this.items = [];
+  }
+}
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size);   // 2
+
+stack.clear();
+console.log(stack.isEmpty); // true
