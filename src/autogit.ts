@@ -1,17 +1,29 @@
-const numbers = [3, 42, 7, -1, 20];
-const biggest = Math.max(...numbers);
+function firstRepeat(s: string): string | undefined {
+  const seen = new Set<string>();
 
-console.log(biggest); // 42
-function findMax(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined; // or throw, or use null, whatever fits your API
-  return Math.max(...nums);
+  for (const ch of s) {
+    if (seen.has(ch)) return ch;   // this is the first repeated one
+    seen.add(ch);
+  }
+
+  return undefined;   // no repeats
 }
-const biggest = numbers.reduce((max, curr) => curr > max ? curr : max, -Infinity);
-function findMax(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;
-  return nums.reduce((max, curr) => (curr > max ? curr : max));
+function firstRepeatObj(s: string): string | undefined {
+  const map: { [k: string]: boolean } = {};
+
+  for (const ch of s) {
+    if (map[ch]) return ch;
+    map[ch] = true;
+  }
 }
-function findMax<T extends readonly (number | null | undefined)[]>(arr: T): number | undefined {
-  const filtered = arr.filter(isFinite) as number[]; // strip out null/undefined if you like
-  return filtered.length ? Math.max(...filtered) : undefined;
+function firstRepeatingAlpha(str: string): string | undefined {
+  const seen = new Set<string>();
+  for (const ch of str) {
+    if (!/[a-zA-Z]/.test(ch)) continue; // skip non‑letters
+    if (seen.has(ch)) return ch;
+    seen.add(ch);
+  }
 }
+console.log(firstRepeat('abcdeafg')); // a
+console.log(firstRepeat('hello world')); // l
+console.log(firstRepeat('xyz')); // undefined
