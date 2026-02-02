@@ -1,59 +1,61 @@
 /**
- * Shell sort – a simple in‑place comparison sort.
+ * Sorts an array of numbers in ascending order using insertion sort.
+ * The algorithm works in place – the input array is mutated.
  *
- * @template T          – The element type stored in the array.
- * @param array         – Array to be sorted (mutated).
- * @param compareFn     – Optional comparison function.  
- *                        Should return a negative number if a < b,
- *                        zero if a == b, and a positive number if a > b.
- *                        Default is numeric ascending order.
- *
+ * @param arr - The numeric array to be sorted.
  * @returns The same array, now sorted.
- *
- * Example:
- *   const nums = [23, 12, 1, 2, 8, 15];
- *   shellSort(nums);                 // → [1,2,8,12,15,23]
- *
- *   const words = ["pear","apple","orange"];
- *   shellSort(words, (a,b) => a.localeCompare(b));  // → ["apple","orange","pear"]
  */
-export function shellSort<T>(
-  array: T[],
-  compareFn: (a: T, b: T) => number = (a, b) => (a as unknown as number) - (b as unknown as number)
-): T[] {
-  const n = array.length;
-  // Basic Shell sequence: n/2, n/4, ..., 1
-  // (You could use a more sophisticated sequence, e.g. Hibbard, Pratt, or Knuth.)
-  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Perform a gapped insertion sort for this gap size
-    for (let i = gap; i < n; i++) {
-      const current = array[i];
-      let j = i;
+export function insertionSort(arr: number[]): number[] {
+  // Start from the second element; the first element is “sorted” by definition
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];            // The value we’re going to insert
+    let j = i - 1;
 
-      // Shift earlier gap‑separated elements up until the correct location for current
-      while (j >= gap && compareFn(array[j - gap], current) > 0) {
-        array[j] = array[j - gap];
-        j -= gap;
-      }
-      array[j] = current;
+    // Shift elements that are greater than the key to the right
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j];
+      j--;
     }
-  }
-  return array;
-}
-import { shellSort } from "./shellSort";
 
-const planets = [
-  { name: "Jupiter", radius: 69911 },
-  { name: "Earth", radius: 6371 },
-  { name: "Mars", radius: 3389 },
-  { name: "Saturn", radius: 58232 },
+    // Insert the key into its correct position
+    arr[j + 1] = key;
+  }
+
+  return arr;
+}
+export function insertionSort<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+
+    // While j is in range and key is less than arr[j], shift arr[j] right
+    while (j >= 0 && compareFn(key, arr[j]) < 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    arr[j + 1] = key;
+  }
+
+  return arr;
+}
+// Numbers
+const nums = [64, 25, 12, 22, 11];
+insertionSort(nums);          // => [11, 12, 22, 25, 64]
+
+// Strings
+const words = ['banana', 'apple', 'cherry'];
+insertionSort(words);          // => ['apple', 'banana', 'cherry']
+
+// Custom objects
+const people = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob', age: 24 },
+  { name: 'Catherine', age: 27 }
 ];
 
-shellSort(planets, (a, b) => a.radius - b.radius);
-console.log(planets);
-// → [
-//      { name: "Mars", radius: 3389 },
-//      { name: "Earth", radius: 6371 },
-//      { name: "Saturn", radius: 58232 },
-//      { name: "Jupiter", radius: 69911 }
-//    ]
+insertionSort(people, (a, b) => a.age - b.age);
+// => sorted by age
