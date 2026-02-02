@@ -1,45 +1,72 @@
-class Stack<T> {
-  private items: T[] = [];      // underlying array
+// A single node in the list
+class Node<T> {
+  constructor(public value: T, public next: Node<T> | null = null) {}
+}
 
-  /** Push a value onto the top of the stack. */
-  push(value: T): void {
-    this.items.push(value);
+// The queue itself
+export class LinkedListQueue<T> {
+  // Keep refs to both ends so that enqueue/dequeue stay constant‑time
+  private head: Node<T> | null = null; // points to first element
+  private tail: Node<T> | null = null; // points to last element
+  private _size = 0;
+
+  /** Adds a value to the back of the queue */
+  enqueue(value: T): void {
+    const newNode = new Node(value);
+    if (this.tail) {
+      this.tail.next = newNode;   // link the old tail to the new node
+      this.tail = newNode;        // new node becomes the new tail
+    } else {
+      // Queue was empty – head and tail are the same node now
+      this.head = this.tail = newNode;
+    }
+    this._size++;
   }
 
-  /** Remove and return the top value.  Returns `undefined` if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
+  /** Removes and returns the value from the front of the queue.
+      Throws an error if the queue is empty. */
+  dequeue(): T {
+    if (!this.head) {
+      throw new Error('Cannot dequeue from an empty queue');
+    }
+    const value = this.head.value;
+    this.head = this.head.next; // move head forward
+    if (!this.head) {
+      // Queue became empty, so tail must also be null
+      this.tail = null;
+    }
+    this._size--;
+    return value;
   }
 
-  /** Peek at the top value without removing it. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
+  /** Peeks at the front value without removing it. */
+  peek(): T | null {
+    return this.head?.value ?? null;
   }
 
-  /** Number of elements in the stack. */
-  get size(): number {
-    return this.items.length;
+  /** Returns true if the queue contains no elements. */
+  isEmpty(): boolean {
+    return this._size === 0;
   }
 
-  /** True if the stack contains no items. */
-  get isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** Optional: clear all items. */
-  clear(): void {
-    this.items = [];
+  /** Current number of elements */
+  size(): number {
+    return this._size;
   }
 }
-const stack = new Stack<number>();
+import { LinkedListQueue } from './LinkedListQueue';
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
+const q = new LinkedListQueue<number>();
 
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size);   // 2
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
 
-stack.clear();
-console.log(stack.isEmpty); // true
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size());    // 1
+console.log(q.isEmpty()); // false
+
+q.dequeue();          // removes 30
+console.log(q.isEmpty()); // true
