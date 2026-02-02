@@ -1,48 +1,47 @@
 /**
- * Returns the longest common subsequence (LCS) of two strings.
- * @param a First string
- * @param b Second string
- * @returns { subsequence: string; length: number }
+ * Interpolation search – returns the index of `key` in `arr`
+ * or `-1` if the key is not present.
+ *
+ * @template T – numeric type (number, bigInt, etc.)
+ * @param arr  – sorted array of numbers
+ * @param key  – value to look for
+ * @returns index or -1
  */
-function longestCommonSubsequence(a: string, b: string) {
-  const m = a.length;
-  const n = b.length;
+export function interpolationSearch<T extends number | bigint>(
+  arr: T[],
+  key: T
+): number {
+  if (!arr.length) return -1;
 
-  // 1. Build DP matrix (m+1) x (n+1) filled with 0
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  let low = 0;
+  let high = arr.length - 1;
 
-  // 2. Fill DP matrix
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
+  /* Handle the special situation where the key is identical to
+   * the value at both bounds – it can’t be found if low === high
+   * but arr[low] !== key.
+   */
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    /* Avoid division by zero when array values are identical */
+    const step =
+      low === high
+        ? 0
+        : Number(
+            (key - arr[low]) *
+              (high - low) /
+              (arr[high] - arr[low])
+          );
+
+    const mid = low + Math.min(Math.max(step, 0), high - low);
+
+    const midVal = arr[mid];
+
+    if (midVal === key) return mid;
+    if (midVal < key) low = mid + 1;
+    else high = mid - 1;
   }
 
-  // 3. Back‑track to rebuild the subsequence
-  let i = m, j = n;
-  const subseq: string[] = [];
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      subseq.push(a[i - 1]); // same char belongs to LCS
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;            // move up
-    } else {
-      j--;            // move left
-    }
-  }
-
-  return {
-    subsequence: subseq.reverse().join(''),
-    length: dp[m][n]
-  };
+  return -1; // Key not found
 }
-
-// Quick demo
-const { subsequence, length } = longestCommonSubsequence('AGCAT', 'GAC');
-console.log(`Longest common subsequence: ${subsequence} (length ${length})`);
+const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17];
+console.log(interpolationSearch(nums, 7));  // → 3
+console.log(interpolationSearch(nums, 4));  // → -1
