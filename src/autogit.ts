@@ -1,57 +1,37 @@
-function secondLargestSort(arr: number[]): number | null {
-  // Defensive copy so we don’t mutate the caller’s data
-  const sorted = [...arr].sort((a, b) => b - a); // descending
+// factorial.ts
+import readline from 'readline';
 
-  // Find the first element that isn’t equal to the maximum
-  let i = 1;
-  while (i < sorted.length && sorted[i] === sorted[0]) {
-    i++;
-  }
-
-  return i < sorted.length ? sorted[i] : null;
+// Utility that returns the factorial of a non‑negative integer
+function factorial(n: number): number {
+  if (n < 0) throw new Error('Number must be non‑negative');
+  if (n === 0 || n === 1) return 1;
+  return n * factorial(n - 1);
 }
-console.log(secondLargestSort([3, 1, 4, 4, 5])); // 4
-console.log(secondLargestSort([10]));            // null
-function secondLargestTwoPass(arr: number[]): number | null {
-  if (arr.length < 2) return null;
 
-  let max = -Infinity;
-  let secondMax = -Infinity;
+// Set up a readline interface to read from stdin
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
 
-  // First pass: find the maximum
-  for (const v of arr) {
-    if (v > max) max = v;
-  }
+// Ask the user for a number
+rl.question('Enter a non‑negative integer: ', (answer) => {
+  const num = Number(answer.trim());
 
-  // Second pass: find the largest value that is < max
-  for (const v of arr) {
-    if (v < max && v > secondMax) secondMax = v;
-  }
-
-  return secondMax === -Infinity ? null : secondMax;
-}
-console.log(secondLargestTwoPass([7, 3, 9, 1, 9])); // 7
-function secondLargest(arr: number[]): number | null {
-  if (arr.length < 2) return null;
-
-  let max = -Infinity;
-  let secondMax = -Infinity;
-
-  for (const v of arr) {
-    if (v > max) {
-      secondMax = max; // the old max becomes second max
-      max = v;
-    } else if (v < max && v > secondMax) {
-      secondMax = v;
+  if (Number.isNaN(num) || !Number.isInteger(num)) {
+    console.log(`"${answer}" is not a valid integer.`);
+  } else {
+    try {
+      const result = factorial(num);
+      console.log(`Factorial of ${num} is ${result}`);
+    } catch (e) {
+      console.log(e.message);
     }
   }
 
-  return secondMax === -Infinity ? null : secondMax;
-}
-console.log(secondLargest([5, 12, 7, 12, 9]));   // 9
-console.log(secondLargest([3]));                // null
-console.log(secondLargest([2, 2, 2]));          // null (no distinct second largest)
-function findSecondLargest(arr: number[]): number | null {
-  // Pick whichever implementation feels best
-  return secondLargest(arr);
-}
+  rl.close();
+});
+npm install --save-dev @types/node
+npx ts-node factorial.ts
+tsc factorial.ts   # produces factorial.js
+node factorial.js
