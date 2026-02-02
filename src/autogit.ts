@@ -1,87 +1,53 @@
 /**
- * Returns the maximum sum of any contiguous sub‑array.
- *
- * @param arr – array of numbers (may contain negatives)
- * @returns {number} maximum sub‑array sum
+ * Simpler Rabin–Karp – uses a 32‑bit unsigned int hash.
+ * For stronger use (large text / collision safety) switch to BigInt or a
+ * larger mod (e.g., 1_000_000_007).
  */
-export function maxSubArraySum(arr: number[]): number {
-  if (arr.length === 0) {
-    throw new Error('Array must contain at least one element');
-  }
+export function rabinKarp(
+    text: string,
+    pattern: string,
+    base: number = 256,               // alphabet size
+    mod: number = 1_000_000_007       // a large prime
+): number[] {
+    const n = text.length;
+    const m = pattern.length;
+    if (m === 0 || n < m) return [];
 
-  // init both with first element: handles all‑negative cases nicely
-  let currentBest = arr[0];
-  let globalBest = arr[0];
+    const result: number[] = [];
 
-  for (let i = 1; i < arr.length; i++) {
-    const value = arr[i];
+    /* Pre‑compute base^(m-1) % mod   (the weight of the leading char) */
+    let power = 1;
+    for (let i = 0; i < m - 1; i++) power = (power * base) % mod;
 
-    // Either extend the previous sub‑array or start fresh at value
-    currentBest = Math.max(value, currentBest + value);
-
-    // Keep the best seen so far
-    globalBest = Math.max(globalBest, currentBest);
-  }
-
-  return globalBest;
-}
-const testSets = [
-  { arr: [1, -2, 3, 4, -5, 8], expect: 10 },
-  { arr: [-2, -3, -1, -4], expect: -1 },
-  { arr: [2, 3, 1, 6], expect: 12 },
-  { arr: [5, -1, 2, 3], expect: 9 },
-  { arr: [1], expect: 1 },
-];
-
-for (const { arr, expect } of testSets) {
-  const result = maxSubArraySum(arr);
-  console.log(`arr: ${arr} → max sum: ${result} (${result === expect ? '✓' : '✗'})`);
-}
-arr: 1,-2,3,4,-5,8 → max sum: 10 (✓)
-arr: -2,-3,-1,-4 → max sum: -1 (✓)
-arr: 2,3,1,6 → max sum: 12 (✓)
-arr: 5,-1,2,3 → max sum: 9 (✓)
-arr: 1 → max sum: 1 (✓)
-interface MaxSubArrayResult {
-  sum: number;
-  start: number;
-  end: number;   // inclusive
-}
-
-export function maxSubArraySumWithIndices(arr: number[]): MaxSubArrayResult {
-  if (arr.length === 0) {
-    throw new Error('Array must contain at least one element');
-  }
-
-  let currentBest = arr[0];
-  let globalBest = arr[0];
-
-  // working indices
-  let currentStart = 0;
-  let bestStart = 0;
-  let bestEnd = 0;
-
-  for (let i = 1; i < arr.length; i++) {
-    const value = arr[i];
-
-    // decide whether to continue or start a new sub‑array
-    if (currentBest + value < value) {
-      currentBest = value;
-      currentStart = i;
-    } else {
-      currentBest += value;
+    /* Hashes of pattern and first window */
+    let patternHash = 0;
+    let windowHash = 0;
+    for (let i = 0; i < m; i++) {
+        patternHash = (patternHash * base + pattern.charCodeAt(i)) % mod;
+        windowHash  = (windowHash  * base + text.charCodeAt(i))  % mod;
     }
 
-    // update global best if we found a better sum
-    if (currentBest > globalBest) {
-      globalBest = currentBest;
-      bestStart = currentStart;
-      bestEnd = i;
-    }
-  }
+    /* Slide the window */
+    for (let i = 0; i <= n - m; i++) {
+        /* If hashes match – do a literal check to avoid false positives */
+        if (patternHash === windowHash) {
+            if (text.substr(i, m) === pattern) result.push(i);
+        }
 
-  return { sum: globalBest, start: bestStart, end: bestEnd };
+        /* Re‑hash: remove leading char, add trailing char */
+        if (i < n - m) {
+            const leading = text.charCodeAt(i) * power % mod;
+            windowHash = (windowHash - leading + mod) % mod;   // avoid negative
+            windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
+        }
+    }
+
+    return result;
 }
-const { sum, start, end } = maxSubArraySumWithIndices([1, -2, 3, 4, -5, 8]);
-console.log(`max sum ${sum} from index ${start} to ${end}`);
-// → max sum 10 from index 2 to 5
+import { rabinKarp } from './rabinKarp';
+
+const text = "ababcabcabababd";
+const pattern = "ababd";
+
+const matches = rabinKarp(text, pattern);  // → [10]
+console.log("Match at indices: ", matches);
