@@ -1,45 +1,37 @@
-/**
- * Returns the majority element if it exists.
- * If no element occurs > n/2 times, it returns undefined.
- */
-function majorityElement<T>(arr: T[]): T | undefined {
-  let candidate: T | undefined;
-  let count = 0;
+// factorial.ts
+import readline from 'readline';
 
-  // Step 1 – find a candidate
-  for (const value of arr) {
-    if (count === 0) {
-      candidate = value;
-      count = 1;
-    } else if (value === candidate) {
-      count++;
-    } else {
-      count--;
-    }
-  }
-
-  // Step 2 – optional verification pass
-  // (often omitted if you’re sure the input guarantees a majority)
-  if (candidate !== undefined) {
-    let occurrences = 0;
-    for (const v of arr) {
-      if (v === candidate) occurrences++;
-    }
-    if (occurrences > Math.floor(arr.length / 2)) {
-      return candidate;
-    }
-  }
-
-  return undefined; // no majority
+// Utility that returns the factorial of a non‑negative integer
+function factorial(n: number): number {
+  if (n < 0) throw new Error('Number must be non‑negative');
+  if (n === 0 || n === 1) return 1;
+  return n * factorial(n - 1);
 }
-function majorityUsingMap<T>(arr: T[]): T | undefined {
-  const freq = new Map<T, number>();
-  const threshold = Math.floor(arr.length / 2) + 1;
 
-  for (const val of arr) {
-    const newCount = (freq.get(val) ?? 0) + 1;
-    if (newCount >= threshold) return val;
-    freq.set(val, newCount);
+// Set up a readline interface to read from stdin
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+// Ask the user for a number
+rl.question('Enter a non‑negative integer: ', (answer) => {
+  const num = Number(answer.trim());
+
+  if (Number.isNaN(num) || !Number.isInteger(num)) {
+    console.log(`"${answer}" is not a valid integer.`);
+  } else {
+    try {
+      const result = factorial(num);
+      console.log(`Factorial of ${num} is ${result}`);
+    } catch (e) {
+      console.log(e.message);
+    }
   }
-  return undefined;
-}
+
+  rl.close();
+});
+npm install --save-dev @types/node
+npx ts-node factorial.ts
+tsc factorial.ts   # produces factorial.js
+node factorial.js
