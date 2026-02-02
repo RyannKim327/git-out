@@ -1,71 +1,50 @@
 /**
- * Heap‑sort – sorts an array of numbers in ascending order.
- * The algorithm works in O(n log n) time and O(1) extra space (in‑place).
+ * Random sort – a quick‑sort implementation that picks a random
+ * pivot for each split.
  *
- * @param arr The array to sort – it will be mutated.
+ * The algorithm is deterministic in complexity (O(n log n) on average),
+ * but the pivot choice is completely random, which can be useful for
+ * teaching purposes or for avoiding worst‑case sequences.
  */
-export function heapSort(arr: number[]): void {
-  const n = arr.length;
 
-  // Step 1. Build a max‑heap.
-  // The last non‑leaf node is at floor(n/2) - 1.
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-    siftDown(arr, i, n);
+function randomQuickSort<T>(input: T[], compare?: (a: T, b: T) => number): T[] {
+  // If there are 0 or 1 elements, it's already sorted.
+  if (input.length <= 1) {
+    return [...input];
   }
 
-  // Step 2. Repeatedly extract the maximum element.
-  for (let end = n - 1; end > 0; end--) {
-    swap(arr, 0, end);          // Move current max to its final position.
-    siftDown(arr, 0, end);      // Restore heap property for the reduced heap.
-  }
-}
+  // Choose a random pivot index.
+  const pivotIndex = Math.floor(Math.random() * input.length);
+  const pivot = input[pivotIndex];
 
-/**
- * Restores the max‑heap property by sifting a node downwards.
- *
- * @param heap  The heap array.
- * @param start Index of the node to sift down.
- * @param size  The current size of the heap (elements >= size are already sorted).
- */
-function siftDown(heap: number[], start: number, size: number): void {
-  let root = start;
+  // Helper to decide the order.
+  const cmp = compare ||
+    // Default to numeric or string comparison.
+    ((a: T, b: T) => (a as any) < b ? -1 : (a as any) > b ? 1 : 0);
 
-  while (true) {
-    const left = 2 * root + 1;   // Left child index.
-    const right = left + 1;      // Right child index.
-    let largest = root;
+  // Partition the array into two bins: <= pivot and > pivot.
+  const smaller: T[] = [];
+  const larger: T[] = [];
 
-    // If left child exists and is greater than root.
-    if (left < size && heap[left] > heap[largest]) {
-      largest = left;
+  for (let i = 0; i < input.length; i++) {
+    if (i === pivotIndex) continue; // skip the pivot itself
+    const item = input[i];
+    if (cmp(item, pivot) <= 0) {
+      smaller.push(item);
+    } else {
+      larger.push(item);
     }
-
-    // If right child exists and is greater than current largest.
-    if (right < size && heap[right] > heap[largest]) {
-      largest = right;
-    }
-
-    // If root is already the largest, the heap property holds.
-    if (largest === root) break;
-
-    // Swap root with the larger child and continue sifting down.
-    swap(heap, root, largest);
-    root = largest;
   }
+
+  // Recursively sort each sub‑array and concatenate the results.
+  return [
+    ...randomQuickSort(smaller, compare),
+    pivot,
+    ...randomQuickSort(larger, compare),
+  ];
 }
 
-/**
- * Utility to swap two elements in an array.
- *
- * @param a    Array containing the elements.
- * @param i    Index of the first element.
- * @param j    Index of the second element.
- */
-function swap(a: number[], i: number, j: number): void {
-  const tmp = a[i];
-  a[i] = a[j];
-  a[j] = tmp;
-}
-const data = [5, 3, 8, 4, 1, 2];
-heapSort(data);
-console.log(data);  // → [1, 2, 3, 4, 5, 8]
+/* --- Example usage ----------------------------------------------------- */
+const nums = [23, 4, 42, 8, 15, 16, 42, 23, 4, 17];
+console.log('Unsorted:', nums);
+console.log('Sorted:', randomQuickSort(nums));
