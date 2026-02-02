@@ -1,53 +1,32 @@
-/**
- * Simpler Rabin–Karp – uses a 32‑bit unsigned int hash.
- * For stronger use (large text / collision safety) switch to BigInt or a
- * larger mod (e.g., 1_000_000_007).
- */
-export function rabinKarp(
-    text: string,
-    pattern: string,
-    base: number = 256,               // alphabet size
-    mod: number = 1_000_000_007       // a large prime
-): number[] {
-    const n = text.length;
-    const m = pattern.length;
-    if (m === 0 || n < m) return [];
+const uniq = <T>(arr: T[]): T[] => [...new Set(arr)];
 
-    const result: number[] = [];
+const numbers = [1, 2, 3, 2, 4, 1];
+console.log(uniq(numbers)); // [1, 2, 3, 4]
+const uniq = <T>(arr: T[]): T[] =>
+  arr.filter((value, index, self) => self.indexOf(value) === index);
 
-    /* Pre‑compute base^(m-1) % mod   (the weight of the leading char) */
-    let power = 1;
-    for (let i = 0; i < m - 1; i++) power = (power * base) % mod;
+const words = ["a", "b", "a", "c", "b"];
+console.log(uniq(words)); // ["a", "b", "c"]
+const uniq = <T>(arr: T[]): T[] =>
+  arr.reduce((seen, val) => {
+    if (!seen.includes(val)) seen.push(val);
+    return seen;
+  }, [] as T[]);
+function uniqInPlace<T>(arr: T[]): void {
+  const seen = new Set<T>();
+  let writeIdx = 0;
 
-    /* Hashes of pattern and first window */
-    let patternHash = 0;
-    let windowHash = 0;
-    for (let i = 0; i < m; i++) {
-        patternHash = (patternHash * base + pattern.charCodeAt(i)) % mod;
-        windowHash  = (windowHash  * base + text.charCodeAt(i))  % mod;
+  for (const v of arr) {
+    if (!seen.has(v)) {
+      seen.add(v);
+      arr[writeIdx++] = v;
     }
+  }
 
-    /* Slide the window */
-    for (let i = 0; i <= n - m; i++) {
-        /* If hashes match – do a literal check to avoid false positives */
-        if (patternHash === windowHash) {
-            if (text.substr(i, m) === pattern) result.push(i);
-        }
-
-        /* Re‑hash: remove leading char, add trailing char */
-        if (i < n - m) {
-            const leading = text.charCodeAt(i) * power % mod;
-            windowHash = (windowHash - leading + mod) % mod;   // avoid negative
-            windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
-        }
-    }
-
-    return result;
+  // Optional: truncate the array
+  arr.length = writeIdx;
 }
-import { rabinKarp } from './rabinKarp';
 
-const text = "ababcabcabababd";
-const pattern = "ababd";
-
-const matches = rabinKarp(text, pattern);  // → [10]
-console.log("Match at indices: ", matches);
+const data = [5, 3, 5, 2, 3];
+uniqInPlace(data);
+console.log(data); // [5, 3, 2]
