@@ -1,24 +1,45 @@
 /**
- * Count occurrences of a word in a string.
+ * Return the largest prime factor of |n|.
  *
- * @param text   The text to search through.
- * @param word   The word to count (exact case‑sensitive match).
- * @param flags  Optional RegExp flags (default is “g” for global).
- * @returns The number of matches found.
+ * @param n Any integer. Negative values are treated as |n|.
+ * @returns   The largest prime factor of n, or `0` if n has no prime factors
+ * (i.e. n is 0, 1, or –1).
  */
-export function countWordOccurrences(
-  text: string,
-  word: string,
-  flags: string = "g"
-): number {
-  // Escape regex metacharacters in the word so it’s treated literally
-  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const regex = new RegExp(`\\b${escapedWord}\\b`, flags);
-  const matches = text.match(regex);
-  return matches?.length ?? 0;
-}
-let sentence = "The quick brown fox jumps over the lazy dog. The fox was quick.";
+function largestPrimeFactor(n: number): number {
+  if (n === 0 || n === 1 || n === -1) return 0;
 
-console.log(countWordOccurrences(sentence, "fox"));          // 2
-console.log(countWordOccurrences(sentence, "quick"));       // 2
-console.log(countWordOccurrences(sentence, "quick", "gi")); // 2 (case‑insensitive)
+  let num = Math.abs(n);          // work with the absolute value
+  let lastPrime = 0;              // keep the biggest factor we’ve seen
+
+  // Treat 2 separately – it’s the only even prime
+  while (num % 2 === 0) {
+    lastPrime = 2;
+    num >>= 1;                    // divide by 2
+  }
+
+  // Now n is odd. Try only odd divisors.
+  // We only need to go up to sqrt(num) because if num still > 1 after that,
+  // num itself is prime and the largest factor.
+  for (let d = 3; d * d <= num; d += 2) {
+    while (num % d === 0) {
+      lastPrime = d;
+      num /= d;
+    }
+  }
+
+  // If after the loop num > 1, it means num itself is prime
+  // and larger than any divisor we found earlier.
+  if (num > 1) lastPrime = num;
+
+  return lastPrime;
+}
+
+/* ----- quick sanity checks ----- */
+console.log(largestPrimeFactor(13195));   // 29  (13195 = 5 × 7 × 13 × 29)
+console.log(largestPrimeFactor(600851475143)); // 6857 (the known answer to Project Euler #3)
+Console.log(largestPrimeFactor(13));      // 13
+Console.log(largestPrimeFactor(4));       // 2
+Console.log(largestPrimeFactor(1));       // 0
+function largestPrimeFactorBigInt(n: bigint): bigint {
+  // identical logic, but using bigint operations
+}
