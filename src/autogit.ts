@@ -1,29 +1,52 @@
-function firstRepeat(s: string): string | undefined {
-  const seen = new Set<string>();
+interface TreeNode {
+  value: number;          // what you want to sum
+  left?: TreeNode | null;
+  right?: TreeNode | null;
+}
+function sumTreeRecursive(node: TreeNode | null): number {
+  if (!node) return 0;
 
-  for (const ch of s) {
-    if (seen.has(ch)) return ch;   // this is the first repeated one
-    seen.add(ch);
+  const leftSum  = sumTreeRecursive(node.left ?? null);
+  const rightSum = sumTreeRecursive(node.right ?? null);
+
+  return node.value + leftSum + rightSum;
+}
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+
+  let total = 0;
+  const stack: TreeNode[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.value;
+
+    // Push children in any order – the sum is commutative.
+    if (node.right) stack.push(node.right);
+    if (node.left)  stack.push(node.left);
   }
 
-  return undefined;   // no repeats
+  return total;
 }
-function firstRepeatObj(s: string): string | undefined {
-  const map: { [k: string]: boolean } = {};
+// A tiny test tree:
+//        5
+//       / \
+//      3   7
+//     / \   \
+//    2   4   8
 
-  for (const ch of s) {
-    if (map[ch]) return ch;
-    map[ch] = true;
+const testTree: TreeNode = {
+  value: 5,
+  left: {
+    value: 3,
+    left:  { value: 2 },
+    right: { value: 4 }
+  },
+  right: {
+    value: 7,
+    right: { value: 8 }
   }
-}
-function firstRepeatingAlpha(str: string): string | undefined {
-  const seen = new Set<string>();
-  for (const ch of str) {
-    if (!/[a-zA-Z]/.test(ch)) continue; // skip non‑letters
-    if (seen.has(ch)) return ch;
-    seen.add(ch);
-  }
-}
-console.log(firstRepeat('abcdeafg')); // a
-console.log(firstRepeat('hello world')); // l
-console.log(firstRepeat('xyz')); // undefined
+};
+
+console.log('Recursive sum:', sumTreeRecursive(testTree));  // 29
+console.log('Iterative sum:', sumTreeIterative(testTree));  // 29
