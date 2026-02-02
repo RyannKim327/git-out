@@ -1,76 +1,59 @@
 /**
- * Returns the longest common prefix of all strings in `arr`.
+ * Shell sort – a simple in‑place comparison sort.
  *
- * @param arr – an array of strings (can be empty)
- * @returns the prefix that every string shares, or an empty string
+ * @template T          – The element type stored in the array.
+ * @param array         – Array to be sorted (mutated).
+ * @param compareFn     – Optional comparison function.  
+ *                        Should return a negative number if a < b,
+ *                        zero if a == b, and a positive number if a > b.
+ *                        Default is numeric ascending order.
+ *
+ * @returns The same array, now sorted.
+ *
+ * Example:
+ *   const nums = [23, 12, 1, 2, 8, 15];
+ *   shellSort(nums);                 // → [1,2,8,12,15,23]
+ *
+ *   const words = ["pear","apple","orange"];
+ *   shellSort(words, (a,b) => a.localeCompare(b));  // → ["apple","orange","pear"]
  */
-function longestCommonPrefix(arr: string[]): string {
-  if (!arr.length) return "";
+export function shellSort<T>(
+  array: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a as unknown as number) - (b as unknown as number)
+): T[] {
+  const n = array.length;
+  // Basic Shell sequence: n/2, n/4, ..., 1
+  // (You could use a more sophisticated sequence, e.g. Hibbard, Pratt, or Knuth.)
+  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Perform a gapped insertion sort for this gap size
+    for (let i = gap; i < n; i++) {
+      const current = array[i];
+      let j = i;
 
-  // Pin the “shortest”‑length string as a stopping rule.
-  // No prefix can be longer than this string.
-  const minLen = Math.min(...arr.map(s => s.length));
-
-  for (let i = 0; i < minLen; i++) {
-    const char = arr[0][i]; // candidate character
-    // stop as soon as any string mismatches
-    for (let j = 1; j < arr.length; j++) {
-      if (arr[j][i] !== char) {
-        return arr[0].substring(0, i);
+      // Shift earlier gap‑separated elements up until the correct location for current
+      while (j >= gap && compareFn(array[j - gap], current) > 0) {
+        array[j] = array[j - gap];
+        j -= gap;
       }
+      array[j] = current;
     }
   }
-
-  // All `minLen` characters matched
-  return arr[0].substring(0, minLen);
+  return array;
 }
-const words = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(words)); // logs "fl"
-function longestCommonPrefixSort(arr: string[]): string {
-  if (!arr.length) return "";
+import { shellSort } from "./shellSort";
 
-  const sorted = [...arr].sort();          // O(n log n)
-  const first = sorted[0];
-  const last  = sorted[sorted.length - 1];
-
-  let i = 0;
-  while (i < first.length && i < last.length && first[i] === last[i]) {
-    i++;
-  }
-
-  return first.substring(0, i);
-}
-function lcpDivideAndConquer(arr: string[], l = 0, r = arr.length - 1): string {
-  if (l > r) return "";
-  if (l === r) return arr[l];
-
-  const mid = Math.floor((l + r) / 2);
-  const leftPref  = lcpDivideAndConquer(arr, l, mid);
-  const rightPref = lcpDivideAndConquer(arr, mid + 1, r);
-
-  // intersect two prefixes
-  let i = 0;
-  while (i < leftPref.length && i < rightPref.length && leftPref[i] === rightPref[i]) {
-    i++;
-  }
-  return leftPref.substring(0, i);
-}
-
-// convenience wrapper
-function longestCommonPrefixD&C(arr: string[]): string {
-  return lcpDivideAndConquer(arr);
-}
-const cases: [string[], string][] = [
-  [["", "", ""]]          , [""],
-  [["dog"], ["dog"]]      , ["dog"],
-  [["abc","ab"],
-   ["ab"]]                , ["ab"],
-  [["abc","abcd","abce"], ["abc"]],
-  [["agri", "adopt", "alien"], ["a"]],
-  [["b", "a"], [""]], 
+const planets = [
+  { name: "Jupiter", radius: 69911 },
+  { name: "Earth", radius: 6371 },
+  { name: "Mars", radius: 3389 },
+  { name: "Saturn", radius: 58232 },
 ];
 
-cases.forEach(([arr, expected], i) => {
-  const result = longestCommonPrefix(arr);
-  console.log(i, result === expected[0] ? "✅" : `❌ got "${result}"`);
-});
+shellSort(planets, (a, b) => a.radius - b.radius);
+console.log(planets);
+// → [
+//      { name: "Mars", radius: 3389 },
+//      { name: "Earth", radius: 6371 },
+//      { name: "Saturn", radius: 58232 },
+//      { name: "Jupiter", radius: 69911 }
+//    ]
