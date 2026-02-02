@@ -1,41 +1,24 @@
 /**
- * KMP string matcher.
- * @param text    Text in which to search.
- * @param pattern Pattern to find.
- * @returns Index of first occurrence of pattern in text, or -1 if not found.
+ * Count occurrences of a word in a string.
+ *
+ * @param text   The text to search through.
+ * @param word   The word to count (exact case‑sensitive match).
+ * @param flags  Optional RegExp flags (default is “g” for global).
+ * @returns The number of matches found.
  */
-export function kmpSearch(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
-
-  if (m === 0) return 0;           // Empty pattern matches at start.
-
-  // --------- Step 1: build failure function ----------
-  const fail: number[] = new Array(m).fill(0);
-  let k = 0;                         // length of current match
-
-  for (let i = 1; i < m; i++) {
-    while (k > 0 && pattern[k] !== pattern[i]) {
-      k = fail[k - 1];
-    }
-    if (pattern[k] === pattern[i]) k++;
-    fail[i] = k;
-  }
-
-  // --------- Step 2: scan the text ---------------
-  k = 0;                               // reset pattern index
-  for (let i = 0; i < n; i++) {
-    while (k > 0 && text[i] !== pattern[k]) {
-      k = fail[k - 1];
-    }
-    if (text[i] === pattern[k]) k++;
-
-    if (k === m) {                    // match found
-      return i - m + 1;
-    }
-  }
-
-  return -1;                          // no match
+export function countWordOccurrences(
+  text: string,
+  word: string,
+  flags: string = "g"
+): number {
+  // Escape regex metacharacters in the word so it’s treated literally
+  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`\\b${escapedWord}\\b`, flags);
+  const matches = text.match(regex);
+  return matches?.length ?? 0;
 }
-const idx = kmpSearch('abxabcabcaby', 'abcaby');
-console.log(idx);   // → 6
+let sentence = "The quick brown fox jumps over the lazy dog. The fox was quick.";
+
+console.log(countWordOccurrences(sentence, "fox"));          // 2
+console.log(countWordOccurrences(sentence, "quick"));       // 2
+console.log(countWordOccurrences(sentence, "quick", "gi")); // 2 (case‑insensitive)
