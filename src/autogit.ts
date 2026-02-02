@@ -1,32 +1,48 @@
 /**
- * Bubble sort – compares adjacent elements and swaps them if they're out of order.
- *
- * @param arr – The array of numbers (or any type that implements `<`),
- *              sorted in place and also returned for convenience.
- * @returns The sorted array.
+ * Returns the longest common subsequence (LCS) of two strings.
+ * @param a First string
+ * @param b Second string
+ * @returns { subsequence: string; length: number }
  */
-export function bubbleSort<T>(arr: T[]): T[] {
-  const n = arr.length;
+function longestCommonSubsequence(a: string, b: string) {
+  const m = a.length;
+  const n = b.length;
 
-  // Outer loop – each pass guarantees that the largest element among the
-  // unsorted portion moves to its final position at the end of the array.
-  for (let i = 0; i < n - 1; i++) {
-    // Inner loop – only needs to run up to the last unsorted element.
-    for (let j = 0; j < n - i - 1; j++) {
-      // If the current element is greater than the next one, swap them.
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+  // 1. Build DP matrix (m+1) x (n+1) filled with 0
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+  // 2. Fill DP matrix
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
       }
     }
   }
 
-  return arr;
+  // 3. Back‑track to rebuild the subsequence
+  let i = m, j = n;
+  const subseq: string[] = [];
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      subseq.push(a[i - 1]); // same char belongs to LCS
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;            // move up
+    } else {
+      j--;            // move left
+    }
+  }
+
+  return {
+    subsequence: subseq.reverse().join(''),
+    length: dp[m][n]
+  };
 }
-import { bubbleSort } from './bubbleSort';
 
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-console.log('Before:', numbers);
-
-bubbleSort(numbers);
-
-console.log('After:', numbers);   // [11, 12, 22, 25, 34, 64, 90]
+// Quick demo
+const { subsequence, length } = longestCommonSubsequence('AGCAT', 'GAC');
+console.log(`Longest common subsequence: ${subsequence} (length ${length})`);
