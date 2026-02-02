@@ -1,60 +1,57 @@
-/**
- * Calculates n! recursively.
- *
- * @param n - The non‑negative integer whose factorial to compute.
- * @returns n! as a number (or NaN if n < 0).
- */
-function factorialRecursive(n: number): number {
-  if (n < 0) return NaN;        // keep it simple: no negative factorials
-  if (n <= 1) return 1;
-  return n * factorialRecursive(n - 1);
-}
+function secondLargestSort(arr: number[]): number | null {
+  // Defensive copy so we don’t mutate the caller’s data
+  const sorted = [...arr].sort((a, b) => b - a); // descending
 
-// Example:
-console.log(factorialRecursive(5)); // 120
-/**
- * Calculates n! iteratively.
- *
- * @param n - The non‑negative integer to factorialize.
- * @returns n! as a number (or NaN if n < 0).
- */
-function factorialIterative(n: number): number {
-  if (n < 0) return NaN;
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+  // Find the first element that isn’t equal to the maximum
+  let i = 1;
+  while (i < sorted.length && sorted[i] === sorted[0]) {
+    i++;
   }
-  return result;
-}
 
-// Example:
-console.log(factorialIterative(10)); // 3628800
-/**
- * Calculates n! exactly using BigInt.
- *
- * @param n - The non‑negative integer to factorialize.
- * @returns n! as a BigInt (or NaN if n < 0).
- */
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error("Factorial isn't defined for negative numbers");
-  let result = 1n;
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
+  return i < sorted.length ? sorted[i] : null;
+}
+console.log(secondLargestSort([3, 1, 4, 4, 5])); // 4
+console.log(secondLargestSort([10]));            // null
+function secondLargestTwoPass(arr: number[]): number | null {
+  if (arr.length < 2) return null;
+
+  let max = -Infinity;
+  let secondMax = -Infinity;
+
+  // First pass: find the maximum
+  for (const v of arr) {
+    if (v > max) max = v;
   }
-  return result;
+
+  // Second pass: find the largest value that is < max
+  for (const v of arr) {
+    if (v < max && v > secondMax) secondMax = v;
+  }
+
+  return secondMax === -Infinity ? null : secondMax;
 }
+console.log(secondLargestTwoPass([7, 3, 9, 1, 9])); // 7
+function secondLargest(arr: number[]): number | null {
+  if (arr.length < 2) return null;
 
-// Example:
-console.log(factorialBigInt(20)); // 2432902008176640000n
-const factorialMemo = new Map<number, number | bigint>();
+  let max = -Infinity;
+  let secondMax = -Infinity;
 
-function factorialMemoized(n: number): number | bigint {
-  if (n < 0) throw new Error("Negative input");
-  if (n <= 1) return 1;
-  if (factorialMemo.has(n)) return factorialMemo.get(n)!;
-  
-  // choose number or bigint based on the expected size
-  const answer = n * factorialMemoized(n - 1);
-  factorialMemo.set(n, answer);
-  return answer;
+  for (const v of arr) {
+    if (v > max) {
+      secondMax = max; // the old max becomes second max
+      max = v;
+    } else if (v < max && v > secondMax) {
+      secondMax = v;
+    }
+  }
+
+  return secondMax === -Infinity ? null : secondMax;
+}
+console.log(secondLargest([5, 12, 7, 12, 9]));   // 9
+console.log(secondLargest([3]));                // null
+console.log(secondLargest([2, 2, 2]));          // null (no distinct second largest)
+function findSecondLargest(arr: number[]): number | null {
+  // Pick whichever implementation feels best
+  return secondLargest(arr);
 }
