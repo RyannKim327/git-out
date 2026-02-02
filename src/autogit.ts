@@ -1,59 +1,110 @@
-/**
- * Shell sort – a simple in‑place comparison sort.
- *
- * @template T          – The element type stored in the array.
- * @param array         – Array to be sorted (mutated).
- * @param compareFn     – Optional comparison function.  
- *                        Should return a negative number if a < b,
- *                        zero if a == b, and a positive number if a > b.
- *                        Default is numeric ascending order.
- *
- * @returns The same array, now sorted.
- *
- * Example:
- *   const nums = [23, 12, 1, 2, 8, 15];
- *   shellSort(nums);                 // → [1,2,8,12,15,23]
- *
- *   const words = ["pear","apple","orange"];
- *   shellSort(words, (a,b) => a.localeCompare(b));  // → ["apple","orange","pear"]
- */
-export function shellSort<T>(
-  array: T[],
-  compareFn: (a: T, b: T) => number = (a, b) => (a as unknown as number) - (b as unknown as number)
-): T[] {
-  const n = array.length;
-  // Basic Shell sequence: n/2, n/4, ..., 1
-  // (You could use a more sophisticated sequence, e.g. Hibbard, Pratt, or Knuth.)
-  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Perform a gapped insertion sort for this gap size
-    for (let i = gap; i < n; i++) {
-      const current = array[i];
-      let j = i;
+class ListNode<T> {
+  /** The value stored in this node */
+  value: T;
 
-      // Shift earlier gap‑separated elements up until the correct location for current
-      while (j >= gap && compareFn(array[j - gap], current) > 0) {
-        array[j] = array[j - gap];
-        j -= gap;
-      }
-      array[j] = current;
+  /** Reference to the next node, or null if this is the tail */
+  next: ListNode<T> | null = null;
+
+  constructor(value: T) {
+    this.value = value;
+  }
+}
+class LinkedList<T> {
+  /** Head (first node) – `null` if the list is empty */
+  private head: ListNode<T> | null = null;
+
+  /** Tail (last node) – kept for efficient push; `null` if the list is empty */
+  private tail: ListNode<T> | null = null;
+
+  /** Current length – handy for O(1) size queries */
+  private _size = 0;
+
+  /** Number of elements in the list */
+  get size() { return this._size; }
+  get isEmpty() { return this._size === 0; }
+}
+  /** Append an element to the end of the list */
+  push(value: T): void {
+    const node = new ListNode(value);
+    if (this.tail) {
+      this.tail.next = node;
+    } else {          // empty list – new node is both head and tail
+      this.head = node;
+    }
+    this.tail = node;
+    this._size++;
+  }
+
+  /** Prepend an element to the front of the list */
+  unshift(value: T): void {
+    const node = new ListNode(value);
+    node.next = this.head;
+    this.head = node;
+    if (!this.tail) this.tail = node;  // first element
+    this._size++;
+  }
+
+  /** Remove and return the first element, or `undefined` if the list is empty */
+  shift(): T | undefined {
+    if (!this.head) return undefined;
+    const removed = this.head.value;
+    this.head = this.head.next;
+    if (!this.head) this.tail = null;  // list became empty
+    this._size--;
+    return removed;
+  }
+
+  /** Remove and return the last element, or `undefined` if the list is empty */
+  pop(): T | undefined {
+    if (!this.head) return undefined;
+    if (this.head === this.tail) {     // single element
+      const val = this.head.value;
+      this.head = this.tail = null;
+      this._size = 0;
+      return val;
+    }
+
+    // Walk to the second‑to‑last node
+    let current = this.head;
+    while (current.next && current.next !== this.tail) {
+      current = current.next;
+    }
+
+    const val = this.tail!.value;
+    current.next = null;
+    this.tail = current;
+    this._size--;
+    return val;
+  }
+  /** Find the first node whose value satisfies the predicate; returns `undefined` if none */
+  find(p: (value: T) => boolean): T | undefined {
+    let curr = this.head;
+    while (curr) {
+      if (p(curr.value)) return curr.value;
+      curr = curr.next;
+    }
+    return undefined;
+  }
+
+  /** Iterate over values (supports `for…of`) */
+  *[Symbol.iterator](): Iterator<T> {
+    let current = this.head;
+    while (current) {
+      yield current.value;
+      current = current.next;
     }
   }
-  return array;
-}
-import { shellSort } from "./shellSort";
+const list = new LinkedList<number>();
+for (const n of list) console.log(n);
+const list = new LinkedList<string>();
 
-const planets = [
-  { name: "Jupiter", radius: 69911 },
-  { name: "Earth", radius: 6371 },
-  { name: "Mars", radius: 3389 },
-  { name: "Saturn", radius: 58232 },
-];
+list.push('first');
+list.push('second');
+list.unshift('zeroth');
 
-shellSort(planets, (a, b) => a.radius - b.radius);
-console.log(planets);
-// → [
-//      { name: "Mars", radius: 3389 },
-//      { name: "Earth", radius: 6371 },
-//      { name: "Saturn", radius: 58232 },
-//      { name: "Jupiter", radius: 69911 }
-//    ]
+console.log([...list]);          // ["zeroth", "first", "second"]
+
+console.log(list.shift());       // "zeroth"
+console.log(list.pop());         // "second"
+
+console.log(list.find(n => n.startsWith('f'))); // "first"
