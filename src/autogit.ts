@@ -1,53 +1,32 @@
 /**
- * Simpler Rabin–Karp – uses a 32‑bit unsigned int hash.
- * For stronger use (large text / collision safety) switch to BigInt or a
- * larger mod (e.g., 1_000_000_007).
+ * Bubble sort – compares adjacent elements and swaps them if they're out of order.
+ *
+ * @param arr – The array of numbers (or any type that implements `<`),
+ *              sorted in place and also returned for convenience.
+ * @returns The sorted array.
  */
-export function rabinKarp(
-    text: string,
-    pattern: string,
-    base: number = 256,               // alphabet size
-    mod: number = 1_000_000_007       // a large prime
-): number[] {
-    const n = text.length;
-    const m = pattern.length;
-    if (m === 0 || n < m) return [];
+export function bubbleSort<T>(arr: T[]): T[] {
+  const n = arr.length;
 
-    const result: number[] = [];
-
-    /* Pre‑compute base^(m-1) % mod   (the weight of the leading char) */
-    let power = 1;
-    for (let i = 0; i < m - 1; i++) power = (power * base) % mod;
-
-    /* Hashes of pattern and first window */
-    let patternHash = 0;
-    let windowHash = 0;
-    for (let i = 0; i < m; i++) {
-        patternHash = (patternHash * base + pattern.charCodeAt(i)) % mod;
-        windowHash  = (windowHash  * base + text.charCodeAt(i))  % mod;
+  // Outer loop – each pass guarantees that the largest element among the
+  // unsorted portion moves to its final position at the end of the array.
+  for (let i = 0; i < n - 1; i++) {
+    // Inner loop – only needs to run up to the last unsorted element.
+    for (let j = 0; j < n - i - 1; j++) {
+      // If the current element is greater than the next one, swap them.
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+      }
     }
+  }
 
-    /* Slide the window */
-    for (let i = 0; i <= n - m; i++) {
-        /* If hashes match – do a literal check to avoid false positives */
-        if (patternHash === windowHash) {
-            if (text.substr(i, m) === pattern) result.push(i);
-        }
-
-        /* Re‑hash: remove leading char, add trailing char */
-        if (i < n - m) {
-            const leading = text.charCodeAt(i) * power % mod;
-            windowHash = (windowHash - leading + mod) % mod;   // avoid negative
-            windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
-        }
-    }
-
-    return result;
+  return arr;
 }
-import { rabinKarp } from './rabinKarp';
+import { bubbleSort } from './bubbleSort';
 
-const text = "ababcabcabababd";
-const pattern = "ababd";
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log('Before:', numbers);
 
-const matches = rabinKarp(text, pattern);  // → [10]
-console.log("Match at indices: ", matches);
+bubbleSort(numbers);
+
+console.log('After:', numbers);   // [11, 12, 22, 25, 34, 64, 90]
