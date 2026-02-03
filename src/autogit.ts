@@ -1,43 +1,45 @@
-interface BinaryTreeNode<T = number> {
-  val: T;                  // The payload – can be any type you need
-  left?: BinaryTreeNode<T>;
-  right?: BinaryTreeNode<T>;
-}
-function maxDepthRecursive<T>(root?: BinaryTreeNode<T>): number {
-  if (!root) return 0; // An empty tree has depth 0
+/**
+ * Returns the majority element if it exists.
+ * If no element occurs > n/2 times, it returns undefined.
+ */
+function majorityElement<T>(arr: T[]): T | undefined {
+  let candidate: T | undefined;
+  let count = 0;
 
-  const leftDepth  = maxDepthRecursive(root.left);
-  const rightDepth = maxDepthRecursive(root.right);
-
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthBFS<T>(root?: BinaryTreeNode<T>): number {
-  if (!root) return 0;
-
-  const queue: Array<{ node: BinaryTreeNode<T>; depth: number }> = [{ node: root, depth: 1 }];
-  let maxDepth = 0;
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!; // Non‑null assertion: queue never empty here
-    maxDepth = Math.max(maxDepth, depth);
-
-    if (node.left)  queue.push({ node: node.left, depth: depth + 1 });
-    if (node.right) queue.push({ node: node.right, depth: depth + 1 });
+  // Step 1 – find a candidate
+  for (const value of arr) {
+    if (count === 0) {
+      candidate = value;
+      count = 1;
+    } else if (value === candidate) {
+      count++;
+    } else {
+      count--;
+    }
   }
 
-  return maxDepth;
-}
-// Example tree:
-//        1
-//       / \
-//      2   3
-//     /
-//    4
-const tree: BinaryTreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3 }
-};
+  // Step 2 – optional verification pass
+  // (often omitted if you’re sure the input guarantees a majority)
+  if (candidate !== undefined) {
+    let occurrences = 0;
+    for (const v of arr) {
+      if (v === candidate) occurrences++;
+    }
+    if (occurrences > Math.floor(arr.length / 2)) {
+      return candidate;
+    }
+  }
 
-console.log(maxDepthRecursive(tree)); // 3
-console.log(maxDepthBFS(tree));       // 3
+  return undefined; // no majority
+}
+function majorityUsingMap<T>(arr: T[]): T | undefined {
+  const freq = new Map<T, number>();
+  const threshold = Math.floor(arr.length / 2) + 1;
+
+  for (const val of arr) {
+    const newCount = (freq.get(val) ?? 0) + 1;
+    if (newCount >= threshold) return val;
+    freq.set(val, newCount);
+  }
+  return undefined;
+}
