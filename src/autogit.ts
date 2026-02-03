@@ -1,32 +1,31 @@
-const uniq = <T>(arr: T[]): T[] => [...new Set(arr)];
+/**
+ * Counts how many code units a string contains.
+ * @param s The string to measure.
+ * @returns The length as a number.
+ */
+function getStringLength(s: string): number {
+  let count = 0;
 
-const numbers = [1, 2, 3, 2, 4, 1];
-console.log(uniq(numbers)); // [1, 2, 3, 4]
-const uniq = <T>(arr: T[]): T[] =>
-  arr.filter((value, index, self) => self.indexOf(value) === index);
-
-const words = ["a", "b", "a", "c", "b"];
-console.log(uniq(words)); // ["a", "b", "c"]
-const uniq = <T>(arr: T[]): T[] =>
-  arr.reduce((seen, val) => {
-    if (!seen.includes(val)) seen.push(val);
-    return seen;
-  }, [] as T[]);
-function uniqInPlace<T>(arr: T[]): void {
-  const seen = new Set<T>();
-  let writeIdx = 0;
-
-  for (const v of arr) {
-    if (!seen.has(v)) {
-      seen.add(v);
-      arr[writeIdx++] = v;
-    }
+  // Keep stepping forward until we encounter an undefined slot.
+  while (s[count] !== undefined) {
+    count++;
   }
 
-  // Optional: truncate the array
-  arr.length = writeIdx;
+  return count;
 }
+function getStringLengthUsingForOf(s: string): number {
+  let count = 0;
+  for (const _ of s) {
+    count++;        // `_` is just a throwaway variable
+  }
+  return count;    // this is the number of Unicode code points we iterated over
+}
+function getStringLengthRecursive(s: string, idx = 0): number {
+  return s[idx] === undefined
+    ? idx
+    : getStringLengthRecursive(s, idx + 1);
+}
+const demo = "Hello, 👋🌍";
 
-const data = [5, 3, 5, 2, 3];
-uniqInPlace(data);
-console.log(data); // [5, 3, 2]
+console.log(getStringLength(demo));                    // 13 (code units)
+console.log(getStringLengthUsingForOf(demo));          // 10 (code points)
