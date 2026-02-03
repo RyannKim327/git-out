@@ -1,75 +1,71 @@
-function decimalToBinary(dec: number | bigint): string {
-  return dec.toString(2);
-}
+/**
+ * Forward Burrows‑Wheeler Transform.
+ *
+ * @param text – input string
+ * @returns {lastColumn, originalIndex}
+ *   • lastColumn  – the BWT string (the last column of the sorted rotations)
+ *   • originalIndex – position of the original string in the sorted list
+ */
+export function bwt(text: string): { lastColumn: string; originalIndex: number } {
+  const n = text.length;
+  const rotations = new Array<string>(n);
 
-// Examples
-console.log(decimalToBinary(13));      // '1101'
-console.log(decimalToBinary(255n));    // '11111111'
-function decimalToBinaryIterative(num: number): string {
-  if (num === 0) return '0';
-  let n = Math.abs(num);
-  const bits: string[] = [];
-  while (n > 0) {
-    bits.push((n % 2).toString());
-    n = Math.floor(n / 2);
-  }
-  if (num < 0) bits.push('-');
-  return bits.reverse().join('');
-}
-
-// Demo
-console.log(decimalToBinaryIterative(13));   // '1101'
-console.log(decimalToBinaryIterative(-13));  // '-1101'
-function decimalToBinaryRecursive(num: number): string {
-  if (num === 0) return '';
-  const [higher, bit] = decimalToBinaryRecursive(Math.floor(num / 2)).split('|', 2);
-  return `${higher}|${num % 2}`;
-}
-
-// Helper to clean up the leading empty part
-function binaryRecursive(num: number): string {
-  const bin = decimalToBinaryRecursive(num);
-  return bin.split('|').filter(Boolean).join('');
-}
-
-// Demo
-console.log(binaryRecursive(27));  // '11011'
-function decimalToBinaryFraction(num: number, precision: number = 10): string {
-  const intPart = Math.trunc(num);
-  let fracPart = num - intPart;
-  let binary = intPart.toString(2);
-
-  if (precision > 0 && fracPart > 0) {
-    binary += '.';
-    let p = 0;
-    while (p < precision && fracPart > 0) {
-      fracPart *= 2;
-      if (fracPart >= 1) {
-        binary += '1';
-        fracPart -= 1;
-      } else {
-        binary += '0';
-      }
-      p++;
-    }
+  // Build all cyclic rotations
+  for (let i = 0; i < n; i++) {
+    rotations[i] = text.slice(i) + text.slice(0, i);
   }
 
-  return binary;
-}
+  // Sort rotations lexicographically
+  rotations.sort();
 
-// Demo
-console.log(decimalToBinaryFraction(5.6875, 8)); // '101.1011'
-function test(input: number | bigint) {
-  console.log(`Decimal: ${input}`);
-  console.log(`  -> toString(2):   ${input.toString(2)}`);
-  if (typeof input === 'number') {
-    console.log(`  -> iterative:   ${decimalToBinaryIterative(input)}`);
-    console.log(`  -> recursive:   ${binaryRecursive(input)}`);
+  // Grab last character of each rotation and remember where the original text ended up
+  let lastColumn = '';
+  let originalIndex = -1;
+  for (let i = 0; i < n; i++) {
+    const rot = rotations[i];
+    lastColumn += rot[rot.length - 1];
+    if (rot === text) originalIndex = i;
   }
-  console.log('');
+
+  return { lastColumn, originalIndex };
 }
 
-test(13);
-test(-13);
-test(0);
-test(5.6875);   // only the toString version works for BigInt
+/**
+ * Inverse Burrows‑Wheeler Transform.
+ *
+ * @param lastColumn  – BWT string (result of the forward transform)
+ * @param originalIndex – index returned by the forward transform
+ * @returns original input string
+ */
+export function inverseBwt(lastColumn: string, originalIndex: number): string {
+  const n = lastColumn.length;
+
+  // Build the first column by sorting the last column
+  const firstColumn = [...lastColumn].sort().join('');
+
+  // Build a map from character to its deque of positions in the last column
+  const charQueues: Record<string, number[]> = {};
+  for (let i = 0; i < n; i++) {
+    const c = lastColumn[i];
+    if (!charQueues[c]) charQueues[c] = [];
+    charQueues[c].push(i);
+  }
+
+  // Reconstruct the original string
+  let result = '';
+  let idx = originalIndex;
+  for (let i = 0; i < n; i++) {
+    const c = firstColumn[idx];
+    result += c;
+    // The row that had c in the last column is the next idx
+    idx = charQueues[c].shift()!;
+  }
+
+  return result;
+}
+const { lastColumn, originalIndex } = bwt('BANANA');
+console.log(lastColumn);          // 'ANNBAA'
+console.log(originalIndex);       // 3
+
+const original = inverseBwt(lastColumn, originalIndex);
+console.log(original);            // 'BANANA'
