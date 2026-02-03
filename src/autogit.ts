@@ -1,45 +1,47 @@
 /**
- * Return the largest prime factor of |n|.
+ * Finds the median of two sorted arrays that may be of different lengths.
  *
- * @param n Any integer. Negative values are treated as |n|.
- * @returns   The largest prime factor of n, or `0` if n has no prime factors
- * (i.e. n is 0, 1, or –1).
+ * @param a  first sorted array (non‑empty)
+ * @param b  second sorted array (non‑empty)
+ * @returns  median value (number)
  */
-function largestPrimeFactor(n: number): number {
-  if (n === 0 || n === 1 || n === -1) return 0;
+export function medianOfTwoSortedArrays(a: number[], b: number[]): number {
+  // Ensure a is the shorter array to keep the binary search bounded.
+  if (a.length > b.length) return medianOfTwoSortedArrays(b, a);
 
-  let num = Math.abs(n);          // work with the absolute value
-  let lastPrime = 0;              // keep the biggest factor we’ve seen
+  const m = a.length;
+  const n = b.length;
+  let left = 0;
+  let right = m;
 
-  // Treat 2 separately – it’s the only even prime
-  while (num % 2 === 0) {
-    lastPrime = 2;
-    num >>= 1;                    // divide by 2
-  }
+  while (left <= right) {
+    const i = Math.floor((left + right) / 2);          // cut in a
+    const j = Math.floor((m + n + 1) / 2) - i;        // cut in b
 
-  // Now n is odd. Try only odd divisors.
-  // We only need to go up to sqrt(num) because if num still > 1 after that,
-  // num itself is prime and the largest factor.
-  for (let d = 3; d * d <= num; d += 2) {
-    while (num % d === 0) {
-      lastPrime = d;
-      num /= d;
+    const Aleft   = i === 0 ?    -Infinity : a[i - 1];
+    const Aright  = i === m ?    Infinity : a[i];
+    const Bleft   = j === 0 ?    -Infinity : b[j - 1];
+    const Bright  = j === n ?    Infinity : b[j];
+
+    if (Aleft <= Bright && Bleft <= Aright) {
+      // correct partition found
+      if ((m + n) % 2 === 0) {
+        return Math.max(Aleft, Bleft) + Math.min(Aright, Bright) / 2;
+      } else {
+        return Math.max(Aleft, Bleft);
+      }
+    } else if (Aleft > Bright) {
+      // i is too big – shift left
+      right = i - 1;
+    } else {
+      // i is too small – shift right
+      left = i + 1;
     }
   }
 
-  // If after the loop num > 1, it means num itself is prime
-  // and larger than any divisor we found earlier.
-  if (num > 1) lastPrime = num;
-
-  return lastPrime;
+  // Should never hit here if inputs are valid and sorted.
+  throw new Error("Input arrays are not sorted or empty");
 }
-
-/* ----- quick sanity checks ----- */
-console.log(largestPrimeFactor(13195));   // 29  (13195 = 5 × 7 × 13 × 29)
-console.log(largestPrimeFactor(600851475143)); // 6857 (the known answer to Project Euler #3)
-Console.log(largestPrimeFactor(13));      // 13
-Console.log(largestPrimeFactor(4));       // 2
-Console.log(largestPrimeFactor(1));       // 0
-function largestPrimeFactorBigInt(n: bigint): bigint {
-  // identical logic, but using bigint operations
-}
+console.log(medianOfTwoSortedArrays([1, 3], [2]));          // 2
+console.log(medianOfTwoSortedArrays([1, 2], [3, 4]));        // 2.5
+console.log(medianOfTwoSortedArrays([0, 0], [0, 0]));        // 0
