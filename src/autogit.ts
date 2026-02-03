@@ -1,85 +1,87 @@
 /**
- * Simple representation of a DAG.
- *   vertices – an array of node identifiers (any type, but usually string or number)
- *   edges    – a map from a vertex to a list of outgoing neighbours
+ * Returns the maximum sum of any contiguous sub‑array.
+ *
+ * @param arr – array of numbers (may contain negatives)
+ * @returns {number} maximum sub‑array sum
  */
-interface Graph<V> {
-  vertices: V[];
-  edges: Map<V, V[]>;
-}
-
-/**
- * Kahn’s topological sort.
- * @param graph – a DAG
- * @returns a list of vertices sorted topologically
- * @throws Error if the graph contains a cycle
- */
-function topologicalSort<V>(graph: Graph<V>): V[] {
-  // Compute indegree of each vertex
-  const indegree = new Map<V, number>();
-  graph.vertices.forEach(v => indegree.set(v, 0));
-
-  graph.edges.forEach((neighbours, from) => {
-    neighbours.forEach(to => {
-      indegree.set(to, (indegree.get(to) || 0) + 1);
-    });
-  });
-
-  // Queue of vertices with indegree 0
-  const queue: V[] = [];
-  indegree.forEach((deg, v) => {
-    if (deg === 0) queue.push(v);
-  });
-
-  const order: V[] = [];
-  while (queue.length) {
-    const v = queue.shift()!;
-    order.push(v);
-
-    const neighbours = graph.edges.get(v) ?? [];
-    neighbours.forEach(to => {
-      indegree.set(to, (indegree.get(to) || 0) - 1);
-      if (indegree.get(to) === 0) queue.push(to);
-    });
+export function maxSubArraySum(arr: number[]): number {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
   }
 
-  // If we processed fewer vertices than exist, a cycle is present
-  if (order.length !== graph.vertices.length) {
-    throw new Error('Graph contains a cycle – topological sort not possible');
+  // init both with first element: handles all‑negative cases nicely
+  let currentBest = arr[0];
+  let globalBest = arr[0];
+
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
+
+    // Either extend the previous sub‑array or start fresh at value
+    currentBest = Math.max(value, currentBest + value);
+
+    // Keep the best seen so far
+    globalBest = Math.max(globalBest, currentBest);
   }
 
-  return order;
+  return globalBest;
 }
-A → C
-B → C
-C → D
-const g: Graph<string> = {
-  vertices: ['A', 'B', 'C', 'D'],
-  edges: new Map([
-    ['A', ['C']],
-    ['B', ['C']],
-    ['C', ['D']],
-    // D has no outgoing edges
-  ]),
-};
+const testSets = [
+  { arr: [1, -2, 3, 4, -5, 8], expect: 10 },
+  { arr: [-2, -3, -1, -4], expect: -1 },
+  { arr: [2, 3, 1, 6], expect: 12 },
+  { arr: [5, -1, 2, 3], expect: 9 },
+  { arr: [1], expect: 1 },
+];
 
-console.log(topologicalSort(g)); // → ['A', 'B', 'C', 'D'] (or ['B', 'A', 'C', 'D'])
-function topologicalSortDFS<V>(graph: Graph<V>): V[] {
-  const visited = new Set<V>();
-  const temp = new Set<V>();          // to detect cycles
-  const stack: V[] = [];
+for (const { arr, expect } of testSets) {
+  const result = maxSubArraySum(arr);
+  console.log(`arr: ${arr} → max sum: ${result} (${result === expect ? '✓' : '✗'})`);
+}
+arr: 1,-2,3,4,-5,8 → max sum: 10 (✓)
+arr: -2,-3,-1,-4 → max sum: -1 (✓)
+arr: 2,3,1,6 → max sum: 12 (✓)
+arr: 5,-1,2,3 → max sum: 9 (✓)
+arr: 1 → max sum: 1 (✓)
+interface MaxSubArrayResult {
+  sum: number;
+  start: number;
+  end: number;   // inclusive
+}
 
-  function visit(v: V) {
-    if (temp.has(v)) throw new Error('Cycle detected');
-    if (visited.has(v)) return;
-
-    temp.add(v);
-    (graph.edges.get(v) ?? []).forEach(visit);
-    temp.delete(v);
-    visited.add(v);
-    stack.push(v);                    // push after children – this yields reverse order
+export function maxSubArraySumWithIndices(arr: number[]): MaxSubArrayResult {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
   }
 
-  graph.vertices.forEach(visit);
-  return stack.reverse();             // reverse to get the correct order
+  let currentBest = arr[0];
+  let globalBest = arr[0];
+
+  // working indices
+  let currentStart = 0;
+  let bestStart = 0;
+  let bestEnd = 0;
+
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
+
+    // decide whether to continue or start a new sub‑array
+    if (currentBest + value < value) {
+      currentBest = value;
+      currentStart = i;
+    } else {
+      currentBest += value;
+    }
+
+    // update global best if we found a better sum
+    if (currentBest > globalBest) {
+      globalBest = currentBest;
+      bestStart = currentStart;
+      bestEnd = i;
+    }
+  }
+
+  return { sum: globalBest, start: bestStart, end: bestEnd };
 }
+const { sum, start, end } = maxSubArraySumWithIndices([1, -2, 3, 4, -5, 8]);
+console.log(`max sum ${sum} from index ${start} to ${end}`);
+// → max sum 10 from index 2 to 5
