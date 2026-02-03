@@ -1,33 +1,45 @@
 /**
- * Returns the index of the first non‑repeating character.
- * If every character repeats, returns -1.
- *
- * @param s – the string to scan
+ * Returns the majority element if it exists.
+ * If no element occurs > n/2 times, it returns undefined.
  */
-function firstNonRepeatingIndex(s: string): number {
-  // 1️⃣ Count how many times each character occurs
-  const freq = new Map<string, number>();
+function majorityElement<T>(arr: T[]): T | undefined {
+  let candidate: T | undefined;
+  let count = 0;
 
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
-
-  // 2️⃣ Scan again from the start, picking the first that has count 1
-  for (let i = 0; i < s.length; i++) {
-    if (freq.get(s[i]) === 1) {
-      return i;    // return the index, you can return the character with s[i]
+  // Step 1 – find a candidate
+  for (const value of arr) {
+    if (count === 0) {
+      candidate = value;
+      count = 1;
+    } else if (value === candidate) {
+      count++;
+    } else {
+      count--;
     }
   }
 
-  return -1; // no unique character found
+  // Step 2 – optional verification pass
+  // (often omitted if you’re sure the input guarantees a majority)
+  if (candidate !== undefined) {
+    let occurrences = 0;
+    for (const v of arr) {
+      if (v === candidate) occurrences++;
+    }
+    if (occurrences > Math.floor(arr.length / 2)) {
+      return candidate;
+    }
+  }
+
+  return undefined; // no majority
 }
+function majorityUsingMap<T>(arr: T[]): T | undefined {
+  const freq = new Map<T, number>();
+  const threshold = Math.floor(arr.length / 2) + 1;
 
-// Demo
-const txt = "mybobby";
-const idx = firstNonRepeatingIndex(txt);
-
-if (idx >= 0) {
-  console.log(`First non‑repeating char: '${txt[idx]}' at position ${idx}`);
-} else {
-  console.log("All characters repeat");
+  for (const val of arr) {
+    const newCount = (freq.get(val) ?? 0) + 1;
+    if (newCount >= threshold) return val;
+    freq.set(val, newCount);
+  }
+  return undefined;
 }
