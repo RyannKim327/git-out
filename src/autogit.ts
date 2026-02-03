@@ -1,110 +1,44 @@
-class ListNode<T> {
-  /** The value stored in this node */
+export interface ListNode<T> {
   value: T;
-
-  /** Reference to the next node, or null if this is the tail */
-  next: ListNode<T> | null = null;
-
-  constructor(value: T) {
-    this.value = value;
-  }
+  next: ListNode<T> | null;
 }
-class LinkedList<T> {
-  /** Head (first node) – `null` if the list is empty */
-  private head: ListNode<T> | null = null;
+/**
+ * Returns the nth node from the end of a singly‑linked list.
+ *
+ * @param head  The head of the list (may be null).
+ * @param n 1‑based index counting from the last node.
+ * @returns   The node itself, or null if n is out of bounds.
+ */
+export function getNthFromEnd<T>(
+  head: ListNode<T> | null,
+  n: number
+): ListNode<T> | null {
+  if (n <= 0) return null;                // n must be positive
 
-  /** Tail (last node) – kept for efficient push; `null` if the list is empty */
-  private tail: ListNode<T> | null = null;
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
 
-  /** Current length – handy for O(1) size queries */
-  private _size = 0;
+  // Advance `fast` n steps ahead.
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;              // n is larger than the list length
+    fast = fast.next;
+  }
 
-  /** Number of elements in the list */
-  get size() { return this._size; }
-  get isEmpty() { return this._size === 0; }
+  // Move both pointers until `fast` reaches the end.
+  while (fast) {
+    fast = fast.next;
+    slow = slow?.next ?? null;
+  }
+
+  // `slow` is now the nth from the end.
+  return slow;
 }
-  /** Append an element to the end of the list */
-  push(value: T): void {
-    const node = new ListNode(value);
-    if (this.tail) {
-      this.tail.next = node;
-    } else {          // empty list – new node is both head and tail
-      this.head = node;
-    }
-    this.tail = node;
-    this._size++;
-  }
+// Build a tiny list: 10 → 20 → 30 → 40 → 50
+const node5: ListNode<number> = { value: 50, next: null };
+const node4: ListNode<number> = { value: 40, next: node5 };
+const node3: ListNode<number> = { value: 30, next: node4 };
+const node2: ListNode<number> = { value: 20, next: node3 };
+const head: ListNode<number> = { value: 10, next: node2 };
 
-  /** Prepend an element to the front of the list */
-  unshift(value: T): void {
-    const node = new ListNode(value);
-    node.next = this.head;
-    this.head = node;
-    if (!this.tail) this.tail = node;  // first element
-    this._size++;
-  }
-
-  /** Remove and return the first element, or `undefined` if the list is empty */
-  shift(): T | undefined {
-    if (!this.head) return undefined;
-    const removed = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null;  // list became empty
-    this._size--;
-    return removed;
-  }
-
-  /** Remove and return the last element, or `undefined` if the list is empty */
-  pop(): T | undefined {
-    if (!this.head) return undefined;
-    if (this.head === this.tail) {     // single element
-      const val = this.head.value;
-      this.head = this.tail = null;
-      this._size = 0;
-      return val;
-    }
-
-    // Walk to the second‑to‑last node
-    let current = this.head;
-    while (current.next && current.next !== this.tail) {
-      current = current.next;
-    }
-
-    const val = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-    this._size--;
-    return val;
-  }
-  /** Find the first node whose value satisfies the predicate; returns `undefined` if none */
-  find(p: (value: T) => boolean): T | undefined {
-    let curr = this.head;
-    while (curr) {
-      if (p(curr.value)) return curr.value;
-      curr = curr.next;
-    }
-    return undefined;
-  }
-
-  /** Iterate over values (supports `for…of`) */
-  *[Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    while (current) {
-      yield current.value;
-      current = current.next;
-    }
-  }
-const list = new LinkedList<number>();
-for (const n of list) console.log(n);
-const list = new LinkedList<string>();
-
-list.push('first');
-list.push('second');
-list.unshift('zeroth');
-
-console.log([...list]);          // ["zeroth", "first", "second"]
-
-console.log(list.shift());       // "zeroth"
-console.log(list.pop());         // "second"
-
-console.log(list.find(n => n.startsWith('f'))); // "first"
+const thirdFromEnd = getNthFromEnd(head, 3);
+console.log(thirdFromEnd?.value); // 30
