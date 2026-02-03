@@ -1,71 +1,65 @@
-/**
- * Forward Burrows‑Wheeler Transform.
- *
- * @param text – input string
- * @returns {lastColumn, originalIndex}
- *   • lastColumn  – the BWT string (the last column of the sorted rotations)
- *   • originalIndex – position of the original string in the sorted list
- */
-export function bwt(text: string): { lastColumn: string; originalIndex: number } {
-  const n = text.length;
-  const rotations = new Array<string>(n);
+// ---------- Basics ----------
+class ListNode {
+  val: number          // you can keep any data you need
+  next: ListNode | null = null;
 
-  // Build all cyclic rotations
-  for (let i = 0; i < n; i++) {
-    rotations[i] = text.slice(i) + text.slice(0, i);
+  constructor(val: number) {
+    this.val = val;
   }
-
-  // Sort rotations lexicographically
-  rotations.sort();
-
-  // Grab last character of each rotation and remember where the original text ended up
-  let lastColumn = '';
-  let originalIndex = -1;
-  for (let i = 0; i < n; i++) {
-    const rot = rotations[i];
-    lastColumn += rot[rot.length - 1];
-    if (rot === text) originalIndex = i;
-  }
-
-  return { lastColumn, originalIndex };
 }
 
-/**
- * Inverse Burrows‑Wheeler Transform.
- *
- * @param lastColumn  – BWT string (result of the forward transform)
- * @param originalIndex – index returned by the forward transform
- * @returns original input string
- */
-export function inverseBwt(lastColumn: string, originalIndex: number): string {
-  const n = lastColumn.length;
+// ---------- Intersection finder ----------
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  if (!headA || !headB) return null;
 
-  // Build the first column by sorting the last column
-  const firstColumn = [...lastColumn].sort().join('');
+  let ptrA: ListNode | null = headA;
+  let ptrB: ListNode | null = headB;
 
-  // Build a map from character to its deque of positions in the last column
-  const charQueues: Record<string, number[]> = {};
-  for (let i = 0; i < n; i++) {
-    const c = lastColumn[i];
-    if (!charQueues[c]) charQueues[c] = [];
-    charQueues[c].push(i);
+  // After at most two passes through each list the pointers
+  // will either meet at the intersection or both become null.
+  while (ptrA !== ptrB) {
+    ptrA = ptrA ? ptrA.next : headB; // switch to the head of the other list
+    ptrB = ptrB ? ptrB.next : headA;
   }
 
-  // Reconstruct the original string
-  let result = '';
-  let idx = originalIndex;
-  for (let i = 0; i < n; i++) {
-    const c = firstColumn[idx];
-    result += c;
-    // The row that had c in the last column is the next idx
-    idx = charQueues[c].shift()!;
-  }
-
-  return result;
+  return ptrA; // either the intersection node, or null
 }
-const { lastColumn, originalIndex } = bwt('BANANA');
-console.log(lastColumn);          // 'ANNBAA'
-console.log(originalIndex);       // 3
 
-const original = inverseBwt(lastColumn, originalIndex);
-console.log(original);            // 'BANANA'
+// ---------- Quick demo ----------
+function buildLinkedList(values: number[], offset: number = 0) {
+  let head: ListNode | null = null;
+  let tail: ListNode | null = null;
+  for (let v of values) {
+    const node = new ListNode(v);
+    if (!head) head = node;
+    if (tail) tail.next = node;
+    tail = node;
+  }
+  return { head, tail };
+}
+
+// Common tail that will be shared by two lists
+const { head: shared, tail: sharedTail } = buildLinkedList([8, 10]);
+
+// First list: 3 → 7 → 8 → 10
+const { head: aHead } = buildLinkedList([3, 7]);
+if (aHead && sharedHead) {
+  // connect the shared tail
+  let node = aHead;
+  while (node.next) node = node.next;
+  node.next = shared;
+}
+
+// Second list: 99 → 1 → 8 → 10
+const { head: bHead } = buildLinkedList([99, 1]);
+if (bHead && sharedHead) {
+  let node = bHead;
+  while (node.next) node = node.next;
+  node.next = shared;
+}
+
+const intersection = getIntersectionNode(aHead, bHead);
+console.log(intersection?.val); // prints 8
