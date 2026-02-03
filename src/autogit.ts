@@ -1,47 +1,104 @@
 /**
- * Finds the median of two sorted arrays that may be of different lengths.
+ * Bottom‑up merge sort.
  *
- * @param a  first sorted array (non‑empty)
- * @param b  second sorted array (non‑empty)
- * @returns  median value (number)
+ * @param arr   The array to sort.  The sort is performed in place.
+ * @returns     The sorted array (useful for chaining / convenience).
  */
-export function medianOfTwoSortedArrays(a: number[], b: number[]): number {
-  // Ensure a is the shorter array to keep the binary search bounded.
-  if (a.length > b.length) return medianOfTwoSortedArrays(b, a);
+export function mergeSortIterative<T>(arr: T[]): T[] {
+  const n = arr.length;
+  if (n <= 1) return arr;              // nothing to do
 
-  const m = a.length;
-  const n = b.length;
-  let left = 0;
-  let right = m;
+  // auxiliary array – we copy data in and out of it
+  const aux = new Array<T>(n);
 
-  while (left <= right) {
-    const i = Math.floor((left + right) / 2);          // cut in a
-    const j = Math.floor((m + n + 1) / 2) - i;        // cut in b
-
-    const Aleft   = i === 0 ?    -Infinity : a[i - 1];
-    const Aright  = i === m ?    Infinity : a[i];
-    const Bleft   = j === 0 ?    -Infinity : b[j - 1];
-    const Bright  = j === n ?    Infinity : b[j];
-
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // correct partition found
-      if ((m + n) % 2 === 0) {
-        return Math.max(Aleft, Bleft) + Math.min(Aright, Bright) / 2;
-      } else {
-        return Math.max(Aleft, Bleft);
-      }
-    } else if (Aleft > Bright) {
-      // i is too big – shift left
-      right = i - 1;
-    } else {
-      // i is too small – shift right
-      left = i + 1;
+  // start with runs of length 1 and double until the whole array is covered
+  for (let sz = 1; sz < n; sz <<= 1) {
+    // merge adjacent runs of width `sz`
+    for (let lo = 0; lo < n - sz; lo += sz * 2) {
+      const mid = lo + sz;                     // end of left run
+      const hi  = Math.min(lo + sz * 2, n);    // exclusive upper bound
+      merge(arr, aux, lo, mid, hi);
     }
   }
-
-  // Should never hit here if inputs are valid and sorted.
-  throw new Error("Input arrays are not sorted or empty");
+  return arr;
 }
-console.log(medianOfTwoSortedArrays([1, 3], [2]));          // 2
-console.log(medianOfTwoSortedArrays([1, 2], [3, 4]));        // 2.5
-console.log(medianOfTwoSortedArrays([0, 0], [0, 0]));        // 0
+/**
+ * Merge two consecutive sorted halves `arr[lo..mid)` and `arr[mid..hi)`.
+ * Output is written back into `arr` using the auxiliary buffer `aux`.
+ */
+function merge<T>(
+  arr: T[],
+  aux: T[],
+  lo: number,
+  mid: number,
+  hi: number
+): void {
+  // copy the relevant segment into aux
+  for (let i = lo; i < hi; i++) {
+    aux[i] = arr[i];
+  }
+
+  let i = lo;      // pointer into left half
+  let j = mid;     // pointer into right half
+  for (let k = lo; k < hi; k++) {
+    if (i >= mid) {
+      arr[k] = aux[j++];
+    } else if (j >= hi) {
+      arr[k] = aux[i++];
+    } else if (aux[j] < aux[i]) {   // you can plug in a custom comparator if you want
+      arr[k] = aux[j++];
+    } else {
+      arr[k] = aux[i++];
+    }
+  }
+}
+// helper to display array nicely
+const fmt = (a: number[]) => `[${a.join(', ')}]`;
+
+// Random test helper
+function randomArray(len: number, max = 100) {
+  return Array.from({ length: len }, () => Math.floor(Math.random() * max));
+}
+
+// sanity checks
+console.time('iterative');
+const sorted1 = mergeSortIterative(randomArray(1_000_000));
+console.timeEnd('iterative');          // ~200-300 ms on a typical laptop
+
+// make sure it's really sorted
+for (let i = 1; i < sorted1.length; i++) {
+  if (sorted1[i - 1] > sorted1[i]) {
+    throw new Error('Not sorted!');
+  }
+}
+function mergeSortIterativeWith<T>(arr: T[], comp: (a: T, b: T) => number): T[] {
+  const n = arr.length;
+  if (n <= 1) return arr;
+  const aux = new Array<T>(n);
+  for (let sz = 1; sz < n; sz <<= 1) {
+    for (let lo = 0; lo < n - sz; lo += sz * 2) {
+      const mid = lo + sz;
+      const hi  = Math.min(lo + sz * 2, n);
+      mergeWith(arr, aux, lo, mid, hi, comp);
+    }
+  }
+  return arr;
+}
+
+function mergeWith<T>(
+  arr: T[],
+  aux: T[],
+  lo: number,
+  mid: number,
+  hi: number,
+  comp: (a: T, b: T) => number
+): void {
+  for (let i = lo; i < hi; i++) aux[i] = arr[i];
+  let i = lo, j = mid;
+  for (let k = lo; k < hi; k++) {
+    if (i >= mid) arr[k] = aux[j++];
+    else if (j >= hi) arr[k] = aux[i++];
+    else if (comp(aux[j], aux[i]) < 0) arr[k] = aux[j++];
+    else arr[k] = aux[i++];
+  }
+}
