@@ -1,32 +1,31 @@
 /**
- * Bubble sort – compares adjacent elements and swaps them if they're out of order.
- *
- * @param arr – The array of numbers (or any type that implements `<`),
- *              sorted in place and also returned for convenience.
- * @returns The sorted array.
+ * Counts how many code units a string contains.
+ * @param s The string to measure.
+ * @returns The length as a number.
  */
-export function bubbleSort<T>(arr: T[]): T[] {
-  const n = arr.length;
+function getStringLength(s: string): number {
+  let count = 0;
 
-  // Outer loop – each pass guarantees that the largest element among the
-  // unsorted portion moves to its final position at the end of the array.
-  for (let i = 0; i < n - 1; i++) {
-    // Inner loop – only needs to run up to the last unsorted element.
-    for (let j = 0; j < n - i - 1; j++) {
-      // If the current element is greater than the next one, swap them.
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-      }
-    }
+  // Keep stepping forward until we encounter an undefined slot.
+  while (s[count] !== undefined) {
+    count++;
   }
 
-  return arr;
+  return count;
 }
-import { bubbleSort } from './bubbleSort';
+function getStringLengthUsingForOf(s: string): number {
+  let count = 0;
+  for (const _ of s) {
+    count++;        // `_` is just a throwaway variable
+  }
+  return count;    // this is the number of Unicode code points we iterated over
+}
+function getStringLengthRecursive(s: string, idx = 0): number {
+  return s[idx] === undefined
+    ? idx
+    : getStringLengthRecursive(s, idx + 1);
+}
+const demo = "Hello, 👋🌍";
 
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-console.log('Before:', numbers);
-
-bubbleSort(numbers);
-
-console.log('After:', numbers);   // [11, 12, 22, 25, 34, 64, 90]
+console.log(getStringLength(demo));                    // 13 (code units)
+console.log(getStringLengthUsingForOf(demo));          // 10 (code points)
