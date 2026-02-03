@@ -1,29 +1,32 @@
-/**
- * Returns the intersection of two arrays.
- * @param a  First array.
- * @param b  Second array.
- * @returns  Array containing elements that are present in **both** a and b.
- */
-function intersection<T>(a: T[], b: T[]): T[] {
-  // Turn the first array into a Set for O(1) look‑ups.
-  const aSet = new Set(a);
+const uniq = <T>(arr: T[]): T[] => [...new Set(arr)];
 
-  // Keep only the items from `b` that are also in `aSet`.
-  const result: T[] = [];
-  for (const item of b) {
-    if (aSet.has(item)) {
-      result.push(item);
-      // Optional: remove the item so we don’t collect duplicates if
-      // `a` or `b` contains repeated entries
-      aSet.delete(item);
+const numbers = [1, 2, 3, 2, 4, 1];
+console.log(uniq(numbers)); // [1, 2, 3, 4]
+const uniq = <T>(arr: T[]): T[] =>
+  arr.filter((value, index, self) => self.indexOf(value) === index);
+
+const words = ["a", "b", "a", "c", "b"];
+console.log(uniq(words)); // ["a", "b", "c"]
+const uniq = <T>(arr: T[]): T[] =>
+  arr.reduce((seen, val) => {
+    if (!seen.includes(val)) seen.push(val);
+    return seen;
+  }, [] as T[]);
+function uniqInPlace<T>(arr: T[]): void {
+  const seen = new Set<T>();
+  let writeIdx = 0;
+
+  for (const v of arr) {
+    if (!seen.has(v)) {
+      seen.add(v);
+      arr[writeIdx++] = v;
     }
   }
-  return result;
+
+  // Optional: truncate the array
+  arr.length = writeIdx;
 }
-console.log(intersection([1, 2, 3, 4], [3, 4, 5, 6])); // → [3, 4]
 
-console.log(intersection(['foo', 'bar'], ['bar', 'baz', 'foo'])); // → ['bar', 'foo']
-
-// With duplicates
-console.log(intersection([1, 2, 2], [2, 2, 3])); // → [2]
-const intersection = (a: any[], b: any[]) => a.filter(x => b.includes(x));
+const data = [5, 3, 5, 2, 3];
+uniqInPlace(data);
+console.log(data); // [5, 3, 2]
