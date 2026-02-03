@@ -1,60 +1,52 @@
-/**
- * Calculates n! recursively.
- *
- * @param n - The non‑negative integer whose factorial to compute.
- * @returns n! as a number (or NaN if n < 0).
- */
-function factorialRecursive(n: number): number {
-  if (n < 0) return NaN;        // keep it simple: no negative factorials
-  if (n <= 1) return 1;
-  return n * factorialRecursive(n - 1);
+interface TreeNode {
+  value: number;          // what you want to sum
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
+function sumTreeRecursive(node: TreeNode | null): number {
+  if (!node) return 0;
 
-// Example:
-console.log(factorialRecursive(5)); // 120
-/**
- * Calculates n! iteratively.
- *
- * @param n - The non‑negative integer to factorialize.
- * @returns n! as a number (or NaN if n < 0).
- */
-function factorialIterative(n: number): number {
-  if (n < 0) return NaN;
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+  const leftSum  = sumTreeRecursive(node.left ?? null);
+  const rightSum = sumTreeRecursive(node.right ?? null);
+
+  return node.value + leftSum + rightSum;
+}
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+
+  let total = 0;
+  const stack: TreeNode[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.value;
+
+    // Push children in any order – the sum is commutative.
+    if (node.right) stack.push(node.right);
+    if (node.left)  stack.push(node.left);
   }
-  return result;
-}
 
-// Example:
-console.log(factorialIterative(10)); // 3628800
-/**
- * Calculates n! exactly using BigInt.
- *
- * @param n - The non‑negative integer to factorialize.
- * @returns n! as a BigInt (or NaN if n < 0).
- */
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error("Factorial isn't defined for negative numbers");
-  let result = 1n;
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
+  return total;
+}
+// A tiny test tree:
+//        5
+//       / \
+//      3   7
+//     / \   \
+//    2   4   8
+
+const testTree: TreeNode = {
+  value: 5,
+  left: {
+    value: 3,
+    left:  { value: 2 },
+    right: { value: 4 }
+  },
+  right: {
+    value: 7,
+    right: { value: 8 }
   }
-  return result;
-}
+};
 
-// Example:
-console.log(factorialBigInt(20)); // 2432902008176640000n
-const factorialMemo = new Map<number, number | bigint>();
-
-function factorialMemoized(n: number): number | bigint {
-  if (n < 0) throw new Error("Negative input");
-  if (n <= 1) return 1;
-  if (factorialMemo.has(n)) return factorialMemo.get(n)!;
-  
-  // choose number or bigint based on the expected size
-  const answer = n * factorialMemoized(n - 1);
-  factorialMemo.set(n, answer);
-  return answer;
-}
+console.log('Recursive sum:', sumTreeRecursive(testTree));  // 29
+console.log('Iterative sum:', sumTreeIterative(testTree));  // 29
