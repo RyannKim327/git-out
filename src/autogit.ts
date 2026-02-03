@@ -1,53 +1,57 @@
-/**
- * Simpler Rabin–Karp – uses a 32‑bit unsigned int hash.
- * For stronger use (large text / collision safety) switch to BigInt or a
- * larger mod (e.g., 1_000_000_007).
- */
-export function rabinKarp(
-    text: string,
-    pattern: string,
-    base: number = 256,               // alphabet size
-    mod: number = 1_000_000_007       // a large prime
-): number[] {
-    const n = text.length;
-    const m = pattern.length;
-    if (m === 0 || n < m) return [];
+function secondLargestSort(arr: number[]): number | null {
+  // Defensive copy so we don’t mutate the caller’s data
+  const sorted = [...arr].sort((a, b) => b - a); // descending
 
-    const result: number[] = [];
+  // Find the first element that isn’t equal to the maximum
+  let i = 1;
+  while (i < sorted.length && sorted[i] === sorted[0]) {
+    i++;
+  }
 
-    /* Pre‑compute base^(m-1) % mod   (the weight of the leading char) */
-    let power = 1;
-    for (let i = 0; i < m - 1; i++) power = (power * base) % mod;
-
-    /* Hashes of pattern and first window */
-    let patternHash = 0;
-    let windowHash = 0;
-    for (let i = 0; i < m; i++) {
-        patternHash = (patternHash * base + pattern.charCodeAt(i)) % mod;
-        windowHash  = (windowHash  * base + text.charCodeAt(i))  % mod;
-    }
-
-    /* Slide the window */
-    for (let i = 0; i <= n - m; i++) {
-        /* If hashes match – do a literal check to avoid false positives */
-        if (patternHash === windowHash) {
-            if (text.substr(i, m) === pattern) result.push(i);
-        }
-
-        /* Re‑hash: remove leading char, add trailing char */
-        if (i < n - m) {
-            const leading = text.charCodeAt(i) * power % mod;
-            windowHash = (windowHash - leading + mod) % mod;   // avoid negative
-            windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
-        }
-    }
-
-    return result;
+  return i < sorted.length ? sorted[i] : null;
 }
-import { rabinKarp } from './rabinKarp';
+console.log(secondLargestSort([3, 1, 4, 4, 5])); // 4
+console.log(secondLargestSort([10]));            // null
+function secondLargestTwoPass(arr: number[]): number | null {
+  if (arr.length < 2) return null;
 
-const text = "ababcabcabababd";
-const pattern = "ababd";
+  let max = -Infinity;
+  let secondMax = -Infinity;
 
-const matches = rabinKarp(text, pattern);  // → [10]
-console.log("Match at indices: ", matches);
+  // First pass: find the maximum
+  for (const v of arr) {
+    if (v > max) max = v;
+  }
+
+  // Second pass: find the largest value that is < max
+  for (const v of arr) {
+    if (v < max && v > secondMax) secondMax = v;
+  }
+
+  return secondMax === -Infinity ? null : secondMax;
+}
+console.log(secondLargestTwoPass([7, 3, 9, 1, 9])); // 7
+function secondLargest(arr: number[]): number | null {
+  if (arr.length < 2) return null;
+
+  let max = -Infinity;
+  let secondMax = -Infinity;
+
+  for (const v of arr) {
+    if (v > max) {
+      secondMax = max; // the old max becomes second max
+      max = v;
+    } else if (v < max && v > secondMax) {
+      secondMax = v;
+    }
+  }
+
+  return secondMax === -Infinity ? null : secondMax;
+}
+console.log(secondLargest([5, 12, 7, 12, 9]));   // 9
+console.log(secondLargest([3]));                // null
+console.log(secondLargest([2, 2, 2]));          // null (no distinct second largest)
+function findSecondLargest(arr: number[]): number | null {
+  // Pick whichever implementation feels best
+  return secondLargest(arr);
+}
