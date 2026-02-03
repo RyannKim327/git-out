@@ -1,45 +1,78 @@
-/**
- * Returns the majority element if it exists.
- * If no element occurs > n/2 times, it returns undefined.
- */
-function majorityElement<T>(arr: T[]): T | undefined {
-  let candidate: T | undefined;
-  let count = 0;
+// 1️⃣  A tiny node definition
+interface ListNode<T> {
+  val: T;
+  next?: ListNode<T>;
+}
 
-  // Step 1 – find a candidate
-  for (const value of arr) {
-    if (count === 0) {
-      candidate = value;
-      count = 1;
-    } else if (value === candidate) {
-      count++;
+// 2️⃣  Helper: walk a list and collect values (for demo)
+const listToArray = <T>(head: ListNode<T> | undefined): T[] => {
+  const arr: T[] = [];
+  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
+  return arr;
+};
+
+// 3️⃣  The trick: two pointers, fast and slow
+function middle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
+  if (!head) return undefined; // empty list—no middle
+
+  let fast = head;
+  let slow = head;
+
+  // advance fast every two steps, slow every one
+  while (fast.next && fast.next.next) {
+    fast = fast.next.next; // jump 2
+    slow = slow.next as ListNode<T>; // jump 1
+  }
+
+  // If fast has a next (odd length), move slow one more
+  if (fast.next) slow = slow.next as ListNode<T>;
+
+  return slow;
+}
+
+// 4️⃣  Demo: build a list so we can see it in action
+const nodes: ListNode<number>[] = [1, 2, 3, 4, 5].map(
+  (v) => ({ val: v })
+);
+for (let i = 0; i < nodes.length - 1; i++) nodes[i].next = nodes[i + 1];
+const head = nodes[0];
+
+console.log("Full list:", listToArray(head));         // 1,2,3,4,5
+console.log("Middle node:", middle(head)?.val);        // 3
+
+// Try an even‑length list
+const even: ListNode<number>[] = [10, 20, 30, 40].map(
+  (v) => ({ val: v })
+);
+for (let i = 0; i < even.length - 1; i++) even[i].next = even[i + 1];
+console.log("Middle of even list:", middle(even)?.val); // 20 (or 30 if you prefer that half)
+class LinkedList<T> {
+  head?: ListNode<T>;
+
+  // push to the tail
+  push(val: T) {
+    const node: ListNode<T> = { val };
+    if (!this.head) {
+      this.head = node;
     } else {
-      count--;
+      let cur = this.head;
+      while (cur.next) cur = cur.next;
+      cur.next = node;
     }
   }
 
-  // Step 2 – optional verification pass
-  // (often omitted if you’re sure the input guarantees a majority)
-  if (candidate !== undefined) {
-    let occurrences = 0;
-    for (const v of arr) {
-      if (v === candidate) occurrences++;
-    }
-    if (occurrences > Math.floor(arr.length / 2)) {
-      return candidate;
-    }
+  // returns the middle node (or the first of two middles for even length)
+  middle(): ListNode<T> | undefined {
+    return middle(this.head);
   }
 
-  return undefined; // no majority
+  toArray(): T[] {
+    return listToArray(this.head);
+  }
 }
-function majorityUsingMap<T>(arr: T[]): T | undefined {
-  const freq = new Map<T, number>();
-  const threshold = Math.floor(arr.length / 2) + 1;
 
-  for (const val of arr) {
-    const newCount = (freq.get(val) ?? 0) + 1;
-    if (newCount >= threshold) return val;
-    freq.set(val, newCount);
-  }
-  return undefined;
-}
+// Usage:
+const ll = new LinkedList<number>();
+[1, 2, 3, 4, 5].forEach(v => ll.push(v));
+console.log(ll.toArray());       // [1,2,3,4,5]
+console.log(ll.middle()?.val);   // 3
