@@ -1,78 +1,114 @@
-// 1️⃣  A tiny node definition
-interface ListNode<T> {
-  val: T;
-  next?: ListNode<T>;
-}
+/**
+ * A binary heap backed priority queue.
+ *
+ * The heap stores elements in a 0‑based array. For a node at index i:
+ *   left child   → 2*i + 1
+ *   right child  → 2*i + 2
+ *   parent       → Math.floor((i - 1) / 2)
+ */
+export class BinaryPriorityQueue<T> {
+  private data: T[] = [];
+  private readonly compare: (a: T, b: T) => number; // negative if a < b
 
-// 2️⃣  Helper: walk a list and collect values (for demo)
-const listToArray = <T>(head: ListNode<T> | undefined): T[] => {
-  const arr: T[] = [];
-  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
-  return arr;
-};
-
-// 3️⃣  The trick: two pointers, fast and slow
-function middle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  if (!head) return undefined; // empty list—no middle
-
-  let fast = head;
-  let slow = head;
-
-  // advance fast every two steps, slow every one
-  while (fast.next && fast.next.next) {
-    fast = fast.next.next; // jump 2
-    slow = slow.next as ListNode<T>; // jump 1
+  constructor(compare: (a: T, b: T) => number) {
+    this.compare = compare;
   }
 
-  // If fast has a next (odd length), move slow one more
-  if (fast.next) slow = slow.next as ListNode<T>;
+  /** Number of elements in the queue */
+  size(): number {
+    return this.data.length;
+  }
 
-  return slow;
-}
+  /** Peek the element with the highest priority (root of the heap) */
+  peek(): T | undefined {
+    return this.data[0];
+  }
 
-// 4️⃣  Demo: build a list so we can see it in action
-const nodes: ListNode<number>[] = [1, 2, 3, 4, 5].map(
-  (v) => ({ val: v })
-);
-for (let i = 0; i < nodes.length - 1; i++) nodes[i].next = nodes[i + 1];
-const head = nodes[0];
+  /** Insert a new element */
+  push(value: T): void {
+    this.data.push(value);
+    this.bubbleUp(this.data.length - 1);
+  }
 
-console.log("Full list:", listToArray(head));         // 1,2,3,4,5
-console.log("Middle node:", middle(head)?.val);        // 3
+  /**
+   * Remove and return the element with the highest priority.
+   * Returns undefined if the queue is empty.
+   */
+  pop(): T | undefined {
+    if (!this.data.length) return undefined;
 
-// Try an even‑length list
-const even: ListNode<number>[] = [10, 20, 30, 40].map(
-  (v) => ({ val: v })
-);
-for (let i = 0; i < even.length - 1; i++) even[i].next = even[i + 1];
-console.log("Middle of even list:", middle(even)?.val); // 20 (or 30 if you prefer that half)
-class LinkedList<T> {
-  head?: ListNode<T>;
+    const root = this.data[0];
+    const last = this.data.pop()!; // safe because we checked length
 
-  // push to the tail
-  push(val: T) {
-    const node: ListNode<T> = { val };
-    if (!this.head) {
-      this.head = node;
-    } else {
-      let cur = this.head;
-      while (cur.next) cur = cur.next;
-      cur.next = node;
+    if (this.data.length) {
+      this.data[0] = last;
+      this.sinkDown(0);
     }
+
+    return root;
   }
 
-  // returns the middle node (or the first of two middles for even length)
-  middle(): ListNode<T> | undefined {
-    return middle(this.head);
+  /** Remove all elements */
+  clear(): void {
+    this.data.length = 0;
   }
 
-  toArray(): T[] {
-    return listToArray(this.head);
+  /* --- Internals --- */
+
+  private bubbleUp(index: number): void {
+    const elem = this.data[index];
+    while (index > 0) {
+      const parentIdx = (index - 1) >> 1;
+      const parent = this.data[parentIdx];
+      if (this.compare(elem, parent) >= 0) break;
+      this.data[index] = parent;
+      index = parentIdx;
+    }
+    this.data[index] = elem;
+  }
+
+  private sinkDown(index: number): void {
+    const length = this.data.length;
+    const elem = this.data[index];
+
+    while (true) {
+      const leftIdx = (index << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let swapIdx = -1;
+
+      if (leftIdx < length) {
+        const left = this.data[leftIdx];
+        if (this.compare(left, elem) < 0) swapIdx = leftIdx;
+      }
+      if (rightIdx < length) {
+        const right = this.data[rightIdx];
+        const compareRight = this.compare(right, elem);
+        if (
+          (swapIdx === -1 && compareRight < 0) ||
+          (swapIdx !== -1 && compareRight < this.compare(this.data[swapIdx], elem))
+        ) {
+          swapIdx = rightIdx;
+        }
+      }
+
+      if (swapIdx === -1) break;
+      this.data[index] = this.data[swapIdx];
+      index = swapIdx;
+    }
+    this.data[index] = elem;
   }
 }
+// Example: priority queue of numbers (min‑heap)
+const pq = new BinaryPriorityQueue<number>((a, b) => a - b);
 
-// Usage:
-const ll = new LinkedList<number>();
-[1, 2, 3, 4, 5].forEach(v => ll.push(v));
-console.log(ll.toArray());       // [1,2,3,4,5]
-console.log(ll.middle()?.val);   // 3
+pq.push(5);
+pq.push(1);
+pq.push(3);
+
+console.log(pq.peek()); // 1
+console.log(pq.pop());  // 1
+console.log(pq.pop());  // 3
+console.log(pq.pop());  // 5
+interface Task { id: number; priority: number; }
+
+const taskQueue = new BinaryPriorityQueue<Task>((a, b) => a.priority - b.priority);
