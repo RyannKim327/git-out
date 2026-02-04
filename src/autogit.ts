@@ -1,30 +1,24 @@
-// src/scheduler.ts
-import { schedule, Job } from 'node-cron';
-import { randomInt } from 'crypto';
+/**
+ * Count occurrences of a word in a string.
+ *
+ * @param text   The text to search through.
+ * @param word   The word to count (exact case‑sensitive match).
+ * @param flags  Optional RegExp flags (default is “g” for global).
+ * @returns The number of matches found.
+ */
+export function countWordOccurrences(
+  text: string,
+  word: string,
+  flags: string = "g"
+): number {
+  // Escape regex metacharacters in the word so it’s treated literally
+  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`\\b${escapedWord}\\b`, flags);
+  const matches = text.match(regex);
+  return matches?.length ?? 0;
+}
+let sentence = "The quick brown fox jumps over the lazy dog. The fox was quick.";
 
-// Helper: format the current date/time nicely
-const fmtDate = (date: Date): string => {
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
-         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-};
-
-// Cron expression – every 5 minutes, on the minute.
-// (Syntax: `m h dom mon dow`)
-// Example: 0 12 * * * → every day at 12:00.
-const cronExpr = '*/5 * * * *';
-
-const job: Job = schedule(cronExpr, () => {
-  const now = new Date();
-  const rand = randomInt(1_000_000); // 0 <= rand < 1,000,000
-  console.log(`[${fmtDate(now)}] Random number: ${rand}`);
-}, {
-  scheduled: true, // start scheduling immediately
-  timezone: 'UTC'  // adjust if you need a different zone
-});
-
-// Optional: make the process stay alive but not block exit
-job.task?.unref?.();
-
-// If you ran the script normally (`node src/scheduler.js` after TS‑compile),
-// the job will keep running. Exit manually when you're done.
+console.log(countWordOccurrences(sentence, "fox"));          // 2
+console.log(countWordOccurrences(sentence, "quick"));       // 2
+console.log(countWordOccurrences(sentence, "quick", "gi")); // 2 (case‑insensitive)
