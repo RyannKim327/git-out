@@ -1,49 +1,32 @@
-/**
- * Binary search on a sorted array.
- *
- * @param arr   Sorted array (ascending).
- * @param key   Value to search for.
- * @returns     Index of `key` in `arr`, or -1 if not found.
- */
-export function binarySearch<T extends number | string>(arr: T[], key: T): number {
-    let low  = 0;
-    let high = arr.length - 1;
+const uniq = <T>(arr: T[]): T[] => [...new Set(arr)];
 
-    while (low <= high) {
-        // Use floor division so we don’t overshoot on odd lengths.
-        const mid = Math.floor((low + high) / 2);
-        const midVal = arr[mid];
+const numbers = [1, 2, 3, 2, 4, 1];
+console.log(uniq(numbers)); // [1, 2, 3, 4]
+const uniq = <T>(arr: T[]): T[] =>
+  arr.filter((value, index, self) => self.indexOf(value) === index);
 
-        if (midVal === key) {
-            return mid;                // Found it!
-        }
-        else if (midVal < key) {
-            low = mid + 1;              // Search right half
-        } else {
-            high = mid - 1;             // Search left half
-        }
+const words = ["a", "b", "a", "c", "b"];
+console.log(uniq(words)); // ["a", "b", "c"]
+const uniq = <T>(arr: T[]): T[] =>
+  arr.reduce((seen, val) => {
+    if (!seen.includes(val)) seen.push(val);
+    return seen;
+  }, [] as T[]);
+function uniqInPlace<T>(arr: T[]): void {
+  const seen = new Set<T>();
+  let writeIdx = 0;
+
+  for (const v of arr) {
+    if (!seen.has(v)) {
+      seen.add(v);
+      arr[writeIdx++] = v;
     }
-    return -1; // Not found
+  }
+
+  // Optional: truncate the array
+  arr.length = writeIdx;
 }
-type Comparator<T> = (a: T, b: T) => number; // negative if a < b, zero if equal, positive otherwise
 
-export function binarySearchWith<T>(arr: T[], key: T, cmp: Comparator<T>): number {
-    let low = 0, high = arr.length - 1;
-
-    while (low <= high) {
-        const mid = Math.floor((low + high) / 2);
-        const comp = cmp(arr[mid], key);
-
-        if (comp === 0) return mid;
-        if (comp < 0)  low = mid + 1;
-        else           high = mid - 1;
-    }
-    return -1;
-}
-const numbers = [3, 7, 12, 20, 31, 45, 58];
-console.log(binarySearch(numbers, 20)); // → 3
-
-// With a custom comparator for objects:
-const people = [{id: 1, name: 'Alice'}, {id: 3, name: 'Bob'}, {id: 7, name: 'Carol'}];
-const idCmp = (p: typeof people[0], key: number) => p.id - key;
-console.log(binarySearchWith(people, 3, idCmp)); // → 1
+const data = [5, 3, 5, 2, 3];
+uniqInPlace(data);
+console.log(data); // [5, 3, 2]
