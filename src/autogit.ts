@@ -1,7 +1,31 @@
-function safeParseInt(s: string, radix = 10): number | undefined {
-  const n = parseInt(s, radix);
-  return isNaN(n) ? undefined : n;
+/**
+ * Counts how many code units a string contains.
+ * @param s The string to measure.
+ * @returns The length as a number.
+ */
+function getStringLength(s: string): number {
+  let count = 0;
+
+  // Keep stepping forward until we encounter an undefined slot.
+  while (s[count] !== undefined) {
+    count++;
+  }
+
+  return count;
 }
-const intVal = parseInt(myStr, 10); // for ordinary integers
-const floatVal = Number(myStr);     // for decimals, natural format
-const alt = +myStr;                 // the one‑liner version of Number
+function getStringLengthUsingForOf(s: string): number {
+  let count = 0;
+  for (const _ of s) {
+    count++;        // `_` is just a throwaway variable
+  }
+  return count;    // this is the number of Unicode code points we iterated over
+}
+function getStringLengthRecursive(s: string, idx = 0): number {
+  return s[idx] === undefined
+    ? idx
+    : getStringLengthRecursive(s, idx + 1);
+}
+const demo = "Hello, 👋🌍";
+
+console.log(getStringLength(demo));                    // 13 (code units)
+console.log(getStringLengthUsingForOf(demo));          // 10 (code points)
