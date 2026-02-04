@@ -1,74 +1,50 @@
-interface Node<T> {
-  /** opaque identifier used for duplicate detection – e.g. a stringified board state */
-  id: string;
-  /** whatever data you want to keep (state, metadata, …) */
-  data: T;
-  /** produces the succ­esor nodes */
-  getChildren(): Iterable<Node<T>>;
-}
-function dls<T>(
-  node: Node<T>,
-  goalTest: (n: Node<T>) => boolean,
-  limit: number,
-  visited = new Set<string>()
-): Node<T> | null {
-  if (goalTest(node)) return node;
-  if (limit <= 0) return null;          // terminal depth reached
-  visited.add(node.id);                 // prevent revisiting
+/**
+ * Random sort – a quick‑sort implementation that picks a random
+ * pivot for each split.
+ *
+ * The algorithm is deterministic in complexity (O(n log n) on average),
+ * but the pivot choice is completely random, which can be useful for
+ * teaching purposes or for avoiding worst‑case sequences.
+ */
 
-  for (const child of node.getChildren()) {
-    if (!visited.has(child.id)) {
-      const result = dls(child, goalTest, limit - 1, visited);
-      if (result !== null) return result;
+function randomQuickSort<T>(input: T[], compare?: (a: T, b: T) => number): T[] {
+  // If there are 0 or 1 elements, it's already sorted.
+  if (input.length <= 1) {
+    return [...input];
+  }
+
+  // Choose a random pivot index.
+  const pivotIndex = Math.floor(Math.random() * input.length);
+  const pivot = input[pivotIndex];
+
+  // Helper to decide the order.
+  const cmp = compare ||
+    // Default to numeric or string comparison.
+    ((a: T, b: T) => (a as any) < b ? -1 : (a as any) > b ? 1 : 0);
+
+  // Partition the array into two bins: <= pivot and > pivot.
+  const smaller: T[] = [];
+  const larger: T[] = [];
+
+  for (let i = 0; i < input.length; i++) {
+    if (i === pivotIndex) continue; // skip the pivot itself
+    const item = input[i];
+    if (cmp(item, pivot) <= 0) {
+      smaller.push(item);
+    } else {
+      larger.push(item);
     }
   }
-  return null; // no goal found within limit
-}
-function dlsIter<T>(
-  start: Node<T>,
-  goalTest: (n: Node<T>) => boolean,
-  limit: number
-): Node<T> | null {
-  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: start, depth: 0 }];
-  const visited = new Set<string>();
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    if (goalTest(node)) return node;
-    if (depth === limit) continue;      // hit the limit – skip children
-
-    visited.add(node.id);
-    for (const child of node.getChildren()) {
-      if (!visited.has(child.id)) {
-        stack.push({ node: child, depth: depth + 1 });
-      }
-    }
-  }
-  return null;
-}
-class Coord {
-  constructor(public x: number, public y: number) {}
+  // Recursively sort each sub‑array and concatenate the results.
+  return [
+    ...randomQuickSort(smaller, compare),
+    pivot,
+    ...randomQuickSort(larger, compare),
+  ];
 }
 
-class MazeCell implements Node<Coord> {
-  constructor(
-    public id: string,
-    public data: Coord,
-    private neighbors: readonly Coord[]
-  ) {}
-
-  getChildren(): Iterable<Node<Coord>> {
-    return this.neighbors.map(
-      n => new MazeCell(String(n.x) + ',' + n.y, n, [] /* placeholder */)
-    );
-  }
-}
-
-// Setup: build maze, decide start & goal
-const start = new MazeCell('0,0', new Coord(0, 0), [new Coord(1, 0), new Coord(0, 1)]);
-const isGoal = (n: Node<Coord>) => n.data.x === 5 && n.data.y === 5;
-
-// Run:
-const found = dls(start, isGoal, 10);
-if (found) console.log('Found solution:', found.data);
-else console.log('no path within depth 10');
+/* --- Example usage ----------------------------------------------------- */
+const nums = [23, 4, 42, 8, 15, 16, 42, 23, 4, 17];
+console.log('Unsorted:', nums);
+console.log('Sorted:', randomQuickSort(nums));
