@@ -1,29 +1,29 @@
-/**
- * Returns the intersection of two arrays.
- * @param a  First array.
- * @param b  Second array.
- * @returns  Array containing elements that are present in **both** a and b.
- */
-function intersection<T>(a: T[], b: T[]): T[] {
-  // Turn the first array into a Set for O(1) look‑ups.
-  const aSet = new Set(a);
+function firstRepeat(s: string): string | undefined {
+  const seen = new Set<string>();
 
-  // Keep only the items from `b` that are also in `aSet`.
-  const result: T[] = [];
-  for (const item of b) {
-    if (aSet.has(item)) {
-      result.push(item);
-      // Optional: remove the item so we don’t collect duplicates if
-      // `a` or `b` contains repeated entries
-      aSet.delete(item);
-    }
+  for (const ch of s) {
+    if (seen.has(ch)) return ch;   // this is the first repeated one
+    seen.add(ch);
   }
-  return result;
+
+  return undefined;   // no repeats
 }
-console.log(intersection([1, 2, 3, 4], [3, 4, 5, 6])); // → [3, 4]
+function firstRepeatObj(s: string): string | undefined {
+  const map: { [k: string]: boolean } = {};
 
-console.log(intersection(['foo', 'bar'], ['bar', 'baz', 'foo'])); // → ['bar', 'foo']
-
-// With duplicates
-console.log(intersection([1, 2, 2], [2, 2, 3])); // → [2]
-const intersection = (a: any[], b: any[]) => a.filter(x => b.includes(x));
+  for (const ch of s) {
+    if (map[ch]) return ch;
+    map[ch] = true;
+  }
+}
+function firstRepeatingAlpha(str: string): string | undefined {
+  const seen = new Set<string>();
+  for (const ch of str) {
+    if (!/[a-zA-Z]/.test(ch)) continue; // skip non‑letters
+    if (seen.has(ch)) return ch;
+    seen.add(ch);
+  }
+}
+console.log(firstRepeat('abcdeafg')); // a
+console.log(firstRepeat('hello world')); // l
+console.log(firstRepeat('xyz')); // undefined
