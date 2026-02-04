@@ -1,76 +1,105 @@
 /**
- * Quicksort implementation for an array of items of type T.
- * 
- * @param items The array to sort.  It will be sorted in‑place.
- * @param compare Optional. A function that returns a negative number if a < b,
- *                zero if a === b, and a positive number if a > b.
- *                If omitted, native `<` / `>` are used for primitives.
+ * A singly‑linked list node that holds a generic value.
  */
-export function quickSort<T>(
-  items: T[],
-  compare?: (a: T, b: T) => number
-): void {
-  // Default comparison – works for numbers, strings, booleans
-  const cmp = compare
-    ? compare
-    : (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
-
-  // Helper for the recursive sort; index bounds are inclusive
-  function sort(left: number, right: number): void {
-    if (left >= right) return;
-
-    // Choose pivot – median‑of‑three to avoid worst‑case on sorted input
-    const mid = Math.floor((left + right) / 2);
-    const pivotIndex = medianOfThree(left, mid, right);
-    const pivotValue = items[pivotIndex];
-
-    // Move pivot to the left end to simplify the partition loop
-    [items[left], items[pivotIndex]] = [items[pivotIndex], items[left]];
-
-    let i = left + 1;
-    let j = right;
-
-    while (i <= j) {
-      while (i <= right && cmp(items[i], pivotValue) < 0) i++;
-      while (j >= left + 1 && cmp(items[j], pivotValue) > 0) j--;
-
-      if (i < j) [items[i], items[j]] = [items[j], items[i]];
-      i++;
-      j--;
-    }
-
-    // Return pivot to its final spot
-    [items[left], items[j]] = [items[j], items[left]];
-
-    // Recurse on each side
-    sort(left, j - 1);
-    sort(j + 1, right);
-  }
-
-  // Median‑of‑three helper – returns index of median of three indices
-  function medianOfThree(a: number, b: number, c: number): number {
-    const va = items[a], vb = items[b], vc = items[c];
-    if ((cmp(va, vb) < 0) ^ (cmp(va, vc) < 0)) return a;
-    if ((cmp(vb, va) < 0) ^ (cmp(vb, vc) < 0)) return b;
-    return c;
-  }
-
-  sort(0, items.length - 1);
+export class ListNode<T> {
+  constructor(
+    public val: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
-// Numbers
-const nums = [3, 8, 2, 5, 1, 9];
-quickSort(nums);               // in‑place sort → [1, 2, 3, 5, 8, 9]
+/**
+ * Returns true iff the linked list is a palindrome.
+ */
+export function isPalindrome<T>(head: ListNode<T> | null): boolean {
+  if (!head || !head.next) return true; // empty or single node
 
-// Strings
-const words = ['banana', 'apple', 'cherry'];
-quickSort(words);              // → ['apple', 'banana', 'cherry']
+  /* ---------- 1️⃣ Find middle ---------- */
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-// Custom objects
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 20 },
-  { name: 'Carol', age: 25 }
+  while (fast.next && fast.next.next) {
+    slow = slow!.next!;   // move one step
+    fast = fast.next.next; // move two steps
+  }
+
+  /* ---------- 2️⃣ Reverse second half ---------- */
+  let prev: ListNode<T> | null = null;
+  let curr: ListNode<T> | null = slow;
+
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  const secondHalfHead = prev; // start of reversed half
+
+  /* ---------- 3️⃣ Compare halves ---------- */
+  let p1: ListNode<T> | null = head;
+  let p2: ListNode<T> | null = secondHalfHead;
+
+  let isPal = true;
+  while (isPal && p2) {           // p2 is half the length
+    if (p1!.val !== p2!.val) {
+      isPal = false;
+      break;
+    }
+    p1 = p1!.next;
+    p2 = p2!.next;
+  }
+
+  /* ---------- (Optional) 4️⃣ Restore list ---------- */
+  // reverse again to keep original structure
+  curr = secondHalfHead;
+  prev = null;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  if (slow!.next) { // connect back
+    slow!.next = prev;
+  }
+
+  return isPal;
+}
+function build<T>(arr: T[]): ListNode<T> | null {
+  let dummy = new ListNode<T>(null as any);
+  let cur = dummy;
+  for (const v of arr) {
+    cur.next = new ListNode<T>(v);
+    cur = cur.next;
+  }
+  return dummy.next;
+}
+
+const tests = [
+  { arr: [1, 2, 3, 2, 1], expected: true },
+  { arr: [1, 2, 2, 1], expected: true },
+  { arr: [1, 2, 3], expected: false },
+  { arr: [], expected: true },
+  { arr: [42], expected: true },
+  { arr: [7, 8, 7, 9], expected: false }
 ];
-quickSort(people, (a, b) => a.age - b.age);
-// → sorted by age: 20, 25, 30
+
+for (const {arr, expected} of tests) {
+  const h = build(arr);
+  console.log(`isPalindrome(${JSON.stringify(arr)}) =>`, isPalindrome(h), 'expected', expected);
+}
+isPalindrome([1,2,3,2,1]) => true expected true
+isPalindrome([1,2,2,1]) => true expected true
+isPalindrome([1,2,3]) => false expected false
+isPalindrome([]) => true expected true
+isPalindrome([42]) => true expected true
+isPalindrome([7,8,7,9]) => false expected false
+function isPalindromeStack<T>(head: ListNode<T> | null): boolean {
+  const vals: T[] = [];
+  for (let cur = head; cur; cur = cur.next) vals.push(cur.val);
+
+  let l = 0, r = vals.length - 1;
+  while (l < r) {
+    if (vals[l++] !== vals[r--]) return false;
+  }
+  return true;
+}
