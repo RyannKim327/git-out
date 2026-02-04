@@ -1,49 +1,59 @@
 /**
- * Binary search on a sorted array.
+ * Shell sort – a simple in‑place comparison sort.
  *
- * @param arr   Sorted array (ascending).
- * @param key   Value to search for.
- * @returns     Index of `key` in `arr`, or -1 if not found.
+ * @template T          – The element type stored in the array.
+ * @param array         – Array to be sorted (mutated).
+ * @param compareFn     – Optional comparison function.  
+ *                        Should return a negative number if a < b,
+ *                        zero if a == b, and a positive number if a > b.
+ *                        Default is numeric ascending order.
+ *
+ * @returns The same array, now sorted.
+ *
+ * Example:
+ *   const nums = [23, 12, 1, 2, 8, 15];
+ *   shellSort(nums);                 // → [1,2,8,12,15,23]
+ *
+ *   const words = ["pear","apple","orange"];
+ *   shellSort(words, (a,b) => a.localeCompare(b));  // → ["apple","orange","pear"]
  */
-export function binarySearch<T extends number | string>(arr: T[], key: T): number {
-    let low  = 0;
-    let high = arr.length - 1;
+export function shellSort<T>(
+  array: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a as unknown as number) - (b as unknown as number)
+): T[] {
+  const n = array.length;
+  // Basic Shell sequence: n/2, n/4, ..., 1
+  // (You could use a more sophisticated sequence, e.g. Hibbard, Pratt, or Knuth.)
+  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Perform a gapped insertion sort for this gap size
+    for (let i = gap; i < n; i++) {
+      const current = array[i];
+      let j = i;
 
-    while (low <= high) {
-        // Use floor division so we don’t overshoot on odd lengths.
-        const mid = Math.floor((low + high) / 2);
-        const midVal = arr[mid];
-
-        if (midVal === key) {
-            return mid;                // Found it!
-        }
-        else if (midVal < key) {
-            low = mid + 1;              // Search right half
-        } else {
-            high = mid - 1;             // Search left half
-        }
+      // Shift earlier gap‑separated elements up until the correct location for current
+      while (j >= gap && compareFn(array[j - gap], current) > 0) {
+        array[j] = array[j - gap];
+        j -= gap;
+      }
+      array[j] = current;
     }
-    return -1; // Not found
+  }
+  return array;
 }
-type Comparator<T> = (a: T, b: T) => number; // negative if a < b, zero if equal, positive otherwise
+import { shellSort } from "./shellSort";
 
-export function binarySearchWith<T>(arr: T[], key: T, cmp: Comparator<T>): number {
-    let low = 0, high = arr.length - 1;
+const planets = [
+  { name: "Jupiter", radius: 69911 },
+  { name: "Earth", radius: 6371 },
+  { name: "Mars", radius: 3389 },
+  { name: "Saturn", radius: 58232 },
+];
 
-    while (low <= high) {
-        const mid = Math.floor((low + high) / 2);
-        const comp = cmp(arr[mid], key);
-
-        if (comp === 0) return mid;
-        if (comp < 0)  low = mid + 1;
-        else           high = mid - 1;
-    }
-    return -1;
-}
-const numbers = [3, 7, 12, 20, 31, 45, 58];
-console.log(binarySearch(numbers, 20)); // → 3
-
-// With a custom comparator for objects:
-const people = [{id: 1, name: 'Alice'}, {id: 3, name: 'Bob'}, {id: 7, name: 'Carol'}];
-const idCmp = (p: typeof people[0], key: number) => p.id - key;
-console.log(binarySearchWith(people, 3, idCmp)); // → 1
+shellSort(planets, (a, b) => a.radius - b.radius);
+console.log(planets);
+// → [
+//      { name: "Mars", radius: 3389 },
+//      { name: "Earth", radius: 6371 },
+//      { name: "Saturn", radius: 58232 },
+//      { name: "Jupiter", radius: 69911 }
+//    ]
