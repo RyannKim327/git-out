@@ -1,78 +1,44 @@
-// 1️⃣  A tiny node definition
-interface ListNode<T> {
-  val: T;
-  next?: ListNode<T>;
+export interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
+/**
+ * Returns the nth node from the end of a singly‑linked list.
+ *
+ * @param head  The head of the list (may be null).
+ * @param n 1‑based index counting from the last node.
+ * @returns   The node itself, or null if n is out of bounds.
+ */
+export function getNthFromEnd<T>(
+  head: ListNode<T> | null,
+  n: number
+): ListNode<T> | null {
+  if (n <= 0) return null;                // n must be positive
 
-// 2️⃣  Helper: walk a list and collect values (for demo)
-const listToArray = <T>(head: ListNode<T> | undefined): T[] => {
-  const arr: T[] = [];
-  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
-  return arr;
-};
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
 
-// 3️⃣  The trick: two pointers, fast and slow
-function middle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  if (!head) return undefined; // empty list—no middle
-
-  let fast = head;
-  let slow = head;
-
-  // advance fast every two steps, slow every one
-  while (fast.next && fast.next.next) {
-    fast = fast.next.next; // jump 2
-    slow = slow.next as ListNode<T>; // jump 1
+  // Advance `fast` n steps ahead.
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;              // n is larger than the list length
+    fast = fast.next;
   }
 
-  // If fast has a next (odd length), move slow one more
-  if (fast.next) slow = slow.next as ListNode<T>;
+  // Move both pointers until `fast` reaches the end.
+  while (fast) {
+    fast = fast.next;
+    slow = slow?.next ?? null;
+  }
 
+  // `slow` is now the nth from the end.
   return slow;
 }
+// Build a tiny list: 10 → 20 → 30 → 40 → 50
+const node5: ListNode<number> = { value: 50, next: null };
+const node4: ListNode<number> = { value: 40, next: node5 };
+const node3: ListNode<number> = { value: 30, next: node4 };
+const node2: ListNode<number> = { value: 20, next: node3 };
+const head: ListNode<number> = { value: 10, next: node2 };
 
-// 4️⃣  Demo: build a list so we can see it in action
-const nodes: ListNode<number>[] = [1, 2, 3, 4, 5].map(
-  (v) => ({ val: v })
-);
-for (let i = 0; i < nodes.length - 1; i++) nodes[i].next = nodes[i + 1];
-const head = nodes[0];
-
-console.log("Full list:", listToArray(head));         // 1,2,3,4,5
-console.log("Middle node:", middle(head)?.val);        // 3
-
-// Try an even‑length list
-const even: ListNode<number>[] = [10, 20, 30, 40].map(
-  (v) => ({ val: v })
-);
-for (let i = 0; i < even.length - 1; i++) even[i].next = even[i + 1];
-console.log("Middle of even list:", middle(even)?.val); // 20 (or 30 if you prefer that half)
-class LinkedList<T> {
-  head?: ListNode<T>;
-
-  // push to the tail
-  push(val: T) {
-    const node: ListNode<T> = { val };
-    if (!this.head) {
-      this.head = node;
-    } else {
-      let cur = this.head;
-      while (cur.next) cur = cur.next;
-      cur.next = node;
-    }
-  }
-
-  // returns the middle node (or the first of two middles for even length)
-  middle(): ListNode<T> | undefined {
-    return middle(this.head);
-  }
-
-  toArray(): T[] {
-    return listToArray(this.head);
-  }
-}
-
-// Usage:
-const ll = new LinkedList<number>();
-[1, 2, 3, 4, 5].forEach(v => ll.push(v));
-console.log(ll.toArray());       // [1,2,3,4,5]
-console.log(ll.middle()?.val);   // 3
+const thirdFromEnd = getNthFromEnd(head, 3);
+console.log(thirdFromEnd?.value); // 30
