@@ -1,30 +1,55 @@
-// src/scheduler.ts
-import { schedule, Job } from 'node-cron';
-import { randomInt } from 'crypto';
+/**
+ * Selection sort – sorts an array in‑place in ascending order.
+ *
+ * @param array   The array to sort.  It will be mutated.
+ * @param compare Callback used to decide order. If omitted, a natural
+ *                ascending numeric/string comparison is used.
+ * @returns The same array instance, now sorted.
+ */
+export function selectionSort<T>(
+  array: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  const len = array.length;
 
-// Helper: format the current date/time nicely
-const fmtDate = (date: Date): string => {
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
-         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-};
+  // default comparer: numeric or string ascending
+  const cmp = compare ?? ((a: any, b: any) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
 
-// Cron expression – every 5 minutes, on the minute.
-// (Syntax: `m h dom mon dow`)
-// Example: 0 12 * * * → every day at 12:00.
-const cronExpr = '*/5 * * * *';
+  for (let i = 0; i < len - 1; i++) {
+    // assume min at current position
+    let minIdx = i;
 
-const job: Job = schedule(cronExpr, () => {
-  const now = new Date();
-  const rand = randomInt(1_000_000); // 0 <= rand < 1,000,000
-  console.log(`[${fmtDate(now)}] Random number: ${rand}`);
-}, {
-  scheduled: true, // start scheduling immediately
-  timezone: 'UTC'  // adjust if you need a different zone
-});
+    // find the smallest element in the unsorted portion
+    for (let j = i + 1; j < len; j++) {
+      if (cmp(array[j], array[minIdx]) < 0) {
+        minIdx = j;
+      }
+    }
 
-// Optional: make the process stay alive but not block exit
-job.task?.unref?.();
+    // swap if we found a smaller element
+    if (minIdx !== i) {
+      const temp = array[i];
+      array[i] = array[minIdx];
+      array[minIdx] = temp;
+    }
+  }
 
-// If you ran the script normally (`node src/scheduler.js` after TS‑compile),
-// the job will keep running. Exit manually when you're done.
+  return array;
+}
+// simple numeric sorting
+let nums = [64, 25, 12, 22, 11];
+selectionSort(nums);
+console.log(nums); // [11, 12, 22, 25, 64]
+
+// sorting strings
+let words = ["banana", "avocado", "cherry"];
+selectionSort(words);
+console.log(words); // ["avocado", "banana", "cherry"]
+
+// custom comparator – descending numbers
+selectionSort(nums, (a, b) => b - a);
+console.log(nums); // [64, 25, 22, 12, 11]
