@@ -1,75 +1,113 @@
-/** Build the "lps" (longest‑prefix‑which‑is‑also‑suffix) table for the pattern */
-function buildLPS(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let len = 0;              // length of previous longest prefix suffix
-  let i = 1;                // we start from the second character
+type Hashable = string | number;
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      if (len !== 0) {
-        len = lps[len - 1];  // fallback in the pattern
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
+// A node in a linked list that stores a key–value pair.
+class ListNode<K extends Hashable, V> {
+  constructor(
+    public key: K,
+    public value: V,
+    public next: ListNode<K, V> | null = null
+  ) {}
 }
 
-/** Find the first occurrence of `pattern` in `text` (returns -1 if not found) */
-function kmpSearch(text: string, pattern: string): number {
-  if (!pattern) return 0; // empty pattern matches at start
+// A very small, non‑generic implementation.
+// Could be turned into a generic class if you want re‑usability.
+class HashTable<K extends Hashable, V> {
+  // Number of buckets.  53 is a prime that keeps things a bit uniform.
+  private readonly bucketCount = 53;
+  private readonly buckets: Array<ListNode<K, V> | null>;
 
-  const lps = buildLPS(pattern);
-  let i = 0; // index for text
-  let j = 0; // index for pattern
+  constructor() {
+    // fill the array with nulls
+    this.buckets = Array(this.bucketCount).fill(null);
+  }
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) return i - j; // match found
+  // Simple hash: string => simple accumulating hash; number => straight
+  private hash(key: K): number {
+    let h: number;
+    if (typeof key === "number") {
+      h = key;
     } else {
-      if (j !== 0) {
-        j = lps[j - 1]; // shift pattern without re‑examining matched chars
-      } else {
-        i++;           // no match, move on in the text
+      h = 0;
+      for (let i = 0; i < key.length; i++) {
+        // 31 is a classic multiplier in hash functions
+        h = (h * 31 + key.charCodeAt(i)) | 0; // |0 keeps it 32‑bit
       }
     }
+    // Ensure positive index
+    return Math.abs(h) % this.bucketCount;
   }
-  return -1; // no match
-}
 
-/** Optional: return *all* starting indices of matches */
-function kmpAllMatches(text: string, pattern: string): number[] {
-  const indices: number[] = [];
-  if (!pattern) return [0];
+  set(key: K, value: V): void {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
 
-  const lps = buildLPS(pattern);
-  let i = 0, j = 0;
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) {
-        indices.push(i - j);
-        j = lps[j - 1]; // continue searching for next possible match
+    // If there’s already a node, see if the key matches
+    while (node) {
+      if (node.key === key) {
+        node.value = value; // update
+        return;
       }
-    } else {
-      if (j !== 0) j = lps[j - 1];
-      else i++;
+      node = node.next;
     }
-  }
-  return indices;
-}
-const txt = "ABABDABACDABABCABAB";
-const pat = "ABABCABAB";
 
-const firstIdx = kmpSearch(txt, pat);          // returns 10
-const allIdx   = kmpAllMatches(txt, pat);     // returns [10]
+    // No match – prepend a new node (O(1) for inserts)
+    const newNode = new ListNode(key, value, this.buckets[idx]);
+    this.buckets[idx] = newNode;
+  }
+
+  get(key: K): V | undefined {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+
+    while (node) {
+      if (node.key === key) return node.value;
+      node = node.next;
+    }
+    return undefined;
+  }
+
+  has(key: K): boolean {
+    return this.get(key) !== undefined;
+  }
+
+  delete(key: K): boolean {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+    let prev: ListNode<K, V> | null = null;
+
+    while (node) {
+      if (node.key === key) {
+        if (prev) prev.next = node.next;
+        else this.buckets[idx] = node.next;
+        return true;
+      }
+      prev = node;
+      node = node.next;
+    }
+    return false;
+  }
+
+  // For debugging / tests: flatten the table into a plain object
+  toObject(): Record<string, V> {
+    const out: Record<string, V> = {};
+    for (const bucket of this.buckets) {
+      let node = bucket;
+      while (node) {
+        out[String(node.key)] = node.value;
+        node = node.next;
+      }
+    }
+    return out;
+  }
+}
+const table = new HashTable<string, number>();
+table.set("alpha", 1);
+table.set("beta", 2);
+table.set("gamma", 3);
+table.set("delta", 4);
+
+console.log(table.get("beta"));   // 2
+console.log(table.has("epsilon")); // false
+
+table.delete("gamma");
+console.log(table.toObject());    // { alpha: 1, beta: 2, delta: 4 }
