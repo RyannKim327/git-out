@@ -1,20 +1,33 @@
-function reverseString(str: string): string {
-  return str.split('').reverse().join('');
-}
-function reverseStringLoop(str: string): string {
-  let out = '';
-  for (let i = str.length - 1; i >= 0; i--) {
-    out += str[i];
+/**
+ * Returns the index of the first non‑repeating character.
+ * If every character repeats, returns -1.
+ *
+ * @param s – the string to scan
+ */
+function firstNonRepeatingIndex(s: string): number {
+  // 1️⃣ Count how many times each character occurs
+  const freq = new Map<string, number>();
+
+  for (const ch of s) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
-  return out;
-}
-function reverseStringSpread(str: string): string {
-  return [...str].reverse().join('');
-}
-import GraphemeSplitter from 'grapheme-splitter';
 
-const splitter = new GraphemeSplitter();
+  // 2️⃣ Scan again from the start, picking the first that has count 1
+  for (let i = 0; i < s.length; i++) {
+    if (freq.get(s[i]) === 1) {
+      return i;    // return the index, you can return the character with s[i]
+    }
+  }
 
-function reverseStringUnicode(str: string): string {
-  return splitter.splitGraphemes(str).reverse().join('');
+  return -1; // no unique character found
+}
+
+// Demo
+const txt = "mybobby";
+const idx = firstNonRepeatingIndex(txt);
+
+if (idx >= 0) {
+  console.log(`First non‑repeating char: '${txt[idx]}' at position ${idx}`);
+} else {
+  console.log("All characters repeat");
 }
