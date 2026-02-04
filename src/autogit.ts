@@ -1,75 +1,30 @@
-function decimalToBinary(dec: number | bigint): string {
-  return dec.toString(2);
-}
+// src/scheduler.ts
+import { schedule, Job } from 'node-cron';
+import { randomInt } from 'crypto';
 
-// Examples
-console.log(decimalToBinary(13));      // '1101'
-console.log(decimalToBinary(255n));    // '11111111'
-function decimalToBinaryIterative(num: number): string {
-  if (num === 0) return '0';
-  let n = Math.abs(num);
-  const bits: string[] = [];
-  while (n > 0) {
-    bits.push((n % 2).toString());
-    n = Math.floor(n / 2);
-  }
-  if (num < 0) bits.push('-');
-  return bits.reverse().join('');
-}
+// Helper: format the current date/time nicely
+const fmtDate = (date: Date): string => {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
 
-// Demo
-console.log(decimalToBinaryIterative(13));   // '1101'
-console.log(decimalToBinaryIterative(-13));  // '-1101'
-function decimalToBinaryRecursive(num: number): string {
-  if (num === 0) return '';
-  const [higher, bit] = decimalToBinaryRecursive(Math.floor(num / 2)).split('|', 2);
-  return `${higher}|${num % 2}`;
-}
+// Cron expression – every 5 minutes, on the minute.
+// (Syntax: `m h dom mon dow`)
+// Example: 0 12 * * * → every day at 12:00.
+const cronExpr = '*/5 * * * *';
 
-// Helper to clean up the leading empty part
-function binaryRecursive(num: number): string {
-  const bin = decimalToBinaryRecursive(num);
-  return bin.split('|').filter(Boolean).join('');
-}
+const job: Job = schedule(cronExpr, () => {
+  const now = new Date();
+  const rand = randomInt(1_000_000); // 0 <= rand < 1,000,000
+  console.log(`[${fmtDate(now)}] Random number: ${rand}`);
+}, {
+  scheduled: true, // start scheduling immediately
+  timezone: 'UTC'  // adjust if you need a different zone
+});
 
-// Demo
-console.log(binaryRecursive(27));  // '11011'
-function decimalToBinaryFraction(num: number, precision: number = 10): string {
-  const intPart = Math.trunc(num);
-  let fracPart = num - intPart;
-  let binary = intPart.toString(2);
+// Optional: make the process stay alive but not block exit
+job.task?.unref?.();
 
-  if (precision > 0 && fracPart > 0) {
-    binary += '.';
-    let p = 0;
-    while (p < precision && fracPart > 0) {
-      fracPart *= 2;
-      if (fracPart >= 1) {
-        binary += '1';
-        fracPart -= 1;
-      } else {
-        binary += '0';
-      }
-      p++;
-    }
-  }
-
-  return binary;
-}
-
-// Demo
-console.log(decimalToBinaryFraction(5.6875, 8)); // '101.1011'
-function test(input: number | bigint) {
-  console.log(`Decimal: ${input}`);
-  console.log(`  -> toString(2):   ${input.toString(2)}`);
-  if (typeof input === 'number') {
-    console.log(`  -> iterative:   ${decimalToBinaryIterative(input)}`);
-    console.log(`  -> recursive:   ${binaryRecursive(input)}`);
-  }
-  console.log('');
-}
-
-test(13);
-test(-13);
-test(0);
-test(5.6875);   // only the toString version works for BigInt
+// If you ran the script normally (`node src/scheduler.js` after TS‑compile),
+// the job will keep running. Exit manually when you're done.
