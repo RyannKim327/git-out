@@ -1,29 +1,41 @@
-function firstRepeat(s: string): string | undefined {
-  const seen = new Set<string>();
+/**
+ * KMP string matcher.
+ * @param text    Text in which to search.
+ * @param pattern Pattern to find.
+ * @returns Index of first occurrence of pattern in text, or -1 if not found.
+ */
+export function kmpSearch(text: string, pattern: string): number {
+  const n = text.length;
+  const m = pattern.length;
 
-  for (const ch of s) {
-    if (seen.has(ch)) return ch;   // this is the first repeated one
-    seen.add(ch);
+  if (m === 0) return 0;           // Empty pattern matches at start.
+
+  // --------- Step 1: build failure function ----------
+  const fail: number[] = new Array(m).fill(0);
+  let k = 0;                         // length of current match
+
+  for (let i = 1; i < m; i++) {
+    while (k > 0 && pattern[k] !== pattern[i]) {
+      k = fail[k - 1];
+    }
+    if (pattern[k] === pattern[i]) k++;
+    fail[i] = k;
   }
 
-  return undefined;   // no repeats
-}
-function firstRepeatObj(s: string): string | undefined {
-  const map: { [k: string]: boolean } = {};
+  // --------- Step 2: scan the text ---------------
+  k = 0;                               // reset pattern index
+  for (let i = 0; i < n; i++) {
+    while (k > 0 && text[i] !== pattern[k]) {
+      k = fail[k - 1];
+    }
+    if (text[i] === pattern[k]) k++;
 
-  for (const ch of s) {
-    if (map[ch]) return ch;
-    map[ch] = true;
+    if (k === m) {                    // match found
+      return i - m + 1;
+    }
   }
+
+  return -1;                          // no match
 }
-function firstRepeatingAlpha(str: string): string | undefined {
-  const seen = new Set<string>();
-  for (const ch of str) {
-    if (!/[a-zA-Z]/.test(ch)) continue; // skip non‑letters
-    if (seen.has(ch)) return ch;
-    seen.add(ch);
-  }
-}
-console.log(firstRepeat('abcdeafg')); // a
-console.log(firstRepeat('hello world')); // l
-console.log(firstRepeat('xyz')); // undefined
+const idx = kmpSearch('abxabcabcaby', 'abcaby');
+console.log(idx);   // → 6
