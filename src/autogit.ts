@@ -1,49 +1,34 @@
-/**
- * Binary search on a sorted array.
- *
- * @param arr   Sorted array (ascending).
- * @param key   Value to search for.
- * @returns     Index of `key` in `arr`, or -1 if not found.
- */
-export function binarySearch<T extends number | string>(arr: T[], key: T): number {
-    let low  = 0;
-    let high = arr.length - 1;
+function isAnagramSort(a: string, b: string): boolean {
+  // Normalize (optional – depends on your use‑case)
+  const normalize = (s: string) =>
+    s.replace(/\s+/g, '').toLowerCase(); // trim spaces, lower‑case
 
-    while (low <= high) {
-        // Use floor division so we don’t overshoot on odd lengths.
-        const mid = Math.floor((low + high) / 2);
-        const midVal = arr[mid];
+  const sa = normalize(a).split('').sort().join('');
+  const sb = normalize(b).split('').sort().join('');
 
-        if (midVal === key) {
-            return mid;                // Found it!
-        }
-        else if (midVal < key) {
-            low = mid + 1;              // Search right half
-        } else {
-            high = mid - 1;             // Search left half
-        }
-    }
-    return -1; // Not found
+  return sa === sb;
 }
-type Comparator<T> = (a: T, b: T) => number; // negative if a < b, zero if equal, positive otherwise
+function isAnagramMap(a: string, b: string): boolean {
+  // Quick length check (no need to normalize again here)
+  if (a.length !== b.length) return false;
 
-export function binarySearchWith<T>(arr: T[], key: T, cmp: Comparator<T>): number {
-    let low = 0, high = arr.length - 1;
+  const count = new Map<string, number>();
 
-    while (low <= high) {
-        const mid = Math.floor((low + high) / 2);
-        const comp = cmp(arr[mid], key);
+  for (let i = 0; i < a.length; i++) {
+    const ca = a[i];
+    const cb = b[i];
 
-        if (comp === 0) return mid;
-        if (comp < 0)  low = mid + 1;
-        else           high = mid - 1;
-    }
-    return -1;
+    count.set(ca, (count.get(ca) || 0) + 1);
+    count.set(cb, (count.get(cb) || 0) - 1);
+  }
+
+  // All counts must net to 0
+  for (const val of count.values()) {
+    if (val !== 0) return false;
+  }
+  return true;
 }
-const numbers = [3, 7, 12, 20, 31, 45, 58];
-console.log(binarySearch(numbers, 20)); // → 3
-
-// With a custom comparator for objects:
-const people = [{id: 1, name: 'Alice'}, {id: 3, name: 'Bob'}, {id: 7, name: 'Carol'}];
-const idCmp = (p: typeof people[0], key: number) => p.id - key;
-console.log(binarySearchWith(people, 3, idCmp)); // → 1
+const a = 'listen';
+const b = 'silent';
+console.log(isAnagramSort(a, b)); // true
+console.log(isAnagramMap(a, b));  // true
