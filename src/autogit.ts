@@ -1,68 +1,49 @@
-// A minimal list node
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null,
-  ) {}
-}
 /**
- * Reverses a linked list.
- * @param head The original list head.
- * @returns New head of the reversed list.
+ * Binary search on a sorted array.
+ *
+ * @param arr   Sorted array (ascending).
+ * @param key   Value to search for.
+ * @returns     Index of `key` in `arr`, or -1 if not found.
  */
-export function reverseListIterative<T>(
-  head: ListNode<T> | null,
-): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let current = head;
+export function binarySearch<T extends number | string>(arr: T[], key: T): number {
+    let low  = 0;
+    let high = arr.length - 1;
 
-  while (current !== null) {
-    const next = current.next;   // remember the next node
-    current.next = prev;         // reverse the link
-    prev = current;              // move `prev` one step forward
-    current = next;              // advance to the next node
-  }
+    while (low <= high) {
+        // Use floor division so we don’t overshoot on odd lengths.
+        const mid = Math.floor((low + high) / 2);
+        const midVal = arr[mid];
 
-  return prev; // new head
+        if (midVal === key) {
+            return mid;                // Found it!
+        }
+        else if (midVal < key) {
+            low = mid + 1;              // Search right half
+        } else {
+            high = mid - 1;             // Search left half
+        }
+    }
+    return -1; // Not found
 }
-/**
- * Reverses a linked list recursively.
- * @param node Current node being processed.
- * @returns New head of the reversed list.
- */
-export function reverseListRecursive<T>(
-  node: ListNode<T> | null,
-  newHead: ListNode<T> | null = null,
-): ListNode<T> | null {
-  if (node === null) return newHead;   // base case: original list exhausted
+type Comparator<T> = (a: T, b: T) => number; // negative if a < b, zero if equal, positive otherwise
 
-  const next = node.next;              // keep reference to the next node
-  node.next = newHead;                 // attach current node before the “new head”
-  return reverseListRecursive(next, node);
+export function binarySearchWith<T>(arr: T[], key: T, cmp: Comparator<T>): number {
+    let low = 0, high = arr.length - 1;
+
+    while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        const comp = cmp(arr[mid], key);
+
+        if (comp === 0) return mid;
+        if (comp < 0)  low = mid + 1;
+        else           high = mid - 1;
+    }
+    return -1;
 }
-// Helper to build a list from an array
-function buildList<T>(arr: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = new ListNode(arr[i], head);
-  }
-  return head;
-}
+const numbers = [3, 7, 12, 20, 31, 45, 58];
+console.log(binarySearch(numbers, 20)); // → 3
 
-// Helper to turn a list back into an array (for easy checking)
-function listToArray<T>(head: ListNode<T> | null): T[] {
-  const result: T[] = [];
-  for (let cur = head; cur; cur = cur.next) result.push(cur.val);
-  return result;
-}
-
-// Example usage
-const nums = [1, 2, 3, 4, 5];
-const list = buildList(nums);
-
-const reversedIter = reverseListIterative(list);
-console.log(listToArray(reversedIter)); // [5,4,3,2,1]
-
-const original = buildList(nums); // rebuild, since the list was mutated
-const reversedRec = reverseListRecursive(original);
-console.log(listToArray(reversedRec)); // [5,4,3,2,1]
+// With a custom comparator for objects:
+const people = [{id: 1, name: 'Alice'}, {id: 3, name: 'Bob'}, {id: 7, name: 'Carol'}];
+const idCmp = (p: typeof people[0], key: number) => p.id - key;
+console.log(binarySearchWith(people, 3, idCmp)); // → 1
