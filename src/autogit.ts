@@ -1,33 +1,24 @@
 /**
- * Returns the index of the first non‑repeating character.
- * If every character repeats, returns -1.
+ * Count occurrences of a word in a string.
  *
- * @param s – the string to scan
+ * @param text   The text to search through.
+ * @param word   The word to count (exact case‑sensitive match).
+ * @param flags  Optional RegExp flags (default is “g” for global).
+ * @returns The number of matches found.
  */
-function firstNonRepeatingIndex(s: string): number {
-  // 1️⃣ Count how many times each character occurs
-  const freq = new Map<string, number>();
-
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
-
-  // 2️⃣ Scan again from the start, picking the first that has count 1
-  for (let i = 0; i < s.length; i++) {
-    if (freq.get(s[i]) === 1) {
-      return i;    // return the index, you can return the character with s[i]
-    }
-  }
-
-  return -1; // no unique character found
+export function countWordOccurrences(
+  text: string,
+  word: string,
+  flags: string = "g"
+): number {
+  // Escape regex metacharacters in the word so it’s treated literally
+  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`\\b${escapedWord}\\b`, flags);
+  const matches = text.match(regex);
+  return matches?.length ?? 0;
 }
+let sentence = "The quick brown fox jumps over the lazy dog. The fox was quick.";
 
-// Demo
-const txt = "mybobby";
-const idx = firstNonRepeatingIndex(txt);
-
-if (idx >= 0) {
-  console.log(`First non‑repeating char: '${txt[idx]}' at position ${idx}`);
-} else {
-  console.log("All characters repeat");
-}
+console.log(countWordOccurrences(sentence, "fox"));          // 2
+console.log(countWordOccurrences(sentence, "quick"));       // 2
+console.log(countWordOccurrences(sentence, "quick", "gi")); // 2 (case‑insensitive)
