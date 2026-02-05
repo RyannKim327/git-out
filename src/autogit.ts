@@ -1,32 +1,33 @@
-const uniq = <T>(arr: T[]): T[] => [...new Set(arr)];
+/**
+ * Returns the index of the first non‑repeating character.
+ * If every character repeats, returns -1.
+ *
+ * @param s – the string to scan
+ */
+function firstNonRepeatingIndex(s: string): number {
+  // 1️⃣ Count how many times each character occurs
+  const freq = new Map<string, number>();
 
-const numbers = [1, 2, 3, 2, 4, 1];
-console.log(uniq(numbers)); // [1, 2, 3, 4]
-const uniq = <T>(arr: T[]): T[] =>
-  arr.filter((value, index, self) => self.indexOf(value) === index);
+  for (const ch of s) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  }
 
-const words = ["a", "b", "a", "c", "b"];
-console.log(uniq(words)); // ["a", "b", "c"]
-const uniq = <T>(arr: T[]): T[] =>
-  arr.reduce((seen, val) => {
-    if (!seen.includes(val)) seen.push(val);
-    return seen;
-  }, [] as T[]);
-function uniqInPlace<T>(arr: T[]): void {
-  const seen = new Set<T>();
-  let writeIdx = 0;
-
-  for (const v of arr) {
-    if (!seen.has(v)) {
-      seen.add(v);
-      arr[writeIdx++] = v;
+  // 2️⃣ Scan again from the start, picking the first that has count 1
+  for (let i = 0; i < s.length; i++) {
+    if (freq.get(s[i]) === 1) {
+      return i;    // return the index, you can return the character with s[i]
     }
   }
 
-  // Optional: truncate the array
-  arr.length = writeIdx;
+  return -1; // no unique character found
 }
 
-const data = [5, 3, 5, 2, 3];
-uniqInPlace(data);
-console.log(data); // [5, 3, 2]
+// Demo
+const txt = "mybobby";
+const idx = firstNonRepeatingIndex(txt);
+
+if (idx >= 0) {
+  console.log(`First non‑repeating char: '${txt[idx]}' at position ${idx}`);
+} else {
+  console.log("All characters repeat");
+}
