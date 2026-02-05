@@ -1,61 +1,71 @@
 /**
- * Sorts an array of numbers in ascending order using insertion sort.
- * The algorithm works in place – the input array is mutated.
+ * Forward Burrows‑Wheeler Transform.
  *
- * @param arr - The numeric array to be sorted.
- * @returns The same array, now sorted.
+ * @param text – input string
+ * @returns {lastColumn, originalIndex}
+ *   • lastColumn  – the BWT string (the last column of the sorted rotations)
+ *   • originalIndex – position of the original string in the sorted list
  */
-export function insertionSort(arr: number[]): number[] {
-  // Start from the second element; the first element is “sorted” by definition
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];            // The value we’re going to insert
-    let j = i - 1;
+export function bwt(text: string): { lastColumn: string; originalIndex: number } {
+  const n = text.length;
+  const rotations = new Array<string>(n);
 
-    // Shift elements that are greater than the key to the right
-    while (j >= 0 && arr[j] > key) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    // Insert the key into its correct position
-    arr[j + 1] = key;
+  // Build all cyclic rotations
+  for (let i = 0; i < n; i++) {
+    rotations[i] = text.slice(i) + text.slice(0, i);
   }
 
-  return arr;
-}
-export function insertionSort<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+  // Sort rotations lexicographically
+  rotations.sort();
 
-    // While j is in range and key is less than arr[j], shift arr[j] right
-    while (j >= 0 && compareFn(key, arr[j]) < 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    arr[j + 1] = key;
+  // Grab last character of each rotation and remember where the original text ended up
+  let lastColumn = '';
+  let originalIndex = -1;
+  for (let i = 0; i < n; i++) {
+    const rot = rotations[i];
+    lastColumn += rot[rot.length - 1];
+    if (rot === text) originalIndex = i;
   }
 
-  return arr;
+  return { lastColumn, originalIndex };
 }
-// Numbers
-const nums = [64, 25, 12, 22, 11];
-insertionSort(nums);          // => [11, 12, 22, 25, 64]
 
-// Strings
-const words = ['banana', 'apple', 'cherry'];
-insertionSort(words);          // => ['apple', 'banana', 'cherry']
+/**
+ * Inverse Burrows‑Wheeler Transform.
+ *
+ * @param lastColumn  – BWT string (result of the forward transform)
+ * @param originalIndex – index returned by the forward transform
+ * @returns original input string
+ */
+export function inverseBwt(lastColumn: string, originalIndex: number): string {
+  const n = lastColumn.length;
 
-// Custom objects
-const people = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 24 },
-  { name: 'Catherine', age: 27 }
-];
+  // Build the first column by sorting the last column
+  const firstColumn = [...lastColumn].sort().join('');
 
-insertionSort(people, (a, b) => a.age - b.age);
-// => sorted by age
+  // Build a map from character to its deque of positions in the last column
+  const charQueues: Record<string, number[]> = {};
+  for (let i = 0; i < n; i++) {
+    const c = lastColumn[i];
+    if (!charQueues[c]) charQueues[c] = [];
+    charQueues[c].push(i);
+  }
+
+  // Reconstruct the original string
+  let result = '';
+  let idx = originalIndex;
+  for (let i = 0; i < n; i++) {
+    const c = firstColumn[idx];
+    result += c;
+    // The row that had c in the last column is the next idx
+    idx = charQueues[c].shift()!;
+  }
+
+  return result;
+}
+const { lastColumn, originalIndex } = bwt('BANANA');
+console.log(lastColumn);          // 'ANNBAA'
+console.log(originalIndex);       // 3
+
+const original = inverseBwt(lastColumn, originalIndex);
+console.log(original);            // 'BANANA'
