@@ -1,55 +1,29 @@
 /**
- * Selection sort – sorts an array in‑place in ascending order.
- *
- * @param array   The array to sort.  It will be mutated.
- * @param compare Callback used to decide order. If omitted, a natural
- *                ascending numeric/string comparison is used.
- * @returns The same array instance, now sorted.
+ * Returns the intersection of two arrays.
+ * @param a  First array.
+ * @param b  Second array.
+ * @returns  Array containing elements that are present in **both** a and b.
  */
-export function selectionSort<T>(
-  array: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  const len = array.length;
+function intersection<T>(a: T[], b: T[]): T[] {
+  // Turn the first array into a Set for O(1) look‑ups.
+  const aSet = new Set(a);
 
-  // default comparer: numeric or string ascending
-  const cmp = compare ?? ((a: any, b: any) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
-
-  for (let i = 0; i < len - 1; i++) {
-    // assume min at current position
-    let minIdx = i;
-
-    // find the smallest element in the unsorted portion
-    for (let j = i + 1; j < len; j++) {
-      if (cmp(array[j], array[minIdx]) < 0) {
-        minIdx = j;
-      }
-    }
-
-    // swap if we found a smaller element
-    if (minIdx !== i) {
-      const temp = array[i];
-      array[i] = array[minIdx];
-      array[minIdx] = temp;
+  // Keep only the items from `b` that are also in `aSet`.
+  const result: T[] = [];
+  for (const item of b) {
+    if (aSet.has(item)) {
+      result.push(item);
+      // Optional: remove the item so we don’t collect duplicates if
+      // `a` or `b` contains repeated entries
+      aSet.delete(item);
     }
   }
-
-  return array;
+  return result;
 }
-// simple numeric sorting
-let nums = [64, 25, 12, 22, 11];
-selectionSort(nums);
-console.log(nums); // [11, 12, 22, 25, 64]
+console.log(intersection([1, 2, 3, 4], [3, 4, 5, 6])); // → [3, 4]
 
-// sorting strings
-let words = ["banana", "avocado", "cherry"];
-selectionSort(words);
-console.log(words); // ["avocado", "banana", "cherry"]
+console.log(intersection(['foo', 'bar'], ['bar', 'baz', 'foo'])); // → ['bar', 'foo']
 
-// custom comparator – descending numbers
-selectionSort(nums, (a, b) => b - a);
-console.log(nums); // [64, 25, 22, 12, 11]
+// With duplicates
+console.log(intersection([1, 2, 2], [2, 2, 3])); // → [2]
+const intersection = (a: any[], b: any[]) => a.filter(x => b.includes(x));
