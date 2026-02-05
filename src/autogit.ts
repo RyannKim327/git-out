@@ -1,45 +1,34 @@
-/**
- * Return the largest prime factor of |n|.
- *
- * @param n Any integer. Negative values are treated as |n|.
- * @returns   The largest prime factor of n, or `0` if n has no prime factors
- * (i.e. n is 0, 1, or –1).
- */
-function largestPrimeFactor(n: number): number {
-  if (n === 0 || n === 1 || n === -1) return 0;
+function isAnagramSort(a: string, b: string): boolean {
+  // Normalize (optional – depends on your use‑case)
+  const normalize = (s: string) =>
+    s.replace(/\s+/g, '').toLowerCase(); // trim spaces, lower‑case
 
-  let num = Math.abs(n);          // work with the absolute value
-  let lastPrime = 0;              // keep the biggest factor we’ve seen
+  const sa = normalize(a).split('').sort().join('');
+  const sb = normalize(b).split('').sort().join('');
 
-  // Treat 2 separately – it’s the only even prime
-  while (num % 2 === 0) {
-    lastPrime = 2;
-    num >>= 1;                    // divide by 2
+  return sa === sb;
+}
+function isAnagramMap(a: string, b: string): boolean {
+  // Quick length check (no need to normalize again here)
+  if (a.length !== b.length) return false;
+
+  const count = new Map<string, number>();
+
+  for (let i = 0; i < a.length; i++) {
+    const ca = a[i];
+    const cb = b[i];
+
+    count.set(ca, (count.get(ca) || 0) + 1);
+    count.set(cb, (count.get(cb) || 0) - 1);
   }
 
-  // Now n is odd. Try only odd divisors.
-  // We only need to go up to sqrt(num) because if num still > 1 after that,
-  // num itself is prime and the largest factor.
-  for (let d = 3; d * d <= num; d += 2) {
-    while (num % d === 0) {
-      lastPrime = d;
-      num /= d;
-    }
+  // All counts must net to 0
+  for (const val of count.values()) {
+    if (val !== 0) return false;
   }
-
-  // If after the loop num > 1, it means num itself is prime
-  // and larger than any divisor we found earlier.
-  if (num > 1) lastPrime = num;
-
-  return lastPrime;
+  return true;
 }
-
-/* ----- quick sanity checks ----- */
-console.log(largestPrimeFactor(13195));   // 29  (13195 = 5 × 7 × 13 × 29)
-console.log(largestPrimeFactor(600851475143)); // 6857 (the known answer to Project Euler #3)
-Console.log(largestPrimeFactor(13));      // 13
-Console.log(largestPrimeFactor(4));       // 2
-Console.log(largestPrimeFactor(1));       // 0
-function largestPrimeFactorBigInt(n: bigint): bigint {
-  // identical logic, but using bigint operations
-}
+const a = 'listen';
+const b = 'silent';
+console.log(isAnagramSort(a, b)); // true
+console.log(isAnagramMap(a, b));  // true
