@@ -1,105 +1,32 @@
 /**
- * A singly‑linked list node that holds a generic value.
+ * Bubble sort – compares adjacent elements and swaps them if they're out of order.
+ *
+ * @param arr – The array of numbers (or any type that implements `<`),
+ *              sorted in place and also returned for convenience.
+ * @returns The sorted array.
  */
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
-/**
- * Returns true iff the linked list is a palindrome.
- */
-export function isPalindrome<T>(head: ListNode<T> | null): boolean {
-  if (!head || !head.next) return true; // empty or single node
+export function bubbleSort<T>(arr: T[]): T[] {
+  const n = arr.length;
 
-  /* ---------- 1️⃣ Find middle ---------- */
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
-
-  while (fast.next && fast.next.next) {
-    slow = slow!.next!;   // move one step
-    fast = fast.next.next; // move two steps
-  }
-
-  /* ---------- 2️⃣ Reverse second half ---------- */
-  let prev: ListNode<T> | null = null;
-  let curr: ListNode<T> | null = slow;
-
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  const secondHalfHead = prev; // start of reversed half
-
-  /* ---------- 3️⃣ Compare halves ---------- */
-  let p1: ListNode<T> | null = head;
-  let p2: ListNode<T> | null = secondHalfHead;
-
-  let isPal = true;
-  while (isPal && p2) {           // p2 is half the length
-    if (p1!.val !== p2!.val) {
-      isPal = false;
-      break;
+  // Outer loop – each pass guarantees that the largest element among the
+  // unsorted portion moves to its final position at the end of the array.
+  for (let i = 0; i < n - 1; i++) {
+    // Inner loop – only needs to run up to the last unsorted element.
+    for (let j = 0; j < n - i - 1; j++) {
+      // If the current element is greater than the next one, swap them.
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+      }
     }
-    p1 = p1!.next;
-    p2 = p2!.next;
   }
 
-  /* ---------- (Optional) 4️⃣ Restore list ---------- */
-  // reverse again to keep original structure
-  curr = secondHalfHead;
-  prev = null;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  if (slow!.next) { // connect back
-    slow!.next = prev;
-  }
-
-  return isPal;
+  return arr;
 }
-function build<T>(arr: T[]): ListNode<T> | null {
-  let dummy = new ListNode<T>(null as any);
-  let cur = dummy;
-  for (const v of arr) {
-    cur.next = new ListNode<T>(v);
-    cur = cur.next;
-  }
-  return dummy.next;
-}
+import { bubbleSort } from './bubbleSort';
 
-const tests = [
-  { arr: [1, 2, 3, 2, 1], expected: true },
-  { arr: [1, 2, 2, 1], expected: true },
-  { arr: [1, 2, 3], expected: false },
-  { arr: [], expected: true },
-  { arr: [42], expected: true },
-  { arr: [7, 8, 7, 9], expected: false }
-];
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log('Before:', numbers);
 
-for (const {arr, expected} of tests) {
-  const h = build(arr);
-  console.log(`isPalindrome(${JSON.stringify(arr)}) =>`, isPalindrome(h), 'expected', expected);
-}
-isPalindrome([1,2,3,2,1]) => true expected true
-isPalindrome([1,2,2,1]) => true expected true
-isPalindrome([1,2,3]) => false expected false
-isPalindrome([]) => true expected true
-isPalindrome([42]) => true expected true
-isPalindrome([7,8,7,9]) => false expected false
-function isPalindromeStack<T>(head: ListNode<T> | null): boolean {
-  const vals: T[] = [];
-  for (let cur = head; cur; cur = cur.next) vals.push(cur.val);
+bubbleSort(numbers);
 
-  let l = 0, r = vals.length - 1;
-  while (l < r) {
-    if (vals[l++] !== vals[r--]) return false;
-  }
-  return true;
-}
+console.log('After:', numbers);   // [11, 12, 22, 25, 34, 64, 90]
