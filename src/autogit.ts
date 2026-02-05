@@ -1,61 +1,45 @@
 /**
- * Fibonacci Search
- *
- * @param arr   Sorted array to search
- * @param key   Value to locate
- * @returns    Index of key or -1
+ * Returns the majority element if it exists.
+ * If no element occurs > n/2 times, it returns undefined.
  */
-export function fibonacciSearch<T extends number | string>(
-  arr: T[],
-  key: T
-): number {
-  const n = arr.length;
+function majorityElement<T>(arr: T[]): T | undefined {
+  let candidate: T | undefined;
+  let count = 0;
 
-  // 1. Compute the smallest Fibonacci number greater or equal to n
-  let fibMinusTwo = 0;   // (n-2)th fibonacci
-  let fibMinusOne = 1;   // (n-1)th fibonacci
-  let fibN = fibMinusTwo + fibMinusOne; // nth fibonacci
-
-  while (fibN < n) {
-    fibMinusTwo = fibMinusOne;
-    fibMinusOne = fibN;
-    fibN = fibMinusTwo + fibMinusOne;
-  }
-
-  // 2. Marks the index beyond the last element
-  let offset = -1;
-
-  // 3. while there's more to inspect
-  while (fibN > 1) {
-    const i = Math.min(offset + fibMinusTwo, n - 1);
-
-    // Compare the current element with the key
-    if (arr[i] < key!) {
-      // Move three Fibonacci numbers down
-      fibN = fibMinusOne;
-      fibMinusOne = fibMinusTwo;
-      fibMinusTwo = fibN - fibMinusOne;
-      offset = i;
-    } else if (arr[i] > key!) {
-      // Move two Fibonacci numbers down
-      fibN = fibMinusTwo;
-      fibMinusOne = fibMinusOne - fibMinusTwo;
-      fibMinusTwo = fibN - fibMinusOne;
+  // Step 1 – find a candidate
+  for (const value of arr) {
+    if (count === 0) {
+      candidate = value;
+      count = 1;
+    } else if (value === candidate) {
+      count++;
     } else {
-      // Element found
-      return i;
+      count--;
     }
   }
 
-  // Compare the last element with the key
-  if (fibMinusOne && offset + 1 < n && arr[offset + 1] === key) {
-    return offset + 1;
+  // Step 2 – optional verification pass
+  // (often omitted if you’re sure the input guarantees a majority)
+  if (candidate !== undefined) {
+    let occurrences = 0;
+    for (const v of arr) {
+      if (v === candidate) occurrences++;
+    }
+    if (occurrences > Math.floor(arr.length / 2)) {
+      return candidate;
+    }
   }
 
-  return -1; // Not found
+  return undefined; // no majority
 }
-const sortedNums = [3, 7, 12, 18, 23, 27, 34, 38, 45, 52];
-const target = 23;
+function majorityUsingMap<T>(arr: T[]): T | undefined {
+  const freq = new Map<T, number>();
+  const threshold = Math.floor(arr.length / 2) + 1;
 
-const idx = fibonacciSearch(sortedNums, target);
-console.log(idx); // 4
+  for (const val of arr) {
+    const newCount = (freq.get(val) ?? 0) + 1;
+    if (newCount >= threshold) return val;
+    freq.set(val, newCount);
+  }
+  return undefined;
+}
