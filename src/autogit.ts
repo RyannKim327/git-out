@@ -1,47 +1,87 @@
 /**
- * Finds the median of two sorted arrays that may be of different lengths.
+ * Returns the maximum sum of any contiguous sub‑array.
  *
- * @param a  first sorted array (non‑empty)
- * @param b  second sorted array (non‑empty)
- * @returns  median value (number)
+ * @param arr – array of numbers (may contain negatives)
+ * @returns {number} maximum sub‑array sum
  */
-export function medianOfTwoSortedArrays(a: number[], b: number[]): number {
-  // Ensure a is the shorter array to keep the binary search bounded.
-  if (a.length > b.length) return medianOfTwoSortedArrays(b, a);
+export function maxSubArraySum(arr: number[]): number {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
+  }
 
-  const m = a.length;
-  const n = b.length;
-  let left = 0;
-  let right = m;
+  // init both with first element: handles all‑negative cases nicely
+  let currentBest = arr[0];
+  let globalBest = arr[0];
 
-  while (left <= right) {
-    const i = Math.floor((left + right) / 2);          // cut in a
-    const j = Math.floor((m + n + 1) / 2) - i;        // cut in b
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
 
-    const Aleft   = i === 0 ?    -Infinity : a[i - 1];
-    const Aright  = i === m ?    Infinity : a[i];
-    const Bleft   = j === 0 ?    -Infinity : b[j - 1];
-    const Bright  = j === n ?    Infinity : b[j];
+    // Either extend the previous sub‑array or start fresh at value
+    currentBest = Math.max(value, currentBest + value);
 
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // correct partition found
-      if ((m + n) % 2 === 0) {
-        return Math.max(Aleft, Bleft) + Math.min(Aright, Bright) / 2;
-      } else {
-        return Math.max(Aleft, Bleft);
-      }
-    } else if (Aleft > Bright) {
-      // i is too big – shift left
-      right = i - 1;
+    // Keep the best seen so far
+    globalBest = Math.max(globalBest, currentBest);
+  }
+
+  return globalBest;
+}
+const testSets = [
+  { arr: [1, -2, 3, 4, -5, 8], expect: 10 },
+  { arr: [-2, -3, -1, -4], expect: -1 },
+  { arr: [2, 3, 1, 6], expect: 12 },
+  { arr: [5, -1, 2, 3], expect: 9 },
+  { arr: [1], expect: 1 },
+];
+
+for (const { arr, expect } of testSets) {
+  const result = maxSubArraySum(arr);
+  console.log(`arr: ${arr} → max sum: ${result} (${result === expect ? '✓' : '✗'})`);
+}
+arr: 1,-2,3,4,-5,8 → max sum: 10 (✓)
+arr: -2,-3,-1,-4 → max sum: -1 (✓)
+arr: 2,3,1,6 → max sum: 12 (✓)
+arr: 5,-1,2,3 → max sum: 9 (✓)
+arr: 1 → max sum: 1 (✓)
+interface MaxSubArrayResult {
+  sum: number;
+  start: number;
+  end: number;   // inclusive
+}
+
+export function maxSubArraySumWithIndices(arr: number[]): MaxSubArrayResult {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
+  }
+
+  let currentBest = arr[0];
+  let globalBest = arr[0];
+
+  // working indices
+  let currentStart = 0;
+  let bestStart = 0;
+  let bestEnd = 0;
+
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
+
+    // decide whether to continue or start a new sub‑array
+    if (currentBest + value < value) {
+      currentBest = value;
+      currentStart = i;
     } else {
-      // i is too small – shift right
-      left = i + 1;
+      currentBest += value;
+    }
+
+    // update global best if we found a better sum
+    if (currentBest > globalBest) {
+      globalBest = currentBest;
+      bestStart = currentStart;
+      bestEnd = i;
     }
   }
 
-  // Should never hit here if inputs are valid and sorted.
-  throw new Error("Input arrays are not sorted or empty");
+  return { sum: globalBest, start: bestStart, end: bestEnd };
 }
-console.log(medianOfTwoSortedArrays([1, 3], [2]));          // 2
-console.log(medianOfTwoSortedArrays([1, 2], [3, 4]));        // 2.5
-console.log(medianOfTwoSortedArrays([0, 0], [0, 0]));        // 0
+const { sum, start, end } = maxSubArraySumWithIndices([1, -2, 3, 4, -5, 8]);
+console.log(`max sum ${sum} from index ${start} to ${end}`);
+// → max sum 10 from index 2 to 5
