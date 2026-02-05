@@ -1,32 +1,45 @@
-const uniq = <T>(arr: T[]): T[] => [...new Set(arr)];
+class Stack<T> {
+  private items: T[] = [];      // underlying array
 
-const numbers = [1, 2, 3, 2, 4, 1];
-console.log(uniq(numbers)); // [1, 2, 3, 4]
-const uniq = <T>(arr: T[]): T[] =>
-  arr.filter((value, index, self) => self.indexOf(value) === index);
-
-const words = ["a", "b", "a", "c", "b"];
-console.log(uniq(words)); // ["a", "b", "c"]
-const uniq = <T>(arr: T[]): T[] =>
-  arr.reduce((seen, val) => {
-    if (!seen.includes(val)) seen.push(val);
-    return seen;
-  }, [] as T[]);
-function uniqInPlace<T>(arr: T[]): void {
-  const seen = new Set<T>();
-  let writeIdx = 0;
-
-  for (const v of arr) {
-    if (!seen.has(v)) {
-      seen.add(v);
-      arr[writeIdx++] = v;
-    }
+  /** Push a value onto the top of the stack. */
+  push(value: T): void {
+    this.items.push(value);
   }
 
-  // Optional: truncate the array
-  arr.length = writeIdx;
-}
+  /** Remove and return the top value.  Returns `undefined` if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
 
-const data = [5, 3, 5, 2, 3];
-uniqInPlace(data);
-console.log(data); // [5, 3, 2]
+  /** Peek at the top value without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Number of elements in the stack. */
+  get size(): number {
+    return this.items.length;
+  }
+
+  /** True if the stack contains no items. */
+  get isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Optional: clear all items. */
+  clear(): void {
+    this.items = [];
+  }
+}
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size);   // 2
+
+stack.clear();
+console.log(stack.isEmpty); // true
