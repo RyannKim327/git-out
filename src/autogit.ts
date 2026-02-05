@@ -1,104 +1,114 @@
 /**
- * Bottom‑up merge sort.
+ * A binary heap backed priority queue.
  *
- * @param arr   The array to sort.  The sort is performed in place.
- * @returns     The sorted array (useful for chaining / convenience).
+ * The heap stores elements in a 0‑based array. For a node at index i:
+ *   left child   → 2*i + 1
+ *   right child  → 2*i + 2
+ *   parent       → Math.floor((i - 1) / 2)
  */
-export function mergeSortIterative<T>(arr: T[]): T[] {
-  const n = arr.length;
-  if (n <= 1) return arr;              // nothing to do
+export class BinaryPriorityQueue<T> {
+  private data: T[] = [];
+  private readonly compare: (a: T, b: T) => number; // negative if a < b
 
-  // auxiliary array – we copy data in and out of it
-  const aux = new Array<T>(n);
+  constructor(compare: (a: T, b: T) => number) {
+    this.compare = compare;
+  }
 
-  // start with runs of length 1 and double until the whole array is covered
-  for (let sz = 1; sz < n; sz <<= 1) {
-    // merge adjacent runs of width `sz`
-    for (let lo = 0; lo < n - sz; lo += sz * 2) {
-      const mid = lo + sz;                     // end of left run
-      const hi  = Math.min(lo + sz * 2, n);    // exclusive upper bound
-      merge(arr, aux, lo, mid, hi);
+  /** Number of elements in the queue */
+  size(): number {
+    return this.data.length;
+  }
+
+  /** Peek the element with the highest priority (root of the heap) */
+  peek(): T | undefined {
+    return this.data[0];
+  }
+
+  /** Insert a new element */
+  push(value: T): void {
+    this.data.push(value);
+    this.bubbleUp(this.data.length - 1);
+  }
+
+  /**
+   * Remove and return the element with the highest priority.
+   * Returns undefined if the queue is empty.
+   */
+  pop(): T | undefined {
+    if (!this.data.length) return undefined;
+
+    const root = this.data[0];
+    const last = this.data.pop()!; // safe because we checked length
+
+    if (this.data.length) {
+      this.data[0] = last;
+      this.sinkDown(0);
     }
-  }
-  return arr;
-}
-/**
- * Merge two consecutive sorted halves `arr[lo..mid)` and `arr[mid..hi)`.
- * Output is written back into `arr` using the auxiliary buffer `aux`.
- */
-function merge<T>(
-  arr: T[],
-  aux: T[],
-  lo: number,
-  mid: number,
-  hi: number
-): void {
-  // copy the relevant segment into aux
-  for (let i = lo; i < hi; i++) {
-    aux[i] = arr[i];
+
+    return root;
   }
 
-  let i = lo;      // pointer into left half
-  let j = mid;     // pointer into right half
-  for (let k = lo; k < hi; k++) {
-    if (i >= mid) {
-      arr[k] = aux[j++];
-    } else if (j >= hi) {
-      arr[k] = aux[i++];
-    } else if (aux[j] < aux[i]) {   // you can plug in a custom comparator if you want
-      arr[k] = aux[j++];
-    } else {
-      arr[k] = aux[i++];
+  /** Remove all elements */
+  clear(): void {
+    this.data.length = 0;
+  }
+
+  /* --- Internals --- */
+
+  private bubbleUp(index: number): void {
+    const elem = this.data[index];
+    while (index > 0) {
+      const parentIdx = (index - 1) >> 1;
+      const parent = this.data[parentIdx];
+      if (this.compare(elem, parent) >= 0) break;
+      this.data[index] = parent;
+      index = parentIdx;
     }
+    this.data[index] = elem;
   }
-}
-// helper to display array nicely
-const fmt = (a: number[]) => `[${a.join(', ')}]`;
 
-// Random test helper
-function randomArray(len: number, max = 100) {
-  return Array.from({ length: len }, () => Math.floor(Math.random() * max));
-}
+  private sinkDown(index: number): void {
+    const length = this.data.length;
+    const elem = this.data[index];
 
-// sanity checks
-console.time('iterative');
-const sorted1 = mergeSortIterative(randomArray(1_000_000));
-console.timeEnd('iterative');          // ~200-300 ms on a typical laptop
+    while (true) {
+      const leftIdx = (index << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let swapIdx = -1;
 
-// make sure it's really sorted
-for (let i = 1; i < sorted1.length; i++) {
-  if (sorted1[i - 1] > sorted1[i]) {
-    throw new Error('Not sorted!');
-  }
-}
-function mergeSortIterativeWith<T>(arr: T[], comp: (a: T, b: T) => number): T[] {
-  const n = arr.length;
-  if (n <= 1) return arr;
-  const aux = new Array<T>(n);
-  for (let sz = 1; sz < n; sz <<= 1) {
-    for (let lo = 0; lo < n - sz; lo += sz * 2) {
-      const mid = lo + sz;
-      const hi  = Math.min(lo + sz * 2, n);
-      mergeWith(arr, aux, lo, mid, hi, comp);
+      if (leftIdx < length) {
+        const left = this.data[leftIdx];
+        if (this.compare(left, elem) < 0) swapIdx = leftIdx;
+      }
+      if (rightIdx < length) {
+        const right = this.data[rightIdx];
+        const compareRight = this.compare(right, elem);
+        if (
+          (swapIdx === -1 && compareRight < 0) ||
+          (swapIdx !== -1 && compareRight < this.compare(this.data[swapIdx], elem))
+        ) {
+          swapIdx = rightIdx;
+        }
+      }
+
+      if (swapIdx === -1) break;
+      this.data[index] = this.data[swapIdx];
+      index = swapIdx;
     }
+    this.data[index] = elem;
   }
-  return arr;
 }
+// Example: priority queue of numbers (min‑heap)
+const pq = new BinaryPriorityQueue<number>((a, b) => a - b);
 
-function mergeWith<T>(
-  arr: T[],
-  aux: T[],
-  lo: number,
-  mid: number,
-  hi: number,
-  comp: (a: T, b: T) => number
-): void {
-  for (let i = lo; i < hi; i++) aux[i] = arr[i];
-  let i = lo, j = mid;
-  for (let k = lo; k < hi; k++) {
-    if (i >= mid) arr[k] = aux[j++];
-    else if (j >= hi) arr[k] = aux[i++];
-    else if (comp(aux[j], aux[i]) < 0) arr[k] = aux[j++];
-    else arr[k] = aux[i++];
-  }
-}
+pq.push(5);
+pq.push(1);
+pq.push(3);
+
+console.log(pq.peek()); // 1
+console.log(pq.pop());  // 1
+console.log(pq.pop());  // 3
+console.log(pq.pop());  // 5
+interface Task { id: number; priority: number; }
+
+const taskQueue = new BinaryPriorityQueue<Task>((a, b) => a.priority - b.priority);
