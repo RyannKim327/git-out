@@ -1,30 +1,45 @@
-// src/scheduler.ts
-import { schedule, Job } from 'node-cron';
-import { randomInt } from 'crypto';
+/**
+ * Return the largest prime factor of |n|.
+ *
+ * @param n Any integer. Negative values are treated as |n|.
+ * @returns   The largest prime factor of n, or `0` if n has no prime factors
+ * (i.e. n is 0, 1, or –1).
+ */
+function largestPrimeFactor(n: number): number {
+  if (n === 0 || n === 1 || n === -1) return 0;
 
-// Helper: format the current date/time nicely
-const fmtDate = (date: Date): string => {
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
-         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-};
+  let num = Math.abs(n);          // work with the absolute value
+  let lastPrime = 0;              // keep the biggest factor we’ve seen
 
-// Cron expression – every 5 minutes, on the minute.
-// (Syntax: `m h dom mon dow`)
-// Example: 0 12 * * * → every day at 12:00.
-const cronExpr = '*/5 * * * *';
+  // Treat 2 separately – it’s the only even prime
+  while (num % 2 === 0) {
+    lastPrime = 2;
+    num >>= 1;                    // divide by 2
+  }
 
-const job: Job = schedule(cronExpr, () => {
-  const now = new Date();
-  const rand = randomInt(1_000_000); // 0 <= rand < 1,000,000
-  console.log(`[${fmtDate(now)}] Random number: ${rand}`);
-}, {
-  scheduled: true, // start scheduling immediately
-  timezone: 'UTC'  // adjust if you need a different zone
-});
+  // Now n is odd. Try only odd divisors.
+  // We only need to go up to sqrt(num) because if num still > 1 after that,
+  // num itself is prime and the largest factor.
+  for (let d = 3; d * d <= num; d += 2) {
+    while (num % d === 0) {
+      lastPrime = d;
+      num /= d;
+    }
+  }
 
-// Optional: make the process stay alive but not block exit
-job.task?.unref?.();
+  // If after the loop num > 1, it means num itself is prime
+  // and larger than any divisor we found earlier.
+  if (num > 1) lastPrime = num;
 
-// If you ran the script normally (`node src/scheduler.js` after TS‑compile),
-// the job will keep running. Exit manually when you're done.
+  return lastPrime;
+}
+
+/* ----- quick sanity checks ----- */
+console.log(largestPrimeFactor(13195));   // 29  (13195 = 5 × 7 × 13 × 29)
+console.log(largestPrimeFactor(600851475143)); // 6857 (the known answer to Project Euler #3)
+Console.log(largestPrimeFactor(13));      // 13
+Console.log(largestPrimeFactor(4));       // 2
+Console.log(largestPrimeFactor(1));       // 0
+function largestPrimeFactorBigInt(n: bigint): bigint {
+  // identical logic, but using bigint operations
+}
