@@ -1,44 +1,61 @@
-export interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-}
 /**
- * Returns the nth node from the end of a singly‑linked list.
+ * Fibonacci Search
  *
- * @param head  The head of the list (may be null).
- * @param n 1‑based index counting from the last node.
- * @returns   The node itself, or null if n is out of bounds.
+ * @param arr   Sorted array to search
+ * @param key   Value to locate
+ * @returns    Index of key or -1
  */
-export function getNthFromEnd<T>(
-  head: ListNode<T> | null,
-  n: number
-): ListNode<T> | null {
-  if (n <= 0) return null;                // n must be positive
+export function fibonacciSearch<T extends number | string>(
+  arr: T[],
+  key: T
+): number {
+  const n = arr.length;
 
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
+  // 1. Compute the smallest Fibonacci number greater or equal to n
+  let fibMinusTwo = 0;   // (n-2)th fibonacci
+  let fibMinusOne = 1;   // (n-1)th fibonacci
+  let fibN = fibMinusTwo + fibMinusOne; // nth fibonacci
 
-  // Advance `fast` n steps ahead.
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;              // n is larger than the list length
-    fast = fast.next;
+  while (fibN < n) {
+    fibMinusTwo = fibMinusOne;
+    fibMinusOne = fibN;
+    fibN = fibMinusTwo + fibMinusOne;
   }
 
-  // Move both pointers until `fast` reaches the end.
-  while (fast) {
-    fast = fast.next;
-    slow = slow?.next ?? null;
+  // 2. Marks the index beyond the last element
+  let offset = -1;
+
+  // 3. while there's more to inspect
+  while (fibN > 1) {
+    const i = Math.min(offset + fibMinusTwo, n - 1);
+
+    // Compare the current element with the key
+    if (arr[i] < key!) {
+      // Move three Fibonacci numbers down
+      fibN = fibMinusOne;
+      fibMinusOne = fibMinusTwo;
+      fibMinusTwo = fibN - fibMinusOne;
+      offset = i;
+    } else if (arr[i] > key!) {
+      // Move two Fibonacci numbers down
+      fibN = fibMinusTwo;
+      fibMinusOne = fibMinusOne - fibMinusTwo;
+      fibMinusTwo = fibN - fibMinusOne;
+    } else {
+      // Element found
+      return i;
+    }
   }
 
-  // `slow` is now the nth from the end.
-  return slow;
+  // Compare the last element with the key
+  if (fibMinusOne && offset + 1 < n && arr[offset + 1] === key) {
+    return offset + 1;
+  }
+
+  return -1; // Not found
 }
-// Build a tiny list: 10 → 20 → 30 → 40 → 50
-const node5: ListNode<number> = { value: 50, next: null };
-const node4: ListNode<number> = { value: 40, next: node5 };
-const node3: ListNode<number> = { value: 30, next: node4 };
-const node2: ListNode<number> = { value: 20, next: node3 };
-const head: ListNode<number> = { value: 10, next: node2 };
+const sortedNums = [3, 7, 12, 18, 23, 27, 34, 38, 45, 52];
+const target = 23;
 
-const thirdFromEnd = getNthFromEnd(head, 3);
-console.log(thirdFromEnd?.value); // 30
+const idx = fibonacciSearch(sortedNums, target);
+console.log(idx); // 4
