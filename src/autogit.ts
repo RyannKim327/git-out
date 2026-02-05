@@ -1,74 +1,87 @@
-interface Node<T> {
-  /** opaque identifier used for duplicate detection – e.g. a stringified board state */
-  id: string;
-  /** whatever data you want to keep (state, metadata, …) */
-  data: T;
-  /** produces the succ­esor nodes */
-  getChildren(): Iterable<Node<T>>;
-}
-function dls<T>(
-  node: Node<T>,
-  goalTest: (n: Node<T>) => boolean,
-  limit: number,
-  visited = new Set<string>()
-): Node<T> | null {
-  if (goalTest(node)) return node;
-  if (limit <= 0) return null;          // terminal depth reached
-  visited.add(node.id);                 // prevent revisiting
+/**
+ * Returns the maximum sum of any contiguous sub‑array.
+ *
+ * @param arr – array of numbers (may contain negatives)
+ * @returns {number} maximum sub‑array sum
+ */
+export function maxSubArraySum(arr: number[]): number {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
+  }
 
-  for (const child of node.getChildren()) {
-    if (!visited.has(child.id)) {
-      const result = dls(child, goalTest, limit - 1, visited);
-      if (result !== null) return result;
+  // init both with first element: handles all‑negative cases nicely
+  let currentBest = arr[0];
+  let globalBest = arr[0];
+
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
+
+    // Either extend the previous sub‑array or start fresh at value
+    currentBest = Math.max(value, currentBest + value);
+
+    // Keep the best seen so far
+    globalBest = Math.max(globalBest, currentBest);
+  }
+
+  return globalBest;
+}
+const testSets = [
+  { arr: [1, -2, 3, 4, -5, 8], expect: 10 },
+  { arr: [-2, -3, -1, -4], expect: -1 },
+  { arr: [2, 3, 1, 6], expect: 12 },
+  { arr: [5, -1, 2, 3], expect: 9 },
+  { arr: [1], expect: 1 },
+];
+
+for (const { arr, expect } of testSets) {
+  const result = maxSubArraySum(arr);
+  console.log(`arr: ${arr} → max sum: ${result} (${result === expect ? '✓' : '✗'})`);
+}
+arr: 1,-2,3,4,-5,8 → max sum: 10 (✓)
+arr: -2,-3,-1,-4 → max sum: -1 (✓)
+arr: 2,3,1,6 → max sum: 12 (✓)
+arr: 5,-1,2,3 → max sum: 9 (✓)
+arr: 1 → max sum: 1 (✓)
+interface MaxSubArrayResult {
+  sum: number;
+  start: number;
+  end: number;   // inclusive
+}
+
+export function maxSubArraySumWithIndices(arr: number[]): MaxSubArrayResult {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
+  }
+
+  let currentBest = arr[0];
+  let globalBest = arr[0];
+
+  // working indices
+  let currentStart = 0;
+  let bestStart = 0;
+  let bestEnd = 0;
+
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
+
+    // decide whether to continue or start a new sub‑array
+    if (currentBest + value < value) {
+      currentBest = value;
+      currentStart = i;
+    } else {
+      currentBest += value;
+    }
+
+    // update global best if we found a better sum
+    if (currentBest > globalBest) {
+      globalBest = currentBest;
+      bestStart = currentStart;
+      bestEnd = i;
     }
   }
-  return null; // no goal found within limit
+
+  return { sum: globalBest, start: bestStart, end: bestEnd };
 }
-function dlsIter<T>(
-  start: Node<T>,
-  goalTest: (n: Node<T>) => boolean,
-  limit: number
-): Node<T> | null {
-  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: start, depth: 0 }];
-  const visited = new Set<string>();
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    if (goalTest(node)) return node;
-    if (depth === limit) continue;      // hit the limit – skip children
-
-    visited.add(node.id);
-    for (const child of node.getChildren()) {
-      if (!visited.has(child.id)) {
-        stack.push({ node: child, depth: depth + 1 });
-      }
-    }
-  }
-  return null;
-}
-class Coord {
-  constructor(public x: number, public y: number) {}
-}
-
-class MazeCell implements Node<Coord> {
-  constructor(
-    public id: string,
-    public data: Coord,
-    private neighbors: readonly Coord[]
-  ) {}
-
-  getChildren(): Iterable<Node<Coord>> {
-    return this.neighbors.map(
-      n => new MazeCell(String(n.x) + ',' + n.y, n, [] /* placeholder */)
-    );
-  }
-}
-
-// Setup: build maze, decide start & goal
-const start = new MazeCell('0,0', new Coord(0, 0), [new Coord(1, 0), new Coord(0, 1)]);
-const isGoal = (n: Node<Coord>) => n.data.x === 5 && n.data.y === 5;
-
-// Run:
-const found = dls(start, isGoal, 10);
-if (found) console.log('Found solution:', found.data);
-else console.log('no path within depth 10');
+const { sum, start, end } = maxSubArraySumWithIndices([1, -2, 3, 4, -5, 8]);
+console.log(`max sum ${sum} from index ${start} to ${end}`);
+// → max sum 10 from index 2 to 5
