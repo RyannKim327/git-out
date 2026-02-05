@@ -1,51 +1,32 @@
-// ----------  Tree node definition ----------
-class TreeNode<T> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
-}
+/**
+ * Bubble sort – compares adjacent elements and swaps them if they're out of order.
+ *
+ * @param arr – The array of numbers (or any type that implements `<`),
+ *              sorted in place and also returned for convenience.
+ * @returns The sorted array.
+ */
+export function bubbleSort<T>(arr: T[]): T[] {
+  const n = arr.length;
 
-// ----------  Diameter helper ----------
-function diameter(root: TreeNode<any> | null): number {
-  let maxDiameter = 0;           // global best
-
-  // returns height of subtree rooted at `node`
-  function dfs(node: TreeNode<any> | null): number {
-    if (!node) return 0;
-
-    const leftH  = dfs(node.left);
-    const rightH = dfs(node.right);
-
-    // path that passes through this node
-    const candidate = leftH + rightH;
-    if (candidate > maxDiameter) maxDiameter = candidate;
-
-    // height of this subtree
-    return Math.max(leftH, rightH) + 1;
+  // Outer loop – each pass guarantees that the largest element among the
+  // unsorted portion moves to its final position at the end of the array.
+  for (let i = 0; i < n - 1; i++) {
+    // Inner loop – only needs to run up to the last unsorted element.
+    for (let j = 0; j < n - i - 1; j++) {
+      // If the current element is greater than the next one, swap them.
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+      }
+    }
   }
 
-  dfs(root);
-  return maxDiameter;                   // number of edges on the longest path
+  return arr;
 }
+import { bubbleSort } from './bubbleSort';
 
-/* ------------------------------------------------------------------ */
-/*  Quick sanity check – build a tree and run the function             */
-/* ------------------------------------------------------------------ */
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log('Before:', numbers);
 
-const a = new TreeNode('a');
-const b = new TreeNode('b');
-const c = new TreeNode('c');
-const d = new TreeNode('d');
-const e = new TreeNode('e');
-const f = new TreeNode('f');
+bubbleSort(numbers);
 
-a.left  = b;                //   a
-a.right = c;                //  / \
-b.left  = d;                // d   c
-b.right = e;                //  \   \
-e.right = f;                //   f
-
-console.log(diameter(a));   // → 4
-const diameterInNodes = diameter(root) + 1;
+console.log('After:', numbers);   // [11, 12, 22, 25, 34, 64, 90]
