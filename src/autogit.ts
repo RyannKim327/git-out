@@ -1,75 +1,87 @@
-function decimalToBinary(dec: number | bigint): string {
-  return dec.toString(2);
-}
-
-// Examples
-console.log(decimalToBinary(13));      // '1101'
-console.log(decimalToBinary(255n));    // '11111111'
-function decimalToBinaryIterative(num: number): string {
-  if (num === 0) return '0';
-  let n = Math.abs(num);
-  const bits: string[] = [];
-  while (n > 0) {
-    bits.push((n % 2).toString());
-    n = Math.floor(n / 2);
+/**
+ * Returns the maximum sum of any contiguous sub‑array.
+ *
+ * @param arr – array of numbers (may contain negatives)
+ * @returns {number} maximum sub‑array sum
+ */
+export function maxSubArraySum(arr: number[]): number {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
   }
-  if (num < 0) bits.push('-');
-  return bits.reverse().join('');
+
+  // init both with first element: handles all‑negative cases nicely
+  let currentBest = arr[0];
+  let globalBest = arr[0];
+
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
+
+    // Either extend the previous sub‑array or start fresh at value
+    currentBest = Math.max(value, currentBest + value);
+
+    // Keep the best seen so far
+    globalBest = Math.max(globalBest, currentBest);
+  }
+
+  return globalBest;
+}
+const testSets = [
+  { arr: [1, -2, 3, 4, -5, 8], expect: 10 },
+  { arr: [-2, -3, -1, -4], expect: -1 },
+  { arr: [2, 3, 1, 6], expect: 12 },
+  { arr: [5, -1, 2, 3], expect: 9 },
+  { arr: [1], expect: 1 },
+];
+
+for (const { arr, expect } of testSets) {
+  const result = maxSubArraySum(arr);
+  console.log(`arr: ${arr} → max sum: ${result} (${result === expect ? '✓' : '✗'})`);
+}
+arr: 1,-2,3,4,-5,8 → max sum: 10 (✓)
+arr: -2,-3,-1,-4 → max sum: -1 (✓)
+arr: 2,3,1,6 → max sum: 12 (✓)
+arr: 5,-1,2,3 → max sum: 9 (✓)
+arr: 1 → max sum: 1 (✓)
+interface MaxSubArrayResult {
+  sum: number;
+  start: number;
+  end: number;   // inclusive
 }
 
-// Demo
-console.log(decimalToBinaryIterative(13));   // '1101'
-console.log(decimalToBinaryIterative(-13));  // '-1101'
-function decimalToBinaryRecursive(num: number): string {
-  if (num === 0) return '';
-  const [higher, bit] = decimalToBinaryRecursive(Math.floor(num / 2)).split('|', 2);
-  return `${higher}|${num % 2}`;
-}
+export function maxSubArraySumWithIndices(arr: number[]): MaxSubArrayResult {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
+  }
 
-// Helper to clean up the leading empty part
-function binaryRecursive(num: number): string {
-  const bin = decimalToBinaryRecursive(num);
-  return bin.split('|').filter(Boolean).join('');
-}
+  let currentBest = arr[0];
+  let globalBest = arr[0];
 
-// Demo
-console.log(binaryRecursive(27));  // '11011'
-function decimalToBinaryFraction(num: number, precision: number = 10): string {
-  const intPart = Math.trunc(num);
-  let fracPart = num - intPart;
-  let binary = intPart.toString(2);
+  // working indices
+  let currentStart = 0;
+  let bestStart = 0;
+  let bestEnd = 0;
 
-  if (precision > 0 && fracPart > 0) {
-    binary += '.';
-    let p = 0;
-    while (p < precision && fracPart > 0) {
-      fracPart *= 2;
-      if (fracPart >= 1) {
-        binary += '1';
-        fracPart -= 1;
-      } else {
-        binary += '0';
-      }
-      p++;
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
+
+    // decide whether to continue or start a new sub‑array
+    if (currentBest + value < value) {
+      currentBest = value;
+      currentStart = i;
+    } else {
+      currentBest += value;
+    }
+
+    // update global best if we found a better sum
+    if (currentBest > globalBest) {
+      globalBest = currentBest;
+      bestStart = currentStart;
+      bestEnd = i;
     }
   }
 
-  return binary;
+  return { sum: globalBest, start: bestStart, end: bestEnd };
 }
-
-// Demo
-console.log(decimalToBinaryFraction(5.6875, 8)); // '101.1011'
-function test(input: number | bigint) {
-  console.log(`Decimal: ${input}`);
-  console.log(`  -> toString(2):   ${input.toString(2)}`);
-  if (typeof input === 'number') {
-    console.log(`  -> iterative:   ${decimalToBinaryIterative(input)}`);
-    console.log(`  -> recursive:   ${binaryRecursive(input)}`);
-  }
-  console.log('');
-}
-
-test(13);
-test(-13);
-test(0);
-test(5.6875);   // only the toString version works for BigInt
+const { sum, start, end } = maxSubArraySumWithIndices([1, -2, 3, 4, -5, 8]);
+console.log(`max sum ${sum} from index ${start} to ${end}`);
+// → max sum 10 from index 2 to 5
