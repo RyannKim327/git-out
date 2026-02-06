@@ -1,48 +1,71 @@
 /**
- * Returns the longest common subsequence (LCS) of two strings.
- * @param a First string
- * @param b Second string
- * @returns { subsequence: string; length: number }
+ * Forward Burrows‑Wheeler Transform.
+ *
+ * @param text – input string
+ * @returns {lastColumn, originalIndex}
+ *   • lastColumn  – the BWT string (the last column of the sorted rotations)
+ *   • originalIndex – position of the original string in the sorted list
  */
-function longestCommonSubsequence(a: string, b: string) {
-  const m = a.length;
-  const n = b.length;
+export function bwt(text: string): { lastColumn: string; originalIndex: number } {
+  const n = text.length;
+  const rotations = new Array<string>(n);
 
-  // 1. Build DP matrix (m+1) x (n+1) filled with 0
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-
-  // 2. Fill DP matrix
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
+  // Build all cyclic rotations
+  for (let i = 0; i < n; i++) {
+    rotations[i] = text.slice(i) + text.slice(0, i);
   }
 
-  // 3. Back‑track to rebuild the subsequence
-  let i = m, j = n;
-  const subseq: string[] = [];
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      subseq.push(a[i - 1]); // same char belongs to LCS
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;            // move up
-    } else {
-      j--;            // move left
-    }
+  // Sort rotations lexicographically
+  rotations.sort();
+
+  // Grab last character of each rotation and remember where the original text ended up
+  let lastColumn = '';
+  let originalIndex = -1;
+  for (let i = 0; i < n; i++) {
+    const rot = rotations[i];
+    lastColumn += rot[rot.length - 1];
+    if (rot === text) originalIndex = i;
   }
 
-  return {
-    subsequence: subseq.reverse().join(''),
-    length: dp[m][n]
-  };
+  return { lastColumn, originalIndex };
 }
 
-// Quick demo
-const { subsequence, length } = longestCommonSubsequence('AGCAT', 'GAC');
-console.log(`Longest common subsequence: ${subsequence} (length ${length})`);
+/**
+ * Inverse Burrows‑Wheeler Transform.
+ *
+ * @param lastColumn  – BWT string (result of the forward transform)
+ * @param originalIndex – index returned by the forward transform
+ * @returns original input string
+ */
+export function inverseBwt(lastColumn: string, originalIndex: number): string {
+  const n = lastColumn.length;
+
+  // Build the first column by sorting the last column
+  const firstColumn = [...lastColumn].sort().join('');
+
+  // Build a map from character to its deque of positions in the last column
+  const charQueues: Record<string, number[]> = {};
+  for (let i = 0; i < n; i++) {
+    const c = lastColumn[i];
+    if (!charQueues[c]) charQueues[c] = [];
+    charQueues[c].push(i);
+  }
+
+  // Reconstruct the original string
+  let result = '';
+  let idx = originalIndex;
+  for (let i = 0; i < n; i++) {
+    const c = firstColumn[idx];
+    result += c;
+    // The row that had c in the last column is the next idx
+    idx = charQueues[c].shift()!;
+  }
+
+  return result;
+}
+const { lastColumn, originalIndex } = bwt('BANANA');
+console.log(lastColumn);          // 'ANNBAA'
+console.log(originalIndex);       // 3
+
+const original = inverseBwt(lastColumn, originalIndex);
+console.log(original);            // 'BANANA'
