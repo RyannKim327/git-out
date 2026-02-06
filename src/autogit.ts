@@ -1,113 +1,96 @@
-type Hashable = string | number;
+/**
+ * The graph is kept as an adjacency list.
+ * `T` is the type of the value stored on each vertex.
+ */
+export class Graph<T> {
+  /** Map from vertex ID → the value stored on that vertex */
+  private vertices = new Map<string, T>();
+  /** Map from vertex ID → Set of neighbour IDs */
+  private edges = new Map<string, Set<string>>();
 
-// A node in a linked list that stores a key–value pair.
-class ListNode<K extends Hashable, V> {
-  constructor(
-    public key: K,
-    public value: V,
-    public next: ListNode<K, V> | null = null
-  ) {}
-}
-
-// A very small, non‑generic implementation.
-// Could be turned into a generic class if you want re‑usability.
-class HashTable<K extends Hashable, V> {
-  // Number of buckets.  53 is a prime that keeps things a bit uniform.
-  private readonly bucketCount = 53;
-  private readonly buckets: Array<ListNode<K, V> | null>;
-
-  constructor() {
-    // fill the array with nulls
-    this.buckets = Array(this.bucketCount).fill(null);
+  addVertex(id: string, value: T): void {
+    this.vertices.set(id, value);
+    if (!this.edges.has(id)) this.edges.set(id, new Set());
   }
 
-  // Simple hash: string => simple accumulating hash; number => straight
-  private hash(key: K): number {
-    let h: number;
-    if (typeof key === "number") {
-      h = key;
-    } else {
-      h = 0;
-      for (let i = 0; i < key.length; i++) {
-        // 31 is a classic multiplier in hash functions
-        h = (h * 31 + key.charCodeAt(i)) | 0; // |0 keeps it 32‑bit
-      }
-    }
-    // Ensure positive index
-    return Math.abs(h) % this.bucketCount;
+  addEdge(from: string, to: string, undirected = false): void {
+    if (!this.vertices.has(from) || !this.vertices.has(to))
+      throw new Error('Both vertices must exist before linking');
+    this.edges.get(from)!.add(to);
+    if (undirected) this.edges.get(to)!.add(from);
   }
 
-  set(key: K, value: V): void {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-
-    // If there’s already a node, see if the key matches
-    while (node) {
-      if (node.key === key) {
-        node.value = value; // update
-        return;
-      }
-      node = node.next;
-    }
-
-    // No match – prepend a new node (O(1) for inserts)
-    const newNode = new ListNode(key, value, this.buckets[idx]);
-    this.buckets[idx] = newNode;
+  /** Return the neighbours of a vertex, or [] if it has none */
+  neighbours(id: string): string[] {
+    return Array.from(this.edges.get(id) ?? []);
   }
 
-  get(key: K): V | undefined {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-
-    while (node) {
-      if (node.key === key) return node.value;
-      node = node.next;
-    }
-    return undefined;
+  /** Optional helpers for inspection */
+  getVertex(id: string): T | undefined {
+    return this.vertices.get(id);
   }
 
-  has(key: K): boolean {
-    return this.get(key) !== undefined;
-  }
-
-  delete(key: K): boolean {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-    let prev: ListNode<K, V> | null = null;
-
-    while (node) {
-      if (node.key === key) {
-        if (prev) prev.next = node.next;
-        else this.buckets[idx] = node.next;
-        return true;
-      }
-      prev = node;
-      node = node.next;
-    }
-    return false;
-  }
-
-  // For debugging / tests: flatten the table into a plain object
-  toObject(): Record<string, V> {
-    const out: Record<string, V> = {};
-    for (const bucket of this.buckets) {
-      let node = bucket;
-      while (node) {
-        out[String(node.key)] = node.value;
-        node = node.next;
-      }
-    }
-    return out;
+  getVertices(): string[] {
+    return Array.from(this.vertices.keys());
   }
 }
-const table = new HashTable<string, number>();
-table.set("alpha", 1);
-table.set("beta", 2);
-table.set("gamma", 3);
-table.set("delta", 4);
+/**
+ * Depth‑first search that walks the graph from `start`.
+ * Returns the order in which vertices were first visited.
+ */
+export function dfsRecursive<T>(
+  graph: Graph<T>,
+  start: string,
+  visited: Set<string> = new Set()
+): string[] {
+  if (visited.has(start)) return [];
 
-console.log(table.get("beta"));   // 2
-console.log(table.has("epsilon")); // false
+  visited.add(start);
+  const order = [start];
 
-table.delete("gamma");
-console.log(table.toObject());    // { alpha: 1, beta: 2, delta: 4 }
+  for (const neighbour of graph.neighbours(start)) {
+    order.push(...dfsRecursive(graph, neighbour, visited));
+  }
+
+  return order;
+}
+/**
+ * Explicit‑stack depth‑first search.
+ * Produces the same visitation order as the recursive version.
+ */
+export function dfsIterative<T>(graph: Graph<T>, start: string): string[] {
+  const stack: string[] = [start];
+  const visited = new Set<string>();
+  const order: string[] = [];
+
+  while (stack.length) {
+    const curr = stack.pop()!; // guaranteed non‑empty
+    if (visited.has(curr)) continue;
+
+    visited.add(curr);
+    order.push(curr);
+
+    // push neighbours in reverse order for natural DFS ordering
+    const neighbours = graph.neighbours(curr).slice().reverse();
+    for (const n of neighbours) {
+      if (!visited.has(n)) stack.push(n);
+    }
+  }
+
+  return order;
+}
+const g = new Graph<number>();
+
+// build a tiny graph
+g.addVertex('a', 1);
+g.addVertex('b', 2);
+g.addVertex('c', 3);
+g.addVertex('d', 4);
+
+g.addEdge('a', 'b', true); // undirected
+g.addEdge('a', 'c', true);
+g.addEdge('b', 'd', true);
+g.addEdge('c', 'd', true);
+
+console.log('Recursive DFS:', dfsRecursive(g, 'a')); // e.g. ['a','b','d','c']
+console.log('Iterative DFS:', dfsIterative(g, 'a')); // same order
