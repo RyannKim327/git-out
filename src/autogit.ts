@@ -1,24 +1,60 @@
 /**
- * Count occurrences of a word in a string.
+ * Calculates n! recursively.
  *
- * @param text   The text to search through.
- * @param word   The word to count (exact case‑sensitive match).
- * @param flags  Optional RegExp flags (default is “g” for global).
- * @returns The number of matches found.
+ * @param n - The non‑negative integer whose factorial to compute.
+ * @returns n! as a number (or NaN if n < 0).
  */
-export function countWordOccurrences(
-  text: string,
-  word: string,
-  flags: string = "g"
-): number {
-  // Escape regex metacharacters in the word so it’s treated literally
-  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const regex = new RegExp(`\\b${escapedWord}\\b`, flags);
-  const matches = text.match(regex);
-  return matches?.length ?? 0;
+function factorialRecursive(n: number): number {
+  if (n < 0) return NaN;        // keep it simple: no negative factorials
+  if (n <= 1) return 1;
+  return n * factorialRecursive(n - 1);
 }
-let sentence = "The quick brown fox jumps over the lazy dog. The fox was quick.";
 
-console.log(countWordOccurrences(sentence, "fox"));          // 2
-console.log(countWordOccurrences(sentence, "quick"));       // 2
-console.log(countWordOccurrences(sentence, "quick", "gi")); // 2 (case‑insensitive)
+// Example:
+console.log(factorialRecursive(5)); // 120
+/**
+ * Calculates n! iteratively.
+ *
+ * @param n - The non‑negative integer to factorialize.
+ * @returns n! as a number (or NaN if n < 0).
+ */
+function factorialIterative(n: number): number {
+  if (n < 0) return NaN;
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
+}
+
+// Example:
+console.log(factorialIterative(10)); // 3628800
+/**
+ * Calculates n! exactly using BigInt.
+ *
+ * @param n - The non‑negative integer to factorialize.
+ * @returns n! as a BigInt (or NaN if n < 0).
+ */
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error("Factorial isn't defined for negative numbers");
+  let result = 1n;
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
+}
+
+// Example:
+console.log(factorialBigInt(20)); // 2432902008176640000n
+const factorialMemo = new Map<number, number | bigint>();
+
+function factorialMemoized(n: number): number | bigint {
+  if (n < 0) throw new Error("Negative input");
+  if (n <= 1) return 1;
+  if (factorialMemo.has(n)) return factorialMemo.get(n)!;
+  
+  // choose number or bigint based on the expected size
+  const answer = n * factorialMemoized(n - 1);
+  factorialMemo.set(n, answer);
+  return answer;
+}
