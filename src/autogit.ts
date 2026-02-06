@@ -1,30 +1,59 @@
 /**
- * Reverse the order of words in a string.
+ * Shell sort – a simple in‑place comparison sort.
  *
- * Words are anything separated by whitespace (space, tab, etc.).
- * Leading/trailing whitespace is trimmed for a clean result, but
- * consecutive internal spaces are collapsed to a single space – you can keep
- * them if you prefer by tweaking the regex.
+ * @template T          – The element type stored in the array.
+ * @param array         – Array to be sorted (mutated).
+ * @param compareFn     – Optional comparison function.  
+ *                        Should return a negative number if a < b,
+ *                        zero if a == b, and a positive number if a > b.
+ *                        Default is numeric ascending order.
  *
- * @param s  The input string.
- * @returns   The string with the words reversed.
+ * @returns The same array, now sorted.
+ *
+ * Example:
+ *   const nums = [23, 12, 1, 2, 8, 15];
+ *   shellSort(nums);                 // → [1,2,8,12,15,23]
+ *
+ *   const words = ["pear","apple","orange"];
+ *   shellSort(words, (a,b) => a.localeCompare(b));  // → ["apple","orange","pear"]
  */
-function reverseWords(s: string): string {
-  // 1. Trim surrounding whitespace, then split on any sequence of whitespace.
-  const words = s.trim().split(/\s+/);
+export function shellSort<T>(
+  array: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a as unknown as number) - (b as unknown as number)
+): T[] {
+  const n = array.length;
+  // Basic Shell sequence: n/2, n/4, ..., 1
+  // (You could use a more sophisticated sequence, e.g. Hibbard, Pratt, or Knuth.)
+  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Perform a gapped insertion sort for this gap size
+    for (let i = gap; i < n; i++) {
+      const current = array[i];
+      let j = i;
 
-  // 2. Reverse the array in place.
-  words.reverse();
-
-  // 3. Join back with a single space (change if you need a different separator).
-  return words.join(' ');
+      // Shift earlier gap‑separated elements up until the correct location for current
+      while (j >= gap && compareFn(array[j - gap], current) > 0) {
+        array[j] = array[j - gap];
+        j -= gap;
+      }
+      array[j] = current;
+    }
+  }
+  return array;
 }
+import { shellSort } from "./shellSort";
 
-// Demo
-const original = "  the quick brown   fox jumps over the lazy dog  ";
-const reversed = reverseWords(original);
+const planets = [
+  { name: "Jupiter", radius: 69911 },
+  { name: "Earth", radius: 6371 },
+  { name: "Mars", radius: 3389 },
+  { name: "Saturn", radius: 58232 },
+];
 
-console.log("Original:", original);
-console.log("Reversed:", reversed);
-// Output: "dog lazy the over jumps fox brown quick the"
-const words = s.split(/\s+/);
+shellSort(planets, (a, b) => a.radius - b.radius);
+console.log(planets);
+// → [
+//      { name: "Mars", radius: 3389 },
+//      { name: "Earth", radius: 6371 },
+//      { name: "Saturn", radius: 58232 },
+//      { name: "Jupiter", radius: 69911 }
+//    ]
