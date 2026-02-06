@@ -1,24 +1,52 @@
-/**
- * Count occurrences of a word in a string.
- *
- * @param text   The text to search through.
- * @param word   The word to count (exact case‑sensitive match).
- * @param flags  Optional RegExp flags (default is “g” for global).
- * @returns The number of matches found.
- */
-export function countWordOccurrences(
-  text: string,
-  word: string,
-  flags: string = "g"
-): number {
-  // Escape regex metacharacters in the word so it’s treated literally
-  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const regex = new RegExp(`\\b${escapedWord}\\b`, flags);
-  const matches = text.match(regex);
-  return matches?.length ?? 0;
+interface TreeNode {
+  value: number;          // what you want to sum
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
-let sentence = "The quick brown fox jumps over the lazy dog. The fox was quick.";
+function sumTreeRecursive(node: TreeNode | null): number {
+  if (!node) return 0;
 
-console.log(countWordOccurrences(sentence, "fox"));          // 2
-console.log(countWordOccurrences(sentence, "quick"));       // 2
-console.log(countWordOccurrences(sentence, "quick", "gi")); // 2 (case‑insensitive)
+  const leftSum  = sumTreeRecursive(node.left ?? null);
+  const rightSum = sumTreeRecursive(node.right ?? null);
+
+  return node.value + leftSum + rightSum;
+}
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+
+  let total = 0;
+  const stack: TreeNode[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.value;
+
+    // Push children in any order – the sum is commutative.
+    if (node.right) stack.push(node.right);
+    if (node.left)  stack.push(node.left);
+  }
+
+  return total;
+}
+// A tiny test tree:
+//        5
+//       / \
+//      3   7
+//     / \   \
+//    2   4   8
+
+const testTree: TreeNode = {
+  value: 5,
+  left: {
+    value: 3,
+    left:  { value: 2 },
+    right: { value: 4 }
+  },
+  right: {
+    value: 7,
+    right: { value: 8 }
+  }
+};
+
+console.log('Recursive sum:', sumTreeRecursive(testTree));  // 29
+console.log('Iterative sum:', sumTreeIterative(testTree));  // 29
