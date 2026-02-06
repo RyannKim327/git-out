@@ -1,71 +1,29 @@
 /**
- * Forward Burrows‑Wheeler Transform.
- *
- * @param text – input string
- * @returns {lastColumn, originalIndex}
- *   • lastColumn  – the BWT string (the last column of the sorted rotations)
- *   • originalIndex – position of the original string in the sorted list
+ * Returns the intersection of two arrays.
+ * @param a  First array.
+ * @param b  Second array.
+ * @returns  Array containing elements that are present in **both** a and b.
  */
-export function bwt(text: string): { lastColumn: string; originalIndex: number } {
-  const n = text.length;
-  const rotations = new Array<string>(n);
+function intersection<T>(a: T[], b: T[]): T[] {
+  // Turn the first array into a Set for O(1) look‑ups.
+  const aSet = new Set(a);
 
-  // Build all cyclic rotations
-  for (let i = 0; i < n; i++) {
-    rotations[i] = text.slice(i) + text.slice(0, i);
+  // Keep only the items from `b` that are also in `aSet`.
+  const result: T[] = [];
+  for (const item of b) {
+    if (aSet.has(item)) {
+      result.push(item);
+      // Optional: remove the item so we don’t collect duplicates if
+      // `a` or `b` contains repeated entries
+      aSet.delete(item);
+    }
   }
-
-  // Sort rotations lexicographically
-  rotations.sort();
-
-  // Grab last character of each rotation and remember where the original text ended up
-  let lastColumn = '';
-  let originalIndex = -1;
-  for (let i = 0; i < n; i++) {
-    const rot = rotations[i];
-    lastColumn += rot[rot.length - 1];
-    if (rot === text) originalIndex = i;
-  }
-
-  return { lastColumn, originalIndex };
-}
-
-/**
- * Inverse Burrows‑Wheeler Transform.
- *
- * @param lastColumn  – BWT string (result of the forward transform)
- * @param originalIndex – index returned by the forward transform
- * @returns original input string
- */
-export function inverseBwt(lastColumn: string, originalIndex: number): string {
-  const n = lastColumn.length;
-
-  // Build the first column by sorting the last column
-  const firstColumn = [...lastColumn].sort().join('');
-
-  // Build a map from character to its deque of positions in the last column
-  const charQueues: Record<string, number[]> = {};
-  for (let i = 0; i < n; i++) {
-    const c = lastColumn[i];
-    if (!charQueues[c]) charQueues[c] = [];
-    charQueues[c].push(i);
-  }
-
-  // Reconstruct the original string
-  let result = '';
-  let idx = originalIndex;
-  for (let i = 0; i < n; i++) {
-    const c = firstColumn[idx];
-    result += c;
-    // The row that had c in the last column is the next idx
-    idx = charQueues[c].shift()!;
-  }
-
   return result;
 }
-const { lastColumn, originalIndex } = bwt('BANANA');
-console.log(lastColumn);          // 'ANNBAA'
-console.log(originalIndex);       // 3
+console.log(intersection([1, 2, 3, 4], [3, 4, 5, 6])); // → [3, 4]
 
-const original = inverseBwt(lastColumn, originalIndex);
-console.log(original);            // 'BANANA'
+console.log(intersection(['foo', 'bar'], ['bar', 'baz', 'foo'])); // → ['bar', 'foo']
+
+// With duplicates
+console.log(intersection([1, 2, 2], [2, 2, 3])); // → [2]
+const intersection = (a: any[], b: any[]) => a.filter(x => b.includes(x));
