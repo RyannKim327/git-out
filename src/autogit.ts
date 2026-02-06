@@ -1,50 +1,59 @@
 /**
- * Random sort – a quick‑sort implementation that picks a random
- * pivot for each split.
+ * Shell sort – a simple in‑place comparison sort.
  *
- * The algorithm is deterministic in complexity (O(n log n) on average),
- * but the pivot choice is completely random, which can be useful for
- * teaching purposes or for avoiding worst‑case sequences.
+ * @template T          – The element type stored in the array.
+ * @param array         – Array to be sorted (mutated).
+ * @param compareFn     – Optional comparison function.  
+ *                        Should return a negative number if a < b,
+ *                        zero if a == b, and a positive number if a > b.
+ *                        Default is numeric ascending order.
+ *
+ * @returns The same array, now sorted.
+ *
+ * Example:
+ *   const nums = [23, 12, 1, 2, 8, 15];
+ *   shellSort(nums);                 // → [1,2,8,12,15,23]
+ *
+ *   const words = ["pear","apple","orange"];
+ *   shellSort(words, (a,b) => a.localeCompare(b));  // → ["apple","orange","pear"]
  */
+export function shellSort<T>(
+  array: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a as unknown as number) - (b as unknown as number)
+): T[] {
+  const n = array.length;
+  // Basic Shell sequence: n/2, n/4, ..., 1
+  // (You could use a more sophisticated sequence, e.g. Hibbard, Pratt, or Knuth.)
+  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Perform a gapped insertion sort for this gap size
+    for (let i = gap; i < n; i++) {
+      const current = array[i];
+      let j = i;
 
-function randomQuickSort<T>(input: T[], compare?: (a: T, b: T) => number): T[] {
-  // If there are 0 or 1 elements, it's already sorted.
-  if (input.length <= 1) {
-    return [...input];
-  }
-
-  // Choose a random pivot index.
-  const pivotIndex = Math.floor(Math.random() * input.length);
-  const pivot = input[pivotIndex];
-
-  // Helper to decide the order.
-  const cmp = compare ||
-    // Default to numeric or string comparison.
-    ((a: T, b: T) => (a as any) < b ? -1 : (a as any) > b ? 1 : 0);
-
-  // Partition the array into two bins: <= pivot and > pivot.
-  const smaller: T[] = [];
-  const larger: T[] = [];
-
-  for (let i = 0; i < input.length; i++) {
-    if (i === pivotIndex) continue; // skip the pivot itself
-    const item = input[i];
-    if (cmp(item, pivot) <= 0) {
-      smaller.push(item);
-    } else {
-      larger.push(item);
+      // Shift earlier gap‑separated elements up until the correct location for current
+      while (j >= gap && compareFn(array[j - gap], current) > 0) {
+        array[j] = array[j - gap];
+        j -= gap;
+      }
+      array[j] = current;
     }
   }
-
-  // Recursively sort each sub‑array and concatenate the results.
-  return [
-    ...randomQuickSort(smaller, compare),
-    pivot,
-    ...randomQuickSort(larger, compare),
-  ];
+  return array;
 }
+import { shellSort } from "./shellSort";
 
-/* --- Example usage ----------------------------------------------------- */
-const nums = [23, 4, 42, 8, 15, 16, 42, 23, 4, 17];
-console.log('Unsorted:', nums);
-console.log('Sorted:', randomQuickSort(nums));
+const planets = [
+  { name: "Jupiter", radius: 69911 },
+  { name: "Earth", radius: 6371 },
+  { name: "Mars", radius: 3389 },
+  { name: "Saturn", radius: 58232 },
+];
+
+shellSort(planets, (a, b) => a.radius - b.radius);
+console.log(planets);
+// → [
+//      { name: "Mars", radius: 3389 },
+//      { name: "Earth", radius: 6371 },
+//      { name: "Saturn", radius: 58232 },
+//      { name: "Jupiter", radius: 69911 }
+//    ]
