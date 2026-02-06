@@ -1,45 +1,38 @@
 /**
- * Returns the majority element if it exists.
- * If no element occurs > n/2 times, it returns undefined.
+ * @param s The string to test.
+ * @param options
+ *   - ignoreCase: whether to treat “A” and “a” as the same (default: true)
+ *   - ignoreNonAlphaNum: whether to strip out spaces, punctuation, etc. (default: true)
+ * @returns true if `s` reads the same forward and backward under the chosen options.
  */
-function majorityElement<T>(arr: T[]): T | undefined {
-  let candidate: T | undefined;
-  let count = 0;
+function isPalindrome(
+  s: string,
+  options: { ignoreCase?: boolean; ignoreNonAlphaNum?: boolean } = {}
+): boolean {
+  const { ignoreCase = true, ignoreNonAlphaNum = true } = options;
 
-  // Step 1 – find a candidate
-  for (const value of arr) {
-    if (count === 0) {
-      candidate = value;
-      count = 1;
-    } else if (value === candidate) {
-      count++;
-    } else {
-      count--;
-    }
+  // Optional: strip out anything other than letters/digits
+  let cleaned = ignoreNonAlphaNum
+    ? s.replace(/[^A-Za-z0-9]/g, '')
+    : s;
+
+  // Optional: standardise case
+  if (ignoreCase) cleaned = cleaned.toLowerCase();
+
+  // Fast exit on single‑character strings (or empty)
+  if (cleaned.length < 2) return true;
+
+  // Compare characters from both ends
+  let left = 0;
+  let right = cleaned.length - 1;
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) return false;
+    left++;
+    right--;
   }
-
-  // Step 2 – optional verification pass
-  // (often omitted if you’re sure the input guarantees a majority)
-  if (candidate !== undefined) {
-    let occurrences = 0;
-    for (const v of arr) {
-      if (v === candidate) occurrences++;
-    }
-    if (occurrences > Math.floor(arr.length / 2)) {
-      return candidate;
-    }
-  }
-
-  return undefined; // no majority
+  return true;
 }
-function majorityUsingMap<T>(arr: T[]): T | undefined {
-  const freq = new Map<T, number>();
-  const threshold = Math.floor(arr.length / 2) + 1;
-
-  for (const val of arr) {
-    const newCount = (freq.get(val) ?? 0) + 1;
-    if (newCount >= threshold) return val;
-    freq.set(val, newCount);
-  }
-  return undefined;
-}
+console.log(isPalindrome('Racecar'));           // true
+console.log(isPalindrome('hello'));             // false
+console.log(isPalindrome('A man, a plan, a canal, Panama')); // true
+console.log(isPalindrome('No lemon, no melon', { ignoreNonAlphaNum: true, ignoreCase: true })); // true
