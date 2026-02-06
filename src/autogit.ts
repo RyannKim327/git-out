@@ -1,32 +1,24 @@
 /**
- * Bubble sort – compares adjacent elements and swaps them if they're out of order.
+ * Count occurrences of a word in a string.
  *
- * @param arr – The array of numbers (or any type that implements `<`),
- *              sorted in place and also returned for convenience.
- * @returns The sorted array.
+ * @param text   The text to search through.
+ * @param word   The word to count (exact case‑sensitive match).
+ * @param flags  Optional RegExp flags (default is “g” for global).
+ * @returns The number of matches found.
  */
-export function bubbleSort<T>(arr: T[]): T[] {
-  const n = arr.length;
-
-  // Outer loop – each pass guarantees that the largest element among the
-  // unsorted portion moves to its final position at the end of the array.
-  for (let i = 0; i < n - 1; i++) {
-    // Inner loop – only needs to run up to the last unsorted element.
-    for (let j = 0; j < n - i - 1; j++) {
-      // If the current element is greater than the next one, swap them.
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-      }
-    }
-  }
-
-  return arr;
+export function countWordOccurrences(
+  text: string,
+  word: string,
+  flags: string = "g"
+): number {
+  // Escape regex metacharacters in the word so it’s treated literally
+  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`\\b${escapedWord}\\b`, flags);
+  const matches = text.match(regex);
+  return matches?.length ?? 0;
 }
-import { bubbleSort } from './bubbleSort';
+let sentence = "The quick brown fox jumps over the lazy dog. The fox was quick.";
 
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-console.log('Before:', numbers);
-
-bubbleSort(numbers);
-
-console.log('After:', numbers);   // [11, 12, 22, 25, 34, 64, 90]
+console.log(countWordOccurrences(sentence, "fox"));          // 2
+console.log(countWordOccurrences(sentence, "quick"));       // 2
+console.log(countWordOccurrences(sentence, "quick", "gi")); // 2 (case‑insensitive)
