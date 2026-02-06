@@ -1,75 +1,119 @@
-function decimalToBinary(dec: number | bigint): string {
-  return dec.toString(2);
+// An adjacency map: node ID → list of neighbouring node IDs
+type Graph = Record<string, string[]>;
+
+// Keeps track of visited nodes and the node from which we reached them
+interface VisitedMap {
+  [node: string]: string | null;      // null = source node itself
 }
+enqueue start into frontierStart
+enqueue goal  into frontierGoal
+mark start as visitedFromStart (predecessor = null)
+mark goal  as visitedFromGoal (predecessor = null)
 
-// Examples
-console.log(decimalToBinary(13));      // '1101'
-console.log(decimalToBinary(255n));    // '11111111'
-function decimalToBinaryIterative(num: number): string {
-  if (num === 0) return '0';
-  let n = Math.abs(num);
-  const bits: string[] = [];
-  while (n > 0) {
-    bits.push((n % 2).toString());
-    n = Math.floor(n / 2);
-  }
-  if (num < 0) bits.push('-');
-  return bits.reverse().join('');
-}
+while both queues not empty:
+    # Expand one layer from the start side
+    if expand(frontierStart, visitedFromStart, visitedFromGoal): return result
 
-// Demo
-console.log(decimalToBinaryIterative(13));   // '1101'
-console.log(decimalToBinaryIterative(-13));  // '-1101'
-function decimalToBinaryRecursive(num: number): string {
-  if (num === 0) return '';
-  const [higher, bit] = decimalToBinaryRecursive(Math.floor(num / 2)).split('|', 2);
-  return `${higher}|${num % 2}`;
-}
+    # Expand one layer from the goal side
+    if expand(frontierGoal, visitedFromGoal, visitedFromStart):   return result
 
-// Helper to clean up the leading empty part
-function binaryRecursive(num: number): string {
-  const bin = decimalToBinaryRecursive(num);
-  return bin.split('|').filter(Boolean).join('');
-}
+return no path
+/**
+ * Bidirectional BFS.
+ *
+ * @param graph  adjacency map
+ * @param start  ID of start node
+ * @param goal   ID of goal node
+ * @returns a list of node IDs from start to goal, or null if no path
+ */
+function bidirectionalBFS(graph: Graph, start: string, goal: string): string[] | null {
+  if (start === goal) return [start];
 
-// Demo
-console.log(binaryRecursive(27));  // '11011'
-function decimalToBinaryFraction(num: number, precision: number = 10): string {
-  const intPart = Math.trunc(num);
-  let fracPart = num - intPart;
-  let binary = intPart.toString(2);
+  const visitedStart: VisitedMap = { [start]: null };
+  const visitedGoal: VisitedMap   = { [goal] : null };
 
-  if (precision > 0 && fracPart > 0) {
-    binary += '.';
-    let p = 0;
-    while (p < precision && fracPart > 0) {
-      fracPart *= 2;
-      if (fracPart >= 1) {
-        binary += '1';
-        fracPart -= 1;
-      } else {
-        binary += '0';
+  const frontierStart: string[] = [start];
+  const frontierGoal: string[]  = [goal];
+
+  const expand = (
+    frontier: string[],
+    visitedThis: VisitedMap,
+    visitedOther: VisitedMap
+  ): string[] | null => {
+    const nextLayer: string[] = [];
+
+    for (const current of frontier) {
+      for (const neighbor of graph[current] || []) {
+        // Already visited from this side → skip
+        if (current in visitedThis && neighbor in visitedThis) continue;
+
+        // New node for this side
+        if (!(neighbor in visitedThis)) {
+          visitedThis[neighbor] = current;
+          nextLayer.push(neighbor);
+        }
+
+        // If neighbour is in the opposite frontier → frontiers meet
+        if (neighbor in visitedOther) {
+          return reconstructPath(
+            start,
+            goal,
+            visitedStart,
+            visitedGoal,
+            neighbor
+          );
+        }
       }
-      p++;
     }
+
+    frontier.splice(0, frontier.length, ...nextLayer);
+    return null;
+  };
+
+  while (frontierStart.length && frontierGoal.length) {
+    const resStart = expand(frontierStart, visitedStart, visitedGoal);
+    if (resStart) return resStart;
+
+    const resGoal = expand(frontierGoal, visitedGoal, visitedStart);
+    if (resGoal) return resGoal;
   }
 
-  return binary;
+  return null; // no path found
 }
 
-// Demo
-console.log(decimalToBinaryFraction(5.6875, 8)); // '101.1011'
-function test(input: number | bigint) {
-  console.log(`Decimal: ${input}`);
-  console.log(`  -> toString(2):   ${input.toString(2)}`);
-  if (typeof input === 'number') {
-    console.log(`  -> iterative:   ${decimalToBinaryIterative(input)}`);
-    console.log(`  -> recursive:   ${binaryRecursive(input)}`);
+/**
+ * Reconstruct the path once the frontiers have met at `meetingNode`.
+ */
+function reconstructPath(
+  start: string,
+  goal: string,
+  visitedStart: VisitedMap,
+  visitedGoal: VisitedMap,
+  meetingNode: string
+): string[] {
+  const partFromStart: string[] = [meetingNode];
+  let node = meetingNode;
+  while (visitedStart[node]) {
+    node = visitedStart[node]!;
+    partFromStart.unshift(node);
   }
-  console.log('');
-}
 
-test(13);
-test(-13);
-test(0);
-test(5.6875);   // only the toString version works for BigInt
+  const partFromGoal: string[] = [];
+  node = meetingNode;
+  while (visitedGoal[node]) {
+    node = visitedGoal[node]!;
+    partFromGoal.push(node);
+  }
+
+  // Avoid duplicating the meeting node
+  return [...partFromStart, ...partFromGoal];
+}
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['a', 'd'],
+  c: ['a', 'd'],
+  d: ['b', 'c', 'e'],
+  e: ['d'],
+};
+
+console.log(bidirectionalBFS(graph, 'a', 'e')); // ["a", "b", "d", "e"]
