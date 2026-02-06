@@ -1,32 +1,41 @@
-const uniq = <T>(arr: T[]): T[] => [...new Set(arr)];
+/**
+ * KMP string matcher.
+ * @param text    Text in which to search.
+ * @param pattern Pattern to find.
+ * @returns Index of first occurrence of pattern in text, or -1 if not found.
+ */
+export function kmpSearch(text: string, pattern: string): number {
+  const n = text.length;
+  const m = pattern.length;
 
-const numbers = [1, 2, 3, 2, 4, 1];
-console.log(uniq(numbers)); // [1, 2, 3, 4]
-const uniq = <T>(arr: T[]): T[] =>
-  arr.filter((value, index, self) => self.indexOf(value) === index);
+  if (m === 0) return 0;           // Empty pattern matches at start.
 
-const words = ["a", "b", "a", "c", "b"];
-console.log(uniq(words)); // ["a", "b", "c"]
-const uniq = <T>(arr: T[]): T[] =>
-  arr.reduce((seen, val) => {
-    if (!seen.includes(val)) seen.push(val);
-    return seen;
-  }, [] as T[]);
-function uniqInPlace<T>(arr: T[]): void {
-  const seen = new Set<T>();
-  let writeIdx = 0;
+  // --------- Step 1: build failure function ----------
+  const fail: number[] = new Array(m).fill(0);
+  let k = 0;                         // length of current match
 
-  for (const v of arr) {
-    if (!seen.has(v)) {
-      seen.add(v);
-      arr[writeIdx++] = v;
+  for (let i = 1; i < m; i++) {
+    while (k > 0 && pattern[k] !== pattern[i]) {
+      k = fail[k - 1];
+    }
+    if (pattern[k] === pattern[i]) k++;
+    fail[i] = k;
+  }
+
+  // --------- Step 2: scan the text ---------------
+  k = 0;                               // reset pattern index
+  for (let i = 0; i < n; i++) {
+    while (k > 0 && text[i] !== pattern[k]) {
+      k = fail[k - 1];
+    }
+    if (text[i] === pattern[k]) k++;
+
+    if (k === m) {                    // match found
+      return i - m + 1;
     }
   }
 
-  // Optional: truncate the array
-  arr.length = writeIdx;
+  return -1;                          // no match
 }
-
-const data = [5, 3, 5, 2, 3];
-uniqInPlace(data);
-console.log(data); // [5, 3, 2]
+const idx = kmpSearch('abxabcabcaby', 'abcaby');
+console.log(idx);   // → 6
