@@ -1,68 +1,75 @@
-// A minimal list node
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null,
-  ) {}
-}
-/**
- * Reverses a linked list.
- * @param head The original list head.
- * @returns New head of the reversed list.
- */
-export function reverseListIterative<T>(
-  head: ListNode<T> | null,
-): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let current = head;
+/** Build the "lps" (longest‑prefix‑which‑is‑also‑suffix) table for the pattern */
+function buildLPS(pattern: string): number[] {
+  const lps = new Array(pattern.length).fill(0);
+  let len = 0;              // length of previous longest prefix suffix
+  let i = 1;                // we start from the second character
 
-  while (current !== null) {
-    const next = current.next;   // remember the next node
-    current.next = prev;         // reverse the link
-    prev = current;              // move `prev` one step forward
-    current = next;              // advance to the next node
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      if (len !== 0) {
+        len = lps[len - 1];  // fallback in the pattern
+      } else {
+        lps[i] = 0;
+        i++;
+      }
+    }
   }
-
-  return prev; // new head
+  return lps;
 }
-/**
- * Reverses a linked list recursively.
- * @param node Current node being processed.
- * @returns New head of the reversed list.
- */
-export function reverseListRecursive<T>(
-  node: ListNode<T> | null,
-  newHead: ListNode<T> | null = null,
-): ListNode<T> | null {
-  if (node === null) return newHead;   // base case: original list exhausted
 
-  const next = node.next;              // keep reference to the next node
-  node.next = newHead;                 // attach current node before the “new head”
-  return reverseListRecursive(next, node);
-}
-// Helper to build a list from an array
-function buildList<T>(arr: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = new ListNode(arr[i], head);
+/** Find the first occurrence of `pattern` in `text` (returns -1 if not found) */
+function kmpSearch(text: string, pattern: string): number {
+  if (!pattern) return 0; // empty pattern matches at start
+
+  const lps = buildLPS(pattern);
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) return i - j; // match found
+    } else {
+      if (j !== 0) {
+        j = lps[j - 1]; // shift pattern without re‑examining matched chars
+      } else {
+        i++;           // no match, move on in the text
+      }
+    }
   }
-  return head;
+  return -1; // no match
 }
 
-// Helper to turn a list back into an array (for easy checking)
-function listToArray<T>(head: ListNode<T> | null): T[] {
-  const result: T[] = [];
-  for (let cur = head; cur; cur = cur.next) result.push(cur.val);
-  return result;
+/** Optional: return *all* starting indices of matches */
+function kmpAllMatches(text: string, pattern: string): number[] {
+  const indices: number[] = [];
+  if (!pattern) return [0];
+
+  const lps = buildLPS(pattern);
+  let i = 0, j = 0;
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) {
+        indices.push(i - j);
+        j = lps[j - 1]; // continue searching for next possible match
+      }
+    } else {
+      if (j !== 0) j = lps[j - 1];
+      else i++;
+    }
+  }
+  return indices;
 }
+const txt = "ABABDABACDABABCABAB";
+const pat = "ABABCABAB";
 
-// Example usage
-const nums = [1, 2, 3, 4, 5];
-const list = buildList(nums);
-
-const reversedIter = reverseListIterative(list);
-console.log(listToArray(reversedIter)); // [5,4,3,2,1]
-
-const original = buildList(nums); // rebuild, since the list was mutated
-const reversedRec = reverseListRecursive(original);
-console.log(listToArray(reversedRec)); // [5,4,3,2,1]
+const firstIdx = kmpSearch(txt, pat);          // returns 10
+const allIdx   = kmpAllMatches(txt, pat);     // returns [10]
