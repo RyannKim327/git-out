@@ -1,119 +1,44 @@
-// An adjacency map: node ID → list of neighbouring node IDs
-type Graph = Record<string, string[]>;
-
-// Keeps track of visited nodes and the node from which we reached them
-interface VisitedMap {
-  [node: string]: string | null;      // null = source node itself
+export interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
-enqueue start into frontierStart
-enqueue goal  into frontierGoal
-mark start as visitedFromStart (predecessor = null)
-mark goal  as visitedFromGoal (predecessor = null)
-
-while both queues not empty:
-    # Expand one layer from the start side
-    if expand(frontierStart, visitedFromStart, visitedFromGoal): return result
-
-    # Expand one layer from the goal side
-    if expand(frontierGoal, visitedFromGoal, visitedFromStart):   return result
-
-return no path
 /**
- * Bidirectional BFS.
+ * Returns the nth node from the end of a singly‑linked list.
  *
- * @param graph  adjacency map
- * @param start  ID of start node
- * @param goal   ID of goal node
- * @returns a list of node IDs from start to goal, or null if no path
+ * @param head  The head of the list (may be null).
+ * @param n 1‑based index counting from the last node.
+ * @returns   The node itself, or null if n is out of bounds.
  */
-function bidirectionalBFS(graph: Graph, start: string, goal: string): string[] | null {
-  if (start === goal) return [start];
+export function getNthFromEnd<T>(
+  head: ListNode<T> | null,
+  n: number
+): ListNode<T> | null {
+  if (n <= 0) return null;                // n must be positive
 
-  const visitedStart: VisitedMap = { [start]: null };
-  const visitedGoal: VisitedMap   = { [goal] : null };
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
 
-  const frontierStart: string[] = [start];
-  const frontierGoal: string[]  = [goal];
-
-  const expand = (
-    frontier: string[],
-    visitedThis: VisitedMap,
-    visitedOther: VisitedMap
-  ): string[] | null => {
-    const nextLayer: string[] = [];
-
-    for (const current of frontier) {
-      for (const neighbor of graph[current] || []) {
-        // Already visited from this side → skip
-        if (current in visitedThis && neighbor in visitedThis) continue;
-
-        // New node for this side
-        if (!(neighbor in visitedThis)) {
-          visitedThis[neighbor] = current;
-          nextLayer.push(neighbor);
-        }
-
-        // If neighbour is in the opposite frontier → frontiers meet
-        if (neighbor in visitedOther) {
-          return reconstructPath(
-            start,
-            goal,
-            visitedStart,
-            visitedGoal,
-            neighbor
-          );
-        }
-      }
-    }
-
-    frontier.splice(0, frontier.length, ...nextLayer);
-    return null;
-  };
-
-  while (frontierStart.length && frontierGoal.length) {
-    const resStart = expand(frontierStart, visitedStart, visitedGoal);
-    if (resStart) return resStart;
-
-    const resGoal = expand(frontierGoal, visitedGoal, visitedStart);
-    if (resGoal) return resGoal;
+  // Advance `fast` n steps ahead.
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;              // n is larger than the list length
+    fast = fast.next;
   }
 
-  return null; // no path found
+  // Move both pointers until `fast` reaches the end.
+  while (fast) {
+    fast = fast.next;
+    slow = slow?.next ?? null;
+  }
+
+  // `slow` is now the nth from the end.
+  return slow;
 }
+// Build a tiny list: 10 → 20 → 30 → 40 → 50
+const node5: ListNode<number> = { value: 50, next: null };
+const node4: ListNode<number> = { value: 40, next: node5 };
+const node3: ListNode<number> = { value: 30, next: node4 };
+const node2: ListNode<number> = { value: 20, next: node3 };
+const head: ListNode<number> = { value: 10, next: node2 };
 
-/**
- * Reconstruct the path once the frontiers have met at `meetingNode`.
- */
-function reconstructPath(
-  start: string,
-  goal: string,
-  visitedStart: VisitedMap,
-  visitedGoal: VisitedMap,
-  meetingNode: string
-): string[] {
-  const partFromStart: string[] = [meetingNode];
-  let node = meetingNode;
-  while (visitedStart[node]) {
-    node = visitedStart[node]!;
-    partFromStart.unshift(node);
-  }
-
-  const partFromGoal: string[] = [];
-  node = meetingNode;
-  while (visitedGoal[node]) {
-    node = visitedGoal[node]!;
-    partFromGoal.push(node);
-  }
-
-  // Avoid duplicating the meeting node
-  return [...partFromStart, ...partFromGoal];
-}
-const graph: Graph = {
-  a: ['b', 'c'],
-  b: ['a', 'd'],
-  c: ['a', 'd'],
-  d: ['b', 'c', 'e'],
-  e: ['d'],
-};
-
-console.log(bidirectionalBFS(graph, 'a', 'e')); // ["a", "b", "d", "e"]
+const thirdFromEnd = getNthFromEnd(head, 3);
+console.log(thirdFromEnd?.value); // 30
