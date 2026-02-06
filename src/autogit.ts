@@ -1,60 +1,119 @@
-/**
- * Calculates n! recursively.
- *
- * @param n - The non‑negative integer whose factorial to compute.
- * @returns n! as a number (or NaN if n < 0).
- */
-function factorialRecursive(n: number): number {
-  if (n < 0) return NaN;        // keep it simple: no negative factorials
-  if (n <= 1) return 1;
-  return n * factorialRecursive(n - 1);
-}
+// An adjacency map: node ID → list of neighbouring node IDs
+type Graph = Record<string, string[]>;
 
-// Example:
-console.log(factorialRecursive(5)); // 120
+// Keeps track of visited nodes and the node from which we reached them
+interface VisitedMap {
+  [node: string]: string | null;      // null = source node itself
+}
+enqueue start into frontierStart
+enqueue goal  into frontierGoal
+mark start as visitedFromStart (predecessor = null)
+mark goal  as visitedFromGoal (predecessor = null)
+
+while both queues not empty:
+    # Expand one layer from the start side
+    if expand(frontierStart, visitedFromStart, visitedFromGoal): return result
+
+    # Expand one layer from the goal side
+    if expand(frontierGoal, visitedFromGoal, visitedFromStart):   return result
+
+return no path
 /**
- * Calculates n! iteratively.
+ * Bidirectional BFS.
  *
- * @param n - The non‑negative integer to factorialize.
- * @returns n! as a number (or NaN if n < 0).
+ * @param graph  adjacency map
+ * @param start  ID of start node
+ * @param goal   ID of goal node
+ * @returns a list of node IDs from start to goal, or null if no path
  */
-function factorialIterative(n: number): number {
-  if (n < 0) return NaN;
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+function bidirectionalBFS(graph: Graph, start: string, goal: string): string[] | null {
+  if (start === goal) return [start];
+
+  const visitedStart: VisitedMap = { [start]: null };
+  const visitedGoal: VisitedMap   = { [goal] : null };
+
+  const frontierStart: string[] = [start];
+  const frontierGoal: string[]  = [goal];
+
+  const expand = (
+    frontier: string[],
+    visitedThis: VisitedMap,
+    visitedOther: VisitedMap
+  ): string[] | null => {
+    const nextLayer: string[] = [];
+
+    for (const current of frontier) {
+      for (const neighbor of graph[current] || []) {
+        // Already visited from this side → skip
+        if (current in visitedThis && neighbor in visitedThis) continue;
+
+        // New node for this side
+        if (!(neighbor in visitedThis)) {
+          visitedThis[neighbor] = current;
+          nextLayer.push(neighbor);
+        }
+
+        // If neighbour is in the opposite frontier → frontiers meet
+        if (neighbor in visitedOther) {
+          return reconstructPath(
+            start,
+            goal,
+            visitedStart,
+            visitedGoal,
+            neighbor
+          );
+        }
+      }
+    }
+
+    frontier.splice(0, frontier.length, ...nextLayer);
+    return null;
+  };
+
+  while (frontierStart.length && frontierGoal.length) {
+    const resStart = expand(frontierStart, visitedStart, visitedGoal);
+    if (resStart) return resStart;
+
+    const resGoal = expand(frontierGoal, visitedGoal, visitedStart);
+    if (resGoal) return resGoal;
   }
-  return result;
+
+  return null; // no path found
 }
 
-// Example:
-console.log(factorialIterative(10)); // 3628800
 /**
- * Calculates n! exactly using BigInt.
- *
- * @param n - The non‑negative integer to factorialize.
- * @returns n! as a BigInt (or NaN if n < 0).
+ * Reconstruct the path once the frontiers have met at `meetingNode`.
  */
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error("Factorial isn't defined for negative numbers");
-  let result = 1n;
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
+function reconstructPath(
+  start: string,
+  goal: string,
+  visitedStart: VisitedMap,
+  visitedGoal: VisitedMap,
+  meetingNode: string
+): string[] {
+  const partFromStart: string[] = [meetingNode];
+  let node = meetingNode;
+  while (visitedStart[node]) {
+    node = visitedStart[node]!;
+    partFromStart.unshift(node);
   }
-  return result;
-}
 
-// Example:
-console.log(factorialBigInt(20)); // 2432902008176640000n
-const factorialMemo = new Map<number, number | bigint>();
+  const partFromGoal: string[] = [];
+  node = meetingNode;
+  while (visitedGoal[node]) {
+    node = visitedGoal[node]!;
+    partFromGoal.push(node);
+  }
 
-function factorialMemoized(n: number): number | bigint {
-  if (n < 0) throw new Error("Negative input");
-  if (n <= 1) return 1;
-  if (factorialMemo.has(n)) return factorialMemo.get(n)!;
-  
-  // choose number or bigint based on the expected size
-  const answer = n * factorialMemoized(n - 1);
-  factorialMemo.set(n, answer);
-  return answer;
+  // Avoid duplicating the meeting node
+  return [...partFromStart, ...partFromGoal];
 }
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['a', 'd'],
+  c: ['a', 'd'],
+  d: ['b', 'c', 'e'],
+  e: ['d'],
+};
+
+console.log(bidirectionalBFS(graph, 'a', 'e')); // ["a", "b", "d", "e"]
