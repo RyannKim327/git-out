@@ -1,5 +1,17 @@
-const arr = [1, 2, 3, 2, 4];
-const withoutTwos = arr.filter(x => x !== 2); // [1, 3, 4]
-const arr = [0, 1, 2, 3];
-const idx = 1;
-const sliced = [...arr.slice(0, idx), ...arr.slice(idx + 1)]; // [0, 2, 3]
+const numbers = [3, 42, 7, -1, 20];
+const biggest = Math.max(...numbers);
+
+console.log(biggest); // 42
+function findMax(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined; // or throw, or use null, whatever fits your API
+  return Math.max(...nums);
+}
+const biggest = numbers.reduce((max, curr) => curr > max ? curr : max, -Infinity);
+function findMax(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  return nums.reduce((max, curr) => (curr > max ? curr : max));
+}
+function findMax<T extends readonly (number | null | undefined)[]>(arr: T): number | undefined {
+  const filtered = arr.filter(isFinite) as number[]; // strip out null/undefined if you like
+  return filtered.length ? Math.max(...filtered) : undefined;
+}
