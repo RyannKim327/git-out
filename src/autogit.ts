@@ -1,71 +1,87 @@
 /**
- * Heap‑sort – sorts an array of numbers in ascending order.
- * The algorithm works in O(n log n) time and O(1) extra space (in‑place).
+ * Returns the maximum sum of any contiguous sub‑array.
  *
- * @param arr The array to sort – it will be mutated.
+ * @param arr – array of numbers (may contain negatives)
+ * @returns {number} maximum sub‑array sum
  */
-export function heapSort(arr: number[]): void {
-  const n = arr.length;
-
-  // Step 1. Build a max‑heap.
-  // The last non‑leaf node is at floor(n/2) - 1.
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-    siftDown(arr, i, n);
+export function maxSubArraySum(arr: number[]): number {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
   }
 
-  // Step 2. Repeatedly extract the maximum element.
-  for (let end = n - 1; end > 0; end--) {
-    swap(arr, 0, end);          // Move current max to its final position.
-    siftDown(arr, 0, end);      // Restore heap property for the reduced heap.
+  // init both with first element: handles all‑negative cases nicely
+  let currentBest = arr[0];
+  let globalBest = arr[0];
+
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
+
+    // Either extend the previous sub‑array or start fresh at value
+    currentBest = Math.max(value, currentBest + value);
+
+    // Keep the best seen so far
+    globalBest = Math.max(globalBest, currentBest);
   }
+
+  return globalBest;
+}
+const testSets = [
+  { arr: [1, -2, 3, 4, -5, 8], expect: 10 },
+  { arr: [-2, -3, -1, -4], expect: -1 },
+  { arr: [2, 3, 1, 6], expect: 12 },
+  { arr: [5, -1, 2, 3], expect: 9 },
+  { arr: [1], expect: 1 },
+];
+
+for (const { arr, expect } of testSets) {
+  const result = maxSubArraySum(arr);
+  console.log(`arr: ${arr} → max sum: ${result} (${result === expect ? '✓' : '✗'})`);
+}
+arr: 1,-2,3,4,-5,8 → max sum: 10 (✓)
+arr: -2,-3,-1,-4 → max sum: -1 (✓)
+arr: 2,3,1,6 → max sum: 12 (✓)
+arr: 5,-1,2,3 → max sum: 9 (✓)
+arr: 1 → max sum: 1 (✓)
+interface MaxSubArrayResult {
+  sum: number;
+  start: number;
+  end: number;   // inclusive
 }
 
-/**
- * Restores the max‑heap property by sifting a node downwards.
- *
- * @param heap  The heap array.
- * @param start Index of the node to sift down.
- * @param size  The current size of the heap (elements >= size are already sorted).
- */
-function siftDown(heap: number[], start: number, size: number): void {
-  let root = start;
+export function maxSubArraySumWithIndices(arr: number[]): MaxSubArrayResult {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
+  }
 
-  while (true) {
-    const left = 2 * root + 1;   // Left child index.
-    const right = left + 1;      // Right child index.
-    let largest = root;
+  let currentBest = arr[0];
+  let globalBest = arr[0];
 
-    // If left child exists and is greater than root.
-    if (left < size && heap[left] > heap[largest]) {
-      largest = left;
+  // working indices
+  let currentStart = 0;
+  let bestStart = 0;
+  let bestEnd = 0;
+
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
+
+    // decide whether to continue or start a new sub‑array
+    if (currentBest + value < value) {
+      currentBest = value;
+      currentStart = i;
+    } else {
+      currentBest += value;
     }
 
-    // If right child exists and is greater than current largest.
-    if (right < size && heap[right] > heap[largest]) {
-      largest = right;
+    // update global best if we found a better sum
+    if (currentBest > globalBest) {
+      globalBest = currentBest;
+      bestStart = currentStart;
+      bestEnd = i;
     }
-
-    // If root is already the largest, the heap property holds.
-    if (largest === root) break;
-
-    // Swap root with the larger child and continue sifting down.
-    swap(heap, root, largest);
-    root = largest;
   }
-}
 
-/**
- * Utility to swap two elements in an array.
- *
- * @param a    Array containing the elements.
- * @param i    Index of the first element.
- * @param j    Index of the second element.
- */
-function swap(a: number[], i: number, j: number): void {
-  const tmp = a[i];
-  a[i] = a[j];
-  a[j] = tmp;
+  return { sum: globalBest, start: bestStart, end: bestEnd };
 }
-const data = [5, 3, 8, 4, 1, 2];
-heapSort(data);
-console.log(data);  // → [1, 2, 3, 4, 5, 8]
+const { sum, start, end } = maxSubArraySumWithIndices([1, -2, 3, 4, -5, 8]);
+console.log(`max sum ${sum} from index ${start} to ${end}`);
+// → max sum 10 from index 2 to 5
