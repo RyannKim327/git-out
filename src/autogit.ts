@@ -1,95 +1,76 @@
-/* ------------------------------------------------------------------
-   Interface that a node must support for the search.
-   ------------------------------------------------------------------ */
-export interface Searchable<Node> {
-  // Return an array (or any iterable) of child nodes.
-  getChildren(): Iterable<Node>;
+/**
+ * Returns the longest common prefix of all strings in `arr`.
+ *
+ * @param arr – an array of strings (can be empty)
+ * @returns the prefix that every string shares, or an empty string
+ */
+function longestCommonPrefix(arr: string[]): string {
+  if (!arr.length) return "";
 
-  // Optional: a quick way to decide if this node is the goal.
-  // If omitted, the caller supplies a separate predicate below.
-  isGoal?(): boolean;
-}
+  // Pin the “shortest”‑length string as a stopping rule.
+  // No prefix can be longer than this string.
+  const minLen = Math.min(...arr.map(s => s.length));
 
-/* ------------------------------------------------------------------
-   Breadth‑Limited Search
-
-   Parameters
-     start   : node to begin the search
-     maxDepth: maximum depth (root is depth 0)
-     goal   : optional predicate; if the node has `isGoal`, that
-              method is used instead
-
-   Returns
-     The found node, or `undefined` if nothing was discovered within
-     the depth limit.
-   ------------------------------------------------------------------ */
-export function breadthLimitedSearch<Node extends Searchable<Node>>(
-  start: Node,
-  maxDepth: number,
-  goal?: (node: Node) => boolean
-): Node | undefined {
-
-  // Queue entries store the node and its depth
-  interface QueueEntry {
-    node: Node;
-    depth: number;
-  }
-
-  const queue: QueueEntry[] = [{ node: start, depth: 0 }];
-  const seen = new Set<Node>();
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;
-
-    // Skip any repeated nodes – this protects against cycles
-    if (seen.has(node)) continue;
-    seen.add(node);
-
-    // Goal test – prefer the node’s own method if present
-    const isGoal =
-      goal ? goal(node) : node.isGoal ? node.isGoal() : false;
-    if (isGoal) return node;
-
-    // Stop expanding deeper than maxDepth
-    if (depth < maxDepth) {
-      for (const child of node.getChildren()) {
-        queue.push({ node: child, depth: depth + 1 });
+  for (let i = 0; i < minLen; i++) {
+    const char = arr[0][i]; // candidate character
+    // stop as soon as any string mismatches
+    for (let j = 1; j < arr.length; j++) {
+      if (arr[j][i] !== char) {
+        return arr[0].substring(0, i);
       }
     }
   }
 
-  // Nothing matched within the limit
-  return undefined;
+  // All `minLen` characters matched
+  return arr[0].substring(0, minLen);
 }
-// 1. A concrete node type
-class TreeNode implements Searchable<TreeNode> {
-  constructor(
-    public value: number,
-    private children: TreeNode[] = []
-  ) {}
+const words = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(words)); // logs "fl"
+function longestCommonPrefixSort(arr: string[]): string {
+  if (!arr.length) return "";
 
-  getChildren(): TreeNode[] {
-    return this.children;
+  const sorted = [...arr].sort();          // O(n log n)
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
+
+  let i = 0;
+  while (i < first.length && i < last.length && first[i] === last[i]) {
+    i++;
   }
 
-  // Optional helper that the search will call first
-  isGoal(): boolean {
-    return this.value === 42;
-  }
+  return first.substring(0, i);
+}
+function lcpDivideAndConquer(arr: string[], l = 0, r = arr.length - 1): string {
+  if (l > r) return "";
+  if (l === r) return arr[l];
 
-  add(child: TreeNode) {
-    this.children.push(child);
+  const mid = Math.floor((l + r) / 2);
+  const leftPref  = lcpDivideAndConquer(arr, l, mid);
+  const rightPref = lcpDivideAndConquer(arr, mid + 1, r);
+
+  // intersect two prefixes
+  let i = 0;
+  while (i < leftPref.length && i < rightPref.length && leftPref[i] === rightPref[i]) {
+    i++;
   }
+  return leftPref.substring(0, i);
 }
 
-// 2. Build a little tree
-const root = new TreeNode(1);
-const a = new TreeNode(2);
-const b = new TreeNode(3);
-root.add(a); root.add(b);
-a.add(new TreeNode(4));
-b.add(new TreeNode(42)); // the goal
+// convenience wrapper
+function longestCommonPrefixD&C(arr: string[]): string {
+  return lcpDivideAndConquer(arr);
+}
+const cases: [string[], string][] = [
+  [["", "", ""]]          , [""],
+  [["dog"], ["dog"]]      , ["dog"],
+  [["abc","ab"],
+   ["ab"]]                , ["ab"],
+  [["abc","abcd","abce"], ["abc"]],
+  [["agri", "adopt", "alien"], ["a"]],
+  [["b", "a"], [""]], 
+];
 
-// 3. Run the search
-const found = breadthLimitedSearch(root, 3);
-console.log(found?.value ?? 'not found'); // prints 42
+cases.forEach(([arr, expected], i) => {
+  const result = longestCommonPrefix(arr);
+  console.log(i, result === expected[0] ? "✅" : `❌ got "${result}"`);
+});
