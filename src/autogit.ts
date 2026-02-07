@@ -1,32 +1,38 @@
 /**
- * Bubble sort – compares adjacent elements and swaps them if they're out of order.
- *
- * @param arr – The array of numbers (or any type that implements `<`),
- *              sorted in place and also returned for convenience.
- * @returns The sorted array.
+ * @param s The string to test.
+ * @param options
+ *   - ignoreCase: whether to treat “A” and “a” as the same (default: true)
+ *   - ignoreNonAlphaNum: whether to strip out spaces, punctuation, etc. (default: true)
+ * @returns true if `s` reads the same forward and backward under the chosen options.
  */
-export function bubbleSort<T>(arr: T[]): T[] {
-  const n = arr.length;
+function isPalindrome(
+  s: string,
+  options: { ignoreCase?: boolean; ignoreNonAlphaNum?: boolean } = {}
+): boolean {
+  const { ignoreCase = true, ignoreNonAlphaNum = true } = options;
 
-  // Outer loop – each pass guarantees that the largest element among the
-  // unsorted portion moves to its final position at the end of the array.
-  for (let i = 0; i < n - 1; i++) {
-    // Inner loop – only needs to run up to the last unsorted element.
-    for (let j = 0; j < n - i - 1; j++) {
-      // If the current element is greater than the next one, swap them.
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-      }
-    }
+  // Optional: strip out anything other than letters/digits
+  let cleaned = ignoreNonAlphaNum
+    ? s.replace(/[^A-Za-z0-9]/g, '')
+    : s;
+
+  // Optional: standardise case
+  if (ignoreCase) cleaned = cleaned.toLowerCase();
+
+  // Fast exit on single‑character strings (or empty)
+  if (cleaned.length < 2) return true;
+
+  // Compare characters from both ends
+  let left = 0;
+  let right = cleaned.length - 1;
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) return false;
+    left++;
+    right--;
   }
-
-  return arr;
+  return true;
 }
-import { bubbleSort } from './bubbleSort';
-
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-console.log('Before:', numbers);
-
-bubbleSort(numbers);
-
-console.log('After:', numbers);   // [11, 12, 22, 25, 34, 64, 90]
+console.log(isPalindrome('Racecar'));           // true
+console.log(isPalindrome('hello'));             // false
+console.log(isPalindrome('A man, a plan, a canal, Panama')); // true
+console.log(isPalindrome('No lemon, no melon', { ignoreNonAlphaNum: true, ignoreCase: true })); // true
