@@ -1,76 +1,75 @@
-/**
- * Returns the longest common prefix of all strings in `arr`.
- *
- * @param arr – an array of strings (can be empty)
- * @returns the prefix that every string shares, or an empty string
- */
-function longestCommonPrefix(arr: string[]): string {
-  if (!arr.length) return "";
+function decimalToBinary(dec: number | bigint): string {
+  return dec.toString(2);
+}
 
-  // Pin the “shortest”‑length string as a stopping rule.
-  // No prefix can be longer than this string.
-  const minLen = Math.min(...arr.map(s => s.length));
+// Examples
+console.log(decimalToBinary(13));      // '1101'
+console.log(decimalToBinary(255n));    // '11111111'
+function decimalToBinaryIterative(num: number): string {
+  if (num === 0) return '0';
+  let n = Math.abs(num);
+  const bits: string[] = [];
+  while (n > 0) {
+    bits.push((n % 2).toString());
+    n = Math.floor(n / 2);
+  }
+  if (num < 0) bits.push('-');
+  return bits.reverse().join('');
+}
 
-  for (let i = 0; i < minLen; i++) {
-    const char = arr[0][i]; // candidate character
-    // stop as soon as any string mismatches
-    for (let j = 1; j < arr.length; j++) {
-      if (arr[j][i] !== char) {
-        return arr[0].substring(0, i);
+// Demo
+console.log(decimalToBinaryIterative(13));   // '1101'
+console.log(decimalToBinaryIterative(-13));  // '-1101'
+function decimalToBinaryRecursive(num: number): string {
+  if (num === 0) return '';
+  const [higher, bit] = decimalToBinaryRecursive(Math.floor(num / 2)).split('|', 2);
+  return `${higher}|${num % 2}`;
+}
+
+// Helper to clean up the leading empty part
+function binaryRecursive(num: number): string {
+  const bin = decimalToBinaryRecursive(num);
+  return bin.split('|').filter(Boolean).join('');
+}
+
+// Demo
+console.log(binaryRecursive(27));  // '11011'
+function decimalToBinaryFraction(num: number, precision: number = 10): string {
+  const intPart = Math.trunc(num);
+  let fracPart = num - intPart;
+  let binary = intPart.toString(2);
+
+  if (precision > 0 && fracPart > 0) {
+    binary += '.';
+    let p = 0;
+    while (p < precision && fracPart > 0) {
+      fracPart *= 2;
+      if (fracPart >= 1) {
+        binary += '1';
+        fracPart -= 1;
+      } else {
+        binary += '0';
       }
+      p++;
     }
   }
 
-  // All `minLen` characters matched
-  return arr[0].substring(0, minLen);
+  return binary;
 }
-const words = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(words)); // logs "fl"
-function longestCommonPrefixSort(arr: string[]): string {
-  if (!arr.length) return "";
 
-  const sorted = [...arr].sort();          // O(n log n)
-  const first = sorted[0];
-  const last  = sorted[sorted.length - 1];
-
-  let i = 0;
-  while (i < first.length && i < last.length && first[i] === last[i]) {
-    i++;
+// Demo
+console.log(decimalToBinaryFraction(5.6875, 8)); // '101.1011'
+function test(input: number | bigint) {
+  console.log(`Decimal: ${input}`);
+  console.log(`  -> toString(2):   ${input.toString(2)}`);
+  if (typeof input === 'number') {
+    console.log(`  -> iterative:   ${decimalToBinaryIterative(input)}`);
+    console.log(`  -> recursive:   ${binaryRecursive(input)}`);
   }
-
-  return first.substring(0, i);
-}
-function lcpDivideAndConquer(arr: string[], l = 0, r = arr.length - 1): string {
-  if (l > r) return "";
-  if (l === r) return arr[l];
-
-  const mid = Math.floor((l + r) / 2);
-  const leftPref  = lcpDivideAndConquer(arr, l, mid);
-  const rightPref = lcpDivideAndConquer(arr, mid + 1, r);
-
-  // intersect two prefixes
-  let i = 0;
-  while (i < leftPref.length && i < rightPref.length && leftPref[i] === rightPref[i]) {
-    i++;
-  }
-  return leftPref.substring(0, i);
+  console.log('');
 }
 
-// convenience wrapper
-function longestCommonPrefixD&C(arr: string[]): string {
-  return lcpDivideAndConquer(arr);
-}
-const cases: [string[], string][] = [
-  [["", "", ""]]          , [""],
-  [["dog"], ["dog"]]      , ["dog"],
-  [["abc","ab"],
-   ["ab"]]                , ["ab"],
-  [["abc","abcd","abce"], ["abc"]],
-  [["agri", "adopt", "alien"], ["a"]],
-  [["b", "a"], [""]], 
-];
-
-cases.forEach(([arr, expected], i) => {
-  const result = longestCommonPrefix(arr);
-  console.log(i, result === expected[0] ? "✅" : `❌ got "${result}"`);
-});
+test(13);
+test(-13);
+test(0);
+test(5.6875);   // only the toString version works for BigInt
