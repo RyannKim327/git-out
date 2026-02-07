@@ -1,113 +1,105 @@
-type Hashable = string | number;
-
-// A node in a linked list that stores a key–value pair.
-class ListNode<K extends Hashable, V> {
+/**
+ * A singly‑linked list node that holds a generic value.
+ */
+export class ListNode<T> {
   constructor(
-    public key: K,
-    public value: V,
-    public next: ListNode<K, V> | null = null
+    public val: T,
+    public next: ListNode<T> | null = null
   ) {}
 }
+/**
+ * Returns true iff the linked list is a palindrome.
+ */
+export function isPalindrome<T>(head: ListNode<T> | null): boolean {
+  if (!head || !head.next) return true; // empty or single node
 
-// A very small, non‑generic implementation.
-// Could be turned into a generic class if you want re‑usability.
-class HashTable<K extends Hashable, V> {
-  // Number of buckets.  53 is a prime that keeps things a bit uniform.
-  private readonly bucketCount = 53;
-  private readonly buckets: Array<ListNode<K, V> | null>;
+  /* ---------- 1️⃣ Find middle ---------- */
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-  constructor() {
-    // fill the array with nulls
-    this.buckets = Array(this.bucketCount).fill(null);
+  while (fast.next && fast.next.next) {
+    slow = slow!.next!;   // move one step
+    fast = fast.next.next; // move two steps
   }
 
-  // Simple hash: string => simple accumulating hash; number => straight
-  private hash(key: K): number {
-    let h: number;
-    if (typeof key === "number") {
-      h = key;
-    } else {
-      h = 0;
-      for (let i = 0; i < key.length; i++) {
-        // 31 is a classic multiplier in hash functions
-        h = (h * 31 + key.charCodeAt(i)) | 0; // |0 keeps it 32‑bit
-      }
+  /* ---------- 2️⃣ Reverse second half ---------- */
+  let prev: ListNode<T> | null = null;
+  let curr: ListNode<T> | null = slow;
+
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  const secondHalfHead = prev; // start of reversed half
+
+  /* ---------- 3️⃣ Compare halves ---------- */
+  let p1: ListNode<T> | null = head;
+  let p2: ListNode<T> | null = secondHalfHead;
+
+  let isPal = true;
+  while (isPal && p2) {           // p2 is half the length
+    if (p1!.val !== p2!.val) {
+      isPal = false;
+      break;
     }
-    // Ensure positive index
-    return Math.abs(h) % this.bucketCount;
+    p1 = p1!.next;
+    p2 = p2!.next;
   }
 
-  set(key: K, value: V): void {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-
-    // If there’s already a node, see if the key matches
-    while (node) {
-      if (node.key === key) {
-        node.value = value; // update
-        return;
-      }
-      node = node.next;
-    }
-
-    // No match – prepend a new node (O(1) for inserts)
-    const newNode = new ListNode(key, value, this.buckets[idx]);
-    this.buckets[idx] = newNode;
+  /* ---------- (Optional) 4️⃣ Restore list ---------- */
+  // reverse again to keep original structure
+  curr = secondHalfHead;
+  prev = null;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  if (slow!.next) { // connect back
+    slow!.next = prev;
   }
 
-  get(key: K): V | undefined {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-
-    while (node) {
-      if (node.key === key) return node.value;
-      node = node.next;
-    }
-    return undefined;
-  }
-
-  has(key: K): boolean {
-    return this.get(key) !== undefined;
-  }
-
-  delete(key: K): boolean {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-    let prev: ListNode<K, V> | null = null;
-
-    while (node) {
-      if (node.key === key) {
-        if (prev) prev.next = node.next;
-        else this.buckets[idx] = node.next;
-        return true;
-      }
-      prev = node;
-      node = node.next;
-    }
-    return false;
-  }
-
-  // For debugging / tests: flatten the table into a plain object
-  toObject(): Record<string, V> {
-    const out: Record<string, V> = {};
-    for (const bucket of this.buckets) {
-      let node = bucket;
-      while (node) {
-        out[String(node.key)] = node.value;
-        node = node.next;
-      }
-    }
-    return out;
-  }
+  return isPal;
 }
-const table = new HashTable<string, number>();
-table.set("alpha", 1);
-table.set("beta", 2);
-table.set("gamma", 3);
-table.set("delta", 4);
+function build<T>(arr: T[]): ListNode<T> | null {
+  let dummy = new ListNode<T>(null as any);
+  let cur = dummy;
+  for (const v of arr) {
+    cur.next = new ListNode<T>(v);
+    cur = cur.next;
+  }
+  return dummy.next;
+}
 
-console.log(table.get("beta"));   // 2
-console.log(table.has("epsilon")); // false
+const tests = [
+  { arr: [1, 2, 3, 2, 1], expected: true },
+  { arr: [1, 2, 2, 1], expected: true },
+  { arr: [1, 2, 3], expected: false },
+  { arr: [], expected: true },
+  { arr: [42], expected: true },
+  { arr: [7, 8, 7, 9], expected: false }
+];
 
-table.delete("gamma");
-console.log(table.toObject());    // { alpha: 1, beta: 2, delta: 4 }
+for (const {arr, expected} of tests) {
+  const h = build(arr);
+  console.log(`isPalindrome(${JSON.stringify(arr)}) =>`, isPalindrome(h), 'expected', expected);
+}
+isPalindrome([1,2,3,2,1]) => true expected true
+isPalindrome([1,2,2,1]) => true expected true
+isPalindrome([1,2,3]) => false expected false
+isPalindrome([]) => true expected true
+isPalindrome([42]) => true expected true
+isPalindrome([7,8,7,9]) => false expected false
+function isPalindromeStack<T>(head: ListNode<T> | null): boolean {
+  const vals: T[] = [];
+  for (let cur = head; cur; cur = cur.next) vals.push(cur.val);
+
+  let l = 0, r = vals.length - 1;
+  while (l < r) {
+    if (vals[l++] !== vals[r--]) return false;
+  }
+  return true;
+}
