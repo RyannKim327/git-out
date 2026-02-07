@@ -1,75 +1,71 @@
-function decimalToBinary(dec: number | bigint): string {
-  return dec.toString(2);
-}
+/**
+ * Heap‑sort – sorts an array of numbers in ascending order.
+ * The algorithm works in O(n log n) time and O(1) extra space (in‑place).
+ *
+ * @param arr The array to sort – it will be mutated.
+ */
+export function heapSort(arr: number[]): void {
+  const n = arr.length;
 
-// Examples
-console.log(decimalToBinary(13));      // '1101'
-console.log(decimalToBinary(255n));    // '11111111'
-function decimalToBinaryIterative(num: number): string {
-  if (num === 0) return '0';
-  let n = Math.abs(num);
-  const bits: string[] = [];
-  while (n > 0) {
-    bits.push((n % 2).toString());
-    n = Math.floor(n / 2);
+  // Step 1. Build a max‑heap.
+  // The last non‑leaf node is at floor(n/2) - 1.
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+    siftDown(arr, i, n);
   }
-  if (num < 0) bits.push('-');
-  return bits.reverse().join('');
+
+  // Step 2. Repeatedly extract the maximum element.
+  for (let end = n - 1; end > 0; end--) {
+    swap(arr, 0, end);          // Move current max to its final position.
+    siftDown(arr, 0, end);      // Restore heap property for the reduced heap.
+  }
 }
 
-// Demo
-console.log(decimalToBinaryIterative(13));   // '1101'
-console.log(decimalToBinaryIterative(-13));  // '-1101'
-function decimalToBinaryRecursive(num: number): string {
-  if (num === 0) return '';
-  const [higher, bit] = decimalToBinaryRecursive(Math.floor(num / 2)).split('|', 2);
-  return `${higher}|${num % 2}`;
-}
+/**
+ * Restores the max‑heap property by sifting a node downwards.
+ *
+ * @param heap  The heap array.
+ * @param start Index of the node to sift down.
+ * @param size  The current size of the heap (elements >= size are already sorted).
+ */
+function siftDown(heap: number[], start: number, size: number): void {
+  let root = start;
 
-// Helper to clean up the leading empty part
-function binaryRecursive(num: number): string {
-  const bin = decimalToBinaryRecursive(num);
-  return bin.split('|').filter(Boolean).join('');
-}
+  while (true) {
+    const left = 2 * root + 1;   // Left child index.
+    const right = left + 1;      // Right child index.
+    let largest = root;
 
-// Demo
-console.log(binaryRecursive(27));  // '11011'
-function decimalToBinaryFraction(num: number, precision: number = 10): string {
-  const intPart = Math.trunc(num);
-  let fracPart = num - intPart;
-  let binary = intPart.toString(2);
-
-  if (precision > 0 && fracPart > 0) {
-    binary += '.';
-    let p = 0;
-    while (p < precision && fracPart > 0) {
-      fracPart *= 2;
-      if (fracPart >= 1) {
-        binary += '1';
-        fracPart -= 1;
-      } else {
-        binary += '0';
-      }
-      p++;
+    // If left child exists and is greater than root.
+    if (left < size && heap[left] > heap[largest]) {
+      largest = left;
     }
-  }
 
-  return binary;
+    // If right child exists and is greater than current largest.
+    if (right < size && heap[right] > heap[largest]) {
+      largest = right;
+    }
+
+    // If root is already the largest, the heap property holds.
+    if (largest === root) break;
+
+    // Swap root with the larger child and continue sifting down.
+    swap(heap, root, largest);
+    root = largest;
+  }
 }
 
-// Demo
-console.log(decimalToBinaryFraction(5.6875, 8)); // '101.1011'
-function test(input: number | bigint) {
-  console.log(`Decimal: ${input}`);
-  console.log(`  -> toString(2):   ${input.toString(2)}`);
-  if (typeof input === 'number') {
-    console.log(`  -> iterative:   ${decimalToBinaryIterative(input)}`);
-    console.log(`  -> recursive:   ${binaryRecursive(input)}`);
-  }
-  console.log('');
+/**
+ * Utility to swap two elements in an array.
+ *
+ * @param a    Array containing the elements.
+ * @param i    Index of the first element.
+ * @param j    Index of the second element.
+ */
+function swap(a: number[], i: number, j: number): void {
+  const tmp = a[i];
+  a[i] = a[j];
+  a[j] = tmp;
 }
-
-test(13);
-test(-13);
-test(0);
-test(5.6875);   // only the toString version works for BigInt
+const data = [5, 3, 8, 4, 1, 2];
+heapSort(data);
+console.log(data);  // → [1, 2, 3, 4, 5, 8]
