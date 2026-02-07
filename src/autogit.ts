@@ -1,34 +1,87 @@
-function isAnagramSort(a: string, b: string): boolean {
-  // Normalize (optional – depends on your use‑case)
-  const normalize = (s: string) =>
-    s.replace(/\s+/g, '').toLowerCase(); // trim spaces, lower‑case
-
-  const sa = normalize(a).split('').sort().join('');
-  const sb = normalize(b).split('').sort().join('');
-
-  return sa === sb;
-}
-function isAnagramMap(a: string, b: string): boolean {
-  // Quick length check (no need to normalize again here)
-  if (a.length !== b.length) return false;
-
-  const count = new Map<string, number>();
-
-  for (let i = 0; i < a.length; i++) {
-    const ca = a[i];
-    const cb = b[i];
-
-    count.set(ca, (count.get(ca) || 0) + 1);
-    count.set(cb, (count.get(cb) || 0) - 1);
+/**
+ * Returns the maximum sum of any contiguous sub‑array.
+ *
+ * @param arr – array of numbers (may contain negatives)
+ * @returns {number} maximum sub‑array sum
+ */
+export function maxSubArraySum(arr: number[]): number {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
   }
 
-  // All counts must net to 0
-  for (const val of count.values()) {
-    if (val !== 0) return false;
+  // init both with first element: handles all‑negative cases nicely
+  let currentBest = arr[0];
+  let globalBest = arr[0];
+
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
+
+    // Either extend the previous sub‑array or start fresh at value
+    currentBest = Math.max(value, currentBest + value);
+
+    // Keep the best seen so far
+    globalBest = Math.max(globalBest, currentBest);
   }
-  return true;
+
+  return globalBest;
 }
-const a = 'listen';
-const b = 'silent';
-console.log(isAnagramSort(a, b)); // true
-console.log(isAnagramMap(a, b));  // true
+const testSets = [
+  { arr: [1, -2, 3, 4, -5, 8], expect: 10 },
+  { arr: [-2, -3, -1, -4], expect: -1 },
+  { arr: [2, 3, 1, 6], expect: 12 },
+  { arr: [5, -1, 2, 3], expect: 9 },
+  { arr: [1], expect: 1 },
+];
+
+for (const { arr, expect } of testSets) {
+  const result = maxSubArraySum(arr);
+  console.log(`arr: ${arr} → max sum: ${result} (${result === expect ? '✓' : '✗'})`);
+}
+arr: 1,-2,3,4,-5,8 → max sum: 10 (✓)
+arr: -2,-3,-1,-4 → max sum: -1 (✓)
+arr: 2,3,1,6 → max sum: 12 (✓)
+arr: 5,-1,2,3 → max sum: 9 (✓)
+arr: 1 → max sum: 1 (✓)
+interface MaxSubArrayResult {
+  sum: number;
+  start: number;
+  end: number;   // inclusive
+}
+
+export function maxSubArraySumWithIndices(arr: number[]): MaxSubArrayResult {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
+  }
+
+  let currentBest = arr[0];
+  let globalBest = arr[0];
+
+  // working indices
+  let currentStart = 0;
+  let bestStart = 0;
+  let bestEnd = 0;
+
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
+
+    // decide whether to continue or start a new sub‑array
+    if (currentBest + value < value) {
+      currentBest = value;
+      currentStart = i;
+    } else {
+      currentBest += value;
+    }
+
+    // update global best if we found a better sum
+    if (currentBest > globalBest) {
+      globalBest = currentBest;
+      bestStart = currentStart;
+      bestEnd = i;
+    }
+  }
+
+  return { sum: globalBest, start: bestStart, end: bestEnd };
+}
+const { sum, start, end } = maxSubArraySumWithIndices([1, -2, 3, 4, -5, 8]);
+console.log(`max sum ${sum} from index ${start} to ${end}`);
+// → max sum 10 from index 2 to 5
