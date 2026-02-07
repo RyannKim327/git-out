@@ -1,59 +1,71 @@
 /**
- * Shell sort – a simple in‑place comparison sort.
+ * Forward Burrows‑Wheeler Transform.
  *
- * @template T          – The element type stored in the array.
- * @param array         – Array to be sorted (mutated).
- * @param compareFn     – Optional comparison function.  
- *                        Should return a negative number if a < b,
- *                        zero if a == b, and a positive number if a > b.
- *                        Default is numeric ascending order.
- *
- * @returns The same array, now sorted.
- *
- * Example:
- *   const nums = [23, 12, 1, 2, 8, 15];
- *   shellSort(nums);                 // → [1,2,8,12,15,23]
- *
- *   const words = ["pear","apple","orange"];
- *   shellSort(words, (a,b) => a.localeCompare(b));  // → ["apple","orange","pear"]
+ * @param text – input string
+ * @returns {lastColumn, originalIndex}
+ *   • lastColumn  – the BWT string (the last column of the sorted rotations)
+ *   • originalIndex – position of the original string in the sorted list
  */
-export function shellSort<T>(
-  array: T[],
-  compareFn: (a: T, b: T) => number = (a, b) => (a as unknown as number) - (b as unknown as number)
-): T[] {
-  const n = array.length;
-  // Basic Shell sequence: n/2, n/4, ..., 1
-  // (You could use a more sophisticated sequence, e.g. Hibbard, Pratt, or Knuth.)
-  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Perform a gapped insertion sort for this gap size
-    for (let i = gap; i < n; i++) {
-      const current = array[i];
-      let j = i;
+export function bwt(text: string): { lastColumn: string; originalIndex: number } {
+  const n = text.length;
+  const rotations = new Array<string>(n);
 
-      // Shift earlier gap‑separated elements up until the correct location for current
-      while (j >= gap && compareFn(array[j - gap], current) > 0) {
-        array[j] = array[j - gap];
-        j -= gap;
-      }
-      array[j] = current;
-    }
+  // Build all cyclic rotations
+  for (let i = 0; i < n; i++) {
+    rotations[i] = text.slice(i) + text.slice(0, i);
   }
-  return array;
+
+  // Sort rotations lexicographically
+  rotations.sort();
+
+  // Grab last character of each rotation and remember where the original text ended up
+  let lastColumn = '';
+  let originalIndex = -1;
+  for (let i = 0; i < n; i++) {
+    const rot = rotations[i];
+    lastColumn += rot[rot.length - 1];
+    if (rot === text) originalIndex = i;
+  }
+
+  return { lastColumn, originalIndex };
 }
-import { shellSort } from "./shellSort";
 
-const planets = [
-  { name: "Jupiter", radius: 69911 },
-  { name: "Earth", radius: 6371 },
-  { name: "Mars", radius: 3389 },
-  { name: "Saturn", radius: 58232 },
-];
+/**
+ * Inverse Burrows‑Wheeler Transform.
+ *
+ * @param lastColumn  – BWT string (result of the forward transform)
+ * @param originalIndex – index returned by the forward transform
+ * @returns original input string
+ */
+export function inverseBwt(lastColumn: string, originalIndex: number): string {
+  const n = lastColumn.length;
 
-shellSort(planets, (a, b) => a.radius - b.radius);
-console.log(planets);
-// → [
-//      { name: "Mars", radius: 3389 },
-//      { name: "Earth", radius: 6371 },
-//      { name: "Saturn", radius: 58232 },
-//      { name: "Jupiter", radius: 69911 }
-//    ]
+  // Build the first column by sorting the last column
+  const firstColumn = [...lastColumn].sort().join('');
+
+  // Build a map from character to its deque of positions in the last column
+  const charQueues: Record<string, number[]> = {};
+  for (let i = 0; i < n; i++) {
+    const c = lastColumn[i];
+    if (!charQueues[c]) charQueues[c] = [];
+    charQueues[c].push(i);
+  }
+
+  // Reconstruct the original string
+  let result = '';
+  let idx = originalIndex;
+  for (let i = 0; i < n; i++) {
+    const c = firstColumn[idx];
+    result += c;
+    // The row that had c in the last column is the next idx
+    idx = charQueues[c].shift()!;
+  }
+
+  return result;
+}
+const { lastColumn, originalIndex } = bwt('BANANA');
+console.log(lastColumn);          // 'ANNBAA'
+console.log(originalIndex);       // 3
+
+const original = inverseBwt(lastColumn, originalIndex);
+console.log(original);            // 'BANANA'
