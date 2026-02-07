@@ -1,50 +1,45 @@
 /**
- * Random sort – a quick‑sort implementation that picks a random
- * pivot for each split.
- *
- * The algorithm is deterministic in complexity (O(n log n) on average),
- * but the pivot choice is completely random, which can be useful for
- * teaching purposes or for avoiding worst‑case sequences.
+ * Returns the majority element if it exists.
+ * If no element occurs > n/2 times, it returns undefined.
  */
+function majorityElement<T>(arr: T[]): T | undefined {
+  let candidate: T | undefined;
+  let count = 0;
 
-function randomQuickSort<T>(input: T[], compare?: (a: T, b: T) => number): T[] {
-  // If there are 0 or 1 elements, it's already sorted.
-  if (input.length <= 1) {
-    return [...input];
-  }
-
-  // Choose a random pivot index.
-  const pivotIndex = Math.floor(Math.random() * input.length);
-  const pivot = input[pivotIndex];
-
-  // Helper to decide the order.
-  const cmp = compare ||
-    // Default to numeric or string comparison.
-    ((a: T, b: T) => (a as any) < b ? -1 : (a as any) > b ? 1 : 0);
-
-  // Partition the array into two bins: <= pivot and > pivot.
-  const smaller: T[] = [];
-  const larger: T[] = [];
-
-  for (let i = 0; i < input.length; i++) {
-    if (i === pivotIndex) continue; // skip the pivot itself
-    const item = input[i];
-    if (cmp(item, pivot) <= 0) {
-      smaller.push(item);
+  // Step 1 – find a candidate
+  for (const value of arr) {
+    if (count === 0) {
+      candidate = value;
+      count = 1;
+    } else if (value === candidate) {
+      count++;
     } else {
-      larger.push(item);
+      count--;
     }
   }
 
-  // Recursively sort each sub‑array and concatenate the results.
-  return [
-    ...randomQuickSort(smaller, compare),
-    pivot,
-    ...randomQuickSort(larger, compare),
-  ];
-}
+  // Step 2 – optional verification pass
+  // (often omitted if you’re sure the input guarantees a majority)
+  if (candidate !== undefined) {
+    let occurrences = 0;
+    for (const v of arr) {
+      if (v === candidate) occurrences++;
+    }
+    if (occurrences > Math.floor(arr.length / 2)) {
+      return candidate;
+    }
+  }
 
-/* --- Example usage ----------------------------------------------------- */
-const nums = [23, 4, 42, 8, 15, 16, 42, 23, 4, 17];
-console.log('Unsorted:', nums);
-console.log('Sorted:', randomQuickSort(nums));
+  return undefined; // no majority
+}
+function majorityUsingMap<T>(arr: T[]): T | undefined {
+  const freq = new Map<T, number>();
+  const threshold = Math.floor(arr.length / 2) + 1;
+
+  for (const val of arr) {
+    const newCount = (freq.get(val) ?? 0) + 1;
+    if (newCount >= threshold) return val;
+    freq.set(val, newCount);
+  }
+  return undefined;
+}
