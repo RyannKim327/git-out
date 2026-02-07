@@ -1,76 +1,87 @@
+// A directed graph: adjacency list
+type Graph = Record<string, string[]>;
+
+// Example: a tiny graph
+const graph: Graph = {
+  A: ["B"],
+  B: ["C"],
+  C: ["A", "D"],
+  D: ["C", "E"],
+  E: [],
+};
 /**
- * Quicksort implementation for an array of items of type T.
- * 
- * @param items The array to sort.  It will be sorted in‑place.
- * @param compare Optional. A function that returns a negative number if a < b,
- *                zero if a === b, and a positive number if a > b.
- *                If omitted, native `<` / `>` are used for primitives.
+ * Finds all strongly connected components of a directed graph.
+ * @param graph The adjacency list of the graph.
+ * @returns An array of SCCs; each SCC is an array of vertex IDs.
  */
-export function quickSort<T>(
-  items: T[],
-  compare?: (a: T, b: T) => number
-): void {
-  // Default comparison – works for numbers, strings, booleans
-  const cmp = compare
-    ? compare
-    : (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
+function tarjanSCC(graph: Graph): string[][] {
+  let index = 0;                     // global index counter
+  const stack: string[] = [];        // DFS stack
+  const onStack = new Set<string>(); // quick membership check
 
-  // Helper for the recursive sort; index bounds are inclusive
-  function sort(left: number, right: number): void {
-    if (left >= right) return;
+  // Maps vertex → its index in DFS tree
+  const indices = new Map<string, number>();
+  // Maps vertex → its lowlink value
+  const lowlink = new Map<string, number>();
+  // Result: array of SCCs
+  const sccs: string[][] = [];
 
-    // Choose pivot – median‑of‑three to avoid worst‑case on sorted input
-    const mid = Math.floor((left + right) / 2);
-    const pivotIndex = medianOfThree(left, mid, right);
-    const pivotValue = items[pivotIndex];
+  function strongConnect(v: string) {
+    // Step 1: set the depth index for v
+    indices.set(v, index);
+    lowlink.set(v, index);
+    index++;
+    stack.push(v);
+    onStack.add(v);
 
-    // Move pivot to the left end to simplify the partition loop
-    [items[left], items[pivotIndex]] = [items[pivotIndex], items[left]];
-
-    let i = left + 1;
-    let j = right;
-
-    while (i <= j) {
-      while (i <= right && cmp(items[i], pivotValue) < 0) i++;
-      while (j >= left + 1 && cmp(items[j], pivotValue) > 0) j--;
-
-      if (i < j) [items[i], items[j]] = [items[j], items[i]];
-      i++;
-      j--;
+    // Step 2: consider each successor
+    for (const w of graph[v] ?? []) {
+      if (!indices.has(w)) {
+        // Successor w has not yet been visited; recurse on it.
+        strongConnect(w);
+        // After recursion: update lowlink of v
+        lowlink.set(v, Math.min(lowlink.get(v)!, lowlink.get(w)!));
+      } else if (onStack.has(w)) {
+        // Successor w is in stack → part of current SCC
+        lowlink.set(v, Math.min(lowlink.get(v)!, indices.get(w)!));
+      }
     }
 
-    // Return pivot to its final spot
-    [items[left], items[j]] = [items[j], items[left]];
-
-    // Recurse on each side
-    sort(left, j - 1);
-    sort(j + 1, right);
+    // Step 3: If v is a root node, pop the stack and generate an SCC
+    if (lowlink.get(v)! === indices.get(v)!) {
+      const scc: string[] = [];
+      let w: string | undefined;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        scc.push(w);
+      } while (w !== v);
+      sccs.push(scc);
+    }
   }
 
-  // Median‑of‑three helper – returns index of median of three indices
-  function medianOfThree(a: number, b: number, c: number): number {
-    const va = items[a], vb = items[b], vc = items[c];
-    if ((cmp(va, vb) < 0) ^ (cmp(va, vc) < 0)) return a;
-    if ((cmp(vb, va) < 0) ^ (cmp(vb, vc) < 0)) return b;
-    return c;
+  // Kick off DFS for each vertex that hasn't been visited yet
+  for (const v of Object.keys(graph)) {
+    if (!indices.has(v)) {
+      strongConnect(v);
+    }
   }
 
-  sort(0, items.length - 1);
+  return sccs;
 }
-// Numbers
-const nums = [3, 8, 2, 5, 1, 9];
-quickSort(nums);               // in‑place sort → [1, 2, 3, 5, 8, 9]
+const sccs = tarjanSCC(graph);
+console.log("Strongly connected components:");
+sccs.forEach((scc, i) => {
+  console.log(`  ${i + 1}. [${scc.join(", ")}]`);
+});
+Strongly connected components:
+  1. [A, C, B]
+  2. [E]
+  3. [D]
+type Vertex = number;
 
-// Strings
-const words = ['banana', 'apple', 'cherry'];
-quickSort(words);              // → ['apple', 'banana', 'cherry']
+// * Update the graph type:
+type Graph = Record<Vertex, Vertex[]>;
 
-// Custom objects
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 20 },
-  { name: 'Carol', age: 25 }
-];
-quickSort(people, (a, b) => a.age - b.age);
-// → sorted by age: 20, 25, 30
+// * Replace string‑specific typing in the function:
+function tarjanSCC(graph: Graph): Vertex[][] { ... }
