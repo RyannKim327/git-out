@@ -1,72 +1,32 @@
-// A single node in the list
-class Node<T> {
-  constructor(public value: T, public next: Node<T> | null = null) {}
+/**
+ * Bubble sort – compares adjacent elements and swaps them if they're out of order.
+ *
+ * @param arr – The array of numbers (or any type that implements `<`),
+ *              sorted in place and also returned for convenience.
+ * @returns The sorted array.
+ */
+export function bubbleSort<T>(arr: T[]): T[] {
+  const n = arr.length;
+
+  // Outer loop – each pass guarantees that the largest element among the
+  // unsorted portion moves to its final position at the end of the array.
+  for (let i = 0; i < n - 1; i++) {
+    // Inner loop – only needs to run up to the last unsorted element.
+    for (let j = 0; j < n - i - 1; j++) {
+      // If the current element is greater than the next one, swap them.
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+      }
+    }
+  }
+
+  return arr;
 }
+import { bubbleSort } from './bubbleSort';
 
-// The queue itself
-export class LinkedListQueue<T> {
-  // Keep refs to both ends so that enqueue/dequeue stay constant‑time
-  private head: Node<T> | null = null; // points to first element
-  private tail: Node<T> | null = null; // points to last element
-  private _size = 0;
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log('Before:', numbers);
 
-  /** Adds a value to the back of the queue */
-  enqueue(value: T): void {
-    const newNode = new Node(value);
-    if (this.tail) {
-      this.tail.next = newNode;   // link the old tail to the new node
-      this.tail = newNode;        // new node becomes the new tail
-    } else {
-      // Queue was empty – head and tail are the same node now
-      this.head = this.tail = newNode;
-    }
-    this._size++;
-  }
+bubbleSort(numbers);
 
-  /** Removes and returns the value from the front of the queue.
-      Throws an error if the queue is empty. */
-  dequeue(): T {
-    if (!this.head) {
-      throw new Error('Cannot dequeue from an empty queue');
-    }
-    const value = this.head.value;
-    this.head = this.head.next; // move head forward
-    if (!this.head) {
-      // Queue became empty, so tail must also be null
-      this.tail = null;
-    }
-    this._size--;
-    return value;
-  }
-
-  /** Peeks at the front value without removing it. */
-  peek(): T | null {
-    return this.head?.value ?? null;
-  }
-
-  /** Returns true if the queue contains no elements. */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Current number of elements */
-  size(): number {
-    return this._size;
-  }
-}
-import { LinkedListQueue } from './LinkedListQueue';
-
-const q = new LinkedListQueue<number>();
-
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
-
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size());    // 1
-console.log(q.isEmpty()); // false
-
-q.dequeue();          // removes 30
-console.log(q.isEmpty()); // true
+console.log('After:', numbers);   // [11, 12, 22, 25, 34, 64, 90]
