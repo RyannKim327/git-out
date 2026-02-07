@@ -1,104 +1,113 @@
-/**
- * Bottom‑up merge sort.
- *
- * @param arr   The array to sort.  The sort is performed in place.
- * @returns     The sorted array (useful for chaining / convenience).
- */
-export function mergeSortIterative<T>(arr: T[]): T[] {
-  const n = arr.length;
-  if (n <= 1) return arr;              // nothing to do
+type Hashable = string | number;
 
-  // auxiliary array – we copy data in and out of it
-  const aux = new Array<T>(n);
-
-  // start with runs of length 1 and double until the whole array is covered
-  for (let sz = 1; sz < n; sz <<= 1) {
-    // merge adjacent runs of width `sz`
-    for (let lo = 0; lo < n - sz; lo += sz * 2) {
-      const mid = lo + sz;                     // end of left run
-      const hi  = Math.min(lo + sz * 2, n);    // exclusive upper bound
-      merge(arr, aux, lo, mid, hi);
-    }
-  }
-  return arr;
+// A node in a linked list that stores a key–value pair.
+class ListNode<K extends Hashable, V> {
+  constructor(
+    public key: K,
+    public value: V,
+    public next: ListNode<K, V> | null = null
+  ) {}
 }
-/**
- * Merge two consecutive sorted halves `arr[lo..mid)` and `arr[mid..hi)`.
- * Output is written back into `arr` using the auxiliary buffer `aux`.
- */
-function merge<T>(
-  arr: T[],
-  aux: T[],
-  lo: number,
-  mid: number,
-  hi: number
-): void {
-  // copy the relevant segment into aux
-  for (let i = lo; i < hi; i++) {
-    aux[i] = arr[i];
+
+// A very small, non‑generic implementation.
+// Could be turned into a generic class if you want re‑usability.
+class HashTable<K extends Hashable, V> {
+  // Number of buckets.  53 is a prime that keeps things a bit uniform.
+  private readonly bucketCount = 53;
+  private readonly buckets: Array<ListNode<K, V> | null>;
+
+  constructor() {
+    // fill the array with nulls
+    this.buckets = Array(this.bucketCount).fill(null);
   }
 
-  let i = lo;      // pointer into left half
-  let j = mid;     // pointer into right half
-  for (let k = lo; k < hi; k++) {
-    if (i >= mid) {
-      arr[k] = aux[j++];
-    } else if (j >= hi) {
-      arr[k] = aux[i++];
-    } else if (aux[j] < aux[i]) {   // you can plug in a custom comparator if you want
-      arr[k] = aux[j++];
+  // Simple hash: string => simple accumulating hash; number => straight
+  private hash(key: K): number {
+    let h: number;
+    if (typeof key === "number") {
+      h = key;
     } else {
-      arr[k] = aux[i++];
+      h = 0;
+      for (let i = 0; i < key.length; i++) {
+        // 31 is a classic multiplier in hash functions
+        h = (h * 31 + key.charCodeAt(i)) | 0; // |0 keeps it 32‑bit
+      }
     }
+    // Ensure positive index
+    return Math.abs(h) % this.bucketCount;
   }
-}
-// helper to display array nicely
-const fmt = (a: number[]) => `[${a.join(', ')}]`;
 
-// Random test helper
-function randomArray(len: number, max = 100) {
-  return Array.from({ length: len }, () => Math.floor(Math.random() * max));
-}
+  set(key: K, value: V): void {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
 
-// sanity checks
-console.time('iterative');
-const sorted1 = mergeSortIterative(randomArray(1_000_000));
-console.timeEnd('iterative');          // ~200-300 ms on a typical laptop
-
-// make sure it's really sorted
-for (let i = 1; i < sorted1.length; i++) {
-  if (sorted1[i - 1] > sorted1[i]) {
-    throw new Error('Not sorted!');
-  }
-}
-function mergeSortIterativeWith<T>(arr: T[], comp: (a: T, b: T) => number): T[] {
-  const n = arr.length;
-  if (n <= 1) return arr;
-  const aux = new Array<T>(n);
-  for (let sz = 1; sz < n; sz <<= 1) {
-    for (let lo = 0; lo < n - sz; lo += sz * 2) {
-      const mid = lo + sz;
-      const hi  = Math.min(lo + sz * 2, n);
-      mergeWith(arr, aux, lo, mid, hi, comp);
+    // If there’s already a node, see if the key matches
+    while (node) {
+      if (node.key === key) {
+        node.value = value; // update
+        return;
+      }
+      node = node.next;
     }
-  }
-  return arr;
-}
 
-function mergeWith<T>(
-  arr: T[],
-  aux: T[],
-  lo: number,
-  mid: number,
-  hi: number,
-  comp: (a: T, b: T) => number
-): void {
-  for (let i = lo; i < hi; i++) aux[i] = arr[i];
-  let i = lo, j = mid;
-  for (let k = lo; k < hi; k++) {
-    if (i >= mid) arr[k] = aux[j++];
-    else if (j >= hi) arr[k] = aux[i++];
-    else if (comp(aux[j], aux[i]) < 0) arr[k] = aux[j++];
-    else arr[k] = aux[i++];
+    // No match – prepend a new node (O(1) for inserts)
+    const newNode = new ListNode(key, value, this.buckets[idx]);
+    this.buckets[idx] = newNode;
+  }
+
+  get(key: K): V | undefined {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+
+    while (node) {
+      if (node.key === key) return node.value;
+      node = node.next;
+    }
+    return undefined;
+  }
+
+  has(key: K): boolean {
+    return this.get(key) !== undefined;
+  }
+
+  delete(key: K): boolean {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+    let prev: ListNode<K, V> | null = null;
+
+    while (node) {
+      if (node.key === key) {
+        if (prev) prev.next = node.next;
+        else this.buckets[idx] = node.next;
+        return true;
+      }
+      prev = node;
+      node = node.next;
+    }
+    return false;
+  }
+
+  // For debugging / tests: flatten the table into a plain object
+  toObject(): Record<string, V> {
+    const out: Record<string, V> = {};
+    for (const bucket of this.buckets) {
+      let node = bucket;
+      while (node) {
+        out[String(node.key)] = node.value;
+        node = node.next;
+      }
+    }
+    return out;
   }
 }
+const table = new HashTable<string, number>();
+table.set("alpha", 1);
+table.set("beta", 2);
+table.set("gamma", 3);
+table.set("delta", 4);
+
+console.log(table.get("beta"));   // 2
+console.log(table.has("epsilon")); // false
+
+table.delete("gamma");
+console.log(table.toObject());    // { alpha: 1, beta: 2, delta: 4 }
