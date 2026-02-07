@@ -1,87 +1,72 @@
-/**
- * Returns the maximum sum of any contiguous sub‑array.
- *
- * @param arr – array of numbers (may contain negatives)
- * @returns {number} maximum sub‑array sum
- */
-export function maxSubArraySum(arr: number[]): number {
-  if (arr.length === 0) {
-    throw new Error('Array must contain at least one element');
-  }
-
-  // init both with first element: handles all‑negative cases nicely
-  let currentBest = arr[0];
-  let globalBest = arr[0];
-
-  for (let i = 1; i < arr.length; i++) {
-    const value = arr[i];
-
-    // Either extend the previous sub‑array or start fresh at value
-    currentBest = Math.max(value, currentBest + value);
-
-    // Keep the best seen so far
-    globalBest = Math.max(globalBest, currentBest);
-  }
-
-  return globalBest;
-}
-const testSets = [
-  { arr: [1, -2, 3, 4, -5, 8], expect: 10 },
-  { arr: [-2, -3, -1, -4], expect: -1 },
-  { arr: [2, 3, 1, 6], expect: 12 },
-  { arr: [5, -1, 2, 3], expect: 9 },
-  { arr: [1], expect: 1 },
-];
-
-for (const { arr, expect } of testSets) {
-  const result = maxSubArraySum(arr);
-  console.log(`arr: ${arr} → max sum: ${result} (${result === expect ? '✓' : '✗'})`);
-}
-arr: 1,-2,3,4,-5,8 → max sum: 10 (✓)
-arr: -2,-3,-1,-4 → max sum: -1 (✓)
-arr: 2,3,1,6 → max sum: 12 (✓)
-arr: 5,-1,2,3 → max sum: 9 (✓)
-arr: 1 → max sum: 1 (✓)
-interface MaxSubArrayResult {
-  sum: number;
-  start: number;
-  end: number;   // inclusive
+// A single node in the list
+class Node<T> {
+  constructor(public value: T, public next: Node<T> | null = null) {}
 }
 
-export function maxSubArraySumWithIndices(arr: number[]): MaxSubArrayResult {
-  if (arr.length === 0) {
-    throw new Error('Array must contain at least one element');
-  }
+// The queue itself
+export class LinkedListQueue<T> {
+  // Keep refs to both ends so that enqueue/dequeue stay constant‑time
+  private head: Node<T> | null = null; // points to first element
+  private tail: Node<T> | null = null; // points to last element
+  private _size = 0;
 
-  let currentBest = arr[0];
-  let globalBest = arr[0];
-
-  // working indices
-  let currentStart = 0;
-  let bestStart = 0;
-  let bestEnd = 0;
-
-  for (let i = 1; i < arr.length; i++) {
-    const value = arr[i];
-
-    // decide whether to continue or start a new sub‑array
-    if (currentBest + value < value) {
-      currentBest = value;
-      currentStart = i;
+  /** Adds a value to the back of the queue */
+  enqueue(value: T): void {
+    const newNode = new Node(value);
+    if (this.tail) {
+      this.tail.next = newNode;   // link the old tail to the new node
+      this.tail = newNode;        // new node becomes the new tail
     } else {
-      currentBest += value;
+      // Queue was empty – head and tail are the same node now
+      this.head = this.tail = newNode;
     }
-
-    // update global best if we found a better sum
-    if (currentBest > globalBest) {
-      globalBest = currentBest;
-      bestStart = currentStart;
-      bestEnd = i;
-    }
+    this._size++;
   }
 
-  return { sum: globalBest, start: bestStart, end: bestEnd };
+  /** Removes and returns the value from the front of the queue.
+      Throws an error if the queue is empty. */
+  dequeue(): T {
+    if (!this.head) {
+      throw new Error('Cannot dequeue from an empty queue');
+    }
+    const value = this.head.value;
+    this.head = this.head.next; // move head forward
+    if (!this.head) {
+      // Queue became empty, so tail must also be null
+      this.tail = null;
+    }
+    this._size--;
+    return value;
+  }
+
+  /** Peeks at the front value without removing it. */
+  peek(): T | null {
+    return this.head?.value ?? null;
+  }
+
+  /** Returns true if the queue contains no elements. */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** Current number of elements */
+  size(): number {
+    return this._size;
+  }
 }
-const { sum, start, end } = maxSubArraySumWithIndices([1, -2, 3, 4, -5, 8]);
-console.log(`max sum ${sum} from index ${start} to ${end}`);
-// → max sum 10 from index 2 to 5
+import { LinkedListQueue } from './LinkedListQueue';
+
+const q = new LinkedListQueue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size());    // 1
+console.log(q.isEmpty()); // false
+
+q.dequeue();          // removes 30
+console.log(q.isEmpty()); // true
