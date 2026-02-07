@@ -1,113 +1,114 @@
-type Hashable = string | number;
+/**
+ * A binary heap backed priority queue.
+ *
+ * The heap stores elements in a 0‑based array. For a node at index i:
+ *   left child   → 2*i + 1
+ *   right child  → 2*i + 2
+ *   parent       → Math.floor((i - 1) / 2)
+ */
+export class BinaryPriorityQueue<T> {
+  private data: T[] = [];
+  private readonly compare: (a: T, b: T) => number; // negative if a < b
 
-// A node in a linked list that stores a key–value pair.
-class ListNode<K extends Hashable, V> {
-  constructor(
-    public key: K,
-    public value: V,
-    public next: ListNode<K, V> | null = null
-  ) {}
-}
-
-// A very small, non‑generic implementation.
-// Could be turned into a generic class if you want re‑usability.
-class HashTable<K extends Hashable, V> {
-  // Number of buckets.  53 is a prime that keeps things a bit uniform.
-  private readonly bucketCount = 53;
-  private readonly buckets: Array<ListNode<K, V> | null>;
-
-  constructor() {
-    // fill the array with nulls
-    this.buckets = Array(this.bucketCount).fill(null);
+  constructor(compare: (a: T, b: T) => number) {
+    this.compare = compare;
   }
 
-  // Simple hash: string => simple accumulating hash; number => straight
-  private hash(key: K): number {
-    let h: number;
-    if (typeof key === "number") {
-      h = key;
-    } else {
-      h = 0;
-      for (let i = 0; i < key.length; i++) {
-        // 31 is a classic multiplier in hash functions
-        h = (h * 31 + key.charCodeAt(i)) | 0; // |0 keeps it 32‑bit
+  /** Number of elements in the queue */
+  size(): number {
+    return this.data.length;
+  }
+
+  /** Peek the element with the highest priority (root of the heap) */
+  peek(): T | undefined {
+    return this.data[0];
+  }
+
+  /** Insert a new element */
+  push(value: T): void {
+    this.data.push(value);
+    this.bubbleUp(this.data.length - 1);
+  }
+
+  /**
+   * Remove and return the element with the highest priority.
+   * Returns undefined if the queue is empty.
+   */
+  pop(): T | undefined {
+    if (!this.data.length) return undefined;
+
+    const root = this.data[0];
+    const last = this.data.pop()!; // safe because we checked length
+
+    if (this.data.length) {
+      this.data[0] = last;
+      this.sinkDown(0);
+    }
+
+    return root;
+  }
+
+  /** Remove all elements */
+  clear(): void {
+    this.data.length = 0;
+  }
+
+  /* --- Internals --- */
+
+  private bubbleUp(index: number): void {
+    const elem = this.data[index];
+    while (index > 0) {
+      const parentIdx = (index - 1) >> 1;
+      const parent = this.data[parentIdx];
+      if (this.compare(elem, parent) >= 0) break;
+      this.data[index] = parent;
+      index = parentIdx;
+    }
+    this.data[index] = elem;
+  }
+
+  private sinkDown(index: number): void {
+    const length = this.data.length;
+    const elem = this.data[index];
+
+    while (true) {
+      const leftIdx = (index << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let swapIdx = -1;
+
+      if (leftIdx < length) {
+        const left = this.data[leftIdx];
+        if (this.compare(left, elem) < 0) swapIdx = leftIdx;
       }
-    }
-    // Ensure positive index
-    return Math.abs(h) % this.bucketCount;
-  }
-
-  set(key: K, value: V): void {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-
-    // If there’s already a node, see if the key matches
-    while (node) {
-      if (node.key === key) {
-        node.value = value; // update
-        return;
+      if (rightIdx < length) {
+        const right = this.data[rightIdx];
+        const compareRight = this.compare(right, elem);
+        if (
+          (swapIdx === -1 && compareRight < 0) ||
+          (swapIdx !== -1 && compareRight < this.compare(this.data[swapIdx], elem))
+        ) {
+          swapIdx = rightIdx;
+        }
       }
-      node = node.next;
+
+      if (swapIdx === -1) break;
+      this.data[index] = this.data[swapIdx];
+      index = swapIdx;
     }
-
-    // No match – prepend a new node (O(1) for inserts)
-    const newNode = new ListNode(key, value, this.buckets[idx]);
-    this.buckets[idx] = newNode;
-  }
-
-  get(key: K): V | undefined {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-
-    while (node) {
-      if (node.key === key) return node.value;
-      node = node.next;
-    }
-    return undefined;
-  }
-
-  has(key: K): boolean {
-    return this.get(key) !== undefined;
-  }
-
-  delete(key: K): boolean {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-    let prev: ListNode<K, V> | null = null;
-
-    while (node) {
-      if (node.key === key) {
-        if (prev) prev.next = node.next;
-        else this.buckets[idx] = node.next;
-        return true;
-      }
-      prev = node;
-      node = node.next;
-    }
-    return false;
-  }
-
-  // For debugging / tests: flatten the table into a plain object
-  toObject(): Record<string, V> {
-    const out: Record<string, V> = {};
-    for (const bucket of this.buckets) {
-      let node = bucket;
-      while (node) {
-        out[String(node.key)] = node.value;
-        node = node.next;
-      }
-    }
-    return out;
+    this.data[index] = elem;
   }
 }
-const table = new HashTable<string, number>();
-table.set("alpha", 1);
-table.set("beta", 2);
-table.set("gamma", 3);
-table.set("delta", 4);
+// Example: priority queue of numbers (min‑heap)
+const pq = new BinaryPriorityQueue<number>((a, b) => a - b);
 
-console.log(table.get("beta"));   // 2
-console.log(table.has("epsilon")); // false
+pq.push(5);
+pq.push(1);
+pq.push(3);
 
-table.delete("gamma");
-console.log(table.toObject());    // { alpha: 1, beta: 2, delta: 4 }
+console.log(pq.peek()); // 1
+console.log(pq.pop());  // 1
+console.log(pq.pop());  // 3
+console.log(pq.pop());  // 5
+interface Task { id: number; priority: number; }
+
+const taskQueue = new BinaryPriorityQueue<Task>((a, b) => a.priority - b.priority);
