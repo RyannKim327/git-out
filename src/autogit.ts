@@ -1,61 +1,61 @@
 /**
- * Fibonacci Search
+ * Sorts an array of numbers in ascending order using insertion sort.
+ * The algorithm works in place – the input array is mutated.
  *
- * @param arr   Sorted array to search
- * @param key   Value to locate
- * @returns    Index of key or -1
+ * @param arr - The numeric array to be sorted.
+ * @returns The same array, now sorted.
  */
-export function fibonacciSearch<T extends number | string>(
-  arr: T[],
-  key: T
-): number {
-  const n = arr.length;
+export function insertionSort(arr: number[]): number[] {
+  // Start from the second element; the first element is “sorted” by definition
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];            // The value we’re going to insert
+    let j = i - 1;
 
-  // 1. Compute the smallest Fibonacci number greater or equal to n
-  let fibMinusTwo = 0;   // (n-2)th fibonacci
-  let fibMinusOne = 1;   // (n-1)th fibonacci
-  let fibN = fibMinusTwo + fibMinusOne; // nth fibonacci
-
-  while (fibN < n) {
-    fibMinusTwo = fibMinusOne;
-    fibMinusOne = fibN;
-    fibN = fibMinusTwo + fibMinusOne;
-  }
-
-  // 2. Marks the index beyond the last element
-  let offset = -1;
-
-  // 3. while there's more to inspect
-  while (fibN > 1) {
-    const i = Math.min(offset + fibMinusTwo, n - 1);
-
-    // Compare the current element with the key
-    if (arr[i] < key!) {
-      // Move three Fibonacci numbers down
-      fibN = fibMinusOne;
-      fibMinusOne = fibMinusTwo;
-      fibMinusTwo = fibN - fibMinusOne;
-      offset = i;
-    } else if (arr[i] > key!) {
-      // Move two Fibonacci numbers down
-      fibN = fibMinusTwo;
-      fibMinusOne = fibMinusOne - fibMinusTwo;
-      fibMinusTwo = fibN - fibMinusOne;
-    } else {
-      // Element found
-      return i;
+    // Shift elements that are greater than the key to the right
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j];
+      j--;
     }
+
+    // Insert the key into its correct position
+    arr[j + 1] = key;
   }
 
-  // Compare the last element with the key
-  if (fibMinusOne && offset + 1 < n && arr[offset + 1] === key) {
-    return offset + 1;
-  }
-
-  return -1; // Not found
+  return arr;
 }
-const sortedNums = [3, 7, 12, 18, 23, 27, 34, 38, 45, 52];
-const target = 23;
+export function insertionSort<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-const idx = fibonacciSearch(sortedNums, target);
-console.log(idx); // 4
+    // While j is in range and key is less than arr[j], shift arr[j] right
+    while (j >= 0 && compareFn(key, arr[j]) < 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    arr[j + 1] = key;
+  }
+
+  return arr;
+}
+// Numbers
+const nums = [64, 25, 12, 22, 11];
+insertionSort(nums);          // => [11, 12, 22, 25, 64]
+
+// Strings
+const words = ['banana', 'apple', 'cherry'];
+insertionSort(words);          // => ['apple', 'banana', 'cherry']
+
+// Custom objects
+const people = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob', age: 24 },
+  { name: 'Catherine', age: 27 }
+];
+
+insertionSort(people, (a, b) => a.age - b.age);
+// => sorted by age
