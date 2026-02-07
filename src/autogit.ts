@@ -1,29 +1,61 @@
-function firstRepeat(s: string): string | undefined {
-  const seen = new Set<string>();
+/**
+ * Fibonacci Search
+ *
+ * @param arr   Sorted array to search
+ * @param key   Value to locate
+ * @returns    Index of key or -1
+ */
+export function fibonacciSearch<T extends number | string>(
+  arr: T[],
+  key: T
+): number {
+  const n = arr.length;
 
-  for (const ch of s) {
-    if (seen.has(ch)) return ch;   // this is the first repeated one
-    seen.add(ch);
+  // 1. Compute the smallest Fibonacci number greater or equal to n
+  let fibMinusTwo = 0;   // (n-2)th fibonacci
+  let fibMinusOne = 1;   // (n-1)th fibonacci
+  let fibN = fibMinusTwo + fibMinusOne; // nth fibonacci
+
+  while (fibN < n) {
+    fibMinusTwo = fibMinusOne;
+    fibMinusOne = fibN;
+    fibN = fibMinusTwo + fibMinusOne;
   }
 
-  return undefined;   // no repeats
-}
-function firstRepeatObj(s: string): string | undefined {
-  const map: { [k: string]: boolean } = {};
+  // 2. Marks the index beyond the last element
+  let offset = -1;
 
-  for (const ch of s) {
-    if (map[ch]) return ch;
-    map[ch] = true;
+  // 3. while there's more to inspect
+  while (fibN > 1) {
+    const i = Math.min(offset + fibMinusTwo, n - 1);
+
+    // Compare the current element with the key
+    if (arr[i] < key!) {
+      // Move three Fibonacci numbers down
+      fibN = fibMinusOne;
+      fibMinusOne = fibMinusTwo;
+      fibMinusTwo = fibN - fibMinusOne;
+      offset = i;
+    } else if (arr[i] > key!) {
+      // Move two Fibonacci numbers down
+      fibN = fibMinusTwo;
+      fibMinusOne = fibMinusOne - fibMinusTwo;
+      fibMinusTwo = fibN - fibMinusOne;
+    } else {
+      // Element found
+      return i;
+    }
   }
-}
-function firstRepeatingAlpha(str: string): string | undefined {
-  const seen = new Set<string>();
-  for (const ch of str) {
-    if (!/[a-zA-Z]/.test(ch)) continue; // skip non‑letters
-    if (seen.has(ch)) return ch;
-    seen.add(ch);
+
+  // Compare the last element with the key
+  if (fibMinusOne && offset + 1 < n && arr[offset + 1] === key) {
+    return offset + 1;
   }
+
+  return -1; // Not found
 }
-console.log(firstRepeat('abcdeafg')); // a
-console.log(firstRepeat('hello world')); // l
-console.log(firstRepeat('xyz')); // undefined
+const sortedNums = [3, 7, 12, 18, 23, 27, 34, 38, 45, 52];
+const target = 23;
+
+const idx = fibonacciSearch(sortedNums, target);
+console.log(idx); // 4
