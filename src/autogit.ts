@@ -1,71 +1,105 @@
 /**
- * Heap‑sort – sorts an array of numbers in ascending order.
- * The algorithm works in O(n log n) time and O(1) extra space (in‑place).
- *
- * @param arr The array to sort – it will be mutated.
+ * A singly‑linked list node that holds a generic value.
  */
-export function heapSort(arr: number[]): void {
-  const n = arr.length;
-
-  // Step 1. Build a max‑heap.
-  // The last non‑leaf node is at floor(n/2) - 1.
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-    siftDown(arr, i, n);
-  }
-
-  // Step 2. Repeatedly extract the maximum element.
-  for (let end = n - 1; end > 0; end--) {
-    swap(arr, 0, end);          // Move current max to its final position.
-    siftDown(arr, 0, end);      // Restore heap property for the reduced heap.
-  }
+export class ListNode<T> {
+  constructor(
+    public val: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
-
 /**
- * Restores the max‑heap property by sifting a node downwards.
- *
- * @param heap  The heap array.
- * @param start Index of the node to sift down.
- * @param size  The current size of the heap (elements >= size are already sorted).
+ * Returns true iff the linked list is a palindrome.
  */
-function siftDown(heap: number[], start: number, size: number): void {
-  let root = start;
+export function isPalindrome<T>(head: ListNode<T> | null): boolean {
+  if (!head || !head.next) return true; // empty or single node
 
-  while (true) {
-    const left = 2 * root + 1;   // Left child index.
-    const right = left + 1;      // Right child index.
-    let largest = root;
+  /* ---------- 1️⃣ Find middle ---------- */
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-    // If left child exists and is greater than root.
-    if (left < size && heap[left] > heap[largest]) {
-      largest = left;
-    }
-
-    // If right child exists and is greater than current largest.
-    if (right < size && heap[right] > heap[largest]) {
-      largest = right;
-    }
-
-    // If root is already the largest, the heap property holds.
-    if (largest === root) break;
-
-    // Swap root with the larger child and continue sifting down.
-    swap(heap, root, largest);
-    root = largest;
+  while (fast.next && fast.next.next) {
+    slow = slow!.next!;   // move one step
+    fast = fast.next.next; // move two steps
   }
+
+  /* ---------- 2️⃣ Reverse second half ---------- */
+  let prev: ListNode<T> | null = null;
+  let curr: ListNode<T> | null = slow;
+
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  const secondHalfHead = prev; // start of reversed half
+
+  /* ---------- 3️⃣ Compare halves ---------- */
+  let p1: ListNode<T> | null = head;
+  let p2: ListNode<T> | null = secondHalfHead;
+
+  let isPal = true;
+  while (isPal && p2) {           // p2 is half the length
+    if (p1!.val !== p2!.val) {
+      isPal = false;
+      break;
+    }
+    p1 = p1!.next;
+    p2 = p2!.next;
+  }
+
+  /* ---------- (Optional) 4️⃣ Restore list ---------- */
+  // reverse again to keep original structure
+  curr = secondHalfHead;
+  prev = null;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  if (slow!.next) { // connect back
+    slow!.next = prev;
+  }
+
+  return isPal;
+}
+function build<T>(arr: T[]): ListNode<T> | null {
+  let dummy = new ListNode<T>(null as any);
+  let cur = dummy;
+  for (const v of arr) {
+    cur.next = new ListNode<T>(v);
+    cur = cur.next;
+  }
+  return dummy.next;
 }
 
-/**
- * Utility to swap two elements in an array.
- *
- * @param a    Array containing the elements.
- * @param i    Index of the first element.
- * @param j    Index of the second element.
- */
-function swap(a: number[], i: number, j: number): void {
-  const tmp = a[i];
-  a[i] = a[j];
-  a[j] = tmp;
+const tests = [
+  { arr: [1, 2, 3, 2, 1], expected: true },
+  { arr: [1, 2, 2, 1], expected: true },
+  { arr: [1, 2, 3], expected: false },
+  { arr: [], expected: true },
+  { arr: [42], expected: true },
+  { arr: [7, 8, 7, 9], expected: false }
+];
+
+for (const {arr, expected} of tests) {
+  const h = build(arr);
+  console.log(`isPalindrome(${JSON.stringify(arr)}) =>`, isPalindrome(h), 'expected', expected);
 }
-const data = [5, 3, 8, 4, 1, 2];
-heapSort(data);
-console.log(data);  // → [1, 2, 3, 4, 5, 8]
+isPalindrome([1,2,3,2,1]) => true expected true
+isPalindrome([1,2,2,1]) => true expected true
+isPalindrome([1,2,3]) => false expected false
+isPalindrome([]) => true expected true
+isPalindrome([42]) => true expected true
+isPalindrome([7,8,7,9]) => false expected false
+function isPalindromeStack<T>(head: ListNode<T> | null): boolean {
+  const vals: T[] = [];
+  for (let cur = head; cur; cur = cur.next) vals.push(cur.val);
+
+  let l = 0, r = vals.length - 1;
+  while (l < r) {
+    if (vals[l++] !== vals[r--]) return false;
+  }
+  return true;
+}
