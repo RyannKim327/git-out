@@ -1,56 +1,53 @@
-// ------------------------------------------------------------------
-// 1) Basic types – tweak these to match your own representation.
-// ------------------------------------------------------------------
-interface Node<T> {
-  /** Value that identifies the node – can be an id, a name, … */
-  id: string;
-  /** Children (or neighbours) – the graph may be directed or undirected. */
-  children?: Array<Node<T>>;
-}
+/**
+ * Simpler Rabin–Karp – uses a 32‑bit unsigned int hash.
+ * For stronger use (large text / collision safety) switch to BigInt or a
+ * larger mod (e.g., 1_000_000_007).
+ */
+export function rabinKarp(
+    text: string,
+    pattern: string,
+    base: number = 256,               // alphabet size
+    mod: number = 1_000_000_007       // a large prime
+): number[] {
+    const n = text.length;
+    const m = pattern.length;
+    if (m === 0 || n < m) return [];
 
-// A very simple match predicate. Replace it with whatever checks your
-// problem needs (e.g. `node.id === targetId`).
-type MatchFn<T> = (node: Node<T>) => boolean;
+    const result: number[] = [];
 
-// ------------------------------------------------------------------
-// 2) Depth‑limited search – iterative (uses an explicit stack).
-// ------------------------------------------------------------------
-export function depthLimitedSearch<T>(
-  start: Node<T>,          // The root (or any arbitrary start node)
-  match: MatchFn<T>,      // Predicate to decide if the node is a goal
-  limit: number            // Maximum depth that may be explored
-): Node<T> | null {
+    /* Pre‑compute base^(m-1) % mod   (the weight of the leading char) */
+    let power = 1;
+    for (let i = 0; i < m - 1; i++) power = (power * base) % mod;
 
-  // Stack holds tuples  : [current node, current depth]
-  const stack: Array<[Node<T>, number]> = [[start, 0]];
-
-  while (stack.length > 0) {
-    const [node, depth] = stack.pop()!;   // `!` is safe – we just checked length
-
-    // 1️⃣  Goal check
-    if (match(node)) {
-      return node;
+    /* Hashes of pattern and first window */
+    let patternHash = 0;
+    let windowHash = 0;
+    for (let i = 0; i < m; i++) {
+        patternHash = (patternHash * base + pattern.charCodeAt(i)) % mod;
+        windowHash  = (windowHash  * base + text.charCodeAt(i))  % mod;
     }
 
-    // 2️⃣  Depth test – we only enqueue children if we still have room
-    if (depth < limit && node.children) {
-      // Push children onto stack – last child examined first (DFS order)
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        stack.push([node.children[i], depth + 1]);
-      }
+    /* Slide the window */
+    for (let i = 0; i <= n - m; i++) {
+        /* If hashes match – do a literal check to avoid false positives */
+        if (patternHash === windowHash) {
+            if (text.substr(i, m) === pattern) result.push(i);
+        }
+
+        /* Re‑hash: remove leading char, add trailing char */
+        if (i < n - m) {
+            const leading = text.charCodeAt(i) * power % mod;
+            windowHash = (windowHash - leading + mod) % mod;   // avoid negative
+            windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
+        }
     }
-  }
 
-  // No goal found within the depth budget
-  return null;
+    return result;
 }
-const tree: Node<number> = {
-  id: 'root',
-  children: [
-    { id: 'a', children: [{ id: 'a1' }, { id: 'a2' }] },
-    { id: 'b', children: [{ id: 'b1' }, { id: 'b2' }] },
-  ],
-};
+import { rabinKarp } from './rabinKarp';
 
-const found = depthLimitedSearch(tree, node => node.id === 'a2', /* limit */ 2);
-console.log(found?.id ?? 'not found'); // → a2
+const text = "ababcabcabababd";
+const pattern = "ababd";
+
+const matches = rabinKarp(text, pattern);  // → [10]
+console.log("Match at indices: ", matches);
