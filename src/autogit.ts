@@ -1,50 +1,51 @@
-/**
- * Random sort – a quick‑sort implementation that picks a random
- * pivot for each split.
- *
- * The algorithm is deterministic in complexity (O(n log n) on average),
- * but the pivot choice is completely random, which can be useful for
- * teaching purposes or for avoiding worst‑case sequences.
- */
-
-function randomQuickSort<T>(input: T[], compare?: (a: T, b: T) => number): T[] {
-  // If there are 0 or 1 elements, it's already sorted.
-  if (input.length <= 1) {
-    return [...input];
-  }
-
-  // Choose a random pivot index.
-  const pivotIndex = Math.floor(Math.random() * input.length);
-  const pivot = input[pivotIndex];
-
-  // Helper to decide the order.
-  const cmp = compare ||
-    // Default to numeric or string comparison.
-    ((a: T, b: T) => (a as any) < b ? -1 : (a as any) > b ? 1 : 0);
-
-  // Partition the array into two bins: <= pivot and > pivot.
-  const smaller: T[] = [];
-  const larger: T[] = [];
-
-  for (let i = 0; i < input.length; i++) {
-    if (i === pivotIndex) continue; // skip the pivot itself
-    const item = input[i];
-    if (cmp(item, pivot) <= 0) {
-      smaller.push(item);
-    } else {
-      larger.push(item);
-    }
-  }
-
-  // Recursively sort each sub‑array and concatenate the results.
-  return [
-    ...randomQuickSort(smaller, compare),
-    pivot,
-    ...randomQuickSort(larger, compare),
-  ];
+// ----------  Tree node definition ----------
+class TreeNode<T> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
 }
 
-/* --- Example usage ----------------------------------------------------- */
-const nums = [23, 4, 42, 8, 15, 16, 42, 23, 4, 17];
-console.log('Unsorted:', nums);
-console.log('Sorted:', randomQuickSort(nums));
+// ----------  Diameter helper ----------
+function diameter(root: TreeNode<any> | null): number {
+  let maxDiameter = 0;           // global best
+
+  // returns height of subtree rooted at `node`
+  function dfs(node: TreeNode<any> | null): number {
+    if (!node) return 0;
+
+    const leftH  = dfs(node.left);
+    const rightH = dfs(node.right);
+
+    // path that passes through this node
+    const candidate = leftH + rightH;
+    if (candidate > maxDiameter) maxDiameter = candidate;
+
+    // height of this subtree
+    return Math.max(leftH, rightH) + 1;
+  }
+
+  dfs(root);
+  return maxDiameter;                   // number of edges on the longest path
+}
+
+/* ------------------------------------------------------------------ */
+/*  Quick sanity check – build a tree and run the function             */
+/* ------------------------------------------------------------------ */
+
+const a = new TreeNode('a');
+const b = new TreeNode('b');
+const c = new TreeNode('c');
+const d = new TreeNode('d');
+const e = new TreeNode('e');
+const f = new TreeNode('f');
+
+a.left  = b;                //   a
+a.right = c;                //  / \
+b.left  = d;                // d   c
+b.right = e;                //  \   \
+e.right = f;                //   f
+
+console.log(diameter(a));   // → 4
+const diameterInNodes = diameter(root) + 1;
