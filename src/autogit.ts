@@ -1,17 +1,31 @@
-const numbers = [3, 42, 7, -1, 20];
-const biggest = Math.max(...numbers);
+/**
+ * Counts how many code units a string contains.
+ * @param s The string to measure.
+ * @returns The length as a number.
+ */
+function getStringLength(s: string): number {
+  let count = 0;
 
-console.log(biggest); // 42
-function findMax(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined; // or throw, or use null, whatever fits your API
-  return Math.max(...nums);
+  // Keep stepping forward until we encounter an undefined slot.
+  while (s[count] !== undefined) {
+    count++;
+  }
+
+  return count;
 }
-const biggest = numbers.reduce((max, curr) => curr > max ? curr : max, -Infinity);
-function findMax(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;
-  return nums.reduce((max, curr) => (curr > max ? curr : max));
+function getStringLengthUsingForOf(s: string): number {
+  let count = 0;
+  for (const _ of s) {
+    count++;        // `_` is just a throwaway variable
+  }
+  return count;    // this is the number of Unicode code points we iterated over
 }
-function findMax<T extends readonly (number | null | undefined)[]>(arr: T): number | undefined {
-  const filtered = arr.filter(isFinite) as number[]; // strip out null/undefined if you like
-  return filtered.length ? Math.max(...filtered) : undefined;
+function getStringLengthRecursive(s: string, idx = 0): number {
+  return s[idx] === undefined
+    ? idx
+    : getStringLengthRecursive(s, idx + 1);
 }
+const demo = "Hello, 👋🌍";
+
+console.log(getStringLength(demo));                    // 13 (code units)
+console.log(getStringLengthUsingForOf(demo));          // 10 (code points)
