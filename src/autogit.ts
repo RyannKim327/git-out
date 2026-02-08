@@ -1,73 +1,71 @@
 /**
- * Finds the longest increasing subsequence of an array.
+ * Forward Burrows‑Wheeler Transform.
  *
- * @param arr Numeric array (any integers or floats, any sign).
- * @returns Object containing the LIS and its length.
+ * @param text – input string
+ * @returns {lastColumn, originalIndex}
+ *   • lastColumn  – the BWT string (the last column of the sorted rotations)
+ *   • originalIndex – position of the original string in the sorted list
  */
-export function longestIncreasingSubsequence(arr: number[]): { seq: number[]; length: number } {
-  if (arr.length === 0) return { seq: [], length: 0 };
+export function bwt(text: string): { lastColumn: string; originalIndex: number } {
+  const n = text.length;
+  const rotations = new Array<string>(n);
 
-  // tails[i] — minimal tail of an LIS of length i+1 found so far
-  const tails: number[] = [];
-  // prevIndices[i] — index of the previous element in the LIS that ends at arr[i]
-  const prevIndices: number[] = Array(arr.length).fill(-1);
-  // indexInTails[i] — will store the index in tails where arr[i] was placed
-  const indexInTails: number[] = Array(arr.length).fill(0);
-
-  for (let i = 0; i < arr.length; i++) {
-    const num = arr[i];
-
-    // Binary search: first index in tails where tails[idx] >= num
-    let lo = 0,
-      hi = tails.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (tails[mid] < num) lo = mid + 1;
-      else hi = mid;
-    }
-
-    // lo is the length of the new subsequence minus one
-    indexInTails[i] = lo;
-    if (lo >= tails.length) tails.push(num);
-    else tails[lo] = num;
-
-    // Link to previous element of the subsequence
-    if (lo > 0) prevIndices[i] = tailsIdx[lo - 1];
+  // Build all cyclic rotations
+  for (let i = 0; i < n; i++) {
+    rotations[i] = text.slice(i) + text.slice(0, i);
   }
 
-  // tailsIdx will hold the indices in the original array that correspond to tails[]
-  const tailsIdx: number[] = Array(tails.length);
-  const seqIdx: number[] = []; // will hold indices of LIS
+  // Sort rotations lexicographically
+  rotations.sort();
 
-  // Reconstruct the sequence by walking backwards using prevIndices
-  let k = tailsIdx.length - 1;
-  let currentIdx = -1;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (indexInTails[i] === k) {
-      seqIdx.push(i); // store index
-      k--; // look for previous
-      currentIdx = i;
-    }
+  // Grab last character of each rotation and remember where the original text ended up
+  let lastColumn = '';
+  let originalIndex = -1;
+  for (let i = 0; i < n; i++) {
+    const rot = rotations[i];
+    lastColumn += rot[rot.length - 1];
+    if (rot === text) originalIndex = i;
   }
-  seqIdx.reverse();
 
-  const seq = seqIdx.map(idx => arr[idx]);
-
-  return { seq, length: seq.length };
+  return { lastColumn, originalIndex };
 }
-export function lisLength(arr: number[]): number {
-  if (arr.length === 0) return 0;
-  const dp = Array(arr.length).fill(1);
 
-  for (let i = 1; i < arr.length; i++) {
-    for (let j = 0; j < i; j++) {
-      if (arr[i] > arr[j]) dp[i] = Math.max(dp[i], dp[j] + 1);
-    }
+/**
+ * Inverse Burrows‑Wheeler Transform.
+ *
+ * @param lastColumn  – BWT string (result of the forward transform)
+ * @param originalIndex – index returned by the forward transform
+ * @returns original input string
+ */
+export function inverseBwt(lastColumn: string, originalIndex: number): string {
+  const n = lastColumn.length;
+
+  // Build the first column by sorting the last column
+  const firstColumn = [...lastColumn].sort().join('');
+
+  // Build a map from character to its deque of positions in the last column
+  const charQueues: Record<string, number[]> = {};
+  for (let i = 0; i < n; i++) {
+    const c = lastColumn[i];
+    if (!charQueues[c]) charQueues[c] = [];
+    charQueues[c].push(i);
   }
-  return Math.max(...dp);
-}
-const data = [10, 22, 9, 33, 21, 50, 41, 60, 80];
-const { seq, length } = longestIncreasingSubsequence(data);
 
-console.log('LIS:', seq);          // [10, 22, 33, 50, 60, 80]
-console.log('Length:', length);    // 6
+  // Reconstruct the original string
+  let result = '';
+  let idx = originalIndex;
+  for (let i = 0; i < n; i++) {
+    const c = firstColumn[idx];
+    result += c;
+    // The row that had c in the last column is the next idx
+    idx = charQueues[c].shift()!;
+  }
+
+  return result;
+}
+const { lastColumn, originalIndex } = bwt('BANANA');
+console.log(lastColumn);          // 'ANNBAA'
+console.log(originalIndex);       // 3
+
+const original = inverseBwt(lastColumn, originalIndex);
+console.log(original);            // 'BANANA'
