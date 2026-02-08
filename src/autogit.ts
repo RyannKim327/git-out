@@ -1,45 +1,17 @@
-class Stack<T> {
-  private items: T[] = [];      // underlying array
+const numbers = [3, 42, 7, -1, 20];
+const biggest = Math.max(...numbers);
 
-  /** Push a value onto the top of the stack. */
-  push(value: T): void {
-    this.items.push(value);
-  }
-
-  /** Remove and return the top value.  Returns `undefined` if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  /** Peek at the top value without removing it. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** Number of elements in the stack. */
-  get size(): number {
-    return this.items.length;
-  }
-
-  /** True if the stack contains no items. */
-  get isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** Optional: clear all items. */
-  clear(): void {
-    this.items = [];
-  }
+console.log(biggest); // 42
+function findMax(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined; // or throw, or use null, whatever fits your API
+  return Math.max(...nums);
 }
-const stack = new Stack<number>();
-
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size);   // 2
-
-stack.clear();
-console.log(stack.isEmpty); // true
+const biggest = numbers.reduce((max, curr) => curr > max ? curr : max, -Infinity);
+function findMax(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  return nums.reduce((max, curr) => (curr > max ? curr : max));
+}
+function findMax<T extends readonly (number | null | undefined)[]>(arr: T): number | undefined {
+  const filtered = arr.filter(isFinite) as number[]; // strip out null/undefined if you like
+  return filtered.length ? Math.max(...filtered) : undefined;
+}
