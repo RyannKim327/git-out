@@ -1,37 +1,49 @@
 /**
- * Normalises a string for anagram comparison:
- *  – removes whitespace
- *  – drops non‑alphanumeric chars
- *  – lower‑cases everything
- *  – sorts the remaining characters
+ * Binary search on a sorted array.
+ *
+ * @param arr   Sorted array (ascending).
+ * @param key   Value to search for.
+ * @returns     Index of `key` in `arr`, or -1 if not found.
  */
-const normalise = (s: string): string =>
-  s
-    .replace(/[^a-z0-9]/gi, '')   // keep letters & digits only
-    .toLowerCase()
-    .split('')
-    .sort()
-    .join('');
+export function binarySearch<T extends number | string>(arr: T[], key: T): number {
+    let low  = 0;
+    let high = arr.length - 1;
 
-export const areAnagrams = (a: string, b: string): boolean =>
-  normalise(a) === normalise(b);
-console.log(areAnagrams('listen', 'silent'));   // true
-console.log(areAnagrams('Triangle', 'Integral')); // true
-console.log(areAnagrams('hello', 'world'));    // false
-export const areAnagramsMap = (a: string, b: string): boolean => {
-  const buildFreq = (s: string) => {
-    const freq: Record<string, number> = {};
-    for (const ch of s.replace(/[^a-z0-9]/gi, '').toLowerCase()) {
-      freq[ch] = (freq[ch] ?? 0) + 1;
+    while (low <= high) {
+        // Use floor division so we don’t overshoot on odd lengths.
+        const mid = Math.floor((low + high) / 2);
+        const midVal = arr[mid];
+
+        if (midVal === key) {
+            return mid;                // Found it!
+        }
+        else if (midVal < key) {
+            low = mid + 1;              // Search right half
+        } else {
+            high = mid - 1;             // Search left half
+        }
     }
-    return freq;
-  };
+    return -1; // Not found
+}
+type Comparator<T> = (a: T, b: T) => number; // negative if a < b, zero if equal, positive otherwise
 
-  const freqA = buildFreq(a);
-  const freqB = buildFreq(b);
+export function binarySearchWith<T>(arr: T[], key: T, cmp: Comparator<T>): number {
+    let low = 0, high = arr.length - 1;
 
-  const keys = Object.keys(freqA);
-  if (keys.length !== Object.keys(freqB).length) return false;
+    while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        const comp = cmp(arr[mid], key);
 
-  return keys.every(k => freqA[k] === freqB[k]);
-};
+        if (comp === 0) return mid;
+        if (comp < 0)  low = mid + 1;
+        else           high = mid - 1;
+    }
+    return -1;
+}
+const numbers = [3, 7, 12, 20, 31, 45, 58];
+console.log(binarySearch(numbers, 20)); // → 3
+
+// With a custom comparator for objects:
+const people = [{id: 1, name: 'Alice'}, {id: 3, name: 'Bob'}, {id: 7, name: 'Carol'}];
+const idCmp = (p: typeof people[0], key: number) => p.id - key;
+console.log(binarySearchWith(people, 3, idCmp)); // → 1
