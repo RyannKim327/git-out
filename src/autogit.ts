@@ -1,45 +1,61 @@
 /**
- * Return the largest prime factor of |n|.
+ * Fibonacci Search
  *
- * @param n Any integer. Negative values are treated as |n|.
- * @returns   The largest prime factor of n, or `0` if n has no prime factors
- * (i.e. n is 0, 1, or –1).
+ * @param arr   Sorted array to search
+ * @param key   Value to locate
+ * @returns    Index of key or -1
  */
-function largestPrimeFactor(n: number): number {
-  if (n === 0 || n === 1 || n === -1) return 0;
+export function fibonacciSearch<T extends number | string>(
+  arr: T[],
+  key: T
+): number {
+  const n = arr.length;
 
-  let num = Math.abs(n);          // work with the absolute value
-  let lastPrime = 0;              // keep the biggest factor we’ve seen
+  // 1. Compute the smallest Fibonacci number greater or equal to n
+  let fibMinusTwo = 0;   // (n-2)th fibonacci
+  let fibMinusOne = 1;   // (n-1)th fibonacci
+  let fibN = fibMinusTwo + fibMinusOne; // nth fibonacci
 
-  // Treat 2 separately – it’s the only even prime
-  while (num % 2 === 0) {
-    lastPrime = 2;
-    num >>= 1;                    // divide by 2
+  while (fibN < n) {
+    fibMinusTwo = fibMinusOne;
+    fibMinusOne = fibN;
+    fibN = fibMinusTwo + fibMinusOne;
   }
 
-  // Now n is odd. Try only odd divisors.
-  // We only need to go up to sqrt(num) because if num still > 1 after that,
-  // num itself is prime and the largest factor.
-  for (let d = 3; d * d <= num; d += 2) {
-    while (num % d === 0) {
-      lastPrime = d;
-      num /= d;
+  // 2. Marks the index beyond the last element
+  let offset = -1;
+
+  // 3. while there's more to inspect
+  while (fibN > 1) {
+    const i = Math.min(offset + fibMinusTwo, n - 1);
+
+    // Compare the current element with the key
+    if (arr[i] < key!) {
+      // Move three Fibonacci numbers down
+      fibN = fibMinusOne;
+      fibMinusOne = fibMinusTwo;
+      fibMinusTwo = fibN - fibMinusOne;
+      offset = i;
+    } else if (arr[i] > key!) {
+      // Move two Fibonacci numbers down
+      fibN = fibMinusTwo;
+      fibMinusOne = fibMinusOne - fibMinusTwo;
+      fibMinusTwo = fibN - fibMinusOne;
+    } else {
+      // Element found
+      return i;
     }
   }
 
-  // If after the loop num > 1, it means num itself is prime
-  // and larger than any divisor we found earlier.
-  if (num > 1) lastPrime = num;
+  // Compare the last element with the key
+  if (fibMinusOne && offset + 1 < n && arr[offset + 1] === key) {
+    return offset + 1;
+  }
 
-  return lastPrime;
+  return -1; // Not found
 }
+const sortedNums = [3, 7, 12, 18, 23, 27, 34, 38, 45, 52];
+const target = 23;
 
-/* ----- quick sanity checks ----- */
-console.log(largestPrimeFactor(13195));   // 29  (13195 = 5 × 7 × 13 × 29)
-console.log(largestPrimeFactor(600851475143)); // 6857 (the known answer to Project Euler #3)
-Console.log(largestPrimeFactor(13));      // 13
-Console.log(largestPrimeFactor(4));       // 2
-Console.log(largestPrimeFactor(1));       // 0
-function largestPrimeFactorBigInt(n: bigint): bigint {
-  // identical logic, but using bigint operations
-}
+const idx = fibonacciSearch(sortedNums, target);
+console.log(idx); // 4
