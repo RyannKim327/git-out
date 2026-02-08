@@ -1,66 +1,37 @@
-class ListNode {
-  val: number;
-  next: ListNode | null;
+// TypeScript example that fetches JSON and validates the shape of the response
 
-  constructor(val: number, next: ListNode | null = null) {
-    this.val = val;
-    this.next = next;
-  }
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
 
 /**
- * Returns true if the list contains a cycle, false otherwise.
+ * Fetch a Todo by ID.
+ *
+ * @param id The ID of the todo to fetch.
+ * @returns A promise that resolves to a Todo object.
  */
-function hasCycle(head: ListNode | null): boolean {
-  let slow = head;
-  let fast = head;
+async function fetchTodo(id: number): Promise<Todo> {
+  const response = await fetch(`https://jsonplaceholder.typicode.com/todos/${id}`);
 
-  while (fast && fast.next) {
-    slow = slow.next;             // move one step
-    fast = fast.next.next;        // move two steps
-
-    if (slow === fast) {          // pointers meet → cycle
-      return true;
-    }
+  if (!response.ok) {
+    throw new Error(`Failed to load todo #${id}: ${response.status} ${response.statusText}`);
   }
 
-  // fast reached the end → no cycle
-  return false;
-}
-/**
- * Returns true if the list contains a cycle, false otherwise.
- * Uses a Set to remember nodes we've seen.
- */
-function hasCycleWithSet(head: ListNode | null): boolean {
-  const visited = new Set<ListNode>();
+  // TypeScript's `as` ensures the runtime shape matches the interface
+  const data = (await response.json()) as Todo;
 
-  let current = head;
-  while (current) {
-    if (visited.has(current)) {
-      return true;               // seen it before → cycle
-    }
-    visited.add(current);
-    current = current.next;
+  // Quick sanity check
+  if (typeof data.completed !== "boolean") {
+    throw new Error("data format unexpected");
   }
 
-  return false;                  // reached the end
+  return data;
 }
-// 1 ➜ 2 ➜ 3 ➜ 4 ➜ null   (no cycle)
-const a = new ListNode(1);
-a.next = new ListNode(2, new ListNode(3, new ListNode(4)));
 
-console.log(hasCycle(a));          // false
-console.log(hasCycleWithSet(a));   // false
-
-// 1 ➜ 2 ➜ 3 ➜ 4 ➜ 2 ...   (cycle back to node 2)
-const b = new ListNode(1);
-const node2 = new ListNode(2);
-const node3 = new ListNode(3);
-const node4 = new ListNode(4);
-b.next = node2;
-node2.next = node3;
-node3.next = node4;
-node4.next = node2;                // close the loop
-
-console.log(hasCycle(b));          // true
-console.log(hasCycleWithSet(b));   // true
+// Usage example (you can place this in a main function or wherever you need it)
+fetchTodo(1)
+  .then(todo => console.log(`Todo #${todo.id}: ${todo.title} (completed: ${todo.completed})`))
+  .catch(err => console.error(err));
