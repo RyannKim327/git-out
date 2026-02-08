@@ -1,48 +1,70 @@
 /**
- * Returns the longest common subsequence (LCS) of two strings.
- * @param a First string
- * @param b Second string
- * @returns { subsequence: string; length: number }
+ * Radix sort (Least–Significant‑digit first) for arrays of non‑negative integers.
+ *
+ * Time:  O(k * n)  where k = number of digits in the largest number
+ * Space: O(n + B)  (B = 10 for base‑10)
  */
-function longestCommonSubsequence(a: string, b: string) {
-  const m = a.length;
-  const n = b.length;
+function radixSort(nums: number[]): number[] {
+  if (nums.length <= 1) return nums.slice();
 
-  // 1. Build DP matrix (m+1) x (n+1) filled with 0
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  // Find the biggest value to know how many digits we need to process
+  const maxVal = Math.max(...nums);
+  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
 
-  // 2. Fill DP matrix
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+  // Start from the least significant digit
+  let divisor = 1;
+
+  // We'll reuse these buckets in each pass to keep O(n) allocations
+  const buckets: number[][] = Array.from({ length: 10 }, () => []);
+
+  for (let d = 0; d < maxDigits; d++) {
+    // Distribute
+    for (const num of nums) {
+      const bucketIndex = Math.floor(num / divisor) % 10;
+      buckets[bucketIndex].push(num);
+    }
+
+    // Collect back into nums, empty buckets for the next pass
+    let pos = 0;
+    for (const bucket of buckets) {
+      while (bucket.length) {
+        nums[pos++] = bucket.pop() as number; // pop gives LIFO but we reverse order below
+      }
+      bucket.length = 0; // reset
+    }
+
+    divisor *= 10; // move to the next digit
+  }
+
+  return nums;
+}
+function radixSortStable(nums: number[]): number[] {
+  if (nums.length <= 1) return nums.slice();
+
+  const maxVal = Math.max(...nums);
+  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
+
+  let divisor = 1;
+  const buckets: number[][] = Array.from({ length: 10 }, () => []);
+
+  for (let d = 0; d < maxDigits; d++) {
+    for (const n of nums) {
+      const idx = Math.floor(n / divisor) % 10;
+      buckets[idx].push(n);
+    }
+
+    let i = 0;
+    for (const bucket of buckets) {
+      while (bucket.length) {
+        nums[i++] = bucket.shift() as number; // shift preserves order
       }
     }
+
+    divisor *= 10;
   }
 
-  // 3. Back‑track to rebuild the subsequence
-  let i = m, j = n;
-  const subseq: string[] = [];
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      subseq.push(a[i - 1]); // same char belongs to LCS
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;            // move up
-    } else {
-      j--;            // move left
-    }
-  }
-
-  return {
-    subsequence: subseq.reverse().join(''),
-    length: dp[m][n]
-  };
+  return nums;
 }
-
-// Quick demo
-const { subsequence, length } = longestCommonSubsequence('AGCAT', 'GAC');
-console.log(`Longest common subsequence: ${subsequence} (length ${length})`);
+const data = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log(radixSortStable(data));
+// → [2, 24, 45, 66, 75, 90, 170, 802]
