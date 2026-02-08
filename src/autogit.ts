@@ -1,16 +1,17 @@
-/**
- * Return a copy of `text` with all a, e, i, o, u removed.
- * @param text – The input string.
- * @returns The string with vowels gone.
- */
-export function removeVowels(text: string): string {
-  // `[aeiou]` matches any vowel, and `gi` makes it global & case‑insensitive.
-  return text.replace(/[aeiou]/gi, '');
+const numbers = [3, 42, 7, -1, 20];
+const biggest = Math.max(...numbers);
+
+console.log(biggest); // 42
+function findMax(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined; // or throw, or use null, whatever fits your API
+  return Math.max(...nums);
 }
-console.log(removeVowels('Hello, World!')); // "Hll, Wrld!"
-console.log(removeVowels('TypeScript'));     // "TpScrt"
-export function removeVowels(text: string, includeY = false): string {
-  const pattern = includeY ? /[aeiouy]/gi : /[aeiou]/gi;
-  return text.replace(pattern, '');
+const biggest = numbers.reduce((max, curr) => curr > max ? curr : max, -Infinity);
+function findMax(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  return nums.reduce((max, curr) => (curr > max ? curr : max));
 }
-removeVowels('Rhythm', true); // "Rhthm"  (if `y` is treated as a vowel)
+function findMax<T extends readonly (number | null | undefined)[]>(arr: T): number | undefined {
+  const filtered = arr.filter(isFinite) as number[]; // strip out null/undefined if you like
+  return filtered.length ? Math.max(...filtered) : undefined;
+}
