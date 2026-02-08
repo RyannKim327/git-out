@@ -1,21 +1,37 @@
-/**
- * Factorial using recursion.
- * Works for ordinary numbers up to 20 (safe integer range).
- * If you need bigger results, use BigInt and the overload below.
- */
-function factorial(n: number): number {
-  if (n < 0) throw new Error("Negative values are not allowed");
-  if (n <= 1) return 1;          // base case
-  return n * factorial(n - 1);   // recursive step
+// TypeScript example that fetches JSON and validates the shape of the response
+
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
 
 /**
- * A BigInt version for arbitrary‑size factorials.
+ * Fetch a Todo by ID.
+ *
+ * @param id The ID of the todo to fetch.
+ * @returns A promise that resolves to a Todo object.
  */
-function factorialBigInt(n: bigint): bigint {
-  if (n < 0n) throw new Error("Negative values are not allowed");
-  if (n <= 1n) return 1n;
-  return n * factorialBigInt(n - 1n);
+async function fetchTodo(id: number): Promise<Todo> {
+  const response = await fetch(`https://jsonplaceholder.typicode.com/todos/${id}`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to load todo #${id}: ${response.status} ${response.statusText}`);
+  }
+
+  // TypeScript's `as` ensures the runtime shape matches the interface
+  const data = (await response.json()) as Todo;
+
+  // Quick sanity check
+  if (typeof data.completed !== "boolean") {
+    throw new Error("data format unexpected");
+  }
+
+  return data;
 }
-console.log(factorial(5));          // 120
-console.log(factorialBigInt(25n));  // 15511210043330985984000000n
+
+// Usage example (you can place this in a main function or wherever you need it)
+fetchTodo(1)
+  .then(todo => console.log(`Todo #${todo.id}: ${todo.title} (completed: ${todo.completed})`))
+  .catch(err => console.error(err));
