@@ -1,87 +1,85 @@
-// A directed graph: adjacency list
-type Graph = Record<string, string[]>;
-
-// Example: a tiny graph
-const graph: Graph = {
-  A: ["B"],
-  B: ["C"],
-  C: ["A", "D"],
-  D: ["C", "E"],
-  E: [],
-};
 /**
- * Finds all strongly connected components of a directed graph.
- * @param graph The adjacency list of the graph.
- * @returns An array of SCCs; each SCC is an array of vertex IDs.
+ * Simple representation of a DAG.
+ *   vertices – an array of node identifiers (any type, but usually string or number)
+ *   edges    – a map from a vertex to a list of outgoing neighbours
  */
-function tarjanSCC(graph: Graph): string[][] {
-  let index = 0;                     // global index counter
-  const stack: string[] = [];        // DFS stack
-  const onStack = new Set<string>(); // quick membership check
-
-  // Maps vertex → its index in DFS tree
-  const indices = new Map<string, number>();
-  // Maps vertex → its lowlink value
-  const lowlink = new Map<string, number>();
-  // Result: array of SCCs
-  const sccs: string[][] = [];
-
-  function strongConnect(v: string) {
-    // Step 1: set the depth index for v
-    indices.set(v, index);
-    lowlink.set(v, index);
-    index++;
-    stack.push(v);
-    onStack.add(v);
-
-    // Step 2: consider each successor
-    for (const w of graph[v] ?? []) {
-      if (!indices.has(w)) {
-        // Successor w has not yet been visited; recurse on it.
-        strongConnect(w);
-        // After recursion: update lowlink of v
-        lowlink.set(v, Math.min(lowlink.get(v)!, lowlink.get(w)!));
-      } else if (onStack.has(w)) {
-        // Successor w is in stack → part of current SCC
-        lowlink.set(v, Math.min(lowlink.get(v)!, indices.get(w)!));
-      }
-    }
-
-    // Step 3: If v is a root node, pop the stack and generate an SCC
-    if (lowlink.get(v)! === indices.get(v)!) {
-      const scc: string[] = [];
-      let w: string | undefined;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        scc.push(w);
-      } while (w !== v);
-      sccs.push(scc);
-    }
-  }
-
-  // Kick off DFS for each vertex that hasn't been visited yet
-  for (const v of Object.keys(graph)) {
-    if (!indices.has(v)) {
-      strongConnect(v);
-    }
-  }
-
-  return sccs;
+interface Graph<V> {
+  vertices: V[];
+  edges: Map<V, V[]>;
 }
-const sccs = tarjanSCC(graph);
-console.log("Strongly connected components:");
-sccs.forEach((scc, i) => {
-  console.log(`  ${i + 1}. [${scc.join(", ")}]`);
-});
-Strongly connected components:
-  1. [A, C, B]
-  2. [E]
-  3. [D]
-type Vertex = number;
 
-// * Update the graph type:
-type Graph = Record<Vertex, Vertex[]>;
+/**
+ * Kahn’s topological sort.
+ * @param graph – a DAG
+ * @returns a list of vertices sorted topologically
+ * @throws Error if the graph contains a cycle
+ */
+function topologicalSort<V>(graph: Graph<V>): V[] {
+  // Compute indegree of each vertex
+  const indegree = new Map<V, number>();
+  graph.vertices.forEach(v => indegree.set(v, 0));
 
-// * Replace string‑specific typing in the function:
-function tarjanSCC(graph: Graph): Vertex[][] { ... }
+  graph.edges.forEach((neighbours, from) => {
+    neighbours.forEach(to => {
+      indegree.set(to, (indegree.get(to) || 0) + 1);
+    });
+  });
+
+  // Queue of vertices with indegree 0
+  const queue: V[] = [];
+  indegree.forEach((deg, v) => {
+    if (deg === 0) queue.push(v);
+  });
+
+  const order: V[] = [];
+  while (queue.length) {
+    const v = queue.shift()!;
+    order.push(v);
+
+    const neighbours = graph.edges.get(v) ?? [];
+    neighbours.forEach(to => {
+      indegree.set(to, (indegree.get(to) || 0) - 1);
+      if (indegree.get(to) === 0) queue.push(to);
+    });
+  }
+
+  // If we processed fewer vertices than exist, a cycle is present
+  if (order.length !== graph.vertices.length) {
+    throw new Error('Graph contains a cycle – topological sort not possible');
+  }
+
+  return order;
+}
+A → C
+B → C
+C → D
+const g: Graph<string> = {
+  vertices: ['A', 'B', 'C', 'D'],
+  edges: new Map([
+    ['A', ['C']],
+    ['B', ['C']],
+    ['C', ['D']],
+    // D has no outgoing edges
+  ]),
+};
+
+console.log(topologicalSort(g)); // → ['A', 'B', 'C', 'D'] (or ['B', 'A', 'C', 'D'])
+function topologicalSortDFS<V>(graph: Graph<V>): V[] {
+  const visited = new Set<V>();
+  const temp = new Set<V>();          // to detect cycles
+  const stack: V[] = [];
+
+  function visit(v: V) {
+    if (temp.has(v)) throw new Error('Cycle detected');
+    if (visited.has(v)) return;
+
+    temp.add(v);
+    (graph.edges.get(v) ?? []).forEach(visit);
+    temp.delete(v);
+    visited.add(v);
+    stack.push(v);                    // push after children – this yields reverse order
+  }
+
+  graph.vertices.forEach(visit);
+  return stack.reverse();             // reverse to get the correct order
+}
