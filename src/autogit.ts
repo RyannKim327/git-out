@@ -1,61 +1,55 @@
 /**
- * Fibonacci Search
+ * Selection sort – sorts an array in‑place in ascending order.
  *
- * @param arr   Sorted array to search
- * @param key   Value to locate
- * @returns    Index of key or -1
+ * @param array   The array to sort.  It will be mutated.
+ * @param compare Callback used to decide order. If omitted, a natural
+ *                ascending numeric/string comparison is used.
+ * @returns The same array instance, now sorted.
  */
-export function fibonacciSearch<T extends number | string>(
-  arr: T[],
-  key: T
-): number {
-  const n = arr.length;
+export function selectionSort<T>(
+  array: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  const len = array.length;
 
-  // 1. Compute the smallest Fibonacci number greater or equal to n
-  let fibMinusTwo = 0;   // (n-2)th fibonacci
-  let fibMinusOne = 1;   // (n-1)th fibonacci
-  let fibN = fibMinusTwo + fibMinusOne; // nth fibonacci
+  // default comparer: numeric or string ascending
+  const cmp = compare ?? ((a: any, b: any) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
 
-  while (fibN < n) {
-    fibMinusTwo = fibMinusOne;
-    fibMinusOne = fibN;
-    fibN = fibMinusTwo + fibMinusOne;
-  }
+  for (let i = 0; i < len - 1; i++) {
+    // assume min at current position
+    let minIdx = i;
 
-  // 2. Marks the index beyond the last element
-  let offset = -1;
+    // find the smallest element in the unsorted portion
+    for (let j = i + 1; j < len; j++) {
+      if (cmp(array[j], array[minIdx]) < 0) {
+        minIdx = j;
+      }
+    }
 
-  // 3. while there's more to inspect
-  while (fibN > 1) {
-    const i = Math.min(offset + fibMinusTwo, n - 1);
-
-    // Compare the current element with the key
-    if (arr[i] < key!) {
-      // Move three Fibonacci numbers down
-      fibN = fibMinusOne;
-      fibMinusOne = fibMinusTwo;
-      fibMinusTwo = fibN - fibMinusOne;
-      offset = i;
-    } else if (arr[i] > key!) {
-      // Move two Fibonacci numbers down
-      fibN = fibMinusTwo;
-      fibMinusOne = fibMinusOne - fibMinusTwo;
-      fibMinusTwo = fibN - fibMinusOne;
-    } else {
-      // Element found
-      return i;
+    // swap if we found a smaller element
+    if (minIdx !== i) {
+      const temp = array[i];
+      array[i] = array[minIdx];
+      array[minIdx] = temp;
     }
   }
 
-  // Compare the last element with the key
-  if (fibMinusOne && offset + 1 < n && arr[offset + 1] === key) {
-    return offset + 1;
-  }
-
-  return -1; // Not found
+  return array;
 }
-const sortedNums = [3, 7, 12, 18, 23, 27, 34, 38, 45, 52];
-const target = 23;
+// simple numeric sorting
+let nums = [64, 25, 12, 22, 11];
+selectionSort(nums);
+console.log(nums); // [11, 12, 22, 25, 64]
 
-const idx = fibonacciSearch(sortedNums, target);
-console.log(idx); // 4
+// sorting strings
+let words = ["banana", "avocado", "cherry"];
+selectionSort(words);
+console.log(words); // ["avocado", "banana", "cherry"]
+
+// custom comparator – descending numbers
+selectionSort(nums, (a, b) => b - a);
+console.log(nums); // [64, 25, 22, 12, 11]
