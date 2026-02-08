@@ -1,43 +1,66 @@
-interface BinaryTreeNode<T = number> {
-  val: T;                  // The payload – can be any type you need
-  left?: BinaryTreeNode<T>;
-  right?: BinaryTreeNode<T>;
-}
-function maxDepthRecursive<T>(root?: BinaryTreeNode<T>): number {
-  if (!root) return 0; // An empty tree has depth 0
+/**
+ * Checks whether the given string is a palindrome, ignoring case and
+ * non‑alphanumeric characters.  It uses only constant extra space.
+ *
+ * @param s  The string to check.
+ * @returns  true if `s` is a palindrome, false otherwise.
+ */
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  const leftDepth  = maxDepthRecursive(root.left);
-  const rightDepth = maxDepthRecursive(root.right);
+  while (left < right) {
+    // Skip any *non*‑alphanumeric character on the left
+    while (left < right && !isAlphaNum(s.charCodeAt(left))) {
+      left++;
+    }
+    // Skip any *non*‑alphanumeric character on the right
+    while (left < right && !isAlphaNum(s.charCodeAt(right))) {
+      right--;
+    }
 
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthBFS<T>(root?: BinaryTreeNode<T>): number {
-  if (!root) return 0;
+    // If indices crossed after skipping, we're done
+    if (left >= right) break;
 
-  const queue: Array<{ node: BinaryTreeNode<T>; depth: number }> = [{ node: root, depth: 1 }];
-  let maxDepth = 0;
+    // Compare the characters case‑insensitively
+    const leftChar = s.charCodeAt(left);
+    const rightChar = s.charCodeAt(right);
 
-  while (queue.length) {
-    const { node, depth } = queue.shift()!; // Non‑null assertion: queue never empty here
-    maxDepth = Math.max(maxDepth, depth);
+    if (normalize(leftChar) !== normalize(rightChar)) {
+      return false;
+    }
 
-    if (node.left)  queue.push({ node: node.left, depth: depth + 1 });
-    if (node.right) queue.push({ node: node.right, depth: depth + 1 });
+    left++;
+    right--;
   }
 
-  return maxDepth;
+  return true;
 }
-// Example tree:
-//        1
-//       / \
-//      2   3
-//     /
-//    4
-const tree: BinaryTreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3 }
-};
 
-console.log(maxDepthRecursive(tree)); // 3
-console.log(maxDepthBFS(tree));       // 3
+/**
+ * Helper to test whether a character code is alphanumeric.
+ */
+function isAlphaNum(code: number): boolean {
+  // 0-9
+  if (code >= 48 && code <= 57) return true;
+  // A-Z
+  if (code >= 65 && code <= 90) return true;
+  // a-z
+  if (code >= 97 && code <= 122) return true;
+  return false;
+}
+
+/**
+ * Normalises a character code to be lowercase ASCII when possible.
+ * For Unicode other than ASCII it simply returns the original code.
+ */
+function normalize(code: number): number {
+  // Convert uppercase A-Z to lowercase a-z
+  if (code >= 65 && code <= 90) {
+    return code + 32;
+  }
+  return code;
+}
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("race a car"));                      // false
+console.log(isPalindrome("   abcba   "));                     // true
