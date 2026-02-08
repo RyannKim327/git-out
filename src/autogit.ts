@@ -1,53 +1,72 @@
-/**
- * Simpler Rabin–Karp – uses a 32‑bit unsigned int hash.
- * For stronger use (large text / collision safety) switch to BigInt or a
- * larger mod (e.g., 1_000_000_007).
- */
-export function rabinKarp(
-    text: string,
-    pattern: string,
-    base: number = 256,               // alphabet size
-    mod: number = 1_000_000_007       // a large prime
-): number[] {
-    const n = text.length;
-    const m = pattern.length;
-    if (m === 0 || n < m) return [];
-
-    const result: number[] = [];
-
-    /* Pre‑compute base^(m-1) % mod   (the weight of the leading char) */
-    let power = 1;
-    for (let i = 0; i < m - 1; i++) power = (power * base) % mod;
-
-    /* Hashes of pattern and first window */
-    let patternHash = 0;
-    let windowHash = 0;
-    for (let i = 0; i < m; i++) {
-        patternHash = (patternHash * base + pattern.charCodeAt(i)) % mod;
-        windowHash  = (windowHash  * base + text.charCodeAt(i))  % mod;
-    }
-
-    /* Slide the window */
-    for (let i = 0; i <= n - m; i++) {
-        /* If hashes match – do a literal check to avoid false positives */
-        if (patternHash === windowHash) {
-            if (text.substr(i, m) === pattern) result.push(i);
-        }
-
-        /* Re‑hash: remove leading char, add trailing char */
-        if (i < n - m) {
-            const leading = text.charCodeAt(i) * power % mod;
-            windowHash = (windowHash - leading + mod) % mod;   // avoid negative
-            windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
-        }
-    }
-
-    return result;
+// A single node in the list
+class Node<T> {
+  constructor(public value: T, public next: Node<T> | null = null) {}
 }
-import { rabinKarp } from './rabinKarp';
 
-const text = "ababcabcabababd";
-const pattern = "ababd";
+// The queue itself
+export class LinkedListQueue<T> {
+  // Keep refs to both ends so that enqueue/dequeue stay constant‑time
+  private head: Node<T> | null = null; // points to first element
+  private tail: Node<T> | null = null; // points to last element
+  private _size = 0;
 
-const matches = rabinKarp(text, pattern);  // → [10]
-console.log("Match at indices: ", matches);
+  /** Adds a value to the back of the queue */
+  enqueue(value: T): void {
+    const newNode = new Node(value);
+    if (this.tail) {
+      this.tail.next = newNode;   // link the old tail to the new node
+      this.tail = newNode;        // new node becomes the new tail
+    } else {
+      // Queue was empty – head and tail are the same node now
+      this.head = this.tail = newNode;
+    }
+    this._size++;
+  }
+
+  /** Removes and returns the value from the front of the queue.
+      Throws an error if the queue is empty. */
+  dequeue(): T {
+    if (!this.head) {
+      throw new Error('Cannot dequeue from an empty queue');
+    }
+    const value = this.head.value;
+    this.head = this.head.next; // move head forward
+    if (!this.head) {
+      // Queue became empty, so tail must also be null
+      this.tail = null;
+    }
+    this._size--;
+    return value;
+  }
+
+  /** Peeks at the front value without removing it. */
+  peek(): T | null {
+    return this.head?.value ?? null;
+  }
+
+  /** Returns true if the queue contains no elements. */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** Current number of elements */
+  size(): number {
+    return this._size;
+  }
+}
+import { LinkedListQueue } from './LinkedListQueue';
+
+const q = new LinkedListQueue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size());    // 1
+console.log(q.isEmpty()); // false
+
+q.dequeue();          // removes 30
+console.log(q.isEmpty()); // true
