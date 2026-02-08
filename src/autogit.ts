@@ -1,21 +1,66 @@
-/**
- * Factorial using recursion.
- * Works for ordinary numbers up to 20 (safe integer range).
- * If you need bigger results, use BigInt and the overload below.
- */
-function factorial(n: number): number {
-  if (n < 0) throw new Error("Negative values are not allowed");
-  if (n <= 1) return 1;          // base case
-  return n * factorial(n - 1);   // recursive step
+class ListNode {
+  val: number;
+  next: ListNode | null;
+
+  constructor(val: number, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
+  }
 }
 
 /**
- * A BigInt version for arbitrary‑size factorials.
+ * Returns true if the list contains a cycle, false otherwise.
  */
-function factorialBigInt(n: bigint): bigint {
-  if (n < 0n) throw new Error("Negative values are not allowed");
-  if (n <= 1n) return 1n;
-  return n * factorialBigInt(n - 1n);
+function hasCycle(head: ListNode | null): boolean {
+  let slow = head;
+  let fast = head;
+
+  while (fast && fast.next) {
+    slow = slow.next;             // move one step
+    fast = fast.next.next;        // move two steps
+
+    if (slow === fast) {          // pointers meet → cycle
+      return true;
+    }
+  }
+
+  // fast reached the end → no cycle
+  return false;
 }
-console.log(factorial(5));          // 120
-console.log(factorialBigInt(25n));  // 15511210043330985984000000n
+/**
+ * Returns true if the list contains a cycle, false otherwise.
+ * Uses a Set to remember nodes we've seen.
+ */
+function hasCycleWithSet(head: ListNode | null): boolean {
+  const visited = new Set<ListNode>();
+
+  let current = head;
+  while (current) {
+    if (visited.has(current)) {
+      return true;               // seen it before → cycle
+    }
+    visited.add(current);
+    current = current.next;
+  }
+
+  return false;                  // reached the end
+}
+// 1 ➜ 2 ➜ 3 ➜ 4 ➜ null   (no cycle)
+const a = new ListNode(1);
+a.next = new ListNode(2, new ListNode(3, new ListNode(4)));
+
+console.log(hasCycle(a));          // false
+console.log(hasCycleWithSet(a));   // false
+
+// 1 ➜ 2 ➜ 3 ➜ 4 ➜ 2 ...   (cycle back to node 2)
+const b = new ListNode(1);
+const node2 = new ListNode(2);
+const node3 = new ListNode(3);
+const node4 = new ListNode(4);
+b.next = node2;
+node2.next = node3;
+node3.next = node4;
+node4.next = node2;                // close the loop
+
+console.log(hasCycle(b));          // true
+console.log(hasCycleWithSet(b));   // true
