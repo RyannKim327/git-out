@@ -1,32 +1,47 @@
 /**
- * Bubble sort – compares adjacent elements and swaps them if they're out of order.
+ * Finds the median of two sorted arrays that may be of different lengths.
  *
- * @param arr – The array of numbers (or any type that implements `<`),
- *              sorted in place and also returned for convenience.
- * @returns The sorted array.
+ * @param a  first sorted array (non‑empty)
+ * @param b  second sorted array (non‑empty)
+ * @returns  median value (number)
  */
-export function bubbleSort<T>(arr: T[]): T[] {
-  const n = arr.length;
+export function medianOfTwoSortedArrays(a: number[], b: number[]): number {
+  // Ensure a is the shorter array to keep the binary search bounded.
+  if (a.length > b.length) return medianOfTwoSortedArrays(b, a);
 
-  // Outer loop – each pass guarantees that the largest element among the
-  // unsorted portion moves to its final position at the end of the array.
-  for (let i = 0; i < n - 1; i++) {
-    // Inner loop – only needs to run up to the last unsorted element.
-    for (let j = 0; j < n - i - 1; j++) {
-      // If the current element is greater than the next one, swap them.
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+  const m = a.length;
+  const n = b.length;
+  let left = 0;
+  let right = m;
+
+  while (left <= right) {
+    const i = Math.floor((left + right) / 2);          // cut in a
+    const j = Math.floor((m + n + 1) / 2) - i;        // cut in b
+
+    const Aleft   = i === 0 ?    -Infinity : a[i - 1];
+    const Aright  = i === m ?    Infinity : a[i];
+    const Bleft   = j === 0 ?    -Infinity : b[j - 1];
+    const Bright  = j === n ?    Infinity : b[j];
+
+    if (Aleft <= Bright && Bleft <= Aright) {
+      // correct partition found
+      if ((m + n) % 2 === 0) {
+        return Math.max(Aleft, Bleft) + Math.min(Aright, Bright) / 2;
+      } else {
+        return Math.max(Aleft, Bleft);
       }
+    } else if (Aleft > Bright) {
+      // i is too big – shift left
+      right = i - 1;
+    } else {
+      // i is too small – shift right
+      left = i + 1;
     }
   }
 
-  return arr;
+  // Should never hit here if inputs are valid and sorted.
+  throw new Error("Input arrays are not sorted or empty");
 }
-import { bubbleSort } from './bubbleSort';
-
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-console.log('Before:', numbers);
-
-bubbleSort(numbers);
-
-console.log('After:', numbers);   // [11, 12, 22, 25, 34, 64, 90]
+console.log(medianOfTwoSortedArrays([1, 3], [2]));          // 2
+console.log(medianOfTwoSortedArrays([1, 2], [3, 4]));        // 2.5
+console.log(medianOfTwoSortedArrays([0, 0], [0, 0]));        // 0
