@@ -1,50 +1,70 @@
-area = (base * height) / 2
 /**
- * Return the area of a triangle when you know its base and height.
+ * Radix sort (Least–Significant‑digit first) for arrays of non‑negative integers.
  *
- * @param base   Length of the base side.
- * @param height Height perpendicular to that base.
- * @returns      Area of the triangle as a number.
+ * Time:  O(k * n)  where k = number of digits in the largest number
+ * Space: O(n + B)  (B = 10 for base‑10)
  */
-export function areaFromBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new Error("Base and height must be positive numbers.");
+function radixSort(nums: number[]): number[] {
+  if (nums.length <= 1) return nums.slice();
+
+  // Find the biggest value to know how many digits we need to process
+  const maxVal = Math.max(...nums);
+  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
+
+  // Start from the least significant digit
+  let divisor = 1;
+
+  // We'll reuse these buckets in each pass to keep O(n) allocations
+  const buckets: number[][] = Array.from({ length: 10 }, () => []);
+
+  for (let d = 0; d < maxDigits; d++) {
+    // Distribute
+    for (const num of nums) {
+      const bucketIndex = Math.floor(num / divisor) % 10;
+      buckets[bucketIndex].push(num);
+    }
+
+    // Collect back into nums, empty buckets for the next pass
+    let pos = 0;
+    for (const bucket of buckets) {
+      while (bucket.length) {
+        nums[pos++] = bucket.pop() as number; // pop gives LIFO but we reverse order below
+      }
+      bucket.length = 0; // reset
+    }
+
+    divisor *= 10; // move to the next digit
   }
-  return (base * height) / 2;
+
+  return nums;
 }
-s = (a + b + c) / 2            // semi‑perimeter
-area = sqrt( s * (s−a) * (s−b) * (s−c) )
-/**
- * Compute the area of a triangle from its three side lengths.
- *
- * @param a   Length of side A.
- * @param b   Length of side B.
- * @param c   Length of side C.
- * @returns   Area of the triangle (number) or NaN if the sides
- *            don’t form a valid triangle.
- */
-export function areaFromSides(a: number, b: number, c: number): number {
-  // Basic validation – all sides must be positive
-  if (a <= 0 || b <= 0 || c <= 0) {
-    throw new Error("All side lengths must be positive numbers.");
+function radixSortStable(nums: number[]): number[] {
+  if (nums.length <= 1) return nums.slice();
+
+  const maxVal = Math.max(...nums);
+  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
+
+  let divisor = 1;
+  const buckets: number[][] = Array.from({ length: 10 }, () => []);
+
+  for (let d = 0; d < maxDigits; d++) {
+    for (const n of nums) {
+      const idx = Math.floor(n / divisor) % 10;
+      buckets[idx].push(n);
+    }
+
+    let i = 0;
+    for (const bucket of buckets) {
+      while (bucket.length) {
+        nums[i++] = bucket.shift() as number; // shift preserves order
+      }
+    }
+
+    divisor *= 10;
   }
 
-  // Triangle inequality check – else area calculation would
-  // produce NaN or a negative under the radicand.
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error("The provided side lengths do not form a valid triangle.");
-  }
-
-  const s = (a + b + c) / 2;
-  const radicand = s * (s - a) * (s - b) * (s - c);
-
-  return Math.sqrt(radicand);
+  return nums;
 }
-import { areaFromBaseHeight, areaFromSides } from "./triangle-utils";
-
-const base = 10;
-const height = 6;
-console.log(areaFromBaseHeight(base, height)); // 30
-
-const a = 7, b = 10, c = 5;
-console.log(areaFromSides(a, b, c));           // ≈ 17.89
+const data = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log(radixSortStable(data));
+// → [2, 24, 45, 66, 75, 90, 170, 802]
