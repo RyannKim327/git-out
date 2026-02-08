@@ -1,50 +1,60 @@
-area = (base * height) / 2
 /**
- * Return the area of a triangle when you know its base and height.
- *
- * @param base   Length of the base side.
- * @param height Height perpendicular to that base.
- * @returns      Area of the triangle as a number.
+ * Merges two sorted slices `left` and `right` into a single sorted array.
+ * The operation is stable — items that compare equal keep their original
+ * relative order.
  */
-export function areaFromBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new Error("Base and height must be positive numbers.");
+function merge<T>(left: T[], right: T[], compare: (a: T, b: T) => number): T[] {
+  const result: T[] = [];
+  let i = 0;          // index into left
+  let j = 0;          // index into right
+
+  while (i < left.length && j < right.length) {
+    if (compare(left[i], right[j]) <= 0) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
+    }
   }
-  return (base * height) / 2;
+
+  // Append any remaining elements
+  return result.concat(left.slice(i), right.slice(j));
 }
-s = (a + b + c) / 2            // semi‑perimeter
-area = sqrt( s * (s−a) * (s−b) * (s−c) )
+
 /**
- * Compute the area of a triangle from its three side lengths.
+ * Recursively sorts `array` using merge sort.
  *
- * @param a   Length of side A.
- * @param b   Length of side B.
- * @param c   Length of side C.
- * @returns   Area of the triangle (number) or NaN if the sides
- *            don’t form a valid triangle.
+ * @param array   – the array to sort
+ * @param compare – a comparator returning a negative number if a < b,
+ *                  zero if a == b, and a positive number otherwise.
+ *
+ * @returns a NEW sorted array; the input array is left untouched.
  */
-export function areaFromSides(a: number, b: number, c: number): number {
-  // Basic validation – all sides must be positive
-  if (a <= 0 || b <= 0 || c <= 0) {
-    throw new Error("All side lengths must be positive numbers.");
+export function mergeSort<T>(array: T[], compare: (a: T, b: T) => number): T[] {
+  // Base case: arrays of length 0 or 1 are already sorted
+  if (array.length <= 1) {
+    return array.slice();          // shallow copy to stay pure
   }
 
-  // Triangle inequality check – else area calculation would
-  // produce NaN or a negative under the radicand.
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error("The provided side lengths do not form a valid triangle.");
-  }
+  const mid = Math.floor(array.length / 2);
+  const left  = array.slice(0, mid);
+  const right = array.slice(mid);
 
-  const s = (a + b + c) / 2;
-  const radicand = s * (s - a) * (s - b) * (s - c);
+  // Sort each half and merge
+  const sortedLeft  = mergeSort(left,  compare);
+  const sortedRight = mergeSort(right, compare);
 
-  return Math.sqrt(radicand);
+  return merge(sortedLeft, sortedRight, compare);
 }
-import { areaFromBaseHeight, areaFromSides } from "./triangle-utils";
 
-const base = 10;
-const height = 6;
-console.log(areaFromBaseHeight(base, height)); // 30
+/* ---------------------------------------------------------
+   Example usage:
+   ---------------------------------------------------------
 
-const a = 7, b = 10, c = 5;
-console.log(areaFromSides(a, b, c));           // ≈ 17.89
+   // Numeric sort (ascending)
+   const numbers = [32, 5, 73, 1, 42];
+   const sortedNumbers = mergeSort(numbers, (a, b) => a - b);
+
+   // String sort by length
+   const words = ["banana", "apple", "fig", "cherry"];
+   const sortedByLength = mergeSort(words, (a, b) => a.length - b.length);
+   -------------------------------------------------------- */
