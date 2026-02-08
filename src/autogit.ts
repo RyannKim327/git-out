@@ -1,43 +1,23 @@
-interface BinaryTreeNode<T = number> {
-  val: T;                  // The payload – can be any type you need
-  left?: BinaryTreeNode<T>;
-  right?: BinaryTreeNode<T>;
-}
-function maxDepthRecursive<T>(root?: BinaryTreeNode<T>): number {
-  if (!root) return 0; // An empty tree has depth 0
+const numbers: number[] = [34, 7, 23, 32, 5, 62];
 
-  const leftDepth  = maxDepthRecursive(root.left);
-  const rightDepth = maxDepthRecursive(root.right);
-
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthBFS<T>(root?: BinaryTreeNode<T>): number {
-  if (!root) return 0;
-
-  const queue: Array<{ node: BinaryTreeNode<T>; depth: number }> = [{ node: root, depth: 1 }];
-  let maxDepth = 0;
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!; // Non‑null assertion: queue never empty here
-    maxDepth = Math.max(maxDepth, depth);
-
-    if (node.left)  queue.push({ node: node.left, depth: depth + 1 });
-    if (node.right) queue.push({ node: node.right, depth: depth + 1 });
+// 1️⃣ Basic MDN‑style numeric sort
+const sorted = numbers.slice().sort((a, b) => a - b);
+console.log(sorted); // [5, 7, 23, 32, 34, 62]
+[34, 7, 23, 32, 5, 62].sort(); // [23, 32, 34, 5, 62, 7]
+const descending = numbers.slice().sort((a, b) => b - a);
+console.log(descending); // [62, 34, 32, 23, 7, 5]
+function insertionSort(arr: number[]): number[] {
+  const res = arr.slice();
+  for (let i = 1; i < res.length; i++) {
+    let key = res[i];
+    let j = i - 1;
+    while (j >= 0 && res[j] > key) {
+      res[j + 1] = res[j];
+      j--;
+    }
+    res[j + 1] = key;
   }
-
-  return maxDepth;
+  return res;
 }
-// Example tree:
-//        1
-//       / \
-//      2   3
-//     /
-//    4
-const tree: BinaryTreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3 }
-};
 
-console.log(maxDepthRecursive(tree)); // 3
-console.log(maxDepthBFS(tree));       // 3
+console.log(insertionSort(numbers)); // same sorted output
