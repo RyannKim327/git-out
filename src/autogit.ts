@@ -1,54 +1,57 @@
-/**
- * Recursively searches for `target` in a sorted numeric array.
- *
- * @param arr    The sorted array to search.
- * @param target The value we’re looking for.
- * @param low    The lower bound index for the current search window.
- * @param high   The upper bound index for the current search window.
- * @returns The index of `target` in `arr`, or -1 if it’s absent.
- */
-function binarySearchRec(
-  arr: number[],
-  target: number,
-  low: number = 0,
-  high: number = arr.length - 1
-): number {
-  // Base case: window collapsed → not found.
-  if (low > high) return -1;
+function secondLargestSort(arr: number[]): number | null {
+  // Defensive copy so we don’t mutate the caller’s data
+  const sorted = [...arr].sort((a, b) => b - a); // descending
 
-  const mid = Math.floor((low + high) / 2);
-  const midVal = arr[mid];
+  // Find the first element that isn’t equal to the maximum
+  let i = 1;
+  while (i < sorted.length && sorted[i] === sorted[0]) {
+    i++;
+  }
 
-  if (midVal === target) return mid;           // Found!
-  if (midVal < target)
-    return binarySearchRec(arr, target, mid + 1, high); // Search right half
-  else
-    return binarySearchRec(arr, target, low, mid - 1);  // Search left half
+  return i < sorted.length ? sorted[i] : null;
 }
-const sorted = [1, 4, 7, 9, 12, 18, 25];
+console.log(secondLargestSort([3, 1, 4, 4, 5])); // 4
+console.log(secondLargestSort([10]));            // null
+function secondLargestTwoPass(arr: number[]): number | null {
+  if (arr.length < 2) return null;
 
-console.log(binarySearchRec(sorted, 9));  // → 3
-console.log(binarySearchRec(sorted, 5));  // → -1 (not present)
-function binarySearchRecGeneric<T>(
-  arr: T[],
-  target: T,
-  compare: (a: T, b: T) => number,  // Returns <0, 0, >0
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (low > high) return -1;
+  let max = -Infinity;
+  let secondMax = -Infinity;
 
-  const mid = Math.floor((low + high) / 2);
-  const cmp = compare(arr[mid], target);
+  // First pass: find the maximum
+  for (const v of arr) {
+    if (v > max) max = v;
+  }
 
-  if (cmp === 0) return mid;
-  if (cmp < 0)   return binarySearchRecGeneric(arr, target, compare, mid + 1, high);
-  return binarySearchRecGeneric(arr, target, compare, low, mid - 1);
+  // Second pass: find the largest value that is < max
+  for (const v of arr) {
+    if (v < max && v > secondMax) secondMax = v;
+  }
+
+  return secondMax === -Infinity ? null : secondMax;
 }
-const names = ['Alice', 'Bob', 'Charlie', 'Diana'];
-const idx = binarySearchRecGeneric(
-  names,
-  'Charlie',
-  (a, b) => a.localeCompare(b)   // Comparator
-);
-console.log(idx); // → 2
+console.log(secondLargestTwoPass([7, 3, 9, 1, 9])); // 7
+function secondLargest(arr: number[]): number | null {
+  if (arr.length < 2) return null;
+
+  let max = -Infinity;
+  let secondMax = -Infinity;
+
+  for (const v of arr) {
+    if (v > max) {
+      secondMax = max; // the old max becomes second max
+      max = v;
+    } else if (v < max && v > secondMax) {
+      secondMax = v;
+    }
+  }
+
+  return secondMax === -Infinity ? null : secondMax;
+}
+console.log(secondLargest([5, 12, 7, 12, 9]));   // 9
+console.log(secondLargest([3]));                // null
+console.log(secondLargest([2, 2, 2]));          // null (no distinct second largest)
+function findSecondLargest(arr: number[]): number | null {
+  // Pick whichever implementation feels best
+  return secondLargest(arr);
+}
