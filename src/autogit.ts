@@ -1,78 +1,87 @@
-// 1️⃣  A tiny node definition
-interface ListNode<T> {
-  val: T;
-  next?: ListNode<T>;
-}
-
-// 2️⃣  Helper: walk a list and collect values (for demo)
-const listToArray = <T>(head: ListNode<T> | undefined): T[] => {
-  const arr: T[] = [];
-  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
-  return arr;
-};
-
-// 3️⃣  The trick: two pointers, fast and slow
-function middle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  if (!head) return undefined; // empty list—no middle
-
-  let fast = head;
-  let slow = head;
-
-  // advance fast every two steps, slow every one
-  while (fast.next && fast.next.next) {
-    fast = fast.next.next; // jump 2
-    slow = slow.next as ListNode<T>; // jump 1
+/**
+ * Returns the maximum sum of any contiguous sub‑array.
+ *
+ * @param arr – array of numbers (may contain negatives)
+ * @returns {number} maximum sub‑array sum
+ */
+export function maxSubArraySum(arr: number[]): number {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
   }
 
-  // If fast has a next (odd length), move slow one more
-  if (fast.next) slow = slow.next as ListNode<T>;
+  // init both with first element: handles all‑negative cases nicely
+  let currentBest = arr[0];
+  let globalBest = arr[0];
 
-  return slow;
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
+
+    // Either extend the previous sub‑array or start fresh at value
+    currentBest = Math.max(value, currentBest + value);
+
+    // Keep the best seen so far
+    globalBest = Math.max(globalBest, currentBest);
+  }
+
+  return globalBest;
+}
+const testSets = [
+  { arr: [1, -2, 3, 4, -5, 8], expect: 10 },
+  { arr: [-2, -3, -1, -4], expect: -1 },
+  { arr: [2, 3, 1, 6], expect: 12 },
+  { arr: [5, -1, 2, 3], expect: 9 },
+  { arr: [1], expect: 1 },
+];
+
+for (const { arr, expect } of testSets) {
+  const result = maxSubArraySum(arr);
+  console.log(`arr: ${arr} → max sum: ${result} (${result === expect ? '✓' : '✗'})`);
+}
+arr: 1,-2,3,4,-5,8 → max sum: 10 (✓)
+arr: -2,-3,-1,-4 → max sum: -1 (✓)
+arr: 2,3,1,6 → max sum: 12 (✓)
+arr: 5,-1,2,3 → max sum: 9 (✓)
+arr: 1 → max sum: 1 (✓)
+interface MaxSubArrayResult {
+  sum: number;
+  start: number;
+  end: number;   // inclusive
 }
 
-// 4️⃣  Demo: build a list so we can see it in action
-const nodes: ListNode<number>[] = [1, 2, 3, 4, 5].map(
-  (v) => ({ val: v })
-);
-for (let i = 0; i < nodes.length - 1; i++) nodes[i].next = nodes[i + 1];
-const head = nodes[0];
+export function maxSubArraySumWithIndices(arr: number[]): MaxSubArrayResult {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
+  }
 
-console.log("Full list:", listToArray(head));         // 1,2,3,4,5
-console.log("Middle node:", middle(head)?.val);        // 3
+  let currentBest = arr[0];
+  let globalBest = arr[0];
 
-// Try an even‑length list
-const even: ListNode<number>[] = [10, 20, 30, 40].map(
-  (v) => ({ val: v })
-);
-for (let i = 0; i < even.length - 1; i++) even[i].next = even[i + 1];
-console.log("Middle of even list:", middle(even)?.val); // 20 (or 30 if you prefer that half)
-class LinkedList<T> {
-  head?: ListNode<T>;
+  // working indices
+  let currentStart = 0;
+  let bestStart = 0;
+  let bestEnd = 0;
 
-  // push to the tail
-  push(val: T) {
-    const node: ListNode<T> = { val };
-    if (!this.head) {
-      this.head = node;
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
+
+    // decide whether to continue or start a new sub‑array
+    if (currentBest + value < value) {
+      currentBest = value;
+      currentStart = i;
     } else {
-      let cur = this.head;
-      while (cur.next) cur = cur.next;
-      cur.next = node;
+      currentBest += value;
+    }
+
+    // update global best if we found a better sum
+    if (currentBest > globalBest) {
+      globalBest = currentBest;
+      bestStart = currentStart;
+      bestEnd = i;
     }
   }
 
-  // returns the middle node (or the first of two middles for even length)
-  middle(): ListNode<T> | undefined {
-    return middle(this.head);
-  }
-
-  toArray(): T[] {
-    return listToArray(this.head);
-  }
+  return { sum: globalBest, start: bestStart, end: bestEnd };
 }
-
-// Usage:
-const ll = new LinkedList<number>();
-[1, 2, 3, 4, 5].forEach(v => ll.push(v));
-console.log(ll.toArray());       // [1,2,3,4,5]
-console.log(ll.middle()?.val);   // 3
+const { sum, start, end } = maxSubArraySumWithIndices([1, -2, 3, 4, -5, 8]);
+console.log(`max sum ${sum} from index ${start} to ${end}`);
+// → max sum 10 from index 2 to 5
