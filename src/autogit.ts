@@ -1,29 +1,87 @@
-/**
- * Returns true if `n` is a prime number.
- *
- * Rules:
- *   * 0 and 1 are **not** primes.
- *   * 2 is the only even prime.
- *   * For any other number, test divisibility up to √n.
- *
- * NOTE: This is a classic, “trial‑division” algorithm
- * and is fast enough for numbers that fit comfortably
- * in a JavaScript `number`. If you need to handle millisecond‑length
- * big‑ints, consider a probabilistic test like Miller‑Rabin.
- */
-function isPrime(n: number): boolean {
-  if (n < 2) return false;         // 0, 1, and negative numbers are not prime
-  if (n === 2) return true;        // 2 is prime
-  if (n % 2 === 0) return false;   // even numbers larger than 2 are not prime
+// A directed graph: adjacency list
+type Graph = Record<string, string[]>;
 
-  const limit = Math.floor(Math.sqrt(n));
-  for (let divisor = 3; divisor <= limit; divisor += 2) {
-    if (n % divisor === 0) return false;
+// Example: a tiny graph
+const graph: Graph = {
+  A: ["B"],
+  B: ["C"],
+  C: ["A", "D"],
+  D: ["C", "E"],
+  E: [],
+};
+/**
+ * Finds all strongly connected components of a directed graph.
+ * @param graph The adjacency list of the graph.
+ * @returns An array of SCCs; each SCC is an array of vertex IDs.
+ */
+function tarjanSCC(graph: Graph): string[][] {
+  let index = 0;                     // global index counter
+  const stack: string[] = [];        // DFS stack
+  const onStack = new Set<string>(); // quick membership check
+
+  // Maps vertex → its index in DFS tree
+  const indices = new Map<string, number>();
+  // Maps vertex → its lowlink value
+  const lowlink = new Map<string, number>();
+  // Result: array of SCCs
+  const sccs: string[][] = [];
+
+  function strongConnect(v: string) {
+    // Step 1: set the depth index for v
+    indices.set(v, index);
+    lowlink.set(v, index);
+    index++;
+    stack.push(v);
+    onStack.add(v);
+
+    // Step 2: consider each successor
+    for (const w of graph[v] ?? []) {
+      if (!indices.has(w)) {
+        // Successor w has not yet been visited; recurse on it.
+        strongConnect(w);
+        // After recursion: update lowlink of v
+        lowlink.set(v, Math.min(lowlink.get(v)!, lowlink.get(w)!));
+      } else if (onStack.has(w)) {
+        // Successor w is in stack → part of current SCC
+        lowlink.set(v, Math.min(lowlink.get(v)!, indices.get(w)!));
+      }
+    }
+
+    // Step 3: If v is a root node, pop the stack and generate an SCC
+    if (lowlink.get(v)! === indices.get(v)!) {
+      const scc: string[] = [];
+      let w: string | undefined;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        scc.push(w);
+      } while (w !== v);
+      sccs.push(scc);
+    }
   }
-  return true;
+
+  // Kick off DFS for each vertex that hasn't been visited yet
+  for (const v of Object.keys(graph)) {
+    if (!indices.has(v)) {
+      strongConnect(v);
+    }
+  }
+
+  return sccs;
 }
-console.log(isPrime(2));   // true
-console.log(isPrime(9));   // false
-console.log(isPrime(13));  // true
-console.log(isPrime(1_000_003)); // true (prime just over a million)
-Time to test 1 000 000 numbers (≈ 5–6 ms in Node.js)
+const sccs = tarjanSCC(graph);
+console.log("Strongly connected components:");
+sccs.forEach((scc, i) => {
+  console.log(`  ${i + 1}. [${scc.join(", ")}]`);
+});
+Strongly connected components:
+  1. [A, C, B]
+  2. [E]
+  3. [D]
+type Vertex = number;
+
+// * Update the graph type:
+type Graph = Record<Vertex, Vertex[]>;
+
+// * Replace string‑specific typing in the function:
+function tarjanSCC(graph: Graph): Vertex[][] { ... }
