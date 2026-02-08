@@ -1,78 +1,48 @@
-// 1️⃣  A tiny node definition
-interface ListNode<T> {
-  val: T;
-  next?: ListNode<T>;
-}
+/**
+ * Returns the longest common subsequence (LCS) of two strings.
+ * @param a First string
+ * @param b Second string
+ * @returns { subsequence: string; length: number }
+ */
+function longestCommonSubsequence(a: string, b: string) {
+  const m = a.length;
+  const n = b.length;
 
-// 2️⃣  Helper: walk a list and collect values (for demo)
-const listToArray = <T>(head: ListNode<T> | undefined): T[] => {
-  const arr: T[] = [];
-  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
-  return arr;
-};
+  // 1. Build DP matrix (m+1) x (n+1) filled with 0
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-// 3️⃣  The trick: two pointers, fast and slow
-function middle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  if (!head) return undefined; // empty list—no middle
-
-  let fast = head;
-  let slow = head;
-
-  // advance fast every two steps, slow every one
-  while (fast.next && fast.next.next) {
-    fast = fast.next.next; // jump 2
-    slow = slow.next as ListNode<T>; // jump 1
-  }
-
-  // If fast has a next (odd length), move slow one more
-  if (fast.next) slow = slow.next as ListNode<T>;
-
-  return slow;
-}
-
-// 4️⃣  Demo: build a list so we can see it in action
-const nodes: ListNode<number>[] = [1, 2, 3, 4, 5].map(
-  (v) => ({ val: v })
-);
-for (let i = 0; i < nodes.length - 1; i++) nodes[i].next = nodes[i + 1];
-const head = nodes[0];
-
-console.log("Full list:", listToArray(head));         // 1,2,3,4,5
-console.log("Middle node:", middle(head)?.val);        // 3
-
-// Try an even‑length list
-const even: ListNode<number>[] = [10, 20, 30, 40].map(
-  (v) => ({ val: v })
-);
-for (let i = 0; i < even.length - 1; i++) even[i].next = even[i + 1];
-console.log("Middle of even list:", middle(even)?.val); // 20 (or 30 if you prefer that half)
-class LinkedList<T> {
-  head?: ListNode<T>;
-
-  // push to the tail
-  push(val: T) {
-    const node: ListNode<T> = { val };
-    if (!this.head) {
-      this.head = node;
-    } else {
-      let cur = this.head;
-      while (cur.next) cur = cur.next;
-      cur.next = node;
+  // 2. Fill DP matrix
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
   }
 
-  // returns the middle node (or the first of two middles for even length)
-  middle(): ListNode<T> | undefined {
-    return middle(this.head);
+  // 3. Back‑track to rebuild the subsequence
+  let i = m, j = n;
+  const subseq: string[] = [];
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      subseq.push(a[i - 1]); // same char belongs to LCS
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;            // move up
+    } else {
+      j--;            // move left
+    }
   }
 
-  toArray(): T[] {
-    return listToArray(this.head);
-  }
+  return {
+    subsequence: subseq.reverse().join(''),
+    length: dp[m][n]
+  };
 }
 
-// Usage:
-const ll = new LinkedList<number>();
-[1, 2, 3, 4, 5].forEach(v => ll.push(v));
-console.log(ll.toArray());       // [1,2,3,4,5]
-console.log(ll.middle()?.val);   // 3
+// Quick demo
+const { subsequence, length } = longestCommonSubsequence('AGCAT', 'GAC');
+console.log(`Longest common subsequence: ${subsequence} (length ${length})`);
