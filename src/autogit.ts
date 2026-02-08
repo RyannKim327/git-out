@@ -1,87 +1,48 @@
-/**
- * Returns the maximum sum of any contiguous sub‑array.
- *
- * @param arr – array of numbers (may contain negatives)
- * @returns {number} maximum sub‑array sum
- */
-export function maxSubArraySum(arr: number[]): number {
-  if (arr.length === 0) {
-    throw new Error('Array must contain at least one element');
-  }
+// emailValidator.ts
+export function isEmail(str: string): boolean {
+  // RFC‑5322 allows a very wide set of characters.  For most apps a
+  // simpler “+ followed by domain” style rule is good enough.
+  // This expression is a commonly‑accepted compromise:
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  // init both with first element: handles all‑negative cases nicely
-  let currentBest = arr[0];
-  let globalBest = arr[0];
-
-  for (let i = 1; i < arr.length; i++) {
-    const value = arr[i];
-
-    // Either extend the previous sub‑array or start fresh at value
-    currentBest = Math.max(value, currentBest + value);
-
-    // Keep the best seen so far
-    globalBest = Math.max(globalBest, currentBest);
-  }
-
-  return globalBest;
+  return emailRe.test(str);
 }
-const testSets = [
-  { arr: [1, -2, 3, 4, -5, 8], expect: 10 },
-  { arr: [-2, -3, -1, -4], expect: -1 },
-  { arr: [2, 3, 1, 6], expect: 12 },
-  { arr: [5, -1, 2, 3], expect: 9 },
-  { arr: [1], expect: 1 },
-];
+export const strictEmailRe = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
+const tests: Record<string, boolean> = {
+  // pass
+  'user@example.com': true,
+  'user.name+tag@sub.domain.co.uk': true,
 
-for (const { arr, expect } of testSets) {
-  const result = maxSubArraySum(arr);
-  console.log(`arr: ${arr} → max sum: ${result} (${result === expect ? '✓' : '✗'})`);
-}
-arr: 1,-2,3,4,-5,8 → max sum: 10 (✓)
-arr: -2,-3,-1,-4 → max sum: -1 (✓)
-arr: 2,3,1,6 → max sum: 12 (✓)
-arr: 5,-1,2,3 → max sum: 9 (✓)
-arr: 1 → max sum: 1 (✓)
-interface MaxSubArrayResult {
-  sum: number;
-  start: number;
-  end: number;   // inclusive
+  // fail
+  'user@': false,
+  '@example.com': false,
+  'user@@example.com': false,
+  'user example@example.com': false,
+  'user@.com': false,
+  '': false,
+};
+
+for (const [addr, expected] of Object.entries(tests)) {
+  const result = isEmail(addr);
+  console.assert(result === expected, `❌ ${addr}: expected ${expected}, got ${result}`);
 }
 
-export function maxSubArraySumWithIndices(arr: number[]): MaxSubArrayResult {
-  if (arr.length === 0) {
-    throw new Error('Array must contain at least one element');
-  }
+console.log('All test cases passed!');
+import { useForm } from 'react-hook-form';
 
-  let currentBest = arr[0];
-  let globalBest = arr[0];
+function MyForm() {
+  const { register, handleSubmit, formState: { errors } } = useForm();
 
-  // working indices
-  let currentStart = 0;
-  let bestStart = 0;
-  let bestEnd = 0;
+  const onSubmit = data => console.log('Valid email:', data.email);
 
-  for (let i = 1; i < arr.length; i++) {
-    const value = arr[i];
-
-    // decide whether to continue or start a new sub‑array
-    if (currentBest + value < value) {
-      currentBest = value;
-      currentStart = i;
-    } else {
-      currentBest += value;
-    }
-
-    // update global best if we found a better sum
-    if (currentBest > globalBest) {
-      globalBest = currentBest;
-      bestStart = currentStart;
-      bestEnd = i;
-    }
-  }
-
-  return { sum: globalBest, start: bestStart, end: bestEnd };
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input
+        {...register('email', { validate: isEmail })}
+        placeholder="email@example.com"
+      />
+      {errors.email && <p>Email is not valid.</p>}
+      <button type="submit">Submit</button>
+    </form>
+  );
 }
-const { sum, start, end } = maxSubArraySumWithIndices([1, -2, 3, 4, -5, 8]);
-console.log(`max sum ${sum} from index ${start} to ${end}`);
-// → max sum 10 from index 2 to 5
