@@ -1,71 +1,32 @@
 /**
- * Forward Burrows‑Wheeler Transform.
+ * Bubble sort – compares adjacent elements and swaps them if they're out of order.
  *
- * @param text – input string
- * @returns {lastColumn, originalIndex}
- *   • lastColumn  – the BWT string (the last column of the sorted rotations)
- *   • originalIndex – position of the original string in the sorted list
+ * @param arr – The array of numbers (or any type that implements `<`),
+ *              sorted in place and also returned for convenience.
+ * @returns The sorted array.
  */
-export function bwt(text: string): { lastColumn: string; originalIndex: number } {
-  const n = text.length;
-  const rotations = new Array<string>(n);
+export function bubbleSort<T>(arr: T[]): T[] {
+  const n = arr.length;
 
-  // Build all cyclic rotations
-  for (let i = 0; i < n; i++) {
-    rotations[i] = text.slice(i) + text.slice(0, i);
+  // Outer loop – each pass guarantees that the largest element among the
+  // unsorted portion moves to its final position at the end of the array.
+  for (let i = 0; i < n - 1; i++) {
+    // Inner loop – only needs to run up to the last unsorted element.
+    for (let j = 0; j < n - i - 1; j++) {
+      // If the current element is greater than the next one, swap them.
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+      }
+    }
   }
 
-  // Sort rotations lexicographically
-  rotations.sort();
-
-  // Grab last character of each rotation and remember where the original text ended up
-  let lastColumn = '';
-  let originalIndex = -1;
-  for (let i = 0; i < n; i++) {
-    const rot = rotations[i];
-    lastColumn += rot[rot.length - 1];
-    if (rot === text) originalIndex = i;
-  }
-
-  return { lastColumn, originalIndex };
+  return arr;
 }
+import { bubbleSort } from './bubbleSort';
 
-/**
- * Inverse Burrows‑Wheeler Transform.
- *
- * @param lastColumn  – BWT string (result of the forward transform)
- * @param originalIndex – index returned by the forward transform
- * @returns original input string
- */
-export function inverseBwt(lastColumn: string, originalIndex: number): string {
-  const n = lastColumn.length;
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log('Before:', numbers);
 
-  // Build the first column by sorting the last column
-  const firstColumn = [...lastColumn].sort().join('');
+bubbleSort(numbers);
 
-  // Build a map from character to its deque of positions in the last column
-  const charQueues: Record<string, number[]> = {};
-  for (let i = 0; i < n; i++) {
-    const c = lastColumn[i];
-    if (!charQueues[c]) charQueues[c] = [];
-    charQueues[c].push(i);
-  }
-
-  // Reconstruct the original string
-  let result = '';
-  let idx = originalIndex;
-  for (let i = 0; i < n; i++) {
-    const c = firstColumn[idx];
-    result += c;
-    // The row that had c in the last column is the next idx
-    idx = charQueues[c].shift()!;
-  }
-
-  return result;
-}
-const { lastColumn, originalIndex } = bwt('BANANA');
-console.log(lastColumn);          // 'ANNBAA'
-console.log(originalIndex);       // 3
-
-const original = inverseBwt(lastColumn, originalIndex);
-console.log(original);            // 'BANANA'
+console.log('After:', numbers);   // [11, 12, 22, 25, 34, 64, 90]
