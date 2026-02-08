@@ -1,74 +1,34 @@
-interface Node<T> {
-  /** opaque identifier used for duplicate detection – e.g. a stringified board state */
-  id: string;
-  /** whatever data you want to keep (state, metadata, …) */
-  data: T;
-  /** produces the succ­esor nodes */
-  getChildren(): Iterable<Node<T>>;
-}
-function dls<T>(
-  node: Node<T>,
-  goalTest: (n: Node<T>) => boolean,
-  limit: number,
-  visited = new Set<string>()
-): Node<T> | null {
-  if (goalTest(node)) return node;
-  if (limit <= 0) return null;          // terminal depth reached
-  visited.add(node.id);                 // prevent revisiting
+function isAnagramSort(a: string, b: string): boolean {
+  // Normalize (optional – depends on your use‑case)
+  const normalize = (s: string) =>
+    s.replace(/\s+/g, '').toLowerCase(); // trim spaces, lower‑case
 
-  for (const child of node.getChildren()) {
-    if (!visited.has(child.id)) {
-      const result = dls(child, goalTest, limit - 1, visited);
-      if (result !== null) return result;
-    }
+  const sa = normalize(a).split('').sort().join('');
+  const sb = normalize(b).split('').sort().join('');
+
+  return sa === sb;
+}
+function isAnagramMap(a: string, b: string): boolean {
+  // Quick length check (no need to normalize again here)
+  if (a.length !== b.length) return false;
+
+  const count = new Map<string, number>();
+
+  for (let i = 0; i < a.length; i++) {
+    const ca = a[i];
+    const cb = b[i];
+
+    count.set(ca, (count.get(ca) || 0) + 1);
+    count.set(cb, (count.get(cb) || 0) - 1);
   }
-  return null; // no goal found within limit
-}
-function dlsIter<T>(
-  start: Node<T>,
-  goalTest: (n: Node<T>) => boolean,
-  limit: number
-): Node<T> | null {
-  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: start, depth: 0 }];
-  const visited = new Set<string>();
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    if (goalTest(node)) return node;
-    if (depth === limit) continue;      // hit the limit – skip children
-
-    visited.add(node.id);
-    for (const child of node.getChildren()) {
-      if (!visited.has(child.id)) {
-        stack.push({ node: child, depth: depth + 1 });
-      }
-    }
+  // All counts must net to 0
+  for (const val of count.values()) {
+    if (val !== 0) return false;
   }
-  return null;
+  return true;
 }
-class Coord {
-  constructor(public x: number, public y: number) {}
-}
-
-class MazeCell implements Node<Coord> {
-  constructor(
-    public id: string,
-    public data: Coord,
-    private neighbors: readonly Coord[]
-  ) {}
-
-  getChildren(): Iterable<Node<Coord>> {
-    return this.neighbors.map(
-      n => new MazeCell(String(n.x) + ',' + n.y, n, [] /* placeholder */)
-    );
-  }
-}
-
-// Setup: build maze, decide start & goal
-const start = new MazeCell('0,0', new Coord(0, 0), [new Coord(1, 0), new Coord(0, 1)]);
-const isGoal = (n: Node<Coord>) => n.data.x === 5 && n.data.y === 5;
-
-// Run:
-const found = dls(start, isGoal, 10);
-if (found) console.log('Found solution:', found.data);
-else console.log('no path within depth 10');
+const a = 'listen';
+const b = 'silent';
+console.log(isAnagramSort(a, b)); // true
+console.log(isAnagramMap(a, b));  // true
