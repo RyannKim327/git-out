@@ -1,16 +1,14 @@
-const str = "Hello, TypeScript world!";
+// Remove *every* whitespace (spaces, tabs, newlines, etc.)
+const clean = str.replace(/\s+/g, '');   // <-- compressed string
 
-console.log(str.includes("TypeScript")); // true
-console.log(str.indexOf("world") !== -1); // true
+// If you only want to trim the ends:
+const trimmed = str.trim();              // <-- removes leading/trailing whitespace
 
-// Case‑insensitive search
-const pattern = /typescript/i;
-console.log(pattern.test(str)); // true
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
+// If you want middle‑spaces only (keeping a single space between words):
+const condensed = str.replace(/\s+/g, ' ');
+const original = '  Hello   world \t this\nis  a test  ';
+const stripped = original.replace(/\s+/g, '');
+// stripped === 'Helloworldthisisatest'
 
-const sub = "a+b*?"; // contains regex meta‑chars
-const safePattern = new RegExp(escapeRegExp(sub), 'i');
-console.log(safePattern.test(str)); // correct result
-str.toLowerCase().includes(sub.toLowerCase());
+console.log(stripped);
+const stripped = original.split(/\s+/).join(''); // same result
