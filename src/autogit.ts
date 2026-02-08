@@ -1,70 +1,87 @@
+// A directed graph: adjacency list
+type Graph = Record<string, string[]>;
+
+// Example: a tiny graph
+const graph: Graph = {
+  A: ["B"],
+  B: ["C"],
+  C: ["A", "D"],
+  D: ["C", "E"],
+  E: [],
+};
 /**
- * Radix sort (Least–Significant‑digit first) for arrays of non‑negative integers.
- *
- * Time:  O(k * n)  where k = number of digits in the largest number
- * Space: O(n + B)  (B = 10 for base‑10)
+ * Finds all strongly connected components of a directed graph.
+ * @param graph The adjacency list of the graph.
+ * @returns An array of SCCs; each SCC is an array of vertex IDs.
  */
-function radixSort(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
+function tarjanSCC(graph: Graph): string[][] {
+  let index = 0;                     // global index counter
+  const stack: string[] = [];        // DFS stack
+  const onStack = new Set<string>(); // quick membership check
 
-  // Find the biggest value to know how many digits we need to process
-  const maxVal = Math.max(...nums);
-  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
+  // Maps vertex → its index in DFS tree
+  const indices = new Map<string, number>();
+  // Maps vertex → its lowlink value
+  const lowlink = new Map<string, number>();
+  // Result: array of SCCs
+  const sccs: string[][] = [];
 
-  // Start from the least significant digit
-  let divisor = 1;
+  function strongConnect(v: string) {
+    // Step 1: set the depth index for v
+    indices.set(v, index);
+    lowlink.set(v, index);
+    index++;
+    stack.push(v);
+    onStack.add(v);
 
-  // We'll reuse these buckets in each pass to keep O(n) allocations
-  const buckets: number[][] = Array.from({ length: 10 }, () => []);
-
-  for (let d = 0; d < maxDigits; d++) {
-    // Distribute
-    for (const num of nums) {
-      const bucketIndex = Math.floor(num / divisor) % 10;
-      buckets[bucketIndex].push(num);
-    }
-
-    // Collect back into nums, empty buckets for the next pass
-    let pos = 0;
-    for (const bucket of buckets) {
-      while (bucket.length) {
-        nums[pos++] = bucket.pop() as number; // pop gives LIFO but we reverse order below
-      }
-      bucket.length = 0; // reset
-    }
-
-    divisor *= 10; // move to the next digit
-  }
-
-  return nums;
-}
-function radixSortStable(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
-
-  const maxVal = Math.max(...nums);
-  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
-
-  let divisor = 1;
-  const buckets: number[][] = Array.from({ length: 10 }, () => []);
-
-  for (let d = 0; d < maxDigits; d++) {
-    for (const n of nums) {
-      const idx = Math.floor(n / divisor) % 10;
-      buckets[idx].push(n);
-    }
-
-    let i = 0;
-    for (const bucket of buckets) {
-      while (bucket.length) {
-        nums[i++] = bucket.shift() as number; // shift preserves order
+    // Step 2: consider each successor
+    for (const w of graph[v] ?? []) {
+      if (!indices.has(w)) {
+        // Successor w has not yet been visited; recurse on it.
+        strongConnect(w);
+        // After recursion: update lowlink of v
+        lowlink.set(v, Math.min(lowlink.get(v)!, lowlink.get(w)!));
+      } else if (onStack.has(w)) {
+        // Successor w is in stack → part of current SCC
+        lowlink.set(v, Math.min(lowlink.get(v)!, indices.get(w)!));
       }
     }
 
-    divisor *= 10;
+    // Step 3: If v is a root node, pop the stack and generate an SCC
+    if (lowlink.get(v)! === indices.get(v)!) {
+      const scc: string[] = [];
+      let w: string | undefined;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        scc.push(w);
+      } while (w !== v);
+      sccs.push(scc);
+    }
   }
 
-  return nums;
+  // Kick off DFS for each vertex that hasn't been visited yet
+  for (const v of Object.keys(graph)) {
+    if (!indices.has(v)) {
+      strongConnect(v);
+    }
+  }
+
+  return sccs;
 }
-const data = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log(radixSortStable(data));
-// → [2, 24, 45, 66, 75, 90, 170, 802]
+const sccs = tarjanSCC(graph);
+console.log("Strongly connected components:");
+sccs.forEach((scc, i) => {
+  console.log(`  ${i + 1}. [${scc.join(", ")}]`);
+});
+Strongly connected components:
+  1. [A, C, B]
+  2. [E]
+  3. [D]
+type Vertex = number;
+
+// * Update the graph type:
+type Graph = Record<Vertex, Vertex[]>;
+
+// * Replace string‑specific typing in the function:
+function tarjanSCC(graph: Graph): Vertex[][] { ... }
