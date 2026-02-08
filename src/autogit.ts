@@ -1,66 +1,17 @@
-/**
- * Checks whether the given string is a palindrome, ignoring case and
- * non‑alphanumeric characters.  It uses only constant extra space.
- *
- * @param s  The string to check.
- * @returns  true if `s` is a palindrome, false otherwise.
- */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+const numbers = [3, 42, 7, -1, 20];
+const biggest = Math.max(...numbers);
 
-  while (left < right) {
-    // Skip any *non*‑alphanumeric character on the left
-    while (left < right && !isAlphaNum(s.charCodeAt(left))) {
-      left++;
-    }
-    // Skip any *non*‑alphanumeric character on the right
-    while (left < right && !isAlphaNum(s.charCodeAt(right))) {
-      right--;
-    }
-
-    // If indices crossed after skipping, we're done
-    if (left >= right) break;
-
-    // Compare the characters case‑insensitively
-    const leftChar = s.charCodeAt(left);
-    const rightChar = s.charCodeAt(right);
-
-    if (normalize(leftChar) !== normalize(rightChar)) {
-      return false;
-    }
-
-    left++;
-    right--;
-  }
-
-  return true;
+console.log(biggest); // 42
+function findMax(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined; // or throw, or use null, whatever fits your API
+  return Math.max(...nums);
 }
-
-/**
- * Helper to test whether a character code is alphanumeric.
- */
-function isAlphaNum(code: number): boolean {
-  // 0-9
-  if (code >= 48 && code <= 57) return true;
-  // A-Z
-  if (code >= 65 && code <= 90) return true;
-  // a-z
-  if (code >= 97 && code <= 122) return true;
-  return false;
+const biggest = numbers.reduce((max, curr) => curr > max ? curr : max, -Infinity);
+function findMax(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  return nums.reduce((max, curr) => (curr > max ? curr : max));
 }
-
-/**
- * Normalises a character code to be lowercase ASCII when possible.
- * For Unicode other than ASCII it simply returns the original code.
- */
-function normalize(code: number): number {
-  // Convert uppercase A-Z to lowercase a-z
-  if (code >= 65 && code <= 90) {
-    return code + 32;
-  }
-  return code;
+function findMax<T extends readonly (number | null | undefined)[]>(arr: T): number | undefined {
+  const filtered = arr.filter(isFinite) as number[]; // strip out null/undefined if you like
+  return filtered.length ? Math.max(...filtered) : undefined;
 }
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("race a car"));                      // false
-console.log(isPalindrome("   abcba   "));                     // true
