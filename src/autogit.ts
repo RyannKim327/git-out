@@ -1,17 +1,37 @@
-const numbers = [3, 42, 7, -1, 20];
-const biggest = Math.max(...numbers);
+/**
+ * Normalises a string for anagram comparison:
+ *  – removes whitespace
+ *  – drops non‑alphanumeric chars
+ *  – lower‑cases everything
+ *  – sorts the remaining characters
+ */
+const normalise = (s: string): string =>
+  s
+    .replace(/[^a-z0-9]/gi, '')   // keep letters & digits only
+    .toLowerCase()
+    .split('')
+    .sort()
+    .join('');
 
-console.log(biggest); // 42
-function findMax(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined; // or throw, or use null, whatever fits your API
-  return Math.max(...nums);
-}
-const biggest = numbers.reduce((max, curr) => curr > max ? curr : max, -Infinity);
-function findMax(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;
-  return nums.reduce((max, curr) => (curr > max ? curr : max));
-}
-function findMax<T extends readonly (number | null | undefined)[]>(arr: T): number | undefined {
-  const filtered = arr.filter(isFinite) as number[]; // strip out null/undefined if you like
-  return filtered.length ? Math.max(...filtered) : undefined;
-}
+export const areAnagrams = (a: string, b: string): boolean =>
+  normalise(a) === normalise(b);
+console.log(areAnagrams('listen', 'silent'));   // true
+console.log(areAnagrams('Triangle', 'Integral')); // true
+console.log(areAnagrams('hello', 'world'));    // false
+export const areAnagramsMap = (a: string, b: string): boolean => {
+  const buildFreq = (s: string) => {
+    const freq: Record<string, number> = {};
+    for (const ch of s.replace(/[^a-z0-9]/gi, '').toLowerCase()) {
+      freq[ch] = (freq[ch] ?? 0) + 1;
+    }
+    return freq;
+  };
+
+  const freqA = buildFreq(a);
+  const freqB = buildFreq(b);
+
+  const keys = Object.keys(freqA);
+  if (keys.length !== Object.keys(freqB).length) return false;
+
+  return keys.every(k => freqA[k] === freqB[k]);
+};
