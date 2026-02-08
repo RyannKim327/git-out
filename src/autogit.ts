@@ -1,55 +1,56 @@
-/**
- * Selection sort – sorts an array in‑place in ascending order.
- *
- * @param array   The array to sort.  It will be mutated.
- * @param compare Callback used to decide order. If omitted, a natural
- *                ascending numeric/string comparison is used.
- * @returns The same array instance, now sorted.
- */
-export function selectionSort<T>(
-  array: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  const len = array.length;
+// ------------------------------------------------------------------
+// 1) Basic types – tweak these to match your own representation.
+// ------------------------------------------------------------------
+interface Node<T> {
+  /** Value that identifies the node – can be an id, a name, … */
+  id: string;
+  /** Children (or neighbours) – the graph may be directed or undirected. */
+  children?: Array<Node<T>>;
+}
 
-  // default comparer: numeric or string ascending
-  const cmp = compare ?? ((a: any, b: any) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
+// A very simple match predicate. Replace it with whatever checks your
+// problem needs (e.g. `node.id === targetId`).
+type MatchFn<T> = (node: Node<T>) => boolean;
 
-  for (let i = 0; i < len - 1; i++) {
-    // assume min at current position
-    let minIdx = i;
+// ------------------------------------------------------------------
+// 2) Depth‑limited search – iterative (uses an explicit stack).
+// ------------------------------------------------------------------
+export function depthLimitedSearch<T>(
+  start: Node<T>,          // The root (or any arbitrary start node)
+  match: MatchFn<T>,      // Predicate to decide if the node is a goal
+  limit: number            // Maximum depth that may be explored
+): Node<T> | null {
 
-    // find the smallest element in the unsorted portion
-    for (let j = i + 1; j < len; j++) {
-      if (cmp(array[j], array[minIdx]) < 0) {
-        minIdx = j;
-      }
+  // Stack holds tuples  : [current node, current depth]
+  const stack: Array<[Node<T>, number]> = [[start, 0]];
+
+  while (stack.length > 0) {
+    const [node, depth] = stack.pop()!;   // `!` is safe – we just checked length
+
+    // 1️⃣  Goal check
+    if (match(node)) {
+      return node;
     }
 
-    // swap if we found a smaller element
-    if (minIdx !== i) {
-      const temp = array[i];
-      array[i] = array[minIdx];
-      array[minIdx] = temp;
+    // 2️⃣  Depth test – we only enqueue children if we still have room
+    if (depth < limit && node.children) {
+      // Push children onto stack – last child examined first (DFS order)
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        stack.push([node.children[i], depth + 1]);
+      }
     }
   }
 
-  return array;
+  // No goal found within the depth budget
+  return null;
 }
-// simple numeric sorting
-let nums = [64, 25, 12, 22, 11];
-selectionSort(nums);
-console.log(nums); // [11, 12, 22, 25, 64]
+const tree: Node<number> = {
+  id: 'root',
+  children: [
+    { id: 'a', children: [{ id: 'a1' }, { id: 'a2' }] },
+    { id: 'b', children: [{ id: 'b1' }, { id: 'b2' }] },
+  ],
+};
 
-// sorting strings
-let words = ["banana", "avocado", "cherry"];
-selectionSort(words);
-console.log(words); // ["avocado", "banana", "cherry"]
-
-// custom comparator – descending numbers
-selectionSort(nums, (a, b) => b - a);
-console.log(nums); // [64, 25, 22, 12, 11]
+const found = depthLimitedSearch(tree, node => node.id === 'a2', /* limit */ 2);
+console.log(found?.id ?? 'not found'); // → a2
