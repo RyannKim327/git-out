@@ -1,72 +1,71 @@
-// A single node in the list
-class Node<T> {
-  constructor(public value: T, public next: Node<T> | null = null) {}
-}
+/**
+ * Heap‑sort – sorts an array of numbers in ascending order.
+ * The algorithm works in O(n log n) time and O(1) extra space (in‑place).
+ *
+ * @param arr The array to sort – it will be mutated.
+ */
+export function heapSort(arr: number[]): void {
+  const n = arr.length;
 
-// The queue itself
-export class LinkedListQueue<T> {
-  // Keep refs to both ends so that enqueue/dequeue stay constant‑time
-  private head: Node<T> | null = null; // points to first element
-  private tail: Node<T> | null = null; // points to last element
-  private _size = 0;
-
-  /** Adds a value to the back of the queue */
-  enqueue(value: T): void {
-    const newNode = new Node(value);
-    if (this.tail) {
-      this.tail.next = newNode;   // link the old tail to the new node
-      this.tail = newNode;        // new node becomes the new tail
-    } else {
-      // Queue was empty – head and tail are the same node now
-      this.head = this.tail = newNode;
-    }
-    this._size++;
+  // Step 1. Build a max‑heap.
+  // The last non‑leaf node is at floor(n/2) - 1.
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+    siftDown(arr, i, n);
   }
 
-  /** Removes and returns the value from the front of the queue.
-      Throws an error if the queue is empty. */
-  dequeue(): T {
-    if (!this.head) {
-      throw new Error('Cannot dequeue from an empty queue');
-    }
-    const value = this.head.value;
-    this.head = this.head.next; // move head forward
-    if (!this.head) {
-      // Queue became empty, so tail must also be null
-      this.tail = null;
-    }
-    this._size--;
-    return value;
-  }
-
-  /** Peeks at the front value without removing it. */
-  peek(): T | null {
-    return this.head?.value ?? null;
-  }
-
-  /** Returns true if the queue contains no elements. */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Current number of elements */
-  size(): number {
-    return this._size;
+  // Step 2. Repeatedly extract the maximum element.
+  for (let end = n - 1; end > 0; end--) {
+    swap(arr, 0, end);          // Move current max to its final position.
+    siftDown(arr, 0, end);      // Restore heap property for the reduced heap.
   }
 }
-import { LinkedListQueue } from './LinkedListQueue';
 
-const q = new LinkedListQueue<number>();
+/**
+ * Restores the max‑heap property by sifting a node downwards.
+ *
+ * @param heap  The heap array.
+ * @param start Index of the node to sift down.
+ * @param size  The current size of the heap (elements >= size are already sorted).
+ */
+function siftDown(heap: number[], start: number, size: number): void {
+  let root = start;
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+  while (true) {
+    const left = 2 * root + 1;   // Left child index.
+    const right = left + 1;      // Right child index.
+    let largest = root;
 
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size());    // 1
-console.log(q.isEmpty()); // false
+    // If left child exists and is greater than root.
+    if (left < size && heap[left] > heap[largest]) {
+      largest = left;
+    }
 
-q.dequeue();          // removes 30
-console.log(q.isEmpty()); // true
+    // If right child exists and is greater than current largest.
+    if (right < size && heap[right] > heap[largest]) {
+      largest = right;
+    }
+
+    // If root is already the largest, the heap property holds.
+    if (largest === root) break;
+
+    // Swap root with the larger child and continue sifting down.
+    swap(heap, root, largest);
+    root = largest;
+  }
+}
+
+/**
+ * Utility to swap two elements in an array.
+ *
+ * @param a    Array containing the elements.
+ * @param i    Index of the first element.
+ * @param j    Index of the second element.
+ */
+function swap(a: number[], i: number, j: number): void {
+  const tmp = a[i];
+  a[i] = a[j];
+  a[j] = tmp;
+}
+const data = [5, 3, 8, 4, 1, 2];
+heapSort(data);
+console.log(data);  // → [1, 2, 3, 4, 5, 8]
