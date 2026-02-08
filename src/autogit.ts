@@ -1,34 +1,33 @@
-function isAnagramSort(a: string, b: string): boolean {
-  // Normalize (optional – depends on your use‑case)
-  const normalize = (s: string) =>
-    s.replace(/\s+/g, '').toLowerCase(); // trim spaces, lower‑case
+/**
+ * Returns the index of the first non‑repeating character.
+ * If every character repeats, returns -1.
+ *
+ * @param s – the string to scan
+ */
+function firstNonRepeatingIndex(s: string): number {
+  // 1️⃣ Count how many times each character occurs
+  const freq = new Map<string, number>();
 
-  const sa = normalize(a).split('').sort().join('');
-  const sb = normalize(b).split('').sort().join('');
-
-  return sa === sb;
-}
-function isAnagramMap(a: string, b: string): boolean {
-  // Quick length check (no need to normalize again here)
-  if (a.length !== b.length) return false;
-
-  const count = new Map<string, number>();
-
-  for (let i = 0; i < a.length; i++) {
-    const ca = a[i];
-    const cb = b[i];
-
-    count.set(ca, (count.get(ca) || 0) + 1);
-    count.set(cb, (count.get(cb) || 0) - 1);
+  for (const ch of s) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  // All counts must net to 0
-  for (const val of count.values()) {
-    if (val !== 0) return false;
+  // 2️⃣ Scan again from the start, picking the first that has count 1
+  for (let i = 0; i < s.length; i++) {
+    if (freq.get(s[i]) === 1) {
+      return i;    // return the index, you can return the character with s[i]
+    }
   }
-  return true;
+
+  return -1; // no unique character found
 }
-const a = 'listen';
-const b = 'silent';
-console.log(isAnagramSort(a, b)); // true
-console.log(isAnagramMap(a, b));  // true
+
+// Demo
+const txt = "mybobby";
+const idx = firstNonRepeatingIndex(txt);
+
+if (idx >= 0) {
+  console.log(`First non‑repeating char: '${txt[idx]}' at position ${idx}`);
+} else {
+  console.log("All characters repeat");
+}
