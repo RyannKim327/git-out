@@ -1,13 +1,13 @@
-/**
- * Calculate the mean (average) of an array of numbers.
- *
- * @param data - a non‑empty array of numbers
- * @returns the mean, or NaN if the array is empty
- */
-function mean(data: number[]): number {
-  if (data.length === 0) return NaN;          // nothing to average
-  const total = data.reduce((sum, val) => sum + val, 0);
-  return total / data.length;
+const original = "Hello world! How are you?";
+const withoutSpaces = original.replace(/ /g, ""); // "Helloworld!Howareyou?"
+const original = "Hello \tworld!\u00A0How\nare you?"; // contains tab, non‑breaking space, newline
+const withoutAnyWhitespace = original.replace(/\s+/gu, "");
+// "Helloworld!Howareyou?"
+function stripAllWhitespace(str: string): string {
+  return str.replace(/\s+/gu, "");
 }
-const values = [4, 7, 9, 2];
-console.log(mean(values));   // → 5.5
+
+// Usage
+const clean = stripAllWhitespace("  Foo Bar\nBaz  ");
+console.log(clean); // "FooBarBaz"
+const cleaned = original.replace(/\s+/g, " ");  // collapse to single space
