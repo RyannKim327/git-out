@@ -1,32 +1,6 @@
-const uniq = <T>(arr: T[]): T[] => [...new Set(arr)];
-
-const numbers = [1, 2, 3, 2, 4, 1];
-console.log(uniq(numbers)); // [1, 2, 3, 4]
-const uniq = <T>(arr: T[]): T[] =>
-  arr.filter((value, index, self) => self.indexOf(value) === index);
-
-const words = ["a", "b", "a", "c", "b"];
-console.log(uniq(words)); // ["a", "b", "c"]
-const uniq = <T>(arr: T[]): T[] =>
-  arr.reduce((seen, val) => {
-    if (!seen.includes(val)) seen.push(val);
-    return seen;
-  }, [] as T[]);
-function uniqInPlace<T>(arr: T[]): void {
-  const seen = new Set<T>();
-  let writeIdx = 0;
-
-  for (const v of arr) {
-    if (!seen.has(v)) {
-      seen.add(v);
-      arr[writeIdx++] = v;
-    }
-  }
-
-  // Optional: truncate the array
-  arr.length = writeIdx;
+const original = "HeLLo WoRLd";
+const lower = original.toLowerCase();   // "hello world"
+const turkish = "Iİ".toLocaleLowerCase("tr-TR");  // "iı"
+function maybeLower(val?: string | null): string | undefined {
+  return val?.toLowerCase();   // returns undefined if val is null/undefined
 }
-
-const data = [5, 3, 5, 2, 3];
-uniqInPlace(data);
-console.log(data); // [5, 3, 2]
