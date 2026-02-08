@@ -1,68 +1,114 @@
-// A minimal list node
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null,
-  ) {}
-}
 /**
- * Reverses a linked list.
- * @param head The original list head.
- * @returns New head of the reversed list.
+ * A binary heap backed priority queue.
+ *
+ * The heap stores elements in a 0‑based array. For a node at index i:
+ *   left child   → 2*i + 1
+ *   right child  → 2*i + 2
+ *   parent       → Math.floor((i - 1) / 2)
  */
-export function reverseListIterative<T>(
-  head: ListNode<T> | null,
-): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let current = head;
+export class BinaryPriorityQueue<T> {
+  private data: T[] = [];
+  private readonly compare: (a: T, b: T) => number; // negative if a < b
 
-  while (current !== null) {
-    const next = current.next;   // remember the next node
-    current.next = prev;         // reverse the link
-    prev = current;              // move `prev` one step forward
-    current = next;              // advance to the next node
+  constructor(compare: (a: T, b: T) => number) {
+    this.compare = compare;
   }
 
-  return prev; // new head
-}
-/**
- * Reverses a linked list recursively.
- * @param node Current node being processed.
- * @returns New head of the reversed list.
- */
-export function reverseListRecursive<T>(
-  node: ListNode<T> | null,
-  newHead: ListNode<T> | null = null,
-): ListNode<T> | null {
-  if (node === null) return newHead;   // base case: original list exhausted
-
-  const next = node.next;              // keep reference to the next node
-  node.next = newHead;                 // attach current node before the “new head”
-  return reverseListRecursive(next, node);
-}
-// Helper to build a list from an array
-function buildList<T>(arr: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = new ListNode(arr[i], head);
+  /** Number of elements in the queue */
+  size(): number {
+    return this.data.length;
   }
-  return head;
+
+  /** Peek the element with the highest priority (root of the heap) */
+  peek(): T | undefined {
+    return this.data[0];
+  }
+
+  /** Insert a new element */
+  push(value: T): void {
+    this.data.push(value);
+    this.bubbleUp(this.data.length - 1);
+  }
+
+  /**
+   * Remove and return the element with the highest priority.
+   * Returns undefined if the queue is empty.
+   */
+  pop(): T | undefined {
+    if (!this.data.length) return undefined;
+
+    const root = this.data[0];
+    const last = this.data.pop()!; // safe because we checked length
+
+    if (this.data.length) {
+      this.data[0] = last;
+      this.sinkDown(0);
+    }
+
+    return root;
+  }
+
+  /** Remove all elements */
+  clear(): void {
+    this.data.length = 0;
+  }
+
+  /* --- Internals --- */
+
+  private bubbleUp(index: number): void {
+    const elem = this.data[index];
+    while (index > 0) {
+      const parentIdx = (index - 1) >> 1;
+      const parent = this.data[parentIdx];
+      if (this.compare(elem, parent) >= 0) break;
+      this.data[index] = parent;
+      index = parentIdx;
+    }
+    this.data[index] = elem;
+  }
+
+  private sinkDown(index: number): void {
+    const length = this.data.length;
+    const elem = this.data[index];
+
+    while (true) {
+      const leftIdx = (index << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let swapIdx = -1;
+
+      if (leftIdx < length) {
+        const left = this.data[leftIdx];
+        if (this.compare(left, elem) < 0) swapIdx = leftIdx;
+      }
+      if (rightIdx < length) {
+        const right = this.data[rightIdx];
+        const compareRight = this.compare(right, elem);
+        if (
+          (swapIdx === -1 && compareRight < 0) ||
+          (swapIdx !== -1 && compareRight < this.compare(this.data[swapIdx], elem))
+        ) {
+          swapIdx = rightIdx;
+        }
+      }
+
+      if (swapIdx === -1) break;
+      this.data[index] = this.data[swapIdx];
+      index = swapIdx;
+    }
+    this.data[index] = elem;
+  }
 }
+// Example: priority queue of numbers (min‑heap)
+const pq = new BinaryPriorityQueue<number>((a, b) => a - b);
 
-// Helper to turn a list back into an array (for easy checking)
-function listToArray<T>(head: ListNode<T> | null): T[] {
-  const result: T[] = [];
-  for (let cur = head; cur; cur = cur.next) result.push(cur.val);
-  return result;
-}
+pq.push(5);
+pq.push(1);
+pq.push(3);
 
-// Example usage
-const nums = [1, 2, 3, 4, 5];
-const list = buildList(nums);
+console.log(pq.peek()); // 1
+console.log(pq.pop());  // 1
+console.log(pq.pop());  // 3
+console.log(pq.pop());  // 5
+interface Task { id: number; priority: number; }
 
-const reversedIter = reverseListIterative(list);
-console.log(listToArray(reversedIter)); // [5,4,3,2,1]
-
-const original = buildList(nums); // rebuild, since the list was mutated
-const reversedRec = reverseListRecursive(original);
-console.log(listToArray(reversedRec)); // [5,4,3,2,1]
+const taskQueue = new BinaryPriorityQueue<Task>((a, b) => a.priority - b.priority);
