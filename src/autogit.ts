@@ -1,7 +1,14 @@
-function safeParseInt(s: string, radix = 10): number | undefined {
-  const n = parseInt(s, radix);
-  return isNaN(n) ? undefined : n;
-}
-const intVal = parseInt(myStr, 10); // for ordinary integers
-const floatVal = Number(myStr);     // for decimals, natural format
-const alt = +myStr;                 // the one‑liner version of Number
+// Remove *every* whitespace (spaces, tabs, newlines, etc.)
+const clean = str.replace(/\s+/g, '');   // <-- compressed string
+
+// If you only want to trim the ends:
+const trimmed = str.trim();              // <-- removes leading/trailing whitespace
+
+// If you want middle‑spaces only (keeping a single space between words):
+const condensed = str.replace(/\s+/g, ' ');
+const original = '  Hello   world \t this\nis  a test  ';
+const stripped = original.replace(/\s+/g, '');
+// stripped === 'Helloworldthisisatest'
+
+console.log(stripped);
+const stripped = original.split(/\s+/).join(''); // same result
