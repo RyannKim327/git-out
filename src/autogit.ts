@@ -1,75 +1,66 @@
-/** Build the "lps" (longest‑prefix‑which‑is‑also‑suffix) table for the pattern */
-function buildLPS(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let len = 0;              // length of previous longest prefix suffix
-  let i = 1;                // we start from the second character
+/**
+ * Checks whether the given string is a palindrome, ignoring case and
+ * non‑alphanumeric characters.  It uses only constant extra space.
+ *
+ * @param s  The string to check.
+ * @returns  true if `s` is a palindrome, false otherwise.
+ */
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      if (len !== 0) {
-        len = lps[len - 1];  // fallback in the pattern
-      } else {
-        lps[i] = 0;
-        i++;
-      }
+  while (left < right) {
+    // Skip any *non*‑alphanumeric character on the left
+    while (left < right && !isAlphaNum(s.charCodeAt(left))) {
+      left++;
     }
+    // Skip any *non*‑alphanumeric character on the right
+    while (left < right && !isAlphaNum(s.charCodeAt(right))) {
+      right--;
+    }
+
+    // If indices crossed after skipping, we're done
+    if (left >= right) break;
+
+    // Compare the characters case‑insensitively
+    const leftChar = s.charCodeAt(left);
+    const rightChar = s.charCodeAt(right);
+
+    if (normalize(leftChar) !== normalize(rightChar)) {
+      return false;
+    }
+
+    left++;
+    right--;
   }
-  return lps;
+
+  return true;
 }
 
-/** Find the first occurrence of `pattern` in `text` (returns -1 if not found) */
-function kmpSearch(text: string, pattern: string): number {
-  if (!pattern) return 0; // empty pattern matches at start
-
-  const lps = buildLPS(pattern);
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) return i - j; // match found
-    } else {
-      if (j !== 0) {
-        j = lps[j - 1]; // shift pattern without re‑examining matched chars
-      } else {
-        i++;           // no match, move on in the text
-      }
-    }
-  }
-  return -1; // no match
+/**
+ * Helper to test whether a character code is alphanumeric.
+ */
+function isAlphaNum(code: number): boolean {
+  // 0-9
+  if (code >= 48 && code <= 57) return true;
+  // A-Z
+  if (code >= 65 && code <= 90) return true;
+  // a-z
+  if (code >= 97 && code <= 122) return true;
+  return false;
 }
 
-/** Optional: return *all* starting indices of matches */
-function kmpAllMatches(text: string, pattern: string): number[] {
-  const indices: number[] = [];
-  if (!pattern) return [0];
-
-  const lps = buildLPS(pattern);
-  let i = 0, j = 0;
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) {
-        indices.push(i - j);
-        j = lps[j - 1]; // continue searching for next possible match
-      }
-    } else {
-      if (j !== 0) j = lps[j - 1];
-      else i++;
-    }
+/**
+ * Normalises a character code to be lowercase ASCII when possible.
+ * For Unicode other than ASCII it simply returns the original code.
+ */
+function normalize(code: number): number {
+  // Convert uppercase A-Z to lowercase a-z
+  if (code >= 65 && code <= 90) {
+    return code + 32;
   }
-  return indices;
+  return code;
 }
-const txt = "ABABDABACDABABCABAB";
-const pat = "ABABCABAB";
-
-const firstIdx = kmpSearch(txt, pat);          // returns 10
-const allIdx   = kmpAllMatches(txt, pat);     // returns [10]
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("race a car"));                      // false
+console.log(isPalindrome("   abcba   "));                     // true
