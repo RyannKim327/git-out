@@ -1,37 +1,53 @@
-// TypeScript example that fetches JSON and validates the shape of the response
-
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
 /**
- * Fetch a Todo by ID.
- *
- * @param id The ID of the todo to fetch.
- * @returns A promise that resolves to a Todo object.
+ * Simpler Rabin–Karp – uses a 32‑bit unsigned int hash.
+ * For stronger use (large text / collision safety) switch to BigInt or a
+ * larger mod (e.g., 1_000_000_007).
  */
-async function fetchTodo(id: number): Promise<Todo> {
-  const response = await fetch(`https://jsonplaceholder.typicode.com/todos/${id}`);
+export function rabinKarp(
+    text: string,
+    pattern: string,
+    base: number = 256,               // alphabet size
+    mod: number = 1_000_000_007       // a large prime
+): number[] {
+    const n = text.length;
+    const m = pattern.length;
+    if (m === 0 || n < m) return [];
 
-  if (!response.ok) {
-    throw new Error(`Failed to load todo #${id}: ${response.status} ${response.statusText}`);
-  }
+    const result: number[] = [];
 
-  // TypeScript's `as` ensures the runtime shape matches the interface
-  const data = (await response.json()) as Todo;
+    /* Pre‑compute base^(m-1) % mod   (the weight of the leading char) */
+    let power = 1;
+    for (let i = 0; i < m - 1; i++) power = (power * base) % mod;
 
-  // Quick sanity check
-  if (typeof data.completed !== "boolean") {
-    throw new Error("data format unexpected");
-  }
+    /* Hashes of pattern and first window */
+    let patternHash = 0;
+    let windowHash = 0;
+    for (let i = 0; i < m; i++) {
+        patternHash = (patternHash * base + pattern.charCodeAt(i)) % mod;
+        windowHash  = (windowHash  * base + text.charCodeAt(i))  % mod;
+    }
 
-  return data;
+    /* Slide the window */
+    for (let i = 0; i <= n - m; i++) {
+        /* If hashes match – do a literal check to avoid false positives */
+        if (patternHash === windowHash) {
+            if (text.substr(i, m) === pattern) result.push(i);
+        }
+
+        /* Re‑hash: remove leading char, add trailing char */
+        if (i < n - m) {
+            const leading = text.charCodeAt(i) * power % mod;
+            windowHash = (windowHash - leading + mod) % mod;   // avoid negative
+            windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
+        }
+    }
+
+    return result;
 }
+import { rabinKarp } from './rabinKarp';
 
-// Usage example (you can place this in a main function or wherever you need it)
-fetchTodo(1)
-  .then(todo => console.log(`Todo #${todo.id}: ${todo.title} (completed: ${todo.completed})`))
-  .catch(err => console.error(err));
+const text = "ababcabcabababd";
+const pattern = "ababd";
+
+const matches = rabinKarp(text, pattern);  // → [10]
+console.log("Match at indices: ", matches);
