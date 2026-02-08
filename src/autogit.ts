@@ -1,20 +1,17 @@
-function reverseString(str: string): string {
-  return str.split('').reverse().join('');
-}
-function reverseStringLoop(str: string): string {
-  let out = '';
-  for (let i = str.length - 1; i >= 0; i--) {
-    out += str[i];
-  }
-  return out;
-}
-function reverseStringSpread(str: string): string {
-  return [...str].reverse().join('');
-}
-import GraphemeSplitter from 'grapheme-splitter';
+const numbers = [3, 42, 7, -1, 20];
+const biggest = Math.max(...numbers);
 
-const splitter = new GraphemeSplitter();
-
-function reverseStringUnicode(str: string): string {
-  return splitter.splitGraphemes(str).reverse().join('');
+console.log(biggest); // 42
+function findMax(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined; // or throw, or use null, whatever fits your API
+  return Math.max(...nums);
+}
+const biggest = numbers.reduce((max, curr) => curr > max ? curr : max, -Infinity);
+function findMax(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  return nums.reduce((max, curr) => (curr > max ? curr : max));
+}
+function findMax<T extends readonly (number | null | undefined)[]>(arr: T): number | undefined {
+  const filtered = arr.filter(isFinite) as number[]; // strip out null/undefined if you like
+  return filtered.length ? Math.max(...filtered) : undefined;
 }
