@@ -1,72 +1,45 @@
-// A single node in the list
-class Node<T> {
-  constructor(public value: T, public next: Node<T> | null = null) {}
-}
+/**
+ * Returns the majority element if it exists.
+ * If no element occurs > n/2 times, it returns undefined.
+ */
+function majorityElement<T>(arr: T[]): T | undefined {
+  let candidate: T | undefined;
+  let count = 0;
 
-// The queue itself
-export class LinkedListQueue<T> {
-  // Keep refs to both ends so that enqueue/dequeue stay constant‑time
-  private head: Node<T> | null = null; // points to first element
-  private tail: Node<T> | null = null; // points to last element
-  private _size = 0;
-
-  /** Adds a value to the back of the queue */
-  enqueue(value: T): void {
-    const newNode = new Node(value);
-    if (this.tail) {
-      this.tail.next = newNode;   // link the old tail to the new node
-      this.tail = newNode;        // new node becomes the new tail
+  // Step 1 – find a candidate
+  for (const value of arr) {
+    if (count === 0) {
+      candidate = value;
+      count = 1;
+    } else if (value === candidate) {
+      count++;
     } else {
-      // Queue was empty – head and tail are the same node now
-      this.head = this.tail = newNode;
+      count--;
     }
-    this._size++;
   }
 
-  /** Removes and returns the value from the front of the queue.
-      Throws an error if the queue is empty. */
-  dequeue(): T {
-    if (!this.head) {
-      throw new Error('Cannot dequeue from an empty queue');
+  // Step 2 – optional verification pass
+  // (often omitted if you’re sure the input guarantees a majority)
+  if (candidate !== undefined) {
+    let occurrences = 0;
+    for (const v of arr) {
+      if (v === candidate) occurrences++;
     }
-    const value = this.head.value;
-    this.head = this.head.next; // move head forward
-    if (!this.head) {
-      // Queue became empty, so tail must also be null
-      this.tail = null;
+    if (occurrences > Math.floor(arr.length / 2)) {
+      return candidate;
     }
-    this._size--;
-    return value;
   }
 
-  /** Peeks at the front value without removing it. */
-  peek(): T | null {
-    return this.head?.value ?? null;
-  }
-
-  /** Returns true if the queue contains no elements. */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Current number of elements */
-  size(): number {
-    return this._size;
-  }
+  return undefined; // no majority
 }
-import { LinkedListQueue } from './LinkedListQueue';
+function majorityUsingMap<T>(arr: T[]): T | undefined {
+  const freq = new Map<T, number>();
+  const threshold = Math.floor(arr.length / 2) + 1;
 
-const q = new LinkedListQueue<number>();
-
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
-
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size());    // 1
-console.log(q.isEmpty()); // false
-
-q.dequeue();          // removes 30
-console.log(q.isEmpty()); // true
+  for (const val of arr) {
+    const newCount = (freq.get(val) ?? 0) + 1;
+    if (newCount >= threshold) return val;
+    freq.set(val, newCount);
+  }
+  return undefined;
+}
