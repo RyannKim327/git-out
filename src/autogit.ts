@@ -1,14 +1,20 @@
-// Remove *every* whitespace (spaces, tabs, newlines, etc.)
-const clean = str.replace(/\s+/g, '');   // <-- compressed string
+function reverseString(str: string): string {
+  return str.split('').reverse().join('');
+}
+function reverseStringLoop(str: string): string {
+  let out = '';
+  for (let i = str.length - 1; i >= 0; i--) {
+    out += str[i];
+  }
+  return out;
+}
+function reverseStringSpread(str: string): string {
+  return [...str].reverse().join('');
+}
+import GraphemeSplitter from 'grapheme-splitter';
 
-// If you only want to trim the ends:
-const trimmed = str.trim();              // <-- removes leading/trailing whitespace
+const splitter = new GraphemeSplitter();
 
-// If you want middle‑spaces only (keeping a single space between words):
-const condensed = str.replace(/\s+/g, ' ');
-const original = '  Hello   world \t this\nis  a test  ';
-const stripped = original.replace(/\s+/g, '');
-// stripped === 'Helloworldthisisatest'
-
-console.log(stripped);
-const stripped = original.split(/\s+/).join(''); // same result
+function reverseStringUnicode(str: string): string {
+  return splitter.splitGraphemes(str).reverse().join('');
+}
