@@ -1,66 +1,76 @@
-class ListNode {
-  val: number;
-  next: ListNode | null;
-
-  constructor(val: number, next: ListNode | null = null) {
-    this.val = val;
-    this.next = next;
-  }
-}
-
 /**
- * Returns true if the list contains a cycle, false otherwise.
+ * Returns the longest common prefix of all strings in `arr`.
+ *
+ * @param arr – an array of strings (can be empty)
+ * @returns the prefix that every string shares, or an empty string
  */
-function hasCycle(head: ListNode | null): boolean {
-  let slow = head;
-  let fast = head;
+function longestCommonPrefix(arr: string[]): string {
+  if (!arr.length) return "";
 
-  while (fast && fast.next) {
-    slow = slow.next;             // move one step
-    fast = fast.next.next;        // move two steps
+  // Pin the “shortest”‑length string as a stopping rule.
+  // No prefix can be longer than this string.
+  const minLen = Math.min(...arr.map(s => s.length));
 
-    if (slow === fast) {          // pointers meet → cycle
-      return true;
+  for (let i = 0; i < minLen; i++) {
+    const char = arr[0][i]; // candidate character
+    // stop as soon as any string mismatches
+    for (let j = 1; j < arr.length; j++) {
+      if (arr[j][i] !== char) {
+        return arr[0].substring(0, i);
+      }
     }
   }
 
-  // fast reached the end → no cycle
-  return false;
+  // All `minLen` characters matched
+  return arr[0].substring(0, minLen);
 }
-/**
- * Returns true if the list contains a cycle, false otherwise.
- * Uses a Set to remember nodes we've seen.
- */
-function hasCycleWithSet(head: ListNode | null): boolean {
-  const visited = new Set<ListNode>();
+const words = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(words)); // logs "fl"
+function longestCommonPrefixSort(arr: string[]): string {
+  if (!arr.length) return "";
 
-  let current = head;
-  while (current) {
-    if (visited.has(current)) {
-      return true;               // seen it before → cycle
-    }
-    visited.add(current);
-    current = current.next;
+  const sorted = [...arr].sort();          // O(n log n)
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
+
+  let i = 0;
+  while (i < first.length && i < last.length && first[i] === last[i]) {
+    i++;
   }
 
-  return false;                  // reached the end
+  return first.substring(0, i);
 }
-// 1 ➜ 2 ➜ 3 ➜ 4 ➜ null   (no cycle)
-const a = new ListNode(1);
-a.next = new ListNode(2, new ListNode(3, new ListNode(4)));
+function lcpDivideAndConquer(arr: string[], l = 0, r = arr.length - 1): string {
+  if (l > r) return "";
+  if (l === r) return arr[l];
 
-console.log(hasCycle(a));          // false
-console.log(hasCycleWithSet(a));   // false
+  const mid = Math.floor((l + r) / 2);
+  const leftPref  = lcpDivideAndConquer(arr, l, mid);
+  const rightPref = lcpDivideAndConquer(arr, mid + 1, r);
 
-// 1 ➜ 2 ➜ 3 ➜ 4 ➜ 2 ...   (cycle back to node 2)
-const b = new ListNode(1);
-const node2 = new ListNode(2);
-const node3 = new ListNode(3);
-const node4 = new ListNode(4);
-b.next = node2;
-node2.next = node3;
-node3.next = node4;
-node4.next = node2;                // close the loop
+  // intersect two prefixes
+  let i = 0;
+  while (i < leftPref.length && i < rightPref.length && leftPref[i] === rightPref[i]) {
+    i++;
+  }
+  return leftPref.substring(0, i);
+}
 
-console.log(hasCycle(b));          // true
-console.log(hasCycleWithSet(b));   // true
+// convenience wrapper
+function longestCommonPrefixD&C(arr: string[]): string {
+  return lcpDivideAndConquer(arr);
+}
+const cases: [string[], string][] = [
+  [["", "", ""]]          , [""],
+  [["dog"], ["dog"]]      , ["dog"],
+  [["abc","ab"],
+   ["ab"]]                , ["ab"],
+  [["abc","abcd","abce"], ["abc"]],
+  [["agri", "adopt", "alien"], ["a"]],
+  [["b", "a"], [""]], 
+];
+
+cases.forEach(([arr, expected], i) => {
+  const result = longestCommonPrefix(arr);
+  console.log(i, result === expected[0] ? "✅" : `❌ got "${result}"`);
+});
