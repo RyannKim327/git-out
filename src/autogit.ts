@@ -1,93 +1,119 @@
-// 1️⃣  Generic node type
-class TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
+// An adjacency map: node ID → list of neighbouring node IDs
+type Graph = Record<string, string[]>;
 
-  constructor(value: T) {
-    this.value = value;
-  }
+// Keeps track of visited nodes and the node from which we reached them
+interface VisitedMap {
+  [node: string]: string | null;      // null = source node itself
 }
+enqueue start into frontierStart
+enqueue goal  into frontierGoal
+mark start as visitedFromStart (predecessor = null)
+mark goal  as visitedFromGoal (predecessor = null)
 
-// 2️⃣  BinaryTree class
-class BinaryTree<T> {
-  root: TreeNode<T> | null = null;
+while both queues not empty:
+    # Expand one layer from the start side
+    if expand(frontierStart, visitedFromStart, visitedFromGoal): return result
 
-  // Insert a value – keeps the tree *ordered* (BST rule)
-  insert(value: T, comparator: (a: T, b: T) => number) {
-    const newNode = new TreeNode(value);
+    # Expand one layer from the goal side
+    if expand(frontierGoal, visitedFromGoal, visitedFromStart):   return result
 
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
+return no path
+/**
+ * Bidirectional BFS.
+ *
+ * @param graph  adjacency map
+ * @param start  ID of start node
+ * @param goal   ID of goal node
+ * @returns a list of node IDs from start to goal, or null if no path
+ */
+function bidirectionalBFS(graph: Graph, start: string, goal: string): string[] | null {
+  if (start === goal) return [start];
 
-    let current: TreeNode<T> | null = this.root;
-    while (current) {
-      const comp = comparator(value, current.value);
-      if (comp < 0) {
-        if (!current.left) {
-          current.left = newNode;
-          return;
+  const visitedStart: VisitedMap = { [start]: null };
+  const visitedGoal: VisitedMap   = { [goal] : null };
+
+  const frontierStart: string[] = [start];
+  const frontierGoal: string[]  = [goal];
+
+  const expand = (
+    frontier: string[],
+    visitedThis: VisitedMap,
+    visitedOther: VisitedMap
+  ): string[] | null => {
+    const nextLayer: string[] = [];
+
+    for (const current of frontier) {
+      for (const neighbor of graph[current] || []) {
+        // Already visited from this side → skip
+        if (current in visitedThis && neighbor in visitedThis) continue;
+
+        // New node for this side
+        if (!(neighbor in visitedThis)) {
+          visitedThis[neighbor] = current;
+          nextLayer.push(neighbor);
         }
-        current = current.left;
-      } else if (comp > 0) {
-        if (!current.right) {
-          current.right = newNode;
-          return;
+
+        // If neighbour is in the opposite frontier → frontiers meet
+        if (neighbor in visitedOther) {
+          return reconstructPath(
+            start,
+            goal,
+            visitedStart,
+            visitedGoal,
+            neighbor
+          );
         }
-        current = current.right;
-      } else {
-        // Duplicate – decide what to do; here we just replace
-        current.value = value;
-        return;
       }
     }
-  }
 
-  // Find a node with a particular value
-  find(value: T, comparator: (a: T, b: T) => number): TreeNode<T> | null {
-    let current = this.root;
-    while (current) {
-      const comp = comparator(value, current.value);
-      if (comp === 0) return current;
-      current = comp < 0 ? current.left : current.right;
-    }
+    frontier.splice(0, frontier.length, ...nextLayer);
     return null;
+  };
+
+  while (frontierStart.length && frontierGoal.length) {
+    const resStart = expand(frontierStart, visitedStart, visitedGoal);
+    if (resStart) return resStart;
+
+    const resGoal = expand(frontierGoal, visitedGoal, visitedStart);
+    if (resGoal) return resGoal;
   }
 
-  // In‑order traversal (left, root, right)
-  inOrder(callback: (node: TreeNode<T>) => void) {
-    const visit = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      visit(node.left);
-      callback(node);
-      visit(node.right);
-    };
-    visit(this.root);
-  }
-
-  // Pre‑ and post‑order are left to you if needed
+  return null; // no path found
 }
-const cmpNum = (a: number, b: number) => a - b;
-const cmpStr = (a: string, b: string) => a.localeCompare(b);
-const tree = new BinaryTree<number>();
 
-tree.insert(42, cmpNum);
-tree.insert(23, cmpNum);
-tree.insert(87, cmpNum);
-tree.insert(13, cmpNum);
-tree.insert(31, cmpNum);
+/**
+ * Reconstruct the path once the frontiers have met at `meetingNode`.
+ */
+function reconstructPath(
+  start: string,
+  goal: string,
+  visitedStart: VisitedMap,
+  visitedGoal: VisitedMap,
+  meetingNode: string
+): string[] {
+  const partFromStart: string[] = [meetingNode];
+  let node = meetingNode;
+  while (visitedStart[node]) {
+    node = visitedStart[node]!;
+    partFromStart.unshift(node);
+  }
 
-console.log("In‑order traversal:");
-tree.inOrder(node => console.log(node.value));
+  const partFromGoal: string[] = [];
+  node = meetingNode;
+  while (visitedGoal[node]) {
+    node = visitedGoal[node]!;
+    partFromGoal.push(node);
+  }
 
-const found = tree.find(31, cmpNum);
-console.log(found ? `Found ${found.value}` : "Not found");
-In-order traversal:
-13
-23
-31
-42
-87
-Found 31
+  // Avoid duplicating the meeting node
+  return [...partFromStart, ...partFromGoal];
+}
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['a', 'd'],
+  c: ['a', 'd'],
+  d: ['b', 'c', 'e'],
+  e: ['d'],
+};
+
+console.log(bidirectionalBFS(graph, 'a', 'e')); // ["a", "b", "d", "e"]
