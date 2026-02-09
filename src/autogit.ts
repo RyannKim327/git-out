@@ -1,53 +1,50 @@
+area = (base * height) / 2
 /**
- * Simpler Rabin–Karp – uses a 32‑bit unsigned int hash.
- * For stronger use (large text / collision safety) switch to BigInt or a
- * larger mod (e.g., 1_000_000_007).
+ * Return the area of a triangle when you know its base and height.
+ *
+ * @param base   Length of the base side.
+ * @param height Height perpendicular to that base.
+ * @returns      Area of the triangle as a number.
  */
-export function rabinKarp(
-    text: string,
-    pattern: string,
-    base: number = 256,               // alphabet size
-    mod: number = 1_000_000_007       // a large prime
-): number[] {
-    const n = text.length;
-    const m = pattern.length;
-    if (m === 0 || n < m) return [];
-
-    const result: number[] = [];
-
-    /* Pre‑compute base^(m-1) % mod   (the weight of the leading char) */
-    let power = 1;
-    for (let i = 0; i < m - 1; i++) power = (power * base) % mod;
-
-    /* Hashes of pattern and first window */
-    let patternHash = 0;
-    let windowHash = 0;
-    for (let i = 0; i < m; i++) {
-        patternHash = (patternHash * base + pattern.charCodeAt(i)) % mod;
-        windowHash  = (windowHash  * base + text.charCodeAt(i))  % mod;
-    }
-
-    /* Slide the window */
-    for (let i = 0; i <= n - m; i++) {
-        /* If hashes match – do a literal check to avoid false positives */
-        if (patternHash === windowHash) {
-            if (text.substr(i, m) === pattern) result.push(i);
-        }
-
-        /* Re‑hash: remove leading char, add trailing char */
-        if (i < n - m) {
-            const leading = text.charCodeAt(i) * power % mod;
-            windowHash = (windowHash - leading + mod) % mod;   // avoid negative
-            windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
-        }
-    }
-
-    return result;
+export function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error("Base and height must be positive numbers.");
+  }
+  return (base * height) / 2;
 }
-import { rabinKarp } from './rabinKarp';
+s = (a + b + c) / 2            // semi‑perimeter
+area = sqrt( s * (s−a) * (s−b) * (s−c) )
+/**
+ * Compute the area of a triangle from its three side lengths.
+ *
+ * @param a   Length of side A.
+ * @param b   Length of side B.
+ * @param c   Length of side C.
+ * @returns   Area of the triangle (number) or NaN if the sides
+ *            don’t form a valid triangle.
+ */
+export function areaFromSides(a: number, b: number, c: number): number {
+  // Basic validation – all sides must be positive
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw new Error("All side lengths must be positive numbers.");
+  }
 
-const text = "ababcabcabababd";
-const pattern = "ababd";
+  // Triangle inequality check – else area calculation would
+  // produce NaN or a negative under the radicand.
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error("The provided side lengths do not form a valid triangle.");
+  }
 
-const matches = rabinKarp(text, pattern);  // → [10]
-console.log("Match at indices: ", matches);
+  const s = (a + b + c) / 2;
+  const radicand = s * (s - a) * (s - b) * (s - c);
+
+  return Math.sqrt(radicand);
+}
+import { areaFromBaseHeight, areaFromSides } from "./triangle-utils";
+
+const base = 10;
+const height = 6;
+console.log(areaFromBaseHeight(base, height)); // 30
+
+const a = 7, b = 10, c = 5;
+console.log(areaFromSides(a, b, c));           // ≈ 17.89
