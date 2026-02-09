@@ -1,47 +1,56 @@
-/**
- * Interpolation search – returns the index of `key` in `arr`
- * or `-1` if the key is not present.
- *
- * @template T – numeric type (number, bigInt, etc.)
- * @param arr  – sorted array of numbers
- * @param key  – value to look for
- * @returns index or -1
- */
-export function interpolationSearch<T extends number | bigint>(
-  arr: T[],
-  key: T
-): number {
-  if (!arr.length) return -1;
+// ------------------------------------------------------------------
+// 1) Basic types – tweak these to match your own representation.
+// ------------------------------------------------------------------
+interface Node<T> {
+  /** Value that identifies the node – can be an id, a name, … */
+  id: string;
+  /** Children (or neighbours) – the graph may be directed or undirected. */
+  children?: Array<Node<T>>;
+}
 
-  let low = 0;
-  let high = arr.length - 1;
+// A very simple match predicate. Replace it with whatever checks your
+// problem needs (e.g. `node.id === targetId`).
+type MatchFn<T> = (node: Node<T>) => boolean;
 
-  /* Handle the special situation where the key is identical to
-   * the value at both bounds – it can’t be found if low === high
-   * but arr[low] !== key.
-   */
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    /* Avoid division by zero when array values are identical */
-    const step =
-      low === high
-        ? 0
-        : Number(
-            (key - arr[low]) *
-              (high - low) /
-              (arr[high] - arr[low])
-          );
+// ------------------------------------------------------------------
+// 2) Depth‑limited search – iterative (uses an explicit stack).
+// ------------------------------------------------------------------
+export function depthLimitedSearch<T>(
+  start: Node<T>,          // The root (or any arbitrary start node)
+  match: MatchFn<T>,      // Predicate to decide if the node is a goal
+  limit: number            // Maximum depth that may be explored
+): Node<T> | null {
 
-    const mid = low + Math.min(Math.max(step, 0), high - low);
+  // Stack holds tuples  : [current node, current depth]
+  const stack: Array<[Node<T>, number]> = [[start, 0]];
 
-    const midVal = arr[mid];
+  while (stack.length > 0) {
+    const [node, depth] = stack.pop()!;   // `!` is safe – we just checked length
 
-    if (midVal === key) return mid;
-    if (midVal < key) low = mid + 1;
-    else high = mid - 1;
+    // 1️⃣  Goal check
+    if (match(node)) {
+      return node;
+    }
+
+    // 2️⃣  Depth test – we only enqueue children if we still have room
+    if (depth < limit && node.children) {
+      // Push children onto stack – last child examined first (DFS order)
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        stack.push([node.children[i], depth + 1]);
+      }
+    }
   }
 
-  return -1; // Key not found
+  // No goal found within the depth budget
+  return null;
 }
-const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17];
-console.log(interpolationSearch(nums, 7));  // → 3
-console.log(interpolationSearch(nums, 4));  // → -1
+const tree: Node<number> = {
+  id: 'root',
+  children: [
+    { id: 'a', children: [{ id: 'a1' }, { id: 'a2' }] },
+    { id: 'b', children: [{ id: 'b1' }, { id: 'b2' }] },
+  ],
+};
+
+const found = depthLimitedSearch(tree, node => node.id === 'a2', /* limit */ 2);
+console.log(found?.id ?? 'not found'); // → a2
