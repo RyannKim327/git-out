@@ -1,55 +1,47 @@
 /**
- * Selection sort – sorts an array in‑place in ascending order.
+ * Interpolation search – returns the index of `key` in `arr`
+ * or `-1` if the key is not present.
  *
- * @param array   The array to sort.  It will be mutated.
- * @param compare Callback used to decide order. If omitted, a natural
- *                ascending numeric/string comparison is used.
- * @returns The same array instance, now sorted.
+ * @template T – numeric type (number, bigInt, etc.)
+ * @param arr  – sorted array of numbers
+ * @param key  – value to look for
+ * @returns index or -1
  */
-export function selectionSort<T>(
-  array: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  const len = array.length;
+export function interpolationSearch<T extends number | bigint>(
+  arr: T[],
+  key: T
+): number {
+  if (!arr.length) return -1;
 
-  // default comparer: numeric or string ascending
-  const cmp = compare ?? ((a: any, b: any) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
+  let low = 0;
+  let high = arr.length - 1;
 
-  for (let i = 0; i < len - 1; i++) {
-    // assume min at current position
-    let minIdx = i;
+  /* Handle the special situation where the key is identical to
+   * the value at both bounds – it can’t be found if low === high
+   * but arr[low] !== key.
+   */
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    /* Avoid division by zero when array values are identical */
+    const step =
+      low === high
+        ? 0
+        : Number(
+            (key - arr[low]) *
+              (high - low) /
+              (arr[high] - arr[low])
+          );
 
-    // find the smallest element in the unsorted portion
-    for (let j = i + 1; j < len; j++) {
-      if (cmp(array[j], array[minIdx]) < 0) {
-        minIdx = j;
-      }
-    }
+    const mid = low + Math.min(Math.max(step, 0), high - low);
 
-    // swap if we found a smaller element
-    if (minIdx !== i) {
-      const temp = array[i];
-      array[i] = array[minIdx];
-      array[minIdx] = temp;
-    }
+    const midVal = arr[mid];
+
+    if (midVal === key) return mid;
+    if (midVal < key) low = mid + 1;
+    else high = mid - 1;
   }
 
-  return array;
+  return -1; // Key not found
 }
-// simple numeric sorting
-let nums = [64, 25, 12, 22, 11];
-selectionSort(nums);
-console.log(nums); // [11, 12, 22, 25, 64]
-
-// sorting strings
-let words = ["banana", "avocado", "cherry"];
-selectionSort(words);
-console.log(words); // ["avocado", "banana", "cherry"]
-
-// custom comparator – descending numbers
-selectionSort(nums, (a, b) => b - a);
-console.log(nums); // [64, 25, 22, 12, 11]
+const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17];
+console.log(interpolationSearch(nums, 7));  // → 3
+console.log(interpolationSearch(nums, 4));  // → -1
