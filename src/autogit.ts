@@ -1,14 +1,45 @@
-// 1️⃣ Simple string interpolation (most common)
-const a = "hello";
-const b = "world";
-const c = a + " " + b;          // "hello world"
+class Stack<T> {
+  private items: T[] = [];      // underlying array
 
-// 2️⃣ Template literals – works the same but often cleaner
-const c2 = `${a} ${b}`;          // "hello world"
+  /** Push a value onto the top of the stack. */
+  push(value: T): void {
+    this.items.push(value);
+  }
 
-// 3️⃣ Array join (useful if you have many parts)
-const parts = [a, b];
-const c3 = parts.join(" ");      // "hello world"
+  /** Remove and return the top value.  Returns `undefined` if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
 
-// 4️⃣ String.prototype.concat (rarely needed)
-const c4 = a.concat(" ", b);     // "hello world"
+  /** Peek at the top value without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Number of elements in the stack. */
+  get size(): number {
+    return this.items.length;
+  }
+
+  /** True if the stack contains no items. */
+  get isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Optional: clear all items. */
+  clear(): void {
+    this.items = [];
+  }
+}
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size);   // 2
+
+stack.clear();
+console.log(stack.isEmpty); // true
