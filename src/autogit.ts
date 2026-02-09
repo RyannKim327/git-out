@@ -1,61 +1,50 @@
+area = (base * height) / 2
 /**
- * Fibonacci Search
+ * Return the area of a triangle when you know its base and height.
  *
- * @param arr   Sorted array to search
- * @param key   Value to locate
- * @returns    Index of key or -1
+ * @param base   Length of the base side.
+ * @param height Height perpendicular to that base.
+ * @returns      Area of the triangle as a number.
  */
-export function fibonacciSearch<T extends number | string>(
-  arr: T[],
-  key: T
-): number {
-  const n = arr.length;
-
-  // 1. Compute the smallest Fibonacci number greater or equal to n
-  let fibMinusTwo = 0;   // (n-2)th fibonacci
-  let fibMinusOne = 1;   // (n-1)th fibonacci
-  let fibN = fibMinusTwo + fibMinusOne; // nth fibonacci
-
-  while (fibN < n) {
-    fibMinusTwo = fibMinusOne;
-    fibMinusOne = fibN;
-    fibN = fibMinusTwo + fibMinusOne;
+export function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error("Base and height must be positive numbers.");
   }
-
-  // 2. Marks the index beyond the last element
-  let offset = -1;
-
-  // 3. while there's more to inspect
-  while (fibN > 1) {
-    const i = Math.min(offset + fibMinusTwo, n - 1);
-
-    // Compare the current element with the key
-    if (arr[i] < key!) {
-      // Move three Fibonacci numbers down
-      fibN = fibMinusOne;
-      fibMinusOne = fibMinusTwo;
-      fibMinusTwo = fibN - fibMinusOne;
-      offset = i;
-    } else if (arr[i] > key!) {
-      // Move two Fibonacci numbers down
-      fibN = fibMinusTwo;
-      fibMinusOne = fibMinusOne - fibMinusTwo;
-      fibMinusTwo = fibN - fibMinusOne;
-    } else {
-      // Element found
-      return i;
-    }
-  }
-
-  // Compare the last element with the key
-  if (fibMinusOne && offset + 1 < n && arr[offset + 1] === key) {
-    return offset + 1;
-  }
-
-  return -1; // Not found
+  return (base * height) / 2;
 }
-const sortedNums = [3, 7, 12, 18, 23, 27, 34, 38, 45, 52];
-const target = 23;
+s = (a + b + c) / 2            // semi‑perimeter
+area = sqrt( s * (s−a) * (s−b) * (s−c) )
+/**
+ * Compute the area of a triangle from its three side lengths.
+ *
+ * @param a   Length of side A.
+ * @param b   Length of side B.
+ * @param c   Length of side C.
+ * @returns   Area of the triangle (number) or NaN if the sides
+ *            don’t form a valid triangle.
+ */
+export function areaFromSides(a: number, b: number, c: number): number {
+  // Basic validation – all sides must be positive
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw new Error("All side lengths must be positive numbers.");
+  }
 
-const idx = fibonacciSearch(sortedNums, target);
-console.log(idx); // 4
+  // Triangle inequality check – else area calculation would
+  // produce NaN or a negative under the radicand.
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error("The provided side lengths do not form a valid triangle.");
+  }
+
+  const s = (a + b + c) / 2;
+  const radicand = s * (s - a) * (s - b) * (s - c);
+
+  return Math.sqrt(radicand);
+}
+import { areaFromBaseHeight, areaFromSides } from "./triangle-utils";
+
+const base = 10;
+const height = 6;
+console.log(areaFromBaseHeight(base, height)); // 30
+
+const a = 7, b = 10, c = 5;
+console.log(areaFromSides(a, b, c));           // ≈ 17.89
