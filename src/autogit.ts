@@ -1,52 +1,45 @@
-interface TreeNode {
-  value: number;          // what you want to sum
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
-function sumTreeRecursive(node: TreeNode | null): number {
-  if (!node) return 0;
+/**
+ * Return the largest prime factor of |n|.
+ *
+ * @param n Any integer. Negative values are treated as |n|.
+ * @returns   The largest prime factor of n, or `0` if n has no prime factors
+ * (i.e. n is 0, 1, or –1).
+ */
+function largestPrimeFactor(n: number): number {
+  if (n === 0 || n === 1 || n === -1) return 0;
 
-  const leftSum  = sumTreeRecursive(node.left ?? null);
-  const rightSum = sumTreeRecursive(node.right ?? null);
+  let num = Math.abs(n);          // work with the absolute value
+  let lastPrime = 0;              // keep the biggest factor we’ve seen
 
-  return node.value + leftSum + rightSum;
-}
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  let total = 0;
-  const stack: TreeNode[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.value;
-
-    // Push children in any order – the sum is commutative.
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
+  // Treat 2 separately – it’s the only even prime
+  while (num % 2 === 0) {
+    lastPrime = 2;
+    num >>= 1;                    // divide by 2
   }
 
-  return total;
-}
-// A tiny test tree:
-//        5
-//       / \
-//      3   7
-//     / \   \
-//    2   4   8
-
-const testTree: TreeNode = {
-  value: 5,
-  left: {
-    value: 3,
-    left:  { value: 2 },
-    right: { value: 4 }
-  },
-  right: {
-    value: 7,
-    right: { value: 8 }
+  // Now n is odd. Try only odd divisors.
+  // We only need to go up to sqrt(num) because if num still > 1 after that,
+  // num itself is prime and the largest factor.
+  for (let d = 3; d * d <= num; d += 2) {
+    while (num % d === 0) {
+      lastPrime = d;
+      num /= d;
+    }
   }
-};
 
-console.log('Recursive sum:', sumTreeRecursive(testTree));  // 29
-console.log('Iterative sum:', sumTreeIterative(testTree));  // 29
+  // If after the loop num > 1, it means num itself is prime
+  // and larger than any divisor we found earlier.
+  if (num > 1) lastPrime = num;
+
+  return lastPrime;
+}
+
+/* ----- quick sanity checks ----- */
+console.log(largestPrimeFactor(13195));   // 29  (13195 = 5 × 7 × 13 × 29)
+console.log(largestPrimeFactor(600851475143)); // 6857 (the known answer to Project Euler #3)
+Console.log(largestPrimeFactor(13));      // 13
+Console.log(largestPrimeFactor(4));       // 2
+Console.log(largestPrimeFactor(1));       // 0
+function largestPrimeFactorBigInt(n: bigint): bigint {
+  // identical logic, but using bigint operations
+}
