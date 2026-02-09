@@ -1,43 +1,52 @@
-interface BinaryTreeNode<T = number> {
-  val: T;                  // The payload – can be any type you need
-  left?: BinaryTreeNode<T>;
-  right?: BinaryTreeNode<T>;
+interface TreeNode {
+  value: number;          // what you want to sum
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
-function maxDepthRecursive<T>(root?: BinaryTreeNode<T>): number {
-  if (!root) return 0; // An empty tree has depth 0
+function sumTreeRecursive(node: TreeNode | null): number {
+  if (!node) return 0;
 
-  const leftDepth  = maxDepthRecursive(root.left);
-  const rightDepth = maxDepthRecursive(root.right);
+  const leftSum  = sumTreeRecursive(node.left ?? null);
+  const rightSum = sumTreeRecursive(node.right ?? null);
 
-  return Math.max(leftDepth, rightDepth) + 1;
+  return node.value + leftSum + rightSum;
 }
-function maxDepthBFS<T>(root?: BinaryTreeNode<T>): number {
+function sumTreeIterative(root: TreeNode | null): number {
   if (!root) return 0;
 
-  const queue: Array<{ node: BinaryTreeNode<T>; depth: number }> = [{ node: root, depth: 1 }];
-  let maxDepth = 0;
+  let total = 0;
+  const stack: TreeNode[] = [root];
 
-  while (queue.length) {
-    const { node, depth } = queue.shift()!; // Non‑null assertion: queue never empty here
-    maxDepth = Math.max(maxDepth, depth);
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.value;
 
-    if (node.left)  queue.push({ node: node.left, depth: depth + 1 });
-    if (node.right) queue.push({ node: node.right, depth: depth + 1 });
+    // Push children in any order – the sum is commutative.
+    if (node.right) stack.push(node.right);
+    if (node.left)  stack.push(node.left);
   }
 
-  return maxDepth;
+  return total;
 }
-// Example tree:
-//        1
+// A tiny test tree:
+//        5
 //       / \
-//      2   3
-//     /
-//    4
-const tree: BinaryTreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3 }
+//      3   7
+//     / \   \
+//    2   4   8
+
+const testTree: TreeNode = {
+  value: 5,
+  left: {
+    value: 3,
+    left:  { value: 2 },
+    right: { value: 4 }
+  },
+  right: {
+    value: 7,
+    right: { value: 8 }
+  }
 };
 
-console.log(maxDepthRecursive(tree)); // 3
-console.log(maxDepthBFS(tree));       // 3
+console.log('Recursive sum:', sumTreeRecursive(testTree));  // 29
+console.log('Iterative sum:', sumTreeIterative(testTree));  // 29
