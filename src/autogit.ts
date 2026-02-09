@@ -1,30 +1,68 @@
-// src/scheduler.ts
-import { schedule, Job } from 'node-cron';
-import { randomInt } from 'crypto';
+// A minimal list node
+export class ListNode<T> {
+  constructor(
+    public val: T,
+    public next: ListNode<T> | null = null,
+  ) {}
+}
+/**
+ * Reverses a linked list.
+ * @param head The original list head.
+ * @returns New head of the reversed list.
+ */
+export function reverseListIterative<T>(
+  head: ListNode<T> | null,
+): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let current = head;
 
-// Helper: format the current date/time nicely
-const fmtDate = (date: Date): string => {
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
-         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-};
+  while (current !== null) {
+    const next = current.next;   // remember the next node
+    current.next = prev;         // reverse the link
+    prev = current;              // move `prev` one step forward
+    current = next;              // advance to the next node
+  }
 
-// Cron expression – every 5 minutes, on the minute.
-// (Syntax: `m h dom mon dow`)
-// Example: 0 12 * * * → every day at 12:00.
-const cronExpr = '*/5 * * * *';
+  return prev; // new head
+}
+/**
+ * Reverses a linked list recursively.
+ * @param node Current node being processed.
+ * @returns New head of the reversed list.
+ */
+export function reverseListRecursive<T>(
+  node: ListNode<T> | null,
+  newHead: ListNode<T> | null = null,
+): ListNode<T> | null {
+  if (node === null) return newHead;   // base case: original list exhausted
 
-const job: Job = schedule(cronExpr, () => {
-  const now = new Date();
-  const rand = randomInt(1_000_000); // 0 <= rand < 1,000,000
-  console.log(`[${fmtDate(now)}] Random number: ${rand}`);
-}, {
-  scheduled: true, // start scheduling immediately
-  timezone: 'UTC'  // adjust if you need a different zone
-});
+  const next = node.next;              // keep reference to the next node
+  node.next = newHead;                 // attach current node before the “new head”
+  return reverseListRecursive(next, node);
+}
+// Helper to build a list from an array
+function buildList<T>(arr: T[]): ListNode<T> | null {
+  let head: ListNode<T> | null = null;
+  for (let i = arr.length - 1; i >= 0; i--) {
+    head = new ListNode(arr[i], head);
+  }
+  return head;
+}
 
-// Optional: make the process stay alive but not block exit
-job.task?.unref?.();
+// Helper to turn a list back into an array (for easy checking)
+function listToArray<T>(head: ListNode<T> | null): T[] {
+  const result: T[] = [];
+  for (let cur = head; cur; cur = cur.next) result.push(cur.val);
+  return result;
+}
 
-// If you ran the script normally (`node src/scheduler.js` after TS‑compile),
-// the job will keep running. Exit manually when you're done.
+// Example usage
+const nums = [1, 2, 3, 4, 5];
+const list = buildList(nums);
+
+const reversedIter = reverseListIterative(list);
+console.log(listToArray(reversedIter)); // [5,4,3,2,1]
+
+const original = buildList(nums); // rebuild, since the list was mutated
+const reversedRec = reverseListRecursive(original);
+console.log(listToArray(reversedRec)); // [5,4,3,2,1]
