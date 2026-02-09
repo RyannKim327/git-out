@@ -1,96 +1,30 @@
-/**
- * The graph is kept as an adjacency list.
- * `T` is the type of the value stored on each vertex.
- */
-export class Graph<T> {
-  /** Map from vertex ID → the value stored on that vertex */
-  private vertices = new Map<string, T>();
-  /** Map from vertex ID → Set of neighbour IDs */
-  private edges = new Map<string, Set<string>>();
+// src/scheduler.ts
+import { schedule, Job } from 'node-cron';
+import { randomInt } from 'crypto';
 
-  addVertex(id: string, value: T): void {
-    this.vertices.set(id, value);
-    if (!this.edges.has(id)) this.edges.set(id, new Set());
-  }
+// Helper: format the current date/time nicely
+const fmtDate = (date: Date): string => {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
 
-  addEdge(from: string, to: string, undirected = false): void {
-    if (!this.vertices.has(from) || !this.vertices.has(to))
-      throw new Error('Both vertices must exist before linking');
-    this.edges.get(from)!.add(to);
-    if (undirected) this.edges.get(to)!.add(from);
-  }
+// Cron expression – every 5 minutes, on the minute.
+// (Syntax: `m h dom mon dow`)
+// Example: 0 12 * * * → every day at 12:00.
+const cronExpr = '*/5 * * * *';
 
-  /** Return the neighbours of a vertex, or [] if it has none */
-  neighbours(id: string): string[] {
-    return Array.from(this.edges.get(id) ?? []);
-  }
+const job: Job = schedule(cronExpr, () => {
+  const now = new Date();
+  const rand = randomInt(1_000_000); // 0 <= rand < 1,000,000
+  console.log(`[${fmtDate(now)}] Random number: ${rand}`);
+}, {
+  scheduled: true, // start scheduling immediately
+  timezone: 'UTC'  // adjust if you need a different zone
+});
 
-  /** Optional helpers for inspection */
-  getVertex(id: string): T | undefined {
-    return this.vertices.get(id);
-  }
+// Optional: make the process stay alive but not block exit
+job.task?.unref?.();
 
-  getVertices(): string[] {
-    return Array.from(this.vertices.keys());
-  }
-}
-/**
- * Depth‑first search that walks the graph from `start`.
- * Returns the order in which vertices were first visited.
- */
-export function dfsRecursive<T>(
-  graph: Graph<T>,
-  start: string,
-  visited: Set<string> = new Set()
-): string[] {
-  if (visited.has(start)) return [];
-
-  visited.add(start);
-  const order = [start];
-
-  for (const neighbour of graph.neighbours(start)) {
-    order.push(...dfsRecursive(graph, neighbour, visited));
-  }
-
-  return order;
-}
-/**
- * Explicit‑stack depth‑first search.
- * Produces the same visitation order as the recursive version.
- */
-export function dfsIterative<T>(graph: Graph<T>, start: string): string[] {
-  const stack: string[] = [start];
-  const visited = new Set<string>();
-  const order: string[] = [];
-
-  while (stack.length) {
-    const curr = stack.pop()!; // guaranteed non‑empty
-    if (visited.has(curr)) continue;
-
-    visited.add(curr);
-    order.push(curr);
-
-    // push neighbours in reverse order for natural DFS ordering
-    const neighbours = graph.neighbours(curr).slice().reverse();
-    for (const n of neighbours) {
-      if (!visited.has(n)) stack.push(n);
-    }
-  }
-
-  return order;
-}
-const g = new Graph<number>();
-
-// build a tiny graph
-g.addVertex('a', 1);
-g.addVertex('b', 2);
-g.addVertex('c', 3);
-g.addVertex('d', 4);
-
-g.addEdge('a', 'b', true); // undirected
-g.addEdge('a', 'c', true);
-g.addEdge('b', 'd', true);
-g.addEdge('c', 'd', true);
-
-console.log('Recursive DFS:', dfsRecursive(g, 'a')); // e.g. ['a','b','d','c']
-console.log('Iterative DFS:', dfsIterative(g, 'a')); // same order
+// If you ran the script normally (`node src/scheduler.js` after TS‑compile),
+// the job will keep running. Exit manually when you're done.
