@@ -1,61 +1,26 @@
 /**
- * Fibonacci Search
- *
- * @param arr   Sorted array to search
- * @param key   Value to locate
- * @returns    Index of key or -1
+ * Returns true if the array is in strictly ascending order (each element ≤ the next one).
+ * Works for numbers, strings, or any type that can be compared with < / >.
  */
-export function fibonacciSearch<T extends number | string>(
-  arr: T[],
-  key: T
-): number {
-  const n = arr.length;
+export function isAscending<T>(arr: T[], comparator?: (a: T, b: T) => number): boolean {
+  // If the user passes a custom comparator, use it; otherwise fall back to natural order.
+  const cmp = comparator ?? ((a: T, b: T) => a < b ? -1 : a > b ? 1 : 0);
 
-  // 1. Compute the smallest Fibonacci number greater or equal to n
-  let fibMinusTwo = 0;   // (n-2)th fibonacci
-  let fibMinusOne = 1;   // (n-1)th fibonacci
-  let fibN = fibMinusTwo + fibMinusOne; // nth fibonacci
-
-  while (fibN < n) {
-    fibMinusTwo = fibMinusOne;
-    fibMinusOne = fibN;
-    fibN = fibMinusTwo + fibMinusOne;
-  }
-
-  // 2. Marks the index beyond the last element
-  let offset = -1;
-
-  // 3. while there's more to inspect
-  while (fibN > 1) {
-    const i = Math.min(offset + fibMinusTwo, n - 1);
-
-    // Compare the current element with the key
-    if (arr[i] < key!) {
-      // Move three Fibonacci numbers down
-      fibN = fibMinusOne;
-      fibMinusOne = fibMinusTwo;
-      fibMinusTwo = fibN - fibMinusOne;
-      offset = i;
-    } else if (arr[i] > key!) {
-      // Move two Fibonacci numbers down
-      fibN = fibMinusTwo;
-      fibMinusOne = fibMinusOne - fibMinusTwo;
-      fibMinusTwo = fibN - fibMinusOne;
-    } else {
-      // Element found
-      return i;
+  // Iterate until we find a pair that violates the ascending rule.
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) {
+      return false; // arr[i-1] > arr[i], not ascending
     }
   }
-
-  // Compare the last element with the key
-  if (fibMinusOne && offset + 1 < n && arr[offset + 1] === key) {
-    return offset + 1;
-  }
-
-  return -1; // Not found
+  return true;          // All pairs passed the test
 }
-const sortedNums = [3, 7, 12, 18, 23, 27, 34, 38, 45, 52];
-const target = 23;
+// Numbers (default comparator)
+console.log(isAscending([1, 2, 3, 4])); // true
+console.log(isAscending([1, 3, 2, 4])); // false
 
-const idx = fibonacciSearch(sortedNums, target);
-console.log(idx); // 4
+// Strings (lexicographic order)
+console.log(isAscending(['apple', 'banana', 'cherry'])); // true
+
+// Custom comparison – e.g., sort by string length
+const byLength = (a: string, b: string) => a.length - b.length;
+console.log(isAscending(['a', 'bb', 'ccc'], byLength)); // true
