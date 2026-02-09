@@ -1,45 +1,16 @@
 /**
- * Returns the majority element if it exists.
- * If no element occurs > n/2 times, it returns undefined.
+ * Return a copy of `text` with all a, e, i, o, u removed.
+ * @param text – The input string.
+ * @returns The string with vowels gone.
  */
-function majorityElement<T>(arr: T[]): T | undefined {
-  let candidate: T | undefined;
-  let count = 0;
-
-  // Step 1 – find a candidate
-  for (const value of arr) {
-    if (count === 0) {
-      candidate = value;
-      count = 1;
-    } else if (value === candidate) {
-      count++;
-    } else {
-      count--;
-    }
-  }
-
-  // Step 2 – optional verification pass
-  // (often omitted if you’re sure the input guarantees a majority)
-  if (candidate !== undefined) {
-    let occurrences = 0;
-    for (const v of arr) {
-      if (v === candidate) occurrences++;
-    }
-    if (occurrences > Math.floor(arr.length / 2)) {
-      return candidate;
-    }
-  }
-
-  return undefined; // no majority
+export function removeVowels(text: string): string {
+  // `[aeiou]` matches any vowel, and `gi` makes it global & case‑insensitive.
+  return text.replace(/[aeiou]/gi, '');
 }
-function majorityUsingMap<T>(arr: T[]): T | undefined {
-  const freq = new Map<T, number>();
-  const threshold = Math.floor(arr.length / 2) + 1;
-
-  for (const val of arr) {
-    const newCount = (freq.get(val) ?? 0) + 1;
-    if (newCount >= threshold) return val;
-    freq.set(val, newCount);
-  }
-  return undefined;
+console.log(removeVowels('Hello, World!')); // "Hll, Wrld!"
+console.log(removeVowels('TypeScript'));     // "TpScrt"
+export function removeVowels(text: string, includeY = false): string {
+  const pattern = includeY ? /[aeiouy]/gi : /[aeiou]/gi;
+  return text.replace(pattern, '');
 }
+removeVowels('Rhythm', true); // "Rhthm"  (if `y` is treated as a vowel)
