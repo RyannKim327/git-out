@@ -1,44 +1,87 @@
-export interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-}
+// A directed graph: adjacency list
+type Graph = Record<string, string[]>;
+
+// Example: a tiny graph
+const graph: Graph = {
+  A: ["B"],
+  B: ["C"],
+  C: ["A", "D"],
+  D: ["C", "E"],
+  E: [],
+};
 /**
- * Returns the nth node from the end of a singly‑linked list.
- *
- * @param head  The head of the list (may be null).
- * @param n 1‑based index counting from the last node.
- * @returns   The node itself, or null if n is out of bounds.
+ * Finds all strongly connected components of a directed graph.
+ * @param graph The adjacency list of the graph.
+ * @returns An array of SCCs; each SCC is an array of vertex IDs.
  */
-export function getNthFromEnd<T>(
-  head: ListNode<T> | null,
-  n: number
-): ListNode<T> | null {
-  if (n <= 0) return null;                // n must be positive
+function tarjanSCC(graph: Graph): string[][] {
+  let index = 0;                     // global index counter
+  const stack: string[] = [];        // DFS stack
+  const onStack = new Set<string>(); // quick membership check
 
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
+  // Maps vertex → its index in DFS tree
+  const indices = new Map<string, number>();
+  // Maps vertex → its lowlink value
+  const lowlink = new Map<string, number>();
+  // Result: array of SCCs
+  const sccs: string[][] = [];
 
-  // Advance `fast` n steps ahead.
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;              // n is larger than the list length
-    fast = fast.next;
+  function strongConnect(v: string) {
+    // Step 1: set the depth index for v
+    indices.set(v, index);
+    lowlink.set(v, index);
+    index++;
+    stack.push(v);
+    onStack.add(v);
+
+    // Step 2: consider each successor
+    for (const w of graph[v] ?? []) {
+      if (!indices.has(w)) {
+        // Successor w has not yet been visited; recurse on it.
+        strongConnect(w);
+        // After recursion: update lowlink of v
+        lowlink.set(v, Math.min(lowlink.get(v)!, lowlink.get(w)!));
+      } else if (onStack.has(w)) {
+        // Successor w is in stack → part of current SCC
+        lowlink.set(v, Math.min(lowlink.get(v)!, indices.get(w)!));
+      }
+    }
+
+    // Step 3: If v is a root node, pop the stack and generate an SCC
+    if (lowlink.get(v)! === indices.get(v)!) {
+      const scc: string[] = [];
+      let w: string | undefined;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        scc.push(w);
+      } while (w !== v);
+      sccs.push(scc);
+    }
   }
 
-  // Move both pointers until `fast` reaches the end.
-  while (fast) {
-    fast = fast.next;
-    slow = slow?.next ?? null;
+  // Kick off DFS for each vertex that hasn't been visited yet
+  for (const v of Object.keys(graph)) {
+    if (!indices.has(v)) {
+      strongConnect(v);
+    }
   }
 
-  // `slow` is now the nth from the end.
-  return slow;
+  return sccs;
 }
-// Build a tiny list: 10 → 20 → 30 → 40 → 50
-const node5: ListNode<number> = { value: 50, next: null };
-const node4: ListNode<number> = { value: 40, next: node5 };
-const node3: ListNode<number> = { value: 30, next: node4 };
-const node2: ListNode<number> = { value: 20, next: node3 };
-const head: ListNode<number> = { value: 10, next: node2 };
+const sccs = tarjanSCC(graph);
+console.log("Strongly connected components:");
+sccs.forEach((scc, i) => {
+  console.log(`  ${i + 1}. [${scc.join(", ")}]`);
+});
+Strongly connected components:
+  1. [A, C, B]
+  2. [E]
+  3. [D]
+type Vertex = number;
 
-const thirdFromEnd = getNthFromEnd(head, 3);
-console.log(thirdFromEnd?.value); // 30
+// * Update the graph type:
+type Graph = Record<Vertex, Vertex[]>;
+
+// * Replace string‑specific typing in the function:
+function tarjanSCC(graph: Graph): Vertex[][] { ... }
