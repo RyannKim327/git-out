@@ -1,119 +1,52 @@
-// An adjacency map: node ID → list of neighbouring node IDs
-type Graph = Record<string, string[]>;
-
-// Keeps track of visited nodes and the node from which we reached them
-interface VisitedMap {
-  [node: string]: string | null;      // null = source node itself
+interface TreeNode {
+  value: number;          // what you want to sum
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
-enqueue start into frontierStart
-enqueue goal  into frontierGoal
-mark start as visitedFromStart (predecessor = null)
-mark goal  as visitedFromGoal (predecessor = null)
+function sumTreeRecursive(node: TreeNode | null): number {
+  if (!node) return 0;
 
-while both queues not empty:
-    # Expand one layer from the start side
-    if expand(frontierStart, visitedFromStart, visitedFromGoal): return result
+  const leftSum  = sumTreeRecursive(node.left ?? null);
+  const rightSum = sumTreeRecursive(node.right ?? null);
 
-    # Expand one layer from the goal side
-    if expand(frontierGoal, visitedFromGoal, visitedFromStart):   return result
+  return node.value + leftSum + rightSum;
+}
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
 
-return no path
-/**
- * Bidirectional BFS.
- *
- * @param graph  adjacency map
- * @param start  ID of start node
- * @param goal   ID of goal node
- * @returns a list of node IDs from start to goal, or null if no path
- */
-function bidirectionalBFS(graph: Graph, start: string, goal: string): string[] | null {
-  if (start === goal) return [start];
+  let total = 0;
+  const stack: TreeNode[] = [root];
 
-  const visitedStart: VisitedMap = { [start]: null };
-  const visitedGoal: VisitedMap   = { [goal] : null };
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.value;
 
-  const frontierStart: string[] = [start];
-  const frontierGoal: string[]  = [goal];
-
-  const expand = (
-    frontier: string[],
-    visitedThis: VisitedMap,
-    visitedOther: VisitedMap
-  ): string[] | null => {
-    const nextLayer: string[] = [];
-
-    for (const current of frontier) {
-      for (const neighbor of graph[current] || []) {
-        // Already visited from this side → skip
-        if (current in visitedThis && neighbor in visitedThis) continue;
-
-        // New node for this side
-        if (!(neighbor in visitedThis)) {
-          visitedThis[neighbor] = current;
-          nextLayer.push(neighbor);
-        }
-
-        // If neighbour is in the opposite frontier → frontiers meet
-        if (neighbor in visitedOther) {
-          return reconstructPath(
-            start,
-            goal,
-            visitedStart,
-            visitedGoal,
-            neighbor
-          );
-        }
-      }
-    }
-
-    frontier.splice(0, frontier.length, ...nextLayer);
-    return null;
-  };
-
-  while (frontierStart.length && frontierGoal.length) {
-    const resStart = expand(frontierStart, visitedStart, visitedGoal);
-    if (resStart) return resStart;
-
-    const resGoal = expand(frontierGoal, visitedGoal, visitedStart);
-    if (resGoal) return resGoal;
+    // Push children in any order – the sum is commutative.
+    if (node.right) stack.push(node.right);
+    if (node.left)  stack.push(node.left);
   }
 
-  return null; // no path found
+  return total;
 }
+// A tiny test tree:
+//        5
+//       / \
+//      3   7
+//     / \   \
+//    2   4   8
 
-/**
- * Reconstruct the path once the frontiers have met at `meetingNode`.
- */
-function reconstructPath(
-  start: string,
-  goal: string,
-  visitedStart: VisitedMap,
-  visitedGoal: VisitedMap,
-  meetingNode: string
-): string[] {
-  const partFromStart: string[] = [meetingNode];
-  let node = meetingNode;
-  while (visitedStart[node]) {
-    node = visitedStart[node]!;
-    partFromStart.unshift(node);
+const testTree: TreeNode = {
+  value: 5,
+  left: {
+    value: 3,
+    left:  { value: 2 },
+    right: { value: 4 }
+  },
+  right: {
+    value: 7,
+    right: { value: 8 }
   }
-
-  const partFromGoal: string[] = [];
-  node = meetingNode;
-  while (visitedGoal[node]) {
-    node = visitedGoal[node]!;
-    partFromGoal.push(node);
-  }
-
-  // Avoid duplicating the meeting node
-  return [...partFromStart, ...partFromGoal];
-}
-const graph: Graph = {
-  a: ['b', 'c'],
-  b: ['a', 'd'],
-  c: ['a', 'd'],
-  d: ['b', 'c', 'e'],
-  e: ['d'],
 };
 
-console.log(bidirectionalBFS(graph, 'a', 'e')); // ["a", "b", "d", "e"]
+console.log('Recursive sum:', sumTreeRecursive(testTree));  // 29
+console.log('Iterative sum:', sumTreeIterative(testTree));  // 29
