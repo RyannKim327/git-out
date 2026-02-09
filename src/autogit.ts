@@ -1,74 +1,76 @@
-interface Node<T> {
-  /** opaque identifier used for duplicate detection – e.g. a stringified board state */
-  id: string;
-  /** whatever data you want to keep (state, metadata, …) */
-  data: T;
-  /** produces the succ­esor nodes */
-  getChildren(): Iterable<Node<T>>;
-}
-function dls<T>(
-  node: Node<T>,
-  goalTest: (n: Node<T>) => boolean,
-  limit: number,
-  visited = new Set<string>()
-): Node<T> | null {
-  if (goalTest(node)) return node;
-  if (limit <= 0) return null;          // terminal depth reached
-  visited.add(node.id);                 // prevent revisiting
+/**
+ * Returns the longest common prefix of all strings in `arr`.
+ *
+ * @param arr – an array of strings (can be empty)
+ * @returns the prefix that every string shares, or an empty string
+ */
+function longestCommonPrefix(arr: string[]): string {
+  if (!arr.length) return "";
 
-  for (const child of node.getChildren()) {
-    if (!visited.has(child.id)) {
-      const result = dls(child, goalTest, limit - 1, visited);
-      if (result !== null) return result;
-    }
-  }
-  return null; // no goal found within limit
-}
-function dlsIter<T>(
-  start: Node<T>,
-  goalTest: (n: Node<T>) => boolean,
-  limit: number
-): Node<T> | null {
-  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: start, depth: 0 }];
-  const visited = new Set<string>();
+  // Pin the “shortest”‑length string as a stopping rule.
+  // No prefix can be longer than this string.
+  const minLen = Math.min(...arr.map(s => s.length));
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    if (goalTest(node)) return node;
-    if (depth === limit) continue;      // hit the limit – skip children
-
-    visited.add(node.id);
-    for (const child of node.getChildren()) {
-      if (!visited.has(child.id)) {
-        stack.push({ node: child, depth: depth + 1 });
+  for (let i = 0; i < minLen; i++) {
+    const char = arr[0][i]; // candidate character
+    // stop as soon as any string mismatches
+    for (let j = 1; j < arr.length; j++) {
+      if (arr[j][i] !== char) {
+        return arr[0].substring(0, i);
       }
     }
   }
-  return null;
-}
-class Coord {
-  constructor(public x: number, public y: number) {}
-}
 
-class MazeCell implements Node<Coord> {
-  constructor(
-    public id: string,
-    public data: Coord,
-    private neighbors: readonly Coord[]
-  ) {}
+  // All `minLen` characters matched
+  return arr[0].substring(0, minLen);
+}
+const words = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(words)); // logs "fl"
+function longestCommonPrefixSort(arr: string[]): string {
+  if (!arr.length) return "";
 
-  getChildren(): Iterable<Node<Coord>> {
-    return this.neighbors.map(
-      n => new MazeCell(String(n.x) + ',' + n.y, n, [] /* placeholder */)
-    );
+  const sorted = [...arr].sort();          // O(n log n)
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
+
+  let i = 0;
+  while (i < first.length && i < last.length && first[i] === last[i]) {
+    i++;
   }
+
+  return first.substring(0, i);
+}
+function lcpDivideAndConquer(arr: string[], l = 0, r = arr.length - 1): string {
+  if (l > r) return "";
+  if (l === r) return arr[l];
+
+  const mid = Math.floor((l + r) / 2);
+  const leftPref  = lcpDivideAndConquer(arr, l, mid);
+  const rightPref = lcpDivideAndConquer(arr, mid + 1, r);
+
+  // intersect two prefixes
+  let i = 0;
+  while (i < leftPref.length && i < rightPref.length && leftPref[i] === rightPref[i]) {
+    i++;
+  }
+  return leftPref.substring(0, i);
 }
 
-// Setup: build maze, decide start & goal
-const start = new MazeCell('0,0', new Coord(0, 0), [new Coord(1, 0), new Coord(0, 1)]);
-const isGoal = (n: Node<Coord>) => n.data.x === 5 && n.data.y === 5;
+// convenience wrapper
+function longestCommonPrefixD&C(arr: string[]): string {
+  return lcpDivideAndConquer(arr);
+}
+const cases: [string[], string][] = [
+  [["", "", ""]]          , [""],
+  [["dog"], ["dog"]]      , ["dog"],
+  [["abc","ab"],
+   ["ab"]]                , ["ab"],
+  [["abc","abcd","abce"], ["abc"]],
+  [["agri", "adopt", "alien"], ["a"]],
+  [["b", "a"], [""]], 
+];
 
-// Run:
-const found = dls(start, isGoal, 10);
-if (found) console.log('Found solution:', found.data);
-else console.log('no path within depth 10');
+cases.forEach(([arr, expected], i) => {
+  const result = longestCommonPrefix(arr);
+  console.log(i, result === expected[0] ? "✅" : `❌ got "${result}"`);
+});
