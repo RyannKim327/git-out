@@ -1,41 +1,47 @@
 /**
- * KMP string matcher.
- * @param text    Text in which to search.
- * @param pattern Pattern to find.
- * @returns Index of first occurrence of pattern in text, or -1 if not found.
+ * Interpolation search – returns the index of `key` in `arr`
+ * or `-1` if the key is not present.
+ *
+ * @template T – numeric type (number, bigInt, etc.)
+ * @param arr  – sorted array of numbers
+ * @param key  – value to look for
+ * @returns index or -1
  */
-export function kmpSearch(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
+export function interpolationSearch<T extends number | bigint>(
+  arr: T[],
+  key: T
+): number {
+  if (!arr.length) return -1;
 
-  if (m === 0) return 0;           // Empty pattern matches at start.
+  let low = 0;
+  let high = arr.length - 1;
 
-  // --------- Step 1: build failure function ----------
-  const fail: number[] = new Array(m).fill(0);
-  let k = 0;                         // length of current match
+  /* Handle the special situation where the key is identical to
+   * the value at both bounds – it can’t be found if low === high
+   * but arr[low] !== key.
+   */
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    /* Avoid division by zero when array values are identical */
+    const step =
+      low === high
+        ? 0
+        : Number(
+            (key - arr[low]) *
+              (high - low) /
+              (arr[high] - arr[low])
+          );
 
-  for (let i = 1; i < m; i++) {
-    while (k > 0 && pattern[k] !== pattern[i]) {
-      k = fail[k - 1];
-    }
-    if (pattern[k] === pattern[i]) k++;
-    fail[i] = k;
+    const mid = low + Math.min(Math.max(step, 0), high - low);
+
+    const midVal = arr[mid];
+
+    if (midVal === key) return mid;
+    if (midVal < key) low = mid + 1;
+    else high = mid - 1;
   }
 
-  // --------- Step 2: scan the text ---------------
-  k = 0;                               // reset pattern index
-  for (let i = 0; i < n; i++) {
-    while (k > 0 && text[i] !== pattern[k]) {
-      k = fail[k - 1];
-    }
-    if (text[i] === pattern[k]) k++;
-
-    if (k === m) {                    // match found
-      return i - m + 1;
-    }
-  }
-
-  return -1;                          // no match
+  return -1; // Key not found
 }
-const idx = kmpSearch('abxabcabcaby', 'abcaby');
-console.log(idx);   // → 6
+const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17];
+console.log(interpolationSearch(nums, 7));  // → 3
+console.log(interpolationSearch(nums, 4));  // → -1
