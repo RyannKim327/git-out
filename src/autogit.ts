@@ -1,52 +1,16 @@
-interface TreeNode {
-  value: number;          // what you want to sum
-  left?: TreeNode | null;
-  right?: TreeNode | null;
+const str = "Hello, TypeScript world!";
+
+console.log(str.includes("TypeScript")); // true
+console.log(str.indexOf("world") !== -1); // true
+
+// Case‑insensitive search
+const pattern = /typescript/i;
+console.log(pattern.test(str)); // true
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
-function sumTreeRecursive(node: TreeNode | null): number {
-  if (!node) return 0;
 
-  const leftSum  = sumTreeRecursive(node.left ?? null);
-  const rightSum = sumTreeRecursive(node.right ?? null);
-
-  return node.value + leftSum + rightSum;
-}
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  let total = 0;
-  const stack: TreeNode[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.value;
-
-    // Push children in any order – the sum is commutative.
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
-  }
-
-  return total;
-}
-// A tiny test tree:
-//        5
-//       / \
-//      3   7
-//     / \   \
-//    2   4   8
-
-const testTree: TreeNode = {
-  value: 5,
-  left: {
-    value: 3,
-    left:  { value: 2 },
-    right: { value: 4 }
-  },
-  right: {
-    value: 7,
-    right: { value: 8 }
-  }
-};
-
-console.log('Recursive sum:', sumTreeRecursive(testTree));  // 29
-console.log('Iterative sum:', sumTreeIterative(testTree));  // 29
+const sub = "a+b*?"; // contains regex meta‑chars
+const safePattern = new RegExp(escapeRegExp(sub), 'i');
+console.log(safePattern.test(str)); // correct result
+str.toLowerCase().includes(sub.toLowerCase());
