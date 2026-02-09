@@ -1,71 +1,60 @@
 /**
- * Forward Burrows‑Wheeler Transform.
- *
- * @param text – input string
- * @returns {lastColumn, originalIndex}
- *   • lastColumn  – the BWT string (the last column of the sorted rotations)
- *   • originalIndex – position of the original string in the sorted list
+ * Merges two sorted slices `left` and `right` into a single sorted array.
+ * The operation is stable — items that compare equal keep their original
+ * relative order.
  */
-export function bwt(text: string): { lastColumn: string; originalIndex: number } {
-  const n = text.length;
-  const rotations = new Array<string>(n);
+function merge<T>(left: T[], right: T[], compare: (a: T, b: T) => number): T[] {
+  const result: T[] = [];
+  let i = 0;          // index into left
+  let j = 0;          // index into right
 
-  // Build all cyclic rotations
-  for (let i = 0; i < n; i++) {
-    rotations[i] = text.slice(i) + text.slice(0, i);
+  while (i < left.length && j < right.length) {
+    if (compare(left[i], right[j]) <= 0) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
+    }
   }
 
-  // Sort rotations lexicographically
-  rotations.sort();
-
-  // Grab last character of each rotation and remember where the original text ended up
-  let lastColumn = '';
-  let originalIndex = -1;
-  for (let i = 0; i < n; i++) {
-    const rot = rotations[i];
-    lastColumn += rot[rot.length - 1];
-    if (rot === text) originalIndex = i;
-  }
-
-  return { lastColumn, originalIndex };
+  // Append any remaining elements
+  return result.concat(left.slice(i), right.slice(j));
 }
 
 /**
- * Inverse Burrows‑Wheeler Transform.
+ * Recursively sorts `array` using merge sort.
  *
- * @param lastColumn  – BWT string (result of the forward transform)
- * @param originalIndex – index returned by the forward transform
- * @returns original input string
+ * @param array   – the array to sort
+ * @param compare – a comparator returning a negative number if a < b,
+ *                  zero if a == b, and a positive number otherwise.
+ *
+ * @returns a NEW sorted array; the input array is left untouched.
  */
-export function inverseBwt(lastColumn: string, originalIndex: number): string {
-  const n = lastColumn.length;
-
-  // Build the first column by sorting the last column
-  const firstColumn = [...lastColumn].sort().join('');
-
-  // Build a map from character to its deque of positions in the last column
-  const charQueues: Record<string, number[]> = {};
-  for (let i = 0; i < n; i++) {
-    const c = lastColumn[i];
-    if (!charQueues[c]) charQueues[c] = [];
-    charQueues[c].push(i);
+export function mergeSort<T>(array: T[], compare: (a: T, b: T) => number): T[] {
+  // Base case: arrays of length 0 or 1 are already sorted
+  if (array.length <= 1) {
+    return array.slice();          // shallow copy to stay pure
   }
 
-  // Reconstruct the original string
-  let result = '';
-  let idx = originalIndex;
-  for (let i = 0; i < n; i++) {
-    const c = firstColumn[idx];
-    result += c;
-    // The row that had c in the last column is the next idx
-    idx = charQueues[c].shift()!;
-  }
+  const mid = Math.floor(array.length / 2);
+  const left  = array.slice(0, mid);
+  const right = array.slice(mid);
 
-  return result;
+  // Sort each half and merge
+  const sortedLeft  = mergeSort(left,  compare);
+  const sortedRight = mergeSort(right, compare);
+
+  return merge(sortedLeft, sortedRight, compare);
 }
-const { lastColumn, originalIndex } = bwt('BANANA');
-console.log(lastColumn);          // 'ANNBAA'
-console.log(originalIndex);       // 3
 
-const original = inverseBwt(lastColumn, originalIndex);
-console.log(original);            // 'BANANA'
+/* ---------------------------------------------------------
+   Example usage:
+   ---------------------------------------------------------
+
+   // Numeric sort (ascending)
+   const numbers = [32, 5, 73, 1, 42];
+   const sortedNumbers = mergeSort(numbers, (a, b) => a - b);
+
+   // String sort by length
+   const words = ["banana", "apple", "fig", "cherry"];
+   const sortedByLength = mergeSort(words, (a, b) => a.length - b.length);
+   -------------------------------------------------------- */
