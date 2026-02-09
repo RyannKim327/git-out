@@ -1,45 +1,30 @@
-/**
- * Returns the majority element if it exists.
- * If no element occurs > n/2 times, it returns undefined.
- */
-function majorityElement<T>(arr: T[]): T | undefined {
-  let candidate: T | undefined;
-  let count = 0;
+// src/scheduler.ts
+import { schedule, Job } from 'node-cron';
+import { randomInt } from 'crypto';
 
-  // Step 1 – find a candidate
-  for (const value of arr) {
-    if (count === 0) {
-      candidate = value;
-      count = 1;
-    } else if (value === candidate) {
-      count++;
-    } else {
-      count--;
-    }
-  }
+// Helper: format the current date/time nicely
+const fmtDate = (date: Date): string => {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
 
-  // Step 2 – optional verification pass
-  // (often omitted if you’re sure the input guarantees a majority)
-  if (candidate !== undefined) {
-    let occurrences = 0;
-    for (const v of arr) {
-      if (v === candidate) occurrences++;
-    }
-    if (occurrences > Math.floor(arr.length / 2)) {
-      return candidate;
-    }
-  }
+// Cron expression – every 5 minutes, on the minute.
+// (Syntax: `m h dom mon dow`)
+// Example: 0 12 * * * → every day at 12:00.
+const cronExpr = '*/5 * * * *';
 
-  return undefined; // no majority
-}
-function majorityUsingMap<T>(arr: T[]): T | undefined {
-  const freq = new Map<T, number>();
-  const threshold = Math.floor(arr.length / 2) + 1;
+const job: Job = schedule(cronExpr, () => {
+  const now = new Date();
+  const rand = randomInt(1_000_000); // 0 <= rand < 1,000,000
+  console.log(`[${fmtDate(now)}] Random number: ${rand}`);
+}, {
+  scheduled: true, // start scheduling immediately
+  timezone: 'UTC'  // adjust if you need a different zone
+});
 
-  for (const val of arr) {
-    const newCount = (freq.get(val) ?? 0) + 1;
-    if (newCount >= threshold) return val;
-    freq.set(val, newCount);
-  }
-  return undefined;
-}
+// Optional: make the process stay alive but not block exit
+job.task?.unref?.();
+
+// If you ran the script normally (`node src/scheduler.js` after TS‑compile),
+// the job will keep running. Exit manually when you're done.
