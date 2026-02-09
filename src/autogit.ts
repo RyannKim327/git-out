@@ -1,37 +1,26 @@
-// TypeScript example that fetches JSON and validates the shape of the response
-
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
 /**
- * Fetch a Todo by ID.
- *
- * @param id The ID of the todo to fetch.
- * @returns A promise that resolves to a Todo object.
+ * Returns true if the array is in strictly ascending order (each element ≤ the next one).
+ * Works for numbers, strings, or any type that can be compared with < / >.
  */
-async function fetchTodo(id: number): Promise<Todo> {
-  const response = await fetch(`https://jsonplaceholder.typicode.com/todos/${id}`);
+export function isAscending<T>(arr: T[], comparator?: (a: T, b: T) => number): boolean {
+  // If the user passes a custom comparator, use it; otherwise fall back to natural order.
+  const cmp = comparator ?? ((a: T, b: T) => a < b ? -1 : a > b ? 1 : 0);
 
-  if (!response.ok) {
-    throw new Error(`Failed to load todo #${id}: ${response.status} ${response.statusText}`);
+  // Iterate until we find a pair that violates the ascending rule.
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) {
+      return false; // arr[i-1] > arr[i], not ascending
+    }
   }
-
-  // TypeScript's `as` ensures the runtime shape matches the interface
-  const data = (await response.json()) as Todo;
-
-  // Quick sanity check
-  if (typeof data.completed !== "boolean") {
-    throw new Error("data format unexpected");
-  }
-
-  return data;
+  return true;          // All pairs passed the test
 }
+// Numbers (default comparator)
+console.log(isAscending([1, 2, 3, 4])); // true
+console.log(isAscending([1, 3, 2, 4])); // false
 
-// Usage example (you can place this in a main function or wherever you need it)
-fetchTodo(1)
-  .then(todo => console.log(`Todo #${todo.id}: ${todo.title} (completed: ${todo.completed})`))
-  .catch(err => console.error(err));
+// Strings (lexicographic order)
+console.log(isAscending(['apple', 'banana', 'cherry'])); // true
+
+// Custom comparison – e.g., sort by string length
+const byLength = (a: string, b: string) => a.length - b.length;
+console.log(isAscending(['a', 'bb', 'ccc'], byLength)); // true
