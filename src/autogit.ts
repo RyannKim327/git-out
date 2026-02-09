@@ -1,13 +1,20 @@
-/**
- * Calculate the mean (average) of an array of numbers.
- *
- * @param data - a non‑empty array of numbers
- * @returns the mean, or NaN if the array is empty
- */
-function mean(data: number[]): number {
-  if (data.length === 0) return NaN;          // nothing to average
-  const total = data.reduce((sum, val) => sum + val, 0);
-  return total / data.length;
+// A simple node definition – adjust to match your existing structure
+interface ListNode<T> {
+  value: T;
+  next?: ListNode<T>;
 }
-const values = [4, 7, 9, 2];
-console.log(mean(values));   // → 5.5
+function getLength<T>(head: ListNode<T> | undefined): number {
+  let count = 0;
+  let current = head;
+
+  while (current) {
+    count++;
+    current = current.next;
+  }
+
+  return count;
+}
+function getLengthRec<T>(node: ListNode<T> | undefined): number {
+  if (!node) return 0;
+  return 1 + getLengthRec(node.next);
+}
