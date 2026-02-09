@@ -1,43 +1,93 @@
-interface BinaryTreeNode<T = number> {
-  val: T;                  // The payload – can be any type you need
-  left?: BinaryTreeNode<T>;
-  right?: BinaryTreeNode<T>;
+// 1️⃣  Generic node type
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null = null;
+  right: TreeNode<T> | null = null;
+
+  constructor(value: T) {
+    this.value = value;
+  }
 }
-function maxDepthRecursive<T>(root?: BinaryTreeNode<T>): number {
-  if (!root) return 0; // An empty tree has depth 0
 
-  const leftDepth  = maxDepthRecursive(root.left);
-  const rightDepth = maxDepthRecursive(root.right);
+// 2️⃣  BinaryTree class
+class BinaryTree<T> {
+  root: TreeNode<T> | null = null;
 
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthBFS<T>(root?: BinaryTreeNode<T>): number {
-  if (!root) return 0;
+  // Insert a value – keeps the tree *ordered* (BST rule)
+  insert(value: T, comparator: (a: T, b: T) => number) {
+    const newNode = new TreeNode(value);
 
-  const queue: Array<{ node: BinaryTreeNode<T>; depth: number }> = [{ node: root, depth: 1 }];
-  let maxDepth = 0;
+    if (!this.root) {
+      this.root = newNode;
+      return;
+    }
 
-  while (queue.length) {
-    const { node, depth } = queue.shift()!; // Non‑null assertion: queue never empty here
-    maxDepth = Math.max(maxDepth, depth);
-
-    if (node.left)  queue.push({ node: node.left, depth: depth + 1 });
-    if (node.right) queue.push({ node: node.right, depth: depth + 1 });
+    let current: TreeNode<T> | null = this.root;
+    while (current) {
+      const comp = comparator(value, current.value);
+      if (comp < 0) {
+        if (!current.left) {
+          current.left = newNode;
+          return;
+        }
+        current = current.left;
+      } else if (comp > 0) {
+        if (!current.right) {
+          current.right = newNode;
+          return;
+        }
+        current = current.right;
+      } else {
+        // Duplicate – decide what to do; here we just replace
+        current.value = value;
+        return;
+      }
+    }
   }
 
-  return maxDepth;
-}
-// Example tree:
-//        1
-//       / \
-//      2   3
-//     /
-//    4
-const tree: BinaryTreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3 }
-};
+  // Find a node with a particular value
+  find(value: T, comparator: (a: T, b: T) => number): TreeNode<T> | null {
+    let current = this.root;
+    while (current) {
+      const comp = comparator(value, current.value);
+      if (comp === 0) return current;
+      current = comp < 0 ? current.left : current.right;
+    }
+    return null;
+  }
 
-console.log(maxDepthRecursive(tree)); // 3
-console.log(maxDepthBFS(tree));       // 3
+  // In‑order traversal (left, root, right)
+  inOrder(callback: (node: TreeNode<T>) => void) {
+    const visit = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      visit(node.left);
+      callback(node);
+      visit(node.right);
+    };
+    visit(this.root);
+  }
+
+  // Pre‑ and post‑order are left to you if needed
+}
+const cmpNum = (a: number, b: number) => a - b;
+const cmpStr = (a: string, b: string) => a.localeCompare(b);
+const tree = new BinaryTree<number>();
+
+tree.insert(42, cmpNum);
+tree.insert(23, cmpNum);
+tree.insert(87, cmpNum);
+tree.insert(13, cmpNum);
+tree.insert(31, cmpNum);
+
+console.log("In‑order traversal:");
+tree.inOrder(node => console.log(node.value));
+
+const found = tree.find(31, cmpNum);
+console.log(found ? `Found ${found.value}` : "Not found");
+In-order traversal:
+13
+23
+31
+42
+87
+Found 31
