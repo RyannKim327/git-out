@@ -1,28 +1,37 @@
-function countChar(str: string, ch: string): number {
-  // split on the target char and subtract 1 (the split always creates one
-  // more slice than the number of matches)
-  return str.split(ch).length - 1;
+// TypeScript example that fetches JSON and validates the shape of the response
+
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
 
-// Example
-console.log(countChar("hello world", "l")); // 3
-function countChar(str: string, ch: string): number {
-  const matches = str.match(new RegExp(ch, "g")); // global search
-  // If no matches, null is returned; length is 0 in that case
-  return matches ? matches.length : 0;
-}
+/**
+ * Fetch a Todo by ID.
+ *
+ * @param id The ID of the todo to fetch.
+ * @returns A promise that resolves to a Todo object.
+ */
+async function fetchTodo(id: number): Promise<Todo> {
+  const response = await fetch(`https://jsonplaceholder.typicode.com/todos/${id}`);
 
-// Example
-console.log(countChar("hello world", "l")); // 3
-const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const regex = new RegExp(escaped, "g");
-function countChar(str: string, ch: string): number {
-  let count = 0;
-  for (const c of str) {
-    if (c === ch) count++;
+  if (!response.ok) {
+    throw new Error(`Failed to load todo #${id}: ${response.status} ${response.statusText}`);
   }
-  return count;
+
+  // TypeScript's `as` ensures the runtime shape matches the interface
+  const data = (await response.json()) as Todo;
+
+  // Quick sanity check
+  if (typeof data.completed !== "boolean") {
+    throw new Error("data format unexpected");
+  }
+
+  return data;
 }
 
-// Example
-console.log(countChar("hello world", "l")); // 3
+// Usage example (you can place this in a main function or wherever you need it)
+fetchTodo(1)
+  .then(todo => console.log(`Todo #${todo.id}: ${todo.title} (completed: ${todo.completed})`))
+  .catch(err => console.error(err));
