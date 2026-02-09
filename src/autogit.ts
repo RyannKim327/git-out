@@ -1,93 +1,74 @@
-// 1️⃣  Generic node type
-class TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
-
-  constructor(value: T) {
-    this.value = value;
-  }
+interface Node<T> {
+  /** opaque identifier used for duplicate detection – e.g. a stringified board state */
+  id: string;
+  /** whatever data you want to keep (state, metadata, …) */
+  data: T;
+  /** produces the succ­esor nodes */
+  getChildren(): Iterable<Node<T>>;
 }
+function dls<T>(
+  node: Node<T>,
+  goalTest: (n: Node<T>) => boolean,
+  limit: number,
+  visited = new Set<string>()
+): Node<T> | null {
+  if (goalTest(node)) return node;
+  if (limit <= 0) return null;          // terminal depth reached
+  visited.add(node.id);                 // prevent revisiting
 
-// 2️⃣  BinaryTree class
-class BinaryTree<T> {
-  root: TreeNode<T> | null = null;
-
-  // Insert a value – keeps the tree *ordered* (BST rule)
-  insert(value: T, comparator: (a: T, b: T) => number) {
-    const newNode = new TreeNode(value);
-
-    if (!this.root) {
-      this.root = newNode;
-      return;
+  for (const child of node.getChildren()) {
+    if (!visited.has(child.id)) {
+      const result = dls(child, goalTest, limit - 1, visited);
+      if (result !== null) return result;
     }
+  }
+  return null; // no goal found within limit
+}
+function dlsIter<T>(
+  start: Node<T>,
+  goalTest: (n: Node<T>) => boolean,
+  limit: number
+): Node<T> | null {
+  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: start, depth: 0 }];
+  const visited = new Set<string>();
 
-    let current: TreeNode<T> | null = this.root;
-    while (current) {
-      const comp = comparator(value, current.value);
-      if (comp < 0) {
-        if (!current.left) {
-          current.left = newNode;
-          return;
-        }
-        current = current.left;
-      } else if (comp > 0) {
-        if (!current.right) {
-          current.right = newNode;
-          return;
-        }
-        current = current.right;
-      } else {
-        // Duplicate – decide what to do; here we just replace
-        current.value = value;
-        return;
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    if (goalTest(node)) return node;
+    if (depth === limit) continue;      // hit the limit – skip children
+
+    visited.add(node.id);
+    for (const child of node.getChildren()) {
+      if (!visited.has(child.id)) {
+        stack.push({ node: child, depth: depth + 1 });
       }
     }
   }
-
-  // Find a node with a particular value
-  find(value: T, comparator: (a: T, b: T) => number): TreeNode<T> | null {
-    let current = this.root;
-    while (current) {
-      const comp = comparator(value, current.value);
-      if (comp === 0) return current;
-      current = comp < 0 ? current.left : current.right;
-    }
-    return null;
-  }
-
-  // In‑order traversal (left, root, right)
-  inOrder(callback: (node: TreeNode<T>) => void) {
-    const visit = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      visit(node.left);
-      callback(node);
-      visit(node.right);
-    };
-    visit(this.root);
-  }
-
-  // Pre‑ and post‑order are left to you if needed
+  return null;
 }
-const cmpNum = (a: number, b: number) => a - b;
-const cmpStr = (a: string, b: string) => a.localeCompare(b);
-const tree = new BinaryTree<number>();
+class Coord {
+  constructor(public x: number, public y: number) {}
+}
 
-tree.insert(42, cmpNum);
-tree.insert(23, cmpNum);
-tree.insert(87, cmpNum);
-tree.insert(13, cmpNum);
-tree.insert(31, cmpNum);
+class MazeCell implements Node<Coord> {
+  constructor(
+    public id: string,
+    public data: Coord,
+    private neighbors: readonly Coord[]
+  ) {}
 
-console.log("In‑order traversal:");
-tree.inOrder(node => console.log(node.value));
+  getChildren(): Iterable<Node<Coord>> {
+    return this.neighbors.map(
+      n => new MazeCell(String(n.x) + ',' + n.y, n, [] /* placeholder */)
+    );
+  }
+}
 
-const found = tree.find(31, cmpNum);
-console.log(found ? `Found ${found.value}` : "Not found");
-In-order traversal:
-13
-23
-31
-42
-87
-Found 31
+// Setup: build maze, decide start & goal
+const start = new MazeCell('0,0', new Coord(0, 0), [new Coord(1, 0), new Coord(0, 1)]);
+const isGoal = (n: Node<Coord>) => n.data.x === 5 && n.data.y === 5;
+
+// Run:
+const found = dls(start, isGoal, 10);
+if (found) console.log('Found solution:', found.data);
+else console.log('no path within depth 10');
