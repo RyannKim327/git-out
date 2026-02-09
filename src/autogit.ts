@@ -1,37 +1,47 @@
-// TypeScript example that fetches JSON and validates the shape of the response
-
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
 /**
- * Fetch a Todo by ID.
+ * Interpolation search – returns the index of `key` in `arr`
+ * or `-1` if the key is not present.
  *
- * @param id The ID of the todo to fetch.
- * @returns A promise that resolves to a Todo object.
+ * @template T – numeric type (number, bigInt, etc.)
+ * @param arr  – sorted array of numbers
+ * @param key  – value to look for
+ * @returns index or -1
  */
-async function fetchTodo(id: number): Promise<Todo> {
-  const response = await fetch(`https://jsonplaceholder.typicode.com/todos/${id}`);
+export function interpolationSearch<T extends number | bigint>(
+  arr: T[],
+  key: T
+): number {
+  if (!arr.length) return -1;
 
-  if (!response.ok) {
-    throw new Error(`Failed to load todo #${id}: ${response.status} ${response.statusText}`);
+  let low = 0;
+  let high = arr.length - 1;
+
+  /* Handle the special situation where the key is identical to
+   * the value at both bounds – it can’t be found if low === high
+   * but arr[low] !== key.
+   */
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    /* Avoid division by zero when array values are identical */
+    const step =
+      low === high
+        ? 0
+        : Number(
+            (key - arr[low]) *
+              (high - low) /
+              (arr[high] - arr[low])
+          );
+
+    const mid = low + Math.min(Math.max(step, 0), high - low);
+
+    const midVal = arr[mid];
+
+    if (midVal === key) return mid;
+    if (midVal < key) low = mid + 1;
+    else high = mid - 1;
   }
 
-  // TypeScript's `as` ensures the runtime shape matches the interface
-  const data = (await response.json()) as Todo;
-
-  // Quick sanity check
-  if (typeof data.completed !== "boolean") {
-    throw new Error("data format unexpected");
-  }
-
-  return data;
+  return -1; // Key not found
 }
-
-// Usage example (you can place this in a main function or wherever you need it)
-fetchTodo(1)
-  .then(todo => console.log(`Todo #${todo.id}: ${todo.title} (completed: ${todo.completed})`))
-  .catch(err => console.error(err));
+const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17];
+console.log(interpolationSearch(nums, 7));  // → 3
+console.log(interpolationSearch(nums, 4));  // → -1
