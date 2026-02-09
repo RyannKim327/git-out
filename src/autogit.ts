@@ -1,37 +1,85 @@
 /**
- * Normalises a string for anagram comparison:
- *  – removes whitespace
- *  – drops non‑alphanumeric chars
- *  – lower‑cases everything
- *  – sorts the remaining characters
+ * Simple representation of a DAG.
+ *   vertices – an array of node identifiers (any type, but usually string or number)
+ *   edges    – a map from a vertex to a list of outgoing neighbours
  */
-const normalise = (s: string): string =>
-  s
-    .replace(/[^a-z0-9]/gi, '')   // keep letters & digits only
-    .toLowerCase()
-    .split('')
-    .sort()
-    .join('');
+interface Graph<V> {
+  vertices: V[];
+  edges: Map<V, V[]>;
+}
 
-export const areAnagrams = (a: string, b: string): boolean =>
-  normalise(a) === normalise(b);
-console.log(areAnagrams('listen', 'silent'));   // true
-console.log(areAnagrams('Triangle', 'Integral')); // true
-console.log(areAnagrams('hello', 'world'));    // false
-export const areAnagramsMap = (a: string, b: string): boolean => {
-  const buildFreq = (s: string) => {
-    const freq: Record<string, number> = {};
-    for (const ch of s.replace(/[^a-z0-9]/gi, '').toLowerCase()) {
-      freq[ch] = (freq[ch] ?? 0) + 1;
-    }
-    return freq;
-  };
+/**
+ * Kahn’s topological sort.
+ * @param graph – a DAG
+ * @returns a list of vertices sorted topologically
+ * @throws Error if the graph contains a cycle
+ */
+function topologicalSort<V>(graph: Graph<V>): V[] {
+  // Compute indegree of each vertex
+  const indegree = new Map<V, number>();
+  graph.vertices.forEach(v => indegree.set(v, 0));
 
-  const freqA = buildFreq(a);
-  const freqB = buildFreq(b);
+  graph.edges.forEach((neighbours, from) => {
+    neighbours.forEach(to => {
+      indegree.set(to, (indegree.get(to) || 0) + 1);
+    });
+  });
 
-  const keys = Object.keys(freqA);
-  if (keys.length !== Object.keys(freqB).length) return false;
+  // Queue of vertices with indegree 0
+  const queue: V[] = [];
+  indegree.forEach((deg, v) => {
+    if (deg === 0) queue.push(v);
+  });
 
-  return keys.every(k => freqA[k] === freqB[k]);
+  const order: V[] = [];
+  while (queue.length) {
+    const v = queue.shift()!;
+    order.push(v);
+
+    const neighbours = graph.edges.get(v) ?? [];
+    neighbours.forEach(to => {
+      indegree.set(to, (indegree.get(to) || 0) - 1);
+      if (indegree.get(to) === 0) queue.push(to);
+    });
+  }
+
+  // If we processed fewer vertices than exist, a cycle is present
+  if (order.length !== graph.vertices.length) {
+    throw new Error('Graph contains a cycle – topological sort not possible');
+  }
+
+  return order;
+}
+A → C
+B → C
+C → D
+const g: Graph<string> = {
+  vertices: ['A', 'B', 'C', 'D'],
+  edges: new Map([
+    ['A', ['C']],
+    ['B', ['C']],
+    ['C', ['D']],
+    // D has no outgoing edges
+  ]),
 };
+
+console.log(topologicalSort(g)); // → ['A', 'B', 'C', 'D'] (or ['B', 'A', 'C', 'D'])
+function topologicalSortDFS<V>(graph: Graph<V>): V[] {
+  const visited = new Set<V>();
+  const temp = new Set<V>();          // to detect cycles
+  const stack: V[] = [];
+
+  function visit(v: V) {
+    if (temp.has(v)) throw new Error('Cycle detected');
+    if (visited.has(v)) return;
+
+    temp.add(v);
+    (graph.edges.get(v) ?? []).forEach(visit);
+    temp.delete(v);
+    visited.add(v);
+    stack.push(v);                    // push after children – this yields reverse order
+  }
+
+  graph.vertices.forEach(visit);
+  return stack.reverse();             // reverse to get the correct order
+}
