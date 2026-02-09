@@ -1,110 +1,113 @@
-class ListNode<T> {
-  /** The value stored in this node */
-  value: T;
+type Hashable = string | number;
 
-  /** Reference to the next node, or null if this is the tail */
-  next: ListNode<T> | null = null;
-
-  constructor(value: T) {
-    this.value = value;
-  }
+// A node in a linked list that stores a key–value pair.
+class ListNode<K extends Hashable, V> {
+  constructor(
+    public key: K,
+    public value: V,
+    public next: ListNode<K, V> | null = null
+  ) {}
 }
-class LinkedList<T> {
-  /** Head (first node) – `null` if the list is empty */
-  private head: ListNode<T> | null = null;
 
-  /** Tail (last node) – kept for efficient push; `null` if the list is empty */
-  private tail: ListNode<T> | null = null;
+// A very small, non‑generic implementation.
+// Could be turned into a generic class if you want re‑usability.
+class HashTable<K extends Hashable, V> {
+  // Number of buckets.  53 is a prime that keeps things a bit uniform.
+  private readonly bucketCount = 53;
+  private readonly buckets: Array<ListNode<K, V> | null>;
 
-  /** Current length – handy for O(1) size queries */
-  private _size = 0;
+  constructor() {
+    // fill the array with nulls
+    this.buckets = Array(this.bucketCount).fill(null);
+  }
 
-  /** Number of elements in the list */
-  get size() { return this._size; }
-  get isEmpty() { return this._size === 0; }
-}
-  /** Append an element to the end of the list */
-  push(value: T): void {
-    const node = new ListNode(value);
-    if (this.tail) {
-      this.tail.next = node;
-    } else {          // empty list – new node is both head and tail
-      this.head = node;
+  // Simple hash: string => simple accumulating hash; number => straight
+  private hash(key: K): number {
+    let h: number;
+    if (typeof key === "number") {
+      h = key;
+    } else {
+      h = 0;
+      for (let i = 0; i < key.length; i++) {
+        // 31 is a classic multiplier in hash functions
+        h = (h * 31 + key.charCodeAt(i)) | 0; // |0 keeps it 32‑bit
+      }
     }
-    this.tail = node;
-    this._size++;
+    // Ensure positive index
+    return Math.abs(h) % this.bucketCount;
   }
 
-  /** Prepend an element to the front of the list */
-  unshift(value: T): void {
-    const node = new ListNode(value);
-    node.next = this.head;
-    this.head = node;
-    if (!this.tail) this.tail = node;  // first element
-    this._size++;
-  }
+  set(key: K, value: V): void {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
 
-  /** Remove and return the first element, or `undefined` if the list is empty */
-  shift(): T | undefined {
-    if (!this.head) return undefined;
-    const removed = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null;  // list became empty
-    this._size--;
-    return removed;
-  }
-
-  /** Remove and return the last element, or `undefined` if the list is empty */
-  pop(): T | undefined {
-    if (!this.head) return undefined;
-    if (this.head === this.tail) {     // single element
-      const val = this.head.value;
-      this.head = this.tail = null;
-      this._size = 0;
-      return val;
+    // If there’s already a node, see if the key matches
+    while (node) {
+      if (node.key === key) {
+        node.value = value; // update
+        return;
+      }
+      node = node.next;
     }
 
-    // Walk to the second‑to‑last node
-    let current = this.head;
-    while (current.next && current.next !== this.tail) {
-      current = current.next;
-    }
-
-    const val = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-    this._size--;
-    return val;
+    // No match – prepend a new node (O(1) for inserts)
+    const newNode = new ListNode(key, value, this.buckets[idx]);
+    this.buckets[idx] = newNode;
   }
-  /** Find the first node whose value satisfies the predicate; returns `undefined` if none */
-  find(p: (value: T) => boolean): T | undefined {
-    let curr = this.head;
-    while (curr) {
-      if (p(curr.value)) return curr.value;
-      curr = curr.next;
+
+  get(key: K): V | undefined {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+
+    while (node) {
+      if (node.key === key) return node.value;
+      node = node.next;
     }
     return undefined;
   }
 
-  /** Iterate over values (supports `for…of`) */
-  *[Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    while (current) {
-      yield current.value;
-      current = current.next;
-    }
+  has(key: K): boolean {
+    return this.get(key) !== undefined;
   }
-const list = new LinkedList<number>();
-for (const n of list) console.log(n);
-const list = new LinkedList<string>();
 
-list.push('first');
-list.push('second');
-list.unshift('zeroth');
+  delete(key: K): boolean {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+    let prev: ListNode<K, V> | null = null;
 
-console.log([...list]);          // ["zeroth", "first", "second"]
+    while (node) {
+      if (node.key === key) {
+        if (prev) prev.next = node.next;
+        else this.buckets[idx] = node.next;
+        return true;
+      }
+      prev = node;
+      node = node.next;
+    }
+    return false;
+  }
 
-console.log(list.shift());       // "zeroth"
-console.log(list.pop());         // "second"
+  // For debugging / tests: flatten the table into a plain object
+  toObject(): Record<string, V> {
+    const out: Record<string, V> = {};
+    for (const bucket of this.buckets) {
+      let node = bucket;
+      while (node) {
+        out[String(node.key)] = node.value;
+        node = node.next;
+      }
+    }
+    return out;
+  }
+}
+const table = new HashTable<string, number>();
+table.set("alpha", 1);
+table.set("beta", 2);
+table.set("gamma", 3);
+table.set("delta", 4);
 
-console.log(list.find(n => n.startsWith('f'))); // "first"
+console.log(table.get("beta"));   // 2
+console.log(table.has("epsilon")); // false
+
+table.delete("gamma");
+console.log(table.toObject());    // { alpha: 1, beta: 2, delta: 4 }
