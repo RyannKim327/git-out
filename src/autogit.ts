@@ -1,28 +1,31 @@
-function countChar(str: string, ch: string): number {
-  // split on the target char and subtract 1 (the split always creates one
-  // more slice than the number of matches)
-  return str.split(ch).length - 1;
-}
-
-// Example
-console.log(countChar("hello world", "l")); // 3
-function countChar(str: string, ch: string): number {
-  const matches = str.match(new RegExp(ch, "g")); // global search
-  // If no matches, null is returned; length is 0 in that case
-  return matches ? matches.length : 0;
-}
-
-// Example
-console.log(countChar("hello world", "l")); // 3
-const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const regex = new RegExp(escaped, "g");
-function countChar(str: string, ch: string): number {
+/**
+ * Counts how many code units a string contains.
+ * @param s The string to measure.
+ * @returns The length as a number.
+ */
+function getStringLength(s: string): number {
   let count = 0;
-  for (const c of str) {
-    if (c === ch) count++;
+
+  // Keep stepping forward until we encounter an undefined slot.
+  while (s[count] !== undefined) {
+    count++;
   }
+
   return count;
 }
+function getStringLengthUsingForOf(s: string): number {
+  let count = 0;
+  for (const _ of s) {
+    count++;        // `_` is just a throwaway variable
+  }
+  return count;    // this is the number of Unicode code points we iterated over
+}
+function getStringLengthRecursive(s: string, idx = 0): number {
+  return s[idx] === undefined
+    ? idx
+    : getStringLengthRecursive(s, idx + 1);
+}
+const demo = "Hello, 👋🌍";
 
-// Example
-console.log(countChar("hello world", "l")); // 3
+console.log(getStringLength(demo));                    // 13 (code units)
+console.log(getStringLengthUsingForOf(demo));          // 10 (code points)
