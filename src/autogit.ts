@@ -1,72 +1,115 @@
-// A single node in the list
-class Node<T> {
-  constructor(public value: T, public next: Node<T> | null = null) {}
+// 1️⃣ Node – every node knows its children and whether it finishes a word
+class TrieNode {
+    /** Map <character, child node> */
+    children: Map<string, TrieNode>;
+    /** True if node represents the end of an inserted word */
+    isWord: boolean;
+
+    constructor() {
+        this.children = new Map();
+        this.isWord = false;
+    }
 }
 
-// The queue itself
-export class LinkedListQueue<T> {
-  // Keep refs to both ends so that enqueue/dequeue stay constant‑time
-  private head: Node<T> | null = null; // points to first element
-  private tail: Node<T> | null = null; // points to last element
-  private _size = 0;
+// 2️⃣ Trie – wrapper around the root node
+class Trie {
+    private root: TrieNode;
 
-  /** Adds a value to the back of the queue */
-  enqueue(value: T): void {
-    const newNode = new Node(value);
-    if (this.tail) {
-      this.tail.next = newNode;   // link the old tail to the new node
-      this.tail = newNode;        // new node becomes the new tail
-    } else {
-      // Queue was empty – head and tail are the same node now
-      this.head = this.tail = newNode;
+    constructor() {
+        this.root = new TrieNode();
     }
-    this._size++;
-  }
 
-  /** Removes and returns the value from the front of the queue.
-      Throws an error if the queue is empty. */
-  dequeue(): T {
-    if (!this.head) {
-      throw new Error('Cannot dequeue from an empty queue');
+    /** Inserts a word into the trie */
+    insert(word: string): void {
+        let node = this.root;
+        for (const ch of word) {
+            if (!node.children.has(ch)) {
+                node.children.set(ch, new TrieNode());
+            }
+            node = node.children.get(ch)!;
+        }
+        node.isWord = true;
     }
-    const value = this.head.value;
-    this.head = this.head.next; // move head forward
-    if (!this.head) {
-      // Queue became empty, so tail must also be null
-      this.tail = null;
+
+    /** Returns true if the trie contains the exact word */
+    search(word: string): boolean {
+        const node = this._traverse(word);
+        return node?.isWord ?? false;
     }
-    this._size--;
-    return value;
-  }
 
-  /** Peeks at the front value without removing it. */
-  peek(): T | null {
-    return this.head?.value ?? null;
-  }
+    /** Returns true if the trie contains any word that starts with the prefix */
+    startsWith(prefix: string): boolean {
+        const node = this._traverse(prefix);
+        return !!node;
+    }
 
-  /** Returns true if the queue contains no elements. */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
+    /** Remove a word – returns true if a word was removed */
+    remove(word: string): boolean {
+        const stack: Array<{ node: TrieNode; char: string }> = [];
 
-  /** Current number of elements */
-  size(): number {
-    return this._size;
-  }
+        let node = this.root;
+        for (const ch of word) {
+            const child = node.children.get(ch);
+            if (!child) return false; // word not present
+            stack.push({ node, char: ch });
+            node = child;
+        }
+
+        if (!node.isWord) return false; // not a complete word
+
+        node.isWord = false;
+
+        // Clean up nodes that are no longer needed
+        while (stack.length && !node.isWord && node.children.size === 0) {
+            const { node: parent, char } = stack.pop()!;
+            parent.children.delete(char);
+            node = parent;
+        }
+
+        return true;
+    }
+
+    /** Suggest words that start with a prefix (up to maxResults) */
+    suggest(prefix: string, maxResults = 10): string[] {
+        const results: string[] = [];
+        let node = this.root;
+        for (const ch of prefix) {
+            const child = node.children.get(ch);
+            if (!child) return results;
+            node = child;
+        }
+        this._dfs(node, prefix, results, maxResults);
+        return results;
+    }
+
+    /* ---------- private helpers ---------- */
+    // walk through the trie following the key; return node or null
+    private _traverse(key: string): TrieNode | null {
+        let node: TrieNode | undefined = this.root;
+        for (const ch of key) {
+            node = node.children.get(ch);
+            if (!node) return null;
+        }
+        return node as TrieNode;
+    }
+
+    private _dfs(node: TrieNode, path: string, out: string[], limit: number): void {
+        if (out.length >= limit) return;
+        if (node.isWord) out.push(path);
+        for (const [ch, child] of node.children.entries()) {
+            this._dfs(child, path + ch, out, limit);
+        }
+    }
 }
-import { LinkedListQueue } from './LinkedListQueue';
+const trie = new Trie();
+trie.insert('apple');
+trie.insert('app');
+trie.insert('banana');
 
-const q = new LinkedListQueue<number>();
+console.log(trie.search('app'));      // true
+console.log(trie.search('apricot'));  // false
+console.log(trie.startsWith('app'));  // true
+console.log(trie.suggest('app'));     // ['app', 'apple']
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
-
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size());    // 1
-console.log(q.isEmpty()); // false
-
-q.dequeue();          // removes 30
-console.log(q.isEmpty()); // true
+trie.remove('app');
+console.log(trie.search('app'));      // false
