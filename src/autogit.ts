@@ -1,105 +1,66 @@
-/**
- * A singly‑linked list node that holds a generic value.
- */
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null
-  ) {}
+class ListNode {
+  val: number;
+  next: ListNode | null;
+
+  constructor(val: number, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
+  }
 }
+
 /**
- * Returns true iff the linked list is a palindrome.
+ * Returns true if the list contains a cycle, false otherwise.
  */
-export function isPalindrome<T>(head: ListNode<T> | null): boolean {
-  if (!head || !head.next) return true; // empty or single node
+function hasCycle(head: ListNode | null): boolean {
+  let slow = head;
+  let fast = head;
 
-  /* ---------- 1️⃣ Find middle ---------- */
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+  while (fast && fast.next) {
+    slow = slow.next;             // move one step
+    fast = fast.next.next;        // move two steps
 
-  while (fast.next && fast.next.next) {
-    slow = slow!.next!;   // move one step
-    fast = fast.next.next; // move two steps
-  }
-
-  /* ---------- 2️⃣ Reverse second half ---------- */
-  let prev: ListNode<T> | null = null;
-  let curr: ListNode<T> | null = slow;
-
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  const secondHalfHead = prev; // start of reversed half
-
-  /* ---------- 3️⃣ Compare halves ---------- */
-  let p1: ListNode<T> | null = head;
-  let p2: ListNode<T> | null = secondHalfHead;
-
-  let isPal = true;
-  while (isPal && p2) {           // p2 is half the length
-    if (p1!.val !== p2!.val) {
-      isPal = false;
-      break;
+    if (slow === fast) {          // pointers meet → cycle
+      return true;
     }
-    p1 = p1!.next;
-    p2 = p2!.next;
   }
 
-  /* ---------- (Optional) 4️⃣ Restore list ---------- */
-  // reverse again to keep original structure
-  curr = secondHalfHead;
-  prev = null;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  if (slow!.next) { // connect back
-    slow!.next = prev;
-  }
-
-  return isPal;
+  // fast reached the end → no cycle
+  return false;
 }
-function build<T>(arr: T[]): ListNode<T> | null {
-  let dummy = new ListNode<T>(null as any);
-  let cur = dummy;
-  for (const v of arr) {
-    cur.next = new ListNode<T>(v);
-    cur = cur.next;
+/**
+ * Returns true if the list contains a cycle, false otherwise.
+ * Uses a Set to remember nodes we've seen.
+ */
+function hasCycleWithSet(head: ListNode | null): boolean {
+  const visited = new Set<ListNode>();
+
+  let current = head;
+  while (current) {
+    if (visited.has(current)) {
+      return true;               // seen it before → cycle
+    }
+    visited.add(current);
+    current = current.next;
   }
-  return dummy.next;
-}
 
-const tests = [
-  { arr: [1, 2, 3, 2, 1], expected: true },
-  { arr: [1, 2, 2, 1], expected: true },
-  { arr: [1, 2, 3], expected: false },
-  { arr: [], expected: true },
-  { arr: [42], expected: true },
-  { arr: [7, 8, 7, 9], expected: false }
-];
-
-for (const {arr, expected} of tests) {
-  const h = build(arr);
-  console.log(`isPalindrome(${JSON.stringify(arr)}) =>`, isPalindrome(h), 'expected', expected);
+  return false;                  // reached the end
 }
-isPalindrome([1,2,3,2,1]) => true expected true
-isPalindrome([1,2,2,1]) => true expected true
-isPalindrome([1,2,3]) => false expected false
-isPalindrome([]) => true expected true
-isPalindrome([42]) => true expected true
-isPalindrome([7,8,7,9]) => false expected false
-function isPalindromeStack<T>(head: ListNode<T> | null): boolean {
-  const vals: T[] = [];
-  for (let cur = head; cur; cur = cur.next) vals.push(cur.val);
+// 1 ➜ 2 ➜ 3 ➜ 4 ➜ null   (no cycle)
+const a = new ListNode(1);
+a.next = new ListNode(2, new ListNode(3, new ListNode(4)));
 
-  let l = 0, r = vals.length - 1;
-  while (l < r) {
-    if (vals[l++] !== vals[r--]) return false;
-  }
-  return true;
-}
+console.log(hasCycle(a));          // false
+console.log(hasCycleWithSet(a));   // false
+
+// 1 ➜ 2 ➜ 3 ➜ 4 ➜ 2 ...   (cycle back to node 2)
+const b = new ListNode(1);
+const node2 = new ListNode(2);
+const node3 = new ListNode(3);
+const node4 = new ListNode(4);
+b.next = node2;
+node2.next = node3;
+node3.next = node4;
+node4.next = node2;                // close the loop
+
+console.log(hasCycle(b));          // true
+console.log(hasCycleWithSet(b));   // true
