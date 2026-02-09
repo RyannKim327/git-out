@@ -1,59 +1,87 @@
 /**
- * Shell sort – a simple in‑place comparison sort.
+ * Returns the maximum sum of any contiguous sub‑array.
  *
- * @template T          – The element type stored in the array.
- * @param array         – Array to be sorted (mutated).
- * @param compareFn     – Optional comparison function.  
- *                        Should return a negative number if a < b,
- *                        zero if a == b, and a positive number if a > b.
- *                        Default is numeric ascending order.
- *
- * @returns The same array, now sorted.
- *
- * Example:
- *   const nums = [23, 12, 1, 2, 8, 15];
- *   shellSort(nums);                 // → [1,2,8,12,15,23]
- *
- *   const words = ["pear","apple","orange"];
- *   shellSort(words, (a,b) => a.localeCompare(b));  // → ["apple","orange","pear"]
+ * @param arr – array of numbers (may contain negatives)
+ * @returns {number} maximum sub‑array sum
  */
-export function shellSort<T>(
-  array: T[],
-  compareFn: (a: T, b: T) => number = (a, b) => (a as unknown as number) - (b as unknown as number)
-): T[] {
-  const n = array.length;
-  // Basic Shell sequence: n/2, n/4, ..., 1
-  // (You could use a more sophisticated sequence, e.g. Hibbard, Pratt, or Knuth.)
-  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Perform a gapped insertion sort for this gap size
-    for (let i = gap; i < n; i++) {
-      const current = array[i];
-      let j = i;
-
-      // Shift earlier gap‑separated elements up until the correct location for current
-      while (j >= gap && compareFn(array[j - gap], current) > 0) {
-        array[j] = array[j - gap];
-        j -= gap;
-      }
-      array[j] = current;
-    }
+export function maxSubArraySum(arr: number[]): number {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
   }
-  return array;
-}
-import { shellSort } from "./shellSort";
 
-const planets = [
-  { name: "Jupiter", radius: 69911 },
-  { name: "Earth", radius: 6371 },
-  { name: "Mars", radius: 3389 },
-  { name: "Saturn", radius: 58232 },
+  // init both with first element: handles all‑negative cases nicely
+  let currentBest = arr[0];
+  let globalBest = arr[0];
+
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
+
+    // Either extend the previous sub‑array or start fresh at value
+    currentBest = Math.max(value, currentBest + value);
+
+    // Keep the best seen so far
+    globalBest = Math.max(globalBest, currentBest);
+  }
+
+  return globalBest;
+}
+const testSets = [
+  { arr: [1, -2, 3, 4, -5, 8], expect: 10 },
+  { arr: [-2, -3, -1, -4], expect: -1 },
+  { arr: [2, 3, 1, 6], expect: 12 },
+  { arr: [5, -1, 2, 3], expect: 9 },
+  { arr: [1], expect: 1 },
 ];
 
-shellSort(planets, (a, b) => a.radius - b.radius);
-console.log(planets);
-// → [
-//      { name: "Mars", radius: 3389 },
-//      { name: "Earth", radius: 6371 },
-//      { name: "Saturn", radius: 58232 },
-//      { name: "Jupiter", radius: 69911 }
-//    ]
+for (const { arr, expect } of testSets) {
+  const result = maxSubArraySum(arr);
+  console.log(`arr: ${arr} → max sum: ${result} (${result === expect ? '✓' : '✗'})`);
+}
+arr: 1,-2,3,4,-5,8 → max sum: 10 (✓)
+arr: -2,-3,-1,-4 → max sum: -1 (✓)
+arr: 2,3,1,6 → max sum: 12 (✓)
+arr: 5,-1,2,3 → max sum: 9 (✓)
+arr: 1 → max sum: 1 (✓)
+interface MaxSubArrayResult {
+  sum: number;
+  start: number;
+  end: number;   // inclusive
+}
+
+export function maxSubArraySumWithIndices(arr: number[]): MaxSubArrayResult {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
+  }
+
+  let currentBest = arr[0];
+  let globalBest = arr[0];
+
+  // working indices
+  let currentStart = 0;
+  let bestStart = 0;
+  let bestEnd = 0;
+
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
+
+    // decide whether to continue or start a new sub‑array
+    if (currentBest + value < value) {
+      currentBest = value;
+      currentStart = i;
+    } else {
+      currentBest += value;
+    }
+
+    // update global best if we found a better sum
+    if (currentBest > globalBest) {
+      globalBest = currentBest;
+      bestStart = currentStart;
+      bestEnd = i;
+    }
+  }
+
+  return { sum: globalBest, start: bestStart, end: bestEnd };
+}
+const { sum, start, end } = maxSubArraySumWithIndices([1, -2, 3, 4, -5, 8]);
+console.log(`max sum ${sum} from index ${start} to ${end}`);
+// → max sum 10 from index 2 to 5
