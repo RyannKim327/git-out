@@ -1,66 +1,87 @@
-class ListNode {
-  val: number;
-  next: ListNode | null;
+// A directed graph: adjacency list
+type Graph = Record<string, string[]>;
 
-  constructor(val: number, next: ListNode | null = null) {
-    this.val = val;
-    this.next = next;
-  }
-}
-
+// Example: a tiny graph
+const graph: Graph = {
+  A: ["B"],
+  B: ["C"],
+  C: ["A", "D"],
+  D: ["C", "E"],
+  E: [],
+};
 /**
- * Returns true if the list contains a cycle, false otherwise.
+ * Finds all strongly connected components of a directed graph.
+ * @param graph The adjacency list of the graph.
+ * @returns An array of SCCs; each SCC is an array of vertex IDs.
  */
-function hasCycle(head: ListNode | null): boolean {
-  let slow = head;
-  let fast = head;
+function tarjanSCC(graph: Graph): string[][] {
+  let index = 0;                     // global index counter
+  const stack: string[] = [];        // DFS stack
+  const onStack = new Set<string>(); // quick membership check
 
-  while (fast && fast.next) {
-    slow = slow.next;             // move one step
-    fast = fast.next.next;        // move two steps
+  // Maps vertex → its index in DFS tree
+  const indices = new Map<string, number>();
+  // Maps vertex → its lowlink value
+  const lowlink = new Map<string, number>();
+  // Result: array of SCCs
+  const sccs: string[][] = [];
 
-    if (slow === fast) {          // pointers meet → cycle
-      return true;
+  function strongConnect(v: string) {
+    // Step 1: set the depth index for v
+    indices.set(v, index);
+    lowlink.set(v, index);
+    index++;
+    stack.push(v);
+    onStack.add(v);
+
+    // Step 2: consider each successor
+    for (const w of graph[v] ?? []) {
+      if (!indices.has(w)) {
+        // Successor w has not yet been visited; recurse on it.
+        strongConnect(w);
+        // After recursion: update lowlink of v
+        lowlink.set(v, Math.min(lowlink.get(v)!, lowlink.get(w)!));
+      } else if (onStack.has(w)) {
+        // Successor w is in stack → part of current SCC
+        lowlink.set(v, Math.min(lowlink.get(v)!, indices.get(w)!));
+      }
+    }
+
+    // Step 3: If v is a root node, pop the stack and generate an SCC
+    if (lowlink.get(v)! === indices.get(v)!) {
+      const scc: string[] = [];
+      let w: string | undefined;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        scc.push(w);
+      } while (w !== v);
+      sccs.push(scc);
     }
   }
 
-  // fast reached the end → no cycle
-  return false;
-}
-/**
- * Returns true if the list contains a cycle, false otherwise.
- * Uses a Set to remember nodes we've seen.
- */
-function hasCycleWithSet(head: ListNode | null): boolean {
-  const visited = new Set<ListNode>();
-
-  let current = head;
-  while (current) {
-    if (visited.has(current)) {
-      return true;               // seen it before → cycle
+  // Kick off DFS for each vertex that hasn't been visited yet
+  for (const v of Object.keys(graph)) {
+    if (!indices.has(v)) {
+      strongConnect(v);
     }
-    visited.add(current);
-    current = current.next;
   }
 
-  return false;                  // reached the end
+  return sccs;
 }
-// 1 ➜ 2 ➜ 3 ➜ 4 ➜ null   (no cycle)
-const a = new ListNode(1);
-a.next = new ListNode(2, new ListNode(3, new ListNode(4)));
+const sccs = tarjanSCC(graph);
+console.log("Strongly connected components:");
+sccs.forEach((scc, i) => {
+  console.log(`  ${i + 1}. [${scc.join(", ")}]`);
+});
+Strongly connected components:
+  1. [A, C, B]
+  2. [E]
+  3. [D]
+type Vertex = number;
 
-console.log(hasCycle(a));          // false
-console.log(hasCycleWithSet(a));   // false
+// * Update the graph type:
+type Graph = Record<Vertex, Vertex[]>;
 
-// 1 ➜ 2 ➜ 3 ➜ 4 ➜ 2 ...   (cycle back to node 2)
-const b = new ListNode(1);
-const node2 = new ListNode(2);
-const node3 = new ListNode(3);
-const node4 = new ListNode(4);
-b.next = node2;
-node2.next = node3;
-node3.next = node4;
-node4.next = node2;                // close the loop
-
-console.log(hasCycle(b));          // true
-console.log(hasCycleWithSet(b));   // true
+// * Replace string‑specific typing in the function:
+function tarjanSCC(graph: Graph): Vertex[][] { ... }
