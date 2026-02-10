@@ -1,47 +1,31 @@
 /**
- * Finds the median of two sorted arrays that may be of different lengths.
- *
- * @param a  first sorted array (non‑empty)
- * @param b  second sorted array (non‑empty)
- * @returns  median value (number)
+ * Counts how many code units a string contains.
+ * @param s The string to measure.
+ * @returns The length as a number.
  */
-export function medianOfTwoSortedArrays(a: number[], b: number[]): number {
-  // Ensure a is the shorter array to keep the binary search bounded.
-  if (a.length > b.length) return medianOfTwoSortedArrays(b, a);
+function getStringLength(s: string): number {
+  let count = 0;
 
-  const m = a.length;
-  const n = b.length;
-  let left = 0;
-  let right = m;
-
-  while (left <= right) {
-    const i = Math.floor((left + right) / 2);          // cut in a
-    const j = Math.floor((m + n + 1) / 2) - i;        // cut in b
-
-    const Aleft   = i === 0 ?    -Infinity : a[i - 1];
-    const Aright  = i === m ?    Infinity : a[i];
-    const Bleft   = j === 0 ?    -Infinity : b[j - 1];
-    const Bright  = j === n ?    Infinity : b[j];
-
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // correct partition found
-      if ((m + n) % 2 === 0) {
-        return Math.max(Aleft, Bleft) + Math.min(Aright, Bright) / 2;
-      } else {
-        return Math.max(Aleft, Bleft);
-      }
-    } else if (Aleft > Bright) {
-      // i is too big – shift left
-      right = i - 1;
-    } else {
-      // i is too small – shift right
-      left = i + 1;
-    }
+  // Keep stepping forward until we encounter an undefined slot.
+  while (s[count] !== undefined) {
+    count++;
   }
 
-  // Should never hit here if inputs are valid and sorted.
-  throw new Error("Input arrays are not sorted or empty");
+  return count;
 }
-console.log(medianOfTwoSortedArrays([1, 3], [2]));          // 2
-console.log(medianOfTwoSortedArrays([1, 2], [3, 4]));        // 2.5
-console.log(medianOfTwoSortedArrays([0, 0], [0, 0]));        // 0
+function getStringLengthUsingForOf(s: string): number {
+  let count = 0;
+  for (const _ of s) {
+    count++;        // `_` is just a throwaway variable
+  }
+  return count;    // this is the number of Unicode code points we iterated over
+}
+function getStringLengthRecursive(s: string, idx = 0): number {
+  return s[idx] === undefined
+    ? idx
+    : getStringLengthRecursive(s, idx + 1);
+}
+const demo = "Hello, 👋🌍";
+
+console.log(getStringLength(demo));                    // 13 (code units)
+console.log(getStringLengthUsingForOf(demo));          // 10 (code points)
