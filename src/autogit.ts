@@ -1,45 +1,41 @@
-class Stack<T> {
-  private items: T[] = [];      // underlying array
+/**
+ * KMP string matcher.
+ * @param text    Text in which to search.
+ * @param pattern Pattern to find.
+ * @returns Index of first occurrence of pattern in text, or -1 if not found.
+ */
+export function kmpSearch(text: string, pattern: string): number {
+  const n = text.length;
+  const m = pattern.length;
 
-  /** Push a value onto the top of the stack. */
-  push(value: T): void {
-    this.items.push(value);
+  if (m === 0) return 0;           // Empty pattern matches at start.
+
+  // --------- Step 1: build failure function ----------
+  const fail: number[] = new Array(m).fill(0);
+  let k = 0;                         // length of current match
+
+  for (let i = 1; i < m; i++) {
+    while (k > 0 && pattern[k] !== pattern[i]) {
+      k = fail[k - 1];
+    }
+    if (pattern[k] === pattern[i]) k++;
+    fail[i] = k;
   }
 
-  /** Remove and return the top value.  Returns `undefined` if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
+  // --------- Step 2: scan the text ---------------
+  k = 0;                               // reset pattern index
+  for (let i = 0; i < n; i++) {
+    while (k > 0 && text[i] !== pattern[k]) {
+      k = fail[k - 1];
+    }
+    if (text[i] === pattern[k]) k++;
+
+    if (k === m) {                    // match found
+      return i - m + 1;
+    }
   }
 
-  /** Peek at the top value without removing it. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** Number of elements in the stack. */
-  get size(): number {
-    return this.items.length;
-  }
-
-  /** True if the stack contains no items. */
-  get isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** Optional: clear all items. */
-  clear(): void {
-    this.items = [];
-  }
+  return -1;                          // no match
 }
-const stack = new Stack<number>();
-
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size);   // 2
-
-stack.clear();
-console.log(stack.isEmpty); // true
+const idx = kmpSearch('abxabcabcaby', 'abcaby');
+console.log(idx);   // → 6
