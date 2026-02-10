@@ -1,49 +1,41 @@
 /**
- * Binary search on a sorted array.
- *
- * @param arr   Sorted array (ascending).
- * @param key   Value to search for.
- * @returns     Index of `key` in `arr`, or -1 if not found.
+ * KMP string matcher.
+ * @param text    Text in which to search.
+ * @param pattern Pattern to find.
+ * @returns Index of first occurrence of pattern in text, or -1 if not found.
  */
-export function binarySearch<T extends number | string>(arr: T[], key: T): number {
-    let low  = 0;
-    let high = arr.length - 1;
+export function kmpSearch(text: string, pattern: string): number {
+  const n = text.length;
+  const m = pattern.length;
 
-    while (low <= high) {
-        // Use floor division so we don’t overshoot on odd lengths.
-        const mid = Math.floor((low + high) / 2);
-        const midVal = arr[mid];
+  if (m === 0) return 0;           // Empty pattern matches at start.
 
-        if (midVal === key) {
-            return mid;                // Found it!
-        }
-        else if (midVal < key) {
-            low = mid + 1;              // Search right half
-        } else {
-            high = mid - 1;             // Search left half
-        }
+  // --------- Step 1: build failure function ----------
+  const fail: number[] = new Array(m).fill(0);
+  let k = 0;                         // length of current match
+
+  for (let i = 1; i < m; i++) {
+    while (k > 0 && pattern[k] !== pattern[i]) {
+      k = fail[k - 1];
     }
-    return -1; // Not found
-}
-type Comparator<T> = (a: T, b: T) => number; // negative if a < b, zero if equal, positive otherwise
+    if (pattern[k] === pattern[i]) k++;
+    fail[i] = k;
+  }
 
-export function binarySearchWith<T>(arr: T[], key: T, cmp: Comparator<T>): number {
-    let low = 0, high = arr.length - 1;
-
-    while (low <= high) {
-        const mid = Math.floor((low + high) / 2);
-        const comp = cmp(arr[mid], key);
-
-        if (comp === 0) return mid;
-        if (comp < 0)  low = mid + 1;
-        else           high = mid - 1;
+  // --------- Step 2: scan the text ---------------
+  k = 0;                               // reset pattern index
+  for (let i = 0; i < n; i++) {
+    while (k > 0 && text[i] !== pattern[k]) {
+      k = fail[k - 1];
     }
-    return -1;
-}
-const numbers = [3, 7, 12, 20, 31, 45, 58];
-console.log(binarySearch(numbers, 20)); // → 3
+    if (text[i] === pattern[k]) k++;
 
-// With a custom comparator for objects:
-const people = [{id: 1, name: 'Alice'}, {id: 3, name: 'Bob'}, {id: 7, name: 'Carol'}];
-const idCmp = (p: typeof people[0], key: number) => p.id - key;
-console.log(binarySearchWith(people, 3, idCmp)); // → 1
+    if (k === m) {                    // match found
+      return i - m + 1;
+    }
+  }
+
+  return -1;                          // no match
+}
+const idx = kmpSearch('abxabcabcaby', 'abcaby');
+console.log(idx);   // → 6
