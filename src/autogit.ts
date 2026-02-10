@@ -1,43 +1,32 @@
-interface BinaryTreeNode<T = number> {
-  val: T;                  // The payload – can be any type you need
-  left?: BinaryTreeNode<T>;
-  right?: BinaryTreeNode<T>;
-}
-function maxDepthRecursive<T>(root?: BinaryTreeNode<T>): number {
-  if (!root) return 0; // An empty tree has depth 0
+/**
+ * Bubble sort – compares adjacent elements and swaps them if they're out of order.
+ *
+ * @param arr – The array of numbers (or any type that implements `<`),
+ *              sorted in place and also returned for convenience.
+ * @returns The sorted array.
+ */
+export function bubbleSort<T>(arr: T[]): T[] {
+  const n = arr.length;
 
-  const leftDepth  = maxDepthRecursive(root.left);
-  const rightDepth = maxDepthRecursive(root.right);
-
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthBFS<T>(root?: BinaryTreeNode<T>): number {
-  if (!root) return 0;
-
-  const queue: Array<{ node: BinaryTreeNode<T>; depth: number }> = [{ node: root, depth: 1 }];
-  let maxDepth = 0;
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!; // Non‑null assertion: queue never empty here
-    maxDepth = Math.max(maxDepth, depth);
-
-    if (node.left)  queue.push({ node: node.left, depth: depth + 1 });
-    if (node.right) queue.push({ node: node.right, depth: depth + 1 });
+  // Outer loop – each pass guarantees that the largest element among the
+  // unsorted portion moves to its final position at the end of the array.
+  for (let i = 0; i < n - 1; i++) {
+    // Inner loop – only needs to run up to the last unsorted element.
+    for (let j = 0; j < n - i - 1; j++) {
+      // If the current element is greater than the next one, swap them.
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+      }
+    }
   }
 
-  return maxDepth;
+  return arr;
 }
-// Example tree:
-//        1
-//       / \
-//      2   3
-//     /
-//    4
-const tree: BinaryTreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3 }
-};
+import { bubbleSort } from './bubbleSort';
 
-console.log(maxDepthRecursive(tree)); // 3
-console.log(maxDepthBFS(tree));       // 3
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log('Before:', numbers);
+
+bubbleSort(numbers);
+
+console.log('After:', numbers);   // [11, 12, 22, 25, 34, 64, 90]
