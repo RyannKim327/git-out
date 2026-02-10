@@ -1,113 +1,70 @@
-type Hashable = string | number;
+/**
+ * Radix sort (Least–Significant‑digit first) for arrays of non‑negative integers.
+ *
+ * Time:  O(k * n)  where k = number of digits in the largest number
+ * Space: O(n + B)  (B = 10 for base‑10)
+ */
+function radixSort(nums: number[]): number[] {
+  if (nums.length <= 1) return nums.slice();
 
-// A node in a linked list that stores a key–value pair.
-class ListNode<K extends Hashable, V> {
-  constructor(
-    public key: K,
-    public value: V,
-    public next: ListNode<K, V> | null = null
-  ) {}
+  // Find the biggest value to know how many digits we need to process
+  const maxVal = Math.max(...nums);
+  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
+
+  // Start from the least significant digit
+  let divisor = 1;
+
+  // We'll reuse these buckets in each pass to keep O(n) allocations
+  const buckets: number[][] = Array.from({ length: 10 }, () => []);
+
+  for (let d = 0; d < maxDigits; d++) {
+    // Distribute
+    for (const num of nums) {
+      const bucketIndex = Math.floor(num / divisor) % 10;
+      buckets[bucketIndex].push(num);
+    }
+
+    // Collect back into nums, empty buckets for the next pass
+    let pos = 0;
+    for (const bucket of buckets) {
+      while (bucket.length) {
+        nums[pos++] = bucket.pop() as number; // pop gives LIFO but we reverse order below
+      }
+      bucket.length = 0; // reset
+    }
+
+    divisor *= 10; // move to the next digit
+  }
+
+  return nums;
 }
+function radixSortStable(nums: number[]): number[] {
+  if (nums.length <= 1) return nums.slice();
 
-// A very small, non‑generic implementation.
-// Could be turned into a generic class if you want re‑usability.
-class HashTable<K extends Hashable, V> {
-  // Number of buckets.  53 is a prime that keeps things a bit uniform.
-  private readonly bucketCount = 53;
-  private readonly buckets: Array<ListNode<K, V> | null>;
+  const maxVal = Math.max(...nums);
+  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
 
-  constructor() {
-    // fill the array with nulls
-    this.buckets = Array(this.bucketCount).fill(null);
-  }
+  let divisor = 1;
+  const buckets: number[][] = Array.from({ length: 10 }, () => []);
 
-  // Simple hash: string => simple accumulating hash; number => straight
-  private hash(key: K): number {
-    let h: number;
-    if (typeof key === "number") {
-      h = key;
-    } else {
-      h = 0;
-      for (let i = 0; i < key.length; i++) {
-        // 31 is a classic multiplier in hash functions
-        h = (h * 31 + key.charCodeAt(i)) | 0; // |0 keeps it 32‑bit
+  for (let d = 0; d < maxDigits; d++) {
+    for (const n of nums) {
+      const idx = Math.floor(n / divisor) % 10;
+      buckets[idx].push(n);
+    }
+
+    let i = 0;
+    for (const bucket of buckets) {
+      while (bucket.length) {
+        nums[i++] = bucket.shift() as number; // shift preserves order
       }
     }
-    // Ensure positive index
-    return Math.abs(h) % this.bucketCount;
+
+    divisor *= 10;
   }
 
-  set(key: K, value: V): void {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-
-    // If there’s already a node, see if the key matches
-    while (node) {
-      if (node.key === key) {
-        node.value = value; // update
-        return;
-      }
-      node = node.next;
-    }
-
-    // No match – prepend a new node (O(1) for inserts)
-    const newNode = new ListNode(key, value, this.buckets[idx]);
-    this.buckets[idx] = newNode;
-  }
-
-  get(key: K): V | undefined {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-
-    while (node) {
-      if (node.key === key) return node.value;
-      node = node.next;
-    }
-    return undefined;
-  }
-
-  has(key: K): boolean {
-    return this.get(key) !== undefined;
-  }
-
-  delete(key: K): boolean {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-    let prev: ListNode<K, V> | null = null;
-
-    while (node) {
-      if (node.key === key) {
-        if (prev) prev.next = node.next;
-        else this.buckets[idx] = node.next;
-        return true;
-      }
-      prev = node;
-      node = node.next;
-    }
-    return false;
-  }
-
-  // For debugging / tests: flatten the table into a plain object
-  toObject(): Record<string, V> {
-    const out: Record<string, V> = {};
-    for (const bucket of this.buckets) {
-      let node = bucket;
-      while (node) {
-        out[String(node.key)] = node.value;
-        node = node.next;
-      }
-    }
-    return out;
-  }
+  return nums;
 }
-const table = new HashTable<string, number>();
-table.set("alpha", 1);
-table.set("beta", 2);
-table.set("gamma", 3);
-table.set("delta", 4);
-
-console.log(table.get("beta"));   // 2
-console.log(table.has("epsilon")); // false
-
-table.delete("gamma");
-console.log(table.toObject());    // { alpha: 1, beta: 2, delta: 4 }
+const data = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log(radixSortStable(data));
+// → [2, 24, 45, 66, 75, 90, 170, 802]
