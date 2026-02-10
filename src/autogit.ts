@@ -1,87 +1,91 @@
-/**
- * Returns the maximum sum of any contiguous sub‑array.
- *
- * @param arr – array of numbers (may contain negatives)
- * @returns {number} maximum sub‑array sum
- */
-export function maxSubArraySum(arr: number[]): number {
-  if (arr.length === 0) {
-    throw new Error('Array must contain at least one element');
-  }
+// --------------------------------------------------------
+// Random TypeScript demo:  GET data from a public API
+// --------------------------------------------------------
 
-  // init both with first element: handles all‑negative cases nicely
-  let currentBest = arr[0];
-  let globalBest = arr[0];
+// Install the needed deps if you run this in a Node project:
+//   npm install --save node-fetch @types/node-fetch
+//
+// If you use this in a browser project, the browser's fetch is already available.
 
-  for (let i = 1; i < arr.length; i++) {
-    const value = arr[i];
+// Import the fetch shim for Node (uncomment if you run under Node)
+// import fetch from 'node-fetch';
 
-    // Either extend the previous sub‑array or start fresh at value
-    currentBest = Math.max(value, currentBest + value);
+// A tiny helper to pause (useful for demo pacing)
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-    // Keep the best seen so far
-    globalBest = Math.max(globalBest, currentBest);
-  }
-
-  return globalBest;
-}
-const testSets = [
-  { arr: [1, -2, 3, 4, -5, 8], expect: 10 },
-  { arr: [-2, -3, -1, -4], expect: -1 },
-  { arr: [2, 3, 1, 6], expect: 12 },
-  { arr: [5, -1, 2, 3], expect: 9 },
-  { arr: [1], expect: 1 },
-];
-
-for (const { arr, expect } of testSets) {
-  const result = maxSubArraySum(arr);
-  console.log(`arr: ${arr} → max sum: ${result} (${result === expect ? '✓' : '✗'})`);
-}
-arr: 1,-2,3,4,-5,8 → max sum: 10 (✓)
-arr: -2,-3,-1,-4 → max sum: -1 (✓)
-arr: 2,3,1,6 → max sum: 12 (✓)
-arr: 5,-1,2,3 → max sum: 9 (✓)
-arr: 1 → max sum: 1 (✓)
-interface MaxSubArrayResult {
-  sum: number;
-  start: number;
-  end: number;   // inclusive
+// -------------------------------------------------------------------
+// 1️⃣  Define the shape of the data we expect from the API
+// -------------------------------------------------------------------
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
 
-export function maxSubArraySumWithIndices(arr: number[]): MaxSubArrayResult {
-  if (arr.length === 0) {
-    throw new Error('Array must contain at least one element');
+// -------------------------------------------------------------------
+// 2️⃣  A generic GET helper that returns typed JSON
+// -------------------------------------------------------------------
+async function get<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    // We simply throw an error for this demo
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
-
-  let currentBest = arr[0];
-  let globalBest = arr[0];
-
-  // working indices
-  let currentStart = 0;
-  let bestStart = 0;
-  let bestEnd = 0;
-
-  for (let i = 1; i < arr.length; i++) {
-    const value = arr[i];
-
-    // decide whether to continue or start a new sub‑array
-    if (currentBest + value < value) {
-      currentBest = value;
-      currentStart = i;
-    } else {
-      currentBest += value;
-    }
-
-    // update global best if we found a better sum
-    if (currentBest > globalBest) {
-      globalBest = currentBest;
-      bestStart = currentStart;
-      bestEnd = i;
-    }
-  }
-
-  return { sum: globalBest, start: bestStart, end: bestEnd };
+  const data: T = await response.json();
+  return data;
 }
-const { sum, start, end } = maxSubArraySumWithIndices([1, -2, 3, 4, -5, 8]);
-console.log(`max sum ${sum} from index ${start} to ${end}`);
-// → max sum 10 from index 2 to 5
+
+// -------------------------------------------------------------------
+// 3️⃣  Main demo logic
+// -------------------------------------------------------------------
+async function main() {
+  const apiEndpoint = 'https://jsonplaceholder.typicode.com/posts/1';
+
+  console.log('Fetching demo post...');
+  try {
+    const post = await get<Post>(apiEndpoint);
+    console.log('✅ Post fetched:');
+    console.log(`  • ID: ${post.id}`);
+    console.log(`  • Title: ${post.title}`);
+    console.log(`  • Body snippet: "${post.body.slice(0, 60)}..."`);
+  } catch (err) {
+    console.error('⚠️  Error while fetching:', err);
+  }
+
+  // -------------------------------------------------------------------
+  // 4️⃣  Throw in a second request: list of all posts
+  // -------------------------------------------------------------------
+  console.log('\nFetching all posts (just the first 5 for brevity)...');
+  try {
+    const allPosts = await get<Post[]>('https://jsonplaceholder.typicode.com/posts');
+    console.table(allPosts.slice(0, 5));
+  } catch (err) {
+    console.error('⚠️  Error while fetching:', err);
+  }
+
+  // ---------------------------------------------------------------
+  // 5️⃣  Optional: POST a new resource (mocked, won't persist)
+  // ---------------------------------------------------------------
+  console.log('\nAttempting to POST a new post...');
+  try {
+    const newPostResponse = await fetch('https://jsonplaceholder.typicode.com/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Hello World',
+        body: 'This post was created by the demo.',
+        userId: 42
+      })
+    });
+    const created: Post = await newPostResponse.json();
+    console.log('✅ Created post (mocked):', created);
+  } catch (err) {
+    console.error('⚠️  Error while posting:', err);
+  }
+
+  // Small pause before exit (only matters if running in Node)
+  await delay(500);
+}
+
+main();
