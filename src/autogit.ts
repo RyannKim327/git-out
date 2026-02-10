@@ -1,30 +1,45 @@
-/**
- * Reverse the order of words in a string.
- *
- * Words are anything separated by whitespace (space, tab, etc.).
- * Leading/trailing whitespace is trimmed for a clean result, but
- * consecutive internal spaces are collapsed to a single space – you can keep
- * them if you prefer by tweaking the regex.
- *
- * @param s  The input string.
- * @returns   The string with the words reversed.
- */
-function reverseWords(s: string): string {
-  // 1. Trim surrounding whitespace, then split on any sequence of whitespace.
-  const words = s.trim().split(/\s+/);
+class Stack<T> {
+  private items: T[] = [];      // underlying array
 
-  // 2. Reverse the array in place.
-  words.reverse();
+  /** Push a value onto the top of the stack. */
+  push(value: T): void {
+    this.items.push(value);
+  }
 
-  // 3. Join back with a single space (change if you need a different separator).
-  return words.join(' ');
+  /** Remove and return the top value.  Returns `undefined` if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  /** Peek at the top value without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Number of elements in the stack. */
+  get size(): number {
+    return this.items.length;
+  }
+
+  /** True if the stack contains no items. */
+  get isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Optional: clear all items. */
+  clear(): void {
+    this.items = [];
+  }
 }
+const stack = new Stack<number>();
 
-// Demo
-const original = "  the quick brown   fox jumps over the lazy dog  ";
-const reversed = reverseWords(original);
+stack.push(10);
+stack.push(20);
+stack.push(30);
 
-console.log("Original:", original);
-console.log("Reversed:", reversed);
-// Output: "dog lazy the over jumps fox brown quick the"
-const words = s.split(/\s+/);
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size);   // 2
+
+stack.clear();
+console.log(stack.isEmpty); // true
