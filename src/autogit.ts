@@ -1,47 +1,72 @@
-/**
- * Finds the median of two sorted arrays that may be of different lengths.
- *
- * @param a  first sorted array (non‑empty)
- * @param b  second sorted array (non‑empty)
- * @returns  median value (number)
- */
-export function medianOfTwoSortedArrays(a: number[], b: number[]): number {
-  // Ensure a is the shorter array to keep the binary search bounded.
-  if (a.length > b.length) return medianOfTwoSortedArrays(b, a);
+// A single node in the list
+class Node<T> {
+  constructor(public value: T, public next: Node<T> | null = null) {}
+}
 
-  const m = a.length;
-  const n = b.length;
-  let left = 0;
-  let right = m;
+// The queue itself
+export class LinkedListQueue<T> {
+  // Keep refs to both ends so that enqueue/dequeue stay constant‑time
+  private head: Node<T> | null = null; // points to first element
+  private tail: Node<T> | null = null; // points to last element
+  private _size = 0;
 
-  while (left <= right) {
-    const i = Math.floor((left + right) / 2);          // cut in a
-    const j = Math.floor((m + n + 1) / 2) - i;        // cut in b
-
-    const Aleft   = i === 0 ?    -Infinity : a[i - 1];
-    const Aright  = i === m ?    Infinity : a[i];
-    const Bleft   = j === 0 ?    -Infinity : b[j - 1];
-    const Bright  = j === n ?    Infinity : b[j];
-
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // correct partition found
-      if ((m + n) % 2 === 0) {
-        return Math.max(Aleft, Bleft) + Math.min(Aright, Bright) / 2;
-      } else {
-        return Math.max(Aleft, Bleft);
-      }
-    } else if (Aleft > Bright) {
-      // i is too big – shift left
-      right = i - 1;
+  /** Adds a value to the back of the queue */
+  enqueue(value: T): void {
+    const newNode = new Node(value);
+    if (this.tail) {
+      this.tail.next = newNode;   // link the old tail to the new node
+      this.tail = newNode;        // new node becomes the new tail
     } else {
-      // i is too small – shift right
-      left = i + 1;
+      // Queue was empty – head and tail are the same node now
+      this.head = this.tail = newNode;
     }
+    this._size++;
   }
 
-  // Should never hit here if inputs are valid and sorted.
-  throw new Error("Input arrays are not sorted or empty");
+  /** Removes and returns the value from the front of the queue.
+      Throws an error if the queue is empty. */
+  dequeue(): T {
+    if (!this.head) {
+      throw new Error('Cannot dequeue from an empty queue');
+    }
+    const value = this.head.value;
+    this.head = this.head.next; // move head forward
+    if (!this.head) {
+      // Queue became empty, so tail must also be null
+      this.tail = null;
+    }
+    this._size--;
+    return value;
+  }
+
+  /** Peeks at the front value without removing it. */
+  peek(): T | null {
+    return this.head?.value ?? null;
+  }
+
+  /** Returns true if the queue contains no elements. */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** Current number of elements */
+  size(): number {
+    return this._size;
+  }
 }
-console.log(medianOfTwoSortedArrays([1, 3], [2]));          // 2
-console.log(medianOfTwoSortedArrays([1, 2], [3, 4]));        // 2.5
-console.log(medianOfTwoSortedArrays([0, 0], [0, 0]));        // 0
+import { LinkedListQueue } from './LinkedListQueue';
+
+const q = new LinkedListQueue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size());    // 1
+console.log(q.isEmpty()); // false
+
+q.dequeue();          // removes 30
+console.log(q.isEmpty()); // true
