@@ -1,44 +1,30 @@
-export interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-}
-/**
- * Returns the nth node from the end of a singly‑linked list.
- *
- * @param head  The head of the list (may be null).
- * @param n 1‑based index counting from the last node.
- * @returns   The node itself, or null if n is out of bounds.
- */
-export function getNthFromEnd<T>(
-  head: ListNode<T> | null,
-  n: number
-): ListNode<T> | null {
-  if (n <= 0) return null;                // n must be positive
+// src/scheduler.ts
+import { schedule, Job } from 'node-cron';
+import { randomInt } from 'crypto';
 
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
+// Helper: format the current date/time nicely
+const fmtDate = (date: Date): string => {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
 
-  // Advance `fast` n steps ahead.
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;              // n is larger than the list length
-    fast = fast.next;
-  }
+// Cron expression – every 5 minutes, on the minute.
+// (Syntax: `m h dom mon dow`)
+// Example: 0 12 * * * → every day at 12:00.
+const cronExpr = '*/5 * * * *';
 
-  // Move both pointers until `fast` reaches the end.
-  while (fast) {
-    fast = fast.next;
-    slow = slow?.next ?? null;
-  }
+const job: Job = schedule(cronExpr, () => {
+  const now = new Date();
+  const rand = randomInt(1_000_000); // 0 <= rand < 1,000,000
+  console.log(`[${fmtDate(now)}] Random number: ${rand}`);
+}, {
+  scheduled: true, // start scheduling immediately
+  timezone: 'UTC'  // adjust if you need a different zone
+});
 
-  // `slow` is now the nth from the end.
-  return slow;
-}
-// Build a tiny list: 10 → 20 → 30 → 40 → 50
-const node5: ListNode<number> = { value: 50, next: null };
-const node4: ListNode<number> = { value: 40, next: node5 };
-const node3: ListNode<number> = { value: 30, next: node4 };
-const node2: ListNode<number> = { value: 20, next: node3 };
-const head: ListNode<number> = { value: 10, next: node2 };
+// Optional: make the process stay alive but not block exit
+job.task?.unref?.();
 
-const thirdFromEnd = getNthFromEnd(head, 3);
-console.log(thirdFromEnd?.value); // 30
+// If you ran the script normally (`node src/scheduler.js` after TS‑compile),
+// the job will keep running. Exit manually when you're done.
