@@ -1,30 +1,33 @@
-// src/scheduler.ts
-import { schedule, Job } from 'node-cron';
-import { randomInt } from 'crypto';
+// random-axios-example.ts
+import axios, { AxiosResponse } from "axios";
 
-// Helper: format the current date/time nicely
-const fmtDate = (date: Date): string => {
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
-         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-};
+interface PostSummary {
+  id: number;
+  title: string;
+}
 
-// Cron expression – every 5 minutes, on the minute.
-// (Syntax: `m h dom mon dow`)
-// Example: 0 12 * * * → every day at 12:00.
-const cronExpr = '*/5 * * * *';
+async function fetchPostSummaries(
+  limit: number = 5,
+  page: number = 1
+): Promise<PostSummary[]> {
+  const url = "https://jsonplaceholder.typicode.com/posts";
+  const params = { _limit: limit, _page: page };
 
-const job: Job = schedule(cronExpr, () => {
-  const now = new Date();
-  const rand = randomInt(1_000_000); // 0 <= rand < 1,000,000
-  console.log(`[${fmtDate(now)}] Random number: ${rand}`);
-}, {
-  scheduled: true, // start scheduling immediately
-  timezone: 'UTC'  // adjust if you need a different zone
-});
+  // Axios can be typed at the request level:
+  const response: AxiosResponse<PostSummary[]> = await axios.get(url, { params });
 
-// Optional: make the process stay alive but not block exit
-job.task?.unref?.();
+  // We trust the API returns the expected shape, but we still slice the fields we care about.
+  return response.data.map(({ id, title }) => ({ id, title }));
+}
 
-// If you ran the script normally (`node src/scheduler.js` after TS‑compile),
-// the job will keep running. Exit manually when you're done.
+async function main() {
+  try {
+    const summaries = await fetchPostSummaries();
+    console.log("Fetched post summaries:", summaries);
+  } catch (err) {
+    // @ts-ignore – quick error log for demonstration
+    console.error("Something went wrong:", err?.message ?? err);
+  }
+}
+
+main();
