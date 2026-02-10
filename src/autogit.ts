@@ -1,13 +1,16 @@
 /**
- * Calculate the mean (average) of an array of numbers.
- *
- * @param data - a non‑empty array of numbers
- * @returns the mean, or NaN if the array is empty
+ * Return a copy of `text` with all a, e, i, o, u removed.
+ * @param text – The input string.
+ * @returns The string with vowels gone.
  */
-function mean(data: number[]): number {
-  if (data.length === 0) return NaN;          // nothing to average
-  const total = data.reduce((sum, val) => sum + val, 0);
-  return total / data.length;
+export function removeVowels(text: string): string {
+  // `[aeiou]` matches any vowel, and `gi` makes it global & case‑insensitive.
+  return text.replace(/[aeiou]/gi, '');
 }
-const values = [4, 7, 9, 2];
-console.log(mean(values));   // → 5.5
+console.log(removeVowels('Hello, World!')); // "Hll, Wrld!"
+console.log(removeVowels('TypeScript'));     // "TpScrt"
+export function removeVowels(text: string, includeY = false): string {
+  const pattern = includeY ? /[aeiouy]/gi : /[aeiou]/gi;
+  return text.replace(pattern, '');
+}
+removeVowels('Rhythm', true); // "Rhthm"  (if `y` is treated as a vowel)
