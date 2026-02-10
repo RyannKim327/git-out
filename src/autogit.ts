@@ -1,87 +1,105 @@
-// A directed graph: adjacency list
-type Graph = Record<string, string[]>;
-
-// Example: a tiny graph
-const graph: Graph = {
-  A: ["B"],
-  B: ["C"],
-  C: ["A", "D"],
-  D: ["C", "E"],
-  E: [],
-};
-/**
- * Finds all strongly connected components of a directed graph.
- * @param graph The adjacency list of the graph.
- * @returns An array of SCCs; each SCC is an array of vertex IDs.
- */
-function tarjanSCC(graph: Graph): string[][] {
-  let index = 0;                     // global index counter
-  const stack: string[] = [];        // DFS stack
-  const onStack = new Set<string>(); // quick membership check
-
-  // Maps vertex → its index in DFS tree
-  const indices = new Map<string, number>();
-  // Maps vertex → its lowlink value
-  const lowlink = new Map<string, number>();
-  // Result: array of SCCs
-  const sccs: string[][] = [];
-
-  function strongConnect(v: string) {
-    // Step 1: set the depth index for v
-    indices.set(v, index);
-    lowlink.set(v, index);
-    index++;
-    stack.push(v);
-    onStack.add(v);
-
-    // Step 2: consider each successor
-    for (const w of graph[v] ?? []) {
-      if (!indices.has(w)) {
-        // Successor w has not yet been visited; recurse on it.
-        strongConnect(w);
-        // After recursion: update lowlink of v
-        lowlink.set(v, Math.min(lowlink.get(v)!, lowlink.get(w)!));
-      } else if (onStack.has(w)) {
-        // Successor w is in stack → part of current SCC
-        lowlink.set(v, Math.min(lowlink.get(v)!, indices.get(w)!));
-      }
-    }
-
-    // Step 3: If v is a root node, pop the stack and generate an SCC
-    if (lowlink.get(v)! === indices.get(v)!) {
-      const scc: string[] = [];
-      let w: string | undefined;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        scc.push(w);
-      } while (w !== v);
-      sccs.push(scc);
-    }
-  }
-
-  // Kick off DFS for each vertex that hasn't been visited yet
-  for (const v of Object.keys(graph)) {
-    if (!indices.has(v)) {
-      strongConnect(v);
-    }
-  }
-
-  return sccs;
+// A minimal node type
+export interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
-const sccs = tarjanSCC(graph);
-console.log("Strongly connected components:");
-sccs.forEach((scc, i) => {
-  console.log(`  ${i + 1}. [${scc.join(", ")}]`);
-});
-Strongly connected components:
-  1. [A, C, B]
-  2. [E]
-  3. [D]
-type Vertex = number;
+/**
+ * Returns the first common reference node of two singly linked lists,
+ * or null if they do not intersect.
+ */
+export function getIntersectionNode<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  // Edge‑case: if either list is empty, there can’t be an intersection
+  if (!headA || !headB) return null;
 
-// * Update the graph type:
-type Graph = Record<Vertex, Vertex[]>;
+  const seen = new Set<ListNode<T>>();
 
-// * Replace string‑specific typing in the function:
-function tarjanSCC(graph: Graph): Vertex[][] { ... }
+  // Walk the first list, remember every node
+  let cur = headA;
+  while (cur) {
+    seen.add(cur);
+    cur = cur.next;
+  }
+
+  // Walk the second list until we find a node that we already saw
+  cur = headB;
+  while (cur) {
+    if (seen.has(cur)) return cur;   // first intersection node
+    cur = cur.next;
+  }
+
+  return null; // no intersection
+}
+/**
+ * Returns an array of values that appear in *both* lists.
+ * Duplicates are preserved in the sense that each matched node
+ * contributes one entry to the result.
+ */
+export function getCommonValues<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): T[] {
+  const values = new Set<T>();
+  const common: T[] = [];
+
+  // Record every value of the first list
+  for (let node = headA; node; node = node.next) {
+    values.add(node.val);
+  }
+
+  // Walk the second list and pick out matches
+  for (let node = headB; node; node = node.next) {
+    if (values.has(node.val)) common.push(node.val);
+  }
+
+  return common;
+}
+export function getIntersectionNodeTwoPointer<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  if (!headA || !headB) return null;
+
+  let a: ListNode<T> | null = headA;
+  let b: ListNode<T> | null = headB;
+
+  // After at most (lenA + lenB) steps, they either meet or both hit null.
+  while (a !== b) {
+    a = a ? a.next : headB; // switch to the other list
+    b = b ? b.next : headA;
+  }
+
+  return a; // could be null (no intersection) or the meeting node
+}
+// Helper to build a list from an array
+function build<T>(vals: T[]): ListNode<T> | null {
+  let head: ListNode<T> | null = null;
+  let cur: ListNode<T> | null = null;
+  for (const v of vals) {
+    const node: ListNode<T> = { val: v, next: null };
+    if (!head) head = node;
+    if (cur) cur.next = node;
+    cur = node;
+  }
+  return head;
+}
+
+// Example: intersecting lists
+const shared = build([7, 8, 9]);                           // shared tail
+const a1 = build([1, 2]);                                 // first list
+const a2 = build([3, 4]);                                 // second list
+
+// Connect the tails
+let node = a1;
+while (node?.next) node = node.next;
+node.next = shared;
+
+node = a2;
+while (node?.next) node = node.next;
+node.next = shared;
+
+// Find intersection
+const inter = getIntersectionNode(a1, a2);
+console.log(inter?.val); // 7
