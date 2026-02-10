@@ -1,24 +1,43 @@
-/**
- * Count occurrences of a word in a string.
- *
- * @param text   The text to search through.
- * @param word   The word to count (exact case‑sensitive match).
- * @param flags  Optional RegExp flags (default is “g” for global).
- * @returns The number of matches found.
- */
-export function countWordOccurrences(
-  text: string,
-  word: string,
-  flags: string = "g"
-): number {
-  // Escape regex metacharacters in the word so it’s treated literally
-  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const regex = new RegExp(`\\b${escapedWord}\\b`, flags);
-  const matches = text.match(regex);
-  return matches?.length ?? 0;
+interface BinaryTreeNode<T = number> {
+  val: T;                  // The payload – can be any type you need
+  left?: BinaryTreeNode<T>;
+  right?: BinaryTreeNode<T>;
 }
-let sentence = "The quick brown fox jumps over the lazy dog. The fox was quick.";
+function maxDepthRecursive<T>(root?: BinaryTreeNode<T>): number {
+  if (!root) return 0; // An empty tree has depth 0
 
-console.log(countWordOccurrences(sentence, "fox"));          // 2
-console.log(countWordOccurrences(sentence, "quick"));       // 2
-console.log(countWordOccurrences(sentence, "quick", "gi")); // 2 (case‑insensitive)
+  const leftDepth  = maxDepthRecursive(root.left);
+  const rightDepth = maxDepthRecursive(root.right);
+
+  return Math.max(leftDepth, rightDepth) + 1;
+}
+function maxDepthBFS<T>(root?: BinaryTreeNode<T>): number {
+  if (!root) return 0;
+
+  const queue: Array<{ node: BinaryTreeNode<T>; depth: number }> = [{ node: root, depth: 1 }];
+  let maxDepth = 0;
+
+  while (queue.length) {
+    const { node, depth } = queue.shift()!; // Non‑null assertion: queue never empty here
+    maxDepth = Math.max(maxDepth, depth);
+
+    if (node.left)  queue.push({ node: node.left, depth: depth + 1 });
+    if (node.right) queue.push({ node: node.right, depth: depth + 1 });
+  }
+
+  return maxDepth;
+}
+// Example tree:
+//        1
+//       / \
+//      2   3
+//     /
+//    4
+const tree: BinaryTreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 } },
+  right: { val: 3 }
+};
+
+console.log(maxDepthRecursive(tree)); // 3
+console.log(maxDepthBFS(tree));       // 3
