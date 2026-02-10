@@ -1,41 +1,29 @@
 /**
- * KMP string matcher.
- * @param text    Text in which to search.
- * @param pattern Pattern to find.
- * @returns Index of first occurrence of pattern in text, or -1 if not found.
+ * Returns the intersection of two arrays.
+ * @param a  First array.
+ * @param b  Second array.
+ * @returns  Array containing elements that are present in **both** a and b.
  */
-export function kmpSearch(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
+function intersection<T>(a: T[], b: T[]): T[] {
+  // Turn the first array into a Set for O(1) look‑ups.
+  const aSet = new Set(a);
 
-  if (m === 0) return 0;           // Empty pattern matches at start.
-
-  // --------- Step 1: build failure function ----------
-  const fail: number[] = new Array(m).fill(0);
-  let k = 0;                         // length of current match
-
-  for (let i = 1; i < m; i++) {
-    while (k > 0 && pattern[k] !== pattern[i]) {
-      k = fail[k - 1];
-    }
-    if (pattern[k] === pattern[i]) k++;
-    fail[i] = k;
-  }
-
-  // --------- Step 2: scan the text ---------------
-  k = 0;                               // reset pattern index
-  for (let i = 0; i < n; i++) {
-    while (k > 0 && text[i] !== pattern[k]) {
-      k = fail[k - 1];
-    }
-    if (text[i] === pattern[k]) k++;
-
-    if (k === m) {                    // match found
-      return i - m + 1;
+  // Keep only the items from `b` that are also in `aSet`.
+  const result: T[] = [];
+  for (const item of b) {
+    if (aSet.has(item)) {
+      result.push(item);
+      // Optional: remove the item so we don’t collect duplicates if
+      // `a` or `b` contains repeated entries
+      aSet.delete(item);
     }
   }
-
-  return -1;                          // no match
+  return result;
 }
-const idx = kmpSearch('abxabcabcaby', 'abcaby');
-console.log(idx);   // → 6
+console.log(intersection([1, 2, 3, 4], [3, 4, 5, 6])); // → [3, 4]
+
+console.log(intersection(['foo', 'bar'], ['bar', 'baz', 'foo'])); // → ['bar', 'foo']
+
+// With duplicates
+console.log(intersection([1, 2, 2], [2, 2, 3])); // → [2]
+const intersection = (a: any[], b: any[]) => a.filter(x => b.includes(x));
