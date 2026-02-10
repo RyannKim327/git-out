@@ -1,31 +1,11 @@
-/**
- * Counts how many code units a string contains.
- * @param s The string to measure.
- * @returns The length as a number.
- */
-function getStringLength(s: string): number {
-  let count = 0;
+// In‑place reversal
+const arr = [1, 2, 3, 4];
+arr.reverse();             // arr is now [4, 3, 2, 1]
+// Make a copy first, then reverse the copy
+const arr = [1, 2, 3, 4];
+const reversed = [...arr].reverse();   // [4, 3, 2, 1]
 
-  // Keep stepping forward until we encounter an undefined slot.
-  while (s[count] !== undefined) {
-    count++;
-  }
-
-  return count;
-}
-function getStringLengthUsingForOf(s: string): number {
-  let count = 0;
-  for (const _ of s) {
-    count++;        // `_` is just a throwaway variable
-  }
-  return count;    // this is the number of Unicode code points we iterated over
-}
-function getStringLengthRecursive(s: string, idx = 0): number {
-  return s[idx] === undefined
-    ? idx
-    : getStringLengthRecursive(s, idx + 1);
-}
-const demo = "Hello, 👋🌍";
-
-console.log(getStringLength(demo));                    // 13 (code units)
-console.log(getStringLengthUsingForOf(demo));          // 10 (code points)
+ // or
+const reversed = arr.slice().reverse();
+const reverse = <T>(a: T[]): T[] =>
+  a.reduceRight((acc, cur) => [...acc, cur], [] as T[]);
