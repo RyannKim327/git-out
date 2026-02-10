@@ -1,33 +1,45 @@
-/**
- * Returns the index of the first non‑repeating character.
- * If every character repeats, returns -1.
- *
- * @param s – the string to scan
- */
-function firstNonRepeatingIndex(s: string): number {
-  // 1️⃣ Count how many times each character occurs
-  const freq = new Map<string, number>();
-
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
-
-  // 2️⃣ Scan again from the start, picking the first that has count 1
-  for (let i = 0; i < s.length; i++) {
-    if (freq.get(s[i]) === 1) {
-      return i;    // return the index, you can return the character with s[i]
-    }
-  }
-
-  return -1; // no unique character found
+// 1️⃣  Node definition
+interface TreeNode<T = unknown> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
 
-// Demo
-const txt = "mybobby";
-const idx = firstNonRepeatingIndex(txt);
+// 2️⃣  Recursive leaf counter
+function countLeaves<T>(node?: TreeNode<T>): number {
+  // Base case: empty sub‑tree
+  if (!node) return 0;
 
-if (idx >= 0) {
-  console.log(`First non‑repeating char: '${txt[idx]}' at position ${idx}`);
-} else {
-  console.log("All characters repeat");
+  // A leaf has no children
+  const isLeaf = !node.left && !node.right;
+  if (isLeaf) return 1;
+
+  // Recurse on the two sub‑trees
+  return countLeaves(node.left) + countLeaves(node.right);
+}
+
+// 3️⃣  Example usage
+const tree: TreeNode<number> = {
+  value: 1,
+  left: { value: 2, right: { value: 4 } },
+  right: { value: 3, left: { value: 5 } }
+};
+
+console.log(countLeaves(tree)); // → 3
+function countLeavesIterative<T>(root: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let stack: TreeNode<T>[] = [root];
+  let leafCount = 0;
+
+  while (stack.length) {
+    const node = stack.pop()!; // guaranteed defined
+    if (!node.left && !node.right) {
+      leafCount++;
+    } else {
+      if (node.right) stack.push(node.right);
+      if (node.left)  stack.push(node.left);
+    }
+  }
+  return leafCount;
 }
