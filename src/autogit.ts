@@ -1,113 +1,93 @@
-type Hashable = string | number;
+// 1️⃣  Generic node type
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null = null;
+  right: TreeNode<T> | null = null;
 
-// A node in a linked list that stores a key–value pair.
-class ListNode<K extends Hashable, V> {
-  constructor(
-    public key: K,
-    public value: V,
-    public next: ListNode<K, V> | null = null
-  ) {}
+  constructor(value: T) {
+    this.value = value;
+  }
 }
 
-// A very small, non‑generic implementation.
-// Could be turned into a generic class if you want re‑usability.
-class HashTable<K extends Hashable, V> {
-  // Number of buckets.  53 is a prime that keeps things a bit uniform.
-  private readonly bucketCount = 53;
-  private readonly buckets: Array<ListNode<K, V> | null>;
+// 2️⃣  BinaryTree class
+class BinaryTree<T> {
+  root: TreeNode<T> | null = null;
 
-  constructor() {
-    // fill the array with nulls
-    this.buckets = Array(this.bucketCount).fill(null);
-  }
+  // Insert a value – keeps the tree *ordered* (BST rule)
+  insert(value: T, comparator: (a: T, b: T) => number) {
+    const newNode = new TreeNode(value);
 
-  // Simple hash: string => simple accumulating hash; number => straight
-  private hash(key: K): number {
-    let h: number;
-    if (typeof key === "number") {
-      h = key;
-    } else {
-      h = 0;
-      for (let i = 0; i < key.length; i++) {
-        // 31 is a classic multiplier in hash functions
-        h = (h * 31 + key.charCodeAt(i)) | 0; // |0 keeps it 32‑bit
-      }
+    if (!this.root) {
+      this.root = newNode;
+      return;
     }
-    // Ensure positive index
-    return Math.abs(h) % this.bucketCount;
-  }
 
-  set(key: K, value: V): void {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-
-    // If there’s already a node, see if the key matches
-    while (node) {
-      if (node.key === key) {
-        node.value = value; // update
+    let current: TreeNode<T> | null = this.root;
+    while (current) {
+      const comp = comparator(value, current.value);
+      if (comp < 0) {
+        if (!current.left) {
+          current.left = newNode;
+          return;
+        }
+        current = current.left;
+      } else if (comp > 0) {
+        if (!current.right) {
+          current.right = newNode;
+          return;
+        }
+        current = current.right;
+      } else {
+        // Duplicate – decide what to do; here we just replace
+        current.value = value;
         return;
       }
-      node = node.next;
     }
-
-    // No match – prepend a new node (O(1) for inserts)
-    const newNode = new ListNode(key, value, this.buckets[idx]);
-    this.buckets[idx] = newNode;
   }
 
-  get(key: K): V | undefined {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-
-    while (node) {
-      if (node.key === key) return node.value;
-      node = node.next;
+  // Find a node with a particular value
+  find(value: T, comparator: (a: T, b: T) => number): TreeNode<T> | null {
+    let current = this.root;
+    while (current) {
+      const comp = comparator(value, current.value);
+      if (comp === 0) return current;
+      current = comp < 0 ? current.left : current.right;
     }
-    return undefined;
+    return null;
   }
 
-  has(key: K): boolean {
-    return this.get(key) !== undefined;
+  // In‑order traversal (left, root, right)
+  inOrder(callback: (node: TreeNode<T>) => void) {
+    const visit = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      visit(node.left);
+      callback(node);
+      visit(node.right);
+    };
+    visit(this.root);
   }
 
-  delete(key: K): boolean {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-    let prev: ListNode<K, V> | null = null;
-
-    while (node) {
-      if (node.key === key) {
-        if (prev) prev.next = node.next;
-        else this.buckets[idx] = node.next;
-        return true;
-      }
-      prev = node;
-      node = node.next;
-    }
-    return false;
-  }
-
-  // For debugging / tests: flatten the table into a plain object
-  toObject(): Record<string, V> {
-    const out: Record<string, V> = {};
-    for (const bucket of this.buckets) {
-      let node = bucket;
-      while (node) {
-        out[String(node.key)] = node.value;
-        node = node.next;
-      }
-    }
-    return out;
-  }
+  // Pre‑ and post‑order are left to you if needed
 }
-const table = new HashTable<string, number>();
-table.set("alpha", 1);
-table.set("beta", 2);
-table.set("gamma", 3);
-table.set("delta", 4);
+const cmpNum = (a: number, b: number) => a - b;
+const cmpStr = (a: string, b: string) => a.localeCompare(b);
+const tree = new BinaryTree<number>();
 
-console.log(table.get("beta"));   // 2
-console.log(table.has("epsilon")); // false
+tree.insert(42, cmpNum);
+tree.insert(23, cmpNum);
+tree.insert(87, cmpNum);
+tree.insert(13, cmpNum);
+tree.insert(31, cmpNum);
 
-table.delete("gamma");
-console.log(table.toObject());    // { alpha: 1, beta: 2, delta: 4 }
+console.log("In‑order traversal:");
+tree.inOrder(node => console.log(node.value));
+
+const found = tree.find(31, cmpNum);
+console.log(found ? `Found ${found.value}` : "Not found");
+In-order traversal:
+13
+23
+31
+42
+87
+Found 31
