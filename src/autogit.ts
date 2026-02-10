@@ -1,105 +1,115 @@
-// A minimal node type
-export interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
-}
-/**
- * Returns the first common reference node of two singly linked lists,
- * or null if they do not intersect.
- */
-export function getIntersectionNode<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  // Edge‑case: if either list is empty, there can’t be an intersection
-  if (!headA || !headB) return null;
+// 1️⃣ Node – every node knows its children and whether it finishes a word
+class TrieNode {
+    /** Map <character, child node> */
+    children: Map<string, TrieNode>;
+    /** True if node represents the end of an inserted word */
+    isWord: boolean;
 
-  const seen = new Set<ListNode<T>>();
-
-  // Walk the first list, remember every node
-  let cur = headA;
-  while (cur) {
-    seen.add(cur);
-    cur = cur.next;
-  }
-
-  // Walk the second list until we find a node that we already saw
-  cur = headB;
-  while (cur) {
-    if (seen.has(cur)) return cur;   // first intersection node
-    cur = cur.next;
-  }
-
-  return null; // no intersection
-}
-/**
- * Returns an array of values that appear in *both* lists.
- * Duplicates are preserved in the sense that each matched node
- * contributes one entry to the result.
- */
-export function getCommonValues<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): T[] {
-  const values = new Set<T>();
-  const common: T[] = [];
-
-  // Record every value of the first list
-  for (let node = headA; node; node = node.next) {
-    values.add(node.val);
-  }
-
-  // Walk the second list and pick out matches
-  for (let node = headB; node; node = node.next) {
-    if (values.has(node.val)) common.push(node.val);
-  }
-
-  return common;
-}
-export function getIntersectionNodeTwoPointer<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  if (!headA || !headB) return null;
-
-  let a: ListNode<T> | null = headA;
-  let b: ListNode<T> | null = headB;
-
-  // After at most (lenA + lenB) steps, they either meet or both hit null.
-  while (a !== b) {
-    a = a ? a.next : headB; // switch to the other list
-    b = b ? b.next : headA;
-  }
-
-  return a; // could be null (no intersection) or the meeting node
-}
-// Helper to build a list from an array
-function build<T>(vals: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null;
-  let cur: ListNode<T> | null = null;
-  for (const v of vals) {
-    const node: ListNode<T> = { val: v, next: null };
-    if (!head) head = node;
-    if (cur) cur.next = node;
-    cur = node;
-  }
-  return head;
+    constructor() {
+        this.children = new Map();
+        this.isWord = false;
+    }
 }
 
-// Example: intersecting lists
-const shared = build([7, 8, 9]);                           // shared tail
-const a1 = build([1, 2]);                                 // first list
-const a2 = build([3, 4]);                                 // second list
+// 2️⃣ Trie – wrapper around the root node
+class Trie {
+    private root: TrieNode;
 
-// Connect the tails
-let node = a1;
-while (node?.next) node = node.next;
-node.next = shared;
+    constructor() {
+        this.root = new TrieNode();
+    }
 
-node = a2;
-while (node?.next) node = node.next;
-node.next = shared;
+    /** Inserts a word into the trie */
+    insert(word: string): void {
+        let node = this.root;
+        for (const ch of word) {
+            if (!node.children.has(ch)) {
+                node.children.set(ch, new TrieNode());
+            }
+            node = node.children.get(ch)!;
+        }
+        node.isWord = true;
+    }
 
-// Find intersection
-const inter = getIntersectionNode(a1, a2);
-console.log(inter?.val); // 7
+    /** Returns true if the trie contains the exact word */
+    search(word: string): boolean {
+        const node = this._traverse(word);
+        return node?.isWord ?? false;
+    }
+
+    /** Returns true if the trie contains any word that starts with the prefix */
+    startsWith(prefix: string): boolean {
+        const node = this._traverse(prefix);
+        return !!node;
+    }
+
+    /** Remove a word – returns true if a word was removed */
+    remove(word: string): boolean {
+        const stack: Array<{ node: TrieNode; char: string }> = [];
+
+        let node = this.root;
+        for (const ch of word) {
+            const child = node.children.get(ch);
+            if (!child) return false; // word not present
+            stack.push({ node, char: ch });
+            node = child;
+        }
+
+        if (!node.isWord) return false; // not a complete word
+
+        node.isWord = false;
+
+        // Clean up nodes that are no longer needed
+        while (stack.length && !node.isWord && node.children.size === 0) {
+            const { node: parent, char } = stack.pop()!;
+            parent.children.delete(char);
+            node = parent;
+        }
+
+        return true;
+    }
+
+    /** Suggest words that start with a prefix (up to maxResults) */
+    suggest(prefix: string, maxResults = 10): string[] {
+        const results: string[] = [];
+        let node = this.root;
+        for (const ch of prefix) {
+            const child = node.children.get(ch);
+            if (!child) return results;
+            node = child;
+        }
+        this._dfs(node, prefix, results, maxResults);
+        return results;
+    }
+
+    /* ---------- private helpers ---------- */
+    // walk through the trie following the key; return node or null
+    private _traverse(key: string): TrieNode | null {
+        let node: TrieNode | undefined = this.root;
+        for (const ch of key) {
+            node = node.children.get(ch);
+            if (!node) return null;
+        }
+        return node as TrieNode;
+    }
+
+    private _dfs(node: TrieNode, path: string, out: string[], limit: number): void {
+        if (out.length >= limit) return;
+        if (node.isWord) out.push(path);
+        for (const [ch, child] of node.children.entries()) {
+            this._dfs(child, path + ch, out, limit);
+        }
+    }
+}
+const trie = new Trie();
+trie.insert('apple');
+trie.insert('app');
+trie.insert('banana');
+
+console.log(trie.search('app'));      // true
+console.log(trie.search('apricot'));  // false
+console.log(trie.startsWith('app'));  // true
+console.log(trie.suggest('app'));     // ['app', 'apple']
+
+trie.remove('app');
+console.log(trie.search('app'));      // false
