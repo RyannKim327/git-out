@@ -1,51 +1,24 @@
-// ----------  Tree node definition ----------
-class TreeNode<T> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+/**
+ * Count occurrences of a word in a string.
+ *
+ * @param text   The text to search through.
+ * @param word   The word to count (exact case‑sensitive match).
+ * @param flags  Optional RegExp flags (default is “g” for global).
+ * @returns The number of matches found.
+ */
+export function countWordOccurrences(
+  text: string,
+  word: string,
+  flags: string = "g"
+): number {
+  // Escape regex metacharacters in the word so it’s treated literally
+  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`\\b${escapedWord}\\b`, flags);
+  const matches = text.match(regex);
+  return matches?.length ?? 0;
 }
+let sentence = "The quick brown fox jumps over the lazy dog. The fox was quick.";
 
-// ----------  Diameter helper ----------
-function diameter(root: TreeNode<any> | null): number {
-  let maxDiameter = 0;           // global best
-
-  // returns height of subtree rooted at `node`
-  function dfs(node: TreeNode<any> | null): number {
-    if (!node) return 0;
-
-    const leftH  = dfs(node.left);
-    const rightH = dfs(node.right);
-
-    // path that passes through this node
-    const candidate = leftH + rightH;
-    if (candidate > maxDiameter) maxDiameter = candidate;
-
-    // height of this subtree
-    return Math.max(leftH, rightH) + 1;
-  }
-
-  dfs(root);
-  return maxDiameter;                   // number of edges on the longest path
-}
-
-/* ------------------------------------------------------------------ */
-/*  Quick sanity check – build a tree and run the function             */
-/* ------------------------------------------------------------------ */
-
-const a = new TreeNode('a');
-const b = new TreeNode('b');
-const c = new TreeNode('c');
-const d = new TreeNode('d');
-const e = new TreeNode('e');
-const f = new TreeNode('f');
-
-a.left  = b;                //   a
-a.right = c;                //  / \
-b.left  = d;                // d   c
-b.right = e;                //  \   \
-e.right = f;                //   f
-
-console.log(diameter(a));   // → 4
-const diameterInNodes = diameter(root) + 1;
+console.log(countWordOccurrences(sentence, "fox"));          // 2
+console.log(countWordOccurrences(sentence, "quick"));       // 2
+console.log(countWordOccurrences(sentence, "quick", "gi")); // 2 (case‑insensitive)
