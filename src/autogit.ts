@@ -1,13 +1,21 @@
 /**
- * Calculate the mean (average) of an array of numbers.
- *
- * @param data - a non‑empty array of numbers
- * @returns the mean, or NaN if the array is empty
+ * Factorial using recursion.
+ * Works for ordinary numbers up to 20 (safe integer range).
+ * If you need bigger results, use BigInt and the overload below.
  */
-function mean(data: number[]): number {
-  if (data.length === 0) return NaN;          // nothing to average
-  const total = data.reduce((sum, val) => sum + val, 0);
-  return total / data.length;
+function factorial(n: number): number {
+  if (n < 0) throw new Error("Negative values are not allowed");
+  if (n <= 1) return 1;          // base case
+  return n * factorial(n - 1);   // recursive step
 }
-const values = [4, 7, 9, 2];
-console.log(mean(values));   // → 5.5
+
+/**
+ * A BigInt version for arbitrary‑size factorials.
+ */
+function factorialBigInt(n: bigint): bigint {
+  if (n < 0n) throw new Error("Negative values are not allowed");
+  if (n <= 1n) return 1n;
+  return n * factorialBigInt(n - 1n);
+}
+console.log(factorial(5));          // 120
+console.log(factorialBigInt(25n));  // 15511210043330985984000000n
