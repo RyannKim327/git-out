@@ -1,139 +1,87 @@
-// 1️⃣  Types ---------------------------------------------------------------
+// A directed graph: adjacency list
+type Graph = Record<string, string[]>;
 
+// Example: a tiny graph
+const graph: Graph = {
+  A: ["B"],
+  B: ["C"],
+  C: ["A", "D"],
+  D: ["C", "E"],
+  E: [],
+};
 /**
- * A simple graph node.  The generic parameter `T` lets you store any
- * payload with the node (e.g., a string label, a number, an object, …).
+ * Finds all strongly connected components of a directed graph.
+ * @param graph The adjacency list of the graph.
+ * @returns An array of SCCs; each SCC is an array of vertex IDs.
  */
-export interface Node<T> {
-    id: string;          // unique key for the node
-    value: T;            // whatever you want to keep with it
-    neighbors: Node<T>[]; // adjacency list
-}
+function tarjanSCC(graph: Graph): string[][] {
+  let index = 0;                     // global index counter
+  const stack: string[] = [];        // DFS stack
+  const onStack = new Set<string>(); // quick membership check
 
-/**
- * A helper that produces a queue with the three essential ops.
- * We keep a head index instead of shifting the array for O(1) time.
- */
-class Queue<T> {
-    private items: T[] = [];
-    private head: number = 0;
+  // Maps vertex → its index in DFS tree
+  const indices = new Map<string, number>();
+  // Maps vertex → its lowlink value
+  const lowlink = new Map<string, number>();
+  // Result: array of SCCs
+  const sccs: string[][] = [];
 
-    push(item: T) { this.items.push(item); }
+  function strongConnect(v: string) {
+    // Step 1: set the depth index for v
+    indices.set(v, index);
+    lowlink.set(v, index);
+    index++;
+    stack.push(v);
+    onStack.add(v);
 
-    shift(): T | undefined {
-        if (this.head >= this.items.length) return undefined;
-        const item = this.items[this.head++];
-        // Do a bit of housekeeping to keep the array from growing forever.
-        if (this.head > 1000) {                                   
-            this.items = this.items.slice(this.head);
-            this.head = 0;
-        }
-        return item;
+    // Step 2: consider each successor
+    for (const w of graph[v] ?? []) {
+      if (!indices.has(w)) {
+        // Successor w has not yet been visited; recurse on it.
+        strongConnect(w);
+        // After recursion: update lowlink of v
+        lowlink.set(v, Math.min(lowlink.get(v)!, lowlink.get(w)!));
+      } else if (onStack.has(w)) {
+        // Successor w is in stack → part of current SCC
+        lowlink.set(v, Math.min(lowlink.get(v)!, indices.get(w)!));
+      }
     }
 
-    size() { return this.items.length - this.head; }
-
-    isEmpty() { return this.size() === 0; }
-}
-
-
-// 2️⃣  Breadth‑First Search -----------------------------------------------
-
-/**
- * Returns an array of nodes in the order they were visited.
- * `start` is the node to begin from.
- * Optional `getNeighbors` allows you to supply a custom adjacency function.
- */
-export function bfs<T>(
-    start: Node<T>,
-    getNeighbors?: (node: Node<T>) => Iterable<Node<T>>
-): Node<T>[] {
-
-    const visited = new Set<string>();
-    const queue = new Queue<Node<T>>();
-    const order: Node<T>[] = [];
-
-    visited.add(start.id);
-    queue.push(start);
-
-    while (!queue.isEmpty()) {
-        const current = queue.shift()!;   // non‑undefined because we checked queue.isEmpty()
-        order.push(current);
-
-        const neighbors = getNeighbors
-            ? getNeighbors(current)
-            : current.neighbors;          // fallback to adjacency list
-
-        for (const nb of neighbors) {
-            if (!visited.has(nb.id)) {
-                visited.add(nb.id);
-                queue.push(nb);
-            }
-        }
+    // Step 3: If v is a root node, pop the stack and generate an SCC
+    if (lowlink.get(v)! === indices.get(v)!) {
+      const scc: string[] = [];
+      let w: string | undefined;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        scc.push(w);
+      } while (w !== v);
+      sccs.push(scc);
     }
+  }
 
-    return order;
+  // Kick off DFS for each vertex that hasn't been visited yet
+  for (const v of Object.keys(graph)) {
+    if (!indices.has(v)) {
+      strongConnect(v);
+    }
+  }
+
+  return sccs;
 }
+const sccs = tarjanSCC(graph);
+console.log("Strongly connected components:");
+sccs.forEach((scc, i) => {
+  console.log(`  ${i + 1}. [${scc.join(", ")}]`);
+});
+Strongly connected components:
+  1. [A, C, B]
+  2. [E]
+  3. [D]
+type Vertex = number;
 
+// * Update the graph type:
+type Graph = Record<Vertex, Vertex[]>;
 
-// 3️⃣  Example:  undirected graph -----------------------------------------
-
-// Helper to wire nodes together
-function link<T>(a: Node<T>, b: Node<T>) {
-    a.neighbors.push(b);
-    b.neighbors.push(a);
-}
-
-// Create a small graph
-const a = { id: 'A', value: 1, neighbors: [] } as Node<number>;
-const b = { id: 'B', value: 2, neighbors: [] } as Node<number>;
-const c = { id: 'C', value: 3, neighbors: [] } as Node<number>;
-const d = { id: 'D', value: 4, neighbors: [] } as Node<number>;
-const e = { id: 'E', value: 5, neighbors: [] } as Node<number>;
-
-link(a, b);
-link(a, c);
-link(b, d);
-link(c, d);
-link(d, e);
-
-// Run BFS
-const bfsResult = bfs(a);          // depth‑first will visit A → B → C → D → E
-console.log('BFS order:', bfsResult.map(n => n.id));
-
-// 4️⃣  Tweaking with a custom neighbor fetch ------------------------------
-
-/**
- * Suppose your graph data is stored in an adjacency map:
- *   { 'A': ['B', 'C'], ... }
- * You can adapt BFS by supplying a `getNeighbors` callback.
- */
-const adjacency: Record<string, string[]> = {
-    A: ['B', 'C'],
-    B: ['A', 'D'],
-    C: ['A', 'D'],
-    D: ['B', 'C', 'E'],
-    E: ['D']
-};
-
-const nodes = Object.fromEntries(
-    Object.keys(adjacency).map(id => [id, { id, value: id, neighbors: [] } as Node<string>])
-);
-
-// Convert adjacency graph to node objects (without circular refs)
-for (const [id, nbrs] of Object.entries(adjacency)) {
-    const node = nodes[id]!;
-    node.neighbors = nbrs.map(n => nodes[n]!);
-}
-
-// Or just keep the adjacency map and pull neighbors on the fly:
-const bfsFromMap = (startId: string): string[] => {
-    const startNode = nodes[startId]!;
-    const path = bfs(startNode, n => adjacency[n.id].map(id => nodes[id]!));
-    return path.map(n => n.id);
-};
-
-console.log('BFS from map:', bfsFromMap('A'));
-
-// -------------------------------------------------------------------------
-
+// * Replace string‑specific typing in the function:
+function tarjanSCC(graph: Graph): Vertex[][] { ... }
