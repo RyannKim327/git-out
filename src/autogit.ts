@@ -1,71 +1,115 @@
-/**
- * Heap‑sort – sorts an array of numbers in ascending order.
- * The algorithm works in O(n log n) time and O(1) extra space (in‑place).
- *
- * @param arr The array to sort – it will be mutated.
- */
-export function heapSort(arr: number[]): void {
-  const n = arr.length;
+// 1️⃣ Node – every node knows its children and whether it finishes a word
+class TrieNode {
+    /** Map <character, child node> */
+    children: Map<string, TrieNode>;
+    /** True if node represents the end of an inserted word */
+    isWord: boolean;
 
-  // Step 1. Build a max‑heap.
-  // The last non‑leaf node is at floor(n/2) - 1.
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-    siftDown(arr, i, n);
-  }
-
-  // Step 2. Repeatedly extract the maximum element.
-  for (let end = n - 1; end > 0; end--) {
-    swap(arr, 0, end);          // Move current max to its final position.
-    siftDown(arr, 0, end);      // Restore heap property for the reduced heap.
-  }
+    constructor() {
+        this.children = new Map();
+        this.isWord = false;
+    }
 }
 
-/**
- * Restores the max‑heap property by sifting a node downwards.
- *
- * @param heap  The heap array.
- * @param start Index of the node to sift down.
- * @param size  The current size of the heap (elements >= size are already sorted).
- */
-function siftDown(heap: number[], start: number, size: number): void {
-  let root = start;
+// 2️⃣ Trie – wrapper around the root node
+class Trie {
+    private root: TrieNode;
 
-  while (true) {
-    const left = 2 * root + 1;   // Left child index.
-    const right = left + 1;      // Right child index.
-    let largest = root;
-
-    // If left child exists and is greater than root.
-    if (left < size && heap[left] > heap[largest]) {
-      largest = left;
+    constructor() {
+        this.root = new TrieNode();
     }
 
-    // If right child exists and is greater than current largest.
-    if (right < size && heap[right] > heap[largest]) {
-      largest = right;
+    /** Inserts a word into the trie */
+    insert(word: string): void {
+        let node = this.root;
+        for (const ch of word) {
+            if (!node.children.has(ch)) {
+                node.children.set(ch, new TrieNode());
+            }
+            node = node.children.get(ch)!;
+        }
+        node.isWord = true;
     }
 
-    // If root is already the largest, the heap property holds.
-    if (largest === root) break;
+    /** Returns true if the trie contains the exact word */
+    search(word: string): boolean {
+        const node = this._traverse(word);
+        return node?.isWord ?? false;
+    }
 
-    // Swap root with the larger child and continue sifting down.
-    swap(heap, root, largest);
-    root = largest;
-  }
-}
+    /** Returns true if the trie contains any word that starts with the prefix */
+    startsWith(prefix: string): boolean {
+        const node = this._traverse(prefix);
+        return !!node;
+    }
 
-/**
- * Utility to swap two elements in an array.
- *
- * @param a    Array containing the elements.
- * @param i    Index of the first element.
- * @param j    Index of the second element.
- */
-function swap(a: number[], i: number, j: number): void {
-  const tmp = a[i];
-  a[i] = a[j];
-  a[j] = tmp;
+    /** Remove a word – returns true if a word was removed */
+    remove(word: string): boolean {
+        const stack: Array<{ node: TrieNode; char: string }> = [];
+
+        let node = this.root;
+        for (const ch of word) {
+            const child = node.children.get(ch);
+            if (!child) return false; // word not present
+            stack.push({ node, char: ch });
+            node = child;
+        }
+
+        if (!node.isWord) return false; // not a complete word
+
+        node.isWord = false;
+
+        // Clean up nodes that are no longer needed
+        while (stack.length && !node.isWord && node.children.size === 0) {
+            const { node: parent, char } = stack.pop()!;
+            parent.children.delete(char);
+            node = parent;
+        }
+
+        return true;
+    }
+
+    /** Suggest words that start with a prefix (up to maxResults) */
+    suggest(prefix: string, maxResults = 10): string[] {
+        const results: string[] = [];
+        let node = this.root;
+        for (const ch of prefix) {
+            const child = node.children.get(ch);
+            if (!child) return results;
+            node = child;
+        }
+        this._dfs(node, prefix, results, maxResults);
+        return results;
+    }
+
+    /* ---------- private helpers ---------- */
+    // walk through the trie following the key; return node or null
+    private _traverse(key: string): TrieNode | null {
+        let node: TrieNode | undefined = this.root;
+        for (const ch of key) {
+            node = node.children.get(ch);
+            if (!node) return null;
+        }
+        return node as TrieNode;
+    }
+
+    private _dfs(node: TrieNode, path: string, out: string[], limit: number): void {
+        if (out.length >= limit) return;
+        if (node.isWord) out.push(path);
+        for (const [ch, child] of node.children.entries()) {
+            this._dfs(child, path + ch, out, limit);
+        }
+    }
 }
-const data = [5, 3, 8, 4, 1, 2];
-heapSort(data);
-console.log(data);  // → [1, 2, 3, 4, 5, 8]
+const trie = new Trie();
+trie.insert('apple');
+trie.insert('app');
+trie.insert('banana');
+
+console.log(trie.search('app'));      // true
+console.log(trie.search('apricot'));  // false
+console.log(trie.startsWith('app'));  // true
+console.log(trie.suggest('app'));     // ['app', 'apple']
+
+trie.remove('app');
+console.log(trie.search('app'));      // false
