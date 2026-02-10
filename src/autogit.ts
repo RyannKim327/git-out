@@ -1,23 +1,52 @@
-const numbers: number[] = [34, 7, 23, 32, 5, 62];
-
-// 1️⃣ Basic MDN‑style numeric sort
-const sorted = numbers.slice().sort((a, b) => a - b);
-console.log(sorted); // [5, 7, 23, 32, 34, 62]
-[34, 7, 23, 32, 5, 62].sort(); // [23, 32, 34, 5, 62, 7]
-const descending = numbers.slice().sort((a, b) => b - a);
-console.log(descending); // [62, 34, 32, 23, 7, 5]
-function insertionSort(arr: number[]): number[] {
-  const res = arr.slice();
-  for (let i = 1; i < res.length; i++) {
-    let key = res[i];
-    let j = i - 1;
-    while (j >= 0 && res[j] > key) {
-      res[j + 1] = res[j];
-      j--;
-    }
-    res[j + 1] = key;
-  }
-  return res;
+interface TreeNode {
+  value: number;          // what you want to sum
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
+function sumTreeRecursive(node: TreeNode | null): number {
+  if (!node) return 0;
 
-console.log(insertionSort(numbers)); // same sorted output
+  const leftSum  = sumTreeRecursive(node.left ?? null);
+  const rightSum = sumTreeRecursive(node.right ?? null);
+
+  return node.value + leftSum + rightSum;
+}
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+
+  let total = 0;
+  const stack: TreeNode[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.value;
+
+    // Push children in any order – the sum is commutative.
+    if (node.right) stack.push(node.right);
+    if (node.left)  stack.push(node.left);
+  }
+
+  return total;
+}
+// A tiny test tree:
+//        5
+//       / \
+//      3   7
+//     / \   \
+//    2   4   8
+
+const testTree: TreeNode = {
+  value: 5,
+  left: {
+    value: 3,
+    left:  { value: 2 },
+    right: { value: 4 }
+  },
+  right: {
+    value: 7,
+    right: { value: 8 }
+  }
+};
+
+console.log('Recursive sum:', sumTreeRecursive(testTree));  // 29
+console.log('Iterative sum:', sumTreeIterative(testTree));  // 29
