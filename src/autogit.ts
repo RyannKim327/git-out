@@ -1,56 +1,43 @@
-// ------------------------------------------------------------------
-// 1) Basic types – tweak these to match your own representation.
-// ------------------------------------------------------------------
-interface Node<T> {
-  /** Value that identifies the node – can be an id, a name, … */
-  id: string;
-  /** Children (or neighbours) – the graph may be directed or undirected. */
-  children?: Array<Node<T>>;
+interface BinaryTreeNode<T = number> {
+  val: T;                  // The payload – can be any type you need
+  left?: BinaryTreeNode<T>;
+  right?: BinaryTreeNode<T>;
 }
+function maxDepthRecursive<T>(root?: BinaryTreeNode<T>): number {
+  if (!root) return 0; // An empty tree has depth 0
 
-// A very simple match predicate. Replace it with whatever checks your
-// problem needs (e.g. `node.id === targetId`).
-type MatchFn<T> = (node: Node<T>) => boolean;
+  const leftDepth  = maxDepthRecursive(root.left);
+  const rightDepth = maxDepthRecursive(root.right);
 
-// ------------------------------------------------------------------
-// 2) Depth‑limited search – iterative (uses an explicit stack).
-// ------------------------------------------------------------------
-export function depthLimitedSearch<T>(
-  start: Node<T>,          // The root (or any arbitrary start node)
-  match: MatchFn<T>,      // Predicate to decide if the node is a goal
-  limit: number            // Maximum depth that may be explored
-): Node<T> | null {
+  return Math.max(leftDepth, rightDepth) + 1;
+}
+function maxDepthBFS<T>(root?: BinaryTreeNode<T>): number {
+  if (!root) return 0;
 
-  // Stack holds tuples  : [current node, current depth]
-  const stack: Array<[Node<T>, number]> = [[start, 0]];
+  const queue: Array<{ node: BinaryTreeNode<T>; depth: number }> = [{ node: root, depth: 1 }];
+  let maxDepth = 0;
 
-  while (stack.length > 0) {
-    const [node, depth] = stack.pop()!;   // `!` is safe – we just checked length
+  while (queue.length) {
+    const { node, depth } = queue.shift()!; // Non‑null assertion: queue never empty here
+    maxDepth = Math.max(maxDepth, depth);
 
-    // 1️⃣  Goal check
-    if (match(node)) {
-      return node;
-    }
-
-    // 2️⃣  Depth test – we only enqueue children if we still have room
-    if (depth < limit && node.children) {
-      // Push children onto stack – last child examined first (DFS order)
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        stack.push([node.children[i], depth + 1]);
-      }
-    }
+    if (node.left)  queue.push({ node: node.left, depth: depth + 1 });
+    if (node.right) queue.push({ node: node.right, depth: depth + 1 });
   }
 
-  // No goal found within the depth budget
-  return null;
+  return maxDepth;
 }
-const tree: Node<number> = {
-  id: 'root',
-  children: [
-    { id: 'a', children: [{ id: 'a1' }, { id: 'a2' }] },
-    { id: 'b', children: [{ id: 'b1' }, { id: 'b2' }] },
-  ],
+// Example tree:
+//        1
+//       / \
+//      2   3
+//     /
+//    4
+const tree: BinaryTreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 } },
+  right: { val: 3 }
 };
 
-const found = depthLimitedSearch(tree, node => node.id === 'a2', /* limit */ 2);
-console.log(found?.id ?? 'not found'); // → a2
+console.log(maxDepthRecursive(tree)); // 3
+console.log(maxDepthBFS(tree));       // 3
