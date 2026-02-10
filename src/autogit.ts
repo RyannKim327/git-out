@@ -1,24 +1,66 @@
-/**
- * Count occurrences of a word in a string.
- *
- * @param text   The text to search through.
- * @param word   The word to count (exact case‑sensitive match).
- * @param flags  Optional RegExp flags (default is “g” for global).
- * @returns The number of matches found.
- */
-export function countWordOccurrences(
-  text: string,
-  word: string,
-  flags: string = "g"
-): number {
-  // Escape regex metacharacters in the word so it’s treated literally
-  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const regex = new RegExp(`\\b${escapedWord}\\b`, flags);
-  const matches = text.match(regex);
-  return matches?.length ?? 0;
-}
-let sentence = "The quick brown fox jumps over the lazy dog. The fox was quick.";
+class ListNode {
+  val: number;
+  next: ListNode | null;
 
-console.log(countWordOccurrences(sentence, "fox"));          // 2
-console.log(countWordOccurrences(sentence, "quick"));       // 2
-console.log(countWordOccurrences(sentence, "quick", "gi")); // 2 (case‑insensitive)
+  constructor(val: number, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
+  }
+}
+
+/**
+ * Returns true if the list contains a cycle, false otherwise.
+ */
+function hasCycle(head: ListNode | null): boolean {
+  let slow = head;
+  let fast = head;
+
+  while (fast && fast.next) {
+    slow = slow.next;             // move one step
+    fast = fast.next.next;        // move two steps
+
+    if (slow === fast) {          // pointers meet → cycle
+      return true;
+    }
+  }
+
+  // fast reached the end → no cycle
+  return false;
+}
+/**
+ * Returns true if the list contains a cycle, false otherwise.
+ * Uses a Set to remember nodes we've seen.
+ */
+function hasCycleWithSet(head: ListNode | null): boolean {
+  const visited = new Set<ListNode>();
+
+  let current = head;
+  while (current) {
+    if (visited.has(current)) {
+      return true;               // seen it before → cycle
+    }
+    visited.add(current);
+    current = current.next;
+  }
+
+  return false;                  // reached the end
+}
+// 1 ➜ 2 ➜ 3 ➜ 4 ➜ null   (no cycle)
+const a = new ListNode(1);
+a.next = new ListNode(2, new ListNode(3, new ListNode(4)));
+
+console.log(hasCycle(a));          // false
+console.log(hasCycleWithSet(a));   // false
+
+// 1 ➜ 2 ➜ 3 ➜ 4 ➜ 2 ...   (cycle back to node 2)
+const b = new ListNode(1);
+const node2 = new ListNode(2);
+const node3 = new ListNode(3);
+const node4 = new ListNode(4);
+b.next = node2;
+node2.next = node3;
+node3.next = node4;
+node4.next = node2;                // close the loop
+
+console.log(hasCycle(b));          // true
+console.log(hasCycleWithSet(b));   // true
