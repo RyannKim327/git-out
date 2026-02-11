@@ -1,55 +1,38 @@
 /**
- * Selection sort – sorts an array in‑place in ascending order.
- *
- * @param array   The array to sort.  It will be mutated.
- * @param compare Callback used to decide order. If omitted, a natural
- *                ascending numeric/string comparison is used.
- * @returns The same array instance, now sorted.
+ * @param s The string to test.
+ * @param options
+ *   - ignoreCase: whether to treat “A” and “a” as the same (default: true)
+ *   - ignoreNonAlphaNum: whether to strip out spaces, punctuation, etc. (default: true)
+ * @returns true if `s` reads the same forward and backward under the chosen options.
  */
-export function selectionSort<T>(
-  array: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  const len = array.length;
+function isPalindrome(
+  s: string,
+  options: { ignoreCase?: boolean; ignoreNonAlphaNum?: boolean } = {}
+): boolean {
+  const { ignoreCase = true, ignoreNonAlphaNum = true } = options;
 
-  // default comparer: numeric or string ascending
-  const cmp = compare ?? ((a: any, b: any) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
+  // Optional: strip out anything other than letters/digits
+  let cleaned = ignoreNonAlphaNum
+    ? s.replace(/[^A-Za-z0-9]/g, '')
+    : s;
 
-  for (let i = 0; i < len - 1; i++) {
-    // assume min at current position
-    let minIdx = i;
+  // Optional: standardise case
+  if (ignoreCase) cleaned = cleaned.toLowerCase();
 
-    // find the smallest element in the unsorted portion
-    for (let j = i + 1; j < len; j++) {
-      if (cmp(array[j], array[minIdx]) < 0) {
-        minIdx = j;
-      }
-    }
+  // Fast exit on single‑character strings (or empty)
+  if (cleaned.length < 2) return true;
 
-    // swap if we found a smaller element
-    if (minIdx !== i) {
-      const temp = array[i];
-      array[i] = array[minIdx];
-      array[minIdx] = temp;
-    }
+  // Compare characters from both ends
+  let left = 0;
+  let right = cleaned.length - 1;
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) return false;
+    left++;
+    right--;
   }
-
-  return array;
+  return true;
 }
-// simple numeric sorting
-let nums = [64, 25, 12, 22, 11];
-selectionSort(nums);
-console.log(nums); // [11, 12, 22, 25, 64]
-
-// sorting strings
-let words = ["banana", "avocado", "cherry"];
-selectionSort(words);
-console.log(words); // ["avocado", "banana", "cherry"]
-
-// custom comparator – descending numbers
-selectionSort(nums, (a, b) => b - a);
-console.log(nums); // [64, 25, 22, 12, 11]
+console.log(isPalindrome('Racecar'));           // true
+console.log(isPalindrome('hello'));             // false
+console.log(isPalindrome('A man, a plan, a canal, Panama')); // true
+console.log(isPalindrome('No lemon, no melon', { ignoreNonAlphaNum: true, ignoreCase: true })); // true
