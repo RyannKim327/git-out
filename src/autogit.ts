@@ -1,59 +1,45 @@
-/**
- * Shell sort – a simple in‑place comparison sort.
- *
- * @template T          – The element type stored in the array.
- * @param array         – Array to be sorted (mutated).
- * @param compareFn     – Optional comparison function.  
- *                        Should return a negative number if a < b,
- *                        zero if a == b, and a positive number if a > b.
- *                        Default is numeric ascending order.
- *
- * @returns The same array, now sorted.
- *
- * Example:
- *   const nums = [23, 12, 1, 2, 8, 15];
- *   shellSort(nums);                 // → [1,2,8,12,15,23]
- *
- *   const words = ["pear","apple","orange"];
- *   shellSort(words, (a,b) => a.localeCompare(b));  // → ["apple","orange","pear"]
- */
-export function shellSort<T>(
-  array: T[],
-  compareFn: (a: T, b: T) => number = (a, b) => (a as unknown as number) - (b as unknown as number)
-): T[] {
-  const n = array.length;
-  // Basic Shell sequence: n/2, n/4, ..., 1
-  // (You could use a more sophisticated sequence, e.g. Hibbard, Pratt, or Knuth.)
-  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Perform a gapped insertion sort for this gap size
-    for (let i = gap; i < n; i++) {
-      const current = array[i];
-      let j = i;
+class Stack<T> {
+  private items: T[] = [];      // underlying array
 
-      // Shift earlier gap‑separated elements up until the correct location for current
-      while (j >= gap && compareFn(array[j - gap], current) > 0) {
-        array[j] = array[j - gap];
-        j -= gap;
-      }
-      array[j] = current;
-    }
+  /** Push a value onto the top of the stack. */
+  push(value: T): void {
+    this.items.push(value);
   }
-  return array;
+
+  /** Remove and return the top value.  Returns `undefined` if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  /** Peek at the top value without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Number of elements in the stack. */
+  get size(): number {
+    return this.items.length;
+  }
+
+  /** True if the stack contains no items. */
+  get isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Optional: clear all items. */
+  clear(): void {
+    this.items = [];
+  }
 }
-import { shellSort } from "./shellSort";
+const stack = new Stack<number>();
 
-const planets = [
-  { name: "Jupiter", radius: 69911 },
-  { name: "Earth", radius: 6371 },
-  { name: "Mars", radius: 3389 },
-  { name: "Saturn", radius: 58232 },
-];
+stack.push(10);
+stack.push(20);
+stack.push(30);
 
-shellSort(planets, (a, b) => a.radius - b.radius);
-console.log(planets);
-// → [
-//      { name: "Mars", radius: 3389 },
-//      { name: "Earth", radius: 6371 },
-//      { name: "Saturn", radius: 58232 },
-//      { name: "Jupiter", radius: 69911 }
-//    ]
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size);   // 2
+
+stack.clear();
+console.log(stack.isEmpty); // true
