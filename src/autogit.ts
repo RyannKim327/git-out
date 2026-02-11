@@ -1,76 +1,66 @@
 /**
- * Returns the longest common prefix of all strings in `arr`.
+ * Checks whether the given string is a palindrome, ignoring case and
+ * non‑alphanumeric characters.  It uses only constant extra space.
  *
- * @param arr – an array of strings (can be empty)
- * @returns the prefix that every string shares, or an empty string
+ * @param s  The string to check.
+ * @returns  true if `s` is a palindrome, false otherwise.
  */
-function longestCommonPrefix(arr: string[]): string {
-  if (!arr.length) return "";
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  // Pin the “shortest”‑length string as a stopping rule.
-  // No prefix can be longer than this string.
-  const minLen = Math.min(...arr.map(s => s.length));
-
-  for (let i = 0; i < minLen; i++) {
-    const char = arr[0][i]; // candidate character
-    // stop as soon as any string mismatches
-    for (let j = 1; j < arr.length; j++) {
-      if (arr[j][i] !== char) {
-        return arr[0].substring(0, i);
-      }
+  while (left < right) {
+    // Skip any *non*‑alphanumeric character on the left
+    while (left < right && !isAlphaNum(s.charCodeAt(left))) {
+      left++;
     }
+    // Skip any *non*‑alphanumeric character on the right
+    while (left < right && !isAlphaNum(s.charCodeAt(right))) {
+      right--;
+    }
+
+    // If indices crossed after skipping, we're done
+    if (left >= right) break;
+
+    // Compare the characters case‑insensitively
+    const leftChar = s.charCodeAt(left);
+    const rightChar = s.charCodeAt(right);
+
+    if (normalize(leftChar) !== normalize(rightChar)) {
+      return false;
+    }
+
+    left++;
+    right--;
   }
 
-  // All `minLen` characters matched
-  return arr[0].substring(0, minLen);
+  return true;
 }
-const words = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(words)); // logs "fl"
-function longestCommonPrefixSort(arr: string[]): string {
-  if (!arr.length) return "";
 
-  const sorted = [...arr].sort();          // O(n log n)
-  const first = sorted[0];
-  const last  = sorted[sorted.length - 1];
+/**
+ * Helper to test whether a character code is alphanumeric.
+ */
+function isAlphaNum(code: number): boolean {
+  // 0-9
+  if (code >= 48 && code <= 57) return true;
+  // A-Z
+  if (code >= 65 && code <= 90) return true;
+  // a-z
+  if (code >= 97 && code <= 122) return true;
+  return false;
+}
 
-  let i = 0;
-  while (i < first.length && i < last.length && first[i] === last[i]) {
-    i++;
+/**
+ * Normalises a character code to be lowercase ASCII when possible.
+ * For Unicode other than ASCII it simply returns the original code.
+ */
+function normalize(code: number): number {
+  // Convert uppercase A-Z to lowercase a-z
+  if (code >= 65 && code <= 90) {
+    return code + 32;
   }
-
-  return first.substring(0, i);
+  return code;
 }
-function lcpDivideAndConquer(arr: string[], l = 0, r = arr.length - 1): string {
-  if (l > r) return "";
-  if (l === r) return arr[l];
-
-  const mid = Math.floor((l + r) / 2);
-  const leftPref  = lcpDivideAndConquer(arr, l, mid);
-  const rightPref = lcpDivideAndConquer(arr, mid + 1, r);
-
-  // intersect two prefixes
-  let i = 0;
-  while (i < leftPref.length && i < rightPref.length && leftPref[i] === rightPref[i]) {
-    i++;
-  }
-  return leftPref.substring(0, i);
-}
-
-// convenience wrapper
-function longestCommonPrefixD&C(arr: string[]): string {
-  return lcpDivideAndConquer(arr);
-}
-const cases: [string[], string][] = [
-  [["", "", ""]]          , [""],
-  [["dog"], ["dog"]]      , ["dog"],
-  [["abc","ab"],
-   ["ab"]]                , ["ab"],
-  [["abc","abcd","abce"], ["abc"]],
-  [["agri", "adopt", "alien"], ["a"]],
-  [["b", "a"], [""]], 
-];
-
-cases.forEach(([arr, expected], i) => {
-  const result = longestCommonPrefix(arr);
-  console.log(i, result === expected[0] ? "✅" : `❌ got "${result}"`);
-});
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("race a car"));                      // false
+console.log(isPalindrome("   abcba   "));                     // true
