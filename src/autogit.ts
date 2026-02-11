@@ -1,44 +1,37 @@
-export interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-}
 /**
- * Returns the nth node from the end of a singly‑linked list.
- *
- * @param head  The head of the list (may be null).
- * @param n 1‑based index counting from the last node.
- * @returns   The node itself, or null if n is out of bounds.
+ * Normalises a string for anagram comparison:
+ *  – removes whitespace
+ *  – drops non‑alphanumeric chars
+ *  – lower‑cases everything
+ *  – sorts the remaining characters
  */
-export function getNthFromEnd<T>(
-  head: ListNode<T> | null,
-  n: number
-): ListNode<T> | null {
-  if (n <= 0) return null;                // n must be positive
+const normalise = (s: string): string =>
+  s
+    .replace(/[^a-z0-9]/gi, '')   // keep letters & digits only
+    .toLowerCase()
+    .split('')
+    .sort()
+    .join('');
 
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
+export const areAnagrams = (a: string, b: string): boolean =>
+  normalise(a) === normalise(b);
+console.log(areAnagrams('listen', 'silent'));   // true
+console.log(areAnagrams('Triangle', 'Integral')); // true
+console.log(areAnagrams('hello', 'world'));    // false
+export const areAnagramsMap = (a: string, b: string): boolean => {
+  const buildFreq = (s: string) => {
+    const freq: Record<string, number> = {};
+    for (const ch of s.replace(/[^a-z0-9]/gi, '').toLowerCase()) {
+      freq[ch] = (freq[ch] ?? 0) + 1;
+    }
+    return freq;
+  };
 
-  // Advance `fast` n steps ahead.
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;              // n is larger than the list length
-    fast = fast.next;
-  }
+  const freqA = buildFreq(a);
+  const freqB = buildFreq(b);
 
-  // Move both pointers until `fast` reaches the end.
-  while (fast) {
-    fast = fast.next;
-    slow = slow?.next ?? null;
-  }
+  const keys = Object.keys(freqA);
+  if (keys.length !== Object.keys(freqB).length) return false;
 
-  // `slow` is now the nth from the end.
-  return slow;
-}
-// Build a tiny list: 10 → 20 → 30 → 40 → 50
-const node5: ListNode<number> = { value: 50, next: null };
-const node4: ListNode<number> = { value: 40, next: node5 };
-const node3: ListNode<number> = { value: 30, next: node4 };
-const node2: ListNode<number> = { value: 20, next: node3 };
-const head: ListNode<number> = { value: 10, next: node2 };
-
-const thirdFromEnd = getNthFromEnd(head, 3);
-console.log(thirdFromEnd?.value); // 30
+  return keys.every(k => freqA[k] === freqB[k]);
+};
