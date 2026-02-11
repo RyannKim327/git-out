@@ -1,75 +1,113 @@
-function decimalToBinary(dec: number | bigint): string {
-  return dec.toString(2);
+type Hashable = string | number;
+
+// A node in a linked list that stores a key–value pair.
+class ListNode<K extends Hashable, V> {
+  constructor(
+    public key: K,
+    public value: V,
+    public next: ListNode<K, V> | null = null
+  ) {}
 }
 
-// Examples
-console.log(decimalToBinary(13));      // '1101'
-console.log(decimalToBinary(255n));    // '11111111'
-function decimalToBinaryIterative(num: number): string {
-  if (num === 0) return '0';
-  let n = Math.abs(num);
-  const bits: string[] = [];
-  while (n > 0) {
-    bits.push((n % 2).toString());
-    n = Math.floor(n / 2);
+// A very small, non‑generic implementation.
+// Could be turned into a generic class if you want re‑usability.
+class HashTable<K extends Hashable, V> {
+  // Number of buckets.  53 is a prime that keeps things a bit uniform.
+  private readonly bucketCount = 53;
+  private readonly buckets: Array<ListNode<K, V> | null>;
+
+  constructor() {
+    // fill the array with nulls
+    this.buckets = Array(this.bucketCount).fill(null);
   }
-  if (num < 0) bits.push('-');
-  return bits.reverse().join('');
-}
 
-// Demo
-console.log(decimalToBinaryIterative(13));   // '1101'
-console.log(decimalToBinaryIterative(-13));  // '-1101'
-function decimalToBinaryRecursive(num: number): string {
-  if (num === 0) return '';
-  const [higher, bit] = decimalToBinaryRecursive(Math.floor(num / 2)).split('|', 2);
-  return `${higher}|${num % 2}`;
-}
-
-// Helper to clean up the leading empty part
-function binaryRecursive(num: number): string {
-  const bin = decimalToBinaryRecursive(num);
-  return bin.split('|').filter(Boolean).join('');
-}
-
-// Demo
-console.log(binaryRecursive(27));  // '11011'
-function decimalToBinaryFraction(num: number, precision: number = 10): string {
-  const intPart = Math.trunc(num);
-  let fracPart = num - intPart;
-  let binary = intPart.toString(2);
-
-  if (precision > 0 && fracPart > 0) {
-    binary += '.';
-    let p = 0;
-    while (p < precision && fracPart > 0) {
-      fracPart *= 2;
-      if (fracPart >= 1) {
-        binary += '1';
-        fracPart -= 1;
-      } else {
-        binary += '0';
+  // Simple hash: string => simple accumulating hash; number => straight
+  private hash(key: K): number {
+    let h: number;
+    if (typeof key === "number") {
+      h = key;
+    } else {
+      h = 0;
+      for (let i = 0; i < key.length; i++) {
+        // 31 is a classic multiplier in hash functions
+        h = (h * 31 + key.charCodeAt(i)) | 0; // |0 keeps it 32‑bit
       }
-      p++;
     }
+    // Ensure positive index
+    return Math.abs(h) % this.bucketCount;
   }
 
-  return binary;
-}
+  set(key: K, value: V): void {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
 
-// Demo
-console.log(decimalToBinaryFraction(5.6875, 8)); // '101.1011'
-function test(input: number | bigint) {
-  console.log(`Decimal: ${input}`);
-  console.log(`  -> toString(2):   ${input.toString(2)}`);
-  if (typeof input === 'number') {
-    console.log(`  -> iterative:   ${decimalToBinaryIterative(input)}`);
-    console.log(`  -> recursive:   ${binaryRecursive(input)}`);
+    // If there’s already a node, see if the key matches
+    while (node) {
+      if (node.key === key) {
+        node.value = value; // update
+        return;
+      }
+      node = node.next;
+    }
+
+    // No match – prepend a new node (O(1) for inserts)
+    const newNode = new ListNode(key, value, this.buckets[idx]);
+    this.buckets[idx] = newNode;
   }
-  console.log('');
-}
 
-test(13);
-test(-13);
-test(0);
-test(5.6875);   // only the toString version works for BigInt
+  get(key: K): V | undefined {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+
+    while (node) {
+      if (node.key === key) return node.value;
+      node = node.next;
+    }
+    return undefined;
+  }
+
+  has(key: K): boolean {
+    return this.get(key) !== undefined;
+  }
+
+  delete(key: K): boolean {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+    let prev: ListNode<K, V> | null = null;
+
+    while (node) {
+      if (node.key === key) {
+        if (prev) prev.next = node.next;
+        else this.buckets[idx] = node.next;
+        return true;
+      }
+      prev = node;
+      node = node.next;
+    }
+    return false;
+  }
+
+  // For debugging / tests: flatten the table into a plain object
+  toObject(): Record<string, V> {
+    const out: Record<string, V> = {};
+    for (const bucket of this.buckets) {
+      let node = bucket;
+      while (node) {
+        out[String(node.key)] = node.value;
+        node = node.next;
+      }
+    }
+    return out;
+  }
+}
+const table = new HashTable<string, number>();
+table.set("alpha", 1);
+table.set("beta", 2);
+table.set("gamma", 3);
+table.set("delta", 4);
+
+console.log(table.get("beta"));   // 2
+console.log(table.has("epsilon")); // false
+
+table.delete("gamma");
+console.log(table.toObject());    // { alpha: 1, beta: 2, delta: 4 }
