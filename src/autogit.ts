@@ -1,34 +1,45 @@
-function isAnagramSort(a: string, b: string): boolean {
-  // Normalize (optional – depends on your use‑case)
-  const normalize = (s: string) =>
-    s.replace(/\s+/g, '').toLowerCase(); // trim spaces, lower‑case
-
-  const sa = normalize(a).split('').sort().join('');
-  const sb = normalize(b).split('').sort().join('');
-
-  return sa === sb;
+// 1️⃣  Node definition
+interface TreeNode<T = unknown> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
-function isAnagramMap(a: string, b: string): boolean {
-  // Quick length check (no need to normalize again here)
-  if (a.length !== b.length) return false;
 
-  const count = new Map<string, number>();
+// 2️⃣  Recursive leaf counter
+function countLeaves<T>(node?: TreeNode<T>): number {
+  // Base case: empty sub‑tree
+  if (!node) return 0;
 
-  for (let i = 0; i < a.length; i++) {
-    const ca = a[i];
-    const cb = b[i];
+  // A leaf has no children
+  const isLeaf = !node.left && !node.right;
+  if (isLeaf) return 1;
 
-    count.set(ca, (count.get(ca) || 0) + 1);
-    count.set(cb, (count.get(cb) || 0) - 1);
-  }
-
-  // All counts must net to 0
-  for (const val of count.values()) {
-    if (val !== 0) return false;
-  }
-  return true;
+  // Recurse on the two sub‑trees
+  return countLeaves(node.left) + countLeaves(node.right);
 }
-const a = 'listen';
-const b = 'silent';
-console.log(isAnagramSort(a, b)); // true
-console.log(isAnagramMap(a, b));  // true
+
+// 3️⃣  Example usage
+const tree: TreeNode<number> = {
+  value: 1,
+  left: { value: 2, right: { value: 4 } },
+  right: { value: 3, left: { value: 5 } }
+};
+
+console.log(countLeaves(tree)); // → 3
+function countLeavesIterative<T>(root: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let stack: TreeNode<T>[] = [root];
+  let leafCount = 0;
+
+  while (stack.length) {
+    const node = stack.pop()!; // guaranteed defined
+    if (!node.left && !node.right) {
+      leafCount++;
+    } else {
+      if (node.right) stack.push(node.right);
+      if (node.left)  stack.push(node.left);
+    }
+  }
+  return leafCount;
+}
