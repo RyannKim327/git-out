@@ -1,50 +1,85 @@
-area = (base * height) / 2
 /**
- * Return the area of a triangle when you know its base and height.
- *
- * @param base   Length of the base side.
- * @param height Height perpendicular to that base.
- * @returns      Area of the triangle as a number.
+ * Simple representation of a DAG.
+ *   vertices – an array of node identifiers (any type, but usually string or number)
+ *   edges    – a map from a vertex to a list of outgoing neighbours
  */
-export function areaFromBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new Error("Base and height must be positive numbers.");
-  }
-  return (base * height) / 2;
+interface Graph<V> {
+  vertices: V[];
+  edges: Map<V, V[]>;
 }
-s = (a + b + c) / 2            // semi‑perimeter
-area = sqrt( s * (s−a) * (s−b) * (s−c) )
+
 /**
- * Compute the area of a triangle from its three side lengths.
- *
- * @param a   Length of side A.
- * @param b   Length of side B.
- * @param c   Length of side C.
- * @returns   Area of the triangle (number) or NaN if the sides
- *            don’t form a valid triangle.
+ * Kahn’s topological sort.
+ * @param graph – a DAG
+ * @returns a list of vertices sorted topologically
+ * @throws Error if the graph contains a cycle
  */
-export function areaFromSides(a: number, b: number, c: number): number {
-  // Basic validation – all sides must be positive
-  if (a <= 0 || b <= 0 || c <= 0) {
-    throw new Error("All side lengths must be positive numbers.");
+function topologicalSort<V>(graph: Graph<V>): V[] {
+  // Compute indegree of each vertex
+  const indegree = new Map<V, number>();
+  graph.vertices.forEach(v => indegree.set(v, 0));
+
+  graph.edges.forEach((neighbours, from) => {
+    neighbours.forEach(to => {
+      indegree.set(to, (indegree.get(to) || 0) + 1);
+    });
+  });
+
+  // Queue of vertices with indegree 0
+  const queue: V[] = [];
+  indegree.forEach((deg, v) => {
+    if (deg === 0) queue.push(v);
+  });
+
+  const order: V[] = [];
+  while (queue.length) {
+    const v = queue.shift()!;
+    order.push(v);
+
+    const neighbours = graph.edges.get(v) ?? [];
+    neighbours.forEach(to => {
+      indegree.set(to, (indegree.get(to) || 0) - 1);
+      if (indegree.get(to) === 0) queue.push(to);
+    });
   }
 
-  // Triangle inequality check – else area calculation would
-  // produce NaN or a negative under the radicand.
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error("The provided side lengths do not form a valid triangle.");
+  // If we processed fewer vertices than exist, a cycle is present
+  if (order.length !== graph.vertices.length) {
+    throw new Error('Graph contains a cycle – topological sort not possible');
   }
 
-  const s = (a + b + c) / 2;
-  const radicand = s * (s - a) * (s - b) * (s - c);
-
-  return Math.sqrt(radicand);
+  return order;
 }
-import { areaFromBaseHeight, areaFromSides } from "./triangle-utils";
+A → C
+B → C
+C → D
+const g: Graph<string> = {
+  vertices: ['A', 'B', 'C', 'D'],
+  edges: new Map([
+    ['A', ['C']],
+    ['B', ['C']],
+    ['C', ['D']],
+    // D has no outgoing edges
+  ]),
+};
 
-const base = 10;
-const height = 6;
-console.log(areaFromBaseHeight(base, height)); // 30
+console.log(topologicalSort(g)); // → ['A', 'B', 'C', 'D'] (or ['B', 'A', 'C', 'D'])
+function topologicalSortDFS<V>(graph: Graph<V>): V[] {
+  const visited = new Set<V>();
+  const temp = new Set<V>();          // to detect cycles
+  const stack: V[] = [];
 
-const a = 7, b = 10, c = 5;
-console.log(areaFromSides(a, b, c));           // ≈ 17.89
+  function visit(v: V) {
+    if (temp.has(v)) throw new Error('Cycle detected');
+    if (visited.has(v)) return;
+
+    temp.add(v);
+    (graph.edges.get(v) ?? []).forEach(visit);
+    temp.delete(v);
+    visited.add(v);
+    stack.push(v);                    // push after children – this yields reverse order
+  }
+
+  graph.vertices.forEach(visit);
+  return stack.reverse();             // reverse to get the correct order
+}
