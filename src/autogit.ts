@@ -1,110 +1,60 @@
-class ListNode<T> {
-  /** The value stored in this node */
-  value: T;
+/**
+ * Merges two sorted slices `left` and `right` into a single sorted array.
+ * The operation is stable — items that compare equal keep their original
+ * relative order.
+ */
+function merge<T>(left: T[], right: T[], compare: (a: T, b: T) => number): T[] {
+  const result: T[] = [];
+  let i = 0;          // index into left
+  let j = 0;          // index into right
 
-  /** Reference to the next node, or null if this is the tail */
-  next: ListNode<T> | null = null;
-
-  constructor(value: T) {
-    this.value = value;
+  while (i < left.length && j < right.length) {
+    if (compare(left[i], right[j]) <= 0) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
+    }
   }
+
+  // Append any remaining elements
+  return result.concat(left.slice(i), right.slice(j));
 }
-class LinkedList<T> {
-  /** Head (first node) – `null` if the list is empty */
-  private head: ListNode<T> | null = null;
 
-  /** Tail (last node) – kept for efficient push; `null` if the list is empty */
-  private tail: ListNode<T> | null = null;
+/**
+ * Recursively sorts `array` using merge sort.
+ *
+ * @param array   – the array to sort
+ * @param compare – a comparator returning a negative number if a < b,
+ *                  zero if a == b, and a positive number otherwise.
+ *
+ * @returns a NEW sorted array; the input array is left untouched.
+ */
+export function mergeSort<T>(array: T[], compare: (a: T, b: T) => number): T[] {
+  // Base case: arrays of length 0 or 1 are already sorted
+  if (array.length <= 1) {
+    return array.slice();          // shallow copy to stay pure
+  }
 
-  /** Current length – handy for O(1) size queries */
-  private _size = 0;
+  const mid = Math.floor(array.length / 2);
+  const left  = array.slice(0, mid);
+  const right = array.slice(mid);
 
-  /** Number of elements in the list */
-  get size() { return this._size; }
-  get isEmpty() { return this._size === 0; }
+  // Sort each half and merge
+  const sortedLeft  = mergeSort(left,  compare);
+  const sortedRight = mergeSort(right, compare);
+
+  return merge(sortedLeft, sortedRight, compare);
 }
-  /** Append an element to the end of the list */
-  push(value: T): void {
-    const node = new ListNode(value);
-    if (this.tail) {
-      this.tail.next = node;
-    } else {          // empty list – new node is both head and tail
-      this.head = node;
-    }
-    this.tail = node;
-    this._size++;
-  }
 
-  /** Prepend an element to the front of the list */
-  unshift(value: T): void {
-    const node = new ListNode(value);
-    node.next = this.head;
-    this.head = node;
-    if (!this.tail) this.tail = node;  // first element
-    this._size++;
-  }
+/* ---------------------------------------------------------
+   Example usage:
+   ---------------------------------------------------------
 
-  /** Remove and return the first element, or `undefined` if the list is empty */
-  shift(): T | undefined {
-    if (!this.head) return undefined;
-    const removed = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null;  // list became empty
-    this._size--;
-    return removed;
-  }
+   // Numeric sort (ascending)
+   const numbers = [32, 5, 73, 1, 42];
+   const sortedNumbers = mergeSort(numbers, (a, b) => a - b);
 
-  /** Remove and return the last element, or `undefined` if the list is empty */
-  pop(): T | undefined {
-    if (!this.head) return undefined;
-    if (this.head === this.tail) {     // single element
-      const val = this.head.value;
-      this.head = this.tail = null;
-      this._size = 0;
-      return val;
-    }
-
-    // Walk to the second‑to‑last node
-    let current = this.head;
-    while (current.next && current.next !== this.tail) {
-      current = current.next;
-    }
-
-    const val = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-    this._size--;
-    return val;
-  }
-  /** Find the first node whose value satisfies the predicate; returns `undefined` if none */
-  find(p: (value: T) => boolean): T | undefined {
-    let curr = this.head;
-    while (curr) {
-      if (p(curr.value)) return curr.value;
-      curr = curr.next;
-    }
-    return undefined;
-  }
-
-  /** Iterate over values (supports `for…of`) */
-  *[Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    while (current) {
-      yield current.value;
-      current = current.next;
-    }
-  }
-const list = new LinkedList<number>();
-for (const n of list) console.log(n);
-const list = new LinkedList<string>();
-
-list.push('first');
-list.push('second');
-list.unshift('zeroth');
-
-console.log([...list]);          // ["zeroth", "first", "second"]
-
-console.log(list.shift());       // "zeroth"
-console.log(list.pop());         // "second"
-
-console.log(list.find(n => n.startsWith('f'))); // "first"
+   // String sort by length
+   const words = ["banana", "apple", "fig", "cherry"];
+   const sortedByLength = mergeSort(words, (a, b) => a.length - b.length);
+   -------------------------------------------------------- */
