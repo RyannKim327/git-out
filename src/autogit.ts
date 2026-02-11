@@ -1,91 +1,119 @@
-// --------------------------------------------------------
-// Random TypeScript demo:  GET data from a public API
-// --------------------------------------------------------
+// An adjacency map: node ID → list of neighbouring node IDs
+type Graph = Record<string, string[]>;
 
-// Install the needed deps if you run this in a Node project:
-//   npm install --save node-fetch @types/node-fetch
-//
-// If you use this in a browser project, the browser's fetch is already available.
+// Keeps track of visited nodes and the node from which we reached them
+interface VisitedMap {
+  [node: string]: string | null;      // null = source node itself
+}
+enqueue start into frontierStart
+enqueue goal  into frontierGoal
+mark start as visitedFromStart (predecessor = null)
+mark goal  as visitedFromGoal (predecessor = null)
 
-// Import the fetch shim for Node (uncomment if you run under Node)
-// import fetch from 'node-fetch';
+while both queues not empty:
+    # Expand one layer from the start side
+    if expand(frontierStart, visitedFromStart, visitedFromGoal): return result
 
-// A tiny helper to pause (useful for demo pacing)
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    # Expand one layer from the goal side
+    if expand(frontierGoal, visitedFromGoal, visitedFromStart):   return result
 
-// -------------------------------------------------------------------
-// 1️⃣  Define the shape of the data we expect from the API
-// -------------------------------------------------------------------
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
+return no path
+/**
+ * Bidirectional BFS.
+ *
+ * @param graph  adjacency map
+ * @param start  ID of start node
+ * @param goal   ID of goal node
+ * @returns a list of node IDs from start to goal, or null if no path
+ */
+function bidirectionalBFS(graph: Graph, start: string, goal: string): string[] | null {
+  if (start === goal) return [start];
+
+  const visitedStart: VisitedMap = { [start]: null };
+  const visitedGoal: VisitedMap   = { [goal] : null };
+
+  const frontierStart: string[] = [start];
+  const frontierGoal: string[]  = [goal];
+
+  const expand = (
+    frontier: string[],
+    visitedThis: VisitedMap,
+    visitedOther: VisitedMap
+  ): string[] | null => {
+    const nextLayer: string[] = [];
+
+    for (const current of frontier) {
+      for (const neighbor of graph[current] || []) {
+        // Already visited from this side → skip
+        if (current in visitedThis && neighbor in visitedThis) continue;
+
+        // New node for this side
+        if (!(neighbor in visitedThis)) {
+          visitedThis[neighbor] = current;
+          nextLayer.push(neighbor);
+        }
+
+        // If neighbour is in the opposite frontier → frontiers meet
+        if (neighbor in visitedOther) {
+          return reconstructPath(
+            start,
+            goal,
+            visitedStart,
+            visitedGoal,
+            neighbor
+          );
+        }
+      }
+    }
+
+    frontier.splice(0, frontier.length, ...nextLayer);
+    return null;
+  };
+
+  while (frontierStart.length && frontierGoal.length) {
+    const resStart = expand(frontierStart, visitedStart, visitedGoal);
+    if (resStart) return resStart;
+
+    const resGoal = expand(frontierGoal, visitedGoal, visitedStart);
+    if (resGoal) return resGoal;
+  }
+
+  return null; // no path found
 }
 
-// -------------------------------------------------------------------
-// 2️⃣  A generic GET helper that returns typed JSON
-// -------------------------------------------------------------------
-async function get<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    // We simply throw an error for this demo
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+/**
+ * Reconstruct the path once the frontiers have met at `meetingNode`.
+ */
+function reconstructPath(
+  start: string,
+  goal: string,
+  visitedStart: VisitedMap,
+  visitedGoal: VisitedMap,
+  meetingNode: string
+): string[] {
+  const partFromStart: string[] = [meetingNode];
+  let node = meetingNode;
+  while (visitedStart[node]) {
+    node = visitedStart[node]!;
+    partFromStart.unshift(node);
   }
-  const data: T = await response.json();
-  return data;
+
+  const partFromGoal: string[] = [];
+  node = meetingNode;
+  while (visitedGoal[node]) {
+    node = visitedGoal[node]!;
+    partFromGoal.push(node);
+  }
+
+  // Avoid duplicating the meeting node
+  return [...partFromStart, ...partFromGoal];
 }
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['a', 'd'],
+  c: ['a', 'd'],
+  d: ['b', 'c', 'e'],
+  e: ['d'],
+};
 
-// -------------------------------------------------------------------
-// 3️⃣  Main demo logic
-// -------------------------------------------------------------------
-async function main() {
-  const apiEndpoint = 'https://jsonplaceholder.typicode.com/posts/1';
-
-  console.log('Fetching demo post...');
-  try {
-    const post = await get<Post>(apiEndpoint);
-    console.log('✅ Post fetched:');
-    console.log(`  • ID: ${post.id}`);
-    console.log(`  • Title: ${post.title}`);
-    console.log(`  • Body snippet: "${post.body.slice(0, 60)}..."`);
-  } catch (err) {
-    console.error('⚠️  Error while fetching:', err);
-  }
-
-  // -------------------------------------------------------------------
-  // 4️⃣  Throw in a second request: list of all posts
-  // -------------------------------------------------------------------
-  console.log('\nFetching all posts (just the first 5 for brevity)...');
-  try {
-    const allPosts = await get<Post[]>('https://jsonplaceholder.typicode.com/posts');
-    console.table(allPosts.slice(0, 5));
-  } catch (err) {
-    console.error('⚠️  Error while fetching:', err);
-  }
-
-  // ---------------------------------------------------------------
-  // 5️⃣  Optional: POST a new resource (mocked, won't persist)
-  // ---------------------------------------------------------------
-  console.log('\nAttempting to POST a new post...');
-  try {
-    const newPostResponse = await fetch('https://jsonplaceholder.typicode.com/posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: 'Hello World',
-        body: 'This post was created by the demo.',
-        userId: 42
-      })
-    });
-    const created: Post = await newPostResponse.json();
-    console.log('✅ Created post (mocked):', created);
-  } catch (err) {
-    console.error('⚠️  Error while posting:', err);
-  }
-
-  // Small pause before exit (only matters if running in Node)
-  await delay(500);
-}
-
-main();
+console.log(bidirectionalBFS(graph, 'a', 'e')); // ["a", "b", "d", "e"]
