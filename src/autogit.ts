@@ -1,11 +1,13 @@
-// In‑place reversal
-const arr = [1, 2, 3, 4];
-arr.reverse();             // arr is now [4, 3, 2, 1]
-// Make a copy first, then reverse the copy
-const arr = [1, 2, 3, 4];
-const reversed = [...arr].reverse();   // [4, 3, 2, 1]
-
- // or
-const reversed = arr.slice().reverse();
-const reverse = <T>(a: T[]): T[] =>
-  a.reduceRight((acc, cur) => [...acc, cur], [] as T[]);
+/**
+ * Calculate the mean (average) of an array of numbers.
+ *
+ * @param data - a non‑empty array of numbers
+ * @returns the mean, or NaN if the array is empty
+ */
+function mean(data: number[]): number {
+  if (data.length === 0) return NaN;          // nothing to average
+  const total = data.reduce((sum, val) => sum + val, 0);
+  return total / data.length;
+}
+const values = [4, 7, 9, 2];
+console.log(mean(values));   // → 5.5
