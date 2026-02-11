@@ -1,26 +1,17 @@
-/**
- * Pick a random floating‑point number ≥ min and < max.
- *
- * @param min – lower bound (inclusive)
- * @param max – upper bound (exclusive)
- * @returns random number in [min, max)
- */
-export function randFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min;
-}
-/**
- * Pick a random integer ≥ min and ≤ max.
- *
- * @param min – lower bound (inclusive)
- * @param max – upper bound (inclusive)
- * @returns random integer in [min, max]
- */
-export function randInt(min: number, max: number): number {
-  // floor ensures min can be selected; max included by +1 offset
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-// 0 <= x < 1
-console.log(randFloat(0, 1));
+const numbers = [3, 42, 7, -1, 20];
+const biggest = Math.max(...numbers);
 
-// 5 <= y <= 10
-console.log(randInt(5, 10));
+console.log(biggest); // 42
+function findMax(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined; // or throw, or use null, whatever fits your API
+  return Math.max(...nums);
+}
+const biggest = numbers.reduce((max, curr) => curr > max ? curr : max, -Infinity);
+function findMax(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  return nums.reduce((max, curr) => (curr > max ? curr : max));
+}
+function findMax<T extends readonly (number | null | undefined)[]>(arr: T): number | undefined {
+  const filtered = arr.filter(isFinite) as number[]; // strip out null/undefined if you like
+  return filtered.length ? Math.max(...filtered) : undefined;
+}
