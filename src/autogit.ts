@@ -1,29 +1,66 @@
 /**
- * Returns true if `n` is a prime number.
+ * Checks whether the given string is a palindrome, ignoring case and
+ * non‑alphanumeric characters.  It uses only constant extra space.
  *
- * Rules:
- *   * 0 and 1 are **not** primes.
- *   * 2 is the only even prime.
- *   * For any other number, test divisibility up to √n.
- *
- * NOTE: This is a classic, “trial‑division” algorithm
- * and is fast enough for numbers that fit comfortably
- * in a JavaScript `number`. If you need to handle millisecond‑length
- * big‑ints, consider a probabilistic test like Miller‑Rabin.
+ * @param s  The string to check.
+ * @returns  true if `s` is a palindrome, false otherwise.
  */
-function isPrime(n: number): boolean {
-  if (n < 2) return false;         // 0, 1, and negative numbers are not prime
-  if (n === 2) return true;        // 2 is prime
-  if (n % 2 === 0) return false;   // even numbers larger than 2 are not prime
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  const limit = Math.floor(Math.sqrt(n));
-  for (let divisor = 3; divisor <= limit; divisor += 2) {
-    if (n % divisor === 0) return false;
+  while (left < right) {
+    // Skip any *non*‑alphanumeric character on the left
+    while (left < right && !isAlphaNum(s.charCodeAt(left))) {
+      left++;
+    }
+    // Skip any *non*‑alphanumeric character on the right
+    while (left < right && !isAlphaNum(s.charCodeAt(right))) {
+      right--;
+    }
+
+    // If indices crossed after skipping, we're done
+    if (left >= right) break;
+
+    // Compare the characters case‑insensitively
+    const leftChar = s.charCodeAt(left);
+    const rightChar = s.charCodeAt(right);
+
+    if (normalize(leftChar) !== normalize(rightChar)) {
+      return false;
+    }
+
+    left++;
+    right--;
   }
+
   return true;
 }
-console.log(isPrime(2));   // true
-console.log(isPrime(9));   // false
-console.log(isPrime(13));  // true
-console.log(isPrime(1_000_003)); // true (prime just over a million)
-Time to test 1 000 000 numbers (≈ 5–6 ms in Node.js)
+
+/**
+ * Helper to test whether a character code is alphanumeric.
+ */
+function isAlphaNum(code: number): boolean {
+  // 0-9
+  if (code >= 48 && code <= 57) return true;
+  // A-Z
+  if (code >= 65 && code <= 90) return true;
+  // a-z
+  if (code >= 97 && code <= 122) return true;
+  return false;
+}
+
+/**
+ * Normalises a character code to be lowercase ASCII when possible.
+ * For Unicode other than ASCII it simply returns the original code.
+ */
+function normalize(code: number): number {
+  // Convert uppercase A-Z to lowercase a-z
+  if (code >= 65 && code <= 90) {
+    return code + 32;
+  }
+  return code;
+}
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("race a car"));                      // false
+console.log(isPalindrome("   abcba   "));                     // true
