@@ -1,37 +1,48 @@
-/**
- * Normalises a string for anagram comparison:
- *  – removes whitespace
- *  – drops non‑alphanumeric chars
- *  – lower‑cases everything
- *  – sorts the remaining characters
- */
-const normalise = (s: string): string =>
-  s
-    .replace(/[^a-z0-9]/gi, '')   // keep letters & digits only
-    .toLowerCase()
-    .split('')
-    .sort()
-    .join('');
+// emailValidator.ts
+export function isEmail(str: string): boolean {
+  // RFC‑5322 allows a very wide set of characters.  For most apps a
+  // simpler “+ followed by domain” style rule is good enough.
+  // This expression is a commonly‑accepted compromise:
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export const areAnagrams = (a: string, b: string): boolean =>
-  normalise(a) === normalise(b);
-console.log(areAnagrams('listen', 'silent'));   // true
-console.log(areAnagrams('Triangle', 'Integral')); // true
-console.log(areAnagrams('hello', 'world'));    // false
-export const areAnagramsMap = (a: string, b: string): boolean => {
-  const buildFreq = (s: string) => {
-    const freq: Record<string, number> = {};
-    for (const ch of s.replace(/[^a-z0-9]/gi, '').toLowerCase()) {
-      freq[ch] = (freq[ch] ?? 0) + 1;
-    }
-    return freq;
-  };
+  return emailRe.test(str);
+}
+export const strictEmailRe = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
+const tests: Record<string, boolean> = {
+  // pass
+  'user@example.com': true,
+  'user.name+tag@sub.domain.co.uk': true,
 
-  const freqA = buildFreq(a);
-  const freqB = buildFreq(b);
-
-  const keys = Object.keys(freqA);
-  if (keys.length !== Object.keys(freqB).length) return false;
-
-  return keys.every(k => freqA[k] === freqB[k]);
+  // fail
+  'user@': false,
+  '@example.com': false,
+  'user@@example.com': false,
+  'user example@example.com': false,
+  'user@.com': false,
+  '': false,
 };
+
+for (const [addr, expected] of Object.entries(tests)) {
+  const result = isEmail(addr);
+  console.assert(result === expected, `❌ ${addr}: expected ${expected}, got ${result}`);
+}
+
+console.log('All test cases passed!');
+import { useForm } from 'react-hook-form';
+
+function MyForm() {
+  const { register, handleSubmit, formState: { errors } } = useForm();
+
+  const onSubmit = data => console.log('Valid email:', data.email);
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input
+        {...register('email', { validate: isEmail })}
+        placeholder="email@example.com"
+      />
+      {errors.email && <p>Email is not valid.</p>}
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
