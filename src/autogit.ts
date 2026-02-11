@@ -1,110 +1,35 @@
-class ListNode<T> {
-  /** The value stored in this node */
-  value: T;
+/**
+ * Counting sort for arrays of non‑negative integers.
+ * @param arr The input array – it will not be mutated.
+ * @returns A new array containing the sorted numbers.
+ */
+export function countingSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-  /** Reference to the next node, or null if this is the tail */
-  next: ListNode<T> | null = null;
+  // 1. Find the maximum value (k) – the range of the keys.
+  let max = arr[0];
+  for (const num of arr) if (num > max) max = num;
 
-  constructor(value: T) {
-    this.value = value;
+  // 2. Build the “count” array of size k + 1, initialise to 0.
+  const count: number[] = new Array(max + 1).fill(0);
+
+  // 3. Count how many times each value appears.
+  for (const num of arr) count[num]++;
+
+  // 4. Transform counts to positions (prefix sums).
+  for (let i = 1; i < count.length; i++) {
+    count[i] += count[i - 1];
   }
+
+  // 5. Place each element into the output array in stable order.
+  const output: number[] = new Array(arr.length);
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const num = arr[i];
+    const pos = --count[num];   // decrement to get zero‑based index
+    output[pos] = num;
+  }
+
+  return output;
 }
-class LinkedList<T> {
-  /** Head (first node) – `null` if the list is empty */
-  private head: ListNode<T> | null = null;
-
-  /** Tail (last node) – kept for efficient push; `null` if the list is empty */
-  private tail: ListNode<T> | null = null;
-
-  /** Current length – handy for O(1) size queries */
-  private _size = 0;
-
-  /** Number of elements in the list */
-  get size() { return this._size; }
-  get isEmpty() { return this._size === 0; }
-}
-  /** Append an element to the end of the list */
-  push(value: T): void {
-    const node = new ListNode(value);
-    if (this.tail) {
-      this.tail.next = node;
-    } else {          // empty list – new node is both head and tail
-      this.head = node;
-    }
-    this.tail = node;
-    this._size++;
-  }
-
-  /** Prepend an element to the front of the list */
-  unshift(value: T): void {
-    const node = new ListNode(value);
-    node.next = this.head;
-    this.head = node;
-    if (!this.tail) this.tail = node;  // first element
-    this._size++;
-  }
-
-  /** Remove and return the first element, or `undefined` if the list is empty */
-  shift(): T | undefined {
-    if (!this.head) return undefined;
-    const removed = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null;  // list became empty
-    this._size--;
-    return removed;
-  }
-
-  /** Remove and return the last element, or `undefined` if the list is empty */
-  pop(): T | undefined {
-    if (!this.head) return undefined;
-    if (this.head === this.tail) {     // single element
-      const val = this.head.value;
-      this.head = this.tail = null;
-      this._size = 0;
-      return val;
-    }
-
-    // Walk to the second‑to‑last node
-    let current = this.head;
-    while (current.next && current.next !== this.tail) {
-      current = current.next;
-    }
-
-    const val = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-    this._size--;
-    return val;
-  }
-  /** Find the first node whose value satisfies the predicate; returns `undefined` if none */
-  find(p: (value: T) => boolean): T | undefined {
-    let curr = this.head;
-    while (curr) {
-      if (p(curr.value)) return curr.value;
-      curr = curr.next;
-    }
-    return undefined;
-  }
-
-  /** Iterate over values (supports `for…of`) */
-  *[Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    while (current) {
-      yield current.value;
-      current = current.next;
-    }
-  }
-const list = new LinkedList<number>();
-for (const n of list) console.log(n);
-const list = new LinkedList<string>();
-
-list.push('first');
-list.push('second');
-list.unshift('zeroth');
-
-console.log([...list]);          // ["zeroth", "first", "second"]
-
-console.log(list.shift());       // "zeroth"
-console.log(list.pop());         // "second"
-
-console.log(list.find(n => n.startsWith('f'))); // "first"
+const data = [4, 2, 2, 8, 3, 3, 1];
+console.log(countingSort(data)); // [1, 2, 2, 3, 3, 4, 8]
