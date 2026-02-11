@@ -1,26 +1,50 @@
+area = (base * height) / 2
 /**
- * Returns true if the array is in strictly ascending order (each element ≤ the next one).
- * Works for numbers, strings, or any type that can be compared with < / >.
+ * Return the area of a triangle when you know its base and height.
+ *
+ * @param base   Length of the base side.
+ * @param height Height perpendicular to that base.
+ * @returns      Area of the triangle as a number.
  */
-export function isAscending<T>(arr: T[], comparator?: (a: T, b: T) => number): boolean {
-  // If the user passes a custom comparator, use it; otherwise fall back to natural order.
-  const cmp = comparator ?? ((a: T, b: T) => a < b ? -1 : a > b ? 1 : 0);
-
-  // Iterate until we find a pair that violates the ascending rule.
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) {
-      return false; // arr[i-1] > arr[i], not ascending
-    }
+export function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error("Base and height must be positive numbers.");
   }
-  return true;          // All pairs passed the test
+  return (base * height) / 2;
 }
-// Numbers (default comparator)
-console.log(isAscending([1, 2, 3, 4])); // true
-console.log(isAscending([1, 3, 2, 4])); // false
+s = (a + b + c) / 2            // semi‑perimeter
+area = sqrt( s * (s−a) * (s−b) * (s−c) )
+/**
+ * Compute the area of a triangle from its three side lengths.
+ *
+ * @param a   Length of side A.
+ * @param b   Length of side B.
+ * @param c   Length of side C.
+ * @returns   Area of the triangle (number) or NaN if the sides
+ *            don’t form a valid triangle.
+ */
+export function areaFromSides(a: number, b: number, c: number): number {
+  // Basic validation – all sides must be positive
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw new Error("All side lengths must be positive numbers.");
+  }
 
-// Strings (lexicographic order)
-console.log(isAscending(['apple', 'banana', 'cherry'])); // true
+  // Triangle inequality check – else area calculation would
+  // produce NaN or a negative under the radicand.
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error("The provided side lengths do not form a valid triangle.");
+  }
 
-// Custom comparison – e.g., sort by string length
-const byLength = (a: string, b: string) => a.length - b.length;
-console.log(isAscending(['a', 'bb', 'ccc'], byLength)); // true
+  const s = (a + b + c) / 2;
+  const radicand = s * (s - a) * (s - b) * (s - c);
+
+  return Math.sqrt(radicand);
+}
+import { areaFromBaseHeight, areaFromSides } from "./triangle-utils";
+
+const base = 10;
+const height = 6;
+console.log(areaFromBaseHeight(base, height)); // 30
+
+const a = 7, b = 10, c = 5;
+console.log(areaFromSides(a, b, c));           // ≈ 17.89
