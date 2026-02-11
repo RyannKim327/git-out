@@ -1,47 +1,75 @@
-/**
- * Interpolation search – returns the index of `key` in `arr`
- * or `-1` if the key is not present.
- *
- * @template T – numeric type (number, bigInt, etc.)
- * @param arr  – sorted array of numbers
- * @param key  – value to look for
- * @returns index or -1
- */
-export function interpolationSearch<T extends number | bigint>(
-  arr: T[],
-  key: T
-): number {
-  if (!arr.length) return -1;
+function decimalToBinary(dec: number | bigint): string {
+  return dec.toString(2);
+}
 
-  let low = 0;
-  let high = arr.length - 1;
+// Examples
+console.log(decimalToBinary(13));      // '1101'
+console.log(decimalToBinary(255n));    // '11111111'
+function decimalToBinaryIterative(num: number): string {
+  if (num === 0) return '0';
+  let n = Math.abs(num);
+  const bits: string[] = [];
+  while (n > 0) {
+    bits.push((n % 2).toString());
+    n = Math.floor(n / 2);
+  }
+  if (num < 0) bits.push('-');
+  return bits.reverse().join('');
+}
 
-  /* Handle the special situation where the key is identical to
-   * the value at both bounds – it can’t be found if low === high
-   * but arr[low] !== key.
-   */
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    /* Avoid division by zero when array values are identical */
-    const step =
-      low === high
-        ? 0
-        : Number(
-            (key - arr[low]) *
-              (high - low) /
-              (arr[high] - arr[low])
-          );
+// Demo
+console.log(decimalToBinaryIterative(13));   // '1101'
+console.log(decimalToBinaryIterative(-13));  // '-1101'
+function decimalToBinaryRecursive(num: number): string {
+  if (num === 0) return '';
+  const [higher, bit] = decimalToBinaryRecursive(Math.floor(num / 2)).split('|', 2);
+  return `${higher}|${num % 2}`;
+}
 
-    const mid = low + Math.min(Math.max(step, 0), high - low);
+// Helper to clean up the leading empty part
+function binaryRecursive(num: number): string {
+  const bin = decimalToBinaryRecursive(num);
+  return bin.split('|').filter(Boolean).join('');
+}
 
-    const midVal = arr[mid];
+// Demo
+console.log(binaryRecursive(27));  // '11011'
+function decimalToBinaryFraction(num: number, precision: number = 10): string {
+  const intPart = Math.trunc(num);
+  let fracPart = num - intPart;
+  let binary = intPart.toString(2);
 
-    if (midVal === key) return mid;
-    if (midVal < key) low = mid + 1;
-    else high = mid - 1;
+  if (precision > 0 && fracPart > 0) {
+    binary += '.';
+    let p = 0;
+    while (p < precision && fracPart > 0) {
+      fracPart *= 2;
+      if (fracPart >= 1) {
+        binary += '1';
+        fracPart -= 1;
+      } else {
+        binary += '0';
+      }
+      p++;
+    }
   }
 
-  return -1; // Key not found
+  return binary;
 }
-const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17];
-console.log(interpolationSearch(nums, 7));  // → 3
-console.log(interpolationSearch(nums, 4));  // → -1
+
+// Demo
+console.log(decimalToBinaryFraction(5.6875, 8)); // '101.1011'
+function test(input: number | bigint) {
+  console.log(`Decimal: ${input}`);
+  console.log(`  -> toString(2):   ${input.toString(2)}`);
+  if (typeof input === 'number') {
+    console.log(`  -> iterative:   ${decimalToBinaryIterative(input)}`);
+    console.log(`  -> recursive:   ${binaryRecursive(input)}`);
+  }
+  console.log('');
+}
+
+test(13);
+test(-13);
+test(0);
+test(5.6875);   // only the toString version works for BigInt
