@@ -1,119 +1,66 @@
-// An adjacency map: node ID → list of neighbouring node IDs
-type Graph = Record<string, string[]>;
-
-// Keeps track of visited nodes and the node from which we reached them
-interface VisitedMap {
-  [node: string]: string | null;      // null = source node itself
-}
-enqueue start into frontierStart
-enqueue goal  into frontierGoal
-mark start as visitedFromStart (predecessor = null)
-mark goal  as visitedFromGoal (predecessor = null)
-
-while both queues not empty:
-    # Expand one layer from the start side
-    if expand(frontierStart, visitedFromStart, visitedFromGoal): return result
-
-    # Expand one layer from the goal side
-    if expand(frontierGoal, visitedFromGoal, visitedFromStart):   return result
-
-return no path
 /**
- * Bidirectional BFS.
+ * Checks whether the given string is a palindrome, ignoring case and
+ * non‑alphanumeric characters.  It uses only constant extra space.
  *
- * @param graph  adjacency map
- * @param start  ID of start node
- * @param goal   ID of goal node
- * @returns a list of node IDs from start to goal, or null if no path
+ * @param s  The string to check.
+ * @returns  true if `s` is a palindrome, false otherwise.
  */
-function bidirectionalBFS(graph: Graph, start: string, goal: string): string[] | null {
-  if (start === goal) return [start];
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  const visitedStart: VisitedMap = { [start]: null };
-  const visitedGoal: VisitedMap   = { [goal] : null };
-
-  const frontierStart: string[] = [start];
-  const frontierGoal: string[]  = [goal];
-
-  const expand = (
-    frontier: string[],
-    visitedThis: VisitedMap,
-    visitedOther: VisitedMap
-  ): string[] | null => {
-    const nextLayer: string[] = [];
-
-    for (const current of frontier) {
-      for (const neighbor of graph[current] || []) {
-        // Already visited from this side → skip
-        if (current in visitedThis && neighbor in visitedThis) continue;
-
-        // New node for this side
-        if (!(neighbor in visitedThis)) {
-          visitedThis[neighbor] = current;
-          nextLayer.push(neighbor);
-        }
-
-        // If neighbour is in the opposite frontier → frontiers meet
-        if (neighbor in visitedOther) {
-          return reconstructPath(
-            start,
-            goal,
-            visitedStart,
-            visitedGoal,
-            neighbor
-          );
-        }
-      }
+  while (left < right) {
+    // Skip any *non*‑alphanumeric character on the left
+    while (left < right && !isAlphaNum(s.charCodeAt(left))) {
+      left++;
+    }
+    // Skip any *non*‑alphanumeric character on the right
+    while (left < right && !isAlphaNum(s.charCodeAt(right))) {
+      right--;
     }
 
-    frontier.splice(0, frontier.length, ...nextLayer);
-    return null;
-  };
+    // If indices crossed after skipping, we're done
+    if (left >= right) break;
 
-  while (frontierStart.length && frontierGoal.length) {
-    const resStart = expand(frontierStart, visitedStart, visitedGoal);
-    if (resStart) return resStart;
+    // Compare the characters case‑insensitively
+    const leftChar = s.charCodeAt(left);
+    const rightChar = s.charCodeAt(right);
 
-    const resGoal = expand(frontierGoal, visitedGoal, visitedStart);
-    if (resGoal) return resGoal;
+    if (normalize(leftChar) !== normalize(rightChar)) {
+      return false;
+    }
+
+    left++;
+    right--;
   }
 
-  return null; // no path found
+  return true;
 }
 
 /**
- * Reconstruct the path once the frontiers have met at `meetingNode`.
+ * Helper to test whether a character code is alphanumeric.
  */
-function reconstructPath(
-  start: string,
-  goal: string,
-  visitedStart: VisitedMap,
-  visitedGoal: VisitedMap,
-  meetingNode: string
-): string[] {
-  const partFromStart: string[] = [meetingNode];
-  let node = meetingNode;
-  while (visitedStart[node]) {
-    node = visitedStart[node]!;
-    partFromStart.unshift(node);
-  }
-
-  const partFromGoal: string[] = [];
-  node = meetingNode;
-  while (visitedGoal[node]) {
-    node = visitedGoal[node]!;
-    partFromGoal.push(node);
-  }
-
-  // Avoid duplicating the meeting node
-  return [...partFromStart, ...partFromGoal];
+function isAlphaNum(code: number): boolean {
+  // 0-9
+  if (code >= 48 && code <= 57) return true;
+  // A-Z
+  if (code >= 65 && code <= 90) return true;
+  // a-z
+  if (code >= 97 && code <= 122) return true;
+  return false;
 }
-const graph: Graph = {
-  a: ['b', 'c'],
-  b: ['a', 'd'],
-  c: ['a', 'd'],
-  d: ['b', 'c', 'e'],
-  e: ['d'],
-};
 
-console.log(bidirectionalBFS(graph, 'a', 'e')); // ["a", "b", "d", "e"]
+/**
+ * Normalises a character code to be lowercase ASCII when possible.
+ * For Unicode other than ASCII it simply returns the original code.
+ */
+function normalize(code: number): number {
+  // Convert uppercase A-Z to lowercase a-z
+  if (code >= 65 && code <= 90) {
+    return code + 32;
+  }
+  return code;
+}
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("race a car"));                      // false
+console.log(isPalindrome("   abcba   "));                     // true
