@@ -1,37 +1,74 @@
-// TypeScript example that fetches JSON and validates the shape of the response
+interface Node<T> {
+  /** opaque identifier used for duplicate detection – e.g. a stringified board state */
+  id: string;
+  /** whatever data you want to keep (state, metadata, …) */
+  data: T;
+  /** produces the succ­esor nodes */
+  getChildren(): Iterable<Node<T>>;
+}
+function dls<T>(
+  node: Node<T>,
+  goalTest: (n: Node<T>) => boolean,
+  limit: number,
+  visited = new Set<string>()
+): Node<T> | null {
+  if (goalTest(node)) return node;
+  if (limit <= 0) return null;          // terminal depth reached
+  visited.add(node.id);                 // prevent revisiting
 
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
+  for (const child of node.getChildren()) {
+    if (!visited.has(child.id)) {
+      const result = dls(child, goalTest, limit - 1, visited);
+      if (result !== null) return result;
+    }
+  }
+  return null; // no goal found within limit
+}
+function dlsIter<T>(
+  start: Node<T>,
+  goalTest: (n: Node<T>) => boolean,
+  limit: number
+): Node<T> | null {
+  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: start, depth: 0 }];
+  const visited = new Set<string>();
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    if (goalTest(node)) return node;
+    if (depth === limit) continue;      // hit the limit – skip children
+
+    visited.add(node.id);
+    for (const child of node.getChildren()) {
+      if (!visited.has(child.id)) {
+        stack.push({ node: child, depth: depth + 1 });
+      }
+    }
+  }
+  return null;
+}
+class Coord {
+  constructor(public x: number, public y: number) {}
 }
 
-/**
- * Fetch a Todo by ID.
- *
- * @param id The ID of the todo to fetch.
- * @returns A promise that resolves to a Todo object.
- */
-async function fetchTodo(id: number): Promise<Todo> {
-  const response = await fetch(`https://jsonplaceholder.typicode.com/todos/${id}`);
+class MazeCell implements Node<Coord> {
+  constructor(
+    public id: string,
+    public data: Coord,
+    private neighbors: readonly Coord[]
+  ) {}
 
-  if (!response.ok) {
-    throw new Error(`Failed to load todo #${id}: ${response.status} ${response.statusText}`);
+  getChildren(): Iterable<Node<Coord>> {
+    return this.neighbors.map(
+      n => new MazeCell(String(n.x) + ',' + n.y, n, [] /* placeholder */)
+    );
   }
-
-  // TypeScript's `as` ensures the runtime shape matches the interface
-  const data = (await response.json()) as Todo;
-
-  // Quick sanity check
-  if (typeof data.completed !== "boolean") {
-    throw new Error("data format unexpected");
-  }
-
-  return data;
 }
 
-// Usage example (you can place this in a main function or wherever you need it)
-fetchTodo(1)
-  .then(todo => console.log(`Todo #${todo.id}: ${todo.title} (completed: ${todo.completed})`))
-  .catch(err => console.error(err));
+// Setup: build maze, decide start & goal
+const start = new MazeCell('0,0', new Coord(0, 0), [new Coord(1, 0), new Coord(0, 1)]);
+const isGoal = (n: Node<Coord>) => n.data.x === 5 && n.data.y === 5;
+
+// Run:
+const found = dls(start, isGoal, 10);
+if (found) console.log('Found solution:', found.data);
+else console.log('no path within depth 10');
