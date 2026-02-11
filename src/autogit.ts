@@ -1,56 +1,44 @@
-// ------------------------------------------------------------------
-// 1) Basic types – tweak these to match your own representation.
-// ------------------------------------------------------------------
-interface Node<T> {
-  /** Value that identifies the node – can be an id, a name, … */
-  id: string;
-  /** Children (or neighbours) – the graph may be directed or undirected. */
-  children?: Array<Node<T>>;
+export interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
+/**
+ * Returns the nth node from the end of a singly‑linked list.
+ *
+ * @param head  The head of the list (may be null).
+ * @param n 1‑based index counting from the last node.
+ * @returns   The node itself, or null if n is out of bounds.
+ */
+export function getNthFromEnd<T>(
+  head: ListNode<T> | null,
+  n: number
+): ListNode<T> | null {
+  if (n <= 0) return null;                // n must be positive
 
-// A very simple match predicate. Replace it with whatever checks your
-// problem needs (e.g. `node.id === targetId`).
-type MatchFn<T> = (node: Node<T>) => boolean;
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
 
-// ------------------------------------------------------------------
-// 2) Depth‑limited search – iterative (uses an explicit stack).
-// ------------------------------------------------------------------
-export function depthLimitedSearch<T>(
-  start: Node<T>,          // The root (or any arbitrary start node)
-  match: MatchFn<T>,      // Predicate to decide if the node is a goal
-  limit: number            // Maximum depth that may be explored
-): Node<T> | null {
-
-  // Stack holds tuples  : [current node, current depth]
-  const stack: Array<[Node<T>, number]> = [[start, 0]];
-
-  while (stack.length > 0) {
-    const [node, depth] = stack.pop()!;   // `!` is safe – we just checked length
-
-    // 1️⃣  Goal check
-    if (match(node)) {
-      return node;
-    }
-
-    // 2️⃣  Depth test – we only enqueue children if we still have room
-    if (depth < limit && node.children) {
-      // Push children onto stack – last child examined first (DFS order)
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        stack.push([node.children[i], depth + 1]);
-      }
-    }
+  // Advance `fast` n steps ahead.
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;              // n is larger than the list length
+    fast = fast.next;
   }
 
-  // No goal found within the depth budget
-  return null;
-}
-const tree: Node<number> = {
-  id: 'root',
-  children: [
-    { id: 'a', children: [{ id: 'a1' }, { id: 'a2' }] },
-    { id: 'b', children: [{ id: 'b1' }, { id: 'b2' }] },
-  ],
-};
+  // Move both pointers until `fast` reaches the end.
+  while (fast) {
+    fast = fast.next;
+    slow = slow?.next ?? null;
+  }
 
-const found = depthLimitedSearch(tree, node => node.id === 'a2', /* limit */ 2);
-console.log(found?.id ?? 'not found'); // → a2
+  // `slow` is now the nth from the end.
+  return slow;
+}
+// Build a tiny list: 10 → 20 → 30 → 40 → 50
+const node5: ListNode<number> = { value: 50, next: null };
+const node4: ListNode<number> = { value: 40, next: node5 };
+const node3: ListNode<number> = { value: 30, next: node4 };
+const node2: ListNode<number> = { value: 20, next: node3 };
+const head: ListNode<number> = { value: 10, next: node2 };
+
+const thirdFromEnd = getNthFromEnd(head, 3);
+console.log(thirdFromEnd?.value); // 30
