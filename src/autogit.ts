@@ -1,17 +1,32 @@
-const numbers = [3, 42, 7, -1, 20];
-const biggest = Math.max(...numbers);
+/**
+ * Bubble sort – compares adjacent elements and swaps them if they're out of order.
+ *
+ * @param arr – The array of numbers (or any type that implements `<`),
+ *              sorted in place and also returned for convenience.
+ * @returns The sorted array.
+ */
+export function bubbleSort<T>(arr: T[]): T[] {
+  const n = arr.length;
 
-console.log(biggest); // 42
-function findMax(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined; // or throw, or use null, whatever fits your API
-  return Math.max(...nums);
+  // Outer loop – each pass guarantees that the largest element among the
+  // unsorted portion moves to its final position at the end of the array.
+  for (let i = 0; i < n - 1; i++) {
+    // Inner loop – only needs to run up to the last unsorted element.
+    for (let j = 0; j < n - i - 1; j++) {
+      // If the current element is greater than the next one, swap them.
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+      }
+    }
+  }
+
+  return arr;
 }
-const biggest = numbers.reduce((max, curr) => curr > max ? curr : max, -Infinity);
-function findMax(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;
-  return nums.reduce((max, curr) => (curr > max ? curr : max));
-}
-function findMax<T extends readonly (number | null | undefined)[]>(arr: T): number | undefined {
-  const filtered = arr.filter(isFinite) as number[]; // strip out null/undefined if you like
-  return filtered.length ? Math.max(...filtered) : undefined;
-}
+import { bubbleSort } from './bubbleSort';
+
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log('Before:', numbers);
+
+bubbleSort(numbers);
+
+console.log('After:', numbers);   // [11, 12, 22, 25, 34, 64, 90]
