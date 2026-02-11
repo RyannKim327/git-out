@@ -1,45 +1,56 @@
-// 1️⃣  Node definition
-interface TreeNode<T = unknown> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+// ------------------------------------------------------------------
+// 1) Basic types – tweak these to match your own representation.
+// ------------------------------------------------------------------
+interface Node<T> {
+  /** Value that identifies the node – can be an id, a name, … */
+  id: string;
+  /** Children (or neighbours) – the graph may be directed or undirected. */
+  children?: Array<Node<T>>;
 }
 
-// 2️⃣  Recursive leaf counter
-function countLeaves<T>(node?: TreeNode<T>): number {
-  // Base case: empty sub‑tree
-  if (!node) return 0;
+// A very simple match predicate. Replace it with whatever checks your
+// problem needs (e.g. `node.id === targetId`).
+type MatchFn<T> = (node: Node<T>) => boolean;
 
-  // A leaf has no children
-  const isLeaf = !node.left && !node.right;
-  if (isLeaf) return 1;
+// ------------------------------------------------------------------
+// 2) Depth‑limited search – iterative (uses an explicit stack).
+// ------------------------------------------------------------------
+export function depthLimitedSearch<T>(
+  start: Node<T>,          // The root (or any arbitrary start node)
+  match: MatchFn<T>,      // Predicate to decide if the node is a goal
+  limit: number            // Maximum depth that may be explored
+): Node<T> | null {
 
-  // Recurse on the two sub‑trees
-  return countLeaves(node.left) + countLeaves(node.right);
-}
+  // Stack holds tuples  : [current node, current depth]
+  const stack: Array<[Node<T>, number]> = [[start, 0]];
 
-// 3️⃣  Example usage
-const tree: TreeNode<number> = {
-  value: 1,
-  left: { value: 2, right: { value: 4 } },
-  right: { value: 3, left: { value: 5 } }
-};
+  while (stack.length > 0) {
+    const [node, depth] = stack.pop()!;   // `!` is safe – we just checked length
 
-console.log(countLeaves(tree)); // → 3
-function countLeavesIterative<T>(root: TreeNode<T>): number {
-  if (!root) return 0;
+    // 1️⃣  Goal check
+    if (match(node)) {
+      return node;
+    }
 
-  let stack: TreeNode<T>[] = [root];
-  let leafCount = 0;
-
-  while (stack.length) {
-    const node = stack.pop()!; // guaranteed defined
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
+    // 2️⃣  Depth test – we only enqueue children if we still have room
+    if (depth < limit && node.children) {
+      // Push children onto stack – last child examined first (DFS order)
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        stack.push([node.children[i], depth + 1]);
+      }
     }
   }
-  return leafCount;
+
+  // No goal found within the depth budget
+  return null;
 }
+const tree: Node<number> = {
+  id: 'root',
+  children: [
+    { id: 'a', children: [{ id: 'a1' }, { id: 'a2' }] },
+    { id: 'b', children: [{ id: 'b1' }, { id: 'b2' }] },
+  ],
+};
+
+const found = depthLimitedSearch(tree, node => node.id === 'a2', /* limit */ 2);
+console.log(found?.id ?? 'not found'); // → a2
