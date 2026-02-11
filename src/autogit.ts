@@ -1,48 +1,27 @@
-// emailValidator.ts
-export function isEmail(str: string): boolean {
-  // RFC‑5322 allows a very wide set of characters.  For most apps a
-  // simpler “+ followed by domain” style rule is good enough.
-  // This expression is a commonly‑accepted compromise:
-  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  return emailRe.test(str);
+function isPalindrome(str: string): boolean {
+  const sanitized = str.toLowerCase();              // ignore case
+  const reversed  = sanitized.split('').reverse().join('');
+  return sanitized === reversed;
 }
-export const strictEmailRe = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
-const tests: Record<string, boolean> = {
-  // pass
-  'user@example.com': true,
-  'user.name+tag@sub.domain.co.uk': true,
+console.log(isPalindrome('RaceCar'));      // true
+console.log(isPalindrome('hello'));        // false
+function isPalindromePortable(str: string): boolean {
+  const cleaned = str.replace(/[^a-z0-9]/gi, '').toLowerCase();
+  const left = 0;
+  const right = cleaned.length - 1;
 
-  // fail
-  'user@': false,
-  '@example.com': false,
-  'user@@example.com': false,
-  'user example@example.com': false,
-  'user@.com': false,
-  '': false,
-};
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) return false;
+    left++;
+    right--;
+  }
 
-for (const [addr, expected] of Object.entries(tests)) {
-  const result = isEmail(addr);
-  console.assert(result === expected, `❌ ${addr}: expected ${expected}, got ${result}`);
+  return true;
 }
-
-console.log('All test cases passed!');
-import { useForm } from 'react-hook-form';
-
-function MyForm() {
-  const { register, handleSubmit, formState: { errors } } = useForm();
-
-  const onSubmit = data => console.log('Valid email:', data.email);
-
-  return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <input
-        {...register('email', { validate: isEmail })}
-        placeholder="email@example.com"
-      />
-      {errors.email && <p>Email is not valid.</p>}
-      <button type="submit">Submit</button>
-    </form>
-  );
-}
+console.log(isPalindromePortable('A man, a plan, a canal: Panama')); // true
+console.log(isPalindromePortable('No lemon, no melon'));            // true
+console.log(isPalindromePortable('Hello, world!'));                 // false
+const isPalindromeFancy = (s: string) =>
+  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).join('') ===
+  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).reverse().join('');
+export { isPalindrome, isPalindromePortable };
