@@ -1,53 +1,45 @@
-/**
- * Simpler Rabin–Karp – uses a 32‑bit unsigned int hash.
- * For stronger use (large text / collision safety) switch to BigInt or a
- * larger mod (e.g., 1_000_000_007).
- */
-export function rabinKarp(
-    text: string,
-    pattern: string,
-    base: number = 256,               // alphabet size
-    mod: number = 1_000_000_007       // a large prime
-): number[] {
-    const n = text.length;
-    const m = pattern.length;
-    if (m === 0 || n < m) return [];
+class Stack<T> {
+  private items: T[] = [];      // underlying array
 
-    const result: number[] = [];
+  /** Push a value onto the top of the stack. */
+  push(value: T): void {
+    this.items.push(value);
+  }
 
-    /* Pre‑compute base^(m-1) % mod   (the weight of the leading char) */
-    let power = 1;
-    for (let i = 0; i < m - 1; i++) power = (power * base) % mod;
+  /** Remove and return the top value.  Returns `undefined` if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
 
-    /* Hashes of pattern and first window */
-    let patternHash = 0;
-    let windowHash = 0;
-    for (let i = 0; i < m; i++) {
-        patternHash = (patternHash * base + pattern.charCodeAt(i)) % mod;
-        windowHash  = (windowHash  * base + text.charCodeAt(i))  % mod;
-    }
+  /** Peek at the top value without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
 
-    /* Slide the window */
-    for (let i = 0; i <= n - m; i++) {
-        /* If hashes match – do a literal check to avoid false positives */
-        if (patternHash === windowHash) {
-            if (text.substr(i, m) === pattern) result.push(i);
-        }
+  /** Number of elements in the stack. */
+  get size(): number {
+    return this.items.length;
+  }
 
-        /* Re‑hash: remove leading char, add trailing char */
-        if (i < n - m) {
-            const leading = text.charCodeAt(i) * power % mod;
-            windowHash = (windowHash - leading + mod) % mod;   // avoid negative
-            windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
-        }
-    }
+  /** True if the stack contains no items. */
+  get isEmpty(): boolean {
+    return this.items.length === 0;
+  }
 
-    return result;
+  /** Optional: clear all items. */
+  clear(): void {
+    this.items = [];
+  }
 }
-import { rabinKarp } from './rabinKarp';
+const stack = new Stack<number>();
 
-const text = "ababcabcabababd";
-const pattern = "ababd";
+stack.push(10);
+stack.push(20);
+stack.push(30);
 
-const matches = rabinKarp(text, pattern);  // → [10]
-console.log("Match at indices: ", matches);
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size);   // 2
+
+stack.clear();
+console.log(stack.isEmpty); // true
