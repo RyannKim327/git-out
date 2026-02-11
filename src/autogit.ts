@@ -1,20 +1,34 @@
-// A simple node definition – adjust to match your existing structure
-interface ListNode<T> {
-  value: T;
-  next?: ListNode<T>;
-}
-function getLength<T>(head: ListNode<T> | undefined): number {
-  let count = 0;
-  let current = head;
+function isAnagramSort(a: string, b: string): boolean {
+  // Normalize (optional – depends on your use‑case)
+  const normalize = (s: string) =>
+    s.replace(/\s+/g, '').toLowerCase(); // trim spaces, lower‑case
 
-  while (current) {
-    count++;
-    current = current.next;
+  const sa = normalize(a).split('').sort().join('');
+  const sb = normalize(b).split('').sort().join('');
+
+  return sa === sb;
+}
+function isAnagramMap(a: string, b: string): boolean {
+  // Quick length check (no need to normalize again here)
+  if (a.length !== b.length) return false;
+
+  const count = new Map<string, number>();
+
+  for (let i = 0; i < a.length; i++) {
+    const ca = a[i];
+    const cb = b[i];
+
+    count.set(ca, (count.get(ca) || 0) + 1);
+    count.set(cb, (count.get(cb) || 0) - 1);
   }
 
-  return count;
+  // All counts must net to 0
+  for (const val of count.values()) {
+    if (val !== 0) return false;
+  }
+  return true;
 }
-function getLengthRec<T>(node: ListNode<T> | undefined): number {
-  if (!node) return 0;
-  return 1 + getLengthRec(node.next);
-}
+const a = 'listen';
+const b = 'silent';
+console.log(isAnagramSort(a, b)); // true
+console.log(isAnagramMap(a, b));  // true
