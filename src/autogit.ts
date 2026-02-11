@@ -1,47 +1,33 @@
-/**
- * Interpolation search – returns the index of `key` in `arr`
- * or `-1` if the key is not present.
- *
- * @template T – numeric type (number, bigInt, etc.)
- * @param arr  – sorted array of numbers
- * @param key  – value to look for
- * @returns index or -1
- */
-export function interpolationSearch<T extends number | bigint>(
-  arr: T[],
-  key: T
-): number {
-  if (!arr.length) return -1;
+// random-axios-example.ts
+import axios, { AxiosResponse } from "axios";
 
-  let low = 0;
-  let high = arr.length - 1;
-
-  /* Handle the special situation where the key is identical to
-   * the value at both bounds – it can’t be found if low === high
-   * but arr[low] !== key.
-   */
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    /* Avoid division by zero when array values are identical */
-    const step =
-      low === high
-        ? 0
-        : Number(
-            (key - arr[low]) *
-              (high - low) /
-              (arr[high] - arr[low])
-          );
-
-    const mid = low + Math.min(Math.max(step, 0), high - low);
-
-    const midVal = arr[mid];
-
-    if (midVal === key) return mid;
-    if (midVal < key) low = mid + 1;
-    else high = mid - 1;
-  }
-
-  return -1; // Key not found
+interface PostSummary {
+  id: number;
+  title: string;
 }
-const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17];
-console.log(interpolationSearch(nums, 7));  // → 3
-console.log(interpolationSearch(nums, 4));  // → -1
+
+async function fetchPostSummaries(
+  limit: number = 5,
+  page: number = 1
+): Promise<PostSummary[]> {
+  const url = "https://jsonplaceholder.typicode.com/posts";
+  const params = { _limit: limit, _page: page };
+
+  // Axios can be typed at the request level:
+  const response: AxiosResponse<PostSummary[]> = await axios.get(url, { params });
+
+  // We trust the API returns the expected shape, but we still slice the fields we care about.
+  return response.data.map(({ id, title }) => ({ id, title }));
+}
+
+async function main() {
+  try {
+    const summaries = await fetchPostSummaries();
+    console.log("Fetched post summaries:", summaries);
+  } catch (err) {
+    // @ts-ignore – quick error log for demonstration
+    console.error("Something went wrong:", err?.message ?? err);
+  }
+}
+
+main();
