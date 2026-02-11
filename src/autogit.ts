@@ -1,74 +1,32 @@
-interface Node<T> {
-  /** opaque identifier used for duplicate detection – e.g. a stringified board state */
-  id: string;
-  /** whatever data you want to keep (state, metadata, …) */
-  data: T;
-  /** produces the succ­esor nodes */
-  getChildren(): Iterable<Node<T>>;
-}
-function dls<T>(
-  node: Node<T>,
-  goalTest: (n: Node<T>) => boolean,
-  limit: number,
-  visited = new Set<string>()
-): Node<T> | null {
-  if (goalTest(node)) return node;
-  if (limit <= 0) return null;          // terminal depth reached
-  visited.add(node.id);                 // prevent revisiting
+/**
+ * Bubble sort – compares adjacent elements and swaps them if they're out of order.
+ *
+ * @param arr – The array of numbers (or any type that implements `<`),
+ *              sorted in place and also returned for convenience.
+ * @returns The sorted array.
+ */
+export function bubbleSort<T>(arr: T[]): T[] {
+  const n = arr.length;
 
-  for (const child of node.getChildren()) {
-    if (!visited.has(child.id)) {
-      const result = dls(child, goalTest, limit - 1, visited);
-      if (result !== null) return result;
-    }
-  }
-  return null; // no goal found within limit
-}
-function dlsIter<T>(
-  start: Node<T>,
-  goalTest: (n: Node<T>) => boolean,
-  limit: number
-): Node<T> | null {
-  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: start, depth: 0 }];
-  const visited = new Set<string>();
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    if (goalTest(node)) return node;
-    if (depth === limit) continue;      // hit the limit – skip children
-
-    visited.add(node.id);
-    for (const child of node.getChildren()) {
-      if (!visited.has(child.id)) {
-        stack.push({ node: child, depth: depth + 1 });
+  // Outer loop – each pass guarantees that the largest element among the
+  // unsorted portion moves to its final position at the end of the array.
+  for (let i = 0; i < n - 1; i++) {
+    // Inner loop – only needs to run up to the last unsorted element.
+    for (let j = 0; j < n - i - 1; j++) {
+      // If the current element is greater than the next one, swap them.
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
       }
     }
   }
-  return null;
+
+  return arr;
 }
-class Coord {
-  constructor(public x: number, public y: number) {}
-}
+import { bubbleSort } from './bubbleSort';
 
-class MazeCell implements Node<Coord> {
-  constructor(
-    public id: string,
-    public data: Coord,
-    private neighbors: readonly Coord[]
-  ) {}
+const numbers = [64, 34, 25, 12, 22, 11, 90];
+console.log('Before:', numbers);
 
-  getChildren(): Iterable<Node<Coord>> {
-    return this.neighbors.map(
-      n => new MazeCell(String(n.x) + ',' + n.y, n, [] /* placeholder */)
-    );
-  }
-}
+bubbleSort(numbers);
 
-// Setup: build maze, decide start & goal
-const start = new MazeCell('0,0', new Coord(0, 0), [new Coord(1, 0), new Coord(0, 1)]);
-const isGoal = (n: Node<Coord>) => n.data.x === 5 && n.data.y === 5;
-
-// Run:
-const found = dls(start, isGoal, 10);
-if (found) console.log('Found solution:', found.data);
-else console.log('no path within depth 10');
+console.log('After:', numbers);   // [11, 12, 22, 25, 34, 64, 90]
