@@ -1,32 +1,66 @@
-/**
- * Bubble sort – compares adjacent elements and swaps them if they're out of order.
- *
- * @param arr – The array of numbers (or any type that implements `<`),
- *              sorted in place and also returned for convenience.
- * @returns The sorted array.
- */
-export function bubbleSort<T>(arr: T[]): T[] {
-  const n = arr.length;
+class ListNode {
+  val: number;
+  next: ListNode | null;
 
-  // Outer loop – each pass guarantees that the largest element among the
-  // unsorted portion moves to its final position at the end of the array.
-  for (let i = 0; i < n - 1; i++) {
-    // Inner loop – only needs to run up to the last unsorted element.
-    for (let j = 0; j < n - i - 1; j++) {
-      // If the current element is greater than the next one, swap them.
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-      }
+  constructor(val: number, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
+  }
+}
+
+/**
+ * Returns true if the list contains a cycle, false otherwise.
+ */
+function hasCycle(head: ListNode | null): boolean {
+  let slow = head;
+  let fast = head;
+
+  while (fast && fast.next) {
+    slow = slow.next;             // move one step
+    fast = fast.next.next;        // move two steps
+
+    if (slow === fast) {          // pointers meet → cycle
+      return true;
     }
   }
 
-  return arr;
+  // fast reached the end → no cycle
+  return false;
 }
-import { bubbleSort } from './bubbleSort';
+/**
+ * Returns true if the list contains a cycle, false otherwise.
+ * Uses a Set to remember nodes we've seen.
+ */
+function hasCycleWithSet(head: ListNode | null): boolean {
+  const visited = new Set<ListNode>();
 
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-console.log('Before:', numbers);
+  let current = head;
+  while (current) {
+    if (visited.has(current)) {
+      return true;               // seen it before → cycle
+    }
+    visited.add(current);
+    current = current.next;
+  }
 
-bubbleSort(numbers);
+  return false;                  // reached the end
+}
+// 1 ➜ 2 ➜ 3 ➜ 4 ➜ null   (no cycle)
+const a = new ListNode(1);
+a.next = new ListNode(2, new ListNode(3, new ListNode(4)));
 
-console.log('After:', numbers);   // [11, 12, 22, 25, 34, 64, 90]
+console.log(hasCycle(a));          // false
+console.log(hasCycleWithSet(a));   // false
+
+// 1 ➜ 2 ➜ 3 ➜ 4 ➜ 2 ...   (cycle back to node 2)
+const b = new ListNode(1);
+const node2 = new ListNode(2);
+const node3 = new ListNode(3);
+const node4 = new ListNode(4);
+b.next = node2;
+node2.next = node3;
+node3.next = node4;
+node4.next = node2;                // close the loop
+
+console.log(hasCycle(b));          // true
+console.log(hasCycleWithSet(b));   // true
