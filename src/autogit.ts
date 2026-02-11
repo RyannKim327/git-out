@@ -1,31 +1,51 @@
-/**
- * Counts how many code units a string contains.
- * @param s The string to measure.
- * @returns The length as a number.
- */
-function getStringLength(s: string): number {
-  let count = 0;
+// ----------  Tree node definition ----------
+class TreeNode<T> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
+}
 
-  // Keep stepping forward until we encounter an undefined slot.
-  while (s[count] !== undefined) {
-    count++;
+// ----------  Diameter helper ----------
+function diameter(root: TreeNode<any> | null): number {
+  let maxDiameter = 0;           // global best
+
+  // returns height of subtree rooted at `node`
+  function dfs(node: TreeNode<any> | null): number {
+    if (!node) return 0;
+
+    const leftH  = dfs(node.left);
+    const rightH = dfs(node.right);
+
+    // path that passes through this node
+    const candidate = leftH + rightH;
+    if (candidate > maxDiameter) maxDiameter = candidate;
+
+    // height of this subtree
+    return Math.max(leftH, rightH) + 1;
   }
 
-  return count;
+  dfs(root);
+  return maxDiameter;                   // number of edges on the longest path
 }
-function getStringLengthUsingForOf(s: string): number {
-  let count = 0;
-  for (const _ of s) {
-    count++;        // `_` is just a throwaway variable
-  }
-  return count;    // this is the number of Unicode code points we iterated over
-}
-function getStringLengthRecursive(s: string, idx = 0): number {
-  return s[idx] === undefined
-    ? idx
-    : getStringLengthRecursive(s, idx + 1);
-}
-const demo = "Hello, 👋🌍";
 
-console.log(getStringLength(demo));                    // 13 (code units)
-console.log(getStringLengthUsingForOf(demo));          // 10 (code points)
+/* ------------------------------------------------------------------ */
+/*  Quick sanity check – build a tree and run the function             */
+/* ------------------------------------------------------------------ */
+
+const a = new TreeNode('a');
+const b = new TreeNode('b');
+const c = new TreeNode('c');
+const d = new TreeNode('d');
+const e = new TreeNode('e');
+const f = new TreeNode('f');
+
+a.left  = b;                //   a
+a.right = c;                //  / \
+b.left  = d;                // d   c
+b.right = e;                //  \   \
+e.right = f;                //   f
+
+console.log(diameter(a));   // → 4
+const diameterInNodes = diameter(root) + 1;
