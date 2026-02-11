@@ -1,31 +1,48 @@
-/**
- * Counts how many code units a string contains.
- * @param s The string to measure.
- * @returns The length as a number.
- */
-function getStringLength(s: string): number {
-  let count = 0;
+// emailValidator.ts
+export function isEmail(str: string): boolean {
+  // RFC‑5322 allows a very wide set of characters.  For most apps a
+  // simpler “+ followed by domain” style rule is good enough.
+  // This expression is a commonly‑accepted compromise:
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  // Keep stepping forward until we encounter an undefined slot.
-  while (s[count] !== undefined) {
-    count++;
-  }
+  return emailRe.test(str);
+}
+export const strictEmailRe = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
+const tests: Record<string, boolean> = {
+  // pass
+  'user@example.com': true,
+  'user.name+tag@sub.domain.co.uk': true,
 
-  return count;
-}
-function getStringLengthUsingForOf(s: string): number {
-  let count = 0;
-  for (const _ of s) {
-    count++;        // `_` is just a throwaway variable
-  }
-  return count;    // this is the number of Unicode code points we iterated over
-}
-function getStringLengthRecursive(s: string, idx = 0): number {
-  return s[idx] === undefined
-    ? idx
-    : getStringLengthRecursive(s, idx + 1);
-}
-const demo = "Hello, 👋🌍";
+  // fail
+  'user@': false,
+  '@example.com': false,
+  'user@@example.com': false,
+  'user example@example.com': false,
+  'user@.com': false,
+  '': false,
+};
 
-console.log(getStringLength(demo));                    // 13 (code units)
-console.log(getStringLengthUsingForOf(demo));          // 10 (code points)
+for (const [addr, expected] of Object.entries(tests)) {
+  const result = isEmail(addr);
+  console.assert(result === expected, `❌ ${addr}: expected ${expected}, got ${result}`);
+}
+
+console.log('All test cases passed!');
+import { useForm } from 'react-hook-form';
+
+function MyForm() {
+  const { register, handleSubmit, formState: { errors } } = useForm();
+
+  const onSubmit = data => console.log('Valid email:', data.email);
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input
+        {...register('email', { validate: isEmail })}
+        placeholder="email@example.com"
+      />
+      {errors.email && <p>Email is not valid.</p>}
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
