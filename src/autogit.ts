@@ -1,115 +1,70 @@
-// 1️⃣ Node – every node knows its children and whether it finishes a word
-class TrieNode {
-    /** Map <character, child node> */
-    children: Map<string, TrieNode>;
-    /** True if node represents the end of an inserted word */
-    isWord: boolean;
+/**
+ * Radix sort (Least–Significant‑digit first) for arrays of non‑negative integers.
+ *
+ * Time:  O(k * n)  where k = number of digits in the largest number
+ * Space: O(n + B)  (B = 10 for base‑10)
+ */
+function radixSort(nums: number[]): number[] {
+  if (nums.length <= 1) return nums.slice();
 
-    constructor() {
-        this.children = new Map();
-        this.isWord = false;
+  // Find the biggest value to know how many digits we need to process
+  const maxVal = Math.max(...nums);
+  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
+
+  // Start from the least significant digit
+  let divisor = 1;
+
+  // We'll reuse these buckets in each pass to keep O(n) allocations
+  const buckets: number[][] = Array.from({ length: 10 }, () => []);
+
+  for (let d = 0; d < maxDigits; d++) {
+    // Distribute
+    for (const num of nums) {
+      const bucketIndex = Math.floor(num / divisor) % 10;
+      buckets[bucketIndex].push(num);
     }
+
+    // Collect back into nums, empty buckets for the next pass
+    let pos = 0;
+    for (const bucket of buckets) {
+      while (bucket.length) {
+        nums[pos++] = bucket.pop() as number; // pop gives LIFO but we reverse order below
+      }
+      bucket.length = 0; // reset
+    }
+
+    divisor *= 10; // move to the next digit
+  }
+
+  return nums;
 }
+function radixSortStable(nums: number[]): number[] {
+  if (nums.length <= 1) return nums.slice();
 
-// 2️⃣ Trie – wrapper around the root node
-class Trie {
-    private root: TrieNode;
+  const maxVal = Math.max(...nums);
+  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
 
-    constructor() {
-        this.root = new TrieNode();
+  let divisor = 1;
+  const buckets: number[][] = Array.from({ length: 10 }, () => []);
+
+  for (let d = 0; d < maxDigits; d++) {
+    for (const n of nums) {
+      const idx = Math.floor(n / divisor) % 10;
+      buckets[idx].push(n);
     }
 
-    /** Inserts a word into the trie */
-    insert(word: string): void {
-        let node = this.root;
-        for (const ch of word) {
-            if (!node.children.has(ch)) {
-                node.children.set(ch, new TrieNode());
-            }
-            node = node.children.get(ch)!;
-        }
-        node.isWord = true;
+    let i = 0;
+    for (const bucket of buckets) {
+      while (bucket.length) {
+        nums[i++] = bucket.shift() as number; // shift preserves order
+      }
     }
 
-    /** Returns true if the trie contains the exact word */
-    search(word: string): boolean {
-        const node = this._traverse(word);
-        return node?.isWord ?? false;
-    }
+    divisor *= 10;
+  }
 
-    /** Returns true if the trie contains any word that starts with the prefix */
-    startsWith(prefix: string): boolean {
-        const node = this._traverse(prefix);
-        return !!node;
-    }
-
-    /** Remove a word – returns true if a word was removed */
-    remove(word: string): boolean {
-        const stack: Array<{ node: TrieNode; char: string }> = [];
-
-        let node = this.root;
-        for (const ch of word) {
-            const child = node.children.get(ch);
-            if (!child) return false; // word not present
-            stack.push({ node, char: ch });
-            node = child;
-        }
-
-        if (!node.isWord) return false; // not a complete word
-
-        node.isWord = false;
-
-        // Clean up nodes that are no longer needed
-        while (stack.length && !node.isWord && node.children.size === 0) {
-            const { node: parent, char } = stack.pop()!;
-            parent.children.delete(char);
-            node = parent;
-        }
-
-        return true;
-    }
-
-    /** Suggest words that start with a prefix (up to maxResults) */
-    suggest(prefix: string, maxResults = 10): string[] {
-        const results: string[] = [];
-        let node = this.root;
-        for (const ch of prefix) {
-            const child = node.children.get(ch);
-            if (!child) return results;
-            node = child;
-        }
-        this._dfs(node, prefix, results, maxResults);
-        return results;
-    }
-
-    /* ---------- private helpers ---------- */
-    // walk through the trie following the key; return node or null
-    private _traverse(key: string): TrieNode | null {
-        let node: TrieNode | undefined = this.root;
-        for (const ch of key) {
-            node = node.children.get(ch);
-            if (!node) return null;
-        }
-        return node as TrieNode;
-    }
-
-    private _dfs(node: TrieNode, path: string, out: string[], limit: number): void {
-        if (out.length >= limit) return;
-        if (node.isWord) out.push(path);
-        for (const [ch, child] of node.children.entries()) {
-            this._dfs(child, path + ch, out, limit);
-        }
-    }
+  return nums;
 }
-const trie = new Trie();
-trie.insert('apple');
-trie.insert('app');
-trie.insert('banana');
-
-console.log(trie.search('app'));      // true
-console.log(trie.search('apricot'));  // false
-console.log(trie.startsWith('app'));  // true
-console.log(trie.suggest('app'));     // ['app', 'apple']
-
-trie.remove('app');
-console.log(trie.search('app'));      // false
+const data = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log(radixSortStable(data));
+// → [2, 24, 45, 66, 75, 90, 170, 802]
