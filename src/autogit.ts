@@ -1,95 +1,71 @@
-/* ------------------------------------------------------------------
-   Interface that a node must support for the search.
-   ------------------------------------------------------------------ */
-export interface Searchable<Node> {
-  // Return an array (or any iterable) of child nodes.
-  getChildren(): Iterable<Node>;
+/**
+ * Heap‑sort – sorts an array of numbers in ascending order.
+ * The algorithm works in O(n log n) time and O(1) extra space (in‑place).
+ *
+ * @param arr The array to sort – it will be mutated.
+ */
+export function heapSort(arr: number[]): void {
+  const n = arr.length;
 
-  // Optional: a quick way to decide if this node is the goal.
-  // If omitted, the caller supplies a separate predicate below.
-  isGoal?(): boolean;
-}
-
-/* ------------------------------------------------------------------
-   Breadth‑Limited Search
-
-   Parameters
-     start   : node to begin the search
-     maxDepth: maximum depth (root is depth 0)
-     goal   : optional predicate; if the node has `isGoal`, that
-              method is used instead
-
-   Returns
-     The found node, or `undefined` if nothing was discovered within
-     the depth limit.
-   ------------------------------------------------------------------ */
-export function breadthLimitedSearch<Node extends Searchable<Node>>(
-  start: Node,
-  maxDepth: number,
-  goal?: (node: Node) => boolean
-): Node | undefined {
-
-  // Queue entries store the node and its depth
-  interface QueueEntry {
-    node: Node;
-    depth: number;
+  // Step 1. Build a max‑heap.
+  // The last non‑leaf node is at floor(n/2) - 1.
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+    siftDown(arr, i, n);
   }
 
-  const queue: QueueEntry[] = [{ node: start, depth: 0 }];
-  const seen = new Set<Node>();
+  // Step 2. Repeatedly extract the maximum element.
+  for (let end = n - 1; end > 0; end--) {
+    swap(arr, 0, end);          // Move current max to its final position.
+    siftDown(arr, 0, end);      // Restore heap property for the reduced heap.
+  }
+}
 
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;
+/**
+ * Restores the max‑heap property by sifting a node downwards.
+ *
+ * @param heap  The heap array.
+ * @param start Index of the node to sift down.
+ * @param size  The current size of the heap (elements >= size are already sorted).
+ */
+function siftDown(heap: number[], start: number, size: number): void {
+  let root = start;
 
-    // Skip any repeated nodes – this protects against cycles
-    if (seen.has(node)) continue;
-    seen.add(node);
+  while (true) {
+    const left = 2 * root + 1;   // Left child index.
+    const right = left + 1;      // Right child index.
+    let largest = root;
 
-    // Goal test – prefer the node’s own method if present
-    const isGoal =
-      goal ? goal(node) : node.isGoal ? node.isGoal() : false;
-    if (isGoal) return node;
-
-    // Stop expanding deeper than maxDepth
-    if (depth < maxDepth) {
-      for (const child of node.getChildren()) {
-        queue.push({ node: child, depth: depth + 1 });
-      }
+    // If left child exists and is greater than root.
+    if (left < size && heap[left] > heap[largest]) {
+      largest = left;
     }
-  }
 
-  // Nothing matched within the limit
-  return undefined;
-}
-// 1. A concrete node type
-class TreeNode implements Searchable<TreeNode> {
-  constructor(
-    public value: number,
-    private children: TreeNode[] = []
-  ) {}
+    // If right child exists and is greater than current largest.
+    if (right < size && heap[right] > heap[largest]) {
+      largest = right;
+    }
 
-  getChildren(): TreeNode[] {
-    return this.children;
-  }
+    // If root is already the largest, the heap property holds.
+    if (largest === root) break;
 
-  // Optional helper that the search will call first
-  isGoal(): boolean {
-    return this.value === 42;
-  }
-
-  add(child: TreeNode) {
-    this.children.push(child);
+    // Swap root with the larger child and continue sifting down.
+    swap(heap, root, largest);
+    root = largest;
   }
 }
 
-// 2. Build a little tree
-const root = new TreeNode(1);
-const a = new TreeNode(2);
-const b = new TreeNode(3);
-root.add(a); root.add(b);
-a.add(new TreeNode(4));
-b.add(new TreeNode(42)); // the goal
-
-// 3. Run the search
-const found = breadthLimitedSearch(root, 3);
-console.log(found?.value ?? 'not found'); // prints 42
+/**
+ * Utility to swap two elements in an array.
+ *
+ * @param a    Array containing the elements.
+ * @param i    Index of the first element.
+ * @param j    Index of the second element.
+ */
+function swap(a: number[], i: number, j: number): void {
+  const tmp = a[i];
+  a[i] = a[j];
+  a[j] = tmp;
+}
+const data = [5, 3, 8, 4, 1, 2];
+heapSort(data);
+console.log(data);  // → [1, 2, 3, 4, 5, 8]
