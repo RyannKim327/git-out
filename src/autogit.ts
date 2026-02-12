@@ -1,91 +1,44 @@
-// --------------------------------------------------------
-// Random TypeScript demo:  GET data from a public API
-// --------------------------------------------------------
-
-// Install the needed deps if you run this in a Node project:
-//   npm install --save node-fetch @types/node-fetch
-//
-// If you use this in a browser project, the browser's fetch is already available.
-
-// Import the fetch shim for Node (uncomment if you run under Node)
-// import fetch from 'node-fetch';
-
-// A tiny helper to pause (useful for demo pacing)
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// -------------------------------------------------------------------
-// 1️⃣  Define the shape of the data we expect from the API
-// -------------------------------------------------------------------
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
+export interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
+/**
+ * Returns the nth node from the end of a singly‑linked list.
+ *
+ * @param head  The head of the list (may be null).
+ * @param n 1‑based index counting from the last node.
+ * @returns   The node itself, or null if n is out of bounds.
+ */
+export function getNthFromEnd<T>(
+  head: ListNode<T> | null,
+  n: number
+): ListNode<T> | null {
+  if (n <= 0) return null;                // n must be positive
 
-// -------------------------------------------------------------------
-// 2️⃣  A generic GET helper that returns typed JSON
-// -------------------------------------------------------------------
-async function get<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    // We simply throw an error for this demo
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
+
+  // Advance `fast` n steps ahead.
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;              // n is larger than the list length
+    fast = fast.next;
   }
-  const data: T = await response.json();
-  return data;
+
+  // Move both pointers until `fast` reaches the end.
+  while (fast) {
+    fast = fast.next;
+    slow = slow?.next ?? null;
+  }
+
+  // `slow` is now the nth from the end.
+  return slow;
 }
+// Build a tiny list: 10 → 20 → 30 → 40 → 50
+const node5: ListNode<number> = { value: 50, next: null };
+const node4: ListNode<number> = { value: 40, next: node5 };
+const node3: ListNode<number> = { value: 30, next: node4 };
+const node2: ListNode<number> = { value: 20, next: node3 };
+const head: ListNode<number> = { value: 10, next: node2 };
 
-// -------------------------------------------------------------------
-// 3️⃣  Main demo logic
-// -------------------------------------------------------------------
-async function main() {
-  const apiEndpoint = 'https://jsonplaceholder.typicode.com/posts/1';
-
-  console.log('Fetching demo post...');
-  try {
-    const post = await get<Post>(apiEndpoint);
-    console.log('✅ Post fetched:');
-    console.log(`  • ID: ${post.id}`);
-    console.log(`  • Title: ${post.title}`);
-    console.log(`  • Body snippet: "${post.body.slice(0, 60)}..."`);
-  } catch (err) {
-    console.error('⚠️  Error while fetching:', err);
-  }
-
-  // -------------------------------------------------------------------
-  // 4️⃣  Throw in a second request: list of all posts
-  // -------------------------------------------------------------------
-  console.log('\nFetching all posts (just the first 5 for brevity)...');
-  try {
-    const allPosts = await get<Post[]>('https://jsonplaceholder.typicode.com/posts');
-    console.table(allPosts.slice(0, 5));
-  } catch (err) {
-    console.error('⚠️  Error while fetching:', err);
-  }
-
-  // ---------------------------------------------------------------
-  // 5️⃣  Optional: POST a new resource (mocked, won't persist)
-  // ---------------------------------------------------------------
-  console.log('\nAttempting to POST a new post...');
-  try {
-    const newPostResponse = await fetch('https://jsonplaceholder.typicode.com/posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: 'Hello World',
-        body: 'This post was created by the demo.',
-        userId: 42
-      })
-    });
-    const created: Post = await newPostResponse.json();
-    console.log('✅ Created post (mocked):', created);
-  } catch (err) {
-    console.error('⚠️  Error while posting:', err);
-  }
-
-  // Small pause before exit (only matters if running in Node)
-  await delay(500);
-}
-
-main();
+const thirdFromEnd = getNthFromEnd(head, 3);
+console.log(thirdFromEnd?.value); // 30
