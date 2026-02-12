@@ -1,14 +1,26 @@
-// 1️⃣ Simple string interpolation (most common)
-const a = "hello";
-const b = "world";
-const c = a + " " + b;          // "hello world"
+/**
+ * Returns true if the array is in strictly ascending order (each element ≤ the next one).
+ * Works for numbers, strings, or any type that can be compared with < / >.
+ */
+export function isAscending<T>(arr: T[], comparator?: (a: T, b: T) => number): boolean {
+  // If the user passes a custom comparator, use it; otherwise fall back to natural order.
+  const cmp = comparator ?? ((a: T, b: T) => a < b ? -1 : a > b ? 1 : 0);
 
-// 2️⃣ Template literals – works the same but often cleaner
-const c2 = `${a} ${b}`;          // "hello world"
+  // Iterate until we find a pair that violates the ascending rule.
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) {
+      return false; // arr[i-1] > arr[i], not ascending
+    }
+  }
+  return true;          // All pairs passed the test
+}
+// Numbers (default comparator)
+console.log(isAscending([1, 2, 3, 4])); // true
+console.log(isAscending([1, 3, 2, 4])); // false
 
-// 3️⃣ Array join (useful if you have many parts)
-const parts = [a, b];
-const c3 = parts.join(" ");      // "hello world"
+// Strings (lexicographic order)
+console.log(isAscending(['apple', 'banana', 'cherry'])); // true
 
-// 4️⃣ String.prototype.concat (rarely needed)
-const c4 = a.concat(" ", b);     // "hello world"
+// Custom comparison – e.g., sort by string length
+const byLength = (a: string, b: string) => a.length - b.length;
+console.log(isAscending(['a', 'bb', 'ccc'], byLength)); // true
