@@ -1,27 +1,45 @@
-function isPalindrome(str: string): boolean {
-  const sanitized = str.toLowerCase();              // ignore case
-  const reversed  = sanitized.split('').reverse().join('');
-  return sanitized === reversed;
-}
-console.log(isPalindrome('RaceCar'));      // true
-console.log(isPalindrome('hello'));        // false
-function isPalindromePortable(str: string): boolean {
-  const cleaned = str.replace(/[^a-z0-9]/gi, '').toLowerCase();
-  const left = 0;
-  const right = cleaned.length - 1;
+class Stack<T> {
+  private items: T[] = [];      // underlying array
 
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) return false;
-    left++;
-    right--;
+  /** Push a value onto the top of the stack. */
+  push(value: T): void {
+    this.items.push(value);
   }
 
-  return true;
+  /** Remove and return the top value.  Returns `undefined` if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  /** Peek at the top value without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Number of elements in the stack. */
+  get size(): number {
+    return this.items.length;
+  }
+
+  /** True if the stack contains no items. */
+  get isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Optional: clear all items. */
+  clear(): void {
+    this.items = [];
+  }
 }
-console.log(isPalindromePortable('A man, a plan, a canal: Panama')); // true
-console.log(isPalindromePortable('No lemon, no melon'));            // true
-console.log(isPalindromePortable('Hello, world!'));                 // false
-const isPalindromeFancy = (s: string) =>
-  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).join('') ===
-  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).reverse().join('');
-export { isPalindrome, isPalindromePortable };
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size);   // 2
+
+stack.clear();
+console.log(stack.isEmpty); // true
