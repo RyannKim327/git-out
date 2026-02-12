@@ -1,33 +1,30 @@
-/**
- * Returns the index of the first non‑repeating character.
- * If every character repeats, returns -1.
- *
- * @param s – the string to scan
- */
-function firstNonRepeatingIndex(s: string): number {
-  // 1️⃣ Count how many times each character occurs
-  const freq = new Map<string, number>();
+// src/scheduler.ts
+import { schedule, Job } from 'node-cron';
+import { randomInt } from 'crypto';
 
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
+// Helper: format the current date/time nicely
+const fmtDate = (date: Date): string => {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
 
-  // 2️⃣ Scan again from the start, picking the first that has count 1
-  for (let i = 0; i < s.length; i++) {
-    if (freq.get(s[i]) === 1) {
-      return i;    // return the index, you can return the character with s[i]
-    }
-  }
+// Cron expression – every 5 minutes, on the minute.
+// (Syntax: `m h dom mon dow`)
+// Example: 0 12 * * * → every day at 12:00.
+const cronExpr = '*/5 * * * *';
 
-  return -1; // no unique character found
-}
+const job: Job = schedule(cronExpr, () => {
+  const now = new Date();
+  const rand = randomInt(1_000_000); // 0 <= rand < 1,000,000
+  console.log(`[${fmtDate(now)}] Random number: ${rand}`);
+}, {
+  scheduled: true, // start scheduling immediately
+  timezone: 'UTC'  // adjust if you need a different zone
+});
 
-// Demo
-const txt = "mybobby";
-const idx = firstNonRepeatingIndex(txt);
+// Optional: make the process stay alive but not block exit
+job.task?.unref?.();
 
-if (idx >= 0) {
-  console.log(`First non‑repeating char: '${txt[idx]}' at position ${idx}`);
-} else {
-  console.log("All characters repeat");
-}
+// If you ran the script normally (`node src/scheduler.js` after TS‑compile),
+// the job will keep running. Exit manually when you're done.
