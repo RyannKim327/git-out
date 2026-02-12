@@ -1,35 +1,47 @@
 /**
- * Counting sort for arrays of non‑negative integers.
- * @param arr The input array – it will not be mutated.
- * @returns A new array containing the sorted numbers.
+ * Finds the median of two sorted arrays that may be of different lengths.
+ *
+ * @param a  first sorted array (non‑empty)
+ * @param b  second sorted array (non‑empty)
+ * @returns  median value (number)
  */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+export function medianOfTwoSortedArrays(a: number[], b: number[]): number {
+  // Ensure a is the shorter array to keep the binary search bounded.
+  if (a.length > b.length) return medianOfTwoSortedArrays(b, a);
 
-  // 1. Find the maximum value (k) – the range of the keys.
-  let max = arr[0];
-  for (const num of arr) if (num > max) max = num;
+  const m = a.length;
+  const n = b.length;
+  let left = 0;
+  let right = m;
 
-  // 2. Build the “count” array of size k + 1, initialise to 0.
-  const count: number[] = new Array(max + 1).fill(0);
+  while (left <= right) {
+    const i = Math.floor((left + right) / 2);          // cut in a
+    const j = Math.floor((m + n + 1) / 2) - i;        // cut in b
 
-  // 3. Count how many times each value appears.
-  for (const num of arr) count[num]++;
+    const Aleft   = i === 0 ?    -Infinity : a[i - 1];
+    const Aright  = i === m ?    Infinity : a[i];
+    const Bleft   = j === 0 ?    -Infinity : b[j - 1];
+    const Bright  = j === n ?    Infinity : b[j];
 
-  // 4. Transform counts to positions (prefix sums).
-  for (let i = 1; i < count.length; i++) {
-    count[i] += count[i - 1];
+    if (Aleft <= Bright && Bleft <= Aright) {
+      // correct partition found
+      if ((m + n) % 2 === 0) {
+        return Math.max(Aleft, Bleft) + Math.min(Aright, Bright) / 2;
+      } else {
+        return Math.max(Aleft, Bleft);
+      }
+    } else if (Aleft > Bright) {
+      // i is too big – shift left
+      right = i - 1;
+    } else {
+      // i is too small – shift right
+      left = i + 1;
+    }
   }
 
-  // 5. Place each element into the output array in stable order.
-  const output: number[] = new Array(arr.length);
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const num = arr[i];
-    const pos = --count[num];   // decrement to get zero‑based index
-    output[pos] = num;
-  }
-
-  return output;
+  // Should never hit here if inputs are valid and sorted.
+  throw new Error("Input arrays are not sorted or empty");
 }
-const data = [4, 2, 2, 8, 3, 3, 1];
-console.log(countingSort(data)); // [1, 2, 2, 3, 3, 4, 8]
+console.log(medianOfTwoSortedArrays([1, 3], [2]));          // 2
+console.log(medianOfTwoSortedArrays([1, 2], [3, 4]));        // 2.5
+console.log(medianOfTwoSortedArrays([0, 0], [0, 0]));        // 0
