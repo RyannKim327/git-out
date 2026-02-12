@@ -1,50 +1,71 @@
-area = (base * height) / 2
 /**
- * Return the area of a triangle when you know its base and height.
+ * Forward Burrows‑Wheeler Transform.
  *
- * @param base   Length of the base side.
- * @param height Height perpendicular to that base.
- * @returns      Area of the triangle as a number.
+ * @param text – input string
+ * @returns {lastColumn, originalIndex}
+ *   • lastColumn  – the BWT string (the last column of the sorted rotations)
+ *   • originalIndex – position of the original string in the sorted list
  */
-export function areaFromBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new Error("Base and height must be positive numbers.");
+export function bwt(text: string): { lastColumn: string; originalIndex: number } {
+  const n = text.length;
+  const rotations = new Array<string>(n);
+
+  // Build all cyclic rotations
+  for (let i = 0; i < n; i++) {
+    rotations[i] = text.slice(i) + text.slice(0, i);
   }
-  return (base * height) / 2;
+
+  // Sort rotations lexicographically
+  rotations.sort();
+
+  // Grab last character of each rotation and remember where the original text ended up
+  let lastColumn = '';
+  let originalIndex = -1;
+  for (let i = 0; i < n; i++) {
+    const rot = rotations[i];
+    lastColumn += rot[rot.length - 1];
+    if (rot === text) originalIndex = i;
+  }
+
+  return { lastColumn, originalIndex };
 }
-s = (a + b + c) / 2            // semi‑perimeter
-area = sqrt( s * (s−a) * (s−b) * (s−c) )
+
 /**
- * Compute the area of a triangle from its three side lengths.
+ * Inverse Burrows‑Wheeler Transform.
  *
- * @param a   Length of side A.
- * @param b   Length of side B.
- * @param c   Length of side C.
- * @returns   Area of the triangle (number) or NaN if the sides
- *            don’t form a valid triangle.
+ * @param lastColumn  – BWT string (result of the forward transform)
+ * @param originalIndex – index returned by the forward transform
+ * @returns original input string
  */
-export function areaFromSides(a: number, b: number, c: number): number {
-  // Basic validation – all sides must be positive
-  if (a <= 0 || b <= 0 || c <= 0) {
-    throw new Error("All side lengths must be positive numbers.");
+export function inverseBwt(lastColumn: string, originalIndex: number): string {
+  const n = lastColumn.length;
+
+  // Build the first column by sorting the last column
+  const firstColumn = [...lastColumn].sort().join('');
+
+  // Build a map from character to its deque of positions in the last column
+  const charQueues: Record<string, number[]> = {};
+  for (let i = 0; i < n; i++) {
+    const c = lastColumn[i];
+    if (!charQueues[c]) charQueues[c] = [];
+    charQueues[c].push(i);
   }
 
-  // Triangle inequality check – else area calculation would
-  // produce NaN or a negative under the radicand.
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error("The provided side lengths do not form a valid triangle.");
+  // Reconstruct the original string
+  let result = '';
+  let idx = originalIndex;
+  for (let i = 0; i < n; i++) {
+    const c = firstColumn[idx];
+    result += c;
+    // The row that had c in the last column is the next idx
+    idx = charQueues[c].shift()!;
   }
 
-  const s = (a + b + c) / 2;
-  const radicand = s * (s - a) * (s - b) * (s - c);
-
-  return Math.sqrt(radicand);
+  return result;
 }
-import { areaFromBaseHeight, areaFromSides } from "./triangle-utils";
+const { lastColumn, originalIndex } = bwt('BANANA');
+console.log(lastColumn);          // 'ANNBAA'
+console.log(originalIndex);       // 3
 
-const base = 10;
-const height = 6;
-console.log(areaFromBaseHeight(base, height)); // 30
-
-const a = 7, b = 10, c = 5;
-console.log(areaFromSides(a, b, c));           // ≈ 17.89
+const original = inverseBwt(lastColumn, originalIndex);
+console.log(original);            // 'BANANA'
