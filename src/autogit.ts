@@ -1,45 +1,61 @@
-class Stack<T> {
-  private items: T[] = [];      // underlying array
+/**
+ * Fibonacci Search
+ *
+ * @param arr   Sorted array to search
+ * @param key   Value to locate
+ * @returns    Index of key or -1
+ */
+export function fibonacciSearch<T extends number | string>(
+  arr: T[],
+  key: T
+): number {
+  const n = arr.length;
 
-  /** Push a value onto the top of the stack. */
-  push(value: T): void {
-    this.items.push(value);
+  // 1. Compute the smallest Fibonacci number greater or equal to n
+  let fibMinusTwo = 0;   // (n-2)th fibonacci
+  let fibMinusOne = 1;   // (n-1)th fibonacci
+  let fibN = fibMinusTwo + fibMinusOne; // nth fibonacci
+
+  while (fibN < n) {
+    fibMinusTwo = fibMinusOne;
+    fibMinusOne = fibN;
+    fibN = fibMinusTwo + fibMinusOne;
   }
 
-  /** Remove and return the top value.  Returns `undefined` if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
+  // 2. Marks the index beyond the last element
+  let offset = -1;
+
+  // 3. while there's more to inspect
+  while (fibN > 1) {
+    const i = Math.min(offset + fibMinusTwo, n - 1);
+
+    // Compare the current element with the key
+    if (arr[i] < key!) {
+      // Move three Fibonacci numbers down
+      fibN = fibMinusOne;
+      fibMinusOne = fibMinusTwo;
+      fibMinusTwo = fibN - fibMinusOne;
+      offset = i;
+    } else if (arr[i] > key!) {
+      // Move two Fibonacci numbers down
+      fibN = fibMinusTwo;
+      fibMinusOne = fibMinusOne - fibMinusTwo;
+      fibMinusTwo = fibN - fibMinusOne;
+    } else {
+      // Element found
+      return i;
+    }
   }
 
-  /** Peek at the top value without removing it. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
+  // Compare the last element with the key
+  if (fibMinusOne && offset + 1 < n && arr[offset + 1] === key) {
+    return offset + 1;
   }
 
-  /** Number of elements in the stack. */
-  get size(): number {
-    return this.items.length;
-  }
-
-  /** True if the stack contains no items. */
-  get isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** Optional: clear all items. */
-  clear(): void {
-    this.items = [];
-  }
+  return -1; // Not found
 }
-const stack = new Stack<number>();
+const sortedNums = [3, 7, 12, 18, 23, 27, 34, 38, 45, 52];
+const target = 23;
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size);   // 2
-
-stack.clear();
-console.log(stack.isEmpty); // true
+const idx = fibonacciSearch(sortedNums, target);
+console.log(idx); // 4
