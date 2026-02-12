@@ -1,71 +1,45 @@
-/**
- * Heap‑sort – sorts an array of numbers in ascending order.
- * The algorithm works in O(n log n) time and O(1) extra space (in‑place).
- *
- * @param arr The array to sort – it will be mutated.
- */
-export function heapSort(arr: number[]): void {
-  const n = arr.length;
+class Stack<T> {
+  private items: T[] = [];      // underlying array
 
-  // Step 1. Build a max‑heap.
-  // The last non‑leaf node is at floor(n/2) - 1.
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-    siftDown(arr, i, n);
+  /** Push a value onto the top of the stack. */
+  push(value: T): void {
+    this.items.push(value);
   }
 
-  // Step 2. Repeatedly extract the maximum element.
-  for (let end = n - 1; end > 0; end--) {
-    swap(arr, 0, end);          // Move current max to its final position.
-    siftDown(arr, 0, end);      // Restore heap property for the reduced heap.
+  /** Remove and return the top value.  Returns `undefined` if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  /** Peek at the top value without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Number of elements in the stack. */
+  get size(): number {
+    return this.items.length;
+  }
+
+  /** True if the stack contains no items. */
+  get isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Optional: clear all items. */
+  clear(): void {
+    this.items = [];
   }
 }
+const stack = new Stack<number>();
 
-/**
- * Restores the max‑heap property by sifting a node downwards.
- *
- * @param heap  The heap array.
- * @param start Index of the node to sift down.
- * @param size  The current size of the heap (elements >= size are already sorted).
- */
-function siftDown(heap: number[], start: number, size: number): void {
-  let root = start;
+stack.push(10);
+stack.push(20);
+stack.push(30);
 
-  while (true) {
-    const left = 2 * root + 1;   // Left child index.
-    const right = left + 1;      // Right child index.
-    let largest = root;
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size);   // 2
 
-    // If left child exists and is greater than root.
-    if (left < size && heap[left] > heap[largest]) {
-      largest = left;
-    }
-
-    // If right child exists and is greater than current largest.
-    if (right < size && heap[right] > heap[largest]) {
-      largest = right;
-    }
-
-    // If root is already the largest, the heap property holds.
-    if (largest === root) break;
-
-    // Swap root with the larger child and continue sifting down.
-    swap(heap, root, largest);
-    root = largest;
-  }
-}
-
-/**
- * Utility to swap two elements in an array.
- *
- * @param a    Array containing the elements.
- * @param i    Index of the first element.
- * @param j    Index of the second element.
- */
-function swap(a: number[], i: number, j: number): void {
-  const tmp = a[i];
-  a[i] = a[j];
-  a[j] = tmp;
-}
-const data = [5, 3, 8, 4, 1, 2];
-heapSort(data);
-console.log(data);  // → [1, 2, 3, 4, 5, 8]
+stack.clear();
+console.log(stack.isEmpty); // true
