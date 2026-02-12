@@ -1,110 +1,72 @@
-class ListNode<T> {
-  /** The value stored in this node */
-  value: T;
-
-  /** Reference to the next node, or null if this is the tail */
-  next: ListNode<T> | null = null;
-
-  constructor(value: T) {
-    this.value = value;
-  }
+// A single node in the list
+class Node<T> {
+  constructor(public value: T, public next: Node<T> | null = null) {}
 }
-class LinkedList<T> {
-  /** Head (first node) – `null` if the list is empty */
-  private head: ListNode<T> | null = null;
 
-  /** Tail (last node) – kept for efficient push; `null` if the list is empty */
-  private tail: ListNode<T> | null = null;
-
-  /** Current length – handy for O(1) size queries */
+// The queue itself
+export class LinkedListQueue<T> {
+  // Keep refs to both ends so that enqueue/dequeue stay constant‑time
+  private head: Node<T> | null = null; // points to first element
+  private tail: Node<T> | null = null; // points to last element
   private _size = 0;
 
-  /** Number of elements in the list */
-  get size() { return this._size; }
-  get isEmpty() { return this._size === 0; }
-}
-  /** Append an element to the end of the list */
-  push(value: T): void {
-    const node = new ListNode(value);
+  /** Adds a value to the back of the queue */
+  enqueue(value: T): void {
+    const newNode = new Node(value);
     if (this.tail) {
-      this.tail.next = node;
-    } else {          // empty list – new node is both head and tail
-      this.head = node;
+      this.tail.next = newNode;   // link the old tail to the new node
+      this.tail = newNode;        // new node becomes the new tail
+    } else {
+      // Queue was empty – head and tail are the same node now
+      this.head = this.tail = newNode;
     }
-    this.tail = node;
     this._size++;
   }
 
-  /** Prepend an element to the front of the list */
-  unshift(value: T): void {
-    const node = new ListNode(value);
-    node.next = this.head;
-    this.head = node;
-    if (!this.tail) this.tail = node;  // first element
-    this._size++;
-  }
-
-  /** Remove and return the first element, or `undefined` if the list is empty */
-  shift(): T | undefined {
-    if (!this.head) return undefined;
-    const removed = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null;  // list became empty
+  /** Removes and returns the value from the front of the queue.
+      Throws an error if the queue is empty. */
+  dequeue(): T {
+    if (!this.head) {
+      throw new Error('Cannot dequeue from an empty queue');
+    }
+    const value = this.head.value;
+    this.head = this.head.next; // move head forward
+    if (!this.head) {
+      // Queue became empty, so tail must also be null
+      this.tail = null;
+    }
     this._size--;
-    return removed;
+    return value;
   }
 
-  /** Remove and return the last element, or `undefined` if the list is empty */
-  pop(): T | undefined {
-    if (!this.head) return undefined;
-    if (this.head === this.tail) {     // single element
-      const val = this.head.value;
-      this.head = this.tail = null;
-      this._size = 0;
-      return val;
-    }
-
-    // Walk to the second‑to‑last node
-    let current = this.head;
-    while (current.next && current.next !== this.tail) {
-      current = current.next;
-    }
-
-    const val = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-    this._size--;
-    return val;
-  }
-  /** Find the first node whose value satisfies the predicate; returns `undefined` if none */
-  find(p: (value: T) => boolean): T | undefined {
-    let curr = this.head;
-    while (curr) {
-      if (p(curr.value)) return curr.value;
-      curr = curr.next;
-    }
-    return undefined;
+  /** Peeks at the front value without removing it. */
+  peek(): T | null {
+    return this.head?.value ?? null;
   }
 
-  /** Iterate over values (supports `for…of`) */
-  *[Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    while (current) {
-      yield current.value;
-      current = current.next;
-    }
+  /** Returns true if the queue contains no elements. */
+  isEmpty(): boolean {
+    return this._size === 0;
   }
-const list = new LinkedList<number>();
-for (const n of list) console.log(n);
-const list = new LinkedList<string>();
 
-list.push('first');
-list.push('second');
-list.unshift('zeroth');
+  /** Current number of elements */
+  size(): number {
+    return this._size;
+  }
+}
+import { LinkedListQueue } from './LinkedListQueue';
 
-console.log([...list]);          // ["zeroth", "first", "second"]
+const q = new LinkedListQueue<number>();
 
-console.log(list.shift());       // "zeroth"
-console.log(list.pop());         // "second"
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
 
-console.log(list.find(n => n.startsWith('f'))); // "first"
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size());    // 1
+console.log(q.isEmpty()); // false
+
+q.dequeue();          // removes 30
+console.log(q.isEmpty()); // true
