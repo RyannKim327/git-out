@@ -1,52 +1,56 @@
-interface TreeNode {
-  value: number;          // what you want to sum
-  left?: TreeNode | null;
-  right?: TreeNode | null;
+// ------------------------------------------------------------------
+// 1) Basic types – tweak these to match your own representation.
+// ------------------------------------------------------------------
+interface Node<T> {
+  /** Value that identifies the node – can be an id, a name, … */
+  id: string;
+  /** Children (or neighbours) – the graph may be directed or undirected. */
+  children?: Array<Node<T>>;
 }
-function sumTreeRecursive(node: TreeNode | null): number {
-  if (!node) return 0;
 
-  const leftSum  = sumTreeRecursive(node.left ?? null);
-  const rightSum = sumTreeRecursive(node.right ?? null);
+// A very simple match predicate. Replace it with whatever checks your
+// problem needs (e.g. `node.id === targetId`).
+type MatchFn<T> = (node: Node<T>) => boolean;
 
-  return node.value + leftSum + rightSum;
-}
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
+// ------------------------------------------------------------------
+// 2) Depth‑limited search – iterative (uses an explicit stack).
+// ------------------------------------------------------------------
+export function depthLimitedSearch<T>(
+  start: Node<T>,          // The root (or any arbitrary start node)
+  match: MatchFn<T>,      // Predicate to decide if the node is a goal
+  limit: number            // Maximum depth that may be explored
+): Node<T> | null {
 
-  let total = 0;
-  const stack: TreeNode[] = [root];
+  // Stack holds tuples  : [current node, current depth]
+  const stack: Array<[Node<T>, number]> = [[start, 0]];
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.value;
+  while (stack.length > 0) {
+    const [node, depth] = stack.pop()!;   // `!` is safe – we just checked length
 
-    // Push children in any order – the sum is commutative.
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
+    // 1️⃣  Goal check
+    if (match(node)) {
+      return node;
+    }
+
+    // 2️⃣  Depth test – we only enqueue children if we still have room
+    if (depth < limit && node.children) {
+      // Push children onto stack – last child examined first (DFS order)
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        stack.push([node.children[i], depth + 1]);
+      }
+    }
   }
 
-  return total;
+  // No goal found within the depth budget
+  return null;
 }
-// A tiny test tree:
-//        5
-//       / \
-//      3   7
-//     / \   \
-//    2   4   8
-
-const testTree: TreeNode = {
-  value: 5,
-  left: {
-    value: 3,
-    left:  { value: 2 },
-    right: { value: 4 }
-  },
-  right: {
-    value: 7,
-    right: { value: 8 }
-  }
+const tree: Node<number> = {
+  id: 'root',
+  children: [
+    { id: 'a', children: [{ id: 'a1' }, { id: 'a2' }] },
+    { id: 'b', children: [{ id: 'b1' }, { id: 'b2' }] },
+  ],
 };
 
-console.log('Recursive sum:', sumTreeRecursive(testTree));  // 29
-console.log('Iterative sum:', sumTreeIterative(testTree));  // 29
+const found = depthLimitedSearch(tree, node => node.id === 'a2', /* limit */ 2);
+console.log(found?.id ?? 'not found'); // → a2
