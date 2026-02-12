@@ -1,114 +1,49 @@
 /**
- * A binary heap backed priority queue.
+ * Binary search on a sorted array.
  *
- * The heap stores elements in a 0‑based array. For a node at index i:
- *   left child   → 2*i + 1
- *   right child  → 2*i + 2
- *   parent       → Math.floor((i - 1) / 2)
+ * @param arr   Sorted array (ascending).
+ * @param key   Value to search for.
+ * @returns     Index of `key` in `arr`, or -1 if not found.
  */
-export class BinaryPriorityQueue<T> {
-  private data: T[] = [];
-  private readonly compare: (a: T, b: T) => number; // negative if a < b
+export function binarySearch<T extends number | string>(arr: T[], key: T): number {
+    let low  = 0;
+    let high = arr.length - 1;
 
-  constructor(compare: (a: T, b: T) => number) {
-    this.compare = compare;
-  }
+    while (low <= high) {
+        // Use floor division so we don’t overshoot on odd lengths.
+        const mid = Math.floor((low + high) / 2);
+        const midVal = arr[mid];
 
-  /** Number of elements in the queue */
-  size(): number {
-    return this.data.length;
-  }
-
-  /** Peek the element with the highest priority (root of the heap) */
-  peek(): T | undefined {
-    return this.data[0];
-  }
-
-  /** Insert a new element */
-  push(value: T): void {
-    this.data.push(value);
-    this.bubbleUp(this.data.length - 1);
-  }
-
-  /**
-   * Remove and return the element with the highest priority.
-   * Returns undefined if the queue is empty.
-   */
-  pop(): T | undefined {
-    if (!this.data.length) return undefined;
-
-    const root = this.data[0];
-    const last = this.data.pop()!; // safe because we checked length
-
-    if (this.data.length) {
-      this.data[0] = last;
-      this.sinkDown(0);
-    }
-
-    return root;
-  }
-
-  /** Remove all elements */
-  clear(): void {
-    this.data.length = 0;
-  }
-
-  /* --- Internals --- */
-
-  private bubbleUp(index: number): void {
-    const elem = this.data[index];
-    while (index > 0) {
-      const parentIdx = (index - 1) >> 1;
-      const parent = this.data[parentIdx];
-      if (this.compare(elem, parent) >= 0) break;
-      this.data[index] = parent;
-      index = parentIdx;
-    }
-    this.data[index] = elem;
-  }
-
-  private sinkDown(index: number): void {
-    const length = this.data.length;
-    const elem = this.data[index];
-
-    while (true) {
-      const leftIdx = (index << 1) + 1;
-      const rightIdx = leftIdx + 1;
-      let swapIdx = -1;
-
-      if (leftIdx < length) {
-        const left = this.data[leftIdx];
-        if (this.compare(left, elem) < 0) swapIdx = leftIdx;
-      }
-      if (rightIdx < length) {
-        const right = this.data[rightIdx];
-        const compareRight = this.compare(right, elem);
-        if (
-          (swapIdx === -1 && compareRight < 0) ||
-          (swapIdx !== -1 && compareRight < this.compare(this.data[swapIdx], elem))
-        ) {
-          swapIdx = rightIdx;
+        if (midVal === key) {
+            return mid;                // Found it!
         }
-      }
-
-      if (swapIdx === -1) break;
-      this.data[index] = this.data[swapIdx];
-      index = swapIdx;
+        else if (midVal < key) {
+            low = mid + 1;              // Search right half
+        } else {
+            high = mid - 1;             // Search left half
+        }
     }
-    this.data[index] = elem;
-  }
+    return -1; // Not found
 }
-// Example: priority queue of numbers (min‑heap)
-const pq = new BinaryPriorityQueue<number>((a, b) => a - b);
+type Comparator<T> = (a: T, b: T) => number; // negative if a < b, zero if equal, positive otherwise
 
-pq.push(5);
-pq.push(1);
-pq.push(3);
+export function binarySearchWith<T>(arr: T[], key: T, cmp: Comparator<T>): number {
+    let low = 0, high = arr.length - 1;
 
-console.log(pq.peek()); // 1
-console.log(pq.pop());  // 1
-console.log(pq.pop());  // 3
-console.log(pq.pop());  // 5
-interface Task { id: number; priority: number; }
+    while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        const comp = cmp(arr[mid], key);
 
-const taskQueue = new BinaryPriorityQueue<Task>((a, b) => a.priority - b.priority);
+        if (comp === 0) return mid;
+        if (comp < 0)  low = mid + 1;
+        else           high = mid - 1;
+    }
+    return -1;
+}
+const numbers = [3, 7, 12, 20, 31, 45, 58];
+console.log(binarySearch(numbers, 20)); // → 3
+
+// With a custom comparator for objects:
+const people = [{id: 1, name: 'Alice'}, {id: 3, name: 'Bob'}, {id: 7, name: 'Carol'}];
+const idCmp = (p: typeof people[0], key: number) => p.id - key;
+console.log(binarySearchWith(people, 3, idCmp)); // → 1
