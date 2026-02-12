@@ -1,57 +1,87 @@
-function secondLargestSort(arr: number[]): number | null {
-  // Defensive copy so we don’t mutate the caller’s data
-  const sorted = [...arr].sort((a, b) => b - a); // descending
-
-  // Find the first element that isn’t equal to the maximum
-  let i = 1;
-  while (i < sorted.length && sorted[i] === sorted[0]) {
-    i++;
+/**
+ * Returns the maximum sum of any contiguous sub‑array.
+ *
+ * @param arr – array of numbers (may contain negatives)
+ * @returns {number} maximum sub‑array sum
+ */
+export function maxSubArraySum(arr: number[]): number {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
   }
 
-  return i < sorted.length ? sorted[i] : null;
+  // init both with first element: handles all‑negative cases nicely
+  let currentBest = arr[0];
+  let globalBest = arr[0];
+
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
+
+    // Either extend the previous sub‑array or start fresh at value
+    currentBest = Math.max(value, currentBest + value);
+
+    // Keep the best seen so far
+    globalBest = Math.max(globalBest, currentBest);
+  }
+
+  return globalBest;
 }
-console.log(secondLargestSort([3, 1, 4, 4, 5])); // 4
-console.log(secondLargestSort([10]));            // null
-function secondLargestTwoPass(arr: number[]): number | null {
-  if (arr.length < 2) return null;
+const testSets = [
+  { arr: [1, -2, 3, 4, -5, 8], expect: 10 },
+  { arr: [-2, -3, -1, -4], expect: -1 },
+  { arr: [2, 3, 1, 6], expect: 12 },
+  { arr: [5, -1, 2, 3], expect: 9 },
+  { arr: [1], expect: 1 },
+];
 
-  let max = -Infinity;
-  let secondMax = -Infinity;
-
-  // First pass: find the maximum
-  for (const v of arr) {
-    if (v > max) max = v;
-  }
-
-  // Second pass: find the largest value that is < max
-  for (const v of arr) {
-    if (v < max && v > secondMax) secondMax = v;
-  }
-
-  return secondMax === -Infinity ? null : secondMax;
+for (const { arr, expect } of testSets) {
+  const result = maxSubArraySum(arr);
+  console.log(`arr: ${arr} → max sum: ${result} (${result === expect ? '✓' : '✗'})`);
 }
-console.log(secondLargestTwoPass([7, 3, 9, 1, 9])); // 7
-function secondLargest(arr: number[]): number | null {
-  if (arr.length < 2) return null;
+arr: 1,-2,3,4,-5,8 → max sum: 10 (✓)
+arr: -2,-3,-1,-4 → max sum: -1 (✓)
+arr: 2,3,1,6 → max sum: 12 (✓)
+arr: 5,-1,2,3 → max sum: 9 (✓)
+arr: 1 → max sum: 1 (✓)
+interface MaxSubArrayResult {
+  sum: number;
+  start: number;
+  end: number;   // inclusive
+}
 
-  let max = -Infinity;
-  let secondMax = -Infinity;
+export function maxSubArraySumWithIndices(arr: number[]): MaxSubArrayResult {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
+  }
 
-  for (const v of arr) {
-    if (v > max) {
-      secondMax = max; // the old max becomes second max
-      max = v;
-    } else if (v < max && v > secondMax) {
-      secondMax = v;
+  let currentBest = arr[0];
+  let globalBest = arr[0];
+
+  // working indices
+  let currentStart = 0;
+  let bestStart = 0;
+  let bestEnd = 0;
+
+  for (let i = 1; i < arr.length; i++) {
+    const value = arr[i];
+
+    // decide whether to continue or start a new sub‑array
+    if (currentBest + value < value) {
+      currentBest = value;
+      currentStart = i;
+    } else {
+      currentBest += value;
+    }
+
+    // update global best if we found a better sum
+    if (currentBest > globalBest) {
+      globalBest = currentBest;
+      bestStart = currentStart;
+      bestEnd = i;
     }
   }
 
-  return secondMax === -Infinity ? null : secondMax;
+  return { sum: globalBest, start: bestStart, end: bestEnd };
 }
-console.log(secondLargest([5, 12, 7, 12, 9]));   // 9
-console.log(secondLargest([3]));                // null
-console.log(secondLargest([2, 2, 2]));          // null (no distinct second largest)
-function findSecondLargest(arr: number[]): number | null {
-  // Pick whichever implementation feels best
-  return secondLargest(arr);
-}
+const { sum, start, end } = maxSubArraySumWithIndices([1, -2, 3, 4, -5, 8]);
+console.log(`max sum ${sum} from index ${start} to ${end}`);
+// → max sum 10 from index 2 to 5
