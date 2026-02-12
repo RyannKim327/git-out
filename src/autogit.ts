@@ -1,75 +1,48 @@
-function decimalToBinary(dec: number | bigint): string {
-  return dec.toString(2);
-}
+/**
+ * Returns the longest common subsequence (LCS) of two strings.
+ * @param a First string
+ * @param b Second string
+ * @returns { subsequence: string; length: number }
+ */
+function longestCommonSubsequence(a: string, b: string) {
+  const m = a.length;
+  const n = b.length;
 
-// Examples
-console.log(decimalToBinary(13));      // '1101'
-console.log(decimalToBinary(255n));    // '11111111'
-function decimalToBinaryIterative(num: number): string {
-  if (num === 0) return '0';
-  let n = Math.abs(num);
-  const bits: string[] = [];
-  while (n > 0) {
-    bits.push((n % 2).toString());
-    n = Math.floor(n / 2);
-  }
-  if (num < 0) bits.push('-');
-  return bits.reverse().join('');
-}
+  // 1. Build DP matrix (m+1) x (n+1) filled with 0
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-// Demo
-console.log(decimalToBinaryIterative(13));   // '1101'
-console.log(decimalToBinaryIterative(-13));  // '-1101'
-function decimalToBinaryRecursive(num: number): string {
-  if (num === 0) return '';
-  const [higher, bit] = decimalToBinaryRecursive(Math.floor(num / 2)).split('|', 2);
-  return `${higher}|${num % 2}`;
-}
-
-// Helper to clean up the leading empty part
-function binaryRecursive(num: number): string {
-  const bin = decimalToBinaryRecursive(num);
-  return bin.split('|').filter(Boolean).join('');
-}
-
-// Demo
-console.log(binaryRecursive(27));  // '11011'
-function decimalToBinaryFraction(num: number, precision: number = 10): string {
-  const intPart = Math.trunc(num);
-  let fracPart = num - intPart;
-  let binary = intPart.toString(2);
-
-  if (precision > 0 && fracPart > 0) {
-    binary += '.';
-    let p = 0;
-    while (p < precision && fracPart > 0) {
-      fracPart *= 2;
-      if (fracPart >= 1) {
-        binary += '1';
-        fracPart -= 1;
+  // 2. Fill DP matrix
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
       } else {
-        binary += '0';
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
       }
-      p++;
     }
   }
 
-  return binary;
-}
-
-// Demo
-console.log(decimalToBinaryFraction(5.6875, 8)); // '101.1011'
-function test(input: number | bigint) {
-  console.log(`Decimal: ${input}`);
-  console.log(`  -> toString(2):   ${input.toString(2)}`);
-  if (typeof input === 'number') {
-    console.log(`  -> iterative:   ${decimalToBinaryIterative(input)}`);
-    console.log(`  -> recursive:   ${binaryRecursive(input)}`);
+  // 3. Back‑track to rebuild the subsequence
+  let i = m, j = n;
+  const subseq: string[] = [];
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      subseq.push(a[i - 1]); // same char belongs to LCS
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;            // move up
+    } else {
+      j--;            // move left
+    }
   }
-  console.log('');
+
+  return {
+    subsequence: subseq.reverse().join(''),
+    length: dp[m][n]
+  };
 }
 
-test(13);
-test(-13);
-test(0);
-test(5.6875);   // only the toString version works for BigInt
+// Quick demo
+const { subsequence, length } = longestCommonSubsequence('AGCAT', 'GAC');
+console.log(`Longest common subsequence: ${subsequence} (length ${length})`);
