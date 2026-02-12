@@ -1,87 +1,91 @@
-// A directed graph: adjacency list
-type Graph = Record<string, string[]>;
+// --------------------------------------------------------
+// Random TypeScript demo:  GET data from a public API
+// --------------------------------------------------------
 
-// Example: a tiny graph
-const graph: Graph = {
-  A: ["B"],
-  B: ["C"],
-  C: ["A", "D"],
-  D: ["C", "E"],
-  E: [],
-};
-/**
- * Finds all strongly connected components of a directed graph.
- * @param graph The adjacency list of the graph.
- * @returns An array of SCCs; each SCC is an array of vertex IDs.
- */
-function tarjanSCC(graph: Graph): string[][] {
-  let index = 0;                     // global index counter
-  const stack: string[] = [];        // DFS stack
-  const onStack = new Set<string>(); // quick membership check
+// Install the needed deps if you run this in a Node project:
+//   npm install --save node-fetch @types/node-fetch
+//
+// If you use this in a browser project, the browser's fetch is already available.
 
-  // Maps vertex → its index in DFS tree
-  const indices = new Map<string, number>();
-  // Maps vertex → its lowlink value
-  const lowlink = new Map<string, number>();
-  // Result: array of SCCs
-  const sccs: string[][] = [];
+// Import the fetch shim for Node (uncomment if you run under Node)
+// import fetch from 'node-fetch';
 
-  function strongConnect(v: string) {
-    // Step 1: set the depth index for v
-    indices.set(v, index);
-    lowlink.set(v, index);
-    index++;
-    stack.push(v);
-    onStack.add(v);
+// A tiny helper to pause (useful for demo pacing)
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-    // Step 2: consider each successor
-    for (const w of graph[v] ?? []) {
-      if (!indices.has(w)) {
-        // Successor w has not yet been visited; recurse on it.
-        strongConnect(w);
-        // After recursion: update lowlink of v
-        lowlink.set(v, Math.min(lowlink.get(v)!, lowlink.get(w)!));
-      } else if (onStack.has(w)) {
-        // Successor w is in stack → part of current SCC
-        lowlink.set(v, Math.min(lowlink.get(v)!, indices.get(w)!));
-      }
-    }
-
-    // Step 3: If v is a root node, pop the stack and generate an SCC
-    if (lowlink.get(v)! === indices.get(v)!) {
-      const scc: string[] = [];
-      let w: string | undefined;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        scc.push(w);
-      } while (w !== v);
-      sccs.push(scc);
-    }
-  }
-
-  // Kick off DFS for each vertex that hasn't been visited yet
-  for (const v of Object.keys(graph)) {
-    if (!indices.has(v)) {
-      strongConnect(v);
-    }
-  }
-
-  return sccs;
+// -------------------------------------------------------------------
+// 1️⃣  Define the shape of the data we expect from the API
+// -------------------------------------------------------------------
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
-const sccs = tarjanSCC(graph);
-console.log("Strongly connected components:");
-sccs.forEach((scc, i) => {
-  console.log(`  ${i + 1}. [${scc.join(", ")}]`);
-});
-Strongly connected components:
-  1. [A, C, B]
-  2. [E]
-  3. [D]
-type Vertex = number;
 
-// * Update the graph type:
-type Graph = Record<Vertex, Vertex[]>;
+// -------------------------------------------------------------------
+// 2️⃣  A generic GET helper that returns typed JSON
+// -------------------------------------------------------------------
+async function get<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    // We simply throw an error for this demo
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+  const data: T = await response.json();
+  return data;
+}
 
-// * Replace string‑specific typing in the function:
-function tarjanSCC(graph: Graph): Vertex[][] { ... }
+// -------------------------------------------------------------------
+// 3️⃣  Main demo logic
+// -------------------------------------------------------------------
+async function main() {
+  const apiEndpoint = 'https://jsonplaceholder.typicode.com/posts/1';
+
+  console.log('Fetching demo post...');
+  try {
+    const post = await get<Post>(apiEndpoint);
+    console.log('✅ Post fetched:');
+    console.log(`  • ID: ${post.id}`);
+    console.log(`  • Title: ${post.title}`);
+    console.log(`  • Body snippet: "${post.body.slice(0, 60)}..."`);
+  } catch (err) {
+    console.error('⚠️  Error while fetching:', err);
+  }
+
+  // -------------------------------------------------------------------
+  // 4️⃣  Throw in a second request: list of all posts
+  // -------------------------------------------------------------------
+  console.log('\nFetching all posts (just the first 5 for brevity)...');
+  try {
+    const allPosts = await get<Post[]>('https://jsonplaceholder.typicode.com/posts');
+    console.table(allPosts.slice(0, 5));
+  } catch (err) {
+    console.error('⚠️  Error while fetching:', err);
+  }
+
+  // ---------------------------------------------------------------
+  // 5️⃣  Optional: POST a new resource (mocked, won't persist)
+  // ---------------------------------------------------------------
+  console.log('\nAttempting to POST a new post...');
+  try {
+    const newPostResponse = await fetch('https://jsonplaceholder.typicode.com/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Hello World',
+        body: 'This post was created by the demo.',
+        userId: 42
+      })
+    });
+    const created: Post = await newPostResponse.json();
+    console.log('✅ Created post (mocked):', created);
+  } catch (err) {
+    console.error('⚠️  Error while posting:', err);
+  }
+
+  // Small pause before exit (only matters if running in Node)
+  await delay(500);
+}
+
+main();
