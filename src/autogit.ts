@@ -1,13 +1,31 @@
-const original = "Hello world! How are you?";
-const withoutSpaces = original.replace(/ /g, ""); // "Helloworld!Howareyou?"
-const original = "Hello \tworld!\u00A0How\nare you?"; // contains tab, non‑breaking space, newline
-const withoutAnyWhitespace = original.replace(/\s+/gu, "");
-// "Helloworld!Howareyou?"
-function stripAllWhitespace(str: string): string {
-  return str.replace(/\s+/gu, "");
-}
+/**
+ * Counts how many code units a string contains.
+ * @param s The string to measure.
+ * @returns The length as a number.
+ */
+function getStringLength(s: string): number {
+  let count = 0;
 
-// Usage
-const clean = stripAllWhitespace("  Foo Bar\nBaz  ");
-console.log(clean); // "FooBarBaz"
-const cleaned = original.replace(/\s+/g, " ");  // collapse to single space
+  // Keep stepping forward until we encounter an undefined slot.
+  while (s[count] !== undefined) {
+    count++;
+  }
+
+  return count;
+}
+function getStringLengthUsingForOf(s: string): number {
+  let count = 0;
+  for (const _ of s) {
+    count++;        // `_` is just a throwaway variable
+  }
+  return count;    // this is the number of Unicode code points we iterated over
+}
+function getStringLengthRecursive(s: string, idx = 0): number {
+  return s[idx] === undefined
+    ? idx
+    : getStringLengthRecursive(s, idx + 1);
+}
+const demo = "Hello, 👋🌍";
+
+console.log(getStringLength(demo));                    // 13 (code units)
+console.log(getStringLengthUsingForOf(demo));          // 10 (code points)
