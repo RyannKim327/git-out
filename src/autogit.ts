@@ -1,57 +1,73 @@
-function secondLargestSort(arr: number[]): number | null {
-  // Defensive copy so we don’t mutate the caller’s data
-  const sorted = [...arr].sort((a, b) => b - a); // descending
+/**
+ * Finds the longest increasing subsequence of an array.
+ *
+ * @param arr Numeric array (any integers or floats, any sign).
+ * @returns Object containing the LIS and its length.
+ */
+export function longestIncreasingSubsequence(arr: number[]): { seq: number[]; length: number } {
+  if (arr.length === 0) return { seq: [], length: 0 };
 
-  // Find the first element that isn’t equal to the maximum
-  let i = 1;
-  while (i < sorted.length && sorted[i] === sorted[0]) {
-    i++;
+  // tails[i] — minimal tail of an LIS of length i+1 found so far
+  const tails: number[] = [];
+  // prevIndices[i] — index of the previous element in the LIS that ends at arr[i]
+  const prevIndices: number[] = Array(arr.length).fill(-1);
+  // indexInTails[i] — will store the index in tails where arr[i] was placed
+  const indexInTails: number[] = Array(arr.length).fill(0);
+
+  for (let i = 0; i < arr.length; i++) {
+    const num = arr[i];
+
+    // Binary search: first index in tails where tails[idx] >= num
+    let lo = 0,
+      hi = tails.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (tails[mid] < num) lo = mid + 1;
+      else hi = mid;
+    }
+
+    // lo is the length of the new subsequence minus one
+    indexInTails[i] = lo;
+    if (lo >= tails.length) tails.push(num);
+    else tails[lo] = num;
+
+    // Link to previous element of the subsequence
+    if (lo > 0) prevIndices[i] = tailsIdx[lo - 1];
   }
 
-  return i < sorted.length ? sorted[i] : null;
-}
-console.log(secondLargestSort([3, 1, 4, 4, 5])); // 4
-console.log(secondLargestSort([10]));            // null
-function secondLargestTwoPass(arr: number[]): number | null {
-  if (arr.length < 2) return null;
+  // tailsIdx will hold the indices in the original array that correspond to tails[]
+  const tailsIdx: number[] = Array(tails.length);
+  const seqIdx: number[] = []; // will hold indices of LIS
 
-  let max = -Infinity;
-  let secondMax = -Infinity;
-
-  // First pass: find the maximum
-  for (const v of arr) {
-    if (v > max) max = v;
-  }
-
-  // Second pass: find the largest value that is < max
-  for (const v of arr) {
-    if (v < max && v > secondMax) secondMax = v;
-  }
-
-  return secondMax === -Infinity ? null : secondMax;
-}
-console.log(secondLargestTwoPass([7, 3, 9, 1, 9])); // 7
-function secondLargest(arr: number[]): number | null {
-  if (arr.length < 2) return null;
-
-  let max = -Infinity;
-  let secondMax = -Infinity;
-
-  for (const v of arr) {
-    if (v > max) {
-      secondMax = max; // the old max becomes second max
-      max = v;
-    } else if (v < max && v > secondMax) {
-      secondMax = v;
+  // Reconstruct the sequence by walking backwards using prevIndices
+  let k = tailsIdx.length - 1;
+  let currentIdx = -1;
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (indexInTails[i] === k) {
+      seqIdx.push(i); // store index
+      k--; // look for previous
+      currentIdx = i;
     }
   }
+  seqIdx.reverse();
 
-  return secondMax === -Infinity ? null : secondMax;
+  const seq = seqIdx.map(idx => arr[idx]);
+
+  return { seq, length: seq.length };
 }
-console.log(secondLargest([5, 12, 7, 12, 9]));   // 9
-console.log(secondLargest([3]));                // null
-console.log(secondLargest([2, 2, 2]));          // null (no distinct second largest)
-function findSecondLargest(arr: number[]): number | null {
-  // Pick whichever implementation feels best
-  return secondLargest(arr);
+export function lisLength(arr: number[]): number {
+  if (arr.length === 0) return 0;
+  const dp = Array(arr.length).fill(1);
+
+  for (let i = 1; i < arr.length; i++) {
+    for (let j = 0; j < i; j++) {
+      if (arr[i] > arr[j]) dp[i] = Math.max(dp[i], dp[j] + 1);
+    }
+  }
+  return Math.max(...dp);
 }
+const data = [10, 22, 9, 33, 21, 50, 41, 60, 80];
+const { seq, length } = longestIncreasingSubsequence(data);
+
+console.log('LIS:', seq);          // [10, 22, 33, 50, 60, 80]
+console.log('Length:', length);    // 6
