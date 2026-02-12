@@ -1,70 +1,48 @@
-/**
- * Radix sort (Least–Significant‑digit first) for arrays of non‑negative integers.
- *
- * Time:  O(k * n)  where k = number of digits in the largest number
- * Space: O(n + B)  (B = 10 for base‑10)
- */
-function radixSort(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
+// emailValidator.ts
+export function isEmail(str: string): boolean {
+  // RFC‑5322 allows a very wide set of characters.  For most apps a
+  // simpler “+ followed by domain” style rule is good enough.
+  // This expression is a commonly‑accepted compromise:
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  // Find the biggest value to know how many digits we need to process
-  const maxVal = Math.max(...nums);
-  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
-
-  // Start from the least significant digit
-  let divisor = 1;
-
-  // We'll reuse these buckets in each pass to keep O(n) allocations
-  const buckets: number[][] = Array.from({ length: 10 }, () => []);
-
-  for (let d = 0; d < maxDigits; d++) {
-    // Distribute
-    for (const num of nums) {
-      const bucketIndex = Math.floor(num / divisor) % 10;
-      buckets[bucketIndex].push(num);
-    }
-
-    // Collect back into nums, empty buckets for the next pass
-    let pos = 0;
-    for (const bucket of buckets) {
-      while (bucket.length) {
-        nums[pos++] = bucket.pop() as number; // pop gives LIFO but we reverse order below
-      }
-      bucket.length = 0; // reset
-    }
-
-    divisor *= 10; // move to the next digit
-  }
-
-  return nums;
+  return emailRe.test(str);
 }
-function radixSortStable(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
+export const strictEmailRe = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
+const tests: Record<string, boolean> = {
+  // pass
+  'user@example.com': true,
+  'user.name+tag@sub.domain.co.uk': true,
 
-  const maxVal = Math.max(...nums);
-  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
+  // fail
+  'user@': false,
+  '@example.com': false,
+  'user@@example.com': false,
+  'user example@example.com': false,
+  'user@.com': false,
+  '': false,
+};
 
-  let divisor = 1;
-  const buckets: number[][] = Array.from({ length: 10 }, () => []);
-
-  for (let d = 0; d < maxDigits; d++) {
-    for (const n of nums) {
-      const idx = Math.floor(n / divisor) % 10;
-      buckets[idx].push(n);
-    }
-
-    let i = 0;
-    for (const bucket of buckets) {
-      while (bucket.length) {
-        nums[i++] = bucket.shift() as number; // shift preserves order
-      }
-    }
-
-    divisor *= 10;
-  }
-
-  return nums;
+for (const [addr, expected] of Object.entries(tests)) {
+  const result = isEmail(addr);
+  console.assert(result === expected, `❌ ${addr}: expected ${expected}, got ${result}`);
 }
-const data = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log(radixSortStable(data));
-// → [2, 24, 45, 66, 75, 90, 170, 802]
+
+console.log('All test cases passed!');
+import { useForm } from 'react-hook-form';
+
+function MyForm() {
+  const { register, handleSubmit, formState: { errors } } = useForm();
+
+  const onSubmit = data => console.log('Valid email:', data.email);
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input
+        {...register('email', { validate: isEmail })}
+        placeholder="email@example.com"
+      />
+      {errors.email && <p>Email is not valid.</p>}
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
