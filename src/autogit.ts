@@ -1,48 +1,33 @@
-// emailValidator.ts
-export function isEmail(str: string): boolean {
-  // RFC‑5322 allows a very wide set of characters.  For most apps a
-  // simpler “+ followed by domain” style rule is good enough.
-  // This expression is a commonly‑accepted compromise:
-  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/**
+ * Returns the index of the first non‑repeating character.
+ * If every character repeats, returns -1.
+ *
+ * @param s – the string to scan
+ */
+function firstNonRepeatingIndex(s: string): number {
+  // 1️⃣ Count how many times each character occurs
+  const freq = new Map<string, number>();
 
-  return emailRe.test(str);
-}
-export const strictEmailRe = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
-const tests: Record<string, boolean> = {
-  // pass
-  'user@example.com': true,
-  'user.name+tag@sub.domain.co.uk': true,
+  for (const ch of s) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  }
 
-  // fail
-  'user@': false,
-  '@example.com': false,
-  'user@@example.com': false,
-  'user example@example.com': false,
-  'user@.com': false,
-  '': false,
-};
+  // 2️⃣ Scan again from the start, picking the first that has count 1
+  for (let i = 0; i < s.length; i++) {
+    if (freq.get(s[i]) === 1) {
+      return i;    // return the index, you can return the character with s[i]
+    }
+  }
 
-for (const [addr, expected] of Object.entries(tests)) {
-  const result = isEmail(addr);
-  console.assert(result === expected, `❌ ${addr}: expected ${expected}, got ${result}`);
+  return -1; // no unique character found
 }
 
-console.log('All test cases passed!');
-import { useForm } from 'react-hook-form';
+// Demo
+const txt = "mybobby";
+const idx = firstNonRepeatingIndex(txt);
 
-function MyForm() {
-  const { register, handleSubmit, formState: { errors } } = useForm();
-
-  const onSubmit = data => console.log('Valid email:', data.email);
-
-  return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <input
-        {...register('email', { validate: isEmail })}
-        placeholder="email@example.com"
-      />
-      {errors.email && <p>Email is not valid.</p>}
-      <button type="submit">Submit</button>
-    </form>
-  );
+if (idx >= 0) {
+  console.log(`First non‑repeating char: '${txt[idx]}' at position ${idx}`);
+} else {
+  console.log("All characters repeat");
 }
