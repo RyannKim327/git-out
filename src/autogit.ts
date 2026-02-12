@@ -1,60 +1,26 @@
 /**
- * Calculates n! recursively.
+ * Pick a random floating‑point number ≥ min and < max.
  *
- * @param n - The non‑negative integer whose factorial to compute.
- * @returns n! as a number (or NaN if n < 0).
+ * @param min – lower bound (inclusive)
+ * @param max – upper bound (exclusive)
+ * @returns random number in [min, max)
  */
-function factorialRecursive(n: number): number {
-  if (n < 0) return NaN;        // keep it simple: no negative factorials
-  if (n <= 1) return 1;
-  return n * factorialRecursive(n - 1);
+export function randFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min;
 }
-
-// Example:
-console.log(factorialRecursive(5)); // 120
 /**
- * Calculates n! iteratively.
+ * Pick a random integer ≥ min and ≤ max.
  *
- * @param n - The non‑negative integer to factorialize.
- * @returns n! as a number (or NaN if n < 0).
+ * @param min – lower bound (inclusive)
+ * @param max – upper bound (inclusive)
+ * @returns random integer in [min, max]
  */
-function factorialIterative(n: number): number {
-  if (n < 0) return NaN;
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
+export function randInt(min: number, max: number): number {
+  // floor ensures min can be selected; max included by +1 offset
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+// 0 <= x < 1
+console.log(randFloat(0, 1));
 
-// Example:
-console.log(factorialIterative(10)); // 3628800
-/**
- * Calculates n! exactly using BigInt.
- *
- * @param n - The non‑negative integer to factorialize.
- * @returns n! as a BigInt (or NaN if n < 0).
- */
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error("Factorial isn't defined for negative numbers");
-  let result = 1n;
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
-}
-
-// Example:
-console.log(factorialBigInt(20)); // 2432902008176640000n
-const factorialMemo = new Map<number, number | bigint>();
-
-function factorialMemoized(n: number): number | bigint {
-  if (n < 0) throw new Error("Negative input");
-  if (n <= 1) return 1;
-  if (factorialMemo.has(n)) return factorialMemo.get(n)!;
-  
-  // choose number or bigint based on the expected size
-  const answer = n * factorialMemoized(n - 1);
-  factorialMemo.set(n, answer);
-  return answer;
-}
+// 5 <= y <= 10
+console.log(randInt(5, 10));
