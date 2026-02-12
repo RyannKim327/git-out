@@ -1,91 +1,110 @@
-// --------------------------------------------------------
-// Random TypeScript demo:  GET data from a public API
-// --------------------------------------------------------
+class ListNode<T> {
+  /** The value stored in this node */
+  value: T;
 
-// Install the needed deps if you run this in a Node project:
-//   npm install --save node-fetch @types/node-fetch
-//
-// If you use this in a browser project, the browser's fetch is already available.
+  /** Reference to the next node, or null if this is the tail */
+  next: ListNode<T> | null = null;
 
-// Import the fetch shim for Node (uncomment if you run under Node)
-// import fetch from 'node-fetch';
-
-// A tiny helper to pause (useful for demo pacing)
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// -------------------------------------------------------------------
-// 1️⃣  Define the shape of the data we expect from the API
-// -------------------------------------------------------------------
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
+  constructor(value: T) {
+    this.value = value;
+  }
 }
+class LinkedList<T> {
+  /** Head (first node) – `null` if the list is empty */
+  private head: ListNode<T> | null = null;
 
-// -------------------------------------------------------------------
-// 2️⃣  A generic GET helper that returns typed JSON
-// -------------------------------------------------------------------
-async function get<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    // We simply throw an error for this demo
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-  const data: T = await response.json();
-  return data;
+  /** Tail (last node) – kept for efficient push; `null` if the list is empty */
+  private tail: ListNode<T> | null = null;
+
+  /** Current length – handy for O(1) size queries */
+  private _size = 0;
+
+  /** Number of elements in the list */
+  get size() { return this._size; }
+  get isEmpty() { return this._size === 0; }
 }
-
-// -------------------------------------------------------------------
-// 3️⃣  Main demo logic
-// -------------------------------------------------------------------
-async function main() {
-  const apiEndpoint = 'https://jsonplaceholder.typicode.com/posts/1';
-
-  console.log('Fetching demo post...');
-  try {
-    const post = await get<Post>(apiEndpoint);
-    console.log('✅ Post fetched:');
-    console.log(`  • ID: ${post.id}`);
-    console.log(`  • Title: ${post.title}`);
-    console.log(`  • Body snippet: "${post.body.slice(0, 60)}..."`);
-  } catch (err) {
-    console.error('⚠️  Error while fetching:', err);
+  /** Append an element to the end of the list */
+  push(value: T): void {
+    const node = new ListNode(value);
+    if (this.tail) {
+      this.tail.next = node;
+    } else {          // empty list – new node is both head and tail
+      this.head = node;
+    }
+    this.tail = node;
+    this._size++;
   }
 
-  // -------------------------------------------------------------------
-  // 4️⃣  Throw in a second request: list of all posts
-  // -------------------------------------------------------------------
-  console.log('\nFetching all posts (just the first 5 for brevity)...');
-  try {
-    const allPosts = await get<Post[]>('https://jsonplaceholder.typicode.com/posts');
-    console.table(allPosts.slice(0, 5));
-  } catch (err) {
-    console.error('⚠️  Error while fetching:', err);
+  /** Prepend an element to the front of the list */
+  unshift(value: T): void {
+    const node = new ListNode(value);
+    node.next = this.head;
+    this.head = node;
+    if (!this.tail) this.tail = node;  // first element
+    this._size++;
   }
 
-  // ---------------------------------------------------------------
-  // 5️⃣  Optional: POST a new resource (mocked, won't persist)
-  // ---------------------------------------------------------------
-  console.log('\nAttempting to POST a new post...');
-  try {
-    const newPostResponse = await fetch('https://jsonplaceholder.typicode.com/posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: 'Hello World',
-        body: 'This post was created by the demo.',
-        userId: 42
-      })
-    });
-    const created: Post = await newPostResponse.json();
-    console.log('✅ Created post (mocked):', created);
-  } catch (err) {
-    console.error('⚠️  Error while posting:', err);
+  /** Remove and return the first element, or `undefined` if the list is empty */
+  shift(): T | undefined {
+    if (!this.head) return undefined;
+    const removed = this.head.value;
+    this.head = this.head.next;
+    if (!this.head) this.tail = null;  // list became empty
+    this._size--;
+    return removed;
   }
 
-  // Small pause before exit (only matters if running in Node)
-  await delay(500);
-}
+  /** Remove and return the last element, or `undefined` if the list is empty */
+  pop(): T | undefined {
+    if (!this.head) return undefined;
+    if (this.head === this.tail) {     // single element
+      const val = this.head.value;
+      this.head = this.tail = null;
+      this._size = 0;
+      return val;
+    }
 
-main();
+    // Walk to the second‑to‑last node
+    let current = this.head;
+    while (current.next && current.next !== this.tail) {
+      current = current.next;
+    }
+
+    const val = this.tail!.value;
+    current.next = null;
+    this.tail = current;
+    this._size--;
+    return val;
+  }
+  /** Find the first node whose value satisfies the predicate; returns `undefined` if none */
+  find(p: (value: T) => boolean): T | undefined {
+    let curr = this.head;
+    while (curr) {
+      if (p(curr.value)) return curr.value;
+      curr = curr.next;
+    }
+    return undefined;
+  }
+
+  /** Iterate over values (supports `for…of`) */
+  *[Symbol.iterator](): Iterator<T> {
+    let current = this.head;
+    while (current) {
+      yield current.value;
+      current = current.next;
+    }
+  }
+const list = new LinkedList<number>();
+for (const n of list) console.log(n);
+const list = new LinkedList<string>();
+
+list.push('first');
+list.push('second');
+list.unshift('zeroth');
+
+console.log([...list]);          // ["zeroth", "first", "second"]
+
+console.log(list.shift());       // "zeroth"
+console.log(list.pop());         // "second"
+
+console.log(list.find(n => n.startsWith('f'))); // "first"
