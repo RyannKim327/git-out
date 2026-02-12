@@ -1,110 +1,73 @@
-class ListNode<T> {
-  /** The value stored in this node */
-  value: T;
+/**
+ * Finds the longest increasing subsequence of an array.
+ *
+ * @param arr Numeric array (any integers or floats, any sign).
+ * @returns Object containing the LIS and its length.
+ */
+export function longestIncreasingSubsequence(arr: number[]): { seq: number[]; length: number } {
+  if (arr.length === 0) return { seq: [], length: 0 };
 
-  /** Reference to the next node, or null if this is the tail */
-  next: ListNode<T> | null = null;
+  // tails[i] — minimal tail of an LIS of length i+1 found so far
+  const tails: number[] = [];
+  // prevIndices[i] — index of the previous element in the LIS that ends at arr[i]
+  const prevIndices: number[] = Array(arr.length).fill(-1);
+  // indexInTails[i] — will store the index in tails where arr[i] was placed
+  const indexInTails: number[] = Array(arr.length).fill(0);
 
-  constructor(value: T) {
-    this.value = value;
+  for (let i = 0; i < arr.length; i++) {
+    const num = arr[i];
+
+    // Binary search: first index in tails where tails[idx] >= num
+    let lo = 0,
+      hi = tails.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (tails[mid] < num) lo = mid + 1;
+      else hi = mid;
+    }
+
+    // lo is the length of the new subsequence minus one
+    indexInTails[i] = lo;
+    if (lo >= tails.length) tails.push(num);
+    else tails[lo] = num;
+
+    // Link to previous element of the subsequence
+    if (lo > 0) prevIndices[i] = tailsIdx[lo - 1];
   }
+
+  // tailsIdx will hold the indices in the original array that correspond to tails[]
+  const tailsIdx: number[] = Array(tails.length);
+  const seqIdx: number[] = []; // will hold indices of LIS
+
+  // Reconstruct the sequence by walking backwards using prevIndices
+  let k = tailsIdx.length - 1;
+  let currentIdx = -1;
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (indexInTails[i] === k) {
+      seqIdx.push(i); // store index
+      k--; // look for previous
+      currentIdx = i;
+    }
+  }
+  seqIdx.reverse();
+
+  const seq = seqIdx.map(idx => arr[idx]);
+
+  return { seq, length: seq.length };
 }
-class LinkedList<T> {
-  /** Head (first node) – `null` if the list is empty */
-  private head: ListNode<T> | null = null;
+export function lisLength(arr: number[]): number {
+  if (arr.length === 0) return 0;
+  const dp = Array(arr.length).fill(1);
 
-  /** Tail (last node) – kept for efficient push; `null` if the list is empty */
-  private tail: ListNode<T> | null = null;
-
-  /** Current length – handy for O(1) size queries */
-  private _size = 0;
-
-  /** Number of elements in the list */
-  get size() { return this._size; }
-  get isEmpty() { return this._size === 0; }
+  for (let i = 1; i < arr.length; i++) {
+    for (let j = 0; j < i; j++) {
+      if (arr[i] > arr[j]) dp[i] = Math.max(dp[i], dp[j] + 1);
+    }
+  }
+  return Math.max(...dp);
 }
-  /** Append an element to the end of the list */
-  push(value: T): void {
-    const node = new ListNode(value);
-    if (this.tail) {
-      this.tail.next = node;
-    } else {          // empty list – new node is both head and tail
-      this.head = node;
-    }
-    this.tail = node;
-    this._size++;
-  }
+const data = [10, 22, 9, 33, 21, 50, 41, 60, 80];
+const { seq, length } = longestIncreasingSubsequence(data);
 
-  /** Prepend an element to the front of the list */
-  unshift(value: T): void {
-    const node = new ListNode(value);
-    node.next = this.head;
-    this.head = node;
-    if (!this.tail) this.tail = node;  // first element
-    this._size++;
-  }
-
-  /** Remove and return the first element, or `undefined` if the list is empty */
-  shift(): T | undefined {
-    if (!this.head) return undefined;
-    const removed = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null;  // list became empty
-    this._size--;
-    return removed;
-  }
-
-  /** Remove and return the last element, or `undefined` if the list is empty */
-  pop(): T | undefined {
-    if (!this.head) return undefined;
-    if (this.head === this.tail) {     // single element
-      const val = this.head.value;
-      this.head = this.tail = null;
-      this._size = 0;
-      return val;
-    }
-
-    // Walk to the second‑to‑last node
-    let current = this.head;
-    while (current.next && current.next !== this.tail) {
-      current = current.next;
-    }
-
-    const val = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-    this._size--;
-    return val;
-  }
-  /** Find the first node whose value satisfies the predicate; returns `undefined` if none */
-  find(p: (value: T) => boolean): T | undefined {
-    let curr = this.head;
-    while (curr) {
-      if (p(curr.value)) return curr.value;
-      curr = curr.next;
-    }
-    return undefined;
-  }
-
-  /** Iterate over values (supports `for…of`) */
-  *[Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    while (current) {
-      yield current.value;
-      current = current.next;
-    }
-  }
-const list = new LinkedList<number>();
-for (const n of list) console.log(n);
-const list = new LinkedList<string>();
-
-list.push('first');
-list.push('second');
-list.unshift('zeroth');
-
-console.log([...list]);          // ["zeroth", "first", "second"]
-
-console.log(list.shift());       // "zeroth"
-console.log(list.pop());         // "second"
-
-console.log(list.find(n => n.startsWith('f'))); // "first"
+console.log('LIS:', seq);          // [10, 22, 33, 50, 60, 80]
+console.log('Length:', length);    // 6
