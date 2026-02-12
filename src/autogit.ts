@@ -1,41 +1,50 @@
+area = (base * height) / 2
 /**
- * KMP string matcher.
- * @param text    Text in which to search.
- * @param pattern Pattern to find.
- * @returns Index of first occurrence of pattern in text, or -1 if not found.
+ * Return the area of a triangle when you know its base and height.
+ *
+ * @param base   Length of the base side.
+ * @param height Height perpendicular to that base.
+ * @returns      Area of the triangle as a number.
  */
-export function kmpSearch(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
-
-  if (m === 0) return 0;           // Empty pattern matches at start.
-
-  // --------- Step 1: build failure function ----------
-  const fail: number[] = new Array(m).fill(0);
-  let k = 0;                         // length of current match
-
-  for (let i = 1; i < m; i++) {
-    while (k > 0 && pattern[k] !== pattern[i]) {
-      k = fail[k - 1];
-    }
-    if (pattern[k] === pattern[i]) k++;
-    fail[i] = k;
+export function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error("Base and height must be positive numbers.");
   }
-
-  // --------- Step 2: scan the text ---------------
-  k = 0;                               // reset pattern index
-  for (let i = 0; i < n; i++) {
-    while (k > 0 && text[i] !== pattern[k]) {
-      k = fail[k - 1];
-    }
-    if (text[i] === pattern[k]) k++;
-
-    if (k === m) {                    // match found
-      return i - m + 1;
-    }
-  }
-
-  return -1;                          // no match
+  return (base * height) / 2;
 }
-const idx = kmpSearch('abxabcabcaby', 'abcaby');
-console.log(idx);   // → 6
+s = (a + b + c) / 2            // semi‑perimeter
+area = sqrt( s * (s−a) * (s−b) * (s−c) )
+/**
+ * Compute the area of a triangle from its three side lengths.
+ *
+ * @param a   Length of side A.
+ * @param b   Length of side B.
+ * @param c   Length of side C.
+ * @returns   Area of the triangle (number) or NaN if the sides
+ *            don’t form a valid triangle.
+ */
+export function areaFromSides(a: number, b: number, c: number): number {
+  // Basic validation – all sides must be positive
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw new Error("All side lengths must be positive numbers.");
+  }
+
+  // Triangle inequality check – else area calculation would
+  // produce NaN or a negative under the radicand.
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error("The provided side lengths do not form a valid triangle.");
+  }
+
+  const s = (a + b + c) / 2;
+  const radicand = s * (s - a) * (s - b) * (s - c);
+
+  return Math.sqrt(radicand);
+}
+import { areaFromBaseHeight, areaFromSides } from "./triangle-utils";
+
+const base = 10;
+const height = 6;
+console.log(areaFromBaseHeight(base, height)); // 30
+
+const a = 7, b = 10, c = 5;
+console.log(areaFromSides(a, b, c));           // ≈ 17.89
