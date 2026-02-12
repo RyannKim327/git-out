@@ -1,33 +1,55 @@
 /**
- * Returns the index of the first non‑repeating character.
- * If every character repeats, returns -1.
+ * Selection sort – sorts an array in‑place in ascending order.
  *
- * @param s – the string to scan
+ * @param array   The array to sort.  It will be mutated.
+ * @param compare Callback used to decide order. If omitted, a natural
+ *                ascending numeric/string comparison is used.
+ * @returns The same array instance, now sorted.
  */
-function firstNonRepeatingIndex(s: string): number {
-  // 1️⃣ Count how many times each character occurs
-  const freq = new Map<string, number>();
+export function selectionSort<T>(
+  array: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  const len = array.length;
 
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
+  // default comparer: numeric or string ascending
+  const cmp = compare ?? ((a: any, b: any) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
 
-  // 2️⃣ Scan again from the start, picking the first that has count 1
-  for (let i = 0; i < s.length; i++) {
-    if (freq.get(s[i]) === 1) {
-      return i;    // return the index, you can return the character with s[i]
+  for (let i = 0; i < len - 1; i++) {
+    // assume min at current position
+    let minIdx = i;
+
+    // find the smallest element in the unsorted portion
+    for (let j = i + 1; j < len; j++) {
+      if (cmp(array[j], array[minIdx]) < 0) {
+        minIdx = j;
+      }
+    }
+
+    // swap if we found a smaller element
+    if (minIdx !== i) {
+      const temp = array[i];
+      array[i] = array[minIdx];
+      array[minIdx] = temp;
     }
   }
 
-  return -1; // no unique character found
+  return array;
 }
+// simple numeric sorting
+let nums = [64, 25, 12, 22, 11];
+selectionSort(nums);
+console.log(nums); // [11, 12, 22, 25, 64]
 
-// Demo
-const txt = "mybobby";
-const idx = firstNonRepeatingIndex(txt);
+// sorting strings
+let words = ["banana", "avocado", "cherry"];
+selectionSort(words);
+console.log(words); // ["avocado", "banana", "cherry"]
 
-if (idx >= 0) {
-  console.log(`First non‑repeating char: '${txt[idx]}' at position ${idx}`);
-} else {
-  console.log("All characters repeat");
-}
+// custom comparator – descending numbers
+selectionSort(nums, (a, b) => b - a);
+console.log(nums); // [64, 25, 22, 12, 11]
