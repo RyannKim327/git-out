@@ -1,20 +1,45 @@
-// A simple node definition – adjust to match your existing structure
-interface ListNode<T> {
-  value: T;
-  next?: ListNode<T>;
-}
-function getLength<T>(head: ListNode<T> | undefined): number {
-  let count = 0;
-  let current = head;
+class Stack<T> {
+  private items: T[] = [];      // underlying array
 
-  while (current) {
-    count++;
-    current = current.next;
+  /** Push a value onto the top of the stack. */
+  push(value: T): void {
+    this.items.push(value);
   }
 
-  return count;
+  /** Remove and return the top value.  Returns `undefined` if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  /** Peek at the top value without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Number of elements in the stack. */
+  get size(): number {
+    return this.items.length;
+  }
+
+  /** True if the stack contains no items. */
+  get isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Optional: clear all items. */
+  clear(): void {
+    this.items = [];
+  }
 }
-function getLengthRec<T>(node: ListNode<T> | undefined): number {
-  if (!node) return 0;
-  return 1 + getLengthRec(node.next);
-}
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size);   // 2
+
+stack.clear();
+console.log(stack.isEmpty); // true
