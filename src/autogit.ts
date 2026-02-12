@@ -1,87 +1,27 @@
-/**
- * Returns the maximum sum of any contiguous sub‑array.
- *
- * @param arr – array of numbers (may contain negatives)
- * @returns {number} maximum sub‑array sum
- */
-export function maxSubArraySum(arr: number[]): number {
-  if (arr.length === 0) {
-    throw new Error('Array must contain at least one element');
+function isPalindrome(str: string): boolean {
+  const sanitized = str.toLowerCase();              // ignore case
+  const reversed  = sanitized.split('').reverse().join('');
+  return sanitized === reversed;
+}
+console.log(isPalindrome('RaceCar'));      // true
+console.log(isPalindrome('hello'));        // false
+function isPalindromePortable(str: string): boolean {
+  const cleaned = str.replace(/[^a-z0-9]/gi, '').toLowerCase();
+  const left = 0;
+  const right = cleaned.length - 1;
+
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) return false;
+    left++;
+    right--;
   }
 
-  // init both with first element: handles all‑negative cases nicely
-  let currentBest = arr[0];
-  let globalBest = arr[0];
-
-  for (let i = 1; i < arr.length; i++) {
-    const value = arr[i];
-
-    // Either extend the previous sub‑array or start fresh at value
-    currentBest = Math.max(value, currentBest + value);
-
-    // Keep the best seen so far
-    globalBest = Math.max(globalBest, currentBest);
-  }
-
-  return globalBest;
+  return true;
 }
-const testSets = [
-  { arr: [1, -2, 3, 4, -5, 8], expect: 10 },
-  { arr: [-2, -3, -1, -4], expect: -1 },
-  { arr: [2, 3, 1, 6], expect: 12 },
-  { arr: [5, -1, 2, 3], expect: 9 },
-  { arr: [1], expect: 1 },
-];
-
-for (const { arr, expect } of testSets) {
-  const result = maxSubArraySum(arr);
-  console.log(`arr: ${arr} → max sum: ${result} (${result === expect ? '✓' : '✗'})`);
-}
-arr: 1,-2,3,4,-5,8 → max sum: 10 (✓)
-arr: -2,-3,-1,-4 → max sum: -1 (✓)
-arr: 2,3,1,6 → max sum: 12 (✓)
-arr: 5,-1,2,3 → max sum: 9 (✓)
-arr: 1 → max sum: 1 (✓)
-interface MaxSubArrayResult {
-  sum: number;
-  start: number;
-  end: number;   // inclusive
-}
-
-export function maxSubArraySumWithIndices(arr: number[]): MaxSubArrayResult {
-  if (arr.length === 0) {
-    throw new Error('Array must contain at least one element');
-  }
-
-  let currentBest = arr[0];
-  let globalBest = arr[0];
-
-  // working indices
-  let currentStart = 0;
-  let bestStart = 0;
-  let bestEnd = 0;
-
-  for (let i = 1; i < arr.length; i++) {
-    const value = arr[i];
-
-    // decide whether to continue or start a new sub‑array
-    if (currentBest + value < value) {
-      currentBest = value;
-      currentStart = i;
-    } else {
-      currentBest += value;
-    }
-
-    // update global best if we found a better sum
-    if (currentBest > globalBest) {
-      globalBest = currentBest;
-      bestStart = currentStart;
-      bestEnd = i;
-    }
-  }
-
-  return { sum: globalBest, start: bestStart, end: bestEnd };
-}
-const { sum, start, end } = maxSubArraySumWithIndices([1, -2, 3, 4, -5, 8]);
-console.log(`max sum ${sum} from index ${start} to ${end}`);
-// → max sum 10 from index 2 to 5
+console.log(isPalindromePortable('A man, a plan, a canal: Panama')); // true
+console.log(isPalindromePortable('No lemon, no melon'));            // true
+console.log(isPalindromePortable('Hello, world!'));                 // false
+const isPalindromeFancy = (s: string) =>
+  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).join('') ===
+  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).reverse().join('');
+export { isPalindrome, isPalindromePortable };
