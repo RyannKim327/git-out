@@ -1,48 +1,61 @@
 /**
- * Returns the longest common subsequence (LCS) of two strings.
- * @param a First string
- * @param b Second string
- * @returns { subsequence: string; length: number }
+ * Fibonacci Search
+ *
+ * @param arr   Sorted array to search
+ * @param key   Value to locate
+ * @returns    Index of key or -1
  */
-function longestCommonSubsequence(a: string, b: string) {
-  const m = a.length;
-  const n = b.length;
+export function fibonacciSearch<T extends number | string>(
+  arr: T[],
+  key: T
+): number {
+  const n = arr.length;
 
-  // 1. Build DP matrix (m+1) x (n+1) filled with 0
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  // 1. Compute the smallest Fibonacci number greater or equal to n
+  let fibMinusTwo = 0;   // (n-2)th fibonacci
+  let fibMinusOne = 1;   // (n-1)th fibonacci
+  let fibN = fibMinusTwo + fibMinusOne; // nth fibonacci
 
-  // 2. Fill DP matrix
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
+  while (fibN < n) {
+    fibMinusTwo = fibMinusOne;
+    fibMinusOne = fibN;
+    fibN = fibMinusTwo + fibMinusOne;
   }
 
-  // 3. Back‑track to rebuild the subsequence
-  let i = m, j = n;
-  const subseq: string[] = [];
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      subseq.push(a[i - 1]); // same char belongs to LCS
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;            // move up
+  // 2. Marks the index beyond the last element
+  let offset = -1;
+
+  // 3. while there's more to inspect
+  while (fibN > 1) {
+    const i = Math.min(offset + fibMinusTwo, n - 1);
+
+    // Compare the current element with the key
+    if (arr[i] < key!) {
+      // Move three Fibonacci numbers down
+      fibN = fibMinusOne;
+      fibMinusOne = fibMinusTwo;
+      fibMinusTwo = fibN - fibMinusOne;
+      offset = i;
+    } else if (arr[i] > key!) {
+      // Move two Fibonacci numbers down
+      fibN = fibMinusTwo;
+      fibMinusOne = fibMinusOne - fibMinusTwo;
+      fibMinusTwo = fibN - fibMinusOne;
     } else {
-      j--;            // move left
+      // Element found
+      return i;
     }
   }
 
-  return {
-    subsequence: subseq.reverse().join(''),
-    length: dp[m][n]
-  };
-}
+  // Compare the last element with the key
+  if (fibMinusOne && offset + 1 < n && arr[offset + 1] === key) {
+    return offset + 1;
+  }
 
-// Quick demo
-const { subsequence, length } = longestCommonSubsequence('AGCAT', 'GAC');
-console.log(`Longest common subsequence: ${subsequence} (length ${length})`);
+  return -1; // Not found
+}
+const sortedNums = [3, 7, 12, 18, 23, 27, 34, 38, 45, 52];
+const target = 23;
+
+const idx = fibonacciSearch(sortedNums, target);
+console.log(idx); // 4
