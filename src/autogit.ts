@@ -1,26 +1,57 @@
-/**
- * Returns true if the array is in strictly ascending order (each element ≤ the next one).
- * Works for numbers, strings, or any type that can be compared with < / >.
- */
-export function isAscending<T>(arr: T[], comparator?: (a: T, b: T) => number): boolean {
-  // If the user passes a custom comparator, use it; otherwise fall back to natural order.
-  const cmp = comparator ?? ((a: T, b: T) => a < b ? -1 : a > b ? 1 : 0);
+function secondLargestSort(arr: number[]): number | null {
+  // Defensive copy so we don’t mutate the caller’s data
+  const sorted = [...arr].sort((a, b) => b - a); // descending
 
-  // Iterate until we find a pair that violates the ascending rule.
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) {
-      return false; // arr[i-1] > arr[i], not ascending
+  // Find the first element that isn’t equal to the maximum
+  let i = 1;
+  while (i < sorted.length && sorted[i] === sorted[0]) {
+    i++;
+  }
+
+  return i < sorted.length ? sorted[i] : null;
+}
+console.log(secondLargestSort([3, 1, 4, 4, 5])); // 4
+console.log(secondLargestSort([10]));            // null
+function secondLargestTwoPass(arr: number[]): number | null {
+  if (arr.length < 2) return null;
+
+  let max = -Infinity;
+  let secondMax = -Infinity;
+
+  // First pass: find the maximum
+  for (const v of arr) {
+    if (v > max) max = v;
+  }
+
+  // Second pass: find the largest value that is < max
+  for (const v of arr) {
+    if (v < max && v > secondMax) secondMax = v;
+  }
+
+  return secondMax === -Infinity ? null : secondMax;
+}
+console.log(secondLargestTwoPass([7, 3, 9, 1, 9])); // 7
+function secondLargest(arr: number[]): number | null {
+  if (arr.length < 2) return null;
+
+  let max = -Infinity;
+  let secondMax = -Infinity;
+
+  for (const v of arr) {
+    if (v > max) {
+      secondMax = max; // the old max becomes second max
+      max = v;
+    } else if (v < max && v > secondMax) {
+      secondMax = v;
     }
   }
-  return true;          // All pairs passed the test
+
+  return secondMax === -Infinity ? null : secondMax;
 }
-// Numbers (default comparator)
-console.log(isAscending([1, 2, 3, 4])); // true
-console.log(isAscending([1, 3, 2, 4])); // false
-
-// Strings (lexicographic order)
-console.log(isAscending(['apple', 'banana', 'cherry'])); // true
-
-// Custom comparison – e.g., sort by string length
-const byLength = (a: string, b: string) => a.length - b.length;
-console.log(isAscending(['a', 'bb', 'ccc'], byLength)); // true
+console.log(secondLargest([5, 12, 7, 12, 9]));   // 9
+console.log(secondLargest([3]));                // null
+console.log(secondLargest([2, 2, 2]));          // null (no distinct second largest)
+function findSecondLargest(arr: number[]): number | null {
+  // Pick whichever implementation feels best
+  return secondLargest(arr);
+}
