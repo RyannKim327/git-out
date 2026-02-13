@@ -1,85 +1,45 @@
 /**
- * Simple representation of a DAG.
- *   vertices – an array of node identifiers (any type, but usually string or number)
- *   edges    – a map from a vertex to a list of outgoing neighbours
+ * Return the largest prime factor of |n|.
+ *
+ * @param n Any integer. Negative values are treated as |n|.
+ * @returns   The largest prime factor of n, or `0` if n has no prime factors
+ * (i.e. n is 0, 1, or –1).
  */
-interface Graph<V> {
-  vertices: V[];
-  edges: Map<V, V[]>;
+function largestPrimeFactor(n: number): number {
+  if (n === 0 || n === 1 || n === -1) return 0;
+
+  let num = Math.abs(n);          // work with the absolute value
+  let lastPrime = 0;              // keep the biggest factor we’ve seen
+
+  // Treat 2 separately – it’s the only even prime
+  while (num % 2 === 0) {
+    lastPrime = 2;
+    num >>= 1;                    // divide by 2
+  }
+
+  // Now n is odd. Try only odd divisors.
+  // We only need to go up to sqrt(num) because if num still > 1 after that,
+  // num itself is prime and the largest factor.
+  for (let d = 3; d * d <= num; d += 2) {
+    while (num % d === 0) {
+      lastPrime = d;
+      num /= d;
+    }
+  }
+
+  // If after the loop num > 1, it means num itself is prime
+  // and larger than any divisor we found earlier.
+  if (num > 1) lastPrime = num;
+
+  return lastPrime;
 }
 
-/**
- * Kahn’s topological sort.
- * @param graph – a DAG
- * @returns a list of vertices sorted topologically
- * @throws Error if the graph contains a cycle
- */
-function topologicalSort<V>(graph: Graph<V>): V[] {
-  // Compute indegree of each vertex
-  const indegree = new Map<V, number>();
-  graph.vertices.forEach(v => indegree.set(v, 0));
-
-  graph.edges.forEach((neighbours, from) => {
-    neighbours.forEach(to => {
-      indegree.set(to, (indegree.get(to) || 0) + 1);
-    });
-  });
-
-  // Queue of vertices with indegree 0
-  const queue: V[] = [];
-  indegree.forEach((deg, v) => {
-    if (deg === 0) queue.push(v);
-  });
-
-  const order: V[] = [];
-  while (queue.length) {
-    const v = queue.shift()!;
-    order.push(v);
-
-    const neighbours = graph.edges.get(v) ?? [];
-    neighbours.forEach(to => {
-      indegree.set(to, (indegree.get(to) || 0) - 1);
-      if (indegree.get(to) === 0) queue.push(to);
-    });
-  }
-
-  // If we processed fewer vertices than exist, a cycle is present
-  if (order.length !== graph.vertices.length) {
-    throw new Error('Graph contains a cycle – topological sort not possible');
-  }
-
-  return order;
-}
-A → C
-B → C
-C → D
-const g: Graph<string> = {
-  vertices: ['A', 'B', 'C', 'D'],
-  edges: new Map([
-    ['A', ['C']],
-    ['B', ['C']],
-    ['C', ['D']],
-    // D has no outgoing edges
-  ]),
-};
-
-console.log(topologicalSort(g)); // → ['A', 'B', 'C', 'D'] (or ['B', 'A', 'C', 'D'])
-function topologicalSortDFS<V>(graph: Graph<V>): V[] {
-  const visited = new Set<V>();
-  const temp = new Set<V>();          // to detect cycles
-  const stack: V[] = [];
-
-  function visit(v: V) {
-    if (temp.has(v)) throw new Error('Cycle detected');
-    if (visited.has(v)) return;
-
-    temp.add(v);
-    (graph.edges.get(v) ?? []).forEach(visit);
-    temp.delete(v);
-    visited.add(v);
-    stack.push(v);                    // push after children – this yields reverse order
-  }
-
-  graph.vertices.forEach(visit);
-  return stack.reverse();             // reverse to get the correct order
+/* ----- quick sanity checks ----- */
+console.log(largestPrimeFactor(13195));   // 29  (13195 = 5 × 7 × 13 × 29)
+console.log(largestPrimeFactor(600851475143)); // 6857 (the known answer to Project Euler #3)
+Console.log(largestPrimeFactor(13));      // 13
+Console.log(largestPrimeFactor(4));       // 2
+Console.log(largestPrimeFactor(1));       // 0
+function largestPrimeFactorBigInt(n: bigint): bigint {
+  // identical logic, but using bigint operations
 }
