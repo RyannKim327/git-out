@@ -1,61 +1,37 @@
+// TypeScript example that fetches JSON and validates the shape of the response
+
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
 /**
- * Sorts an array of numbers in ascending order using insertion sort.
- * The algorithm works in place – the input array is mutated.
+ * Fetch a Todo by ID.
  *
- * @param arr - The numeric array to be sorted.
- * @returns The same array, now sorted.
+ * @param id The ID of the todo to fetch.
+ * @returns A promise that resolves to a Todo object.
  */
-export function insertionSort(arr: number[]): number[] {
-  // Start from the second element; the first element is “sorted” by definition
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];            // The value we’re going to insert
-    let j = i - 1;
+async function fetchTodo(id: number): Promise<Todo> {
+  const response = await fetch(`https://jsonplaceholder.typicode.com/todos/${id}`);
 
-    // Shift elements that are greater than the key to the right
-    while (j >= 0 && arr[j] > key) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    // Insert the key into its correct position
-    arr[j + 1] = key;
+  if (!response.ok) {
+    throw new Error(`Failed to load todo #${id}: ${response.status} ${response.statusText}`);
   }
 
-  return arr;
-}
-export function insertionSort<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+  // TypeScript's `as` ensures the runtime shape matches the interface
+  const data = (await response.json()) as Todo;
 
-    // While j is in range and key is less than arr[j], shift arr[j] right
-    while (j >= 0 && compareFn(key, arr[j]) < 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    arr[j + 1] = key;
+  // Quick sanity check
+  if (typeof data.completed !== "boolean") {
+    throw new Error("data format unexpected");
   }
 
-  return arr;
+  return data;
 }
-// Numbers
-const nums = [64, 25, 12, 22, 11];
-insertionSort(nums);          // => [11, 12, 22, 25, 64]
 
-// Strings
-const words = ['banana', 'apple', 'cherry'];
-insertionSort(words);          // => ['apple', 'banana', 'cherry']
-
-// Custom objects
-const people = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 24 },
-  { name: 'Catherine', age: 27 }
-];
-
-insertionSort(people, (a, b) => a.age - b.age);
-// => sorted by age
+// Usage example (you can place this in a main function or wherever you need it)
+fetchTodo(1)
+  .then(todo => console.log(`Todo #${todo.id}: ${todo.title} (completed: ${todo.completed})`))
+  .catch(err => console.error(err));
