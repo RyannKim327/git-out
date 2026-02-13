@@ -1,32 +1,17 @@
-const uniq = <T>(arr: T[]): T[] => [...new Set(arr)];
+const numbers = [3, 42, 7, -1, 20];
+const biggest = Math.max(...numbers);
 
-const numbers = [1, 2, 3, 2, 4, 1];
-console.log(uniq(numbers)); // [1, 2, 3, 4]
-const uniq = <T>(arr: T[]): T[] =>
-  arr.filter((value, index, self) => self.indexOf(value) === index);
-
-const words = ["a", "b", "a", "c", "b"];
-console.log(uniq(words)); // ["a", "b", "c"]
-const uniq = <T>(arr: T[]): T[] =>
-  arr.reduce((seen, val) => {
-    if (!seen.includes(val)) seen.push(val);
-    return seen;
-  }, [] as T[]);
-function uniqInPlace<T>(arr: T[]): void {
-  const seen = new Set<T>();
-  let writeIdx = 0;
-
-  for (const v of arr) {
-    if (!seen.has(v)) {
-      seen.add(v);
-      arr[writeIdx++] = v;
-    }
-  }
-
-  // Optional: truncate the array
-  arr.length = writeIdx;
+console.log(biggest); // 42
+function findMax(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined; // or throw, or use null, whatever fits your API
+  return Math.max(...nums);
 }
-
-const data = [5, 3, 5, 2, 3];
-uniqInPlace(data);
-console.log(data); // [5, 3, 2]
+const biggest = numbers.reduce((max, curr) => curr > max ? curr : max, -Infinity);
+function findMax(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  return nums.reduce((max, curr) => (curr > max ? curr : max));
+}
+function findMax<T extends readonly (number | null | undefined)[]>(arr: T): number | undefined {
+  const filtered = arr.filter(isFinite) as number[]; // strip out null/undefined if you like
+  return filtered.length ? Math.max(...filtered) : undefined;
+}
