@@ -1,33 +1,21 @@
-// random-axios-example.ts
-import axios, { AxiosResponse } from "axios";
-
-interface PostSummary {
-  id: number;
-  title: string;
+/**
+ * Factorial using recursion.
+ * Works for ordinary numbers up to 20 (safe integer range).
+ * If you need bigger results, use BigInt and the overload below.
+ */
+function factorial(n: number): number {
+  if (n < 0) throw new Error("Negative values are not allowed");
+  if (n <= 1) return 1;          // base case
+  return n * factorial(n - 1);   // recursive step
 }
 
-async function fetchPostSummaries(
-  limit: number = 5,
-  page: number = 1
-): Promise<PostSummary[]> {
-  const url = "https://jsonplaceholder.typicode.com/posts";
-  const params = { _limit: limit, _page: page };
-
-  // Axios can be typed at the request level:
-  const response: AxiosResponse<PostSummary[]> = await axios.get(url, { params });
-
-  // We trust the API returns the expected shape, but we still slice the fields we care about.
-  return response.data.map(({ id, title }) => ({ id, title }));
+/**
+ * A BigInt version for arbitrary‑size factorials.
+ */
+function factorialBigInt(n: bigint): bigint {
+  if (n < 0n) throw new Error("Negative values are not allowed");
+  if (n <= 1n) return 1n;
+  return n * factorialBigInt(n - 1n);
 }
-
-async function main() {
-  try {
-    const summaries = await fetchPostSummaries();
-    console.log("Fetched post summaries:", summaries);
-  } catch (err) {
-    // @ts-ignore – quick error log for demonstration
-    console.error("Something went wrong:", err?.message ?? err);
-  }
-}
-
-main();
+console.log(factorial(5));          // 120
+console.log(factorialBigInt(25n));  // 15511210043330985984000000n
