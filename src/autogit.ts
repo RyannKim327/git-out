@@ -1,7 +1,16 @@
-function safeParseInt(s: string, radix = 10): number | undefined {
-  const n = parseInt(s, radix);
-  return isNaN(n) ? undefined : n;
+const str = "Hello, TypeScript world!";
+
+console.log(str.includes("TypeScript")); // true
+console.log(str.indexOf("world") !== -1); // true
+
+// Case‑insensitive search
+const pattern = /typescript/i;
+console.log(pattern.test(str)); // true
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
-const intVal = parseInt(myStr, 10); // for ordinary integers
-const floatVal = Number(myStr);     // for decimals, natural format
-const alt = +myStr;                 // the one‑liner version of Number
+
+const sub = "a+b*?"; // contains regex meta‑chars
+const safePattern = new RegExp(escapeRegExp(sub), 'i');
+console.log(safePattern.test(str)); // correct result
+str.toLowerCase().includes(sub.toLowerCase());
