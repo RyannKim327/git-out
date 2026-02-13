@@ -1,47 +1,47 @@
 /**
- * Interpolation search – returns the index of `key` in `arr`
- * or `-1` if the key is not present.
+ * Finds the median of two sorted arrays that may be of different lengths.
  *
- * @template T – numeric type (number, bigInt, etc.)
- * @param arr  – sorted array of numbers
- * @param key  – value to look for
- * @returns index or -1
+ * @param a  first sorted array (non‑empty)
+ * @param b  second sorted array (non‑empty)
+ * @returns  median value (number)
  */
-export function interpolationSearch<T extends number | bigint>(
-  arr: T[],
-  key: T
-): number {
-  if (!arr.length) return -1;
+export function medianOfTwoSortedArrays(a: number[], b: number[]): number {
+  // Ensure a is the shorter array to keep the binary search bounded.
+  if (a.length > b.length) return medianOfTwoSortedArrays(b, a);
 
-  let low = 0;
-  let high = arr.length - 1;
+  const m = a.length;
+  const n = b.length;
+  let left = 0;
+  let right = m;
 
-  /* Handle the special situation where the key is identical to
-   * the value at both bounds – it can’t be found if low === high
-   * but arr[low] !== key.
-   */
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    /* Avoid division by zero when array values are identical */
-    const step =
-      low === high
-        ? 0
-        : Number(
-            (key - arr[low]) *
-              (high - low) /
-              (arr[high] - arr[low])
-          );
+  while (left <= right) {
+    const i = Math.floor((left + right) / 2);          // cut in a
+    const j = Math.floor((m + n + 1) / 2) - i;        // cut in b
 
-    const mid = low + Math.min(Math.max(step, 0), high - low);
+    const Aleft   = i === 0 ?    -Infinity : a[i - 1];
+    const Aright  = i === m ?    Infinity : a[i];
+    const Bleft   = j === 0 ?    -Infinity : b[j - 1];
+    const Bright  = j === n ?    Infinity : b[j];
 
-    const midVal = arr[mid];
-
-    if (midVal === key) return mid;
-    if (midVal < key) low = mid + 1;
-    else high = mid - 1;
+    if (Aleft <= Bright && Bleft <= Aright) {
+      // correct partition found
+      if ((m + n) % 2 === 0) {
+        return Math.max(Aleft, Bleft) + Math.min(Aright, Bright) / 2;
+      } else {
+        return Math.max(Aleft, Bleft);
+      }
+    } else if (Aleft > Bright) {
+      // i is too big – shift left
+      right = i - 1;
+    } else {
+      // i is too small – shift right
+      left = i + 1;
+    }
   }
 
-  return -1; // Key not found
+  // Should never hit here if inputs are valid and sorted.
+  throw new Error("Input arrays are not sorted or empty");
 }
-const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17];
-console.log(interpolationSearch(nums, 7));  // → 3
-console.log(interpolationSearch(nums, 4));  // → -1
+console.log(medianOfTwoSortedArrays([1, 3], [2]));          // 2
+console.log(medianOfTwoSortedArrays([1, 2], [3, 4]));        // 2.5
+console.log(medianOfTwoSortedArrays([0, 0], [0, 0]));        // 0
