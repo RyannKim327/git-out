@@ -1,32 +1,49 @@
 /**
- * Bubble sort – compares adjacent elements and swaps them if they're out of order.
+ * Binary search on a sorted array.
  *
- * @param arr – The array of numbers (or any type that implements `<`),
- *              sorted in place and also returned for convenience.
- * @returns The sorted array.
+ * @param arr   Sorted array (ascending).
+ * @param key   Value to search for.
+ * @returns     Index of `key` in `arr`, or -1 if not found.
  */
-export function bubbleSort<T>(arr: T[]): T[] {
-  const n = arr.length;
+export function binarySearch<T extends number | string>(arr: T[], key: T): number {
+    let low  = 0;
+    let high = arr.length - 1;
 
-  // Outer loop – each pass guarantees that the largest element among the
-  // unsorted portion moves to its final position at the end of the array.
-  for (let i = 0; i < n - 1; i++) {
-    // Inner loop – only needs to run up to the last unsorted element.
-    for (let j = 0; j < n - i - 1; j++) {
-      // If the current element is greater than the next one, swap them.
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-      }
+    while (low <= high) {
+        // Use floor division so we don’t overshoot on odd lengths.
+        const mid = Math.floor((low + high) / 2);
+        const midVal = arr[mid];
+
+        if (midVal === key) {
+            return mid;                // Found it!
+        }
+        else if (midVal < key) {
+            low = mid + 1;              // Search right half
+        } else {
+            high = mid - 1;             // Search left half
+        }
     }
-  }
-
-  return arr;
+    return -1; // Not found
 }
-import { bubbleSort } from './bubbleSort';
+type Comparator<T> = (a: T, b: T) => number; // negative if a < b, zero if equal, positive otherwise
 
-const numbers = [64, 34, 25, 12, 22, 11, 90];
-console.log('Before:', numbers);
+export function binarySearchWith<T>(arr: T[], key: T, cmp: Comparator<T>): number {
+    let low = 0, high = arr.length - 1;
 
-bubbleSort(numbers);
+    while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        const comp = cmp(arr[mid], key);
 
-console.log('After:', numbers);   // [11, 12, 22, 25, 34, 64, 90]
+        if (comp === 0) return mid;
+        if (comp < 0)  low = mid + 1;
+        else           high = mid - 1;
+    }
+    return -1;
+}
+const numbers = [3, 7, 12, 20, 31, 45, 58];
+console.log(binarySearch(numbers, 20)); // → 3
+
+// With a custom comparator for objects:
+const people = [{id: 1, name: 'Alice'}, {id: 3, name: 'Bob'}, {id: 7, name: 'Carol'}];
+const idCmp = (p: typeof people[0], key: number) => p.id - key;
+console.log(binarySearchWith(people, 3, idCmp)); // → 1
