@@ -1,37 +1,31 @@
-// TypeScript example that fetches JSON and validates the shape of the response
-
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
 /**
- * Fetch a Todo by ID.
- *
- * @param id The ID of the todo to fetch.
- * @returns A promise that resolves to a Todo object.
+ * Counts how many code units a string contains.
+ * @param s The string to measure.
+ * @returns The length as a number.
  */
-async function fetchTodo(id: number): Promise<Todo> {
-  const response = await fetch(`https://jsonplaceholder.typicode.com/todos/${id}`);
+function getStringLength(s: string): number {
+  let count = 0;
 
-  if (!response.ok) {
-    throw new Error(`Failed to load todo #${id}: ${response.status} ${response.statusText}`);
+  // Keep stepping forward until we encounter an undefined slot.
+  while (s[count] !== undefined) {
+    count++;
   }
 
-  // TypeScript's `as` ensures the runtime shape matches the interface
-  const data = (await response.json()) as Todo;
-
-  // Quick sanity check
-  if (typeof data.completed !== "boolean") {
-    throw new Error("data format unexpected");
-  }
-
-  return data;
+  return count;
 }
+function getStringLengthUsingForOf(s: string): number {
+  let count = 0;
+  for (const _ of s) {
+    count++;        // `_` is just a throwaway variable
+  }
+  return count;    // this is the number of Unicode code points we iterated over
+}
+function getStringLengthRecursive(s: string, idx = 0): number {
+  return s[idx] === undefined
+    ? idx
+    : getStringLengthRecursive(s, idx + 1);
+}
+const demo = "Hello, 👋🌍";
 
-// Usage example (you can place this in a main function or wherever you need it)
-fetchTodo(1)
-  .then(todo => console.log(`Todo #${todo.id}: ${todo.title} (completed: ${todo.completed})`))
-  .catch(err => console.error(err));
+console.log(getStringLength(demo));                    // 13 (code units)
+console.log(getStringLengthUsingForOf(demo));          // 10 (code points)
