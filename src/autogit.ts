@@ -1,78 +1,76 @@
-// 1️⃣  A tiny node definition
-interface ListNode<T> {
-  val: T;
-  next?: ListNode<T>;
-}
+/**
+ * Returns the longest common prefix of all strings in `arr`.
+ *
+ * @param arr – an array of strings (can be empty)
+ * @returns the prefix that every string shares, or an empty string
+ */
+function longestCommonPrefix(arr: string[]): string {
+  if (!arr.length) return "";
 
-// 2️⃣  Helper: walk a list and collect values (for demo)
-const listToArray = <T>(head: ListNode<T> | undefined): T[] => {
-  const arr: T[] = [];
-  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
-  return arr;
-};
+  // Pin the “shortest”‑length string as a stopping rule.
+  // No prefix can be longer than this string.
+  const minLen = Math.min(...arr.map(s => s.length));
 
-// 3️⃣  The trick: two pointers, fast and slow
-function middle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  if (!head) return undefined; // empty list—no middle
-
-  let fast = head;
-  let slow = head;
-
-  // advance fast every two steps, slow every one
-  while (fast.next && fast.next.next) {
-    fast = fast.next.next; // jump 2
-    slow = slow.next as ListNode<T>; // jump 1
-  }
-
-  // If fast has a next (odd length), move slow one more
-  if (fast.next) slow = slow.next as ListNode<T>;
-
-  return slow;
-}
-
-// 4️⃣  Demo: build a list so we can see it in action
-const nodes: ListNode<number>[] = [1, 2, 3, 4, 5].map(
-  (v) => ({ val: v })
-);
-for (let i = 0; i < nodes.length - 1; i++) nodes[i].next = nodes[i + 1];
-const head = nodes[0];
-
-console.log("Full list:", listToArray(head));         // 1,2,3,4,5
-console.log("Middle node:", middle(head)?.val);        // 3
-
-// Try an even‑length list
-const even: ListNode<number>[] = [10, 20, 30, 40].map(
-  (v) => ({ val: v })
-);
-for (let i = 0; i < even.length - 1; i++) even[i].next = even[i + 1];
-console.log("Middle of even list:", middle(even)?.val); // 20 (or 30 if you prefer that half)
-class LinkedList<T> {
-  head?: ListNode<T>;
-
-  // push to the tail
-  push(val: T) {
-    const node: ListNode<T> = { val };
-    if (!this.head) {
-      this.head = node;
-    } else {
-      let cur = this.head;
-      while (cur.next) cur = cur.next;
-      cur.next = node;
+  for (let i = 0; i < minLen; i++) {
+    const char = arr[0][i]; // candidate character
+    // stop as soon as any string mismatches
+    for (let j = 1; j < arr.length; j++) {
+      if (arr[j][i] !== char) {
+        return arr[0].substring(0, i);
+      }
     }
   }
 
-  // returns the middle node (or the first of two middles for even length)
-  middle(): ListNode<T> | undefined {
-    return middle(this.head);
+  // All `minLen` characters matched
+  return arr[0].substring(0, minLen);
+}
+const words = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(words)); // logs "fl"
+function longestCommonPrefixSort(arr: string[]): string {
+  if (!arr.length) return "";
+
+  const sorted = [...arr].sort();          // O(n log n)
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
+
+  let i = 0;
+  while (i < first.length && i < last.length && first[i] === last[i]) {
+    i++;
   }
 
-  toArray(): T[] {
-    return listToArray(this.head);
+  return first.substring(0, i);
+}
+function lcpDivideAndConquer(arr: string[], l = 0, r = arr.length - 1): string {
+  if (l > r) return "";
+  if (l === r) return arr[l];
+
+  const mid = Math.floor((l + r) / 2);
+  const leftPref  = lcpDivideAndConquer(arr, l, mid);
+  const rightPref = lcpDivideAndConquer(arr, mid + 1, r);
+
+  // intersect two prefixes
+  let i = 0;
+  while (i < leftPref.length && i < rightPref.length && leftPref[i] === rightPref[i]) {
+    i++;
   }
+  return leftPref.substring(0, i);
 }
 
-// Usage:
-const ll = new LinkedList<number>();
-[1, 2, 3, 4, 5].forEach(v => ll.push(v));
-console.log(ll.toArray());       // [1,2,3,4,5]
-console.log(ll.middle()?.val);   // 3
+// convenience wrapper
+function longestCommonPrefixD&C(arr: string[]): string {
+  return lcpDivideAndConquer(arr);
+}
+const cases: [string[], string][] = [
+  [["", "", ""]]          , [""],
+  [["dog"], ["dog"]]      , ["dog"],
+  [["abc","ab"],
+   ["ab"]]                , ["ab"],
+  [["abc","abcd","abce"], ["abc"]],
+  [["agri", "adopt", "alien"], ["a"]],
+  [["b", "a"], [""]], 
+];
+
+cases.forEach(([arr, expected], i) => {
+  const result = longestCommonPrefix(arr);
+  console.log(i, result === expected[0] ? "✅" : `❌ got "${result}"`);
+});
