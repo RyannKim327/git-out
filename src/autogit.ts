@@ -1,14 +1,20 @@
-// 1️⃣ Simple string interpolation (most common)
-const a = "hello";
-const b = "world";
-const c = a + " " + b;          // "hello world"
+// factorial.ts
+import * as readline from 'node:readline';
+import { stdin as input, stdout as output } from 'node:process';
 
-// 2️⃣ Template literals – works the same but often cleaner
-const c2 = `${a} ${b}`;          // "hello world"
+const rl = readline.createInterface({ input, output });
 
-// 3️⃣ Array join (useful if you have many parts)
-const parts = [a, b];
-const c3 = parts.join(" ");      // "hello world"
+function factorial(n: number): bigint {
+  if (n < 0) throw new Error('Negative numbers aren’t supported');
+  return n <= 1 ? BigInt(1) : BigInt(n) * factorial(n - 1);
+}
 
-// 4️⃣ String.prototype.concat (rarely needed)
-const c4 = a.concat(" ", b);     // "hello world"
+rl.question('Enter a non‑negative integer: ', (answer) => {
+  const num = Number(answer.trim());
+  if (!Number.isInteger(num) || num < 0) {
+    console.log('That’s not a valid non‑negative integer.');
+  } else {
+    console.log(`Factorial of ${num} is ${factorial(num).toString()}`);
+  }
+  rl.close();
+});
