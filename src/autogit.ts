@@ -1,78 +1,56 @@
-// 1️⃣  A tiny node definition
-interface ListNode<T> {
-  val: T;
-  next?: ListNode<T>;
+// ------------------------------------------------------------------
+// 1) Basic types – tweak these to match your own representation.
+// ------------------------------------------------------------------
+interface Node<T> {
+  /** Value that identifies the node – can be an id, a name, … */
+  id: string;
+  /** Children (or neighbours) – the graph may be directed or undirected. */
+  children?: Array<Node<T>>;
 }
 
-// 2️⃣  Helper: walk a list and collect values (for demo)
-const listToArray = <T>(head: ListNode<T> | undefined): T[] => {
-  const arr: T[] = [];
-  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
-  return arr;
-};
+// A very simple match predicate. Replace it with whatever checks your
+// problem needs (e.g. `node.id === targetId`).
+type MatchFn<T> = (node: Node<T>) => boolean;
 
-// 3️⃣  The trick: two pointers, fast and slow
-function middle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  if (!head) return undefined; // empty list—no middle
+// ------------------------------------------------------------------
+// 2) Depth‑limited search – iterative (uses an explicit stack).
+// ------------------------------------------------------------------
+export function depthLimitedSearch<T>(
+  start: Node<T>,          // The root (or any arbitrary start node)
+  match: MatchFn<T>,      // Predicate to decide if the node is a goal
+  limit: number            // Maximum depth that may be explored
+): Node<T> | null {
 
-  let fast = head;
-  let slow = head;
+  // Stack holds tuples  : [current node, current depth]
+  const stack: Array<[Node<T>, number]> = [[start, 0]];
 
-  // advance fast every two steps, slow every one
-  while (fast.next && fast.next.next) {
-    fast = fast.next.next; // jump 2
-    slow = slow.next as ListNode<T>; // jump 1
-  }
+  while (stack.length > 0) {
+    const [node, depth] = stack.pop()!;   // `!` is safe – we just checked length
 
-  // If fast has a next (odd length), move slow one more
-  if (fast.next) slow = slow.next as ListNode<T>;
+    // 1️⃣  Goal check
+    if (match(node)) {
+      return node;
+    }
 
-  return slow;
-}
-
-// 4️⃣  Demo: build a list so we can see it in action
-const nodes: ListNode<number>[] = [1, 2, 3, 4, 5].map(
-  (v) => ({ val: v })
-);
-for (let i = 0; i < nodes.length - 1; i++) nodes[i].next = nodes[i + 1];
-const head = nodes[0];
-
-console.log("Full list:", listToArray(head));         // 1,2,3,4,5
-console.log("Middle node:", middle(head)?.val);        // 3
-
-// Try an even‑length list
-const even: ListNode<number>[] = [10, 20, 30, 40].map(
-  (v) => ({ val: v })
-);
-for (let i = 0; i < even.length - 1; i++) even[i].next = even[i + 1];
-console.log("Middle of even list:", middle(even)?.val); // 20 (or 30 if you prefer that half)
-class LinkedList<T> {
-  head?: ListNode<T>;
-
-  // push to the tail
-  push(val: T) {
-    const node: ListNode<T> = { val };
-    if (!this.head) {
-      this.head = node;
-    } else {
-      let cur = this.head;
-      while (cur.next) cur = cur.next;
-      cur.next = node;
+    // 2️⃣  Depth test – we only enqueue children if we still have room
+    if (depth < limit && node.children) {
+      // Push children onto stack – last child examined first (DFS order)
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        stack.push([node.children[i], depth + 1]);
+      }
     }
   }
 
-  // returns the middle node (or the first of two middles for even length)
-  middle(): ListNode<T> | undefined {
-    return middle(this.head);
-  }
-
-  toArray(): T[] {
-    return listToArray(this.head);
-  }
+  // No goal found within the depth budget
+  return null;
 }
+const tree: Node<number> = {
+  id: 'root',
+  children: [
+    { id: 'a', children: [{ id: 'a1' }, { id: 'a2' }] },
+    { id: 'b', children: [{ id: 'b1' }, { id: 'b2' }] },
+  ],
+};
 
-// Usage:
-const ll = new LinkedList<number>();
-[1, 2, 3, 4, 5].forEach(v => ll.push(v));
-console.log(ll.toArray());       // [1,2,3,4,5]
-console.log(ll.middle()?.val);   // 3
+const found = depthLimitedSearch(tree, node => node.id === 'a2', /* limit */ 2);
+console.log(found?.id ?? 'not found'); // → a2
