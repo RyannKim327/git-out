@@ -1,85 +1,114 @@
 /**
- * Simple representation of a DAG.
- *   vertices – an array of node identifiers (any type, but usually string or number)
- *   edges    – a map from a vertex to a list of outgoing neighbours
+ * A binary heap backed priority queue.
+ *
+ * The heap stores elements in a 0‑based array. For a node at index i:
+ *   left child   → 2*i + 1
+ *   right child  → 2*i + 2
+ *   parent       → Math.floor((i - 1) / 2)
  */
-interface Graph<V> {
-  vertices: V[];
-  edges: Map<V, V[]>;
-}
+export class BinaryPriorityQueue<T> {
+  private data: T[] = [];
+  private readonly compare: (a: T, b: T) => number; // negative if a < b
 
-/**
- * Kahn’s topological sort.
- * @param graph – a DAG
- * @returns a list of vertices sorted topologically
- * @throws Error if the graph contains a cycle
- */
-function topologicalSort<V>(graph: Graph<V>): V[] {
-  // Compute indegree of each vertex
-  const indegree = new Map<V, number>();
-  graph.vertices.forEach(v => indegree.set(v, 0));
-
-  graph.edges.forEach((neighbours, from) => {
-    neighbours.forEach(to => {
-      indegree.set(to, (indegree.get(to) || 0) + 1);
-    });
-  });
-
-  // Queue of vertices with indegree 0
-  const queue: V[] = [];
-  indegree.forEach((deg, v) => {
-    if (deg === 0) queue.push(v);
-  });
-
-  const order: V[] = [];
-  while (queue.length) {
-    const v = queue.shift()!;
-    order.push(v);
-
-    const neighbours = graph.edges.get(v) ?? [];
-    neighbours.forEach(to => {
-      indegree.set(to, (indegree.get(to) || 0) - 1);
-      if (indegree.get(to) === 0) queue.push(to);
-    });
+  constructor(compare: (a: T, b: T) => number) {
+    this.compare = compare;
   }
 
-  // If we processed fewer vertices than exist, a cycle is present
-  if (order.length !== graph.vertices.length) {
-    throw new Error('Graph contains a cycle – topological sort not possible');
+  /** Number of elements in the queue */
+  size(): number {
+    return this.data.length;
   }
 
-  return order;
-}
-A → C
-B → C
-C → D
-const g: Graph<string> = {
-  vertices: ['A', 'B', 'C', 'D'],
-  edges: new Map([
-    ['A', ['C']],
-    ['B', ['C']],
-    ['C', ['D']],
-    // D has no outgoing edges
-  ]),
-};
-
-console.log(topologicalSort(g)); // → ['A', 'B', 'C', 'D'] (or ['B', 'A', 'C', 'D'])
-function topologicalSortDFS<V>(graph: Graph<V>): V[] {
-  const visited = new Set<V>();
-  const temp = new Set<V>();          // to detect cycles
-  const stack: V[] = [];
-
-  function visit(v: V) {
-    if (temp.has(v)) throw new Error('Cycle detected');
-    if (visited.has(v)) return;
-
-    temp.add(v);
-    (graph.edges.get(v) ?? []).forEach(visit);
-    temp.delete(v);
-    visited.add(v);
-    stack.push(v);                    // push after children – this yields reverse order
+  /** Peek the element with the highest priority (root of the heap) */
+  peek(): T | undefined {
+    return this.data[0];
   }
 
-  graph.vertices.forEach(visit);
-  return stack.reverse();             // reverse to get the correct order
+  /** Insert a new element */
+  push(value: T): void {
+    this.data.push(value);
+    this.bubbleUp(this.data.length - 1);
+  }
+
+  /**
+   * Remove and return the element with the highest priority.
+   * Returns undefined if the queue is empty.
+   */
+  pop(): T | undefined {
+    if (!this.data.length) return undefined;
+
+    const root = this.data[0];
+    const last = this.data.pop()!; // safe because we checked length
+
+    if (this.data.length) {
+      this.data[0] = last;
+      this.sinkDown(0);
+    }
+
+    return root;
+  }
+
+  /** Remove all elements */
+  clear(): void {
+    this.data.length = 0;
+  }
+
+  /* --- Internals --- */
+
+  private bubbleUp(index: number): void {
+    const elem = this.data[index];
+    while (index > 0) {
+      const parentIdx = (index - 1) >> 1;
+      const parent = this.data[parentIdx];
+      if (this.compare(elem, parent) >= 0) break;
+      this.data[index] = parent;
+      index = parentIdx;
+    }
+    this.data[index] = elem;
+  }
+
+  private sinkDown(index: number): void {
+    const length = this.data.length;
+    const elem = this.data[index];
+
+    while (true) {
+      const leftIdx = (index << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let swapIdx = -1;
+
+      if (leftIdx < length) {
+        const left = this.data[leftIdx];
+        if (this.compare(left, elem) < 0) swapIdx = leftIdx;
+      }
+      if (rightIdx < length) {
+        const right = this.data[rightIdx];
+        const compareRight = this.compare(right, elem);
+        if (
+          (swapIdx === -1 && compareRight < 0) ||
+          (swapIdx !== -1 && compareRight < this.compare(this.data[swapIdx], elem))
+        ) {
+          swapIdx = rightIdx;
+        }
+      }
+
+      if (swapIdx === -1) break;
+      this.data[index] = this.data[swapIdx];
+      index = swapIdx;
+    }
+    this.data[index] = elem;
+  }
 }
+// Example: priority queue of numbers (min‑heap)
+const pq = new BinaryPriorityQueue<number>((a, b) => a - b);
+
+pq.push(5);
+pq.push(1);
+pq.push(3);
+
+console.log(pq.peek()); // 1
+console.log(pq.pop());  // 1
+console.log(pq.pop());  // 3
+console.log(pq.pop());  // 5
+interface Task { id: number; priority: number; }
+
+const taskQueue = new BinaryPriorityQueue<Task>((a, b) => a.priority - b.priority);
