@@ -1,29 +1,30 @@
 /**
- * Returns the intersection of two arrays.
- * @param a  First array.
- * @param b  Second array.
- * @returns  Array containing elements that are present in **both** a and b.
+ * Reverse the order of words in a string.
+ *
+ * Words are anything separated by whitespace (space, tab, etc.).
+ * Leading/trailing whitespace is trimmed for a clean result, but
+ * consecutive internal spaces are collapsed to a single space – you can keep
+ * them if you prefer by tweaking the regex.
+ *
+ * @param s  The input string.
+ * @returns   The string with the words reversed.
  */
-function intersection<T>(a: T[], b: T[]): T[] {
-  // Turn the first array into a Set for O(1) look‑ups.
-  const aSet = new Set(a);
+function reverseWords(s: string): string {
+  // 1. Trim surrounding whitespace, then split on any sequence of whitespace.
+  const words = s.trim().split(/\s+/);
 
-  // Keep only the items from `b` that are also in `aSet`.
-  const result: T[] = [];
-  for (const item of b) {
-    if (aSet.has(item)) {
-      result.push(item);
-      // Optional: remove the item so we don’t collect duplicates if
-      // `a` or `b` contains repeated entries
-      aSet.delete(item);
-    }
-  }
-  return result;
+  // 2. Reverse the array in place.
+  words.reverse();
+
+  // 3. Join back with a single space (change if you need a different separator).
+  return words.join(' ');
 }
-console.log(intersection([1, 2, 3, 4], [3, 4, 5, 6])); // → [3, 4]
 
-console.log(intersection(['foo', 'bar'], ['bar', 'baz', 'foo'])); // → ['bar', 'foo']
+// Demo
+const original = "  the quick brown   fox jumps over the lazy dog  ";
+const reversed = reverseWords(original);
 
-// With duplicates
-console.log(intersection([1, 2, 2], [2, 2, 3])); // → [2]
-const intersection = (a: any[], b: any[]) => a.filter(x => b.includes(x));
+console.log("Original:", original);
+console.log("Reversed:", reversed);
+// Output: "dog lazy the over jumps fox brown quick the"
+const words = s.split(/\s+/);
