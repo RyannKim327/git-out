@@ -1,110 +1,49 @@
-class ListNode<T> {
-  /** The value stored in this node */
-  value: T;
+/**
+ * Binary search on a sorted array.
+ *
+ * @param arr   Sorted array (ascending).
+ * @param key   Value to search for.
+ * @returns     Index of `key` in `arr`, or -1 if not found.
+ */
+export function binarySearch<T extends number | string>(arr: T[], key: T): number {
+    let low  = 0;
+    let high = arr.length - 1;
 
-  /** Reference to the next node, or null if this is the tail */
-  next: ListNode<T> | null = null;
+    while (low <= high) {
+        // Use floor division so we don’t overshoot on odd lengths.
+        const mid = Math.floor((low + high) / 2);
+        const midVal = arr[mid];
 
-  constructor(value: T) {
-    this.value = value;
-  }
+        if (midVal === key) {
+            return mid;                // Found it!
+        }
+        else if (midVal < key) {
+            low = mid + 1;              // Search right half
+        } else {
+            high = mid - 1;             // Search left half
+        }
+    }
+    return -1; // Not found
 }
-class LinkedList<T> {
-  /** Head (first node) – `null` if the list is empty */
-  private head: ListNode<T> | null = null;
+type Comparator<T> = (a: T, b: T) => number; // negative if a < b, zero if equal, positive otherwise
 
-  /** Tail (last node) – kept for efficient push; `null` if the list is empty */
-  private tail: ListNode<T> | null = null;
+export function binarySearchWith<T>(arr: T[], key: T, cmp: Comparator<T>): number {
+    let low = 0, high = arr.length - 1;
 
-  /** Current length – handy for O(1) size queries */
-  private _size = 0;
+    while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        const comp = cmp(arr[mid], key);
 
-  /** Number of elements in the list */
-  get size() { return this._size; }
-  get isEmpty() { return this._size === 0; }
+        if (comp === 0) return mid;
+        if (comp < 0)  low = mid + 1;
+        else           high = mid - 1;
+    }
+    return -1;
 }
-  /** Append an element to the end of the list */
-  push(value: T): void {
-    const node = new ListNode(value);
-    if (this.tail) {
-      this.tail.next = node;
-    } else {          // empty list – new node is both head and tail
-      this.head = node;
-    }
-    this.tail = node;
-    this._size++;
-  }
+const numbers = [3, 7, 12, 20, 31, 45, 58];
+console.log(binarySearch(numbers, 20)); // → 3
 
-  /** Prepend an element to the front of the list */
-  unshift(value: T): void {
-    const node = new ListNode(value);
-    node.next = this.head;
-    this.head = node;
-    if (!this.tail) this.tail = node;  // first element
-    this._size++;
-  }
-
-  /** Remove and return the first element, or `undefined` if the list is empty */
-  shift(): T | undefined {
-    if (!this.head) return undefined;
-    const removed = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null;  // list became empty
-    this._size--;
-    return removed;
-  }
-
-  /** Remove and return the last element, or `undefined` if the list is empty */
-  pop(): T | undefined {
-    if (!this.head) return undefined;
-    if (this.head === this.tail) {     // single element
-      const val = this.head.value;
-      this.head = this.tail = null;
-      this._size = 0;
-      return val;
-    }
-
-    // Walk to the second‑to‑last node
-    let current = this.head;
-    while (current.next && current.next !== this.tail) {
-      current = current.next;
-    }
-
-    const val = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-    this._size--;
-    return val;
-  }
-  /** Find the first node whose value satisfies the predicate; returns `undefined` if none */
-  find(p: (value: T) => boolean): T | undefined {
-    let curr = this.head;
-    while (curr) {
-      if (p(curr.value)) return curr.value;
-      curr = curr.next;
-    }
-    return undefined;
-  }
-
-  /** Iterate over values (supports `for…of`) */
-  *[Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    while (current) {
-      yield current.value;
-      current = current.next;
-    }
-  }
-const list = new LinkedList<number>();
-for (const n of list) console.log(n);
-const list = new LinkedList<string>();
-
-list.push('first');
-list.push('second');
-list.unshift('zeroth');
-
-console.log([...list]);          // ["zeroth", "first", "second"]
-
-console.log(list.shift());       // "zeroth"
-console.log(list.pop());         // "second"
-
-console.log(list.find(n => n.startsWith('f'))); // "first"
+// With a custom comparator for objects:
+const people = [{id: 1, name: 'Alice'}, {id: 3, name: 'Bob'}, {id: 7, name: 'Carol'}];
+const idCmp = (p: typeof people[0], key: number) => p.id - key;
+console.log(binarySearchWith(people, 3, idCmp)); // → 1
