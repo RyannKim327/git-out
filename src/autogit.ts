@@ -1,41 +1,30 @@
 /**
- * KMP string matcher.
- * @param text    Text in which to search.
- * @param pattern Pattern to find.
- * @returns Index of first occurrence of pattern in text, or -1 if not found.
+ * Reverse the order of words in a string.
+ *
+ * Words are anything separated by whitespace (space, tab, etc.).
+ * Leading/trailing whitespace is trimmed for a clean result, but
+ * consecutive internal spaces are collapsed to a single space – you can keep
+ * them if you prefer by tweaking the regex.
+ *
+ * @param s  The input string.
+ * @returns   The string with the words reversed.
  */
-export function kmpSearch(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
+function reverseWords(s: string): string {
+  // 1. Trim surrounding whitespace, then split on any sequence of whitespace.
+  const words = s.trim().split(/\s+/);
 
-  if (m === 0) return 0;           // Empty pattern matches at start.
+  // 2. Reverse the array in place.
+  words.reverse();
 
-  // --------- Step 1: build failure function ----------
-  const fail: number[] = new Array(m).fill(0);
-  let k = 0;                         // length of current match
-
-  for (let i = 1; i < m; i++) {
-    while (k > 0 && pattern[k] !== pattern[i]) {
-      k = fail[k - 1];
-    }
-    if (pattern[k] === pattern[i]) k++;
-    fail[i] = k;
-  }
-
-  // --------- Step 2: scan the text ---------------
-  k = 0;                               // reset pattern index
-  for (let i = 0; i < n; i++) {
-    while (k > 0 && text[i] !== pattern[k]) {
-      k = fail[k - 1];
-    }
-    if (text[i] === pattern[k]) k++;
-
-    if (k === m) {                    // match found
-      return i - m + 1;
-    }
-  }
-
-  return -1;                          // no match
+  // 3. Join back with a single space (change if you need a different separator).
+  return words.join(' ');
 }
-const idx = kmpSearch('abxabcabcaby', 'abcaby');
-console.log(idx);   // → 6
+
+// Demo
+const original = "  the quick brown   fox jumps over the lazy dog  ";
+const reversed = reverseWords(original);
+
+console.log("Original:", original);
+console.log("Reversed:", reversed);
+// Output: "dog lazy the over jumps fox brown quick the"
+const words = s.split(/\s+/);
