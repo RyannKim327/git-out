@@ -1,76 +1,29 @@
 /**
- * Returns the longest common prefix of all strings in `arr`.
- *
- * @param arr – an array of strings (can be empty)
- * @returns the prefix that every string shares, or an empty string
+ * Returns the intersection of two arrays.
+ * @param a  First array.
+ * @param b  Second array.
+ * @returns  Array containing elements that are present in **both** a and b.
  */
-function longestCommonPrefix(arr: string[]): string {
-  if (!arr.length) return "";
+function intersection<T>(a: T[], b: T[]): T[] {
+  // Turn the first array into a Set for O(1) look‑ups.
+  const aSet = new Set(a);
 
-  // Pin the “shortest”‑length string as a stopping rule.
-  // No prefix can be longer than this string.
-  const minLen = Math.min(...arr.map(s => s.length));
-
-  for (let i = 0; i < minLen; i++) {
-    const char = arr[0][i]; // candidate character
-    // stop as soon as any string mismatches
-    for (let j = 1; j < arr.length; j++) {
-      if (arr[j][i] !== char) {
-        return arr[0].substring(0, i);
-      }
+  // Keep only the items from `b` that are also in `aSet`.
+  const result: T[] = [];
+  for (const item of b) {
+    if (aSet.has(item)) {
+      result.push(item);
+      // Optional: remove the item so we don’t collect duplicates if
+      // `a` or `b` contains repeated entries
+      aSet.delete(item);
     }
   }
-
-  // All `minLen` characters matched
-  return arr[0].substring(0, minLen);
+  return result;
 }
-const words = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(words)); // logs "fl"
-function longestCommonPrefixSort(arr: string[]): string {
-  if (!arr.length) return "";
+console.log(intersection([1, 2, 3, 4], [3, 4, 5, 6])); // → [3, 4]
 
-  const sorted = [...arr].sort();          // O(n log n)
-  const first = sorted[0];
-  const last  = sorted[sorted.length - 1];
+console.log(intersection(['foo', 'bar'], ['bar', 'baz', 'foo'])); // → ['bar', 'foo']
 
-  let i = 0;
-  while (i < first.length && i < last.length && first[i] === last[i]) {
-    i++;
-  }
-
-  return first.substring(0, i);
-}
-function lcpDivideAndConquer(arr: string[], l = 0, r = arr.length - 1): string {
-  if (l > r) return "";
-  if (l === r) return arr[l];
-
-  const mid = Math.floor((l + r) / 2);
-  const leftPref  = lcpDivideAndConquer(arr, l, mid);
-  const rightPref = lcpDivideAndConquer(arr, mid + 1, r);
-
-  // intersect two prefixes
-  let i = 0;
-  while (i < leftPref.length && i < rightPref.length && leftPref[i] === rightPref[i]) {
-    i++;
-  }
-  return leftPref.substring(0, i);
-}
-
-// convenience wrapper
-function longestCommonPrefixD&C(arr: string[]): string {
-  return lcpDivideAndConquer(arr);
-}
-const cases: [string[], string][] = [
-  [["", "", ""]]          , [""],
-  [["dog"], ["dog"]]      , ["dog"],
-  [["abc","ab"],
-   ["ab"]]                , ["ab"],
-  [["abc","abcd","abce"], ["abc"]],
-  [["agri", "adopt", "alien"], ["a"]],
-  [["b", "a"], [""]], 
-];
-
-cases.forEach(([arr, expected], i) => {
-  const result = longestCommonPrefix(arr);
-  console.log(i, result === expected[0] ? "✅" : `❌ got "${result}"`);
-});
+// With duplicates
+console.log(intersection([1, 2, 2], [2, 2, 3])); // → [2]
+const intersection = (a: any[], b: any[]) => a.filter(x => b.includes(x));
