@@ -1,61 +1,55 @@
 /**
- * Sorts an array of numbers in ascending order using insertion sort.
- * The algorithm works in place – the input array is mutated.
+ * Selection sort – sorts an array in‑place in ascending order.
  *
- * @param arr - The numeric array to be sorted.
- * @returns The same array, now sorted.
+ * @param array   The array to sort.  It will be mutated.
+ * @param compare Callback used to decide order. If omitted, a natural
+ *                ascending numeric/string comparison is used.
+ * @returns The same array instance, now sorted.
  */
-export function insertionSort(arr: number[]): number[] {
-  // Start from the second element; the first element is “sorted” by definition
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];            // The value we’re going to insert
-    let j = i - 1;
-
-    // Shift elements that are greater than the key to the right
-    while (j >= 0 && arr[j] > key) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    // Insert the key into its correct position
-    arr[j + 1] = key;
-  }
-
-  return arr;
-}
-export function insertionSort<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+export function selectionSort<T>(
+  array: T[],
+  compare?: (a: T, b: T) => number
 ): T[] {
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+  const len = array.length;
 
-    // While j is in range and key is less than arr[j], shift arr[j] right
-    while (j >= 0 && compareFn(key, arr[j]) < 0) {
-      arr[j + 1] = arr[j];
-      j--;
+  // default comparer: numeric or string ascending
+  const cmp = compare ?? ((a: any, b: any) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
+
+  for (let i = 0; i < len - 1; i++) {
+    // assume min at current position
+    let minIdx = i;
+
+    // find the smallest element in the unsorted portion
+    for (let j = i + 1; j < len; j++) {
+      if (cmp(array[j], array[minIdx]) < 0) {
+        minIdx = j;
+      }
     }
 
-    arr[j + 1] = key;
+    // swap if we found a smaller element
+    if (minIdx !== i) {
+      const temp = array[i];
+      array[i] = array[minIdx];
+      array[minIdx] = temp;
+    }
   }
 
-  return arr;
+  return array;
 }
-// Numbers
-const nums = [64, 25, 12, 22, 11];
-insertionSort(nums);          // => [11, 12, 22, 25, 64]
+// simple numeric sorting
+let nums = [64, 25, 12, 22, 11];
+selectionSort(nums);
+console.log(nums); // [11, 12, 22, 25, 64]
 
-// Strings
-const words = ['banana', 'apple', 'cherry'];
-insertionSort(words);          // => ['apple', 'banana', 'cherry']
+// sorting strings
+let words = ["banana", "avocado", "cherry"];
+selectionSort(words);
+console.log(words); // ["avocado", "banana", "cherry"]
 
-// Custom objects
-const people = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 24 },
-  { name: 'Catherine', age: 27 }
-];
-
-insertionSort(people, (a, b) => a.age - b.age);
-// => sorted by age
+// custom comparator – descending numbers
+selectionSort(nums, (a, b) => b - a);
+console.log(nums); // [64, 25, 22, 12, 11]
