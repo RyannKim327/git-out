@@ -1,30 +1,29 @@
-// src/scheduler.ts
-import { schedule, Job } from 'node-cron';
-import { randomInt } from 'crypto';
+/**
+ * Returns the intersection of two arrays.
+ * @param a  First array.
+ * @param b  Second array.
+ * @returns  Array containing elements that are present in **both** a and b.
+ */
+function intersection<T>(a: T[], b: T[]): T[] {
+  // Turn the first array into a Set for O(1) look‑ups.
+  const aSet = new Set(a);
 
-// Helper: format the current date/time nicely
-const fmtDate = (date: Date): string => {
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
-         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-};
+  // Keep only the items from `b` that are also in `aSet`.
+  const result: T[] = [];
+  for (const item of b) {
+    if (aSet.has(item)) {
+      result.push(item);
+      // Optional: remove the item so we don’t collect duplicates if
+      // `a` or `b` contains repeated entries
+      aSet.delete(item);
+    }
+  }
+  return result;
+}
+console.log(intersection([1, 2, 3, 4], [3, 4, 5, 6])); // → [3, 4]
 
-// Cron expression – every 5 minutes, on the minute.
-// (Syntax: `m h dom mon dow`)
-// Example: 0 12 * * * → every day at 12:00.
-const cronExpr = '*/5 * * * *';
+console.log(intersection(['foo', 'bar'], ['bar', 'baz', 'foo'])); // → ['bar', 'foo']
 
-const job: Job = schedule(cronExpr, () => {
-  const now = new Date();
-  const rand = randomInt(1_000_000); // 0 <= rand < 1,000,000
-  console.log(`[${fmtDate(now)}] Random number: ${rand}`);
-}, {
-  scheduled: true, // start scheduling immediately
-  timezone: 'UTC'  // adjust if you need a different zone
-});
-
-// Optional: make the process stay alive but not block exit
-job.task?.unref?.();
-
-// If you ran the script normally (`node src/scheduler.js` after TS‑compile),
-// the job will keep running. Exit manually when you're done.
+// With duplicates
+console.log(intersection([1, 2, 2], [2, 2, 3])); // → [2]
+const intersection = (a: any[], b: any[]) => a.filter(x => b.includes(x));
