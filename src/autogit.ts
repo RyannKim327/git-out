@@ -1,93 +1,45 @@
-// 1️⃣  Generic node type
-class TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
+/**
+ * Return the largest prime factor of |n|.
+ *
+ * @param n Any integer. Negative values are treated as |n|.
+ * @returns   The largest prime factor of n, or `0` if n has no prime factors
+ * (i.e. n is 0, 1, or –1).
+ */
+function largestPrimeFactor(n: number): number {
+  if (n === 0 || n === 1 || n === -1) return 0;
 
-  constructor(value: T) {
-    this.value = value;
+  let num = Math.abs(n);          // work with the absolute value
+  let lastPrime = 0;              // keep the biggest factor we’ve seen
+
+  // Treat 2 separately – it’s the only even prime
+  while (num % 2 === 0) {
+    lastPrime = 2;
+    num >>= 1;                    // divide by 2
   }
+
+  // Now n is odd. Try only odd divisors.
+  // We only need to go up to sqrt(num) because if num still > 1 after that,
+  // num itself is prime and the largest factor.
+  for (let d = 3; d * d <= num; d += 2) {
+    while (num % d === 0) {
+      lastPrime = d;
+      num /= d;
+    }
+  }
+
+  // If after the loop num > 1, it means num itself is prime
+  // and larger than any divisor we found earlier.
+  if (num > 1) lastPrime = num;
+
+  return lastPrime;
 }
 
-// 2️⃣  BinaryTree class
-class BinaryTree<T> {
-  root: TreeNode<T> | null = null;
-
-  // Insert a value – keeps the tree *ordered* (BST rule)
-  insert(value: T, comparator: (a: T, b: T) => number) {
-    const newNode = new TreeNode(value);
-
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
-
-    let current: TreeNode<T> | null = this.root;
-    while (current) {
-      const comp = comparator(value, current.value);
-      if (comp < 0) {
-        if (!current.left) {
-          current.left = newNode;
-          return;
-        }
-        current = current.left;
-      } else if (comp > 0) {
-        if (!current.right) {
-          current.right = newNode;
-          return;
-        }
-        current = current.right;
-      } else {
-        // Duplicate – decide what to do; here we just replace
-        current.value = value;
-        return;
-      }
-    }
-  }
-
-  // Find a node with a particular value
-  find(value: T, comparator: (a: T, b: T) => number): TreeNode<T> | null {
-    let current = this.root;
-    while (current) {
-      const comp = comparator(value, current.value);
-      if (comp === 0) return current;
-      current = comp < 0 ? current.left : current.right;
-    }
-    return null;
-  }
-
-  // In‑order traversal (left, root, right)
-  inOrder(callback: (node: TreeNode<T>) => void) {
-    const visit = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      visit(node.left);
-      callback(node);
-      visit(node.right);
-    };
-    visit(this.root);
-  }
-
-  // Pre‑ and post‑order are left to you if needed
+/* ----- quick sanity checks ----- */
+console.log(largestPrimeFactor(13195));   // 29  (13195 = 5 × 7 × 13 × 29)
+console.log(largestPrimeFactor(600851475143)); // 6857 (the known answer to Project Euler #3)
+Console.log(largestPrimeFactor(13));      // 13
+Console.log(largestPrimeFactor(4));       // 2
+Console.log(largestPrimeFactor(1));       // 0
+function largestPrimeFactorBigInt(n: bigint): bigint {
+  // identical logic, but using bigint operations
 }
-const cmpNum = (a: number, b: number) => a - b;
-const cmpStr = (a: string, b: string) => a.localeCompare(b);
-const tree = new BinaryTree<number>();
-
-tree.insert(42, cmpNum);
-tree.insert(23, cmpNum);
-tree.insert(87, cmpNum);
-tree.insert(13, cmpNum);
-tree.insert(31, cmpNum);
-
-console.log("In‑order traversal:");
-tree.inOrder(node => console.log(node.value));
-
-const found = tree.find(31, cmpNum);
-console.log(found ? `Found ${found.value}` : "Not found");
-In-order traversal:
-13
-23
-31
-42
-87
-Found 31
