@@ -1,21 +1,26 @@
 /**
- * Factorial using recursion.
- * Works for ordinary numbers up to 20 (safe integer range).
- * If you need bigger results, use BigInt and the overload below.
+ * Pick a random floating‑point number ≥ min and < max.
+ *
+ * @param min – lower bound (inclusive)
+ * @param max – upper bound (exclusive)
+ * @returns random number in [min, max)
  */
-function factorial(n: number): number {
-  if (n < 0) throw new Error("Negative values are not allowed");
-  if (n <= 1) return 1;          // base case
-  return n * factorial(n - 1);   // recursive step
+export function randFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min;
 }
-
 /**
- * A BigInt version for arbitrary‑size factorials.
+ * Pick a random integer ≥ min and ≤ max.
+ *
+ * @param min – lower bound (inclusive)
+ * @param max – upper bound (inclusive)
+ * @returns random integer in [min, max]
  */
-function factorialBigInt(n: bigint): bigint {
-  if (n < 0n) throw new Error("Negative values are not allowed");
-  if (n <= 1n) return 1n;
-  return n * factorialBigInt(n - 1n);
+export function randInt(min: number, max: number): number {
+  // floor ensures min can be selected; max included by +1 offset
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-console.log(factorial(5));          // 120
-console.log(factorialBigInt(25n));  // 15511210043330985984000000n
+// 0 <= x < 1
+console.log(randFloat(0, 1));
+
+// 5 <= y <= 10
+console.log(randInt(5, 10));
