@@ -1,45 +1,31 @@
-class Stack<T> {
-  private items: T[] = [];      // underlying array
+/**
+ * Counts how many code units a string contains.
+ * @param s The string to measure.
+ * @returns The length as a number.
+ */
+function getStringLength(s: string): number {
+  let count = 0;
 
-  /** Push a value onto the top of the stack. */
-  push(value: T): void {
-    this.items.push(value);
+  // Keep stepping forward until we encounter an undefined slot.
+  while (s[count] !== undefined) {
+    count++;
   }
 
-  /** Remove and return the top value.  Returns `undefined` if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  /** Peek at the top value without removing it. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** Number of elements in the stack. */
-  get size(): number {
-    return this.items.length;
-  }
-
-  /** True if the stack contains no items. */
-  get isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** Optional: clear all items. */
-  clear(): void {
-    this.items = [];
-  }
+  return count;
 }
-const stack = new Stack<number>();
+function getStringLengthUsingForOf(s: string): number {
+  let count = 0;
+  for (const _ of s) {
+    count++;        // `_` is just a throwaway variable
+  }
+  return count;    // this is the number of Unicode code points we iterated over
+}
+function getStringLengthRecursive(s: string, idx = 0): number {
+  return s[idx] === undefined
+    ? idx
+    : getStringLengthRecursive(s, idx + 1);
+}
+const demo = "Hello, 👋🌍";
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size);   // 2
-
-stack.clear();
-console.log(stack.isEmpty); // true
+console.log(getStringLength(demo));                    // 13 (code units)
+console.log(getStringLengthUsingForOf(demo));          // 10 (code points)
