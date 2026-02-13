@@ -1,45 +1,113 @@
-// 1️⃣  Node definition
-interface TreeNode<T = unknown> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+type Hashable = string | number;
+
+// A node in a linked list that stores a key–value pair.
+class ListNode<K extends Hashable, V> {
+  constructor(
+    public key: K,
+    public value: V,
+    public next: ListNode<K, V> | null = null
+  ) {}
 }
 
-// 2️⃣  Recursive leaf counter
-function countLeaves<T>(node?: TreeNode<T>): number {
-  // Base case: empty sub‑tree
-  if (!node) return 0;
+// A very small, non‑generic implementation.
+// Could be turned into a generic class if you want re‑usability.
+class HashTable<K extends Hashable, V> {
+  // Number of buckets.  53 is a prime that keeps things a bit uniform.
+  private readonly bucketCount = 53;
+  private readonly buckets: Array<ListNode<K, V> | null>;
 
-  // A leaf has no children
-  const isLeaf = !node.left && !node.right;
-  if (isLeaf) return 1;
-
-  // Recurse on the two sub‑trees
-  return countLeaves(node.left) + countLeaves(node.right);
-}
-
-// 3️⃣  Example usage
-const tree: TreeNode<number> = {
-  value: 1,
-  left: { value: 2, right: { value: 4 } },
-  right: { value: 3, left: { value: 5 } }
-};
-
-console.log(countLeaves(tree)); // → 3
-function countLeavesIterative<T>(root: TreeNode<T>): number {
-  if (!root) return 0;
-
-  let stack: TreeNode<T>[] = [root];
-  let leafCount = 0;
-
-  while (stack.length) {
-    const node = stack.pop()!; // guaranteed defined
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
-    }
+  constructor() {
+    // fill the array with nulls
+    this.buckets = Array(this.bucketCount).fill(null);
   }
-  return leafCount;
+
+  // Simple hash: string => simple accumulating hash; number => straight
+  private hash(key: K): number {
+    let h: number;
+    if (typeof key === "number") {
+      h = key;
+    } else {
+      h = 0;
+      for (let i = 0; i < key.length; i++) {
+        // 31 is a classic multiplier in hash functions
+        h = (h * 31 + key.charCodeAt(i)) | 0; // |0 keeps it 32‑bit
+      }
+    }
+    // Ensure positive index
+    return Math.abs(h) % this.bucketCount;
+  }
+
+  set(key: K, value: V): void {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+
+    // If there’s already a node, see if the key matches
+    while (node) {
+      if (node.key === key) {
+        node.value = value; // update
+        return;
+      }
+      node = node.next;
+    }
+
+    // No match – prepend a new node (O(1) for inserts)
+    const newNode = new ListNode(key, value, this.buckets[idx]);
+    this.buckets[idx] = newNode;
+  }
+
+  get(key: K): V | undefined {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+
+    while (node) {
+      if (node.key === key) return node.value;
+      node = node.next;
+    }
+    return undefined;
+  }
+
+  has(key: K): boolean {
+    return this.get(key) !== undefined;
+  }
+
+  delete(key: K): boolean {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+    let prev: ListNode<K, V> | null = null;
+
+    while (node) {
+      if (node.key === key) {
+        if (prev) prev.next = node.next;
+        else this.buckets[idx] = node.next;
+        return true;
+      }
+      prev = node;
+      node = node.next;
+    }
+    return false;
+  }
+
+  // For debugging / tests: flatten the table into a plain object
+  toObject(): Record<string, V> {
+    const out: Record<string, V> = {};
+    for (const bucket of this.buckets) {
+      let node = bucket;
+      while (node) {
+        out[String(node.key)] = node.value;
+        node = node.next;
+      }
+    }
+    return out;
+  }
 }
+const table = new HashTable<string, number>();
+table.set("alpha", 1);
+table.set("beta", 2);
+table.set("gamma", 3);
+table.set("delta", 4);
+
+console.log(table.get("beta"));   // 2
+console.log(table.has("epsilon")); // false
+
+table.delete("gamma");
+console.log(table.toObject());    // { alpha: 1, beta: 2, delta: 4 }
