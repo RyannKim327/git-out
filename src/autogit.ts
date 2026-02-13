@@ -1,49 +1,61 @@
 /**
- * Binary search on a sorted array.
+ * Sorts an array of numbers in ascending order using insertion sort.
+ * The algorithm works in place – the input array is mutated.
  *
- * @param arr   Sorted array (ascending).
- * @param key   Value to search for.
- * @returns     Index of `key` in `arr`, or -1 if not found.
+ * @param arr - The numeric array to be sorted.
+ * @returns The same array, now sorted.
  */
-export function binarySearch<T extends number | string>(arr: T[], key: T): number {
-    let low  = 0;
-    let high = arr.length - 1;
+export function insertionSort(arr: number[]): number[] {
+  // Start from the second element; the first element is “sorted” by definition
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];            // The value we’re going to insert
+    let j = i - 1;
 
-    while (low <= high) {
-        // Use floor division so we don’t overshoot on odd lengths.
-        const mid = Math.floor((low + high) / 2);
-        const midVal = arr[mid];
-
-        if (midVal === key) {
-            return mid;                // Found it!
-        }
-        else if (midVal < key) {
-            low = mid + 1;              // Search right half
-        } else {
-            high = mid - 1;             // Search left half
-        }
+    // Shift elements that are greater than the key to the right
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j];
+      j--;
     }
-    return -1; // Not found
+
+    // Insert the key into its correct position
+    arr[j + 1] = key;
+  }
+
+  return arr;
 }
-type Comparator<T> = (a: T, b: T) => number; // negative if a < b, zero if equal, positive otherwise
+export function insertionSort<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-export function binarySearchWith<T>(arr: T[], key: T, cmp: Comparator<T>): number {
-    let low = 0, high = arr.length - 1;
-
-    while (low <= high) {
-        const mid = Math.floor((low + high) / 2);
-        const comp = cmp(arr[mid], key);
-
-        if (comp === 0) return mid;
-        if (comp < 0)  low = mid + 1;
-        else           high = mid - 1;
+    // While j is in range and key is less than arr[j], shift arr[j] right
+    while (j >= 0 && compareFn(key, arr[j]) < 0) {
+      arr[j + 1] = arr[j];
+      j--;
     }
-    return -1;
-}
-const numbers = [3, 7, 12, 20, 31, 45, 58];
-console.log(binarySearch(numbers, 20)); // → 3
 
-// With a custom comparator for objects:
-const people = [{id: 1, name: 'Alice'}, {id: 3, name: 'Bob'}, {id: 7, name: 'Carol'}];
-const idCmp = (p: typeof people[0], key: number) => p.id - key;
-console.log(binarySearchWith(people, 3, idCmp)); // → 1
+    arr[j + 1] = key;
+  }
+
+  return arr;
+}
+// Numbers
+const nums = [64, 25, 12, 22, 11];
+insertionSort(nums);          // => [11, 12, 22, 25, 64]
+
+// Strings
+const words = ['banana', 'apple', 'cherry'];
+insertionSort(words);          // => ['apple', 'banana', 'cherry']
+
+// Custom objects
+const people = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob', age: 24 },
+  { name: 'Catherine', age: 27 }
+];
+
+insertionSort(people, (a, b) => a.age - b.age);
+// => sorted by age
