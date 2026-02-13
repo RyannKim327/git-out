@@ -1,119 +1,139 @@
-// An adjacency map: node ID → list of neighbouring node IDs
-type Graph = Record<string, string[]>;
+// 1️⃣  Types ---------------------------------------------------------------
 
-// Keeps track of visited nodes and the node from which we reached them
-interface VisitedMap {
-  [node: string]: string | null;      // null = source node itself
-}
-enqueue start into frontierStart
-enqueue goal  into frontierGoal
-mark start as visitedFromStart (predecessor = null)
-mark goal  as visitedFromGoal (predecessor = null)
-
-while both queues not empty:
-    # Expand one layer from the start side
-    if expand(frontierStart, visitedFromStart, visitedFromGoal): return result
-
-    # Expand one layer from the goal side
-    if expand(frontierGoal, visitedFromGoal, visitedFromStart):   return result
-
-return no path
 /**
- * Bidirectional BFS.
- *
- * @param graph  adjacency map
- * @param start  ID of start node
- * @param goal   ID of goal node
- * @returns a list of node IDs from start to goal, or null if no path
+ * A simple graph node.  The generic parameter `T` lets you store any
+ * payload with the node (e.g., a string label, a number, an object, …).
  */
-function bidirectionalBFS(graph: Graph, start: string, goal: string): string[] | null {
-  if (start === goal) return [start];
+export interface Node<T> {
+    id: string;          // unique key for the node
+    value: T;            // whatever you want to keep with it
+    neighbors: Node<T>[]; // adjacency list
+}
 
-  const visitedStart: VisitedMap = { [start]: null };
-  const visitedGoal: VisitedMap   = { [goal] : null };
+/**
+ * A helper that produces a queue with the three essential ops.
+ * We keep a head index instead of shifting the array for O(1) time.
+ */
+class Queue<T> {
+    private items: T[] = [];
+    private head: number = 0;
 
-  const frontierStart: string[] = [start];
-  const frontierGoal: string[]  = [goal];
+    push(item: T) { this.items.push(item); }
 
-  const expand = (
-    frontier: string[],
-    visitedThis: VisitedMap,
-    visitedOther: VisitedMap
-  ): string[] | null => {
-    const nextLayer: string[] = [];
-
-    for (const current of frontier) {
-      for (const neighbor of graph[current] || []) {
-        // Already visited from this side → skip
-        if (current in visitedThis && neighbor in visitedThis) continue;
-
-        // New node for this side
-        if (!(neighbor in visitedThis)) {
-          visitedThis[neighbor] = current;
-          nextLayer.push(neighbor);
+    shift(): T | undefined {
+        if (this.head >= this.items.length) return undefined;
+        const item = this.items[this.head++];
+        // Do a bit of housekeeping to keep the array from growing forever.
+        if (this.head > 1000) {                                   
+            this.items = this.items.slice(this.head);
+            this.head = 0;
         }
-
-        // If neighbour is in the opposite frontier → frontiers meet
-        if (neighbor in visitedOther) {
-          return reconstructPath(
-            start,
-            goal,
-            visitedStart,
-            visitedGoal,
-            neighbor
-          );
-        }
-      }
+        return item;
     }
 
-    frontier.splice(0, frontier.length, ...nextLayer);
-    return null;
-  };
+    size() { return this.items.length - this.head; }
 
-  while (frontierStart.length && frontierGoal.length) {
-    const resStart = expand(frontierStart, visitedStart, visitedGoal);
-    if (resStart) return resStart;
-
-    const resGoal = expand(frontierGoal, visitedGoal, visitedStart);
-    if (resGoal) return resGoal;
-  }
-
-  return null; // no path found
+    isEmpty() { return this.size() === 0; }
 }
+
+
+// 2️⃣  Breadth‑First Search -----------------------------------------------
 
 /**
- * Reconstruct the path once the frontiers have met at `meetingNode`.
+ * Returns an array of nodes in the order they were visited.
+ * `start` is the node to begin from.
+ * Optional `getNeighbors` allows you to supply a custom adjacency function.
  */
-function reconstructPath(
-  start: string,
-  goal: string,
-  visitedStart: VisitedMap,
-  visitedGoal: VisitedMap,
-  meetingNode: string
-): string[] {
-  const partFromStart: string[] = [meetingNode];
-  let node = meetingNode;
-  while (visitedStart[node]) {
-    node = visitedStart[node]!;
-    partFromStart.unshift(node);
-  }
+export function bfs<T>(
+    start: Node<T>,
+    getNeighbors?: (node: Node<T>) => Iterable<Node<T>>
+): Node<T>[] {
 
-  const partFromGoal: string[] = [];
-  node = meetingNode;
-  while (visitedGoal[node]) {
-    node = visitedGoal[node]!;
-    partFromGoal.push(node);
-  }
+    const visited = new Set<string>();
+    const queue = new Queue<Node<T>>();
+    const order: Node<T>[] = [];
 
-  // Avoid duplicating the meeting node
-  return [...partFromStart, ...partFromGoal];
+    visited.add(start.id);
+    queue.push(start);
+
+    while (!queue.isEmpty()) {
+        const current = queue.shift()!;   // non‑undefined because we checked queue.isEmpty()
+        order.push(current);
+
+        const neighbors = getNeighbors
+            ? getNeighbors(current)
+            : current.neighbors;          // fallback to adjacency list
+
+        for (const nb of neighbors) {
+            if (!visited.has(nb.id)) {
+                visited.add(nb.id);
+                queue.push(nb);
+            }
+        }
+    }
+
+    return order;
 }
-const graph: Graph = {
-  a: ['b', 'c'],
-  b: ['a', 'd'],
-  c: ['a', 'd'],
-  d: ['b', 'c', 'e'],
-  e: ['d'],
+
+
+// 3️⃣  Example:  undirected graph -----------------------------------------
+
+// Helper to wire nodes together
+function link<T>(a: Node<T>, b: Node<T>) {
+    a.neighbors.push(b);
+    b.neighbors.push(a);
+}
+
+// Create a small graph
+const a = { id: 'A', value: 1, neighbors: [] } as Node<number>;
+const b = { id: 'B', value: 2, neighbors: [] } as Node<number>;
+const c = { id: 'C', value: 3, neighbors: [] } as Node<number>;
+const d = { id: 'D', value: 4, neighbors: [] } as Node<number>;
+const e = { id: 'E', value: 5, neighbors: [] } as Node<number>;
+
+link(a, b);
+link(a, c);
+link(b, d);
+link(c, d);
+link(d, e);
+
+// Run BFS
+const bfsResult = bfs(a);          // depth‑first will visit A → B → C → D → E
+console.log('BFS order:', bfsResult.map(n => n.id));
+
+// 4️⃣  Tweaking with a custom neighbor fetch ------------------------------
+
+/**
+ * Suppose your graph data is stored in an adjacency map:
+ *   { 'A': ['B', 'C'], ... }
+ * You can adapt BFS by supplying a `getNeighbors` callback.
+ */
+const adjacency: Record<string, string[]> = {
+    A: ['B', 'C'],
+    B: ['A', 'D'],
+    C: ['A', 'D'],
+    D: ['B', 'C', 'E'],
+    E: ['D']
 };
 
-console.log(bidirectionalBFS(graph, 'a', 'e')); // ["a", "b", "d", "e"]
+const nodes = Object.fromEntries(
+    Object.keys(adjacency).map(id => [id, { id, value: id, neighbors: [] } as Node<string>])
+);
+
+// Convert adjacency graph to node objects (without circular refs)
+for (const [id, nbrs] of Object.entries(adjacency)) {
+    const node = nodes[id]!;
+    node.neighbors = nbrs.map(n => nodes[n]!);
+}
+
+// Or just keep the adjacency map and pull neighbors on the fly:
+const bfsFromMap = (startId: string): string[] => {
+    const startNode = nodes[startId]!;
+    const path = bfs(startNode, n => adjacency[n.id].map(id => nodes[id]!));
+    return path.map(n => n.id);
+};
+
+console.log('BFS from map:', bfsFromMap('A'));
+
+// -------------------------------------------------------------------------
+
