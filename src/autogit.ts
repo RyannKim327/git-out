@@ -1,27 +1,7 @@
-function isPalindrome(str: string): boolean {
-  const sanitized = str.toLowerCase();              // ignore case
-  const reversed  = sanitized.split('').reverse().join('');
-  return sanitized === reversed;
+function safeParseInt(s: string, radix = 10): number | undefined {
+  const n = parseInt(s, radix);
+  return isNaN(n) ? undefined : n;
 }
-console.log(isPalindrome('RaceCar'));      // true
-console.log(isPalindrome('hello'));        // false
-function isPalindromePortable(str: string): boolean {
-  const cleaned = str.replace(/[^a-z0-9]/gi, '').toLowerCase();
-  const left = 0;
-  const right = cleaned.length - 1;
-
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) return false;
-    left++;
-    right--;
-  }
-
-  return true;
-}
-console.log(isPalindromePortable('A man, a plan, a canal: Panama')); // true
-console.log(isPalindromePortable('No lemon, no melon'));            // true
-console.log(isPalindromePortable('Hello, world!'));                 // false
-const isPalindromeFancy = (s: string) =>
-  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).join('') ===
-  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).reverse().join('');
-export { isPalindrome, isPalindromePortable };
+const intVal = parseInt(myStr, 10); // for ordinary integers
+const floatVal = Number(myStr);     // for decimals, natural format
+const alt = +myStr;                 // the one‑liner version of Number
