@@ -1,47 +1,110 @@
-/**
- * Finds the median of two sorted arrays that may be of different lengths.
- *
- * @param a  first sorted array (non‑empty)
- * @param b  second sorted array (non‑empty)
- * @returns  median value (number)
- */
-export function medianOfTwoSortedArrays(a: number[], b: number[]): number {
-  // Ensure a is the shorter array to keep the binary search bounded.
-  if (a.length > b.length) return medianOfTwoSortedArrays(b, a);
+class ListNode<T> {
+  /** The value stored in this node */
+  value: T;
 
-  const m = a.length;
-  const n = b.length;
-  let left = 0;
-  let right = m;
+  /** Reference to the next node, or null if this is the tail */
+  next: ListNode<T> | null = null;
 
-  while (left <= right) {
-    const i = Math.floor((left + right) / 2);          // cut in a
-    const j = Math.floor((m + n + 1) / 2) - i;        // cut in b
+  constructor(value: T) {
+    this.value = value;
+  }
+}
+class LinkedList<T> {
+  /** Head (first node) – `null` if the list is empty */
+  private head: ListNode<T> | null = null;
 
-    const Aleft   = i === 0 ?    -Infinity : a[i - 1];
-    const Aright  = i === m ?    Infinity : a[i];
-    const Bleft   = j === 0 ?    -Infinity : b[j - 1];
-    const Bright  = j === n ?    Infinity : b[j];
+  /** Tail (last node) – kept for efficient push; `null` if the list is empty */
+  private tail: ListNode<T> | null = null;
 
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // correct partition found
-      if ((m + n) % 2 === 0) {
-        return Math.max(Aleft, Bleft) + Math.min(Aright, Bright) / 2;
-      } else {
-        return Math.max(Aleft, Bleft);
-      }
-    } else if (Aleft > Bright) {
-      // i is too big – shift left
-      right = i - 1;
-    } else {
-      // i is too small – shift right
-      left = i + 1;
+  /** Current length – handy for O(1) size queries */
+  private _size = 0;
+
+  /** Number of elements in the list */
+  get size() { return this._size; }
+  get isEmpty() { return this._size === 0; }
+}
+  /** Append an element to the end of the list */
+  push(value: T): void {
+    const node = new ListNode(value);
+    if (this.tail) {
+      this.tail.next = node;
+    } else {          // empty list – new node is both head and tail
+      this.head = node;
     }
+    this.tail = node;
+    this._size++;
   }
 
-  // Should never hit here if inputs are valid and sorted.
-  throw new Error("Input arrays are not sorted or empty");
-}
-console.log(medianOfTwoSortedArrays([1, 3], [2]));          // 2
-console.log(medianOfTwoSortedArrays([1, 2], [3, 4]));        // 2.5
-console.log(medianOfTwoSortedArrays([0, 0], [0, 0]));        // 0
+  /** Prepend an element to the front of the list */
+  unshift(value: T): void {
+    const node = new ListNode(value);
+    node.next = this.head;
+    this.head = node;
+    if (!this.tail) this.tail = node;  // first element
+    this._size++;
+  }
+
+  /** Remove and return the first element, or `undefined` if the list is empty */
+  shift(): T | undefined {
+    if (!this.head) return undefined;
+    const removed = this.head.value;
+    this.head = this.head.next;
+    if (!this.head) this.tail = null;  // list became empty
+    this._size--;
+    return removed;
+  }
+
+  /** Remove and return the last element, or `undefined` if the list is empty */
+  pop(): T | undefined {
+    if (!this.head) return undefined;
+    if (this.head === this.tail) {     // single element
+      const val = this.head.value;
+      this.head = this.tail = null;
+      this._size = 0;
+      return val;
+    }
+
+    // Walk to the second‑to‑last node
+    let current = this.head;
+    while (current.next && current.next !== this.tail) {
+      current = current.next;
+    }
+
+    const val = this.tail!.value;
+    current.next = null;
+    this.tail = current;
+    this._size--;
+    return val;
+  }
+  /** Find the first node whose value satisfies the predicate; returns `undefined` if none */
+  find(p: (value: T) => boolean): T | undefined {
+    let curr = this.head;
+    while (curr) {
+      if (p(curr.value)) return curr.value;
+      curr = curr.next;
+    }
+    return undefined;
+  }
+
+  /** Iterate over values (supports `for…of`) */
+  *[Symbol.iterator](): Iterator<T> {
+    let current = this.head;
+    while (current) {
+      yield current.value;
+      current = current.next;
+    }
+  }
+const list = new LinkedList<number>();
+for (const n of list) console.log(n);
+const list = new LinkedList<string>();
+
+list.push('first');
+list.push('second');
+list.unshift('zeroth');
+
+console.log([...list]);          // ["zeroth", "first", "second"]
+
+console.log(list.shift());       // "zeroth"
+console.log(list.pop());         // "second"
+
+console.log(list.find(n => n.startsWith('f'))); // "first"
