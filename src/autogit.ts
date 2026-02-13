@@ -1,52 +1,30 @@
-interface TreeNode {
-  value: number;          // what you want to sum
-  left?: TreeNode | null;
-  right?: TreeNode | null;
+/**
+ * Reverse the order of words in a string.
+ *
+ * Words are anything separated by whitespace (space, tab, etc.).
+ * Leading/trailing whitespace is trimmed for a clean result, but
+ * consecutive internal spaces are collapsed to a single space – you can keep
+ * them if you prefer by tweaking the regex.
+ *
+ * @param s  The input string.
+ * @returns   The string with the words reversed.
+ */
+function reverseWords(s: string): string {
+  // 1. Trim surrounding whitespace, then split on any sequence of whitespace.
+  const words = s.trim().split(/\s+/);
+
+  // 2. Reverse the array in place.
+  words.reverse();
+
+  // 3. Join back with a single space (change if you need a different separator).
+  return words.join(' ');
 }
-function sumTreeRecursive(node: TreeNode | null): number {
-  if (!node) return 0;
 
-  const leftSum  = sumTreeRecursive(node.left ?? null);
-  const rightSum = sumTreeRecursive(node.right ?? null);
+// Demo
+const original = "  the quick brown   fox jumps over the lazy dog  ";
+const reversed = reverseWords(original);
 
-  return node.value + leftSum + rightSum;
-}
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  let total = 0;
-  const stack: TreeNode[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.value;
-
-    // Push children in any order – the sum is commutative.
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
-  }
-
-  return total;
-}
-// A tiny test tree:
-//        5
-//       / \
-//      3   7
-//     / \   \
-//    2   4   8
-
-const testTree: TreeNode = {
-  value: 5,
-  left: {
-    value: 3,
-    left:  { value: 2 },
-    right: { value: 4 }
-  },
-  right: {
-    value: 7,
-    right: { value: 8 }
-  }
-};
-
-console.log('Recursive sum:', sumTreeRecursive(testTree));  // 29
-console.log('Iterative sum:', sumTreeIterative(testTree));  // 29
+console.log("Original:", original);
+console.log("Reversed:", reversed);
+// Output: "dog lazy the over jumps fox brown quick the"
+const words = s.split(/\s+/);
