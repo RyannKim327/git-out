@@ -1,48 +1,61 @@
 /**
- * Returns the longest common subsequence (LCS) of two strings.
- * @param a First string
- * @param b Second string
- * @returns { subsequence: string; length: number }
+ * Sorts an array of numbers in ascending order using insertion sort.
+ * The algorithm works in place – the input array is mutated.
+ *
+ * @param arr - The numeric array to be sorted.
+ * @returns The same array, now sorted.
  */
-function longestCommonSubsequence(a: string, b: string) {
-  const m = a.length;
-  const n = b.length;
+export function insertionSort(arr: number[]): number[] {
+  // Start from the second element; the first element is “sorted” by definition
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];            // The value we’re going to insert
+    let j = i - 1;
 
-  // 1. Build DP matrix (m+1) x (n+1) filled with 0
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-
-  // 2. Fill DP matrix
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
-
-  // 3. Back‑track to rebuild the subsequence
-  let i = m, j = n;
-  const subseq: string[] = [];
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      subseq.push(a[i - 1]); // same char belongs to LCS
-      i--;
+    // Shift elements that are greater than the key to the right
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j];
       j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;            // move up
-    } else {
-      j--;            // move left
     }
+
+    // Insert the key into its correct position
+    arr[j + 1] = key;
   }
 
-  return {
-    subsequence: subseq.reverse().join(''),
-    length: dp[m][n]
-  };
+  return arr;
 }
+export function insertionSort<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-// Quick demo
-const { subsequence, length } = longestCommonSubsequence('AGCAT', 'GAC');
-console.log(`Longest common subsequence: ${subsequence} (length ${length})`);
+    // While j is in range and key is less than arr[j], shift arr[j] right
+    while (j >= 0 && compareFn(key, arr[j]) < 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    arr[j + 1] = key;
+  }
+
+  return arr;
+}
+// Numbers
+const nums = [64, 25, 12, 22, 11];
+insertionSort(nums);          // => [11, 12, 22, 25, 64]
+
+// Strings
+const words = ['banana', 'apple', 'cherry'];
+insertionSort(words);          // => ['apple', 'banana', 'cherry']
+
+// Custom objects
+const people = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob', age: 24 },
+  { name: 'Catherine', age: 27 }
+];
+
+insertionSort(people, (a, b) => a.age - b.age);
+// => sorted by age
