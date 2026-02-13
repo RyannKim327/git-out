@@ -1,37 +1,78 @@
-// TypeScript example that fetches JSON and validates the shape of the response
-
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
+// 1️⃣  A tiny node definition
+interface ListNode<T> {
+  val: T;
+  next?: ListNode<T>;
 }
 
-/**
- * Fetch a Todo by ID.
- *
- * @param id The ID of the todo to fetch.
- * @returns A promise that resolves to a Todo object.
- */
-async function fetchTodo(id: number): Promise<Todo> {
-  const response = await fetch(`https://jsonplaceholder.typicode.com/todos/${id}`);
+// 2️⃣  Helper: walk a list and collect values (for demo)
+const listToArray = <T>(head: ListNode<T> | undefined): T[] => {
+  const arr: T[] = [];
+  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
+  return arr;
+};
 
-  if (!response.ok) {
-    throw new Error(`Failed to load todo #${id}: ${response.status} ${response.statusText}`);
+// 3️⃣  The trick: two pointers, fast and slow
+function middle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
+  if (!head) return undefined; // empty list—no middle
+
+  let fast = head;
+  let slow = head;
+
+  // advance fast every two steps, slow every one
+  while (fast.next && fast.next.next) {
+    fast = fast.next.next; // jump 2
+    slow = slow.next as ListNode<T>; // jump 1
   }
 
-  // TypeScript's `as` ensures the runtime shape matches the interface
-  const data = (await response.json()) as Todo;
+  // If fast has a next (odd length), move slow one more
+  if (fast.next) slow = slow.next as ListNode<T>;
 
-  // Quick sanity check
-  if (typeof data.completed !== "boolean") {
-    throw new Error("data format unexpected");
-  }
-
-  return data;
+  return slow;
 }
 
-// Usage example (you can place this in a main function or wherever you need it)
-fetchTodo(1)
-  .then(todo => console.log(`Todo #${todo.id}: ${todo.title} (completed: ${todo.completed})`))
-  .catch(err => console.error(err));
+// 4️⃣  Demo: build a list so we can see it in action
+const nodes: ListNode<number>[] = [1, 2, 3, 4, 5].map(
+  (v) => ({ val: v })
+);
+for (let i = 0; i < nodes.length - 1; i++) nodes[i].next = nodes[i + 1];
+const head = nodes[0];
+
+console.log("Full list:", listToArray(head));         // 1,2,3,4,5
+console.log("Middle node:", middle(head)?.val);        // 3
+
+// Try an even‑length list
+const even: ListNode<number>[] = [10, 20, 30, 40].map(
+  (v) => ({ val: v })
+);
+for (let i = 0; i < even.length - 1; i++) even[i].next = even[i + 1];
+console.log("Middle of even list:", middle(even)?.val); // 20 (or 30 if you prefer that half)
+class LinkedList<T> {
+  head?: ListNode<T>;
+
+  // push to the tail
+  push(val: T) {
+    const node: ListNode<T> = { val };
+    if (!this.head) {
+      this.head = node;
+    } else {
+      let cur = this.head;
+      while (cur.next) cur = cur.next;
+      cur.next = node;
+    }
+  }
+
+  // returns the middle node (or the first of two middles for even length)
+  middle(): ListNode<T> | undefined {
+    return middle(this.head);
+  }
+
+  toArray(): T[] {
+    return listToArray(this.head);
+  }
+}
+
+// Usage:
+const ll = new LinkedList<number>();
+[1, 2, 3, 4, 5].forEach(v => ll.push(v));
+console.log(ll.toArray());       // [1,2,3,4,5]
+console.log(ll.middle()?.val);   // 3
