@@ -1,29 +1,93 @@
-/**
- * Returns the intersection of two arrays.
- * @param a  First array.
- * @param b  Second array.
- * @returns  Array containing elements that are present in **both** a and b.
- */
-function intersection<T>(a: T[], b: T[]): T[] {
-  // Turn the first array into a Set for O(1) look‑ups.
-  const aSet = new Set(a);
+// 1️⃣  Generic node type
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null = null;
+  right: TreeNode<T> | null = null;
 
-  // Keep only the items from `b` that are also in `aSet`.
-  const result: T[] = [];
-  for (const item of b) {
-    if (aSet.has(item)) {
-      result.push(item);
-      // Optional: remove the item so we don’t collect duplicates if
-      // `a` or `b` contains repeated entries
-      aSet.delete(item);
+  constructor(value: T) {
+    this.value = value;
+  }
+}
+
+// 2️⃣  BinaryTree class
+class BinaryTree<T> {
+  root: TreeNode<T> | null = null;
+
+  // Insert a value – keeps the tree *ordered* (BST rule)
+  insert(value: T, comparator: (a: T, b: T) => number) {
+    const newNode = new TreeNode(value);
+
+    if (!this.root) {
+      this.root = newNode;
+      return;
+    }
+
+    let current: TreeNode<T> | null = this.root;
+    while (current) {
+      const comp = comparator(value, current.value);
+      if (comp < 0) {
+        if (!current.left) {
+          current.left = newNode;
+          return;
+        }
+        current = current.left;
+      } else if (comp > 0) {
+        if (!current.right) {
+          current.right = newNode;
+          return;
+        }
+        current = current.right;
+      } else {
+        // Duplicate – decide what to do; here we just replace
+        current.value = value;
+        return;
+      }
     }
   }
-  return result;
+
+  // Find a node with a particular value
+  find(value: T, comparator: (a: T, b: T) => number): TreeNode<T> | null {
+    let current = this.root;
+    while (current) {
+      const comp = comparator(value, current.value);
+      if (comp === 0) return current;
+      current = comp < 0 ? current.left : current.right;
+    }
+    return null;
+  }
+
+  // In‑order traversal (left, root, right)
+  inOrder(callback: (node: TreeNode<T>) => void) {
+    const visit = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      visit(node.left);
+      callback(node);
+      visit(node.right);
+    };
+    visit(this.root);
+  }
+
+  // Pre‑ and post‑order are left to you if needed
 }
-console.log(intersection([1, 2, 3, 4], [3, 4, 5, 6])); // → [3, 4]
+const cmpNum = (a: number, b: number) => a - b;
+const cmpStr = (a: string, b: string) => a.localeCompare(b);
+const tree = new BinaryTree<number>();
 
-console.log(intersection(['foo', 'bar'], ['bar', 'baz', 'foo'])); // → ['bar', 'foo']
+tree.insert(42, cmpNum);
+tree.insert(23, cmpNum);
+tree.insert(87, cmpNum);
+tree.insert(13, cmpNum);
+tree.insert(31, cmpNum);
 
-// With duplicates
-console.log(intersection([1, 2, 2], [2, 2, 3])); // → [2]
-const intersection = (a: any[], b: any[]) => a.filter(x => b.includes(x));
+console.log("In‑order traversal:");
+tree.inOrder(node => console.log(node.value));
+
+const found = tree.find(31, cmpNum);
+console.log(found ? `Found ${found.value}` : "Not found");
+In-order traversal:
+13
+23
+31
+42
+87
+Found 31
