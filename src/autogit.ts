@@ -1,87 +1,96 @@
 /**
- * Returns the maximum sum of any contiguous sub‑array.
- *
- * @param arr – array of numbers (may contain negatives)
- * @returns {number} maximum sub‑array sum
+ * The graph is kept as an adjacency list.
+ * `T` is the type of the value stored on each vertex.
  */
-export function maxSubArraySum(arr: number[]): number {
-  if (arr.length === 0) {
-    throw new Error('Array must contain at least one element');
+export class Graph<T> {
+  /** Map from vertex ID → the value stored on that vertex */
+  private vertices = new Map<string, T>();
+  /** Map from vertex ID → Set of neighbour IDs */
+  private edges = new Map<string, Set<string>>();
+
+  addVertex(id: string, value: T): void {
+    this.vertices.set(id, value);
+    if (!this.edges.has(id)) this.edges.set(id, new Set());
   }
 
-  // init both with first element: handles all‑negative cases nicely
-  let currentBest = arr[0];
-  let globalBest = arr[0];
-
-  for (let i = 1; i < arr.length; i++) {
-    const value = arr[i];
-
-    // Either extend the previous sub‑array or start fresh at value
-    currentBest = Math.max(value, currentBest + value);
-
-    // Keep the best seen so far
-    globalBest = Math.max(globalBest, currentBest);
+  addEdge(from: string, to: string, undirected = false): void {
+    if (!this.vertices.has(from) || !this.vertices.has(to))
+      throw new Error('Both vertices must exist before linking');
+    this.edges.get(from)!.add(to);
+    if (undirected) this.edges.get(to)!.add(from);
   }
 
-  return globalBest;
-}
-const testSets = [
-  { arr: [1, -2, 3, 4, -5, 8], expect: 10 },
-  { arr: [-2, -3, -1, -4], expect: -1 },
-  { arr: [2, 3, 1, 6], expect: 12 },
-  { arr: [5, -1, 2, 3], expect: 9 },
-  { arr: [1], expect: 1 },
-];
-
-for (const { arr, expect } of testSets) {
-  const result = maxSubArraySum(arr);
-  console.log(`arr: ${arr} → max sum: ${result} (${result === expect ? '✓' : '✗'})`);
-}
-arr: 1,-2,3,4,-5,8 → max sum: 10 (✓)
-arr: -2,-3,-1,-4 → max sum: -1 (✓)
-arr: 2,3,1,6 → max sum: 12 (✓)
-arr: 5,-1,2,3 → max sum: 9 (✓)
-arr: 1 → max sum: 1 (✓)
-interface MaxSubArrayResult {
-  sum: number;
-  start: number;
-  end: number;   // inclusive
-}
-
-export function maxSubArraySumWithIndices(arr: number[]): MaxSubArrayResult {
-  if (arr.length === 0) {
-    throw new Error('Array must contain at least one element');
+  /** Return the neighbours of a vertex, or [] if it has none */
+  neighbours(id: string): string[] {
+    return Array.from(this.edges.get(id) ?? []);
   }
 
-  let currentBest = arr[0];
-  let globalBest = arr[0];
+  /** Optional helpers for inspection */
+  getVertex(id: string): T | undefined {
+    return this.vertices.get(id);
+  }
 
-  // working indices
-  let currentStart = 0;
-  let bestStart = 0;
-  let bestEnd = 0;
+  getVertices(): string[] {
+    return Array.from(this.vertices.keys());
+  }
+}
+/**
+ * Depth‑first search that walks the graph from `start`.
+ * Returns the order in which vertices were first visited.
+ */
+export function dfsRecursive<T>(
+  graph: Graph<T>,
+  start: string,
+  visited: Set<string> = new Set()
+): string[] {
+  if (visited.has(start)) return [];
 
-  for (let i = 1; i < arr.length; i++) {
-    const value = arr[i];
+  visited.add(start);
+  const order = [start];
 
-    // decide whether to continue or start a new sub‑array
-    if (currentBest + value < value) {
-      currentBest = value;
-      currentStart = i;
-    } else {
-      currentBest += value;
+  for (const neighbour of graph.neighbours(start)) {
+    order.push(...dfsRecursive(graph, neighbour, visited));
+  }
+
+  return order;
+}
+/**
+ * Explicit‑stack depth‑first search.
+ * Produces the same visitation order as the recursive version.
+ */
+export function dfsIterative<T>(graph: Graph<T>, start: string): string[] {
+  const stack: string[] = [start];
+  const visited = new Set<string>();
+  const order: string[] = [];
+
+  while (stack.length) {
+    const curr = stack.pop()!; // guaranteed non‑empty
+    if (visited.has(curr)) continue;
+
+    visited.add(curr);
+    order.push(curr);
+
+    // push neighbours in reverse order for natural DFS ordering
+    const neighbours = graph.neighbours(curr).slice().reverse();
+    for (const n of neighbours) {
+      if (!visited.has(n)) stack.push(n);
     }
-
-    // update global best if we found a better sum
-    if (currentBest > globalBest) {
-      globalBest = currentBest;
-      bestStart = currentStart;
-      bestEnd = i;
-    }
   }
 
-  return { sum: globalBest, start: bestStart, end: bestEnd };
+  return order;
 }
-const { sum, start, end } = maxSubArraySumWithIndices([1, -2, 3, 4, -5, 8]);
-console.log(`max sum ${sum} from index ${start} to ${end}`);
-// → max sum 10 from index 2 to 5
+const g = new Graph<number>();
+
+// build a tiny graph
+g.addVertex('a', 1);
+g.addVertex('b', 2);
+g.addVertex('c', 3);
+g.addVertex('d', 4);
+
+g.addEdge('a', 'b', true); // undirected
+g.addEdge('a', 'c', true);
+g.addEdge('b', 'd', true);
+g.addEdge('c', 'd', true);
+
+console.log('Recursive DFS:', dfsRecursive(g, 'a')); // e.g. ['a','b','d','c']
+console.log('Iterative DFS:', dfsIterative(g, 'a')); // same order
