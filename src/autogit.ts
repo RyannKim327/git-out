@@ -1,47 +1,61 @@
 /**
- * Interpolation search – returns the index of `key` in `arr`
- * or `-1` if the key is not present.
+ * Sorts an array of numbers in ascending order using insertion sort.
+ * The algorithm works in place – the input array is mutated.
  *
- * @template T – numeric type (number, bigInt, etc.)
- * @param arr  – sorted array of numbers
- * @param key  – value to look for
- * @returns index or -1
+ * @param arr - The numeric array to be sorted.
+ * @returns The same array, now sorted.
  */
-export function interpolationSearch<T extends number | bigint>(
-  arr: T[],
-  key: T
-): number {
-  if (!arr.length) return -1;
+export function insertionSort(arr: number[]): number[] {
+  // Start from the second element; the first element is “sorted” by definition
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];            // The value we’re going to insert
+    let j = i - 1;
 
-  let low = 0;
-  let high = arr.length - 1;
+    // Shift elements that are greater than the key to the right
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
 
-  /* Handle the special situation where the key is identical to
-   * the value at both bounds – it can’t be found if low === high
-   * but arr[low] !== key.
-   */
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    /* Avoid division by zero when array values are identical */
-    const step =
-      low === high
-        ? 0
-        : Number(
-            (key - arr[low]) *
-              (high - low) /
-              (arr[high] - arr[low])
-          );
-
-    const mid = low + Math.min(Math.max(step, 0), high - low);
-
-    const midVal = arr[mid];
-
-    if (midVal === key) return mid;
-    if (midVal < key) low = mid + 1;
-    else high = mid - 1;
+    // Insert the key into its correct position
+    arr[j + 1] = key;
   }
 
-  return -1; // Key not found
+  return arr;
 }
-const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17];
-console.log(interpolationSearch(nums, 7));  // → 3
-console.log(interpolationSearch(nums, 4));  // → -1
+export function insertionSort<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+
+    // While j is in range and key is less than arr[j], shift arr[j] right
+    while (j >= 0 && compareFn(key, arr[j]) < 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    arr[j + 1] = key;
+  }
+
+  return arr;
+}
+// Numbers
+const nums = [64, 25, 12, 22, 11];
+insertionSort(nums);          // => [11, 12, 22, 25, 64]
+
+// Strings
+const words = ['banana', 'apple', 'cherry'];
+insertionSort(words);          // => ['apple', 'banana', 'cherry']
+
+// Custom objects
+const people = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob', age: 24 },
+  { name: 'Catherine', age: 27 }
+];
+
+insertionSort(people, (a, b) => a.age - b.age);
+// => sorted by age
