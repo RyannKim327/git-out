@@ -1,50 +1,105 @@
 /**
- * Random sort – a quick‑sort implementation that picks a random
- * pivot for each split.
- *
- * The algorithm is deterministic in complexity (O(n log n) on average),
- * but the pivot choice is completely random, which can be useful for
- * teaching purposes or for avoiding worst‑case sequences.
+ * A singly‑linked list node that holds a generic value.
  */
+export class ListNode<T> {
+  constructor(
+    public val: T,
+    public next: ListNode<T> | null = null
+  ) {}
+}
+/**
+ * Returns true iff the linked list is a palindrome.
+ */
+export function isPalindrome<T>(head: ListNode<T> | null): boolean {
+  if (!head || !head.next) return true; // empty or single node
 
-function randomQuickSort<T>(input: T[], compare?: (a: T, b: T) => number): T[] {
-  // If there are 0 or 1 elements, it's already sorted.
-  if (input.length <= 1) {
-    return [...input];
+  /* ---------- 1️⃣ Find middle ---------- */
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
+
+  while (fast.next && fast.next.next) {
+    slow = slow!.next!;   // move one step
+    fast = fast.next.next; // move two steps
   }
 
-  // Choose a random pivot index.
-  const pivotIndex = Math.floor(Math.random() * input.length);
-  const pivot = input[pivotIndex];
+  /* ---------- 2️⃣ Reverse second half ---------- */
+  let prev: ListNode<T> | null = null;
+  let curr: ListNode<T> | null = slow;
 
-  // Helper to decide the order.
-  const cmp = compare ||
-    // Default to numeric or string comparison.
-    ((a: T, b: T) => (a as any) < b ? -1 : (a as any) > b ? 1 : 0);
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  const secondHalfHead = prev; // start of reversed half
 
-  // Partition the array into two bins: <= pivot and > pivot.
-  const smaller: T[] = [];
-  const larger: T[] = [];
+  /* ---------- 3️⃣ Compare halves ---------- */
+  let p1: ListNode<T> | null = head;
+  let p2: ListNode<T> | null = secondHalfHead;
 
-  for (let i = 0; i < input.length; i++) {
-    if (i === pivotIndex) continue; // skip the pivot itself
-    const item = input[i];
-    if (cmp(item, pivot) <= 0) {
-      smaller.push(item);
-    } else {
-      larger.push(item);
+  let isPal = true;
+  while (isPal && p2) {           // p2 is half the length
+    if (p1!.val !== p2!.val) {
+      isPal = false;
+      break;
     }
+    p1 = p1!.next;
+    p2 = p2!.next;
   }
 
-  // Recursively sort each sub‑array and concatenate the results.
-  return [
-    ...randomQuickSort(smaller, compare),
-    pivot,
-    ...randomQuickSort(larger, compare),
-  ];
+  /* ---------- (Optional) 4️⃣ Restore list ---------- */
+  // reverse again to keep original structure
+  curr = secondHalfHead;
+  prev = null;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  if (slow!.next) { // connect back
+    slow!.next = prev;
+  }
+
+  return isPal;
+}
+function build<T>(arr: T[]): ListNode<T> | null {
+  let dummy = new ListNode<T>(null as any);
+  let cur = dummy;
+  for (const v of arr) {
+    cur.next = new ListNode<T>(v);
+    cur = cur.next;
+  }
+  return dummy.next;
 }
 
-/* --- Example usage ----------------------------------------------------- */
-const nums = [23, 4, 42, 8, 15, 16, 42, 23, 4, 17];
-console.log('Unsorted:', nums);
-console.log('Sorted:', randomQuickSort(nums));
+const tests = [
+  { arr: [1, 2, 3, 2, 1], expected: true },
+  { arr: [1, 2, 2, 1], expected: true },
+  { arr: [1, 2, 3], expected: false },
+  { arr: [], expected: true },
+  { arr: [42], expected: true },
+  { arr: [7, 8, 7, 9], expected: false }
+];
+
+for (const {arr, expected} of tests) {
+  const h = build(arr);
+  console.log(`isPalindrome(${JSON.stringify(arr)}) =>`, isPalindrome(h), 'expected', expected);
+}
+isPalindrome([1,2,3,2,1]) => true expected true
+isPalindrome([1,2,2,1]) => true expected true
+isPalindrome([1,2,3]) => false expected false
+isPalindrome([]) => true expected true
+isPalindrome([42]) => true expected true
+isPalindrome([7,8,7,9]) => false expected false
+function isPalindromeStack<T>(head: ListNode<T> | null): boolean {
+  const vals: T[] = [];
+  for (let cur = head; cur; cur = cur.next) vals.push(cur.val);
+
+  let l = 0, r = vals.length - 1;
+  while (l < r) {
+    if (vals[l++] !== vals[r--]) return false;
+  }
+  return true;
+}
