@@ -1,20 +1,20 @@
-function reverseString(str: string): string {
-  return str.split('').reverse().join('');
+// factorial.ts
+import * as readline from 'node:readline';
+import { stdin as input, stdout as output } from 'node:process';
+
+const rl = readline.createInterface({ input, output });
+
+function factorial(n: number): bigint {
+  if (n < 0) throw new Error('Negative numbers aren’t supported');
+  return n <= 1 ? BigInt(1) : BigInt(n) * factorial(n - 1);
 }
-function reverseStringLoop(str: string): string {
-  let out = '';
-  for (let i = str.length - 1; i >= 0; i--) {
-    out += str[i];
+
+rl.question('Enter a non‑negative integer: ', (answer) => {
+  const num = Number(answer.trim());
+  if (!Number.isInteger(num) || num < 0) {
+    console.log('That’s not a valid non‑negative integer.');
+  } else {
+    console.log(`Factorial of ${num} is ${factorial(num).toString()}`);
   }
-  return out;
-}
-function reverseStringSpread(str: string): string {
-  return [...str].reverse().join('');
-}
-import GraphemeSplitter from 'grapheme-splitter';
-
-const splitter = new GraphemeSplitter();
-
-function reverseStringUnicode(str: string): string {
-  return splitter.splitGraphemes(str).reverse().join('');
-}
+  rl.close();
+});
