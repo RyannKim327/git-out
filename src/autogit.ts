@@ -1,50 +1,75 @@
-area = (base * height) / 2
-/**
- * Return the area of a triangle when you know its base and height.
- *
- * @param base   Length of the base side.
- * @param height Height perpendicular to that base.
- * @returns      Area of the triangle as a number.
- */
-export function areaFromBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new Error("Base and height must be positive numbers.");
-  }
-  return (base * height) / 2;
+function decimalToBinary(dec: number | bigint): string {
+  return dec.toString(2);
 }
-s = (a + b + c) / 2            // semi‑perimeter
-area = sqrt( s * (s−a) * (s−b) * (s−c) )
-/**
- * Compute the area of a triangle from its three side lengths.
- *
- * @param a   Length of side A.
- * @param b   Length of side B.
- * @param c   Length of side C.
- * @returns   Area of the triangle (number) or NaN if the sides
- *            don’t form a valid triangle.
- */
-export function areaFromSides(a: number, b: number, c: number): number {
-  // Basic validation – all sides must be positive
-  if (a <= 0 || b <= 0 || c <= 0) {
-    throw new Error("All side lengths must be positive numbers.");
+
+// Examples
+console.log(decimalToBinary(13));      // '1101'
+console.log(decimalToBinary(255n));    // '11111111'
+function decimalToBinaryIterative(num: number): string {
+  if (num === 0) return '0';
+  let n = Math.abs(num);
+  const bits: string[] = [];
+  while (n > 0) {
+    bits.push((n % 2).toString());
+    n = Math.floor(n / 2);
   }
-
-  // Triangle inequality check – else area calculation would
-  // produce NaN or a negative under the radicand.
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error("The provided side lengths do not form a valid triangle.");
-  }
-
-  const s = (a + b + c) / 2;
-  const radicand = s * (s - a) * (s - b) * (s - c);
-
-  return Math.sqrt(radicand);
+  if (num < 0) bits.push('-');
+  return bits.reverse().join('');
 }
-import { areaFromBaseHeight, areaFromSides } from "./triangle-utils";
 
-const base = 10;
-const height = 6;
-console.log(areaFromBaseHeight(base, height)); // 30
+// Demo
+console.log(decimalToBinaryIterative(13));   // '1101'
+console.log(decimalToBinaryIterative(-13));  // '-1101'
+function decimalToBinaryRecursive(num: number): string {
+  if (num === 0) return '';
+  const [higher, bit] = decimalToBinaryRecursive(Math.floor(num / 2)).split('|', 2);
+  return `${higher}|${num % 2}`;
+}
 
-const a = 7, b = 10, c = 5;
-console.log(areaFromSides(a, b, c));           // ≈ 17.89
+// Helper to clean up the leading empty part
+function binaryRecursive(num: number): string {
+  const bin = decimalToBinaryRecursive(num);
+  return bin.split('|').filter(Boolean).join('');
+}
+
+// Demo
+console.log(binaryRecursive(27));  // '11011'
+function decimalToBinaryFraction(num: number, precision: number = 10): string {
+  const intPart = Math.trunc(num);
+  let fracPart = num - intPart;
+  let binary = intPart.toString(2);
+
+  if (precision > 0 && fracPart > 0) {
+    binary += '.';
+    let p = 0;
+    while (p < precision && fracPart > 0) {
+      fracPart *= 2;
+      if (fracPart >= 1) {
+        binary += '1';
+        fracPart -= 1;
+      } else {
+        binary += '0';
+      }
+      p++;
+    }
+  }
+
+  return binary;
+}
+
+// Demo
+console.log(decimalToBinaryFraction(5.6875, 8)); // '101.1011'
+function test(input: number | bigint) {
+  console.log(`Decimal: ${input}`);
+  console.log(`  -> toString(2):   ${input.toString(2)}`);
+  if (typeof input === 'number') {
+    console.log(`  -> iterative:   ${decimalToBinaryIterative(input)}`);
+    console.log(`  -> recursive:   ${binaryRecursive(input)}`);
+  }
+  console.log('');
+}
+
+test(13);
+test(-13);
+test(0);
+test(5.6875);   // only the toString version works for BigInt
