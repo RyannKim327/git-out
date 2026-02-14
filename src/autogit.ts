@@ -1,73 +1,74 @@
-/**
- * Finds the longest increasing subsequence of an array.
- *
- * @param arr Numeric array (any integers or floats, any sign).
- * @returns Object containing the LIS and its length.
- */
-export function longestIncreasingSubsequence(arr: number[]): { seq: number[]; length: number } {
-  if (arr.length === 0) return { seq: [], length: 0 };
-
-  // tails[i] — minimal tail of an LIS of length i+1 found so far
-  const tails: number[] = [];
-  // prevIndices[i] — index of the previous element in the LIS that ends at arr[i]
-  const prevIndices: number[] = Array(arr.length).fill(-1);
-  // indexInTails[i] — will store the index in tails where arr[i] was placed
-  const indexInTails: number[] = Array(arr.length).fill(0);
-
-  for (let i = 0; i < arr.length; i++) {
-    const num = arr[i];
-
-    // Binary search: first index in tails where tails[idx] >= num
-    let lo = 0,
-      hi = tails.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (tails[mid] < num) lo = mid + 1;
-      else hi = mid;
-    }
-
-    // lo is the length of the new subsequence minus one
-    indexInTails[i] = lo;
-    if (lo >= tails.length) tails.push(num);
-    else tails[lo] = num;
-
-    // Link to previous element of the subsequence
-    if (lo > 0) prevIndices[i] = tailsIdx[lo - 1];
-  }
-
-  // tailsIdx will hold the indices in the original array that correspond to tails[]
-  const tailsIdx: number[] = Array(tails.length);
-  const seqIdx: number[] = []; // will hold indices of LIS
-
-  // Reconstruct the sequence by walking backwards using prevIndices
-  let k = tailsIdx.length - 1;
-  let currentIdx = -1;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (indexInTails[i] === k) {
-      seqIdx.push(i); // store index
-      k--; // look for previous
-      currentIdx = i;
-    }
-  }
-  seqIdx.reverse();
-
-  const seq = seqIdx.map(idx => arr[idx]);
-
-  return { seq, length: seq.length };
+interface Node<T> {
+  /** opaque identifier used for duplicate detection – e.g. a stringified board state */
+  id: string;
+  /** whatever data you want to keep (state, metadata, …) */
+  data: T;
+  /** produces the succ­esor nodes */
+  getChildren(): Iterable<Node<T>>;
 }
-export function lisLength(arr: number[]): number {
-  if (arr.length === 0) return 0;
-  const dp = Array(arr.length).fill(1);
+function dls<T>(
+  node: Node<T>,
+  goalTest: (n: Node<T>) => boolean,
+  limit: number,
+  visited = new Set<string>()
+): Node<T> | null {
+  if (goalTest(node)) return node;
+  if (limit <= 0) return null;          // terminal depth reached
+  visited.add(node.id);                 // prevent revisiting
 
-  for (let i = 1; i < arr.length; i++) {
-    for (let j = 0; j < i; j++) {
-      if (arr[i] > arr[j]) dp[i] = Math.max(dp[i], dp[j] + 1);
+  for (const child of node.getChildren()) {
+    if (!visited.has(child.id)) {
+      const result = dls(child, goalTest, limit - 1, visited);
+      if (result !== null) return result;
     }
   }
-  return Math.max(...dp);
+  return null; // no goal found within limit
 }
-const data = [10, 22, 9, 33, 21, 50, 41, 60, 80];
-const { seq, length } = longestIncreasingSubsequence(data);
+function dlsIter<T>(
+  start: Node<T>,
+  goalTest: (n: Node<T>) => boolean,
+  limit: number
+): Node<T> | null {
+  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: start, depth: 0 }];
+  const visited = new Set<string>();
 
-console.log('LIS:', seq);          // [10, 22, 33, 50, 60, 80]
-console.log('Length:', length);    // 6
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    if (goalTest(node)) return node;
+    if (depth === limit) continue;      // hit the limit – skip children
+
+    visited.add(node.id);
+    for (const child of node.getChildren()) {
+      if (!visited.has(child.id)) {
+        stack.push({ node: child, depth: depth + 1 });
+      }
+    }
+  }
+  return null;
+}
+class Coord {
+  constructor(public x: number, public y: number) {}
+}
+
+class MazeCell implements Node<Coord> {
+  constructor(
+    public id: string,
+    public data: Coord,
+    private neighbors: readonly Coord[]
+  ) {}
+
+  getChildren(): Iterable<Node<Coord>> {
+    return this.neighbors.map(
+      n => new MazeCell(String(n.x) + ',' + n.y, n, [] /* placeholder */)
+    );
+  }
+}
+
+// Setup: build maze, decide start & goal
+const start = new MazeCell('0,0', new Coord(0, 0), [new Coord(1, 0), new Coord(0, 1)]);
+const isGoal = (n: Node<Coord>) => n.data.x === 5 && n.data.y === 5;
+
+// Run:
+const found = dls(start, isGoal, 10);
+if (found) console.log('Found solution:', found.data);
+else console.log('no path within depth 10');
