@@ -1,61 +1,76 @@
 /**
- * Fibonacci Search
+ * Returns the longest common prefix of all strings in `arr`.
  *
- * @param arr   Sorted array to search
- * @param key   Value to locate
- * @returns    Index of key or -1
+ * @param arr – an array of strings (can be empty)
+ * @returns the prefix that every string shares, or an empty string
  */
-export function fibonacciSearch<T extends number | string>(
-  arr: T[],
-  key: T
-): number {
-  const n = arr.length;
+function longestCommonPrefix(arr: string[]): string {
+  if (!arr.length) return "";
 
-  // 1. Compute the smallest Fibonacci number greater or equal to n
-  let fibMinusTwo = 0;   // (n-2)th fibonacci
-  let fibMinusOne = 1;   // (n-1)th fibonacci
-  let fibN = fibMinusTwo + fibMinusOne; // nth fibonacci
+  // Pin the “shortest”‑length string as a stopping rule.
+  // No prefix can be longer than this string.
+  const minLen = Math.min(...arr.map(s => s.length));
 
-  while (fibN < n) {
-    fibMinusTwo = fibMinusOne;
-    fibMinusOne = fibN;
-    fibN = fibMinusTwo + fibMinusOne;
-  }
-
-  // 2. Marks the index beyond the last element
-  let offset = -1;
-
-  // 3. while there's more to inspect
-  while (fibN > 1) {
-    const i = Math.min(offset + fibMinusTwo, n - 1);
-
-    // Compare the current element with the key
-    if (arr[i] < key!) {
-      // Move three Fibonacci numbers down
-      fibN = fibMinusOne;
-      fibMinusOne = fibMinusTwo;
-      fibMinusTwo = fibN - fibMinusOne;
-      offset = i;
-    } else if (arr[i] > key!) {
-      // Move two Fibonacci numbers down
-      fibN = fibMinusTwo;
-      fibMinusOne = fibMinusOne - fibMinusTwo;
-      fibMinusTwo = fibN - fibMinusOne;
-    } else {
-      // Element found
-      return i;
+  for (let i = 0; i < minLen; i++) {
+    const char = arr[0][i]; // candidate character
+    // stop as soon as any string mismatches
+    for (let j = 1; j < arr.length; j++) {
+      if (arr[j][i] !== char) {
+        return arr[0].substring(0, i);
+      }
     }
   }
 
-  // Compare the last element with the key
-  if (fibMinusOne && offset + 1 < n && arr[offset + 1] === key) {
-    return offset + 1;
+  // All `minLen` characters matched
+  return arr[0].substring(0, minLen);
+}
+const words = ["flower", "flow", "flight"];
+console.log(longestCommonPrefix(words)); // logs "fl"
+function longestCommonPrefixSort(arr: string[]): string {
+  if (!arr.length) return "";
+
+  const sorted = [...arr].sort();          // O(n log n)
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
+
+  let i = 0;
+  while (i < first.length && i < last.length && first[i] === last[i]) {
+    i++;
   }
 
-  return -1; // Not found
+  return first.substring(0, i);
 }
-const sortedNums = [3, 7, 12, 18, 23, 27, 34, 38, 45, 52];
-const target = 23;
+function lcpDivideAndConquer(arr: string[], l = 0, r = arr.length - 1): string {
+  if (l > r) return "";
+  if (l === r) return arr[l];
 
-const idx = fibonacciSearch(sortedNums, target);
-console.log(idx); // 4
+  const mid = Math.floor((l + r) / 2);
+  const leftPref  = lcpDivideAndConquer(arr, l, mid);
+  const rightPref = lcpDivideAndConquer(arr, mid + 1, r);
+
+  // intersect two prefixes
+  let i = 0;
+  while (i < leftPref.length && i < rightPref.length && leftPref[i] === rightPref[i]) {
+    i++;
+  }
+  return leftPref.substring(0, i);
+}
+
+// convenience wrapper
+function longestCommonPrefixD&C(arr: string[]): string {
+  return lcpDivideAndConquer(arr);
+}
+const cases: [string[], string][] = [
+  [["", "", ""]]          , [""],
+  [["dog"], ["dog"]]      , ["dog"],
+  [["abc","ab"],
+   ["ab"]]                , ["ab"],
+  [["abc","abcd","abce"], ["abc"]],
+  [["agri", "adopt", "alien"], ["a"]],
+  [["b", "a"], [""]], 
+];
+
+cases.forEach(([arr, expected], i) => {
+  const result = longestCommonPrefix(arr);
+  console.log(i, result === expected[0] ? "✅" : `❌ got "${result}"`);
+});
