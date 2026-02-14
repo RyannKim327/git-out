@@ -1,95 +1,87 @@
-/* ------------------------------------------------------------------
-   Interface that a node must support for the search.
-   ------------------------------------------------------------------ */
-export interface Searchable<Node> {
-  // Return an array (or any iterable) of child nodes.
-  getChildren(): Iterable<Node>;
+// A directed graph: adjacency list
+type Graph = Record<string, string[]>;
 
-  // Optional: a quick way to decide if this node is the goal.
-  // If omitted, the caller supplies a separate predicate below.
-  isGoal?(): boolean;
-}
+// Example: a tiny graph
+const graph: Graph = {
+  A: ["B"],
+  B: ["C"],
+  C: ["A", "D"],
+  D: ["C", "E"],
+  E: [],
+};
+/**
+ * Finds all strongly connected components of a directed graph.
+ * @param graph The adjacency list of the graph.
+ * @returns An array of SCCs; each SCC is an array of vertex IDs.
+ */
+function tarjanSCC(graph: Graph): string[][] {
+  let index = 0;                     // global index counter
+  const stack: string[] = [];        // DFS stack
+  const onStack = new Set<string>(); // quick membership check
 
-/* ------------------------------------------------------------------
-   Breadth‑Limited Search
+  // Maps vertex → its index in DFS tree
+  const indices = new Map<string, number>();
+  // Maps vertex → its lowlink value
+  const lowlink = new Map<string, number>();
+  // Result: array of SCCs
+  const sccs: string[][] = [];
 
-   Parameters
-     start   : node to begin the search
-     maxDepth: maximum depth (root is depth 0)
-     goal   : optional predicate; if the node has `isGoal`, that
-              method is used instead
+  function strongConnect(v: string) {
+    // Step 1: set the depth index for v
+    indices.set(v, index);
+    lowlink.set(v, index);
+    index++;
+    stack.push(v);
+    onStack.add(v);
 
-   Returns
-     The found node, or `undefined` if nothing was discovered within
-     the depth limit.
-   ------------------------------------------------------------------ */
-export function breadthLimitedSearch<Node extends Searchable<Node>>(
-  start: Node,
-  maxDepth: number,
-  goal?: (node: Node) => boolean
-): Node | undefined {
-
-  // Queue entries store the node and its depth
-  interface QueueEntry {
-    node: Node;
-    depth: number;
-  }
-
-  const queue: QueueEntry[] = [{ node: start, depth: 0 }];
-  const seen = new Set<Node>();
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;
-
-    // Skip any repeated nodes – this protects against cycles
-    if (seen.has(node)) continue;
-    seen.add(node);
-
-    // Goal test – prefer the node’s own method if present
-    const isGoal =
-      goal ? goal(node) : node.isGoal ? node.isGoal() : false;
-    if (isGoal) return node;
-
-    // Stop expanding deeper than maxDepth
-    if (depth < maxDepth) {
-      for (const child of node.getChildren()) {
-        queue.push({ node: child, depth: depth + 1 });
+    // Step 2: consider each successor
+    for (const w of graph[v] ?? []) {
+      if (!indices.has(w)) {
+        // Successor w has not yet been visited; recurse on it.
+        strongConnect(w);
+        // After recursion: update lowlink of v
+        lowlink.set(v, Math.min(lowlink.get(v)!, lowlink.get(w)!));
+      } else if (onStack.has(w)) {
+        // Successor w is in stack → part of current SCC
+        lowlink.set(v, Math.min(lowlink.get(v)!, indices.get(w)!));
       }
+    }
+
+    // Step 3: If v is a root node, pop the stack and generate an SCC
+    if (lowlink.get(v)! === indices.get(v)!) {
+      const scc: string[] = [];
+      let w: string | undefined;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        scc.push(w);
+      } while (w !== v);
+      sccs.push(scc);
     }
   }
 
-  // Nothing matched within the limit
-  return undefined;
+  // Kick off DFS for each vertex that hasn't been visited yet
+  for (const v of Object.keys(graph)) {
+    if (!indices.has(v)) {
+      strongConnect(v);
+    }
+  }
+
+  return sccs;
 }
-// 1. A concrete node type
-class TreeNode implements Searchable<TreeNode> {
-  constructor(
-    public value: number,
-    private children: TreeNode[] = []
-  ) {}
+const sccs = tarjanSCC(graph);
+console.log("Strongly connected components:");
+sccs.forEach((scc, i) => {
+  console.log(`  ${i + 1}. [${scc.join(", ")}]`);
+});
+Strongly connected components:
+  1. [A, C, B]
+  2. [E]
+  3. [D]
+type Vertex = number;
 
-  getChildren(): TreeNode[] {
-    return this.children;
-  }
+// * Update the graph type:
+type Graph = Record<Vertex, Vertex[]>;
 
-  // Optional helper that the search will call first
-  isGoal(): boolean {
-    return this.value === 42;
-  }
-
-  add(child: TreeNode) {
-    this.children.push(child);
-  }
-}
-
-// 2. Build a little tree
-const root = new TreeNode(1);
-const a = new TreeNode(2);
-const b = new TreeNode(3);
-root.add(a); root.add(b);
-a.add(new TreeNode(4));
-b.add(new TreeNode(42)); // the goal
-
-// 3. Run the search
-const found = breadthLimitedSearch(root, 3);
-console.log(found?.value ?? 'not found'); // prints 42
+// * Replace string‑specific typing in the function:
+function tarjanSCC(graph: Graph): Vertex[][] { ... }
