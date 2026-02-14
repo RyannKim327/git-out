@@ -1,28 +1,43 @@
-function countChar(str: string, ch: string): number {
-  // split on the target char and subtract 1 (the split always creates one
-  // more slice than the number of matches)
-  return str.split(ch).length - 1;
+interface BinaryTreeNode<T = number> {
+  val: T;                  // The payload – can be any type you need
+  left?: BinaryTreeNode<T>;
+  right?: BinaryTreeNode<T>;
 }
+function maxDepthRecursive<T>(root?: BinaryTreeNode<T>): number {
+  if (!root) return 0; // An empty tree has depth 0
 
-// Example
-console.log(countChar("hello world", "l")); // 3
-function countChar(str: string, ch: string): number {
-  const matches = str.match(new RegExp(ch, "g")); // global search
-  // If no matches, null is returned; length is 0 in that case
-  return matches ? matches.length : 0;
+  const leftDepth  = maxDepthRecursive(root.left);
+  const rightDepth = maxDepthRecursive(root.right);
+
+  return Math.max(leftDepth, rightDepth) + 1;
 }
+function maxDepthBFS<T>(root?: BinaryTreeNode<T>): number {
+  if (!root) return 0;
 
-// Example
-console.log(countChar("hello world", "l")); // 3
-const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const regex = new RegExp(escaped, "g");
-function countChar(str: string, ch: string): number {
-  let count = 0;
-  for (const c of str) {
-    if (c === ch) count++;
+  const queue: Array<{ node: BinaryTreeNode<T>; depth: number }> = [{ node: root, depth: 1 }];
+  let maxDepth = 0;
+
+  while (queue.length) {
+    const { node, depth } = queue.shift()!; // Non‑null assertion: queue never empty here
+    maxDepth = Math.max(maxDepth, depth);
+
+    if (node.left)  queue.push({ node: node.left, depth: depth + 1 });
+    if (node.right) queue.push({ node: node.right, depth: depth + 1 });
   }
-  return count;
-}
 
-// Example
-console.log(countChar("hello world", "l")); // 3
+  return maxDepth;
+}
+// Example tree:
+//        1
+//       / \
+//      2   3
+//     /
+//    4
+const tree: BinaryTreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 } },
+  right: { val: 3 }
+};
+
+console.log(maxDepthRecursive(tree)); // 3
+console.log(maxDepthBFS(tree));       // 3
