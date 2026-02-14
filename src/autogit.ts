@@ -1,105 +1,139 @@
+// 1️⃣  Types ---------------------------------------------------------------
+
 /**
- * A singly‑linked list node that holds a generic value.
+ * A simple graph node.  The generic parameter `T` lets you store any
+ * payload with the node (e.g., a string label, a number, an object, …).
  */
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null
-  ) {}
+export interface Node<T> {
+    id: string;          // unique key for the node
+    value: T;            // whatever you want to keep with it
+    neighbors: Node<T>[]; // adjacency list
 }
+
 /**
- * Returns true iff the linked list is a palindrome.
+ * A helper that produces a queue with the three essential ops.
+ * We keep a head index instead of shifting the array for O(1) time.
  */
-export function isPalindrome<T>(head: ListNode<T> | null): boolean {
-  if (!head || !head.next) return true; // empty or single node
+class Queue<T> {
+    private items: T[] = [];
+    private head: number = 0;
 
-  /* ---------- 1️⃣ Find middle ---------- */
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+    push(item: T) { this.items.push(item); }
 
-  while (fast.next && fast.next.next) {
-    slow = slow!.next!;   // move one step
-    fast = fast.next.next; // move two steps
-  }
-
-  /* ---------- 2️⃣ Reverse second half ---------- */
-  let prev: ListNode<T> | null = null;
-  let curr: ListNode<T> | null = slow;
-
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  const secondHalfHead = prev; // start of reversed half
-
-  /* ---------- 3️⃣ Compare halves ---------- */
-  let p1: ListNode<T> | null = head;
-  let p2: ListNode<T> | null = secondHalfHead;
-
-  let isPal = true;
-  while (isPal && p2) {           // p2 is half the length
-    if (p1!.val !== p2!.val) {
-      isPal = false;
-      break;
+    shift(): T | undefined {
+        if (this.head >= this.items.length) return undefined;
+        const item = this.items[this.head++];
+        // Do a bit of housekeeping to keep the array from growing forever.
+        if (this.head > 1000) {                                   
+            this.items = this.items.slice(this.head);
+            this.head = 0;
+        }
+        return item;
     }
-    p1 = p1!.next;
-    p2 = p2!.next;
-  }
 
-  /* ---------- (Optional) 4️⃣ Restore list ---------- */
-  // reverse again to keep original structure
-  curr = secondHalfHead;
-  prev = null;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  if (slow!.next) { // connect back
-    slow!.next = prev;
-  }
+    size() { return this.items.length - this.head; }
 
-  return isPal;
-}
-function build<T>(arr: T[]): ListNode<T> | null {
-  let dummy = new ListNode<T>(null as any);
-  let cur = dummy;
-  for (const v of arr) {
-    cur.next = new ListNode<T>(v);
-    cur = cur.next;
-  }
-  return dummy.next;
+    isEmpty() { return this.size() === 0; }
 }
 
-const tests = [
-  { arr: [1, 2, 3, 2, 1], expected: true },
-  { arr: [1, 2, 2, 1], expected: true },
-  { arr: [1, 2, 3], expected: false },
-  { arr: [], expected: true },
-  { arr: [42], expected: true },
-  { arr: [7, 8, 7, 9], expected: false }
-];
 
-for (const {arr, expected} of tests) {
-  const h = build(arr);
-  console.log(`isPalindrome(${JSON.stringify(arr)}) =>`, isPalindrome(h), 'expected', expected);
-}
-isPalindrome([1,2,3,2,1]) => true expected true
-isPalindrome([1,2,2,1]) => true expected true
-isPalindrome([1,2,3]) => false expected false
-isPalindrome([]) => true expected true
-isPalindrome([42]) => true expected true
-isPalindrome([7,8,7,9]) => false expected false
-function isPalindromeStack<T>(head: ListNode<T> | null): boolean {
-  const vals: T[] = [];
-  for (let cur = head; cur; cur = cur.next) vals.push(cur.val);
+// 2️⃣  Breadth‑First Search -----------------------------------------------
 
-  let l = 0, r = vals.length - 1;
-  while (l < r) {
-    if (vals[l++] !== vals[r--]) return false;
-  }
-  return true;
+/**
+ * Returns an array of nodes in the order they were visited.
+ * `start` is the node to begin from.
+ * Optional `getNeighbors` allows you to supply a custom adjacency function.
+ */
+export function bfs<T>(
+    start: Node<T>,
+    getNeighbors?: (node: Node<T>) => Iterable<Node<T>>
+): Node<T>[] {
+
+    const visited = new Set<string>();
+    const queue = new Queue<Node<T>>();
+    const order: Node<T>[] = [];
+
+    visited.add(start.id);
+    queue.push(start);
+
+    while (!queue.isEmpty()) {
+        const current = queue.shift()!;   // non‑undefined because we checked queue.isEmpty()
+        order.push(current);
+
+        const neighbors = getNeighbors
+            ? getNeighbors(current)
+            : current.neighbors;          // fallback to adjacency list
+
+        for (const nb of neighbors) {
+            if (!visited.has(nb.id)) {
+                visited.add(nb.id);
+                queue.push(nb);
+            }
+        }
+    }
+
+    return order;
 }
+
+
+// 3️⃣  Example:  undirected graph -----------------------------------------
+
+// Helper to wire nodes together
+function link<T>(a: Node<T>, b: Node<T>) {
+    a.neighbors.push(b);
+    b.neighbors.push(a);
+}
+
+// Create a small graph
+const a = { id: 'A', value: 1, neighbors: [] } as Node<number>;
+const b = { id: 'B', value: 2, neighbors: [] } as Node<number>;
+const c = { id: 'C', value: 3, neighbors: [] } as Node<number>;
+const d = { id: 'D', value: 4, neighbors: [] } as Node<number>;
+const e = { id: 'E', value: 5, neighbors: [] } as Node<number>;
+
+link(a, b);
+link(a, c);
+link(b, d);
+link(c, d);
+link(d, e);
+
+// Run BFS
+const bfsResult = bfs(a);          // depth‑first will visit A → B → C → D → E
+console.log('BFS order:', bfsResult.map(n => n.id));
+
+// 4️⃣  Tweaking with a custom neighbor fetch ------------------------------
+
+/**
+ * Suppose your graph data is stored in an adjacency map:
+ *   { 'A': ['B', 'C'], ... }
+ * You can adapt BFS by supplying a `getNeighbors` callback.
+ */
+const adjacency: Record<string, string[]> = {
+    A: ['B', 'C'],
+    B: ['A', 'D'],
+    C: ['A', 'D'],
+    D: ['B', 'C', 'E'],
+    E: ['D']
+};
+
+const nodes = Object.fromEntries(
+    Object.keys(adjacency).map(id => [id, { id, value: id, neighbors: [] } as Node<string>])
+);
+
+// Convert adjacency graph to node objects (without circular refs)
+for (const [id, nbrs] of Object.entries(adjacency)) {
+    const node = nodes[id]!;
+    node.neighbors = nbrs.map(n => nodes[n]!);
+}
+
+// Or just keep the adjacency map and pull neighbors on the fly:
+const bfsFromMap = (startId: string): string[] => {
+    const startNode = nodes[startId]!;
+    const path = bfs(startNode, n => adjacency[n.id].map(id => nodes[id]!));
+    return path.map(n => n.id);
+};
+
+console.log('BFS from map:', bfsFromMap('A'));
+
+// -------------------------------------------------------------------------
+
