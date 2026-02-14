@@ -1,38 +1,54 @@
 /**
- * @param s The string to test.
- * @param options
- *   - ignoreCase: whether to treat “A” and “a” as the same (default: true)
- *   - ignoreNonAlphaNum: whether to strip out spaces, punctuation, etc. (default: true)
- * @returns true if `s` reads the same forward and backward under the chosen options.
+ * Recursively searches for `target` in a sorted numeric array.
+ *
+ * @param arr    The sorted array to search.
+ * @param target The value we’re looking for.
+ * @param low    The lower bound index for the current search window.
+ * @param high   The upper bound index for the current search window.
+ * @returns The index of `target` in `arr`, or -1 if it’s absent.
  */
-function isPalindrome(
-  s: string,
-  options: { ignoreCase?: boolean; ignoreNonAlphaNum?: boolean } = {}
-): boolean {
-  const { ignoreCase = true, ignoreNonAlphaNum = true } = options;
+function binarySearchRec(
+  arr: number[],
+  target: number,
+  low: number = 0,
+  high: number = arr.length - 1
+): number {
+  // Base case: window collapsed → not found.
+  if (low > high) return -1;
 
-  // Optional: strip out anything other than letters/digits
-  let cleaned = ignoreNonAlphaNum
-    ? s.replace(/[^A-Za-z0-9]/g, '')
-    : s;
+  const mid = Math.floor((low + high) / 2);
+  const midVal = arr[mid];
 
-  // Optional: standardise case
-  if (ignoreCase) cleaned = cleaned.toLowerCase();
-
-  // Fast exit on single‑character strings (or empty)
-  if (cleaned.length < 2) return true;
-
-  // Compare characters from both ends
-  let left = 0;
-  let right = cleaned.length - 1;
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) return false;
-    left++;
-    right--;
-  }
-  return true;
+  if (midVal === target) return mid;           // Found!
+  if (midVal < target)
+    return binarySearchRec(arr, target, mid + 1, high); // Search right half
+  else
+    return binarySearchRec(arr, target, low, mid - 1);  // Search left half
 }
-console.log(isPalindrome('Racecar'));           // true
-console.log(isPalindrome('hello'));             // false
-console.log(isPalindrome('A man, a plan, a canal, Panama')); // true
-console.log(isPalindrome('No lemon, no melon', { ignoreNonAlphaNum: true, ignoreCase: true })); // true
+const sorted = [1, 4, 7, 9, 12, 18, 25];
+
+console.log(binarySearchRec(sorted, 9));  // → 3
+console.log(binarySearchRec(sorted, 5));  // → -1 (not present)
+function binarySearchRecGeneric<T>(
+  arr: T[],
+  target: T,
+  compare: (a: T, b: T) => number,  // Returns <0, 0, >0
+  low = 0,
+  high = arr.length - 1
+): number {
+  if (low > high) return -1;
+
+  const mid = Math.floor((low + high) / 2);
+  const cmp = compare(arr[mid], target);
+
+  if (cmp === 0) return mid;
+  if (cmp < 0)   return binarySearchRecGeneric(arr, target, compare, mid + 1, high);
+  return binarySearchRecGeneric(arr, target, compare, low, mid - 1);
+}
+const names = ['Alice', 'Bob', 'Charlie', 'Diana'];
+const idx = binarySearchRecGeneric(
+  names,
+  'Charlie',
+  (a, b) => a.localeCompare(b)   // Comparator
+);
+console.log(idx); // → 2
