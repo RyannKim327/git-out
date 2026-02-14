@@ -1,76 +1,105 @@
+// A minimal node type
+export interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
+}
 /**
- * Returns the longest common prefix of all strings in `arr`.
- *
- * @param arr – an array of strings (can be empty)
- * @returns the prefix that every string shares, or an empty string
+ * Returns the first common reference node of two singly linked lists,
+ * or null if they do not intersect.
  */
-function longestCommonPrefix(arr: string[]): string {
-  if (!arr.length) return "";
+export function getIntersectionNode<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  // Edge‑case: if either list is empty, there can’t be an intersection
+  if (!headA || !headB) return null;
 
-  // Pin the “shortest”‑length string as a stopping rule.
-  // No prefix can be longer than this string.
-  const minLen = Math.min(...arr.map(s => s.length));
+  const seen = new Set<ListNode<T>>();
 
-  for (let i = 0; i < minLen; i++) {
-    const char = arr[0][i]; // candidate character
-    // stop as soon as any string mismatches
-    for (let j = 1; j < arr.length; j++) {
-      if (arr[j][i] !== char) {
-        return arr[0].substring(0, i);
-      }
-    }
+  // Walk the first list, remember every node
+  let cur = headA;
+  while (cur) {
+    seen.add(cur);
+    cur = cur.next;
   }
 
-  // All `minLen` characters matched
-  return arr[0].substring(0, minLen);
-}
-const words = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(words)); // logs "fl"
-function longestCommonPrefixSort(arr: string[]): string {
-  if (!arr.length) return "";
-
-  const sorted = [...arr].sort();          // O(n log n)
-  const first = sorted[0];
-  const last  = sorted[sorted.length - 1];
-
-  let i = 0;
-  while (i < first.length && i < last.length && first[i] === last[i]) {
-    i++;
+  // Walk the second list until we find a node that we already saw
+  cur = headB;
+  while (cur) {
+    if (seen.has(cur)) return cur;   // first intersection node
+    cur = cur.next;
   }
 
-  return first.substring(0, i);
+  return null; // no intersection
 }
-function lcpDivideAndConquer(arr: string[], l = 0, r = arr.length - 1): string {
-  if (l > r) return "";
-  if (l === r) return arr[l];
+/**
+ * Returns an array of values that appear in *both* lists.
+ * Duplicates are preserved in the sense that each matched node
+ * contributes one entry to the result.
+ */
+export function getCommonValues<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): T[] {
+  const values = new Set<T>();
+  const common: T[] = [];
 
-  const mid = Math.floor((l + r) / 2);
-  const leftPref  = lcpDivideAndConquer(arr, l, mid);
-  const rightPref = lcpDivideAndConquer(arr, mid + 1, r);
-
-  // intersect two prefixes
-  let i = 0;
-  while (i < leftPref.length && i < rightPref.length && leftPref[i] === rightPref[i]) {
-    i++;
+  // Record every value of the first list
+  for (let node = headA; node; node = node.next) {
+    values.add(node.val);
   }
-  return leftPref.substring(0, i);
+
+  // Walk the second list and pick out matches
+  for (let node = headB; node; node = node.next) {
+    if (values.has(node.val)) common.push(node.val);
+  }
+
+  return common;
+}
+export function getIntersectionNodeTwoPointer<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  if (!headA || !headB) return null;
+
+  let a: ListNode<T> | null = headA;
+  let b: ListNode<T> | null = headB;
+
+  // After at most (lenA + lenB) steps, they either meet or both hit null.
+  while (a !== b) {
+    a = a ? a.next : headB; // switch to the other list
+    b = b ? b.next : headA;
+  }
+
+  return a; // could be null (no intersection) or the meeting node
+}
+// Helper to build a list from an array
+function build<T>(vals: T[]): ListNode<T> | null {
+  let head: ListNode<T> | null = null;
+  let cur: ListNode<T> | null = null;
+  for (const v of vals) {
+    const node: ListNode<T> = { val: v, next: null };
+    if (!head) head = node;
+    if (cur) cur.next = node;
+    cur = node;
+  }
+  return head;
 }
 
-// convenience wrapper
-function longestCommonPrefixD&C(arr: string[]): string {
-  return lcpDivideAndConquer(arr);
-}
-const cases: [string[], string][] = [
-  [["", "", ""]]          , [""],
-  [["dog"], ["dog"]]      , ["dog"],
-  [["abc","ab"],
-   ["ab"]]                , ["ab"],
-  [["abc","abcd","abce"], ["abc"]],
-  [["agri", "adopt", "alien"], ["a"]],
-  [["b", "a"], [""]], 
-];
+// Example: intersecting lists
+const shared = build([7, 8, 9]);                           // shared tail
+const a1 = build([1, 2]);                                 // first list
+const a2 = build([3, 4]);                                 // second list
 
-cases.forEach(([arr, expected], i) => {
-  const result = longestCommonPrefix(arr);
-  console.log(i, result === expected[0] ? "✅" : `❌ got "${result}"`);
-});
+// Connect the tails
+let node = a1;
+while (node?.next) node = node.next;
+node.next = shared;
+
+node = a2;
+while (node?.next) node = node.next;
+node.next = shared;
+
+// Find intersection
+const inter = getIntersectionNode(a1, a2);
+console.log(inter?.val); // 7
