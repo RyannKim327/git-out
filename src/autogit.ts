@@ -1,45 +1,28 @@
-/**
- * Returns the majority element if it exists.
- * If no element occurs > n/2 times, it returns undefined.
- */
-function majorityElement<T>(arr: T[]): T | undefined {
-  let candidate: T | undefined;
+function countChar(str: string, ch: string): number {
+  // split on the target char and subtract 1 (the split always creates one
+  // more slice than the number of matches)
+  return str.split(ch).length - 1;
+}
+
+// Example
+console.log(countChar("hello world", "l")); // 3
+function countChar(str: string, ch: string): number {
+  const matches = str.match(new RegExp(ch, "g")); // global search
+  // If no matches, null is returned; length is 0 in that case
+  return matches ? matches.length : 0;
+}
+
+// Example
+console.log(countChar("hello world", "l")); // 3
+const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const regex = new RegExp(escaped, "g");
+function countChar(str: string, ch: string): number {
   let count = 0;
-
-  // Step 1 – find a candidate
-  for (const value of arr) {
-    if (count === 0) {
-      candidate = value;
-      count = 1;
-    } else if (value === candidate) {
-      count++;
-    } else {
-      count--;
-    }
+  for (const c of str) {
+    if (c === ch) count++;
   }
-
-  // Step 2 – optional verification pass
-  // (often omitted if you’re sure the input guarantees a majority)
-  if (candidate !== undefined) {
-    let occurrences = 0;
-    for (const v of arr) {
-      if (v === candidate) occurrences++;
-    }
-    if (occurrences > Math.floor(arr.length / 2)) {
-      return candidate;
-    }
-  }
-
-  return undefined; // no majority
+  return count;
 }
-function majorityUsingMap<T>(arr: T[]): T | undefined {
-  const freq = new Map<T, number>();
-  const threshold = Math.floor(arr.length / 2) + 1;
 
-  for (const val of arr) {
-    const newCount = (freq.get(val) ?? 0) + 1;
-    if (newCount >= threshold) return val;
-    freq.set(val, newCount);
-  }
-  return undefined;
-}
+// Example
+console.log(countChar("hello world", "l")); // 3
