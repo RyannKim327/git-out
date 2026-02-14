@@ -1,60 +1,47 @@
 /**
- * Merges two sorted slices `left` and `right` into a single sorted array.
- * The operation is stable — items that compare equal keep their original
- * relative order.
+ * Finds the median of two sorted arrays that may be of different lengths.
+ *
+ * @param a  first sorted array (non‑empty)
+ * @param b  second sorted array (non‑empty)
+ * @returns  median value (number)
  */
-function merge<T>(left: T[], right: T[], compare: (a: T, b: T) => number): T[] {
-  const result: T[] = [];
-  let i = 0;          // index into left
-  let j = 0;          // index into right
+export function medianOfTwoSortedArrays(a: number[], b: number[]): number {
+  // Ensure a is the shorter array to keep the binary search bounded.
+  if (a.length > b.length) return medianOfTwoSortedArrays(b, a);
 
-  while (i < left.length && j < right.length) {
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i++]);
+  const m = a.length;
+  const n = b.length;
+  let left = 0;
+  let right = m;
+
+  while (left <= right) {
+    const i = Math.floor((left + right) / 2);          // cut in a
+    const j = Math.floor((m + n + 1) / 2) - i;        // cut in b
+
+    const Aleft   = i === 0 ?    -Infinity : a[i - 1];
+    const Aright  = i === m ?    Infinity : a[i];
+    const Bleft   = j === 0 ?    -Infinity : b[j - 1];
+    const Bright  = j === n ?    Infinity : b[j];
+
+    if (Aleft <= Bright && Bleft <= Aright) {
+      // correct partition found
+      if ((m + n) % 2 === 0) {
+        return Math.max(Aleft, Bleft) + Math.min(Aright, Bright) / 2;
+      } else {
+        return Math.max(Aleft, Bleft);
+      }
+    } else if (Aleft > Bright) {
+      // i is too big – shift left
+      right = i - 1;
     } else {
-      result.push(right[j++]);
+      // i is too small – shift right
+      left = i + 1;
     }
   }
 
-  // Append any remaining elements
-  return result.concat(left.slice(i), right.slice(j));
+  // Should never hit here if inputs are valid and sorted.
+  throw new Error("Input arrays are not sorted or empty");
 }
-
-/**
- * Recursively sorts `array` using merge sort.
- *
- * @param array   – the array to sort
- * @param compare – a comparator returning a negative number if a < b,
- *                  zero if a == b, and a positive number otherwise.
- *
- * @returns a NEW sorted array; the input array is left untouched.
- */
-export function mergeSort<T>(array: T[], compare: (a: T, b: T) => number): T[] {
-  // Base case: arrays of length 0 or 1 are already sorted
-  if (array.length <= 1) {
-    return array.slice();          // shallow copy to stay pure
-  }
-
-  const mid = Math.floor(array.length / 2);
-  const left  = array.slice(0, mid);
-  const right = array.slice(mid);
-
-  // Sort each half and merge
-  const sortedLeft  = mergeSort(left,  compare);
-  const sortedRight = mergeSort(right, compare);
-
-  return merge(sortedLeft, sortedRight, compare);
-}
-
-/* ---------------------------------------------------------
-   Example usage:
-   ---------------------------------------------------------
-
-   // Numeric sort (ascending)
-   const numbers = [32, 5, 73, 1, 42];
-   const sortedNumbers = mergeSort(numbers, (a, b) => a - b);
-
-   // String sort by length
-   const words = ["banana", "apple", "fig", "cherry"];
-   const sortedByLength = mergeSort(words, (a, b) => a.length - b.length);
-   -------------------------------------------------------- */
+console.log(medianOfTwoSortedArrays([1, 3], [2]));          // 2
+console.log(medianOfTwoSortedArrays([1, 2], [3, 4]));        // 2.5
+console.log(medianOfTwoSortedArrays([0, 0], [0, 0]));        // 0
