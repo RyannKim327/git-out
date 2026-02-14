@@ -1,76 +1,38 @@
 /**
- * Quicksort implementation for an array of items of type T.
- * 
- * @param items The array to sort.  It will be sorted in‑place.
- * @param compare Optional. A function that returns a negative number if a < b,
- *                zero if a === b, and a positive number if a > b.
- *                If omitted, native `<` / `>` are used for primitives.
+ * @param s The string to test.
+ * @param options
+ *   - ignoreCase: whether to treat “A” and “a” as the same (default: true)
+ *   - ignoreNonAlphaNum: whether to strip out spaces, punctuation, etc. (default: true)
+ * @returns true if `s` reads the same forward and backward under the chosen options.
  */
-export function quickSort<T>(
-  items: T[],
-  compare?: (a: T, b: T) => number
-): void {
-  // Default comparison – works for numbers, strings, booleans
-  const cmp = compare
-    ? compare
-    : (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
+function isPalindrome(
+  s: string,
+  options: { ignoreCase?: boolean; ignoreNonAlphaNum?: boolean } = {}
+): boolean {
+  const { ignoreCase = true, ignoreNonAlphaNum = true } = options;
 
-  // Helper for the recursive sort; index bounds are inclusive
-  function sort(left: number, right: number): void {
-    if (left >= right) return;
+  // Optional: strip out anything other than letters/digits
+  let cleaned = ignoreNonAlphaNum
+    ? s.replace(/[^A-Za-z0-9]/g, '')
+    : s;
 
-    // Choose pivot – median‑of‑three to avoid worst‑case on sorted input
-    const mid = Math.floor((left + right) / 2);
-    const pivotIndex = medianOfThree(left, mid, right);
-    const pivotValue = items[pivotIndex];
+  // Optional: standardise case
+  if (ignoreCase) cleaned = cleaned.toLowerCase();
 
-    // Move pivot to the left end to simplify the partition loop
-    [items[left], items[pivotIndex]] = [items[pivotIndex], items[left]];
+  // Fast exit on single‑character strings (or empty)
+  if (cleaned.length < 2) return true;
 
-    let i = left + 1;
-    let j = right;
-
-    while (i <= j) {
-      while (i <= right && cmp(items[i], pivotValue) < 0) i++;
-      while (j >= left + 1 && cmp(items[j], pivotValue) > 0) j--;
-
-      if (i < j) [items[i], items[j]] = [items[j], items[i]];
-      i++;
-      j--;
-    }
-
-    // Return pivot to its final spot
-    [items[left], items[j]] = [items[j], items[left]];
-
-    // Recurse on each side
-    sort(left, j - 1);
-    sort(j + 1, right);
+  // Compare characters from both ends
+  let left = 0;
+  let right = cleaned.length - 1;
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) return false;
+    left++;
+    right--;
   }
-
-  // Median‑of‑three helper – returns index of median of three indices
-  function medianOfThree(a: number, b: number, c: number): number {
-    const va = items[a], vb = items[b], vc = items[c];
-    if ((cmp(va, vb) < 0) ^ (cmp(va, vc) < 0)) return a;
-    if ((cmp(vb, va) < 0) ^ (cmp(vb, vc) < 0)) return b;
-    return c;
-  }
-
-  sort(0, items.length - 1);
+  return true;
 }
-// Numbers
-const nums = [3, 8, 2, 5, 1, 9];
-quickSort(nums);               // in‑place sort → [1, 2, 3, 5, 8, 9]
-
-// Strings
-const words = ['banana', 'apple', 'cherry'];
-quickSort(words);              // → ['apple', 'banana', 'cherry']
-
-// Custom objects
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 20 },
-  { name: 'Carol', age: 25 }
-];
-quickSort(people, (a, b) => a.age - b.age);
-// → sorted by age: 20, 25, 30
+console.log(isPalindrome('Racecar'));           // true
+console.log(isPalindrome('hello'));             // false
+console.log(isPalindrome('A man, a plan, a canal, Panama')); // true
+console.log(isPalindrome('No lemon, no melon', { ignoreNonAlphaNum: true, ignoreCase: true })); // true
