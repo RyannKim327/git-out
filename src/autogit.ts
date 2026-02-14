@@ -1,30 +1,49 @@
 /**
- * Reverse the order of words in a string.
+ * Binary search on a sorted array.
  *
- * Words are anything separated by whitespace (space, tab, etc.).
- * Leading/trailing whitespace is trimmed for a clean result, but
- * consecutive internal spaces are collapsed to a single space – you can keep
- * them if you prefer by tweaking the regex.
- *
- * @param s  The input string.
- * @returns   The string with the words reversed.
+ * @param arr   Sorted array (ascending).
+ * @param key   Value to search for.
+ * @returns     Index of `key` in `arr`, or -1 if not found.
  */
-function reverseWords(s: string): string {
-  // 1. Trim surrounding whitespace, then split on any sequence of whitespace.
-  const words = s.trim().split(/\s+/);
+export function binarySearch<T extends number | string>(arr: T[], key: T): number {
+    let low  = 0;
+    let high = arr.length - 1;
 
-  // 2. Reverse the array in place.
-  words.reverse();
+    while (low <= high) {
+        // Use floor division so we don’t overshoot on odd lengths.
+        const mid = Math.floor((low + high) / 2);
+        const midVal = arr[mid];
 
-  // 3. Join back with a single space (change if you need a different separator).
-  return words.join(' ');
+        if (midVal === key) {
+            return mid;                // Found it!
+        }
+        else if (midVal < key) {
+            low = mid + 1;              // Search right half
+        } else {
+            high = mid - 1;             // Search left half
+        }
+    }
+    return -1; // Not found
 }
+type Comparator<T> = (a: T, b: T) => number; // negative if a < b, zero if equal, positive otherwise
 
-// Demo
-const original = "  the quick brown   fox jumps over the lazy dog  ";
-const reversed = reverseWords(original);
+export function binarySearchWith<T>(arr: T[], key: T, cmp: Comparator<T>): number {
+    let low = 0, high = arr.length - 1;
 
-console.log("Original:", original);
-console.log("Reversed:", reversed);
-// Output: "dog lazy the over jumps fox brown quick the"
-const words = s.split(/\s+/);
+    while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        const comp = cmp(arr[mid], key);
+
+        if (comp === 0) return mid;
+        if (comp < 0)  low = mid + 1;
+        else           high = mid - 1;
+    }
+    return -1;
+}
+const numbers = [3, 7, 12, 20, 31, 45, 58];
+console.log(binarySearch(numbers, 20)); // → 3
+
+// With a custom comparator for objects:
+const people = [{id: 1, name: 'Alice'}, {id: 3, name: 'Bob'}, {id: 7, name: 'Carol'}];
+const idCmp = (p: typeof people[0], key: number) => p.id - key;
+console.log(binarySearchWith(people, 3, idCmp)); // → 1
