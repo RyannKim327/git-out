@@ -1,71 +1,75 @@
-/**
- * Forward Burrows‑Wheeler Transform.
- *
- * @param text – input string
- * @returns {lastColumn, originalIndex}
- *   • lastColumn  – the BWT string (the last column of the sorted rotations)
- *   • originalIndex – position of the original string in the sorted list
- */
-export function bwt(text: string): { lastColumn: string; originalIndex: number } {
-  const n = text.length;
-  const rotations = new Array<string>(n);
+/** Build the "lps" (longest‑prefix‑which‑is‑also‑suffix) table for the pattern */
+function buildLPS(pattern: string): number[] {
+  const lps = new Array(pattern.length).fill(0);
+  let len = 0;              // length of previous longest prefix suffix
+  let i = 1;                // we start from the second character
 
-  // Build all cyclic rotations
-  for (let i = 0; i < n; i++) {
-    rotations[i] = text.slice(i) + text.slice(0, i);
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      if (len !== 0) {
+        len = lps[len - 1];  // fallback in the pattern
+      } else {
+        lps[i] = 0;
+        i++;
+      }
+    }
   }
-
-  // Sort rotations lexicographically
-  rotations.sort();
-
-  // Grab last character of each rotation and remember where the original text ended up
-  let lastColumn = '';
-  let originalIndex = -1;
-  for (let i = 0; i < n; i++) {
-    const rot = rotations[i];
-    lastColumn += rot[rot.length - 1];
-    if (rot === text) originalIndex = i;
-  }
-
-  return { lastColumn, originalIndex };
+  return lps;
 }
 
-/**
- * Inverse Burrows‑Wheeler Transform.
- *
- * @param lastColumn  – BWT string (result of the forward transform)
- * @param originalIndex – index returned by the forward transform
- * @returns original input string
- */
-export function inverseBwt(lastColumn: string, originalIndex: number): string {
-  const n = lastColumn.length;
+/** Find the first occurrence of `pattern` in `text` (returns -1 if not found) */
+function kmpSearch(text: string, pattern: string): number {
+  if (!pattern) return 0; // empty pattern matches at start
 
-  // Build the first column by sorting the last column
-  const firstColumn = [...lastColumn].sort().join('');
+  const lps = buildLPS(pattern);
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-  // Build a map from character to its deque of positions in the last column
-  const charQueues: Record<string, number[]> = {};
-  for (let i = 0; i < n; i++) {
-    const c = lastColumn[i];
-    if (!charQueues[c]) charQueues[c] = [];
-    charQueues[c].push(i);
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) return i - j; // match found
+    } else {
+      if (j !== 0) {
+        j = lps[j - 1]; // shift pattern without re‑examining matched chars
+      } else {
+        i++;           // no match, move on in the text
+      }
+    }
   }
-
-  // Reconstruct the original string
-  let result = '';
-  let idx = originalIndex;
-  for (let i = 0; i < n; i++) {
-    const c = firstColumn[idx];
-    result += c;
-    // The row that had c in the last column is the next idx
-    idx = charQueues[c].shift()!;
-  }
-
-  return result;
+  return -1; // no match
 }
-const { lastColumn, originalIndex } = bwt('BANANA');
-console.log(lastColumn);          // 'ANNBAA'
-console.log(originalIndex);       // 3
 
-const original = inverseBwt(lastColumn, originalIndex);
-console.log(original);            // 'BANANA'
+/** Optional: return *all* starting indices of matches */
+function kmpAllMatches(text: string, pattern: string): number[] {
+  const indices: number[] = [];
+  if (!pattern) return [0];
+
+  const lps = buildLPS(pattern);
+  let i = 0, j = 0;
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) {
+        indices.push(i - j);
+        j = lps[j - 1]; // continue searching for next possible match
+      }
+    } else {
+      if (j !== 0) j = lps[j - 1];
+      else i++;
+    }
+  }
+  return indices;
+}
+const txt = "ABABDABACDABABCABAB";
+const pat = "ABABCABAB";
+
+const firstIdx = kmpSearch(txt, pat);          // returns 10
+const allIdx   = kmpAllMatches(txt, pat);     // returns [10]
