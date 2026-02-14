@@ -1,61 +1,85 @@
 /**
- * Sorts an array of numbers in ascending order using insertion sort.
- * The algorithm works in place – the input array is mutated.
- *
- * @param arr - The numeric array to be sorted.
- * @returns The same array, now sorted.
+ * Simple representation of a DAG.
+ *   vertices – an array of node identifiers (any type, but usually string or number)
+ *   edges    – a map from a vertex to a list of outgoing neighbours
  */
-export function insertionSort(arr: number[]): number[] {
-  // Start from the second element; the first element is “sorted” by definition
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];            // The value we’re going to insert
-    let j = i - 1;
+interface Graph<V> {
+  vertices: V[];
+  edges: Map<V, V[]>;
+}
 
-    // Shift elements that are greater than the key to the right
-    while (j >= 0 && arr[j] > key) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
+/**
+ * Kahn’s topological sort.
+ * @param graph – a DAG
+ * @returns a list of vertices sorted topologically
+ * @throws Error if the graph contains a cycle
+ */
+function topologicalSort<V>(graph: Graph<V>): V[] {
+  // Compute indegree of each vertex
+  const indegree = new Map<V, number>();
+  graph.vertices.forEach(v => indegree.set(v, 0));
 
-    // Insert the key into its correct position
-    arr[j + 1] = key;
+  graph.edges.forEach((neighbours, from) => {
+    neighbours.forEach(to => {
+      indegree.set(to, (indegree.get(to) || 0) + 1);
+    });
+  });
+
+  // Queue of vertices with indegree 0
+  const queue: V[] = [];
+  indegree.forEach((deg, v) => {
+    if (deg === 0) queue.push(v);
+  });
+
+  const order: V[] = [];
+  while (queue.length) {
+    const v = queue.shift()!;
+    order.push(v);
+
+    const neighbours = graph.edges.get(v) ?? [];
+    neighbours.forEach(to => {
+      indegree.set(to, (indegree.get(to) || 0) - 1);
+      if (indegree.get(to) === 0) queue.push(to);
+    });
   }
 
-  return arr;
-}
-export function insertionSort<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-
-    // While j is in range and key is less than arr[j], shift arr[j] right
-    while (j >= 0 && compareFn(key, arr[j]) < 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    arr[j + 1] = key;
+  // If we processed fewer vertices than exist, a cycle is present
+  if (order.length !== graph.vertices.length) {
+    throw new Error('Graph contains a cycle – topological sort not possible');
   }
 
-  return arr;
+  return order;
 }
-// Numbers
-const nums = [64, 25, 12, 22, 11];
-insertionSort(nums);          // => [11, 12, 22, 25, 64]
+A → C
+B → C
+C → D
+const g: Graph<string> = {
+  vertices: ['A', 'B', 'C', 'D'],
+  edges: new Map([
+    ['A', ['C']],
+    ['B', ['C']],
+    ['C', ['D']],
+    // D has no outgoing edges
+  ]),
+};
 
-// Strings
-const words = ['banana', 'apple', 'cherry'];
-insertionSort(words);          // => ['apple', 'banana', 'cherry']
+console.log(topologicalSort(g)); // → ['A', 'B', 'C', 'D'] (or ['B', 'A', 'C', 'D'])
+function topologicalSortDFS<V>(graph: Graph<V>): V[] {
+  const visited = new Set<V>();
+  const temp = new Set<V>();          // to detect cycles
+  const stack: V[] = [];
 
-// Custom objects
-const people = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 24 },
-  { name: 'Catherine', age: 27 }
-];
+  function visit(v: V) {
+    if (temp.has(v)) throw new Error('Cycle detected');
+    if (visited.has(v)) return;
 
-insertionSort(people, (a, b) => a.age - b.age);
-// => sorted by age
+    temp.add(v);
+    (graph.edges.get(v) ?? []).forEach(visit);
+    temp.delete(v);
+    visited.add(v);
+    stack.push(v);                    // push after children – this yields reverse order
+  }
+
+  graph.vertices.forEach(visit);
+  return stack.reverse();             // reverse to get the correct order
+}
