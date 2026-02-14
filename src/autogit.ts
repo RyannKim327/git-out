@@ -1,71 +1,74 @@
-/**
- * Forward Burrows‑Wheeler Transform.
- *
- * @param text – input string
- * @returns {lastColumn, originalIndex}
- *   • lastColumn  – the BWT string (the last column of the sorted rotations)
- *   • originalIndex – position of the original string in the sorted list
- */
-export function bwt(text: string): { lastColumn: string; originalIndex: number } {
-  const n = text.length;
-  const rotations = new Array<string>(n);
+interface Node<T> {
+  /** opaque identifier used for duplicate detection – e.g. a stringified board state */
+  id: string;
+  /** whatever data you want to keep (state, metadata, …) */
+  data: T;
+  /** produces the succ­esor nodes */
+  getChildren(): Iterable<Node<T>>;
+}
+function dls<T>(
+  node: Node<T>,
+  goalTest: (n: Node<T>) => boolean,
+  limit: number,
+  visited = new Set<string>()
+): Node<T> | null {
+  if (goalTest(node)) return node;
+  if (limit <= 0) return null;          // terminal depth reached
+  visited.add(node.id);                 // prevent revisiting
 
-  // Build all cyclic rotations
-  for (let i = 0; i < n; i++) {
-    rotations[i] = text.slice(i) + text.slice(0, i);
+  for (const child of node.getChildren()) {
+    if (!visited.has(child.id)) {
+      const result = dls(child, goalTest, limit - 1, visited);
+      if (result !== null) return result;
+    }
   }
+  return null; // no goal found within limit
+}
+function dlsIter<T>(
+  start: Node<T>,
+  goalTest: (n: Node<T>) => boolean,
+  limit: number
+): Node<T> | null {
+  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: start, depth: 0 }];
+  const visited = new Set<string>();
 
-  // Sort rotations lexicographically
-  rotations.sort();
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    if (goalTest(node)) return node;
+    if (depth === limit) continue;      // hit the limit – skip children
 
-  // Grab last character of each rotation and remember where the original text ended up
-  let lastColumn = '';
-  let originalIndex = -1;
-  for (let i = 0; i < n; i++) {
-    const rot = rotations[i];
-    lastColumn += rot[rot.length - 1];
-    if (rot === text) originalIndex = i;
+    visited.add(node.id);
+    for (const child of node.getChildren()) {
+      if (!visited.has(child.id)) {
+        stack.push({ node: child, depth: depth + 1 });
+      }
+    }
   }
-
-  return { lastColumn, originalIndex };
+  return null;
+}
+class Coord {
+  constructor(public x: number, public y: number) {}
 }
 
-/**
- * Inverse Burrows‑Wheeler Transform.
- *
- * @param lastColumn  – BWT string (result of the forward transform)
- * @param originalIndex – index returned by the forward transform
- * @returns original input string
- */
-export function inverseBwt(lastColumn: string, originalIndex: number): string {
-  const n = lastColumn.length;
+class MazeCell implements Node<Coord> {
+  constructor(
+    public id: string,
+    public data: Coord,
+    private neighbors: readonly Coord[]
+  ) {}
 
-  // Build the first column by sorting the last column
-  const firstColumn = [...lastColumn].sort().join('');
-
-  // Build a map from character to its deque of positions in the last column
-  const charQueues: Record<string, number[]> = {};
-  for (let i = 0; i < n; i++) {
-    const c = lastColumn[i];
-    if (!charQueues[c]) charQueues[c] = [];
-    charQueues[c].push(i);
+  getChildren(): Iterable<Node<Coord>> {
+    return this.neighbors.map(
+      n => new MazeCell(String(n.x) + ',' + n.y, n, [] /* placeholder */)
+    );
   }
-
-  // Reconstruct the original string
-  let result = '';
-  let idx = originalIndex;
-  for (let i = 0; i < n; i++) {
-    const c = firstColumn[idx];
-    result += c;
-    // The row that had c in the last column is the next idx
-    idx = charQueues[c].shift()!;
-  }
-
-  return result;
 }
-const { lastColumn, originalIndex } = bwt('BANANA');
-console.log(lastColumn);          // 'ANNBAA'
-console.log(originalIndex);       // 3
 
-const original = inverseBwt(lastColumn, originalIndex);
-console.log(original);            // 'BANANA'
+// Setup: build maze, decide start & goal
+const start = new MazeCell('0,0', new Coord(0, 0), [new Coord(1, 0), new Coord(0, 1)]);
+const isGoal = (n: Node<Coord>) => n.data.x === 5 && n.data.y === 5;
+
+// Run:
+const found = dls(start, isGoal, 10);
+if (found) console.log('Found solution:', found.data);
+else console.log('no path within depth 10');
