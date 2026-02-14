@@ -1,74 +1,76 @@
-interface Node<T> {
-  /** opaque identifier used for duplicate detection – e.g. a stringified board state */
-  id: string;
-  /** whatever data you want to keep (state, metadata, …) */
-  data: T;
-  /** produces the succ­esor nodes */
-  getChildren(): Iterable<Node<T>>;
-}
-function dls<T>(
-  node: Node<T>,
-  goalTest: (n: Node<T>) => boolean,
-  limit: number,
-  visited = new Set<string>()
-): Node<T> | null {
-  if (goalTest(node)) return node;
-  if (limit <= 0) return null;          // terminal depth reached
-  visited.add(node.id);                 // prevent revisiting
+/**
+ * Quicksort implementation for an array of items of type T.
+ * 
+ * @param items The array to sort.  It will be sorted in‑place.
+ * @param compare Optional. A function that returns a negative number if a < b,
+ *                zero if a === b, and a positive number if a > b.
+ *                If omitted, native `<` / `>` are used for primitives.
+ */
+export function quickSort<T>(
+  items: T[],
+  compare?: (a: T, b: T) => number
+): void {
+  // Default comparison – works for numbers, strings, booleans
+  const cmp = compare
+    ? compare
+    : (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
 
-  for (const child of node.getChildren()) {
-    if (!visited.has(child.id)) {
-      const result = dls(child, goalTest, limit - 1, visited);
-      if (result !== null) return result;
+  // Helper for the recursive sort; index bounds are inclusive
+  function sort(left: number, right: number): void {
+    if (left >= right) return;
+
+    // Choose pivot – median‑of‑three to avoid worst‑case on sorted input
+    const mid = Math.floor((left + right) / 2);
+    const pivotIndex = medianOfThree(left, mid, right);
+    const pivotValue = items[pivotIndex];
+
+    // Move pivot to the left end to simplify the partition loop
+    [items[left], items[pivotIndex]] = [items[pivotIndex], items[left]];
+
+    let i = left + 1;
+    let j = right;
+
+    while (i <= j) {
+      while (i <= right && cmp(items[i], pivotValue) < 0) i++;
+      while (j >= left + 1 && cmp(items[j], pivotValue) > 0) j--;
+
+      if (i < j) [items[i], items[j]] = [items[j], items[i]];
+      i++;
+      j--;
     }
+
+    // Return pivot to its final spot
+    [items[left], items[j]] = [items[j], items[left]];
+
+    // Recurse on each side
+    sort(left, j - 1);
+    sort(j + 1, right);
   }
-  return null; // no goal found within limit
-}
-function dlsIter<T>(
-  start: Node<T>,
-  goalTest: (n: Node<T>) => boolean,
-  limit: number
-): Node<T> | null {
-  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: start, depth: 0 }];
-  const visited = new Set<string>();
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    if (goalTest(node)) return node;
-    if (depth === limit) continue;      // hit the limit – skip children
-
-    visited.add(node.id);
-    for (const child of node.getChildren()) {
-      if (!visited.has(child.id)) {
-        stack.push({ node: child, depth: depth + 1 });
-      }
-    }
+  // Median‑of‑three helper – returns index of median of three indices
+  function medianOfThree(a: number, b: number, c: number): number {
+    const va = items[a], vb = items[b], vc = items[c];
+    if ((cmp(va, vb) < 0) ^ (cmp(va, vc) < 0)) return a;
+    if ((cmp(vb, va) < 0) ^ (cmp(vb, vc) < 0)) return b;
+    return c;
   }
-  return null;
+
+  sort(0, items.length - 1);
 }
-class Coord {
-  constructor(public x: number, public y: number) {}
-}
+// Numbers
+const nums = [3, 8, 2, 5, 1, 9];
+quickSort(nums);               // in‑place sort → [1, 2, 3, 5, 8, 9]
 
-class MazeCell implements Node<Coord> {
-  constructor(
-    public id: string,
-    public data: Coord,
-    private neighbors: readonly Coord[]
-  ) {}
+// Strings
+const words = ['banana', 'apple', 'cherry'];
+quickSort(words);              // → ['apple', 'banana', 'cherry']
 
-  getChildren(): Iterable<Node<Coord>> {
-    return this.neighbors.map(
-      n => new MazeCell(String(n.x) + ',' + n.y, n, [] /* placeholder */)
-    );
-  }
-}
-
-// Setup: build maze, decide start & goal
-const start = new MazeCell('0,0', new Coord(0, 0), [new Coord(1, 0), new Coord(0, 1)]);
-const isGoal = (n: Node<Coord>) => n.data.x === 5 && n.data.y === 5;
-
-// Run:
-const found = dls(start, isGoal, 10);
-if (found) console.log('Found solution:', found.data);
-else console.log('no path within depth 10');
+// Custom objects
+type Person = { name: string; age: number };
+const people: Person[] = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob', age: 20 },
+  { name: 'Carol', age: 25 }
+];
+quickSort(people, (a, b) => a.age - b.age);
+// → sorted by age: 20, 25, 30
