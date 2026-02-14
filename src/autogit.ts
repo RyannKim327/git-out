@@ -1,52 +1,27 @@
-interface TreeNode {
-  value: number;          // what you want to sum
-  left?: TreeNode | null;
-  right?: TreeNode | null;
+function isPalindrome(str: string): boolean {
+  const sanitized = str.toLowerCase();              // ignore case
+  const reversed  = sanitized.split('').reverse().join('');
+  return sanitized === reversed;
 }
-function sumTreeRecursive(node: TreeNode | null): number {
-  if (!node) return 0;
+console.log(isPalindrome('RaceCar'));      // true
+console.log(isPalindrome('hello'));        // false
+function isPalindromePortable(str: string): boolean {
+  const cleaned = str.replace(/[^a-z0-9]/gi, '').toLowerCase();
+  const left = 0;
+  const right = cleaned.length - 1;
 
-  const leftSum  = sumTreeRecursive(node.left ?? null);
-  const rightSum = sumTreeRecursive(node.right ?? null);
-
-  return node.value + leftSum + rightSum;
-}
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  let total = 0;
-  const stack: TreeNode[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.value;
-
-    // Push children in any order – the sum is commutative.
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) return false;
+    left++;
+    right--;
   }
 
-  return total;
+  return true;
 }
-// A tiny test tree:
-//        5
-//       / \
-//      3   7
-//     / \   \
-//    2   4   8
-
-const testTree: TreeNode = {
-  value: 5,
-  left: {
-    value: 3,
-    left:  { value: 2 },
-    right: { value: 4 }
-  },
-  right: {
-    value: 7,
-    right: { value: 8 }
-  }
-};
-
-console.log('Recursive sum:', sumTreeRecursive(testTree));  // 29
-console.log('Iterative sum:', sumTreeIterative(testTree));  // 29
+console.log(isPalindromePortable('A man, a plan, a canal: Panama')); // true
+console.log(isPalindromePortable('No lemon, no melon'));            // true
+console.log(isPalindromePortable('Hello, world!'));                 // false
+const isPalindromeFancy = (s: string) =>
+  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).join('') ===
+  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).reverse().join('');
+export { isPalindrome, isPalindromePortable };
