@@ -1,57 +1,61 @@
-function secondLargestSort(arr: number[]): number | null {
-  // Defensive copy so we don’t mutate the caller’s data
-  const sorted = [...arr].sort((a, b) => b - a); // descending
+/**
+ * Sorts an array of numbers in ascending order using insertion sort.
+ * The algorithm works in place – the input array is mutated.
+ *
+ * @param arr - The numeric array to be sorted.
+ * @returns The same array, now sorted.
+ */
+export function insertionSort(arr: number[]): number[] {
+  // Start from the second element; the first element is “sorted” by definition
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];            // The value we’re going to insert
+    let j = i - 1;
 
-  // Find the first element that isn’t equal to the maximum
-  let i = 1;
-  while (i < sorted.length && sorted[i] === sorted[0]) {
-    i++;
-  }
-
-  return i < sorted.length ? sorted[i] : null;
-}
-console.log(secondLargestSort([3, 1, 4, 4, 5])); // 4
-console.log(secondLargestSort([10]));            // null
-function secondLargestTwoPass(arr: number[]): number | null {
-  if (arr.length < 2) return null;
-
-  let max = -Infinity;
-  let secondMax = -Infinity;
-
-  // First pass: find the maximum
-  for (const v of arr) {
-    if (v > max) max = v;
-  }
-
-  // Second pass: find the largest value that is < max
-  for (const v of arr) {
-    if (v < max && v > secondMax) secondMax = v;
-  }
-
-  return secondMax === -Infinity ? null : secondMax;
-}
-console.log(secondLargestTwoPass([7, 3, 9, 1, 9])); // 7
-function secondLargest(arr: number[]): number | null {
-  if (arr.length < 2) return null;
-
-  let max = -Infinity;
-  let secondMax = -Infinity;
-
-  for (const v of arr) {
-    if (v > max) {
-      secondMax = max; // the old max becomes second max
-      max = v;
-    } else if (v < max && v > secondMax) {
-      secondMax = v;
+    // Shift elements that are greater than the key to the right
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j];
+      j--;
     }
+
+    // Insert the key into its correct position
+    arr[j + 1] = key;
   }
 
-  return secondMax === -Infinity ? null : secondMax;
+  return arr;
 }
-console.log(secondLargest([5, 12, 7, 12, 9]));   // 9
-console.log(secondLargest([3]));                // null
-console.log(secondLargest([2, 2, 2]));          // null (no distinct second largest)
-function findSecondLargest(arr: number[]): number | null {
-  // Pick whichever implementation feels best
-  return secondLargest(arr);
+export function insertionSort<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+
+    // While j is in range and key is less than arr[j], shift arr[j] right
+    while (j >= 0 && compareFn(key, arr[j]) < 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    arr[j + 1] = key;
+  }
+
+  return arr;
 }
+// Numbers
+const nums = [64, 25, 12, 22, 11];
+insertionSort(nums);          // => [11, 12, 22, 25, 64]
+
+// Strings
+const words = ['banana', 'apple', 'cherry'];
+insertionSort(words);          // => ['apple', 'banana', 'cherry']
+
+// Custom objects
+const people = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob', age: 24 },
+  { name: 'Catherine', age: 27 }
+];
+
+insertionSort(people, (a, b) => a.age - b.age);
+// => sorted by age
