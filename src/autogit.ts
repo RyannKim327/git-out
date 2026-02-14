@@ -1,76 +1,54 @@
 /**
- * Quicksort implementation for an array of items of type T.
- * 
- * @param items The array to sort.  It will be sorted in‑place.
- * @param compare Optional. A function that returns a negative number if a < b,
- *                zero if a === b, and a positive number if a > b.
- *                If omitted, native `<` / `>` are used for primitives.
+ * Recursively searches for `target` in a sorted numeric array.
+ *
+ * @param arr    The sorted array to search.
+ * @param target The value we’re looking for.
+ * @param low    The lower bound index for the current search window.
+ * @param high   The upper bound index for the current search window.
+ * @returns The index of `target` in `arr`, or -1 if it’s absent.
  */
-export function quickSort<T>(
-  items: T[],
-  compare?: (a: T, b: T) => number
-): void {
-  // Default comparison – works for numbers, strings, booleans
-  const cmp = compare
-    ? compare
-    : (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
+function binarySearchRec(
+  arr: number[],
+  target: number,
+  low: number = 0,
+  high: number = arr.length - 1
+): number {
+  // Base case: window collapsed → not found.
+  if (low > high) return -1;
 
-  // Helper for the recursive sort; index bounds are inclusive
-  function sort(left: number, right: number): void {
-    if (left >= right) return;
+  const mid = Math.floor((low + high) / 2);
+  const midVal = arr[mid];
 
-    // Choose pivot – median‑of‑three to avoid worst‑case on sorted input
-    const mid = Math.floor((left + right) / 2);
-    const pivotIndex = medianOfThree(left, mid, right);
-    const pivotValue = items[pivotIndex];
-
-    // Move pivot to the left end to simplify the partition loop
-    [items[left], items[pivotIndex]] = [items[pivotIndex], items[left]];
-
-    let i = left + 1;
-    let j = right;
-
-    while (i <= j) {
-      while (i <= right && cmp(items[i], pivotValue) < 0) i++;
-      while (j >= left + 1 && cmp(items[j], pivotValue) > 0) j--;
-
-      if (i < j) [items[i], items[j]] = [items[j], items[i]];
-      i++;
-      j--;
-    }
-
-    // Return pivot to its final spot
-    [items[left], items[j]] = [items[j], items[left]];
-
-    // Recurse on each side
-    sort(left, j - 1);
-    sort(j + 1, right);
-  }
-
-  // Median‑of‑three helper – returns index of median of three indices
-  function medianOfThree(a: number, b: number, c: number): number {
-    const va = items[a], vb = items[b], vc = items[c];
-    if ((cmp(va, vb) < 0) ^ (cmp(va, vc) < 0)) return a;
-    if ((cmp(vb, va) < 0) ^ (cmp(vb, vc) < 0)) return b;
-    return c;
-  }
-
-  sort(0, items.length - 1);
+  if (midVal === target) return mid;           // Found!
+  if (midVal < target)
+    return binarySearchRec(arr, target, mid + 1, high); // Search right half
+  else
+    return binarySearchRec(arr, target, low, mid - 1);  // Search left half
 }
-// Numbers
-const nums = [3, 8, 2, 5, 1, 9];
-quickSort(nums);               // in‑place sort → [1, 2, 3, 5, 8, 9]
+const sorted = [1, 4, 7, 9, 12, 18, 25];
 
-// Strings
-const words = ['banana', 'apple', 'cherry'];
-quickSort(words);              // → ['apple', 'banana', 'cherry']
+console.log(binarySearchRec(sorted, 9));  // → 3
+console.log(binarySearchRec(sorted, 5));  // → -1 (not present)
+function binarySearchRecGeneric<T>(
+  arr: T[],
+  target: T,
+  compare: (a: T, b: T) => number,  // Returns <0, 0, >0
+  low = 0,
+  high = arr.length - 1
+): number {
+  if (low > high) return -1;
 
-// Custom objects
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 20 },
-  { name: 'Carol', age: 25 }
-];
-quickSort(people, (a, b) => a.age - b.age);
-// → sorted by age: 20, 25, 30
+  const mid = Math.floor((low + high) / 2);
+  const cmp = compare(arr[mid], target);
+
+  if (cmp === 0) return mid;
+  if (cmp < 0)   return binarySearchRecGeneric(arr, target, compare, mid + 1, high);
+  return binarySearchRecGeneric(arr, target, compare, low, mid - 1);
+}
+const names = ['Alice', 'Bob', 'Charlie', 'Diana'];
+const idx = binarySearchRecGeneric(
+  names,
+  'Charlie',
+  (a, b) => a.localeCompare(b)   // Comparator
+);
+console.log(idx); // → 2
