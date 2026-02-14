@@ -1,38 +1,50 @@
+area = (base * height) / 2
 /**
- * @param s The string to test.
- * @param options
- *   - ignoreCase: whether to treat “A” and “a” as the same (default: true)
- *   - ignoreNonAlphaNum: whether to strip out spaces, punctuation, etc. (default: true)
- * @returns true if `s` reads the same forward and backward under the chosen options.
+ * Return the area of a triangle when you know its base and height.
+ *
+ * @param base   Length of the base side.
+ * @param height Height perpendicular to that base.
+ * @returns      Area of the triangle as a number.
  */
-function isPalindrome(
-  s: string,
-  options: { ignoreCase?: boolean; ignoreNonAlphaNum?: boolean } = {}
-): boolean {
-  const { ignoreCase = true, ignoreNonAlphaNum = true } = options;
-
-  // Optional: strip out anything other than letters/digits
-  let cleaned = ignoreNonAlphaNum
-    ? s.replace(/[^A-Za-z0-9]/g, '')
-    : s;
-
-  // Optional: standardise case
-  if (ignoreCase) cleaned = cleaned.toLowerCase();
-
-  // Fast exit on single‑character strings (or empty)
-  if (cleaned.length < 2) return true;
-
-  // Compare characters from both ends
-  let left = 0;
-  let right = cleaned.length - 1;
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) return false;
-    left++;
-    right--;
+export function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error("Base and height must be positive numbers.");
   }
-  return true;
+  return (base * height) / 2;
 }
-console.log(isPalindrome('Racecar'));           // true
-console.log(isPalindrome('hello'));             // false
-console.log(isPalindrome('A man, a plan, a canal, Panama')); // true
-console.log(isPalindrome('No lemon, no melon', { ignoreNonAlphaNum: true, ignoreCase: true })); // true
+s = (a + b + c) / 2            // semi‑perimeter
+area = sqrt( s * (s−a) * (s−b) * (s−c) )
+/**
+ * Compute the area of a triangle from its three side lengths.
+ *
+ * @param a   Length of side A.
+ * @param b   Length of side B.
+ * @param c   Length of side C.
+ * @returns   Area of the triangle (number) or NaN if the sides
+ *            don’t form a valid triangle.
+ */
+export function areaFromSides(a: number, b: number, c: number): number {
+  // Basic validation – all sides must be positive
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw new Error("All side lengths must be positive numbers.");
+  }
+
+  // Triangle inequality check – else area calculation would
+  // produce NaN or a negative under the radicand.
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error("The provided side lengths do not form a valid triangle.");
+  }
+
+  const s = (a + b + c) / 2;
+  const radicand = s * (s - a) * (s - b) * (s - c);
+
+  return Math.sqrt(radicand);
+}
+import { areaFromBaseHeight, areaFromSides } from "./triangle-utils";
+
+const base = 10;
+const height = 6;
+console.log(areaFromBaseHeight(base, height)); // 30
+
+const a = 7, b = 10, c = 5;
+console.log(areaFromSides(a, b, c));           // ≈ 17.89
