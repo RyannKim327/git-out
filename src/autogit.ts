@@ -1,72 +1,52 @@
-// A single node in the list
-class Node<T> {
-  constructor(public value: T, public next: Node<T> | null = null) {}
+interface TreeNode {
+  value: number;          // what you want to sum
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
+function sumTreeRecursive(node: TreeNode | null): number {
+  if (!node) return 0;
 
-// The queue itself
-export class LinkedListQueue<T> {
-  // Keep refs to both ends so that enqueue/dequeue stay constant‑time
-  private head: Node<T> | null = null; // points to first element
-  private tail: Node<T> | null = null; // points to last element
-  private _size = 0;
+  const leftSum  = sumTreeRecursive(node.left ?? null);
+  const rightSum = sumTreeRecursive(node.right ?? null);
 
-  /** Adds a value to the back of the queue */
-  enqueue(value: T): void {
-    const newNode = new Node(value);
-    if (this.tail) {
-      this.tail.next = newNode;   // link the old tail to the new node
-      this.tail = newNode;        // new node becomes the new tail
-    } else {
-      // Queue was empty – head and tail are the same node now
-      this.head = this.tail = newNode;
-    }
-    this._size++;
-  }
-
-  /** Removes and returns the value from the front of the queue.
-      Throws an error if the queue is empty. */
-  dequeue(): T {
-    if (!this.head) {
-      throw new Error('Cannot dequeue from an empty queue');
-    }
-    const value = this.head.value;
-    this.head = this.head.next; // move head forward
-    if (!this.head) {
-      // Queue became empty, so tail must also be null
-      this.tail = null;
-    }
-    this._size--;
-    return value;
-  }
-
-  /** Peeks at the front value without removing it. */
-  peek(): T | null {
-    return this.head?.value ?? null;
-  }
-
-  /** Returns true if the queue contains no elements. */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Current number of elements */
-  size(): number {
-    return this._size;
-  }
+  return node.value + leftSum + rightSum;
 }
-import { LinkedListQueue } from './LinkedListQueue';
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
 
-const q = new LinkedListQueue<number>();
+  let total = 0;
+  const stack: TreeNode[] = [root];
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.value;
 
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size());    // 1
-console.log(q.isEmpty()); // false
+    // Push children in any order – the sum is commutative.
+    if (node.right) stack.push(node.right);
+    if (node.left)  stack.push(node.left);
+  }
 
-q.dequeue();          // removes 30
-console.log(q.isEmpty()); // true
+  return total;
+}
+// A tiny test tree:
+//        5
+//       / \
+//      3   7
+//     / \   \
+//    2   4   8
+
+const testTree: TreeNode = {
+  value: 5,
+  left: {
+    value: 3,
+    left:  { value: 2 },
+    right: { value: 4 }
+  },
+  right: {
+    value: 7,
+    right: { value: 8 }
+  }
+};
+
+console.log('Recursive sum:', sumTreeRecursive(testTree));  // 29
+console.log('Iterative sum:', sumTreeIterative(testTree));  // 29
