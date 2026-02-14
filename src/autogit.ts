@@ -1,17 +1,14 @@
-const numbers = [3, 42, 7, -1, 20];
-const biggest = Math.max(...numbers);
+// Remove *every* whitespace (spaces, tabs, newlines, etc.)
+const clean = str.replace(/\s+/g, '');   // <-- compressed string
 
-console.log(biggest); // 42
-function findMax(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined; // or throw, or use null, whatever fits your API
-  return Math.max(...nums);
-}
-const biggest = numbers.reduce((max, curr) => curr > max ? curr : max, -Infinity);
-function findMax(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;
-  return nums.reduce((max, curr) => (curr > max ? curr : max));
-}
-function findMax<T extends readonly (number | null | undefined)[]>(arr: T): number | undefined {
-  const filtered = arr.filter(isFinite) as number[]; // strip out null/undefined if you like
-  return filtered.length ? Math.max(...filtered) : undefined;
-}
+// If you only want to trim the ends:
+const trimmed = str.trim();              // <-- removes leading/trailing whitespace
+
+// If you want middle‑spaces only (keeping a single space between words):
+const condensed = str.replace(/\s+/g, ' ');
+const original = '  Hello   world \t this\nis  a test  ';
+const stripped = original.replace(/\s+/g, '');
+// stripped === 'Helloworldthisisatest'
+
+console.log(stripped);
+const stripped = original.split(/\s+/).join(''); // same result
