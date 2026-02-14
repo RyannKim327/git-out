@@ -1,27 +1,75 @@
-function isPalindrome(str: string): boolean {
-  const sanitized = str.toLowerCase();              // ignore case
-  const reversed  = sanitized.split('').reverse().join('');
-  return sanitized === reversed;
-}
-console.log(isPalindrome('RaceCar'));      // true
-console.log(isPalindrome('hello'));        // false
-function isPalindromePortable(str: string): boolean {
-  const cleaned = str.replace(/[^a-z0-9]/gi, '').toLowerCase();
-  const left = 0;
-  const right = cleaned.length - 1;
+/** Build the "lps" (longest‑prefix‑which‑is‑also‑suffix) table for the pattern */
+function buildLPS(pattern: string): number[] {
+  const lps = new Array(pattern.length).fill(0);
+  let len = 0;              // length of previous longest prefix suffix
+  let i = 1;                // we start from the second character
 
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) return false;
-    left++;
-    right--;
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      if (len !== 0) {
+        len = lps[len - 1];  // fallback in the pattern
+      } else {
+        lps[i] = 0;
+        i++;
+      }
+    }
   }
-
-  return true;
+  return lps;
 }
-console.log(isPalindromePortable('A man, a plan, a canal: Panama')); // true
-console.log(isPalindromePortable('No lemon, no melon'));            // true
-console.log(isPalindromePortable('Hello, world!'));                 // false
-const isPalindromeFancy = (s: string) =>
-  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).join('') ===
-  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).reverse().join('');
-export { isPalindrome, isPalindromePortable };
+
+/** Find the first occurrence of `pattern` in `text` (returns -1 if not found) */
+function kmpSearch(text: string, pattern: string): number {
+  if (!pattern) return 0; // empty pattern matches at start
+
+  const lps = buildLPS(pattern);
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) return i - j; // match found
+    } else {
+      if (j !== 0) {
+        j = lps[j - 1]; // shift pattern without re‑examining matched chars
+      } else {
+        i++;           // no match, move on in the text
+      }
+    }
+  }
+  return -1; // no match
+}
+
+/** Optional: return *all* starting indices of matches */
+function kmpAllMatches(text: string, pattern: string): number[] {
+  const indices: number[] = [];
+  if (!pattern) return [0];
+
+  const lps = buildLPS(pattern);
+  let i = 0, j = 0;
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) {
+        indices.push(i - j);
+        j = lps[j - 1]; // continue searching for next possible match
+      }
+    } else {
+      if (j !== 0) j = lps[j - 1];
+      else i++;
+    }
+  }
+  return indices;
+}
+const txt = "ABABDABACDABABCABAB";
+const pat = "ABABCABAB";
+
+const firstIdx = kmpSearch(txt, pat);          // returns 10
+const allIdx   = kmpAllMatches(txt, pat);     // returns [10]
