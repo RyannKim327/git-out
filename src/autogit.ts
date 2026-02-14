@@ -1,51 +1,105 @@
-// ----------  Tree node definition ----------
-class TreeNode<T> {
+/**
+ * A singly‑linked list node that holds a generic value.
+ */
+export class ListNode<T> {
   constructor(
     public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
+    public next: ListNode<T> | null = null
   ) {}
 }
+/**
+ * Returns true iff the linked list is a palindrome.
+ */
+export function isPalindrome<T>(head: ListNode<T> | null): boolean {
+  if (!head || !head.next) return true; // empty or single node
 
-// ----------  Diameter helper ----------
-function diameter(root: TreeNode<any> | null): number {
-  let maxDiameter = 0;           // global best
+  /* ---------- 1️⃣ Find middle ---------- */
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-  // returns height of subtree rooted at `node`
-  function dfs(node: TreeNode<any> | null): number {
-    if (!node) return 0;
-
-    const leftH  = dfs(node.left);
-    const rightH = dfs(node.right);
-
-    // path that passes through this node
-    const candidate = leftH + rightH;
-    if (candidate > maxDiameter) maxDiameter = candidate;
-
-    // height of this subtree
-    return Math.max(leftH, rightH) + 1;
+  while (fast.next && fast.next.next) {
+    slow = slow!.next!;   // move one step
+    fast = fast.next.next; // move two steps
   }
 
-  dfs(root);
-  return maxDiameter;                   // number of edges on the longest path
+  /* ---------- 2️⃣ Reverse second half ---------- */
+  let prev: ListNode<T> | null = null;
+  let curr: ListNode<T> | null = slow;
+
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  const secondHalfHead = prev; // start of reversed half
+
+  /* ---------- 3️⃣ Compare halves ---------- */
+  let p1: ListNode<T> | null = head;
+  let p2: ListNode<T> | null = secondHalfHead;
+
+  let isPal = true;
+  while (isPal && p2) {           // p2 is half the length
+    if (p1!.val !== p2!.val) {
+      isPal = false;
+      break;
+    }
+    p1 = p1!.next;
+    p2 = p2!.next;
+  }
+
+  /* ---------- (Optional) 4️⃣ Restore list ---------- */
+  // reverse again to keep original structure
+  curr = secondHalfHead;
+  prev = null;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  if (slow!.next) { // connect back
+    slow!.next = prev;
+  }
+
+  return isPal;
+}
+function build<T>(arr: T[]): ListNode<T> | null {
+  let dummy = new ListNode<T>(null as any);
+  let cur = dummy;
+  for (const v of arr) {
+    cur.next = new ListNode<T>(v);
+    cur = cur.next;
+  }
+  return dummy.next;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Quick sanity check – build a tree and run the function             */
-/* ------------------------------------------------------------------ */
+const tests = [
+  { arr: [1, 2, 3, 2, 1], expected: true },
+  { arr: [1, 2, 2, 1], expected: true },
+  { arr: [1, 2, 3], expected: false },
+  { arr: [], expected: true },
+  { arr: [42], expected: true },
+  { arr: [7, 8, 7, 9], expected: false }
+];
 
-const a = new TreeNode('a');
-const b = new TreeNode('b');
-const c = new TreeNode('c');
-const d = new TreeNode('d');
-const e = new TreeNode('e');
-const f = new TreeNode('f');
+for (const {arr, expected} of tests) {
+  const h = build(arr);
+  console.log(`isPalindrome(${JSON.stringify(arr)}) =>`, isPalindrome(h), 'expected', expected);
+}
+isPalindrome([1,2,3,2,1]) => true expected true
+isPalindrome([1,2,2,1]) => true expected true
+isPalindrome([1,2,3]) => false expected false
+isPalindrome([]) => true expected true
+isPalindrome([42]) => true expected true
+isPalindrome([7,8,7,9]) => false expected false
+function isPalindromeStack<T>(head: ListNode<T> | null): boolean {
+  const vals: T[] = [];
+  for (let cur = head; cur; cur = cur.next) vals.push(cur.val);
 
-a.left  = b;                //   a
-a.right = c;                //  / \
-b.left  = d;                // d   c
-b.right = e;                //  \   \
-e.right = f;                //   f
-
-console.log(diameter(a));   // → 4
-const diameterInNodes = diameter(root) + 1;
+  let l = 0, r = vals.length - 1;
+  while (l < r) {
+    if (vals[l++] !== vals[r--]) return false;
+  }
+  return true;
+}
