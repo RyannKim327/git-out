@@ -1,60 +1,114 @@
 /**
- * Merges two sorted slices `left` and `right` into a single sorted array.
- * The operation is stable — items that compare equal keep their original
- * relative order.
+ * A binary heap backed priority queue.
+ *
+ * The heap stores elements in a 0‑based array. For a node at index i:
+ *   left child   → 2*i + 1
+ *   right child  → 2*i + 2
+ *   parent       → Math.floor((i - 1) / 2)
  */
-function merge<T>(left: T[], right: T[], compare: (a: T, b: T) => number): T[] {
-  const result: T[] = [];
-  let i = 0;          // index into left
-  let j = 0;          // index into right
+export class BinaryPriorityQueue<T> {
+  private data: T[] = [];
+  private readonly compare: (a: T, b: T) => number; // negative if a < b
 
-  while (i < left.length && j < right.length) {
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
+  constructor(compare: (a: T, b: T) => number) {
+    this.compare = compare;
+  }
+
+  /** Number of elements in the queue */
+  size(): number {
+    return this.data.length;
+  }
+
+  /** Peek the element with the highest priority (root of the heap) */
+  peek(): T | undefined {
+    return this.data[0];
+  }
+
+  /** Insert a new element */
+  push(value: T): void {
+    this.data.push(value);
+    this.bubbleUp(this.data.length - 1);
+  }
+
+  /**
+   * Remove and return the element with the highest priority.
+   * Returns undefined if the queue is empty.
+   */
+  pop(): T | undefined {
+    if (!this.data.length) return undefined;
+
+    const root = this.data[0];
+    const last = this.data.pop()!; // safe because we checked length
+
+    if (this.data.length) {
+      this.data[0] = last;
+      this.sinkDown(0);
     }
+
+    return root;
   }
 
-  // Append any remaining elements
-  return result.concat(left.slice(i), right.slice(j));
-}
-
-/**
- * Recursively sorts `array` using merge sort.
- *
- * @param array   – the array to sort
- * @param compare – a comparator returning a negative number if a < b,
- *                  zero if a == b, and a positive number otherwise.
- *
- * @returns a NEW sorted array; the input array is left untouched.
- */
-export function mergeSort<T>(array: T[], compare: (a: T, b: T) => number): T[] {
-  // Base case: arrays of length 0 or 1 are already sorted
-  if (array.length <= 1) {
-    return array.slice();          // shallow copy to stay pure
+  /** Remove all elements */
+  clear(): void {
+    this.data.length = 0;
   }
 
-  const mid = Math.floor(array.length / 2);
-  const left  = array.slice(0, mid);
-  const right = array.slice(mid);
+  /* --- Internals --- */
 
-  // Sort each half and merge
-  const sortedLeft  = mergeSort(left,  compare);
-  const sortedRight = mergeSort(right, compare);
+  private bubbleUp(index: number): void {
+    const elem = this.data[index];
+    while (index > 0) {
+      const parentIdx = (index - 1) >> 1;
+      const parent = this.data[parentIdx];
+      if (this.compare(elem, parent) >= 0) break;
+      this.data[index] = parent;
+      index = parentIdx;
+    }
+    this.data[index] = elem;
+  }
 
-  return merge(sortedLeft, sortedRight, compare);
+  private sinkDown(index: number): void {
+    const length = this.data.length;
+    const elem = this.data[index];
+
+    while (true) {
+      const leftIdx = (index << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let swapIdx = -1;
+
+      if (leftIdx < length) {
+        const left = this.data[leftIdx];
+        if (this.compare(left, elem) < 0) swapIdx = leftIdx;
+      }
+      if (rightIdx < length) {
+        const right = this.data[rightIdx];
+        const compareRight = this.compare(right, elem);
+        if (
+          (swapIdx === -1 && compareRight < 0) ||
+          (swapIdx !== -1 && compareRight < this.compare(this.data[swapIdx], elem))
+        ) {
+          swapIdx = rightIdx;
+        }
+      }
+
+      if (swapIdx === -1) break;
+      this.data[index] = this.data[swapIdx];
+      index = swapIdx;
+    }
+    this.data[index] = elem;
+  }
 }
+// Example: priority queue of numbers (min‑heap)
+const pq = new BinaryPriorityQueue<number>((a, b) => a - b);
 
-/* ---------------------------------------------------------
-   Example usage:
-   ---------------------------------------------------------
+pq.push(5);
+pq.push(1);
+pq.push(3);
 
-   // Numeric sort (ascending)
-   const numbers = [32, 5, 73, 1, 42];
-   const sortedNumbers = mergeSort(numbers, (a, b) => a - b);
+console.log(pq.peek()); // 1
+console.log(pq.pop());  // 1
+console.log(pq.pop());  // 3
+console.log(pq.pop());  // 5
+interface Task { id: number; priority: number; }
 
-   // String sort by length
-   const words = ["banana", "apple", "fig", "cherry"];
-   const sortedByLength = mergeSort(words, (a, b) => a.length - b.length);
-   -------------------------------------------------------- */
+const taskQueue = new BinaryPriorityQueue<Task>((a, b) => a.priority - b.priority);
