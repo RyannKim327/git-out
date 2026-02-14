@@ -1,44 +1,50 @@
-export interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-}
 /**
- * Returns the nth node from the end of a singly‑linked list.
+ * Random sort – a quick‑sort implementation that picks a random
+ * pivot for each split.
  *
- * @param head  The head of the list (may be null).
- * @param n 1‑based index counting from the last node.
- * @returns   The node itself, or null if n is out of bounds.
+ * The algorithm is deterministic in complexity (O(n log n) on average),
+ * but the pivot choice is completely random, which can be useful for
+ * teaching purposes or for avoiding worst‑case sequences.
  */
-export function getNthFromEnd<T>(
-  head: ListNode<T> | null,
-  n: number
-): ListNode<T> | null {
-  if (n <= 0) return null;                // n must be positive
 
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
-
-  // Advance `fast` n steps ahead.
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;              // n is larger than the list length
-    fast = fast.next;
+function randomQuickSort<T>(input: T[], compare?: (a: T, b: T) => number): T[] {
+  // If there are 0 or 1 elements, it's already sorted.
+  if (input.length <= 1) {
+    return [...input];
   }
 
-  // Move both pointers until `fast` reaches the end.
-  while (fast) {
-    fast = fast.next;
-    slow = slow?.next ?? null;
+  // Choose a random pivot index.
+  const pivotIndex = Math.floor(Math.random() * input.length);
+  const pivot = input[pivotIndex];
+
+  // Helper to decide the order.
+  const cmp = compare ||
+    // Default to numeric or string comparison.
+    ((a: T, b: T) => (a as any) < b ? -1 : (a as any) > b ? 1 : 0);
+
+  // Partition the array into two bins: <= pivot and > pivot.
+  const smaller: T[] = [];
+  const larger: T[] = [];
+
+  for (let i = 0; i < input.length; i++) {
+    if (i === pivotIndex) continue; // skip the pivot itself
+    const item = input[i];
+    if (cmp(item, pivot) <= 0) {
+      smaller.push(item);
+    } else {
+      larger.push(item);
+    }
   }
 
-  // `slow` is now the nth from the end.
-  return slow;
+  // Recursively sort each sub‑array and concatenate the results.
+  return [
+    ...randomQuickSort(smaller, compare),
+    pivot,
+    ...randomQuickSort(larger, compare),
+  ];
 }
-// Build a tiny list: 10 → 20 → 30 → 40 → 50
-const node5: ListNode<number> = { value: 50, next: null };
-const node4: ListNode<number> = { value: 40, next: node5 };
-const node3: ListNode<number> = { value: 30, next: node4 };
-const node2: ListNode<number> = { value: 20, next: node3 };
-const head: ListNode<number> = { value: 10, next: node2 };
 
-const thirdFromEnd = getNthFromEnd(head, 3);
-console.log(thirdFromEnd?.value); // 30
+/* --- Example usage ----------------------------------------------------- */
+const nums = [23, 4, 42, 8, 15, 16, 42, 23, 4, 17];
+console.log('Unsorted:', nums);
+console.log('Sorted:', randomQuickSort(nums));
