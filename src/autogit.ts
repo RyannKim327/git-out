@@ -1,61 +1,43 @@
-/**
- * Sorts an array of numbers in ascending order using insertion sort.
- * The algorithm works in place – the input array is mutated.
- *
- * @param arr - The numeric array to be sorted.
- * @returns The same array, now sorted.
- */
-export function insertionSort(arr: number[]): number[] {
-  // Start from the second element; the first element is “sorted” by definition
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];            // The value we’re going to insert
-    let j = i - 1;
+interface BinaryTreeNode<T = number> {
+  val: T;                  // The payload – can be any type you need
+  left?: BinaryTreeNode<T>;
+  right?: BinaryTreeNode<T>;
+}
+function maxDepthRecursive<T>(root?: BinaryTreeNode<T>): number {
+  if (!root) return 0; // An empty tree has depth 0
 
-    // Shift elements that are greater than the key to the right
-    while (j >= 0 && arr[j] > key) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
+  const leftDepth  = maxDepthRecursive(root.left);
+  const rightDepth = maxDepthRecursive(root.right);
 
-    // Insert the key into its correct position
-    arr[j + 1] = key;
+  return Math.max(leftDepth, rightDepth) + 1;
+}
+function maxDepthBFS<T>(root?: BinaryTreeNode<T>): number {
+  if (!root) return 0;
+
+  const queue: Array<{ node: BinaryTreeNode<T>; depth: number }> = [{ node: root, depth: 1 }];
+  let maxDepth = 0;
+
+  while (queue.length) {
+    const { node, depth } = queue.shift()!; // Non‑null assertion: queue never empty here
+    maxDepth = Math.max(maxDepth, depth);
+
+    if (node.left)  queue.push({ node: node.left, depth: depth + 1 });
+    if (node.right) queue.push({ node: node.right, depth: depth + 1 });
   }
 
-  return arr;
+  return maxDepth;
 }
-export function insertionSort<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+// Example tree:
+//        1
+//       / \
+//      2   3
+//     /
+//    4
+const tree: BinaryTreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 } },
+  right: { val: 3 }
+};
 
-    // While j is in range and key is less than arr[j], shift arr[j] right
-    while (j >= 0 && compareFn(key, arr[j]) < 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    arr[j + 1] = key;
-  }
-
-  return arr;
-}
-// Numbers
-const nums = [64, 25, 12, 22, 11];
-insertionSort(nums);          // => [11, 12, 22, 25, 64]
-
-// Strings
-const words = ['banana', 'apple', 'cherry'];
-insertionSort(words);          // => ['apple', 'banana', 'cherry']
-
-// Custom objects
-const people = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 24 },
-  { name: 'Catherine', age: 27 }
-];
-
-insertionSort(people, (a, b) => a.age - b.age);
-// => sorted by age
+console.log(maxDepthRecursive(tree)); // 3
+console.log(maxDepthBFS(tree));       // 3
