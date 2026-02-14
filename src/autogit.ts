@@ -1,74 +1,75 @@
-interface Node<T> {
-  /** opaque identifier used for duplicate detection – e.g. a stringified board state */
-  id: string;
-  /** whatever data you want to keep (state, metadata, …) */
-  data: T;
-  /** produces the succ­esor nodes */
-  getChildren(): Iterable<Node<T>>;
+function decimalToBinary(dec: number | bigint): string {
+  return dec.toString(2);
 }
-function dls<T>(
-  node: Node<T>,
-  goalTest: (n: Node<T>) => boolean,
-  limit: number,
-  visited = new Set<string>()
-): Node<T> | null {
-  if (goalTest(node)) return node;
-  if (limit <= 0) return null;          // terminal depth reached
-  visited.add(node.id);                 // prevent revisiting
 
-  for (const child of node.getChildren()) {
-    if (!visited.has(child.id)) {
-      const result = dls(child, goalTest, limit - 1, visited);
-      if (result !== null) return result;
-    }
+// Examples
+console.log(decimalToBinary(13));      // '1101'
+console.log(decimalToBinary(255n));    // '11111111'
+function decimalToBinaryIterative(num: number): string {
+  if (num === 0) return '0';
+  let n = Math.abs(num);
+  const bits: string[] = [];
+  while (n > 0) {
+    bits.push((n % 2).toString());
+    n = Math.floor(n / 2);
   }
-  return null; // no goal found within limit
+  if (num < 0) bits.push('-');
+  return bits.reverse().join('');
 }
-function dlsIter<T>(
-  start: Node<T>,
-  goalTest: (n: Node<T>) => boolean,
-  limit: number
-): Node<T> | null {
-  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: start, depth: 0 }];
-  const visited = new Set<string>();
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    if (goalTest(node)) return node;
-    if (depth === limit) continue;      // hit the limit – skip children
+// Demo
+console.log(decimalToBinaryIterative(13));   // '1101'
+console.log(decimalToBinaryIterative(-13));  // '-1101'
+function decimalToBinaryRecursive(num: number): string {
+  if (num === 0) return '';
+  const [higher, bit] = decimalToBinaryRecursive(Math.floor(num / 2)).split('|', 2);
+  return `${higher}|${num % 2}`;
+}
 
-    visited.add(node.id);
-    for (const child of node.getChildren()) {
-      if (!visited.has(child.id)) {
-        stack.push({ node: child, depth: depth + 1 });
+// Helper to clean up the leading empty part
+function binaryRecursive(num: number): string {
+  const bin = decimalToBinaryRecursive(num);
+  return bin.split('|').filter(Boolean).join('');
+}
+
+// Demo
+console.log(binaryRecursive(27));  // '11011'
+function decimalToBinaryFraction(num: number, precision: number = 10): string {
+  const intPart = Math.trunc(num);
+  let fracPart = num - intPart;
+  let binary = intPart.toString(2);
+
+  if (precision > 0 && fracPart > 0) {
+    binary += '.';
+    let p = 0;
+    while (p < precision && fracPart > 0) {
+      fracPart *= 2;
+      if (fracPart >= 1) {
+        binary += '1';
+        fracPart -= 1;
+      } else {
+        binary += '0';
       }
+      p++;
     }
   }
-  return null;
-}
-class Coord {
-  constructor(public x: number, public y: number) {}
+
+  return binary;
 }
 
-class MazeCell implements Node<Coord> {
-  constructor(
-    public id: string,
-    public data: Coord,
-    private neighbors: readonly Coord[]
-  ) {}
-
-  getChildren(): Iterable<Node<Coord>> {
-    return this.neighbors.map(
-      n => new MazeCell(String(n.x) + ',' + n.y, n, [] /* placeholder */)
-    );
+// Demo
+console.log(decimalToBinaryFraction(5.6875, 8)); // '101.1011'
+function test(input: number | bigint) {
+  console.log(`Decimal: ${input}`);
+  console.log(`  -> toString(2):   ${input.toString(2)}`);
+  if (typeof input === 'number') {
+    console.log(`  -> iterative:   ${decimalToBinaryIterative(input)}`);
+    console.log(`  -> recursive:   ${binaryRecursive(input)}`);
   }
+  console.log('');
 }
 
-// Setup: build maze, decide start & goal
-const start = new MazeCell('0,0', new Coord(0, 0), [new Coord(1, 0), new Coord(0, 1)]);
-const isGoal = (n: Node<Coord>) => n.data.x === 5 && n.data.y === 5;
-
-// Run:
-const found = dls(start, isGoal, 10);
-if (found) console.log('Found solution:', found.data);
-else console.log('no path within depth 10');
+test(13);
+test(-13);
+test(0);
+test(5.6875);   // only the toString version works for BigInt
