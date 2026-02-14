@@ -1,50 +1,57 @@
-area = (base * height) / 2
-/**
- * Return the area of a triangle when you know its base and height.
- *
- * @param base   Length of the base side.
- * @param height Height perpendicular to that base.
- * @returns      Area of the triangle as a number.
- */
-export function areaFromBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new Error("Base and height must be positive numbers.");
+function secondLargestSort(arr: number[]): number | null {
+  // Defensive copy so we don’t mutate the caller’s data
+  const sorted = [...arr].sort((a, b) => b - a); // descending
+
+  // Find the first element that isn’t equal to the maximum
+  let i = 1;
+  while (i < sorted.length && sorted[i] === sorted[0]) {
+    i++;
   }
-  return (base * height) / 2;
+
+  return i < sorted.length ? sorted[i] : null;
 }
-s = (a + b + c) / 2            // semi‑perimeter
-area = sqrt( s * (s−a) * (s−b) * (s−c) )
-/**
- * Compute the area of a triangle from its three side lengths.
- *
- * @param a   Length of side A.
- * @param b   Length of side B.
- * @param c   Length of side C.
- * @returns   Area of the triangle (number) or NaN if the sides
- *            don’t form a valid triangle.
- */
-export function areaFromSides(a: number, b: number, c: number): number {
-  // Basic validation – all sides must be positive
-  if (a <= 0 || b <= 0 || c <= 0) {
-    throw new Error("All side lengths must be positive numbers.");
+console.log(secondLargestSort([3, 1, 4, 4, 5])); // 4
+console.log(secondLargestSort([10]));            // null
+function secondLargestTwoPass(arr: number[]): number | null {
+  if (arr.length < 2) return null;
+
+  let max = -Infinity;
+  let secondMax = -Infinity;
+
+  // First pass: find the maximum
+  for (const v of arr) {
+    if (v > max) max = v;
   }
 
-  // Triangle inequality check – else area calculation would
-  // produce NaN or a negative under the radicand.
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error("The provided side lengths do not form a valid triangle.");
+  // Second pass: find the largest value that is < max
+  for (const v of arr) {
+    if (v < max && v > secondMax) secondMax = v;
   }
 
-  const s = (a + b + c) / 2;
-  const radicand = s * (s - a) * (s - b) * (s - c);
-
-  return Math.sqrt(radicand);
+  return secondMax === -Infinity ? null : secondMax;
 }
-import { areaFromBaseHeight, areaFromSides } from "./triangle-utils";
+console.log(secondLargestTwoPass([7, 3, 9, 1, 9])); // 7
+function secondLargest(arr: number[]): number | null {
+  if (arr.length < 2) return null;
 
-const base = 10;
-const height = 6;
-console.log(areaFromBaseHeight(base, height)); // 30
+  let max = -Infinity;
+  let secondMax = -Infinity;
 
-const a = 7, b = 10, c = 5;
-console.log(areaFromSides(a, b, c));           // ≈ 17.89
+  for (const v of arr) {
+    if (v > max) {
+      secondMax = max; // the old max becomes second max
+      max = v;
+    } else if (v < max && v > secondMax) {
+      secondMax = v;
+    }
+  }
+
+  return secondMax === -Infinity ? null : secondMax;
+}
+console.log(secondLargest([5, 12, 7, 12, 9]));   // 9
+console.log(secondLargest([3]));                // null
+console.log(secondLargest([2, 2, 2]));          // null (no distinct second largest)
+function findSecondLargest(arr: number[]): number | null {
+  // Pick whichever implementation feels best
+  return secondLargest(arr);
+}
