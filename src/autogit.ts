@@ -1,52 +1,51 @@
-interface TreeNode {
-  value: number;          // what you want to sum
-  left?: TreeNode | null;
-  right?: TreeNode | null;
+// ----------  Tree node definition ----------
+class TreeNode<T> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
 }
-function sumTreeRecursive(node: TreeNode | null): number {
-  if (!node) return 0;
 
-  const leftSum  = sumTreeRecursive(node.left ?? null);
-  const rightSum = sumTreeRecursive(node.right ?? null);
+// ----------  Diameter helper ----------
+function diameter(root: TreeNode<any> | null): number {
+  let maxDiameter = 0;           // global best
 
-  return node.value + leftSum + rightSum;
-}
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
+  // returns height of subtree rooted at `node`
+  function dfs(node: TreeNode<any> | null): number {
+    if (!node) return 0;
 
-  let total = 0;
-  const stack: TreeNode[] = [root];
+    const leftH  = dfs(node.left);
+    const rightH = dfs(node.right);
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.value;
+    // path that passes through this node
+    const candidate = leftH + rightH;
+    if (candidate > maxDiameter) maxDiameter = candidate;
 
-    // Push children in any order – the sum is commutative.
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
+    // height of this subtree
+    return Math.max(leftH, rightH) + 1;
   }
 
-  return total;
+  dfs(root);
+  return maxDiameter;                   // number of edges on the longest path
 }
-// A tiny test tree:
-//        5
-//       / \
-//      3   7
-//     / \   \
-//    2   4   8
 
-const testTree: TreeNode = {
-  value: 5,
-  left: {
-    value: 3,
-    left:  { value: 2 },
-    right: { value: 4 }
-  },
-  right: {
-    value: 7,
-    right: { value: 8 }
-  }
-};
+/* ------------------------------------------------------------------ */
+/*  Quick sanity check – build a tree and run the function             */
+/* ------------------------------------------------------------------ */
 
-console.log('Recursive sum:', sumTreeRecursive(testTree));  // 29
-console.log('Iterative sum:', sumTreeIterative(testTree));  // 29
+const a = new TreeNode('a');
+const b = new TreeNode('b');
+const c = new TreeNode('c');
+const d = new TreeNode('d');
+const e = new TreeNode('e');
+const f = new TreeNode('f');
+
+a.left  = b;                //   a
+a.right = c;                //  / \
+b.left  = d;                // d   c
+b.right = e;                //  \   \
+e.right = f;                //   f
+
+console.log(diameter(a));   // → 4
+const diameterInNodes = diameter(root) + 1;
