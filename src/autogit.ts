@@ -1,74 +1,78 @@
-/**
- * Median of two sorted arrays
- * A and B can be empty, but not both.
- */
-export function medianOfTwoSortedArrays(
-  a: number[],
-  b: number[]
-): number {
-  // Ensure a is the smaller array; this keeps the binary‑search bounds tight.
-  const [A, B] = a.length <= b.length ? [a, b] : [b, a];
-  const m = A.length;
-  const n = B.length;
-  const half = Math.floor((m + n + 1) / 2);
+// 1️⃣  A tiny node definition
+interface ListNode<T> {
+  val: T;
+  next?: ListNode<T>;
+}
 
-  let low = 0;
-  let high = m;
+// 2️⃣  Helper: walk a list and collect values (for demo)
+const listToArray = <T>(head: ListNode<T> | undefined): T[] => {
+  const arr: T[] = [];
+  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
+  return arr;
+};
 
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2); // elements taken from A
-    const j = half - i;                     // elements taken from B
+// 3️⃣  The trick: two pointers, fast and slow
+function middle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
+  if (!head) return undefined; // empty list—no middle
 
-    const Aleft  = i === 0     ? Number.NEGATIVE_INFINITY : A[i - 1];
-    const Aright = i === m     ? Number.POSITIVE_INFINITY : A[i];
+  let fast = head;
+  let slow = head;
 
-    const Bleft  = j === 0     ? Number.NEGATIVE_INFINITY : B[j - 1];
-    const Bright = j === n     ? Number.POSITIVE_INFINITY : B[j];
+  // advance fast every two steps, slow every one
+  while (fast.next && fast.next.next) {
+    fast = fast.next.next; // jump 2
+    slow = slow.next as ListNode<T>; // jump 1
+  }
 
-    // i is perfect if left side ≤ right side
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // Odd total → max of left side
-      if ((m + n) % 2 === 1) {
-        return Math.max(Aleft, Bleft);
-      }
+  // If fast has a next (odd length), move slow one more
+  if (fast.next) slow = slow.next as ListNode<T>;
 
-      // Even total → average of two middle values
-      return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
-    } else if (Aleft > Bright) {
-      // i too big, shift left
-      high = i - 1;
+  return slow;
+}
+
+// 4️⃣  Demo: build a list so we can see it in action
+const nodes: ListNode<number>[] = [1, 2, 3, 4, 5].map(
+  (v) => ({ val: v })
+);
+for (let i = 0; i < nodes.length - 1; i++) nodes[i].next = nodes[i + 1];
+const head = nodes[0];
+
+console.log("Full list:", listToArray(head));         // 1,2,3,4,5
+console.log("Middle node:", middle(head)?.val);        // 3
+
+// Try an even‑length list
+const even: ListNode<number>[] = [10, 20, 30, 40].map(
+  (v) => ({ val: v })
+);
+for (let i = 0; i < even.length - 1; i++) even[i].next = even[i + 1];
+console.log("Middle of even list:", middle(even)?.val); // 20 (or 30 if you prefer that half)
+class LinkedList<T> {
+  head?: ListNode<T>;
+
+  // push to the tail
+  push(val: T) {
+    const node: ListNode<T> = { val };
+    if (!this.head) {
+      this.head = node;
     } else {
-      // i too small, shift right
-      low = i + 1;
+      let cur = this.head;
+      while (cur.next) cur = cur.next;
+      cur.next = node;
     }
   }
 
-  throw new Error('Input arrays are not sorted or invalid.');
-}
-export function medianOfTwoSortedArraysSimple(
-  a: number[],
-  b: number[]
-): number {
-  const merged: number[] = [];
-  let i = 0, j = 0;
-
-  while (i < a.length || j < b.length) {
-    if (i >= a.length) {
-      merged.push(b[j++]);
-    } else if (j >= b.length) {
-      merged.push(a[i++]);
-    } else if (a[i] <= b[j]) {
-      merged.push(a[i++]);
-    } else {
-      merged.push(b[j++]);
-    }
+  // returns the middle node (or the first of two middles for even length)
+  middle(): ListNode<T> | undefined {
+    return middle(this.head);
   }
 
-  const len = merged.length;
-  if (len % 2 === 1) return merged[Math.floor(len / 2)];
-  return (merged[len / 2 - 1] + merged[len / 2]) / 2;
+  toArray(): T[] {
+    return listToArray(this.head);
+  }
 }
-const arr1 = [1, 3, 5, 9];
-const arr2 = [2, 4, 6, 8, 10];
 
-console.log(medianOfTwoSortedArrays(arr1, arr2)); // 5.5
+// Usage:
+const ll = new LinkedList<number>();
+[1, 2, 3, 4, 5].forEach(v => ll.push(v));
+console.log(ll.toArray());       // [1,2,3,4,5]
+console.log(ll.middle()?.val);   // 3
