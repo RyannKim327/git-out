@@ -1,93 +1,73 @@
-// `Graph<T>` maps a node of type T to an array of its adjacent nodes.
-type Graph<T> = Map<T, T[]>;
-
-// A helper to add an undirected edge
-function addEdge<T>(g: Graph<T>, a: T, b: T) {
-  g.set(a, (g.get(a) ?? []).concat(b));
-  g.set(b, (g.get(b) ?? []).concat(a));
-}
 /**
- * Performs a breadth‑first search on an unweighted graph.
+ * Finds the longest increasing subsequence of an array.
  *
- * @param start   the starting node
- * @param graph   the graph to search
- * @param visitor a callback that receives each visited node in the order
- *                it’s discovered. The callback can return `false` to stop
- *                the search early.
+ * @param arr Numeric array (any integers or floats, any sign).
+ * @returns Object containing the LIS and its length.
  */
-function bfs<T>(
-  start: T,
-  graph: Graph<T>,
-  visitor: (node: T) => void | boolean
-): void {
-  const visited = new Set<T>();
-  const queue = [start];
+export function longestIncreasingSubsequence(arr: number[]): { seq: number[]; length: number } {
+  if (arr.length === 0) return { seq: [], length: 0 };
 
-  visited.add(start);
+  // tails[i] — minimal tail of an LIS of length i+1 found so far
+  const tails: number[] = [];
+  // prevIndices[i] — index of the previous element in the LIS that ends at arr[i]
+  const prevIndices: number[] = Array(arr.length).fill(-1);
+  // indexInTails[i] — will store the index in tails where arr[i] was placed
+  const indexInTails: number[] = Array(arr.length).fill(0);
 
-  while (queue.length) {
-    const node = queue.shift()!;      // Non‑null because we just tested length
-    const result = visitor(node);
+  for (let i = 0; i < arr.length; i++) {
+    const num = arr[i];
 
-    // If the visitor explicitly returned false, break out early.
-    if (result === false) break;
+    // Binary search: first index in tails where tails[idx] >= num
+    let lo = 0,
+      hi = tails.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (tails[mid] < num) lo = mid + 1;
+      else hi = mid;
+    }
 
-    const neighbors = graph.get(node) ?? [];
-    for (const n of neighbors) {
-      if (!visited.has(n)) {
-        visited.add(n);
-        queue.push(n);
-      }
+    // lo is the length of the new subsequence minus one
+    indexInTails[i] = lo;
+    if (lo >= tails.length) tails.push(num);
+    else tails[lo] = num;
+
+    // Link to previous element of the subsequence
+    if (lo > 0) prevIndices[i] = tailsIdx[lo - 1];
+  }
+
+  // tailsIdx will hold the indices in the original array that correspond to tails[]
+  const tailsIdx: number[] = Array(tails.length);
+  const seqIdx: number[] = []; // will hold indices of LIS
+
+  // Reconstruct the sequence by walking backwards using prevIndices
+  let k = tailsIdx.length - 1;
+  let currentIdx = -1;
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (indexInTails[i] === k) {
+      seqIdx.push(i); // store index
+      k--; // look for previous
+      currentIdx = i;
     }
   }
-}
-/**
- * Returns an array representing the shortest path from `start` to `target`
- * (inclusive), or `null` if no path exists.
- */
-function shortestPath<T>(start: T, target: T, graph: Graph<T>): T[] | null {
-  const prev = new Map<T, T | undefined>(); // child → parent
-  const visited = new Set<T>();
-  const queue: T[] = [start];
-  visited.add(start);
-  let found = false;
+  seqIdx.reverse();
 
-  while (queue.length && !found) {
-    const node = queue.shift()!;
-    for (const nb of graph.get(node) ?? []) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        prev.set(nb, node);
-        if (nb === target) {
-          found = true;
-          break;
-        }
-        queue.push(nb);
-      }
+  const seq = seqIdx.map(idx => arr[idx]);
+
+  return { seq, length: seq.length };
+}
+export function lisLength(arr: number[]): number {
+  if (arr.length === 0) return 0;
+  const dp = Array(arr.length).fill(1);
+
+  for (let i = 1; i < arr.length; i++) {
+    for (let j = 0; j < i; j++) {
+      if (arr[i] > arr[j]) dp[i] = Math.max(dp[i], dp[j] + 1);
     }
   }
-
-  if (!found) return null;
-
-  // Walk backwards from target to start
-  const path = [];
-  for (let cur: T | undefined = target; cur !== undefined; cur = prev.get(cur)) {
-    path.push(cur);
-  }
-  path.reverse();
-  return path;
+  return Math.max(...dp);
 }
-const g: Graph<string> = new Map();
-addEdge(g, 'A', 'B');
-addEdge(g, 'A', 'C');
-addEdge(g, 'B', 'D');
-addEdge(g, 'C', 'D');
-addEdge(g, 'C', 'E');
+const data = [10, 22, 9, 33, 21, 50, 41, 60, 80];
+const { seq, length } = longestIncreasingSubsequence(data);
 
-console.log('BFS visiting order:', () => {
-  const order: string[] = [];
-  bfs('A', g, node => { order.push(node); });
-  return order;
-}()); // ['A', 'B', 'C', 'D', 'E']
-
-console.log('Shortest path A → D:', shortestPath('A', 'D', g)); // ['A', 'B', 'D']
+console.log('LIS:', seq);          // [10, 22, 33, 50, 60, 80]
+console.log('Length:', length);    // 6
