@@ -1,81 +1,114 @@
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+/**
+ * A binary heap backed priority queue.
+ *
+ * The heap stores elements in a 0‑based array. For a node at index i:
+ *   left child   → 2*i + 1
+ *   right child  → 2*i + 2
+ *   parent       → Math.floor((i - 1) / 2)
+ */
+export class BinaryPriorityQueue<T> {
+  private data: T[] = [];
+  private readonly compare: (a: T, b: T) => number; // negative if a < b
 
-  get size() { return this._size; }
-}
-append(value: T): void {
-  const newNode = new ListNode(value);
-
-  if (!this.head) {          // empty list
-    this.head = this.tail = newNode;
-  } else {
-    if (this.tail) this.tail.next = newNode;
-    this.tail = newNode;
+  constructor(compare: (a: T, b: T) => number) {
+    this.compare = compare;
   }
 
-  this._size++;
-}
-prepend(value: T): void {
-  const newNode = new ListNode(value, this.head);
-  this.head = newNode;
-
-  if (!this.tail) this.tail = newNode;
-  this._size++;
-}
-remove(index: number): T | null {
-  if (index < 0 || index >= this._size) return null;
-
-  let current = this.head;
-  let prev: ListNode<T> | null = null;
-  let i = 0;
-
-  while (current && i < index) {
-    prev = current;
-    current = current.next;
-    i++;
+  /** Number of elements in the queue */
+  size(): number {
+    return this.data.length;
   }
 
-  if (!current) return null;
-
-  if (prev) prev.next = current.next;
-  else this.head = current.next;      // removed head
-
-  if (current === this.tail) this.tail = prev;
-  this._size--;
-  return current.value;
-}
-find(value: T): number {
-  let current = this.head;
-  let index = 0;
-
-  while (current) {
-    if (current.value === value) return index;
-    current = current.next;
-    index++;
+  /** Peek the element with the highest priority (root of the heap) */
+  peek(): T | undefined {
+    return this.data[0];
   }
-  return -1;  // not found
-}
-toArray(): T[] {
-  const result: T[] = [];
-  let current = this.head;
-  while (current) {
-    result.push(current.value);
-    current = current.next;
+
+  /** Insert a new element */
+  push(value: T): void {
+    this.data.push(value);
+    this.bubbleUp(this.data.length - 1);
   }
-  return result;
+
+  /**
+   * Remove and return the element with the highest priority.
+   * Returns undefined if the queue is empty.
+   */
+  pop(): T | undefined {
+    if (!this.data.length) return undefined;
+
+    const root = this.data[0];
+    const last = this.data.pop()!; // safe because we checked length
+
+    if (this.data.length) {
+      this.data[0] = last;
+      this.sinkDown(0);
+    }
+
+    return root;
+  }
+
+  /** Remove all elements */
+  clear(): void {
+    this.data.length = 0;
+  }
+
+  /* --- Internals --- */
+
+  private bubbleUp(index: number): void {
+    const elem = this.data[index];
+    while (index > 0) {
+      const parentIdx = (index - 1) >> 1;
+      const parent = this.data[parentIdx];
+      if (this.compare(elem, parent) >= 0) break;
+      this.data[index] = parent;
+      index = parentIdx;
+    }
+    this.data[index] = elem;
+  }
+
+  private sinkDown(index: number): void {
+    const length = this.data.length;
+    const elem = this.data[index];
+
+    while (true) {
+      const leftIdx = (index << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let swapIdx = -1;
+
+      if (leftIdx < length) {
+        const left = this.data[leftIdx];
+        if (this.compare(left, elem) < 0) swapIdx = leftIdx;
+      }
+      if (rightIdx < length) {
+        const right = this.data[rightIdx];
+        const compareRight = this.compare(right, elem);
+        if (
+          (swapIdx === -1 && compareRight < 0) ||
+          (swapIdx !== -1 && compareRight < this.compare(this.data[swapIdx], elem))
+        ) {
+          swapIdx = rightIdx;
+        }
+      }
+
+      if (swapIdx === -1) break;
+      this.data[index] = this.data[swapIdx];
+      index = swapIdx;
+    }
+    this.data[index] = elem;
+  }
 }
-const list = new LinkedList<number>();
+// Example: priority queue of numbers (min‑heap)
+const pq = new BinaryPriorityQueue<number>((a, b) => a - b);
 
-list.append(10);
-list.append(20);
-list.prepend(5);
+pq.push(5);
+pq.push(1);
+pq.push(3);
 
-console.log(list.toArray());     // [5, 10, 20]
-console.log(list.find(10));      // 1
-console.log(list.remove(0));     // 5
-console.log(list.toArray());     // [10, 20]
+console.log(pq.peek()); // 1
+console.log(pq.pop());  // 1
+console.log(pq.pop());  // 3
+console.log(pq.pop());  // 5
+interface Task { id: number; priority: number; }
+
+const taskQueue = new BinaryPriorityQueue<Task>((a, b) => a.priority - b.priority);
