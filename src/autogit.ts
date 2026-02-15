@@ -1,76 +1,85 @@
-/**
- * Returns the longest common prefix of all strings in `arr`.
- *
- * @param arr – an array of strings (can be empty)
- * @returns the prefix that every string shares, or an empty string
+/** 
+ * At its core a node only needs to expose
+ *   - a unique identifier (for visited‑tracking)
+ *   - a way to enumerate its successors
  */
-function longestCommonPrefix(arr: string[]): string {
-  if (!arr.length) return "";
+export interface Node<T = any> {
+  id: string | number;
+  // Optional: depth, parent, cost – whatever your context needs
+  getSuccessors(): Node[];
+}
+export interface BinaryNode<T = any> extends Node {
+  left?: BinaryNode;
+  right?: BinaryNode;
+  getSuccessors(): BinaryNode[] {
+    return [this.left, this.right].filter(Boolean);
+  }
+}
+/**
+ * depthLimitedSearch
+ * ------------------
+ * Classic depth‑first search that stops when a given depth threshold is reached.
+ *
+ * @param root the node to start from
+ * @param goalTest a predicate that returns true for the desired node
+ * @param depthLimit the maximum depth to explore (0 = only the root)
+ * @returns the first node that satisfies goalTest, or null if not found
+ */
+export function depthLimitedSearch<T>(
+  root: Node<T>,
+  goalTest: (node: Node<T>) => boolean,
+  depthLimit: number
+): Node<T> | null {
 
-  // Pin the “shortest”‑length string as a stopping rule.
-  // No prefix can be longer than this string.
-  const minLen = Math.min(...arr.map(s => s.length));
+  // A simple iterative DFS pile that also carries the current depth.
+  const stack: { node: Node<T>; depth: number }[] = [];
+  const visited = new Set<string | number>(); // avoid cycles
 
-  for (let i = 0; i < minLen; i++) {
-    const char = arr[0][i]; // candidate character
-    // stop as soon as any string mismatches
-    for (let j = 1; j < arr.length; j++) {
-      if (arr[j][i] !== char) {
-        return arr[0].substring(0, i);
+  stack.push({ node: root, depth: 0 });
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!; // pop returns a value, guaranteed not undefined
+
+    // skip already visited nodes (useful for graphs)
+    if (visited.has(node.id)) continue;
+    visited.add(node.id);
+
+    if (goalTest(node)) return node;   // success!
+
+    // Recurse only if we haven't hit the limit yet
+    if (depth < depthLimit) {
+      // Add successors in reverse order so leftmost child is processed first
+      const successors = node.getSuccessors();
+      for (let i = successors.length - 1; i >= 0; i--) {
+        stack.push({ node: successors[i], depth: depth + 1 });
       }
     }
   }
 
-  // All `minLen` characters matched
-  return arr[0].substring(0, minLen);
+  // If we exhaust the stack without finding the goal
+  return null;
 }
-const words = ["flower", "flow", "flight"];
-console.log(longestCommonPrefix(words)); // logs "fl"
-function longestCommonPrefixSort(arr: string[]): string {
-  if (!arr.length) return "";
-
-  const sorted = [...arr].sort();          // O(n log n)
-  const first = sorted[0];
-  const last  = sorted[sorted.length - 1];
-
-  let i = 0;
-  while (i < first.length && i < last.length && first[i] === last[i]) {
-    i++;
+// 1‑line node type with a simple integer value
+class GraphNode implements Node {
+  constructor(public id: number, public value: number) {}
+  getSuccessors(): GraphNode[] {
+    const n = this.value;
+    return [
+      new GraphNode(n * 2, n * 2),
+      new GraphNode(n * 2 + 1, n * 2 + 1),
+    ];
   }
-
-  return first.substring(0, i);
-}
-function lcpDivideAndConquer(arr: string[], l = 0, r = arr.length - 1): string {
-  if (l > r) return "";
-  if (l === r) return arr[l];
-
-  const mid = Math.floor((l + r) / 2);
-  const leftPref  = lcpDivideAndConquer(arr, l, mid);
-  const rightPref = lcpDivideAndConquer(arr, mid + 1, r);
-
-  // intersect two prefixes
-  let i = 0;
-  while (i < leftPref.length && i < rightPref.length && leftPref[i] === rightPref[i]) {
-    i++;
-  }
-  return leftPref.substring(0, i);
 }
 
-// convenience wrapper
-function longestCommonPrefixD&C(arr: string[]): string {
-  return lcpDivideAndConquer(arr);
-}
-const cases: [string[], string][] = [
-  [["", "", ""]]          , [""],
-  [["dog"], ["dog"]]      , ["dog"],
-  [["abc","ab"],
-   ["ab"]]                , ["ab"],
-  [["abc","abcd","abce"], ["abc"]],
-  [["agri", "adopt", "alien"], ["a"]],
-  [["b", "a"], [""]], 
-];
+const start = new GraphNode(1, 1);
+const goalIf = (node: GraphNode) => node.value === 19;
 
-cases.forEach(([arr, expected], i) => {
-  const result = longestCommonPrefix(arr);
-  console.log(i, result === expected[0] ? "✅" : `❌ got "${result}"`);
-});
+const found = depthLimitedSearch(start, goalIf, 4);
+
+console.log(found ? `found ${found.value}` : 'not found');
+          1
+        /   \
+       2     3
+      / \   / \
+     4  5  6  7
+    / \ ...   ...
