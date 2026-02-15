@@ -1,45 +1,20 @@
-class Stack<T> {
-  private items: T[] = [];      // underlying array
+// factorial.ts
+import * as readline from 'node:readline';
+import { stdin as input, stdout as output } from 'node:process';
 
-  /** Push a value onto the top of the stack. */
-  push(value: T): void {
-    this.items.push(value);
-  }
+const rl = readline.createInterface({ input, output });
 
-  /** Remove and return the top value.  Returns `undefined` if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  /** Peek at the top value without removing it. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** Number of elements in the stack. */
-  get size(): number {
-    return this.items.length;
-  }
-
-  /** True if the stack contains no items. */
-  get isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** Optional: clear all items. */
-  clear(): void {
-    this.items = [];
-  }
+function factorial(n: number): bigint {
+  if (n < 0) throw new Error('Negative numbers aren’t supported');
+  return n <= 1 ? BigInt(1) : BigInt(n) * factorial(n - 1);
 }
-const stack = new Stack<number>();
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size);   // 2
-
-stack.clear();
-console.log(stack.isEmpty); // true
+rl.question('Enter a non‑negative integer: ', (answer) => {
+  const num = Number(answer.trim());
+  if (!Number.isInteger(num) || num < 0) {
+    console.log('That’s not a valid non‑negative integer.');
+  } else {
+    console.log(`Factorial of ${num} is ${factorial(num).toString()}`);
+  }
+  rl.close();
+});
