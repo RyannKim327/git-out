@@ -1,72 +1,93 @@
-// A single node in the list
-class Node<T> {
-  constructor(public value: T, public next: Node<T> | null = null) {}
-}
+// 1️⃣  Generic node type
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null = null;
+  right: TreeNode<T> | null = null;
 
-// The queue itself
-export class LinkedListQueue<T> {
-  // Keep refs to both ends so that enqueue/dequeue stay constant‑time
-  private head: Node<T> | null = null; // points to first element
-  private tail: Node<T> | null = null; // points to last element
-  private _size = 0;
-
-  /** Adds a value to the back of the queue */
-  enqueue(value: T): void {
-    const newNode = new Node(value);
-    if (this.tail) {
-      this.tail.next = newNode;   // link the old tail to the new node
-      this.tail = newNode;        // new node becomes the new tail
-    } else {
-      // Queue was empty – head and tail are the same node now
-      this.head = this.tail = newNode;
-    }
-    this._size++;
-  }
-
-  /** Removes and returns the value from the front of the queue.
-      Throws an error if the queue is empty. */
-  dequeue(): T {
-    if (!this.head) {
-      throw new Error('Cannot dequeue from an empty queue');
-    }
-    const value = this.head.value;
-    this.head = this.head.next; // move head forward
-    if (!this.head) {
-      // Queue became empty, so tail must also be null
-      this.tail = null;
-    }
-    this._size--;
-    return value;
-  }
-
-  /** Peeks at the front value without removing it. */
-  peek(): T | null {
-    return this.head?.value ?? null;
-  }
-
-  /** Returns true if the queue contains no elements. */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Current number of elements */
-  size(): number {
-    return this._size;
+  constructor(value: T) {
+    this.value = value;
   }
 }
-import { LinkedListQueue } from './LinkedListQueue';
 
-const q = new LinkedListQueue<number>();
+// 2️⃣  BinaryTree class
+class BinaryTree<T> {
+  root: TreeNode<T> | null = null;
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+  // Insert a value – keeps the tree *ordered* (BST rule)
+  insert(value: T, comparator: (a: T, b: T) => number) {
+    const newNode = new TreeNode(value);
 
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size());    // 1
-console.log(q.isEmpty()); // false
+    if (!this.root) {
+      this.root = newNode;
+      return;
+    }
 
-q.dequeue();          // removes 30
-console.log(q.isEmpty()); // true
+    let current: TreeNode<T> | null = this.root;
+    while (current) {
+      const comp = comparator(value, current.value);
+      if (comp < 0) {
+        if (!current.left) {
+          current.left = newNode;
+          return;
+        }
+        current = current.left;
+      } else if (comp > 0) {
+        if (!current.right) {
+          current.right = newNode;
+          return;
+        }
+        current = current.right;
+      } else {
+        // Duplicate – decide what to do; here we just replace
+        current.value = value;
+        return;
+      }
+    }
+  }
+
+  // Find a node with a particular value
+  find(value: T, comparator: (a: T, b: T) => number): TreeNode<T> | null {
+    let current = this.root;
+    while (current) {
+      const comp = comparator(value, current.value);
+      if (comp === 0) return current;
+      current = comp < 0 ? current.left : current.right;
+    }
+    return null;
+  }
+
+  // In‑order traversal (left, root, right)
+  inOrder(callback: (node: TreeNode<T>) => void) {
+    const visit = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      visit(node.left);
+      callback(node);
+      visit(node.right);
+    };
+    visit(this.root);
+  }
+
+  // Pre‑ and post‑order are left to you if needed
+}
+const cmpNum = (a: number, b: number) => a - b;
+const cmpStr = (a: string, b: string) => a.localeCompare(b);
+const tree = new BinaryTree<number>();
+
+tree.insert(42, cmpNum);
+tree.insert(23, cmpNum);
+tree.insert(87, cmpNum);
+tree.insert(13, cmpNum);
+tree.insert(31, cmpNum);
+
+console.log("In‑order traversal:");
+tree.inOrder(node => console.log(node.value));
+
+const found = tree.find(31, cmpNum);
+console.log(found ? `Found ${found.value}` : "Not found");
+In-order traversal:
+13
+23
+31
+42
+87
+Found 31
