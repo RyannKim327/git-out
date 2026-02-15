@@ -1,68 +1,50 @@
+area = (base * height) / 2
 /**
- * Selection sort – O(n²) time, O(1) extra space.
+ * Return the area of a triangle when you know its base and height.
  *
- * @param arr The array to sort.
- * @returns The same array instance, now sorted.
+ * @param base   Length of the base side.
+ * @param height Height perpendicular to that base.
+ * @returns      Area of the triangle as a number.
  */
-function selectionSort<T>(arr: T[]): T[] {
-  const len = arr.length;
-
-  for (let i = 0; i < len - 1; i++) {
-    // index of the smallest element in the unsorted suffix
-    let minIdx = i;
-
-    // search for a smaller element
-    for (let j = i + 1; j < len; j++) {
-      if (arr[j] < arr[minIdx]) {
-        minIdx = j;
-      }
-    }
-
-    // swap the found minimum with the current position
-    if (minIdx !== i) {
-      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-    }
+export function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error("Base and height must be positive numbers.");
+  }
+  return (base * height) / 2;
+}
+s = (a + b + c) / 2            // semi‑perimeter
+area = sqrt( s * (s−a) * (s−b) * (s−c) )
+/**
+ * Compute the area of a triangle from its three side lengths.
+ *
+ * @param a   Length of side A.
+ * @param b   Length of side B.
+ * @param c   Length of side C.
+ * @returns   Area of the triangle (number) or NaN if the sides
+ *            don’t form a valid triangle.
+ */
+export function areaFromSides(a: number, b: number, c: number): number {
+  // Basic validation – all sides must be positive
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw new Error("All side lengths must be positive numbers.");
   }
 
-  return arr;
-}
-// Numbers
-const numbers = [64, 25, 12, 22, 11];
-console.log(selectionSort(numbers)); // [11, 12, 22, 25, 64]
-
-// Strings
-const words = ['pear', 'apple', 'orange', 'banana'];
-console.log(selectionSort(words));   // ['apple', 'banana', 'orange', 'pear']
-
-// Custom objects – provide a compare function
-interface Person { name: string; age: number }
-
-function sortByAge(a: Person, b: Person) {
-  return a.age - b.age;
-}
-
-const people: Person[] = [
-  { name: 'Alice', age: 34 },
-  { name: 'Bob', age: 28 },
-  { name: 'Carol', age: 41 }
-];
-
-// Simple wrapper to let us pass a comparator
-function selectionSortWith<T>(arr: T[], compare: (a: T, b: T) => number): T[] {
-  const len = arr.length;
-  for (let i = 0; i < len - 1; i++) {
-    let minIdx = i;
-    for (let j = i + 1; j < len; j++) {
-      if (compare(arr[j], arr[minIdx]) < 0) {
-        minIdx = j;
-      }
-    }
-    if (minIdx !== i) {
-      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-    }
+  // Triangle inequality check – else area calculation would
+  // produce NaN or a negative under the radicand.
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error("The provided side lengths do not form a valid triangle.");
   }
-  return arr;
-}
 
-console.log(selectionSortWith(people, sortByAge));
-// [{ name: 'Bob', age: 28 }, { name: 'Alice', age: 34 }, { name: 'Carol', age: 41 }]
+  const s = (a + b + c) / 2;
+  const radicand = s * (s - a) * (s - b) * (s - c);
+
+  return Math.sqrt(radicand);
+}
+import { areaFromBaseHeight, areaFromSides } from "./triangle-utils";
+
+const base = 10;
+const height = 6;
+console.log(areaFromBaseHeight(base, height)); // 30
+
+const a = 7, b = 10, c = 5;
+console.log(areaFromSides(a, b, c));           // ≈ 17.89
