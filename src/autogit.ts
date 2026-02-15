@@ -1,26 +1,42 @@
-/**
- * Pick a random floating‑point number ≥ min and < max.
- *
- * @param min – lower bound (inclusive)
- * @param max – upper bound (exclusive)
- * @returns random number in [min, max)
- */
-export function randFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min;
-}
-/**
- * Pick a random integer ≥ min and ≤ max.
- *
- * @param min – lower bound (inclusive)
- * @param max – upper bound (inclusive)
- * @returns random integer in [min, max]
- */
-export function randInt(min: number, max: number): number {
-  // floor ensures min can be selected; max included by +1 offset
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-// 0 <= x < 1
-console.log(randFloat(0, 1));
+// cron-demo.ts
+import { CronJob } from 'cron';
+import * as dotenv from 'dotenv';
 
-// 5 <= y <= 10
-console.log(randInt(5, 10));
+dotenv.config(); // optional – pulls cron expression from .env
+
+/**
+ * A simple scheduled task that
+ * • runs every minute (or whatever pattern you set)
+ * • prints a timestamp
+ * • gracefully handles potential errors
+ */
+const job = new CronJob(
+  // Default cron date string: every minute of every hour of every day
+  process.env.CRON_EXPRESSION || '* * * * *',
+  () => {
+    const now = new Date().toISOString();
+    console.log(`[${now}] Tick – cron job fired!`);
+  },
+  // onComplete – fires when the job finishes its last scheduled run (not used here)
+  null,
+  // start immediately
+  true,
+  // timezone – string like 'America/New_York'
+  process.env.TZ || 'UTC',
+);
+
+job.on('error', (err) => {
+  console.error(`❌ Cron job encountered an error: ${err.message}`);
+});
+
+process.once('SIGINT', () => {
+  console.log('\n🛑 Shutting down cron job gracefully...');
+  job.stop();
+  process.exit(0);
+});
+
+console.log(`✅ Cron job started with pattern: ${job.cronTime.source}`);
+✅ Cron job started with pattern: * * * * *
+[2026-02-15T12:00:00.000Z] Tick – cron job fired!
+[2026-02-15T12:01:00.000Z] Tick – cron job fired!
+…
