@@ -1,29 +1,52 @@
-/**
- * Returns true if `n` is a prime number.
- *
- * Rules:
- *   * 0 and 1 are **not** primes.
- *   * 2 is the only even prime.
- *   * For any other number, test divisibility up to √n.
- *
- * NOTE: This is a classic, “trial‑division” algorithm
- * and is fast enough for numbers that fit comfortably
- * in a JavaScript `number`. If you need to handle millisecond‑length
- * big‑ints, consider a probabilistic test like Miller‑Rabin.
- */
-function isPrime(n: number): boolean {
-  if (n < 2) return false;         // 0, 1, and negative numbers are not prime
-  if (n === 2) return true;        // 2 is prime
-  if (n % 2 === 0) return false;   // even numbers larger than 2 are not prime
-
-  const limit = Math.floor(Math.sqrt(n));
-  for (let divisor = 3; divisor <= limit; divisor += 2) {
-    if (n % divisor === 0) return false;
-  }
-  return true;
+interface TreeNode {
+  value: number;          // what you want to sum
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
-console.log(isPrime(2));   // true
-console.log(isPrime(9));   // false
-console.log(isPrime(13));  // true
-console.log(isPrime(1_000_003)); // true (prime just over a million)
-Time to test 1 000 000 numbers (≈ 5–6 ms in Node.js)
+function sumTreeRecursive(node: TreeNode | null): number {
+  if (!node) return 0;
+
+  const leftSum  = sumTreeRecursive(node.left ?? null);
+  const rightSum = sumTreeRecursive(node.right ?? null);
+
+  return node.value + leftSum + rightSum;
+}
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+
+  let total = 0;
+  const stack: TreeNode[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.value;
+
+    // Push children in any order – the sum is commutative.
+    if (node.right) stack.push(node.right);
+    if (node.left)  stack.push(node.left);
+  }
+
+  return total;
+}
+// A tiny test tree:
+//        5
+//       / \
+//      3   7
+//     / \   \
+//    2   4   8
+
+const testTree: TreeNode = {
+  value: 5,
+  left: {
+    value: 3,
+    left:  { value: 2 },
+    right: { value: 4 }
+  },
+  right: {
+    value: 7,
+    right: { value: 8 }
+  }
+};
+
+console.log('Recursive sum:', sumTreeRecursive(testTree));  // 29
+console.log('Iterative sum:', sumTreeIterative(testTree));  // 29
