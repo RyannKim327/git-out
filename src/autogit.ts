@@ -1,27 +1,66 @@
-function isPalindrome(str: string): boolean {
-  const sanitized = str.toLowerCase();              // ignore case
-  const reversed  = sanitized.split('').reverse().join('');
-  return sanitized === reversed;
-}
-console.log(isPalindrome('RaceCar'));      // true
-console.log(isPalindrome('hello'));        // false
-function isPalindromePortable(str: string): boolean {
-  const cleaned = str.replace(/[^a-z0-9]/gi, '').toLowerCase();
-  const left = 0;
-  const right = cleaned.length - 1;
+/**
+ * Checks whether the given string is a palindrome, ignoring case and
+ * non‑alphanumeric characters.  It uses only constant extra space.
+ *
+ * @param s  The string to check.
+ * @returns  true if `s` is a palindrome, false otherwise.
+ */
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
   while (left < right) {
-    if (cleaned[left] !== cleaned[right]) return false;
+    // Skip any *non*‑alphanumeric character on the left
+    while (left < right && !isAlphaNum(s.charCodeAt(left))) {
+      left++;
+    }
+    // Skip any *non*‑alphanumeric character on the right
+    while (left < right && !isAlphaNum(s.charCodeAt(right))) {
+      right--;
+    }
+
+    // If indices crossed after skipping, we're done
+    if (left >= right) break;
+
+    // Compare the characters case‑insensitively
+    const leftChar = s.charCodeAt(left);
+    const rightChar = s.charCodeAt(right);
+
+    if (normalize(leftChar) !== normalize(rightChar)) {
+      return false;
+    }
+
     left++;
     right--;
   }
 
   return true;
 }
-console.log(isPalindromePortable('A man, a plan, a canal: Panama')); // true
-console.log(isPalindromePortable('No lemon, no melon'));            // true
-console.log(isPalindromePortable('Hello, world!'));                 // false
-const isPalindromeFancy = (s: string) =>
-  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).join('') ===
-  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).reverse().join('');
-export { isPalindrome, isPalindromePortable };
+
+/**
+ * Helper to test whether a character code is alphanumeric.
+ */
+function isAlphaNum(code: number): boolean {
+  // 0-9
+  if (code >= 48 && code <= 57) return true;
+  // A-Z
+  if (code >= 65 && code <= 90) return true;
+  // a-z
+  if (code >= 97 && code <= 122) return true;
+  return false;
+}
+
+/**
+ * Normalises a character code to be lowercase ASCII when possible.
+ * For Unicode other than ASCII it simply returns the original code.
+ */
+function normalize(code: number): number {
+  // Convert uppercase A-Z to lowercase a-z
+  if (code >= 65 && code <= 90) {
+    return code + 32;
+  }
+  return code;
+}
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("race a car"));                      // false
+console.log(isPalindrome("   abcba   "));                     // true
