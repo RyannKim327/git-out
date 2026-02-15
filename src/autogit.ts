@@ -1,47 +1,68 @@
 /**
- * Interpolation search – returns the index of `key` in `arr`
- * or `-1` if the key is not present.
+ * Selection sort – O(n²) time, O(1) extra space.
  *
- * @template T – numeric type (number, bigInt, etc.)
- * @param arr  – sorted array of numbers
- * @param key  – value to look for
- * @returns index or -1
+ * @param arr The array to sort.
+ * @returns The same array instance, now sorted.
  */
-export function interpolationSearch<T extends number | bigint>(
-  arr: T[],
-  key: T
-): number {
-  if (!arr.length) return -1;
+function selectionSort<T>(arr: T[]): T[] {
+  const len = arr.length;
 
-  let low = 0;
-  let high = arr.length - 1;
+  for (let i = 0; i < len - 1; i++) {
+    // index of the smallest element in the unsorted suffix
+    let minIdx = i;
 
-  /* Handle the special situation where the key is identical to
-   * the value at both bounds – it can’t be found if low === high
-   * but arr[low] !== key.
-   */
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    /* Avoid division by zero when array values are identical */
-    const step =
-      low === high
-        ? 0
-        : Number(
-            (key - arr[low]) *
-              (high - low) /
-              (arr[high] - arr[low])
-          );
+    // search for a smaller element
+    for (let j = i + 1; j < len; j++) {
+      if (arr[j] < arr[minIdx]) {
+        minIdx = j;
+      }
+    }
 
-    const mid = low + Math.min(Math.max(step, 0), high - low);
-
-    const midVal = arr[mid];
-
-    if (midVal === key) return mid;
-    if (midVal < key) low = mid + 1;
-    else high = mid - 1;
+    // swap the found minimum with the current position
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+    }
   }
 
-  return -1; // Key not found
+  return arr;
 }
-const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17];
-console.log(interpolationSearch(nums, 7));  // → 3
-console.log(interpolationSearch(nums, 4));  // → -1
+// Numbers
+const numbers = [64, 25, 12, 22, 11];
+console.log(selectionSort(numbers)); // [11, 12, 22, 25, 64]
+
+// Strings
+const words = ['pear', 'apple', 'orange', 'banana'];
+console.log(selectionSort(words));   // ['apple', 'banana', 'orange', 'pear']
+
+// Custom objects – provide a compare function
+interface Person { name: string; age: number }
+
+function sortByAge(a: Person, b: Person) {
+  return a.age - b.age;
+}
+
+const people: Person[] = [
+  { name: 'Alice', age: 34 },
+  { name: 'Bob', age: 28 },
+  { name: 'Carol', age: 41 }
+];
+
+// Simple wrapper to let us pass a comparator
+function selectionSortWith<T>(arr: T[], compare: (a: T, b: T) => number): T[] {
+  const len = arr.length;
+  for (let i = 0; i < len - 1; i++) {
+    let minIdx = i;
+    for (let j = i + 1; j < len; j++) {
+      if (compare(arr[j], arr[minIdx]) < 0) {
+        minIdx = j;
+      }
+    }
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+    }
+  }
+  return arr;
+}
+
+console.log(selectionSortWith(people, sortByAge));
+// [{ name: 'Bob', age: 28 }, { name: 'Alice', age: 34 }, { name: 'Carol', age: 41 }]
