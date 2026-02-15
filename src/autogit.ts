@@ -1,66 +1,78 @@
-/**
- * Checks whether the given string is a palindrome, ignoring case and
- * non‑alphanumeric characters.  It uses only constant extra space.
- *
- * @param s  The string to check.
- * @returns  true if `s` is a palindrome, false otherwise.
- */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+// 1️⃣  A tiny node definition
+interface ListNode<T> {
+  val: T;
+  next?: ListNode<T>;
+}
 
-  while (left < right) {
-    // Skip any *non*‑alphanumeric character on the left
-    while (left < right && !isAlphaNum(s.charCodeAt(left))) {
-      left++;
-    }
-    // Skip any *non*‑alphanumeric character on the right
-    while (left < right && !isAlphaNum(s.charCodeAt(right))) {
-      right--;
-    }
+// 2️⃣  Helper: walk a list and collect values (for demo)
+const listToArray = <T>(head: ListNode<T> | undefined): T[] => {
+  const arr: T[] = [];
+  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
+  return arr;
+};
 
-    // If indices crossed after skipping, we're done
-    if (left >= right) break;
+// 3️⃣  The trick: two pointers, fast and slow
+function middle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
+  if (!head) return undefined; // empty list—no middle
 
-    // Compare the characters case‑insensitively
-    const leftChar = s.charCodeAt(left);
-    const rightChar = s.charCodeAt(right);
+  let fast = head;
+  let slow = head;
 
-    if (normalize(leftChar) !== normalize(rightChar)) {
-      return false;
-    }
-
-    left++;
-    right--;
+  // advance fast every two steps, slow every one
+  while (fast.next && fast.next.next) {
+    fast = fast.next.next; // jump 2
+    slow = slow.next as ListNode<T>; // jump 1
   }
 
-  return true;
+  // If fast has a next (odd length), move slow one more
+  if (fast.next) slow = slow.next as ListNode<T>;
+
+  return slow;
 }
 
-/**
- * Helper to test whether a character code is alphanumeric.
- */
-function isAlphaNum(code: number): boolean {
-  // 0-9
-  if (code >= 48 && code <= 57) return true;
-  // A-Z
-  if (code >= 65 && code <= 90) return true;
-  // a-z
-  if (code >= 97 && code <= 122) return true;
-  return false;
-}
+// 4️⃣  Demo: build a list so we can see it in action
+const nodes: ListNode<number>[] = [1, 2, 3, 4, 5].map(
+  (v) => ({ val: v })
+);
+for (let i = 0; i < nodes.length - 1; i++) nodes[i].next = nodes[i + 1];
+const head = nodes[0];
 
-/**
- * Normalises a character code to be lowercase ASCII when possible.
- * For Unicode other than ASCII it simply returns the original code.
- */
-function normalize(code: number): number {
-  // Convert uppercase A-Z to lowercase a-z
-  if (code >= 65 && code <= 90) {
-    return code + 32;
+console.log("Full list:", listToArray(head));         // 1,2,3,4,5
+console.log("Middle node:", middle(head)?.val);        // 3
+
+// Try an even‑length list
+const even: ListNode<number>[] = [10, 20, 30, 40].map(
+  (v) => ({ val: v })
+);
+for (let i = 0; i < even.length - 1; i++) even[i].next = even[i + 1];
+console.log("Middle of even list:", middle(even)?.val); // 20 (or 30 if you prefer that half)
+class LinkedList<T> {
+  head?: ListNode<T>;
+
+  // push to the tail
+  push(val: T) {
+    const node: ListNode<T> = { val };
+    if (!this.head) {
+      this.head = node;
+    } else {
+      let cur = this.head;
+      while (cur.next) cur = cur.next;
+      cur.next = node;
+    }
   }
-  return code;
+
+  // returns the middle node (or the first of two middles for even length)
+  middle(): ListNode<T> | undefined {
+    return middle(this.head);
+  }
+
+  toArray(): T[] {
+    return listToArray(this.head);
+  }
 }
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("race a car"));                      // false
-console.log(isPalindrome("   abcba   "));                     // true
+
+// Usage:
+const ll = new LinkedList<number>();
+[1, 2, 3, 4, 5].forEach(v => ll.push(v));
+console.log(ll.toArray());       // [1,2,3,4,5]
+console.log(ll.middle()?.val);   // 3
