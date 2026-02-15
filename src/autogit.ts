@@ -1,74 +1,66 @@
-interface Node<T> {
-  /** opaque identifier used for duplicate detection – e.g. a stringified board state */
-  id: string;
-  /** whatever data you want to keep (state, metadata, …) */
-  data: T;
-  /** produces the succ­esor nodes */
-  getChildren(): Iterable<Node<T>>;
-}
-function dls<T>(
-  node: Node<T>,
-  goalTest: (n: Node<T>) => boolean,
-  limit: number,
-  visited = new Set<string>()
-): Node<T> | null {
-  if (goalTest(node)) return node;
-  if (limit <= 0) return null;          // terminal depth reached
-  visited.add(node.id);                 // prevent revisiting
+class ListNode {
+  val: number;
+  next: ListNode | null;
 
-  for (const child of node.getChildren()) {
-    if (!visited.has(child.id)) {
-      const result = dls(child, goalTest, limit - 1, visited);
-      if (result !== null) return result;
+  constructor(val: number, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
+  }
+}
+
+/**
+ * Returns true if the list contains a cycle, false otherwise.
+ */
+function hasCycle(head: ListNode | null): boolean {
+  let slow = head;
+  let fast = head;
+
+  while (fast && fast.next) {
+    slow = slow.next;             // move one step
+    fast = fast.next.next;        // move two steps
+
+    if (slow === fast) {          // pointers meet → cycle
+      return true;
     }
   }
-  return null; // no goal found within limit
+
+  // fast reached the end → no cycle
+  return false;
 }
-function dlsIter<T>(
-  start: Node<T>,
-  goalTest: (n: Node<T>) => boolean,
-  limit: number
-): Node<T> | null {
-  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: start, depth: 0 }];
-  const visited = new Set<string>();
+/**
+ * Returns true if the list contains a cycle, false otherwise.
+ * Uses a Set to remember nodes we've seen.
+ */
+function hasCycleWithSet(head: ListNode | null): boolean {
+  const visited = new Set<ListNode>();
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    if (goalTest(node)) return node;
-    if (depth === limit) continue;      // hit the limit – skip children
-
-    visited.add(node.id);
-    for (const child of node.getChildren()) {
-      if (!visited.has(child.id)) {
-        stack.push({ node: child, depth: depth + 1 });
-      }
+  let current = head;
+  while (current) {
+    if (visited.has(current)) {
+      return true;               // seen it before → cycle
     }
+    visited.add(current);
+    current = current.next;
   }
-  return null;
+
+  return false;                  // reached the end
 }
-class Coord {
-  constructor(public x: number, public y: number) {}
-}
+// 1 ➜ 2 ➜ 3 ➜ 4 ➜ null   (no cycle)
+const a = new ListNode(1);
+a.next = new ListNode(2, new ListNode(3, new ListNode(4)));
 
-class MazeCell implements Node<Coord> {
-  constructor(
-    public id: string,
-    public data: Coord,
-    private neighbors: readonly Coord[]
-  ) {}
+console.log(hasCycle(a));          // false
+console.log(hasCycleWithSet(a));   // false
 
-  getChildren(): Iterable<Node<Coord>> {
-    return this.neighbors.map(
-      n => new MazeCell(String(n.x) + ',' + n.y, n, [] /* placeholder */)
-    );
-  }
-}
+// 1 ➜ 2 ➜ 3 ➜ 4 ➜ 2 ...   (cycle back to node 2)
+const b = new ListNode(1);
+const node2 = new ListNode(2);
+const node3 = new ListNode(3);
+const node4 = new ListNode(4);
+b.next = node2;
+node2.next = node3;
+node3.next = node4;
+node4.next = node2;                // close the loop
 
-// Setup: build maze, decide start & goal
-const start = new MazeCell('0,0', new Coord(0, 0), [new Coord(1, 0), new Coord(0, 1)]);
-const isGoal = (n: Node<Coord>) => n.data.x === 5 && n.data.y === 5;
-
-// Run:
-const found = dls(start, isGoal, 10);
-if (found) console.log('Found solution:', found.data);
-else console.log('no path within depth 10');
+console.log(hasCycle(b));          // true
+console.log(hasCycleWithSet(b));   // true
