@@ -1,59 +1,66 @@
 /**
- * Returns the longest common subsequence of two strings.
+ * Checks whether the given string is a palindrome, ignoring case and
+ * non‑alphanumeric characters.  It uses only constant extra space.
  *
- * @param a First string.
- * @param b Second string.
- * @returns The LCS as a string.
+ * @param s  The string to check.
+ * @returns  true if `s` is a palindrome, false otherwise.
  */
-function longestCommonSubsequence(a: string, b: string): string {
-  const n = a.length;
-  const m = b.length;
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  // dp[i][j] = LCS length for a[0..i-1] and b[0..j-1]
-  const dp: number[][] = Array(n + 1)
-    .fill(null)
-    .map(() => Array(m + 1).fill(0));
-
-  // Fill table
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
+  while (left < right) {
+    // Skip any *non*‑alphanumeric character on the left
+    while (left < right && !isAlphaNum(s.charCodeAt(left))) {
+      left++;
     }
+    // Skip any *non*‑alphanumeric character on the right
+    while (left < right && !isAlphaNum(s.charCodeAt(right))) {
+      right--;
+    }
+
+    // If indices crossed after skipping, we're done
+    if (left >= right) break;
+
+    // Compare the characters case‑insensitively
+    const leftChar = s.charCodeAt(left);
+    const rightChar = s.charCodeAt(right);
+
+    if (normalize(leftChar) !== normalize(rightChar)) {
+      return false;
+    }
+
+    left++;
+    right--;
   }
 
-  // Back‑track to build the subsequence
-  let i = n,
-    j = m,
-    lcs = '';
+  return true;
+}
 
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      lcs = a[i - 1] + lcs; // prepend
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;
-    } else {
-      j--;
-    }
+/**
+ * Helper to test whether a character code is alphanumeric.
+ */
+function isAlphaNum(code: number): boolean {
+  // 0-9
+  if (code >= 48 && code <= 57) return true;
+  // A-Z
+  if (code >= 65 && code <= 90) return true;
+  // a-z
+  if (code >= 97 && code <= 122) return true;
+  return false;
+}
+
+/**
+ * Normalises a character code to be lowercase ASCII when possible.
+ * For Unicode other than ASCII it simply returns the original code.
+ */
+function normalize(code: number): number {
+  // Convert uppercase A-Z to lowercase a-z
+  if (code >= 65 && code <= 90) {
+    return code + 32;
   }
-
-  return lcs;
+  return code;
 }
-console.log(longestCommonSubsequence('ABCDGH', 'AEDFHR')); // → "ADH"
-function lcsLength(a: string, b: string): number {
-  const n = a.length, m = b.length;
-  const dp = Array(n + 1).fill(0).map(() => Array(m + 1).fill(0));
-
-  for (let i = 1; i <= n; i++)
-    for (let j = 1; j <= m; j++)
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1] + 1
-        : Math.max(dp[i - 1][j], dp[i][j - 1]);
-
-  return dp[n][m];
-}
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("race a car"));                      // false
+console.log(isPalindrome("   abcba   "));                     // true
