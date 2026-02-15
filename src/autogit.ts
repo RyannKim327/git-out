@@ -1,35 +1,56 @@
-/**
- * Counting sort for arrays of non‑negative integers.
- * @param arr The input array – it will not be mutated.
- * @returns A new array containing the sorted numbers.
- */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
-
-  // 1. Find the maximum value (k) – the range of the keys.
-  let max = arr[0];
-  for (const num of arr) if (num > max) max = num;
-
-  // 2. Build the “count” array of size k + 1, initialise to 0.
-  const count: number[] = new Array(max + 1).fill(0);
-
-  // 3. Count how many times each value appears.
-  for (const num of arr) count[num]++;
-
-  // 4. Transform counts to positions (prefix sums).
-  for (let i = 1; i < count.length; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 5. Place each element into the output array in stable order.
-  const output: number[] = new Array(arr.length);
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const num = arr[i];
-    const pos = --count[num];   // decrement to get zero‑based index
-    output[pos] = num;
-  }
-
-  return output;
+// ------------------------------------------------------------------
+// 1) Basic types – tweak these to match your own representation.
+// ------------------------------------------------------------------
+interface Node<T> {
+  /** Value that identifies the node – can be an id, a name, … */
+  id: string;
+  /** Children (or neighbours) – the graph may be directed or undirected. */
+  children?: Array<Node<T>>;
 }
-const data = [4, 2, 2, 8, 3, 3, 1];
-console.log(countingSort(data)); // [1, 2, 2, 3, 3, 4, 8]
+
+// A very simple match predicate. Replace it with whatever checks your
+// problem needs (e.g. `node.id === targetId`).
+type MatchFn<T> = (node: Node<T>) => boolean;
+
+// ------------------------------------------------------------------
+// 2) Depth‑limited search – iterative (uses an explicit stack).
+// ------------------------------------------------------------------
+export function depthLimitedSearch<T>(
+  start: Node<T>,          // The root (or any arbitrary start node)
+  match: MatchFn<T>,      // Predicate to decide if the node is a goal
+  limit: number            // Maximum depth that may be explored
+): Node<T> | null {
+
+  // Stack holds tuples  : [current node, current depth]
+  const stack: Array<[Node<T>, number]> = [[start, 0]];
+
+  while (stack.length > 0) {
+    const [node, depth] = stack.pop()!;   // `!` is safe – we just checked length
+
+    // 1️⃣  Goal check
+    if (match(node)) {
+      return node;
+    }
+
+    // 2️⃣  Depth test – we only enqueue children if we still have room
+    if (depth < limit && node.children) {
+      // Push children onto stack – last child examined first (DFS order)
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        stack.push([node.children[i], depth + 1]);
+      }
+    }
+  }
+
+  // No goal found within the depth budget
+  return null;
+}
+const tree: Node<number> = {
+  id: 'root',
+  children: [
+    { id: 'a', children: [{ id: 'a1' }, { id: 'a2' }] },
+    { id: 'b', children: [{ id: 'b1' }, { id: 'b2' }] },
+  ],
+};
+
+const found = depthLimitedSearch(tree, node => node.id === 'a2', /* limit */ 2);
+console.log(found?.id ?? 'not found'); // → a2
