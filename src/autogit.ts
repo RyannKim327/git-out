@@ -1,56 +1,94 @@
-// ------------------------------------------------------------------
-// 1) Basic types – tweak these to match your own representation.
-// ------------------------------------------------------------------
-interface Node<T> {
-  /** Value that identifies the node – can be an id, a name, … */
-  id: string;
-  /** Children (or neighbours) – the graph may be directed or undirected. */
-  children?: Array<Node<T>>;
-}
+type AdjacencyList = Record<string, string[]>;
 
-// A very simple match predicate. Replace it with whatever checks your
-// problem needs (e.g. `node.id === targetId`).
-type MatchFn<T> = (node: Node<T>) => boolean;
+/*
+  Example:
 
-// ------------------------------------------------------------------
-// 2) Depth‑limited search – iterative (uses an explicit stack).
-// ------------------------------------------------------------------
-export function depthLimitedSearch<T>(
-  start: Node<T>,          // The root (or any arbitrary start node)
-  match: MatchFn<T>,      // Predicate to decide if the node is a goal
-  limit: number            // Maximum depth that may be explored
-): Node<T> | null {
+  {
+    A: ["B"],
+    B: ["C", "E"],
+    C: ["A", "D"],
+    D: ["C"],
+    E: ["F"],
+    F: ["E", "G"],
+    G: ["H"],
+    H: ["I", "J"],
+    I: ["H"],
+    J: ["G"],
+  }
+*/
+// TarjanSCC.ts
+type AdjacencyList = Record<string, string[]>;
 
-  // Stack holds tuples  : [current node, current depth]
-  const stack: Array<[Node<T>, number]> = [[start, 0]];
+export function tarjanSCC(graph: AdjacencyList): string[][] {
+  let index = 0;                         // global index counter
+  const indices: Record<string, number> = {};   // vertex → index
+  const lowlinks: Record<string, number> = {};  // vertex → lowlink
+  const stack: string[] = [];
+  const onStack: Record<string, boolean> = {};
+  const sccs: string[][] = [];
 
-  while (stack.length > 0) {
-    const [node, depth] = stack.pop()!;   // `!` is safe – we just checked length
+  function strongConnect(v: string) {
+    // 1. Set the depth index for v to the smallest unused index
+    indices[v] = lowlinks[v] = index++;
+    stack.push(v);
+    onStack[v] = true;
 
-    // 1️⃣  Goal check
-    if (match(node)) {
-      return node;
+    // 2. Consider successors of v
+    const neighbours = graph[v] ?? [];
+    for (const w of neighbours) {
+      if (indices[w] === undefined) {
+        // Successor w has not yet been visited; recurse on it
+        strongConnect(w);
+        lowlinks[v] = Math.min(lowlinks[v], lowlinks[w]);
+      } else if (onStack[w]) {
+        // Successor w is in stack → part of current SCC
+        lowlinks[v] = Math.min(lowlinks[v], indices[w]);
+      }
     }
 
-    // 2️⃣  Depth test – we only enqueue children if we still have room
-    if (depth < limit && node.children) {
-      // Push children onto stack – last child examined first (DFS order)
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        stack.push([node.children[i], depth + 1]);
-      }
+    // 3. If v is a root node, pop the stack and generate an SCC
+    if (lowlinks[v] === indices[v]) {
+      const component: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop() as string;
+        onStack[w] = false;
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
     }
   }
 
-  // No goal found within the depth budget
-  return null;
+  // Kick off
+  for (const v of Object.keys(graph)) {
+    if (indices[v] === undefined) {
+      strongConnect(v);
+    }
+  }
+
+  return sccs;
 }
-const tree: Node<number> = {
-  id: 'root',
-  children: [
-    { id: 'a', children: [{ id: 'a1' }, { id: 'a2' }] },
-    { id: 'b', children: [{ id: 'b1' }, { id: 'b2' }] },
-  ],
+import { tarjanSCC } from "./TarjanSCC";
+
+const graph: AdjacencyList = {
+  A: ["B"],
+  B: ["C", "E"],
+  C: ["A", "D"],
+  D: ["C"],
+  E: ["F"],
+  F: ["E", "G"],
+  G: ["H"],
+  H: ["I", "J"],
+  I: ["H"],
+  J: ["G"],
 };
 
-const found = depthLimitedSearch(tree, node => node.id === 'a2', /* limit */ 2);
-console.log(found?.id ?? 'not found'); // → a2
+const sccs = tarjanSCC(graph);
+console.log("Strongly connected components:");
+sccs.forEach((comp, idx) => {
+  console.log(`  ${idx + 1}: [${comp.join(", ")}]`);
+});
+Strongly connected components:
+  1: [A, B, C, D]
+  2: [E, F]
+  3: [G, H, I, J]
