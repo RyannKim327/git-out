@@ -1,59 +1,47 @@
 /**
- * Returns the longest common subsequence of two strings.
+ * Interpolation search – returns the index of `key` in `arr`
+ * or `-1` if the key is not present.
  *
- * @param a First string.
- * @param b Second string.
- * @returns The LCS as a string.
+ * @template T – numeric type (number, bigInt, etc.)
+ * @param arr  – sorted array of numbers
+ * @param key  – value to look for
+ * @returns index or -1
  */
-function longestCommonSubsequence(a: string, b: string): string {
-  const n = a.length;
-  const m = b.length;
+export function interpolationSearch<T extends number | bigint>(
+  arr: T[],
+  key: T
+): number {
+  if (!arr.length) return -1;
 
-  // dp[i][j] = LCS length for a[0..i-1] and b[0..j-1]
-  const dp: number[][] = Array(n + 1)
-    .fill(null)
-    .map(() => Array(m + 1).fill(0));
+  let low = 0;
+  let high = arr.length - 1;
 
-  // Fill table
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
+  /* Handle the special situation where the key is identical to
+   * the value at both bounds – it can’t be found if low === high
+   * but arr[low] !== key.
+   */
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    /* Avoid division by zero when array values are identical */
+    const step =
+      low === high
+        ? 0
+        : Number(
+            (key - arr[low]) *
+              (high - low) /
+              (arr[high] - arr[low])
+          );
+
+    const mid = low + Math.min(Math.max(step, 0), high - low);
+
+    const midVal = arr[mid];
+
+    if (midVal === key) return mid;
+    if (midVal < key) low = mid + 1;
+    else high = mid - 1;
   }
 
-  // Back‑track to build the subsequence
-  let i = n,
-    j = m,
-    lcs = '';
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      lcs = a[i - 1] + lcs; // prepend
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;
-    } else {
-      j--;
-    }
-  }
-
-  return lcs;
+  return -1; // Key not found
 }
-console.log(longestCommonSubsequence('ABCDGH', 'AEDFHR')); // → "ADH"
-function lcsLength(a: string, b: string): number {
-  const n = a.length, m = b.length;
-  const dp = Array(n + 1).fill(0).map(() => Array(m + 1).fill(0));
-
-  for (let i = 1; i <= n; i++)
-    for (let j = 1; j <= m; j++)
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1] + 1
-        : Math.max(dp[i - 1][j], dp[i][j - 1]);
-
-  return dp[n][m];
-}
+const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17];
+console.log(interpolationSearch(nums, 7));  // → 3
+console.log(interpolationSearch(nums, 4));  // → -1
