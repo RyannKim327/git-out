@@ -1,40 +1,72 @@
-const decimal = 42;          // any number you want to convert
-const binary = decimal.toString(2);  // '101010'
-console.log(binary);        // → 101010
-/**
- * Convert a non‑negative decimal number to binary.
- */
-function decimalToBinary(n: number): string {
-  if (n === 0) return '0';
-  let result: string = '';
-  let num = n;
-
-  while (num > 0) {
-    // `num % 2` is the remainder (0 or 1)
-    const bit = (num % 2).toString();
-    result = bit + result;          // prepend the bit
-    num = Math.floor(num / 2);       // shift right
-  }
-
-  return result;
+// A single node in the list
+class Node<T> {
+  constructor(public value: T, public next: Node<T> | null = null) {}
 }
 
-// Demo
-console.log(decimalToBinary(42));   // → 101010
-console.log(decimalToBinary(0));    // → 0
-console.log(decimalToBinary(255));  // → 11111111
-function bigIntDecimalToBinary(n: bigint): string {
-  if (n === 0n) return '0';
-  let result = '';
-  let num = n;
-  while (num > 0n) {
-    result = (num & 1n).toString() + result; // `& 1n` is a fast bitwise test
-    num >>= 1n;   // shift right
-  }
-  return result;
-}
-// 16 decimal → 10000 binary
-console.assert(decimalToBinary(16) === '10000');
+// The queue itself
+export class LinkedListQueue<T> {
+  // Keep refs to both ends so that enqueue/dequeue stay constant‑time
+  private head: Node<T> | null = null; // points to first element
+  private tail: Node<T> | null = null; // points to last element
+  private _size = 0;
 
-// 255 decimal → 11111111 binary
-console.assert(decimalToBinary(255) === '11111111');
+  /** Adds a value to the back of the queue */
+  enqueue(value: T): void {
+    const newNode = new Node(value);
+    if (this.tail) {
+      this.tail.next = newNode;   // link the old tail to the new node
+      this.tail = newNode;        // new node becomes the new tail
+    } else {
+      // Queue was empty – head and tail are the same node now
+      this.head = this.tail = newNode;
+    }
+    this._size++;
+  }
+
+  /** Removes and returns the value from the front of the queue.
+      Throws an error if the queue is empty. */
+  dequeue(): T {
+    if (!this.head) {
+      throw new Error('Cannot dequeue from an empty queue');
+    }
+    const value = this.head.value;
+    this.head = this.head.next; // move head forward
+    if (!this.head) {
+      // Queue became empty, so tail must also be null
+      this.tail = null;
+    }
+    this._size--;
+    return value;
+  }
+
+  /** Peeks at the front value without removing it. */
+  peek(): T | null {
+    return this.head?.value ?? null;
+  }
+
+  /** Returns true if the queue contains no elements. */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** Current number of elements */
+  size(): number {
+    return this._size;
+  }
+}
+import { LinkedListQueue } from './LinkedListQueue';
+
+const q = new LinkedListQueue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size());    // 1
+console.log(q.isEmpty()); // false
+
+q.dequeue();          // removes 30
+console.log(q.isEmpty()); // true
