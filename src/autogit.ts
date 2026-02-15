@@ -1,26 +1,93 @@
-/**
- * Returns true if the array is in strictly ascending order (each element ≤ the next one).
- * Works for numbers, strings, or any type that can be compared with < / >.
- */
-export function isAscending<T>(arr: T[], comparator?: (a: T, b: T) => number): boolean {
-  // If the user passes a custom comparator, use it; otherwise fall back to natural order.
-  const cmp = comparator ?? ((a: T, b: T) => a < b ? -1 : a > b ? 1 : 0);
+// `Graph<T>` maps a node of type T to an array of its adjacent nodes.
+type Graph<T> = Map<T, T[]>;
 
-  // Iterate until we find a pair that violates the ascending rule.
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) {
-      return false; // arr[i-1] > arr[i], not ascending
+// A helper to add an undirected edge
+function addEdge<T>(g: Graph<T>, a: T, b: T) {
+  g.set(a, (g.get(a) ?? []).concat(b));
+  g.set(b, (g.get(b) ?? []).concat(a));
+}
+/**
+ * Performs a breadth‑first search on an unweighted graph.
+ *
+ * @param start   the starting node
+ * @param graph   the graph to search
+ * @param visitor a callback that receives each visited node in the order
+ *                it’s discovered. The callback can return `false` to stop
+ *                the search early.
+ */
+function bfs<T>(
+  start: T,
+  graph: Graph<T>,
+  visitor: (node: T) => void | boolean
+): void {
+  const visited = new Set<T>();
+  const queue = [start];
+
+  visited.add(start);
+
+  while (queue.length) {
+    const node = queue.shift()!;      // Non‑null because we just tested length
+    const result = visitor(node);
+
+    // If the visitor explicitly returned false, break out early.
+    if (result === false) break;
+
+    const neighbors = graph.get(node) ?? [];
+    for (const n of neighbors) {
+      if (!visited.has(n)) {
+        visited.add(n);
+        queue.push(n);
+      }
     }
   }
-  return true;          // All pairs passed the test
 }
-// Numbers (default comparator)
-console.log(isAscending([1, 2, 3, 4])); // true
-console.log(isAscending([1, 3, 2, 4])); // false
+/**
+ * Returns an array representing the shortest path from `start` to `target`
+ * (inclusive), or `null` if no path exists.
+ */
+function shortestPath<T>(start: T, target: T, graph: Graph<T>): T[] | null {
+  const prev = new Map<T, T | undefined>(); // child → parent
+  const visited = new Set<T>();
+  const queue: T[] = [start];
+  visited.add(start);
+  let found = false;
 
-// Strings (lexicographic order)
-console.log(isAscending(['apple', 'banana', 'cherry'])); // true
+  while (queue.length && !found) {
+    const node = queue.shift()!;
+    for (const nb of graph.get(node) ?? []) {
+      if (!visited.has(nb)) {
+        visited.add(nb);
+        prev.set(nb, node);
+        if (nb === target) {
+          found = true;
+          break;
+        }
+        queue.push(nb);
+      }
+    }
+  }
 
-// Custom comparison – e.g., sort by string length
-const byLength = (a: string, b: string) => a.length - b.length;
-console.log(isAscending(['a', 'bb', 'ccc'], byLength)); // true
+  if (!found) return null;
+
+  // Walk backwards from target to start
+  const path = [];
+  for (let cur: T | undefined = target; cur !== undefined; cur = prev.get(cur)) {
+    path.push(cur);
+  }
+  path.reverse();
+  return path;
+}
+const g: Graph<string> = new Map();
+addEdge(g, 'A', 'B');
+addEdge(g, 'A', 'C');
+addEdge(g, 'B', 'D');
+addEdge(g, 'C', 'D');
+addEdge(g, 'C', 'E');
+
+console.log('BFS visiting order:', () => {
+  const order: string[] = [];
+  bfs('A', g, node => { order.push(node); });
+  return order;
+}()); // ['A', 'B', 'C', 'D', 'E']
+
+console.log('Shortest path A → D:', shortestPath('A', 'D', g)); // ['A', 'B', 'D']
