@@ -1,52 +1,41 @@
-interface TreeNode {
-  value: number;          // what you want to sum
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
-function sumTreeRecursive(node: TreeNode | null): number {
-  if (!node) return 0;
+/**
+ * KMP string matcher.
+ * @param text    Text in which to search.
+ * @param pattern Pattern to find.
+ * @returns Index of first occurrence of pattern in text, or -1 if not found.
+ */
+export function kmpSearch(text: string, pattern: string): number {
+  const n = text.length;
+  const m = pattern.length;
 
-  const leftSum  = sumTreeRecursive(node.left ?? null);
-  const rightSum = sumTreeRecursive(node.right ?? null);
+  if (m === 0) return 0;           // Empty pattern matches at start.
 
-  return node.value + leftSum + rightSum;
-}
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
+  // --------- Step 1: build failure function ----------
+  const fail: number[] = new Array(m).fill(0);
+  let k = 0;                         // length of current match
 
-  let total = 0;
-  const stack: TreeNode[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.value;
-
-    // Push children in any order – the sum is commutative.
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
+  for (let i = 1; i < m; i++) {
+    while (k > 0 && pattern[k] !== pattern[i]) {
+      k = fail[k - 1];
+    }
+    if (pattern[k] === pattern[i]) k++;
+    fail[i] = k;
   }
 
-  return total;
-}
-// A tiny test tree:
-//        5
-//       / \
-//      3   7
-//     / \   \
-//    2   4   8
+  // --------- Step 2: scan the text ---------------
+  k = 0;                               // reset pattern index
+  for (let i = 0; i < n; i++) {
+    while (k > 0 && text[i] !== pattern[k]) {
+      k = fail[k - 1];
+    }
+    if (text[i] === pattern[k]) k++;
 
-const testTree: TreeNode = {
-  value: 5,
-  left: {
-    value: 3,
-    left:  { value: 2 },
-    right: { value: 4 }
-  },
-  right: {
-    value: 7,
-    right: { value: 8 }
+    if (k === m) {                    // match found
+      return i - m + 1;
+    }
   }
-};
 
-console.log('Recursive sum:', sumTreeRecursive(testTree));  // 29
-console.log('Iterative sum:', sumTreeIterative(testTree));  // 29
+  return -1;                          // no match
+}
+const idx = kmpSearch('abxabcabcaby', 'abcaby');
+console.log(idx);   // → 6
