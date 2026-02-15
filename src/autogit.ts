@@ -1,66 +1,68 @@
-class ListNode {
-  val: number;
-  next: ListNode | null;
-
-  constructor(val: number, next: ListNode | null = null) {
-    this.val = val;
-    this.next = next;
-  }
-}
-
 /**
- * Returns true if the list contains a cycle, false otherwise.
+ * Selection sort – O(n²) time, O(1) extra space.
+ *
+ * @param arr The array to sort.
+ * @returns The same array instance, now sorted.
  */
-function hasCycle(head: ListNode | null): boolean {
-  let slow = head;
-  let fast = head;
+function selectionSort<T>(arr: T[]): T[] {
+  const len = arr.length;
 
-  while (fast && fast.next) {
-    slow = slow.next;             // move one step
-    fast = fast.next.next;        // move two steps
+  for (let i = 0; i < len - 1; i++) {
+    // index of the smallest element in the unsorted suffix
+    let minIdx = i;
 
-    if (slow === fast) {          // pointers meet → cycle
-      return true;
+    // search for a smaller element
+    for (let j = i + 1; j < len; j++) {
+      if (arr[j] < arr[minIdx]) {
+        minIdx = j;
+      }
+    }
+
+    // swap the found minimum with the current position
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
     }
   }
 
-  // fast reached the end → no cycle
-  return false;
+  return arr;
 }
-/**
- * Returns true if the list contains a cycle, false otherwise.
- * Uses a Set to remember nodes we've seen.
- */
-function hasCycleWithSet(head: ListNode | null): boolean {
-  const visited = new Set<ListNode>();
+// Numbers
+const numbers = [64, 25, 12, 22, 11];
+console.log(selectionSort(numbers)); // [11, 12, 22, 25, 64]
 
-  let current = head;
-  while (current) {
-    if (visited.has(current)) {
-      return true;               // seen it before → cycle
+// Strings
+const words = ['pear', 'apple', 'orange', 'banana'];
+console.log(selectionSort(words));   // ['apple', 'banana', 'orange', 'pear']
+
+// Custom objects – provide a compare function
+interface Person { name: string; age: number }
+
+function sortByAge(a: Person, b: Person) {
+  return a.age - b.age;
+}
+
+const people: Person[] = [
+  { name: 'Alice', age: 34 },
+  { name: 'Bob', age: 28 },
+  { name: 'Carol', age: 41 }
+];
+
+// Simple wrapper to let us pass a comparator
+function selectionSortWith<T>(arr: T[], compare: (a: T, b: T) => number): T[] {
+  const len = arr.length;
+  for (let i = 0; i < len - 1; i++) {
+    let minIdx = i;
+    for (let j = i + 1; j < len; j++) {
+      if (compare(arr[j], arr[minIdx]) < 0) {
+        minIdx = j;
+      }
     }
-    visited.add(current);
-    current = current.next;
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+    }
   }
-
-  return false;                  // reached the end
+  return arr;
 }
-// 1 ➜ 2 ➜ 3 ➜ 4 ➜ null   (no cycle)
-const a = new ListNode(1);
-a.next = new ListNode(2, new ListNode(3, new ListNode(4)));
 
-console.log(hasCycle(a));          // false
-console.log(hasCycleWithSet(a));   // false
-
-// 1 ➜ 2 ➜ 3 ➜ 4 ➜ 2 ...   (cycle back to node 2)
-const b = new ListNode(1);
-const node2 = new ListNode(2);
-const node3 = new ListNode(3);
-const node4 = new ListNode(4);
-b.next = node2;
-node2.next = node3;
-node3.next = node4;
-node4.next = node2;                // close the loop
-
-console.log(hasCycle(b));          // true
-console.log(hasCycleWithSet(b));   // true
+console.log(selectionSortWith(people, sortByAge));
+// [{ name: 'Bob', age: 28 }, { name: 'Alice', age: 34 }, { name: 'Carol', age: 41 }]
