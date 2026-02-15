@@ -1,66 +1,73 @@
 /**
- * Checks whether the given string is a palindrome, ignoring case and
- * non‑alphanumeric characters.  It uses only constant extra space.
+ * Finds the longest increasing subsequence of an array.
  *
- * @param s  The string to check.
- * @returns  true if `s` is a palindrome, false otherwise.
+ * @param arr Numeric array (any integers or floats, any sign).
+ * @returns Object containing the LIS and its length.
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+export function longestIncreasingSubsequence(arr: number[]): { seq: number[]; length: number } {
+  if (arr.length === 0) return { seq: [], length: 0 };
 
-  while (left < right) {
-    // Skip any *non*‑alphanumeric character on the left
-    while (left < right && !isAlphaNum(s.charCodeAt(left))) {
-      left++;
-    }
-    // Skip any *non*‑alphanumeric character on the right
-    while (left < right && !isAlphaNum(s.charCodeAt(right))) {
-      right--;
-    }
+  // tails[i] — minimal tail of an LIS of length i+1 found so far
+  const tails: number[] = [];
+  // prevIndices[i] — index of the previous element in the LIS that ends at arr[i]
+  const prevIndices: number[] = Array(arr.length).fill(-1);
+  // indexInTails[i] — will store the index in tails where arr[i] was placed
+  const indexInTails: number[] = Array(arr.length).fill(0);
 
-    // If indices crossed after skipping, we're done
-    if (left >= right) break;
+  for (let i = 0; i < arr.length; i++) {
+    const num = arr[i];
 
-    // Compare the characters case‑insensitively
-    const leftChar = s.charCodeAt(left);
-    const rightChar = s.charCodeAt(right);
-
-    if (normalize(leftChar) !== normalize(rightChar)) {
-      return false;
+    // Binary search: first index in tails where tails[idx] >= num
+    let lo = 0,
+      hi = tails.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (tails[mid] < num) lo = mid + 1;
+      else hi = mid;
     }
 
-    left++;
-    right--;
+    // lo is the length of the new subsequence minus one
+    indexInTails[i] = lo;
+    if (lo >= tails.length) tails.push(num);
+    else tails[lo] = num;
+
+    // Link to previous element of the subsequence
+    if (lo > 0) prevIndices[i] = tailsIdx[lo - 1];
   }
 
-  return true;
-}
+  // tailsIdx will hold the indices in the original array that correspond to tails[]
+  const tailsIdx: number[] = Array(tails.length);
+  const seqIdx: number[] = []; // will hold indices of LIS
 
-/**
- * Helper to test whether a character code is alphanumeric.
- */
-function isAlphaNum(code: number): boolean {
-  // 0-9
-  if (code >= 48 && code <= 57) return true;
-  // A-Z
-  if (code >= 65 && code <= 90) return true;
-  // a-z
-  if (code >= 97 && code <= 122) return true;
-  return false;
-}
-
-/**
- * Normalises a character code to be lowercase ASCII when possible.
- * For Unicode other than ASCII it simply returns the original code.
- */
-function normalize(code: number): number {
-  // Convert uppercase A-Z to lowercase a-z
-  if (code >= 65 && code <= 90) {
-    return code + 32;
+  // Reconstruct the sequence by walking backwards using prevIndices
+  let k = tailsIdx.length - 1;
+  let currentIdx = -1;
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (indexInTails[i] === k) {
+      seqIdx.push(i); // store index
+      k--; // look for previous
+      currentIdx = i;
+    }
   }
-  return code;
+  seqIdx.reverse();
+
+  const seq = seqIdx.map(idx => arr[idx]);
+
+  return { seq, length: seq.length };
 }
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("race a car"));                      // false
-console.log(isPalindrome("   abcba   "));                     // true
+export function lisLength(arr: number[]): number {
+  if (arr.length === 0) return 0;
+  const dp = Array(arr.length).fill(1);
+
+  for (let i = 1; i < arr.length; i++) {
+    for (let j = 0; j < i; j++) {
+      if (arr[i] > arr[j]) dp[i] = Math.max(dp[i], dp[j] + 1);
+    }
+  }
+  return Math.max(...dp);
+}
+const data = [10, 22, 9, 33, 21, 50, 41, 60, 80];
+const { seq, length } = longestIncreasingSubsequence(data);
+
+console.log('LIS:', seq);          // [10, 22, 33, 50, 60, 80]
+console.log('Length:', length);    // 6
