@@ -1,81 +1,64 @@
+/**
+ * Basic node definition for a singly‑linked list.
+ */
 class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
 
-  get size() { return this._size; }
-}
-append(value: T): void {
-  const newNode = new ListNode(value);
+/**
+ * Returns `true` if the list reads the same forwards and backwards.
+ *
+ * Time   : O(n) – we traverse the list a constant number of times.
+ * Space  : O(1) – we only use a few pointer variables.
+ */
+function isPalindrome<T>(head: ListNode<T> | null): boolean {
+  if (!head || !head.next) return true;   // empty or single‑node list
 
-  if (!this.head) {          // empty list
-    this.head = this.tail = newNode;
-  } else {
-    if (this.tail) this.tail.next = newNode;
-    this.tail = newNode;
+  // 1. Find the middle of the list
+  let slow = head;
+  let fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  this._size++;
-}
-prepend(value: T): void {
-  const newNode = new ListNode(value, this.head);
-  this.head = newNode;
-
-  if (!this.tail) this.tail = newNode;
-  this._size++;
-}
-remove(index: number): T | null {
-  if (index < 0 || index >= this._size) return null;
-
-  let current = this.head;
+  // 2. Reverse the second half (starting from slow.next)
   let prev: ListNode<T> | null = null;
-  let i = 0;
+  let curr: ListNode<T> | null = slow.next;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  // `prev` is now the head of the reversed second half
 
-  while (current && i < index) {
-    prev = current;
-    current = current.next;
-    i++;
+  // 3. Compare the first half with the reversed second half
+  let p1 = head;
+  let p2 = prev;
+  while (p2) {               // only need to go as far as the short half
+    if (p1.val !== p2.val) return false;
+    p1 = p1.next!;
+    p2 = p2.next!;
   }
 
-  if (!current) return null;
+  // Optional: restore the list to its original order (not required for the answer)
+  // reverse(prev) again and reattach to `slow.next`
 
-  if (prev) prev.next = current.next;
-  else this.head = current.next;      // removed head
-
-  if (current === this.tail) this.tail = prev;
-  this._size--;
-  return current.value;
+  return true;
 }
-find(value: T): number {
-  let current = this.head;
-  let index = 0;
-
-  while (current) {
-    if (current.value === value) return index;
-    current = current.next;
-    index++;
+const build = (...vals: number[]): ListNode<number> | null => {
+  let head: ListNode<number> | null = null;
+  let tail: ListNode<number> | null = null;
+  for (const v of vals) {
+    const node = new ListNode(v);
+    if (!head) head = node;
+    else tail!.next = node;
+    tail = node;
   }
-  return -1;  // not found
-}
-toArray(): T[] {
-  const result: T[] = [];
-  let current = this.head;
-  while (current) {
-    result.push(current.value);
-    current = current.next;
-  }
-  return result;
-}
-const list = new LinkedList<number>();
+  return head;
+};
 
-list.append(10);
-list.append(20);
-list.prepend(5);
-
-console.log(list.toArray());     // [5, 10, 20]
-console.log(list.find(10));      // 1
-console.log(list.remove(0));     // 5
-console.log(list.toArray());     // [10, 20]
+console.log(isPalindrome(build(1, 2, 3, 2, 1))); // true
+console.log(isPalindrome(build(1, 2, 2, 1)));      // true
+console.log(isPalindrome(build(1, 2, 3, 4, 5))); // false
