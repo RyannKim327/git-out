@@ -1,41 +1,51 @@
-/**
- * KMP string matcher.
- * @param text    Text in which to search.
- * @param pattern Pattern to find.
- * @returns Index of first occurrence of pattern in text, or -1 if not found.
- */
-export function kmpSearch(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
-
-  if (m === 0) return 0;           // Empty pattern matches at start.
-
-  // --------- Step 1: build failure function ----------
-  const fail: number[] = new Array(m).fill(0);
-  let k = 0;                         // length of current match
-
-  for (let i = 1; i < m; i++) {
-    while (k > 0 && pattern[k] !== pattern[i]) {
-      k = fail[k - 1];
-    }
-    if (pattern[k] === pattern[i]) k++;
-    fail[i] = k;
-  }
-
-  // --------- Step 2: scan the text ---------------
-  k = 0;                               // reset pattern index
-  for (let i = 0; i < n; i++) {
-    while (k > 0 && text[i] !== pattern[k]) {
-      k = fail[k - 1];
-    }
-    if (text[i] === pattern[k]) k++;
-
-    if (k === m) {                    // match found
-      return i - m + 1;
-    }
-  }
-
-  return -1;                          // no match
+// ----------  Tree node definition ----------
+class TreeNode<T> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
 }
-const idx = kmpSearch('abxabcabcaby', 'abcaby');
-console.log(idx);   // → 6
+
+// ----------  Diameter helper ----------
+function diameter(root: TreeNode<any> | null): number {
+  let maxDiameter = 0;           // global best
+
+  // returns height of subtree rooted at `node`
+  function dfs(node: TreeNode<any> | null): number {
+    if (!node) return 0;
+
+    const leftH  = dfs(node.left);
+    const rightH = dfs(node.right);
+
+    // path that passes through this node
+    const candidate = leftH + rightH;
+    if (candidate > maxDiameter) maxDiameter = candidate;
+
+    // height of this subtree
+    return Math.max(leftH, rightH) + 1;
+  }
+
+  dfs(root);
+  return maxDiameter;                   // number of edges on the longest path
+}
+
+/* ------------------------------------------------------------------ */
+/*  Quick sanity check – build a tree and run the function             */
+/* ------------------------------------------------------------------ */
+
+const a = new TreeNode('a');
+const b = new TreeNode('b');
+const c = new TreeNode('c');
+const d = new TreeNode('d');
+const e = new TreeNode('e');
+const f = new TreeNode('f');
+
+a.left  = b;                //   a
+a.right = c;                //  / \
+b.left  = d;                // d   c
+b.right = e;                //  \   \
+e.right = f;                //   f
+
+console.log(diameter(a));   // → 4
+const diameterInNodes = diameter(root) + 1;
