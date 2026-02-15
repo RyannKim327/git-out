@@ -1,13 +1,29 @@
 /**
- * Calculate the mean (average) of an array of numbers.
+ * Reverses the order of words in a string.
  *
- * @param data - a non‑empty array of numbers
- * @returns the mean, or NaN if the array is empty
+ * Words are split on whitespace.  Consecutive whitespace is collapsed,
+ * but you can tweak the regex if you need to keep it intact.
+ *
+ * @param txt – The string to reverse
+ * @returns The string with words in reverse order
  */
-function mean(data: number[]): number {
-  if (data.length === 0) return NaN;          // nothing to average
-  const total = data.reduce((sum, val) => sum + val, 0);
-  return total / data.length;
+function reverseWordOrder(txt: string): string {
+  return txt
+    .trim()                      // Strip leading/trailing gaps
+    .split(/\s+/)                // Break on any run of whitespace
+    .reverse()                   // Flip the array
+    .join(' ');                  // Stitch back together
 }
-const values = [4, 7, 9, 2];
-console.log(mean(values));   // → 5.5
+
+// Example usage
+const original = "Hello world, this is TypeScript.";
+const reversed = reverseWordOrder(original);
+console.log(reversed);  // "TypeScript. is this world, Hello"
+function reverseWordOrder(txt: string) {
+  const words = txt.trim().match(/\w+|\s+/g) ?? [];
+  const textOnly = words.filter(Boolean).join(' ');
+  const reversed = textOnly.split(/\s+/).reverse().join(' ');
+  // re‑insert spaces that were originally present
+  // (not shown here for brevity)
+  return reversed;
+}
