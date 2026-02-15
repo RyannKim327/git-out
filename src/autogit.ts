@@ -1,114 +1,93 @@
+// `Graph<T>` maps a node of type T to an array of its adjacent nodes.
+type Graph<T> = Map<T, T[]>;
+
+// A helper to add an undirected edge
+function addEdge<T>(g: Graph<T>, a: T, b: T) {
+  g.set(a, (g.get(a) ?? []).concat(b));
+  g.set(b, (g.get(b) ?? []).concat(a));
+}
 /**
- * A binary heap backed priority queue.
+ * Performs a breadth‑first search on an unweighted graph.
  *
- * The heap stores elements in a 0‑based array. For a node at index i:
- *   left child   → 2*i + 1
- *   right child  → 2*i + 2
- *   parent       → Math.floor((i - 1) / 2)
+ * @param start   the starting node
+ * @param graph   the graph to search
+ * @param visitor a callback that receives each visited node in the order
+ *                it’s discovered. The callback can return `false` to stop
+ *                the search early.
  */
-export class BinaryPriorityQueue<T> {
-  private data: T[] = [];
-  private readonly compare: (a: T, b: T) => number; // negative if a < b
+function bfs<T>(
+  start: T,
+  graph: Graph<T>,
+  visitor: (node: T) => void | boolean
+): void {
+  const visited = new Set<T>();
+  const queue = [start];
 
-  constructor(compare: (a: T, b: T) => number) {
-    this.compare = compare;
-  }
+  visited.add(start);
 
-  /** Number of elements in the queue */
-  size(): number {
-    return this.data.length;
-  }
+  while (queue.length) {
+    const node = queue.shift()!;      // Non‑null because we just tested length
+    const result = visitor(node);
 
-  /** Peek the element with the highest priority (root of the heap) */
-  peek(): T | undefined {
-    return this.data[0];
-  }
+    // If the visitor explicitly returned false, break out early.
+    if (result === false) break;
 
-  /** Insert a new element */
-  push(value: T): void {
-    this.data.push(value);
-    this.bubbleUp(this.data.length - 1);
-  }
-
-  /**
-   * Remove and return the element with the highest priority.
-   * Returns undefined if the queue is empty.
-   */
-  pop(): T | undefined {
-    if (!this.data.length) return undefined;
-
-    const root = this.data[0];
-    const last = this.data.pop()!; // safe because we checked length
-
-    if (this.data.length) {
-      this.data[0] = last;
-      this.sinkDown(0);
-    }
-
-    return root;
-  }
-
-  /** Remove all elements */
-  clear(): void {
-    this.data.length = 0;
-  }
-
-  /* --- Internals --- */
-
-  private bubbleUp(index: number): void {
-    const elem = this.data[index];
-    while (index > 0) {
-      const parentIdx = (index - 1) >> 1;
-      const parent = this.data[parentIdx];
-      if (this.compare(elem, parent) >= 0) break;
-      this.data[index] = parent;
-      index = parentIdx;
-    }
-    this.data[index] = elem;
-  }
-
-  private sinkDown(index: number): void {
-    const length = this.data.length;
-    const elem = this.data[index];
-
-    while (true) {
-      const leftIdx = (index << 1) + 1;
-      const rightIdx = leftIdx + 1;
-      let swapIdx = -1;
-
-      if (leftIdx < length) {
-        const left = this.data[leftIdx];
-        if (this.compare(left, elem) < 0) swapIdx = leftIdx;
+    const neighbors = graph.get(node) ?? [];
+    for (const n of neighbors) {
+      if (!visited.has(n)) {
+        visited.add(n);
+        queue.push(n);
       }
-      if (rightIdx < length) {
-        const right = this.data[rightIdx];
-        const compareRight = this.compare(right, elem);
-        if (
-          (swapIdx === -1 && compareRight < 0) ||
-          (swapIdx !== -1 && compareRight < this.compare(this.data[swapIdx], elem))
-        ) {
-          swapIdx = rightIdx;
-        }
-      }
-
-      if (swapIdx === -1) break;
-      this.data[index] = this.data[swapIdx];
-      index = swapIdx;
     }
-    this.data[index] = elem;
   }
 }
-// Example: priority queue of numbers (min‑heap)
-const pq = new BinaryPriorityQueue<number>((a, b) => a - b);
+/**
+ * Returns an array representing the shortest path from `start` to `target`
+ * (inclusive), or `null` if no path exists.
+ */
+function shortestPath<T>(start: T, target: T, graph: Graph<T>): T[] | null {
+  const prev = new Map<T, T | undefined>(); // child → parent
+  const visited = new Set<T>();
+  const queue: T[] = [start];
+  visited.add(start);
+  let found = false;
 
-pq.push(5);
-pq.push(1);
-pq.push(3);
+  while (queue.length && !found) {
+    const node = queue.shift()!;
+    for (const nb of graph.get(node) ?? []) {
+      if (!visited.has(nb)) {
+        visited.add(nb);
+        prev.set(nb, node);
+        if (nb === target) {
+          found = true;
+          break;
+        }
+        queue.push(nb);
+      }
+    }
+  }
 
-console.log(pq.peek()); // 1
-console.log(pq.pop());  // 1
-console.log(pq.pop());  // 3
-console.log(pq.pop());  // 5
-interface Task { id: number; priority: number; }
+  if (!found) return null;
 
-const taskQueue = new BinaryPriorityQueue<Task>((a, b) => a.priority - b.priority);
+  // Walk backwards from target to start
+  const path = [];
+  for (let cur: T | undefined = target; cur !== undefined; cur = prev.get(cur)) {
+    path.push(cur);
+  }
+  path.reverse();
+  return path;
+}
+const g: Graph<string> = new Map();
+addEdge(g, 'A', 'B');
+addEdge(g, 'A', 'C');
+addEdge(g, 'B', 'D');
+addEdge(g, 'C', 'D');
+addEdge(g, 'C', 'E');
+
+console.log('BFS visiting order:', () => {
+  const order: string[] = [];
+  bfs('A', g, node => { order.push(node); });
+  return order;
+}()); // ['A', 'B', 'C', 'D', 'E']
+
+console.log('Shortest path A → D:', shortestPath('A', 'D', g)); // ['A', 'B', 'D']
