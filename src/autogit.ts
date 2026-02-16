@@ -1,43 +1,54 @@
 /**
- * Returns the longest common *contiguous* substring of `a` and `b`.
- *
- * If there are multiple substrings with the same maximum length, the first
- * one that appears in `a` is returned.
- *
- * Time:  O(a.length * b.length)
- * Space: O(a.length * b.length)   (you can trim this to O(a.length) if you’re
- *                                   hunting for a memory‑tight version)
+ * Build the bad‑character shift table for the pattern.
+ * The table maps a character code to the distance we can safely skip
+ * when that character is found in the text.
  */
-export function longestCommonSubstring(a: string, b: string): string {
-  const aLen = a.length;
-  const bLen = b.length;
+function buildShiftTable(pattern: string): Int32Array {
+  const m = pattern.length;
+  const shift = new Int32Array(256);       // ASCII table size
+  shift.fill(m);                          // default shift = pattern length
 
-  // A 2‑D array where dp[i][j] holds the length of the longest suffix that
-  // ends at a[i-1] and b[j-1].  We use 1‑based indexing to keep the math
-  // simple: dp[0][*] and dp[*][0] are zero by construction.
-  const dp: number[][] = Array.from({ length: aLen + 1 }, () =>
-    new Array(bLen + 1).fill(0)
-  );
-
-  let bestLen = 0;
-  let bestI = 0; // end index in `a`
-
-  for (let i = 1; i <= aLen; i++) {
-    for (let j = 1; j <= bLen; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-        if (dp[i][j] > bestLen) {
-          bestLen = dp[i][j];
-          bestI = i; // slice stops at `i` (exclusive)
-        }
-      } else {
-        dp[i][j] = 0;
-      }
-    }
+  // Populate the table for every character except the last one.
+  // The last character is handled by the searches’ failure condition.
+  for (let i = 0; i < m - 1; i++) {
+    shift[pattern.charCodeAt(i)] = m - 1 - i;
   }
-
-  return bestLen > 0 ? a.slice(bestI - bestLen, bestI) : '';
+  return shift;
 }
-console.log(longestCommonSubstring('BANANA', 'ANANAB')); // "ANANA"
-console.log(longestCommonSubstring('hello', 'world'));   // ""
-console.log(longestCommonSubstring('', 'something'));    // ""
+
+/**
+ * Boyer‑Moore‑Horspool string search.
+ * @param text The string to search in.
+ * @param pattern The string to find.
+ * @returns The index of the first occurrence, or -1 if not found.
+ */
+export function boyerMooreHorspool(text: string, pattern: string): number {
+  const n = text.length;
+  const m = pattern.length;
+
+  if (m === 0) return 0;          // empty pattern matches at start
+  if (m > n) return -1;           // longer pattern than text → impossible
+
+  const shift = buildShiftTable(pattern);
+
+  let i = m - 1;                  // index in text aligned with last pattern char
+  while (i < n) {
+    let j = 0;                    // offset from last pattern char
+    while (j < m && pattern[m - 1 - j] === text[i - j]) {
+      j++;
+    }
+
+    if (j === m) {                // all characters matched
+      return i - m + 1;           // return starting index
+    }
+
+    // Shift by the value in the table for the mismatching text character
+    const nextChar = text.charCodeAt(i);
+    i += Math.max(shift[nextChar], 1);   // never shift by 0
+  }
+  return -1;                      // not found
+}
+const txt = "abcxabcdabxabcdabcdabcy";
+const pat = "abcdabcy";
+
+console.log(boyerMooreHorspool(txt, pat));  // → 15
