@@ -1,51 +1,92 @@
-// ----------  Tree node definition ----------
-class TreeNode<T> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+type Node = string;                     // or number, or any keyable type
+type Edge = [Node, Node];               // (from, to)
+
+interface Graph {
+    nodes: Set<Node>;
+    edges: Edge[];
 }
+function topologicalSortKahn(graph: Graph): Node[] | null {
+    const indeg = new Map<Node, number>();
+    const adj   = new Map<Node, Node[]>();
 
-// ----------  Diameter helper ----------
-function diameter(root: TreeNode<any> | null): number {
-  let maxDiameter = 0;           // global best
+    // init
+    graph.nodes.forEach(v => {
+        indeg.set(v, 0);
+        adj.set(v, []);
+    });
 
-  // returns height of subtree rooted at `node`
-  function dfs(node: TreeNode<any> | null): number {
-    if (!node) return 0;
+    // build adjacency + indegree
+    for (const [u, v] of graph.edges) {
+        adj.get(u)!.push(v);
+        indeg.set(v, indeg.get(v)! + 1);
+    }
 
-    const leftH  = dfs(node.left);
-    const rightH = dfs(node.right);
+    // queue of nodes with indegree 0
+    const q: Node[] = [];
+    indeg.forEach((cnt, node) => { if (cnt === 0) q.push(node); });
 
-    // path that passes through this node
-    const candidate = leftH + rightH;
-    if (candidate > maxDiameter) maxDiameter = candidate;
+    const order: Node[] = [];
 
-    // height of this subtree
-    return Math.max(leftH, rightH) + 1;
-  }
+    while (q.length) {
+        const v = q.shift()!;
+        order.push(v);
 
-  dfs(root);
-  return maxDiameter;                   // number of edges on the longest path
+        for (const w of adj.get(v)!) {
+            const newCnt = indeg.get(w)! - 1;
+            indeg.set(w, newCnt);
+            if (newCnt === 0) q.push(w);
+        }
+    }
+
+    // If we processed every node → DAG; else cycle present
+    return order.length === graph.nodes.size ? order : null;
 }
+function topologicalSortDFS(graph: Graph): Node[] | null {
+    const adj = new Map<Node, Node[]>();
+    graph.nodes.forEach(v => adj.set(v, []));
 
-/* ------------------------------------------------------------------ */
-/*  Quick sanity check – build a tree and run the function             */
-/* ------------------------------------------------------------------ */
+    for (const [u, v] of graph.edges) {
+        adj.get(u)!.push(v);
+    }
 
-const a = new TreeNode('a');
-const b = new TreeNode('b');
-const c = new TreeNode('c');
-const d = new TreeNode('d');
-const e = new TreeNode('e');
-const f = new TreeNode('f');
+    const visited = new Set<Node>();
+    const onStack = new Set<Node>();   // for cycle detection
+    const order: Node[] = [];
 
-a.left  = b;                //   a
-a.right = c;                //  / \
-b.left  = d;                // d   c
-b.right = e;                //  \   \
-e.right = f;                //   f
+    function dfs(v: Node): boolean {
+        visited.add(v);
+        onStack.add(v);
 
-console.log(diameter(a));   // → 4
-const diameterInNodes = diameter(root) + 1;
+        for (const w of adj.get(v)!) {
+            if (!visited.has(w)) {
+                if (!dfs(w)) return false;           // cycle deeper down
+            } else if (onStack.has(w)) {
+                return false;                       // back edge → cycle
+            }
+        }
+
+        onStack.delete(v);
+        order.push(v);                     // add after exploring all children
+        return true;
+    }
+
+    for (const node of graph.nodes) {
+        if (!visited.has(node) && !dfs(node))
+            return null;                   // cycle found
+    }
+
+    return order.reverse();               // reverse to get finish order
+}
+const g: Graph = {
+    nodes: new Set(['A','B','C','D','E']),
+    edges: [
+        ['A', 'B'],
+        ['A', 'C'],
+        ['B', 'D'],
+        ['C', 'D'],
+        ['D', 'E'],
+    ]
+};
+
+console.log('Kahn:', topologicalSortKahn(g)); // e.g. A,B,C,D,E or A,C,B,D,E
+console.log('DFS :', topologicalSortDFS(g));
