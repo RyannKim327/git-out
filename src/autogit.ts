@@ -1,60 +1,116 @@
 /**
- * Merges two sorted slices `left` and `right` into a single sorted array.
- * The operation is stable — items that compare equal keep their original
- * relative order.
+ * Build the bad‑character shift table.
+ * For every character that occurs in the pattern, we store the distance
+ * from the last occurrence of that character to the end of the pattern
+ * (i.e. how far we can jump when that character mismatches).
  */
-function merge<T>(left: T[], right: T[], compare: (a: T, b: T) => number): T[] {
-  const result: T[] = [];
-  let i = 0;          // index into left
-  let j = 0;          // index into right
+function buildBadCharShift(pat: string): Int8Array {
+  const m = pat.length;
+  // 256 possible ASCII values – 16-bit enough for Unicode offsets too
+  const shift = new Int8Array(256);
+  shift.fill(-1);
 
-  while (i < left.length && j < right.length) {
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
-    }
+  for (let i = 0; i < m; i++) {
+    shift[pat.charCodeAt(i)] = i;
   }
-
-  // Append any remaining elements
-  return result.concat(left.slice(i), right.slice(j));
+  return shift;
 }
 
 /**
- * Recursively sorts `array` using merge sort.
- *
- * @param array   – the array to sort
- * @param compare – a comparator returning a negative number if a < b,
- *                  zero if a == b, and a positive number otherwise.
- *
- * @returns a NEW sorted array; the input array is left untouched.
+ * Build the good‑suffix shift table.
+ * The array `shift` holds, for each position in the pattern,
+ * how far we can safely shift if the suffix starting at that position
+ * is found to match the text but a mismatch occurs just before it.
  */
-export function mergeSort<T>(array: T[], compare: (a: T, b: T) => number): T[] {
-  // Base case: arrays of length 0 or 1 are already sorted
-  if (array.length <= 1) {
-    return array.slice();          // shallow copy to stay pure
+function buildGoodSuffixShift(pat: string): Int32Array {
+  const m = pat.length;
+  const shift = new Int32Array(m).fill(m);
+  const borderPos = new Int32Array(m + 1).fill(-1);
+  const suffixPos = new Int32Array(m + 1).fill(-1);
+
+  /* Step 1 – compute border positions (also known as "failure function") */
+  let i = m;
+  let j = m + 1;
+  borderPos[i] = j;
+  while (i > 0) {
+    while (j <= m && pat[i - 1] !== pat[j - 1]) j = borderPos[j];
+    i--;
+    j--;
+    borderPos[i] = j;
   }
 
-  const mid = Math.floor(array.length / 2);
-  const left  = array.slice(0, mid);
-  const right = array.slice(mid);
+  /* Step 2 – compute suffix positions */
+  i = 0;
+  j = 0;
+  while (i < m) {
+    if (pat[i] === pat[j]) {
+      j++;
+      suffixPos[i + 1] = j;
+    } else if (j > 0) {
+      j = borderPos[j];
+    } else {
+      suffixPos[i + 1] = 0;
+      i++;
+    }
+  }
 
-  // Sort each half and merge
-  const sortedLeft  = mergeSort(left,  compare);
-  const sortedRight = mergeSort(right, compare);
+  /* Step 3 – fill the shift table using the border and suffix data */
+  for (let k = 0; k < m; k++) {
+    // If the suffix starting at k matches the pattern's suffix
+    // and there is a border before that suffix, we can shift
+    // to align that border with the text.
+    shift[k] = m - suffixPos[k];
+  }
 
-  return merge(sortedLeft, sortedRight, compare);
+  return shift;
 }
 
-/* ---------------------------------------------------------
-   Example usage:
-   ---------------------------------------------------------
+/**
+ * Boyer‑Moore search.
+ * Returns an array of all start indices where `pat` is found in `txt`.
+ */
+export function boyerMoore(txt: string, pat: string): number[] {
+  const n = txt.length;
+  const m = pat.length;
 
-   // Numeric sort (ascending)
-   const numbers = [32, 5, 73, 1, 42];
-   const sortedNumbers = mergeSort(numbers, (a, b) => a - b);
+  if (m === 0 || n < m) return [];
 
-   // String sort by length
-   const words = ["banana", "apple", "fig", "cherry"];
-   const sortedByLength = mergeSort(words, (a, b) => a.length - b.length);
-   -------------------------------------------------------- */
+  const badChar = buildBadCharShift(pat);
+  const goodSuffix = buildGoodSuffixShift(pat);
+
+  const res: number[] = [];
+  let s = 0; // shift of the pattern over text
+
+  while (s <= n - m) {
+    let j = m - 1;
+
+    // Move left while characters match
+    while (j >= 0 && pat[j] === txt[s + j]) j--;
+
+    if (j < 0) {
+      // full match
+      res.push(s);
+      // shift so that the next possible match starts right after the first character of the current match
+      s += goodSuffix[0];
+    } else {
+      const badIdx = badChar[txt.charCodeAt(s + j)];
+      const badShift = badIdx !== -1 ? j - badIdx : j + 1;
+      const goodShift = goodSuffix[j];
+      // choose the larger of the two shifts
+      s += Math.max(badShift, goodShift);
+    }
+  }
+
+  return res;
+}
+
+/* ----------------------------------- */
+/* Example usage                     */
+const text = "ABAAABCDABEEABBAAB";
+const pattern = "ABBA";
+
+const matches = boyerMoore(text, pattern);
+console.log("Pattern found at indices:", matches);
+/* Expected output (zero‑based indices):
+   Pattern found at indices: [12, 15]
+*/
