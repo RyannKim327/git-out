@@ -1,60 +1,60 @@
 /**
- * Rabin–Karp string search.
- *
- * @param text    the string to search in
- * @param pattern the string to find
- * @returns array of starting indices where pattern appears in text
+ * Merges two sorted slices `left` and `right` into a single sorted array.
+ * The operation is stable — items that compare equal keep their original
+ * relative order.
  */
-export function rabinKarp(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
+function merge<T>(left: T[], right: T[], compare: (a: T, b: T) => number): T[] {
+  const result: T[] = [];
+  let i = 0;          // index into left
+  let j = 0;          // index into right
 
-  if (m === 0 || m > n) {
-    return [];
-  }
-
-  const base = 256;            // Number of possible ASCII characters
-  const mod  = 101;            // A prime modulus – large enough for short strings
-
-  /* ----------  helper: convert a substring to a hash ------------ */
-  const hash = (str: string, len: number) => {
-    let h = 0;
-    for (let i = 0; i < len; i++) {
-      h = (h * base + str.charCodeAt(i)) % mod;
-    }
-    return h;
-  };
-
-  /* ----------  pre‑compute base^(m-1)  modulo mod -------------- */
-  let highPow = 1;                 // (base^(m‑1)) % mod
-  for (let i = 1; i <= m - 1; i++) {
-    highPow = (highPow * base) % mod;
-  }
-
-  /* ----------  initial hashes ----------------------------------- */
-  let patternHash = hash(pattern, m);
-  let windowHash  = hash(text, m);
-
-  const result: number[] = [];
-
-  /* ----------  main loop ---------------------------------------- */
-  for (let i = 0; i <= n - m; i++) {
-    // When hashes match we still do a string comparison to rule out collisions
-    if (patternHash === windowHash) {
-      if (text.substr(i, m) === pattern) {
-        result.push(i);
-      }
-    }
-
-    // Roll the hash: remove the leftmost character, add the new rightmost
-    if (i < n - m) {
-      windowHash =
-        // Remove leftmost char contribution
-        (windowHash - text.charCodeAt(i) * highPow % mod + mod) % mod; // keep positive
-      // Add next char
-      windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
+  while (i < left.length && j < right.length) {
+    if (compare(left[i], right[j]) <= 0) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
     }
   }
 
-  return result;
+  // Append any remaining elements
+  return result.concat(left.slice(i), right.slice(j));
 }
+
+/**
+ * Recursively sorts `array` using merge sort.
+ *
+ * @param array   – the array to sort
+ * @param compare – a comparator returning a negative number if a < b,
+ *                  zero if a == b, and a positive number otherwise.
+ *
+ * @returns a NEW sorted array; the input array is left untouched.
+ */
+export function mergeSort<T>(array: T[], compare: (a: T, b: T) => number): T[] {
+  // Base case: arrays of length 0 or 1 are already sorted
+  if (array.length <= 1) {
+    return array.slice();          // shallow copy to stay pure
+  }
+
+  const mid = Math.floor(array.length / 2);
+  const left  = array.slice(0, mid);
+  const right = array.slice(mid);
+
+  // Sort each half and merge
+  const sortedLeft  = mergeSort(left,  compare);
+  const sortedRight = mergeSort(right, compare);
+
+  return merge(sortedLeft, sortedRight, compare);
+}
+
+/* ---------------------------------------------------------
+   Example usage:
+   ---------------------------------------------------------
+
+   // Numeric sort (ascending)
+   const numbers = [32, 5, 73, 1, 42];
+   const sortedNumbers = mergeSort(numbers, (a, b) => a - b);
+
+   // String sort by length
+   const words = ["banana", "apple", "fig", "cherry"];
+   const sortedByLength = mergeSort(words, (a, b) => a.length - b.length);
+   -------------------------------------------------------- */
