@@ -1,60 +1,78 @@
-function buildLps(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let len = 0;          // length of the previous longest prefix suffix
-  let i = 1;            // we start from the second character
+/**
+ * Build the longest‑prefix‑suffix (LPS) array for the pattern.
+ * lps[i] will contain the length of the longest proper prefix
+ * that is also a suffix for the substring pattern[0…i].
+ *
+ * @param pattern – the pattern
+ * @returns the filled LPS array
+ */
+function computeLPS(pattern: string): number[] {
+  const lps: number[] = new Array(pattern.length).fill(0);
+  let length = 0;          // length of the previous longest prefix suffix
+  let i = 1;               // lps[0] is always 0
 
   while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
       i++;
     } else {
-      // Mismatch after len matches
-      if (len !== 0) {
-        // Try the last known good prefix
-        len = lps[len - 1];
+      if (length !== 0) {
+        // don't move i here; keep looking for a smaller prefix
+        length = lps[length - 1];
       } else {
         lps[i] = 0;
         i++;
       }
     }
   }
+
   return lps;
 }
-/**
- * Returns an array of starting indices where `pattern` occurs in `text`.
- * If no match, returns an empty array.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  const lps = buildLps(pattern);
-  const results: number[] = [];
 
+/**
+ * Perform KMP search for a pattern in a text.
+ *
+ * @param text     – the string to search in
+ * @param pattern  – the pattern to look for
+ * @returns an array of starting indices where the pattern occurs
+ */
+function kmpSearch(text: string, pattern: string): number[] {
+  if (pattern.length === 0) return []; // nothing to search for
+
+  const lps = computeLPS(pattern);
+  const positions: number[] = [];
   let i = 0; // index for text
   let j = 0; // index for pattern
 
   while (i < text.length) {
     if (text[i] === pattern[j]) {
-      i++; j++;
+      i++;
+      j++;
+
       if (j === pattern.length) {
-        // Match found at position i - j
-        results.push(i - j);
-        // Prepare for the next possible match
+        // match found – record starting index
+        positions.push(i - j);
+        // continue searching for next possible match
         j = lps[j - 1];
       }
     } else {
       if (j !== 0) {
-        // Mismatch after j matches
+        // jump back in the pattern based on LPS
         j = lps[j - 1];
       } else {
-        // Mismatch at the start
-        i++;
+        i++; // move to next character in text
       }
     }
   }
 
-  return results;
+  return positions;
 }
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
 
-console.log(kmpSearch(text, pattern)); // [10]
+/* Example usage */
+const haystack = "ABABDABACDABABCABAB";
+const needle = "ABABCABAB";
+
+const matches = kmpSearch(haystack, needle);
+console.log("Pattern found at positions:", matches);
+// Expected output: Pattern found at positions: [9]
