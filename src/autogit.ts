@@ -1,78 +1,29 @@
-// AndroidAsyncDemo.ts
-import { AndroidApplication, AndroidActivityEventData } from "@nativescript/core";
-import * as http from "http";
-
-export class AndroidAsyncDemo {
-    private activity: android.app.Activity;
-
-    constructor() {
-        const eventData = <AndroidActivityEventData>androidApplication.currentContext.getActivity();
-        this.activity = eventData.activity;
-    }
-
-    public startDemo() {
-        // URL you care about
-        const url = "https://api.github.com/users/nativescript";
-
-        // Create an instance of the AsyncTask wrapper
-        const task = new HttpGetAsyncTask(this.activity, url);
-        task.execute();
-    }
+/**
+ * Reverses the order of words in a string.
+ *
+ * Words are split on whitespace.  Consecutive whitespace is collapsed,
+ * but you can tweak the regex if you need to keep it intact.
+ *
+ * @param txt – The string to reverse
+ * @returns The string with words in reverse order
+ */
+function reverseWordOrder(txt: string): string {
+  return txt
+    .trim()                      // Strip leading/trailing gaps
+    .split(/\s+/)                // Break on any run of whitespace
+    .reverse()                   // Flip the array
+    .join(' ');                  // Stitch back together
 }
 
-// --------------------------------------------
-//  AsyncTask wrapper – looks a bit like Java
-// --------------------------------------------
-class HttpGetAsyncTask extends java.lang.Object implements android.os.AsyncTask<string, void, string> {
-
-    private activity: android.app.Activity;
-    private url: string;
-    private resultView: android.widget.TextView;
-
-    constructor(activity: android.app.Activity, url: string) {
-        super();
-        this.activity = activity;
-        this.url = url;
-        this.resultView = new android.widget.TextView(activity);
-        this.resultView.setLayoutParams(
-            new android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        );
-        this.activity.runOnUiThread(() => {
-            const root = this.activity.findViewById(android.R.id.content);
-            if (root instanceof android.widget.LinearLayout) {
-                root.addView(this.resultView);
-            }
-        });
-    }
-
-    // @Override
-    public doInBackground(...params: string[]): string {
-        try {
-            // Using Node's http wrapper that works in NativeScript
-            const response = http.getSync(this.url);
-            return response.content.toString();
-        } catch (err) {
-            return `Error: ${err.message || err}`;
-        }
-    }
-
-    // @Override
-    public onPostExecute(result: string): void {
-        this.resultView.setText(result);
-    }
-
-    // The following method signatures satisfy the interface contract
-    public onPreExecute(): void {}
-    public onProgressUpdate(...values: void[]): void {}
-}
-
-// --------------------------------------------
-//  Use it from your page or component
-// --------------------------------------------
-export function demoClicked() {
-    const demo = new AndroidAsyncDemo();
-    demo.startDemo();
+// Example usage
+const original = "Hello world, this is TypeScript.";
+const reversed = reverseWordOrder(original);
+console.log(reversed);  // "TypeScript. is this world, Hello"
+function reverseWordOrder(txt: string) {
+  const words = txt.trim().match(/\w+|\s+/g) ?? [];
+  const textOnly = words.filter(Boolean).join(' ');
+  const reversed = textOnly.split(/\s+/).reverse().join(' ');
+  // re‑insert spaces that were originally present
+  // (not shown here for brevity)
+  return reversed;
 }
