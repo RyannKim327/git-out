@@ -1,37 +1,36 @@
 /**
- * Normalises a string for anagram comparison:
- *  – removes whitespace
- *  – drops non‑alphanumeric chars
- *  – lower‑cases everything
- *  – sorts the remaining characters
+ * Performs an in‑place Shell sort on `arr`.
+ * The generic makes it usable for numbers, strings, or any comparable type.
  */
-const normalise = (s: string): string =>
-  s
-    .replace(/[^a-z0-9]/gi, '')   // keep letters & digits only
-    .toLowerCase()
-    .split('')
-    .sort()
-    .join('');
+export function shellSort<T>(arr: T[], compare?: (a: T, b: T) => boolean) {
+  const len = arr.length;
+  // Default comparison: ascending numeric/string order
+  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any));
 
-export const areAnagrams = (a: string, b: string): boolean =>
-  normalise(a) === normalise(b);
-console.log(areAnagrams('listen', 'silent'));   // true
-console.log(areAnagrams('Triangle', 'Integral')); // true
-console.log(areAnagrams('hello', 'world'));    // false
-export const areAnagramsMap = (a: string, b: string): boolean => {
-  const buildFreq = (s: string) => {
-    const freq: Record<string, number> = {};
-    for (const ch of s.replace(/[^a-z0-9]/gi, '').toLowerCase()) {
-      freq[ch] = (freq[ch] ?? 0) + 1;
+  // Start with a gap (Hibbard’s sequence is simple and effective)
+  // gap = 1, 3, 7, 15, …  (2^k‑1)
+  let gap = 1;
+  while (gap < len) gap = 2 * gap + 1; // find largest Hibbard gap <= len
+
+  // Descend gaps until 1
+  while (gap >= 1) {
+    // Insertion sort on elements gap apart
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+      // shift earlier gap‑sorted elements that are greater
+      while (j >= gap && cmp(temp, arr[j - gap])) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
     }
-    return freq;
-  };
-
-  const freqA = buildFreq(a);
-  const freqB = buildFreq(b);
-
-  const keys = Object.keys(freqA);
-  if (keys.length !== Object.keys(freqB).length) return false;
-
-  return keys.every(k => freqA[k] === freqB[k]);
-};
+    // Next gap
+    gap = Math.floor((gap - 1) / 2); // inverse of 2*gap + 1
+  }
+}
+const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
+shellSort(numbers);
+console.log(numbers); // [1, 2, 3, 8, 12, 23, 34, 54]
+const desc = (a: number, b: number) => a > b;
+shellSort(numbers, desc);
