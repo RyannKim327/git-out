@@ -1,72 +1,48 @@
-function longestCommonPrefixVertical(strs: string[]): string {
-  if (!strs.length) return "";
+// emailValidator.ts
+export function isEmail(str: string): boolean {
+  // RFC‑5322 allows a very wide set of characters.  For most apps a
+  // simpler “+ followed by domain” style rule is good enough.
+  // This expression is a commonly‑accepted compromise:
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  // The longest possible prefix is bounded by the first string’s length
-  const first = strs[0];
-
-  for (let i = 0; i < first.length; i++) {
-    const ch = first[i];
-    for (let j = 1; j < strs.length; j++) {
-      // If any string is shorter or the current char differs: stop
-      if (i >= strs[j].length || strs[j][i] !== ch) {
-        return first.slice(0, i);
-      }
-    }
-  }
-
-  // All strings matched the entire first string
-  return first;
+  return emailRe.test(str);
 }
-console.log(longestCommonPrefixVertical(["flower", "flow", "flight"])); // "fl"
-function lcpMerge(a: string, b: string): string {
-  let i = 0;
-  const limit = Math.min(a.length, b.length);
-  while (i < limit && a[i] === b[i]) i++;
-  return a.slice(0, i);
-}
+export const strictEmailRe = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
+const tests: Record<string, boolean> = {
+  // pass
+  'user@example.com': true,
+  'user.name+tag@sub.domain.co.uk': true,
 
-function longestCommonPrefixDivide(strs: string[]): string {
-  if (!strs.length) return "";
+  // fail
+  'user@': false,
+  '@example.com': false,
+  'user@@example.com': false,
+  'user example@example.com': false,
+  'user@.com': false,
+  '': false,
+};
 
-  const helper = (l: number, r: number): string => {
-    if (l === r) return strs[l];
-    const mid = Math.floor((l + r) / 2);
-    const left = helper(l, mid);
-    const right = helper(mid + 1, r);
-    return lcpMerge(left, right);
-  };
-
-  return helper(0, strs.length - 1);
-}
-class TrieNode {
-  children = new Map<string, TrieNode>();
-  isEnd = false;
+for (const [addr, expected] of Object.entries(tests)) {
+  const result = isEmail(addr);
+  console.assert(result === expected, `❌ ${addr}: expected ${expected}, got ${result}`);
 }
 
-function buildTrie(strs: string[]): TrieNode {
-  const root = new TrieNode();
-  for (const s of strs) {
-    let node = root;
-    for (const ch of s) {
-      if (!node.children.has(ch)) node.children.set(ch, new TrieNode());
-      node = node.children.get(ch)!;
-    }
-    node.isEnd = true;
-  }
-  return root;
-}
+console.log('All test cases passed!');
+import { useForm } from 'react-hook-form';
 
-function longestCommonPrefixTrie(strs: string[]): string {
-  if (!strs.length) return "";
-  const root = buildTrie(strs);
-  let node = root;
-  let prefix = "";
-  while (node.children.size === 1 && !node.isEnd) {
-    const [ch, next] = node.children.entries().next().value;
-    prefix += ch;
-    node = next;
-  }
-  return prefix;
+function MyForm() {
+  const { register, handleSubmit, formState: { errors } } = useForm();
+
+  const onSubmit = data => console.log('Valid email:', data.email);
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input
+        {...register('email', { validate: isEmail })}
+        placeholder="email@example.com"
+      />
+      {errors.email && <p>Email is not valid.</p>}
+      <button type="submit">Submit</button>
+    </form>
+  );
 }
-const data = ["algorithm", "algo", "algorithms", "all"]; 
-console.log(longestCommonPrefixVertical(data)); // "alg"
