@@ -1,48 +1,37 @@
-// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
-//      This shape is common in interview‑style code.
-interface TreeNode {
-  val: number;         // node’s payload
-  left?: TreeNode | null;   // left child (optional)
-  right?: TreeNode | null;  // right child (optional)
-}
+/**
+ * Normalises a string for anagram comparison:
+ *  – removes whitespace
+ *  – drops non‑alphanumeric chars
+ *  – lower‑cases everything
+ *  – sorts the remaining characters
+ */
+const normalise = (s: string): string =>
+  s
+    .replace(/[^a-z0-9]/gi, '')   // keep letters & digits only
+    .toLowerCase()
+    .split('')
+    .sort()
+    .join('');
 
-// 2️⃣  Recursive summation – easiest to read and to understand.
-//      Depth‑first, natural for a tree.
-function sumTreeRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                      // base case: empty subtree is 0
-  const leftSum = sumTreeRecursive(root.left);
-  const rightSum = sumTreeRecursive(root.right);
-  return root.val + leftSum + rightSum;      // combine the results
-}
+export const areAnagrams = (a: string, b: string): boolean =>
+  normalise(a) === normalise(b);
+console.log(areAnagrams('listen', 'silent'));   // true
+console.log(areAnagrams('Triangle', 'Integral')); // true
+console.log(areAnagrams('hello', 'world'));    // false
+export const areAnagramsMap = (a: string, b: string): boolean => {
+  const buildFreq = (s: string) => {
+    const freq: Record<string, number> = {};
+    for (const ch of s.replace(/[^a-z0-9]/gi, '').toLowerCase()) {
+      freq[ch] = (freq[ch] ?? 0) + 1;
+    }
+    return freq;
+  };
 
-// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
-//      where recursion might hit the call‑stack limit.
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let total = 0;
-  const stack: TreeNode[] = [root];
+  const freqA = buildFreq(a);
+  const freqB = buildFreq(b);
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.val;
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
-  }
-  return total;
-}
+  const keys = Object.keys(freqA);
+  if (keys.length !== Object.keys(freqB).length) return false;
 
-// 4️⃣  Sample tree for quick sanity check
-//           5
-//          / \
-//         3   7
-//        / \   \
-//       2   4   8
-
-const sampleRoot: TreeNode = {
-  val: 5,
-  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
-  right: { val: 7, right: { val: 8 } },
+  return keys.every(k => freqA[k] === freqB[k]);
 };
-
-console.log(sumTreeRecursive(sampleRoot)); // → 33
-console.log(sumTreeIterative(sampleRoot)); // → 33
