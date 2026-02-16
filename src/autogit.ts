@@ -1,54 +1,83 @@
+// fetch-example.ts
 /**
- * Build the bad‑character shift table for the pattern.
- * The table maps a character code to the distance we can safely skip
- * when that character is found in the text.
+ * A small utility that fetches JSON from a public API
+ * and logs a nicely formatted result.
+ *
+ * It demonstrates:
+ *   • TypeScript generics for response typing
+ *   • Async/await syntax
+ *   • Basic error handling
+ *   • Runtime type guard for JSON validation
  */
-function buildShiftTable(pattern: string): Int32Array {
-  const m = pattern.length;
-  const shift = new Int32Array(256);       // ASCII table size
-  shift.fill(m);                          // default shift = pattern length
 
-  // Populate the table for every character except the last one.
-  // The last character is handled by the searches’ failure condition.
-  for (let i = 0; i < m - 1; i++) {
-    shift[pattern.charCodeAt(i)] = m - 1 - i;
-  }
-  return shift;
+type PlainObject = Record<string, unknown>;
+
+// A small runtime check to ensure the response is
+// an object (the common case when fetching JSON).
+function isObject(value: unknown): value is PlainObject {
+  return typeof value === 'object' && value !== null;
 }
 
 /**
- * Boyer‑Moore‑Horspool string search.
- * @param text The string to search in.
- * @param pattern The string to find.
- * @returns The index of the first occurrence, or -1 if not found.
+ * Generic fetch function that returns data of type T.
+ * @param url          The URL to fetch from
+ * @param init         Optional RequestInit parameters
  */
-export function boyerMooreHorspool(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, init);
 
-  if (m === 0) return 0;          // empty pattern matches at start
-  if (m > n) return -1;           // longer pattern than text → impossible
-
-  const shift = buildShiftTable(pattern);
-
-  let i = m - 1;                  // index in text aligned with last pattern char
-  while (i < n) {
-    let j = 0;                    // offset from last pattern char
-    while (j < m && pattern[m - 1 - j] === text[i - j]) {
-      j++;
-    }
-
-    if (j === m) {                // all characters matched
-      return i - m + 1;           // return starting index
-    }
-
-    // Shift by the value in the table for the mismatching text character
-    const nextChar = text.charCodeAt(i);
-    i += Math.max(shift[nextChar], 1);   // never shift by 0
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
   }
-  return -1;                      // not found
-}
-const txt = "abcxabcdabxabcdabcdabcy";
-const pat = "abcdabcy";
 
-console.log(boyerMooreHorspool(txt, pat));  // → 15
+  const data = await response.json();
+
+  // Very light runtime validation – just make sure we got an object
+  if (!isObject(data)) {
+    throw new Error('Response is not a JSON object');
+  }
+
+  return data as T; // confidence that T matches the real shape
+}
+
+/**
+ * Example usage: fetch a user from the JSONPlaceholder API.
+ * The API returns a shape that we can describe as a type.
+ */
+interface JsonPlaceholderUser {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  address: {
+    street: string;
+    suite: string;
+    city: string;
+    zipcode: string;
+    geo: { lat: string; lng: string };
+  };
+  phone: string;
+  website: string;
+  company: {
+    name: string;
+    catchPhrase: string;
+    bs: string;
+  };
+}
+
+async function main() {
+  const userId = 1;
+  const url = `https://jsonplaceholder.typicode.com/users/${userId}`;
+
+  try {
+    const user = await fetchJson<JsonPlaceholderUser>(url);
+    console.log(`Name: ${user.name}`);
+    console.log(`Company: ${user.company.name}`);
+    console.log(`Address: ${user.address.street}, ${user.address.city}`);
+  } catch (err) {
+    console.error('Something went wrong:', err);
+  }
+}
+
+// Kick it off
+main();
