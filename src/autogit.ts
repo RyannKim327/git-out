@@ -1,45 +1,115 @@
-// 1️⃣  Node definition
-export interface ListNode<T> {
-  val: T
-  next: ListNode<T> | null
+// 1️⃣ Node – every node knows its children and whether it finishes a word
+class TrieNode {
+    /** Map <character, child node> */
+    children: Map<string, TrieNode>;
+    /** True if node represents the end of an inserted word */
+    isWord: boolean;
+
+    constructor() {
+        this.children = new Map();
+        this.isWord = false;
+    }
 }
 
-// 2️⃣  Utility: build list from array (for demo/testing)
-export function fromArray<T>(arr: T[]): ListNode<T> | null {
-  if (!arr.length) return null
-  let head: ListNode<T> = { val: arr[0], next: null }
-  let cur = head
-  for (let i = 1; i < arr.length; i++) {
-    cur.next = { val: arr[i], next: null }
-    cur = cur.next
-  }
-  return head
+// 2️⃣ Trie – wrapper around the root node
+class Trie {
+    private root: TrieNode;
+
+    constructor() {
+        this.root = new TrieNode();
+    }
+
+    /** Inserts a word into the trie */
+    insert(word: string): void {
+        let node = this.root;
+        for (const ch of word) {
+            if (!node.children.has(ch)) {
+                node.children.set(ch, new TrieNode());
+            }
+            node = node.children.get(ch)!;
+        }
+        node.isWord = true;
+    }
+
+    /** Returns true if the trie contains the exact word */
+    search(word: string): boolean {
+        const node = this._traverse(word);
+        return node?.isWord ?? false;
+    }
+
+    /** Returns true if the trie contains any word that starts with the prefix */
+    startsWith(prefix: string): boolean {
+        const node = this._traverse(prefix);
+        return !!node;
+    }
+
+    /** Remove a word – returns true if a word was removed */
+    remove(word: string): boolean {
+        const stack: Array<{ node: TrieNode; char: string }> = [];
+
+        let node = this.root;
+        for (const ch of word) {
+            const child = node.children.get(ch);
+            if (!child) return false; // word not present
+            stack.push({ node, char: ch });
+            node = child;
+        }
+
+        if (!node.isWord) return false; // not a complete word
+
+        node.isWord = false;
+
+        // Clean up nodes that are no longer needed
+        while (stack.length && !node.isWord && node.children.size === 0) {
+            const { node: parent, char } = stack.pop()!;
+            parent.children.delete(char);
+            node = parent;
+        }
+
+        return true;
+    }
+
+    /** Suggest words that start with a prefix (up to maxResults) */
+    suggest(prefix: string, maxResults = 10): string[] {
+        const results: string[] = [];
+        let node = this.root;
+        for (const ch of prefix) {
+            const child = node.children.get(ch);
+            if (!child) return results;
+            node = child;
+        }
+        this._dfs(node, prefix, results, maxResults);
+        return results;
+    }
+
+    /* ---------- private helpers ---------- */
+    // walk through the trie following the key; return node or null
+    private _traverse(key: string): TrieNode | null {
+        let node: TrieNode | undefined = this.root;
+        for (const ch of key) {
+            node = node.children.get(ch);
+            if (!node) return null;
+        }
+        return node as TrieNode;
+    }
+
+    private _dfs(node: TrieNode, path: string, out: string[], limit: number): void {
+        if (out.length >= limit) return;
+        if (node.isWord) out.push(path);
+        for (const [ch, child] of node.children.entries()) {
+            this._dfs(child, path + ch, out, limit);
+        }
+    }
 }
+const trie = new Trie();
+trie.insert('apple');
+trie.insert('app');
+trie.insert('banana');
 
-// 3️⃣  Fast‑/slow‑pointer algorithm (one pass, O(1) extra memory)
-export function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  // Edge checks – return null if n is out of range
-  if (n <= 0) return null
+console.log(trie.search('app'));      // true
+console.log(trie.search('apricot'));  // false
+console.log(trie.startsWith('app'));  // true
+console.log(trie.suggest('app'));     // ['app', 'apple']
 
-  let fast: ListNode<T> | null = head
-  let slow: ListNode<T> | null = head
-
-  // Move `fast` n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null              // n > length
-    fast = fast.next
-  }
-
-  // Move both until `fast` hits the end
-  while (fast) {
-    fast = fast.next
-    slow = slow!.next
-  }
-
-  // `slow` is now the nth from the end
-  return slow
-}
-const list = fromArray([10, 20, 30, 40, 50])
-console.log(nthFromEnd(list, 1)?.val) // 50   (last)
-console.log(nthFromEnd(list, 3)?.val) // 30   (3rd from the end)
-console.log(nthFromEnd(list, 6))       // null  (n > length)
+trie.remove('app');
+console.log(trie.search('app'));      // false
