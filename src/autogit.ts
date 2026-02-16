@@ -1,24 +1,59 @@
 /**
- * Return the first character in `s` that occurs exactly once.
- * If every character repeats, return null.
+ * Returns the longest common subsequence of two strings.
+ *
+ * @param a First string.
+ * @param b Second string.
+ * @returns The LCS as a string.
  */
-function firstNonRepeatingChar(s: string): string | null {
-  // 1️⃣  Count how many times each char appears.
-  const freq = new Map<string, number>();
+function longestCommonSubsequence(a: string, b: string): string {
+  const n = a.length;
+  const m = b.length;
 
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
+  // dp[i][j] = LCS length for a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array(n + 1)
+    .fill(null)
+    .map(() => Array(m + 1).fill(0));
 
-  // 2️⃣  Walk the string a second time, looking for a count of 1.
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;          // first non‑repeating character found
+  // Fill table
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
   }
 
-  return null;              // no unique character
+  // Back‑track to build the subsequence
+  let i = n,
+    j = m,
+    lcs = '';
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      lcs = a[i - 1] + lcs; // prepend
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;
+    } else {
+      j--;
+    }
+  }
+
+  return lcs;
 }
-console.log(firstNonRepeatingChar('abacabad')); // "c"
-console.log(firstNonRepeatingChar('aabbcc'));   // null
-console.log(firstNonRepeatingChar('😀😃😀😄')); // "😃"
+console.log(longestCommonSubsequence('ABCDGH', 'AEDFHR')); // → "ADH"
+function lcsLength(a: string, b: string): number {
+  const n = a.length, m = b.length;
+  const dp = Array(n + 1).fill(0).map(() => Array(m + 1).fill(0));
+
+  for (let i = 1; i <= n; i++)
+    for (let j = 1; j <= m; j++)
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1] + 1
+        : Math.max(dp[i - 1][j], dp[i][j - 1]);
+
+  return dp[n][m];
+}
