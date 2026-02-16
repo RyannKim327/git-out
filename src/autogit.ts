@@ -1,27 +1,72 @@
-/**
- * Returns the second largest number in `arr`.
- * If the array has fewer than two distinct numbers, returns `undefined`.
- */
-function secondLargest(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
+// Generic, in‑place quicksort
+export function quickSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number,
+  low = 0,
+  high = arr.length - 1,
+): T[] {
+  // Default comparator: numeric/string natural order
+  const cmp = compareFn ?? ((a: T, b: T) =>
+    a < b ? -1 : a > b ? 1 : 0,
+  );
 
-  let first: number | null = null;
-  let second: number | null = null;
-
-  for (const x of arr) {
-    if (first === null || x > first) {
-      // New maximum found – push the old maximum down to second
-      second = first;
-      first = x;
-    } else if (x !== first && (second === null || x > second)) {
-      // Candidate for second maximum
-      second = x;
+  // Helper: partition using Hoare's scheme
+  const partition = (l: number, h: number): number => {
+    const pivot = arr[Math.floor((l + h) / 2)];
+    let i = l - 1;
+    let j = h + 1;
+    while (true) {
+      do { i++; } while (cmp(arr[i], pivot) < 0);
+      do { j--; } while (cmp(arr[j], pivot) > 0);
+      if (i >= j) return j;
+      [arr[i], arr[j]] = [arr[j], arr[i]]; // swap
     }
-  }
+  };
 
-  return second ?? undefined;
+  if (low < high) {
+    const p = partition(low, high);
+    quickSort(arr, compareFn, low, p);
+    quickSort(arr, compareFn, p + 1, high);
+  }
+  return arr; // for convenience – returns the same array reference
 }
-console.log(secondLargest([1, 3, 5, 7])); // 5
-console.log(secondLargest([10, 9]));      // 9
-console.log(secondLargest([4]));          // undefined
-console.log(secondLargest([2, 2, 2]));    // undefined
+export function quickSortImmutable<T>(
+  arr: readonly T[],
+  compareFn?: (a: T, b: T) => number,
+): T[] {
+  if (arr.length <= 1) return [...arr];
+
+  const compare = compareFn ?? ((a: T, b: T) =>
+    a < b ? -1 : a > b ? 1 : 0,
+  );
+
+  const pivot = arr[Math.floor(arr.length / 2)];
+  const lows = arr.filter((x) => compare(x, pivot) < 0);
+  const highs = arr.filter((x) => compare(x, pivot) > 0);
+  const pivots = arr.filter((x) => compare(x, pivot) === 0);
+
+  return [
+    ...quickSortImmutable(lows, compareFn),
+    ...pivots,
+    ...quickSortImmutable(highs, compareFn),
+  ];
+}
+const nums = [34, 7, 23, 32, 5, 62];
+quickSort(nums);               // mutates `nums`
+console.log(nums);             // [5, 7, 23, 32, 34, 62]
+
+let strs = ["banana", "apple", "cherry"];
+quickSort(strs, (a, b) => a.localeCompare(b));
+console.log(strs);             // ["apple", "banana", "cherry"]
+
+let objs = [
+  { id: 3, name: "c" },
+  { id: 1, name: "a" },
+  { id: 2, name: "b" },
+];
+quickSort(
+  objs,
+  (a, b) => a.id - b.id,
+);
+console.log(objs);
+// [{ id: 1, name: "a" }, { id: 2, name: "b" }, { id: 3, name: "c" }]
