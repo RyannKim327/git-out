@@ -1,20 +1,36 @@
-function removeVowels(input: string): string {
-  // Vowels (both lower‑ and upper‑case) – feel free to add accented ones if you need
-  const vowels = /[aeiouAEIOU]/g;
-  return input.replace(vowels, '');
-}
-function removeVowels(input: string): string {
-  const result: string[] = [];
+const original = [1, 2, 3, 2, 4, 1, 5];
 
-  for (const char of input) {
-    if (!/[aeiouAEIOU]/.test(char)) {
-      result.push(char);
+// Method 1 – quick & crumb‑free
+const withoutDups = [...new Set(original)];
+console.log(withoutDups); // [1, 2, 3, 4, 5]
+
+// Method 2 – If you prefer a pure function that you can re‑use
+function uniq<T>(arr: T[]): T[] {
+  return [...new Set(arr)];
+}
+
+const uniqueColors = uniq(['red', 'green', 'red', 'blue']);
+function uniqBy<T, K>(arr: T[], keyFn: (item: T) => K): T[] {
+  const seen = new Set<K>();
+  const result: T[] = [];
+
+  for (const item of arr) {
+    const key = keyFn(item);
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(item);
     }
   }
-
-  return result.join('');
+  return result;
 }
-const vowels = /[aeiouAEIOUÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝŸàáâãäåæçèéêëìíîïðñòóôõöøùúûüýÿ]/gu;
-const vowels = /\p{Script=Latin}\p{L}\b{vowel}/u; // not a real pattern – just an example
-const demo = "Hello World! 123";
-console.log(removeVowels(demo)); // "Hll Wrld! 123"
+
+// Example: removing duplicate users by id
+const users = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 1, name: 'Alicia' },
+];
+
+const uniqueUsers = uniqBy(users, u => u.id);
+console.log(uniqueUsers);
+// [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
