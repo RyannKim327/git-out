@@ -1,30 +1,60 @@
-function isPalindrome(str: string): boolean {
-  // Normalise: lowercase + remove all non‑alphanumerics (e.g. spaces, punctuation)
-  const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+/**
+ * Rabin–Karp string search.
+ *
+ * @param text    the string to search in
+ * @param pattern the string to find
+ * @returns array of starting indices where pattern appears in text
+ */
+export function rabinKarp(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
 
-  // Compare the cleaned string to its reverse
-  const reversed = cleaned.split('').reverse().join('');
-  return cleaned === reversed;
-}
-console.log(isPalindrome('Racecar'));          // true
-console.log(isPalindrome('No lemon, no melon!')); // true
-console.log(isPalindrome('Hello, world'));     // false
-function isPalindromeTwoPointer(str: string): boolean {
-  const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-  let left = 0;
-  let right = cleaned.length - 1;
-
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) {
-      return false;
-    }
-    left++;
-    right--;
+  if (m === 0 || m > n) {
+    return [];
   }
-  return true;
-}
-function isPalindromeSafe(input: unknown): boolean {
-  if (typeof input !== 'string') return false;
-  return isPalindrome(input);
+
+  const base = 256;            // Number of possible ASCII characters
+  const mod  = 101;            // A prime modulus – large enough for short strings
+
+  /* ----------  helper: convert a substring to a hash ------------ */
+  const hash = (str: string, len: number) => {
+    let h = 0;
+    for (let i = 0; i < len; i++) {
+      h = (h * base + str.charCodeAt(i)) % mod;
+    }
+    return h;
+  };
+
+  /* ----------  pre‑compute base^(m-1)  modulo mod -------------- */
+  let highPow = 1;                 // (base^(m‑1)) % mod
+  for (let i = 1; i <= m - 1; i++) {
+    highPow = (highPow * base) % mod;
+  }
+
+  /* ----------  initial hashes ----------------------------------- */
+  let patternHash = hash(pattern, m);
+  let windowHash  = hash(text, m);
+
+  const result: number[] = [];
+
+  /* ----------  main loop ---------------------------------------- */
+  for (let i = 0; i <= n - m; i++) {
+    // When hashes match we still do a string comparison to rule out collisions
+    if (patternHash === windowHash) {
+      if (text.substr(i, m) === pattern) {
+        result.push(i);
+      }
+    }
+
+    // Roll the hash: remove the leftmost character, add the new rightmost
+    if (i < n - m) {
+      windowHash =
+        // Remove leftmost char contribution
+        (windowHash - text.charCodeAt(i) * highPow % mod + mod) % mod; // keep positive
+      // Add next char
+      windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
+    }
+  }
+
+  return result;
 }
