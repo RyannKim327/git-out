@@ -1,52 +1,45 @@
-interface TreeNode<T = number> {
-  val: T;                // single value (you can change the type)
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
+// 1️⃣  Node definition
+export interface ListNode<T> {
+  val: T
+  next: ListNode<T> | null
 }
-const root: TreeNode = {
-  val: 10,
-  left: { val: 5, left: null, right: null },
-  right: { val: 15, left: null, right: null },
-};
-function maxDepth<T>(node: TreeNode<T> | null): number {
-  if (!node) return 0;
-  const leftDepth = maxDepth(node.left);
-  const rightDepth = maxDepth(node.right);
-  return Math.max(leftDepth, rightDepth) + 1;
+
+// 2️⃣  Utility: build list from array (for demo/testing)
+export function fromArray<T>(arr: T[]): ListNode<T> | null {
+  if (!arr.length) return null
+  let head: ListNode<T> = { val: arr[0], next: null }
+  let cur = head
+  for (let i = 1; i < arr.length; i++) {
+    cur.next = { val: arr[i], next: null }
+    cur = cur.next
+  }
+  return head
 }
-function maxDepthIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
 
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
+// 3️⃣  Fast‑/slow‑pointer algorithm (one pass, O(1) extra memory)
+export function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  // Edge checks – return null if n is out of range
+  if (n <= 0) return null
 
-  while (queue.length) {
-    const levelSize = queue.length; // nodes at current depth
-    depth++;                        // we’re going to finish this level
+  let fast: ListNode<T> | null = head
+  let slow: ListNode<T> | null = head
 
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift() as TreeNode<T>;
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
-    }
+  // Move `fast` n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null              // n > length
+    fast = fast.next
   }
 
-  return depth;
-}
-// build a quick tree
-const tree: TreeNode = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4, left: null, right: null },
-    right: null,
-  },
-  right: {
-    val: 3,
-    left: null,
-    right: { val: 5, left: null, right: null },
-  },
-};
+  // Move both until `fast` hits the end
+  while (fast) {
+    fast = fast.next
+    slow = slow!.next
+  }
 
-console.log(maxDepth(tree));      // -> 3
-console.log(maxDepthIter(tree));  // -> 3
+  // `slow` is now the nth from the end
+  return slow
+}
+const list = fromArray([10, 20, 30, 40, 50])
+console.log(nthFromEnd(list, 1)?.val) // 50   (last)
+console.log(nthFromEnd(list, 3)?.val) // 30   (3rd from the end)
+console.log(nthFromEnd(list, 6))       // null  (n > length)
