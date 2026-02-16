@@ -1,93 +1,59 @@
-// 1️⃣  Generic node type
-class TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
+/**
+ * Fibonacci search for a sorted array of numbers.
+ * @param arr  - The sorted array (ascending).
+ * @param target - The value to locate.
+ * @returns The index of target in `arr`, or -1 if not found.
+ */
+function fibSearch(arr: number[], target: number): number {
+  const n = arr.length;
 
-  constructor(value: T) {
-    this.value = value;
+  /* ------- 1. Build a Fibonacci sequence long enough ---- */
+  // fibMm2 = fib(m‑2), fibMm1 = fib(m‑1), fibM   = fib(m)
+  let fibMm2 = 0; // (m-2)'th Fibonacci number
+  let fibMm1 = 1; // (m-1)'th Fibonacci number
+  let fibM   = fibMm2 + fibMm1; // m'th Fibonacci
+
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
   }
+
+  /* ------- 2. Mark the boundary of the eliminated range ------- */
+  // The offset is the index of the last removed element
+  let offset = -1;
+
+  /* ------- 3. While there are elements to investigate ----------- */
+  while (fibM > 1) {
+    // Check if fibMm2 is a valid index
+    const i = Math.min(offset + fibMm2, n - 1);
+
+    if (arr[i] === target) {
+      return i; // Found!
+    }
+
+    /* ----- Move the three Fibonacci variables down one step ----- */
+    if (arr[i] < target) {
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else {
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
+    }
+  }
+
+  /* ------- 4. Compare the last element in the range --------------- */
+  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
+  }
+
+  return -1; // Not found
 }
 
-// 2️⃣  BinaryTree class
-class BinaryTree<T> {
-  root: TreeNode<T> | null = null;
-
-  // Insert a value – keeps the tree *ordered* (BST rule)
-  insert(value: T, comparator: (a: T, b: T) => number) {
-    const newNode = new TreeNode(value);
-
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
-
-    let current: TreeNode<T> | null = this.root;
-    while (current) {
-      const comp = comparator(value, current.value);
-      if (comp < 0) {
-        if (!current.left) {
-          current.left = newNode;
-          return;
-        }
-        current = current.left;
-      } else if (comp > 0) {
-        if (!current.right) {
-          current.right = newNode;
-          return;
-        }
-        current = current.right;
-      } else {
-        // Duplicate – decide what to do; here we just replace
-        current.value = value;
-        return;
-      }
-    }
-  }
-
-  // Find a node with a particular value
-  find(value: T, comparator: (a: T, b: T) => number): TreeNode<T> | null {
-    let current = this.root;
-    while (current) {
-      const comp = comparator(value, current.value);
-      if (comp === 0) return current;
-      current = comp < 0 ? current.left : current.right;
-    }
-    return null;
-  }
-
-  // In‑order traversal (left, root, right)
-  inOrder(callback: (node: TreeNode<T>) => void) {
-    const visit = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      visit(node.left);
-      callback(node);
-      visit(node.right);
-    };
-    visit(this.root);
-  }
-
-  // Pre‑ and post‑order are left to you if needed
-}
-const cmpNum = (a: number, b: number) => a - b;
-const cmpStr = (a: string, b: string) => a.localeCompare(b);
-const tree = new BinaryTree<number>();
-
-tree.insert(42, cmpNum);
-tree.insert(23, cmpNum);
-tree.insert(87, cmpNum);
-tree.insert(13, cmpNum);
-tree.insert(31, cmpNum);
-
-console.log("In‑order traversal:");
-tree.inOrder(node => console.log(node.value));
-
-const found = tree.find(31, cmpNum);
-console.log(found ? `Found ${found.value}` : "Not found");
-In-order traversal:
-13
-23
-31
-42
-87
-Found 31
+/* ---- Quick demo ---- */
+const sorted = [3, 5, 8, 12, 19, 27, 34, 42, 56, 73, 91];
+console.log(fibSearch(sorted, 27)); // → 5
+console.log(fibSearch(sorted, 7));  // → -1
