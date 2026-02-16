@@ -1,32 +1,52 @@
-// 1️⃣  Using a Set – O(m + n) time, O(n) extra space
-function commonElements<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(item => setB.has(item));
+interface TreeNode<T = number> {
+  val: T;                // single value (you can change the type)
+  left: TreeNode<T> | null;
+  right: TreeNode<T> | null;
 }
+const root: TreeNode = {
+  val: 10,
+  left: { val: 5, left: null, right: null },
+  right: { val: 15, left: null, right: null },
+};
+function maxDepth<T>(node: TreeNode<T> | null): number {
+  if (!node) return 0;
+  const leftDepth = maxDepth(node.left);
+  const rightDepth = maxDepth(node.right);
+  return Math.max(leftDepth, rightDepth) + 1;
+}
+function maxDepthIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
 
-// 2️⃣  Using two pointers – O(m + n) time, O(1) extra space
-//     (works best if both arrays are already sorted)
-function commonSorted<T>(a: T[], b: T[]): T[] {
-  const res: T[] = [];
-  let i = 0, j = 0;
-  while (i < a.length && j < b.length) {
-    if (a[i] === b[j]) {
-      res.push(a[i]);
-      i++; j++;
-    } else if (a[i] < b[j]) {
-      i++;
-    } else {
-      j++;
+  const queue: TreeNode<T>[] = [root];
+  let depth = 0;
+
+  while (queue.length) {
+    const levelSize = queue.length; // nodes at current depth
+    depth++;                        // we’re going to finish this level
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift() as TreeNode<T>;
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
     }
   }
-  return res;
-}
 
-// 3️⃣  Using reduce – concise but less efficient for large arrays
-function commonReduce<T>(a: T[], b: T[]): T[] {
-  return a.reduce((acc, val) => (b.includes(val) ? [...acc, val] : acc), [] as T[]);
+  return depth;
 }
-const arr1 = [1, 2, 3, 4, 5];
-const arr2 = [3, 4, 5, 6, 7];
+// build a quick tree
+const tree: TreeNode = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: null, right: null },
+    right: null,
+  },
+  right: {
+    val: 3,
+    left: null,
+    right: { val: 5, left: null, right: null },
+  },
+};
 
-console.log(commonElements(arr1, arr2)); // [3, 4, 5]
+console.log(maxDepth(tree));      // -> 3
+console.log(maxDepthIter(tree));  // -> 3
