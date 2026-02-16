@@ -1,21 +1,27 @@
 /**
- * Factorial using recursion.
- * Works for ordinary numbers up to 20 (safe integer range).
- * If you need bigger results, use BigInt and the overload below.
+ * Returns the second largest number in `arr`.
+ * If the array has fewer than two distinct numbers, returns `undefined`.
  */
-function factorial(n: number): number {
-  if (n < 0) throw new Error("Negative values are not allowed");
-  if (n <= 1) return 1;          // base case
-  return n * factorial(n - 1);   // recursive step
-}
+function secondLargest(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-/**
- * A BigInt version for arbitrary‑size factorials.
- */
-function factorialBigInt(n: bigint): bigint {
-  if (n < 0n) throw new Error("Negative values are not allowed");
-  if (n <= 1n) return 1n;
-  return n * factorialBigInt(n - 1n);
+  let first: number | null = null;
+  let second: number | null = null;
+
+  for (const x of arr) {
+    if (first === null || x > first) {
+      // New maximum found – push the old maximum down to second
+      second = first;
+      first = x;
+    } else if (x !== first && (second === null || x > second)) {
+      // Candidate for second maximum
+      second = x;
+    }
+  }
+
+  return second ?? undefined;
 }
-console.log(factorial(5));          // 120
-console.log(factorialBigInt(25n));  // 15511210043330985984000000n
+console.log(secondLargest([1, 3, 5, 7])); // 5
+console.log(secondLargest([10, 9]));      // 9
+console.log(secondLargest([4]));          // undefined
+console.log(secondLargest([2, 2, 2]));    // undefined
