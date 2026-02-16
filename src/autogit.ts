@@ -1,33 +1,29 @@
-// random-axios-example.ts
-import axios, { AxiosResponse } from "axios";
+function firstRepeatedChar(str: string): string | null {
+  const seen = new Set<string>();
 
-interface PostSummary {
-  id: number;
-  title: string;
-}
-
-async function fetchPostSummaries(
-  limit: number = 5,
-  page: number = 1
-): Promise<PostSummary[]> {
-  const url = "https://jsonplaceholder.typicode.com/posts";
-  const params = { _limit: limit, _page: page };
-
-  // Axios can be typed at the request level:
-  const response: AxiosResponse<PostSummary[]> = await axios.get(url, { params });
-
-  // We trust the API returns the expected shape, but we still slice the fields we care about.
-  return response.data.map(({ id, title }) => ({ id, title }));
-}
-
-async function main() {
-  try {
-    const summaries = await fetchPostSummaries();
-    console.log("Fetched post summaries:", summaries);
-  } catch (err) {
-    // @ts-ignore – quick error log for demonstration
-    console.error("Something went wrong:", err?.message ?? err);
+  for (const ch of str) {
+    if (seen.has(ch)) {
+      return ch;            // ❗ hit the first duplicate
+    }
+    seen.add(ch);
   }
+
+  return null;               // no duplicate found
 }
 
-main();
+// Demo
+console.log(firstRepeatedChar("abca")); // → 'a'
+console.log(firstRepeatedChar("abcdef")); // → null
+function firstRepeatedIndex(str: string): number | -1 {
+  const seen = new Map<string, number>();
+
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (seen.has(ch)) {
+      return i;   // index of the first occurrence that was repeated
+    }
+    seen.set(ch, i);
+  }
+
+  return -1;
+}
