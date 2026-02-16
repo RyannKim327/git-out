@@ -1,59 +1,45 @@
-/**
- * Compare two strings for an anagram relationship.
- *
- * @param a – first string (the one you’re testing)
- * @param b – candidate anagram
- * @param ignoreCase – true will treat “A” and “a” the same
- * @param normalize   – if true, removes all non‑alphanumeric chars
- * @returns true if a and b are anagrams
- */
-function isAnagram(
-  a: string,
-  b: string,
-  ignoreCase = true,
-  normalize = true
-): boolean {
-  if (normalize) {
-    const regex = /[^a-z0-9]/gi;
-    a = a.replace(regex, '');
-    b = b.replace(regex, '');
+class Stack<T> {
+  private items: T[] = [];      // underlying array
+
+  /** Push a value onto the top of the stack. */
+  push(value: T): void {
+    this.items.push(value);
   }
 
-  if (ignoreCase) {
-    a = a.toLowerCase();
-    b = b.toLowerCase();
+  /** Remove and return the top value.  Returns `undefined` if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
   }
 
-  // Quick length‐check
-  if (a.length !== b.length) return false;
+  /** Peek at the top value without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
 
-  // Sort characters and compare
-  const sortedA = a.split('').sort().join('');
-  const sortedB = b.split('').sort().join('');
+  /** Number of elements in the stack. */
+  get size(): number {
+    return this.items.length;
+  }
 
-  return sortedA === sortedB;
+  /** True if the stack contains no items. */
+  get isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Optional: clear all items. */
+  clear(): void {
+    this.items = [];
+  }
 }
-console.log(isAnagram('Listen', 'Silent'));               // true
-console.log(isAnagram('Astronomer', 'Moon starer'));      // true
-console.log(isAnagram('Hello', 'World'));                  // false
+const stack = new Stack<number>();
 
-// Custom options
-console.log(isAnagram('Dormitory!', 'Dirtyroom', true, true)); // true
-console.log(isAnagram('Dormitory!', 'Dirtyroom', false, true)); // false – case sensitive
-function isAnagramFreq(a: string, b: string): boolean {
-  const makeMap = (s: string) => {
-    const map: Record<string, number> = {};
-    for (const ch of s) map[ch] = (map[ch] ?? 0) + 1;
-    return map;
-  };
+stack.push(10);
+stack.push(20);
+stack.push(30);
 
-  const freqA = makeMap(a);
-  const freqB = makeMap(b);
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size);   // 2
 
-  // Compare two maps
-  const keys = new Set([...Object.keys(freqA), ...Object.keys(freqB)]);
-  for (const k of keys) {
-    if (freqA[k] !== freqB[k]) return false;
-  }
-  return true;
-}
+stack.clear();
+console.log(stack.isEmpty); // true
