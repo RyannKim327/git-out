@@ -1,14 +1,21 @@
-// Remove *every* whitespace (spaces, tabs, newlines, etc.)
-const clean = str.replace(/\s+/g, '');   // <-- compressed string
+/**
+ * Factorial using recursion.
+ * Works for ordinary numbers up to 20 (safe integer range).
+ * If you need bigger results, use BigInt and the overload below.
+ */
+function factorial(n: number): number {
+  if (n < 0) throw new Error("Negative values are not allowed");
+  if (n <= 1) return 1;          // base case
+  return n * factorial(n - 1);   // recursive step
+}
 
-// If you only want to trim the ends:
-const trimmed = str.trim();              // <-- removes leading/trailing whitespace
-
-// If you want middle‑spaces only (keeping a single space between words):
-const condensed = str.replace(/\s+/g, ' ');
-const original = '  Hello   world \t this\nis  a test  ';
-const stripped = original.replace(/\s+/g, '');
-// stripped === 'Helloworldthisisatest'
-
-console.log(stripped);
-const stripped = original.split(/\s+/).join(''); // same result
+/**
+ * A BigInt version for arbitrary‑size factorials.
+ */
+function factorialBigInt(n: bigint): bigint {
+  if (n < 0n) throw new Error("Negative values are not allowed");
+  if (n <= 1n) return 1n;
+  return n * factorialBigInt(n - 1n);
+}
+console.log(factorial(5));          // 120
+console.log(factorialBigInt(25n));  // 15511210043330985984000000n
