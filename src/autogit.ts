@@ -1,83 +1,48 @@
-// fetch-example.ts
 /**
- * A small utility that fetches JSON from a public API
- * and logs a nicely formatted result.
+ * Return the maximum sum sub‑array (Kadane) along with its start & end indices.
  *
- * It demonstrates:
- *   • TypeScript generics for response typing
- *   • Async/await syntax
- *   • Basic error handling
- *   • Runtime type guard for JSON validation
+ * @param nums  Array of numbers – can contain positives, zeros and negatives.
+ * @returns     Object with `maxSum`, `start`, `end` (inclusive).
  */
+export function maxSubarrayWithIndices(nums: number[]): {
+  maxSum: number;
+  start: number;
+  end: number;
+} {
+  if (nums.length === 0) throw new Error("Input array must contain at least one element");
 
-type PlainObject = Record<string, unknown>;
+  let bestSum = nums[0];
+  let currentSum = nums[0];
 
-// A small runtime check to ensure the response is
-// an object (the common case when fetching JSON).
-function isObject(value: unknown): value is PlainObject {
-  return typeof value === 'object' && value !== null;
-}
+  // These track the best indices we’ve seen
+  let bestStart = 0;
+  let bestEnd = 0;
 
-/**
- * Generic fetch function that returns data of type T.
- * @param url          The URL to fetch from
- * @param init         Optional RequestInit parameters
- */
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
+  // Temporary indices for the sub‑array we are currently extending
+  let tempStart = 0;
 
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+  for (let i = 1; i < nums.length; i++) {
+    const num = nums[i];
+
+    // Decide whether to extend the current sub‑array or start fresh at i
+    if (currentSum + num < num) {
+      currentSum = num;
+      tempStart = i;
+    } else {
+      currentSum += num;
+    }
+
+    // Update the best found so far
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
+    }
   }
 
-  const data = await response.json();
-
-  // Very light runtime validation – just make sure we got an object
-  if (!isObject(data)) {
-    throw new Error('Response is not a JSON object');
-  }
-
-  return data as T; // confidence that T matches the real shape
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-
-/**
- * Example usage: fetch a user from the JSONPlaceholder API.
- * The API returns a shape that we can describe as a type.
- */
-interface JsonPlaceholderUser {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-  address: {
-    street: string;
-    suite: string;
-    city: string;
-    zipcode: string;
-    geo: { lat: string; lng: string };
-  };
-  phone: string;
-  website: string;
-  company: {
-    name: string;
-    catchPhrase: string;
-    bs: string;
-  };
-}
-
-async function main() {
-  const userId = 1;
-  const url = `https://jsonplaceholder.typicode.com/users/${userId}`;
-
-  try {
-    const user = await fetchJson<JsonPlaceholderUser>(url);
-    console.log(`Name: ${user.name}`);
-    console.log(`Company: ${user.company.name}`);
-    console.log(`Address: ${user.address.street}, ${user.address.city}`);
-  } catch (err) {
-    console.error('Something went wrong:', err);
-  }
-}
-
-// Kick it off
-main();
+const arr = [4, -1, 2, 1, -5, 4];
+const result = maxSubarrayWithIndices(arr);
+console.log(result); // { maxSum: 6, start: 0, end: 3 }
+// Sub‑array: [4, -1, 2, 1] → sum 6
