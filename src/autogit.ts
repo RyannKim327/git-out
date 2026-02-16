@@ -1,45 +1,85 @@
-/**
- * A classic LIFO stack that stores items in an array.
- * @template T The type of the values stored inside the stack.
- */
-export class Stack<T> {
-  /** The underlying array that holds the stack's data. */
-  private data: T[] = [];
+/* A node that lives inside the queue */
+class QueueNode<T> {
+  constructor(
+    public value: T,
+    public next: QueueNode<T> | null = null
+  ) {}
+}
 
-  /** Adds an element to the top of the stack. */
-  push(item: T): void {
-    this.data.push(item);
+/* The queue itself */
+export class LinkedListQueue<T> {
+  // We keep pointers to both ends so that both enqueue
+  // (push) and dequeue (pop) stay O(1).
+  private head: QueueNode<T> | null = null; // front of the queue
+  private tail: QueueNode<T> | null = null; // rear of the queue
+  private _size = 0;
+
+  /** Insert a new value at the rear. */
+  enqueue(value: T): void {
+    const node = new QueueNode(value);
+
+    if (this.tail) {
+      // The queue already has at least one element
+      this.tail.next = node;
+      this.tail = node;
+    } else {
+      // Empty queue: head and tail become the new node
+      this.head = this.tail = node;
+    }
+
+    this._size++;
   }
 
-  /**
-   * Removes and returns the element at the top of the stack.
-   * Returns undefined if the stack is empty.
-   */
-  pop(): T | undefined {
-    return this.data.pop();
+  /** Remove and return the value at the front. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // Empty queue
+
+    const value = this.head.value;
+    this.head = this.head.next;
+
+    // If we just removed the last element, clear the tail too
+    if (!this.head) {
+      this.tail = null;
+    }
+
+    this._size--;
+    return value;
   }
 
-  /** Peeks at the element on the top without removing it. */
+  /** Peek at the front value without removing it. */
   peek(): T | undefined {
-    return this.data[this.data.length - 1];
+    return this.head ? this.head.value : undefined;
   }
 
-  /** Returns the number of elements in the stack. */
+  /** Number of elements currently in the queue. */
   get size(): number {
-    return this.data.length;
+    return this._size;
   }
 
-  /** Returns true when the stack has nothing inside. */
+  /** Are there any elements? */
   get isEmpty(): boolean {
-    return this.data.length === 0;
+    return this._size === 0;
+  }
+
+  /** Remove everything from the queue. */
+  clear(): void {
+    this.head = null;
+    this.tail = null;
+    this._size = 0;
   }
 }
-const stack = new Stack<number>();
+const queue = new LinkedListQueue<number>();
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
+queue.enqueue(1);
+queue.enqueue(2);
+queue.enqueue(3);
 
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size);   // 2
+console.log(queue.peek()); // 1
+console.log(queue.dequeue()); // 1
+console.log(queue.dequeue()); // 2
+console.log(queue.size); // 1
+
+queue.enqueue(4);
+console.log(queue.dequeue()); // 3
+console.log(queue.dequeue()); // 4
+console.log(queue.isEmpty); // true
