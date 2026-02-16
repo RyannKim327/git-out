@@ -1,93 +1,66 @@
-// 1️⃣  Generic node type
-class TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
-
-  constructor(value: T) {
-    this.value = value;
+/**
+ * Returns the largest prime factor of a positive integer.
+ * Works for Number (up to ~9e15) and for BigInt.
+ */
+export function largestPrimeFactor(nInput: number | bigint): bigint {
+  // 0 or 1 have no prime factors
+  if (nInput <= 1) {
+    throw new Error('Number must be >= 2');
   }
+
+  // Work with BigInt internally for uniformity
+  let n = BigInt(nInput);
+
+  // Remove factors of 2
+  let lastFactor = 2n;
+  while (n % 2n === 0n) {
+    lastFactor = 2n;
+    n /= 2n;
+  }
+
+  // Try odd factors only
+  let factor = 3n;
+  const limit = sqrtBigInt(n);
+
+  while (factor <= limit) {
+    while (n % factor === 0n) {
+      lastFactor = factor;
+      n /= factor;
+    }
+    factor += 2n;        // skip even numbers
+  }
+
+  // If anything is left, it must be a prime > sqrt(original n)
+  if (n > 1n) {
+    lastFactor = n;
+  }
+
+  return lastFactor;
 }
 
-// 2️⃣  BinaryTree class
-class BinaryTree<T> {
-  root: TreeNode<T> | null = null;
+/**
+ * Integer square root of a BigInt (floor)
+ * (Euclidean algorithm – takes few iterations even for 64‑bit numbers)
+ */
+function sqrtBigInt(value: bigint): bigint {
+  if (value < 0n) throw new Error('square root of negative not supported');
+  if (value < 2n) return value;
 
-  // Insert a value – keeps the tree *ordered* (BST rule)
-  insert(value: T, comparator: (a: T, b: T) => number) {
-    const newNode = new TreeNode(value);
+  let x0 = value / 2n;
+  let x1 = (x0 + value / x0) / 2n;
 
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
-
-    let current: TreeNode<T> | null = this.root;
-    while (current) {
-      const comp = comparator(value, current.value);
-      if (comp < 0) {
-        if (!current.left) {
-          current.left = newNode;
-          return;
-        }
-        current = current.left;
-      } else if (comp > 0) {
-        if (!current.right) {
-          current.right = newNode;
-          return;
-        }
-        current = current.right;
-      } else {
-        // Duplicate – decide what to do; here we just replace
-        current.value = value;
-        return;
-      }
-    }
+  while (x1 < x0) {
+    x0 = x1;
+    x1 = (x0 + value / x0) / 2n;
   }
-
-  // Find a node with a particular value
-  find(value: T, comparator: (a: T, b: T) => number): TreeNode<T> | null {
-    let current = this.root;
-    while (current) {
-      const comp = comparator(value, current.value);
-      if (comp === 0) return current;
-      current = comp < 0 ? current.left : current.right;
-    }
-    return null;
-  }
-
-  // In‑order traversal (left, root, right)
-  inOrder(callback: (node: TreeNode<T>) => void) {
-    const visit = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      visit(node.left);
-      callback(node);
-      visit(node.right);
-    };
-    visit(this.root);
-  }
-
-  // Pre‑ and post‑order are left to you if needed
+  return x0;
 }
-const cmpNum = (a: number, b: number) => a - b;
-const cmpStr = (a: string, b: string) => a.localeCompare(b);
-const tree = new BinaryTree<number>();
+console.log(largestPrimeFactor(13195));      // 29
+console.log(largestPrimeFactor(600851475143)); // 6857
 
-tree.insert(42, cmpNum);
-tree.insert(23, cmpNum);
-tree.insert(87, cmpNum);
-tree.insert(13, cmpNum);
-tree.insert(31, cmpNum);
-
-console.log("In‑order traversal:");
-tree.inOrder(node => console.log(node.value));
-
-const found = tree.find(31, cmpNum);
-console.log(found ? `Found ${found.value}` : "Not found");
-In-order traversal:
-13
-23
-31
-42
-87
-Found 31
+// Using BigInt
+console.log(
+  largestPrimeFactor(
+    BigInt("9999999967") // a 10‑digit number; you can make this much bigger
+  ).toString()
+);
