@@ -1,83 +1,43 @@
-// fetch-example.ts
 /**
- * A small utility that fetches JSON from a public API
- * and logs a nicely formatted result.
+ * Returns the longest common *contiguous* substring of `a` and `b`.
  *
- * It demonstrates:
- *   • TypeScript generics for response typing
- *   • Async/await syntax
- *   • Basic error handling
- *   • Runtime type guard for JSON validation
+ * If there are multiple substrings with the same maximum length, the first
+ * one that appears in `a` is returned.
+ *
+ * Time:  O(a.length * b.length)
+ * Space: O(a.length * b.length)   (you can trim this to O(a.length) if you’re
+ *                                   hunting for a memory‑tight version)
  */
+export function longestCommonSubstring(a: string, b: string): string {
+  const aLen = a.length;
+  const bLen = b.length;
 
-type PlainObject = Record<string, unknown>;
+  // A 2‑D array where dp[i][j] holds the length of the longest suffix that
+  // ends at a[i-1] and b[j-1].  We use 1‑based indexing to keep the math
+  // simple: dp[0][*] and dp[*][0] are zero by construction.
+  const dp: number[][] = Array.from({ length: aLen + 1 }, () =>
+    new Array(bLen + 1).fill(0)
+  );
 
-// A small runtime check to ensure the response is
-// an object (the common case when fetching JSON).
-function isObject(value: unknown): value is PlainObject {
-  return typeof value === 'object' && value !== null;
-}
+  let bestLen = 0;
+  let bestI = 0; // end index in `a`
 
-/**
- * Generic fetch function that returns data of type T.
- * @param url          The URL to fetch from
- * @param init         Optional RequestInit parameters
- */
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
-
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+  for (let i = 1; i <= aLen; i++) {
+    for (let j = 1; j <= bLen; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > bestLen) {
+          bestLen = dp[i][j];
+          bestI = i; // slice stops at `i` (exclusive)
+        }
+      } else {
+        dp[i][j] = 0;
+      }
+    }
   }
 
-  const data = await response.json();
-
-  // Very light runtime validation – just make sure we got an object
-  if (!isObject(data)) {
-    throw new Error('Response is not a JSON object');
-  }
-
-  return data as T; // confidence that T matches the real shape
+  return bestLen > 0 ? a.slice(bestI - bestLen, bestI) : '';
 }
-
-/**
- * Example usage: fetch a user from the JSONPlaceholder API.
- * The API returns a shape that we can describe as a type.
- */
-interface JsonPlaceholderUser {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-  address: {
-    street: string;
-    suite: string;
-    city: string;
-    zipcode: string;
-    geo: { lat: string; lng: string };
-  };
-  phone: string;
-  website: string;
-  company: {
-    name: string;
-    catchPhrase: string;
-    bs: string;
-  };
-}
-
-async function main() {
-  const userId = 1;
-  const url = `https://jsonplaceholder.typicode.com/users/${userId}`;
-
-  try {
-    const user = await fetchJson<JsonPlaceholderUser>(url);
-    console.log(`Name: ${user.name}`);
-    console.log(`Company: ${user.company.name}`);
-    console.log(`Address: ${user.address.street}, ${user.address.city}`);
-  } catch (err) {
-    console.error('Something went wrong:', err);
-  }
-}
-
-// Kick it off
-main();
+console.log(longestCommonSubstring('BANANA', 'ANANAB')); // "ANANA"
+console.log(longestCommonSubstring('hello', 'world'));   // ""
+console.log(longestCommonSubstring('', 'something'));    // ""
