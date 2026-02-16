@@ -1,78 +1,69 @@
-/**
- * Build the longest‑prefix‑suffix (LPS) array for the pattern.
- * lps[i] will contain the length of the longest proper prefix
- * that is also a suffix for the substring pattern[0…i].
- *
- * @param pattern – the pattern
- * @returns the filled LPS array
- */
-function computeLPS(pattern: string): number[] {
-  const lps: number[] = new Array(pattern.length).fill(0);
-  let length = 0;          // length of the previous longest prefix suffix
-  let i = 1;               // lps[0] is always 0
+type NodeId = string | number;          // whatever you want to use for a node key
+interface Graph {
+  /** Map of node id → set of neighbour ids */
+  adjacencyList: Map<NodeId, Set<NodeId>>;
+}
+function createGraph(edges: [NodeId, NodeId][]): Graph {
+  const adjacencyList = new Map<NodeId, Set<NodeId>>();
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        // don't move i here; keep looking for a smaller prefix
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
+  for (const [u, v] of edges) {
+    if (!adjacencyList.has(u)) adjacencyList.set(u, new Set());
+    if (!adjacencyList.has(v)) adjacencyList.set(v, new Set());
+    adjacencyList.get(u)!.add(v);
+    adjacencyList.get(v)!.add(u); // comment out for directed graph
+  }
+
+  return { adjacencyList };
+}
+function dfsRecursive(
+  graph: Graph,
+  start: NodeId,
+  visited = new Set<NodeId>()
+): NodeId[] {
+  visited.add(start);
+  const result = [start];
+
+  for (const neighbour of graph.adjacencyList.get(start) ?? []) {
+    if (!visited.has(neighbour)) {
+      result.push(...dfsRecursive(graph, neighbour, visited));
     }
   }
 
-  return lps;
+  return result;
 }
+function dfsIterative(graph: Graph, start: NodeId): NodeId[] {
+  const visited = new Set<NodeId>();
+  const stack: NodeId[] = [start];
+  const result: NodeId[] = [];
 
-/**
- * Perform KMP search for a pattern in a text.
- *
- * @param text     – the string to search in
- * @param pattern  – the pattern to look for
- * @returns an array of starting indices where the pattern occurs
- */
-function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return []; // nothing to search for
+  while (stack.length) {
+    const node = stack.pop()!;           // safe: stack is non‑empty
 
-  const lps = computeLPS(pattern);
-  const positions: number[] = [];
-  let i = 0; // index for text
-  let j = 0; // index for pattern
+    if (visited.has(node)) continue;
+    visited.add(node);
+    result.push(node);
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-
-      if (j === pattern.length) {
-        // match found – record starting index
-        positions.push(i - j);
-        // continue searching for next possible match
-        j = lps[j - 1];
-      }
-    } else {
-      if (j !== 0) {
-        // jump back in the pattern based on LPS
-        j = lps[j - 1];
-      } else {
-        i++; // move to next character in text
-      }
+    // Add neighbours in reverse order if you want a particular visit order
+    const neighbours = graph.adjacencyList.get(node) ?? new Set();
+    for (const neighbour of Array.from(neighbours).reverse()) {
+      if (!visited.has(neighbour)) stack.push(neighbour);
     }
   }
 
-  return positions;
+  return result;
 }
+const edges: [NodeId, NodeId][] = [
+  [1, 2],
+  [1, 3],
+  [2, 4],
+  [3, 4],
+  [4, 5],
+];
 
-/* Example usage */
-const haystack = "ABABDABACDABABCABAB";
-const needle = "ABABCABAB";
+const graph = createGraph(edges);
 
-const matches = kmpSearch(haystack, needle);
-console.log("Pattern found at positions:", matches);
-// Expected output: Pattern found at positions: [9]
+console.log('Recursive DFS:', dfsRecursive(graph, 1));
+// → [1, 2, 4, 3, 5] (or another order depending on set iteration)
+
+console.log('Iterative DFS:', dfsIterative(graph, 1));
+// → same result, but robust on deep graphs
