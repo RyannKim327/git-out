@@ -1,43 +1,27 @@
-/**
- * Returns the longest common *contiguous* substring of `a` and `b`.
- *
- * If there are multiple substrings with the same maximum length, the first
- * one that appears in `a` is returned.
- *
- * Time:  O(a.length * b.length)
- * Space: O(a.length * b.length)   (you can trim this to O(a.length) if you’re
- *                                   hunting for a memory‑tight version)
- */
-export function longestCommonSubstring(a: string, b: string): string {
-  const aLen = a.length;
-  const bLen = b.length;
+function isPalindrome(str: string): boolean {
+  const sanitized = str.toLowerCase();              // ignore case
+  const reversed  = sanitized.split('').reverse().join('');
+  return sanitized === reversed;
+}
+console.log(isPalindrome('RaceCar'));      // true
+console.log(isPalindrome('hello'));        // false
+function isPalindromePortable(str: string): boolean {
+  const cleaned = str.replace(/[^a-z0-9]/gi, '').toLowerCase();
+  const left = 0;
+  const right = cleaned.length - 1;
 
-  // A 2‑D array where dp[i][j] holds the length of the longest suffix that
-  // ends at a[i-1] and b[j-1].  We use 1‑based indexing to keep the math
-  // simple: dp[0][*] and dp[*][0] are zero by construction.
-  const dp: number[][] = Array.from({ length: aLen + 1 }, () =>
-    new Array(bLen + 1).fill(0)
-  );
-
-  let bestLen = 0;
-  let bestI = 0; // end index in `a`
-
-  for (let i = 1; i <= aLen; i++) {
-    for (let j = 1; j <= bLen; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-        if (dp[i][j] > bestLen) {
-          bestLen = dp[i][j];
-          bestI = i; // slice stops at `i` (exclusive)
-        }
-      } else {
-        dp[i][j] = 0;
-      }
-    }
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) return false;
+    left++;
+    right--;
   }
 
-  return bestLen > 0 ? a.slice(bestI - bestLen, bestI) : '';
+  return true;
 }
-console.log(longestCommonSubstring('BANANA', 'ANANAB')); // "ANANA"
-console.log(longestCommonSubstring('hello', 'world'));   // ""
-console.log(longestCommonSubstring('', 'something'));    // ""
+console.log(isPalindromePortable('A man, a plan, a canal: Panama')); // true
+console.log(isPalindromePortable('No lemon, no melon'));            // true
+console.log(isPalindromePortable('Hello, world!'));                 // false
+const isPalindromeFancy = (s: string) =>
+  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).join('') ===
+  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).reverse().join('');
+export { isPalindrome, isPalindromePortable };
