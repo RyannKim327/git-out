@@ -1,48 +1,36 @@
 /**
- * Return the maximum sum sub‑array (Kadane) along with its start & end indices.
- *
- * @param nums  Array of numbers – can contain positives, zeros and negatives.
- * @returns     Object with `maxSum`, `start`, `end` (inclusive).
+ * Performs an in‑place Shell sort on `arr`.
+ * The generic makes it usable for numbers, strings, or any comparable type.
  */
-export function maxSubarrayWithIndices(nums: number[]): {
-  maxSum: number;
-  start: number;
-  end: number;
-} {
-  if (nums.length === 0) throw new Error("Input array must contain at least one element");
+export function shellSort<T>(arr: T[], compare?: (a: T, b: T) => boolean) {
+  const len = arr.length;
+  // Default comparison: ascending numeric/string order
+  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any));
 
-  let bestSum = nums[0];
-  let currentSum = nums[0];
+  // Start with a gap (Hibbard’s sequence is simple and effective)
+  // gap = 1, 3, 7, 15, …  (2^k‑1)
+  let gap = 1;
+  while (gap < len) gap = 2 * gap + 1; // find largest Hibbard gap <= len
 
-  // These track the best indices we’ve seen
-  let bestStart = 0;
-  let bestEnd = 0;
-
-  // Temporary indices for the sub‑array we are currently extending
-  let tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    const num = nums[i];
-
-    // Decide whether to extend the current sub‑array or start fresh at i
-    if (currentSum + num < num) {
-      currentSum = num;
-      tempStart = i;
-    } else {
-      currentSum += num;
+  // Descend gaps until 1
+  while (gap >= 1) {
+    // Insertion sort on elements gap apart
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+      // shift earlier gap‑sorted elements that are greater
+      while (j >= gap && cmp(temp, arr[j - gap])) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
     }
-
-    // Update the best found so far
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
+    // Next gap
+    gap = Math.floor((gap - 1) / 2); // inverse of 2*gap + 1
   }
-
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-const arr = [4, -1, 2, 1, -5, 4];
-const result = maxSubarrayWithIndices(arr);
-console.log(result); // { maxSum: 6, start: 0, end: 3 }
-// Sub‑array: [4, -1, 2, 1] → sum 6
+const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
+shellSort(numbers);
+console.log(numbers); // [1, 2, 3, 8, 12, 23, 34, 54]
+const desc = (a: number, b: number) => a > b;
+shellSort(numbers, desc);
