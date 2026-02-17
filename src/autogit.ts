@@ -1,74 +1,48 @@
-/**
- * Median of two sorted arrays
- * A and B can be empty, but not both.
- */
-export function medianOfTwoSortedArrays(
-  a: number[],
-  b: number[]
-): number {
-  // Ensure a is the smaller array; this keeps the binary‑search bounds tight.
-  const [A, B] = a.length <= b.length ? [a, b] : [b, a];
-  const m = A.length;
-  const n = B.length;
-  const half = Math.floor((m + n + 1) / 2);
-
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2); // elements taken from A
-    const j = half - i;                     // elements taken from B
-
-    const Aleft  = i === 0     ? Number.NEGATIVE_INFINITY : A[i - 1];
-    const Aright = i === m     ? Number.POSITIVE_INFINITY : A[i];
-
-    const Bleft  = j === 0     ? Number.NEGATIVE_INFINITY : B[j - 1];
-    const Bright = j === n     ? Number.POSITIVE_INFINITY : B[j];
-
-    // i is perfect if left side ≤ right side
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // Odd total → max of left side
-      if ((m + n) % 2 === 1) {
-        return Math.max(Aleft, Bleft);
-      }
-
-      // Even total → average of two middle values
-      return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
-    } else if (Aleft > Bright) {
-      // i too big, shift left
-      high = i - 1;
-    } else {
-      // i too small, shift right
-      low = i + 1;
-    }
-  }
-
-  throw new Error('Input arrays are not sorted or invalid.');
+// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
+//      This shape is common in interview‑style code.
+interface TreeNode {
+  val: number;         // node’s payload
+  left?: TreeNode | null;   // left child (optional)
+  right?: TreeNode | null;  // right child (optional)
 }
-export function medianOfTwoSortedArraysSimple(
-  a: number[],
-  b: number[]
-): number {
-  const merged: number[] = [];
-  let i = 0, j = 0;
 
-  while (i < a.length || j < b.length) {
-    if (i >= a.length) {
-      merged.push(b[j++]);
-    } else if (j >= b.length) {
-      merged.push(a[i++]);
-    } else if (a[i] <= b[j]) {
-      merged.push(a[i++]);
-    } else {
-      merged.push(b[j++]);
-    }
-  }
-
-  const len = merged.length;
-  if (len % 2 === 1) return merged[Math.floor(len / 2)];
-  return (merged[len / 2 - 1] + merged[len / 2]) / 2;
+// 2️⃣  Recursive summation – easiest to read and to understand.
+//      Depth‑first, natural for a tree.
+function sumTreeRecursive(root: TreeNode | null): number {
+  if (!root) return 0;                      // base case: empty subtree is 0
+  const leftSum = sumTreeRecursive(root.left);
+  const rightSum = sumTreeRecursive(root.right);
+  return root.val + leftSum + rightSum;      // combine the results
 }
-const arr1 = [1, 3, 5, 9];
-const arr2 = [2, 4, 6, 8, 10];
 
-console.log(medianOfTwoSortedArrays(arr1, arr2)); // 5.5
+// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
+//      where recursion might hit the call‑stack limit.
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let total = 0;
+  const stack: TreeNode[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.val;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
+  }
+  return total;
+}
+
+// 4️⃣  Sample tree for quick sanity check
+//           5
+//          / \
+//         3   7
+//        / \   \
+//       2   4   8
+
+const sampleRoot: TreeNode = {
+  val: 5,
+  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
+  right: { val: 7, right: { val: 8 } },
+};
+
+console.log(sumTreeRecursive(sampleRoot)); // → 33
+console.log(sumTreeIterative(sampleRoot)); // → 33
