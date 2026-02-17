@@ -1,72 +1,32 @@
-function longestCommonPrefixVertical(strs: string[]): string {
-  if (!strs.length) return "";
+const nums = [1, 2, 3, 4, 5];
 
-  // The longest possible prefix is bounded by the first string’s length
-  const first = strs[0];
-
-  for (let i = 0; i < first.length; i++) {
-    const ch = first[i];
-    for (let j = 1; j < strs.length; j++) {
-      // If any string is shorter or the current char differs: stop
-      if (i >= strs[j].length || strs[j][i] !== ch) {
-        return first.slice(0, i);
-      }
-    }
-  }
-
-  // All strings matched the entire first string
-  return first;
+// Remove the number 3
+const idx = nums.indexOf(3);
+if (idx !== -1) {
+  nums.splice(idx, 1); // nums → [1, 2, 4, 5]
 }
-console.log(longestCommonPrefixVertical(["flower", "flow", "flight"])); // "fl"
-function lcpMerge(a: string, b: string): string {
-  let i = 0;
-  const limit = Math.min(a.length, b.length);
-  while (i < limit && a[i] === b[i]) i++;
-  return a.slice(0, i);
-}
+const chars = ['a', 'b', 'c', 'b', 'd'];
 
-function longestCommonPrefixDivide(strs: string[]): string {
-  if (!strs.length) return "";
+// Drop every 'b'
+const withoutB = chars.filter(ch => ch !== 'b');
+// withoutB → ['a', 'c', 'd']
+const original = [10, 20, 30, 40, 50];
 
-  const helper = (l: number, r: number): string => {
-    if (l === r) return strs[l];
-    const mid = Math.floor((l + r) / 2);
-    const left = helper(l, mid);
-    const right = helper(mid + 1, r);
-    return lcpMerge(left, right);
-  };
+const removed = [
+  ...original.slice(0, original.indexOf(30)),
+  ...original.slice(original.indexOf(30) + 1),
+];
 
-  return helper(0, strs.length - 1);
+// removed → [10, 20, 40, 50]
+/**
+ * Remove the first occurrence of `value` from `array`.
+ * Returns a new array; the original array is not mutated.
+ */
+function removeFirst<T>(array: readonly T[], value: T): T[] {
+  const idx = array.indexOf(value);
+  if (idx === -1) return [...array]; // nothing to remove
+  return [...array.slice(0, idx), ...array.slice(idx + 1)];
 }
-class TrieNode {
-  children = new Map<string, TrieNode>();
-  isEnd = false;
-}
-
-function buildTrie(strs: string[]): TrieNode {
-  const root = new TrieNode();
-  for (const s of strs) {
-    let node = root;
-    for (const ch of s) {
-      if (!node.children.has(ch)) node.children.set(ch, new TrieNode());
-      node = node.children.get(ch)!;
-    }
-    node.isEnd = true;
-  }
-  return root;
-}
-
-function longestCommonPrefixTrie(strs: string[]): string {
-  if (!strs.length) return "";
-  const root = buildTrie(strs);
-  let node = root;
-  let prefix = "";
-  while (node.children.size === 1 && !node.isEnd) {
-    const [ch, next] = node.children.entries().next().value;
-    prefix += ch;
-    node = next;
-  }
-  return prefix;
-}
-const data = ["algorithm", "algo", "algorithms", "all"]; 
-console.log(longestCommonPrefixVertical(data)); // "alg"
+const data = [2, 4, 6, 8];
+const updated = removeFirst(data, 6);
+// updated → [2, 4, 8]
