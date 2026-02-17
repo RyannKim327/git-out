@@ -1,69 +1,59 @@
-type NodeId = string | number;          // whatever you want to use for a node key
-interface Graph {
-  /** Map of node id → set of neighbour ids */
-  adjacencyList: Map<NodeId, Set<NodeId>>;
-}
-function createGraph(edges: [NodeId, NodeId][]): Graph {
-  const adjacencyList = new Map<NodeId, Set<NodeId>>();
+/**
+ * Fibonacci search for a sorted array of numbers.
+ * @param arr  - The sorted array (ascending).
+ * @param target - The value to locate.
+ * @returns The index of target in `arr`, or -1 if not found.
+ */
+function fibSearch(arr: number[], target: number): number {
+  const n = arr.length;
 
-  for (const [u, v] of edges) {
-    if (!adjacencyList.has(u)) adjacencyList.set(u, new Set());
-    if (!adjacencyList.has(v)) adjacencyList.set(v, new Set());
-    adjacencyList.get(u)!.add(v);
-    adjacencyList.get(v)!.add(u); // comment out for directed graph
+  /* ------- 1. Build a Fibonacci sequence long enough ---- */
+  // fibMm2 = fib(m‑2), fibMm1 = fib(m‑1), fibM   = fib(m)
+  let fibMm2 = 0; // (m-2)'th Fibonacci number
+  let fibMm1 = 1; // (m-1)'th Fibonacci number
+  let fibM   = fibMm2 + fibMm1; // m'th Fibonacci
+
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
   }
 
-  return { adjacencyList };
-}
-function dfsRecursive(
-  graph: Graph,
-  start: NodeId,
-  visited = new Set<NodeId>()
-): NodeId[] {
-  visited.add(start);
-  const result = [start];
+  /* ------- 2. Mark the boundary of the eliminated range ------- */
+  // The offset is the index of the last removed element
+  let offset = -1;
 
-  for (const neighbour of graph.adjacencyList.get(start) ?? []) {
-    if (!visited.has(neighbour)) {
-      result.push(...dfsRecursive(graph, neighbour, visited));
+  /* ------- 3. While there are elements to investigate ----------- */
+  while (fibM > 1) {
+    // Check if fibMm2 is a valid index
+    const i = Math.min(offset + fibMm2, n - 1);
+
+    if (arr[i] === target) {
+      return i; // Found!
+    }
+
+    /* ----- Move the three Fibonacci variables down one step ----- */
+    if (arr[i] < target) {
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else {
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
     }
   }
 
-  return result;
-}
-function dfsIterative(graph: Graph, start: NodeId): NodeId[] {
-  const visited = new Set<NodeId>();
-  const stack: NodeId[] = [start];
-  const result: NodeId[] = [];
-
-  while (stack.length) {
-    const node = stack.pop()!;           // safe: stack is non‑empty
-
-    if (visited.has(node)) continue;
-    visited.add(node);
-    result.push(node);
-
-    // Add neighbours in reverse order if you want a particular visit order
-    const neighbours = graph.adjacencyList.get(node) ?? new Set();
-    for (const neighbour of Array.from(neighbours).reverse()) {
-      if (!visited.has(neighbour)) stack.push(neighbour);
-    }
+  /* ------- 4. Compare the last element in the range --------------- */
+  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
   }
 
-  return result;
+  return -1; // Not found
 }
-const edges: [NodeId, NodeId][] = [
-  [1, 2],
-  [1, 3],
-  [2, 4],
-  [3, 4],
-  [4, 5],
-];
 
-const graph = createGraph(edges);
-
-console.log('Recursive DFS:', dfsRecursive(graph, 1));
-// → [1, 2, 4, 3, 5] (or another order depending on set iteration)
-
-console.log('Iterative DFS:', dfsIterative(graph, 1));
-// → same result, but robust on deep graphs
+/* ---- Quick demo ---- */
+const sorted = [3, 5, 8, 12, 19, 27, 34, 42, 56, 73, 91];
+console.log(fibSearch(sorted, 27)); // → 5
+console.log(fibSearch(sorted, 7));  // → -1
