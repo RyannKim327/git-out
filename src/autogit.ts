@@ -1,27 +1,42 @@
+// cron-demo.ts
+import { CronJob } from 'cron';
+import * as dotenv from 'dotenv';
+
+dotenv.config(); // optional – pulls cron expression from .env
+
 /**
- * Returns the second largest number in `arr`.
- * If the array has fewer than two distinct numbers, returns `undefined`.
+ * A simple scheduled task that
+ * • runs every minute (or whatever pattern you set)
+ * • prints a timestamp
+ * • gracefully handles potential errors
  */
-function secondLargest(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
+const job = new CronJob(
+  // Default cron date string: every minute of every hour of every day
+  process.env.CRON_EXPRESSION || '* * * * *',
+  () => {
+    const now = new Date().toISOString();
+    console.log(`[${now}] Tick – cron job fired!`);
+  },
+  // onComplete – fires when the job finishes its last scheduled run (not used here)
+  null,
+  // start immediately
+  true,
+  // timezone – string like 'America/New_York'
+  process.env.TZ || 'UTC',
+);
 
-  let first: number | null = null;
-  let second: number | null = null;
+job.on('error', (err) => {
+  console.error(`❌ Cron job encountered an error: ${err.message}`);
+});
 
-  for (const x of arr) {
-    if (first === null || x > first) {
-      // New maximum found – push the old maximum down to second
-      second = first;
-      first = x;
-    } else if (x !== first && (second === null || x > second)) {
-      // Candidate for second maximum
-      second = x;
-    }
-  }
+process.once('SIGINT', () => {
+  console.log('\n🛑 Shutting down cron job gracefully...');
+  job.stop();
+  process.exit(0);
+});
 
-  return second ?? undefined;
-}
-console.log(secondLargest([1, 3, 5, 7])); // 5
-console.log(secondLargest([10, 9]));      // 9
-console.log(secondLargest([4]));          // undefined
-console.log(secondLargest([2, 2, 2]));    // undefined
+console.log(`✅ Cron job started with pattern: ${job.cronTime.source}`);
+✅ Cron job started with pattern: * * * * *
+[2026-02-15T12:00:00.000Z] Tick – cron job fired!
+[2026-02-15T12:01:00.000Z] Tick – cron job fired!
+…
