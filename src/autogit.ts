@@ -1,21 +1,20 @@
-/**
- * Factorial using recursion.
- * Works for ordinary numbers up to 20 (safe integer range).
- * If you need bigger results, use BigInt and the overload below.
- */
-function factorial(n: number): number {
-  if (n < 0) throw new Error("Negative values are not allowed");
-  if (n <= 1) return 1;          // base case
-  return n * factorial(n - 1);   // recursive step
+function removeVowels(input: string): string {
+  // Vowels (both lower‑ and upper‑case) – feel free to add accented ones if you need
+  const vowels = /[aeiouAEIOU]/g;
+  return input.replace(vowels, '');
 }
+function removeVowels(input: string): string {
+  const result: string[] = [];
 
-/**
- * A BigInt version for arbitrary‑size factorials.
- */
-function factorialBigInt(n: bigint): bigint {
-  if (n < 0n) throw new Error("Negative values are not allowed");
-  if (n <= 1n) return 1n;
-  return n * factorialBigInt(n - 1n);
+  for (const char of input) {
+    if (!/[aeiouAEIOU]/.test(char)) {
+      result.push(char);
+    }
+  }
+
+  return result.join('');
 }
-console.log(factorial(5));          // 120
-console.log(factorialBigInt(25n));  // 15511210043330985984000000n
+const vowels = /[aeiouAEIOUÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝŸàáâãäåæçèéêëìíîïðñòóôõöøùúûüýÿ]/gu;
+const vowels = /\p{Script=Latin}\p{L}\b{vowel}/u; // not a real pattern – just an example
+const demo = "Hello World! 123";
+console.log(removeVowels(demo)); // "Hll Wrld! 123"
