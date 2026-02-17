@@ -1,29 +1,21 @@
 /**
- * Reverses the order of words in a string.
- *
- * Words are split on whitespace.  Consecutive whitespace is collapsed,
- * but you can tweak the regex if you need to keep it intact.
- *
- * @param txt – The string to reverse
- * @returns The string with words in reverse order
+ * Factorial using recursion.
+ * Works for ordinary numbers up to 20 (safe integer range).
+ * If you need bigger results, use BigInt and the overload below.
  */
-function reverseWordOrder(txt: string): string {
-  return txt
-    .trim()                      // Strip leading/trailing gaps
-    .split(/\s+/)                // Break on any run of whitespace
-    .reverse()                   // Flip the array
-    .join(' ');                  // Stitch back together
+function factorial(n: number): number {
+  if (n < 0) throw new Error("Negative values are not allowed");
+  if (n <= 1) return 1;          // base case
+  return n * factorial(n - 1);   // recursive step
 }
 
-// Example usage
-const original = "Hello world, this is TypeScript.";
-const reversed = reverseWordOrder(original);
-console.log(reversed);  // "TypeScript. is this world, Hello"
-function reverseWordOrder(txt: string) {
-  const words = txt.trim().match(/\w+|\s+/g) ?? [];
-  const textOnly = words.filter(Boolean).join(' ');
-  const reversed = textOnly.split(/\s+/).reverse().join(' ');
-  // re‑insert spaces that were originally present
-  // (not shown here for brevity)
-  return reversed;
+/**
+ * A BigInt version for arbitrary‑size factorials.
+ */
+function factorialBigInt(n: bigint): bigint {
+  if (n < 0n) throw new Error("Negative values are not allowed");
+  if (n <= 1n) return 1n;
+  return n * factorialBigInt(n - 1n);
 }
+console.log(factorial(5));          // 120
+console.log(factorialBigInt(25n));  // 15511210043330985984000000n
