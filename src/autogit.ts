@@ -1,66 +1,72 @@
-class ListNode {
-  val: number;
-  next: ListNode | null;
+/**
+ * Returns the k-th smallest element of an array.
+ *
+ * @param arr   Array of numbers (or any comparable type).
+ * @param k     1‑based index of the element to find.
+ * @returns     The k‑th smallest value.
+ *
+ * @throws      If k is out of bounds.
+ */
+export function kthSmallest<T>(arr: T[], k: number): T {
+  if (k < 1 || k > arr.length) {
+    throw new Error(`k=${k} is not in the valid range 1..${arr.length}`);
+  }
 
-  constructor(val: number, next: ListNode | null = null) {
-    this.val = val;
-    this.next = next;
+  // Work on a copy so the original array stays untouched.
+  const a = arr.slice();
+  let left = 0;
+  let right = a.length - 1;
+
+  while (true) {
+    // Pick a pivot – here we just pick the middle element.
+    const pivotIndex = left + Math.floor((right - left) / 2);
+    const pivot = a[pivotIndex];
+
+    // Partition step: elements < pivot go left, >= pivot go right.
+    const pivotNewIndex = partition(a, left, right, pivot);
+
+    if (pivotNewIndex === k - 1) {      // Found the k‑th smallest
+      return a[pivotNewIndex];
+    } else if (pivotNewIndex > k - 1) {  // Look in the left partition
+      right = pivotNewIndex - 1;
+    } else {                            // Look in the right partition
+      left = pivotNewIndex + 1;
+    }
   }
 }
 
 /**
- * Returns true if the list contains a cycle, false otherwise.
+ * Standard Lomuto partition scheme.
+ *
+ * @param a array to partition
+ * @param lo left boundary
+ * @param hi right boundary
+ * @param pivotValue value the array should be partitioned around
+ * @returns new index of the pivot after partition
  */
-function hasCycle(head: ListNode | null): boolean {
-  let slow = head;
-  let fast = head;
+function partition<T>(a: T[], lo: number, hi: number, pivotValue: T): number {
+  // Move pivot to the end for convenience.
+  let pivotIndex = lo + (Math.random() * (hi - lo + 1)) | 0; // random pivot for stability
+  [a[pivotIndex], a[hi]] = [a[hi], a[pivotIndex]];
 
-  while (fast && fast.next) {
-    slow = slow.next;             // move one step
-    fast = fast.next.next;        // move two steps
+  const pivot = a[hi];
+  let storeIndex = lo;                         // index of the first element >= pivot
 
-    if (slow === fast) {          // pointers meet → cycle
-      return true;
+  for (let i = lo; i < hi; i++) {
+    if (a[i] < pivot) {
+      [a[i], a[storeIndex]] = [a[storeIndex], a[i]];
+      storeIndex++;
     }
   }
 
-  // fast reached the end → no cycle
-  return false;
+  // place pivot after the last smaller element
+  [a[storeIndex], a[hi]] = [a[hi], a[storeIndex]];
+  return storeIndex;
 }
-/**
- * Returns true if the list contains a cycle, false otherwise.
- * Uses a Set to remember nodes we've seen.
- */
-function hasCycleWithSet(head: ListNode | null): boolean {
-  const visited = new Set<ListNode>();
-
-  let current = head;
-  while (current) {
-    if (visited.has(current)) {
-      return true;               // seen it before → cycle
-    }
-    visited.add(current);
-    current = current.next;
-  }
-
-  return false;                  // reached the end
+export function kthSmallestSort<T>(arr: T[], k: number): T {
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
+  return [...arr].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))[k - 1];
 }
-// 1 ➜ 2 ➜ 3 ➜ 4 ➜ null   (no cycle)
-const a = new ListNode(1);
-a.next = new ListNode(2, new ListNode(3, new ListNode(4)));
-
-console.log(hasCycle(a));          // false
-console.log(hasCycleWithSet(a));   // false
-
-// 1 ➜ 2 ➜ 3 ➜ 4 ➜ 2 ...   (cycle back to node 2)
-const b = new ListNode(1);
-const node2 = new ListNode(2);
-const node3 = new ListNode(3);
-const node4 = new ListNode(4);
-b.next = node2;
-node2.next = node3;
-node3.next = node4;
-node4.next = node2;                // close the loop
-
-console.log(hasCycle(b));          // true
-console.log(hasCycleWithSet(b));   // true
+const nums = [7, 11, 5, 3, 9, 2];
+console.log(kthSmallest(nums, 3)); // 5
+console.log(kthSmallestSort(nums, 3)); // 5
