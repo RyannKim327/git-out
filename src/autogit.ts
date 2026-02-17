@@ -1,42 +1,81 @@
-// cron-demo.ts
-import { CronJob } from 'cron';
-import * as dotenv from 'dotenv';
+class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
+}
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
 
-dotenv.config(); // optional – pulls cron expression from .env
+  get size() { return this._size; }
+}
+append(value: T): void {
+  const newNode = new ListNode(value);
 
-/**
- * A simple scheduled task that
- * • runs every minute (or whatever pattern you set)
- * • prints a timestamp
- * • gracefully handles potential errors
- */
-const job = new CronJob(
-  // Default cron date string: every minute of every hour of every day
-  process.env.CRON_EXPRESSION || '* * * * *',
-  () => {
-    const now = new Date().toISOString();
-    console.log(`[${now}] Tick – cron job fired!`);
-  },
-  // onComplete – fires when the job finishes its last scheduled run (not used here)
-  null,
-  // start immediately
-  true,
-  // timezone – string like 'America/New_York'
-  process.env.TZ || 'UTC',
-);
+  if (!this.head) {          // empty list
+    this.head = this.tail = newNode;
+  } else {
+    if (this.tail) this.tail.next = newNode;
+    this.tail = newNode;
+  }
 
-job.on('error', (err) => {
-  console.error(`❌ Cron job encountered an error: ${err.message}`);
-});
+  this._size++;
+}
+prepend(value: T): void {
+  const newNode = new ListNode(value, this.head);
+  this.head = newNode;
 
-process.once('SIGINT', () => {
-  console.log('\n🛑 Shutting down cron job gracefully...');
-  job.stop();
-  process.exit(0);
-});
+  if (!this.tail) this.tail = newNode;
+  this._size++;
+}
+remove(index: number): T | null {
+  if (index < 0 || index >= this._size) return null;
 
-console.log(`✅ Cron job started with pattern: ${job.cronTime.source}`);
-✅ Cron job started with pattern: * * * * *
-[2026-02-15T12:00:00.000Z] Tick – cron job fired!
-[2026-02-15T12:01:00.000Z] Tick – cron job fired!
-…
+  let current = this.head;
+  let prev: ListNode<T> | null = null;
+  let i = 0;
+
+  while (current && i < index) {
+    prev = current;
+    current = current.next;
+    i++;
+  }
+
+  if (!current) return null;
+
+  if (prev) prev.next = current.next;
+  else this.head = current.next;      // removed head
+
+  if (current === this.tail) this.tail = prev;
+  this._size--;
+  return current.value;
+}
+find(value: T): number {
+  let current = this.head;
+  let index = 0;
+
+  while (current) {
+    if (current.value === value) return index;
+    current = current.next;
+    index++;
+  }
+  return -1;  // not found
+}
+toArray(): T[] {
+  const result: T[] = [];
+  let current = this.head;
+  while (current) {
+    result.push(current.value);
+    current = current.next;
+  }
+  return result;
+}
+const list = new LinkedList<number>();
+
+list.append(10);
+list.append(20);
+list.prepend(5);
+
+console.log(list.toArray());     // [5, 10, 20]
+console.log(list.find(10));      // 1
+console.log(list.remove(0));     // 5
+console.log(list.toArray());     // [10, 20]
