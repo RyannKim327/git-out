@@ -1,27 +1,10 @@
-function isPalindrome(str: string): boolean {
-  const sanitized = str.toLowerCase();              // ignore case
-  const reversed  = sanitized.split('').reverse().join('');
-  return sanitized === reversed;
-}
-console.log(isPalindrome('RaceCar'));      // true
-console.log(isPalindrome('hello'));        // false
-function isPalindromePortable(str: string): boolean {
-  const cleaned = str.replace(/[^a-z0-9]/gi, '').toLowerCase();
-  const left = 0;
-  const right = cleaned.length - 1;
+// 1️⃣ Mutating the original array
+const numbers = [1, 2, 3, 4, 5];
+numbers.reverse();          // numbers === [5, 4, 3, 2, 1]
 
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) return false;
-    left++;
-    right--;
-  }
-
-  return true;
+// 2️⃣ Producing a new array (original stays untouched)
+const letters = ['a', 'b', 'c'];
+const reversed = [...letters].reverse(); // reversed === ['c', 'b', 'a']
+function reverseArray<T>(arr: T[]): T[] {
+    return [...arr].reverse();   // or: return arr.slice().reverse();
 }
-console.log(isPalindromePortable('A man, a plan, a canal: Panama')); // true
-console.log(isPalindromePortable('No lemon, no melon'));            // true
-console.log(isPalindromePortable('Hello, world!'));                 // false
-const isPalindromeFancy = (s: string) =>
-  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).join('') ===
-  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).reverse().join('');
-export { isPalindrome, isPalindromePortable };
