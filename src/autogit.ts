@@ -1,48 +1,93 @@
-/**
- * Random‑pivot quicksort for an array of numbers.
- *
- * @param arr – the array to sort (it will be sorted in place)
- * @returns the sorted array (same reference as the input)
- */
-function randomQuickSort(arr: number[]): number[] {
-  // Internal helper that works on a sub‑range [left, right]
-  function sort(left: number, right: number) {
-    if (left >= right) return;           // 0 or 1 element – nothing to do
+// 1️⃣  Generic node type
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null = null;
+  right: TreeNode<T> | null = null;
 
-    // Pick a random pivot index between left and right (inclusive)
-    const pivotIndex = Math.floor(Math.random() * (right - left + 1)) + left;
-    const pivotValue = arr[pivotIndex];
-
-    // Move the pivot to the rightmost position for the partition step
-    [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
-
-    // Standard Lomuto partition
-    let storeIndex = left;
-    for (let i = left; i < right; i++) {
-      if (arr[i] < pivotValue) {
-        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
-        storeIndex++;
-      }
-    }
-
-    // Put the pivot back in its final place
-    [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
-
-    // Recurse on the two partitions
-    sort(left, storeIndex - 1);
-    sort(storeIndex + 1, right);
+  constructor(value: T) {
+    this.value = value;
   }
-
-  sort(0, arr.length - 1);
-  return arr;
 }
 
-/*--------------------------------------------
-  Example usage
---------------------------------------------*/
+// 2️⃣  BinaryTree class
+class BinaryTree<T> {
+  root: TreeNode<T> | null = null;
 
-const data = [34, 7, 23, 32, 5, 62];
-console.log('Unsorted:', data);
+  // Insert a value – keeps the tree *ordered* (BST rule)
+  insert(value: T, comparator: (a: T, b: T) => number) {
+    const newNode = new TreeNode(value);
 
-const sorted = randomQuickSort([...data]); // copy to avoid mutating the original
-console.log('Sorted  :', sorted);
+    if (!this.root) {
+      this.root = newNode;
+      return;
+    }
+
+    let current: TreeNode<T> | null = this.root;
+    while (current) {
+      const comp = comparator(value, current.value);
+      if (comp < 0) {
+        if (!current.left) {
+          current.left = newNode;
+          return;
+        }
+        current = current.left;
+      } else if (comp > 0) {
+        if (!current.right) {
+          current.right = newNode;
+          return;
+        }
+        current = current.right;
+      } else {
+        // Duplicate – decide what to do; here we just replace
+        current.value = value;
+        return;
+      }
+    }
+  }
+
+  // Find a node with a particular value
+  find(value: T, comparator: (a: T, b: T) => number): TreeNode<T> | null {
+    let current = this.root;
+    while (current) {
+      const comp = comparator(value, current.value);
+      if (comp === 0) return current;
+      current = comp < 0 ? current.left : current.right;
+    }
+    return null;
+  }
+
+  // In‑order traversal (left, root, right)
+  inOrder(callback: (node: TreeNode<T>) => void) {
+    const visit = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      visit(node.left);
+      callback(node);
+      visit(node.right);
+    };
+    visit(this.root);
+  }
+
+  // Pre‑ and post‑order are left to you if needed
+}
+const cmpNum = (a: number, b: number) => a - b;
+const cmpStr = (a: string, b: string) => a.localeCompare(b);
+const tree = new BinaryTree<number>();
+
+tree.insert(42, cmpNum);
+tree.insert(23, cmpNum);
+tree.insert(87, cmpNum);
+tree.insert(13, cmpNum);
+tree.insert(31, cmpNum);
+
+console.log("In‑order traversal:");
+tree.inOrder(node => console.log(node.value));
+
+const found = tree.find(31, cmpNum);
+console.log(found ? `Found ${found.value}` : "Not found");
+In-order traversal:
+13
+23
+31
+42
+87
+Found 31
