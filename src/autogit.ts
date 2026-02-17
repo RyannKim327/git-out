@@ -1,40 +1,83 @@
-const decimal = 42;          // any number you want to convert
-const binary = decimal.toString(2);  // '101010'
-console.log(binary);        // → 101010
+// fetch-example.ts
 /**
- * Convert a non‑negative decimal number to binary.
+ * A small utility that fetches JSON from a public API
+ * and logs a nicely formatted result.
+ *
+ * It demonstrates:
+ *   • TypeScript generics for response typing
+ *   • Async/await syntax
+ *   • Basic error handling
+ *   • Runtime type guard for JSON validation
  */
-function decimalToBinary(n: number): string {
-  if (n === 0) return '0';
-  let result: string = '';
-  let num = n;
 
-  while (num > 0) {
-    // `num % 2` is the remainder (0 or 1)
-    const bit = (num % 2).toString();
-    result = bit + result;          // prepend the bit
-    num = Math.floor(num / 2);       // shift right
-  }
+type PlainObject = Record<string, unknown>;
 
-  return result;
+// A small runtime check to ensure the response is
+// an object (the common case when fetching JSON).
+function isObject(value: unknown): value is PlainObject {
+  return typeof value === 'object' && value !== null;
 }
 
-// Demo
-console.log(decimalToBinary(42));   // → 101010
-console.log(decimalToBinary(0));    // → 0
-console.log(decimalToBinary(255));  // → 11111111
-function bigIntDecimalToBinary(n: bigint): string {
-  if (n === 0n) return '0';
-  let result = '';
-  let num = n;
-  while (num > 0n) {
-    result = (num & 1n).toString() + result; // `& 1n` is a fast bitwise test
-    num >>= 1n;   // shift right
-  }
-  return result;
-}
-// 16 decimal → 10000 binary
-console.assert(decimalToBinary(16) === '10000');
+/**
+ * Generic fetch function that returns data of type T.
+ * @param url          The URL to fetch from
+ * @param init         Optional RequestInit parameters
+ */
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, init);
 
-// 255 decimal → 11111111 binary
-console.assert(decimalToBinary(255) === '11111111');
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+
+  // Very light runtime validation – just make sure we got an object
+  if (!isObject(data)) {
+    throw new Error('Response is not a JSON object');
+  }
+
+  return data as T; // confidence that T matches the real shape
+}
+
+/**
+ * Example usage: fetch a user from the JSONPlaceholder API.
+ * The API returns a shape that we can describe as a type.
+ */
+interface JsonPlaceholderUser {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  address: {
+    street: string;
+    suite: string;
+    city: string;
+    zipcode: string;
+    geo: { lat: string; lng: string };
+  };
+  phone: string;
+  website: string;
+  company: {
+    name: string;
+    catchPhrase: string;
+    bs: string;
+  };
+}
+
+async function main() {
+  const userId = 1;
+  const url = `https://jsonplaceholder.typicode.com/users/${userId}`;
+
+  try {
+    const user = await fetchJson<JsonPlaceholderUser>(url);
+    console.log(`Name: ${user.name}`);
+    console.log(`Company: ${user.company.name}`);
+    console.log(`Address: ${user.address.street}, ${user.address.city}`);
+  } catch (err) {
+    console.error('Something went wrong:', err);
+  }
+}
+
+// Kick it off
+main();
