@@ -1,48 +1,27 @@
-/**
- * Return the maximum sum sub‑array (Kadane) along with its start & end indices.
- *
- * @param nums  Array of numbers – can contain positives, zeros and negatives.
- * @returns     Object with `maxSum`, `start`, `end` (inclusive).
- */
-export function maxSubarrayWithIndices(nums: number[]): {
-  maxSum: number;
-  start: number;
-  end: number;
-} {
-  if (nums.length === 0) throw new Error("Input array must contain at least one element");
+function isPalindrome(str: string): boolean {
+  const sanitized = str.toLowerCase();              // ignore case
+  const reversed  = sanitized.split('').reverse().join('');
+  return sanitized === reversed;
+}
+console.log(isPalindrome('RaceCar'));      // true
+console.log(isPalindrome('hello'));        // false
+function isPalindromePortable(str: string): boolean {
+  const cleaned = str.replace(/[^a-z0-9]/gi, '').toLowerCase();
+  const left = 0;
+  const right = cleaned.length - 1;
 
-  let bestSum = nums[0];
-  let currentSum = nums[0];
-
-  // These track the best indices we’ve seen
-  let bestStart = 0;
-  let bestEnd = 0;
-
-  // Temporary indices for the sub‑array we are currently extending
-  let tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    const num = nums[i];
-
-    // Decide whether to extend the current sub‑array or start fresh at i
-    if (currentSum + num < num) {
-      currentSum = num;
-      tempStart = i;
-    } else {
-      currentSum += num;
-    }
-
-    // Update the best found so far
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) return false;
+    left++;
+    right--;
   }
 
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+  return true;
 }
-const arr = [4, -1, 2, 1, -5, 4];
-const result = maxSubarrayWithIndices(arr);
-console.log(result); // { maxSum: 6, start: 0, end: 3 }
-// Sub‑array: [4, -1, 2, 1] → sum 6
+console.log(isPalindromePortable('A man, a plan, a canal: Panama')); // true
+console.log(isPalindromePortable('No lemon, no melon'));            // true
+console.log(isPalindromePortable('Hello, world!'));                 // false
+const isPalindromeFancy = (s: string) =>
+  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).join('') ===
+  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).reverse().join('');
+export { isPalindrome, isPalindromePortable };
