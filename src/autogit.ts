@@ -1,93 +1,43 @@
-// 1️⃣  Generic node type
-class TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
+/**
+ * Returns the longest common *contiguous* substring of `a` and `b`.
+ *
+ * If there are multiple substrings with the same maximum length, the first
+ * one that appears in `a` is returned.
+ *
+ * Time:  O(a.length * b.length)
+ * Space: O(a.length * b.length)   (you can trim this to O(a.length) if you’re
+ *                                   hunting for a memory‑tight version)
+ */
+export function longestCommonSubstring(a: string, b: string): string {
+  const aLen = a.length;
+  const bLen = b.length;
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
+  // A 2‑D array where dp[i][j] holds the length of the longest suffix that
+  // ends at a[i-1] and b[j-1].  We use 1‑based indexing to keep the math
+  // simple: dp[0][*] and dp[*][0] are zero by construction.
+  const dp: number[][] = Array.from({ length: aLen + 1 }, () =>
+    new Array(bLen + 1).fill(0)
+  );
 
-// 2️⃣  BinaryTree class
-class BinaryTree<T> {
-  root: TreeNode<T> | null = null;
+  let bestLen = 0;
+  let bestI = 0; // end index in `a`
 
-  // Insert a value – keeps the tree *ordered* (BST rule)
-  insert(value: T, comparator: (a: T, b: T) => number) {
-    const newNode = new TreeNode(value);
-
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
-
-    let current: TreeNode<T> | null = this.root;
-    while (current) {
-      const comp = comparator(value, current.value);
-      if (comp < 0) {
-        if (!current.left) {
-          current.left = newNode;
-          return;
+  for (let i = 1; i <= aLen; i++) {
+    for (let j = 1; j <= bLen; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > bestLen) {
+          bestLen = dp[i][j];
+          bestI = i; // slice stops at `i` (exclusive)
         }
-        current = current.left;
-      } else if (comp > 0) {
-        if (!current.right) {
-          current.right = newNode;
-          return;
-        }
-        current = current.right;
       } else {
-        // Duplicate – decide what to do; here we just replace
-        current.value = value;
-        return;
+        dp[i][j] = 0;
       }
     }
   }
 
-  // Find a node with a particular value
-  find(value: T, comparator: (a: T, b: T) => number): TreeNode<T> | null {
-    let current = this.root;
-    while (current) {
-      const comp = comparator(value, current.value);
-      if (comp === 0) return current;
-      current = comp < 0 ? current.left : current.right;
-    }
-    return null;
-  }
-
-  // In‑order traversal (left, root, right)
-  inOrder(callback: (node: TreeNode<T>) => void) {
-    const visit = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      visit(node.left);
-      callback(node);
-      visit(node.right);
-    };
-    visit(this.root);
-  }
-
-  // Pre‑ and post‑order are left to you if needed
+  return bestLen > 0 ? a.slice(bestI - bestLen, bestI) : '';
 }
-const cmpNum = (a: number, b: number) => a - b;
-const cmpStr = (a: string, b: string) => a.localeCompare(b);
-const tree = new BinaryTree<number>();
-
-tree.insert(42, cmpNum);
-tree.insert(23, cmpNum);
-tree.insert(87, cmpNum);
-tree.insert(13, cmpNum);
-tree.insert(31, cmpNum);
-
-console.log("In‑order traversal:");
-tree.inOrder(node => console.log(node.value));
-
-const found = tree.find(31, cmpNum);
-console.log(found ? `Found ${found.value}` : "Not found");
-In-order traversal:
-13
-23
-31
-42
-87
-Found 31
+console.log(longestCommonSubstring('BANANA', 'ANANAB')); // "ANANA"
+console.log(longestCommonSubstring('hello', 'world'));   // ""
+console.log(longestCommonSubstring('', 'something'));    // ""
