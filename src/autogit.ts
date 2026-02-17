@@ -1,54 +1,143 @@
-/**
- * Build the bad‑character shift table for the pattern.
- * The table maps a character code to the distance we can safely skip
- * when that character is found in the text.
- */
-function buildShiftTable(pattern: string): Int32Array {
-  const m = pattern.length;
-  const shift = new Int32Array(256);       // ASCII table size
-  shift.fill(m);                          // default shift = pattern length
-
-  // Populate the table for every character except the last one.
-  // The last character is handled by the searches’ failure condition.
-  for (let i = 0; i < m - 1; i++) {
-    shift[pattern.charCodeAt(i)] = m - 1 - i;
-  }
-  return shift;
+// 1️⃣  Bucket element (used for chaining)
+interface BucketItem<K, V> {
+  key: K;
+  value: V;
+  next?: BucketItem<K, V>;
 }
 
-/**
- * Boyer‑Moore‑Horspool string search.
- * @param text The string to search in.
- * @param pattern The string to find.
- * @returns The index of the first occurrence, or -1 if not found.
- */
-export function boyerMooreHorspool(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
+// 2️⃣  Hash table implementation
+class HashTable<K extends string | number, V> {
+  // Choose a prime number for better distribution
+  private readonly bucketCount = 53;
+  private readonly buckets: Array<BucketItem<K, V> | undefined> = [];
 
-  if (m === 0) return 0;          // empty pattern matches at start
-  if (m > n) return -1;           // longer pattern than text → impossible
-
-  const shift = buildShiftTable(pattern);
-
-  let i = m - 1;                  // index in text aligned with last pattern char
-  while (i < n) {
-    let j = 0;                    // offset from last pattern char
-    while (j < m && pattern[m - 1 - j] === text[i - j]) {
-      j++;
-    }
-
-    if (j === m) {                // all characters matched
-      return i - m + 1;           // return starting index
-    }
-
-    // Shift by the value in the table for the mismatching text character
-    const nextChar = text.charCodeAt(i);
-    i += Math.max(shift[nextChar], 1);   // never shift by 0
+  constructor() {
+    // Initialize buckets array
+    this.buckets.length = this.bucketCount;
   }
-  return -1;                      // not found
-}
-const txt = "abcxabcdabxabcdabcdabcy";
-const pat = "abcdabcy";
 
-console.log(boyerMooreHorspool(txt, pat));  // → 15
+  /* ---------- 🔑 Helper: hash function ---------- */
+  // Works for string & number keys; you can add more types if wanted.
+  private hash(key: K): number {
+    const str = key.toString();
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash * 31 + str.charCodeAt(i)) >>> 0; // unsigned 32‑bit arithmetic
+    }
+    return hash % this.bucketCount;
+  }
+
+  /* ---------- 🔧 Operations ---------- */
+
+  set(key: K, value: V): void {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+
+    // If the bucket is empty, insert directly
+    if (!node) {
+      this.buckets[idx] = { key, value };
+      return;
+    }
+
+    // Otherwise iterate to find key or append at end
+    let prev: BucketItem<K, V> | undefined;
+    while (node) {
+      if (node.key === key) {
+        node.value = value; // overwrite
+        return;
+      }
+      prev = node;
+      node = node.next;
+    }
+
+    prev!.next = { key, value }; // add new node at end
+  }
+
+  get(key: K): V | undefined {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+
+    while (node) {
+      if (node.key === key) return node.value;
+      node = node.next;
+    }
+
+    return undefined; // not found
+  }
+
+  delete(key: K): boolean {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+    let prev: BucketItem<K, V> | undefined;
+
+    while (node) {
+      if (node.key === key) {
+        if (!prev) {
+          // first node in bucket
+          this.buckets[idx] = node.next;
+        } else {
+          prev.next = node.next;
+        }
+        return true;
+      }
+      prev = node;
+      node = node.next;
+    }
+
+    return false; // key absent
+  }
+
+  keys(): K[] {
+    const res: K[] = [];
+    for (const bucket of this.buckets) {
+      let node = bucket;
+      while (node) {
+        res.push(node.key);
+        node = node.next;
+      }
+    }
+    return res;
+  }
+
+  values(): V[] {
+    const res: V[] = [];
+    for (const bucket of this.buckets) {
+      let node = bucket;
+      while (node) {
+        res.push(node.value);
+        node = node.next;
+      }
+    }
+    return res;
+  }
+
+  // Optional: iteration in for…of style
+  *entries(): Generator<[K, V]> {
+    for (const bucket of this.buckets) {
+      let node = bucket;
+      while (node) {
+        yield [node.key, node.value];
+        node = node.next;
+      }
+    }
+  }
+}
+
+// ---------- Demo ----------
+const ht = new HashTable<string, number>();
+
+ht.set('apple', 3);
+ht.set('banana', 7);
+ht.set('orange', 5);
+ht.set('apple', 10); // overwrite
+
+console.log(ht.get('apple')); // 10
+console.log(ht.get('banana')); // 7
+console.log(ht.get('missing')); // undefined
+
+ht.delete('orange');
+console.log(ht.keys()); // ['apple', 'banana']
+
+for (const [k, v] of ht.entries()) {
+  console.log(`key=${k}, value=${v}`);
+}
