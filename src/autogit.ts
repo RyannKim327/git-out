@@ -1,91 +1,72 @@
-// --------------------------------------------------------
-// Random TypeScript demo:  GET data from a public API
-// --------------------------------------------------------
+// Generic, in‑place quicksort
+export function quickSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number,
+  low = 0,
+  high = arr.length - 1,
+): T[] {
+  // Default comparator: numeric/string natural order
+  const cmp = compareFn ?? ((a: T, b: T) =>
+    a < b ? -1 : a > b ? 1 : 0,
+  );
 
-// Install the needed deps if you run this in a Node project:
-//   npm install --save node-fetch @types/node-fetch
-//
-// If you use this in a browser project, the browser's fetch is already available.
+  // Helper: partition using Hoare's scheme
+  const partition = (l: number, h: number): number => {
+    const pivot = arr[Math.floor((l + h) / 2)];
+    let i = l - 1;
+    let j = h + 1;
+    while (true) {
+      do { i++; } while (cmp(arr[i], pivot) < 0);
+      do { j--; } while (cmp(arr[j], pivot) > 0);
+      if (i >= j) return j;
+      [arr[i], arr[j]] = [arr[j], arr[i]]; // swap
+    }
+  };
 
-// Import the fetch shim for Node (uncomment if you run under Node)
-// import fetch from 'node-fetch';
-
-// A tiny helper to pause (useful for demo pacing)
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// -------------------------------------------------------------------
-// 1️⃣  Define the shape of the data we expect from the API
-// -------------------------------------------------------------------
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
+  if (low < high) {
+    const p = partition(low, high);
+    quickSort(arr, compareFn, low, p);
+    quickSort(arr, compareFn, p + 1, high);
+  }
+  return arr; // for convenience – returns the same array reference
 }
+export function quickSortImmutable<T>(
+  arr: readonly T[],
+  compareFn?: (a: T, b: T) => number,
+): T[] {
+  if (arr.length <= 1) return [...arr];
 
-// -------------------------------------------------------------------
-// 2️⃣  A generic GET helper that returns typed JSON
-// -------------------------------------------------------------------
-async function get<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    // We simply throw an error for this demo
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-  const data: T = await response.json();
-  return data;
+  const compare = compareFn ?? ((a: T, b: T) =>
+    a < b ? -1 : a > b ? 1 : 0,
+  );
+
+  const pivot = arr[Math.floor(arr.length / 2)];
+  const lows = arr.filter((x) => compare(x, pivot) < 0);
+  const highs = arr.filter((x) => compare(x, pivot) > 0);
+  const pivots = arr.filter((x) => compare(x, pivot) === 0);
+
+  return [
+    ...quickSortImmutable(lows, compareFn),
+    ...pivots,
+    ...quickSortImmutable(highs, compareFn),
+  ];
 }
+const nums = [34, 7, 23, 32, 5, 62];
+quickSort(nums);               // mutates `nums`
+console.log(nums);             // [5, 7, 23, 32, 34, 62]
 
-// -------------------------------------------------------------------
-// 3️⃣  Main demo logic
-// -------------------------------------------------------------------
-async function main() {
-  const apiEndpoint = 'https://jsonplaceholder.typicode.com/posts/1';
+let strs = ["banana", "apple", "cherry"];
+quickSort(strs, (a, b) => a.localeCompare(b));
+console.log(strs);             // ["apple", "banana", "cherry"]
 
-  console.log('Fetching demo post...');
-  try {
-    const post = await get<Post>(apiEndpoint);
-    console.log('✅ Post fetched:');
-    console.log(`  • ID: ${post.id}`);
-    console.log(`  • Title: ${post.title}`);
-    console.log(`  • Body snippet: "${post.body.slice(0, 60)}..."`);
-  } catch (err) {
-    console.error('⚠️  Error while fetching:', err);
-  }
-
-  // -------------------------------------------------------------------
-  // 4️⃣  Throw in a second request: list of all posts
-  // -------------------------------------------------------------------
-  console.log('\nFetching all posts (just the first 5 for brevity)...');
-  try {
-    const allPosts = await get<Post[]>('https://jsonplaceholder.typicode.com/posts');
-    console.table(allPosts.slice(0, 5));
-  } catch (err) {
-    console.error('⚠️  Error while fetching:', err);
-  }
-
-  // ---------------------------------------------------------------
-  // 5️⃣  Optional: POST a new resource (mocked, won't persist)
-  // ---------------------------------------------------------------
-  console.log('\nAttempting to POST a new post...');
-  try {
-    const newPostResponse = await fetch('https://jsonplaceholder.typicode.com/posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: 'Hello World',
-        body: 'This post was created by the demo.',
-        userId: 42
-      })
-    });
-    const created: Post = await newPostResponse.json();
-    console.log('✅ Created post (mocked):', created);
-  } catch (err) {
-    console.error('⚠️  Error while posting:', err);
-  }
-
-  // Small pause before exit (only matters if running in Node)
-  await delay(500);
-}
-
-main();
+let objs = [
+  { id: 3, name: "c" },
+  { id: 1, name: "a" },
+  { id: 2, name: "b" },
+];
+quickSort(
+  objs,
+  (a, b) => a.id - b.id,
+);
+console.log(objs);
+// [{ id: 1, name: "a" }, { id: 2, name: "b" }, { id: 3, name: "c" }]
