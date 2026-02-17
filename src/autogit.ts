@@ -1,52 +1,105 @@
+// A minimal node type
+export interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
+}
 /**
- * Compare two numbers (or any types that support `<` and `>`).
- * Returns positive if a > b, negative if a < b, zero otherwise.
+ * Returns the first common reference node of two singly linked lists,
+ * or null if they do not intersect.
  */
-const compare = <T>(a: T, b: T): number => {
-  if (a > b) return 1;
-  if (a < b) return -1;
-  return 0;
-};
+export function getIntersectionNode<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  // Edge‑case: if either list is empty, there can’t be an intersection
+  if (!headA || !headB) return null;
 
-/**
- * Restores the max‑heap property for the sub‑array a[0 … n-1]
- * starting from index i, assuming its children already satisfy
- * the heap property.
- */
-const heapify = <T>(a: T[], n: number, i: number): void => {
-  let largest = i;
-  const left  = 2 * i + 1;
-  const right = 2 * i + 2;
+  const seen = new Set<ListNode<T>>();
 
-  if (left  < n && compare(a[left],  a[largest]) > 0) largest = left;
-  if (right < n && compare(a[right], a[largest]) > 0) largest = right;
-
-  if (largest !== i) {
-    [a[i], a[largest]] = [a[largest], a[i]];
-    heapify(a, n, largest);
+  // Walk the first list, remember every node
+  let cur = headA;
+  while (cur) {
+    seen.add(cur);
+    cur = cur.next;
   }
-};
 
-/**
- * Turns an array into a max‑heap. Complexity O(n).
- */
-const buildHeap = <T>(a: T[]): void => {
-  const n = a.length;
-  // start at the last parent node
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-    heapify(a, n, i);
+  // Walk the second list until we find a node that we already saw
+  cur = headB;
+  while (cur) {
+    if (seen.has(cur)) return cur;   // first intersection node
+    cur = cur.next;
   }
-};
 
+  return null; // no intersection
+}
 /**
- * Heap‑sort: arr is sorted in‑place.
+ * Returns an array of values that appear in *both* lists.
+ * Duplicates are preserved in the sense that each matched node
+ * contributes one entry to the result.
  */
-export const heapSort = <T>(arr: T[]): void => {
-  buildHeap(arr);
-  for (let i = arr.length - 1; i > 0; i--) {
-    // move current root (max) to the end
-    [arr[0], arr[i]] = [arr[i], arr[0]];
-    // heapify the reduced heap
-    heapify(arr, i, 0);
+export function getCommonValues<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): T[] {
+  const values = new Set<T>();
+  const common: T[] = [];
+
+  // Record every value of the first list
+  for (let node = headA; node; node = node.next) {
+    values.add(node.val);
   }
-};
+
+  // Walk the second list and pick out matches
+  for (let node = headB; node; node = node.next) {
+    if (values.has(node.val)) common.push(node.val);
+  }
+
+  return common;
+}
+export function getIntersectionNodeTwoPointer<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  if (!headA || !headB) return null;
+
+  let a: ListNode<T> | null = headA;
+  let b: ListNode<T> | null = headB;
+
+  // After at most (lenA + lenB) steps, they either meet or both hit null.
+  while (a !== b) {
+    a = a ? a.next : headB; // switch to the other list
+    b = b ? b.next : headA;
+  }
+
+  return a; // could be null (no intersection) or the meeting node
+}
+// Helper to build a list from an array
+function build<T>(vals: T[]): ListNode<T> | null {
+  let head: ListNode<T> | null = null;
+  let cur: ListNode<T> | null = null;
+  for (const v of vals) {
+    const node: ListNode<T> = { val: v, next: null };
+    if (!head) head = node;
+    if (cur) cur.next = node;
+    cur = node;
+  }
+  return head;
+}
+
+// Example: intersecting lists
+const shared = build([7, 8, 9]);                           // shared tail
+const a1 = build([1, 2]);                                 // first list
+const a2 = build([3, 4]);                                 // second list
+
+// Connect the tails
+let node = a1;
+while (node?.next) node = node.next;
+node.next = shared;
+
+node = a2;
+while (node?.next) node = node.next;
+node.next = shared;
+
+// Find intersection
+const inter = getIntersectionNode(a1, a2);
+console.log(inter?.val); // 7
