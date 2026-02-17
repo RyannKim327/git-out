@@ -1,93 +1,72 @@
-// 1️⃣  Generic node type
-class TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
+function longestCommonPrefixVertical(strs: string[]): string {
+  if (!strs.length) return "";
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
+  // The longest possible prefix is bounded by the first string’s length
+  const first = strs[0];
 
-// 2️⃣  BinaryTree class
-class BinaryTree<T> {
-  root: TreeNode<T> | null = null;
-
-  // Insert a value – keeps the tree *ordered* (BST rule)
-  insert(value: T, comparator: (a: T, b: T) => number) {
-    const newNode = new TreeNode(value);
-
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
-
-    let current: TreeNode<T> | null = this.root;
-    while (current) {
-      const comp = comparator(value, current.value);
-      if (comp < 0) {
-        if (!current.left) {
-          current.left = newNode;
-          return;
-        }
-        current = current.left;
-      } else if (comp > 0) {
-        if (!current.right) {
-          current.right = newNode;
-          return;
-        }
-        current = current.right;
-      } else {
-        // Duplicate – decide what to do; here we just replace
-        current.value = value;
-        return;
+  for (let i = 0; i < first.length; i++) {
+    const ch = first[i];
+    for (let j = 1; j < strs.length; j++) {
+      // If any string is shorter or the current char differs: stop
+      if (i >= strs[j].length || strs[j][i] !== ch) {
+        return first.slice(0, i);
       }
     }
   }
 
-  // Find a node with a particular value
-  find(value: T, comparator: (a: T, b: T) => number): TreeNode<T> | null {
-    let current = this.root;
-    while (current) {
-      const comp = comparator(value, current.value);
-      if (comp === 0) return current;
-      current = comp < 0 ? current.left : current.right;
-    }
-    return null;
-  }
-
-  // In‑order traversal (left, root, right)
-  inOrder(callback: (node: TreeNode<T>) => void) {
-    const visit = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      visit(node.left);
-      callback(node);
-      visit(node.right);
-    };
-    visit(this.root);
-  }
-
-  // Pre‑ and post‑order are left to you if needed
+  // All strings matched the entire first string
+  return first;
 }
-const cmpNum = (a: number, b: number) => a - b;
-const cmpStr = (a: string, b: string) => a.localeCompare(b);
-const tree = new BinaryTree<number>();
+console.log(longestCommonPrefixVertical(["flower", "flow", "flight"])); // "fl"
+function lcpMerge(a: string, b: string): string {
+  let i = 0;
+  const limit = Math.min(a.length, b.length);
+  while (i < limit && a[i] === b[i]) i++;
+  return a.slice(0, i);
+}
 
-tree.insert(42, cmpNum);
-tree.insert(23, cmpNum);
-tree.insert(87, cmpNum);
-tree.insert(13, cmpNum);
-tree.insert(31, cmpNum);
+function longestCommonPrefixDivide(strs: string[]): string {
+  if (!strs.length) return "";
 
-console.log("In‑order traversal:");
-tree.inOrder(node => console.log(node.value));
+  const helper = (l: number, r: number): string => {
+    if (l === r) return strs[l];
+    const mid = Math.floor((l + r) / 2);
+    const left = helper(l, mid);
+    const right = helper(mid + 1, r);
+    return lcpMerge(left, right);
+  };
 
-const found = tree.find(31, cmpNum);
-console.log(found ? `Found ${found.value}` : "Not found");
-In-order traversal:
-13
-23
-31
-42
-87
-Found 31
+  return helper(0, strs.length - 1);
+}
+class TrieNode {
+  children = new Map<string, TrieNode>();
+  isEnd = false;
+}
+
+function buildTrie(strs: string[]): TrieNode {
+  const root = new TrieNode();
+  for (const s of strs) {
+    let node = root;
+    for (const ch of s) {
+      if (!node.children.has(ch)) node.children.set(ch, new TrieNode());
+      node = node.children.get(ch)!;
+    }
+    node.isEnd = true;
+  }
+  return root;
+}
+
+function longestCommonPrefixTrie(strs: string[]): string {
+  if (!strs.length) return "";
+  const root = buildTrie(strs);
+  let node = root;
+  let prefix = "";
+  while (node.children.size === 1 && !node.isEnd) {
+    const [ch, next] = node.children.entries().next().value;
+    prefix += ch;
+    node = next;
+  }
+  return prefix;
+}
+const data = ["algorithm", "algo", "algorithms", "all"]; 
+console.log(longestCommonPrefixVertical(data)); // "alg"
