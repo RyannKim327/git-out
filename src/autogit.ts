@@ -1,88 +1,54 @@
-/* ------------------------------------------------------------------
-   Node definitions (customise to your data shape)
-------------------------------------------------------------------- */
-export interface Node {
-  id: string | number;
-  /* Any other properties you need – e.g. parent, distance, etc. */
+// 1️⃣  Basic node interface – replace / extend it to fit your model
+export interface TreeNode<T> {
+  value: T;                 // the payload stored in the node
+  children?: TreeNode<T>[]>; // can be unset (leaf) or an empty array for a leaf
 }
 
-export interface Graph {
-  /** Returns the neighbours of a given node ID. */
-  neighbours(id: Node["id"]): Node[];
+// 2️⃣  The actual algorithm
+export function depthLimitedSearch<T>(
+  root: TreeNode<T>,           // root of the tree
+  target: T,                   // value we’re looking for
+  depthLimit: number,          // how far the search may go (0 = only the root)
+  equals: (a: T, b: T) => boolean = (a, b) => a === b
+): TreeNode<T> | null {
+  if (depthLimit < 0) return null; // sanity check
 
-  /** Optional: expands a node – useful if nodes need lazy loading. */
-  expand?(node: Node): void;
-}
+  // stack holds {node, depth}
+  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
+    { node: root, depth: 0 },
+  ];
 
-/* ------------------------------------------------------------------
-   Breadth‑Limited Search
-------------------------------------------------------------------- */
-type GoalPredicate<T> = (node: T) => boolean;
+  while (stack.length) {
+    const { node, depth } = stack.pop()!; // pop from top of stack
 
-export function breadthLimitedSearch<T extends Node>(
-  graph: Graph,
-  root: T,
-  goal: GoalPredicate<T>,
-  maxDepth: number
-): T | null {
-  // A queue that holds tuples: [node, depth]
-  const frontier: Array<[T, number]> = [[root, 0]];
-  const visited = new Set<T["id"]>();
+    // 3️⃣  Stop expanding when the depth limit is reached
+    if (depth > depthLimit) {
+      continue;
+    }
 
-  visited.add(root.id);
+    // 4️⃣  Check the current node
+    if (equals(node.value, target)) {
+      return node;
+    }
 
-  while (frontier.length !== 0) {
-    const [current, depth] = frontier.shift()!; // pop front
-
-    // Goal hit
-    if (goal(current)) return current;
-
-    // If we reached the depth ceiling, skip expansion
-    if (depth === maxDepth) continue;
-
-    // Expand or otherwise load neighbours if you need lazy loading
-    if (graph.expand) graph.expand(current);
-
-    const neighbors = graph.neighbours(current.id);
-    for (const child of neighbors) {
-      if (!visited.has(child.id)) {
-        visited.add(child.id);
-        frontier.push([child, depth + 1]);
+    // 5️⃣  Push children (DFS) – children that are undefined are skipped
+    if (node.children) {
+      // depth + 1 because we’ll go down one edge
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        stack.push({ node: node.children[i], depth: depth + 1 });
       }
     }
   }
 
-  // No solution within the depth limit
-  return null;
+  return null; // nothing found within the depth limit
 }
-// Simple graph representation
-class MyGraph implements Graph {
-  nodes: Record<string, Node> = {};
+const tree: TreeNode<string> = {
+  value: "A",
+  children: [
+    { value: "B", children: [{ value: "D" }, { value: "E" }] },
+    { value: "C", children: [{ value: "F" }, { value: "G" }] },
+  ],
+};
 
-  constructor(nodeList: Node[]) {
-    nodeList.forEach(node => (this.nodes[node.id] = node));
-  }
-
-  neighbours(id: string | number) {
-    // Example: assume every node has a "children" array of ids
-    const node = this.nodes[id];
-    return (node as any).children?.map((cId: string | number) => this.nodes[cId]) ?? [];
-  }
-}
-
-// Example nodes
-const nodes: Node[] = [
-  { id: 1, ...( { children: [2, 3] } as any ) },
-  { id: 2, ...( { children: [4] } as any ) },
-  { id: 3 },
-  { id: 4 }
-];
-
-const graph = new MyGraph(nodes);
-
-const root = graph.nodes[1];
-const goal = (n: Node) => n.id === 4;
-const depthLimit = 2;
-
-const solution = breadthLimitedSearch(graph, root, goal, depthLimit);
-console.log(solution); // Node with id 4 (found at depth 2)
+console.log(depthLimitedSearch(tree, "F", 1)); // null (needs depth 2)
+console.log(depthLimitedSearch(tree, "F", 2)); // node with value "F"
