@@ -1,51 +1,26 @@
-// 1️⃣ Tree node definition
-interface TreeNode {
-  val: number;          // value is irrelevant for diameter
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
+/**
+ * Returns true if the array is in strictly ascending order (each element ≤ the next one).
+ * Works for numbers, strings, or any type that can be compared with < / >.
+ */
+export function isAscending<T>(arr: T[], comparator?: (a: T, b: T) => number): boolean {
+  // If the user passes a custom comparator, use it; otherwise fall back to natural order.
+  const cmp = comparator ?? ((a: T, b: T) => a < b ? -1 : a > b ? 1 : 0);
 
-// 2️⃣ Main diameter function
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let diameter = 0;                 // global accumulator
-
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;            // height of empty subtree
-
-    // Recursively find heights of left/right subtrees
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
-
-    // Path through current node (in edges)
-    const pathThrough = leftHeight + rightHeight;
-
-    // Update global diameter if this is the largest seen so far
-    diameter = Math.max(diameter, pathThrough);
-
-    // Return height from this node up to a leaf
-    return 1 + Math.max(leftHeight, rightHeight);
+  // Iterate until we find a pair that violates the ascending rule.
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) {
+      return false; // arr[i-1] > arr[i], not ascending
+    }
   }
-
-  dfs(root);
-  return diameter;
+  return true;          // All pairs passed the test
 }
-// Example tree:
-//      1
-//     / \
-//    2   3
-//   / \
-//  4   5
-const tree: TreeNode = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4, left: null, right: null },
-    right: { val: 5, left: null, right: null },
-  },
-  right: { val: 3, left: null, right: null },
-};
+// Numbers (default comparator)
+console.log(isAscending([1, 2, 3, 4])); // true
+console.log(isAscending([1, 3, 2, 4])); // false
 
-console.log(diameterOfBinaryTree(tree)); // Output: 3
-// Explanation: path 4‑2‑1‑3 uses 3 edges
-console.log(diameterOfBinaryTree(null));           // 0
-console.log(diameterOfBinaryTree({ val: 42 }));    // 0
+// Strings (lexicographic order)
+console.log(isAscending(['apple', 'banana', 'cherry'])); // true
+
+// Custom comparison – e.g., sort by string length
+const byLength = (a: string, b: string) => a.length - b.length;
+console.log(isAscending(['a', 'bb', 'ccc'], byLength)); // true
