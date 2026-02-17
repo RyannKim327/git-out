@@ -1,26 +1,48 @@
 /**
- * Returns true if the array is in strictly ascending order (each element ≤ the next one).
- * Works for numbers, strings, or any type that can be compared with < / >.
+ * Return the maximum sum sub‑array (Kadane) along with its start & end indices.
+ *
+ * @param nums  Array of numbers – can contain positives, zeros and negatives.
+ * @returns     Object with `maxSum`, `start`, `end` (inclusive).
  */
-export function isAscending<T>(arr: T[], comparator?: (a: T, b: T) => number): boolean {
-  // If the user passes a custom comparator, use it; otherwise fall back to natural order.
-  const cmp = comparator ?? ((a: T, b: T) => a < b ? -1 : a > b ? 1 : 0);
+export function maxSubarrayWithIndices(nums: number[]): {
+  maxSum: number;
+  start: number;
+  end: number;
+} {
+  if (nums.length === 0) throw new Error("Input array must contain at least one element");
 
-  // Iterate until we find a pair that violates the ascending rule.
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) {
-      return false; // arr[i-1] > arr[i], not ascending
+  let bestSum = nums[0];
+  let currentSum = nums[0];
+
+  // These track the best indices we’ve seen
+  let bestStart = 0;
+  let bestEnd = 0;
+
+  // Temporary indices for the sub‑array we are currently extending
+  let tempStart = 0;
+
+  for (let i = 1; i < nums.length; i++) {
+    const num = nums[i];
+
+    // Decide whether to extend the current sub‑array or start fresh at i
+    if (currentSum + num < num) {
+      currentSum = num;
+      tempStart = i;
+    } else {
+      currentSum += num;
+    }
+
+    // Update the best found so far
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
     }
   }
-  return true;          // All pairs passed the test
+
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-// Numbers (default comparator)
-console.log(isAscending([1, 2, 3, 4])); // true
-console.log(isAscending([1, 3, 2, 4])); // false
-
-// Strings (lexicographic order)
-console.log(isAscending(['apple', 'banana', 'cherry'])); // true
-
-// Custom comparison – e.g., sort by string length
-const byLength = (a: string, b: string) => a.length - b.length;
-console.log(isAscending(['a', 'bb', 'ccc'], byLength)); // true
+const arr = [4, -1, 2, 1, -5, 4];
+const result = maxSubarrayWithIndices(arr);
+console.log(result); // { maxSum: 6, start: 0, end: 3 }
+// Sub‑array: [4, -1, 2, 1] → sum 6
