@@ -1,72 +1,85 @@
-/**
- * Returns the k-th smallest element of an array.
- *
- * @param arr   Array of numbers (or any comparable type).
- * @param k     1‑based index of the element to find.
- * @returns     The k‑th smallest value.
- *
- * @throws      If k is out of bounds.
+/** 
+ * At its core a node only needs to expose
+ *   - a unique identifier (for visited‑tracking)
+ *   - a way to enumerate its successors
  */
-export function kthSmallest<T>(arr: T[], k: number): T {
-  if (k < 1 || k > arr.length) {
-    throw new Error(`k=${k} is not in the valid range 1..${arr.length}`);
-  }
-
-  // Work on a copy so the original array stays untouched.
-  const a = arr.slice();
-  let left = 0;
-  let right = a.length - 1;
-
-  while (true) {
-    // Pick a pivot – here we just pick the middle element.
-    const pivotIndex = left + Math.floor((right - left) / 2);
-    const pivot = a[pivotIndex];
-
-    // Partition step: elements < pivot go left, >= pivot go right.
-    const pivotNewIndex = partition(a, left, right, pivot);
-
-    if (pivotNewIndex === k - 1) {      // Found the k‑th smallest
-      return a[pivotNewIndex];
-    } else if (pivotNewIndex > k - 1) {  // Look in the left partition
-      right = pivotNewIndex - 1;
-    } else {                            // Look in the right partition
-      left = pivotNewIndex + 1;
-    }
+export interface Node<T = any> {
+  id: string | number;
+  // Optional: depth, parent, cost – whatever your context needs
+  getSuccessors(): Node[];
+}
+export interface BinaryNode<T = any> extends Node {
+  left?: BinaryNode;
+  right?: BinaryNode;
+  getSuccessors(): BinaryNode[] {
+    return [this.left, this.right].filter(Boolean);
   }
 }
-
 /**
- * Standard Lomuto partition scheme.
+ * depthLimitedSearch
+ * ------------------
+ * Classic depth‑first search that stops when a given depth threshold is reached.
  *
- * @param a array to partition
- * @param lo left boundary
- * @param hi right boundary
- * @param pivotValue value the array should be partitioned around
- * @returns new index of the pivot after partition
+ * @param root the node to start from
+ * @param goalTest a predicate that returns true for the desired node
+ * @param depthLimit the maximum depth to explore (0 = only the root)
+ * @returns the first node that satisfies goalTest, or null if not found
  */
-function partition<T>(a: T[], lo: number, hi: number, pivotValue: T): number {
-  // Move pivot to the end for convenience.
-  let pivotIndex = lo + (Math.random() * (hi - lo + 1)) | 0; // random pivot for stability
-  [a[pivotIndex], a[hi]] = [a[hi], a[pivotIndex]];
+export function depthLimitedSearch<T>(
+  root: Node<T>,
+  goalTest: (node: Node<T>) => boolean,
+  depthLimit: number
+): Node<T> | null {
 
-  const pivot = a[hi];
-  let storeIndex = lo;                         // index of the first element >= pivot
+  // A simple iterative DFS pile that also carries the current depth.
+  const stack: { node: Node<T>; depth: number }[] = [];
+  const visited = new Set<string | number>(); // avoid cycles
 
-  for (let i = lo; i < hi; i++) {
-    if (a[i] < pivot) {
-      [a[i], a[storeIndex]] = [a[storeIndex], a[i]];
-      storeIndex++;
+  stack.push({ node: root, depth: 0 });
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!; // pop returns a value, guaranteed not undefined
+
+    // skip already visited nodes (useful for graphs)
+    if (visited.has(node.id)) continue;
+    visited.add(node.id);
+
+    if (goalTest(node)) return node;   // success!
+
+    // Recurse only if we haven't hit the limit yet
+    if (depth < depthLimit) {
+      // Add successors in reverse order so leftmost child is processed first
+      const successors = node.getSuccessors();
+      for (let i = successors.length - 1; i >= 0; i--) {
+        stack.push({ node: successors[i], depth: depth + 1 });
+      }
     }
   }
 
-  // place pivot after the last smaller element
-  [a[storeIndex], a[hi]] = [a[hi], a[storeIndex]];
-  return storeIndex;
+  // If we exhaust the stack without finding the goal
+  return null;
 }
-export function kthSmallestSort<T>(arr: T[], k: number): T {
-  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
-  return [...arr].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))[k - 1];
+// 1‑line node type with a simple integer value
+class GraphNode implements Node {
+  constructor(public id: number, public value: number) {}
+  getSuccessors(): GraphNode[] {
+    const n = this.value;
+    return [
+      new GraphNode(n * 2, n * 2),
+      new GraphNode(n * 2 + 1, n * 2 + 1),
+    ];
+  }
 }
-const nums = [7, 11, 5, 3, 9, 2];
-console.log(kthSmallest(nums, 3)); // 5
-console.log(kthSmallestSort(nums, 3)); // 5
+
+const start = new GraphNode(1, 1);
+const goalIf = (node: GraphNode) => node.value === 19;
+
+const found = depthLimitedSearch(start, goalIf, 4);
+
+console.log(found ? `found ${found.value}` : 'not found');
+          1
+        /   \
+       2     3
+      / \   / \
+     4  5  6  7
+    / \ ...   ...
