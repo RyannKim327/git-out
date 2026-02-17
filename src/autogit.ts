@@ -1,60 +1,78 @@
 /**
- * Merges two sorted slices `left` and `right` into a single sorted array.
- * The operation is stable — items that compare equal keep their original
- * relative order.
+ * Build the longest‑prefix‑suffix (LPS) array for the pattern.
+ * lps[i] will contain the length of the longest proper prefix
+ * that is also a suffix for the substring pattern[0…i].
+ *
+ * @param pattern – the pattern
+ * @returns the filled LPS array
  */
-function merge<T>(left: T[], right: T[], compare: (a: T, b: T) => number): T[] {
-  const result: T[] = [];
-  let i = 0;          // index into left
-  let j = 0;          // index into right
+function computeLPS(pattern: string): number[] {
+  const lps: number[] = new Array(pattern.length).fill(0);
+  let length = 0;          // length of the previous longest prefix suffix
+  let i = 1;               // lps[0] is always 0
 
-  while (i < left.length && j < right.length) {
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i++]);
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
     } else {
-      result.push(right[j++]);
+      if (length !== 0) {
+        // don't move i here; keep looking for a smaller prefix
+        length = lps[length - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
     }
   }
 
-  // Append any remaining elements
-  return result.concat(left.slice(i), right.slice(j));
+  return lps;
 }
 
 /**
- * Recursively sorts `array` using merge sort.
+ * Perform KMP search for a pattern in a text.
  *
- * @param array   – the array to sort
- * @param compare – a comparator returning a negative number if a < b,
- *                  zero if a == b, and a positive number otherwise.
- *
- * @returns a NEW sorted array; the input array is left untouched.
+ * @param text     – the string to search in
+ * @param pattern  – the pattern to look for
+ * @returns an array of starting indices where the pattern occurs
  */
-export function mergeSort<T>(array: T[], compare: (a: T, b: T) => number): T[] {
-  // Base case: arrays of length 0 or 1 are already sorted
-  if (array.length <= 1) {
-    return array.slice();          // shallow copy to stay pure
+function kmpSearch(text: string, pattern: string): number[] {
+  if (pattern.length === 0) return []; // nothing to search for
+
+  const lps = computeLPS(pattern);
+  const positions: number[] = [];
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+
+      if (j === pattern.length) {
+        // match found – record starting index
+        positions.push(i - j);
+        // continue searching for next possible match
+        j = lps[j - 1];
+      }
+    } else {
+      if (j !== 0) {
+        // jump back in the pattern based on LPS
+        j = lps[j - 1];
+      } else {
+        i++; // move to next character in text
+      }
+    }
   }
 
-  const mid = Math.floor(array.length / 2);
-  const left  = array.slice(0, mid);
-  const right = array.slice(mid);
-
-  // Sort each half and merge
-  const sortedLeft  = mergeSort(left,  compare);
-  const sortedRight = mergeSort(right, compare);
-
-  return merge(sortedLeft, sortedRight, compare);
+  return positions;
 }
 
-/* ---------------------------------------------------------
-   Example usage:
-   ---------------------------------------------------------
+/* Example usage */
+const haystack = "ABABDABACDABABCABAB";
+const needle = "ABABCABAB";
 
-   // Numeric sort (ascending)
-   const numbers = [32, 5, 73, 1, 42];
-   const sortedNumbers = mergeSort(numbers, (a, b) => a - b);
-
-   // String sort by length
-   const words = ["banana", "apple", "fig", "cherry"];
-   const sortedByLength = mergeSort(words, (a, b) => a.length - b.length);
-   -------------------------------------------------------- */
+const matches = kmpSearch(haystack, needle);
+console.log("Pattern found at positions:", matches);
+// Expected output: Pattern found at positions: [9]
