@@ -1,61 +1,21 @@
-export interface ListNode<T> {
-  val: T;               // the payload
-  next: ListNode<T> | null; // pointer to the next node
-}
 /**
- * Reverses a singly linked list.
- * @param head: the first node of the list (or null for an empty list)
- * @returns the new head of the reversed list
+ * Returns the mean (average) of an array of numbers.
+ * If the array is empty, it throws an error; you can change that behavior if you prefer.
  */
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;   // will become the new head
-  let curr: ListNode<T> | null = head;   // current node being processed
-
-  while (curr) {
-    const nextTemp = curr.next; // keep reference to the next node
-    curr.next = prev;           // reverse the link
-    prev = curr;                // move prev forward
-    curr = nextTemp;            // move curr forward
+function mean(nums: number[]): number {
+  if (nums.length === 0) {
+    throw new Error("Cannot compute the mean of an empty array");
   }
 
-  // At this point, prev points to the new head
-  return prev;
+  const sum = nums.reduce((acc, v) => acc + v, 0);
+  return sum / nums.length;
 }
-export function reverseListRec<T>(node: ListNode<T> | null): ListNode<T> | null {
-  if (!node || !node.next) {
-    return node; // new head (either the original head if list is 1 or 0 nodes)
+const values = [4, 8, 15, 16, 23, 42];
+console.log(mean(values)); // 18.833333333333332
+function meanWhenPossible(nums: number[]): number {
+  if (nums.length === 0) {
+    return NaN;
   }
-
-  const newHead = reverseListRec(node.next);   // recurse to the end
-  node.next.next = node;   // make the next node point back to the current one
-  node.next = null;        // sever original forward link
-  return newHead;
+  return nums.reduce((acc, v) => acc + v, 0) / nums.length;
 }
-// Helper to build a list [1, 2, 3]
-function buildList(arr: number[]): ListNode<number> | null {
-  let head: ListNode<number> | null = null;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = { val: arr[i], next: head };
-  }
-  return head;
-}
-
-// Helper to convert list back to array for easy viewing
-function toArray<T>(head: ListNode<T> | null): T[] {
-  const result: T[] = [];
-  let cur = head;
-  while (cur) {
-    result.push(cur.val);
-    cur = cur.next;
-  }
-  return result;
-}
-
-// Demo
-const original = buildList([1, 2, 3, 4, 5]);
-console.log('original:', toArray(original));
-
-const reversed = reverseList(original);
-console.log('reversed:', toArray(reversed));
-original: [1, 2, 3, 4, 5]
-reversed: [5, 4, 3, 2, 1]
+console.assert(mean([2, 4, 6]) === 4, "The mean should be 4");
