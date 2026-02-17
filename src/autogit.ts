@@ -1,23 +1,14 @@
-const numbers: number[] = [34, 7, 23, 32, 5, 62];
+// 1️⃣ Simple string interpolation (most common)
+const a = "hello";
+const b = "world";
+const c = a + " " + b;          // "hello world"
 
-// 1️⃣ Basic MDN‑style numeric sort
-const sorted = numbers.slice().sort((a, b) => a - b);
-console.log(sorted); // [5, 7, 23, 32, 34, 62]
-[34, 7, 23, 32, 5, 62].sort(); // [23, 32, 34, 5, 62, 7]
-const descending = numbers.slice().sort((a, b) => b - a);
-console.log(descending); // [62, 34, 32, 23, 7, 5]
-function insertionSort(arr: number[]): number[] {
-  const res = arr.slice();
-  for (let i = 1; i < res.length; i++) {
-    let key = res[i];
-    let j = i - 1;
-    while (j >= 0 && res[j] > key) {
-      res[j + 1] = res[j];
-      j--;
-    }
-    res[j + 1] = key;
-  }
-  return res;
-}
+// 2️⃣ Template literals – works the same but often cleaner
+const c2 = `${a} ${b}`;          // "hello world"
 
-console.log(insertionSort(numbers)); // same sorted output
+// 3️⃣ Array join (useful if you have many parts)
+const parts = [a, b];
+const c3 = parts.join(" ");      // "hello world"
+
+// 4️⃣ String.prototype.concat (rarely needed)
+const c4 = a.concat(" ", b);     // "hello world"
