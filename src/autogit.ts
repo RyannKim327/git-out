@@ -1,32 +1,40 @@
-const nums = [1, 2, 3, 4, 5];
-
-// Remove the number 3
-const idx = nums.indexOf(3);
-if (idx !== -1) {
-  nums.splice(idx, 1); // nums → [1, 2, 4, 5]
-}
-const chars = ['a', 'b', 'c', 'b', 'd'];
-
-// Drop every 'b'
-const withoutB = chars.filter(ch => ch !== 'b');
-// withoutB → ['a', 'c', 'd']
-const original = [10, 20, 30, 40, 50];
-
-const removed = [
-  ...original.slice(0, original.indexOf(30)),
-  ...original.slice(original.indexOf(30) + 1),
-];
-
-// removed → [10, 20, 40, 50]
+const decimal = 42;          // any number you want to convert
+const binary = decimal.toString(2);  // '101010'
+console.log(binary);        // → 101010
 /**
- * Remove the first occurrence of `value` from `array`.
- * Returns a new array; the original array is not mutated.
+ * Convert a non‑negative decimal number to binary.
  */
-function removeFirst<T>(array: readonly T[], value: T): T[] {
-  const idx = array.indexOf(value);
-  if (idx === -1) return [...array]; // nothing to remove
-  return [...array.slice(0, idx), ...array.slice(idx + 1)];
+function decimalToBinary(n: number): string {
+  if (n === 0) return '0';
+  let result: string = '';
+  let num = n;
+
+  while (num > 0) {
+    // `num % 2` is the remainder (0 or 1)
+    const bit = (num % 2).toString();
+    result = bit + result;          // prepend the bit
+    num = Math.floor(num / 2);       // shift right
+  }
+
+  return result;
 }
-const data = [2, 4, 6, 8];
-const updated = removeFirst(data, 6);
-// updated → [2, 4, 8]
+
+// Demo
+console.log(decimalToBinary(42));   // → 101010
+console.log(decimalToBinary(0));    // → 0
+console.log(decimalToBinary(255));  // → 11111111
+function bigIntDecimalToBinary(n: bigint): string {
+  if (n === 0n) return '0';
+  let result = '';
+  let num = n;
+  while (num > 0n) {
+    result = (num & 1n).toString() + result; // `& 1n` is a fast bitwise test
+    num >>= 1n;   // shift right
+  }
+  return result;
+}
+// 16 decimal → 10000 binary
+console.assert(decimalToBinary(16) === '10000');
+
+// 255 decimal → 11111111 binary
+console.assert(decimalToBinary(255) === '11111111');
