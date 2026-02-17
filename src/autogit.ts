@@ -1,60 +1,78 @@
 /**
- * Merges two consecutive sorted halves of `arr` into a single sorted segment.
- * `left` … start index of the first half
- * `mid`  … start index of the second half (i.e. left + size)
- * `right`… end index (exclusive) of the second half
- * The merged result is written back into `arr`.
+ * Build the longest‑prefix‑suffix (LPS) array for the pattern.
+ * lps[i] will contain the length of the longest proper prefix
+ * that is also a suffix for the substring pattern[0…i].
+ *
+ * @param pattern – the pattern
+ * @returns the filled LPS array
  */
-function merge(
-  arr: number[],
-  left: number,
-  mid: number,
-  right: number,
-  temp: number[]
-) {
-  let i = left;   // index in first half
-  let j = mid;    // index in second half
-  let k = left;   // index in temp
+function computeLPS(pattern: string): number[] {
+  const lps: number[] = new Array(pattern.length).fill(0);
+  let length = 0;          // length of the previous longest prefix suffix
+  let i = 1;               // lps[0] is always 0
 
-  while (i < mid && j < right) {
-    if (arr[i] <= arr[j]) temp[k++] = arr[i++];
-    else                   temp[k++] = arr[j++];
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
+    } else {
+      if (length !== 0) {
+        // don't move i here; keep looking for a smaller prefix
+        length = lps[length - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
+    }
   }
 
-  // copy any remaining elements from the first half
-  while (i < mid) temp[k++] = arr[i++];
-  // anything left from the second half already sits in temp
-
-  // copy back to the original array
-  for (let p = left; p < right; ++p) arr[p] = temp[p];
+  return lps;
 }
 
 /**
- * Iterative merge sort.
- * Works in O(n log n) time, O(n) auxiliary space for the temporary array.
+ * Perform KMP search for a pattern in a text.
+ *
+ * @param text     – the string to search in
+ * @param pattern  – the pattern to look for
+ * @returns an array of starting indices where the pattern occurs
  */
-export function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  if (n <= 1) return;                 // already sorted
+function kmpSearch(text: string, pattern: string): number[] {
+  if (pattern.length === 0) return []; // nothing to search for
 
-  const temp = new Array<number>(n);   // reuse this buffer
+  const lps = computeLPS(pattern);
+  const positions: number[] = [];
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-  // subarray size starts at 1 (single elements) and doubles each pass
-  for (let sz = 1; sz < n; sz *= 2) {
-    // merge adjacent subarrays of size sz
-    for (let left = 0; left < n - sz; left += sz * 2) {
-      const mid   = left + sz;          // left + sz is the start of the 2nd half
-      const right = Math.min(left + sz * 2, n);
-      merge(arr, left, mid, right, temp);
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+
+      if (j === pattern.length) {
+        // match found – record starting index
+        positions.push(i - j);
+        // continue searching for next possible match
+        j = lps[j - 1];
+      }
+    } else {
+      if (j !== 0) {
+        // jump back in the pattern based on LPS
+        j = lps[j - 1];
+      } else {
+        i++; // move to next character in text
+      }
     }
   }
+
+  return positions;
 }
 
-// ------------------------------------------------------------------
-// Example usage
-// ------------------------------------------------------------------
+/* Example usage */
+const haystack = "ABABDABACDABABCABAB";
+const needle = "ABABCABAB";
 
-// Readable example – will sort the array in place
-const sample = [38, 27, 43, 3, 9, 82, 10];
-mergeSortIterative(sample);
-console.log(sample);  // [3, 9, 10, 27, 38, 43, 82]
+const matches = kmpSearch(haystack, needle);
+console.log("Pattern found at positions:", matches);
+// Expected output: Pattern found at positions: [9]
