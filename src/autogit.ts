@@ -1,72 +1,85 @@
-/**
- * Returns the k-th smallest element of an array.
- *
- * @param arr   Array of numbers (or any comparable type).
- * @param k     1‑based index of the element to find.
- * @returns     The k‑th smallest value.
- *
- * @throws      If k is out of bounds.
- */
-export function kthSmallest<T>(arr: T[], k: number): T {
-  if (k < 1 || k > arr.length) {
-    throw new Error(`k=${k} is not in the valid range 1..${arr.length}`);
-  }
+/* A node that lives inside the queue */
+class QueueNode<T> {
+  constructor(
+    public value: T,
+    public next: QueueNode<T> | null = null
+  ) {}
+}
 
-  // Work on a copy so the original array stays untouched.
-  const a = arr.slice();
-  let left = 0;
-  let right = a.length - 1;
+/* The queue itself */
+export class LinkedListQueue<T> {
+  // We keep pointers to both ends so that both enqueue
+  // (push) and dequeue (pop) stay O(1).
+  private head: QueueNode<T> | null = null; // front of the queue
+  private tail: QueueNode<T> | null = null; // rear of the queue
+  private _size = 0;
 
-  while (true) {
-    // Pick a pivot – here we just pick the middle element.
-    const pivotIndex = left + Math.floor((right - left) / 2);
-    const pivot = a[pivotIndex];
+  /** Insert a new value at the rear. */
+  enqueue(value: T): void {
+    const node = new QueueNode(value);
 
-    // Partition step: elements < pivot go left, >= pivot go right.
-    const pivotNewIndex = partition(a, left, right, pivot);
-
-    if (pivotNewIndex === k - 1) {      // Found the k‑th smallest
-      return a[pivotNewIndex];
-    } else if (pivotNewIndex > k - 1) {  // Look in the left partition
-      right = pivotNewIndex - 1;
-    } else {                            // Look in the right partition
-      left = pivotNewIndex + 1;
+    if (this.tail) {
+      // The queue already has at least one element
+      this.tail.next = node;
+      this.tail = node;
+    } else {
+      // Empty queue: head and tail become the new node
+      this.head = this.tail = node;
     }
+
+    this._size++;
   }
-}
 
-/**
- * Standard Lomuto partition scheme.
- *
- * @param a array to partition
- * @param lo left boundary
- * @param hi right boundary
- * @param pivotValue value the array should be partitioned around
- * @returns new index of the pivot after partition
- */
-function partition<T>(a: T[], lo: number, hi: number, pivotValue: T): number {
-  // Move pivot to the end for convenience.
-  let pivotIndex = lo + (Math.random() * (hi - lo + 1)) | 0; // random pivot for stability
-  [a[pivotIndex], a[hi]] = [a[hi], a[pivotIndex]];
+  /** Remove and return the value at the front. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // Empty queue
 
-  const pivot = a[hi];
-  let storeIndex = lo;                         // index of the first element >= pivot
+    const value = this.head.value;
+    this.head = this.head.next;
 
-  for (let i = lo; i < hi; i++) {
-    if (a[i] < pivot) {
-      [a[i], a[storeIndex]] = [a[storeIndex], a[i]];
-      storeIndex++;
+    // If we just removed the last element, clear the tail too
+    if (!this.head) {
+      this.tail = null;
     }
+
+    this._size--;
+    return value;
   }
 
-  // place pivot after the last smaller element
-  [a[storeIndex], a[hi]] = [a[hi], a[storeIndex]];
-  return storeIndex;
+  /** Peek at the front value without removing it. */
+  peek(): T | undefined {
+    return this.head ? this.head.value : undefined;
+  }
+
+  /** Number of elements currently in the queue. */
+  get size(): number {
+    return this._size;
+  }
+
+  /** Are there any elements? */
+  get isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** Remove everything from the queue. */
+  clear(): void {
+    this.head = null;
+    this.tail = null;
+    this._size = 0;
+  }
 }
-export function kthSmallestSort<T>(arr: T[], k: number): T {
-  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
-  return [...arr].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))[k - 1];
-}
-const nums = [7, 11, 5, 3, 9, 2];
-console.log(kthSmallest(nums, 3)); // 5
-console.log(kthSmallestSort(nums, 3)); // 5
+const queue = new LinkedListQueue<number>();
+
+queue.enqueue(1);
+queue.enqueue(2);
+queue.enqueue(3);
+
+console.log(queue.peek()); // 1
+console.log(queue.dequeue()); // 1
+console.log(queue.dequeue()); // 2
+console.log(queue.size); // 1
+
+queue.enqueue(4);
+console.log(queue.dequeue()); // 3
+console.log(queue.dequeue()); // 4
+console.log(queue.isEmpty); // true
