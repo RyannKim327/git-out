@@ -1,72 +1,45 @@
-function longestCommonPrefixVertical(strs: string[]): string {
-  if (!strs.length) return "";
+/**
+ * A classic LIFO stack that stores items in an array.
+ * @template T The type of the values stored inside the stack.
+ */
+export class Stack<T> {
+  /** The underlying array that holds the stack's data. */
+  private data: T[] = [];
 
-  // The longest possible prefix is bounded by the first string’s length
-  const first = strs[0];
-
-  for (let i = 0; i < first.length; i++) {
-    const ch = first[i];
-    for (let j = 1; j < strs.length; j++) {
-      // If any string is shorter or the current char differs: stop
-      if (i >= strs[j].length || strs[j][i] !== ch) {
-        return first.slice(0, i);
-      }
-    }
+  /** Adds an element to the top of the stack. */
+  push(item: T): void {
+    this.data.push(item);
   }
 
-  // All strings matched the entire first string
-  return first;
-}
-console.log(longestCommonPrefixVertical(["flower", "flow", "flight"])); // "fl"
-function lcpMerge(a: string, b: string): string {
-  let i = 0;
-  const limit = Math.min(a.length, b.length);
-  while (i < limit && a[i] === b[i]) i++;
-  return a.slice(0, i);
-}
-
-function longestCommonPrefixDivide(strs: string[]): string {
-  if (!strs.length) return "";
-
-  const helper = (l: number, r: number): string => {
-    if (l === r) return strs[l];
-    const mid = Math.floor((l + r) / 2);
-    const left = helper(l, mid);
-    const right = helper(mid + 1, r);
-    return lcpMerge(left, right);
-  };
-
-  return helper(0, strs.length - 1);
-}
-class TrieNode {
-  children = new Map<string, TrieNode>();
-  isEnd = false;
-}
-
-function buildTrie(strs: string[]): TrieNode {
-  const root = new TrieNode();
-  for (const s of strs) {
-    let node = root;
-    for (const ch of s) {
-      if (!node.children.has(ch)) node.children.set(ch, new TrieNode());
-      node = node.children.get(ch)!;
-    }
-    node.isEnd = true;
+  /**
+   * Removes and returns the element at the top of the stack.
+   * Returns undefined if the stack is empty.
+   */
+  pop(): T | undefined {
+    return this.data.pop();
   }
-  return root;
-}
 
-function longestCommonPrefixTrie(strs: string[]): string {
-  if (!strs.length) return "";
-  const root = buildTrie(strs);
-  let node = root;
-  let prefix = "";
-  while (node.children.size === 1 && !node.isEnd) {
-    const [ch, next] = node.children.entries().next().value;
-    prefix += ch;
-    node = next;
+  /** Peeks at the element on the top without removing it. */
+  peek(): T | undefined {
+    return this.data[this.data.length - 1];
   }
-  return prefix;
+
+  /** Returns the number of elements in the stack. */
+  get size(): number {
+    return this.data.length;
+  }
+
+  /** Returns true when the stack has nothing inside. */
+  get isEmpty(): boolean {
+    return this.data.length === 0;
+  }
 }
-const data = ["algorithm", "algo", "algorithms", "all"]; 
-console.log(longestCommonPrefixVertical(data)); // "alg"
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size);   // 2
