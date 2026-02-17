@@ -1,94 +1,61 @@
-type AdjacencyList = Record<string, string[]>;
-
-/*
-  Example:
-
-  {
-    A: ["B"],
-    B: ["C", "E"],
-    C: ["A", "D"],
-    D: ["C"],
-    E: ["F"],
-    F: ["E", "G"],
-    G: ["H"],
-    H: ["I", "J"],
-    I: ["H"],
-    J: ["G"],
-  }
-*/
-// TarjanSCC.ts
-type AdjacencyList = Record<string, string[]>;
-
-export function tarjanSCC(graph: AdjacencyList): string[][] {
-  let index = 0;                         // global index counter
-  const indices: Record<string, number> = {};   // vertex → index
-  const lowlinks: Record<string, number> = {};  // vertex → lowlink
-  const stack: string[] = [];
-  const onStack: Record<string, boolean> = {};
-  const sccs: string[][] = [];
-
-  function strongConnect(v: string) {
-    // 1. Set the depth index for v to the smallest unused index
-    indices[v] = lowlinks[v] = index++;
-    stack.push(v);
-    onStack[v] = true;
-
-    // 2. Consider successors of v
-    const neighbours = graph[v] ?? [];
-    for (const w of neighbours) {
-      if (indices[w] === undefined) {
-        // Successor w has not yet been visited; recurse on it
-        strongConnect(w);
-        lowlinks[v] = Math.min(lowlinks[v], lowlinks[w]);
-      } else if (onStack[w]) {
-        // Successor w is in stack → part of current SCC
-        lowlinks[v] = Math.min(lowlinks[v], indices[w]);
-      }
-    }
-
-    // 3. If v is a root node, pop the stack and generate an SCC
-    if (lowlinks[v] === indices[v]) {
-      const component: string[] = [];
-      let w: string;
-      do {
-        w = stack.pop() as string;
-        onStack[w] = false;
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
-    }
-  }
-
-  // Kick off
-  for (const v of Object.keys(graph)) {
-    if (indices[v] === undefined) {
-      strongConnect(v);
-    }
-  }
-
-  return sccs;
+export interface ListNode<T> {
+  val: T;               // the payload
+  next: ListNode<T> | null; // pointer to the next node
 }
-import { tarjanSCC } from "./TarjanSCC";
+/**
+ * Reverses a singly linked list.
+ * @param head: the first node of the list (or null for an empty list)
+ * @returns the new head of the reversed list
+ */
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;   // will become the new head
+  let curr: ListNode<T> | null = head;   // current node being processed
 
-const graph: AdjacencyList = {
-  A: ["B"],
-  B: ["C", "E"],
-  C: ["A", "D"],
-  D: ["C"],
-  E: ["F"],
-  F: ["E", "G"],
-  G: ["H"],
-  H: ["I", "J"],
-  I: ["H"],
-  J: ["G"],
-};
+  while (curr) {
+    const nextTemp = curr.next; // keep reference to the next node
+    curr.next = prev;           // reverse the link
+    prev = curr;                // move prev forward
+    curr = nextTemp;            // move curr forward
+  }
 
-const sccs = tarjanSCC(graph);
-console.log("Strongly connected components:");
-sccs.forEach((comp, idx) => {
-  console.log(`  ${idx + 1}: [${comp.join(", ")}]`);
-});
-Strongly connected components:
-  1: [A, B, C, D]
-  2: [E, F]
-  3: [G, H, I, J]
+  // At this point, prev points to the new head
+  return prev;
+}
+export function reverseListRec<T>(node: ListNode<T> | null): ListNode<T> | null {
+  if (!node || !node.next) {
+    return node; // new head (either the original head if list is 1 or 0 nodes)
+  }
+
+  const newHead = reverseListRec(node.next);   // recurse to the end
+  node.next.next = node;   // make the next node point back to the current one
+  node.next = null;        // sever original forward link
+  return newHead;
+}
+// Helper to build a list [1, 2, 3]
+function buildList(arr: number[]): ListNode<number> | null {
+  let head: ListNode<number> | null = null;
+  for (let i = arr.length - 1; i >= 0; i--) {
+    head = { val: arr[i], next: head };
+  }
+  return head;
+}
+
+// Helper to convert list back to array for easy viewing
+function toArray<T>(head: ListNode<T> | null): T[] {
+  const result: T[] = [];
+  let cur = head;
+  while (cur) {
+    result.push(cur.val);
+    cur = cur.next;
+  }
+  return result;
+}
+
+// Demo
+const original = buildList([1, 2, 3, 4, 5]);
+console.log('original:', toArray(original));
+
+const reversed = reverseList(original);
+console.log('reversed:', toArray(reversed));
+original: [1, 2, 3, 4, 5]
+reversed: [5, 4, 3, 2, 1]
