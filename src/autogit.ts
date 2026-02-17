@@ -1,60 +1,91 @@
-function buildLps(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let len = 0;          // length of the previous longest prefix suffix
-  let i = 1;            // we start from the second character
+// --------------------------------------------------------
+// Random TypeScript demo:  GET data from a public API
+// --------------------------------------------------------
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      // Mismatch after len matches
-      if (len !== 0) {
-        // Try the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
+// Install the needed deps if you run this in a Node project:
+//   npm install --save node-fetch @types/node-fetch
+//
+// If you use this in a browser project, the browser's fetch is already available.
+
+// Import the fetch shim for Node (uncomment if you run under Node)
+// import fetch from 'node-fetch';
+
+// A tiny helper to pause (useful for demo pacing)
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// -------------------------------------------------------------------
+// 1️⃣  Define the shape of the data we expect from the API
+// -------------------------------------------------------------------
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
-/**
- * Returns an array of starting indices where `pattern` occurs in `text`.
- * If no match, returns an empty array.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  const lps = buildLps(pattern);
-  const results: number[] = [];
 
-  let i = 0; // index for text
-  let j = 0; // index for pattern
+// -------------------------------------------------------------------
+// 2️⃣  A generic GET helper that returns typed JSON
+// -------------------------------------------------------------------
+async function get<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    // We simply throw an error for this demo
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+  const data: T = await response.json();
+  return data;
+}
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++; j++;
-      if (j === pattern.length) {
-        // Match found at position i - j
-        results.push(i - j);
-        // Prepare for the next possible match
-        j = lps[j - 1];
-      }
-    } else {
-      if (j !== 0) {
-        // Mismatch after j matches
-        j = lps[j - 1];
-      } else {
-        // Mismatch at the start
-        i++;
-      }
-    }
+// -------------------------------------------------------------------
+// 3️⃣  Main demo logic
+// -------------------------------------------------------------------
+async function main() {
+  const apiEndpoint = 'https://jsonplaceholder.typicode.com/posts/1';
+
+  console.log('Fetching demo post...');
+  try {
+    const post = await get<Post>(apiEndpoint);
+    console.log('✅ Post fetched:');
+    console.log(`  • ID: ${post.id}`);
+    console.log(`  • Title: ${post.title}`);
+    console.log(`  • Body snippet: "${post.body.slice(0, 60)}..."`);
+  } catch (err) {
+    console.error('⚠️  Error while fetching:', err);
   }
 
-  return results;
-}
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
+  // -------------------------------------------------------------------
+  // 4️⃣  Throw in a second request: list of all posts
+  // -------------------------------------------------------------------
+  console.log('\nFetching all posts (just the first 5 for brevity)...');
+  try {
+    const allPosts = await get<Post[]>('https://jsonplaceholder.typicode.com/posts');
+    console.table(allPosts.slice(0, 5));
+  } catch (err) {
+    console.error('⚠️  Error while fetching:', err);
+  }
 
-console.log(kmpSearch(text, pattern)); // [10]
+  // ---------------------------------------------------------------
+  // 5️⃣  Optional: POST a new resource (mocked, won't persist)
+  // ---------------------------------------------------------------
+  console.log('\nAttempting to POST a new post...');
+  try {
+    const newPostResponse = await fetch('https://jsonplaceholder.typicode.com/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Hello World',
+        body: 'This post was created by the demo.',
+        userId: 42
+      })
+    });
+    const created: Post = await newPostResponse.json();
+    console.log('✅ Created post (mocked):', created);
+  } catch (err) {
+    console.error('⚠️  Error while posting:', err);
+  }
+
+  // Small pause before exit (only matters if running in Node)
+  await delay(500);
+}
+
+main();
