@@ -1,73 +1,52 @@
 /**
- * Finds the longest increasing subsequence of an array.
- *
- * @param arr Numeric array (any integers or floats, any sign).
- * @returns Object containing the LIS and its length.
+ * Compare two numbers (or any types that support `<` and `>`).
+ * Returns positive if a > b, negative if a < b, zero otherwise.
  */
-export function longestIncreasingSubsequence(arr: number[]): { seq: number[]; length: number } {
-  if (arr.length === 0) return { seq: [], length: 0 };
+const compare = <T>(a: T, b: T): number => {
+  if (a > b) return 1;
+  if (a < b) return -1;
+  return 0;
+};
 
-  // tails[i] — minimal tail of an LIS of length i+1 found so far
-  const tails: number[] = [];
-  // prevIndices[i] — index of the previous element in the LIS that ends at arr[i]
-  const prevIndices: number[] = Array(arr.length).fill(-1);
-  // indexInTails[i] — will store the index in tails where arr[i] was placed
-  const indexInTails: number[] = Array(arr.length).fill(0);
+/**
+ * Restores the max‑heap property for the sub‑array a[0 … n-1]
+ * starting from index i, assuming its children already satisfy
+ * the heap property.
+ */
+const heapify = <T>(a: T[], n: number, i: number): void => {
+  let largest = i;
+  const left  = 2 * i + 1;
+  const right = 2 * i + 2;
 
-  for (let i = 0; i < arr.length; i++) {
-    const num = arr[i];
+  if (left  < n && compare(a[left],  a[largest]) > 0) largest = left;
+  if (right < n && compare(a[right], a[largest]) > 0) largest = right;
 
-    // Binary search: first index in tails where tails[idx] >= num
-    let lo = 0,
-      hi = tails.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (tails[mid] < num) lo = mid + 1;
-      else hi = mid;
-    }
-
-    // lo is the length of the new subsequence minus one
-    indexInTails[i] = lo;
-    if (lo >= tails.length) tails.push(num);
-    else tails[lo] = num;
-
-    // Link to previous element of the subsequence
-    if (lo > 0) prevIndices[i] = tailsIdx[lo - 1];
+  if (largest !== i) {
+    [a[i], a[largest]] = [a[largest], a[i]];
+    heapify(a, n, largest);
   }
+};
 
-  // tailsIdx will hold the indices in the original array that correspond to tails[]
-  const tailsIdx: number[] = Array(tails.length);
-  const seqIdx: number[] = []; // will hold indices of LIS
-
-  // Reconstruct the sequence by walking backwards using prevIndices
-  let k = tailsIdx.length - 1;
-  let currentIdx = -1;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (indexInTails[i] === k) {
-      seqIdx.push(i); // store index
-      k--; // look for previous
-      currentIdx = i;
-    }
+/**
+ * Turns an array into a max‑heap. Complexity O(n).
+ */
+const buildHeap = <T>(a: T[]): void => {
+  const n = a.length;
+  // start at the last parent node
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+    heapify(a, n, i);
   }
-  seqIdx.reverse();
+};
 
-  const seq = seqIdx.map(idx => arr[idx]);
-
-  return { seq, length: seq.length };
-}
-export function lisLength(arr: number[]): number {
-  if (arr.length === 0) return 0;
-  const dp = Array(arr.length).fill(1);
-
-  for (let i = 1; i < arr.length; i++) {
-    for (let j = 0; j < i; j++) {
-      if (arr[i] > arr[j]) dp[i] = Math.max(dp[i], dp[j] + 1);
-    }
+/**
+ * Heap‑sort: arr is sorted in‑place.
+ */
+export const heapSort = <T>(arr: T[]): void => {
+  buildHeap(arr);
+  for (let i = arr.length - 1; i > 0; i--) {
+    // move current root (max) to the end
+    [arr[0], arr[i]] = [arr[i], arr[0]];
+    // heapify the reduced heap
+    heapify(arr, i, 0);
   }
-  return Math.max(...dp);
-}
-const data = [10, 22, 9, 33, 21, 50, 41, 60, 80];
-const { seq, length } = longestIncreasingSubsequence(data);
-
-console.log('LIS:', seq);          // [10, 22, 33, 50, 60, 80]
-console.log('Length:', length);    // 6
+};
