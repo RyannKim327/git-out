@@ -1,21 +1,21 @@
-/**
- * Returns the mean (average) of an array of numbers.
- * If the array is empty, it throws an error; you can change that behavior if you prefer.
- */
-function mean(nums: number[]): number {
-  if (nums.length === 0) {
-    throw new Error("Cannot compute the mean of an empty array");
-  }
+const numbers = [3, 7, 2, 9, 4];
 
-  const sum = nums.reduce((acc, v) => acc + v, 0);
-  return sum / nums.length;
+const max = Math.max(...numbers); // 9
+console.log(max);
+const numbers = [3, 7, 2, 9, 4];
+
+const max = numbers.reduce((prev, cur) => (cur > prev ? cur : prev));
+
+console.log(max); // 9
+function maxNumber<T extends number>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
+  return arr.reduce((a, b) => (b > a ? b : a));
 }
-const values = [4, 8, 15, 16, 23, 42];
-console.log(mean(values)); // 18.833333333333332
-function meanWhenPossible(nums: number[]): number {
-  if (nums.length === 0) {
-    return NaN;
-  }
-  return nums.reduce((acc, v) => acc + v, 0) / nums.length;
-}
-console.assert(mean([2, 4, 6]) === 4, "The mean should be 4");
+
+const nums = [1, 5, 3];
+console.log(maxNumber(nums)); // 5
+const bigNumbers = [10n, 500n, 200n];
+
+const maxBig = bigNumbers.reduce((a, b) => (b > a ? b : a)); // 500n
+
+console.log(maxBig);
