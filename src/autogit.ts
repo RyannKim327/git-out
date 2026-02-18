@@ -1,60 +1,48 @@
-function buildLps(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let len = 0;          // length of the previous longest prefix suffix
-  let i = 1;            // we start from the second character
-
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      // Mismatch after len matches
-      if (len !== 0) {
-        // Try the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
+// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
+//      This shape is common in interview‑style code.
+interface TreeNode {
+  val: number;         // node’s payload
+  left?: TreeNode | null;   // left child (optional)
+  right?: TreeNode | null;  // right child (optional)
 }
-/**
- * Returns an array of starting indices where `pattern` occurs in `text`.
- * If no match, returns an empty array.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  const lps = buildLps(pattern);
-  const results: number[] = [];
 
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++; j++;
-      if (j === pattern.length) {
-        // Match found at position i - j
-        results.push(i - j);
-        // Prepare for the next possible match
-        j = lps[j - 1];
-      }
-    } else {
-      if (j !== 0) {
-        // Mismatch after j matches
-        j = lps[j - 1];
-      } else {
-        // Mismatch at the start
-        i++;
-      }
-    }
-  }
-
-  return results;
+// 2️⃣  Recursive summation – easiest to read and to understand.
+//      Depth‑first, natural for a tree.
+function sumTreeRecursive(root: TreeNode | null): number {
+  if (!root) return 0;                      // base case: empty subtree is 0
+  const leftSum = sumTreeRecursive(root.left);
+  const rightSum = sumTreeRecursive(root.right);
+  return root.val + leftSum + rightSum;      // combine the results
 }
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
 
-console.log(kmpSearch(text, pattern)); // [10]
+// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
+//      where recursion might hit the call‑stack limit.
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let total = 0;
+  const stack: TreeNode[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.val;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
+  }
+  return total;
+}
+
+// 4️⃣  Sample tree for quick sanity check
+//           5
+//          / \
+//         3   7
+//        / \   \
+//       2   4   8
+
+const sampleRoot: TreeNode = {
+  val: 5,
+  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
+  right: { val: 7, right: { val: 8 } },
+};
+
+console.log(sumTreeRecursive(sampleRoot)); // → 33
+console.log(sumTreeIterative(sampleRoot)); // → 33
