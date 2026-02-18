@@ -1,24 +1,29 @@
-/**
- * Return the first character in `s` that occurs exactly once.
- * If every character repeats, return null.
- */
-function firstNonRepeatingChar(s: string): string | null {
-  // 1️⃣  Count how many times each char appears.
-  const freq = new Map<string, number>();
+function firstRepeatedChar(str: string): string | null {
+  const seen = new Set<string>();
 
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
-
-  // 2️⃣  Walk the string a second time, looking for a count of 1.
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;          // first non‑repeating character found
+  for (const ch of str) {
+    if (seen.has(ch)) {
+      return ch;            // ❗ hit the first duplicate
     }
+    seen.add(ch);
   }
 
-  return null;              // no unique character
+  return null;               // no duplicate found
 }
-console.log(firstNonRepeatingChar('abacabad')); // "c"
-console.log(firstNonRepeatingChar('aabbcc'));   // null
-console.log(firstNonRepeatingChar('😀😃😀😄')); // "😃"
+
+// Demo
+console.log(firstRepeatedChar("abca")); // → 'a'
+console.log(firstRepeatedChar("abcdef")); // → null
+function firstRepeatedIndex(str: string): number | -1 {
+  const seen = new Map<string, number>();
+
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (seen.has(ch)) {
+      return i;   // index of the first occurrence that was repeated
+    }
+    seen.set(ch, i);
+  }
+
+  return -1;
+}
