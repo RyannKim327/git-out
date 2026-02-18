@@ -1,69 +1,45 @@
-type NodeId = string | number;          // whatever you want to use for a node key
-interface Graph {
-  /** Map of node id → set of neighbour ids */
-  adjacencyList: Map<NodeId, Set<NodeId>>;
+// 1️⃣  Node definition
+interface TreeNode<T = unknown> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
-function createGraph(edges: [NodeId, NodeId][]): Graph {
-  const adjacencyList = new Map<NodeId, Set<NodeId>>();
 
-  for (const [u, v] of edges) {
-    if (!adjacencyList.has(u)) adjacencyList.set(u, new Set());
-    if (!adjacencyList.has(v)) adjacencyList.set(v, new Set());
-    adjacencyList.get(u)!.add(v);
-    adjacencyList.get(v)!.add(u); // comment out for directed graph
-  }
+// 2️⃣  Recursive leaf counter
+function countLeaves<T>(node?: TreeNode<T>): number {
+  // Base case: empty sub‑tree
+  if (!node) return 0;
 
-  return { adjacencyList };
+  // A leaf has no children
+  const isLeaf = !node.left && !node.right;
+  if (isLeaf) return 1;
+
+  // Recurse on the two sub‑trees
+  return countLeaves(node.left) + countLeaves(node.right);
 }
-function dfsRecursive(
-  graph: Graph,
-  start: NodeId,
-  visited = new Set<NodeId>()
-): NodeId[] {
-  visited.add(start);
-  const result = [start];
 
-  for (const neighbour of graph.adjacencyList.get(start) ?? []) {
-    if (!visited.has(neighbour)) {
-      result.push(...dfsRecursive(graph, neighbour, visited));
-    }
-  }
+// 3️⃣  Example usage
+const tree: TreeNode<number> = {
+  value: 1,
+  left: { value: 2, right: { value: 4 } },
+  right: { value: 3, left: { value: 5 } }
+};
 
-  return result;
-}
-function dfsIterative(graph: Graph, start: NodeId): NodeId[] {
-  const visited = new Set<NodeId>();
-  const stack: NodeId[] = [start];
-  const result: NodeId[] = [];
+console.log(countLeaves(tree)); // → 3
+function countLeavesIterative<T>(root: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let stack: TreeNode<T>[] = [root];
+  let leafCount = 0;
 
   while (stack.length) {
-    const node = stack.pop()!;           // safe: stack is non‑empty
-
-    if (visited.has(node)) continue;
-    visited.add(node);
-    result.push(node);
-
-    // Add neighbours in reverse order if you want a particular visit order
-    const neighbours = graph.adjacencyList.get(node) ?? new Set();
-    for (const neighbour of Array.from(neighbours).reverse()) {
-      if (!visited.has(neighbour)) stack.push(neighbour);
+    const node = stack.pop()!; // guaranteed defined
+    if (!node.left && !node.right) {
+      leafCount++;
+    } else {
+      if (node.right) stack.push(node.right);
+      if (node.left)  stack.push(node.left);
     }
   }
-
-  return result;
+  return leafCount;
 }
-const edges: [NodeId, NodeId][] = [
-  [1, 2],
-  [1, 3],
-  [2, 4],
-  [3, 4],
-  [4, 5],
-];
-
-const graph = createGraph(edges);
-
-console.log('Recursive DFS:', dfsRecursive(graph, 1));
-// → [1, 2, 4, 3, 5] (or another order depending on set iteration)
-
-console.log('Iterative DFS:', dfsIterative(graph, 1));
-// → same result, but robust on deep graphs
