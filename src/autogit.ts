@@ -1,43 +1,33 @@
-/**
- * Binary search on a sorted array.
- *
- * @param arr   A sorted array that supports the supplied comparator.
- * @param target The value you’re searching for.
- * @param compare A comparison function: returns <0 if a<b, 0 if a===b, >0 if a>b.
- * @returns The index of `target` if found; otherwise –1.
- */
-export function binarySearch<T>(
-  arr: readonly T[],
-  target: T,
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): number {
-  let low = 0;
-  let high = arr.length - 1;
+// random-axios-example.ts
+import axios, { AxiosResponse } from "axios";
 
-  while (low <= high) {
-    // Use Math.floor to avoid overflow and keep mid an integer.
-    const mid = low + Math.floor((high - low) / 2);
-    const cmp = compare(arr[mid], target);
-
-    if (cmp === 0) {
-      return mid; // Found it!
-    } else if (cmp < 0) {
-      low = mid + 1; // Search right half
-    } else {
-      high = mid - 1; // Search left half
-    }
-  }
-
-  return -1; // Not found
+interface PostSummary {
+  id: number;
+  title: string;
 }
-// Example with numbers
-const nums = [3, 7, 12, 18, 25, 34];
-const index = binarySearch(nums, 18); // → 3
 
-// Example with strings – note we pass a custom comparator for case‑insensitive search
-const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
-const idx = binarySearch(
-  words,
-  'CHeRry',
-  (a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' })
-); // → 2
+async function fetchPostSummaries(
+  limit: number = 5,
+  page: number = 1
+): Promise<PostSummary[]> {
+  const url = "https://jsonplaceholder.typicode.com/posts";
+  const params = { _limit: limit, _page: page };
+
+  // Axios can be typed at the request level:
+  const response: AxiosResponse<PostSummary[]> = await axios.get(url, { params });
+
+  // We trust the API returns the expected shape, but we still slice the fields we care about.
+  return response.data.map(({ id, title }) => ({ id, title }));
+}
+
+async function main() {
+  try {
+    const summaries = await fetchPostSummaries();
+    console.log("Fetched post summaries:", summaries);
+  } catch (err) {
+    // @ts-ignore – quick error log for demonstration
+    console.error("Something went wrong:", err?.message ?? err);
+  }
+}
+
+main();
