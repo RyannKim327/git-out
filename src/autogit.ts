@@ -1,128 +1,92 @@
-type Compare<T> = (a: T, b: T) => boolean;
+type Node = string;                     // or number, or any keyable type
+type Edge = [Node, Node];               // (from, to)
 
-/**
- * If `compare(child, parent)` is true, swap them and continue
- * until the heap property is restored.
- */
-function siftDown<T>(heap: T[], start: number, end: number, compare: Compare<T>) {
-  let root = start;
-
-  while (true) {
-    const left = root * 2 + 1;
-    const right = left + 1;
-    let swap = root;
-
-    if (left <= end && compare(heap[left], heap[swap])) {
-      swap = left;
-    }
-    if (right <= end && compare(heap[right], heap[swap])) {
-      swap = right;
-    }
-
-    if (swap === root) break;
-
-    [heap[root], heap[swap]] = [heap[swap], heap[root]];
-    root = swap;
-  }
+interface Graph {
+    nodes: Set<Node>;
+    edges: Edge[];
 }
+function topologicalSortKahn(graph: Graph): Node[] | null {
+    const indeg = new Map<Node, number>();
+    const adj   = new Map<Node, Node[]>();
 
-/**
- * Moves the root element down the heap until it finds the right spot.
- * Called during `remove` after we swap the last element into the root.
- */
-export function heapify<T>(heap: T[], compare: Compare<T>) {
-  const length = heap.length;
-  if (length <= 1) return;
+    // init
+    graph.nodes.forEach(v => {
+        indeg.set(v, 0);
+        adj.set(v, []);
+    });
 
-  // Start from the last non‑leaf node.
-  for (let i = Math.floor((length - 2) / 2); i >= 0; i--) {
-    siftDown(heap, i, length - 1, compare);
-  }
-}
-export class PriorityQueue<T> {
-  private heap: T[] = [];
-  private readonly compare: Compare<T>;
-
-  constructor(compare: Compare<T>) {
-    this.compare = compare;
-  }
-
-  get size() {
-    return this.heap.length;
-  }
-
-  /** Insert a new item, maintaining heap property */
-  push(item: T): void {
-    this.heap.push(item);
-    // bubble‑up
-    let idx = this.heap.length - 1;
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      if (!this.compare(this.heap[idx], this.heap[parentIdx])) break;
-      [this.heap[idx], this.heap[parentIdx]] = [this.heap[parentIdx], this.heap[idx]];
-      idx = parentIdx;
-    }
-  }
-
-  /** Return the root element (minimum) without removing it */
-  peek(): T | undefined {
-    return this.heap[0];
-  }
-
-  /**
-   * Remove and return the root element.
-   * The last element is moved to the root and sifted down.
-   */
-  pop(): T | undefined {
-    const length = this.heap.length;
-    if (!length) return undefined;
-    const root = this.heap[0];
-    const last = this.heap.pop()!; // last is defined because length > 0
-
-    if (length > 1) {
-      this.heap[0] = last;
-      siftDown(this.heap, 0, this.heap.length - 1, this.compare);
+    // build adjacency + indegree
+    for (const [u, v] of graph.edges) {
+        adj.get(u)!.push(v);
+        indeg.set(v, indeg.get(v)! + 1);
     }
 
-    return root;
-  }
+    // queue of nodes with indegree 0
+    const q: Node[] = [];
+    indeg.forEach((cnt, node) => { if (cnt === 0) q.push(node); });
 
-  /** Convert the current array into a heap (in‑place) */
-  build() {
-    heapify(this.heap, this.compare);
-  }
+    const order: Node[] = [];
+
+    while (q.length) {
+        const v = q.shift()!;
+        order.push(v);
+
+        for (const w of adj.get(v)!) {
+            const newCnt = indeg.get(w)! - 1;
+            indeg.set(w, newCnt);
+            if (newCnt === 0) q.push(w);
+        }
+    }
+
+    // If we processed every node → DAG; else cycle present
+    return order.length === graph.nodes.size ? order : null;
 }
-// Simple numeric priority queue
-const pq = new PriorityQueue<number>((a, b) => a < b);
+function topologicalSortDFS(graph: Graph): Node[] | null {
+    const adj = new Map<Node, Node[]>();
+    graph.nodes.forEach(v => adj.set(v, []));
 
-pq.push(5);
-pq.push(2);
-pq.push(8);
-pq.push(1);
+    for (const [u, v] of graph.edges) {
+        adj.get(u)!.push(v);
+    }
 
-console.log(pq.peek()); // 1
-while (pq.size) {
-  console.log(pq.pop()); // 1, 2, 5, 8
+    const visited = new Set<Node>();
+    const onStack = new Set<Node>();   // for cycle detection
+    const order: Node[] = [];
+
+    function dfs(v: Node): boolean {
+        visited.add(v);
+        onStack.add(v);
+
+        for (const w of adj.get(v)!) {
+            if (!visited.has(w)) {
+                if (!dfs(w)) return false;           // cycle deeper down
+            } else if (onStack.has(w)) {
+                return false;                       // back edge → cycle
+            }
+        }
+
+        onStack.delete(v);
+        order.push(v);                     // add after exploring all children
+        return true;
+    }
+
+    for (const node of graph.nodes) {
+        if (!visited.has(node) && !dfs(node))
+            return null;                   // cycle found
+    }
+
+    return order.reverse();               // reverse to get finish order
 }
-interface Task {
-  id: number;
-  priority: number; // smaller = higher priority
-  payload: string;
-}
+const g: Graph = {
+    nodes: new Set(['A','B','C','D','E']),
+    edges: [
+        ['A', 'B'],
+        ['A', 'C'],
+        ['B', 'D'],
+        ['C', 'D'],
+        ['D', 'E'],
+    ]
+};
 
-const taskCompare = (a: Task, b: Task) => a.priority < b.priority;
-const taskQueue = new PriorityQueue<Task>(taskCompare);
-
-taskQueue.push({ id: 1, priority: 10, payload: 'work' });
-taskQueue.push({ id: 2, priority: 3, payload: 'urgent' });
-taskQueue.push({ id: 3, priority: 7, payload: 'normal' });
-
-while (taskQueue.size) {
-  const t = taskQueue.pop()!;
-  console.log(`${t.id} (${t.priority}): ${t.payload}`);
-}
-2 (3): urgent
-3 (7): normal
-1 (10): work
-const maxComparator = (a: number, b: number) => a > b;
-const maxPQ = new PriorityQueue<number>(maxComparator);
+console.log('Kahn:', topologicalSortKahn(g)); // e.g. A,B,C,D,E or A,C,B,D,E
+console.log('DFS :', topologicalSortDFS(g));
