@@ -1,81 +1,73 @@
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+/**
+ * Finds the longest increasing subsequence of an array.
+ *
+ * @param arr Numeric array (any integers or floats, any sign).
+ * @returns Object containing the LIS and its length.
+ */
+export function longestIncreasingSubsequence(arr: number[]): { seq: number[]; length: number } {
+  if (arr.length === 0) return { seq: [], length: 0 };
 
-  get size() { return this._size; }
-}
-append(value: T): void {
-  const newNode = new ListNode(value);
+  // tails[i] — minimal tail of an LIS of length i+1 found so far
+  const tails: number[] = [];
+  // prevIndices[i] — index of the previous element in the LIS that ends at arr[i]
+  const prevIndices: number[] = Array(arr.length).fill(-1);
+  // indexInTails[i] — will store the index in tails where arr[i] was placed
+  const indexInTails: number[] = Array(arr.length).fill(0);
 
-  if (!this.head) {          // empty list
-    this.head = this.tail = newNode;
-  } else {
-    if (this.tail) this.tail.next = newNode;
-    this.tail = newNode;
+  for (let i = 0; i < arr.length; i++) {
+    const num = arr[i];
+
+    // Binary search: first index in tails where tails[idx] >= num
+    let lo = 0,
+      hi = tails.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (tails[mid] < num) lo = mid + 1;
+      else hi = mid;
+    }
+
+    // lo is the length of the new subsequence minus one
+    indexInTails[i] = lo;
+    if (lo >= tails.length) tails.push(num);
+    else tails[lo] = num;
+
+    // Link to previous element of the subsequence
+    if (lo > 0) prevIndices[i] = tailsIdx[lo - 1];
   }
 
-  this._size++;
-}
-prepend(value: T): void {
-  const newNode = new ListNode(value, this.head);
-  this.head = newNode;
+  // tailsIdx will hold the indices in the original array that correspond to tails[]
+  const tailsIdx: number[] = Array(tails.length);
+  const seqIdx: number[] = []; // will hold indices of LIS
 
-  if (!this.tail) this.tail = newNode;
-  this._size++;
-}
-remove(index: number): T | null {
-  if (index < 0 || index >= this._size) return null;
-
-  let current = this.head;
-  let prev: ListNode<T> | null = null;
-  let i = 0;
-
-  while (current && i < index) {
-    prev = current;
-    current = current.next;
-    i++;
+  // Reconstruct the sequence by walking backwards using prevIndices
+  let k = tailsIdx.length - 1;
+  let currentIdx = -1;
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (indexInTails[i] === k) {
+      seqIdx.push(i); // store index
+      k--; // look for previous
+      currentIdx = i;
+    }
   }
+  seqIdx.reverse();
 
-  if (!current) return null;
+  const seq = seqIdx.map(idx => arr[idx]);
 
-  if (prev) prev.next = current.next;
-  else this.head = current.next;      // removed head
-
-  if (current === this.tail) this.tail = prev;
-  this._size--;
-  return current.value;
+  return { seq, length: seq.length };
 }
-find(value: T): number {
-  let current = this.head;
-  let index = 0;
+export function lisLength(arr: number[]): number {
+  if (arr.length === 0) return 0;
+  const dp = Array(arr.length).fill(1);
 
-  while (current) {
-    if (current.value === value) return index;
-    current = current.next;
-    index++;
+  for (let i = 1; i < arr.length; i++) {
+    for (let j = 0; j < i; j++) {
+      if (arr[i] > arr[j]) dp[i] = Math.max(dp[i], dp[j] + 1);
+    }
   }
-  return -1;  // not found
+  return Math.max(...dp);
 }
-toArray(): T[] {
-  const result: T[] = [];
-  let current = this.head;
-  while (current) {
-    result.push(current.value);
-    current = current.next;
-  }
-  return result;
-}
-const list = new LinkedList<number>();
+const data = [10, 22, 9, 33, 21, 50, 41, 60, 80];
+const { seq, length } = longestIncreasingSubsequence(data);
 
-list.append(10);
-list.append(20);
-list.prepend(5);
-
-console.log(list.toArray());     // [5, 10, 20]
-console.log(list.find(10));      // 1
-console.log(list.remove(0));     // 5
-console.log(list.toArray());     // [10, 20]
+console.log('LIS:', seq);          // [10, 22, 33, 50, 60, 80]
+console.log('Length:', length);    // 6
