@@ -1,128 +1,72 @@
-type Compare<T> = (a: T, b: T) => boolean;
+function longestCommonPrefixVertical(strs: string[]): string {
+  if (!strs.length) return "";
 
-/**
- * If `compare(child, parent)` is true, swap them and continue
- * until the heap property is restored.
- */
-function siftDown<T>(heap: T[], start: number, end: number, compare: Compare<T>) {
-  let root = start;
+  // The longest possible prefix is bounded by the first string’s length
+  const first = strs[0];
 
-  while (true) {
-    const left = root * 2 + 1;
-    const right = left + 1;
-    let swap = root;
-
-    if (left <= end && compare(heap[left], heap[swap])) {
-      swap = left;
-    }
-    if (right <= end && compare(heap[right], heap[swap])) {
-      swap = right;
-    }
-
-    if (swap === root) break;
-
-    [heap[root], heap[swap]] = [heap[swap], heap[root]];
-    root = swap;
-  }
-}
-
-/**
- * Moves the root element down the heap until it finds the right spot.
- * Called during `remove` after we swap the last element into the root.
- */
-export function heapify<T>(heap: T[], compare: Compare<T>) {
-  const length = heap.length;
-  if (length <= 1) return;
-
-  // Start from the last non‑leaf node.
-  for (let i = Math.floor((length - 2) / 2); i >= 0; i--) {
-    siftDown(heap, i, length - 1, compare);
-  }
-}
-export class PriorityQueue<T> {
-  private heap: T[] = [];
-  private readonly compare: Compare<T>;
-
-  constructor(compare: Compare<T>) {
-    this.compare = compare;
-  }
-
-  get size() {
-    return this.heap.length;
-  }
-
-  /** Insert a new item, maintaining heap property */
-  push(item: T): void {
-    this.heap.push(item);
-    // bubble‑up
-    let idx = this.heap.length - 1;
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      if (!this.compare(this.heap[idx], this.heap[parentIdx])) break;
-      [this.heap[idx], this.heap[parentIdx]] = [this.heap[parentIdx], this.heap[idx]];
-      idx = parentIdx;
+  for (let i = 0; i < first.length; i++) {
+    const ch = first[i];
+    for (let j = 1; j < strs.length; j++) {
+      // If any string is shorter or the current char differs: stop
+      if (i >= strs[j].length || strs[j][i] !== ch) {
+        return first.slice(0, i);
+      }
     }
   }
 
-  /** Return the root element (minimum) without removing it */
-  peek(): T | undefined {
-    return this.heap[0];
-  }
+  // All strings matched the entire first string
+  return first;
+}
+console.log(longestCommonPrefixVertical(["flower", "flow", "flight"])); // "fl"
+function lcpMerge(a: string, b: string): string {
+  let i = 0;
+  const limit = Math.min(a.length, b.length);
+  while (i < limit && a[i] === b[i]) i++;
+  return a.slice(0, i);
+}
 
-  /**
-   * Remove and return the root element.
-   * The last element is moved to the root and sifted down.
-   */
-  pop(): T | undefined {
-    const length = this.heap.length;
-    if (!length) return undefined;
-    const root = this.heap[0];
-    const last = this.heap.pop()!; // last is defined because length > 0
+function longestCommonPrefixDivide(strs: string[]): string {
+  if (!strs.length) return "";
 
-    if (length > 1) {
-      this.heap[0] = last;
-      siftDown(this.heap, 0, this.heap.length - 1, this.compare);
+  const helper = (l: number, r: number): string => {
+    if (l === r) return strs[l];
+    const mid = Math.floor((l + r) / 2);
+    const left = helper(l, mid);
+    const right = helper(mid + 1, r);
+    return lcpMerge(left, right);
+  };
+
+  return helper(0, strs.length - 1);
+}
+class TrieNode {
+  children = new Map<string, TrieNode>();
+  isEnd = false;
+}
+
+function buildTrie(strs: string[]): TrieNode {
+  const root = new TrieNode();
+  for (const s of strs) {
+    let node = root;
+    for (const ch of s) {
+      if (!node.children.has(ch)) node.children.set(ch, new TrieNode());
+      node = node.children.get(ch)!;
     }
-
-    return root;
+    node.isEnd = true;
   }
+  return root;
+}
 
-  /** Convert the current array into a heap (in‑place) */
-  build() {
-    heapify(this.heap, this.compare);
+function longestCommonPrefixTrie(strs: string[]): string {
+  if (!strs.length) return "";
+  const root = buildTrie(strs);
+  let node = root;
+  let prefix = "";
+  while (node.children.size === 1 && !node.isEnd) {
+    const [ch, next] = node.children.entries().next().value;
+    prefix += ch;
+    node = next;
   }
+  return prefix;
 }
-// Simple numeric priority queue
-const pq = new PriorityQueue<number>((a, b) => a < b);
-
-pq.push(5);
-pq.push(2);
-pq.push(8);
-pq.push(1);
-
-console.log(pq.peek()); // 1
-while (pq.size) {
-  console.log(pq.pop()); // 1, 2, 5, 8
-}
-interface Task {
-  id: number;
-  priority: number; // smaller = higher priority
-  payload: string;
-}
-
-const taskCompare = (a: Task, b: Task) => a.priority < b.priority;
-const taskQueue = new PriorityQueue<Task>(taskCompare);
-
-taskQueue.push({ id: 1, priority: 10, payload: 'work' });
-taskQueue.push({ id: 2, priority: 3, payload: 'urgent' });
-taskQueue.push({ id: 3, priority: 7, payload: 'normal' });
-
-while (taskQueue.size) {
-  const t = taskQueue.pop()!;
-  console.log(`${t.id} (${t.priority}): ${t.payload}`);
-}
-2 (3): urgent
-3 (7): normal
-1 (10): work
-const maxComparator = (a: number, b: number) => a > b;
-const maxPQ = new PriorityQueue<number>(maxComparator);
+const data = ["algorithm", "algo", "algorithms", "all"]; 
+console.log(longestCommonPrefixVertical(data)); // "alg"
