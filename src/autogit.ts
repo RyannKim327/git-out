@@ -1,60 +1,69 @@
-/**
- * Merges two sorted slices `left` and `right` into a single sorted array.
- * The operation is stable — items that compare equal keep their original
- * relative order.
- */
-function merge<T>(left: T[], right: T[], compare: (a: T, b: T) => number): T[] {
-  const result: T[] = [];
-  let i = 0;          // index into left
-  let j = 0;          // index into right
+type NodeId = string | number;          // whatever you want to use for a node key
+interface Graph {
+  /** Map of node id → set of neighbour ids */
+  adjacencyList: Map<NodeId, Set<NodeId>>;
+}
+function createGraph(edges: [NodeId, NodeId][]): Graph {
+  const adjacencyList = new Map<NodeId, Set<NodeId>>();
 
-  while (i < left.length && j < right.length) {
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
+  for (const [u, v] of edges) {
+    if (!adjacencyList.has(u)) adjacencyList.set(u, new Set());
+    if (!adjacencyList.has(v)) adjacencyList.set(v, new Set());
+    adjacencyList.get(u)!.add(v);
+    adjacencyList.get(v)!.add(u); // comment out for directed graph
+  }
+
+  return { adjacencyList };
+}
+function dfsRecursive(
+  graph: Graph,
+  start: NodeId,
+  visited = new Set<NodeId>()
+): NodeId[] {
+  visited.add(start);
+  const result = [start];
+
+  for (const neighbour of graph.adjacencyList.get(start) ?? []) {
+    if (!visited.has(neighbour)) {
+      result.push(...dfsRecursive(graph, neighbour, visited));
     }
   }
 
-  // Append any remaining elements
-  return result.concat(left.slice(i), right.slice(j));
+  return result;
 }
+function dfsIterative(graph: Graph, start: NodeId): NodeId[] {
+  const visited = new Set<NodeId>();
+  const stack: NodeId[] = [start];
+  const result: NodeId[] = [];
 
-/**
- * Recursively sorts `array` using merge sort.
- *
- * @param array   – the array to sort
- * @param compare – a comparator returning a negative number if a < b,
- *                  zero if a == b, and a positive number otherwise.
- *
- * @returns a NEW sorted array; the input array is left untouched.
- */
-export function mergeSort<T>(array: T[], compare: (a: T, b: T) => number): T[] {
-  // Base case: arrays of length 0 or 1 are already sorted
-  if (array.length <= 1) {
-    return array.slice();          // shallow copy to stay pure
+  while (stack.length) {
+    const node = stack.pop()!;           // safe: stack is non‑empty
+
+    if (visited.has(node)) continue;
+    visited.add(node);
+    result.push(node);
+
+    // Add neighbours in reverse order if you want a particular visit order
+    const neighbours = graph.adjacencyList.get(node) ?? new Set();
+    for (const neighbour of Array.from(neighbours).reverse()) {
+      if (!visited.has(neighbour)) stack.push(neighbour);
+    }
   }
 
-  const mid = Math.floor(array.length / 2);
-  const left  = array.slice(0, mid);
-  const right = array.slice(mid);
-
-  // Sort each half and merge
-  const sortedLeft  = mergeSort(left,  compare);
-  const sortedRight = mergeSort(right, compare);
-
-  return merge(sortedLeft, sortedRight, compare);
+  return result;
 }
+const edges: [NodeId, NodeId][] = [
+  [1, 2],
+  [1, 3],
+  [2, 4],
+  [3, 4],
+  [4, 5],
+];
 
-/* ---------------------------------------------------------
-   Example usage:
-   ---------------------------------------------------------
+const graph = createGraph(edges);
 
-   // Numeric sort (ascending)
-   const numbers = [32, 5, 73, 1, 42];
-   const sortedNumbers = mergeSort(numbers, (a, b) => a - b);
+console.log('Recursive DFS:', dfsRecursive(graph, 1));
+// → [1, 2, 4, 3, 5] (or another order depending on set iteration)
 
-   // String sort by length
-   const words = ["banana", "apple", "fig", "cherry"];
-   const sortedByLength = mergeSort(words, (a, b) => a.length - b.length);
-   -------------------------------------------------------- */
+console.log('Iterative DFS:', dfsIterative(graph, 1));
+// → same result, but robust on deep graphs
