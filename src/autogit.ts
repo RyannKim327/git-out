@@ -1,21 +1,52 @@
-const numbers = [3, 7, 2, 9, 4];
-
-const max = Math.max(...numbers); // 9
-console.log(max);
-const numbers = [3, 7, 2, 9, 4];
-
-const max = numbers.reduce((prev, cur) => (cur > prev ? cur : prev));
-
-console.log(max); // 9
-function maxNumber<T extends number>(arr: T[]): T | undefined {
-  if (arr.length === 0) return undefined;
-  return arr.reduce((a, b) => (b > a ? b : a));
+interface TreeNode<T = number> {
+  val: T;                // single value (you can change the type)
+  left: TreeNode<T> | null;
+  right: TreeNode<T> | null;
 }
+const root: TreeNode = {
+  val: 10,
+  left: { val: 5, left: null, right: null },
+  right: { val: 15, left: null, right: null },
+};
+function maxDepth<T>(node: TreeNode<T> | null): number {
+  if (!node) return 0;
+  const leftDepth = maxDepth(node.left);
+  const rightDepth = maxDepth(node.right);
+  return Math.max(leftDepth, rightDepth) + 1;
+}
+function maxDepthIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
 
-const nums = [1, 5, 3];
-console.log(maxNumber(nums)); // 5
-const bigNumbers = [10n, 500n, 200n];
+  const queue: TreeNode<T>[] = [root];
+  let depth = 0;
 
-const maxBig = bigNumbers.reduce((a, b) => (b > a ? b : a)); // 500n
+  while (queue.length) {
+    const levelSize = queue.length; // nodes at current depth
+    depth++;                        // we’re going to finish this level
 
-console.log(maxBig);
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift() as TreeNode<T>;
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
+  }
+
+  return depth;
+}
+// build a quick tree
+const tree: TreeNode = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: null, right: null },
+    right: null,
+  },
+  right: {
+    val: 3,
+    left: null,
+    right: { val: 5, left: null, right: null },
+  },
+};
+
+console.log(maxDepth(tree));      // -> 3
+console.log(maxDepthIter(tree));  // -> 3
