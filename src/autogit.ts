@@ -1,78 +1,61 @@
+export interface ListNode<T> {
+  val: T;               // the payload
+  next: ListNode<T> | null; // pointer to the next node
+}
 /**
- * Build the longest‑prefix‑suffix (LPS) array for the pattern.
- * lps[i] will contain the length of the longest proper prefix
- * that is also a suffix for the substring pattern[0…i].
- *
- * @param pattern – the pattern
- * @returns the filled LPS array
+ * Reverses a singly linked list.
+ * @param head: the first node of the list (or null for an empty list)
+ * @returns the new head of the reversed list
  */
-function computeLPS(pattern: string): number[] {
-  const lps: number[] = new Array(pattern.length).fill(0);
-  let length = 0;          // length of the previous longest prefix suffix
-  let i = 1;               // lps[0] is always 0
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;   // will become the new head
+  let curr: ListNode<T> | null = head;   // current node being processed
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        // don't move i here; keep looking for a smaller prefix
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
+  while (curr) {
+    const nextTemp = curr.next; // keep reference to the next node
+    curr.next = prev;           // reverse the link
+    prev = curr;                // move prev forward
+    curr = nextTemp;            // move curr forward
   }
 
-  return lps;
+  // At this point, prev points to the new head
+  return prev;
 }
-
-/**
- * Perform KMP search for a pattern in a text.
- *
- * @param text     – the string to search in
- * @param pattern  – the pattern to look for
- * @returns an array of starting indices where the pattern occurs
- */
-function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return []; // nothing to search for
-
-  const lps = computeLPS(pattern);
-  const positions: number[] = [];
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-
-      if (j === pattern.length) {
-        // match found – record starting index
-        positions.push(i - j);
-        // continue searching for next possible match
-        j = lps[j - 1];
-      }
-    } else {
-      if (j !== 0) {
-        // jump back in the pattern based on LPS
-        j = lps[j - 1];
-      } else {
-        i++; // move to next character in text
-      }
-    }
+export function reverseListRec<T>(node: ListNode<T> | null): ListNode<T> | null {
+  if (!node || !node.next) {
+    return node; // new head (either the original head if list is 1 or 0 nodes)
   }
 
-  return positions;
+  const newHead = reverseListRec(node.next);   // recurse to the end
+  node.next.next = node;   // make the next node point back to the current one
+  node.next = null;        // sever original forward link
+  return newHead;
+}
+// Helper to build a list [1, 2, 3]
+function buildList(arr: number[]): ListNode<number> | null {
+  let head: ListNode<number> | null = null;
+  for (let i = arr.length - 1; i >= 0; i--) {
+    head = { val: arr[i], next: head };
+  }
+  return head;
 }
 
-/* Example usage */
-const haystack = "ABABDABACDABABCABAB";
-const needle = "ABABCABAB";
+// Helper to convert list back to array for easy viewing
+function toArray<T>(head: ListNode<T> | null): T[] {
+  const result: T[] = [];
+  let cur = head;
+  while (cur) {
+    result.push(cur.val);
+    cur = cur.next;
+  }
+  return result;
+}
 
-const matches = kmpSearch(haystack, needle);
-console.log("Pattern found at positions:", matches);
-// Expected output: Pattern found at positions: [9]
+// Demo
+const original = buildList([1, 2, 3, 4, 5]);
+console.log('original:', toArray(original));
+
+const reversed = reverseList(original);
+console.log('reversed:', toArray(reversed));
+original: [1, 2, 3, 4, 5]
+reversed: [5, 4, 3, 2, 1]
