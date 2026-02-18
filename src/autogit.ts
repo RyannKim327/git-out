@@ -1,70 +1,43 @@
 /**
- * Radix sort (Least–Significant‑digit first) for arrays of non‑negative integers.
+ * Binary search on a sorted array.
  *
- * Time:  O(k * n)  where k = number of digits in the largest number
- * Space: O(n + B)  (B = 10 for base‑10)
+ * @param arr   A sorted array that supports the supplied comparator.
+ * @param target The value you’re searching for.
+ * @param compare A comparison function: returns <0 if a<b, 0 if a===b, >0 if a>b.
+ * @returns The index of `target` if found; otherwise –1.
  */
-function radixSort(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
+export function binarySearch<T>(
+  arr: readonly T[],
+  target: T,
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): number {
+  let low = 0;
+  let high = arr.length - 1;
 
-  // Find the biggest value to know how many digits we need to process
-  const maxVal = Math.max(...nums);
-  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
+  while (low <= high) {
+    // Use Math.floor to avoid overflow and keep mid an integer.
+    const mid = low + Math.floor((high - low) / 2);
+    const cmp = compare(arr[mid], target);
 
-  // Start from the least significant digit
-  let divisor = 1;
-
-  // We'll reuse these buckets in each pass to keep O(n) allocations
-  const buckets: number[][] = Array.from({ length: 10 }, () => []);
-
-  for (let d = 0; d < maxDigits; d++) {
-    // Distribute
-    for (const num of nums) {
-      const bucketIndex = Math.floor(num / divisor) % 10;
-      buckets[bucketIndex].push(num);
+    if (cmp === 0) {
+      return mid; // Found it!
+    } else if (cmp < 0) {
+      low = mid + 1; // Search right half
+    } else {
+      high = mid - 1; // Search left half
     }
-
-    // Collect back into nums, empty buckets for the next pass
-    let pos = 0;
-    for (const bucket of buckets) {
-      while (bucket.length) {
-        nums[pos++] = bucket.pop() as number; // pop gives LIFO but we reverse order below
-      }
-      bucket.length = 0; // reset
-    }
-
-    divisor *= 10; // move to the next digit
   }
 
-  return nums;
+  return -1; // Not found
 }
-function radixSortStable(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
+// Example with numbers
+const nums = [3, 7, 12, 18, 25, 34];
+const index = binarySearch(nums, 18); // → 3
 
-  const maxVal = Math.max(...nums);
-  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
-
-  let divisor = 1;
-  const buckets: number[][] = Array.from({ length: 10 }, () => []);
-
-  for (let d = 0; d < maxDigits; d++) {
-    for (const n of nums) {
-      const idx = Math.floor(n / divisor) % 10;
-      buckets[idx].push(n);
-    }
-
-    let i = 0;
-    for (const bucket of buckets) {
-      while (bucket.length) {
-        nums[i++] = bucket.shift() as number; // shift preserves order
-      }
-    }
-
-    divisor *= 10;
-  }
-
-  return nums;
-}
-const data = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log(radixSortStable(data));
-// → [2, 24, 45, 66, 75, 90, 170, 802]
+// Example with strings – note we pass a custom comparator for case‑insensitive search
+const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
+const idx = binarySearch(
+  words,
+  'CHeRry',
+  (a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' })
+); // → 2
