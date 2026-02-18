@@ -1,73 +1,37 @@
 /**
- * Finds the longest increasing subsequence of an array.
- *
- * @param arr Numeric array (any integers or floats, any sign).
- * @returns Object containing the LIS and its length.
+ * Normalises a string for anagram comparison:
+ *  – removes whitespace
+ *  – drops non‑alphanumeric chars
+ *  – lower‑cases everything
+ *  – sorts the remaining characters
  */
-export function longestIncreasingSubsequence(arr: number[]): { seq: number[]; length: number } {
-  if (arr.length === 0) return { seq: [], length: 0 };
+const normalise = (s: string): string =>
+  s
+    .replace(/[^a-z0-9]/gi, '')   // keep letters & digits only
+    .toLowerCase()
+    .split('')
+    .sort()
+    .join('');
 
-  // tails[i] — minimal tail of an LIS of length i+1 found so far
-  const tails: number[] = [];
-  // prevIndices[i] — index of the previous element in the LIS that ends at arr[i]
-  const prevIndices: number[] = Array(arr.length).fill(-1);
-  // indexInTails[i] — will store the index in tails where arr[i] was placed
-  const indexInTails: number[] = Array(arr.length).fill(0);
-
-  for (let i = 0; i < arr.length; i++) {
-    const num = arr[i];
-
-    // Binary search: first index in tails where tails[idx] >= num
-    let lo = 0,
-      hi = tails.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (tails[mid] < num) lo = mid + 1;
-      else hi = mid;
+export const areAnagrams = (a: string, b: string): boolean =>
+  normalise(a) === normalise(b);
+console.log(areAnagrams('listen', 'silent'));   // true
+console.log(areAnagrams('Triangle', 'Integral')); // true
+console.log(areAnagrams('hello', 'world'));    // false
+export const areAnagramsMap = (a: string, b: string): boolean => {
+  const buildFreq = (s: string) => {
+    const freq: Record<string, number> = {};
+    for (const ch of s.replace(/[^a-z0-9]/gi, '').toLowerCase()) {
+      freq[ch] = (freq[ch] ?? 0) + 1;
     }
+    return freq;
+  };
 
-    // lo is the length of the new subsequence minus one
-    indexInTails[i] = lo;
-    if (lo >= tails.length) tails.push(num);
-    else tails[lo] = num;
+  const freqA = buildFreq(a);
+  const freqB = buildFreq(b);
 
-    // Link to previous element of the subsequence
-    if (lo > 0) prevIndices[i] = tailsIdx[lo - 1];
-  }
+  const keys = Object.keys(freqA);
+  if (keys.length !== Object.keys(freqB).length) return false;
 
-  // tailsIdx will hold the indices in the original array that correspond to tails[]
-  const tailsIdx: number[] = Array(tails.length);
-  const seqIdx: number[] = []; // will hold indices of LIS
-
-  // Reconstruct the sequence by walking backwards using prevIndices
-  let k = tailsIdx.length - 1;
-  let currentIdx = -1;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (indexInTails[i] === k) {
-      seqIdx.push(i); // store index
-      k--; // look for previous
-      currentIdx = i;
-    }
-  }
-  seqIdx.reverse();
-
-  const seq = seqIdx.map(idx => arr[idx]);
-
-  return { seq, length: seq.length };
-}
-export function lisLength(arr: number[]): number {
-  if (arr.length === 0) return 0;
-  const dp = Array(arr.length).fill(1);
-
-  for (let i = 1; i < arr.length; i++) {
-    for (let j = 0; j < i; j++) {
-      if (arr[i] > arr[j]) dp[i] = Math.max(dp[i], dp[j] + 1);
-    }
-  }
-  return Math.max(...dp);
-}
-const data = [10, 22, 9, 33, 21, 50, 41, 60, 80];
-const { seq, length } = longestIncreasingSubsequence(data);
-
-console.log('LIS:', seq);          // [10, 22, 33, 50, 60, 80]
-console.log('Length:', length);    // 6
+  return keys.every(k => freqA[k] === freqB[k]);
+};
