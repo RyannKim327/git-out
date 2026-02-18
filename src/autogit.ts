@@ -1,52 +1,48 @@
-/**
- * Compare two numbers (or any types that support `<` and `>`).
- * Returns positive if a > b, negative if a < b, zero otherwise.
- */
-const compare = <T>(a: T, b: T): number => {
-  if (a > b) return 1;
-  if (a < b) return -1;
-  return 0;
-};
+// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
+//      This shape is common in interview‑style code.
+interface TreeNode {
+  val: number;         // node’s payload
+  left?: TreeNode | null;   // left child (optional)
+  right?: TreeNode | null;  // right child (optional)
+}
 
-/**
- * Restores the max‑heap property for the sub‑array a[0 … n-1]
- * starting from index i, assuming its children already satisfy
- * the heap property.
- */
-const heapify = <T>(a: T[], n: number, i: number): void => {
-  let largest = i;
-  const left  = 2 * i + 1;
-  const right = 2 * i + 2;
+// 2️⃣  Recursive summation – easiest to read and to understand.
+//      Depth‑first, natural for a tree.
+function sumTreeRecursive(root: TreeNode | null): number {
+  if (!root) return 0;                      // base case: empty subtree is 0
+  const leftSum = sumTreeRecursive(root.left);
+  const rightSum = sumTreeRecursive(root.right);
+  return root.val + leftSum + rightSum;      // combine the results
+}
 
-  if (left  < n && compare(a[left],  a[largest]) > 0) largest = left;
-  if (right < n && compare(a[right], a[largest]) > 0) largest = right;
+// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
+//      where recursion might hit the call‑stack limit.
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let total = 0;
+  const stack: TreeNode[] = [root];
 
-  if (largest !== i) {
-    [a[i], a[largest]] = [a[largest], a[i]];
-    heapify(a, n, largest);
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.val;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
   }
+  return total;
+}
+
+// 4️⃣  Sample tree for quick sanity check
+//           5
+//          / \
+//         3   7
+//        / \   \
+//       2   4   8
+
+const sampleRoot: TreeNode = {
+  val: 5,
+  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
+  right: { val: 7, right: { val: 8 } },
 };
 
-/**
- * Turns an array into a max‑heap. Complexity O(n).
- */
-const buildHeap = <T>(a: T[]): void => {
-  const n = a.length;
-  // start at the last parent node
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-    heapify(a, n, i);
-  }
-};
-
-/**
- * Heap‑sort: arr is sorted in‑place.
- */
-export const heapSort = <T>(arr: T[]): void => {
-  buildHeap(arr);
-  for (let i = arr.length - 1; i > 0; i--) {
-    // move current root (max) to the end
-    [arr[0], arr[i]] = [arr[i], arr[0]];
-    // heapify the reduced heap
-    heapify(arr, i, 0);
-  }
-};
+console.log(sumTreeRecursive(sampleRoot)); // → 33
+console.log(sumTreeIterative(sampleRoot)); // → 33
