@@ -1,28 +1,20 @@
-function countChar(str: string, ch: string): number {
-  // split on the target char and subtract 1 (the split always creates one
-  // more slice than the number of matches)
-  return str.split(ch).length - 1;
+// factorial.ts
+import * as readline from 'node:readline';
+import { stdin as input, stdout as output } from 'node:process';
+
+const rl = readline.createInterface({ input, output });
+
+function factorial(n: number): bigint {
+  if (n < 0) throw new Error('Negative numbers aren’t supported');
+  return n <= 1 ? BigInt(1) : BigInt(n) * factorial(n - 1);
 }
 
-// Example
-console.log(countChar("hello world", "l")); // 3
-function countChar(str: string, ch: string): number {
-  const matches = str.match(new RegExp(ch, "g")); // global search
-  // If no matches, null is returned; length is 0 in that case
-  return matches ? matches.length : 0;
-}
-
-// Example
-console.log(countChar("hello world", "l")); // 3
-const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const regex = new RegExp(escaped, "g");
-function countChar(str: string, ch: string): number {
-  let count = 0;
-  for (const c of str) {
-    if (c === ch) count++;
+rl.question('Enter a non‑negative integer: ', (answer) => {
+  const num = Number(answer.trim());
+  if (!Number.isInteger(num) || num < 0) {
+    console.log('That’s not a valid non‑negative integer.');
+  } else {
+    console.log(`Factorial of ${num} is ${factorial(num).toString()}`);
   }
-  return count;
-}
-
-// Example
-console.log(countChar("hello world", "l")); // 3
+  rl.close();
+});
