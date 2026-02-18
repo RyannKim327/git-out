@@ -1,26 +1,60 @@
-/**
- * Returns true if the array is in strictly ascending order (each element ≤ the next one).
- * Works for numbers, strings, or any type that can be compared with < / >.
- */
-export function isAscending<T>(arr: T[], comparator?: (a: T, b: T) => number): boolean {
-  // If the user passes a custom comparator, use it; otherwise fall back to natural order.
-  const cmp = comparator ?? ((a: T, b: T) => a < b ? -1 : a > b ? 1 : 0);
+function buildLps(pattern: string): number[] {
+  const lps = new Array(pattern.length).fill(0);
+  let len = 0;          // length of the previous longest prefix suffix
+  let i = 1;            // we start from the second character
 
-  // Iterate until we find a pair that violates the ascending rule.
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) {
-      return false; // arr[i-1] > arr[i], not ascending
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      // Mismatch after len matches
+      if (len !== 0) {
+        // Try the last known good prefix
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
     }
   }
-  return true;          // All pairs passed the test
+  return lps;
 }
-// Numbers (default comparator)
-console.log(isAscending([1, 2, 3, 4])); // true
-console.log(isAscending([1, 3, 2, 4])); // false
+/**
+ * Returns an array of starting indices where `pattern` occurs in `text`.
+ * If no match, returns an empty array.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  const lps = buildLps(pattern);
+  const results: number[] = [];
 
-// Strings (lexicographic order)
-console.log(isAscending(['apple', 'banana', 'cherry'])); // true
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-// Custom comparison – e.g., sort by string length
-const byLength = (a: string, b: string) => a.length - b.length;
-console.log(isAscending(['a', 'bb', 'ccc'], byLength)); // true
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) {
+        // Match found at position i - j
+        results.push(i - j);
+        // Prepare for the next possible match
+        j = lps[j - 1];
+      }
+    } else {
+      if (j !== 0) {
+        // Mismatch after j matches
+        j = lps[j - 1];
+      } else {
+        // Mismatch at the start
+        i++;
+      }
+    }
+  }
+
+  return results;
+}
+const text = "ABABDABACDABABCABAB";
+const pattern = "ABABCABAB";
+
+console.log(kmpSearch(text, pattern)); // [10]
