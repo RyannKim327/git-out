@@ -1,59 +1,52 @@
 /**
- * Fibonacci search for a sorted array of numbers.
- * @param arr  - The sorted array (ascending).
- * @param target - The value to locate.
- * @returns The index of target in `arr`, or -1 if not found.
+ * Compare two numbers (or any types that support `<` and `>`).
+ * Returns positive if a > b, negative if a < b, zero otherwise.
  */
-function fibSearch(arr: number[], target: number): number {
-  const n = arr.length;
+const compare = <T>(a: T, b: T): number => {
+  if (a > b) return 1;
+  if (a < b) return -1;
+  return 0;
+};
 
-  /* ------- 1. Build a Fibonacci sequence long enough ---- */
-  // fibMm2 = fib(m‑2), fibMm1 = fib(m‑1), fibM   = fib(m)
-  let fibMm2 = 0; // (m-2)'th Fibonacci number
-  let fibMm1 = 1; // (m-1)'th Fibonacci number
-  let fibM   = fibMm2 + fibMm1; // m'th Fibonacci
+/**
+ * Restores the max‑heap property for the sub‑array a[0 … n-1]
+ * starting from index i, assuming its children already satisfy
+ * the heap property.
+ */
+const heapify = <T>(a: T[], n: number, i: number): void => {
+  let largest = i;
+  const left  = 2 * i + 1;
+  const right = 2 * i + 2;
 
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM   = fibMm2 + fibMm1;
+  if (left  < n && compare(a[left],  a[largest]) > 0) largest = left;
+  if (right < n && compare(a[right], a[largest]) > 0) largest = right;
+
+  if (largest !== i) {
+    [a[i], a[largest]] = [a[largest], a[i]];
+    heapify(a, n, largest);
   }
+};
 
-  /* ------- 2. Mark the boundary of the eliminated range ------- */
-  // The offset is the index of the last removed element
-  let offset = -1;
-
-  /* ------- 3. While there are elements to investigate ----------- */
-  while (fibM > 1) {
-    // Check if fibMm2 is a valid index
-    const i = Math.min(offset + fibMm2, n - 1);
-
-    if (arr[i] === target) {
-      return i; // Found!
-    }
-
-    /* ----- Move the three Fibonacci variables down one step ----- */
-    if (arr[i] < target) {
-      fibM   = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i;
-    } else {
-      fibM   = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
-    }
+/**
+ * Turns an array into a max‑heap. Complexity O(n).
+ */
+const buildHeap = <T>(a: T[]): void => {
+  const n = a.length;
+  // start at the last parent node
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+    heapify(a, n, i);
   }
+};
 
-  /* ------- 4. Compare the last element in the range --------------- */
-  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
-    return offset + 1;
+/**
+ * Heap‑sort: arr is sorted in‑place.
+ */
+export const heapSort = <T>(arr: T[]): void => {
+  buildHeap(arr);
+  for (let i = arr.length - 1; i > 0; i--) {
+    // move current root (max) to the end
+    [arr[0], arr[i]] = [arr[i], arr[0]];
+    // heapify the reduced heap
+    heapify(arr, i, 0);
   }
-
-  return -1; // Not found
-}
-
-/* ---- Quick demo ---- */
-const sorted = [3, 5, 8, 12, 19, 27, 34, 42, 56, 73, 91];
-console.log(fibSearch(sorted, 27)); // → 5
-console.log(fibSearch(sorted, 7));  // → -1
+};
