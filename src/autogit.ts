@@ -1,91 +1,61 @@
-// --------------------------------------------------------
-// Random TypeScript demo:  GET data from a public API
-// --------------------------------------------------------
+export interface ListNode<T> {
+  val: T;               // the payload
+  next: ListNode<T> | null; // pointer to the next node
+}
+/**
+ * Reverses a singly linked list.
+ * @param head: the first node of the list (or null for an empty list)
+ * @returns the new head of the reversed list
+ */
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;   // will become the new head
+  let curr: ListNode<T> | null = head;   // current node being processed
 
-// Install the needed deps if you run this in a Node project:
-//   npm install --save node-fetch @types/node-fetch
-//
-// If you use this in a browser project, the browser's fetch is already available.
+  while (curr) {
+    const nextTemp = curr.next; // keep reference to the next node
+    curr.next = prev;           // reverse the link
+    prev = curr;                // move prev forward
+    curr = nextTemp;            // move curr forward
+  }
 
-// Import the fetch shim for Node (uncomment if you run under Node)
-// import fetch from 'node-fetch';
+  // At this point, prev points to the new head
+  return prev;
+}
+export function reverseListRec<T>(node: ListNode<T> | null): ListNode<T> | null {
+  if (!node || !node.next) {
+    return node; // new head (either the original head if list is 1 or 0 nodes)
+  }
 
-// A tiny helper to pause (useful for demo pacing)
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// -------------------------------------------------------------------
-// 1️⃣  Define the shape of the data we expect from the API
-// -------------------------------------------------------------------
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
+  const newHead = reverseListRec(node.next);   // recurse to the end
+  node.next.next = node;   // make the next node point back to the current one
+  node.next = null;        // sever original forward link
+  return newHead;
+}
+// Helper to build a list [1, 2, 3]
+function buildList(arr: number[]): ListNode<number> | null {
+  let head: ListNode<number> | null = null;
+  for (let i = arr.length - 1; i >= 0; i--) {
+    head = { val: arr[i], next: head };
+  }
+  return head;
 }
 
-// -------------------------------------------------------------------
-// 2️⃣  A generic GET helper that returns typed JSON
-// -------------------------------------------------------------------
-async function get<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    // We simply throw an error for this demo
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+// Helper to convert list back to array for easy viewing
+function toArray<T>(head: ListNode<T> | null): T[] {
+  const result: T[] = [];
+  let cur = head;
+  while (cur) {
+    result.push(cur.val);
+    cur = cur.next;
   }
-  const data: T = await response.json();
-  return data;
+  return result;
 }
 
-// -------------------------------------------------------------------
-// 3️⃣  Main demo logic
-// -------------------------------------------------------------------
-async function main() {
-  const apiEndpoint = 'https://jsonplaceholder.typicode.com/posts/1';
+// Demo
+const original = buildList([1, 2, 3, 4, 5]);
+console.log('original:', toArray(original));
 
-  console.log('Fetching demo post...');
-  try {
-    const post = await get<Post>(apiEndpoint);
-    console.log('✅ Post fetched:');
-    console.log(`  • ID: ${post.id}`);
-    console.log(`  • Title: ${post.title}`);
-    console.log(`  • Body snippet: "${post.body.slice(0, 60)}..."`);
-  } catch (err) {
-    console.error('⚠️  Error while fetching:', err);
-  }
-
-  // -------------------------------------------------------------------
-  // 4️⃣  Throw in a second request: list of all posts
-  // -------------------------------------------------------------------
-  console.log('\nFetching all posts (just the first 5 for brevity)...');
-  try {
-    const allPosts = await get<Post[]>('https://jsonplaceholder.typicode.com/posts');
-    console.table(allPosts.slice(0, 5));
-  } catch (err) {
-    console.error('⚠️  Error while fetching:', err);
-  }
-
-  // ---------------------------------------------------------------
-  // 5️⃣  Optional: POST a new resource (mocked, won't persist)
-  // ---------------------------------------------------------------
-  console.log('\nAttempting to POST a new post...');
-  try {
-    const newPostResponse = await fetch('https://jsonplaceholder.typicode.com/posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: 'Hello World',
-        body: 'This post was created by the demo.',
-        userId: 42
-      })
-    });
-    const created: Post = await newPostResponse.json();
-    console.log('✅ Created post (mocked):', created);
-  } catch (err) {
-    console.error('⚠️  Error while posting:', err);
-  }
-
-  // Small pause before exit (only matters if running in Node)
-  await delay(500);
-}
-
-main();
+const reversed = reverseList(original);
+console.log('reversed:', toArray(reversed));
+original: [1, 2, 3, 4, 5]
+reversed: [5, 4, 3, 2, 1]
