@@ -1,45 +1,48 @@
-// 1️⃣  Node definition
-interface TreeNode<T = unknown> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
-}
+/**
+ * Random‑pivot quicksort for an array of numbers.
+ *
+ * @param arr – the array to sort (it will be sorted in place)
+ * @returns the sorted array (same reference as the input)
+ */
+function randomQuickSort(arr: number[]): number[] {
+  // Internal helper that works on a sub‑range [left, right]
+  function sort(left: number, right: number) {
+    if (left >= right) return;           // 0 or 1 element – nothing to do
 
-// 2️⃣  Recursive leaf counter
-function countLeaves<T>(node?: TreeNode<T>): number {
-  // Base case: empty sub‑tree
-  if (!node) return 0;
+    // Pick a random pivot index between left and right (inclusive)
+    const pivotIndex = Math.floor(Math.random() * (right - left + 1)) + left;
+    const pivotValue = arr[pivotIndex];
 
-  // A leaf has no children
-  const isLeaf = !node.left && !node.right;
-  if (isLeaf) return 1;
+    // Move the pivot to the rightmost position for the partition step
+    [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
 
-  // Recurse on the two sub‑trees
-  return countLeaves(node.left) + countLeaves(node.right);
-}
-
-// 3️⃣  Example usage
-const tree: TreeNode<number> = {
-  value: 1,
-  left: { value: 2, right: { value: 4 } },
-  right: { value: 3, left: { value: 5 } }
-};
-
-console.log(countLeaves(tree)); // → 3
-function countLeavesIterative<T>(root: TreeNode<T>): number {
-  if (!root) return 0;
-
-  let stack: TreeNode<T>[] = [root];
-  let leafCount = 0;
-
-  while (stack.length) {
-    const node = stack.pop()!; // guaranteed defined
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
+    // Standard Lomuto partition
+    let storeIndex = left;
+    for (let i = left; i < right; i++) {
+      if (arr[i] < pivotValue) {
+        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
+        storeIndex++;
+      }
     }
+
+    // Put the pivot back in its final place
+    [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
+
+    // Recurse on the two partitions
+    sort(left, storeIndex - 1);
+    sort(storeIndex + 1, right);
   }
-  return leafCount;
+
+  sort(0, arr.length - 1);
+  return arr;
 }
+
+/*--------------------------------------------
+  Example usage
+--------------------------------------------*/
+
+const data = [34, 7, 23, 32, 5, 62];
+console.log('Unsorted:', data);
+
+const sorted = randomQuickSort([...data]); // copy to avoid mutating the original
+console.log('Sorted  :', sorted);
