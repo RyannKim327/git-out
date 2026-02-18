@@ -1,33 +1,30 @@
-// random-axios-example.ts
-import axios, { AxiosResponse } from "axios";
+function isPalindrome(str: string): boolean {
+  // Normalise: lowercase + remove all non‑alphanumerics (e.g. spaces, punctuation)
+  const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-interface PostSummary {
-  id: number;
-  title: string;
+  // Compare the cleaned string to its reverse
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
 }
+console.log(isPalindrome('Racecar'));          // true
+console.log(isPalindrome('No lemon, no melon!')); // true
+console.log(isPalindrome('Hello, world'));     // false
+function isPalindromeTwoPointer(str: string): boolean {
+  const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-async function fetchPostSummaries(
-  limit: number = 5,
-  page: number = 1
-): Promise<PostSummary[]> {
-  const url = "https://jsonplaceholder.typicode.com/posts";
-  const params = { _limit: limit, _page: page };
+  let left = 0;
+  let right = cleaned.length - 1;
 
-  // Axios can be typed at the request level:
-  const response: AxiosResponse<PostSummary[]> = await axios.get(url, { params });
-
-  // We trust the API returns the expected shape, but we still slice the fields we care about.
-  return response.data.map(({ id, title }) => ({ id, title }));
-}
-
-async function main() {
-  try {
-    const summaries = await fetchPostSummaries();
-    console.log("Fetched post summaries:", summaries);
-  } catch (err) {
-    // @ts-ignore – quick error log for demonstration
-    console.error("Something went wrong:", err?.message ?? err);
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) {
+      return false;
+    }
+    left++;
+    right--;
   }
+  return true;
 }
-
-main();
+function isPalindromeSafe(input: unknown): boolean {
+  if (typeof input !== 'string') return false;
+  return isPalindrome(input);
+}
