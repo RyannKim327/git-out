@@ -1,30 +1,28 @@
-function isPalindrome(str: string): boolean {
-  // Normalise: lowercase + remove all non‑alphanumerics (e.g. spaces, punctuation)
-  const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-  // Compare the cleaned string to its reverse
-  const reversed = cleaned.split('').reverse().join('');
-  return cleaned === reversed;
+function countChar(str: string, ch: string): number {
+  // split on the target char and subtract 1 (the split always creates one
+  // more slice than the number of matches)
+  return str.split(ch).length - 1;
 }
-console.log(isPalindrome('Racecar'));          // true
-console.log(isPalindrome('No lemon, no melon!')); // true
-console.log(isPalindrome('Hello, world'));     // false
-function isPalindromeTwoPointer(str: string): boolean {
-  const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-  let left = 0;
-  let right = cleaned.length - 1;
+// Example
+console.log(countChar("hello world", "l")); // 3
+function countChar(str: string, ch: string): number {
+  const matches = str.match(new RegExp(ch, "g")); // global search
+  // If no matches, null is returned; length is 0 in that case
+  return matches ? matches.length : 0;
+}
 
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) {
-      return false;
-    }
-    left++;
-    right--;
+// Example
+console.log(countChar("hello world", "l")); // 3
+const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const regex = new RegExp(escaped, "g");
+function countChar(str: string, ch: string): number {
+  let count = 0;
+  for (const c of str) {
+    if (c === ch) count++;
   }
-  return true;
+  return count;
 }
-function isPalindromeSafe(input: unknown): boolean {
-  if (typeof input !== 'string') return false;
-  return isPalindrome(input);
-}
+
+// Example
+console.log(countChar("hello world", "l")); // 3
