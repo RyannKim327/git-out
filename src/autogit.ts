@@ -1,85 +1,36 @@
-/* A node that lives inside the queue */
-class QueueNode<T> {
-  constructor(
-    public value: T,
-    public next: QueueNode<T> | null = null
-  ) {}
-}
+/**
+ * Performs an in‑place Shell sort on `arr`.
+ * The generic makes it usable for numbers, strings, or any comparable type.
+ */
+export function shellSort<T>(arr: T[], compare?: (a: T, b: T) => boolean) {
+  const len = arr.length;
+  // Default comparison: ascending numeric/string order
+  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any));
 
-/* The queue itself */
-export class LinkedListQueue<T> {
-  // We keep pointers to both ends so that both enqueue
-  // (push) and dequeue (pop) stay O(1).
-  private head: QueueNode<T> | null = null; // front of the queue
-  private tail: QueueNode<T> | null = null; // rear of the queue
-  private _size = 0;
+  // Start with a gap (Hibbard’s sequence is simple and effective)
+  // gap = 1, 3, 7, 15, …  (2^k‑1)
+  let gap = 1;
+  while (gap < len) gap = 2 * gap + 1; // find largest Hibbard gap <= len
 
-  /** Insert a new value at the rear. */
-  enqueue(value: T): void {
-    const node = new QueueNode(value);
-
-    if (this.tail) {
-      // The queue already has at least one element
-      this.tail.next = node;
-      this.tail = node;
-    } else {
-      // Empty queue: head and tail become the new node
-      this.head = this.tail = node;
+  // Descend gaps until 1
+  while (gap >= 1) {
+    // Insertion sort on elements gap apart
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+      // shift earlier gap‑sorted elements that are greater
+      while (j >= gap && cmp(temp, arr[j - gap])) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
     }
-
-    this._size++;
-  }
-
-  /** Remove and return the value at the front. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined; // Empty queue
-
-    const value = this.head.value;
-    this.head = this.head.next;
-
-    // If we just removed the last element, clear the tail too
-    if (!this.head) {
-      this.tail = null;
-    }
-
-    this._size--;
-    return value;
-  }
-
-  /** Peek at the front value without removing it. */
-  peek(): T | undefined {
-    return this.head ? this.head.value : undefined;
-  }
-
-  /** Number of elements currently in the queue. */
-  get size(): number {
-    return this._size;
-  }
-
-  /** Are there any elements? */
-  get isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Remove everything from the queue. */
-  clear(): void {
-    this.head = null;
-    this.tail = null;
-    this._size = 0;
+    // Next gap
+    gap = Math.floor((gap - 1) / 2); // inverse of 2*gap + 1
   }
 }
-const queue = new LinkedListQueue<number>();
-
-queue.enqueue(1);
-queue.enqueue(2);
-queue.enqueue(3);
-
-console.log(queue.peek()); // 1
-console.log(queue.dequeue()); // 1
-console.log(queue.dequeue()); // 2
-console.log(queue.size); // 1
-
-queue.enqueue(4);
-console.log(queue.dequeue()); // 3
-console.log(queue.dequeue()); // 4
-console.log(queue.isEmpty); // true
+const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
+shellSort(numbers);
+console.log(numbers); // [1, 2, 3, 8, 12, 23, 34, 54]
+const desc = (a: number, b: number) => a > b;
+shellSort(numbers, desc);
