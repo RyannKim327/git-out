@@ -1,78 +1,60 @@
-// AndroidAsyncDemo.ts
-import { AndroidApplication, AndroidActivityEventData } from "@nativescript/core";
-import * as http from "http";
+function buildLps(pattern: string): number[] {
+  const lps = new Array(pattern.length).fill(0);
+  let len = 0;          // length of the previous longest prefix suffix
+  let i = 1;            // we start from the second character
 
-export class AndroidAsyncDemo {
-    private activity: android.app.Activity;
-
-    constructor() {
-        const eventData = <AndroidActivityEventData>androidApplication.currentContext.getActivity();
-        this.activity = eventData.activity;
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      // Mismatch after len matches
+      if (len !== 0) {
+        // Try the last known good prefix
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
     }
-
-    public startDemo() {
-        // URL you care about
-        const url = "https://api.github.com/users/nativescript";
-
-        // Create an instance of the AsyncTask wrapper
-        const task = new HttpGetAsyncTask(this.activity, url);
-        task.execute();
-    }
+  }
+  return lps;
 }
+/**
+ * Returns an array of starting indices where `pattern` occurs in `text`.
+ * If no match, returns an empty array.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  const lps = buildLps(pattern);
+  const results: number[] = [];
 
-// --------------------------------------------
-//  AsyncTask wrapper – looks a bit like Java
-// --------------------------------------------
-class HttpGetAsyncTask extends java.lang.Object implements android.os.AsyncTask<string, void, string> {
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-    private activity: android.app.Activity;
-    private url: string;
-    private resultView: android.widget.TextView;
-
-    constructor(activity: android.app.Activity, url: string) {
-        super();
-        this.activity = activity;
-        this.url = url;
-        this.resultView = new android.widget.TextView(activity);
-        this.resultView.setLayoutParams(
-            new android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        );
-        this.activity.runOnUiThread(() => {
-            const root = this.activity.findViewById(android.R.id.content);
-            if (root instanceof android.widget.LinearLayout) {
-                root.addView(this.resultView);
-            }
-        });
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) {
+        // Match found at position i - j
+        results.push(i - j);
+        // Prepare for the next possible match
+        j = lps[j - 1];
+      }
+    } else {
+      if (j !== 0) {
+        // Mismatch after j matches
+        j = lps[j - 1];
+      } else {
+        // Mismatch at the start
+        i++;
+      }
     }
+  }
 
-    // @Override
-    public doInBackground(...params: string[]): string {
-        try {
-            // Using Node's http wrapper that works in NativeScript
-            const response = http.getSync(this.url);
-            return response.content.toString();
-        } catch (err) {
-            return `Error: ${err.message || err}`;
-        }
-    }
-
-    // @Override
-    public onPostExecute(result: string): void {
-        this.resultView.setText(result);
-    }
-
-    // The following method signatures satisfy the interface contract
-    public onPreExecute(): void {}
-    public onProgressUpdate(...values: void[]): void {}
+  return results;
 }
+const text = "ABABDABACDABABCABAB";
+const pattern = "ABABCABAB";
 
-// --------------------------------------------
-//  Use it from your page or component
-// --------------------------------------------
-export function demoClicked() {
-    const demo = new AndroidAsyncDemo();
-    demo.startDemo();
-}
+console.log(kmpSearch(text, pattern)); // [10]
