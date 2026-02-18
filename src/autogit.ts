@@ -1,73 +1,74 @@
 /**
- * Finds the longest increasing subsequence of an array.
- *
- * @param arr Numeric array (any integers or floats, any sign).
- * @returns Object containing the LIS and its length.
+ * Median of two sorted arrays
+ * A and B can be empty, but not both.
  */
-export function longestIncreasingSubsequence(arr: number[]): { seq: number[]; length: number } {
-  if (arr.length === 0) return { seq: [], length: 0 };
+export function medianOfTwoSortedArrays(
+  a: number[],
+  b: number[]
+): number {
+  // Ensure a is the smaller array; this keeps the binary‑search bounds tight.
+  const [A, B] = a.length <= b.length ? [a, b] : [b, a];
+  const m = A.length;
+  const n = B.length;
+  const half = Math.floor((m + n + 1) / 2);
 
-  // tails[i] — minimal tail of an LIS of length i+1 found so far
-  const tails: number[] = [];
-  // prevIndices[i] — index of the previous element in the LIS that ends at arr[i]
-  const prevIndices: number[] = Array(arr.length).fill(-1);
-  // indexInTails[i] — will store the index in tails where arr[i] was placed
-  const indexInTails: number[] = Array(arr.length).fill(0);
+  let low = 0;
+  let high = m;
 
-  for (let i = 0; i < arr.length; i++) {
-    const num = arr[i];
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2); // elements taken from A
+    const j = half - i;                     // elements taken from B
 
-    // Binary search: first index in tails where tails[idx] >= num
-    let lo = 0,
-      hi = tails.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (tails[mid] < num) lo = mid + 1;
-      else hi = mid;
-    }
+    const Aleft  = i === 0     ? Number.NEGATIVE_INFINITY : A[i - 1];
+    const Aright = i === m     ? Number.POSITIVE_INFINITY : A[i];
 
-    // lo is the length of the new subsequence minus one
-    indexInTails[i] = lo;
-    if (lo >= tails.length) tails.push(num);
-    else tails[lo] = num;
+    const Bleft  = j === 0     ? Number.NEGATIVE_INFINITY : B[j - 1];
+    const Bright = j === n     ? Number.POSITIVE_INFINITY : B[j];
 
-    // Link to previous element of the subsequence
-    if (lo > 0) prevIndices[i] = tailsIdx[lo - 1];
-  }
+    // i is perfect if left side ≤ right side
+    if (Aleft <= Bright && Bleft <= Aright) {
+      // Odd total → max of left side
+      if ((m + n) % 2 === 1) {
+        return Math.max(Aleft, Bleft);
+      }
 
-  // tailsIdx will hold the indices in the original array that correspond to tails[]
-  const tailsIdx: number[] = Array(tails.length);
-  const seqIdx: number[] = []; // will hold indices of LIS
-
-  // Reconstruct the sequence by walking backwards using prevIndices
-  let k = tailsIdx.length - 1;
-  let currentIdx = -1;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (indexInTails[i] === k) {
-      seqIdx.push(i); // store index
-      k--; // look for previous
-      currentIdx = i;
+      // Even total → average of two middle values
+      return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
+    } else if (Aleft > Bright) {
+      // i too big, shift left
+      high = i - 1;
+    } else {
+      // i too small, shift right
+      low = i + 1;
     }
   }
-  seqIdx.reverse();
 
-  const seq = seqIdx.map(idx => arr[idx]);
-
-  return { seq, length: seq.length };
+  throw new Error('Input arrays are not sorted or invalid.');
 }
-export function lisLength(arr: number[]): number {
-  if (arr.length === 0) return 0;
-  const dp = Array(arr.length).fill(1);
+export function medianOfTwoSortedArraysSimple(
+  a: number[],
+  b: number[]
+): number {
+  const merged: number[] = [];
+  let i = 0, j = 0;
 
-  for (let i = 1; i < arr.length; i++) {
-    for (let j = 0; j < i; j++) {
-      if (arr[i] > arr[j]) dp[i] = Math.max(dp[i], dp[j] + 1);
+  while (i < a.length || j < b.length) {
+    if (i >= a.length) {
+      merged.push(b[j++]);
+    } else if (j >= b.length) {
+      merged.push(a[i++]);
+    } else if (a[i] <= b[j]) {
+      merged.push(a[i++]);
+    } else {
+      merged.push(b[j++]);
     }
   }
-  return Math.max(...dp);
-}
-const data = [10, 22, 9, 33, 21, 50, 41, 60, 80];
-const { seq, length } = longestIncreasingSubsequence(data);
 
-console.log('LIS:', seq);          // [10, 22, 33, 50, 60, 80]
-console.log('Length:', length);    // 6
+  const len = merged.length;
+  if (len % 2 === 1) return merged[Math.floor(len / 2)];
+  return (merged[len / 2 - 1] + merged[len / 2]) / 2;
+}
+const arr1 = [1, 3, 5, 9];
+const arr2 = [2, 4, 6, 8, 10];
+
+console.log(medianOfTwoSortedArrays(arr1, arr2)); // 5.5
