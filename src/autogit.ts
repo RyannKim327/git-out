@@ -1,132 +1,48 @@
-// ---------- Types ---------------------------------------------------------
-type Vertex = string | number // whatever sort of key you like
-
-// an edge is directed; the weight can be positive, negative or zero
-interface Edge {
-  from: Vertex
-  to: Vertex
-  weight: number
-}
-
-// ---------- Graph wrapper -----------------------------------------------
-class Graph {
-  private vertices: Set<Vertex> = new Set()
-  private edges: Edge[] = []
-
-  // you can add vertices explicitly if you want; adding an edge will
-  // automatically pull its endpoints into the vertex set
-  public addVertex(v: Vertex) {
-    this.vertices.add(v)
-  }
-
-  public addEdge(from: Vertex, to: Vertex, weight: number) {
-    this.vertices.add(from)
-    this.vertices.add(to)
-    this.edges.push({ from, to, weight })
-  }
-
-  public getVertices() {
-    return Array.from(this.vertices)
-  }
-
-  public getEdges() {
-    return this.edges.slice()
-  }
-}
-
-// ---------- Bellman‑Ford algorithm ---------------------------------------
 /**
- * Returns an object containing:
- *   distances:  map from vertex to its shortest‑path distance from source
- *   previous:   map from vertex to its predecessor on that shortest path
+ * Return the maximum sum sub‑array (Kadane) along with its start & end indices.
  *
- * Throws an Error if a negative‑weight cycle is reachable from `source`.
+ * @param nums  Array of numbers – can contain positives, zeros and negatives.
+ * @returns     Object with `maxSum`, `start`, `end` (inclusive).
  */
-function bellmanFord(
-  graph: Graph,
-  source: Vertex
-): { distances: Record<Vertex, number>; previous: Record<Vertex, Vertex | null> } {
-  const INF = Number.POSITIVE_INFINITY
+export function maxSubarrayWithIndices(nums: number[]): {
+  maxSum: number;
+  start: number;
+  end: number;
+} {
+  if (nums.length === 0) throw new Error("Input array must contain at least one element");
 
-  // 1. initialise
-  const distance: Record<Vertex, number> = {}
-  const previous: Record<Vertex, Vertex | null> = {}
+  let bestSum = nums[0];
+  let currentSum = nums[0];
 
-  for (const v of graph.getVertices()) {
-    distance[v] = INF
-    previous[v] = null
-  }
-  distance[source] = 0
+  // These track the best indices we’ve seen
+  let bestStart = 0;
+  let bestEnd = 0;
 
-  const edges = graph.getEdges()
-  const nvertices = graph.getVertices().length
+  // Temporary indices for the sub‑array we are currently extending
+  let tempStart = 0;
 
-  // 2. relaxation loop (nvertices - 1) times
-  for (let i = 0; i < nvertices - 1; i++) {
-    let updated = false
-    for (const { from, to, weight } of edges) {
-      const alt = distance[from] + weight
-      if (alt < distance[to]) {
-        distance[to] = alt
-        previous[to] = from
-        updated = true
-      }
+  for (let i = 1; i < nums.length; i++) {
+    const num = nums[i];
+
+    // Decide whether to extend the current sub‑array or start fresh at i
+    if (currentSum + num < num) {
+      currentSum = num;
+      tempStart = i;
+    } else {
+      currentSum += num;
     }
-    // early exit if nothing changed
-    if (!updated) break
-  }
 
-  // 3. check for negative‑weight cycles
-  for (const { from, to, weight } of edges) {
-    if (distance[from] + weight < distance[to]) {
-      throw new Error(
-        `Negative‑weight cycle detected: edge ${from} → ${to} (weight ${weight})`
-      )
+    // Update the best found so far
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
     }
   }
 
-  return { distances: distance, previous }
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-
-// ---------- Reconstruct path helper ---------------------------------------
-function reconstructPath(
-  previous: Record<Vertex, Vertex | null>,
-  source: Vertex,
-  target: Vertex
-): Vertex[] {
-  const path: Vertex[] = []
-  let v: Vertex | null = target
-
-  while (v !== null && v !== source) {
-    path.unshift(v)
-    v = previous[v]
-  }
-  if (v !== source) {
-    // no path
-    return []
-  }
-  path.unshift(source)
-  return path
-}
-
-// ---------- Example usage -----------------------------------------------
-const g = new Graph()
-
-// sample graph: 0 → 1 (4), 0 → 2 (5), 1 → 2 (-1), 2 → 3 (3), 3 → 1 (-2)
-g.addEdge(0, 1, 4)
-g.addEdge(0, 2, 5)
-g.addEdge(1, 2, -1)
-g.addEdge(2, 3, 3)
-g.addEdge(3, 1, -2)
-
-try {
-  const { distances, previous } = bellmanFord(g, 0)
-  console.log('distances:', distances)
-
-  for (const v of g.getVertices()) {
-    const path = reconstructPath(previous, 0, v)
-    console.log(`0 → ${v}  (dist=${distances[v]})  path:`, path.join(' → '))
-  }
-} catch (e) {
-  console.error(e)
-}
+const arr = [4, -1, 2, 1, -5, 4];
+const result = maxSubarrayWithIndices(arr);
+console.log(result); // { maxSum: 6, start: 0, end: 3 }
+// Sub‑array: [4, -1, 2, 1] → sum 6
