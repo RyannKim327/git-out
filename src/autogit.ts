@@ -1,35 +1,72 @@
-/**
- * Counting sort for arrays of non‑negative integers.
- * @param arr The input array – it will not be mutated.
- * @returns A new array containing the sorted numbers.
- */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+// Generic, in‑place quicksort
+export function quickSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number,
+  low = 0,
+  high = arr.length - 1,
+): T[] {
+  // Default comparator: numeric/string natural order
+  const cmp = compareFn ?? ((a: T, b: T) =>
+    a < b ? -1 : a > b ? 1 : 0,
+  );
 
-  // 1. Find the maximum value (k) – the range of the keys.
-  let max = arr[0];
-  for (const num of arr) if (num > max) max = num;
+  // Helper: partition using Hoare's scheme
+  const partition = (l: number, h: number): number => {
+    const pivot = arr[Math.floor((l + h) / 2)];
+    let i = l - 1;
+    let j = h + 1;
+    while (true) {
+      do { i++; } while (cmp(arr[i], pivot) < 0);
+      do { j--; } while (cmp(arr[j], pivot) > 0);
+      if (i >= j) return j;
+      [arr[i], arr[j]] = [arr[j], arr[i]]; // swap
+    }
+  };
 
-  // 2. Build the “count” array of size k + 1, initialise to 0.
-  const count: number[] = new Array(max + 1).fill(0);
-
-  // 3. Count how many times each value appears.
-  for (const num of arr) count[num]++;
-
-  // 4. Transform counts to positions (prefix sums).
-  for (let i = 1; i < count.length; i++) {
-    count[i] += count[i - 1];
+  if (low < high) {
+    const p = partition(low, high);
+    quickSort(arr, compareFn, low, p);
+    quickSort(arr, compareFn, p + 1, high);
   }
-
-  // 5. Place each element into the output array in stable order.
-  const output: number[] = new Array(arr.length);
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const num = arr[i];
-    const pos = --count[num];   // decrement to get zero‑based index
-    output[pos] = num;
-  }
-
-  return output;
+  return arr; // for convenience – returns the same array reference
 }
-const data = [4, 2, 2, 8, 3, 3, 1];
-console.log(countingSort(data)); // [1, 2, 2, 3, 3, 4, 8]
+export function quickSortImmutable<T>(
+  arr: readonly T[],
+  compareFn?: (a: T, b: T) => number,
+): T[] {
+  if (arr.length <= 1) return [...arr];
+
+  const compare = compareFn ?? ((a: T, b: T) =>
+    a < b ? -1 : a > b ? 1 : 0,
+  );
+
+  const pivot = arr[Math.floor(arr.length / 2)];
+  const lows = arr.filter((x) => compare(x, pivot) < 0);
+  const highs = arr.filter((x) => compare(x, pivot) > 0);
+  const pivots = arr.filter((x) => compare(x, pivot) === 0);
+
+  return [
+    ...quickSortImmutable(lows, compareFn),
+    ...pivots,
+    ...quickSortImmutable(highs, compareFn),
+  ];
+}
+const nums = [34, 7, 23, 32, 5, 62];
+quickSort(nums);               // mutates `nums`
+console.log(nums);             // [5, 7, 23, 32, 34, 62]
+
+let strs = ["banana", "apple", "cherry"];
+quickSort(strs, (a, b) => a.localeCompare(b));
+console.log(strs);             // ["apple", "banana", "cherry"]
+
+let objs = [
+  { id: 3, name: "c" },
+  { id: 1, name: "a" },
+  { id: 2, name: "b" },
+];
+quickSort(
+  objs,
+  (a, b) => a.id - b.id,
+);
+console.log(objs);
+// [{ id: 1, name: "a" }, { id: 2, name: "b" }, { id: 3, name: "c" }]
