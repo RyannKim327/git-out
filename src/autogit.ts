@@ -1,29 +1,10 @@
-function firstRepeatedChar(str: string): string | null {
-  const seen = new Set<string>();
+// 1️⃣ Mutating the original array
+const numbers = [1, 2, 3, 4, 5];
+numbers.reverse();          // numbers === [5, 4, 3, 2, 1]
 
-  for (const ch of str) {
-    if (seen.has(ch)) {
-      return ch;            // ❗ hit the first duplicate
-    }
-    seen.add(ch);
-  }
-
-  return null;               // no duplicate found
-}
-
-// Demo
-console.log(firstRepeatedChar("abca")); // → 'a'
-console.log(firstRepeatedChar("abcdef")); // → null
-function firstRepeatedIndex(str: string): number | -1 {
-  const seen = new Map<string, number>();
-
-  for (let i = 0; i < str.length; i++) {
-    const ch = str[i];
-    if (seen.has(ch)) {
-      return i;   // index of the first occurrence that was repeated
-    }
-    seen.set(ch, i);
-  }
-
-  return -1;
+// 2️⃣ Producing a new array (original stays untouched)
+const letters = ['a', 'b', 'c'];
+const reversed = [...letters].reverse(); // reversed === ['c', 'b', 'a']
+function reverseArray<T>(arr: T[]): T[] {
+    return [...arr].reverse();   // or: return arr.slice().reverse();
 }
