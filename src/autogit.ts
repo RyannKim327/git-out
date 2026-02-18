@@ -1,78 +1,94 @@
-/**
- * Bubble Sort – in‑place, O(n²) time, O(1) space
- *
- * @param arr Array of values that implement `Comparable`
- * @returns the sorted array (same reference as input)
- */
-export function bubbleSort<T extends Comparable>(arr: T[]): T[] {
-  const n = arr.length;
+type AdjacencyList = Record<string, string[]>;
 
-  // Minor optimization: keep track of whether a swap happened
-  // in the current pass. If not, array is already sorted.
-  for (let i = 0; i < n - 1; i++) {
-    let swapped = false;
+/*
+  Example:
 
-    // After each outer loop pass, the largest element of the
-    // unsorted portion settles at the end of the array.
-    for (let j = 0; j < n - i - 1; j++) {
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
+  {
+    A: ["B"],
+    B: ["C", "E"],
+    C: ["A", "D"],
+    D: ["C"],
+    E: ["F"],
+    F: ["E", "G"],
+    G: ["H"],
+    H: ["I", "J"],
+    I: ["H"],
+    J: ["G"],
+  }
+*/
+// TarjanSCC.ts
+type AdjacencyList = Record<string, string[]>;
+
+export function tarjanSCC(graph: AdjacencyList): string[][] {
+  let index = 0;                         // global index counter
+  const indices: Record<string, number> = {};   // vertex → index
+  const lowlinks: Record<string, number> = {};  // vertex → lowlink
+  const stack: string[] = [];
+  const onStack: Record<string, boolean> = {};
+  const sccs: string[][] = [];
+
+  function strongConnect(v: string) {
+    // 1. Set the depth index for v to the smallest unused index
+    indices[v] = lowlinks[v] = index++;
+    stack.push(v);
+    onStack[v] = true;
+
+    // 2. Consider successors of v
+    const neighbours = graph[v] ?? [];
+    for (const w of neighbours) {
+      if (indices[w] === undefined) {
+        // Successor w has not yet been visited; recurse on it
+        strongConnect(w);
+        lowlinks[v] = Math.min(lowlinks[v], lowlinks[w]);
+      } else if (onStack[w]) {
+        // Successor w is in stack → part of current SCC
+        lowlinks[v] = Math.min(lowlinks[v], indices[w]);
       }
     }
 
-    // If no elements were swapped, the array is already sorted.
-    if (!swapped) break;
-  }
-
-  return arr;
-}
-
-/** Simple comparable interface for primitives */
-export interface Comparable {
-  /** Return true if this > other */
-  > (other: this): boolean;
-}
-export function bubbleSortWith<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number
-): T[] {
-  for (let i = 0; i < arr.length - 1; i++) {
-    let swapped = false;
-
-    for (let j = 0; j < arr.length - i - 1; j++) {
-      // compareFn(a, b) < 0 => a < b
-      // compareFn(a, b) > 0 => a > b
-      if (compareFn(arr[j], arr[j + 1]) > 0) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
+    // 3. If v is a root node, pop the stack and generate an SCC
+    if (lowlinks[v] === indices[v]) {
+      const component: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop() as string;
+        onStack[w] = false;
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
     }
-
-    if (!swapped) break;
   }
 
-  return arr;
-}
-interface Person {
-  name: string;
-  age: number;
-}
+  // Kick off
+  for (const v of Object.keys(graph)) {
+    if (indices[v] === undefined) {
+      strongConnect(v);
+    }
+  }
 
-const people: Person[] = [
-  { name: "Alice", age: 34 },
-  { name: "Bob", age: 29 },
-  { name: "Carol", age: 42 },
-];
-
-bubbleSortWith(people, (a, b) => a.age - b.age);
-// people is now sorted by age ascending
-function test() {
-  const nums = [3, 1, 4, 1, 5, 9, 2, 6];
-  console.log("Before:", nums);
-  bubbleSort(nums); // mutates nums in place
-  console.log("After: ", nums);
+  return sccs;
 }
+import { tarjanSCC } from "./TarjanSCC";
 
-test(); /* → Before: [3,1,4,1,5,9,2,6]
-          After:  [1,1,2,3,4,5,6,9] */
+const graph: AdjacencyList = {
+  A: ["B"],
+  B: ["C", "E"],
+  C: ["A", "D"],
+  D: ["C"],
+  E: ["F"],
+  F: ["E", "G"],
+  G: ["H"],
+  H: ["I", "J"],
+  I: ["H"],
+  J: ["G"],
+};
+
+const sccs = tarjanSCC(graph);
+console.log("Strongly connected components:");
+sccs.forEach((comp, idx) => {
+  console.log(`  ${idx + 1}: [${comp.join(", ")}]`);
+});
+Strongly connected components:
+  1: [A, B, C, D]
+  2: [E, F]
+  3: [G, H, I, J]
