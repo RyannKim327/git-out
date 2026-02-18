@@ -1,72 +1,51 @@
-// Generic, in‑place quicksort
-export function quickSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number,
-  low = 0,
-  high = arr.length - 1,
-): T[] {
-  // Default comparator: numeric/string natural order
-  const cmp = compareFn ?? ((a: T, b: T) =>
-    a < b ? -1 : a > b ? 1 : 0,
-  );
+// 1️⃣ Tree node definition
+interface TreeNode {
+  val: number;          // value is irrelevant for diameter
+  left?: TreeNode | null;
+  right?: TreeNode | null;
+}
 
-  // Helper: partition using Hoare's scheme
-  const partition = (l: number, h: number): number => {
-    const pivot = arr[Math.floor((l + h) / 2)];
-    let i = l - 1;
-    let j = h + 1;
-    while (true) {
-      do { i++; } while (cmp(arr[i], pivot) < 0);
-      do { j--; } while (cmp(arr[j], pivot) > 0);
-      if (i >= j) return j;
-      [arr[i], arr[j]] = [arr[j], arr[i]]; // swap
-    }
-  };
+// 2️⃣ Main diameter function
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let diameter = 0;                 // global accumulator
 
-  if (low < high) {
-    const p = partition(low, high);
-    quickSort(arr, compareFn, low, p);
-    quickSort(arr, compareFn, p + 1, high);
+  function dfs(node: TreeNode | null): number {
+    if (!node) return 0;            // height of empty subtree
+
+    // Recursively find heights of left/right subtrees
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
+
+    // Path through current node (in edges)
+    const pathThrough = leftHeight + rightHeight;
+
+    // Update global diameter if this is the largest seen so far
+    diameter = Math.max(diameter, pathThrough);
+
+    // Return height from this node up to a leaf
+    return 1 + Math.max(leftHeight, rightHeight);
   }
-  return arr; // for convenience – returns the same array reference
+
+  dfs(root);
+  return diameter;
 }
-export function quickSortImmutable<T>(
-  arr: readonly T[],
-  compareFn?: (a: T, b: T) => number,
-): T[] {
-  if (arr.length <= 1) return [...arr];
+// Example tree:
+//      1
+//     / \
+//    2   3
+//   / \
+//  4   5
+const tree: TreeNode = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: null, right: null },
+    right: { val: 5, left: null, right: null },
+  },
+  right: { val: 3, left: null, right: null },
+};
 
-  const compare = compareFn ?? ((a: T, b: T) =>
-    a < b ? -1 : a > b ? 1 : 0,
-  );
-
-  const pivot = arr[Math.floor(arr.length / 2)];
-  const lows = arr.filter((x) => compare(x, pivot) < 0);
-  const highs = arr.filter((x) => compare(x, pivot) > 0);
-  const pivots = arr.filter((x) => compare(x, pivot) === 0);
-
-  return [
-    ...quickSortImmutable(lows, compareFn),
-    ...pivots,
-    ...quickSortImmutable(highs, compareFn),
-  ];
-}
-const nums = [34, 7, 23, 32, 5, 62];
-quickSort(nums);               // mutates `nums`
-console.log(nums);             // [5, 7, 23, 32, 34, 62]
-
-let strs = ["banana", "apple", "cherry"];
-quickSort(strs, (a, b) => a.localeCompare(b));
-console.log(strs);             // ["apple", "banana", "cherry"]
-
-let objs = [
-  { id: 3, name: "c" },
-  { id: 1, name: "a" },
-  { id: 2, name: "b" },
-];
-quickSort(
-  objs,
-  (a, b) => a.id - b.id,
-);
-console.log(objs);
-// [{ id: 1, name: "a" }, { id: 2, name: "b" }, { id: 3, name: "c" }]
+console.log(diameterOfBinaryTree(tree)); // Output: 3
+// Explanation: path 4‑2‑1‑3 uses 3 edges
+console.log(diameterOfBinaryTree(null));           // 0
+console.log(diameterOfBinaryTree({ val: 42 }));    // 0
