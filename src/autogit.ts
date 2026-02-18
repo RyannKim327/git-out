@@ -1,33 +1,29 @@
-// random-axios-example.ts
-import axios, { AxiosResponse } from "axios";
-
-interface PostSummary {
-  id: number;
-  title: string;
+/**
+ * Reverses the order of words in a string.
+ *
+ * Words are split on whitespace.  Consecutive whitespace is collapsed,
+ * but you can tweak the regex if you need to keep it intact.
+ *
+ * @param txt – The string to reverse
+ * @returns The string with words in reverse order
+ */
+function reverseWordOrder(txt: string): string {
+  return txt
+    .trim()                      // Strip leading/trailing gaps
+    .split(/\s+/)                // Break on any run of whitespace
+    .reverse()                   // Flip the array
+    .join(' ');                  // Stitch back together
 }
 
-async function fetchPostSummaries(
-  limit: number = 5,
-  page: number = 1
-): Promise<PostSummary[]> {
-  const url = "https://jsonplaceholder.typicode.com/posts";
-  const params = { _limit: limit, _page: page };
-
-  // Axios can be typed at the request level:
-  const response: AxiosResponse<PostSummary[]> = await axios.get(url, { params });
-
-  // We trust the API returns the expected shape, but we still slice the fields we care about.
-  return response.data.map(({ id, title }) => ({ id, title }));
+// Example usage
+const original = "Hello world, this is TypeScript.";
+const reversed = reverseWordOrder(original);
+console.log(reversed);  // "TypeScript. is this world, Hello"
+function reverseWordOrder(txt: string) {
+  const words = txt.trim().match(/\w+|\s+/g) ?? [];
+  const textOnly = words.filter(Boolean).join(' ');
+  const reversed = textOnly.split(/\s+/).reverse().join(' ');
+  // re‑insert spaces that were originally present
+  // (not shown here for brevity)
+  return reversed;
 }
-
-async function main() {
-  try {
-    const summaries = await fetchPostSummaries();
-    console.log("Fetched post summaries:", summaries);
-  } catch (err) {
-    // @ts-ignore – quick error log for demonstration
-    console.error("Something went wrong:", err?.message ?? err);
-  }
-}
-
-main();
