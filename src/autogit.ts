@@ -1,70 +1,48 @@
 /**
- * Radix sort (Least–Significant‑digit first) for arrays of non‑negative integers.
+ * Return the maximum sum sub‑array (Kadane) along with its start & end indices.
  *
- * Time:  O(k * n)  where k = number of digits in the largest number
- * Space: O(n + B)  (B = 10 for base‑10)
+ * @param nums  Array of numbers – can contain positives, zeros and negatives.
+ * @returns     Object with `maxSum`, `start`, `end` (inclusive).
  */
-function radixSort(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
+export function maxSubarrayWithIndices(nums: number[]): {
+  maxSum: number;
+  start: number;
+  end: number;
+} {
+  if (nums.length === 0) throw new Error("Input array must contain at least one element");
 
-  // Find the biggest value to know how many digits we need to process
-  const maxVal = Math.max(...nums);
-  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
+  let bestSum = nums[0];
+  let currentSum = nums[0];
 
-  // Start from the least significant digit
-  let divisor = 1;
+  // These track the best indices we’ve seen
+  let bestStart = 0;
+  let bestEnd = 0;
 
-  // We'll reuse these buckets in each pass to keep O(n) allocations
-  const buckets: number[][] = Array.from({ length: 10 }, () => []);
+  // Temporary indices for the sub‑array we are currently extending
+  let tempStart = 0;
 
-  for (let d = 0; d < maxDigits; d++) {
-    // Distribute
-    for (const num of nums) {
-      const bucketIndex = Math.floor(num / divisor) % 10;
-      buckets[bucketIndex].push(num);
+  for (let i = 1; i < nums.length; i++) {
+    const num = nums[i];
+
+    // Decide whether to extend the current sub‑array or start fresh at i
+    if (currentSum + num < num) {
+      currentSum = num;
+      tempStart = i;
+    } else {
+      currentSum += num;
     }
 
-    // Collect back into nums, empty buckets for the next pass
-    let pos = 0;
-    for (const bucket of buckets) {
-      while (bucket.length) {
-        nums[pos++] = bucket.pop() as number; // pop gives LIFO but we reverse order below
-      }
-      bucket.length = 0; // reset
+    // Update the best found so far
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
     }
-
-    divisor *= 10; // move to the next digit
   }
 
-  return nums;
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-function radixSortStable(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
-
-  const maxVal = Math.max(...nums);
-  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
-
-  let divisor = 1;
-  const buckets: number[][] = Array.from({ length: 10 }, () => []);
-
-  for (let d = 0; d < maxDigits; d++) {
-    for (const n of nums) {
-      const idx = Math.floor(n / divisor) % 10;
-      buckets[idx].push(n);
-    }
-
-    let i = 0;
-    for (const bucket of buckets) {
-      while (bucket.length) {
-        nums[i++] = bucket.shift() as number; // shift preserves order
-      }
-    }
-
-    divisor *= 10;
-  }
-
-  return nums;
-}
-const data = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log(radixSortStable(data));
-// → [2, 24, 45, 66, 75, 90, 170, 802]
+const arr = [4, -1, 2, 1, -5, 4];
+const result = maxSubarrayWithIndices(arr);
+console.log(result); // { maxSum: 6, start: 0, end: 3 }
+// Sub‑array: [4, -1, 2, 1] → sum 6
