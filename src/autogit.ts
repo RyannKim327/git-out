@@ -1,23 +1,45 @@
-function countWordOccurrences(str: string, word: string): number {
-  // Escape any regex‑special characters in the word
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(escaped, 'g');
-
-  const matches = str.match(regex);
-  return matches ? matches.length : 0;
+// 1️⃣  Node definition
+interface TreeNode<T = unknown> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
 
-/* Example */
-const txt = "Lorem ipsum dolor sit amet. Lorem ipsum!";
-console.log(countWordOccurrences(txt, "Lorem")); // 2
-function countWordOccurrencesInsensitive(str: string, word: string): number {
-  const lowered = str.toLowerCase();
-  const target = word.toLowerCase();
+// 2️⃣  Recursive leaf counter
+function countLeaves<T>(node?: TreeNode<T>): number {
+  // Base case: empty sub‑tree
+  if (!node) return 0;
 
-  // Split on the target word – keep empty pieces that might appear
-  // at the boundaries or due to overlapping patterns
-  return lowered.split(target).length - 1;
+  // A leaf has no children
+  const isLeaf = !node.left && !node.right;
+  if (isLeaf) return 1;
+
+  // Recurse on the two sub‑trees
+  return countLeaves(node.left) + countLeaves(node.right);
 }
 
-/* Example */
-console.log(countWordOccurrencesInsensitive(txt, "lorem")); // 2
+// 3️⃣  Example usage
+const tree: TreeNode<number> = {
+  value: 1,
+  left: { value: 2, right: { value: 4 } },
+  right: { value: 3, left: { value: 5 } }
+};
+
+console.log(countLeaves(tree)); // → 3
+function countLeavesIterative<T>(root: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let stack: TreeNode<T>[] = [root];
+  let leafCount = 0;
+
+  while (stack.length) {
+    const node = stack.pop()!; // guaranteed defined
+    if (!node.left && !node.right) {
+      leafCount++;
+    } else {
+      if (node.right) stack.push(node.right);
+      if (node.left)  stack.push(node.left);
+    }
+  }
+  return leafCount;
+}
