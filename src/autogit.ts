@@ -1,21 +1,20 @@
-/**
- * Factorial using recursion.
- * Works for ordinary numbers up to 20 (safe integer range).
- * If you need bigger results, use BigInt and the overload below.
- */
-function factorial(n: number): number {
-  if (n < 0) throw new Error("Negative values are not allowed");
-  if (n <= 1) return 1;          // base case
-  return n * factorial(n - 1);   // recursive step
+// A simple node definition – adjust to match your existing structure
+interface ListNode<T> {
+  value: T;
+  next?: ListNode<T>;
 }
+function getLength<T>(head: ListNode<T> | undefined): number {
+  let count = 0;
+  let current = head;
 
-/**
- * A BigInt version for arbitrary‑size factorials.
- */
-function factorialBigInt(n: bigint): bigint {
-  if (n < 0n) throw new Error("Negative values are not allowed");
-  if (n <= 1n) return 1n;
-  return n * factorialBigInt(n - 1n);
+  while (current) {
+    count++;
+    current = current.next;
+  }
+
+  return count;
 }
-console.log(factorial(5));          // 120
-console.log(factorialBigInt(25n));  // 15511210043330985984000000n
+function getLengthRec<T>(node: ListNode<T> | undefined): number {
+  if (!node) return 0;
+  return 1 + getLengthRec(node.next);
+}
