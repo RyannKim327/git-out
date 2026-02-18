@@ -1,45 +1,60 @@
-// 1️⃣  Node definition
-interface TreeNode<T = unknown> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+/**
+ * Merges two consecutive sorted halves of `arr` into a single sorted segment.
+ * `left` … start index of the first half
+ * `mid`  … start index of the second half (i.e. left + size)
+ * `right`… end index (exclusive) of the second half
+ * The merged result is written back into `arr`.
+ */
+function merge(
+  arr: number[],
+  left: number,
+  mid: number,
+  right: number,
+  temp: number[]
+) {
+  let i = left;   // index in first half
+  let j = mid;    // index in second half
+  let k = left;   // index in temp
+
+  while (i < mid && j < right) {
+    if (arr[i] <= arr[j]) temp[k++] = arr[i++];
+    else                   temp[k++] = arr[j++];
+  }
+
+  // copy any remaining elements from the first half
+  while (i < mid) temp[k++] = arr[i++];
+  // anything left from the second half already sits in temp
+
+  // copy back to the original array
+  for (let p = left; p < right; ++p) arr[p] = temp[p];
 }
 
-// 2️⃣  Recursive leaf counter
-function countLeaves<T>(node?: TreeNode<T>): number {
-  // Base case: empty sub‑tree
-  if (!node) return 0;
+/**
+ * Iterative merge sort.
+ * Works in O(n log n) time, O(n) auxiliary space for the temporary array.
+ */
+export function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  if (n <= 1) return;                 // already sorted
 
-  // A leaf has no children
-  const isLeaf = !node.left && !node.right;
-  if (isLeaf) return 1;
+  const temp = new Array<number>(n);   // reuse this buffer
 
-  // Recurse on the two sub‑trees
-  return countLeaves(node.left) + countLeaves(node.right);
-}
-
-// 3️⃣  Example usage
-const tree: TreeNode<number> = {
-  value: 1,
-  left: { value: 2, right: { value: 4 } },
-  right: { value: 3, left: { value: 5 } }
-};
-
-console.log(countLeaves(tree)); // → 3
-function countLeavesIterative<T>(root: TreeNode<T>): number {
-  if (!root) return 0;
-
-  let stack: TreeNode<T>[] = [root];
-  let leafCount = 0;
-
-  while (stack.length) {
-    const node = stack.pop()!; // guaranteed defined
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
+  // subarray size starts at 1 (single elements) and doubles each pass
+  for (let sz = 1; sz < n; sz *= 2) {
+    // merge adjacent subarrays of size sz
+    for (let left = 0; left < n - sz; left += sz * 2) {
+      const mid   = left + sz;          // left + sz is the start of the 2nd half
+      const right = Math.min(left + sz * 2, n);
+      merge(arr, left, mid, right, temp);
     }
   }
-  return leafCount;
 }
+
+// ------------------------------------------------------------------
+// Example usage
+// ------------------------------------------------------------------
+
+// Readable example – will sort the array in place
+const sample = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(sample);
+console.log(sample);  // [3, 9, 10, 27, 38, 43, 82]
