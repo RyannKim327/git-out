@@ -1,94 +1,35 @@
-type AdjacencyList = Record<string, string[]>;
+/**
+ * Counting sort for arrays of non‑negative integers.
+ * @param arr The input array – it will not be mutated.
+ * @returns A new array containing the sorted numbers.
+ */
+export function countingSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-/*
-  Example:
+  // 1. Find the maximum value (k) – the range of the keys.
+  let max = arr[0];
+  for (const num of arr) if (num > max) max = num;
 
-  {
-    A: ["B"],
-    B: ["C", "E"],
-    C: ["A", "D"],
-    D: ["C"],
-    E: ["F"],
-    F: ["E", "G"],
-    G: ["H"],
-    H: ["I", "J"],
-    I: ["H"],
-    J: ["G"],
-  }
-*/
-// TarjanSCC.ts
-type AdjacencyList = Record<string, string[]>;
+  // 2. Build the “count” array of size k + 1, initialise to 0.
+  const count: number[] = new Array(max + 1).fill(0);
 
-export function tarjanSCC(graph: AdjacencyList): string[][] {
-  let index = 0;                         // global index counter
-  const indices: Record<string, number> = {};   // vertex → index
-  const lowlinks: Record<string, number> = {};  // vertex → lowlink
-  const stack: string[] = [];
-  const onStack: Record<string, boolean> = {};
-  const sccs: string[][] = [];
+  // 3. Count how many times each value appears.
+  for (const num of arr) count[num]++;
 
-  function strongConnect(v: string) {
-    // 1. Set the depth index for v to the smallest unused index
-    indices[v] = lowlinks[v] = index++;
-    stack.push(v);
-    onStack[v] = true;
-
-    // 2. Consider successors of v
-    const neighbours = graph[v] ?? [];
-    for (const w of neighbours) {
-      if (indices[w] === undefined) {
-        // Successor w has not yet been visited; recurse on it
-        strongConnect(w);
-        lowlinks[v] = Math.min(lowlinks[v], lowlinks[w]);
-      } else if (onStack[w]) {
-        // Successor w is in stack → part of current SCC
-        lowlinks[v] = Math.min(lowlinks[v], indices[w]);
-      }
-    }
-
-    // 3. If v is a root node, pop the stack and generate an SCC
-    if (lowlinks[v] === indices[v]) {
-      const component: string[] = [];
-      let w: string;
-      do {
-        w = stack.pop() as string;
-        onStack[w] = false;
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
-    }
+  // 4. Transform counts to positions (prefix sums).
+  for (let i = 1; i < count.length; i++) {
+    count[i] += count[i - 1];
   }
 
-  // Kick off
-  for (const v of Object.keys(graph)) {
-    if (indices[v] === undefined) {
-      strongConnect(v);
-    }
+  // 5. Place each element into the output array in stable order.
+  const output: number[] = new Array(arr.length);
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const num = arr[i];
+    const pos = --count[num];   // decrement to get zero‑based index
+    output[pos] = num;
   }
 
-  return sccs;
+  return output;
 }
-import { tarjanSCC } from "./TarjanSCC";
-
-const graph: AdjacencyList = {
-  A: ["B"],
-  B: ["C", "E"],
-  C: ["A", "D"],
-  D: ["C"],
-  E: ["F"],
-  F: ["E", "G"],
-  G: ["H"],
-  H: ["I", "J"],
-  I: ["H"],
-  J: ["G"],
-};
-
-const sccs = tarjanSCC(graph);
-console.log("Strongly connected components:");
-sccs.forEach((comp, idx) => {
-  console.log(`  ${idx + 1}: [${comp.join(", ")}]`);
-});
-Strongly connected components:
-  1: [A, B, C, D]
-  2: [E, F]
-  3: [G, H, I, J]
+const data = [4, 2, 2, 8, 3, 3, 1];
+console.log(countingSort(data)); // [1, 2, 2, 3, 3, 4, 8]
