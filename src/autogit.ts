@@ -1,30 +1,51 @@
-function isPalindrome(str: string): boolean {
-  // Normalise: lowercase + remove all non‑alphanumerics (e.g. spaces, punctuation)
-  const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-  // Compare the cleaned string to its reverse
-  const reversed = cleaned.split('').reverse().join('');
-  return cleaned === reversed;
+// 1️⃣ Tree node definition
+interface TreeNode {
+  val: number;          // value is irrelevant for diameter
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
-console.log(isPalindrome('Racecar'));          // true
-console.log(isPalindrome('No lemon, no melon!')); // true
-console.log(isPalindrome('Hello, world'));     // false
-function isPalindromeTwoPointer(str: string): boolean {
-  const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-  let left = 0;
-  let right = cleaned.length - 1;
+// 2️⃣ Main diameter function
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let diameter = 0;                 // global accumulator
 
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) {
-      return false;
-    }
-    left++;
-    right--;
+  function dfs(node: TreeNode | null): number {
+    if (!node) return 0;            // height of empty subtree
+
+    // Recursively find heights of left/right subtrees
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
+
+    // Path through current node (in edges)
+    const pathThrough = leftHeight + rightHeight;
+
+    // Update global diameter if this is the largest seen so far
+    diameter = Math.max(diameter, pathThrough);
+
+    // Return height from this node up to a leaf
+    return 1 + Math.max(leftHeight, rightHeight);
   }
-  return true;
+
+  dfs(root);
+  return diameter;
 }
-function isPalindromeSafe(input: unknown): boolean {
-  if (typeof input !== 'string') return false;
-  return isPalindrome(input);
-}
+// Example tree:
+//      1
+//     / \
+//    2   3
+//   / \
+//  4   5
+const tree: TreeNode = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: null, right: null },
+    right: { val: 5, left: null, right: null },
+  },
+  right: { val: 3, left: null, right: null },
+};
+
+console.log(diameterOfBinaryTree(tree)); // Output: 3
+// Explanation: path 4‑2‑1‑3 uses 3 edges
+console.log(diameterOfBinaryTree(null));           // 0
+console.log(diameterOfBinaryTree({ val: 42 }));    // 0
