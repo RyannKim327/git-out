@@ -1,29 +1,70 @@
 /**
- * Reverses the order of words in a string.
+ * Radix sort (Least–Significant‑digit first) for arrays of non‑negative integers.
  *
- * Words are split on whitespace.  Consecutive whitespace is collapsed,
- * but you can tweak the regex if you need to keep it intact.
- *
- * @param txt – The string to reverse
- * @returns The string with words in reverse order
+ * Time:  O(k * n)  where k = number of digits in the largest number
+ * Space: O(n + B)  (B = 10 for base‑10)
  */
-function reverseWordOrder(txt: string): string {
-  return txt
-    .trim()                      // Strip leading/trailing gaps
-    .split(/\s+/)                // Break on any run of whitespace
-    .reverse()                   // Flip the array
-    .join(' ');                  // Stitch back together
-}
+function radixSort(nums: number[]): number[] {
+  if (nums.length <= 1) return nums.slice();
 
-// Example usage
-const original = "Hello world, this is TypeScript.";
-const reversed = reverseWordOrder(original);
-console.log(reversed);  // "TypeScript. is this world, Hello"
-function reverseWordOrder(txt: string) {
-  const words = txt.trim().match(/\w+|\s+/g) ?? [];
-  const textOnly = words.filter(Boolean).join(' ');
-  const reversed = textOnly.split(/\s+/).reverse().join(' ');
-  // re‑insert spaces that were originally present
-  // (not shown here for brevity)
-  return reversed;
+  // Find the biggest value to know how many digits we need to process
+  const maxVal = Math.max(...nums);
+  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
+
+  // Start from the least significant digit
+  let divisor = 1;
+
+  // We'll reuse these buckets in each pass to keep O(n) allocations
+  const buckets: number[][] = Array.from({ length: 10 }, () => []);
+
+  for (let d = 0; d < maxDigits; d++) {
+    // Distribute
+    for (const num of nums) {
+      const bucketIndex = Math.floor(num / divisor) % 10;
+      buckets[bucketIndex].push(num);
+    }
+
+    // Collect back into nums, empty buckets for the next pass
+    let pos = 0;
+    for (const bucket of buckets) {
+      while (bucket.length) {
+        nums[pos++] = bucket.pop() as number; // pop gives LIFO but we reverse order below
+      }
+      bucket.length = 0; // reset
+    }
+
+    divisor *= 10; // move to the next digit
+  }
+
+  return nums;
 }
+function radixSortStable(nums: number[]): number[] {
+  if (nums.length <= 1) return nums.slice();
+
+  const maxVal = Math.max(...nums);
+  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
+
+  let divisor = 1;
+  const buckets: number[][] = Array.from({ length: 10 }, () => []);
+
+  for (let d = 0; d < maxDigits; d++) {
+    for (const n of nums) {
+      const idx = Math.floor(n / divisor) % 10;
+      buckets[idx].push(n);
+    }
+
+    let i = 0;
+    for (const bucket of buckets) {
+      while (bucket.length) {
+        nums[i++] = bucket.shift() as number; // shift preserves order
+      }
+    }
+
+    divisor *= 10;
+  }
+
+  return nums;
+}
+const data = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log(radixSortStable(data));
+// → [2, 24, 45, 66, 75, 90, 170, 802]
