@@ -1,48 +1,52 @@
 /**
- * Return the maximum sum sub‑array (Kadane) along with its start & end indices.
- *
- * @param nums  Array of numbers – can contain positives, zeros and negatives.
- * @returns     Object with `maxSum`, `start`, `end` (inclusive).
+ * Compare two numbers (or any types that support `<` and `>`).
+ * Returns positive if a > b, negative if a < b, zero otherwise.
  */
-export function maxSubarrayWithIndices(nums: number[]): {
-  maxSum: number;
-  start: number;
-  end: number;
-} {
-  if (nums.length === 0) throw new Error("Input array must contain at least one element");
+const compare = <T>(a: T, b: T): number => {
+  if (a > b) return 1;
+  if (a < b) return -1;
+  return 0;
+};
 
-  let bestSum = nums[0];
-  let currentSum = nums[0];
+/**
+ * Restores the max‑heap property for the sub‑array a[0 … n-1]
+ * starting from index i, assuming its children already satisfy
+ * the heap property.
+ */
+const heapify = <T>(a: T[], n: number, i: number): void => {
+  let largest = i;
+  const left  = 2 * i + 1;
+  const right = 2 * i + 2;
 
-  // These track the best indices we’ve seen
-  let bestStart = 0;
-  let bestEnd = 0;
+  if (left  < n && compare(a[left],  a[largest]) > 0) largest = left;
+  if (right < n && compare(a[right], a[largest]) > 0) largest = right;
 
-  // Temporary indices for the sub‑array we are currently extending
-  let tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    const num = nums[i];
-
-    // Decide whether to extend the current sub‑array or start fresh at i
-    if (currentSum + num < num) {
-      currentSum = num;
-      tempStart = i;
-    } else {
-      currentSum += num;
-    }
-
-    // Update the best found so far
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
+  if (largest !== i) {
+    [a[i], a[largest]] = [a[largest], a[i]];
+    heapify(a, n, largest);
   }
+};
 
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
-}
-const arr = [4, -1, 2, 1, -5, 4];
-const result = maxSubarrayWithIndices(arr);
-console.log(result); // { maxSum: 6, start: 0, end: 3 }
-// Sub‑array: [4, -1, 2, 1] → sum 6
+/**
+ * Turns an array into a max‑heap. Complexity O(n).
+ */
+const buildHeap = <T>(a: T[]): void => {
+  const n = a.length;
+  // start at the last parent node
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+    heapify(a, n, i);
+  }
+};
+
+/**
+ * Heap‑sort: arr is sorted in‑place.
+ */
+export const heapSort = <T>(arr: T[]): void => {
+  buildHeap(arr);
+  for (let i = arr.length - 1; i > 0; i--) {
+    // move current root (max) to the end
+    [arr[0], arr[i]] = [arr[i], arr[0]];
+    // heapify the reduced heap
+    heapify(arr, i, 0);
+  }
+};
