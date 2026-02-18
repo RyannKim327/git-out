@@ -1,43 +1,27 @@
 /**
- * Binary search on a sorted array.
- *
- * @param arr   A sorted array that supports the supplied comparator.
- * @param target The value you’re searching for.
- * @param compare A comparison function: returns <0 if a<b, 0 if a===b, >0 if a>b.
- * @returns The index of `target` if found; otherwise –1.
+ * Returns the second largest number in `arr`.
+ * If the array has fewer than two distinct numbers, returns `undefined`.
  */
-export function binarySearch<T>(
-  arr: readonly T[],
-  target: T,
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): number {
-  let low = 0;
-  let high = arr.length - 1;
+function secondLargest(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-  while (low <= high) {
-    // Use Math.floor to avoid overflow and keep mid an integer.
-    const mid = low + Math.floor((high - low) / 2);
-    const cmp = compare(arr[mid], target);
+  let first: number | null = null;
+  let second: number | null = null;
 
-    if (cmp === 0) {
-      return mid; // Found it!
-    } else if (cmp < 0) {
-      low = mid + 1; // Search right half
-    } else {
-      high = mid - 1; // Search left half
+  for (const x of arr) {
+    if (first === null || x > first) {
+      // New maximum found – push the old maximum down to second
+      second = first;
+      first = x;
+    } else if (x !== first && (second === null || x > second)) {
+      // Candidate for second maximum
+      second = x;
     }
   }
 
-  return -1; // Not found
+  return second ?? undefined;
 }
-// Example with numbers
-const nums = [3, 7, 12, 18, 25, 34];
-const index = binarySearch(nums, 18); // → 3
-
-// Example with strings – note we pass a custom comparator for case‑insensitive search
-const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
-const idx = binarySearch(
-  words,
-  'CHeRry',
-  (a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' })
-); // → 2
+console.log(secondLargest([1, 3, 5, 7])); // 5
+console.log(secondLargest([10, 9]));      // 9
+console.log(secondLargest([4]));          // undefined
+console.log(secondLargest([2, 2, 2]));    // undefined
