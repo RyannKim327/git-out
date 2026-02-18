@@ -1,30 +1,27 @@
 function isPalindrome(str: string): boolean {
-  // Normalise: lowercase + remove all non‑alphanumerics (e.g. spaces, punctuation)
-  const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-  // Compare the cleaned string to its reverse
-  const reversed = cleaned.split('').reverse().join('');
-  return cleaned === reversed;
+  const sanitized = str.toLowerCase();              // ignore case
+  const reversed  = sanitized.split('').reverse().join('');
+  return sanitized === reversed;
 }
-console.log(isPalindrome('Racecar'));          // true
-console.log(isPalindrome('No lemon, no melon!')); // true
-console.log(isPalindrome('Hello, world'));     // false
-function isPalindromeTwoPointer(str: string): boolean {
-  const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-  let left = 0;
-  let right = cleaned.length - 1;
+console.log(isPalindrome('RaceCar'));      // true
+console.log(isPalindrome('hello'));        // false
+function isPalindromePortable(str: string): boolean {
+  const cleaned = str.replace(/[^a-z0-9]/gi, '').toLowerCase();
+  const left = 0;
+  const right = cleaned.length - 1;
 
   while (left < right) {
-    if (cleaned[left] !== cleaned[right]) {
-      return false;
-    }
+    if (cleaned[left] !== cleaned[right]) return false;
     left++;
     right--;
   }
+
   return true;
 }
-function isPalindromeSafe(input: unknown): boolean {
-  if (typeof input !== 'string') return false;
-  return isPalindrome(input);
-}
+console.log(isPalindromePortable('A man, a plan, a canal: Panama')); // true
+console.log(isPalindromePortable('No lemon, no melon'));            // true
+console.log(isPalindromePortable('Hello, world!'));                 // false
+const isPalindromeFancy = (s: string) =>
+  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).join('') ===
+  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).reverse().join('');
+export { isPalindrome, isPalindromePortable };
