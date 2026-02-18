@@ -1,45 +1,24 @@
-// 1️⃣  Node definition
-export interface ListNode<T> {
-  val: T
-  next: ListNode<T> | null
-}
+/**
+ * Return the first character in `s` that occurs exactly once.
+ * If every character repeats, return null.
+ */
+function firstNonRepeatingChar(s: string): string | null {
+  // 1️⃣  Count how many times each char appears.
+  const freq = new Map<string, number>();
 
-// 2️⃣  Utility: build list from array (for demo/testing)
-export function fromArray<T>(arr: T[]): ListNode<T> | null {
-  if (!arr.length) return null
-  let head: ListNode<T> = { val: arr[0], next: null }
-  let cur = head
-  for (let i = 1; i < arr.length; i++) {
-    cur.next = { val: arr[i], next: null }
-    cur = cur.next
-  }
-  return head
-}
-
-// 3️⃣  Fast‑/slow‑pointer algorithm (one pass, O(1) extra memory)
-export function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  // Edge checks – return null if n is out of range
-  if (n <= 0) return null
-
-  let fast: ListNode<T> | null = head
-  let slow: ListNode<T> | null = head
-
-  // Move `fast` n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null              // n > length
-    fast = fast.next
+  for (const ch of s) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  // Move both until `fast` hits the end
-  while (fast) {
-    fast = fast.next
-    slow = slow!.next
+  // 2️⃣  Walk the string a second time, looking for a count of 1.
+  for (const ch of s) {
+    if (freq.get(ch) === 1) {
+      return ch;          // first non‑repeating character found
+    }
   }
 
-  // `slow` is now the nth from the end
-  return slow
+  return null;              // no unique character
 }
-const list = fromArray([10, 20, 30, 40, 50])
-console.log(nthFromEnd(list, 1)?.val) // 50   (last)
-console.log(nthFromEnd(list, 3)?.val) // 30   (3rd from the end)
-console.log(nthFromEnd(list, 6))       // null  (n > length)
+console.log(firstNonRepeatingChar('abacabad')); // "c"
+console.log(firstNonRepeatingChar('aabbcc'));   // null
+console.log(firstNonRepeatingChar('😀😃😀😄')); // "😃"
