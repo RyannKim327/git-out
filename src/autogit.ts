@@ -1,61 +1,43 @@
-export interface ListNode<T> {
-  val: T;               // the payload
-  next: ListNode<T> | null; // pointer to the next node
-}
 /**
- * Reverses a singly linked list.
- * @param head: the first node of the list (or null for an empty list)
- * @returns the new head of the reversed list
+ * Returns the longest common *contiguous* substring of `a` and `b`.
+ *
+ * If there are multiple substrings with the same maximum length, the first
+ * one that appears in `a` is returned.
+ *
+ * Time:  O(a.length * b.length)
+ * Space: O(a.length * b.length)   (you can trim this to O(a.length) if you’re
+ *                                   hunting for a memory‑tight version)
  */
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;   // will become the new head
-  let curr: ListNode<T> | null = head;   // current node being processed
+export function longestCommonSubstring(a: string, b: string): string {
+  const aLen = a.length;
+  const bLen = b.length;
 
-  while (curr) {
-    const nextTemp = curr.next; // keep reference to the next node
-    curr.next = prev;           // reverse the link
-    prev = curr;                // move prev forward
-    curr = nextTemp;            // move curr forward
+  // A 2‑D array where dp[i][j] holds the length of the longest suffix that
+  // ends at a[i-1] and b[j-1].  We use 1‑based indexing to keep the math
+  // simple: dp[0][*] and dp[*][0] are zero by construction.
+  const dp: number[][] = Array.from({ length: aLen + 1 }, () =>
+    new Array(bLen + 1).fill(0)
+  );
+
+  let bestLen = 0;
+  let bestI = 0; // end index in `a`
+
+  for (let i = 1; i <= aLen; i++) {
+    for (let j = 1; j <= bLen; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > bestLen) {
+          bestLen = dp[i][j];
+          bestI = i; // slice stops at `i` (exclusive)
+        }
+      } else {
+        dp[i][j] = 0;
+      }
+    }
   }
 
-  // At this point, prev points to the new head
-  return prev;
+  return bestLen > 0 ? a.slice(bestI - bestLen, bestI) : '';
 }
-export function reverseListRec<T>(node: ListNode<T> | null): ListNode<T> | null {
-  if (!node || !node.next) {
-    return node; // new head (either the original head if list is 1 or 0 nodes)
-  }
-
-  const newHead = reverseListRec(node.next);   // recurse to the end
-  node.next.next = node;   // make the next node point back to the current one
-  node.next = null;        // sever original forward link
-  return newHead;
-}
-// Helper to build a list [1, 2, 3]
-function buildList(arr: number[]): ListNode<number> | null {
-  let head: ListNode<number> | null = null;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = { val: arr[i], next: head };
-  }
-  return head;
-}
-
-// Helper to convert list back to array for easy viewing
-function toArray<T>(head: ListNode<T> | null): T[] {
-  const result: T[] = [];
-  let cur = head;
-  while (cur) {
-    result.push(cur.val);
-    cur = cur.next;
-  }
-  return result;
-}
-
-// Demo
-const original = buildList([1, 2, 3, 4, 5]);
-console.log('original:', toArray(original));
-
-const reversed = reverseList(original);
-console.log('reversed:', toArray(reversed));
-original: [1, 2, 3, 4, 5]
-reversed: [5, 4, 3, 2, 1]
+console.log(longestCommonSubstring('BANANA', 'ANANAB')); // "ANANA"
+console.log(longestCommonSubstring('hello', 'world'));   // ""
+console.log(longestCommonSubstring('', 'something'));    // ""
