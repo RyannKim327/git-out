@@ -1,54 +1,59 @@
-// 1️⃣  Basic node interface – replace / extend it to fit your model
-export interface TreeNode<T> {
-  value: T;                 // the payload stored in the node
-  children?: TreeNode<T>[]>; // can be unset (leaf) or an empty array for a leaf
-}
+/**
+ * Returns the longest common subsequence of two strings.
+ *
+ * @param a First string.
+ * @param b Second string.
+ * @returns The LCS as a string.
+ */
+function longestCommonSubsequence(a: string, b: string): string {
+  const n = a.length;
+  const m = b.length;
 
-// 2️⃣  The actual algorithm
-export function depthLimitedSearch<T>(
-  root: TreeNode<T>,           // root of the tree
-  target: T,                   // value we’re looking for
-  depthLimit: number,          // how far the search may go (0 = only the root)
-  equals: (a: T, b: T) => boolean = (a, b) => a === b
-): TreeNode<T> | null {
-  if (depthLimit < 0) return null; // sanity check
+  // dp[i][j] = LCS length for a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array(n + 1)
+    .fill(null)
+    .map(() => Array(m + 1).fill(0));
 
-  // stack holds {node, depth}
-  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
-    { node: root, depth: 0 },
-  ];
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!; // pop from top of stack
-
-    // 3️⃣  Stop expanding when the depth limit is reached
-    if (depth > depthLimit) {
-      continue;
-    }
-
-    // 4️⃣  Check the current node
-    if (equals(node.value, target)) {
-      return node;
-    }
-
-    // 5️⃣  Push children (DFS) – children that are undefined are skipped
-    if (node.children) {
-      // depth + 1 because we’ll go down one edge
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        stack.push({ node: node.children[i], depth: depth + 1 });
+  // Fill table
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
       }
     }
   }
 
-  return null; // nothing found within the depth limit
-}
-const tree: TreeNode<string> = {
-  value: "A",
-  children: [
-    { value: "B", children: [{ value: "D" }, { value: "E" }] },
-    { value: "C", children: [{ value: "F" }, { value: "G" }] },
-  ],
-};
+  // Back‑track to build the subsequence
+  let i = n,
+    j = m,
+    lcs = '';
 
-console.log(depthLimitedSearch(tree, "F", 1)); // null (needs depth 2)
-console.log(depthLimitedSearch(tree, "F", 2)); // node with value "F"
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      lcs = a[i - 1] + lcs; // prepend
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;
+    } else {
+      j--;
+    }
+  }
+
+  return lcs;
+}
+console.log(longestCommonSubsequence('ABCDGH', 'AEDFHR')); // → "ADH"
+function lcsLength(a: string, b: string): number {
+  const n = a.length, m = b.length;
+  const dp = Array(n + 1).fill(0).map(() => Array(m + 1).fill(0));
+
+  for (let i = 1; i <= n; i++)
+    for (let j = 1; j <= m; j++)
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1] + 1
+        : Math.max(dp[i - 1][j], dp[i][j - 1]);
+
+  return dp[n][m];
+}
