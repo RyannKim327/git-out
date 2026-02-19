@@ -1,93 +1,83 @@
-// `Graph<T>` maps a node of type T to an array of its adjacent nodes.
-type Graph<T> = Map<T, T[]>;
-
-// A helper to add an undirected edge
-function addEdge<T>(g: Graph<T>, a: T, b: T) {
-  g.set(a, (g.get(a) ?? []).concat(b));
-  g.set(b, (g.get(b) ?? []).concat(a));
-}
+// fetch-example.ts
 /**
- * Performs a breadth‑first search on an unweighted graph.
+ * A small utility that fetches JSON from a public API
+ * and logs a nicely formatted result.
  *
- * @param start   the starting node
- * @param graph   the graph to search
- * @param visitor a callback that receives each visited node in the order
- *                it’s discovered. The callback can return `false` to stop
- *                the search early.
+ * It demonstrates:
+ *   • TypeScript generics for response typing
+ *   • Async/await syntax
+ *   • Basic error handling
+ *   • Runtime type guard for JSON validation
  */
-function bfs<T>(
-  start: T,
-  graph: Graph<T>,
-  visitor: (node: T) => void | boolean
-): void {
-  const visited = new Set<T>();
-  const queue = [start];
 
-  visited.add(start);
+type PlainObject = Record<string, unknown>;
 
-  while (queue.length) {
-    const node = queue.shift()!;      // Non‑null because we just tested length
-    const result = visitor(node);
-
-    // If the visitor explicitly returned false, break out early.
-    if (result === false) break;
-
-    const neighbors = graph.get(node) ?? [];
-    for (const n of neighbors) {
-      if (!visited.has(n)) {
-        visited.add(n);
-        queue.push(n);
-      }
-    }
-  }
+// A small runtime check to ensure the response is
+// an object (the common case when fetching JSON).
+function isObject(value: unknown): value is PlainObject {
+  return typeof value === 'object' && value !== null;
 }
+
 /**
- * Returns an array representing the shortest path from `start` to `target`
- * (inclusive), or `null` if no path exists.
+ * Generic fetch function that returns data of type T.
+ * @param url          The URL to fetch from
+ * @param init         Optional RequestInit parameters
  */
-function shortestPath<T>(start: T, target: T, graph: Graph<T>): T[] | null {
-  const prev = new Map<T, T | undefined>(); // child → parent
-  const visited = new Set<T>();
-  const queue: T[] = [start];
-  visited.add(start);
-  let found = false;
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, init);
 
-  while (queue.length && !found) {
-    const node = queue.shift()!;
-    for (const nb of graph.get(node) ?? []) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        prev.set(nb, node);
-        if (nb === target) {
-          found = true;
-          break;
-        }
-        queue.push(nb);
-      }
-    }
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
   }
 
-  if (!found) return null;
+  const data = await response.json();
 
-  // Walk backwards from target to start
-  const path = [];
-  for (let cur: T | undefined = target; cur !== undefined; cur = prev.get(cur)) {
-    path.push(cur);
+  // Very light runtime validation – just make sure we got an object
+  if (!isObject(data)) {
+    throw new Error('Response is not a JSON object');
   }
-  path.reverse();
-  return path;
+
+  return data as T; // confidence that T matches the real shape
 }
-const g: Graph<string> = new Map();
-addEdge(g, 'A', 'B');
-addEdge(g, 'A', 'C');
-addEdge(g, 'B', 'D');
-addEdge(g, 'C', 'D');
-addEdge(g, 'C', 'E');
 
-console.log('BFS visiting order:', () => {
-  const order: string[] = [];
-  bfs('A', g, node => { order.push(node); });
-  return order;
-}()); // ['A', 'B', 'C', 'D', 'E']
+/**
+ * Example usage: fetch a user from the JSONPlaceholder API.
+ * The API returns a shape that we can describe as a type.
+ */
+interface JsonPlaceholderUser {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  address: {
+    street: string;
+    suite: string;
+    city: string;
+    zipcode: string;
+    geo: { lat: string; lng: string };
+  };
+  phone: string;
+  website: string;
+  company: {
+    name: string;
+    catchPhrase: string;
+    bs: string;
+  };
+}
 
-console.log('Shortest path A → D:', shortestPath('A', 'D', g)); // ['A', 'B', 'D']
+async function main() {
+  const userId = 1;
+  const url = `https://jsonplaceholder.typicode.com/users/${userId}`;
+
+  try {
+    const user = await fetchJson<JsonPlaceholderUser>(url);
+    console.log(`Name: ${user.name}`);
+    console.log(`Company: ${user.company.name}`);
+    console.log(`Address: ${user.address.street}, ${user.address.city}`);
+  } catch (err) {
+    console.error('Something went wrong:', err);
+  }
+}
+
+// Kick it off
+main();
