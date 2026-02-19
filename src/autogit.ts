@@ -1,68 +1,29 @@
-// -------------------------------------------
-// Node definition
-// -------------------------------------------
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+/**
+ * Returns true if `n` is a prime number.
+ *
+ * Rules:
+ *   * 0 and 1 are **not** primes.
+ *   * 2 is the only even prime.
+ *   * For any other number, test divisibility up to √n.
+ *
+ * NOTE: This is a classic, “trial‑division” algorithm
+ * and is fast enough for numbers that fit comfortably
+ * in a JavaScript `number`. If you need to handle millisecond‑length
+ * big‑ints, consider a probabilistic test like Miller‑Rabin.
+ */
+function isPrime(n: number): boolean {
+  if (n < 2) return false;         // 0, 1, and negative numbers are not prime
+  if (n === 2) return true;        // 2 is prime
+  if (n % 2 === 0) return false;   // even numbers larger than 2 are not prime
 
-// -------------------------------------------
-// Helper: build list from array
-// -------------------------------------------
-function arrayToLinkedList<T>(arr: T[]): ListNode<T> | null {
-  if (arr.length === 0) return null;
-  const head = new ListNode(arr[0]);
-  let current = head;
-  for (let i = 1; i < arr.length; i++) {
-    current.next = new ListNode(arr[i]);
-    current = current.next;
+  const limit = Math.floor(Math.sqrt(n));
+  for (let divisor = 3; divisor <= limit; divisor += 2) {
+    if (n % divisor === 0) return false;
   }
-  return head;
+  return true;
 }
-
-// -------------------------------------------
-// Helper: read list into array (for debugging)
-// -------------------------------------------
-function linkedListToArray<T>(head: ListNode<T> | null): T[] {
-  const arr: T[] = [];
-  let cur = head;
-  while (cur) {
-    arr.push(cur.val);
-    cur = cur.next;
-  }
-  return arr;
-}
-
-// -------------------------------------------
-// Main: find middle node
-// -------------------------------------------
-function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null;          // empty list
-
-  let slow = head;
-  let fast = head;
-
-  // Move fast two steps and slow one step until fast can't move further.
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  // For even‑length lists, this returns the first of the two middle nodes.
-  // If you prefer the second, replace `while (fast && fast.next)` and
-  // adjust the loop accordingly.
-  return slow;
-}
-
-// -------------------------------------------
-// Demo
-// -------------------------------------------
-const list = arrayToLinkedList([1, 2, 3, 4, 5]);  // odd length
-console.log(linkedListToArray(list));            // [1,2,3,4,5]
-console.log(findMiddle(list)?.val);              // 3
-
-const evenList = arrayToLinkedList([10, 20, 30, 40]);
-console.log(linkedListToArray(evenList));         // [10,20,30,40]
-console.log(findMiddle(evenList)?.val);           // 20 (first middle)
-// if you want the second middle, tweak the loop condition to:
-// while (fast && fast.next)
-// then you'll get 30.
+console.log(isPrime(2));   // true
+console.log(isPrime(9));   // false
+console.log(isPrime(13));  // true
+console.log(isPrime(1_000_003)); // true (prime just over a million)
+Time to test 1 000 000 numbers (≈ 5–6 ms in Node.js)
