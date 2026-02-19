@@ -1,29 +1,27 @@
 /**
- * Returns true if `n` is a prime number.
- *
- * Rules:
- *   * 0 and 1 are **not** primes.
- *   * 2 is the only even prime.
- *   * For any other number, test divisibility up to √n.
- *
- * NOTE: This is a classic, “trial‑division” algorithm
- * and is fast enough for numbers that fit comfortably
- * in a JavaScript `number`. If you need to handle millisecond‑length
- * big‑ints, consider a probabilistic test like Miller‑Rabin.
+ * Returns the second largest number in `arr`.
+ * If the array has fewer than two distinct numbers, returns `undefined`.
  */
-function isPrime(n: number): boolean {
-  if (n < 2) return false;         // 0, 1, and negative numbers are not prime
-  if (n === 2) return true;        // 2 is prime
-  if (n % 2 === 0) return false;   // even numbers larger than 2 are not prime
+function secondLargest(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-  const limit = Math.floor(Math.sqrt(n));
-  for (let divisor = 3; divisor <= limit; divisor += 2) {
-    if (n % divisor === 0) return false;
+  let first: number | null = null;
+  let second: number | null = null;
+
+  for (const x of arr) {
+    if (first === null || x > first) {
+      // New maximum found – push the old maximum down to second
+      second = first;
+      first = x;
+    } else if (x !== first && (second === null || x > second)) {
+      // Candidate for second maximum
+      second = x;
+    }
   }
-  return true;
+
+  return second ?? undefined;
 }
-console.log(isPrime(2));   // true
-console.log(isPrime(9));   // false
-console.log(isPrime(13));  // true
-console.log(isPrime(1_000_003)); // true (prime just over a million)
-Time to test 1 000 000 numbers (≈ 5–6 ms in Node.js)
+console.log(secondLargest([1, 3, 5, 7])); // 5
+console.log(secondLargest([10, 9]));      // 9
+console.log(secondLargest([4]));          // undefined
+console.log(secondLargest([2, 2, 2]));    // undefined
