@@ -1,83 +1,64 @@
-// fetch-example.ts
 /**
- * A small utility that fetches JSON from a public API
- * and logs a nicely formatted result.
+ * Basic node definition for a singly‑linked list.
+ */
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
+}
+
+/**
+ * Returns `true` if the list reads the same forwards and backwards.
  *
- * It demonstrates:
- *   • TypeScript generics for response typing
- *   • Async/await syntax
- *   • Basic error handling
- *   • Runtime type guard for JSON validation
+ * Time   : O(n) – we traverse the list a constant number of times.
+ * Space  : O(1) – we only use a few pointer variables.
  */
+function isPalindrome<T>(head: ListNode<T> | null): boolean {
+  if (!head || !head.next) return true;   // empty or single‑node list
 
-type PlainObject = Record<string, unknown>;
-
-// A small runtime check to ensure the response is
-// an object (the common case when fetching JSON).
-function isObject(value: unknown): value is PlainObject {
-  return typeof value === 'object' && value !== null;
-}
-
-/**
- * Generic fetch function that returns data of type T.
- * @param url          The URL to fetch from
- * @param init         Optional RequestInit parameters
- */
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
-
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+  // 1. Find the middle of the list
+  let slow = head;
+  let fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  const data = await response.json();
+  // 2. Reverse the second half (starting from slow.next)
+  let prev: ListNode<T> | null = null;
+  let curr: ListNode<T> | null = slow.next;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  // `prev` is now the head of the reversed second half
 
-  // Very light runtime validation – just make sure we got an object
-  if (!isObject(data)) {
-    throw new Error('Response is not a JSON object');
+  // 3. Compare the first half with the reversed second half
+  let p1 = head;
+  let p2 = prev;
+  while (p2) {               // only need to go as far as the short half
+    if (p1.val !== p2.val) return false;
+    p1 = p1.next!;
+    p2 = p2.next!;
   }
 
-  return data as T; // confidence that T matches the real shape
+  // Optional: restore the list to its original order (not required for the answer)
+  // reverse(prev) again and reattach to `slow.next`
+
+  return true;
 }
-
-/**
- * Example usage: fetch a user from the JSONPlaceholder API.
- * The API returns a shape that we can describe as a type.
- */
-interface JsonPlaceholderUser {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-  address: {
-    street: string;
-    suite: string;
-    city: string;
-    zipcode: string;
-    geo: { lat: string; lng: string };
-  };
-  phone: string;
-  website: string;
-  company: {
-    name: string;
-    catchPhrase: string;
-    bs: string;
-  };
-}
-
-async function main() {
-  const userId = 1;
-  const url = `https://jsonplaceholder.typicode.com/users/${userId}`;
-
-  try {
-    const user = await fetchJson<JsonPlaceholderUser>(url);
-    console.log(`Name: ${user.name}`);
-    console.log(`Company: ${user.company.name}`);
-    console.log(`Address: ${user.address.street}, ${user.address.city}`);
-  } catch (err) {
-    console.error('Something went wrong:', err);
+const build = (...vals: number[]): ListNode<number> | null => {
+  let head: ListNode<number> | null = null;
+  let tail: ListNode<number> | null = null;
+  for (const v of vals) {
+    const node = new ListNode(v);
+    if (!head) head = node;
+    else tail!.next = node;
+    tail = node;
   }
-}
+  return head;
+};
 
-// Kick it off
-main();
+console.log(isPalindrome(build(1, 2, 3, 2, 1))); // true
+console.log(isPalindrome(build(1, 2, 2, 1)));      // true
+console.log(isPalindrome(build(1, 2, 3, 4, 5))); // false
