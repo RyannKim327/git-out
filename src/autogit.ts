@@ -1,29 +1,27 @@
-/**
- * Reverses the order of words in a string.
- *
- * Words are split on whitespace.  Consecutive whitespace is collapsed,
- * but you can tweak the regex if you need to keep it intact.
- *
- * @param txt – The string to reverse
- * @returns The string with words in reverse order
- */
-function reverseWordOrder(txt: string): string {
-  return txt
-    .trim()                      // Strip leading/trailing gaps
-    .split(/\s+/)                // Break on any run of whitespace
-    .reverse()                   // Flip the array
-    .join(' ');                  // Stitch back together
+function isPalindrome(str: string): boolean {
+  const sanitized = str.toLowerCase();              // ignore case
+  const reversed  = sanitized.split('').reverse().join('');
+  return sanitized === reversed;
 }
+console.log(isPalindrome('RaceCar'));      // true
+console.log(isPalindrome('hello'));        // false
+function isPalindromePortable(str: string): boolean {
+  const cleaned = str.replace(/[^a-z0-9]/gi, '').toLowerCase();
+  const left = 0;
+  const right = cleaned.length - 1;
 
-// Example usage
-const original = "Hello world, this is TypeScript.";
-const reversed = reverseWordOrder(original);
-console.log(reversed);  // "TypeScript. is this world, Hello"
-function reverseWordOrder(txt: string) {
-  const words = txt.trim().match(/\w+|\s+/g) ?? [];
-  const textOnly = words.filter(Boolean).join(' ');
-  const reversed = textOnly.split(/\s+/).reverse().join(' ');
-  // re‑insert spaces that were originally present
-  // (not shown here for brevity)
-  return reversed;
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) return false;
+    left++;
+    right--;
+  }
+
+  return true;
 }
+console.log(isPalindromePortable('A man, a plan, a canal: Panama')); // true
+console.log(isPalindromePortable('No lemon, no melon'));            // true
+console.log(isPalindromePortable('Hello, world!'));                 // false
+const isPalindromeFancy = (s: string) =>
+  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).join('') ===
+  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).reverse().join('');
+export { isPalindrome, isPalindromePortable };
