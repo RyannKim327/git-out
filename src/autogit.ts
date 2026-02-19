@@ -1,45 +1,78 @@
 /**
- * A classic LIFO stack that stores items in an array.
- * @template T The type of the values stored inside the stack.
+ * Build the longest‑prefix‑suffix (LPS) array for the pattern.
+ * lps[i] will contain the length of the longest proper prefix
+ * that is also a suffix for the substring pattern[0…i].
+ *
+ * @param pattern – the pattern
+ * @returns the filled LPS array
  */
-export class Stack<T> {
-  /** The underlying array that holds the stack's data. */
-  private data: T[] = [];
+function computeLPS(pattern: string): number[] {
+  const lps: number[] = new Array(pattern.length).fill(0);
+  let length = 0;          // length of the previous longest prefix suffix
+  let i = 1;               // lps[0] is always 0
 
-  /** Adds an element to the top of the stack. */
-  push(item: T): void {
-    this.data.push(item);
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
+    } else {
+      if (length !== 0) {
+        // don't move i here; keep looking for a smaller prefix
+        length = lps[length - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
+    }
   }
 
-  /**
-   * Removes and returns the element at the top of the stack.
-   * Returns undefined if the stack is empty.
-   */
-  pop(): T | undefined {
-    return this.data.pop();
-  }
-
-  /** Peeks at the element on the top without removing it. */
-  peek(): T | undefined {
-    return this.data[this.data.length - 1];
-  }
-
-  /** Returns the number of elements in the stack. */
-  get size(): number {
-    return this.data.length;
-  }
-
-  /** Returns true when the stack has nothing inside. */
-  get isEmpty(): boolean {
-    return this.data.length === 0;
-  }
+  return lps;
 }
-const stack = new Stack<number>();
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
+/**
+ * Perform KMP search for a pattern in a text.
+ *
+ * @param text     – the string to search in
+ * @param pattern  – the pattern to look for
+ * @returns an array of starting indices where the pattern occurs
+ */
+function kmpSearch(text: string, pattern: string): number[] {
+  if (pattern.length === 0) return []; // nothing to search for
 
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size);   // 2
+  const lps = computeLPS(pattern);
+  const positions: number[] = [];
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+
+      if (j === pattern.length) {
+        // match found – record starting index
+        positions.push(i - j);
+        // continue searching for next possible match
+        j = lps[j - 1];
+      }
+    } else {
+      if (j !== 0) {
+        // jump back in the pattern based on LPS
+        j = lps[j - 1];
+      } else {
+        i++; // move to next character in text
+      }
+    }
+  }
+
+  return positions;
+}
+
+/* Example usage */
+const haystack = "ABABDABACDABABCABAB";
+const needle = "ABABCABAB";
+
+const matches = kmpSearch(haystack, needle);
+console.log("Pattern found at positions:", matches);
+// Expected output: Pattern found at positions: [9]
