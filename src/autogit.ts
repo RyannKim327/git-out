@@ -1,52 +1,74 @@
-interface TreeNode<T = number> {
-  val: T;                // single value (you can change the type)
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
-}
-const root: TreeNode = {
-  val: 10,
-  left: { val: 5, left: null, right: null },
-  right: { val: 15, left: null, right: null },
-};
-function maxDepth<T>(node: TreeNode<T> | null): number {
-  if (!node) return 0;
-  const leftDepth = maxDepth(node.left);
-  const rightDepth = maxDepth(node.right);
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
+/**
+ * Median of two sorted arrays
+ * A and B can be empty, but not both.
+ */
+export function medianOfTwoSortedArrays(
+  a: number[],
+  b: number[]
+): number {
+  // Ensure a is the smaller array; this keeps the binary‑search bounds tight.
+  const [A, B] = a.length <= b.length ? [a, b] : [b, a];
+  const m = A.length;
+  const n = B.length;
+  const half = Math.floor((m + n + 1) / 2);
 
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
+  let low = 0;
+  let high = m;
 
-  while (queue.length) {
-    const levelSize = queue.length; // nodes at current depth
-    depth++;                        // we’re going to finish this level
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2); // elements taken from A
+    const j = half - i;                     // elements taken from B
 
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift() as TreeNode<T>;
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
+    const Aleft  = i === 0     ? Number.NEGATIVE_INFINITY : A[i - 1];
+    const Aright = i === m     ? Number.POSITIVE_INFINITY : A[i];
+
+    const Bleft  = j === 0     ? Number.NEGATIVE_INFINITY : B[j - 1];
+    const Bright = j === n     ? Number.POSITIVE_INFINITY : B[j];
+
+    // i is perfect if left side ≤ right side
+    if (Aleft <= Bright && Bleft <= Aright) {
+      // Odd total → max of left side
+      if ((m + n) % 2 === 1) {
+        return Math.max(Aleft, Bleft);
+      }
+
+      // Even total → average of two middle values
+      return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
+    } else if (Aleft > Bright) {
+      // i too big, shift left
+      high = i - 1;
+    } else {
+      // i too small, shift right
+      low = i + 1;
     }
   }
 
-  return depth;
+  throw new Error('Input arrays are not sorted or invalid.');
 }
-// build a quick tree
-const tree: TreeNode = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4, left: null, right: null },
-    right: null,
-  },
-  right: {
-    val: 3,
-    left: null,
-    right: { val: 5, left: null, right: null },
-  },
-};
+export function medianOfTwoSortedArraysSimple(
+  a: number[],
+  b: number[]
+): number {
+  const merged: number[] = [];
+  let i = 0, j = 0;
 
-console.log(maxDepth(tree));      // -> 3
-console.log(maxDepthIter(tree));  // -> 3
+  while (i < a.length || j < b.length) {
+    if (i >= a.length) {
+      merged.push(b[j++]);
+    } else if (j >= b.length) {
+      merged.push(a[i++]);
+    } else if (a[i] <= b[j]) {
+      merged.push(a[i++]);
+    } else {
+      merged.push(b[j++]);
+    }
+  }
+
+  const len = merged.length;
+  if (len % 2 === 1) return merged[Math.floor(len / 2)];
+  return (merged[len / 2 - 1] + merged[len / 2]) / 2;
+}
+const arr1 = [1, 3, 5, 9];
+const arr2 = [2, 4, 6, 8, 10];
+
+console.log(medianOfTwoSortedArrays(arr1, arr2)); // 5.5
