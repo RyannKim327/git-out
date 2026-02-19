@@ -1,14 +1,13 @@
-// Remove *every* whitespace (spaces, tabs, newlines, etc.)
-const clean = str.replace(/\s+/g, '');   // <-- compressed string
+const original = "Hello world! How are you?";
+const withoutSpaces = original.replace(/ /g, ""); // "Helloworld!Howareyou?"
+const original = "Hello \tworld!\u00A0How\nare you?"; // contains tab, non‑breaking space, newline
+const withoutAnyWhitespace = original.replace(/\s+/gu, "");
+// "Helloworld!Howareyou?"
+function stripAllWhitespace(str: string): string {
+  return str.replace(/\s+/gu, "");
+}
 
-// If you only want to trim the ends:
-const trimmed = str.trim();              // <-- removes leading/trailing whitespace
-
-// If you want middle‑spaces only (keeping a single space between words):
-const condensed = str.replace(/\s+/g, ' ');
-const original = '  Hello   world \t this\nis  a test  ';
-const stripped = original.replace(/\s+/g, '');
-// stripped === 'Helloworldthisisatest'
-
-console.log(stripped);
-const stripped = original.split(/\s+/).join(''); // same result
+// Usage
+const clean = stripAllWhitespace("  Foo Bar\nBaz  ");
+console.log(clean); // "FooBarBaz"
+const cleaned = original.replace(/\s+/g, " ");  // collapse to single space
