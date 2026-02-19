@@ -1,74 +1,60 @@
 /**
- * Median of two sorted arrays
- * A and B can be empty, but not both.
+ * Merges two sorted slices `left` and `right` into a single sorted array.
+ * The operation is stable — items that compare equal keep their original
+ * relative order.
  */
-export function medianOfTwoSortedArrays(
-  a: number[],
-  b: number[]
-): number {
-  // Ensure a is the smaller array; this keeps the binary‑search bounds tight.
-  const [A, B] = a.length <= b.length ? [a, b] : [b, a];
-  const m = A.length;
-  const n = B.length;
-  const half = Math.floor((m + n + 1) / 2);
+function merge<T>(left: T[], right: T[], compare: (a: T, b: T) => number): T[] {
+  const result: T[] = [];
+  let i = 0;          // index into left
+  let j = 0;          // index into right
 
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2); // elements taken from A
-    const j = half - i;                     // elements taken from B
-
-    const Aleft  = i === 0     ? Number.NEGATIVE_INFINITY : A[i - 1];
-    const Aright = i === m     ? Number.POSITIVE_INFINITY : A[i];
-
-    const Bleft  = j === 0     ? Number.NEGATIVE_INFINITY : B[j - 1];
-    const Bright = j === n     ? Number.POSITIVE_INFINITY : B[j];
-
-    // i is perfect if left side ≤ right side
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // Odd total → max of left side
-      if ((m + n) % 2 === 1) {
-        return Math.max(Aleft, Bleft);
-      }
-
-      // Even total → average of two middle values
-      return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
-    } else if (Aleft > Bright) {
-      // i too big, shift left
-      high = i - 1;
+  while (i < left.length && j < right.length) {
+    if (compare(left[i], right[j]) <= 0) {
+      result.push(left[i++]);
     } else {
-      // i too small, shift right
-      low = i + 1;
+      result.push(right[j++]);
     }
   }
 
-  throw new Error('Input arrays are not sorted or invalid.');
+  // Append any remaining elements
+  return result.concat(left.slice(i), right.slice(j));
 }
-export function medianOfTwoSortedArraysSimple(
-  a: number[],
-  b: number[]
-): number {
-  const merged: number[] = [];
-  let i = 0, j = 0;
 
-  while (i < a.length || j < b.length) {
-    if (i >= a.length) {
-      merged.push(b[j++]);
-    } else if (j >= b.length) {
-      merged.push(a[i++]);
-    } else if (a[i] <= b[j]) {
-      merged.push(a[i++]);
-    } else {
-      merged.push(b[j++]);
-    }
+/**
+ * Recursively sorts `array` using merge sort.
+ *
+ * @param array   – the array to sort
+ * @param compare – a comparator returning a negative number if a < b,
+ *                  zero if a == b, and a positive number otherwise.
+ *
+ * @returns a NEW sorted array; the input array is left untouched.
+ */
+export function mergeSort<T>(array: T[], compare: (a: T, b: T) => number): T[] {
+  // Base case: arrays of length 0 or 1 are already sorted
+  if (array.length <= 1) {
+    return array.slice();          // shallow copy to stay pure
   }
 
-  const len = merged.length;
-  if (len % 2 === 1) return merged[Math.floor(len / 2)];
-  return (merged[len / 2 - 1] + merged[len / 2]) / 2;
-}
-const arr1 = [1, 3, 5, 9];
-const arr2 = [2, 4, 6, 8, 10];
+  const mid = Math.floor(array.length / 2);
+  const left  = array.slice(0, mid);
+  const right = array.slice(mid);
 
-console.log(medianOfTwoSortedArrays(arr1, arr2)); // 5.5
+  // Sort each half and merge
+  const sortedLeft  = mergeSort(left,  compare);
+  const sortedRight = mergeSort(right, compare);
+
+  return merge(sortedLeft, sortedRight, compare);
+}
+
+/* ---------------------------------------------------------
+   Example usage:
+   ---------------------------------------------------------
+
+   // Numeric sort (ascending)
+   const numbers = [32, 5, 73, 1, 42];
+   const sortedNumbers = mergeSort(numbers, (a, b) => a - b);
+
+   // String sort by length
+   const words = ["banana", "apple", "fig", "cherry"];
+   const sortedByLength = mergeSort(words, (a, b) => a.length - b.length);
+   -------------------------------------------------------- */
