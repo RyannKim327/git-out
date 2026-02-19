@@ -1,60 +1,21 @@
-function buildLps(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let len = 0;          // length of the previous longest prefix suffix
-  let i = 1;            // we start from the second character
-
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      // Mismatch after len matches
-      if (len !== 0) {
-        // Try the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
-}
 /**
- * Returns an array of starting indices where `pattern` occurs in `text`.
- * If no match, returns an empty array.
+ * Returns the mean (average) of an array of numbers.
+ * If the array is empty, it throws an error; you can change that behavior if you prefer.
  */
-export function kmpSearch(text: string, pattern: string): number[] {
-  const lps = buildLps(pattern);
-  const results: number[] = [];
-
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++; j++;
-      if (j === pattern.length) {
-        // Match found at position i - j
-        results.push(i - j);
-        // Prepare for the next possible match
-        j = lps[j - 1];
-      }
-    } else {
-      if (j !== 0) {
-        // Mismatch after j matches
-        j = lps[j - 1];
-      } else {
-        // Mismatch at the start
-        i++;
-      }
-    }
+function mean(nums: number[]): number {
+  if (nums.length === 0) {
+    throw new Error("Cannot compute the mean of an empty array");
   }
 
-  return results;
+  const sum = nums.reduce((acc, v) => acc + v, 0);
+  return sum / nums.length;
 }
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
-
-console.log(kmpSearch(text, pattern)); // [10]
+const values = [4, 8, 15, 16, 23, 42];
+console.log(mean(values)); // 18.833333333333332
+function meanWhenPossible(nums: number[]): number {
+  if (nums.length === 0) {
+    return NaN;
+  }
+  return nums.reduce((acc, v) => acc + v, 0) / nums.length;
+}
+console.assert(mean([2, 4, 6]) === 4, "The mean should be 4");
