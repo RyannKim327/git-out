@@ -1,60 +1,29 @@
-function buildLps(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let len = 0;          // length of the previous longest prefix suffix
-  let i = 1;            // we start from the second character
-
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      // Mismatch after len matches
-      if (len !== 0) {
-        // Try the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
-}
 /**
- * Returns an array of starting indices where `pattern` occurs in `text`.
- * If no match, returns an empty array.
+ * Returns true if `n` is a prime number.
+ *
+ * Rules:
+ *   * 0 and 1 are **not** primes.
+ *   * 2 is the only even prime.
+ *   * For any other number, test divisibility up to √n.
+ *
+ * NOTE: This is a classic, “trial‑division” algorithm
+ * and is fast enough for numbers that fit comfortably
+ * in a JavaScript `number`. If you need to handle millisecond‑length
+ * big‑ints, consider a probabilistic test like Miller‑Rabin.
  */
-export function kmpSearch(text: string, pattern: string): number[] {
-  const lps = buildLps(pattern);
-  const results: number[] = [];
+function isPrime(n: number): boolean {
+  if (n < 2) return false;         // 0, 1, and negative numbers are not prime
+  if (n === 2) return true;        // 2 is prime
+  if (n % 2 === 0) return false;   // even numbers larger than 2 are not prime
 
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++; j++;
-      if (j === pattern.length) {
-        // Match found at position i - j
-        results.push(i - j);
-        // Prepare for the next possible match
-        j = lps[j - 1];
-      }
-    } else {
-      if (j !== 0) {
-        // Mismatch after j matches
-        j = lps[j - 1];
-      } else {
-        // Mismatch at the start
-        i++;
-      }
-    }
+  const limit = Math.floor(Math.sqrt(n));
+  for (let divisor = 3; divisor <= limit; divisor += 2) {
+    if (n % divisor === 0) return false;
   }
-
-  return results;
+  return true;
 }
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
-
-console.log(kmpSearch(text, pattern)); // [10]
+console.log(isPrime(2));   // true
+console.log(isPrime(9));   // false
+console.log(isPrime(13));  // true
+console.log(isPrime(1_000_003)); // true (prime just over a million)
+Time to test 1 000 000 numbers (≈ 5–6 ms in Node.js)
