@@ -1,48 +1,36 @@
 /**
- * Random‑pivot quicksort for an array of numbers.
- *
- * @param arr – the array to sort (it will be sorted in place)
- * @returns the sorted array (same reference as the input)
+ * Performs an in‑place Shell sort on `arr`.
+ * The generic makes it usable for numbers, strings, or any comparable type.
  */
-function randomQuickSort(arr: number[]): number[] {
-  // Internal helper that works on a sub‑range [left, right]
-  function sort(left: number, right: number) {
-    if (left >= right) return;           // 0 or 1 element – nothing to do
+export function shellSort<T>(arr: T[], compare?: (a: T, b: T) => boolean) {
+  const len = arr.length;
+  // Default comparison: ascending numeric/string order
+  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any));
 
-    // Pick a random pivot index between left and right (inclusive)
-    const pivotIndex = Math.floor(Math.random() * (right - left + 1)) + left;
-    const pivotValue = arr[pivotIndex];
+  // Start with a gap (Hibbard’s sequence is simple and effective)
+  // gap = 1, 3, 7, 15, …  (2^k‑1)
+  let gap = 1;
+  while (gap < len) gap = 2 * gap + 1; // find largest Hibbard gap <= len
 
-    // Move the pivot to the rightmost position for the partition step
-    [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
-
-    // Standard Lomuto partition
-    let storeIndex = left;
-    for (let i = left; i < right; i++) {
-      if (arr[i] < pivotValue) {
-        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
-        storeIndex++;
+  // Descend gaps until 1
+  while (gap >= 1) {
+    // Insertion sort on elements gap apart
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+      // shift earlier gap‑sorted elements that are greater
+      while (j >= gap && cmp(temp, arr[j - gap])) {
+        arr[j] = arr[j - gap];
+        j -= gap;
       }
+      arr[j] = temp;
     }
-
-    // Put the pivot back in its final place
-    [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
-
-    // Recurse on the two partitions
-    sort(left, storeIndex - 1);
-    sort(storeIndex + 1, right);
+    // Next gap
+    gap = Math.floor((gap - 1) / 2); // inverse of 2*gap + 1
   }
-
-  sort(0, arr.length - 1);
-  return arr;
 }
-
-/*--------------------------------------------
-  Example usage
---------------------------------------------*/
-
-const data = [34, 7, 23, 32, 5, 62];
-console.log('Unsorted:', data);
-
-const sorted = randomQuickSort([...data]); // copy to avoid mutating the original
-console.log('Sorted  :', sorted);
+const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
+shellSort(numbers);
+console.log(numbers); // [1, 2, 3, 8, 12, 23, 34, 54]
+const desc = (a: number, b: number) => a > b;
+shellSort(numbers, desc);
