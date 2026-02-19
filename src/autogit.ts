@@ -1,48 +1,72 @@
-// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
-//      This shape is common in interview‑style code.
-interface TreeNode {
-  val: number;         // node’s payload
-  left?: TreeNode | null;   // left child (optional)
-  right?: TreeNode | null;  // right child (optional)
-}
+// Generic, in‑place quicksort
+export function quickSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number,
+  low = 0,
+  high = arr.length - 1,
+): T[] {
+  // Default comparator: numeric/string natural order
+  const cmp = compareFn ?? ((a: T, b: T) =>
+    a < b ? -1 : a > b ? 1 : 0,
+  );
 
-// 2️⃣  Recursive summation – easiest to read and to understand.
-//      Depth‑first, natural for a tree.
-function sumTreeRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                      // base case: empty subtree is 0
-  const leftSum = sumTreeRecursive(root.left);
-  const rightSum = sumTreeRecursive(root.right);
-  return root.val + leftSum + rightSum;      // combine the results
-}
+  // Helper: partition using Hoare's scheme
+  const partition = (l: number, h: number): number => {
+    const pivot = arr[Math.floor((l + h) / 2)];
+    let i = l - 1;
+    let j = h + 1;
+    while (true) {
+      do { i++; } while (cmp(arr[i], pivot) < 0);
+      do { j--; } while (cmp(arr[j], pivot) > 0);
+      if (i >= j) return j;
+      [arr[i], arr[j]] = [arr[j], arr[i]]; // swap
+    }
+  };
 
-// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
-//      where recursion might hit the call‑stack limit.
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let total = 0;
-  const stack: TreeNode[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.val;
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
+  if (low < high) {
+    const p = partition(low, high);
+    quickSort(arr, compareFn, low, p);
+    quickSort(arr, compareFn, p + 1, high);
   }
-  return total;
+  return arr; // for convenience – returns the same array reference
 }
+export function quickSortImmutable<T>(
+  arr: readonly T[],
+  compareFn?: (a: T, b: T) => number,
+): T[] {
+  if (arr.length <= 1) return [...arr];
 
-// 4️⃣  Sample tree for quick sanity check
-//           5
-//          / \
-//         3   7
-//        / \   \
-//       2   4   8
+  const compare = compareFn ?? ((a: T, b: T) =>
+    a < b ? -1 : a > b ? 1 : 0,
+  );
 
-const sampleRoot: TreeNode = {
-  val: 5,
-  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
-  right: { val: 7, right: { val: 8 } },
-};
+  const pivot = arr[Math.floor(arr.length / 2)];
+  const lows = arr.filter((x) => compare(x, pivot) < 0);
+  const highs = arr.filter((x) => compare(x, pivot) > 0);
+  const pivots = arr.filter((x) => compare(x, pivot) === 0);
 
-console.log(sumTreeRecursive(sampleRoot)); // → 33
-console.log(sumTreeIterative(sampleRoot)); // → 33
+  return [
+    ...quickSortImmutable(lows, compareFn),
+    ...pivots,
+    ...quickSortImmutable(highs, compareFn),
+  ];
+}
+const nums = [34, 7, 23, 32, 5, 62];
+quickSort(nums);               // mutates `nums`
+console.log(nums);             // [5, 7, 23, 32, 34, 62]
+
+let strs = ["banana", "apple", "cherry"];
+quickSort(strs, (a, b) => a.localeCompare(b));
+console.log(strs);             // ["apple", "banana", "cherry"]
+
+let objs = [
+  { id: 3, name: "c" },
+  { id: 1, name: "a" },
+  { id: 2, name: "b" },
+];
+quickSort(
+  objs,
+  (a, b) => a.id - b.id,
+);
+console.log(objs);
+// [{ id: 1, name: "a" }, { id: 2, name: "b" }, { id: 3, name: "c" }]
