@@ -1,59 +1,26 @@
 /**
- * Compare two strings for an anagram relationship.
- *
- * @param a – first string (the one you’re testing)
- * @param b – candidate anagram
- * @param ignoreCase – true will treat “A” and “a” the same
- * @param normalize   – if true, removes all non‑alphanumeric chars
- * @returns true if a and b are anagrams
+ * Returns true if the array is in strictly ascending order (each element ≤ the next one).
+ * Works for numbers, strings, or any type that can be compared with < / >.
  */
-function isAnagram(
-  a: string,
-  b: string,
-  ignoreCase = true,
-  normalize = true
-): boolean {
-  if (normalize) {
-    const regex = /[^a-z0-9]/gi;
-    a = a.replace(regex, '');
-    b = b.replace(regex, '');
+export function isAscending<T>(arr: T[], comparator?: (a: T, b: T) => number): boolean {
+  // If the user passes a custom comparator, use it; otherwise fall back to natural order.
+  const cmp = comparator ?? ((a: T, b: T) => a < b ? -1 : a > b ? 1 : 0);
+
+  // Iterate until we find a pair that violates the ascending rule.
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) {
+      return false; // arr[i-1] > arr[i], not ascending
+    }
   }
-
-  if (ignoreCase) {
-    a = a.toLowerCase();
-    b = b.toLowerCase();
-  }
-
-  // Quick length‐check
-  if (a.length !== b.length) return false;
-
-  // Sort characters and compare
-  const sortedA = a.split('').sort().join('');
-  const sortedB = b.split('').sort().join('');
-
-  return sortedA === sortedB;
+  return true;          // All pairs passed the test
 }
-console.log(isAnagram('Listen', 'Silent'));               // true
-console.log(isAnagram('Astronomer', 'Moon starer'));      // true
-console.log(isAnagram('Hello', 'World'));                  // false
+// Numbers (default comparator)
+console.log(isAscending([1, 2, 3, 4])); // true
+console.log(isAscending([1, 3, 2, 4])); // false
 
-// Custom options
-console.log(isAnagram('Dormitory!', 'Dirtyroom', true, true)); // true
-console.log(isAnagram('Dormitory!', 'Dirtyroom', false, true)); // false – case sensitive
-function isAnagramFreq(a: string, b: string): boolean {
-  const makeMap = (s: string) => {
-    const map: Record<string, number> = {};
-    for (const ch of s) map[ch] = (map[ch] ?? 0) + 1;
-    return map;
-  };
+// Strings (lexicographic order)
+console.log(isAscending(['apple', 'banana', 'cherry'])); // true
 
-  const freqA = makeMap(a);
-  const freqB = makeMap(b);
-
-  // Compare two maps
-  const keys = new Set([...Object.keys(freqA), ...Object.keys(freqB)]);
-  for (const k of keys) {
-    if (freqA[k] !== freqB[k]) return false;
-  }
-  return true;
-}
+// Custom comparison – e.g., sort by string length
+const byLength = (a: string, b: string) => a.length - b.length;
+console.log(isAscending(['a', 'bb', 'ccc'], byLength)); // true
