@@ -1,73 +1,35 @@
 /**
- * Finds the longest increasing subsequence of an array.
- *
- * @param arr Numeric array (any integers or floats, any sign).
- * @returns Object containing the LIS and its length.
+ * Counting sort for arrays of non‑negative integers.
+ * @param arr The input array – it will not be mutated.
+ * @returns A new array containing the sorted numbers.
  */
-export function longestIncreasingSubsequence(arr: number[]): { seq: number[]; length: number } {
-  if (arr.length === 0) return { seq: [], length: 0 };
+export function countingSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-  // tails[i] — minimal tail of an LIS of length i+1 found so far
-  const tails: number[] = [];
-  // prevIndices[i] — index of the previous element in the LIS that ends at arr[i]
-  const prevIndices: number[] = Array(arr.length).fill(-1);
-  // indexInTails[i] — will store the index in tails where arr[i] was placed
-  const indexInTails: number[] = Array(arr.length).fill(0);
+  // 1. Find the maximum value (k) – the range of the keys.
+  let max = arr[0];
+  for (const num of arr) if (num > max) max = num;
 
-  for (let i = 0; i < arr.length; i++) {
-    const num = arr[i];
+  // 2. Build the “count” array of size k + 1, initialise to 0.
+  const count: number[] = new Array(max + 1).fill(0);
 
-    // Binary search: first index in tails where tails[idx] >= num
-    let lo = 0,
-      hi = tails.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (tails[mid] < num) lo = mid + 1;
-      else hi = mid;
-    }
+  // 3. Count how many times each value appears.
+  for (const num of arr) count[num]++;
 
-    // lo is the length of the new subsequence minus one
-    indexInTails[i] = lo;
-    if (lo >= tails.length) tails.push(num);
-    else tails[lo] = num;
-
-    // Link to previous element of the subsequence
-    if (lo > 0) prevIndices[i] = tailsIdx[lo - 1];
+  // 4. Transform counts to positions (prefix sums).
+  for (let i = 1; i < count.length; i++) {
+    count[i] += count[i - 1];
   }
 
-  // tailsIdx will hold the indices in the original array that correspond to tails[]
-  const tailsIdx: number[] = Array(tails.length);
-  const seqIdx: number[] = []; // will hold indices of LIS
-
-  // Reconstruct the sequence by walking backwards using prevIndices
-  let k = tailsIdx.length - 1;
-  let currentIdx = -1;
+  // 5. Place each element into the output array in stable order.
+  const output: number[] = new Array(arr.length);
   for (let i = arr.length - 1; i >= 0; i--) {
-    if (indexInTails[i] === k) {
-      seqIdx.push(i); // store index
-      k--; // look for previous
-      currentIdx = i;
-    }
+    const num = arr[i];
+    const pos = --count[num];   // decrement to get zero‑based index
+    output[pos] = num;
   }
-  seqIdx.reverse();
 
-  const seq = seqIdx.map(idx => arr[idx]);
-
-  return { seq, length: seq.length };
+  return output;
 }
-export function lisLength(arr: number[]): number {
-  if (arr.length === 0) return 0;
-  const dp = Array(arr.length).fill(1);
-
-  for (let i = 1; i < arr.length; i++) {
-    for (let j = 0; j < i; j++) {
-      if (arr[i] > arr[j]) dp[i] = Math.max(dp[i], dp[j] + 1);
-    }
-  }
-  return Math.max(...dp);
-}
-const data = [10, 22, 9, 33, 21, 50, 41, 60, 80];
-const { seq, length } = longestIncreasingSubsequence(data);
-
-console.log('LIS:', seq);          // [10, 22, 33, 50, 60, 80]
-console.log('Length:', length);    // 6
+const data = [4, 2, 2, 8, 3, 3, 1];
+console.log(countingSort(data)); // [1, 2, 2, 3, 3, 4, 8]
