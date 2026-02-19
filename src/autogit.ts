@@ -1,72 +1,132 @@
-function longestCommonPrefixVertical(strs: string[]): string {
-  if (!strs.length) return "";
+// ---------- Types ---------------------------------------------------------
+type Vertex = string | number // whatever sort of key you like
 
-  // The longest possible prefix is bounded by the first string’s length
-  const first = strs[0];
+// an edge is directed; the weight can be positive, negative or zero
+interface Edge {
+  from: Vertex
+  to: Vertex
+  weight: number
+}
 
-  for (let i = 0; i < first.length; i++) {
-    const ch = first[i];
-    for (let j = 1; j < strs.length; j++) {
-      // If any string is shorter or the current char differs: stop
-      if (i >= strs[j].length || strs[j][i] !== ch) {
-        return first.slice(0, i);
+// ---------- Graph wrapper -----------------------------------------------
+class Graph {
+  private vertices: Set<Vertex> = new Set()
+  private edges: Edge[] = []
+
+  // you can add vertices explicitly if you want; adding an edge will
+  // automatically pull its endpoints into the vertex set
+  public addVertex(v: Vertex) {
+    this.vertices.add(v)
+  }
+
+  public addEdge(from: Vertex, to: Vertex, weight: number) {
+    this.vertices.add(from)
+    this.vertices.add(to)
+    this.edges.push({ from, to, weight })
+  }
+
+  public getVertices() {
+    return Array.from(this.vertices)
+  }
+
+  public getEdges() {
+    return this.edges.slice()
+  }
+}
+
+// ---------- Bellman‑Ford algorithm ---------------------------------------
+/**
+ * Returns an object containing:
+ *   distances:  map from vertex to its shortest‑path distance from source
+ *   previous:   map from vertex to its predecessor on that shortest path
+ *
+ * Throws an Error if a negative‑weight cycle is reachable from `source`.
+ */
+function bellmanFord(
+  graph: Graph,
+  source: Vertex
+): { distances: Record<Vertex, number>; previous: Record<Vertex, Vertex | null> } {
+  const INF = Number.POSITIVE_INFINITY
+
+  // 1. initialise
+  const distance: Record<Vertex, number> = {}
+  const previous: Record<Vertex, Vertex | null> = {}
+
+  for (const v of graph.getVertices()) {
+    distance[v] = INF
+    previous[v] = null
+  }
+  distance[source] = 0
+
+  const edges = graph.getEdges()
+  const nvertices = graph.getVertices().length
+
+  // 2. relaxation loop (nvertices - 1) times
+  for (let i = 0; i < nvertices - 1; i++) {
+    let updated = false
+    for (const { from, to, weight } of edges) {
+      const alt = distance[from] + weight
+      if (alt < distance[to]) {
+        distance[to] = alt
+        previous[to] = from
+        updated = true
       }
     }
+    // early exit if nothing changed
+    if (!updated) break
   }
 
-  // All strings matched the entire first string
-  return first;
-}
-console.log(longestCommonPrefixVertical(["flower", "flow", "flight"])); // "fl"
-function lcpMerge(a: string, b: string): string {
-  let i = 0;
-  const limit = Math.min(a.length, b.length);
-  while (i < limit && a[i] === b[i]) i++;
-  return a.slice(0, i);
-}
-
-function longestCommonPrefixDivide(strs: string[]): string {
-  if (!strs.length) return "";
-
-  const helper = (l: number, r: number): string => {
-    if (l === r) return strs[l];
-    const mid = Math.floor((l + r) / 2);
-    const left = helper(l, mid);
-    const right = helper(mid + 1, r);
-    return lcpMerge(left, right);
-  };
-
-  return helper(0, strs.length - 1);
-}
-class TrieNode {
-  children = new Map<string, TrieNode>();
-  isEnd = false;
-}
-
-function buildTrie(strs: string[]): TrieNode {
-  const root = new TrieNode();
-  for (const s of strs) {
-    let node = root;
-    for (const ch of s) {
-      if (!node.children.has(ch)) node.children.set(ch, new TrieNode());
-      node = node.children.get(ch)!;
+  // 3. check for negative‑weight cycles
+  for (const { from, to, weight } of edges) {
+    if (distance[from] + weight < distance[to]) {
+      throw new Error(
+        `Negative‑weight cycle detected: edge ${from} → ${to} (weight ${weight})`
+      )
     }
-    node.isEnd = true;
   }
-  return root;
+
+  return { distances: distance, previous }
 }
 
-function longestCommonPrefixTrie(strs: string[]): string {
-  if (!strs.length) return "";
-  const root = buildTrie(strs);
-  let node = root;
-  let prefix = "";
-  while (node.children.size === 1 && !node.isEnd) {
-    const [ch, next] = node.children.entries().next().value;
-    prefix += ch;
-    node = next;
+// ---------- Reconstruct path helper ---------------------------------------
+function reconstructPath(
+  previous: Record<Vertex, Vertex | null>,
+  source: Vertex,
+  target: Vertex
+): Vertex[] {
+  const path: Vertex[] = []
+  let v: Vertex | null = target
+
+  while (v !== null && v !== source) {
+    path.unshift(v)
+    v = previous[v]
   }
-  return prefix;
+  if (v !== source) {
+    // no path
+    return []
+  }
+  path.unshift(source)
+  return path
 }
-const data = ["algorithm", "algo", "algorithms", "all"]; 
-console.log(longestCommonPrefixVertical(data)); // "alg"
+
+// ---------- Example usage -----------------------------------------------
+const g = new Graph()
+
+// sample graph: 0 → 1 (4), 0 → 2 (5), 1 → 2 (-1), 2 → 3 (3), 3 → 1 (-2)
+g.addEdge(0, 1, 4)
+g.addEdge(0, 2, 5)
+g.addEdge(1, 2, -1)
+g.addEdge(2, 3, 3)
+g.addEdge(3, 1, -2)
+
+try {
+  const { distances, previous } = bellmanFord(g, 0)
+  console.log('distances:', distances)
+
+  for (const v of g.getVertices()) {
+    const path = reconstructPath(previous, 0, v)
+    console.log(`0 → ${v}  (dist=${distances[v]})  path:`, path.join(' → '))
+  }
+} catch (e) {
+  console.error(e)
+}
