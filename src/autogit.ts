@@ -1,74 +1,48 @@
-/**
- * Median of two sorted arrays
- * A and B can be empty, but not both.
- */
-export function medianOfTwoSortedArrays(
-  a: number[],
-  b: number[]
-): number {
-  // Ensure a is the smaller array; this keeps the binary‑search bounds tight.
-  const [A, B] = a.length <= b.length ? [a, b] : [b, a];
-  const m = A.length;
-  const n = B.length;
-  const half = Math.floor((m + n + 1) / 2);
+// emailValidator.ts
+export function isEmail(str: string): boolean {
+  // RFC‑5322 allows a very wide set of characters.  For most apps a
+  // simpler “+ followed by domain” style rule is good enough.
+  // This expression is a commonly‑accepted compromise:
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2); // elements taken from A
-    const j = half - i;                     // elements taken from B
-
-    const Aleft  = i === 0     ? Number.NEGATIVE_INFINITY : A[i - 1];
-    const Aright = i === m     ? Number.POSITIVE_INFINITY : A[i];
-
-    const Bleft  = j === 0     ? Number.NEGATIVE_INFINITY : B[j - 1];
-    const Bright = j === n     ? Number.POSITIVE_INFINITY : B[j];
-
-    // i is perfect if left side ≤ right side
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // Odd total → max of left side
-      if ((m + n) % 2 === 1) {
-        return Math.max(Aleft, Bleft);
-      }
-
-      // Even total → average of two middle values
-      return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
-    } else if (Aleft > Bright) {
-      // i too big, shift left
-      high = i - 1;
-    } else {
-      // i too small, shift right
-      low = i + 1;
-    }
-  }
-
-  throw new Error('Input arrays are not sorted or invalid.');
+  return emailRe.test(str);
 }
-export function medianOfTwoSortedArraysSimple(
-  a: number[],
-  b: number[]
-): number {
-  const merged: number[] = [];
-  let i = 0, j = 0;
+export const strictEmailRe = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
+const tests: Record<string, boolean> = {
+  // pass
+  'user@example.com': true,
+  'user.name+tag@sub.domain.co.uk': true,
 
-  while (i < a.length || j < b.length) {
-    if (i >= a.length) {
-      merged.push(b[j++]);
-    } else if (j >= b.length) {
-      merged.push(a[i++]);
-    } else if (a[i] <= b[j]) {
-      merged.push(a[i++]);
-    } else {
-      merged.push(b[j++]);
-    }
-  }
+  // fail
+  'user@': false,
+  '@example.com': false,
+  'user@@example.com': false,
+  'user example@example.com': false,
+  'user@.com': false,
+  '': false,
+};
 
-  const len = merged.length;
-  if (len % 2 === 1) return merged[Math.floor(len / 2)];
-  return (merged[len / 2 - 1] + merged[len / 2]) / 2;
+for (const [addr, expected] of Object.entries(tests)) {
+  const result = isEmail(addr);
+  console.assert(result === expected, `❌ ${addr}: expected ${expected}, got ${result}`);
 }
-const arr1 = [1, 3, 5, 9];
-const arr2 = [2, 4, 6, 8, 10];
 
-console.log(medianOfTwoSortedArrays(arr1, arr2)); // 5.5
+console.log('All test cases passed!');
+import { useForm } from 'react-hook-form';
+
+function MyForm() {
+  const { register, handleSubmit, formState: { errors } } = useForm();
+
+  const onSubmit = data => console.log('Valid email:', data.email);
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input
+        {...register('email', { validate: isEmail })}
+        placeholder="email@example.com"
+      />
+      {errors.email && <p>Email is not valid.</p>}
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
