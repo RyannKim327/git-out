@@ -1,52 +1,43 @@
-interface TreeNode<T = number> {
-  val: T;                // single value (you can change the type)
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
-}
-const root: TreeNode = {
-  val: 10,
-  left: { val: 5, left: null, right: null },
-  right: { val: 15, left: null, right: null },
-};
-function maxDepth<T>(node: TreeNode<T> | null): number {
-  if (!node) return 0;
-  const leftDepth = maxDepth(node.left);
-  const rightDepth = maxDepth(node.right);
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
+/**
+ * Returns the longest common *contiguous* substring of `a` and `b`.
+ *
+ * If there are multiple substrings with the same maximum length, the first
+ * one that appears in `a` is returned.
+ *
+ * Time:  O(a.length * b.length)
+ * Space: O(a.length * b.length)   (you can trim this to O(a.length) if you’re
+ *                                   hunting for a memory‑tight version)
+ */
+export function longestCommonSubstring(a: string, b: string): string {
+  const aLen = a.length;
+  const bLen = b.length;
 
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
+  // A 2‑D array where dp[i][j] holds the length of the longest suffix that
+  // ends at a[i-1] and b[j-1].  We use 1‑based indexing to keep the math
+  // simple: dp[0][*] and dp[*][0] are zero by construction.
+  const dp: number[][] = Array.from({ length: aLen + 1 }, () =>
+    new Array(bLen + 1).fill(0)
+  );
 
-  while (queue.length) {
-    const levelSize = queue.length; // nodes at current depth
-    depth++;                        // we’re going to finish this level
+  let bestLen = 0;
+  let bestI = 0; // end index in `a`
 
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift() as TreeNode<T>;
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
+  for (let i = 1; i <= aLen; i++) {
+    for (let j = 1; j <= bLen; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > bestLen) {
+          bestLen = dp[i][j];
+          bestI = i; // slice stops at `i` (exclusive)
+        }
+      } else {
+        dp[i][j] = 0;
+      }
     }
   }
 
-  return depth;
+  return bestLen > 0 ? a.slice(bestI - bestLen, bestI) : '';
 }
-// build a quick tree
-const tree: TreeNode = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4, left: null, right: null },
-    right: null,
-  },
-  right: {
-    val: 3,
-    left: null,
-    right: { val: 5, left: null, right: null },
-  },
-};
-
-console.log(maxDepth(tree));      // -> 3
-console.log(maxDepthIter(tree));  // -> 3
+console.log(longestCommonSubstring('BANANA', 'ANANAB')); // "ANANA"
+console.log(longestCommonSubstring('hello', 'world'));   // ""
+console.log(longestCommonSubstring('', 'something'));    // ""
