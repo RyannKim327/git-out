@@ -1,52 +1,35 @@
-interface TreeNode<T = number> {
-  val: T;                // single value (you can change the type)
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
-}
-const root: TreeNode = {
-  val: 10,
-  left: { val: 5, left: null, right: null },
-  right: { val: 15, left: null, right: null },
-};
-function maxDepth<T>(node: TreeNode<T> | null): number {
-  if (!node) return 0;
-  const leftDepth = maxDepth(node.left);
-  const rightDepth = maxDepth(node.right);
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
+/**
+ * Counting sort for arrays of non‑negative integers.
+ * @param arr The input array – it will not be mutated.
+ * @returns A new array containing the sorted numbers.
+ */
+export function countingSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
+  // 1. Find the maximum value (k) – the range of the keys.
+  let max = arr[0];
+  for (const num of arr) if (num > max) max = num;
 
-  while (queue.length) {
-    const levelSize = queue.length; // nodes at current depth
-    depth++;                        // we’re going to finish this level
+  // 2. Build the “count” array of size k + 1, initialise to 0.
+  const count: number[] = new Array(max + 1).fill(0);
 
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift() as TreeNode<T>;
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
-    }
+  // 3. Count how many times each value appears.
+  for (const num of arr) count[num]++;
+
+  // 4. Transform counts to positions (prefix sums).
+  for (let i = 1; i < count.length; i++) {
+    count[i] += count[i - 1];
   }
 
-  return depth;
-}
-// build a quick tree
-const tree: TreeNode = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4, left: null, right: null },
-    right: null,
-  },
-  right: {
-    val: 3,
-    left: null,
-    right: { val: 5, left: null, right: null },
-  },
-};
+  // 5. Place each element into the output array in stable order.
+  const output: number[] = new Array(arr.length);
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const num = arr[i];
+    const pos = --count[num];   // decrement to get zero‑based index
+    output[pos] = num;
+  }
 
-console.log(maxDepth(tree));      // -> 3
-console.log(maxDepthIter(tree));  // -> 3
+  return output;
+}
+const data = [4, 2, 2, 8, 3, 3, 1];
+console.log(countingSort(data)); // [1, 2, 2, 3, 3, 4, 8]
