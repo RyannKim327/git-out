@@ -1,143 +1,43 @@
-// 1️⃣  Bucket element (used for chaining)
-interface BucketItem<K, V> {
-  key: K;
-  value: V;
-  next?: BucketItem<K, V>;
-}
+/**
+ * Returns the longest common *contiguous* substring of `a` and `b`.
+ *
+ * If there are multiple substrings with the same maximum length, the first
+ * one that appears in `a` is returned.
+ *
+ * Time:  O(a.length * b.length)
+ * Space: O(a.length * b.length)   (you can trim this to O(a.length) if you’re
+ *                                   hunting for a memory‑tight version)
+ */
+export function longestCommonSubstring(a: string, b: string): string {
+  const aLen = a.length;
+  const bLen = b.length;
 
-// 2️⃣  Hash table implementation
-class HashTable<K extends string | number, V> {
-  // Choose a prime number for better distribution
-  private readonly bucketCount = 53;
-  private readonly buckets: Array<BucketItem<K, V> | undefined> = [];
+  // A 2‑D array where dp[i][j] holds the length of the longest suffix that
+  // ends at a[i-1] and b[j-1].  We use 1‑based indexing to keep the math
+  // simple: dp[0][*] and dp[*][0] are zero by construction.
+  const dp: number[][] = Array.from({ length: aLen + 1 }, () =>
+    new Array(bLen + 1).fill(0)
+  );
 
-  constructor() {
-    // Initialize buckets array
-    this.buckets.length = this.bucketCount;
-  }
+  let bestLen = 0;
+  let bestI = 0; // end index in `a`
 
-  /* ---------- 🔑 Helper: hash function ---------- */
-  // Works for string & number keys; you can add more types if wanted.
-  private hash(key: K): number {
-    const str = key.toString();
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash * 31 + str.charCodeAt(i)) >>> 0; // unsigned 32‑bit arithmetic
-    }
-    return hash % this.bucketCount;
-  }
-
-  /* ---------- 🔧 Operations ---------- */
-
-  set(key: K, value: V): void {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-
-    // If the bucket is empty, insert directly
-    if (!node) {
-      this.buckets[idx] = { key, value };
-      return;
-    }
-
-    // Otherwise iterate to find key or append at end
-    let prev: BucketItem<K, V> | undefined;
-    while (node) {
-      if (node.key === key) {
-        node.value = value; // overwrite
-        return;
-      }
-      prev = node;
-      node = node.next;
-    }
-
-    prev!.next = { key, value }; // add new node at end
-  }
-
-  get(key: K): V | undefined {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-
-    while (node) {
-      if (node.key === key) return node.value;
-      node = node.next;
-    }
-
-    return undefined; // not found
-  }
-
-  delete(key: K): boolean {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-    let prev: BucketItem<K, V> | undefined;
-
-    while (node) {
-      if (node.key === key) {
-        if (!prev) {
-          // first node in bucket
-          this.buckets[idx] = node.next;
-        } else {
-          prev.next = node.next;
+  for (let i = 1; i <= aLen; i++) {
+    for (let j = 1; j <= bLen; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > bestLen) {
+          bestLen = dp[i][j];
+          bestI = i; // slice stops at `i` (exclusive)
         }
-        return true;
-      }
-      prev = node;
-      node = node.next;
-    }
-
-    return false; // key absent
-  }
-
-  keys(): K[] {
-    const res: K[] = [];
-    for (const bucket of this.buckets) {
-      let node = bucket;
-      while (node) {
-        res.push(node.key);
-        node = node.next;
-      }
-    }
-    return res;
-  }
-
-  values(): V[] {
-    const res: V[] = [];
-    for (const bucket of this.buckets) {
-      let node = bucket;
-      while (node) {
-        res.push(node.value);
-        node = node.next;
-      }
-    }
-    return res;
-  }
-
-  // Optional: iteration in for…of style
-  *entries(): Generator<[K, V]> {
-    for (const bucket of this.buckets) {
-      let node = bucket;
-      while (node) {
-        yield [node.key, node.value];
-        node = node.next;
+      } else {
+        dp[i][j] = 0;
       }
     }
   }
+
+  return bestLen > 0 ? a.slice(bestI - bestLen, bestI) : '';
 }
-
-// ---------- Demo ----------
-const ht = new HashTable<string, number>();
-
-ht.set('apple', 3);
-ht.set('banana', 7);
-ht.set('orange', 5);
-ht.set('apple', 10); // overwrite
-
-console.log(ht.get('apple')); // 10
-console.log(ht.get('banana')); // 7
-console.log(ht.get('missing')); // undefined
-
-ht.delete('orange');
-console.log(ht.keys()); // ['apple', 'banana']
-
-for (const [k, v] of ht.entries()) {
-  console.log(`key=${k}, value=${v}`);
-}
+console.log(longestCommonSubstring('BANANA', 'ANANAB')); // "ANANA"
+console.log(longestCommonSubstring('hello', 'world'));   // ""
+console.log(longestCommonSubstring('', 'something'));    // ""
