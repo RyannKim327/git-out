@@ -1,66 +1,29 @@
-class ListNode {
-  val: number;
-  next: ListNode | null;
+function firstRepeatedChar(str: string): string | null {
+  const seen = new Set<string>();
 
-  constructor(val: number, next: ListNode | null = null) {
-    this.val = val;
-    this.next = next;
-  }
-}
-
-/**
- * Returns true if the list contains a cycle, false otherwise.
- */
-function hasCycle(head: ListNode | null): boolean {
-  let slow = head;
-  let fast = head;
-
-  while (fast && fast.next) {
-    slow = slow.next;             // move one step
-    fast = fast.next.next;        // move two steps
-
-    if (slow === fast) {          // pointers meet → cycle
-      return true;
+  for (const ch of str) {
+    if (seen.has(ch)) {
+      return ch;            // ❗ hit the first duplicate
     }
+    seen.add(ch);
   }
 
-  // fast reached the end → no cycle
-  return false;
+  return null;               // no duplicate found
 }
-/**
- * Returns true if the list contains a cycle, false otherwise.
- * Uses a Set to remember nodes we've seen.
- */
-function hasCycleWithSet(head: ListNode | null): boolean {
-  const visited = new Set<ListNode>();
 
-  let current = head;
-  while (current) {
-    if (visited.has(current)) {
-      return true;               // seen it before → cycle
+// Demo
+console.log(firstRepeatedChar("abca")); // → 'a'
+console.log(firstRepeatedChar("abcdef")); // → null
+function firstRepeatedIndex(str: string): number | -1 {
+  const seen = new Map<string, number>();
+
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (seen.has(ch)) {
+      return i;   // index of the first occurrence that was repeated
     }
-    visited.add(current);
-    current = current.next;
+    seen.set(ch, i);
   }
 
-  return false;                  // reached the end
+  return -1;
 }
-// 1 ➜ 2 ➜ 3 ➜ 4 ➜ null   (no cycle)
-const a = new ListNode(1);
-a.next = new ListNode(2, new ListNode(3, new ListNode(4)));
-
-console.log(hasCycle(a));          // false
-console.log(hasCycleWithSet(a));   // false
-
-// 1 ➜ 2 ➜ 3 ➜ 4 ➜ 2 ...   (cycle back to node 2)
-const b = new ListNode(1);
-const node2 = new ListNode(2);
-const node3 = new ListNode(3);
-const node4 = new ListNode(4);
-b.next = node2;
-node2.next = node3;
-node3.next = node4;
-node4.next = node2;                // close the loop
-
-console.log(hasCycle(b));          // true
-console.log(hasCycleWithSet(b));   // true
