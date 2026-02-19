@@ -1,29 +1,29 @@
-/**
- * Reverses the order of words in a string.
- *
- * Words are split on whitespace.  Consecutive whitespace is collapsed,
- * but you can tweak the regex if you need to keep it intact.
- *
- * @param txt – The string to reverse
- * @returns The string with words in reverse order
- */
-function reverseWordOrder(txt: string): string {
-  return txt
-    .trim()                      // Strip leading/trailing gaps
-    .split(/\s+/)                // Break on any run of whitespace
-    .reverse()                   // Flip the array
-    .join(' ');                  // Stitch back together
+function firstRepeatedChar(str: string): string | null {
+  const seen = new Set<string>();
+
+  for (const ch of str) {
+    if (seen.has(ch)) {
+      return ch;            // ❗ hit the first duplicate
+    }
+    seen.add(ch);
+  }
+
+  return null;               // no duplicate found
 }
 
-// Example usage
-const original = "Hello world, this is TypeScript.";
-const reversed = reverseWordOrder(original);
-console.log(reversed);  // "TypeScript. is this world, Hello"
-function reverseWordOrder(txt: string) {
-  const words = txt.trim().match(/\w+|\s+/g) ?? [];
-  const textOnly = words.filter(Boolean).join(' ');
-  const reversed = textOnly.split(/\s+/).reverse().join(' ');
-  // re‑insert spaces that were originally present
-  // (not shown here for brevity)
-  return reversed;
+// Demo
+console.log(firstRepeatedChar("abca")); // → 'a'
+console.log(firstRepeatedChar("abcdef")); // → null
+function firstRepeatedIndex(str: string): number | -1 {
+  const seen = new Map<string, number>();
+
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (seen.has(ch)) {
+      return i;   // index of the first occurrence that was repeated
+    }
+    seen.set(ch, i);
+  }
+
+  return -1;
 }
