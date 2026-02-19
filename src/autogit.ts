@@ -1,94 +1,36 @@
-type AdjacencyList = Record<string, string[]>;
+const original = [1, 2, 3, 2, 4, 1, 5];
 
-/*
-  Example:
+// Method 1 – quick & crumb‑free
+const withoutDups = [...new Set(original)];
+console.log(withoutDups); // [1, 2, 3, 4, 5]
 
-  {
-    A: ["B"],
-    B: ["C", "E"],
-    C: ["A", "D"],
-    D: ["C"],
-    E: ["F"],
-    F: ["E", "G"],
-    G: ["H"],
-    H: ["I", "J"],
-    I: ["H"],
-    J: ["G"],
-  }
-*/
-// TarjanSCC.ts
-type AdjacencyList = Record<string, string[]>;
-
-export function tarjanSCC(graph: AdjacencyList): string[][] {
-  let index = 0;                         // global index counter
-  const indices: Record<string, number> = {};   // vertex → index
-  const lowlinks: Record<string, number> = {};  // vertex → lowlink
-  const stack: string[] = [];
-  const onStack: Record<string, boolean> = {};
-  const sccs: string[][] = [];
-
-  function strongConnect(v: string) {
-    // 1. Set the depth index for v to the smallest unused index
-    indices[v] = lowlinks[v] = index++;
-    stack.push(v);
-    onStack[v] = true;
-
-    // 2. Consider successors of v
-    const neighbours = graph[v] ?? [];
-    for (const w of neighbours) {
-      if (indices[w] === undefined) {
-        // Successor w has not yet been visited; recurse on it
-        strongConnect(w);
-        lowlinks[v] = Math.min(lowlinks[v], lowlinks[w]);
-      } else if (onStack[w]) {
-        // Successor w is in stack → part of current SCC
-        lowlinks[v] = Math.min(lowlinks[v], indices[w]);
-      }
-    }
-
-    // 3. If v is a root node, pop the stack and generate an SCC
-    if (lowlinks[v] === indices[v]) {
-      const component: string[] = [];
-      let w: string;
-      do {
-        w = stack.pop() as string;
-        onStack[w] = false;
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
-    }
-  }
-
-  // Kick off
-  for (const v of Object.keys(graph)) {
-    if (indices[v] === undefined) {
-      strongConnect(v);
-    }
-  }
-
-  return sccs;
+// Method 2 – If you prefer a pure function that you can re‑use
+function uniq<T>(arr: T[]): T[] {
+  return [...new Set(arr)];
 }
-import { tarjanSCC } from "./TarjanSCC";
 
-const graph: AdjacencyList = {
-  A: ["B"],
-  B: ["C", "E"],
-  C: ["A", "D"],
-  D: ["C"],
-  E: ["F"],
-  F: ["E", "G"],
-  G: ["H"],
-  H: ["I", "J"],
-  I: ["H"],
-  J: ["G"],
-};
+const uniqueColors = uniq(['red', 'green', 'red', 'blue']);
+function uniqBy<T, K>(arr: T[], keyFn: (item: T) => K): T[] {
+  const seen = new Set<K>();
+  const result: T[] = [];
 
-const sccs = tarjanSCC(graph);
-console.log("Strongly connected components:");
-sccs.forEach((comp, idx) => {
-  console.log(`  ${idx + 1}: [${comp.join(", ")}]`);
-});
-Strongly connected components:
-  1: [A, B, C, D]
-  2: [E, F]
-  3: [G, H, I, J]
+  for (const item of arr) {
+    const key = keyFn(item);
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(item);
+    }
+  }
+  return result;
+}
+
+// Example: removing duplicate users by id
+const users = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 1, name: 'Alicia' },
+];
+
+const uniqueUsers = uniqBy(users, u => u.id);
+console.log(uniqueUsers);
+// [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
