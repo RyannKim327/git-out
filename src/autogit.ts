@@ -1,60 +1,69 @@
-/**
- * Rabin–Karp string search.
- *
- * @param text    the string to search in
- * @param pattern the string to find
- * @returns array of starting indices where pattern appears in text
- */
-export function rabinKarp(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
+type NodeId = string | number;          // whatever you want to use for a node key
+interface Graph {
+  /** Map of node id → set of neighbour ids */
+  adjacencyList: Map<NodeId, Set<NodeId>>;
+}
+function createGraph(edges: [NodeId, NodeId][]): Graph {
+  const adjacencyList = new Map<NodeId, Set<NodeId>>();
 
-  if (m === 0 || m > n) {
-    return [];
+  for (const [u, v] of edges) {
+    if (!adjacencyList.has(u)) adjacencyList.set(u, new Set());
+    if (!adjacencyList.has(v)) adjacencyList.set(v, new Set());
+    adjacencyList.get(u)!.add(v);
+    adjacencyList.get(v)!.add(u); // comment out for directed graph
   }
 
-  const base = 256;            // Number of possible ASCII characters
-  const mod  = 101;            // A prime modulus – large enough for short strings
+  return { adjacencyList };
+}
+function dfsRecursive(
+  graph: Graph,
+  start: NodeId,
+  visited = new Set<NodeId>()
+): NodeId[] {
+  visited.add(start);
+  const result = [start];
 
-  /* ----------  helper: convert a substring to a hash ------------ */
-  const hash = (str: string, len: number) => {
-    let h = 0;
-    for (let i = 0; i < len; i++) {
-      h = (h * base + str.charCodeAt(i)) % mod;
-    }
-    return h;
-  };
-
-  /* ----------  pre‑compute base^(m-1)  modulo mod -------------- */
-  let highPow = 1;                 // (base^(m‑1)) % mod
-  for (let i = 1; i <= m - 1; i++) {
-    highPow = (highPow * base) % mod;
-  }
-
-  /* ----------  initial hashes ----------------------------------- */
-  let patternHash = hash(pattern, m);
-  let windowHash  = hash(text, m);
-
-  const result: number[] = [];
-
-  /* ----------  main loop ---------------------------------------- */
-  for (let i = 0; i <= n - m; i++) {
-    // When hashes match we still do a string comparison to rule out collisions
-    if (patternHash === windowHash) {
-      if (text.substr(i, m) === pattern) {
-        result.push(i);
-      }
-    }
-
-    // Roll the hash: remove the leftmost character, add the new rightmost
-    if (i < n - m) {
-      windowHash =
-        // Remove leftmost char contribution
-        (windowHash - text.charCodeAt(i) * highPow % mod + mod) % mod; // keep positive
-      // Add next char
-      windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
+  for (const neighbour of graph.adjacencyList.get(start) ?? []) {
+    if (!visited.has(neighbour)) {
+      result.push(...dfsRecursive(graph, neighbour, visited));
     }
   }
 
   return result;
 }
+function dfsIterative(graph: Graph, start: NodeId): NodeId[] {
+  const visited = new Set<NodeId>();
+  const stack: NodeId[] = [start];
+  const result: NodeId[] = [];
+
+  while (stack.length) {
+    const node = stack.pop()!;           // safe: stack is non‑empty
+
+    if (visited.has(node)) continue;
+    visited.add(node);
+    result.push(node);
+
+    // Add neighbours in reverse order if you want a particular visit order
+    const neighbours = graph.adjacencyList.get(node) ?? new Set();
+    for (const neighbour of Array.from(neighbours).reverse()) {
+      if (!visited.has(neighbour)) stack.push(neighbour);
+    }
+  }
+
+  return result;
+}
+const edges: [NodeId, NodeId][] = [
+  [1, 2],
+  [1, 3],
+  [2, 4],
+  [3, 4],
+  [4, 5],
+];
+
+const graph = createGraph(edges);
+
+console.log('Recursive DFS:', dfsRecursive(graph, 1));
+// → [1, 2, 4, 3, 5] (or another order depending on set iteration)
+
+console.log('Iterative DFS:', dfsIterative(graph, 1));
+// → same result, but robust on deep graphs
