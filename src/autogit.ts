@@ -1,45 +1,24 @@
-// 1️⃣  Node definition
-interface TreeNode<T = unknown> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
-}
+/**
+ * Return the first character in `s` that occurs exactly once.
+ * If every character repeats, return null.
+ */
+function firstNonRepeatingChar(s: string): string | null {
+  // 1️⃣  Count how many times each char appears.
+  const freq = new Map<string, number>();
 
-// 2️⃣  Recursive leaf counter
-function countLeaves<T>(node?: TreeNode<T>): number {
-  // Base case: empty sub‑tree
-  if (!node) return 0;
+  for (const ch of s) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  }
 
-  // A leaf has no children
-  const isLeaf = !node.left && !node.right;
-  if (isLeaf) return 1;
-
-  // Recurse on the two sub‑trees
-  return countLeaves(node.left) + countLeaves(node.right);
-}
-
-// 3️⃣  Example usage
-const tree: TreeNode<number> = {
-  value: 1,
-  left: { value: 2, right: { value: 4 } },
-  right: { value: 3, left: { value: 5 } }
-};
-
-console.log(countLeaves(tree)); // → 3
-function countLeavesIterative<T>(root: TreeNode<T>): number {
-  if (!root) return 0;
-
-  let stack: TreeNode<T>[] = [root];
-  let leafCount = 0;
-
-  while (stack.length) {
-    const node = stack.pop()!; // guaranteed defined
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
+  // 2️⃣  Walk the string a second time, looking for a count of 1.
+  for (const ch of s) {
+    if (freq.get(ch) === 1) {
+      return ch;          // first non‑repeating character found
     }
   }
-  return leafCount;
+
+  return null;              // no unique character
 }
+console.log(firstNonRepeatingChar('abacabad')); // "c"
+console.log(firstNonRepeatingChar('aabbcc'));   // null
+console.log(firstNonRepeatingChar('😀😃😀😄')); // "😃"
