@@ -1,78 +1,59 @@
-// AndroidAsyncDemo.ts
-import { AndroidApplication, AndroidActivityEventData } from "@nativescript/core";
-import * as http from "http";
+/**
+ * Returns the longest common subsequence of two strings.
+ *
+ * @param a First string.
+ * @param b Second string.
+ * @returns The LCS as a string.
+ */
+function longestCommonSubsequence(a: string, b: string): string {
+  const n = a.length;
+  const m = b.length;
 
-export class AndroidAsyncDemo {
-    private activity: android.app.Activity;
+  // dp[i][j] = LCS length for a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array(n + 1)
+    .fill(null)
+    .map(() => Array(m + 1).fill(0));
 
-    constructor() {
-        const eventData = <AndroidActivityEventData>androidApplication.currentContext.getActivity();
-        this.activity = eventData.activity;
+  // Fill table
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
+  }
 
-    public startDemo() {
-        // URL you care about
-        const url = "https://api.github.com/users/nativescript";
+  // Back‑track to build the subsequence
+  let i = n,
+    j = m,
+    lcs = '';
 
-        // Create an instance of the AsyncTask wrapper
-        const task = new HttpGetAsyncTask(this.activity, url);
-        task.execute();
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      lcs = a[i - 1] + lcs; // prepend
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;
+    } else {
+      j--;
     }
+  }
+
+  return lcs;
 }
+console.log(longestCommonSubsequence('ABCDGH', 'AEDFHR')); // → "ADH"
+function lcsLength(a: string, b: string): number {
+  const n = a.length, m = b.length;
+  const dp = Array(n + 1).fill(0).map(() => Array(m + 1).fill(0));
 
-// --------------------------------------------
-//  AsyncTask wrapper – looks a bit like Java
-// --------------------------------------------
-class HttpGetAsyncTask extends java.lang.Object implements android.os.AsyncTask<string, void, string> {
+  for (let i = 1; i <= n; i++)
+    for (let j = 1; j <= m; j++)
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1] + 1
+        : Math.max(dp[i - 1][j], dp[i][j - 1]);
 
-    private activity: android.app.Activity;
-    private url: string;
-    private resultView: android.widget.TextView;
-
-    constructor(activity: android.app.Activity, url: string) {
-        super();
-        this.activity = activity;
-        this.url = url;
-        this.resultView = new android.widget.TextView(activity);
-        this.resultView.setLayoutParams(
-            new android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        );
-        this.activity.runOnUiThread(() => {
-            const root = this.activity.findViewById(android.R.id.content);
-            if (root instanceof android.widget.LinearLayout) {
-                root.addView(this.resultView);
-            }
-        });
-    }
-
-    // @Override
-    public doInBackground(...params: string[]): string {
-        try {
-            // Using Node's http wrapper that works in NativeScript
-            const response = http.getSync(this.url);
-            return response.content.toString();
-        } catch (err) {
-            return `Error: ${err.message || err}`;
-        }
-    }
-
-    // @Override
-    public onPostExecute(result: string): void {
-        this.resultView.setText(result);
-    }
-
-    // The following method signatures satisfy the interface contract
-    public onPreExecute(): void {}
-    public onProgressUpdate(...values: void[]): void {}
-}
-
-// --------------------------------------------
-//  Use it from your page or component
-// --------------------------------------------
-export function demoClicked() {
-    const demo = new AndroidAsyncDemo();
-    demo.startDemo();
+  return dp[n][m];
 }
