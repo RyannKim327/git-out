@@ -1,64 +1,61 @@
-/**
- * Basic node definition for a singly‑linked list.
- */
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+export interface ListNode<T> {
+  val: T;               // the payload
+  next: ListNode<T> | null; // pointer to the next node
 }
-
 /**
- * Returns `true` if the list reads the same forwards and backwards.
- *
- * Time   : O(n) – we traverse the list a constant number of times.
- * Space  : O(1) – we only use a few pointer variables.
+ * Reverses a singly linked list.
+ * @param head: the first node of the list (or null for an empty list)
+ * @returns the new head of the reversed list
  */
-function isPalindrome<T>(head: ListNode<T> | null): boolean {
-  if (!head || !head.next) return true;   // empty or single‑node list
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;   // will become the new head
+  let curr: ListNode<T> | null = head;   // current node being processed
 
-  // 1. Find the middle of the list
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  // 2. Reverse the second half (starting from slow.next)
-  let prev: ListNode<T> | null = null;
-  let curr: ListNode<T> | null = slow.next;
   while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  // `prev` is now the head of the reversed second half
-
-  // 3. Compare the first half with the reversed second half
-  let p1 = head;
-  let p2 = prev;
-  while (p2) {               // only need to go as far as the short half
-    if (p1.val !== p2.val) return false;
-    p1 = p1.next!;
-    p2 = p2.next!;
+    const nextTemp = curr.next; // keep reference to the next node
+    curr.next = prev;           // reverse the link
+    prev = curr;                // move prev forward
+    curr = nextTemp;            // move curr forward
   }
 
-  // Optional: restore the list to its original order (not required for the answer)
-  // reverse(prev) again and reattach to `slow.next`
-
-  return true;
+  // At this point, prev points to the new head
+  return prev;
 }
-const build = (...vals: number[]): ListNode<number> | null => {
+export function reverseListRec<T>(node: ListNode<T> | null): ListNode<T> | null {
+  if (!node || !node.next) {
+    return node; // new head (either the original head if list is 1 or 0 nodes)
+  }
+
+  const newHead = reverseListRec(node.next);   // recurse to the end
+  node.next.next = node;   // make the next node point back to the current one
+  node.next = null;        // sever original forward link
+  return newHead;
+}
+// Helper to build a list [1, 2, 3]
+function buildList(arr: number[]): ListNode<number> | null {
   let head: ListNode<number> | null = null;
-  let tail: ListNode<number> | null = null;
-  for (const v of vals) {
-    const node = new ListNode(v);
-    if (!head) head = node;
-    else tail!.next = node;
-    tail = node;
+  for (let i = arr.length - 1; i >= 0; i--) {
+    head = { val: arr[i], next: head };
   }
   return head;
-};
+}
 
-console.log(isPalindrome(build(1, 2, 3, 2, 1))); // true
-console.log(isPalindrome(build(1, 2, 2, 1)));      // true
-console.log(isPalindrome(build(1, 2, 3, 4, 5))); // false
+// Helper to convert list back to array for easy viewing
+function toArray<T>(head: ListNode<T> | null): T[] {
+  const result: T[] = [];
+  let cur = head;
+  while (cur) {
+    result.push(cur.val);
+    cur = cur.next;
+  }
+  return result;
+}
+
+// Demo
+const original = buildList([1, 2, 3, 4, 5]);
+console.log('original:', toArray(original));
+
+const reversed = reverseList(original);
+console.log('reversed:', toArray(reversed));
+original: [1, 2, 3, 4, 5]
+reversed: [5, 4, 3, 2, 1]
