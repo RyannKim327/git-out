@@ -1,59 +1,72 @@
-/**
- * Returns the longest common subsequence of two strings.
- *
- * @param a First string.
- * @param b Second string.
- * @returns The LCS as a string.
- */
-function longestCommonSubsequence(a: string, b: string): string {
-  const n = a.length;
-  const m = b.length;
+function longestCommonPrefixVertical(strs: string[]): string {
+  if (!strs.length) return "";
 
-  // dp[i][j] = LCS length for a[0..i-1] and b[0..j-1]
-  const dp: number[][] = Array(n + 1)
-    .fill(null)
-    .map(() => Array(m + 1).fill(0));
+  // The longest possible prefix is bounded by the first string’s length
+  const first = strs[0];
 
-  // Fill table
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+  for (let i = 0; i < first.length; i++) {
+    const ch = first[i];
+    for (let j = 1; j < strs.length; j++) {
+      // If any string is shorter or the current char differs: stop
+      if (i >= strs[j].length || strs[j][i] !== ch) {
+        return first.slice(0, i);
       }
     }
   }
 
-  // Back‑track to build the subsequence
-  let i = n,
-    j = m,
-    lcs = '';
+  // All strings matched the entire first string
+  return first;
+}
+console.log(longestCommonPrefixVertical(["flower", "flow", "flight"])); // "fl"
+function lcpMerge(a: string, b: string): string {
+  let i = 0;
+  const limit = Math.min(a.length, b.length);
+  while (i < limit && a[i] === b[i]) i++;
+  return a.slice(0, i);
+}
 
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      lcs = a[i - 1] + lcs; // prepend
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;
-    } else {
-      j--;
+function longestCommonPrefixDivide(strs: string[]): string {
+  if (!strs.length) return "";
+
+  const helper = (l: number, r: number): string => {
+    if (l === r) return strs[l];
+    const mid = Math.floor((l + r) / 2);
+    const left = helper(l, mid);
+    const right = helper(mid + 1, r);
+    return lcpMerge(left, right);
+  };
+
+  return helper(0, strs.length - 1);
+}
+class TrieNode {
+  children = new Map<string, TrieNode>();
+  isEnd = false;
+}
+
+function buildTrie(strs: string[]): TrieNode {
+  const root = new TrieNode();
+  for (const s of strs) {
+    let node = root;
+    for (const ch of s) {
+      if (!node.children.has(ch)) node.children.set(ch, new TrieNode());
+      node = node.children.get(ch)!;
     }
+    node.isEnd = true;
   }
-
-  return lcs;
+  return root;
 }
-console.log(longestCommonSubsequence('ABCDGH', 'AEDFHR')); // → "ADH"
-function lcsLength(a: string, b: string): number {
-  const n = a.length, m = b.length;
-  const dp = Array(n + 1).fill(0).map(() => Array(m + 1).fill(0));
 
-  for (let i = 1; i <= n; i++)
-    for (let j = 1; j <= m; j++)
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1] + 1
-        : Math.max(dp[i - 1][j], dp[i][j - 1]);
-
-  return dp[n][m];
+function longestCommonPrefixTrie(strs: string[]): string {
+  if (!strs.length) return "";
+  const root = buildTrie(strs);
+  let node = root;
+  let prefix = "";
+  while (node.children.size === 1 && !node.isEnd) {
+    const [ch, next] = node.children.entries().next().value;
+    prefix += ch;
+    node = next;
+  }
+  return prefix;
 }
+const data = ["algorithm", "algo", "algorithms", "all"]; 
+console.log(longestCommonPrefixVertical(data)); // "alg"
