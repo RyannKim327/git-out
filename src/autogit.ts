@@ -1,48 +1,48 @@
-// emailValidator.ts
-export function isEmail(str: string): boolean {
-  // RFC‑5322 allows a very wide set of characters.  For most apps a
-  // simpler “+ followed by domain” style rule is good enough.
-  // This expression is a commonly‑accepted compromise:
-  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/**
+ * Random‑pivot quicksort for an array of numbers.
+ *
+ * @param arr – the array to sort (it will be sorted in place)
+ * @returns the sorted array (same reference as the input)
+ */
+function randomQuickSort(arr: number[]): number[] {
+  // Internal helper that works on a sub‑range [left, right]
+  function sort(left: number, right: number) {
+    if (left >= right) return;           // 0 or 1 element – nothing to do
 
-  return emailRe.test(str);
+    // Pick a random pivot index between left and right (inclusive)
+    const pivotIndex = Math.floor(Math.random() * (right - left + 1)) + left;
+    const pivotValue = arr[pivotIndex];
+
+    // Move the pivot to the rightmost position for the partition step
+    [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
+
+    // Standard Lomuto partition
+    let storeIndex = left;
+    for (let i = left; i < right; i++) {
+      if (arr[i] < pivotValue) {
+        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
+        storeIndex++;
+      }
+    }
+
+    // Put the pivot back in its final place
+    [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
+
+    // Recurse on the two partitions
+    sort(left, storeIndex - 1);
+    sort(storeIndex + 1, right);
+  }
+
+  sort(0, arr.length - 1);
+  return arr;
 }
-export const strictEmailRe = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
-const tests: Record<string, boolean> = {
-  // pass
-  'user@example.com': true,
-  'user.name+tag@sub.domain.co.uk': true,
 
-  // fail
-  'user@': false,
-  '@example.com': false,
-  'user@@example.com': false,
-  'user example@example.com': false,
-  'user@.com': false,
-  '': false,
-};
+/*--------------------------------------------
+  Example usage
+--------------------------------------------*/
 
-for (const [addr, expected] of Object.entries(tests)) {
-  const result = isEmail(addr);
-  console.assert(result === expected, `❌ ${addr}: expected ${expected}, got ${result}`);
-}
+const data = [34, 7, 23, 32, 5, 62];
+console.log('Unsorted:', data);
 
-console.log('All test cases passed!');
-import { useForm } from 'react-hook-form';
-
-function MyForm() {
-  const { register, handleSubmit, formState: { errors } } = useForm();
-
-  const onSubmit = data => console.log('Valid email:', data.email);
-
-  return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <input
-        {...register('email', { validate: isEmail })}
-        placeholder="email@example.com"
-      />
-      {errors.email && <p>Email is not valid.</p>}
-      <button type="submit">Submit</button>
-    </form>
-  );
-}
+const sorted = randomQuickSort([...data]); // copy to avoid mutating the original
+console.log('Sorted  :', sorted);
