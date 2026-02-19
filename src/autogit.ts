@@ -1,32 +1,45 @@
-// 1️⃣  Using a Set – O(m + n) time, O(n) extra space
-function commonElements<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(item => setB.has(item));
+// 1️⃣  Node definition
+interface TreeNode<T = unknown> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
 
-// 2️⃣  Using two pointers – O(m + n) time, O(1) extra space
-//     (works best if both arrays are already sorted)
-function commonSorted<T>(a: T[], b: T[]): T[] {
-  const res: T[] = [];
-  let i = 0, j = 0;
-  while (i < a.length && j < b.length) {
-    if (a[i] === b[j]) {
-      res.push(a[i]);
-      i++; j++;
-    } else if (a[i] < b[j]) {
-      i++;
+// 2️⃣  Recursive leaf counter
+function countLeaves<T>(node?: TreeNode<T>): number {
+  // Base case: empty sub‑tree
+  if (!node) return 0;
+
+  // A leaf has no children
+  const isLeaf = !node.left && !node.right;
+  if (isLeaf) return 1;
+
+  // Recurse on the two sub‑trees
+  return countLeaves(node.left) + countLeaves(node.right);
+}
+
+// 3️⃣  Example usage
+const tree: TreeNode<number> = {
+  value: 1,
+  left: { value: 2, right: { value: 4 } },
+  right: { value: 3, left: { value: 5 } }
+};
+
+console.log(countLeaves(tree)); // → 3
+function countLeavesIterative<T>(root: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let stack: TreeNode<T>[] = [root];
+  let leafCount = 0;
+
+  while (stack.length) {
+    const node = stack.pop()!; // guaranteed defined
+    if (!node.left && !node.right) {
+      leafCount++;
     } else {
-      j++;
+      if (node.right) stack.push(node.right);
+      if (node.left)  stack.push(node.left);
     }
   }
-  return res;
+  return leafCount;
 }
-
-// 3️⃣  Using reduce – concise but less efficient for large arrays
-function commonReduce<T>(a: T[], b: T[]): T[] {
-  return a.reduce((acc, val) => (b.includes(val) ? [...acc, val] : acc), [] as T[]);
-}
-const arr1 = [1, 2, 3, 4, 5];
-const arr2 = [3, 4, 5, 6, 7];
-
-console.log(commonElements(arr1, arr2)); // [3, 4, 5]
