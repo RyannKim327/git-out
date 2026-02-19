@@ -1,43 +1,60 @@
 /**
- * Binary search on a sorted array.
+ * Rabin–Karp string search.
  *
- * @param arr   A sorted array that supports the supplied comparator.
- * @param target The value you’re searching for.
- * @param compare A comparison function: returns <0 if a<b, 0 if a===b, >0 if a>b.
- * @returns The index of `target` if found; otherwise –1.
+ * @param text    the string to search in
+ * @param pattern the string to find
+ * @returns array of starting indices where pattern appears in text
  */
-export function binarySearch<T>(
-  arr: readonly T[],
-  target: T,
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): number {
-  let low = 0;
-  let high = arr.length - 1;
+export function rabinKarp(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
 
-  while (low <= high) {
-    // Use Math.floor to avoid overflow and keep mid an integer.
-    const mid = low + Math.floor((high - low) / 2);
-    const cmp = compare(arr[mid], target);
+  if (m === 0 || m > n) {
+    return [];
+  }
 
-    if (cmp === 0) {
-      return mid; // Found it!
-    } else if (cmp < 0) {
-      low = mid + 1; // Search right half
-    } else {
-      high = mid - 1; // Search left half
+  const base = 256;            // Number of possible ASCII characters
+  const mod  = 101;            // A prime modulus – large enough for short strings
+
+  /* ----------  helper: convert a substring to a hash ------------ */
+  const hash = (str: string, len: number) => {
+    let h = 0;
+    for (let i = 0; i < len; i++) {
+      h = (h * base + str.charCodeAt(i)) % mod;
+    }
+    return h;
+  };
+
+  /* ----------  pre‑compute base^(m-1)  modulo mod -------------- */
+  let highPow = 1;                 // (base^(m‑1)) % mod
+  for (let i = 1; i <= m - 1; i++) {
+    highPow = (highPow * base) % mod;
+  }
+
+  /* ----------  initial hashes ----------------------------------- */
+  let patternHash = hash(pattern, m);
+  let windowHash  = hash(text, m);
+
+  const result: number[] = [];
+
+  /* ----------  main loop ---------------------------------------- */
+  for (let i = 0; i <= n - m; i++) {
+    // When hashes match we still do a string comparison to rule out collisions
+    if (patternHash === windowHash) {
+      if (text.substr(i, m) === pattern) {
+        result.push(i);
+      }
+    }
+
+    // Roll the hash: remove the leftmost character, add the new rightmost
+    if (i < n - m) {
+      windowHash =
+        // Remove leftmost char contribution
+        (windowHash - text.charCodeAt(i) * highPow % mod + mod) % mod; // keep positive
+      // Add next char
+      windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
     }
   }
 
-  return -1; // Not found
+  return result;
 }
-// Example with numbers
-const nums = [3, 7, 12, 18, 25, 34];
-const index = binarySearch(nums, 18); // → 3
-
-// Example with strings – note we pass a custom comparator for case‑insensitive search
-const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
-const idx = binarySearch(
-  words,
-  'CHeRry',
-  (a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' })
-); // → 2
