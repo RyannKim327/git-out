@@ -1,35 +1,59 @@
 /**
- * Counting sort for arrays of non‑negative integers.
- * @param arr The input array – it will not be mutated.
- * @returns A new array containing the sorted numbers.
+ * Returns the longest common subsequence of two strings.
+ *
+ * @param a First string.
+ * @param b Second string.
+ * @returns The LCS as a string.
  */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+function longestCommonSubsequence(a: string, b: string): string {
+  const n = a.length;
+  const m = b.length;
 
-  // 1. Find the maximum value (k) – the range of the keys.
-  let max = arr[0];
-  for (const num of arr) if (num > max) max = num;
+  // dp[i][j] = LCS length for a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array(n + 1)
+    .fill(null)
+    .map(() => Array(m + 1).fill(0));
 
-  // 2. Build the “count” array of size k + 1, initialise to 0.
-  const count: number[] = new Array(max + 1).fill(0);
-
-  // 3. Count how many times each value appears.
-  for (const num of arr) count[num]++;
-
-  // 4. Transform counts to positions (prefix sums).
-  for (let i = 1; i < count.length; i++) {
-    count[i] += count[i - 1];
+  // Fill table
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
   }
 
-  // 5. Place each element into the output array in stable order.
-  const output: number[] = new Array(arr.length);
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const num = arr[i];
-    const pos = --count[num];   // decrement to get zero‑based index
-    output[pos] = num;
+  // Back‑track to build the subsequence
+  let i = n,
+    j = m,
+    lcs = '';
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      lcs = a[i - 1] + lcs; // prepend
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;
+    } else {
+      j--;
+    }
   }
 
-  return output;
+  return lcs;
 }
-const data = [4, 2, 2, 8, 3, 3, 1];
-console.log(countingSort(data)); // [1, 2, 2, 3, 3, 4, 8]
+console.log(longestCommonSubsequence('ABCDGH', 'AEDFHR')); // → "ADH"
+function lcsLength(a: string, b: string): number {
+  const n = a.length, m = b.length;
+  const dp = Array(n + 1).fill(0).map(() => Array(m + 1).fill(0));
+
+  for (let i = 1; i <= n; i++)
+    for (let j = 1; j <= m; j++)
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1] + 1
+        : Math.max(dp[i - 1][j], dp[i][j - 1]);
+
+  return dp[n][m];
+}
