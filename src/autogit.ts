@@ -1,52 +1,59 @@
-interface TreeNode<T = number> {
-  val: T;                // single value (you can change the type)
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
-}
-const root: TreeNode = {
-  val: 10,
-  left: { val: 5, left: null, right: null },
-  right: { val: 15, left: null, right: null },
-};
-function maxDepth<T>(node: TreeNode<T> | null): number {
-  if (!node) return 0;
-  const leftDepth = maxDepth(node.left);
-  const rightDepth = maxDepth(node.right);
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
-
-  while (queue.length) {
-    const levelSize = queue.length; // nodes at current depth
-    depth++;                        // we’re going to finish this level
-
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift() as TreeNode<T>;
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
-    }
+/**
+ * Compare two strings for an anagram relationship.
+ *
+ * @param a – first string (the one you’re testing)
+ * @param b – candidate anagram
+ * @param ignoreCase – true will treat “A” and “a” the same
+ * @param normalize   – if true, removes all non‑alphanumeric chars
+ * @returns true if a and b are anagrams
+ */
+function isAnagram(
+  a: string,
+  b: string,
+  ignoreCase = true,
+  normalize = true
+): boolean {
+  if (normalize) {
+    const regex = /[^a-z0-9]/gi;
+    a = a.replace(regex, '');
+    b = b.replace(regex, '');
   }
 
-  return depth;
-}
-// build a quick tree
-const tree: TreeNode = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4, left: null, right: null },
-    right: null,
-  },
-  right: {
-    val: 3,
-    left: null,
-    right: { val: 5, left: null, right: null },
-  },
-};
+  if (ignoreCase) {
+    a = a.toLowerCase();
+    b = b.toLowerCase();
+  }
 
-console.log(maxDepth(tree));      // -> 3
-console.log(maxDepthIter(tree));  // -> 3
+  // Quick length‐check
+  if (a.length !== b.length) return false;
+
+  // Sort characters and compare
+  const sortedA = a.split('').sort().join('');
+  const sortedB = b.split('').sort().join('');
+
+  return sortedA === sortedB;
+}
+console.log(isAnagram('Listen', 'Silent'));               // true
+console.log(isAnagram('Astronomer', 'Moon starer'));      // true
+console.log(isAnagram('Hello', 'World'));                  // false
+
+// Custom options
+console.log(isAnagram('Dormitory!', 'Dirtyroom', true, true)); // true
+console.log(isAnagram('Dormitory!', 'Dirtyroom', false, true)); // false – case sensitive
+function isAnagramFreq(a: string, b: string): boolean {
+  const makeMap = (s: string) => {
+    const map: Record<string, number> = {};
+    for (const ch of s) map[ch] = (map[ch] ?? 0) + 1;
+    return map;
+  };
+
+  const freqA = makeMap(a);
+  const freqB = makeMap(b);
+
+  // Compare two maps
+  const keys = new Set([...Object.keys(freqA), ...Object.keys(freqB)]);
+  for (const k of keys) {
+    if (freqA[k] !== freqB[k]) return false;
+  }
+  return true;
+}
