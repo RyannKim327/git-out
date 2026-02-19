@@ -1,60 +1,69 @@
-function buildLps(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let len = 0;          // length of the previous longest prefix suffix
-  let i = 1;            // we start from the second character
-
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      // Mismatch after len matches
-      if (len !== 0) {
-        // Try the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
+type NodeId = string | number;          // whatever you want to use for a node key
+interface Graph {
+  /** Map of node id → set of neighbour ids */
+  adjacencyList: Map<NodeId, Set<NodeId>>;
 }
-/**
- * Returns an array of starting indices where `pattern` occurs in `text`.
- * If no match, returns an empty array.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  const lps = buildLps(pattern);
-  const results: number[] = [];
+function createGraph(edges: [NodeId, NodeId][]): Graph {
+  const adjacencyList = new Map<NodeId, Set<NodeId>>();
 
-  let i = 0; // index for text
-  let j = 0; // index for pattern
+  for (const [u, v] of edges) {
+    if (!adjacencyList.has(u)) adjacencyList.set(u, new Set());
+    if (!adjacencyList.has(v)) adjacencyList.set(v, new Set());
+    adjacencyList.get(u)!.add(v);
+    adjacencyList.get(v)!.add(u); // comment out for directed graph
+  }
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++; j++;
-      if (j === pattern.length) {
-        // Match found at position i - j
-        results.push(i - j);
-        // Prepare for the next possible match
-        j = lps[j - 1];
-      }
-    } else {
-      if (j !== 0) {
-        // Mismatch after j matches
-        j = lps[j - 1];
-      } else {
-        // Mismatch at the start
-        i++;
-      }
+  return { adjacencyList };
+}
+function dfsRecursive(
+  graph: Graph,
+  start: NodeId,
+  visited = new Set<NodeId>()
+): NodeId[] {
+  visited.add(start);
+  const result = [start];
+
+  for (const neighbour of graph.adjacencyList.get(start) ?? []) {
+    if (!visited.has(neighbour)) {
+      result.push(...dfsRecursive(graph, neighbour, visited));
     }
   }
 
-  return results;
+  return result;
 }
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
+function dfsIterative(graph: Graph, start: NodeId): NodeId[] {
+  const visited = new Set<NodeId>();
+  const stack: NodeId[] = [start];
+  const result: NodeId[] = [];
 
-console.log(kmpSearch(text, pattern)); // [10]
+  while (stack.length) {
+    const node = stack.pop()!;           // safe: stack is non‑empty
+
+    if (visited.has(node)) continue;
+    visited.add(node);
+    result.push(node);
+
+    // Add neighbours in reverse order if you want a particular visit order
+    const neighbours = graph.adjacencyList.get(node) ?? new Set();
+    for (const neighbour of Array.from(neighbours).reverse()) {
+      if (!visited.has(neighbour)) stack.push(neighbour);
+    }
+  }
+
+  return result;
+}
+const edges: [NodeId, NodeId][] = [
+  [1, 2],
+  [1, 3],
+  [2, 4],
+  [3, 4],
+  [4, 5],
+];
+
+const graph = createGraph(edges);
+
+console.log('Recursive DFS:', dfsRecursive(graph, 1));
+// → [1, 2, 4, 3, 5] (or another order depending on set iteration)
+
+console.log('Iterative DFS:', dfsIterative(graph, 1));
+// → same result, but robust on deep graphs
