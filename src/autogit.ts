@@ -1,132 +1,116 @@
-// ---------- Types ---------------------------------------------------------
-type Vertex = string | number // whatever sort of key you like
-
-// an edge is directed; the weight can be positive, negative or zero
-interface Edge {
-  from: Vertex
-  to: Vertex
-  weight: number
-}
-
-// ---------- Graph wrapper -----------------------------------------------
-class Graph {
-  private vertices: Set<Vertex> = new Set()
-  private edges: Edge[] = []
-
-  // you can add vertices explicitly if you want; adding an edge will
-  // automatically pull its endpoints into the vertex set
-  public addVertex(v: Vertex) {
-    this.vertices.add(v)
-  }
-
-  public addEdge(from: Vertex, to: Vertex, weight: number) {
-    this.vertices.add(from)
-    this.vertices.add(to)
-    this.edges.push({ from, to, weight })
-  }
-
-  public getVertices() {
-    return Array.from(this.vertices)
-  }
-
-  public getEdges() {
-    return this.edges.slice()
-  }
-}
-
-// ---------- Bellman‑Ford algorithm ---------------------------------------
 /**
- * Returns an object containing:
- *   distances:  map from vertex to its shortest‑path distance from source
- *   previous:   map from vertex to its predecessor on that shortest path
- *
- * Throws an Error if a negative‑weight cycle is reachable from `source`.
+ * Build the bad‑character shift table.
+ * For every character that occurs in the pattern, we store the distance
+ * from the last occurrence of that character to the end of the pattern
+ * (i.e. how far we can jump when that character mismatches).
  */
-function bellmanFord(
-  graph: Graph,
-  source: Vertex
-): { distances: Record<Vertex, number>; previous: Record<Vertex, Vertex | null> } {
-  const INF = Number.POSITIVE_INFINITY
+function buildBadCharShift(pat: string): Int8Array {
+  const m = pat.length;
+  // 256 possible ASCII values – 16-bit enough for Unicode offsets too
+  const shift = new Int8Array(256);
+  shift.fill(-1);
 
-  // 1. initialise
-  const distance: Record<Vertex, number> = {}
-  const previous: Record<Vertex, Vertex | null> = {}
-
-  for (const v of graph.getVertices()) {
-    distance[v] = INF
-    previous[v] = null
+  for (let i = 0; i < m; i++) {
+    shift[pat.charCodeAt(i)] = i;
   }
-  distance[source] = 0
+  return shift;
+}
 
-  const edges = graph.getEdges()
-  const nvertices = graph.getVertices().length
+/**
+ * Build the good‑suffix shift table.
+ * The array `shift` holds, for each position in the pattern,
+ * how far we can safely shift if the suffix starting at that position
+ * is found to match the text but a mismatch occurs just before it.
+ */
+function buildGoodSuffixShift(pat: string): Int32Array {
+  const m = pat.length;
+  const shift = new Int32Array(m).fill(m);
+  const borderPos = new Int32Array(m + 1).fill(-1);
+  const suffixPos = new Int32Array(m + 1).fill(-1);
 
-  // 2. relaxation loop (nvertices - 1) times
-  for (let i = 0; i < nvertices - 1; i++) {
-    let updated = false
-    for (const { from, to, weight } of edges) {
-      const alt = distance[from] + weight
-      if (alt < distance[to]) {
-        distance[to] = alt
-        previous[to] = from
-        updated = true
-      }
+  /* Step 1 – compute border positions (also known as "failure function") */
+  let i = m;
+  let j = m + 1;
+  borderPos[i] = j;
+  while (i > 0) {
+    while (j <= m && pat[i - 1] !== pat[j - 1]) j = borderPos[j];
+    i--;
+    j--;
+    borderPos[i] = j;
+  }
+
+  /* Step 2 – compute suffix positions */
+  i = 0;
+  j = 0;
+  while (i < m) {
+    if (pat[i] === pat[j]) {
+      j++;
+      suffixPos[i + 1] = j;
+    } else if (j > 0) {
+      j = borderPos[j];
+    } else {
+      suffixPos[i + 1] = 0;
+      i++;
     }
-    // early exit if nothing changed
-    if (!updated) break
   }
 
-  // 3. check for negative‑weight cycles
-  for (const { from, to, weight } of edges) {
-    if (distance[from] + weight < distance[to]) {
-      throw new Error(
-        `Negative‑weight cycle detected: edge ${from} → ${to} (weight ${weight})`
-      )
+  /* Step 3 – fill the shift table using the border and suffix data */
+  for (let k = 0; k < m; k++) {
+    // If the suffix starting at k matches the pattern's suffix
+    // and there is a border before that suffix, we can shift
+    // to align that border with the text.
+    shift[k] = m - suffixPos[k];
+  }
+
+  return shift;
+}
+
+/**
+ * Boyer‑Moore search.
+ * Returns an array of all start indices where `pat` is found in `txt`.
+ */
+export function boyerMoore(txt: string, pat: string): number[] {
+  const n = txt.length;
+  const m = pat.length;
+
+  if (m === 0 || n < m) return [];
+
+  const badChar = buildBadCharShift(pat);
+  const goodSuffix = buildGoodSuffixShift(pat);
+
+  const res: number[] = [];
+  let s = 0; // shift of the pattern over text
+
+  while (s <= n - m) {
+    let j = m - 1;
+
+    // Move left while characters match
+    while (j >= 0 && pat[j] === txt[s + j]) j--;
+
+    if (j < 0) {
+      // full match
+      res.push(s);
+      // shift so that the next possible match starts right after the first character of the current match
+      s += goodSuffix[0];
+    } else {
+      const badIdx = badChar[txt.charCodeAt(s + j)];
+      const badShift = badIdx !== -1 ? j - badIdx : j + 1;
+      const goodShift = goodSuffix[j];
+      // choose the larger of the two shifts
+      s += Math.max(badShift, goodShift);
     }
   }
 
-  return { distances: distance, previous }
+  return res;
 }
 
-// ---------- Reconstruct path helper ---------------------------------------
-function reconstructPath(
-  previous: Record<Vertex, Vertex | null>,
-  source: Vertex,
-  target: Vertex
-): Vertex[] {
-  const path: Vertex[] = []
-  let v: Vertex | null = target
+/* ----------------------------------- */
+/* Example usage                     */
+const text = "ABAAABCDABEEABBAAB";
+const pattern = "ABBA";
 
-  while (v !== null && v !== source) {
-    path.unshift(v)
-    v = previous[v]
-  }
-  if (v !== source) {
-    // no path
-    return []
-  }
-  path.unshift(source)
-  return path
-}
-
-// ---------- Example usage -----------------------------------------------
-const g = new Graph()
-
-// sample graph: 0 → 1 (4), 0 → 2 (5), 1 → 2 (-1), 2 → 3 (3), 3 → 1 (-2)
-g.addEdge(0, 1, 4)
-g.addEdge(0, 2, 5)
-g.addEdge(1, 2, -1)
-g.addEdge(2, 3, 3)
-g.addEdge(3, 1, -2)
-
-try {
-  const { distances, previous } = bellmanFord(g, 0)
-  console.log('distances:', distances)
-
-  for (const v of g.getVertices()) {
-    const path = reconstructPath(previous, 0, v)
-    console.log(`0 → ${v}  (dist=${distances[v]})  path:`, path.join(' → '))
-  }
-} catch (e) {
-  console.error(e)
-}
+const matches = boyerMoore(text, pattern);
+console.log("Pattern found at indices:", matches);
+/* Expected output (zero‑based indices):
+   Pattern found at indices: [12, 15]
+*/
