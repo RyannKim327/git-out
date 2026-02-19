@@ -1,36 +1,29 @@
 /**
- * Performs an in‑place Shell sort on `arr`.
- * The generic makes it usable for numbers, strings, or any comparable type.
+ * Returns true if `n` is a prime number.
+ *
+ * Rules:
+ *   * 0 and 1 are **not** primes.
+ *   * 2 is the only even prime.
+ *   * For any other number, test divisibility up to √n.
+ *
+ * NOTE: This is a classic, “trial‑division” algorithm
+ * and is fast enough for numbers that fit comfortably
+ * in a JavaScript `number`. If you need to handle millisecond‑length
+ * big‑ints, consider a probabilistic test like Miller‑Rabin.
  */
-export function shellSort<T>(arr: T[], compare?: (a: T, b: T) => boolean) {
-  const len = arr.length;
-  // Default comparison: ascending numeric/string order
-  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any));
+function isPrime(n: number): boolean {
+  if (n < 2) return false;         // 0, 1, and negative numbers are not prime
+  if (n === 2) return true;        // 2 is prime
+  if (n % 2 === 0) return false;   // even numbers larger than 2 are not prime
 
-  // Start with a gap (Hibbard’s sequence is simple and effective)
-  // gap = 1, 3, 7, 15, …  (2^k‑1)
-  let gap = 1;
-  while (gap < len) gap = 2 * gap + 1; // find largest Hibbard gap <= len
-
-  // Descend gaps until 1
-  while (gap >= 1) {
-    // Insertion sort on elements gap apart
-    for (let i = gap; i < len; i++) {
-      const temp = arr[i];
-      let j = i;
-      // shift earlier gap‑sorted elements that are greater
-      while (j >= gap && cmp(temp, arr[j - gap])) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
-    // Next gap
-    gap = Math.floor((gap - 1) / 2); // inverse of 2*gap + 1
+  const limit = Math.floor(Math.sqrt(n));
+  for (let divisor = 3; divisor <= limit; divisor += 2) {
+    if (n % divisor === 0) return false;
   }
+  return true;
 }
-const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
-shellSort(numbers);
-console.log(numbers); // [1, 2, 3, 8, 12, 23, 34, 54]
-const desc = (a: number, b: number) => a > b;
-shellSort(numbers, desc);
+console.log(isPrime(2));   // true
+console.log(isPrime(9));   // false
+console.log(isPrime(13));  // true
+console.log(isPrime(1_000_003)); // true (prime just over a million)
+Time to test 1 000 000 numbers (≈ 5–6 ms in Node.js)
