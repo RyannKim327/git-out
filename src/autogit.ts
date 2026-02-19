@@ -1,48 +1,45 @@
-// emailValidator.ts
-export function isEmail(str: string): boolean {
-  // RFC‑5322 allows a very wide set of characters.  For most apps a
-  // simpler “+ followed by domain” style rule is good enough.
-  // This expression is a commonly‑accepted compromise:
-  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/**
+ * A classic LIFO stack that stores items in an array.
+ * @template T The type of the values stored inside the stack.
+ */
+export class Stack<T> {
+  /** The underlying array that holds the stack's data. */
+  private data: T[] = [];
 
-  return emailRe.test(str);
+  /** Adds an element to the top of the stack. */
+  push(item: T): void {
+    this.data.push(item);
+  }
+
+  /**
+   * Removes and returns the element at the top of the stack.
+   * Returns undefined if the stack is empty.
+   */
+  pop(): T | undefined {
+    return this.data.pop();
+  }
+
+  /** Peeks at the element on the top without removing it. */
+  peek(): T | undefined {
+    return this.data[this.data.length - 1];
+  }
+
+  /** Returns the number of elements in the stack. */
+  get size(): number {
+    return this.data.length;
+  }
+
+  /** Returns true when the stack has nothing inside. */
+  get isEmpty(): boolean {
+    return this.data.length === 0;
+  }
 }
-export const strictEmailRe = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
-const tests: Record<string, boolean> = {
-  // pass
-  'user@example.com': true,
-  'user.name+tag@sub.domain.co.uk': true,
+const stack = new Stack<number>();
 
-  // fail
-  'user@': false,
-  '@example.com': false,
-  'user@@example.com': false,
-  'user example@example.com': false,
-  'user@.com': false,
-  '': false,
-};
+stack.push(10);
+stack.push(20);
+stack.push(30);
 
-for (const [addr, expected] of Object.entries(tests)) {
-  const result = isEmail(addr);
-  console.assert(result === expected, `❌ ${addr}: expected ${expected}, got ${result}`);
-}
-
-console.log('All test cases passed!');
-import { useForm } from 'react-hook-form';
-
-function MyForm() {
-  const { register, handleSubmit, formState: { errors } } = useForm();
-
-  const onSubmit = data => console.log('Valid email:', data.email);
-
-  return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <input
-        {...register('email', { validate: isEmail })}
-        placeholder="email@example.com"
-      />
-      {errors.email && <p>Email is not valid.</p>}
-      <button type="submit">Submit</button>
-    </form>
-  );
-}
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size);   // 2
