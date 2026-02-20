@@ -1,72 +1,38 @@
-// Generic, in‑place quicksort
-export function quickSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number,
-  low = 0,
-  high = arr.length - 1,
-): T[] {
-  // Default comparator: numeric/string natural order
-  const cmp = compareFn ?? ((a: T, b: T) =>
-    a < b ? -1 : a > b ? 1 : 0,
-  );
+/**
+ * Find the majority element in an array.
+ *
+ * @param arr - An array of comparable items.
+ * @returns The majority element, or undefined if no majority exists.
+ *
+ * Assumes `T` supports strict equality (===).
+ */
+function majorityElement<T>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
 
-  // Helper: partition using Hoare's scheme
-  const partition = (l: number, h: number): number => {
-    const pivot = arr[Math.floor((l + h) / 2)];
-    let i = l - 1;
-    let j = h + 1;
-    while (true) {
-      do { i++; } while (cmp(arr[i], pivot) < 0);
-      do { j--; } while (cmp(arr[j], pivot) > 0);
-      if (i >= j) return j;
-      [arr[i], arr[j]] = [arr[j], arr[i]]; // swap
+  // 1️⃣ First pass: find a potential candidate
+  let candidate: T | undefined = arr[0];
+  let count = 0;
+
+  for (const value of arr) {
+    if (count === 0) {
+      candidate = value;
+      count = 1;
+    } else {
+      count += (value === candidate) ? 1 : -1;
     }
-  };
-
-  if (low < high) {
-    const p = partition(low, high);
-    quickSort(arr, compareFn, low, p);
-    quickSort(arr, compareFn, p + 1, high);
   }
-  return arr; // for convenience – returns the same array reference
+
+  // 2️⃣ Optional second pass (remove if you know the input always contains a majority)
+  if (candidate !== undefined) {
+    const actual = arr.filter(v => v === candidate).length;
+    if (actual > arr.length / 2) {
+      return candidate;
+    }
+  }
+
+  return undefined; // No majority element
 }
-export function quickSortImmutable<T>(
-  arr: readonly T[],
-  compareFn?: (a: T, b: T) => number,
-): T[] {
-  if (arr.length <= 1) return [...arr];
+const nums = [2, 2, 1, 1, 2, 2, 2];
 
-  const compare = compareFn ?? ((a: T, b: T) =>
-    a < b ? -1 : a > b ? 1 : 0,
-  );
-
-  const pivot = arr[Math.floor(arr.length / 2)];
-  const lows = arr.filter((x) => compare(x, pivot) < 0);
-  const highs = arr.filter((x) => compare(x, pivot) > 0);
-  const pivots = arr.filter((x) => compare(x, pivot) === 0);
-
-  return [
-    ...quickSortImmutable(lows, compareFn),
-    ...pivots,
-    ...quickSortImmutable(highs, compareFn),
-  ];
-}
-const nums = [34, 7, 23, 32, 5, 62];
-quickSort(nums);               // mutates `nums`
-console.log(nums);             // [5, 7, 23, 32, 34, 62]
-
-let strs = ["banana", "apple", "cherry"];
-quickSort(strs, (a, b) => a.localeCompare(b));
-console.log(strs);             // ["apple", "banana", "cherry"]
-
-let objs = [
-  { id: 3, name: "c" },
-  { id: 1, name: "a" },
-  { id: 2, name: "b" },
-];
-quickSort(
-  objs,
-  (a, b) => a.id - b.id,
-);
-console.log(objs);
-// [{ id: 1, name: "a" }, { id: 2, name: "b" }, { id: 3, name: "c" }]
+const major = majorityElement(nums); // -> 2
+console.log(major); // 2
