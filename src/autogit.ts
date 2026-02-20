@@ -1,14 +1,20 @@
-// 1️⃣ Simple string interpolation (most common)
-const a = "hello";
-const b = "world";
-const c = a + " " + b;          // "hello world"
+// A simple node definition – adjust to match your existing structure
+interface ListNode<T> {
+  value: T;
+  next?: ListNode<T>;
+}
+function getLength<T>(head: ListNode<T> | undefined): number {
+  let count = 0;
+  let current = head;
 
-// 2️⃣ Template literals – works the same but often cleaner
-const c2 = `${a} ${b}`;          // "hello world"
+  while (current) {
+    count++;
+    current = current.next;
+  }
 
-// 3️⃣ Array join (useful if you have many parts)
-const parts = [a, b];
-const c3 = parts.join(" ");      // "hello world"
-
-// 4️⃣ String.prototype.concat (rarely needed)
-const c4 = a.concat(" ", b);     // "hello world"
+  return count;
+}
+function getLengthRec<T>(node: ListNode<T> | undefined): number {
+  if (!node) return 0;
+  return 1 + getLengthRec(node.next);
+}
