@@ -1,78 +1,92 @@
-/**
- * Bubble Sort – in‑place, O(n²) time, O(1) space
- *
- * @param arr Array of values that implement `Comparable`
- * @returns the sorted array (same reference as input)
- */
-export function bubbleSort<T extends Comparable>(arr: T[]): T[] {
-  const n = arr.length;
+type Node = string;                     // or number, or any keyable type
+type Edge = [Node, Node];               // (from, to)
 
-  // Minor optimization: keep track of whether a swap happened
-  // in the current pass. If not, array is already sorted.
-  for (let i = 0; i < n - 1; i++) {
-    let swapped = false;
+interface Graph {
+    nodes: Set<Node>;
+    edges: Edge[];
+}
+function topologicalSortKahn(graph: Graph): Node[] | null {
+    const indeg = new Map<Node, number>();
+    const adj   = new Map<Node, Node[]>();
 
-    // After each outer loop pass, the largest element of the
-    // unsorted portion settles at the end of the array.
-    for (let j = 0; j < n - i - 1; j++) {
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
+    // init
+    graph.nodes.forEach(v => {
+        indeg.set(v, 0);
+        adj.set(v, []);
+    });
+
+    // build adjacency + indegree
+    for (const [u, v] of graph.edges) {
+        adj.get(u)!.push(v);
+        indeg.set(v, indeg.get(v)! + 1);
     }
 
-    // If no elements were swapped, the array is already sorted.
-    if (!swapped) break;
-  }
+    // queue of nodes with indegree 0
+    const q: Node[] = [];
+    indeg.forEach((cnt, node) => { if (cnt === 0) q.push(node); });
 
-  return arr;
-}
+    const order: Node[] = [];
 
-/** Simple comparable interface for primitives */
-export interface Comparable {
-  /** Return true if this > other */
-  > (other: this): boolean;
-}
-export function bubbleSortWith<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number
-): T[] {
-  for (let i = 0; i < arr.length - 1; i++) {
-    let swapped = false;
+    while (q.length) {
+        const v = q.shift()!;
+        order.push(v);
 
-    for (let j = 0; j < arr.length - i - 1; j++) {
-      // compareFn(a, b) < 0 => a < b
-      // compareFn(a, b) > 0 => a > b
-      if (compareFn(arr[j], arr[j + 1]) > 0) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
+        for (const w of adj.get(v)!) {
+            const newCnt = indeg.get(w)! - 1;
+            indeg.set(w, newCnt);
+            if (newCnt === 0) q.push(w);
+        }
     }
 
-    if (!swapped) break;
-  }
-
-  return arr;
+    // If we processed every node → DAG; else cycle present
+    return order.length === graph.nodes.size ? order : null;
 }
-interface Person {
-  name: string;
-  age: number;
+function topologicalSortDFS(graph: Graph): Node[] | null {
+    const adj = new Map<Node, Node[]>();
+    graph.nodes.forEach(v => adj.set(v, []));
+
+    for (const [u, v] of graph.edges) {
+        adj.get(u)!.push(v);
+    }
+
+    const visited = new Set<Node>();
+    const onStack = new Set<Node>();   // for cycle detection
+    const order: Node[] = [];
+
+    function dfs(v: Node): boolean {
+        visited.add(v);
+        onStack.add(v);
+
+        for (const w of adj.get(v)!) {
+            if (!visited.has(w)) {
+                if (!dfs(w)) return false;           // cycle deeper down
+            } else if (onStack.has(w)) {
+                return false;                       // back edge → cycle
+            }
+        }
+
+        onStack.delete(v);
+        order.push(v);                     // add after exploring all children
+        return true;
+    }
+
+    for (const node of graph.nodes) {
+        if (!visited.has(node) && !dfs(node))
+            return null;                   // cycle found
+    }
+
+    return order.reverse();               // reverse to get finish order
 }
+const g: Graph = {
+    nodes: new Set(['A','B','C','D','E']),
+    edges: [
+        ['A', 'B'],
+        ['A', 'C'],
+        ['B', 'D'],
+        ['C', 'D'],
+        ['D', 'E'],
+    ]
+};
 
-const people: Person[] = [
-  { name: "Alice", age: 34 },
-  { name: "Bob", age: 29 },
-  { name: "Carol", age: 42 },
-];
-
-bubbleSortWith(people, (a, b) => a.age - b.age);
-// people is now sorted by age ascending
-function test() {
-  const nums = [3, 1, 4, 1, 5, 9, 2, 6];
-  console.log("Before:", nums);
-  bubbleSort(nums); // mutates nums in place
-  console.log("After: ", nums);
-}
-
-test(); /* → Before: [3,1,4,1,5,9,2,6]
-          After:  [1,1,2,3,4,5,6,9] */
+console.log('Kahn:', topologicalSortKahn(g)); // e.g. A,B,C,D,E or A,C,B,D,E
+console.log('DFS :', topologicalSortDFS(g));
