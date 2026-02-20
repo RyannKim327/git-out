@@ -1,92 +1,88 @@
-type Node = string;                     // or number, or any keyable type
-type Edge = [Node, Node];               // (from, to)
-
-interface Graph {
-    nodes: Set<Node>;
-    edges: Edge[];
+/* ------------------------------------------------------------------
+   Node definitions (customise to your data shape)
+------------------------------------------------------------------- */
+export interface Node {
+  id: string | number;
+  /* Any other properties you need – e.g. parent, distance, etc. */
 }
-function topologicalSortKahn(graph: Graph): Node[] | null {
-    const indeg = new Map<Node, number>();
-    const adj   = new Map<Node, Node[]>();
 
-    // init
-    graph.nodes.forEach(v => {
-        indeg.set(v, 0);
-        adj.set(v, []);
-    });
+export interface Graph {
+  /** Returns the neighbours of a given node ID. */
+  neighbours(id: Node["id"]): Node[];
 
-    // build adjacency + indegree
-    for (const [u, v] of graph.edges) {
-        adj.get(u)!.push(v);
-        indeg.set(v, indeg.get(v)! + 1);
-    }
-
-    // queue of nodes with indegree 0
-    const q: Node[] = [];
-    indeg.forEach((cnt, node) => { if (cnt === 0) q.push(node); });
-
-    const order: Node[] = [];
-
-    while (q.length) {
-        const v = q.shift()!;
-        order.push(v);
-
-        for (const w of adj.get(v)!) {
-            const newCnt = indeg.get(w)! - 1;
-            indeg.set(w, newCnt);
-            if (newCnt === 0) q.push(w);
-        }
-    }
-
-    // If we processed every node → DAG; else cycle present
-    return order.length === graph.nodes.size ? order : null;
+  /** Optional: expands a node – useful if nodes need lazy loading. */
+  expand?(node: Node): void;
 }
-function topologicalSortDFS(graph: Graph): Node[] | null {
-    const adj = new Map<Node, Node[]>();
-    graph.nodes.forEach(v => adj.set(v, []));
 
-    for (const [u, v] of graph.edges) {
-        adj.get(u)!.push(v);
+/* ------------------------------------------------------------------
+   Breadth‑Limited Search
+------------------------------------------------------------------- */
+type GoalPredicate<T> = (node: T) => boolean;
+
+export function breadthLimitedSearch<T extends Node>(
+  graph: Graph,
+  root: T,
+  goal: GoalPredicate<T>,
+  maxDepth: number
+): T | null {
+  // A queue that holds tuples: [node, depth]
+  const frontier: Array<[T, number]> = [[root, 0]];
+  const visited = new Set<T["id"]>();
+
+  visited.add(root.id);
+
+  while (frontier.length !== 0) {
+    const [current, depth] = frontier.shift()!; // pop front
+
+    // Goal hit
+    if (goal(current)) return current;
+
+    // If we reached the depth ceiling, skip expansion
+    if (depth === maxDepth) continue;
+
+    // Expand or otherwise load neighbours if you need lazy loading
+    if (graph.expand) graph.expand(current);
+
+    const neighbors = graph.neighbours(current.id);
+    for (const child of neighbors) {
+      if (!visited.has(child.id)) {
+        visited.add(child.id);
+        frontier.push([child, depth + 1]);
+      }
     }
+  }
 
-    const visited = new Set<Node>();
-    const onStack = new Set<Node>();   // for cycle detection
-    const order: Node[] = [];
-
-    function dfs(v: Node): boolean {
-        visited.add(v);
-        onStack.add(v);
-
-        for (const w of adj.get(v)!) {
-            if (!visited.has(w)) {
-                if (!dfs(w)) return false;           // cycle deeper down
-            } else if (onStack.has(w)) {
-                return false;                       // back edge → cycle
-            }
-        }
-
-        onStack.delete(v);
-        order.push(v);                     // add after exploring all children
-        return true;
-    }
-
-    for (const node of graph.nodes) {
-        if (!visited.has(node) && !dfs(node))
-            return null;                   // cycle found
-    }
-
-    return order.reverse();               // reverse to get finish order
+  // No solution within the depth limit
+  return null;
 }
-const g: Graph = {
-    nodes: new Set(['A','B','C','D','E']),
-    edges: [
-        ['A', 'B'],
-        ['A', 'C'],
-        ['B', 'D'],
-        ['C', 'D'],
-        ['D', 'E'],
-    ]
-};
+// Simple graph representation
+class MyGraph implements Graph {
+  nodes: Record<string, Node> = {};
 
-console.log('Kahn:', topologicalSortKahn(g)); // e.g. A,B,C,D,E or A,C,B,D,E
-console.log('DFS :', topologicalSortDFS(g));
+  constructor(nodeList: Node[]) {
+    nodeList.forEach(node => (this.nodes[node.id] = node));
+  }
+
+  neighbours(id: string | number) {
+    // Example: assume every node has a "children" array of ids
+    const node = this.nodes[id];
+    return (node as any).children?.map((cId: string | number) => this.nodes[cId]) ?? [];
+  }
+}
+
+// Example nodes
+const nodes: Node[] = [
+  { id: 1, ...( { children: [2, 3] } as any ) },
+  { id: 2, ...( { children: [4] } as any ) },
+  { id: 3 },
+  { id: 4 }
+];
+
+const graph = new MyGraph(nodes);
+
+const root = graph.nodes[1];
+const goal = (n: Node) => n.id === 4;
+const depthLimit = 2;
+
+const solution = breadthLimitedSearch(graph, root, goal, depthLimit);
+console.log(solution); // Node with id 4 (found at depth 2)
