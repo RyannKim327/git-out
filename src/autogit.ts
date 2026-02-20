@@ -1,61 +1,48 @@
-export interface ListNode<T> {
-  val: T;               // the payload
-  next: ListNode<T> | null; // pointer to the next node
+// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
+//      This shape is common in interview‑style code.
+interface TreeNode {
+  val: number;         // node’s payload
+  left?: TreeNode | null;   // left child (optional)
+  right?: TreeNode | null;  // right child (optional)
 }
-/**
- * Reverses a singly linked list.
- * @param head: the first node of the list (or null for an empty list)
- * @returns the new head of the reversed list
- */
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;   // will become the new head
-  let curr: ListNode<T> | null = head;   // current node being processed
 
-  while (curr) {
-    const nextTemp = curr.next; // keep reference to the next node
-    curr.next = prev;           // reverse the link
-    prev = curr;                // move prev forward
-    curr = nextTemp;            // move curr forward
+// 2️⃣  Recursive summation – easiest to read and to understand.
+//      Depth‑first, natural for a tree.
+function sumTreeRecursive(root: TreeNode | null): number {
+  if (!root) return 0;                      // base case: empty subtree is 0
+  const leftSum = sumTreeRecursive(root.left);
+  const rightSum = sumTreeRecursive(root.right);
+  return root.val + leftSum + rightSum;      // combine the results
+}
+
+// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
+//      where recursion might hit the call‑stack limit.
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let total = 0;
+  const stack: TreeNode[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.val;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
   }
-
-  // At this point, prev points to the new head
-  return prev;
-}
-export function reverseListRec<T>(node: ListNode<T> | null): ListNode<T> | null {
-  if (!node || !node.next) {
-    return node; // new head (either the original head if list is 1 or 0 nodes)
-  }
-
-  const newHead = reverseListRec(node.next);   // recurse to the end
-  node.next.next = node;   // make the next node point back to the current one
-  node.next = null;        // sever original forward link
-  return newHead;
-}
-// Helper to build a list [1, 2, 3]
-function buildList(arr: number[]): ListNode<number> | null {
-  let head: ListNode<number> | null = null;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = { val: arr[i], next: head };
-  }
-  return head;
+  return total;
 }
 
-// Helper to convert list back to array for easy viewing
-function toArray<T>(head: ListNode<T> | null): T[] {
-  const result: T[] = [];
-  let cur = head;
-  while (cur) {
-    result.push(cur.val);
-    cur = cur.next;
-  }
-  return result;
-}
+// 4️⃣  Sample tree for quick sanity check
+//           5
+//          / \
+//         3   7
+//        / \   \
+//       2   4   8
 
-// Demo
-const original = buildList([1, 2, 3, 4, 5]);
-console.log('original:', toArray(original));
+const sampleRoot: TreeNode = {
+  val: 5,
+  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
+  right: { val: 7, right: { val: 8 } },
+};
 
-const reversed = reverseList(original);
-console.log('reversed:', toArray(reversed));
-original: [1, 2, 3, 4, 5]
-reversed: [5, 4, 3, 2, 1]
+console.log(sumTreeRecursive(sampleRoot)); // → 33
+console.log(sumTreeIterative(sampleRoot)); // → 33
