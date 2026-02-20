@@ -1,27 +1,28 @@
-function isPalindrome(str: string): boolean {
-  const sanitized = str.toLowerCase();              // ignore case
-  const reversed  = sanitized.split('').reverse().join('');
-  return sanitized === reversed;
+function countChar(str: string, ch: string): number {
+  // split on the target char and subtract 1 (the split always creates one
+  // more slice than the number of matches)
+  return str.split(ch).length - 1;
 }
-console.log(isPalindrome('RaceCar'));      // true
-console.log(isPalindrome('hello'));        // false
-function isPalindromePortable(str: string): boolean {
-  const cleaned = str.replace(/[^a-z0-9]/gi, '').toLowerCase();
-  const left = 0;
-  const right = cleaned.length - 1;
 
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) return false;
-    left++;
-    right--;
+// Example
+console.log(countChar("hello world", "l")); // 3
+function countChar(str: string, ch: string): number {
+  const matches = str.match(new RegExp(ch, "g")); // global search
+  // If no matches, null is returned; length is 0 in that case
+  return matches ? matches.length : 0;
+}
+
+// Example
+console.log(countChar("hello world", "l")); // 3
+const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const regex = new RegExp(escaped, "g");
+function countChar(str: string, ch: string): number {
+  let count = 0;
+  for (const c of str) {
+    if (c === ch) count++;
   }
-
-  return true;
+  return count;
 }
-console.log(isPalindromePortable('A man, a plan, a canal: Panama')); // true
-console.log(isPalindromePortable('No lemon, no melon'));            // true
-console.log(isPalindromePortable('Hello, world!'));                 // false
-const isPalindromeFancy = (s: string) =>
-  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).join('') ===
-  [...s.replace(/[^a-z0-9]/gi, '')].map(c => c.toLowerCase()).reverse().join('');
-export { isPalindrome, isPalindromePortable };
+
+// Example
+console.log(countChar("hello world", "l")); // 3
