@@ -1,92 +1,48 @@
-type Node = string;                     // or number, or any keyable type
-type Edge = [Node, Node];               // (from, to)
+/**
+ * Return the maximum sum sub‑array (Kadane) along with its start & end indices.
+ *
+ * @param nums  Array of numbers – can contain positives, zeros and negatives.
+ * @returns     Object with `maxSum`, `start`, `end` (inclusive).
+ */
+export function maxSubarrayWithIndices(nums: number[]): {
+  maxSum: number;
+  start: number;
+  end: number;
+} {
+  if (nums.length === 0) throw new Error("Input array must contain at least one element");
 
-interface Graph {
-    nodes: Set<Node>;
-    edges: Edge[];
+  let bestSum = nums[0];
+  let currentSum = nums[0];
+
+  // These track the best indices we’ve seen
+  let bestStart = 0;
+  let bestEnd = 0;
+
+  // Temporary indices for the sub‑array we are currently extending
+  let tempStart = 0;
+
+  for (let i = 1; i < nums.length; i++) {
+    const num = nums[i];
+
+    // Decide whether to extend the current sub‑array or start fresh at i
+    if (currentSum + num < num) {
+      currentSum = num;
+      tempStart = i;
+    } else {
+      currentSum += num;
+    }
+
+    // Update the best found so far
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
+    }
+  }
+
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-function topologicalSortKahn(graph: Graph): Node[] | null {
-    const indeg = new Map<Node, number>();
-    const adj   = new Map<Node, Node[]>();
-
-    // init
-    graph.nodes.forEach(v => {
-        indeg.set(v, 0);
-        adj.set(v, []);
-    });
-
-    // build adjacency + indegree
-    for (const [u, v] of graph.edges) {
-        adj.get(u)!.push(v);
-        indeg.set(v, indeg.get(v)! + 1);
-    }
-
-    // queue of nodes with indegree 0
-    const q: Node[] = [];
-    indeg.forEach((cnt, node) => { if (cnt === 0) q.push(node); });
-
-    const order: Node[] = [];
-
-    while (q.length) {
-        const v = q.shift()!;
-        order.push(v);
-
-        for (const w of adj.get(v)!) {
-            const newCnt = indeg.get(w)! - 1;
-            indeg.set(w, newCnt);
-            if (newCnt === 0) q.push(w);
-        }
-    }
-
-    // If we processed every node → DAG; else cycle present
-    return order.length === graph.nodes.size ? order : null;
-}
-function topologicalSortDFS(graph: Graph): Node[] | null {
-    const adj = new Map<Node, Node[]>();
-    graph.nodes.forEach(v => adj.set(v, []));
-
-    for (const [u, v] of graph.edges) {
-        adj.get(u)!.push(v);
-    }
-
-    const visited = new Set<Node>();
-    const onStack = new Set<Node>();   // for cycle detection
-    const order: Node[] = [];
-
-    function dfs(v: Node): boolean {
-        visited.add(v);
-        onStack.add(v);
-
-        for (const w of adj.get(v)!) {
-            if (!visited.has(w)) {
-                if (!dfs(w)) return false;           // cycle deeper down
-            } else if (onStack.has(w)) {
-                return false;                       // back edge → cycle
-            }
-        }
-
-        onStack.delete(v);
-        order.push(v);                     // add after exploring all children
-        return true;
-    }
-
-    for (const node of graph.nodes) {
-        if (!visited.has(node) && !dfs(node))
-            return null;                   // cycle found
-    }
-
-    return order.reverse();               // reverse to get finish order
-}
-const g: Graph = {
-    nodes: new Set(['A','B','C','D','E']),
-    edges: [
-        ['A', 'B'],
-        ['A', 'C'],
-        ['B', 'D'],
-        ['C', 'D'],
-        ['D', 'E'],
-    ]
-};
-
-console.log('Kahn:', topologicalSortKahn(g)); // e.g. A,B,C,D,E or A,C,B,D,E
-console.log('DFS :', topologicalSortDFS(g));
+const arr = [4, -1, 2, 1, -5, 4];
+const result = maxSubarrayWithIndices(arr);
+console.log(result); // { maxSum: 6, start: 0, end: 3 }
+// Sub‑array: [4, -1, 2, 1] → sum 6
