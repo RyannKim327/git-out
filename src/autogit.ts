@@ -1,21 +1,23 @@
-/**
- * Factorial using recursion.
- * Works for ordinary numbers up to 20 (safe integer range).
- * If you need bigger results, use BigInt and the overload below.
- */
-function factorial(n: number): number {
-  if (n < 0) throw new Error("Negative values are not allowed");
-  if (n <= 1) return 1;          // base case
-  return n * factorial(n - 1);   // recursive step
+function countWordOccurrences(str: string, word: string): number {
+  // Escape any regex‑special characters in the word
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(escaped, 'g');
+
+  const matches = str.match(regex);
+  return matches ? matches.length : 0;
 }
 
-/**
- * A BigInt version for arbitrary‑size factorials.
- */
-function factorialBigInt(n: bigint): bigint {
-  if (n < 0n) throw new Error("Negative values are not allowed");
-  if (n <= 1n) return 1n;
-  return n * factorialBigInt(n - 1n);
+/* Example */
+const txt = "Lorem ipsum dolor sit amet. Lorem ipsum!";
+console.log(countWordOccurrences(txt, "Lorem")); // 2
+function countWordOccurrencesInsensitive(str: string, word: string): number {
+  const lowered = str.toLowerCase();
+  const target = word.toLowerCase();
+
+  // Split on the target word – keep empty pieces that might appear
+  // at the boundaries or due to overlapping patterns
+  return lowered.split(target).length - 1;
 }
-console.log(factorial(5));          // 120
-console.log(factorialBigInt(25n));  // 15511210043330985984000000n
+
+/* Example */
+console.log(countWordOccurrencesInsensitive(txt, "lorem")); // 2
