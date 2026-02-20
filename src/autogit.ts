@@ -1,32 +1,59 @@
-const nums = [1, 2, 3, 4, 5];
-
-// Remove the number 3
-const idx = nums.indexOf(3);
-if (idx !== -1) {
-  nums.splice(idx, 1); // nums → [1, 2, 4, 5]
-}
-const chars = ['a', 'b', 'c', 'b', 'd'];
-
-// Drop every 'b'
-const withoutB = chars.filter(ch => ch !== 'b');
-// withoutB → ['a', 'c', 'd']
-const original = [10, 20, 30, 40, 50];
-
-const removed = [
-  ...original.slice(0, original.indexOf(30)),
-  ...original.slice(original.indexOf(30) + 1),
-];
-
-// removed → [10, 20, 40, 50]
 /**
- * Remove the first occurrence of `value` from `array`.
- * Returns a new array; the original array is not mutated.
+ * Returns the longest common subsequence of two strings.
+ *
+ * @param a First string.
+ * @param b Second string.
+ * @returns The LCS as a string.
  */
-function removeFirst<T>(array: readonly T[], value: T): T[] {
-  const idx = array.indexOf(value);
-  if (idx === -1) return [...array]; // nothing to remove
-  return [...array.slice(0, idx), ...array.slice(idx + 1)];
+function longestCommonSubsequence(a: string, b: string): string {
+  const n = a.length;
+  const m = b.length;
+
+  // dp[i][j] = LCS length for a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array(n + 1)
+    .fill(null)
+    .map(() => Array(m + 1).fill(0));
+
+  // Fill table
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+
+  // Back‑track to build the subsequence
+  let i = n,
+    j = m,
+    lcs = '';
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      lcs = a[i - 1] + lcs; // prepend
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;
+    } else {
+      j--;
+    }
+  }
+
+  return lcs;
 }
-const data = [2, 4, 6, 8];
-const updated = removeFirst(data, 6);
-// updated → [2, 4, 8]
+console.log(longestCommonSubsequence('ABCDGH', 'AEDFHR')); // → "ADH"
+function lcsLength(a: string, b: string): number {
+  const n = a.length, m = b.length;
+  const dp = Array(n + 1).fill(0).map(() => Array(m + 1).fill(0));
+
+  for (let i = 1; i <= n; i++)
+    for (let j = 1; j <= m; j++)
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1] + 1
+        : Math.max(dp[i - 1][j], dp[i][j - 1]);
+
+  return dp[n][m];
+}
