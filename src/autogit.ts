@@ -1,42 +1,32 @@
-// cron-demo.ts
-import { CronJob } from 'cron';
-import * as dotenv from 'dotenv';
+const nums = [1, 2, 3, 4, 5];
 
-dotenv.config(); // optional – pulls cron expression from .env
+// Remove the number 3
+const idx = nums.indexOf(3);
+if (idx !== -1) {
+  nums.splice(idx, 1); // nums → [1, 2, 4, 5]
+}
+const chars = ['a', 'b', 'c', 'b', 'd'];
 
+// Drop every 'b'
+const withoutB = chars.filter(ch => ch !== 'b');
+// withoutB → ['a', 'c', 'd']
+const original = [10, 20, 30, 40, 50];
+
+const removed = [
+  ...original.slice(0, original.indexOf(30)),
+  ...original.slice(original.indexOf(30) + 1),
+];
+
+// removed → [10, 20, 40, 50]
 /**
- * A simple scheduled task that
- * • runs every minute (or whatever pattern you set)
- * • prints a timestamp
- * • gracefully handles potential errors
+ * Remove the first occurrence of `value` from `array`.
+ * Returns a new array; the original array is not mutated.
  */
-const job = new CronJob(
-  // Default cron date string: every minute of every hour of every day
-  process.env.CRON_EXPRESSION || '* * * * *',
-  () => {
-    const now = new Date().toISOString();
-    console.log(`[${now}] Tick – cron job fired!`);
-  },
-  // onComplete – fires when the job finishes its last scheduled run (not used here)
-  null,
-  // start immediately
-  true,
-  // timezone – string like 'America/New_York'
-  process.env.TZ || 'UTC',
-);
-
-job.on('error', (err) => {
-  console.error(`❌ Cron job encountered an error: ${err.message}`);
-});
-
-process.once('SIGINT', () => {
-  console.log('\n🛑 Shutting down cron job gracefully...');
-  job.stop();
-  process.exit(0);
-});
-
-console.log(`✅ Cron job started with pattern: ${job.cronTime.source}`);
-✅ Cron job started with pattern: * * * * *
-[2026-02-15T12:00:00.000Z] Tick – cron job fired!
-[2026-02-15T12:01:00.000Z] Tick – cron job fired!
-…
+function removeFirst<T>(array: readonly T[], value: T): T[] {
+  const idx = array.indexOf(value);
+  if (idx === -1) return [...array]; // nothing to remove
+  return [...array.slice(0, idx), ...array.slice(idx + 1)];
+}
+const data = [2, 4, 6, 8];
+const updated = removeFirst(data, 6);
+// updated → [2, 4, 8]
