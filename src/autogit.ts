@@ -1,52 +1,23 @@
-/**
- * Compare two numbers (or any types that support `<` and `>`).
- * Returns positive if a > b, negative if a < b, zero otherwise.
- */
-const compare = <T>(a: T, b: T): number => {
-  if (a > b) return 1;
-  if (a < b) return -1;
-  return 0;
-};
+function countWordOccurrences(str: string, word: string): number {
+  // Escape any regex‑special characters in the word
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(escaped, 'g');
 
-/**
- * Restores the max‑heap property for the sub‑array a[0 … n-1]
- * starting from index i, assuming its children already satisfy
- * the heap property.
- */
-const heapify = <T>(a: T[], n: number, i: number): void => {
-  let largest = i;
-  const left  = 2 * i + 1;
-  const right = 2 * i + 2;
+  const matches = str.match(regex);
+  return matches ? matches.length : 0;
+}
 
-  if (left  < n && compare(a[left],  a[largest]) > 0) largest = left;
-  if (right < n && compare(a[right], a[largest]) > 0) largest = right;
+/* Example */
+const txt = "Lorem ipsum dolor sit amet. Lorem ipsum!";
+console.log(countWordOccurrences(txt, "Lorem")); // 2
+function countWordOccurrencesInsensitive(str: string, word: string): number {
+  const lowered = str.toLowerCase();
+  const target = word.toLowerCase();
 
-  if (largest !== i) {
-    [a[i], a[largest]] = [a[largest], a[i]];
-    heapify(a, n, largest);
-  }
-};
+  // Split on the target word – keep empty pieces that might appear
+  // at the boundaries or due to overlapping patterns
+  return lowered.split(target).length - 1;
+}
 
-/**
- * Turns an array into a max‑heap. Complexity O(n).
- */
-const buildHeap = <T>(a: T[]): void => {
-  const n = a.length;
-  // start at the last parent node
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-    heapify(a, n, i);
-  }
-};
-
-/**
- * Heap‑sort: arr is sorted in‑place.
- */
-export const heapSort = <T>(arr: T[]): void => {
-  buildHeap(arr);
-  for (let i = arr.length - 1; i > 0; i--) {
-    // move current root (max) to the end
-    [arr[0], arr[i]] = [arr[i], arr[0]];
-    // heapify the reduced heap
-    heapify(arr, i, 0);
-  }
-};
+/* Example */
+console.log(countWordOccurrencesInsensitive(txt, "lorem")); // 2
