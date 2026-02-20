@@ -1,29 +1,28 @@
-/**
- * Returns true if `n` is a prime number.
- *
- * Rules:
- *   * 0 and 1 are **not** primes.
- *   * 2 is the only even prime.
- *   * For any other number, test divisibility up to √n.
- *
- * NOTE: This is a classic, “trial‑division” algorithm
- * and is fast enough for numbers that fit comfortably
- * in a JavaScript `number`. If you need to handle millisecond‑length
- * big‑ints, consider a probabilistic test like Miller‑Rabin.
- */
-function isPrime(n: number): boolean {
-  if (n < 2) return false;         // 0, 1, and negative numbers are not prime
-  if (n === 2) return true;        // 2 is prime
-  if (n % 2 === 0) return false;   // even numbers larger than 2 are not prime
-
-  const limit = Math.floor(Math.sqrt(n));
-  for (let divisor = 3; divisor <= limit; divisor += 2) {
-    if (n % divisor === 0) return false;
-  }
-  return true;
+function countChar(str: string, ch: string): number {
+  // split on the target char and subtract 1 (the split always creates one
+  // more slice than the number of matches)
+  return str.split(ch).length - 1;
 }
-console.log(isPrime(2));   // true
-console.log(isPrime(9));   // false
-console.log(isPrime(13));  // true
-console.log(isPrime(1_000_003)); // true (prime just over a million)
-Time to test 1 000 000 numbers (≈ 5–6 ms in Node.js)
+
+// Example
+console.log(countChar("hello world", "l")); // 3
+function countChar(str: string, ch: string): number {
+  const matches = str.match(new RegExp(ch, "g")); // global search
+  // If no matches, null is returned; length is 0 in that case
+  return matches ? matches.length : 0;
+}
+
+// Example
+console.log(countChar("hello world", "l")); // 3
+const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const regex = new RegExp(escaped, "g");
+function countChar(str: string, ch: string): number {
+  let count = 0;
+  for (const c of str) {
+    if (c === ch) count++;
+  }
+  return count;
+}
+
+// Example
+console.log(countChar("hello world", "l")); // 3
