@@ -1,13 +1,33 @@
-const original = "Hello world! How are you?";
-const withoutSpaces = original.replace(/ /g, ""); // "Helloworld!Howareyou?"
-const original = "Hello \tworld!\u00A0How\nare you?"; // contains tab, non‑breaking space, newline
-const withoutAnyWhitespace = original.replace(/\s+/gu, "");
-// "Helloworld!Howareyou?"
-function stripAllWhitespace(str: string): string {
-  return str.replace(/\s+/gu, "");
+// random-axios-example.ts
+import axios, { AxiosResponse } from "axios";
+
+interface PostSummary {
+  id: number;
+  title: string;
 }
 
-// Usage
-const clean = stripAllWhitespace("  Foo Bar\nBaz  ");
-console.log(clean); // "FooBarBaz"
-const cleaned = original.replace(/\s+/g, " ");  // collapse to single space
+async function fetchPostSummaries(
+  limit: number = 5,
+  page: number = 1
+): Promise<PostSummary[]> {
+  const url = "https://jsonplaceholder.typicode.com/posts";
+  const params = { _limit: limit, _page: page };
+
+  // Axios can be typed at the request level:
+  const response: AxiosResponse<PostSummary[]> = await axios.get(url, { params });
+
+  // We trust the API returns the expected shape, but we still slice the fields we care about.
+  return response.data.map(({ id, title }) => ({ id, title }));
+}
+
+async function main() {
+  try {
+    const summaries = await fetchPostSummaries();
+    console.log("Fetched post summaries:", summaries);
+  } catch (err) {
+    // @ts-ignore – quick error log for demonstration
+    console.error("Something went wrong:", err?.message ?? err);
+  }
+}
+
+main();
