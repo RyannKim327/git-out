@@ -1,60 +1,70 @@
-function buildLps(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let len = 0;          // length of the previous longest prefix suffix
-  let i = 1;            // we start from the second character
-
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      // Mismatch after len matches
-      if (len !== 0) {
-        // Try the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
-}
 /**
- * Returns an array of starting indices where `pattern` occurs in `text`.
- * If no match, returns an empty array.
+ * Radix sort (Least–Significant‑digit first) for arrays of non‑negative integers.
+ *
+ * Time:  O(k * n)  where k = number of digits in the largest number
+ * Space: O(n + B)  (B = 10 for base‑10)
  */
-export function kmpSearch(text: string, pattern: string): number[] {
-  const lps = buildLps(pattern);
-  const results: number[] = [];
+function radixSort(nums: number[]): number[] {
+  if (nums.length <= 1) return nums.slice();
 
-  let i = 0; // index for text
-  let j = 0; // index for pattern
+  // Find the biggest value to know how many digits we need to process
+  const maxVal = Math.max(...nums);
+  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++; j++;
-      if (j === pattern.length) {
-        // Match found at position i - j
-        results.push(i - j);
-        // Prepare for the next possible match
-        j = lps[j - 1];
-      }
-    } else {
-      if (j !== 0) {
-        // Mismatch after j matches
-        j = lps[j - 1];
-      } else {
-        // Mismatch at the start
-        i++;
-      }
+  // Start from the least significant digit
+  let divisor = 1;
+
+  // We'll reuse these buckets in each pass to keep O(n) allocations
+  const buckets: number[][] = Array.from({ length: 10 }, () => []);
+
+  for (let d = 0; d < maxDigits; d++) {
+    // Distribute
+    for (const num of nums) {
+      const bucketIndex = Math.floor(num / divisor) % 10;
+      buckets[bucketIndex].push(num);
     }
+
+    // Collect back into nums, empty buckets for the next pass
+    let pos = 0;
+    for (const bucket of buckets) {
+      while (bucket.length) {
+        nums[pos++] = bucket.pop() as number; // pop gives LIFO but we reverse order below
+      }
+      bucket.length = 0; // reset
+    }
+
+    divisor *= 10; // move to the next digit
   }
 
-  return results;
+  return nums;
 }
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
+function radixSortStable(nums: number[]): number[] {
+  if (nums.length <= 1) return nums.slice();
 
-console.log(kmpSearch(text, pattern)); // [10]
+  const maxVal = Math.max(...nums);
+  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
+
+  let divisor = 1;
+  const buckets: number[][] = Array.from({ length: 10 }, () => []);
+
+  for (let d = 0; d < maxDigits; d++) {
+    for (const n of nums) {
+      const idx = Math.floor(n / divisor) % 10;
+      buckets[idx].push(n);
+    }
+
+    let i = 0;
+    for (const bucket of buckets) {
+      while (bucket.length) {
+        nums[i++] = bucket.shift() as number; // shift preserves order
+      }
+    }
+
+    divisor *= 10;
+  }
+
+  return nums;
+}
+const data = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log(radixSortStable(data));
+// → [2, 24, 45, 66, 75, 90, 170, 802]
