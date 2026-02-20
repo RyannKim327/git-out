@@ -1,35 +1,91 @@
-/**
- * Counting sort for arrays of non‑negative integers.
- * @param arr The input array – it will not be mutated.
- * @returns A new array containing the sorted numbers.
- */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+// --------------------------------------------------------
+// Random TypeScript demo:  GET data from a public API
+// --------------------------------------------------------
 
-  // 1. Find the maximum value (k) – the range of the keys.
-  let max = arr[0];
-  for (const num of arr) if (num > max) max = num;
+// Install the needed deps if you run this in a Node project:
+//   npm install --save node-fetch @types/node-fetch
+//
+// If you use this in a browser project, the browser's fetch is already available.
 
-  // 2. Build the “count” array of size k + 1, initialise to 0.
-  const count: number[] = new Array(max + 1).fill(0);
+// Import the fetch shim for Node (uncomment if you run under Node)
+// import fetch from 'node-fetch';
 
-  // 3. Count how many times each value appears.
-  for (const num of arr) count[num]++;
+// A tiny helper to pause (useful for demo pacing)
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  // 4. Transform counts to positions (prefix sums).
-  for (let i = 1; i < count.length; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 5. Place each element into the output array in stable order.
-  const output: number[] = new Array(arr.length);
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const num = arr[i];
-    const pos = --count[num];   // decrement to get zero‑based index
-    output[pos] = num;
-  }
-
-  return output;
+// -------------------------------------------------------------------
+// 1️⃣  Define the shape of the data we expect from the API
+// -------------------------------------------------------------------
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
-const data = [4, 2, 2, 8, 3, 3, 1];
-console.log(countingSort(data)); // [1, 2, 2, 3, 3, 4, 8]
+
+// -------------------------------------------------------------------
+// 2️⃣  A generic GET helper that returns typed JSON
+// -------------------------------------------------------------------
+async function get<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    // We simply throw an error for this demo
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+  const data: T = await response.json();
+  return data;
+}
+
+// -------------------------------------------------------------------
+// 3️⃣  Main demo logic
+// -------------------------------------------------------------------
+async function main() {
+  const apiEndpoint = 'https://jsonplaceholder.typicode.com/posts/1';
+
+  console.log('Fetching demo post...');
+  try {
+    const post = await get<Post>(apiEndpoint);
+    console.log('✅ Post fetched:');
+    console.log(`  • ID: ${post.id}`);
+    console.log(`  • Title: ${post.title}`);
+    console.log(`  • Body snippet: "${post.body.slice(0, 60)}..."`);
+  } catch (err) {
+    console.error('⚠️  Error while fetching:', err);
+  }
+
+  // -------------------------------------------------------------------
+  // 4️⃣  Throw in a second request: list of all posts
+  // -------------------------------------------------------------------
+  console.log('\nFetching all posts (just the first 5 for brevity)...');
+  try {
+    const allPosts = await get<Post[]>('https://jsonplaceholder.typicode.com/posts');
+    console.table(allPosts.slice(0, 5));
+  } catch (err) {
+    console.error('⚠️  Error while fetching:', err);
+  }
+
+  // ---------------------------------------------------------------
+  // 5️⃣  Optional: POST a new resource (mocked, won't persist)
+  // ---------------------------------------------------------------
+  console.log('\nAttempting to POST a new post...');
+  try {
+    const newPostResponse = await fetch('https://jsonplaceholder.typicode.com/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Hello World',
+        body: 'This post was created by the demo.',
+        userId: 42
+      })
+    });
+    const created: Post = await newPostResponse.json();
+    console.log('✅ Created post (mocked):', created);
+  } catch (err) {
+    console.error('⚠️  Error while posting:', err);
+  }
+
+  // Small pause before exit (only matters if running in Node)
+  await delay(500);
+}
+
+main();
