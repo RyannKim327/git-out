@@ -1,54 +1,92 @@
-/**
- * Recursively searches for `target` in a sorted numeric array.
- *
- * @param arr    The sorted array to search.
- * @param target The value we’re looking for.
- * @param low    The lower bound index for the current search window.
- * @param high   The upper bound index for the current search window.
- * @returns The index of `target` in `arr`, or -1 if it’s absent.
- */
-function binarySearchRec(
-  arr: number[],
-  target: number,
-  low: number = 0,
-  high: number = arr.length - 1
-): number {
-  // Base case: window collapsed → not found.
-  if (low > high) return -1;
+type Node = string;                     // or number, or any keyable type
+type Edge = [Node, Node];               // (from, to)
 
-  const mid = Math.floor((low + high) / 2);
-  const midVal = arr[mid];
-
-  if (midVal === target) return mid;           // Found!
-  if (midVal < target)
-    return binarySearchRec(arr, target, mid + 1, high); // Search right half
-  else
-    return binarySearchRec(arr, target, low, mid - 1);  // Search left half
+interface Graph {
+    nodes: Set<Node>;
+    edges: Edge[];
 }
-const sorted = [1, 4, 7, 9, 12, 18, 25];
+function topologicalSortKahn(graph: Graph): Node[] | null {
+    const indeg = new Map<Node, number>();
+    const adj   = new Map<Node, Node[]>();
 
-console.log(binarySearchRec(sorted, 9));  // → 3
-console.log(binarySearchRec(sorted, 5));  // → -1 (not present)
-function binarySearchRecGeneric<T>(
-  arr: T[],
-  target: T,
-  compare: (a: T, b: T) => number,  // Returns <0, 0, >0
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (low > high) return -1;
+    // init
+    graph.nodes.forEach(v => {
+        indeg.set(v, 0);
+        adj.set(v, []);
+    });
 
-  const mid = Math.floor((low + high) / 2);
-  const cmp = compare(arr[mid], target);
+    // build adjacency + indegree
+    for (const [u, v] of graph.edges) {
+        adj.get(u)!.push(v);
+        indeg.set(v, indeg.get(v)! + 1);
+    }
 
-  if (cmp === 0) return mid;
-  if (cmp < 0)   return binarySearchRecGeneric(arr, target, compare, mid + 1, high);
-  return binarySearchRecGeneric(arr, target, compare, low, mid - 1);
+    // queue of nodes with indegree 0
+    const q: Node[] = [];
+    indeg.forEach((cnt, node) => { if (cnt === 0) q.push(node); });
+
+    const order: Node[] = [];
+
+    while (q.length) {
+        const v = q.shift()!;
+        order.push(v);
+
+        for (const w of adj.get(v)!) {
+            const newCnt = indeg.get(w)! - 1;
+            indeg.set(w, newCnt);
+            if (newCnt === 0) q.push(w);
+        }
+    }
+
+    // If we processed every node → DAG; else cycle present
+    return order.length === graph.nodes.size ? order : null;
 }
-const names = ['Alice', 'Bob', 'Charlie', 'Diana'];
-const idx = binarySearchRecGeneric(
-  names,
-  'Charlie',
-  (a, b) => a.localeCompare(b)   // Comparator
-);
-console.log(idx); // → 2
+function topologicalSortDFS(graph: Graph): Node[] | null {
+    const adj = new Map<Node, Node[]>();
+    graph.nodes.forEach(v => adj.set(v, []));
+
+    for (const [u, v] of graph.edges) {
+        adj.get(u)!.push(v);
+    }
+
+    const visited = new Set<Node>();
+    const onStack = new Set<Node>();   // for cycle detection
+    const order: Node[] = [];
+
+    function dfs(v: Node): boolean {
+        visited.add(v);
+        onStack.add(v);
+
+        for (const w of adj.get(v)!) {
+            if (!visited.has(w)) {
+                if (!dfs(w)) return false;           // cycle deeper down
+            } else if (onStack.has(w)) {
+                return false;                       // back edge → cycle
+            }
+        }
+
+        onStack.delete(v);
+        order.push(v);                     // add after exploring all children
+        return true;
+    }
+
+    for (const node of graph.nodes) {
+        if (!visited.has(node) && !dfs(node))
+            return null;                   // cycle found
+    }
+
+    return order.reverse();               // reverse to get finish order
+}
+const g: Graph = {
+    nodes: new Set(['A','B','C','D','E']),
+    edges: [
+        ['A', 'B'],
+        ['A', 'C'],
+        ['B', 'D'],
+        ['C', 'D'],
+        ['D', 'E'],
+    ]
+};
+
+console.log('Kahn:', topologicalSortKahn(g)); // e.g. A,B,C,D,E or A,C,B,D,E
+console.log('DFS :', topologicalSortDFS(g));
