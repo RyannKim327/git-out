@@ -1,65 +1,68 @@
 /**
- * Generic insertion sort.
- * @param arr  The array to sort – it will be mutated in‑place.
- * @returns    The sorted array (the same reference that was passed in).
+ * Selection sort – O(n²) time, O(1) extra space.
+ *
+ * @param arr The array to sort.
+ * @returns The same array instance, now sorted.
  */
-export function insertionSort<T>(arr: T[]): T[] {
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+function selectionSort<T>(arr: T[]): T[] {
+  const len = arr.length;
 
-    /* shift elements that are greater than key one position to the right */
-    while (j >= 0 && arr[j] > key) {
-      arr[j + 1] = arr[j];
-      j--;
+  for (let i = 0; i < len - 1; i++) {
+    // index of the smallest element in the unsorted suffix
+    let minIdx = i;
+
+    // search for a smaller element
+    for (let j = i + 1; j < len; j++) {
+      if (arr[j] < arr[minIdx]) {
+        minIdx = j;
+      }
     }
 
-    arr[j + 1] = key;
+    // swap the found minimum with the current position
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+    }
   }
+
   return arr;
 }
-const numbers = [8, 3, 5, 4, 6, 1];
-console.log(insertionSort(numbers)); // [1, 3, 4, 5, 6, 8]
-const words = ['orange', 'apple', 'banana'];
-console.log(insertionSort(words)); // ['apple', 'banana', 'orange']
-interface Person {
-  name: string;
-  age: number;
+// Numbers
+const numbers = [64, 25, 12, 22, 11];
+console.log(selectionSort(numbers)); // [11, 12, 22, 25, 64]
+
+// Strings
+const words = ['pear', 'apple', 'orange', 'banana'];
+console.log(selectionSort(words));   // ['apple', 'banana', 'orange', 'pear']
+
+// Custom objects – provide a compare function
+interface Person { name: string; age: number }
+
+function sortByAge(a: Person, b: Person) {
+  return a.age - b.age;
 }
 
 const people: Person[] = [
-  { name: 'Zoe', age: 29 },
-  { name: 'Anna', age: 22 },
-  { name: 'Mike', age: 35 }
+  { name: 'Alice', age: 34 },
+  { name: 'Bob', age: 28 },
+  { name: 'Carol', age: 41 }
 ];
 
-function sortByAge(arr: Person[]): Person[] {
-  return insertionSort(arr, (a, b) => a.age - b.age);
-}
-
-// extended version that accepts a compare function
-export function insertionSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number
-): T[] {
-  const cmp = compareFn ?? ((a: T, b: T) => (a > b ? 1 : a < b ? -1 : 0));
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
+// Simple wrapper to let us pass a comparator
+function selectionSortWith<T>(arr: T[], compare: (a: T, b: T) => number): T[] {
+  const len = arr.length;
+  for (let i = 0; i < len - 1; i++) {
+    let minIdx = i;
+    for (let j = i + 1; j < len; j++) {
+      if (compare(arr[j], arr[minIdx]) < 0) {
+        minIdx = j;
+      }
     }
-    arr[j + 1] = key;
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+    }
   }
   return arr;
 }
 
-console.log(sortByAge(people));
-/*
-[
-  { name: 'Anna', age: 22 },
-  { name: 'Zoe', age: 29 },
-  { name: 'Mike', age: 35 }
-]
-*/
+console.log(selectionSortWith(people, sortByAge));
+// [{ name: 'Bob', age: 28 }, { name: 'Alice', age: 34 }, { name: 'Carol', age: 41 }]
