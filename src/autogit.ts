@@ -1,54 +1,66 @@
 /**
- * Recursively searches for `target` in a sorted numeric array.
- *
- * @param arr    The sorted array to search.
- * @param target The value we’re looking for.
- * @param low    The lower bound index for the current search window.
- * @param high   The upper bound index for the current search window.
- * @returns The index of `target` in `arr`, or -1 if it’s absent.
+ * Returns the largest prime factor of a positive integer.
+ * Works for Number (up to ~9e15) and for BigInt.
  */
-function binarySearchRec(
-  arr: number[],
-  target: number,
-  low: number = 0,
-  high: number = arr.length - 1
-): number {
-  // Base case: window collapsed → not found.
-  if (low > high) return -1;
+export function largestPrimeFactor(nInput: number | bigint): bigint {
+  // 0 or 1 have no prime factors
+  if (nInput <= 1) {
+    throw new Error('Number must be >= 2');
+  }
 
-  const mid = Math.floor((low + high) / 2);
-  const midVal = arr[mid];
+  // Work with BigInt internally for uniformity
+  let n = BigInt(nInput);
 
-  if (midVal === target) return mid;           // Found!
-  if (midVal < target)
-    return binarySearchRec(arr, target, mid + 1, high); // Search right half
-  else
-    return binarySearchRec(arr, target, low, mid - 1);  // Search left half
+  // Remove factors of 2
+  let lastFactor = 2n;
+  while (n % 2n === 0n) {
+    lastFactor = 2n;
+    n /= 2n;
+  }
+
+  // Try odd factors only
+  let factor = 3n;
+  const limit = sqrtBigInt(n);
+
+  while (factor <= limit) {
+    while (n % factor === 0n) {
+      lastFactor = factor;
+      n /= factor;
+    }
+    factor += 2n;        // skip even numbers
+  }
+
+  // If anything is left, it must be a prime > sqrt(original n)
+  if (n > 1n) {
+    lastFactor = n;
+  }
+
+  return lastFactor;
 }
-const sorted = [1, 4, 7, 9, 12, 18, 25];
 
-console.log(binarySearchRec(sorted, 9));  // → 3
-console.log(binarySearchRec(sorted, 5));  // → -1 (not present)
-function binarySearchRecGeneric<T>(
-  arr: T[],
-  target: T,
-  compare: (a: T, b: T) => number,  // Returns <0, 0, >0
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (low > high) return -1;
+/**
+ * Integer square root of a BigInt (floor)
+ * (Euclidean algorithm – takes few iterations even for 64‑bit numbers)
+ */
+function sqrtBigInt(value: bigint): bigint {
+  if (value < 0n) throw new Error('square root of negative not supported');
+  if (value < 2n) return value;
 
-  const mid = Math.floor((low + high) / 2);
-  const cmp = compare(arr[mid], target);
+  let x0 = value / 2n;
+  let x1 = (x0 + value / x0) / 2n;
 
-  if (cmp === 0) return mid;
-  if (cmp < 0)   return binarySearchRecGeneric(arr, target, compare, mid + 1, high);
-  return binarySearchRecGeneric(arr, target, compare, low, mid - 1);
+  while (x1 < x0) {
+    x0 = x1;
+    x1 = (x0 + value / x0) / 2n;
+  }
+  return x0;
 }
-const names = ['Alice', 'Bob', 'Charlie', 'Diana'];
-const idx = binarySearchRecGeneric(
-  names,
-  'Charlie',
-  (a, b) => a.localeCompare(b)   // Comparator
+console.log(largestPrimeFactor(13195));      // 29
+console.log(largestPrimeFactor(600851475143)); // 6857
+
+// Using BigInt
+console.log(
+  largestPrimeFactor(
+    BigInt("9999999967") // a 10‑digit number; you can make this much bigger
+  ).toString()
 );
-console.log(idx); // → 2
