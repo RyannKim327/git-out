@@ -1,52 +1,51 @@
-interface TreeNode<T = number> {
-  val: T;                // single value (you can change the type)
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
+// 1️⃣ Tree node definition
+interface TreeNode {
+  val: number;          // value is irrelevant for diameter
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
-const root: TreeNode = {
-  val: 10,
-  left: { val: 5, left: null, right: null },
-  right: { val: 15, left: null, right: null },
-};
-function maxDepth<T>(node: TreeNode<T> | null): number {
-  if (!node) return 0;
-  const leftDepth = maxDepth(node.left);
-  const rightDepth = maxDepth(node.right);
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
 
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
+// 2️⃣ Main diameter function
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let diameter = 0;                 // global accumulator
 
-  while (queue.length) {
-    const levelSize = queue.length; // nodes at current depth
-    depth++;                        // we’re going to finish this level
+  function dfs(node: TreeNode | null): number {
+    if (!node) return 0;            // height of empty subtree
 
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift() as TreeNode<T>;
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
-    }
+    // Recursively find heights of left/right subtrees
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
+
+    // Path through current node (in edges)
+    const pathThrough = leftHeight + rightHeight;
+
+    // Update global diameter if this is the largest seen so far
+    diameter = Math.max(diameter, pathThrough);
+
+    // Return height from this node up to a leaf
+    return 1 + Math.max(leftHeight, rightHeight);
   }
 
-  return depth;
+  dfs(root);
+  return diameter;
 }
-// build a quick tree
+// Example tree:
+//      1
+//     / \
+//    2   3
+//   / \
+//  4   5
 const tree: TreeNode = {
   val: 1,
   left: {
     val: 2,
     left: { val: 4, left: null, right: null },
-    right: null,
-  },
-  right: {
-    val: 3,
-    left: null,
     right: { val: 5, left: null, right: null },
   },
+  right: { val: 3, left: null, right: null },
 };
 
-console.log(maxDepth(tree));      // -> 3
-console.log(maxDepthIter(tree));  // -> 3
+console.log(diameterOfBinaryTree(tree)); // Output: 3
+// Explanation: path 4‑2‑1‑3 uses 3 edges
+console.log(diameterOfBinaryTree(null));           // 0
+console.log(diameterOfBinaryTree({ val: 42 }));    // 0
