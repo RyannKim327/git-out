@@ -1,115 +1,72 @@
-// 1️⃣ Node – every node knows its children and whether it finishes a word
-class TrieNode {
-    /** Map <character, child node> */
-    children: Map<string, TrieNode>;
-    /** True if node represents the end of an inserted word */
-    isWord: boolean;
+/**
+ * Returns the k-th smallest element of an array.
+ *
+ * @param arr   Array of numbers (or any comparable type).
+ * @param k     1‑based index of the element to find.
+ * @returns     The k‑th smallest value.
+ *
+ * @throws      If k is out of bounds.
+ */
+export function kthSmallest<T>(arr: T[], k: number): T {
+  if (k < 1 || k > arr.length) {
+    throw new Error(`k=${k} is not in the valid range 1..${arr.length}`);
+  }
 
-    constructor() {
-        this.children = new Map();
-        this.isWord = false;
+  // Work on a copy so the original array stays untouched.
+  const a = arr.slice();
+  let left = 0;
+  let right = a.length - 1;
+
+  while (true) {
+    // Pick a pivot – here we just pick the middle element.
+    const pivotIndex = left + Math.floor((right - left) / 2);
+    const pivot = a[pivotIndex];
+
+    // Partition step: elements < pivot go left, >= pivot go right.
+    const pivotNewIndex = partition(a, left, right, pivot);
+
+    if (pivotNewIndex === k - 1) {      // Found the k‑th smallest
+      return a[pivotNewIndex];
+    } else if (pivotNewIndex > k - 1) {  // Look in the left partition
+      right = pivotNewIndex - 1;
+    } else {                            // Look in the right partition
+      left = pivotNewIndex + 1;
     }
+  }
 }
 
-// 2️⃣ Trie – wrapper around the root node
-class Trie {
-    private root: TrieNode;
+/**
+ * Standard Lomuto partition scheme.
+ *
+ * @param a array to partition
+ * @param lo left boundary
+ * @param hi right boundary
+ * @param pivotValue value the array should be partitioned around
+ * @returns new index of the pivot after partition
+ */
+function partition<T>(a: T[], lo: number, hi: number, pivotValue: T): number {
+  // Move pivot to the end for convenience.
+  let pivotIndex = lo + (Math.random() * (hi - lo + 1)) | 0; // random pivot for stability
+  [a[pivotIndex], a[hi]] = [a[hi], a[pivotIndex]];
 
-    constructor() {
-        this.root = new TrieNode();
+  const pivot = a[hi];
+  let storeIndex = lo;                         // index of the first element >= pivot
+
+  for (let i = lo; i < hi; i++) {
+    if (a[i] < pivot) {
+      [a[i], a[storeIndex]] = [a[storeIndex], a[i]];
+      storeIndex++;
     }
+  }
 
-    /** Inserts a word into the trie */
-    insert(word: string): void {
-        let node = this.root;
-        for (const ch of word) {
-            if (!node.children.has(ch)) {
-                node.children.set(ch, new TrieNode());
-            }
-            node = node.children.get(ch)!;
-        }
-        node.isWord = true;
-    }
-
-    /** Returns true if the trie contains the exact word */
-    search(word: string): boolean {
-        const node = this._traverse(word);
-        return node?.isWord ?? false;
-    }
-
-    /** Returns true if the trie contains any word that starts with the prefix */
-    startsWith(prefix: string): boolean {
-        const node = this._traverse(prefix);
-        return !!node;
-    }
-
-    /** Remove a word – returns true if a word was removed */
-    remove(word: string): boolean {
-        const stack: Array<{ node: TrieNode; char: string }> = [];
-
-        let node = this.root;
-        for (const ch of word) {
-            const child = node.children.get(ch);
-            if (!child) return false; // word not present
-            stack.push({ node, char: ch });
-            node = child;
-        }
-
-        if (!node.isWord) return false; // not a complete word
-
-        node.isWord = false;
-
-        // Clean up nodes that are no longer needed
-        while (stack.length && !node.isWord && node.children.size === 0) {
-            const { node: parent, char } = stack.pop()!;
-            parent.children.delete(char);
-            node = parent;
-        }
-
-        return true;
-    }
-
-    /** Suggest words that start with a prefix (up to maxResults) */
-    suggest(prefix: string, maxResults = 10): string[] {
-        const results: string[] = [];
-        let node = this.root;
-        for (const ch of prefix) {
-            const child = node.children.get(ch);
-            if (!child) return results;
-            node = child;
-        }
-        this._dfs(node, prefix, results, maxResults);
-        return results;
-    }
-
-    /* ---------- private helpers ---------- */
-    // walk through the trie following the key; return node or null
-    private _traverse(key: string): TrieNode | null {
-        let node: TrieNode | undefined = this.root;
-        for (const ch of key) {
-            node = node.children.get(ch);
-            if (!node) return null;
-        }
-        return node as TrieNode;
-    }
-
-    private _dfs(node: TrieNode, path: string, out: string[], limit: number): void {
-        if (out.length >= limit) return;
-        if (node.isWord) out.push(path);
-        for (const [ch, child] of node.children.entries()) {
-            this._dfs(child, path + ch, out, limit);
-        }
-    }
+  // place pivot after the last smaller element
+  [a[storeIndex], a[hi]] = [a[hi], a[storeIndex]];
+  return storeIndex;
 }
-const trie = new Trie();
-trie.insert('apple');
-trie.insert('app');
-trie.insert('banana');
-
-console.log(trie.search('app'));      // true
-console.log(trie.search('apricot'));  // false
-console.log(trie.startsWith('app'));  // true
-console.log(trie.suggest('app'));     // ['app', 'apple']
-
-trie.remove('app');
-console.log(trie.search('app'));      // false
+export function kthSmallestSort<T>(arr: T[], k: number): T {
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
+  return [...arr].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))[k - 1];
+}
+const nums = [7, 11, 5, 3, 9, 2];
+console.log(kthSmallest(nums, 3)); // 5
+console.log(kthSmallestSort(nums, 3)); // 5
