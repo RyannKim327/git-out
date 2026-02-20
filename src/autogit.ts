@@ -1,45 +1,54 @@
-// 1️⃣  Node definition
-export interface ListNode<T> {
-  val: T
-  next: ListNode<T> | null
+/**
+ * Recursively searches for `target` in a sorted numeric array.
+ *
+ * @param arr    The sorted array to search.
+ * @param target The value we’re looking for.
+ * @param low    The lower bound index for the current search window.
+ * @param high   The upper bound index for the current search window.
+ * @returns The index of `target` in `arr`, or -1 if it’s absent.
+ */
+function binarySearchRec(
+  arr: number[],
+  target: number,
+  low: number = 0,
+  high: number = arr.length - 1
+): number {
+  // Base case: window collapsed → not found.
+  if (low > high) return -1;
+
+  const mid = Math.floor((low + high) / 2);
+  const midVal = arr[mid];
+
+  if (midVal === target) return mid;           // Found!
+  if (midVal < target)
+    return binarySearchRec(arr, target, mid + 1, high); // Search right half
+  else
+    return binarySearchRec(arr, target, low, mid - 1);  // Search left half
 }
+const sorted = [1, 4, 7, 9, 12, 18, 25];
 
-// 2️⃣  Utility: build list from array (for demo/testing)
-export function fromArray<T>(arr: T[]): ListNode<T> | null {
-  if (!arr.length) return null
-  let head: ListNode<T> = { val: arr[0], next: null }
-  let cur = head
-  for (let i = 1; i < arr.length; i++) {
-    cur.next = { val: arr[i], next: null }
-    cur = cur.next
-  }
-  return head
+console.log(binarySearchRec(sorted, 9));  // → 3
+console.log(binarySearchRec(sorted, 5));  // → -1 (not present)
+function binarySearchRecGeneric<T>(
+  arr: T[],
+  target: T,
+  compare: (a: T, b: T) => number,  // Returns <0, 0, >0
+  low = 0,
+  high = arr.length - 1
+): number {
+  if (low > high) return -1;
+
+  const mid = Math.floor((low + high) / 2);
+  const cmp = compare(arr[mid], target);
+
+  if (cmp === 0) return mid;
+  if (cmp < 0)   return binarySearchRecGeneric(arr, target, compare, mid + 1, high);
+  return binarySearchRecGeneric(arr, target, compare, low, mid - 1);
 }
-
-// 3️⃣  Fast‑/slow‑pointer algorithm (one pass, O(1) extra memory)
-export function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  // Edge checks – return null if n is out of range
-  if (n <= 0) return null
-
-  let fast: ListNode<T> | null = head
-  let slow: ListNode<T> | null = head
-
-  // Move `fast` n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null              // n > length
-    fast = fast.next
-  }
-
-  // Move both until `fast` hits the end
-  while (fast) {
-    fast = fast.next
-    slow = slow!.next
-  }
-
-  // `slow` is now the nth from the end
-  return slow
-}
-const list = fromArray([10, 20, 30, 40, 50])
-console.log(nthFromEnd(list, 1)?.val) // 50   (last)
-console.log(nthFromEnd(list, 3)?.val) // 30   (3rd from the end)
-console.log(nthFromEnd(list, 6))       // null  (n > length)
+const names = ['Alice', 'Bob', 'Charlie', 'Diana'];
+const idx = binarySearchRecGeneric(
+  names,
+  'Charlie',
+  (a, b) => a.localeCompare(b)   // Comparator
+);
+console.log(idx); // → 2
