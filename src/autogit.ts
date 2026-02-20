@@ -1,29 +1,23 @@
-/**
- * Returns true if `n` is a prime number.
- *
- * Rules:
- *   * 0 and 1 are **not** primes.
- *   * 2 is the only even prime.
- *   * For any other number, test divisibility up to √n.
- *
- * NOTE: This is a classic, “trial‑division” algorithm
- * and is fast enough for numbers that fit comfortably
- * in a JavaScript `number`. If you need to handle millisecond‑length
- * big‑ints, consider a probabilistic test like Miller‑Rabin.
- */
-function isPrime(n: number): boolean {
-  if (n < 2) return false;         // 0, 1, and negative numbers are not prime
-  if (n === 2) return true;        // 2 is prime
-  if (n % 2 === 0) return false;   // even numbers larger than 2 are not prime
+const numbers: number[] = [34, 7, 23, 32, 5, 62];
 
-  const limit = Math.floor(Math.sqrt(n));
-  for (let divisor = 3; divisor <= limit; divisor += 2) {
-    if (n % divisor === 0) return false;
+// 1️⃣ Basic MDN‑style numeric sort
+const sorted = numbers.slice().sort((a, b) => a - b);
+console.log(sorted); // [5, 7, 23, 32, 34, 62]
+[34, 7, 23, 32, 5, 62].sort(); // [23, 32, 34, 5, 62, 7]
+const descending = numbers.slice().sort((a, b) => b - a);
+console.log(descending); // [62, 34, 32, 23, 7, 5]
+function insertionSort(arr: number[]): number[] {
+  const res = arr.slice();
+  for (let i = 1; i < res.length; i++) {
+    let key = res[i];
+    let j = i - 1;
+    while (j >= 0 && res[j] > key) {
+      res[j + 1] = res[j];
+      j--;
+    }
+    res[j + 1] = key;
   }
-  return true;
+  return res;
 }
-console.log(isPrime(2));   // true
-console.log(isPrime(9));   // false
-console.log(isPrime(13));  // true
-console.log(isPrime(1_000_003)); // true (prime just over a million)
-Time to test 1 000 000 numbers (≈ 5–6 ms in Node.js)
+
+console.log(insertionSort(numbers)); // same sorted output
