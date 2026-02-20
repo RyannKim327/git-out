@@ -1,132 +1,93 @@
-// ---------- Types ---------------------------------------------------------
-type Vertex = string | number // whatever sort of key you like
+// 1️⃣  Generic node type
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null = null;
+  right: TreeNode<T> | null = null;
 
-// an edge is directed; the weight can be positive, negative or zero
-interface Edge {
-  from: Vertex
-  to: Vertex
-  weight: number
-}
-
-// ---------- Graph wrapper -----------------------------------------------
-class Graph {
-  private vertices: Set<Vertex> = new Set()
-  private edges: Edge[] = []
-
-  // you can add vertices explicitly if you want; adding an edge will
-  // automatically pull its endpoints into the vertex set
-  public addVertex(v: Vertex) {
-    this.vertices.add(v)
-  }
-
-  public addEdge(from: Vertex, to: Vertex, weight: number) {
-    this.vertices.add(from)
-    this.vertices.add(to)
-    this.edges.push({ from, to, weight })
-  }
-
-  public getVertices() {
-    return Array.from(this.vertices)
-  }
-
-  public getEdges() {
-    return this.edges.slice()
+  constructor(value: T) {
+    this.value = value;
   }
 }
 
-// ---------- Bellman‑Ford algorithm ---------------------------------------
-/**
- * Returns an object containing:
- *   distances:  map from vertex to its shortest‑path distance from source
- *   previous:   map from vertex to its predecessor on that shortest path
- *
- * Throws an Error if a negative‑weight cycle is reachable from `source`.
- */
-function bellmanFord(
-  graph: Graph,
-  source: Vertex
-): { distances: Record<Vertex, number>; previous: Record<Vertex, Vertex | null> } {
-  const INF = Number.POSITIVE_INFINITY
+// 2️⃣  BinaryTree class
+class BinaryTree<T> {
+  root: TreeNode<T> | null = null;
 
-  // 1. initialise
-  const distance: Record<Vertex, number> = {}
-  const previous: Record<Vertex, Vertex | null> = {}
+  // Insert a value – keeps the tree *ordered* (BST rule)
+  insert(value: T, comparator: (a: T, b: T) => number) {
+    const newNode = new TreeNode(value);
 
-  for (const v of graph.getVertices()) {
-    distance[v] = INF
-    previous[v] = null
-  }
-  distance[source] = 0
+    if (!this.root) {
+      this.root = newNode;
+      return;
+    }
 
-  const edges = graph.getEdges()
-  const nvertices = graph.getVertices().length
-
-  // 2. relaxation loop (nvertices - 1) times
-  for (let i = 0; i < nvertices - 1; i++) {
-    let updated = false
-    for (const { from, to, weight } of edges) {
-      const alt = distance[from] + weight
-      if (alt < distance[to]) {
-        distance[to] = alt
-        previous[to] = from
-        updated = true
+    let current: TreeNode<T> | null = this.root;
+    while (current) {
+      const comp = comparator(value, current.value);
+      if (comp < 0) {
+        if (!current.left) {
+          current.left = newNode;
+          return;
+        }
+        current = current.left;
+      } else if (comp > 0) {
+        if (!current.right) {
+          current.right = newNode;
+          return;
+        }
+        current = current.right;
+      } else {
+        // Duplicate – decide what to do; here we just replace
+        current.value = value;
+        return;
       }
     }
-    // early exit if nothing changed
-    if (!updated) break
   }
 
-  // 3. check for negative‑weight cycles
-  for (const { from, to, weight } of edges) {
-    if (distance[from] + weight < distance[to]) {
-      throw new Error(
-        `Negative‑weight cycle detected: edge ${from} → ${to} (weight ${weight})`
-      )
+  // Find a node with a particular value
+  find(value: T, comparator: (a: T, b: T) => number): TreeNode<T> | null {
+    let current = this.root;
+    while (current) {
+      const comp = comparator(value, current.value);
+      if (comp === 0) return current;
+      current = comp < 0 ? current.left : current.right;
     }
+    return null;
   }
 
-  return { distances: distance, previous }
+  // In‑order traversal (left, root, right)
+  inOrder(callback: (node: TreeNode<T>) => void) {
+    const visit = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      visit(node.left);
+      callback(node);
+      visit(node.right);
+    };
+    visit(this.root);
+  }
+
+  // Pre‑ and post‑order are left to you if needed
 }
+const cmpNum = (a: number, b: number) => a - b;
+const cmpStr = (a: string, b: string) => a.localeCompare(b);
+const tree = new BinaryTree<number>();
 
-// ---------- Reconstruct path helper ---------------------------------------
-function reconstructPath(
-  previous: Record<Vertex, Vertex | null>,
-  source: Vertex,
-  target: Vertex
-): Vertex[] {
-  const path: Vertex[] = []
-  let v: Vertex | null = target
+tree.insert(42, cmpNum);
+tree.insert(23, cmpNum);
+tree.insert(87, cmpNum);
+tree.insert(13, cmpNum);
+tree.insert(31, cmpNum);
 
-  while (v !== null && v !== source) {
-    path.unshift(v)
-    v = previous[v]
-  }
-  if (v !== source) {
-    // no path
-    return []
-  }
-  path.unshift(source)
-  return path
-}
+console.log("In‑order traversal:");
+tree.inOrder(node => console.log(node.value));
 
-// ---------- Example usage -----------------------------------------------
-const g = new Graph()
-
-// sample graph: 0 → 1 (4), 0 → 2 (5), 1 → 2 (-1), 2 → 3 (3), 3 → 1 (-2)
-g.addEdge(0, 1, 4)
-g.addEdge(0, 2, 5)
-g.addEdge(1, 2, -1)
-g.addEdge(2, 3, 3)
-g.addEdge(3, 1, -2)
-
-try {
-  const { distances, previous } = bellmanFord(g, 0)
-  console.log('distances:', distances)
-
-  for (const v of g.getVertices()) {
-    const path = reconstructPath(previous, 0, v)
-    console.log(`0 → ${v}  (dist=${distances[v]})  path:`, path.join(' → '))
-  }
-} catch (e) {
-  console.error(e)
-}
+const found = tree.find(31, cmpNum);
+console.log(found ? `Found ${found.value}` : "Not found");
+In-order traversal:
+13
+23
+31
+42
+87
+Found 31
