@@ -1,72 +1,78 @@
-function longestCommonPrefixVertical(strs: string[]): string {
-  if (!strs.length) return "";
+// AndroidAsyncDemo.ts
+import { AndroidApplication, AndroidActivityEventData } from "@nativescript/core";
+import * as http from "http";
 
-  // The longest possible prefix is bounded by the first string’s length
-  const first = strs[0];
+export class AndroidAsyncDemo {
+    private activity: android.app.Activity;
 
-  for (let i = 0; i < first.length; i++) {
-    const ch = first[i];
-    for (let j = 1; j < strs.length; j++) {
-      // If any string is shorter or the current char differs: stop
-      if (i >= strs[j].length || strs[j][i] !== ch) {
-        return first.slice(0, i);
-      }
+    constructor() {
+        const eventData = <AndroidActivityEventData>androidApplication.currentContext.getActivity();
+        this.activity = eventData.activity;
     }
-  }
 
-  // All strings matched the entire first string
-  return first;
-}
-console.log(longestCommonPrefixVertical(["flower", "flow", "flight"])); // "fl"
-function lcpMerge(a: string, b: string): string {
-  let i = 0;
-  const limit = Math.min(a.length, b.length);
-  while (i < limit && a[i] === b[i]) i++;
-  return a.slice(0, i);
-}
+    public startDemo() {
+        // URL you care about
+        const url = "https://api.github.com/users/nativescript";
 
-function longestCommonPrefixDivide(strs: string[]): string {
-  if (!strs.length) return "";
-
-  const helper = (l: number, r: number): string => {
-    if (l === r) return strs[l];
-    const mid = Math.floor((l + r) / 2);
-    const left = helper(l, mid);
-    const right = helper(mid + 1, r);
-    return lcpMerge(left, right);
-  };
-
-  return helper(0, strs.length - 1);
-}
-class TrieNode {
-  children = new Map<string, TrieNode>();
-  isEnd = false;
-}
-
-function buildTrie(strs: string[]): TrieNode {
-  const root = new TrieNode();
-  for (const s of strs) {
-    let node = root;
-    for (const ch of s) {
-      if (!node.children.has(ch)) node.children.set(ch, new TrieNode());
-      node = node.children.get(ch)!;
+        // Create an instance of the AsyncTask wrapper
+        const task = new HttpGetAsyncTask(this.activity, url);
+        task.execute();
     }
-    node.isEnd = true;
-  }
-  return root;
 }
 
-function longestCommonPrefixTrie(strs: string[]): string {
-  if (!strs.length) return "";
-  const root = buildTrie(strs);
-  let node = root;
-  let prefix = "";
-  while (node.children.size === 1 && !node.isEnd) {
-    const [ch, next] = node.children.entries().next().value;
-    prefix += ch;
-    node = next;
-  }
-  return prefix;
+// --------------------------------------------
+//  AsyncTask wrapper – looks a bit like Java
+// --------------------------------------------
+class HttpGetAsyncTask extends java.lang.Object implements android.os.AsyncTask<string, void, string> {
+
+    private activity: android.app.Activity;
+    private url: string;
+    private resultView: android.widget.TextView;
+
+    constructor(activity: android.app.Activity, url: string) {
+        super();
+        this.activity = activity;
+        this.url = url;
+        this.resultView = new android.widget.TextView(activity);
+        this.resultView.setLayoutParams(
+            new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        );
+        this.activity.runOnUiThread(() => {
+            const root = this.activity.findViewById(android.R.id.content);
+            if (root instanceof android.widget.LinearLayout) {
+                root.addView(this.resultView);
+            }
+        });
+    }
+
+    // @Override
+    public doInBackground(...params: string[]): string {
+        try {
+            // Using Node's http wrapper that works in NativeScript
+            const response = http.getSync(this.url);
+            return response.content.toString();
+        } catch (err) {
+            return `Error: ${err.message || err}`;
+        }
+    }
+
+    // @Override
+    public onPostExecute(result: string): void {
+        this.resultView.setText(result);
+    }
+
+    // The following method signatures satisfy the interface contract
+    public onPreExecute(): void {}
+    public onProgressUpdate(...values: void[]): void {}
 }
-const data = ["algorithm", "algo", "algorithms", "all"]; 
-console.log(longestCommonPrefixVertical(data)); // "alg"
+
+// --------------------------------------------
+//  Use it from your page or component
+// --------------------------------------------
+export function demoClicked() {
+    const demo = new AndroidAsyncDemo();
+    demo.startDemo();
+}
