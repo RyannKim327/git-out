@@ -1,66 +1,45 @@
 /**
- * Checks whether the given string is a palindrome, ignoring case and
- * non‑alphanumeric characters.  It uses only constant extra space.
- *
- * @param s  The string to check.
- * @returns  true if `s` is a palindrome, false otherwise.
+ * A classic LIFO stack that stores items in an array.
+ * @template T The type of the values stored inside the stack.
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+export class Stack<T> {
+  /** The underlying array that holds the stack's data. */
+  private data: T[] = [];
 
-  while (left < right) {
-    // Skip any *non*‑alphanumeric character on the left
-    while (left < right && !isAlphaNum(s.charCodeAt(left))) {
-      left++;
-    }
-    // Skip any *non*‑alphanumeric character on the right
-    while (left < right && !isAlphaNum(s.charCodeAt(right))) {
-      right--;
-    }
-
-    // If indices crossed after skipping, we're done
-    if (left >= right) break;
-
-    // Compare the characters case‑insensitively
-    const leftChar = s.charCodeAt(left);
-    const rightChar = s.charCodeAt(right);
-
-    if (normalize(leftChar) !== normalize(rightChar)) {
-      return false;
-    }
-
-    left++;
-    right--;
+  /** Adds an element to the top of the stack. */
+  push(item: T): void {
+    this.data.push(item);
   }
 
-  return true;
-}
-
-/**
- * Helper to test whether a character code is alphanumeric.
- */
-function isAlphaNum(code: number): boolean {
-  // 0-9
-  if (code >= 48 && code <= 57) return true;
-  // A-Z
-  if (code >= 65 && code <= 90) return true;
-  // a-z
-  if (code >= 97 && code <= 122) return true;
-  return false;
-}
-
-/**
- * Normalises a character code to be lowercase ASCII when possible.
- * For Unicode other than ASCII it simply returns the original code.
- */
-function normalize(code: number): number {
-  // Convert uppercase A-Z to lowercase a-z
-  if (code >= 65 && code <= 90) {
-    return code + 32;
+  /**
+   * Removes and returns the element at the top of the stack.
+   * Returns undefined if the stack is empty.
+   */
+  pop(): T | undefined {
+    return this.data.pop();
   }
-  return code;
+
+  /** Peeks at the element on the top without removing it. */
+  peek(): T | undefined {
+    return this.data[this.data.length - 1];
+  }
+
+  /** Returns the number of elements in the stack. */
+  get size(): number {
+    return this.data.length;
+  }
+
+  /** Returns true when the stack has nothing inside. */
+  get isEmpty(): boolean {
+    return this.data.length === 0;
+  }
 }
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("race a car"));                      // false
-console.log(isPalindrome("   abcba   "));                     // true
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size);   // 2
