@@ -1,52 +1,143 @@
-interface TreeNode<T = number> {
-  val: T;                // single value (you can change the type)
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
+// 1️⃣  Bucket element (used for chaining)
+interface BucketItem<K, V> {
+  key: K;
+  value: V;
+  next?: BucketItem<K, V>;
 }
-const root: TreeNode = {
-  val: 10,
-  left: { val: 5, left: null, right: null },
-  right: { val: 15, left: null, right: null },
-};
-function maxDepth<T>(node: TreeNode<T> | null): number {
-  if (!node) return 0;
-  const leftDepth = maxDepth(node.left);
-  const rightDepth = maxDepth(node.right);
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
 
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
+// 2️⃣  Hash table implementation
+class HashTable<K extends string | number, V> {
+  // Choose a prime number for better distribution
+  private readonly bucketCount = 53;
+  private readonly buckets: Array<BucketItem<K, V> | undefined> = [];
 
-  while (queue.length) {
-    const levelSize = queue.length; // nodes at current depth
-    depth++;                        // we’re going to finish this level
-
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift() as TreeNode<T>;
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
-    }
+  constructor() {
+    // Initialize buckets array
+    this.buckets.length = this.bucketCount;
   }
 
-  return depth;
-}
-// build a quick tree
-const tree: TreeNode = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4, left: null, right: null },
-    right: null,
-  },
-  right: {
-    val: 3,
-    left: null,
-    right: { val: 5, left: null, right: null },
-  },
-};
+  /* ---------- 🔑 Helper: hash function ---------- */
+  // Works for string & number keys; you can add more types if wanted.
+  private hash(key: K): number {
+    const str = key.toString();
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash * 31 + str.charCodeAt(i)) >>> 0; // unsigned 32‑bit arithmetic
+    }
+    return hash % this.bucketCount;
+  }
 
-console.log(maxDepth(tree));      // -> 3
-console.log(maxDepthIter(tree));  // -> 3
+  /* ---------- 🔧 Operations ---------- */
+
+  set(key: K, value: V): void {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+
+    // If the bucket is empty, insert directly
+    if (!node) {
+      this.buckets[idx] = { key, value };
+      return;
+    }
+
+    // Otherwise iterate to find key or append at end
+    let prev: BucketItem<K, V> | undefined;
+    while (node) {
+      if (node.key === key) {
+        node.value = value; // overwrite
+        return;
+      }
+      prev = node;
+      node = node.next;
+    }
+
+    prev!.next = { key, value }; // add new node at end
+  }
+
+  get(key: K): V | undefined {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+
+    while (node) {
+      if (node.key === key) return node.value;
+      node = node.next;
+    }
+
+    return undefined; // not found
+  }
+
+  delete(key: K): boolean {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+    let prev: BucketItem<K, V> | undefined;
+
+    while (node) {
+      if (node.key === key) {
+        if (!prev) {
+          // first node in bucket
+          this.buckets[idx] = node.next;
+        } else {
+          prev.next = node.next;
+        }
+        return true;
+      }
+      prev = node;
+      node = node.next;
+    }
+
+    return false; // key absent
+  }
+
+  keys(): K[] {
+    const res: K[] = [];
+    for (const bucket of this.buckets) {
+      let node = bucket;
+      while (node) {
+        res.push(node.key);
+        node = node.next;
+      }
+    }
+    return res;
+  }
+
+  values(): V[] {
+    const res: V[] = [];
+    for (const bucket of this.buckets) {
+      let node = bucket;
+      while (node) {
+        res.push(node.value);
+        node = node.next;
+      }
+    }
+    return res;
+  }
+
+  // Optional: iteration in for…of style
+  *entries(): Generator<[K, V]> {
+    for (const bucket of this.buckets) {
+      let node = bucket;
+      while (node) {
+        yield [node.key, node.value];
+        node = node.next;
+      }
+    }
+  }
+}
+
+// ---------- Demo ----------
+const ht = new HashTable<string, number>();
+
+ht.set('apple', 3);
+ht.set('banana', 7);
+ht.set('orange', 5);
+ht.set('apple', 10); // overwrite
+
+console.log(ht.get('apple')); // 10
+console.log(ht.get('banana')); // 7
+console.log(ht.get('missing')); // undefined
+
+ht.delete('orange');
+console.log(ht.keys()); // ['apple', 'banana']
+
+for (const [k, v] of ht.entries()) {
+  console.log(`key=${k}, value=${v}`);
+}
