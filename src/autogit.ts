@@ -1,92 +1,83 @@
-type Node = string;                     // or number, or any keyable type
-type Edge = [Node, Node];               // (from, to)
+// fetch-example.ts
+/**
+ * A small utility that fetches JSON from a public API
+ * and logs a nicely formatted result.
+ *
+ * It demonstrates:
+ *   • TypeScript generics for response typing
+ *   • Async/await syntax
+ *   • Basic error handling
+ *   • Runtime type guard for JSON validation
+ */
 
-interface Graph {
-    nodes: Set<Node>;
-    edges: Edge[];
+type PlainObject = Record<string, unknown>;
+
+// A small runtime check to ensure the response is
+// an object (the common case when fetching JSON).
+function isObject(value: unknown): value is PlainObject {
+  return typeof value === 'object' && value !== null;
 }
-function topologicalSortKahn(graph: Graph): Node[] | null {
-    const indeg = new Map<Node, number>();
-    const adj   = new Map<Node, Node[]>();
 
-    // init
-    graph.nodes.forEach(v => {
-        indeg.set(v, 0);
-        adj.set(v, []);
-    });
+/**
+ * Generic fetch function that returns data of type T.
+ * @param url          The URL to fetch from
+ * @param init         Optional RequestInit parameters
+ */
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, init);
 
-    // build adjacency + indegree
-    for (const [u, v] of graph.edges) {
-        adj.get(u)!.push(v);
-        indeg.set(v, indeg.get(v)! + 1);
-    }
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+  }
 
-    // queue of nodes with indegree 0
-    const q: Node[] = [];
-    indeg.forEach((cnt, node) => { if (cnt === 0) q.push(node); });
+  const data = await response.json();
 
-    const order: Node[] = [];
+  // Very light runtime validation – just make sure we got an object
+  if (!isObject(data)) {
+    throw new Error('Response is not a JSON object');
+  }
 
-    while (q.length) {
-        const v = q.shift()!;
-        order.push(v);
-
-        for (const w of adj.get(v)!) {
-            const newCnt = indeg.get(w)! - 1;
-            indeg.set(w, newCnt);
-            if (newCnt === 0) q.push(w);
-        }
-    }
-
-    // If we processed every node → DAG; else cycle present
-    return order.length === graph.nodes.size ? order : null;
+  return data as T; // confidence that T matches the real shape
 }
-function topologicalSortDFS(graph: Graph): Node[] | null {
-    const adj = new Map<Node, Node[]>();
-    graph.nodes.forEach(v => adj.set(v, []));
 
-    for (const [u, v] of graph.edges) {
-        adj.get(u)!.push(v);
-    }
-
-    const visited = new Set<Node>();
-    const onStack = new Set<Node>();   // for cycle detection
-    const order: Node[] = [];
-
-    function dfs(v: Node): boolean {
-        visited.add(v);
-        onStack.add(v);
-
-        for (const w of adj.get(v)!) {
-            if (!visited.has(w)) {
-                if (!dfs(w)) return false;           // cycle deeper down
-            } else if (onStack.has(w)) {
-                return false;                       // back edge → cycle
-            }
-        }
-
-        onStack.delete(v);
-        order.push(v);                     // add after exploring all children
-        return true;
-    }
-
-    for (const node of graph.nodes) {
-        if (!visited.has(node) && !dfs(node))
-            return null;                   // cycle found
-    }
-
-    return order.reverse();               // reverse to get finish order
+/**
+ * Example usage: fetch a user from the JSONPlaceholder API.
+ * The API returns a shape that we can describe as a type.
+ */
+interface JsonPlaceholderUser {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  address: {
+    street: string;
+    suite: string;
+    city: string;
+    zipcode: string;
+    geo: { lat: string; lng: string };
+  };
+  phone: string;
+  website: string;
+  company: {
+    name: string;
+    catchPhrase: string;
+    bs: string;
+  };
 }
-const g: Graph = {
-    nodes: new Set(['A','B','C','D','E']),
-    edges: [
-        ['A', 'B'],
-        ['A', 'C'],
-        ['B', 'D'],
-        ['C', 'D'],
-        ['D', 'E'],
-    ]
-};
 
-console.log('Kahn:', topologicalSortKahn(g)); // e.g. A,B,C,D,E or A,C,B,D,E
-console.log('DFS :', topologicalSortDFS(g));
+async function main() {
+  const userId = 1;
+  const url = `https://jsonplaceholder.typicode.com/users/${userId}`;
+
+  try {
+    const user = await fetchJson<JsonPlaceholderUser>(url);
+    console.log(`Name: ${user.name}`);
+    console.log(`Company: ${user.company.name}`);
+    console.log(`Address: ${user.address.street}, ${user.address.city}`);
+  } catch (err) {
+    console.error('Something went wrong:', err);
+  }
+}
+
+// Kick it off
+main();
