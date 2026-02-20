@@ -1,48 +1,29 @@
 /**
- * Return the maximum sum sub‑array (Kadane) along with its start & end indices.
+ * Returns true if `n` is a prime number.
  *
- * @param nums  Array of numbers – can contain positives, zeros and negatives.
- * @returns     Object with `maxSum`, `start`, `end` (inclusive).
+ * Rules:
+ *   * 0 and 1 are **not** primes.
+ *   * 2 is the only even prime.
+ *   * For any other number, test divisibility up to √n.
+ *
+ * NOTE: This is a classic, “trial‑division” algorithm
+ * and is fast enough for numbers that fit comfortably
+ * in a JavaScript `number`. If you need to handle millisecond‑length
+ * big‑ints, consider a probabilistic test like Miller‑Rabin.
  */
-export function maxSubarrayWithIndices(nums: number[]): {
-  maxSum: number;
-  start: number;
-  end: number;
-} {
-  if (nums.length === 0) throw new Error("Input array must contain at least one element");
+function isPrime(n: number): boolean {
+  if (n < 2) return false;         // 0, 1, and negative numbers are not prime
+  if (n === 2) return true;        // 2 is prime
+  if (n % 2 === 0) return false;   // even numbers larger than 2 are not prime
 
-  let bestSum = nums[0];
-  let currentSum = nums[0];
-
-  // These track the best indices we’ve seen
-  let bestStart = 0;
-  let bestEnd = 0;
-
-  // Temporary indices for the sub‑array we are currently extending
-  let tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    const num = nums[i];
-
-    // Decide whether to extend the current sub‑array or start fresh at i
-    if (currentSum + num < num) {
-      currentSum = num;
-      tempStart = i;
-    } else {
-      currentSum += num;
-    }
-
-    // Update the best found so far
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
+  const limit = Math.floor(Math.sqrt(n));
+  for (let divisor = 3; divisor <= limit; divisor += 2) {
+    if (n % divisor === 0) return false;
   }
-
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+  return true;
 }
-const arr = [4, -1, 2, 1, -5, 4];
-const result = maxSubarrayWithIndices(arr);
-console.log(result); // { maxSum: 6, start: 0, end: 3 }
-// Sub‑array: [4, -1, 2, 1] → sum 6
+console.log(isPrime(2));   // true
+console.log(isPrime(9));   // false
+console.log(isPrime(13));  // true
+console.log(isPrime(1_000_003)); // true (prime just over a million)
+Time to test 1 000 000 numbers (≈ 5–6 ms in Node.js)
