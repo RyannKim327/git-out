@@ -1,83 +1,143 @@
-// fetch-example.ts
-/**
- * A small utility that fetches JSON from a public API
- * and logs a nicely formatted result.
- *
- * It demonstrates:
- *   • TypeScript generics for response typing
- *   • Async/await syntax
- *   • Basic error handling
- *   • Runtime type guard for JSON validation
- */
-
-type PlainObject = Record<string, unknown>;
-
-// A small runtime check to ensure the response is
-// an object (the common case when fetching JSON).
-function isObject(value: unknown): value is PlainObject {
-  return typeof value === 'object' && value !== null;
+// 1️⃣  Bucket element (used for chaining)
+interface BucketItem<K, V> {
+  key: K;
+  value: V;
+  next?: BucketItem<K, V>;
 }
 
-/**
- * Generic fetch function that returns data of type T.
- * @param url          The URL to fetch from
- * @param init         Optional RequestInit parameters
- */
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
+// 2️⃣  Hash table implementation
+class HashTable<K extends string | number, V> {
+  // Choose a prime number for better distribution
+  private readonly bucketCount = 53;
+  private readonly buckets: Array<BucketItem<K, V> | undefined> = [];
 
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+  constructor() {
+    // Initialize buckets array
+    this.buckets.length = this.bucketCount;
   }
 
-  const data = await response.json();
-
-  // Very light runtime validation – just make sure we got an object
-  if (!isObject(data)) {
-    throw new Error('Response is not a JSON object');
+  /* ---------- 🔑 Helper: hash function ---------- */
+  // Works for string & number keys; you can add more types if wanted.
+  private hash(key: K): number {
+    const str = key.toString();
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash * 31 + str.charCodeAt(i)) >>> 0; // unsigned 32‑bit arithmetic
+    }
+    return hash % this.bucketCount;
   }
 
-  return data as T; // confidence that T matches the real shape
-}
+  /* ---------- 🔧 Operations ---------- */
 
-/**
- * Example usage: fetch a user from the JSONPlaceholder API.
- * The API returns a shape that we can describe as a type.
- */
-interface JsonPlaceholderUser {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-  address: {
-    street: string;
-    suite: string;
-    city: string;
-    zipcode: string;
-    geo: { lat: string; lng: string };
-  };
-  phone: string;
-  website: string;
-  company: {
-    name: string;
-    catchPhrase: string;
-    bs: string;
-  };
-}
+  set(key: K, value: V): void {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
 
-async function main() {
-  const userId = 1;
-  const url = `https://jsonplaceholder.typicode.com/users/${userId}`;
+    // If the bucket is empty, insert directly
+    if (!node) {
+      this.buckets[idx] = { key, value };
+      return;
+    }
 
-  try {
-    const user = await fetchJson<JsonPlaceholderUser>(url);
-    console.log(`Name: ${user.name}`);
-    console.log(`Company: ${user.company.name}`);
-    console.log(`Address: ${user.address.street}, ${user.address.city}`);
-  } catch (err) {
-    console.error('Something went wrong:', err);
+    // Otherwise iterate to find key or append at end
+    let prev: BucketItem<K, V> | undefined;
+    while (node) {
+      if (node.key === key) {
+        node.value = value; // overwrite
+        return;
+      }
+      prev = node;
+      node = node.next;
+    }
+
+    prev!.next = { key, value }; // add new node at end
+  }
+
+  get(key: K): V | undefined {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+
+    while (node) {
+      if (node.key === key) return node.value;
+      node = node.next;
+    }
+
+    return undefined; // not found
+  }
+
+  delete(key: K): boolean {
+    const idx = this.hash(key);
+    let node = this.buckets[idx];
+    let prev: BucketItem<K, V> | undefined;
+
+    while (node) {
+      if (node.key === key) {
+        if (!prev) {
+          // first node in bucket
+          this.buckets[idx] = node.next;
+        } else {
+          prev.next = node.next;
+        }
+        return true;
+      }
+      prev = node;
+      node = node.next;
+    }
+
+    return false; // key absent
+  }
+
+  keys(): K[] {
+    const res: K[] = [];
+    for (const bucket of this.buckets) {
+      let node = bucket;
+      while (node) {
+        res.push(node.key);
+        node = node.next;
+      }
+    }
+    return res;
+  }
+
+  values(): V[] {
+    const res: V[] = [];
+    for (const bucket of this.buckets) {
+      let node = bucket;
+      while (node) {
+        res.push(node.value);
+        node = node.next;
+      }
+    }
+    return res;
+  }
+
+  // Optional: iteration in for…of style
+  *entries(): Generator<[K, V]> {
+    for (const bucket of this.buckets) {
+      let node = bucket;
+      while (node) {
+        yield [node.key, node.value];
+        node = node.next;
+      }
+    }
   }
 }
 
-// Kick it off
-main();
+// ---------- Demo ----------
+const ht = new HashTable<string, number>();
+
+ht.set('apple', 3);
+ht.set('banana', 7);
+ht.set('orange', 5);
+ht.set('apple', 10); // overwrite
+
+console.log(ht.get('apple')); // 10
+console.log(ht.get('banana')); // 7
+console.log(ht.get('missing')); // undefined
+
+ht.delete('orange');
+console.log(ht.keys()); // ['apple', 'banana']
+
+for (const [k, v] of ht.entries()) {
+  console.log(`key=${k}, value=${v}`);
+}
