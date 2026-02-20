@@ -1,28 +1,21 @@
-function countChar(str: string, ch: string): number {
-  // split on the target char and subtract 1 (the split always creates one
-  // more slice than the number of matches)
-  return str.split(ch).length - 1;
+const numbers = [3, 7, 2, 9, 4];
+
+const max = Math.max(...numbers); // 9
+console.log(max);
+const numbers = [3, 7, 2, 9, 4];
+
+const max = numbers.reduce((prev, cur) => (cur > prev ? cur : prev));
+
+console.log(max); // 9
+function maxNumber<T extends number>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
+  return arr.reduce((a, b) => (b > a ? b : a));
 }
 
-// Example
-console.log(countChar("hello world", "l")); // 3
-function countChar(str: string, ch: string): number {
-  const matches = str.match(new RegExp(ch, "g")); // global search
-  // If no matches, null is returned; length is 0 in that case
-  return matches ? matches.length : 0;
-}
+const nums = [1, 5, 3];
+console.log(maxNumber(nums)); // 5
+const bigNumbers = [10n, 500n, 200n];
 
-// Example
-console.log(countChar("hello world", "l")); // 3
-const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const regex = new RegExp(escaped, "g");
-function countChar(str: string, ch: string): number {
-  let count = 0;
-  for (const c of str) {
-    if (c === ch) count++;
-  }
-  return count;
-}
+const maxBig = bigNumbers.reduce((a, b) => (b > a ? b : a)); // 500n
 
-// Example
-console.log(countChar("hello world", "l")); // 3
+console.log(maxBig);
