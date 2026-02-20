@@ -1,68 +1,83 @@
-// -------------------------------------------
-// Node definition
-// -------------------------------------------
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+// fetch-example.ts
+/**
+ * A small utility that fetches JSON from a public API
+ * and logs a nicely formatted result.
+ *
+ * It demonstrates:
+ *   • TypeScript generics for response typing
+ *   • Async/await syntax
+ *   • Basic error handling
+ *   • Runtime type guard for JSON validation
+ */
+
+type PlainObject = Record<string, unknown>;
+
+// A small runtime check to ensure the response is
+// an object (the common case when fetching JSON).
+function isObject(value: unknown): value is PlainObject {
+  return typeof value === 'object' && value !== null;
 }
 
-// -------------------------------------------
-// Helper: build list from array
-// -------------------------------------------
-function arrayToLinkedList<T>(arr: T[]): ListNode<T> | null {
-  if (arr.length === 0) return null;
-  const head = new ListNode(arr[0]);
-  let current = head;
-  for (let i = 1; i < arr.length; i++) {
-    current.next = new ListNode(arr[i]);
-    current = current.next;
-  }
-  return head;
-}
+/**
+ * Generic fetch function that returns data of type T.
+ * @param url          The URL to fetch from
+ * @param init         Optional RequestInit parameters
+ */
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, init);
 
-// -------------------------------------------
-// Helper: read list into array (for debugging)
-// -------------------------------------------
-function linkedListToArray<T>(head: ListNode<T> | null): T[] {
-  const arr: T[] = [];
-  let cur = head;
-  while (cur) {
-    arr.push(cur.val);
-    cur = cur.next;
-  }
-  return arr;
-}
-
-// -------------------------------------------
-// Main: find middle node
-// -------------------------------------------
-function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null;          // empty list
-
-  let slow = head;
-  let fast = head;
-
-  // Move fast two steps and slow one step until fast can't move further.
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
   }
 
-  // For even‑length lists, this returns the first of the two middle nodes.
-  // If you prefer the second, replace `while (fast && fast.next)` and
-  // adjust the loop accordingly.
-  return slow;
+  const data = await response.json();
+
+  // Very light runtime validation – just make sure we got an object
+  if (!isObject(data)) {
+    throw new Error('Response is not a JSON object');
+  }
+
+  return data as T; // confidence that T matches the real shape
 }
 
-// -------------------------------------------
-// Demo
-// -------------------------------------------
-const list = arrayToLinkedList([1, 2, 3, 4, 5]);  // odd length
-console.log(linkedListToArray(list));            // [1,2,3,4,5]
-console.log(findMiddle(list)?.val);              // 3
+/**
+ * Example usage: fetch a user from the JSONPlaceholder API.
+ * The API returns a shape that we can describe as a type.
+ */
+interface JsonPlaceholderUser {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  address: {
+    street: string;
+    suite: string;
+    city: string;
+    zipcode: string;
+    geo: { lat: string; lng: string };
+  };
+  phone: string;
+  website: string;
+  company: {
+    name: string;
+    catchPhrase: string;
+    bs: string;
+  };
+}
 
-const evenList = arrayToLinkedList([10, 20, 30, 40]);
-console.log(linkedListToArray(evenList));         // [10,20,30,40]
-console.log(findMiddle(evenList)?.val);           // 20 (first middle)
-// if you want the second middle, tweak the loop condition to:
-// while (fast && fast.next)
-// then you'll get 30.
+async function main() {
+  const userId = 1;
+  const url = `https://jsonplaceholder.typicode.com/users/${userId}`;
+
+  try {
+    const user = await fetchJson<JsonPlaceholderUser>(url);
+    console.log(`Name: ${user.name}`);
+    console.log(`Company: ${user.company.name}`);
+    console.log(`Address: ${user.address.street}, ${user.address.city}`);
+  } catch (err) {
+    console.error('Something went wrong:', err);
+  }
+}
+
+// Kick it off
+main();
