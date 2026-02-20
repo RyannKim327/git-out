@@ -1,70 +1,78 @@
-/**
- * Radix sort (Least–Significant‑digit first) for arrays of non‑negative integers.
- *
- * Time:  O(k * n)  where k = number of digits in the largest number
- * Space: O(n + B)  (B = 10 for base‑10)
- */
-function radixSort(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
+// AndroidAsyncDemo.ts
+import { AndroidApplication, AndroidActivityEventData } from "@nativescript/core";
+import * as http from "http";
 
-  // Find the biggest value to know how many digits we need to process
-  const maxVal = Math.max(...nums);
-  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
+export class AndroidAsyncDemo {
+    private activity: android.app.Activity;
 
-  // Start from the least significant digit
-  let divisor = 1;
-
-  // We'll reuse these buckets in each pass to keep O(n) allocations
-  const buckets: number[][] = Array.from({ length: 10 }, () => []);
-
-  for (let d = 0; d < maxDigits; d++) {
-    // Distribute
-    for (const num of nums) {
-      const bucketIndex = Math.floor(num / divisor) % 10;
-      buckets[bucketIndex].push(num);
+    constructor() {
+        const eventData = <AndroidActivityEventData>androidApplication.currentContext.getActivity();
+        this.activity = eventData.activity;
     }
 
-    // Collect back into nums, empty buckets for the next pass
-    let pos = 0;
-    for (const bucket of buckets) {
-      while (bucket.length) {
-        nums[pos++] = bucket.pop() as number; // pop gives LIFO but we reverse order below
-      }
-      bucket.length = 0; // reset
+    public startDemo() {
+        // URL you care about
+        const url = "https://api.github.com/users/nativescript";
+
+        // Create an instance of the AsyncTask wrapper
+        const task = new HttpGetAsyncTask(this.activity, url);
+        task.execute();
     }
-
-    divisor *= 10; // move to the next digit
-  }
-
-  return nums;
 }
-function radixSortStable(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
 
-  const maxVal = Math.max(...nums);
-  const maxDigits = Math.floor(Math.log10(maxVal)) + 1;
+// --------------------------------------------
+//  AsyncTask wrapper – looks a bit like Java
+// --------------------------------------------
+class HttpGetAsyncTask extends java.lang.Object implements android.os.AsyncTask<string, void, string> {
 
-  let divisor = 1;
-  const buckets: number[][] = Array.from({ length: 10 }, () => []);
+    private activity: android.app.Activity;
+    private url: string;
+    private resultView: android.widget.TextView;
 
-  for (let d = 0; d < maxDigits; d++) {
-    for (const n of nums) {
-      const idx = Math.floor(n / divisor) % 10;
-      buckets[idx].push(n);
+    constructor(activity: android.app.Activity, url: string) {
+        super();
+        this.activity = activity;
+        this.url = url;
+        this.resultView = new android.widget.TextView(activity);
+        this.resultView.setLayoutParams(
+            new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        );
+        this.activity.runOnUiThread(() => {
+            const root = this.activity.findViewById(android.R.id.content);
+            if (root instanceof android.widget.LinearLayout) {
+                root.addView(this.resultView);
+            }
+        });
     }
 
-    let i = 0;
-    for (const bucket of buckets) {
-      while (bucket.length) {
-        nums[i++] = bucket.shift() as number; // shift preserves order
-      }
+    // @Override
+    public doInBackground(...params: string[]): string {
+        try {
+            // Using Node's http wrapper that works in NativeScript
+            const response = http.getSync(this.url);
+            return response.content.toString();
+        } catch (err) {
+            return `Error: ${err.message || err}`;
+        }
     }
 
-    divisor *= 10;
-  }
+    // @Override
+    public onPostExecute(result: string): void {
+        this.resultView.setText(result);
+    }
 
-  return nums;
+    // The following method signatures satisfy the interface contract
+    public onPreExecute(): void {}
+    public onProgressUpdate(...values: void[]): void {}
 }
-const data = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log(radixSortStable(data));
-// → [2, 24, 45, 66, 75, 90, 170, 802]
+
+// --------------------------------------------
+//  Use it from your page or component
+// --------------------------------------------
+export function demoClicked() {
+    const demo = new AndroidAsyncDemo();
+    demo.startDemo();
+}
