@@ -1,48 +1,83 @@
-// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
-//      This shape is common in interview‑style code.
-interface TreeNode {
-  val: number;         // node’s payload
-  left?: TreeNode | null;   // left child (optional)
-  right?: TreeNode | null;  // right child (optional)
+// fetch-example.ts
+/**
+ * A small utility that fetches JSON from a public API
+ * and logs a nicely formatted result.
+ *
+ * It demonstrates:
+ *   • TypeScript generics for response typing
+ *   • Async/await syntax
+ *   • Basic error handling
+ *   • Runtime type guard for JSON validation
+ */
+
+type PlainObject = Record<string, unknown>;
+
+// A small runtime check to ensure the response is
+// an object (the common case when fetching JSON).
+function isObject(value: unknown): value is PlainObject {
+  return typeof value === 'object' && value !== null;
 }
 
-// 2️⃣  Recursive summation – easiest to read and to understand.
-//      Depth‑first, natural for a tree.
-function sumTreeRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                      // base case: empty subtree is 0
-  const leftSum = sumTreeRecursive(root.left);
-  const rightSum = sumTreeRecursive(root.right);
-  return root.val + leftSum + rightSum;      // combine the results
-}
+/**
+ * Generic fetch function that returns data of type T.
+ * @param url          The URL to fetch from
+ * @param init         Optional RequestInit parameters
+ */
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, init);
 
-// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
-//      where recursion might hit the call‑stack limit.
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let total = 0;
-  const stack: TreeNode[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.val;
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
   }
-  return total;
+
+  const data = await response.json();
+
+  // Very light runtime validation – just make sure we got an object
+  if (!isObject(data)) {
+    throw new Error('Response is not a JSON object');
+  }
+
+  return data as T; // confidence that T matches the real shape
 }
 
-// 4️⃣  Sample tree for quick sanity check
-//           5
-//          / \
-//         3   7
-//        / \   \
-//       2   4   8
+/**
+ * Example usage: fetch a user from the JSONPlaceholder API.
+ * The API returns a shape that we can describe as a type.
+ */
+interface JsonPlaceholderUser {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  address: {
+    street: string;
+    suite: string;
+    city: string;
+    zipcode: string;
+    geo: { lat: string; lng: string };
+  };
+  phone: string;
+  website: string;
+  company: {
+    name: string;
+    catchPhrase: string;
+    bs: string;
+  };
+}
 
-const sampleRoot: TreeNode = {
-  val: 5,
-  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
-  right: { val: 7, right: { val: 8 } },
-};
+async function main() {
+  const userId = 1;
+  const url = `https://jsonplaceholder.typicode.com/users/${userId}`;
 
-console.log(sumTreeRecursive(sampleRoot)); // → 33
-console.log(sumTreeIterative(sampleRoot)); // → 33
+  try {
+    const user = await fetchJson<JsonPlaceholderUser>(url);
+    console.log(`Name: ${user.name}`);
+    console.log(`Company: ${user.company.name}`);
+    console.log(`Address: ${user.address.street}, ${user.address.city}`);
+  } catch (err) {
+    console.error('Something went wrong:', err);
+  }
+}
+
+// Kick it off
+main();
