@@ -1,78 +1,54 @@
 /**
- * Build the longest‑prefix‑suffix (LPS) array for the pattern.
- * lps[i] will contain the length of the longest proper prefix
- * that is also a suffix for the substring pattern[0…i].
+ * Recursively searches for `target` in a sorted numeric array.
  *
- * @param pattern – the pattern
- * @returns the filled LPS array
+ * @param arr    The sorted array to search.
+ * @param target The value we’re looking for.
+ * @param low    The lower bound index for the current search window.
+ * @param high   The upper bound index for the current search window.
+ * @returns The index of `target` in `arr`, or -1 if it’s absent.
  */
-function computeLPS(pattern: string): number[] {
-  const lps: number[] = new Array(pattern.length).fill(0);
-  let length = 0;          // length of the previous longest prefix suffix
-  let i = 1;               // lps[0] is always 0
+function binarySearchRec(
+  arr: number[],
+  target: number,
+  low: number = 0,
+  high: number = arr.length - 1
+): number {
+  // Base case: window collapsed → not found.
+  if (low > high) return -1;
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        // don't move i here; keep looking for a smaller prefix
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
+  const mid = Math.floor((low + high) / 2);
+  const midVal = arr[mid];
 
-  return lps;
+  if (midVal === target) return mid;           // Found!
+  if (midVal < target)
+    return binarySearchRec(arr, target, mid + 1, high); // Search right half
+  else
+    return binarySearchRec(arr, target, low, mid - 1);  // Search left half
 }
+const sorted = [1, 4, 7, 9, 12, 18, 25];
 
-/**
- * Perform KMP search for a pattern in a text.
- *
- * @param text     – the string to search in
- * @param pattern  – the pattern to look for
- * @returns an array of starting indices where the pattern occurs
- */
-function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return []; // nothing to search for
+console.log(binarySearchRec(sorted, 9));  // → 3
+console.log(binarySearchRec(sorted, 5));  // → -1 (not present)
+function binarySearchRecGeneric<T>(
+  arr: T[],
+  target: T,
+  compare: (a: T, b: T) => number,  // Returns <0, 0, >0
+  low = 0,
+  high = arr.length - 1
+): number {
+  if (low > high) return -1;
 
-  const lps = computeLPS(pattern);
-  const positions: number[] = [];
-  let i = 0; // index for text
-  let j = 0; // index for pattern
+  const mid = Math.floor((low + high) / 2);
+  const cmp = compare(arr[mid], target);
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-
-      if (j === pattern.length) {
-        // match found – record starting index
-        positions.push(i - j);
-        // continue searching for next possible match
-        j = lps[j - 1];
-      }
-    } else {
-      if (j !== 0) {
-        // jump back in the pattern based on LPS
-        j = lps[j - 1];
-      } else {
-        i++; // move to next character in text
-      }
-    }
-  }
-
-  return positions;
+  if (cmp === 0) return mid;
+  if (cmp < 0)   return binarySearchRecGeneric(arr, target, compare, mid + 1, high);
+  return binarySearchRecGeneric(arr, target, compare, low, mid - 1);
 }
-
-/* Example usage */
-const haystack = "ABABDABACDABABCABAB";
-const needle = "ABABCABAB";
-
-const matches = kmpSearch(haystack, needle);
-console.log("Pattern found at positions:", matches);
-// Expected output: Pattern found at positions: [9]
+const names = ['Alice', 'Bob', 'Charlie', 'Diana'];
+const idx = binarySearchRecGeneric(
+  names,
+  'Charlie',
+  (a, b) => a.localeCompare(b)   // Comparator
+);
+console.log(idx); // → 2
