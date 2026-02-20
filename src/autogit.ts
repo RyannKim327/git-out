@@ -1,45 +1,38 @@
-// 1️⃣  Node definition
-export interface ListNode<T> {
-  val: T
-  next: ListNode<T> | null
-}
+/**
+ * Find the majority element in an array.
+ *
+ * @param arr - An array of comparable items.
+ * @returns The majority element, or undefined if no majority exists.
+ *
+ * Assumes `T` supports strict equality (===).
+ */
+function majorityElement<T>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
 
-// 2️⃣  Utility: build list from array (for demo/testing)
-export function fromArray<T>(arr: T[]): ListNode<T> | null {
-  if (!arr.length) return null
-  let head: ListNode<T> = { val: arr[0], next: null }
-  let cur = head
-  for (let i = 1; i < arr.length; i++) {
-    cur.next = { val: arr[i], next: null }
-    cur = cur.next
-  }
-  return head
-}
+  // 1️⃣ First pass: find a potential candidate
+  let candidate: T | undefined = arr[0];
+  let count = 0;
 
-// 3️⃣  Fast‑/slow‑pointer algorithm (one pass, O(1) extra memory)
-export function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  // Edge checks – return null if n is out of range
-  if (n <= 0) return null
-
-  let fast: ListNode<T> | null = head
-  let slow: ListNode<T> | null = head
-
-  // Move `fast` n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null              // n > length
-    fast = fast.next
+  for (const value of arr) {
+    if (count === 0) {
+      candidate = value;
+      count = 1;
+    } else {
+      count += (value === candidate) ? 1 : -1;
+    }
   }
 
-  // Move both until `fast` hits the end
-  while (fast) {
-    fast = fast.next
-    slow = slow!.next
+  // 2️⃣ Optional second pass (remove if you know the input always contains a majority)
+  if (candidate !== undefined) {
+    const actual = arr.filter(v => v === candidate).length;
+    if (actual > arr.length / 2) {
+      return candidate;
+    }
   }
 
-  // `slow` is now the nth from the end
-  return slow
+  return undefined; // No majority element
 }
-const list = fromArray([10, 20, 30, 40, 50])
-console.log(nthFromEnd(list, 1)?.val) // 50   (last)
-console.log(nthFromEnd(list, 3)?.val) // 30   (3rd from the end)
-console.log(nthFromEnd(list, 6))       // null  (n > length)
+const nums = [2, 2, 1, 1, 2, 2, 2];
+
+const major = majorityElement(nums); // -> 2
+console.log(major); // 2
