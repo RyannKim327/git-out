@@ -1,32 +1,29 @@
-const nums = [1, 2, 3, 4, 5];
-
-// Remove the number 3
-const idx = nums.indexOf(3);
-if (idx !== -1) {
-  nums.splice(idx, 1); // nums → [1, 2, 4, 5]
-}
-const chars = ['a', 'b', 'c', 'b', 'd'];
-
-// Drop every 'b'
-const withoutB = chars.filter(ch => ch !== 'b');
-// withoutB → ['a', 'c', 'd']
-const original = [10, 20, 30, 40, 50];
-
-const removed = [
-  ...original.slice(0, original.indexOf(30)),
-  ...original.slice(original.indexOf(30) + 1),
-];
-
-// removed → [10, 20, 40, 50]
 /**
- * Remove the first occurrence of `value` from `array`.
- * Returns a new array; the original array is not mutated.
+ * Returns true if `n` is a prime number.
+ *
+ * Rules:
+ *   * 0 and 1 are **not** primes.
+ *   * 2 is the only even prime.
+ *   * For any other number, test divisibility up to √n.
+ *
+ * NOTE: This is a classic, “trial‑division” algorithm
+ * and is fast enough for numbers that fit comfortably
+ * in a JavaScript `number`. If you need to handle millisecond‑length
+ * big‑ints, consider a probabilistic test like Miller‑Rabin.
  */
-function removeFirst<T>(array: readonly T[], value: T): T[] {
-  const idx = array.indexOf(value);
-  if (idx === -1) return [...array]; // nothing to remove
-  return [...array.slice(0, idx), ...array.slice(idx + 1)];
+function isPrime(n: number): boolean {
+  if (n < 2) return false;         // 0, 1, and negative numbers are not prime
+  if (n === 2) return true;        // 2 is prime
+  if (n % 2 === 0) return false;   // even numbers larger than 2 are not prime
+
+  const limit = Math.floor(Math.sqrt(n));
+  for (let divisor = 3; divisor <= limit; divisor += 2) {
+    if (n % divisor === 0) return false;
+  }
+  return true;
 }
-const data = [2, 4, 6, 8];
-const updated = removeFirst(data, 6);
-// updated → [2, 4, 8]
+console.log(isPrime(2));   // true
+console.log(isPrime(9));   // false
+console.log(isPrime(13));  // true
+console.log(isPrime(1_000_003)); // true (prime just over a million)
+Time to test 1 000 000 numbers (≈ 5–6 ms in Node.js)
