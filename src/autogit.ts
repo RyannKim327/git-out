@@ -1,59 +1,48 @@
-/**
- * Fibonacci search for a sorted array of numbers.
- * @param arr  - The sorted array (ascending).
- * @param target - The value to locate.
- * @returns The index of target in `arr`, or -1 if not found.
- */
-function fibSearch(arr: number[], target: number): number {
-  const n = arr.length;
-
-  /* ------- 1. Build a Fibonacci sequence long enough ---- */
-  // fibMm2 = fib(m‑2), fibMm1 = fib(m‑1), fibM   = fib(m)
-  let fibMm2 = 0; // (m-2)'th Fibonacci number
-  let fibMm1 = 1; // (m-1)'th Fibonacci number
-  let fibM   = fibMm2 + fibMm1; // m'th Fibonacci
-
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM   = fibMm2 + fibMm1;
-  }
-
-  /* ------- 2. Mark the boundary of the eliminated range ------- */
-  // The offset is the index of the last removed element
-  let offset = -1;
-
-  /* ------- 3. While there are elements to investigate ----------- */
-  while (fibM > 1) {
-    // Check if fibMm2 is a valid index
-    const i = Math.min(offset + fibMm2, n - 1);
-
-    if (arr[i] === target) {
-      return i; // Found!
-    }
-
-    /* ----- Move the three Fibonacci variables down one step ----- */
-    if (arr[i] < target) {
-      fibM   = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i;
-    } else {
-      fibM   = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
-    }
-  }
-
-  /* ------- 4. Compare the last element in the range --------------- */
-  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
-    return offset + 1;
-  }
-
-  return -1; // Not found
+// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
+//      This shape is common in interview‑style code.
+interface TreeNode {
+  val: number;         // node’s payload
+  left?: TreeNode | null;   // left child (optional)
+  right?: TreeNode | null;  // right child (optional)
 }
 
-/* ---- Quick demo ---- */
-const sorted = [3, 5, 8, 12, 19, 27, 34, 42, 56, 73, 91];
-console.log(fibSearch(sorted, 27)); // → 5
-console.log(fibSearch(sorted, 7));  // → -1
+// 2️⃣  Recursive summation – easiest to read and to understand.
+//      Depth‑first, natural for a tree.
+function sumTreeRecursive(root: TreeNode | null): number {
+  if (!root) return 0;                      // base case: empty subtree is 0
+  const leftSum = sumTreeRecursive(root.left);
+  const rightSum = sumTreeRecursive(root.right);
+  return root.val + leftSum + rightSum;      // combine the results
+}
+
+// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
+//      where recursion might hit the call‑stack limit.
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let total = 0;
+  const stack: TreeNode[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.val;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
+  }
+  return total;
+}
+
+// 4️⃣  Sample tree for quick sanity check
+//           5
+//          / \
+//         3   7
+//        / \   \
+//       2   4   8
+
+const sampleRoot: TreeNode = {
+  val: 5,
+  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
+  right: { val: 7, right: { val: 8 } },
+};
+
+console.log(sumTreeRecursive(sampleRoot)); // → 33
+console.log(sumTreeIterative(sampleRoot)); // → 33
