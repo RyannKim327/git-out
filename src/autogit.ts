@@ -1,20 +1,37 @@
-function removeVowels(input: string): string {
-  // Vowels (both lower‑ and upper‑case) – feel free to add accented ones if you need
-  const vowels = /[aeiouAEIOU]/g;
-  return input.replace(vowels, '');
-}
-function removeVowels(input: string): string {
-  const result: string[] = [];
+/**
+ * Normalises a string for anagram comparison:
+ *  – removes whitespace
+ *  – drops non‑alphanumeric chars
+ *  – lower‑cases everything
+ *  – sorts the remaining characters
+ */
+const normalise = (s: string): string =>
+  s
+    .replace(/[^a-z0-9]/gi, '')   // keep letters & digits only
+    .toLowerCase()
+    .split('')
+    .sort()
+    .join('');
 
-  for (const char of input) {
-    if (!/[aeiouAEIOU]/.test(char)) {
-      result.push(char);
+export const areAnagrams = (a: string, b: string): boolean =>
+  normalise(a) === normalise(b);
+console.log(areAnagrams('listen', 'silent'));   // true
+console.log(areAnagrams('Triangle', 'Integral')); // true
+console.log(areAnagrams('hello', 'world'));    // false
+export const areAnagramsMap = (a: string, b: string): boolean => {
+  const buildFreq = (s: string) => {
+    const freq: Record<string, number> = {};
+    for (const ch of s.replace(/[^a-z0-9]/gi, '').toLowerCase()) {
+      freq[ch] = (freq[ch] ?? 0) + 1;
     }
-  }
+    return freq;
+  };
 
-  return result.join('');
-}
-const vowels = /[aeiouAEIOUÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝŸàáâãäåæçèéêëìíîïðñòóôõöøùúûüýÿ]/gu;
-const vowels = /\p{Script=Latin}\p{L}\b{vowel}/u; // not a real pattern – just an example
-const demo = "Hello World! 123";
-console.log(removeVowels(demo)); // "Hll Wrld! 123"
+  const freqA = buildFreq(a);
+  const freqB = buildFreq(b);
+
+  const keys = Object.keys(freqA);
+  if (keys.length !== Object.keys(freqB).length) return false;
+
+  return keys.every(k => freqA[k] === freqB[k]);
+};
