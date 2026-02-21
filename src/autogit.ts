@@ -1,60 +1,54 @@
-function buildLps(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let len = 0;          // length of the previous longest prefix suffix
-  let i = 1;            // we start from the second character
-
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      // Mismatch after len matches
-      if (len !== 0) {
-        // Try the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
-}
 /**
- * Returns an array of starting indices where `pattern` occurs in `text`.
- * If no match, returns an empty array.
+ * Build the bad‑character shift table for the pattern.
+ * The table maps a character code to the distance we can safely skip
+ * when that character is found in the text.
  */
-export function kmpSearch(text: string, pattern: string): number[] {
-  const lps = buildLps(pattern);
-  const results: number[] = [];
+function buildShiftTable(pattern: string): Int32Array {
+  const m = pattern.length;
+  const shift = new Int32Array(256);       // ASCII table size
+  shift.fill(m);                          // default shift = pattern length
 
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++; j++;
-      if (j === pattern.length) {
-        // Match found at position i - j
-        results.push(i - j);
-        // Prepare for the next possible match
-        j = lps[j - 1];
-      }
-    } else {
-      if (j !== 0) {
-        // Mismatch after j matches
-        j = lps[j - 1];
-      } else {
-        // Mismatch at the start
-        i++;
-      }
-    }
+  // Populate the table for every character except the last one.
+  // The last character is handled by the searches’ failure condition.
+  for (let i = 0; i < m - 1; i++) {
+    shift[pattern.charCodeAt(i)] = m - 1 - i;
   }
-
-  return results;
+  return shift;
 }
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
 
-console.log(kmpSearch(text, pattern)); // [10]
+/**
+ * Boyer‑Moore‑Horspool string search.
+ * @param text The string to search in.
+ * @param pattern The string to find.
+ * @returns The index of the first occurrence, or -1 if not found.
+ */
+export function boyerMooreHorspool(text: string, pattern: string): number {
+  const n = text.length;
+  const m = pattern.length;
+
+  if (m === 0) return 0;          // empty pattern matches at start
+  if (m > n) return -1;           // longer pattern than text → impossible
+
+  const shift = buildShiftTable(pattern);
+
+  let i = m - 1;                  // index in text aligned with last pattern char
+  while (i < n) {
+    let j = 0;                    // offset from last pattern char
+    while (j < m && pattern[m - 1 - j] === text[i - j]) {
+      j++;
+    }
+
+    if (j === m) {                // all characters matched
+      return i - m + 1;           // return starting index
+    }
+
+    // Shift by the value in the table for the mismatching text character
+    const nextChar = text.charCodeAt(i);
+    i += Math.max(shift[nextChar], 1);   // never shift by 0
+  }
+  return -1;                      // not found
+}
+const txt = "abcxabcdabxabcdabcdabcy";
+const pat = "abcdabcy";
+
+console.log(boyerMooreHorspool(txt, pat));  // → 15
