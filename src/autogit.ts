@@ -1,54 +1,48 @@
 /**
- * Build the bad‑character shift table for the pattern.
- * The table maps a character code to the distance we can safely skip
- * when that character is found in the text.
+ * Return the maximum sum sub‑array (Kadane) along with its start & end indices.
+ *
+ * @param nums  Array of numbers – can contain positives, zeros and negatives.
+ * @returns     Object with `maxSum`, `start`, `end` (inclusive).
  */
-function buildShiftTable(pattern: string): Int32Array {
-  const m = pattern.length;
-  const shift = new Int32Array(256);       // ASCII table size
-  shift.fill(m);                          // default shift = pattern length
+export function maxSubarrayWithIndices(nums: number[]): {
+  maxSum: number;
+  start: number;
+  end: number;
+} {
+  if (nums.length === 0) throw new Error("Input array must contain at least one element");
 
-  // Populate the table for every character except the last one.
-  // The last character is handled by the searches’ failure condition.
-  for (let i = 0; i < m - 1; i++) {
-    shift[pattern.charCodeAt(i)] = m - 1 - i;
-  }
-  return shift;
-}
+  let bestSum = nums[0];
+  let currentSum = nums[0];
 
-/**
- * Boyer‑Moore‑Horspool string search.
- * @param text The string to search in.
- * @param pattern The string to find.
- * @returns The index of the first occurrence, or -1 if not found.
- */
-export function boyerMooreHorspool(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
+  // These track the best indices we’ve seen
+  let bestStart = 0;
+  let bestEnd = 0;
 
-  if (m === 0) return 0;          // empty pattern matches at start
-  if (m > n) return -1;           // longer pattern than text → impossible
+  // Temporary indices for the sub‑array we are currently extending
+  let tempStart = 0;
 
-  const shift = buildShiftTable(pattern);
+  for (let i = 1; i < nums.length; i++) {
+    const num = nums[i];
 
-  let i = m - 1;                  // index in text aligned with last pattern char
-  while (i < n) {
-    let j = 0;                    // offset from last pattern char
-    while (j < m && pattern[m - 1 - j] === text[i - j]) {
-      j++;
+    // Decide whether to extend the current sub‑array or start fresh at i
+    if (currentSum + num < num) {
+      currentSum = num;
+      tempStart = i;
+    } else {
+      currentSum += num;
     }
 
-    if (j === m) {                // all characters matched
-      return i - m + 1;           // return starting index
+    // Update the best found so far
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
     }
-
-    // Shift by the value in the table for the mismatching text character
-    const nextChar = text.charCodeAt(i);
-    i += Math.max(shift[nextChar], 1);   // never shift by 0
   }
-  return -1;                      // not found
-}
-const txt = "abcxabcdabxabcdabcdabcy";
-const pat = "abcdabcy";
 
-console.log(boyerMooreHorspool(txt, pat));  // → 15
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+}
+const arr = [4, -1, 2, 1, -5, 4];
+const result = maxSubarrayWithIndices(arr);
+console.log(result); // { maxSum: 6, start: 0, end: 3 }
+// Sub‑array: [4, -1, 2, 1] → sum 6
