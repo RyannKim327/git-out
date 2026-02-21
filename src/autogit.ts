@@ -1,21 +1,23 @@
-/**
- * Returns the mean (average) of an array of numbers.
- * If the array is empty, it throws an error; you can change that behavior if you prefer.
- */
-function mean(nums: number[]): number {
-  if (nums.length === 0) {
-    throw new Error("Cannot compute the mean of an empty array");
-  }
+const numbers: number[] = [34, 7, 23, 32, 5, 62];
 
-  const sum = nums.reduce((acc, v) => acc + v, 0);
-  return sum / nums.length;
-}
-const values = [4, 8, 15, 16, 23, 42];
-console.log(mean(values)); // 18.833333333333332
-function meanWhenPossible(nums: number[]): number {
-  if (nums.length === 0) {
-    return NaN;
+// 1️⃣ Basic MDN‑style numeric sort
+const sorted = numbers.slice().sort((a, b) => a - b);
+console.log(sorted); // [5, 7, 23, 32, 34, 62]
+[34, 7, 23, 32, 5, 62].sort(); // [23, 32, 34, 5, 62, 7]
+const descending = numbers.slice().sort((a, b) => b - a);
+console.log(descending); // [62, 34, 32, 23, 7, 5]
+function insertionSort(arr: number[]): number[] {
+  const res = arr.slice();
+  for (let i = 1; i < res.length; i++) {
+    let key = res[i];
+    let j = i - 1;
+    while (j >= 0 && res[j] > key) {
+      res[j + 1] = res[j];
+      j--;
+    }
+    res[j + 1] = key;
   }
-  return nums.reduce((acc, v) => acc + v, 0) / nums.length;
+  return res;
 }
-console.assert(mean([2, 4, 6]) === 4, "The mean should be 4");
+
+console.log(insertionSort(numbers)); // same sorted output
