@@ -1,33 +1,45 @@
-// random-axios-example.ts
-import axios, { AxiosResponse } from "axios";
+/**
+ * A classic LIFO stack that stores items in an array.
+ * @template T The type of the values stored inside the stack.
+ */
+export class Stack<T> {
+  /** The underlying array that holds the stack's data. */
+  private data: T[] = [];
 
-interface PostSummary {
-  id: number;
-  title: string;
-}
+  /** Adds an element to the top of the stack. */
+  push(item: T): void {
+    this.data.push(item);
+  }
 
-async function fetchPostSummaries(
-  limit: number = 5,
-  page: number = 1
-): Promise<PostSummary[]> {
-  const url = "https://jsonplaceholder.typicode.com/posts";
-  const params = { _limit: limit, _page: page };
+  /**
+   * Removes and returns the element at the top of the stack.
+   * Returns undefined if the stack is empty.
+   */
+  pop(): T | undefined {
+    return this.data.pop();
+  }
 
-  // Axios can be typed at the request level:
-  const response: AxiosResponse<PostSummary[]> = await axios.get(url, { params });
+  /** Peeks at the element on the top without removing it. */
+  peek(): T | undefined {
+    return this.data[this.data.length - 1];
+  }
 
-  // We trust the API returns the expected shape, but we still slice the fields we care about.
-  return response.data.map(({ id, title }) => ({ id, title }));
-}
+  /** Returns the number of elements in the stack. */
+  get size(): number {
+    return this.data.length;
+  }
 
-async function main() {
-  try {
-    const summaries = await fetchPostSummaries();
-    console.log("Fetched post summaries:", summaries);
-  } catch (err) {
-    // @ts-ignore – quick error log for demonstration
-    console.error("Something went wrong:", err?.message ?? err);
+  /** Returns true when the stack has nothing inside. */
+  get isEmpty(): boolean {
+    return this.data.length === 0;
   }
 }
+const stack = new Stack<number>();
 
-main();
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size);   // 2
