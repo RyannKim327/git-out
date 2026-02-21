@@ -1,45 +1,45 @@
-// 1️⃣  Node definition
-interface TreeNode<T = unknown> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
-}
+/**
+ * A classic LIFO stack that stores items in an array.
+ * @template T The type of the values stored inside the stack.
+ */
+export class Stack<T> {
+  /** The underlying array that holds the stack's data. */
+  private data: T[] = [];
 
-// 2️⃣  Recursive leaf counter
-function countLeaves<T>(node?: TreeNode<T>): number {
-  // Base case: empty sub‑tree
-  if (!node) return 0;
-
-  // A leaf has no children
-  const isLeaf = !node.left && !node.right;
-  if (isLeaf) return 1;
-
-  // Recurse on the two sub‑trees
-  return countLeaves(node.left) + countLeaves(node.right);
-}
-
-// 3️⃣  Example usage
-const tree: TreeNode<number> = {
-  value: 1,
-  left: { value: 2, right: { value: 4 } },
-  right: { value: 3, left: { value: 5 } }
-};
-
-console.log(countLeaves(tree)); // → 3
-function countLeavesIterative<T>(root: TreeNode<T>): number {
-  if (!root) return 0;
-
-  let stack: TreeNode<T>[] = [root];
-  let leafCount = 0;
-
-  while (stack.length) {
-    const node = stack.pop()!; // guaranteed defined
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
-    }
+  /** Adds an element to the top of the stack. */
+  push(item: T): void {
+    this.data.push(item);
   }
-  return leafCount;
+
+  /**
+   * Removes and returns the element at the top of the stack.
+   * Returns undefined if the stack is empty.
+   */
+  pop(): T | undefined {
+    return this.data.pop();
+  }
+
+  /** Peeks at the element on the top without removing it. */
+  peek(): T | undefined {
+    return this.data[this.data.length - 1];
+  }
+
+  /** Returns the number of elements in the stack. */
+  get size(): number {
+    return this.data.length;
+  }
+
+  /** Returns true when the stack has nothing inside. */
+  get isEmpty(): boolean {
+    return this.data.length === 0;
+  }
 }
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size);   // 2
