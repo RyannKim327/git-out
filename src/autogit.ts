@@ -1,54 +1,21 @@
 /**
- * Build the bad‑character shift table for the pattern.
- * The table maps a character code to the distance we can safely skip
- * when that character is found in the text.
+ * Factorial using recursion.
+ * Works for ordinary numbers up to 20 (safe integer range).
+ * If you need bigger results, use BigInt and the overload below.
  */
-function buildShiftTable(pattern: string): Int32Array {
-  const m = pattern.length;
-  const shift = new Int32Array(256);       // ASCII table size
-  shift.fill(m);                          // default shift = pattern length
-
-  // Populate the table for every character except the last one.
-  // The last character is handled by the searches’ failure condition.
-  for (let i = 0; i < m - 1; i++) {
-    shift[pattern.charCodeAt(i)] = m - 1 - i;
-  }
-  return shift;
+function factorial(n: number): number {
+  if (n < 0) throw new Error("Negative values are not allowed");
+  if (n <= 1) return 1;          // base case
+  return n * factorial(n - 1);   // recursive step
 }
 
 /**
- * Boyer‑Moore‑Horspool string search.
- * @param text The string to search in.
- * @param pattern The string to find.
- * @returns The index of the first occurrence, or -1 if not found.
+ * A BigInt version for arbitrary‑size factorials.
  */
-export function boyerMooreHorspool(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
-
-  if (m === 0) return 0;          // empty pattern matches at start
-  if (m > n) return -1;           // longer pattern than text → impossible
-
-  const shift = buildShiftTable(pattern);
-
-  let i = m - 1;                  // index in text aligned with last pattern char
-  while (i < n) {
-    let j = 0;                    // offset from last pattern char
-    while (j < m && pattern[m - 1 - j] === text[i - j]) {
-      j++;
-    }
-
-    if (j === m) {                // all characters matched
-      return i - m + 1;           // return starting index
-    }
-
-    // Shift by the value in the table for the mismatching text character
-    const nextChar = text.charCodeAt(i);
-    i += Math.max(shift[nextChar], 1);   // never shift by 0
-  }
-  return -1;                      // not found
+function factorialBigInt(n: bigint): bigint {
+  if (n < 0n) throw new Error("Negative values are not allowed");
+  if (n <= 1n) return 1n;
+  return n * factorialBigInt(n - 1n);
 }
-const txt = "abcxabcdabxabcdabcdabcy";
-const pat = "abcdabcy";
-
-console.log(boyerMooreHorspool(txt, pat));  // → 15
+console.log(factorial(5));          // 120
+console.log(factorialBigInt(25n));  // 15511210043330985984000000n
