@@ -1,37 +1,54 @@
 /**
- * Normalises a string for anagram comparison:
- *  – removes whitespace
- *  – drops non‑alphanumeric chars
- *  – lower‑cases everything
- *  – sorts the remaining characters
+ * Recursively searches for `target` in a sorted numeric array.
+ *
+ * @param arr    The sorted array to search.
+ * @param target The value we’re looking for.
+ * @param low    The lower bound index for the current search window.
+ * @param high   The upper bound index for the current search window.
+ * @returns The index of `target` in `arr`, or -1 if it’s absent.
  */
-const normalise = (s: string): string =>
-  s
-    .replace(/[^a-z0-9]/gi, '')   // keep letters & digits only
-    .toLowerCase()
-    .split('')
-    .sort()
-    .join('');
+function binarySearchRec(
+  arr: number[],
+  target: number,
+  low: number = 0,
+  high: number = arr.length - 1
+): number {
+  // Base case: window collapsed → not found.
+  if (low > high) return -1;
 
-export const areAnagrams = (a: string, b: string): boolean =>
-  normalise(a) === normalise(b);
-console.log(areAnagrams('listen', 'silent'));   // true
-console.log(areAnagrams('Triangle', 'Integral')); // true
-console.log(areAnagrams('hello', 'world'));    // false
-export const areAnagramsMap = (a: string, b: string): boolean => {
-  const buildFreq = (s: string) => {
-    const freq: Record<string, number> = {};
-    for (const ch of s.replace(/[^a-z0-9]/gi, '').toLowerCase()) {
-      freq[ch] = (freq[ch] ?? 0) + 1;
-    }
-    return freq;
-  };
+  const mid = Math.floor((low + high) / 2);
+  const midVal = arr[mid];
 
-  const freqA = buildFreq(a);
-  const freqB = buildFreq(b);
+  if (midVal === target) return mid;           // Found!
+  if (midVal < target)
+    return binarySearchRec(arr, target, mid + 1, high); // Search right half
+  else
+    return binarySearchRec(arr, target, low, mid - 1);  // Search left half
+}
+const sorted = [1, 4, 7, 9, 12, 18, 25];
 
-  const keys = Object.keys(freqA);
-  if (keys.length !== Object.keys(freqB).length) return false;
+console.log(binarySearchRec(sorted, 9));  // → 3
+console.log(binarySearchRec(sorted, 5));  // → -1 (not present)
+function binarySearchRecGeneric<T>(
+  arr: T[],
+  target: T,
+  compare: (a: T, b: T) => number,  // Returns <0, 0, >0
+  low = 0,
+  high = arr.length - 1
+): number {
+  if (low > high) return -1;
 
-  return keys.every(k => freqA[k] === freqB[k]);
-};
+  const mid = Math.floor((low + high) / 2);
+  const cmp = compare(arr[mid], target);
+
+  if (cmp === 0) return mid;
+  if (cmp < 0)   return binarySearchRecGeneric(arr, target, compare, mid + 1, high);
+  return binarySearchRecGeneric(arr, target, compare, low, mid - 1);
+}
+const names = ['Alice', 'Bob', 'Charlie', 'Diana'];
+const idx = binarySearchRecGeneric(
+  names,
+  'Charlie',
+  (a, b) => a.localeCompare(b)   // Comparator
+);
+console.log(idx); // → 2
