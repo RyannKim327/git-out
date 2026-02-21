@@ -1,13 +1,24 @@
-const original = "Hello world! How are you?";
-const withoutSpaces = original.replace(/ /g, ""); // "Helloworld!Howareyou?"
-const original = "Hello \tworld!\u00A0How\nare you?"; // contains tab, non‑breaking space, newline
-const withoutAnyWhitespace = original.replace(/\s+/gu, "");
-// "Helloworld!Howareyou?"
-function stripAllWhitespace(str: string): string {
-  return str.replace(/\s+/gu, "");
+function factorialRec(n: number): number {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  if (n <= 1) return 1;           // base case: 0! = 1, 1! = 1
+  return n * factorialRec(n - 1);
 }
-
-// Usage
-const clean = stripAllWhitespace("  Foo Bar\nBaz  ");
-console.log(clean); // "FooBarBaz"
-const cleaned = original.replace(/\s+/g, " ");  // collapse to single space
+function factorialIter(n: number): number {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
+}
+function factorialBig(n: bigint): bigint {
+  if (n < 0n) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1n;
+  for (let i = 2n; i <= n; i++) {
+    result *= i;
+  }
+  return result;
+}
+console.log(factorialIter(5));        // 120
+console.log(factorialRec(5));         // 120
+console.log(factorialBig(20n));       // 2432902008176640000n
