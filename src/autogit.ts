@@ -1,33 +1,20 @@
-// random-axios-example.ts
-import axios, { AxiosResponse } from "axios";
+// factorial.ts
+import * as readline from 'node:readline';
+import { stdin as input, stdout as output } from 'node:process';
 
-interface PostSummary {
-  id: number;
-  title: string;
+const rl = readline.createInterface({ input, output });
+
+function factorial(n: number): bigint {
+  if (n < 0) throw new Error('Negative numbers aren’t supported');
+  return n <= 1 ? BigInt(1) : BigInt(n) * factorial(n - 1);
 }
 
-async function fetchPostSummaries(
-  limit: number = 5,
-  page: number = 1
-): Promise<PostSummary[]> {
-  const url = "https://jsonplaceholder.typicode.com/posts";
-  const params = { _limit: limit, _page: page };
-
-  // Axios can be typed at the request level:
-  const response: AxiosResponse<PostSummary[]> = await axios.get(url, { params });
-
-  // We trust the API returns the expected shape, but we still slice the fields we care about.
-  return response.data.map(({ id, title }) => ({ id, title }));
-}
-
-async function main() {
-  try {
-    const summaries = await fetchPostSummaries();
-    console.log("Fetched post summaries:", summaries);
-  } catch (err) {
-    // @ts-ignore – quick error log for demonstration
-    console.error("Something went wrong:", err?.message ?? err);
+rl.question('Enter a non‑negative integer: ', (answer) => {
+  const num = Number(answer.trim());
+  if (!Number.isInteger(num) || num < 0) {
+    console.log('That’s not a valid non‑negative integer.');
+  } else {
+    console.log(`Factorial of ${num} is ${factorial(num).toString()}`);
   }
-}
-
-main();
+  rl.close();
+});
