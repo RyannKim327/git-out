@@ -1,36 +1,14 @@
-const original = [1, 2, 3, 2, 4, 1, 5];
+// Remove *every* whitespace (spaces, tabs, newlines, etc.)
+const clean = str.replace(/\s+/g, '');   // <-- compressed string
 
-// Method 1 – quick & crumb‑free
-const withoutDups = [...new Set(original)];
-console.log(withoutDups); // [1, 2, 3, 4, 5]
+// If you only want to trim the ends:
+const trimmed = str.trim();              // <-- removes leading/trailing whitespace
 
-// Method 2 – If you prefer a pure function that you can re‑use
-function uniq<T>(arr: T[]): T[] {
-  return [...new Set(arr)];
-}
+// If you want middle‑spaces only (keeping a single space between words):
+const condensed = str.replace(/\s+/g, ' ');
+const original = '  Hello   world \t this\nis  a test  ';
+const stripped = original.replace(/\s+/g, '');
+// stripped === 'Helloworldthisisatest'
 
-const uniqueColors = uniq(['red', 'green', 'red', 'blue']);
-function uniqBy<T, K>(arr: T[], keyFn: (item: T) => K): T[] {
-  const seen = new Set<K>();
-  const result: T[] = [];
-
-  for (const item of arr) {
-    const key = keyFn(item);
-    if (!seen.has(key)) {
-      seen.add(key);
-      result.push(item);
-    }
-  }
-  return result;
-}
-
-// Example: removing duplicate users by id
-const users = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 1, name: 'Alicia' },
-];
-
-const uniqueUsers = uniqBy(users, u => u.id);
-console.log(uniqueUsers);
-// [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
+console.log(stripped);
+const stripped = original.split(/\s+/).join(''); // same result
