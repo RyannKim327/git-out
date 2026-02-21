@@ -1,78 +1,68 @@
-// AndroidAsyncDemo.ts
-import { AndroidApplication, AndroidActivityEventData } from "@nativescript/core";
-import * as http from "http";
-
-export class AndroidAsyncDemo {
-    private activity: android.app.Activity;
-
-    constructor() {
-        const eventData = <AndroidActivityEventData>androidApplication.currentContext.getActivity();
-        this.activity = eventData.activity;
-    }
-
-    public startDemo() {
-        // URL you care about
-        const url = "https://api.github.com/users/nativescript";
-
-        // Create an instance of the AsyncTask wrapper
-        const task = new HttpGetAsyncTask(this.activity, url);
-        task.execute();
-    }
+// -------------------------------------------
+// Node definition
+// -------------------------------------------
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
-// --------------------------------------------
-//  AsyncTask wrapper – looks a bit like Java
-// --------------------------------------------
-class HttpGetAsyncTask extends java.lang.Object implements android.os.AsyncTask<string, void, string> {
-
-    private activity: android.app.Activity;
-    private url: string;
-    private resultView: android.widget.TextView;
-
-    constructor(activity: android.app.Activity, url: string) {
-        super();
-        this.activity = activity;
-        this.url = url;
-        this.resultView = new android.widget.TextView(activity);
-        this.resultView.setLayoutParams(
-            new android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        );
-        this.activity.runOnUiThread(() => {
-            const root = this.activity.findViewById(android.R.id.content);
-            if (root instanceof android.widget.LinearLayout) {
-                root.addView(this.resultView);
-            }
-        });
-    }
-
-    // @Override
-    public doInBackground(...params: string[]): string {
-        try {
-            // Using Node's http wrapper that works in NativeScript
-            const response = http.getSync(this.url);
-            return response.content.toString();
-        } catch (err) {
-            return `Error: ${err.message || err}`;
-        }
-    }
-
-    // @Override
-    public onPostExecute(result: string): void {
-        this.resultView.setText(result);
-    }
-
-    // The following method signatures satisfy the interface contract
-    public onPreExecute(): void {}
-    public onProgressUpdate(...values: void[]): void {}
+// -------------------------------------------
+// Helper: build list from array
+// -------------------------------------------
+function arrayToLinkedList<T>(arr: T[]): ListNode<T> | null {
+  if (arr.length === 0) return null;
+  const head = new ListNode(arr[0]);
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = new ListNode(arr[i]);
+    current = current.next;
+  }
+  return head;
 }
 
-// --------------------------------------------
-//  Use it from your page or component
-// --------------------------------------------
-export function demoClicked() {
-    const demo = new AndroidAsyncDemo();
-    demo.startDemo();
+// -------------------------------------------
+// Helper: read list into array (for debugging)
+// -------------------------------------------
+function linkedListToArray<T>(head: ListNode<T> | null): T[] {
+  const arr: T[] = [];
+  let cur = head;
+  while (cur) {
+    arr.push(cur.val);
+    cur = cur.next;
+  }
+  return arr;
 }
+
+// -------------------------------------------
+// Main: find middle node
+// -------------------------------------------
+function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null;          // empty list
+
+  let slow = head;
+  let fast = head;
+
+  // Move fast two steps and slow one step until fast can't move further.
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
+  }
+
+  // For even‑length lists, this returns the first of the two middle nodes.
+  // If you prefer the second, replace `while (fast && fast.next)` and
+  // adjust the loop accordingly.
+  return slow;
+}
+
+// -------------------------------------------
+// Demo
+// -------------------------------------------
+const list = arrayToLinkedList([1, 2, 3, 4, 5]);  // odd length
+console.log(linkedListToArray(list));            // [1,2,3,4,5]
+console.log(findMiddle(list)?.val);              // 3
+
+const evenList = arrayToLinkedList([10, 20, 30, 40]);
+console.log(linkedListToArray(evenList));         // [10,20,30,40]
+console.log(findMiddle(evenList)?.val);           // 20 (first middle)
+// if you want the second middle, tweak the loop condition to:
+// while (fast && fast.next)
+// then you'll get 30.
