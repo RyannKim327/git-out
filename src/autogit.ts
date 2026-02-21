@@ -1,66 +1,92 @@
-/**
- * Checks whether the given string is a palindrome, ignoring case and
- * non‑alphanumeric characters.  It uses only constant extra space.
- *
- * @param s  The string to check.
- * @returns  true if `s` is a palindrome, false otherwise.
- */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+type Node = string;                     // or number, or any keyable type
+type Edge = [Node, Node];               // (from, to)
 
-  while (left < right) {
-    // Skip any *non*‑alphanumeric character on the left
-    while (left < right && !isAlphaNum(s.charCodeAt(left))) {
-      left++;
-    }
-    // Skip any *non*‑alphanumeric character on the right
-    while (left < right && !isAlphaNum(s.charCodeAt(right))) {
-      right--;
-    }
+interface Graph {
+    nodes: Set<Node>;
+    edges: Edge[];
+}
+function topologicalSortKahn(graph: Graph): Node[] | null {
+    const indeg = new Map<Node, number>();
+    const adj   = new Map<Node, Node[]>();
 
-    // If indices crossed after skipping, we're done
-    if (left >= right) break;
+    // init
+    graph.nodes.forEach(v => {
+        indeg.set(v, 0);
+        adj.set(v, []);
+    });
 
-    // Compare the characters case‑insensitively
-    const leftChar = s.charCodeAt(left);
-    const rightChar = s.charCodeAt(right);
-
-    if (normalize(leftChar) !== normalize(rightChar)) {
-      return false;
+    // build adjacency + indegree
+    for (const [u, v] of graph.edges) {
+        adj.get(u)!.push(v);
+        indeg.set(v, indeg.get(v)! + 1);
     }
 
-    left++;
-    right--;
-  }
+    // queue of nodes with indegree 0
+    const q: Node[] = [];
+    indeg.forEach((cnt, node) => { if (cnt === 0) q.push(node); });
 
-  return true;
-}
+    const order: Node[] = [];
 
-/**
- * Helper to test whether a character code is alphanumeric.
- */
-function isAlphaNum(code: number): boolean {
-  // 0-9
-  if (code >= 48 && code <= 57) return true;
-  // A-Z
-  if (code >= 65 && code <= 90) return true;
-  // a-z
-  if (code >= 97 && code <= 122) return true;
-  return false;
-}
+    while (q.length) {
+        const v = q.shift()!;
+        order.push(v);
 
-/**
- * Normalises a character code to be lowercase ASCII when possible.
- * For Unicode other than ASCII it simply returns the original code.
- */
-function normalize(code: number): number {
-  // Convert uppercase A-Z to lowercase a-z
-  if (code >= 65 && code <= 90) {
-    return code + 32;
-  }
-  return code;
+        for (const w of adj.get(v)!) {
+            const newCnt = indeg.get(w)! - 1;
+            indeg.set(w, newCnt);
+            if (newCnt === 0) q.push(w);
+        }
+    }
+
+    // If we processed every node → DAG; else cycle present
+    return order.length === graph.nodes.size ? order : null;
 }
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("race a car"));                      // false
-console.log(isPalindrome("   abcba   "));                     // true
+function topologicalSortDFS(graph: Graph): Node[] | null {
+    const adj = new Map<Node, Node[]>();
+    graph.nodes.forEach(v => adj.set(v, []));
+
+    for (const [u, v] of graph.edges) {
+        adj.get(u)!.push(v);
+    }
+
+    const visited = new Set<Node>();
+    const onStack = new Set<Node>();   // for cycle detection
+    const order: Node[] = [];
+
+    function dfs(v: Node): boolean {
+        visited.add(v);
+        onStack.add(v);
+
+        for (const w of adj.get(v)!) {
+            if (!visited.has(w)) {
+                if (!dfs(w)) return false;           // cycle deeper down
+            } else if (onStack.has(w)) {
+                return false;                       // back edge → cycle
+            }
+        }
+
+        onStack.delete(v);
+        order.push(v);                     // add after exploring all children
+        return true;
+    }
+
+    for (const node of graph.nodes) {
+        if (!visited.has(node) && !dfs(node))
+            return null;                   // cycle found
+    }
+
+    return order.reverse();               // reverse to get finish order
+}
+const g: Graph = {
+    nodes: new Set(['A','B','C','D','E']),
+    edges: [
+        ['A', 'B'],
+        ['A', 'C'],
+        ['B', 'D'],
+        ['C', 'D'],
+        ['D', 'E'],
+    ]
+};
+
+console.log('Kahn:', topologicalSortKahn(g)); // e.g. A,B,C,D,E or A,C,B,D,E
+console.log('DFS :', topologicalSortDFS(g));
