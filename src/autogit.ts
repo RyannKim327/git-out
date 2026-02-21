@@ -1,36 +1,45 @@
-const original = [1, 2, 3, 2, 4, 1, 5];
-
-// Method 1 – quick & crumb‑free
-const withoutDups = [...new Set(original)];
-console.log(withoutDups); // [1, 2, 3, 4, 5]
-
-// Method 2 – If you prefer a pure function that you can re‑use
-function uniq<T>(arr: T[]): T[] {
-  return [...new Set(arr)];
+// 1️⃣  Node definition
+export interface ListNode<T> {
+  val: T
+  next: ListNode<T> | null
 }
 
-const uniqueColors = uniq(['red', 'green', 'red', 'blue']);
-function uniqBy<T, K>(arr: T[], keyFn: (item: T) => K): T[] {
-  const seen = new Set<K>();
-  const result: T[] = [];
-
-  for (const item of arr) {
-    const key = keyFn(item);
-    if (!seen.has(key)) {
-      seen.add(key);
-      result.push(item);
-    }
+// 2️⃣  Utility: build list from array (for demo/testing)
+export function fromArray<T>(arr: T[]): ListNode<T> | null {
+  if (!arr.length) return null
+  let head: ListNode<T> = { val: arr[0], next: null }
+  let cur = head
+  for (let i = 1; i < arr.length; i++) {
+    cur.next = { val: arr[i], next: null }
+    cur = cur.next
   }
-  return result;
+  return head
 }
 
-// Example: removing duplicate users by id
-const users = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 1, name: 'Alicia' },
-];
+// 3️⃣  Fast‑/slow‑pointer algorithm (one pass, O(1) extra memory)
+export function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  // Edge checks – return null if n is out of range
+  if (n <= 0) return null
 
-const uniqueUsers = uniqBy(users, u => u.id);
-console.log(uniqueUsers);
-// [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
+  let fast: ListNode<T> | null = head
+  let slow: ListNode<T> | null = head
+
+  // Move `fast` n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null              // n > length
+    fast = fast.next
+  }
+
+  // Move both until `fast` hits the end
+  while (fast) {
+    fast = fast.next
+    slow = slow!.next
+  }
+
+  // `slow` is now the nth from the end
+  return slow
+}
+const list = fromArray([10, 20, 30, 40, 50])
+console.log(nthFromEnd(list, 1)?.val) // 50   (last)
+console.log(nthFromEnd(list, 3)?.val) // 30   (3rd from the end)
+console.log(nthFromEnd(list, 6))       // null  (n > length)
