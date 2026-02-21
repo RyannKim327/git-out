@@ -1,54 +1,40 @@
+const decimal = 42;          // any number you want to convert
+const binary = decimal.toString(2);  // '101010'
+console.log(binary);        // → 101010
 /**
- * Build the bad‑character shift table for the pattern.
- * The table maps a character code to the distance we can safely skip
- * when that character is found in the text.
+ * Convert a non‑negative decimal number to binary.
  */
-function buildShiftTable(pattern: string): Int32Array {
-  const m = pattern.length;
-  const shift = new Int32Array(256);       // ASCII table size
-  shift.fill(m);                          // default shift = pattern length
+function decimalToBinary(n: number): string {
+  if (n === 0) return '0';
+  let result: string = '';
+  let num = n;
 
-  // Populate the table for every character except the last one.
-  // The last character is handled by the searches’ failure condition.
-  for (let i = 0; i < m - 1; i++) {
-    shift[pattern.charCodeAt(i)] = m - 1 - i;
+  while (num > 0) {
+    // `num % 2` is the remainder (0 or 1)
+    const bit = (num % 2).toString();
+    result = bit + result;          // prepend the bit
+    num = Math.floor(num / 2);       // shift right
   }
-  return shift;
+
+  return result;
 }
 
-/**
- * Boyer‑Moore‑Horspool string search.
- * @param text The string to search in.
- * @param pattern The string to find.
- * @returns The index of the first occurrence, or -1 if not found.
- */
-export function boyerMooreHorspool(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
-
-  if (m === 0) return 0;          // empty pattern matches at start
-  if (m > n) return -1;           // longer pattern than text → impossible
-
-  const shift = buildShiftTable(pattern);
-
-  let i = m - 1;                  // index in text aligned with last pattern char
-  while (i < n) {
-    let j = 0;                    // offset from last pattern char
-    while (j < m && pattern[m - 1 - j] === text[i - j]) {
-      j++;
-    }
-
-    if (j === m) {                // all characters matched
-      return i - m + 1;           // return starting index
-    }
-
-    // Shift by the value in the table for the mismatching text character
-    const nextChar = text.charCodeAt(i);
-    i += Math.max(shift[nextChar], 1);   // never shift by 0
+// Demo
+console.log(decimalToBinary(42));   // → 101010
+console.log(decimalToBinary(0));    // → 0
+console.log(decimalToBinary(255));  // → 11111111
+function bigIntDecimalToBinary(n: bigint): string {
+  if (n === 0n) return '0';
+  let result = '';
+  let num = n;
+  while (num > 0n) {
+    result = (num & 1n).toString() + result; // `& 1n` is a fast bitwise test
+    num >>= 1n;   // shift right
   }
-  return -1;                      // not found
+  return result;
 }
-const txt = "abcxabcdabxabcdabcdabcy";
-const pat = "abcdabcy";
+// 16 decimal → 10000 binary
+console.assert(decimalToBinary(16) === '10000');
 
-console.log(boyerMooreHorspool(txt, pat));  // → 15
+// 255 decimal → 11111111 binary
+console.assert(decimalToBinary(255) === '11111111');
