@@ -1,91 +1,68 @@
-// --------------------------------------------------------
-// Random TypeScript demo:  GET data from a public API
-// --------------------------------------------------------
+/**
+ * Selection sort – O(n²) time, O(1) extra space.
+ *
+ * @param arr The array to sort.
+ * @returns The same array instance, now sorted.
+ */
+function selectionSort<T>(arr: T[]): T[] {
+  const len = arr.length;
 
-// Install the needed deps if you run this in a Node project:
-//   npm install --save node-fetch @types/node-fetch
-//
-// If you use this in a browser project, the browser's fetch is already available.
+  for (let i = 0; i < len - 1; i++) {
+    // index of the smallest element in the unsorted suffix
+    let minIdx = i;
 
-// Import the fetch shim for Node (uncomment if you run under Node)
-// import fetch from 'node-fetch';
+    // search for a smaller element
+    for (let j = i + 1; j < len; j++) {
+      if (arr[j] < arr[minIdx]) {
+        minIdx = j;
+      }
+    }
 
-// A tiny helper to pause (useful for demo pacing)
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    // swap the found minimum with the current position
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+    }
+  }
 
-// -------------------------------------------------------------------
-// 1️⃣  Define the shape of the data we expect from the API
-// -------------------------------------------------------------------
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
+  return arr;
+}
+// Numbers
+const numbers = [64, 25, 12, 22, 11];
+console.log(selectionSort(numbers)); // [11, 12, 22, 25, 64]
+
+// Strings
+const words = ['pear', 'apple', 'orange', 'banana'];
+console.log(selectionSort(words));   // ['apple', 'banana', 'orange', 'pear']
+
+// Custom objects – provide a compare function
+interface Person { name: string; age: number }
+
+function sortByAge(a: Person, b: Person) {
+  return a.age - b.age;
 }
 
-// -------------------------------------------------------------------
-// 2️⃣  A generic GET helper that returns typed JSON
-// -------------------------------------------------------------------
-async function get<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    // We simply throw an error for this demo
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+const people: Person[] = [
+  { name: 'Alice', age: 34 },
+  { name: 'Bob', age: 28 },
+  { name: 'Carol', age: 41 }
+];
+
+// Simple wrapper to let us pass a comparator
+function selectionSortWith<T>(arr: T[], compare: (a: T, b: T) => number): T[] {
+  const len = arr.length;
+  for (let i = 0; i < len - 1; i++) {
+    let minIdx = i;
+    for (let j = i + 1; j < len; j++) {
+      if (compare(arr[j], arr[minIdx]) < 0) {
+        minIdx = j;
+      }
+    }
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+    }
   }
-  const data: T = await response.json();
-  return data;
+  return arr;
 }
 
-// -------------------------------------------------------------------
-// 3️⃣  Main demo logic
-// -------------------------------------------------------------------
-async function main() {
-  const apiEndpoint = 'https://jsonplaceholder.typicode.com/posts/1';
-
-  console.log('Fetching demo post...');
-  try {
-    const post = await get<Post>(apiEndpoint);
-    console.log('✅ Post fetched:');
-    console.log(`  • ID: ${post.id}`);
-    console.log(`  • Title: ${post.title}`);
-    console.log(`  • Body snippet: "${post.body.slice(0, 60)}..."`);
-  } catch (err) {
-    console.error('⚠️  Error while fetching:', err);
-  }
-
-  // -------------------------------------------------------------------
-  // 4️⃣  Throw in a second request: list of all posts
-  // -------------------------------------------------------------------
-  console.log('\nFetching all posts (just the first 5 for brevity)...');
-  try {
-    const allPosts = await get<Post[]>('https://jsonplaceholder.typicode.com/posts');
-    console.table(allPosts.slice(0, 5));
-  } catch (err) {
-    console.error('⚠️  Error while fetching:', err);
-  }
-
-  // ---------------------------------------------------------------
-  // 5️⃣  Optional: POST a new resource (mocked, won't persist)
-  // ---------------------------------------------------------------
-  console.log('\nAttempting to POST a new post...');
-  try {
-    const newPostResponse = await fetch('https://jsonplaceholder.typicode.com/posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: 'Hello World',
-        body: 'This post was created by the demo.',
-        userId: 42
-      })
-    });
-    const created: Post = await newPostResponse.json();
-    console.log('✅ Created post (mocked):', created);
-  } catch (err) {
-    console.error('⚠️  Error while posting:', err);
-  }
-
-  // Small pause before exit (only matters if running in Node)
-  await delay(500);
-}
-
-main();
+console.log(selectionSortWith(people, sortByAge));
+// [{ name: 'Bob', age: 28 }, { name: 'Alice', age: 34 }, { name: 'Carol', age: 41 }]
