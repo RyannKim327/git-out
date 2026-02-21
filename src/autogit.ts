@@ -1,66 +1,72 @@
-/**
- * Returns the largest prime factor of a positive integer.
- * Works for Number (up to ~9e15) and for BigInt.
- */
-export function largestPrimeFactor(nInput: number | bigint): bigint {
-  // 0 or 1 have no prime factors
-  if (nInput <= 1) {
-    throw new Error('Number must be >= 2');
-  }
+function longestCommonPrefixVertical(strs: string[]): string {
+  if (!strs.length) return "";
 
-  // Work with BigInt internally for uniformity
-  let n = BigInt(nInput);
+  // The longest possible prefix is bounded by the first string’s length
+  const first = strs[0];
 
-  // Remove factors of 2
-  let lastFactor = 2n;
-  while (n % 2n === 0n) {
-    lastFactor = 2n;
-    n /= 2n;
-  }
-
-  // Try odd factors only
-  let factor = 3n;
-  const limit = sqrtBigInt(n);
-
-  while (factor <= limit) {
-    while (n % factor === 0n) {
-      lastFactor = factor;
-      n /= factor;
+  for (let i = 0; i < first.length; i++) {
+    const ch = first[i];
+    for (let j = 1; j < strs.length; j++) {
+      // If any string is shorter or the current char differs: stop
+      if (i >= strs[j].length || strs[j][i] !== ch) {
+        return first.slice(0, i);
+      }
     }
-    factor += 2n;        // skip even numbers
   }
 
-  // If anything is left, it must be a prime > sqrt(original n)
-  if (n > 1n) {
-    lastFactor = n;
-  }
-
-  return lastFactor;
+  // All strings matched the entire first string
+  return first;
+}
+console.log(longestCommonPrefixVertical(["flower", "flow", "flight"])); // "fl"
+function lcpMerge(a: string, b: string): string {
+  let i = 0;
+  const limit = Math.min(a.length, b.length);
+  while (i < limit && a[i] === b[i]) i++;
+  return a.slice(0, i);
 }
 
-/**
- * Integer square root of a BigInt (floor)
- * (Euclidean algorithm – takes few iterations even for 64‑bit numbers)
- */
-function sqrtBigInt(value: bigint): bigint {
-  if (value < 0n) throw new Error('square root of negative not supported');
-  if (value < 2n) return value;
+function longestCommonPrefixDivide(strs: string[]): string {
+  if (!strs.length) return "";
 
-  let x0 = value / 2n;
-  let x1 = (x0 + value / x0) / 2n;
+  const helper = (l: number, r: number): string => {
+    if (l === r) return strs[l];
+    const mid = Math.floor((l + r) / 2);
+    const left = helper(l, mid);
+    const right = helper(mid + 1, r);
+    return lcpMerge(left, right);
+  };
 
-  while (x1 < x0) {
-    x0 = x1;
-    x1 = (x0 + value / x0) / 2n;
-  }
-  return x0;
+  return helper(0, strs.length - 1);
 }
-console.log(largestPrimeFactor(13195));      // 29
-console.log(largestPrimeFactor(600851475143)); // 6857
+class TrieNode {
+  children = new Map<string, TrieNode>();
+  isEnd = false;
+}
 
-// Using BigInt
-console.log(
-  largestPrimeFactor(
-    BigInt("9999999967") // a 10‑digit number; you can make this much bigger
-  ).toString()
-);
+function buildTrie(strs: string[]): TrieNode {
+  const root = new TrieNode();
+  for (const s of strs) {
+    let node = root;
+    for (const ch of s) {
+      if (!node.children.has(ch)) node.children.set(ch, new TrieNode());
+      node = node.children.get(ch)!;
+    }
+    node.isEnd = true;
+  }
+  return root;
+}
+
+function longestCommonPrefixTrie(strs: string[]): string {
+  if (!strs.length) return "";
+  const root = buildTrie(strs);
+  let node = root;
+  let prefix = "";
+  while (node.children.size === 1 && !node.isEnd) {
+    const [ch, next] = node.children.entries().next().value;
+    prefix += ch;
+    node = next;
+  }
+  return prefix;
+}
+const data = ["algorithm", "algo", "algorithms", "all"]; 
+console.log(longestCommonPrefixVertical(data)); // "alg"
