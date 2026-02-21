@@ -1,72 +1,91 @@
-function longestCommonPrefixVertical(strs: string[]): string {
-  if (!strs.length) return "";
+// --------------------------------------------------------
+// Random TypeScript demo:  GET data from a public API
+// --------------------------------------------------------
 
-  // The longest possible prefix is bounded by the first string’s length
-  const first = strs[0];
+// Install the needed deps if you run this in a Node project:
+//   npm install --save node-fetch @types/node-fetch
+//
+// If you use this in a browser project, the browser's fetch is already available.
 
-  for (let i = 0; i < first.length; i++) {
-    const ch = first[i];
-    for (let j = 1; j < strs.length; j++) {
-      // If any string is shorter or the current char differs: stop
-      if (i >= strs[j].length || strs[j][i] !== ch) {
-        return first.slice(0, i);
-      }
-    }
+// Import the fetch shim for Node (uncomment if you run under Node)
+// import fetch from 'node-fetch';
+
+// A tiny helper to pause (useful for demo pacing)
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// -------------------------------------------------------------------
+// 1️⃣  Define the shape of the data we expect from the API
+// -------------------------------------------------------------------
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+}
+
+// -------------------------------------------------------------------
+// 2️⃣  A generic GET helper that returns typed JSON
+// -------------------------------------------------------------------
+async function get<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    // We simply throw an error for this demo
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+  const data: T = await response.json();
+  return data;
+}
+
+// -------------------------------------------------------------------
+// 3️⃣  Main demo logic
+// -------------------------------------------------------------------
+async function main() {
+  const apiEndpoint = 'https://jsonplaceholder.typicode.com/posts/1';
+
+  console.log('Fetching demo post...');
+  try {
+    const post = await get<Post>(apiEndpoint);
+    console.log('✅ Post fetched:');
+    console.log(`  • ID: ${post.id}`);
+    console.log(`  • Title: ${post.title}`);
+    console.log(`  • Body snippet: "${post.body.slice(0, 60)}..."`);
+  } catch (err) {
+    console.error('⚠️  Error while fetching:', err);
   }
 
-  // All strings matched the entire first string
-  return first;
-}
-console.log(longestCommonPrefixVertical(["flower", "flow", "flight"])); // "fl"
-function lcpMerge(a: string, b: string): string {
-  let i = 0;
-  const limit = Math.min(a.length, b.length);
-  while (i < limit && a[i] === b[i]) i++;
-  return a.slice(0, i);
-}
-
-function longestCommonPrefixDivide(strs: string[]): string {
-  if (!strs.length) return "";
-
-  const helper = (l: number, r: number): string => {
-    if (l === r) return strs[l];
-    const mid = Math.floor((l + r) / 2);
-    const left = helper(l, mid);
-    const right = helper(mid + 1, r);
-    return lcpMerge(left, right);
-  };
-
-  return helper(0, strs.length - 1);
-}
-class TrieNode {
-  children = new Map<string, TrieNode>();
-  isEnd = false;
-}
-
-function buildTrie(strs: string[]): TrieNode {
-  const root = new TrieNode();
-  for (const s of strs) {
-    let node = root;
-    for (const ch of s) {
-      if (!node.children.has(ch)) node.children.set(ch, new TrieNode());
-      node = node.children.get(ch)!;
-    }
-    node.isEnd = true;
+  // -------------------------------------------------------------------
+  // 4️⃣  Throw in a second request: list of all posts
+  // -------------------------------------------------------------------
+  console.log('\nFetching all posts (just the first 5 for brevity)...');
+  try {
+    const allPosts = await get<Post[]>('https://jsonplaceholder.typicode.com/posts');
+    console.table(allPosts.slice(0, 5));
+  } catch (err) {
+    console.error('⚠️  Error while fetching:', err);
   }
-  return root;
+
+  // ---------------------------------------------------------------
+  // 5️⃣  Optional: POST a new resource (mocked, won't persist)
+  // ---------------------------------------------------------------
+  console.log('\nAttempting to POST a new post...');
+  try {
+    const newPostResponse = await fetch('https://jsonplaceholder.typicode.com/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Hello World',
+        body: 'This post was created by the demo.',
+        userId: 42
+      })
+    });
+    const created: Post = await newPostResponse.json();
+    console.log('✅ Created post (mocked):', created);
+  } catch (err) {
+    console.error('⚠️  Error while posting:', err);
+  }
+
+  // Small pause before exit (only matters if running in Node)
+  await delay(500);
 }
 
-function longestCommonPrefixTrie(strs: string[]): string {
-  if (!strs.length) return "";
-  const root = buildTrie(strs);
-  let node = root;
-  let prefix = "";
-  while (node.children.size === 1 && !node.isEnd) {
-    const [ch, next] = node.children.entries().next().value;
-    prefix += ch;
-    node = next;
-  }
-  return prefix;
-}
-const data = ["algorithm", "algo", "algorithms", "all"]; 
-console.log(longestCommonPrefixVertical(data)); // "alg"
+main();
