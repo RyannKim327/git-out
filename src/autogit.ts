@@ -1,64 +1,52 @@
-/**
- * Basic node definition for a singly‑linked list.
- */
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+interface TreeNode<T = number> {
+  val: T;                // single value (you can change the type)
+  left: TreeNode<T> | null;
+  right: TreeNode<T> | null;
 }
-
-/**
- * Returns `true` if the list reads the same forwards and backwards.
- *
- * Time   : O(n) – we traverse the list a constant number of times.
- * Space  : O(1) – we only use a few pointer variables.
- */
-function isPalindrome<T>(head: ListNode<T> | null): boolean {
-  if (!head || !head.next) return true;   // empty or single‑node list
-
-  // 1. Find the middle of the list
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  // 2. Reverse the second half (starting from slow.next)
-  let prev: ListNode<T> | null = null;
-  let curr: ListNode<T> | null = slow.next;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  // `prev` is now the head of the reversed second half
-
-  // 3. Compare the first half with the reversed second half
-  let p1 = head;
-  let p2 = prev;
-  while (p2) {               // only need to go as far as the short half
-    if (p1.val !== p2.val) return false;
-    p1 = p1.next!;
-    p2 = p2.next!;
-  }
-
-  // Optional: restore the list to its original order (not required for the answer)
-  // reverse(prev) again and reattach to `slow.next`
-
-  return true;
+const root: TreeNode = {
+  val: 10,
+  left: { val: 5, left: null, right: null },
+  right: { val: 15, left: null, right: null },
+};
+function maxDepth<T>(node: TreeNode<T> | null): number {
+  if (!node) return 0;
+  const leftDepth = maxDepth(node.left);
+  const rightDepth = maxDepth(node.right);
+  return Math.max(leftDepth, rightDepth) + 1;
 }
-const build = (...vals: number[]): ListNode<number> | null => {
-  let head: ListNode<number> | null = null;
-  let tail: ListNode<number> | null = null;
-  for (const v of vals) {
-    const node = new ListNode(v);
-    if (!head) head = node;
-    else tail!.next = node;
-    tail = node;
+function maxDepthIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
+
+  const queue: TreeNode<T>[] = [root];
+  let depth = 0;
+
+  while (queue.length) {
+    const levelSize = queue.length; // nodes at current depth
+    depth++;                        // we’re going to finish this level
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift() as TreeNode<T>;
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
   }
-  return head;
+
+  return depth;
+}
+// build a quick tree
+const tree: TreeNode = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: null, right: null },
+    right: null,
+  },
+  right: {
+    val: 3,
+    left: null,
+    right: { val: 5, left: null, right: null },
+  },
 };
 
-console.log(isPalindrome(build(1, 2, 3, 2, 1))); // true
-console.log(isPalindrome(build(1, 2, 2, 1)));      // true
-console.log(isPalindrome(build(1, 2, 3, 4, 5))); // false
+console.log(maxDepth(tree));      // -> 3
+console.log(maxDepthIter(tree));  // -> 3
