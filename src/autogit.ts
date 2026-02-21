@@ -1,52 +1,54 @@
-/**
- * Compare two numbers (or any types that support `<` and `>`).
- * Returns positive if a > b, negative if a < b, zero otherwise.
- */
-const compare = <T>(a: T, b: T): number => {
-  if (a > b) return 1;
-  if (a < b) return -1;
-  return 0;
-};
+// 1️⃣  Basic node interface – replace / extend it to fit your model
+export interface TreeNode<T> {
+  value: T;                 // the payload stored in the node
+  children?: TreeNode<T>[]>; // can be unset (leaf) or an empty array for a leaf
+}
 
-/**
- * Restores the max‑heap property for the sub‑array a[0 … n-1]
- * starting from index i, assuming its children already satisfy
- * the heap property.
- */
-const heapify = <T>(a: T[], n: number, i: number): void => {
-  let largest = i;
-  const left  = 2 * i + 1;
-  const right = 2 * i + 2;
+// 2️⃣  The actual algorithm
+export function depthLimitedSearch<T>(
+  root: TreeNode<T>,           // root of the tree
+  target: T,                   // value we’re looking for
+  depthLimit: number,          // how far the search may go (0 = only the root)
+  equals: (a: T, b: T) => boolean = (a, b) => a === b
+): TreeNode<T> | null {
+  if (depthLimit < 0) return null; // sanity check
 
-  if (left  < n && compare(a[left],  a[largest]) > 0) largest = left;
-  if (right < n && compare(a[right], a[largest]) > 0) largest = right;
+  // stack holds {node, depth}
+  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
+    { node: root, depth: 0 },
+  ];
 
-  if (largest !== i) {
-    [a[i], a[largest]] = [a[largest], a[i]];
-    heapify(a, n, largest);
+  while (stack.length) {
+    const { node, depth } = stack.pop()!; // pop from top of stack
+
+    // 3️⃣  Stop expanding when the depth limit is reached
+    if (depth > depthLimit) {
+      continue;
+    }
+
+    // 4️⃣  Check the current node
+    if (equals(node.value, target)) {
+      return node;
+    }
+
+    // 5️⃣  Push children (DFS) – children that are undefined are skipped
+    if (node.children) {
+      // depth + 1 because we’ll go down one edge
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        stack.push({ node: node.children[i], depth: depth + 1 });
+      }
+    }
   }
+
+  return null; // nothing found within the depth limit
+}
+const tree: TreeNode<string> = {
+  value: "A",
+  children: [
+    { value: "B", children: [{ value: "D" }, { value: "E" }] },
+    { value: "C", children: [{ value: "F" }, { value: "G" }] },
+  ],
 };
 
-/**
- * Turns an array into a max‑heap. Complexity O(n).
- */
-const buildHeap = <T>(a: T[]): void => {
-  const n = a.length;
-  // start at the last parent node
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-    heapify(a, n, i);
-  }
-};
-
-/**
- * Heap‑sort: arr is sorted in‑place.
- */
-export const heapSort = <T>(arr: T[]): void => {
-  buildHeap(arr);
-  for (let i = arr.length - 1; i > 0; i--) {
-    // move current root (max) to the end
-    [arr[0], arr[i]] = [arr[i], arr[0]];
-    // heapify the reduced heap
-    heapify(arr, i, 0);
-  }
-};
+console.log(depthLimitedSearch(tree, "F", 1)); // null (needs depth 2)
+console.log(depthLimitedSearch(tree, "F", 2)); // node with value "F"
