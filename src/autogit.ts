@@ -1,21 +1,26 @@
 /**
- * Factorial using recursion.
- * Works for ordinary numbers up to 20 (safe integer range).
- * If you need bigger results, use BigInt and the overload below.
+ * Returns true if the array is in strictly ascending order (each element ≤ the next one).
+ * Works for numbers, strings, or any type that can be compared with < / >.
  */
-function factorial(n: number): number {
-  if (n < 0) throw new Error("Negative values are not allowed");
-  if (n <= 1) return 1;          // base case
-  return n * factorial(n - 1);   // recursive step
-}
+export function isAscending<T>(arr: T[], comparator?: (a: T, b: T) => number): boolean {
+  // If the user passes a custom comparator, use it; otherwise fall back to natural order.
+  const cmp = comparator ?? ((a: T, b: T) => a < b ? -1 : a > b ? 1 : 0);
 
-/**
- * A BigInt version for arbitrary‑size factorials.
- */
-function factorialBigInt(n: bigint): bigint {
-  if (n < 0n) throw new Error("Negative values are not allowed");
-  if (n <= 1n) return 1n;
-  return n * factorialBigInt(n - 1n);
+  // Iterate until we find a pair that violates the ascending rule.
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) {
+      return false; // arr[i-1] > arr[i], not ascending
+    }
+  }
+  return true;          // All pairs passed the test
 }
-console.log(factorial(5));          // 120
-console.log(factorialBigInt(25n));  // 15511210043330985984000000n
+// Numbers (default comparator)
+console.log(isAscending([1, 2, 3, 4])); // true
+console.log(isAscending([1, 3, 2, 4])); // false
+
+// Strings (lexicographic order)
+console.log(isAscending(['apple', 'banana', 'cherry'])); // true
+
+// Custom comparison – e.g., sort by string length
+const byLength = (a: string, b: string) => a.length - b.length;
+console.log(isAscending(['a', 'bb', 'ccc'], byLength)); // true
