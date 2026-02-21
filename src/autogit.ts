@@ -1,73 +1,42 @@
+// cron-demo.ts
+import { CronJob } from 'cron';
+import * as dotenv from 'dotenv';
+
+dotenv.config(); // optional – pulls cron expression from .env
+
 /**
- * Finds the longest increasing subsequence of an array.
- *
- * @param arr Numeric array (any integers or floats, any sign).
- * @returns Object containing the LIS and its length.
+ * A simple scheduled task that
+ * • runs every minute (or whatever pattern you set)
+ * • prints a timestamp
+ * • gracefully handles potential errors
  */
-export function longestIncreasingSubsequence(arr: number[]): { seq: number[]; length: number } {
-  if (arr.length === 0) return { seq: [], length: 0 };
+const job = new CronJob(
+  // Default cron date string: every minute of every hour of every day
+  process.env.CRON_EXPRESSION || '* * * * *',
+  () => {
+    const now = new Date().toISOString();
+    console.log(`[${now}] Tick – cron job fired!`);
+  },
+  // onComplete – fires when the job finishes its last scheduled run (not used here)
+  null,
+  // start immediately
+  true,
+  // timezone – string like 'America/New_York'
+  process.env.TZ || 'UTC',
+);
 
-  // tails[i] — minimal tail of an LIS of length i+1 found so far
-  const tails: number[] = [];
-  // prevIndices[i] — index of the previous element in the LIS that ends at arr[i]
-  const prevIndices: number[] = Array(arr.length).fill(-1);
-  // indexInTails[i] — will store the index in tails where arr[i] was placed
-  const indexInTails: number[] = Array(arr.length).fill(0);
+job.on('error', (err) => {
+  console.error(`❌ Cron job encountered an error: ${err.message}`);
+});
 
-  for (let i = 0; i < arr.length; i++) {
-    const num = arr[i];
+process.once('SIGINT', () => {
+  console.log('\n🛑 Shutting down cron job gracefully...');
+  job.stop();
+  process.exit(0);
+});
 
-    // Binary search: first index in tails where tails[idx] >= num
-    let lo = 0,
-      hi = tails.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (tails[mid] < num) lo = mid + 1;
-      else hi = mid;
-    }
-
-    // lo is the length of the new subsequence minus one
-    indexInTails[i] = lo;
-    if (lo >= tails.length) tails.push(num);
-    else tails[lo] = num;
-
-    // Link to previous element of the subsequence
-    if (lo > 0) prevIndices[i] = tailsIdx[lo - 1];
-  }
-
-  // tailsIdx will hold the indices in the original array that correspond to tails[]
-  const tailsIdx: number[] = Array(tails.length);
-  const seqIdx: number[] = []; // will hold indices of LIS
-
-  // Reconstruct the sequence by walking backwards using prevIndices
-  let k = tailsIdx.length - 1;
-  let currentIdx = -1;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (indexInTails[i] === k) {
-      seqIdx.push(i); // store index
-      k--; // look for previous
-      currentIdx = i;
-    }
-  }
-  seqIdx.reverse();
-
-  const seq = seqIdx.map(idx => arr[idx]);
-
-  return { seq, length: seq.length };
-}
-export function lisLength(arr: number[]): number {
-  if (arr.length === 0) return 0;
-  const dp = Array(arr.length).fill(1);
-
-  for (let i = 1; i < arr.length; i++) {
-    for (let j = 0; j < i; j++) {
-      if (arr[i] > arr[j]) dp[i] = Math.max(dp[i], dp[j] + 1);
-    }
-  }
-  return Math.max(...dp);
-}
-const data = [10, 22, 9, 33, 21, 50, 41, 60, 80];
-const { seq, length } = longestIncreasingSubsequence(data);
-
-console.log('LIS:', seq);          // [10, 22, 33, 50, 60, 80]
-console.log('Length:', length);    // 6
+console.log(`✅ Cron job started with pattern: ${job.cronTime.source}`);
+✅ Cron job started with pattern: * * * * *
+[2026-02-15T12:00:00.000Z] Tick – cron job fired!
+[2026-02-15T12:01:00.000Z] Tick – cron job fired!
+…
