@@ -1,59 +1,51 @@
-/**
- * Fibonacci search for a sorted array of numbers.
- * @param arr  - The sorted array (ascending).
- * @param target - The value to locate.
- * @returns The index of target in `arr`, or -1 if not found.
- */
-function fibSearch(arr: number[], target: number): number {
-  const n = arr.length;
-
-  /* ------- 1. Build a Fibonacci sequence long enough ---- */
-  // fibMm2 = fib(m‑2), fibMm1 = fib(m‑1), fibM   = fib(m)
-  let fibMm2 = 0; // (m-2)'th Fibonacci number
-  let fibMm1 = 1; // (m-1)'th Fibonacci number
-  let fibM   = fibMm2 + fibMm1; // m'th Fibonacci
-
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM   = fibMm2 + fibMm1;
-  }
-
-  /* ------- 2. Mark the boundary of the eliminated range ------- */
-  // The offset is the index of the last removed element
-  let offset = -1;
-
-  /* ------- 3. While there are elements to investigate ----------- */
-  while (fibM > 1) {
-    // Check if fibMm2 is a valid index
-    const i = Math.min(offset + fibMm2, n - 1);
-
-    if (arr[i] === target) {
-      return i; // Found!
-    }
-
-    /* ----- Move the three Fibonacci variables down one step ----- */
-    if (arr[i] < target) {
-      fibM   = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i;
-    } else {
-      fibM   = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
-    }
-  }
-
-  /* ------- 4. Compare the last element in the range --------------- */
-  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
-    return offset + 1;
-  }
-
-  return -1; // Not found
+// 1️⃣ Tree node definition
+interface TreeNode {
+  val: number;          // value is irrelevant for diameter
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
 
-/* ---- Quick demo ---- */
-const sorted = [3, 5, 8, 12, 19, 27, 34, 42, 56, 73, 91];
-console.log(fibSearch(sorted, 27)); // → 5
-console.log(fibSearch(sorted, 7));  // → -1
+// 2️⃣ Main diameter function
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let diameter = 0;                 // global accumulator
+
+  function dfs(node: TreeNode | null): number {
+    if (!node) return 0;            // height of empty subtree
+
+    // Recursively find heights of left/right subtrees
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
+
+    // Path through current node (in edges)
+    const pathThrough = leftHeight + rightHeight;
+
+    // Update global diameter if this is the largest seen so far
+    diameter = Math.max(diameter, pathThrough);
+
+    // Return height from this node up to a leaf
+    return 1 + Math.max(leftHeight, rightHeight);
+  }
+
+  dfs(root);
+  return diameter;
+}
+// Example tree:
+//      1
+//     / \
+//    2   3
+//   / \
+//  4   5
+const tree: TreeNode = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: null, right: null },
+    right: { val: 5, left: null, right: null },
+  },
+  right: { val: 3, left: null, right: null },
+};
+
+console.log(diameterOfBinaryTree(tree)); // Output: 3
+// Explanation: path 4‑2‑1‑3 uses 3 edges
+console.log(diameterOfBinaryTree(null));           // 0
+console.log(diameterOfBinaryTree({ val: 42 }));    // 0
