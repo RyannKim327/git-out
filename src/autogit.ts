@@ -1,59 +1,105 @@
+// A minimal node type
+export interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
+}
 /**
- * Returns the longest common subsequence of two strings.
- *
- * @param a First string.
- * @param b Second string.
- * @returns The LCS as a string.
+ * Returns the first common reference node of two singly linked lists,
+ * or null if they do not intersect.
  */
-function longestCommonSubsequence(a: string, b: string): string {
-  const n = a.length;
-  const m = b.length;
+export function getIntersectionNode<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  // Edge‑case: if either list is empty, there can’t be an intersection
+  if (!headA || !headB) return null;
 
-  // dp[i][j] = LCS length for a[0..i-1] and b[0..j-1]
-  const dp: number[][] = Array(n + 1)
-    .fill(null)
-    .map(() => Array(m + 1).fill(0));
+  const seen = new Set<ListNode<T>>();
 
-  // Fill table
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
+  // Walk the first list, remember every node
+  let cur = headA;
+  while (cur) {
+    seen.add(cur);
+    cur = cur.next;
   }
 
-  // Back‑track to build the subsequence
-  let i = n,
-    j = m,
-    lcs = '';
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      lcs = a[i - 1] + lcs; // prepend
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;
-    } else {
-      j--;
-    }
+  // Walk the second list until we find a node that we already saw
+  cur = headB;
+  while (cur) {
+    if (seen.has(cur)) return cur;   // first intersection node
+    cur = cur.next;
   }
 
-  return lcs;
+  return null; // no intersection
 }
-console.log(longestCommonSubsequence('ABCDGH', 'AEDFHR')); // → "ADH"
-function lcsLength(a: string, b: string): number {
-  const n = a.length, m = b.length;
-  const dp = Array(n + 1).fill(0).map(() => Array(m + 1).fill(0));
+/**
+ * Returns an array of values that appear in *both* lists.
+ * Duplicates are preserved in the sense that each matched node
+ * contributes one entry to the result.
+ */
+export function getCommonValues<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): T[] {
+  const values = new Set<T>();
+  const common: T[] = [];
 
-  for (let i = 1; i <= n; i++)
-    for (let j = 1; j <= m; j++)
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1] + 1
-        : Math.max(dp[i - 1][j], dp[i][j - 1]);
+  // Record every value of the first list
+  for (let node = headA; node; node = node.next) {
+    values.add(node.val);
+  }
 
-  return dp[n][m];
+  // Walk the second list and pick out matches
+  for (let node = headB; node; node = node.next) {
+    if (values.has(node.val)) common.push(node.val);
+  }
+
+  return common;
 }
+export function getIntersectionNodeTwoPointer<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  if (!headA || !headB) return null;
+
+  let a: ListNode<T> | null = headA;
+  let b: ListNode<T> | null = headB;
+
+  // After at most (lenA + lenB) steps, they either meet or both hit null.
+  while (a !== b) {
+    a = a ? a.next : headB; // switch to the other list
+    b = b ? b.next : headA;
+  }
+
+  return a; // could be null (no intersection) or the meeting node
+}
+// Helper to build a list from an array
+function build<T>(vals: T[]): ListNode<T> | null {
+  let head: ListNode<T> | null = null;
+  let cur: ListNode<T> | null = null;
+  for (const v of vals) {
+    const node: ListNode<T> = { val: v, next: null };
+    if (!head) head = node;
+    if (cur) cur.next = node;
+    cur = node;
+  }
+  return head;
+}
+
+// Example: intersecting lists
+const shared = build([7, 8, 9]);                           // shared tail
+const a1 = build([1, 2]);                                 // first list
+const a2 = build([3, 4]);                                 // second list
+
+// Connect the tails
+let node = a1;
+while (node?.next) node = node.next;
+node.next = shared;
+
+node = a2;
+while (node?.next) node = node.next;
+node.next = shared;
+
+// Find intersection
+const inter = getIntersectionNode(a1, a2);
+console.log(inter?.val); // 7
