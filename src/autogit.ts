@@ -1,45 +1,81 @@
-// 1️⃣  Node definition
-export interface ListNode<T> {
-  val: T
-  next: ListNode<T> | null
+class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
 }
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
 
-// 2️⃣  Utility: build list from array (for demo/testing)
-export function fromArray<T>(arr: T[]): ListNode<T> | null {
-  if (!arr.length) return null
-  let head: ListNode<T> = { val: arr[0], next: null }
-  let cur = head
-  for (let i = 1; i < arr.length; i++) {
-    cur.next = { val: arr[i], next: null }
-    cur = cur.next
-  }
-  return head
+  get size() { return this._size; }
 }
+append(value: T): void {
+  const newNode = new ListNode(value);
 
-// 3️⃣  Fast‑/slow‑pointer algorithm (one pass, O(1) extra memory)
-export function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  // Edge checks – return null if n is out of range
-  if (n <= 0) return null
-
-  let fast: ListNode<T> | null = head
-  let slow: ListNode<T> | null = head
-
-  // Move `fast` n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null              // n > length
-    fast = fast.next
+  if (!this.head) {          // empty list
+    this.head = this.tail = newNode;
+  } else {
+    if (this.tail) this.tail.next = newNode;
+    this.tail = newNode;
   }
 
-  // Move both until `fast` hits the end
-  while (fast) {
-    fast = fast.next
-    slow = slow!.next
+  this._size++;
+}
+prepend(value: T): void {
+  const newNode = new ListNode(value, this.head);
+  this.head = newNode;
+
+  if (!this.tail) this.tail = newNode;
+  this._size++;
+}
+remove(index: number): T | null {
+  if (index < 0 || index >= this._size) return null;
+
+  let current = this.head;
+  let prev: ListNode<T> | null = null;
+  let i = 0;
+
+  while (current && i < index) {
+    prev = current;
+    current = current.next;
+    i++;
   }
 
-  // `slow` is now the nth from the end
-  return slow
+  if (!current) return null;
+
+  if (prev) prev.next = current.next;
+  else this.head = current.next;      // removed head
+
+  if (current === this.tail) this.tail = prev;
+  this._size--;
+  return current.value;
 }
-const list = fromArray([10, 20, 30, 40, 50])
-console.log(nthFromEnd(list, 1)?.val) // 50   (last)
-console.log(nthFromEnd(list, 3)?.val) // 30   (3rd from the end)
-console.log(nthFromEnd(list, 6))       // null  (n > length)
+find(value: T): number {
+  let current = this.head;
+  let index = 0;
+
+  while (current) {
+    if (current.value === value) return index;
+    current = current.next;
+    index++;
+  }
+  return -1;  // not found
+}
+toArray(): T[] {
+  const result: T[] = [];
+  let current = this.head;
+  while (current) {
+    result.push(current.value);
+    current = current.next;
+  }
+  return result;
+}
+const list = new LinkedList<number>();
+
+list.append(10);
+list.append(20);
+list.prepend(5);
+
+console.log(list.toArray());     // [5, 10, 20]
+console.log(list.find(10));      // 1
+console.log(list.remove(0));     // 5
+console.log(list.toArray());     // [10, 20]
