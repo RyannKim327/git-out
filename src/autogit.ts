@@ -1,132 +1,94 @@
-// ---------- Types ---------------------------------------------------------
-type Vertex = string | number // whatever sort of key you like
+type AdjacencyList = Record<string, string[]>;
 
-// an edge is directed; the weight can be positive, negative or zero
-interface Edge {
-  from: Vertex
-  to: Vertex
-  weight: number
-}
+/*
+  Example:
 
-// ---------- Graph wrapper -----------------------------------------------
-class Graph {
-  private vertices: Set<Vertex> = new Set()
-  private edges: Edge[] = []
-
-  // you can add vertices explicitly if you want; adding an edge will
-  // automatically pull its endpoints into the vertex set
-  public addVertex(v: Vertex) {
-    this.vertices.add(v)
+  {
+    A: ["B"],
+    B: ["C", "E"],
+    C: ["A", "D"],
+    D: ["C"],
+    E: ["F"],
+    F: ["E", "G"],
+    G: ["H"],
+    H: ["I", "J"],
+    I: ["H"],
+    J: ["G"],
   }
+*/
+// TarjanSCC.ts
+type AdjacencyList = Record<string, string[]>;
 
-  public addEdge(from: Vertex, to: Vertex, weight: number) {
-    this.vertices.add(from)
-    this.vertices.add(to)
-    this.edges.push({ from, to, weight })
-  }
+export function tarjanSCC(graph: AdjacencyList): string[][] {
+  let index = 0;                         // global index counter
+  const indices: Record<string, number> = {};   // vertex → index
+  const lowlinks: Record<string, number> = {};  // vertex → lowlink
+  const stack: string[] = [];
+  const onStack: Record<string, boolean> = {};
+  const sccs: string[][] = [];
 
-  public getVertices() {
-    return Array.from(this.vertices)
-  }
+  function strongConnect(v: string) {
+    // 1. Set the depth index for v to the smallest unused index
+    indices[v] = lowlinks[v] = index++;
+    stack.push(v);
+    onStack[v] = true;
 
-  public getEdges() {
-    return this.edges.slice()
-  }
-}
-
-// ---------- Bellman‑Ford algorithm ---------------------------------------
-/**
- * Returns an object containing:
- *   distances:  map from vertex to its shortest‑path distance from source
- *   previous:   map from vertex to its predecessor on that shortest path
- *
- * Throws an Error if a negative‑weight cycle is reachable from `source`.
- */
-function bellmanFord(
-  graph: Graph,
-  source: Vertex
-): { distances: Record<Vertex, number>; previous: Record<Vertex, Vertex | null> } {
-  const INF = Number.POSITIVE_INFINITY
-
-  // 1. initialise
-  const distance: Record<Vertex, number> = {}
-  const previous: Record<Vertex, Vertex | null> = {}
-
-  for (const v of graph.getVertices()) {
-    distance[v] = INF
-    previous[v] = null
-  }
-  distance[source] = 0
-
-  const edges = graph.getEdges()
-  const nvertices = graph.getVertices().length
-
-  // 2. relaxation loop (nvertices - 1) times
-  for (let i = 0; i < nvertices - 1; i++) {
-    let updated = false
-    for (const { from, to, weight } of edges) {
-      const alt = distance[from] + weight
-      if (alt < distance[to]) {
-        distance[to] = alt
-        previous[to] = from
-        updated = true
+    // 2. Consider successors of v
+    const neighbours = graph[v] ?? [];
+    for (const w of neighbours) {
+      if (indices[w] === undefined) {
+        // Successor w has not yet been visited; recurse on it
+        strongConnect(w);
+        lowlinks[v] = Math.min(lowlinks[v], lowlinks[w]);
+      } else if (onStack[w]) {
+        // Successor w is in stack → part of current SCC
+        lowlinks[v] = Math.min(lowlinks[v], indices[w]);
       }
     }
-    // early exit if nothing changed
-    if (!updated) break
-  }
 
-  // 3. check for negative‑weight cycles
-  for (const { from, to, weight } of edges) {
-    if (distance[from] + weight < distance[to]) {
-      throw new Error(
-        `Negative‑weight cycle detected: edge ${from} → ${to} (weight ${weight})`
-      )
+    // 3. If v is a root node, pop the stack and generate an SCC
+    if (lowlinks[v] === indices[v]) {
+      const component: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop() as string;
+        onStack[w] = false;
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
     }
   }
 
-  return { distances: distance, previous }
-}
-
-// ---------- Reconstruct path helper ---------------------------------------
-function reconstructPath(
-  previous: Record<Vertex, Vertex | null>,
-  source: Vertex,
-  target: Vertex
-): Vertex[] {
-  const path: Vertex[] = []
-  let v: Vertex | null = target
-
-  while (v !== null && v !== source) {
-    path.unshift(v)
-    v = previous[v]
+  // Kick off
+  for (const v of Object.keys(graph)) {
+    if (indices[v] === undefined) {
+      strongConnect(v);
+    }
   }
-  if (v !== source) {
-    // no path
-    return []
-  }
-  path.unshift(source)
-  return path
+
+  return sccs;
 }
+import { tarjanSCC } from "./TarjanSCC";
 
-// ---------- Example usage -----------------------------------------------
-const g = new Graph()
+const graph: AdjacencyList = {
+  A: ["B"],
+  B: ["C", "E"],
+  C: ["A", "D"],
+  D: ["C"],
+  E: ["F"],
+  F: ["E", "G"],
+  G: ["H"],
+  H: ["I", "J"],
+  I: ["H"],
+  J: ["G"],
+};
 
-// sample graph: 0 → 1 (4), 0 → 2 (5), 1 → 2 (-1), 2 → 3 (3), 3 → 1 (-2)
-g.addEdge(0, 1, 4)
-g.addEdge(0, 2, 5)
-g.addEdge(1, 2, -1)
-g.addEdge(2, 3, 3)
-g.addEdge(3, 1, -2)
-
-try {
-  const { distances, previous } = bellmanFord(g, 0)
-  console.log('distances:', distances)
-
-  for (const v of g.getVertices()) {
-    const path = reconstructPath(previous, 0, v)
-    console.log(`0 → ${v}  (dist=${distances[v]})  path:`, path.join(' → '))
-  }
-} catch (e) {
-  console.error(e)
-}
+const sccs = tarjanSCC(graph);
+console.log("Strongly connected components:");
+sccs.forEach((comp, idx) => {
+  console.log(`  ${idx + 1}: [${comp.join(", ")}]`);
+});
+Strongly connected components:
+  1: [A, B, C, D]
+  2: [E, F]
+  3: [G, H, I, J]
