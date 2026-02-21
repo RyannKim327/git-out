@@ -1,85 +1,52 @@
-/* A node that lives inside the queue */
-class QueueNode<T> {
-  constructor(
-    public value: T,
-    public next: QueueNode<T> | null = null
-  ) {}
+interface TreeNode<T = number> {
+  val: T;                // single value (you can change the type)
+  left: TreeNode<T> | null;
+  right: TreeNode<T> | null;
 }
-
-/* The queue itself */
-export class LinkedListQueue<T> {
-  // We keep pointers to both ends so that both enqueue
-  // (push) and dequeue (pop) stay O(1).
-  private head: QueueNode<T> | null = null; // front of the queue
-  private tail: QueueNode<T> | null = null; // rear of the queue
-  private _size = 0;
-
-  /** Insert a new value at the rear. */
-  enqueue(value: T): void {
-    const node = new QueueNode(value);
-
-    if (this.tail) {
-      // The queue already has at least one element
-      this.tail.next = node;
-      this.tail = node;
-    } else {
-      // Empty queue: head and tail become the new node
-      this.head = this.tail = node;
-    }
-
-    this._size++;
-  }
-
-  /** Remove and return the value at the front. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined; // Empty queue
-
-    const value = this.head.value;
-    this.head = this.head.next;
-
-    // If we just removed the last element, clear the tail too
-    if (!this.head) {
-      this.tail = null;
-    }
-
-    this._size--;
-    return value;
-  }
-
-  /** Peek at the front value without removing it. */
-  peek(): T | undefined {
-    return this.head ? this.head.value : undefined;
-  }
-
-  /** Number of elements currently in the queue. */
-  get size(): number {
-    return this._size;
-  }
-
-  /** Are there any elements? */
-  get isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Remove everything from the queue. */
-  clear(): void {
-    this.head = null;
-    this.tail = null;
-    this._size = 0;
-  }
+const root: TreeNode = {
+  val: 10,
+  left: { val: 5, left: null, right: null },
+  right: { val: 15, left: null, right: null },
+};
+function maxDepth<T>(node: TreeNode<T> | null): number {
+  if (!node) return 0;
+  const leftDepth = maxDepth(node.left);
+  const rightDepth = maxDepth(node.right);
+  return Math.max(leftDepth, rightDepth) + 1;
 }
-const queue = new LinkedListQueue<number>();
+function maxDepthIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
 
-queue.enqueue(1);
-queue.enqueue(2);
-queue.enqueue(3);
+  const queue: TreeNode<T>[] = [root];
+  let depth = 0;
 
-console.log(queue.peek()); // 1
-console.log(queue.dequeue()); // 1
-console.log(queue.dequeue()); // 2
-console.log(queue.size); // 1
+  while (queue.length) {
+    const levelSize = queue.length; // nodes at current depth
+    depth++;                        // we’re going to finish this level
 
-queue.enqueue(4);
-console.log(queue.dequeue()); // 3
-console.log(queue.dequeue()); // 4
-console.log(queue.isEmpty); // true
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift() as TreeNode<T>;
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
+  }
+
+  return depth;
+}
+// build a quick tree
+const tree: TreeNode = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: null, right: null },
+    right: null,
+  },
+  right: {
+    val: 3,
+    left: null,
+    right: { val: 5, left: null, right: null },
+  },
+};
+
+console.log(maxDepth(tree));      // -> 3
+console.log(maxDepthIter(tree));  // -> 3
