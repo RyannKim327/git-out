@@ -1,48 +1,78 @@
-/**
- * Return the maximum sum sub‑array (Kadane) along with its start & end indices.
- *
- * @param nums  Array of numbers – can contain positives, zeros and negatives.
- * @returns     Object with `maxSum`, `start`, `end` (inclusive).
- */
-export function maxSubarrayWithIndices(nums: number[]): {
-  maxSum: number;
-  start: number;
-  end: number;
-} {
-  if (nums.length === 0) throw new Error("Input array must contain at least one element");
+// AndroidAsyncDemo.ts
+import { AndroidApplication, AndroidActivityEventData } from "@nativescript/core";
+import * as http from "http";
 
-  let bestSum = nums[0];
-  let currentSum = nums[0];
+export class AndroidAsyncDemo {
+    private activity: android.app.Activity;
 
-  // These track the best indices we’ve seen
-  let bestStart = 0;
-  let bestEnd = 0;
-
-  // Temporary indices for the sub‑array we are currently extending
-  let tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    const num = nums[i];
-
-    // Decide whether to extend the current sub‑array or start fresh at i
-    if (currentSum + num < num) {
-      currentSum = num;
-      tempStart = i;
-    } else {
-      currentSum += num;
+    constructor() {
+        const eventData = <AndroidActivityEventData>androidApplication.currentContext.getActivity();
+        this.activity = eventData.activity;
     }
 
-    // Update the best found so far
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
-  }
+    public startDemo() {
+        // URL you care about
+        const url = "https://api.github.com/users/nativescript";
 
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+        // Create an instance of the AsyncTask wrapper
+        const task = new HttpGetAsyncTask(this.activity, url);
+        task.execute();
+    }
 }
-const arr = [4, -1, 2, 1, -5, 4];
-const result = maxSubarrayWithIndices(arr);
-console.log(result); // { maxSum: 6, start: 0, end: 3 }
-// Sub‑array: [4, -1, 2, 1] → sum 6
+
+// --------------------------------------------
+//  AsyncTask wrapper – looks a bit like Java
+// --------------------------------------------
+class HttpGetAsyncTask extends java.lang.Object implements android.os.AsyncTask<string, void, string> {
+
+    private activity: android.app.Activity;
+    private url: string;
+    private resultView: android.widget.TextView;
+
+    constructor(activity: android.app.Activity, url: string) {
+        super();
+        this.activity = activity;
+        this.url = url;
+        this.resultView = new android.widget.TextView(activity);
+        this.resultView.setLayoutParams(
+            new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        );
+        this.activity.runOnUiThread(() => {
+            const root = this.activity.findViewById(android.R.id.content);
+            if (root instanceof android.widget.LinearLayout) {
+                root.addView(this.resultView);
+            }
+        });
+    }
+
+    // @Override
+    public doInBackground(...params: string[]): string {
+        try {
+            // Using Node's http wrapper that works in NativeScript
+            const response = http.getSync(this.url);
+            return response.content.toString();
+        } catch (err) {
+            return `Error: ${err.message || err}`;
+        }
+    }
+
+    // @Override
+    public onPostExecute(result: string): void {
+        this.resultView.setText(result);
+    }
+
+    // The following method signatures satisfy the interface contract
+    public onPreExecute(): void {}
+    public onProgressUpdate(...values: void[]): void {}
+}
+
+// --------------------------------------------
+//  Use it from your page or component
+// --------------------------------------------
+export function demoClicked() {
+    const demo = new AndroidAsyncDemo();
+    demo.startDemo();
+}
