@@ -1,9 +1,33 @@
-const txt = "Hello, world!";
+// random-axios-example.ts
+import axios, { AxiosResponse } from "axios";
 
-// 1. Modern, readable
-const hasWorld = txt.includes("world");          // true
+interface PostSummary {
+  id: number;
+  title: string;
+}
 
-// 2. Works everywhere (even older browsers)
-const hasWorldOld = txt.indexOf("world") !== -1; // true
-const hasWorldCI = txt.toLowerCase().includes("world"); // true
-const hasWorldRe = /world/i.test(txt); // true
+async function fetchPostSummaries(
+  limit: number = 5,
+  page: number = 1
+): Promise<PostSummary[]> {
+  const url = "https://jsonplaceholder.typicode.com/posts";
+  const params = { _limit: limit, _page: page };
+
+  // Axios can be typed at the request level:
+  const response: AxiosResponse<PostSummary[]> = await axios.get(url, { params });
+
+  // We trust the API returns the expected shape, but we still slice the fields we care about.
+  return response.data.map(({ id, title }) => ({ id, title }));
+}
+
+async function main() {
+  try {
+    const summaries = await fetchPostSummaries();
+    console.log("Fetched post summaries:", summaries);
+  } catch (err) {
+    // @ts-ignore – quick error log for demonstration
+    console.error("Something went wrong:", err?.message ?? err);
+  }
+}
+
+main();
