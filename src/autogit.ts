@@ -1,48 +1,48 @@
-// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
-//      This shape is common in interview‑style code.
-interface TreeNode {
-  val: number;         // node’s payload
-  left?: TreeNode | null;   // left child (optional)
-  right?: TreeNode | null;  // right child (optional)
+// emailValidator.ts
+export function isEmail(str: string): boolean {
+  // RFC‑5322 allows a very wide set of characters.  For most apps a
+  // simpler “+ followed by domain” style rule is good enough.
+  // This expression is a commonly‑accepted compromise:
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  return emailRe.test(str);
 }
+export const strictEmailRe = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
+const tests: Record<string, boolean> = {
+  // pass
+  'user@example.com': true,
+  'user.name+tag@sub.domain.co.uk': true,
 
-// 2️⃣  Recursive summation – easiest to read and to understand.
-//      Depth‑first, natural for a tree.
-function sumTreeRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                      // base case: empty subtree is 0
-  const leftSum = sumTreeRecursive(root.left);
-  const rightSum = sumTreeRecursive(root.right);
-  return root.val + leftSum + rightSum;      // combine the results
-}
-
-// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
-//      where recursion might hit the call‑stack limit.
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let total = 0;
-  const stack: TreeNode[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.val;
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
-  }
-  return total;
-}
-
-// 4️⃣  Sample tree for quick sanity check
-//           5
-//          / \
-//         3   7
-//        / \   \
-//       2   4   8
-
-const sampleRoot: TreeNode = {
-  val: 5,
-  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
-  right: { val: 7, right: { val: 8 } },
+  // fail
+  'user@': false,
+  '@example.com': false,
+  'user@@example.com': false,
+  'user example@example.com': false,
+  'user@.com': false,
+  '': false,
 };
 
-console.log(sumTreeRecursive(sampleRoot)); // → 33
-console.log(sumTreeIterative(sampleRoot)); // → 33
+for (const [addr, expected] of Object.entries(tests)) {
+  const result = isEmail(addr);
+  console.assert(result === expected, `❌ ${addr}: expected ${expected}, got ${result}`);
+}
+
+console.log('All test cases passed!');
+import { useForm } from 'react-hook-form';
+
+function MyForm() {
+  const { register, handleSubmit, formState: { errors } } = useForm();
+
+  const onSubmit = data => console.log('Valid email:', data.email);
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input
+        {...register('email', { validate: isEmail })}
+        placeholder="email@example.com"
+      />
+      {errors.email && <p>Email is not valid.</p>}
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
