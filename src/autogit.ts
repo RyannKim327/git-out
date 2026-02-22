@@ -1,20 +1,23 @@
-function removeVowels(input: string): string {
-  // Vowels (both lower‑ and upper‑case) – feel free to add accented ones if you need
-  const vowels = /[aeiouAEIOU]/g;
-  return input.replace(vowels, '');
-}
-function removeVowels(input: string): string {
-  const result: string[] = [];
+const numbers: number[] = [34, 7, 23, 32, 5, 62];
 
-  for (const char of input) {
-    if (!/[aeiouAEIOU]/.test(char)) {
-      result.push(char);
+// 1️⃣ Basic MDN‑style numeric sort
+const sorted = numbers.slice().sort((a, b) => a - b);
+console.log(sorted); // [5, 7, 23, 32, 34, 62]
+[34, 7, 23, 32, 5, 62].sort(); // [23, 32, 34, 5, 62, 7]
+const descending = numbers.slice().sort((a, b) => b - a);
+console.log(descending); // [62, 34, 32, 23, 7, 5]
+function insertionSort(arr: number[]): number[] {
+  const res = arr.slice();
+  for (let i = 1; i < res.length; i++) {
+    let key = res[i];
+    let j = i - 1;
+    while (j >= 0 && res[j] > key) {
+      res[j + 1] = res[j];
+      j--;
     }
+    res[j + 1] = key;
   }
-
-  return result.join('');
+  return res;
 }
-const vowels = /[aeiouAEIOUÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝŸàáâãäåæçèéêëìíîïðñòóôõöøùúûüýÿ]/gu;
-const vowels = /\p{Script=Latin}\p{L}\b{vowel}/u; // not a real pattern – just an example
-const demo = "Hello World! 123";
-console.log(removeVowels(demo)); // "Hll Wrld! 123"
+
+console.log(insertionSort(numbers)); // same sorted output
