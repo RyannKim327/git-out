@@ -1,24 +1,24 @@
-function factorialRec(n: number): number {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  if (n <= 1) return 1;           // base case: 0! = 1, 1! = 1
-  return n * factorialRec(n - 1);
+function areaBaseHeight(base: number, height: number): number {
+  return (base * height) / 2;
 }
-function factorialIter(n: number): number {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+
+// Example
+const a = areaBaseHeight(10, 6);   // → 30
+console.log(a);
+function areaBySides(a: number, b: number, c: number): number {
+  // Check triangle inequality first (optional but nice)
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('Not a valid triangle');
   }
-  return result;
+
+  const s = (a + b + c) / 2;                // semi‑perimeter
+  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  return area;
 }
-function factorialBig(n: bigint): bigint {
-  if (n < 0n) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1n;
-  for (let i = 2n; i <= n; i++) {
-    result *= i;
-  }
-  return result;
-}
-console.log(factorialIter(5));        // 120
-console.log(factorialRec(5));         // 120
-console.log(factorialBig(20n));       // 2432902008176640000n
+
+// Example
+const b = areaBySides(5, 12, 13);   // right triangle → 30
+console.log(b);
+const area = Math.sqrt(
+  Math.max(0, s * (s - a) * (s - b) * (s - c))
+);
