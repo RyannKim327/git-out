@@ -1,48 +1,59 @@
 /**
- * Return the maximum sum sub‑array (Kadane) along with its start & end indices.
+ * Returns the longest common subsequence of two strings.
  *
- * @param nums  Array of numbers – can contain positives, zeros and negatives.
- * @returns     Object with `maxSum`, `start`, `end` (inclusive).
+ * @param a First string.
+ * @param b Second string.
+ * @returns The LCS as a string.
  */
-export function maxSubarrayWithIndices(nums: number[]): {
-  maxSum: number;
-  start: number;
-  end: number;
-} {
-  if (nums.length === 0) throw new Error("Input array must contain at least one element");
+function longestCommonSubsequence(a: string, b: string): string {
+  const n = a.length;
+  const m = b.length;
 
-  let bestSum = nums[0];
-  let currentSum = nums[0];
+  // dp[i][j] = LCS length for a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array(n + 1)
+    .fill(null)
+    .map(() => Array(m + 1).fill(0));
 
-  // These track the best indices we’ve seen
-  let bestStart = 0;
-  let bestEnd = 0;
-
-  // Temporary indices for the sub‑array we are currently extending
-  let tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    const num = nums[i];
-
-    // Decide whether to extend the current sub‑array or start fresh at i
-    if (currentSum + num < num) {
-      currentSum = num;
-      tempStart = i;
-    } else {
-      currentSum += num;
-    }
-
-    // Update the best found so far
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
+  // Fill table
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
   }
 
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+  // Back‑track to build the subsequence
+  let i = n,
+    j = m,
+    lcs = '';
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      lcs = a[i - 1] + lcs; // prepend
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;
+    } else {
+      j--;
+    }
+  }
+
+  return lcs;
 }
-const arr = [4, -1, 2, 1, -5, 4];
-const result = maxSubarrayWithIndices(arr);
-console.log(result); // { maxSum: 6, start: 0, end: 3 }
-// Sub‑array: [4, -1, 2, 1] → sum 6
+console.log(longestCommonSubsequence('ABCDGH', 'AEDFHR')); // → "ADH"
+function lcsLength(a: string, b: string): number {
+  const n = a.length, m = b.length;
+  const dp = Array(n + 1).fill(0).map(() => Array(m + 1).fill(0));
+
+  for (let i = 1; i <= n; i++)
+    for (let j = 1; j <= m; j++)
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1] + 1
+        : Math.max(dp[i - 1][j], dp[i][j - 1]);
+
+  return dp[n][m];
+}
