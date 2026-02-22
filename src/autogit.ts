@@ -1,93 +1,59 @@
-// `Graph<T>` maps a node of type T to an array of its adjacent nodes.
-type Graph<T> = Map<T, T[]>;
-
-// A helper to add an undirected edge
-function addEdge<T>(g: Graph<T>, a: T, b: T) {
-  g.set(a, (g.get(a) ?? []).concat(b));
-  g.set(b, (g.get(b) ?? []).concat(a));
-}
 /**
- * Performs a breadth‑first search on an unweighted graph.
- *
- * @param start   the starting node
- * @param graph   the graph to search
- * @param visitor a callback that receives each visited node in the order
- *                it’s discovered. The callback can return `false` to stop
- *                the search early.
+ * Fibonacci search for a sorted array of numbers.
+ * @param arr  - The sorted array (ascending).
+ * @param target - The value to locate.
+ * @returns The index of target in `arr`, or -1 if not found.
  */
-function bfs<T>(
-  start: T,
-  graph: Graph<T>,
-  visitor: (node: T) => void | boolean
-): void {
-  const visited = new Set<T>();
-  const queue = [start];
+function fibSearch(arr: number[], target: number): number {
+  const n = arr.length;
 
-  visited.add(start);
+  /* ------- 1. Build a Fibonacci sequence long enough ---- */
+  // fibMm2 = fib(m‑2), fibMm1 = fib(m‑1), fibM   = fib(m)
+  let fibMm2 = 0; // (m-2)'th Fibonacci number
+  let fibMm1 = 1; // (m-1)'th Fibonacci number
+  let fibM   = fibMm2 + fibMm1; // m'th Fibonacci
 
-  while (queue.length) {
-    const node = queue.shift()!;      // Non‑null because we just tested length
-    const result = visitor(node);
-
-    // If the visitor explicitly returned false, break out early.
-    if (result === false) break;
-
-    const neighbors = graph.get(node) ?? [];
-    for (const n of neighbors) {
-      if (!visited.has(n)) {
-        visited.add(n);
-        queue.push(n);
-      }
-    }
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
   }
-}
-/**
- * Returns an array representing the shortest path from `start` to `target`
- * (inclusive), or `null` if no path exists.
- */
-function shortestPath<T>(start: T, target: T, graph: Graph<T>): T[] | null {
-  const prev = new Map<T, T | undefined>(); // child → parent
-  const visited = new Set<T>();
-  const queue: T[] = [start];
-  visited.add(start);
-  let found = false;
 
-  while (queue.length && !found) {
-    const node = queue.shift()!;
-    for (const nb of graph.get(node) ?? []) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        prev.set(nb, node);
-        if (nb === target) {
-          found = true;
-          break;
-        }
-        queue.push(nb);
-      }
+  /* ------- 2. Mark the boundary of the eliminated range ------- */
+  // The offset is the index of the last removed element
+  let offset = -1;
+
+  /* ------- 3. While there are elements to investigate ----------- */
+  while (fibM > 1) {
+    // Check if fibMm2 is a valid index
+    const i = Math.min(offset + fibMm2, n - 1);
+
+    if (arr[i] === target) {
+      return i; // Found!
+    }
+
+    /* ----- Move the three Fibonacci variables down one step ----- */
+    if (arr[i] < target) {
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else {
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
     }
   }
 
-  if (!found) return null;
-
-  // Walk backwards from target to start
-  const path = [];
-  for (let cur: T | undefined = target; cur !== undefined; cur = prev.get(cur)) {
-    path.push(cur);
+  /* ------- 4. Compare the last element in the range --------------- */
+  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
   }
-  path.reverse();
-  return path;
+
+  return -1; // Not found
 }
-const g: Graph<string> = new Map();
-addEdge(g, 'A', 'B');
-addEdge(g, 'A', 'C');
-addEdge(g, 'B', 'D');
-addEdge(g, 'C', 'D');
-addEdge(g, 'C', 'E');
 
-console.log('BFS visiting order:', () => {
-  const order: string[] = [];
-  bfs('A', g, node => { order.push(node); });
-  return order;
-}()); // ['A', 'B', 'C', 'D', 'E']
-
-console.log('Shortest path A → D:', shortestPath('A', 'D', g)); // ['A', 'B', 'D']
+/* ---- Quick demo ---- */
+const sorted = [3, 5, 8, 12, 19, 27, 34, 42, 56, 73, 91];
+console.log(fibSearch(sorted, 27)); // → 5
+console.log(fibSearch(sorted, 7));  // → -1
