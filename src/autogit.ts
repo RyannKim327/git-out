@@ -1,24 +1,28 @@
-function factorialRec(n: number): number {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  if (n <= 1) return 1;           // base case: 0! = 1, 1! = 1
-  return n * factorialRec(n - 1);
+function countChar(str: string, ch: string): number {
+  // split on the target char and subtract 1 (the split always creates one
+  // more slice than the number of matches)
+  return str.split(ch).length - 1;
 }
-function factorialIter(n: number): number {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+
+// Example
+console.log(countChar("hello world", "l")); // 3
+function countChar(str: string, ch: string): number {
+  const matches = str.match(new RegExp(ch, "g")); // global search
+  // If no matches, null is returned; length is 0 in that case
+  return matches ? matches.length : 0;
+}
+
+// Example
+console.log(countChar("hello world", "l")); // 3
+const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const regex = new RegExp(escaped, "g");
+function countChar(str: string, ch: string): number {
+  let count = 0;
+  for (const c of str) {
+    if (c === ch) count++;
   }
-  return result;
+  return count;
 }
-function factorialBig(n: bigint): bigint {
-  if (n < 0n) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1n;
-  for (let i = 2n; i <= n; i++) {
-    result *= i;
-  }
-  return result;
-}
-console.log(factorialIter(5));        // 120
-console.log(factorialRec(5));         // 120
-console.log(factorialBig(20n));       // 2432902008176640000n
+
+// Example
+console.log(countChar("hello world", "l")); // 3
