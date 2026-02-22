@@ -1,60 +1,32 @@
-function buildLps(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let len = 0;          // length of the previous longest prefix suffix
-  let i = 1;            // we start from the second character
+const nums = [1, 2, 3, 4, 5];
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      // Mismatch after len matches
-      if (len !== 0) {
-        // Try the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
+// Remove the number 3
+const idx = nums.indexOf(3);
+if (idx !== -1) {
+  nums.splice(idx, 1); // nums → [1, 2, 4, 5]
 }
+const chars = ['a', 'b', 'c', 'b', 'd'];
+
+// Drop every 'b'
+const withoutB = chars.filter(ch => ch !== 'b');
+// withoutB → ['a', 'c', 'd']
+const original = [10, 20, 30, 40, 50];
+
+const removed = [
+  ...original.slice(0, original.indexOf(30)),
+  ...original.slice(original.indexOf(30) + 1),
+];
+
+// removed → [10, 20, 40, 50]
 /**
- * Returns an array of starting indices where `pattern` occurs in `text`.
- * If no match, returns an empty array.
+ * Remove the first occurrence of `value` from `array`.
+ * Returns a new array; the original array is not mutated.
  */
-export function kmpSearch(text: string, pattern: string): number[] {
-  const lps = buildLps(pattern);
-  const results: number[] = [];
-
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++; j++;
-      if (j === pattern.length) {
-        // Match found at position i - j
-        results.push(i - j);
-        // Prepare for the next possible match
-        j = lps[j - 1];
-      }
-    } else {
-      if (j !== 0) {
-        // Mismatch after j matches
-        j = lps[j - 1];
-      } else {
-        // Mismatch at the start
-        i++;
-      }
-    }
-  }
-
-  return results;
+function removeFirst<T>(array: readonly T[], value: T): T[] {
+  const idx = array.indexOf(value);
+  if (idx === -1) return [...array]; // nothing to remove
+  return [...array.slice(0, idx), ...array.slice(idx + 1)];
 }
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
-
-console.log(kmpSearch(text, pattern)); // [10]
+const data = [2, 4, 6, 8];
+const updated = removeFirst(data, 6);
+// updated → [2, 4, 8]
