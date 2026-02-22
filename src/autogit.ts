@@ -1,72 +1,52 @@
 /**
- * Returns the k-th smallest element of an array.
- *
- * @param arr   Array of numbers (or any comparable type).
- * @param k     1‑based index of the element to find.
- * @returns     The k‑th smallest value.
- *
- * @throws      If k is out of bounds.
+ * Compare two numbers (or any types that support `<` and `>`).
+ * Returns positive if a > b, negative if a < b, zero otherwise.
  */
-export function kthSmallest<T>(arr: T[], k: number): T {
-  if (k < 1 || k > arr.length) {
-    throw new Error(`k=${k} is not in the valid range 1..${arr.length}`);
-  }
-
-  // Work on a copy so the original array stays untouched.
-  const a = arr.slice();
-  let left = 0;
-  let right = a.length - 1;
-
-  while (true) {
-    // Pick a pivot – here we just pick the middle element.
-    const pivotIndex = left + Math.floor((right - left) / 2);
-    const pivot = a[pivotIndex];
-
-    // Partition step: elements < pivot go left, >= pivot go right.
-    const pivotNewIndex = partition(a, left, right, pivot);
-
-    if (pivotNewIndex === k - 1) {      // Found the k‑th smallest
-      return a[pivotNewIndex];
-    } else if (pivotNewIndex > k - 1) {  // Look in the left partition
-      right = pivotNewIndex - 1;
-    } else {                            // Look in the right partition
-      left = pivotNewIndex + 1;
-    }
-  }
-}
+const compare = <T>(a: T, b: T): number => {
+  if (a > b) return 1;
+  if (a < b) return -1;
+  return 0;
+};
 
 /**
- * Standard Lomuto partition scheme.
- *
- * @param a array to partition
- * @param lo left boundary
- * @param hi right boundary
- * @param pivotValue value the array should be partitioned around
- * @returns new index of the pivot after partition
+ * Restores the max‑heap property for the sub‑array a[0 … n-1]
+ * starting from index i, assuming its children already satisfy
+ * the heap property.
  */
-function partition<T>(a: T[], lo: number, hi: number, pivotValue: T): number {
-  // Move pivot to the end for convenience.
-  let pivotIndex = lo + (Math.random() * (hi - lo + 1)) | 0; // random pivot for stability
-  [a[pivotIndex], a[hi]] = [a[hi], a[pivotIndex]];
+const heapify = <T>(a: T[], n: number, i: number): void => {
+  let largest = i;
+  const left  = 2 * i + 1;
+  const right = 2 * i + 2;
 
-  const pivot = a[hi];
-  let storeIndex = lo;                         // index of the first element >= pivot
+  if (left  < n && compare(a[left],  a[largest]) > 0) largest = left;
+  if (right < n && compare(a[right], a[largest]) > 0) largest = right;
 
-  for (let i = lo; i < hi; i++) {
-    if (a[i] < pivot) {
-      [a[i], a[storeIndex]] = [a[storeIndex], a[i]];
-      storeIndex++;
-    }
+  if (largest !== i) {
+    [a[i], a[largest]] = [a[largest], a[i]];
+    heapify(a, n, largest);
   }
+};
 
-  // place pivot after the last smaller element
-  [a[storeIndex], a[hi]] = [a[hi], a[storeIndex]];
-  return storeIndex;
-}
-export function kthSmallestSort<T>(arr: T[], k: number): T {
-  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
-  return [...arr].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))[k - 1];
-}
-const nums = [7, 11, 5, 3, 9, 2];
-console.log(kthSmallest(nums, 3)); // 5
-console.log(kthSmallestSort(nums, 3)); // 5
+/**
+ * Turns an array into a max‑heap. Complexity O(n).
+ */
+const buildHeap = <T>(a: T[]): void => {
+  const n = a.length;
+  // start at the last parent node
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+    heapify(a, n, i);
+  }
+};
+
+/**
+ * Heap‑sort: arr is sorted in‑place.
+ */
+export const heapSort = <T>(arr: T[]): void => {
+  buildHeap(arr);
+  for (let i = arr.length - 1; i > 0; i--) {
+    // move current root (max) to the end
+    [arr[0], arr[i]] = [arr[i], arr[0]];
+    // heapify the reduced heap
+    heapify(arr, i, 0);
+  }
+};
