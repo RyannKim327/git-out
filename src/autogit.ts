@@ -1,61 +1,48 @@
 /**
- * Radix sort for 32‑bit unsigned integers.
- * Sorts in place and returns the sorted array for convenience.
+ * Random‑pivot quicksort for an array of numbers.
+ *
+ * @param arr – the array to sort (it will be sorted in place)
+ * @returns the sorted array (same reference as the input)
  */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length <= 1) return arr;          // already sorted
+function randomQuickSort(arr: number[]): number[] {
+  // Internal helper that works on a sub‑range [left, right]
+  function sort(left: number, right: number) {
+    if (left >= right) return;           // 0 or 1 element – nothing to do
 
-  // Pick a base that gives a nice trade‑off between passes and bucket size.
-  // Base 256 (8 bits per pass) lets us use a Uint32Array for buckets.
-  const base = 256;
-  const maxBit = 32; // 32 bits for a signed int, but we only store positives here
+    // Pick a random pivot index between left and right (inclusive)
+    const pivotIndex = Math.floor(Math.random() * (right - left + 1)) + left;
+    const pivotValue = arr[pivotIndex];
 
-  // Number of passes, one per byte in this case.
-  const passes = maxBit / 8;
+    // Move the pivot to the rightmost position for the partition step
+    [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
 
-  // Temporary array for intermediate results.
-  const temp = new Array<number>(arr.length);
-
-  // Helper: counts how many numbers have a certain digit value at a given byte.
-  const count = new Uint32Array(base);
-
-  for (let pass = 0; pass < passes; ++pass) {
-    // Reset counts.
-    count.fill(0);
-
-    // Count occurrences of each bucket value.
-    const shift = pass * 8;
-    for (const n of arr) {
-      const bucket = (n >> shift) & 0xff;
-      count[bucket]++;
+    // Standard Lomuto partition
+    let storeIndex = left;
+    for (let i = left; i < right; i++) {
+      if (arr[i] < pivotValue) {
+        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
+        storeIndex++;
+      }
     }
 
-    // Compute cumulative counts => start indices in `temp`.
-    const startIdx = new Uint32Array(base);
-    let sum = 0;
-    for (let i = 0; i < base; ++i) {
-      startIdx[i] = sum;
-      sum += count[i];
-    }
+    // Put the pivot back in its final place
+    [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
 
-    // Place numbers into the correct bucket order.
-    for (const n of arr) {
-      const bucket = (n >> shift) & 0xff;
-      const idx = startIdx[bucket]++;
-      temp[idx] = n;
-    }
-
-    // Swap the source and destination for the next round.
-    [arr, temp] = [temp, arr];
+    // Recurse on the two partitions
+    sort(left, storeIndex - 1);
+    sort(storeIndex + 1, right);
   }
 
-  // After an even number of passes `arr` points to original input; the sorted
-  // result ends up in `arr`. If passes were odd, the sorted array will be in `temp`.
-  // Ensure we return the sorted array reference.
-  return arr.length === sizeOfInput ? arr : temp;
+  sort(0, arr.length - 1);
+  return arr;
 }
 
-/** Quick tests */
-const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log('unsorted:', unsorted);
-console.log('sorted:  ', radixSort([...unsorted])); // use spread to leave original intact
+/*--------------------------------------------
+  Example usage
+--------------------------------------------*/
+
+const data = [34, 7, 23, 32, 5, 62];
+console.log('Unsorted:', data);
+
+const sorted = randomQuickSort([...data]); // copy to avoid mutating the original
+console.log('Sorted  :', sorted);
