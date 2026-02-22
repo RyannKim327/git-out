@@ -1,39 +1,36 @@
-class ListNode<T> {
-    constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-    if (!head) return false;
+/**
+ * Performs an in‑place Shell sort on `arr`.
+ * The generic makes it usable for numbers, strings, or any comparable type.
+ */
+export function shellSort<T>(arr: T[], compare?: (a: T, b: T) => boolean) {
+  const len = arr.length;
+  // Default comparison: ascending numeric/string order
+  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any));
 
-    let slow: ListNode<T> | null = head;
-    let fast: ListNode<T> | null = head;
+  // Start with a gap (Hibbard’s sequence is simple and effective)
+  // gap = 1, 3, 7, 15, …  (2^k‑1)
+  let gap = 1;
+  while (gap < len) gap = 2 * gap + 1; // find largest Hibbard gap <= len
 
-    while (fast !== null && fast.next !== null) {
-        slow = slow!.next;           // move 1 step
-        fast = fast.next.next;       // move 2 steps
-
-        if (slow === fast) {         // same node → cycle
-            return true;
-        }
+  // Descend gaps until 1
+  while (gap >= 1) {
+    // Insertion sort on elements gap apart
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+      // shift earlier gap‑sorted elements that are greater
+      while (j >= gap && cmp(temp, arr[j - gap])) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
     }
-    return false;                    // fast reached end → no cycle
+    // Next gap
+    gap = Math.floor((gap - 1) / 2); // inverse of 2*gap + 1
+  }
 }
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-    const visited = new Set<ListNode<T>>();
-
-    let current: ListNode<T> | null = head;
-    while (current !== null) {
-        if (visited.has(current)) return true; // already seen
-        visited.add(current);
-        current = current.next;
-    }
-    return false;
-}
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b;  // 1 → 2 → 3
-b.next = c;
-c.next = a;  // cycle back to 1
-
-console.log(hasCycle(a));        // → true
-console.log(hasCycleWithSet(a)); // → true
+const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
+shellSort(numbers);
+console.log(numbers); // [1, 2, 3, 8, 12, 23, 34, 54]
+const desc = (a: number, b: number) => a > b;
+shellSort(numbers, desc);
