@@ -1,19 +1,37 @@
-// Original
-const original = "   \tHello, \nWorld!   ";
+// random-joke.ts
+import fetch from 'node-fetch';          // npm i node-fetch@2
+import { Console } from 'console';
 
-// 1. trim (only outer whitespace)
-const trimmed = original.trim();
-console.log(trimmed); // "Hello, \nWorld!"
-
-// 2. remove all literal spaces only
-const noSpaces = original.replace(/ /g, "");
-console.log(noSpaces); // "\tHello,\nWorld!   "
-
-// 3. strip *every* whitespace
-const totallyClean = original.replace(/\s+/g, "");
-console.log(totallyClean); // "Hello,World!"
-function removeAllWhitespace(s: string): string {
-  return s.replace(/\s+/g, "");
+interface Joke {
+  id: number;
+  type: string;
+  setup: string;
+  punchline: string;
 }
 
-const cleaned = removeAllWhitespace("  a b\tc\n "); // "abc"
+async function fetchRandomJoke(): Promise<Joke> {
+  const res = await fetch('https://official-joke-api.appspot.com/random_joke');
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} – failed to fetch joke`);
+  }
+
+  const data: Joke = await res.json();
+
+  return data;
+}
+
+async function run() {
+  try {
+    const joke = await fetchRandomJoke();
+
+    console.log('😂 Here’s something to make you smile!');
+    console.log(`  ${joke.setup}`);
+    console.log(`   – ${joke.punchline}`);
+  } catch (err: any) {
+    console.error('Oops! Something went wrong:');
+    console.error(err.message ?? err);
+  }
+}
+
+run();
