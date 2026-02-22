@@ -1,42 +1,48 @@
 /**
- * Counting sort for non‑negative integers in a known range.
+ * Return the maximum sum sub‑array (Kadane) along with its start & end indices.
  *
- * @param data Array of numbers to sort.
- * @param min  Minimum possible value in `data` (inclusive).
- * @param max  Maximum possible value in `data` (inclusive).
- * @returns    A new array containing the sorted numbers.
- *
- * Example:
- *   const unsorted = [3, 0, 2, 3, 1];
- *   const sorted = countingSort(unsorted, 0, 3); // [0,1,2,3,3]
+ * @param nums  Array of numbers – can contain positives, zeros and negatives.
+ * @returns     Object with `maxSum`, `start`, `end` (inclusive).
  */
-export function countingSort(data: number[], min: number, max: number): number[] {
-  if (data.length === 0) return [];
+export function maxSubarrayWithIndices(nums: number[]): {
+  maxSum: number;
+  start: number;
+  end: number;
+} {
+  if (nums.length === 0) throw new Error("Input array must contain at least one element");
 
-  const range = max - min + 1;
+  let bestSum = nums[0];
+  let currentSum = nums[0];
 
-  // 1. Count occurrences
-  const count: number[] = new Array(range).fill(0);
-  for (const v of data) {
-    count[v - min]++;
+  // These track the best indices we’ve seen
+  let bestStart = 0;
+  let bestEnd = 0;
+
+  // Temporary indices for the sub‑array we are currently extending
+  let tempStart = 0;
+
+  for (let i = 1; i < nums.length; i++) {
+    const num = nums[i];
+
+    // Decide whether to extend the current sub‑array or start fresh at i
+    if (currentSum + num < num) {
+      currentSum = num;
+      tempStart = i;
+    } else {
+      currentSum += num;
+    }
+
+    // Update the best found so far
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
+    }
   }
 
-  // 2. Accumulate counts – now each count element holds the index
-  //    where that value should be placed in the output array.
-  for (let i = 1; i < range; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 3. Build the output array in a stable manner.
-  const output: number[] = new Array(data.length);
-  for (let i = data.length - 1; i >= 0; i--) {
-    const v = data[i];
-    const idx = --count[v - min];          // <-- decrement first
-    output[idx] = v;
-  }
-
-  return output;
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-const unsorted = [5, 3, 0, 2, 5, 1];
-const sorted = countingSort(unsorted, 0, 5);
-console.log(sorted); // [0, 1, 2, 3, 5, 5]
+const arr = [4, -1, 2, 1, -5, 4];
+const result = maxSubarrayWithIndices(arr);
+console.log(result); // { maxSum: 6, start: 0, end: 3 }
+// Sub‑array: [4, -1, 2, 1] → sum 6
