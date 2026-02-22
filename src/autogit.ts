@@ -1,94 +1,39 @@
-type AdjacencyList = Record<string, string[]>;
-
-/*
-  Example:
-
-  {
-    A: ["B"],
-    B: ["C", "E"],
-    C: ["A", "D"],
-    D: ["C"],
-    E: ["F"],
-    F: ["E", "G"],
-    G: ["H"],
-    H: ["I", "J"],
-    I: ["H"],
-    J: ["G"],
-  }
-*/
-// TarjanSCC.ts
-type AdjacencyList = Record<string, string[]>;
-
-export function tarjanSCC(graph: AdjacencyList): string[][] {
-  let index = 0;                         // global index counter
-  const indices: Record<string, number> = {};   // vertex → index
-  const lowlinks: Record<string, number> = {};  // vertex → lowlink
-  const stack: string[] = [];
-  const onStack: Record<string, boolean> = {};
-  const sccs: string[][] = [];
-
-  function strongConnect(v: string) {
-    // 1. Set the depth index for v to the smallest unused index
-    indices[v] = lowlinks[v] = index++;
-    stack.push(v);
-    onStack[v] = true;
-
-    // 2. Consider successors of v
-    const neighbours = graph[v] ?? [];
-    for (const w of neighbours) {
-      if (indices[w] === undefined) {
-        // Successor w has not yet been visited; recurse on it
-        strongConnect(w);
-        lowlinks[v] = Math.min(lowlinks[v], lowlinks[w]);
-      } else if (onStack[w]) {
-        // Successor w is in stack → part of current SCC
-        lowlinks[v] = Math.min(lowlinks[v], indices[w]);
-      }
-    }
-
-    // 3. If v is a root node, pop the stack and generate an SCC
-    if (lowlinks[v] === indices[v]) {
-      const component: string[] = [];
-      let w: string;
-      do {
-        w = stack.pop() as string;
-        onStack[w] = false;
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
-    }
-  }
-
-  // Kick off
-  for (const v of Object.keys(graph)) {
-    if (indices[v] === undefined) {
-      strongConnect(v);
-    }
-  }
-
-  return sccs;
+class ListNode<T> {
+    constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-import { tarjanSCC } from "./TarjanSCC";
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+    if (!head) return false;
 
-const graph: AdjacencyList = {
-  A: ["B"],
-  B: ["C", "E"],
-  C: ["A", "D"],
-  D: ["C"],
-  E: ["F"],
-  F: ["E", "G"],
-  G: ["H"],
-  H: ["I", "J"],
-  I: ["H"],
-  J: ["G"],
-};
+    let slow: ListNode<T> | null = head;
+    let fast: ListNode<T> | null = head;
 
-const sccs = tarjanSCC(graph);
-console.log("Strongly connected components:");
-sccs.forEach((comp, idx) => {
-  console.log(`  ${idx + 1}: [${comp.join(", ")}]`);
-});
-Strongly connected components:
-  1: [A, B, C, D]
-  2: [E, F]
-  3: [G, H, I, J]
+    while (fast !== null && fast.next !== null) {
+        slow = slow!.next;           // move 1 step
+        fast = fast.next.next;       // move 2 steps
+
+        if (slow === fast) {         // same node → cycle
+            return true;
+        }
+    }
+    return false;                    // fast reached end → no cycle
+}
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+    const visited = new Set<ListNode<T>>();
+
+    let current: ListNode<T> | null = head;
+    while (current !== null) {
+        if (visited.has(current)) return true; // already seen
+        visited.add(current);
+        current = current.next;
+    }
+    return false;
+}
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b;  // 1 → 2 → 3
+b.next = c;
+c.next = a;  // cycle back to 1
+
+console.log(hasCycle(a));        // → true
+console.log(hasCycleWithSet(a)); // → true
