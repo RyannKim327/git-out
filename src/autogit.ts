@@ -1,40 +1,59 @@
-const decimal = 42;          // any number you want to convert
-const binary = decimal.toString(2);  // '101010'
-console.log(binary);        // → 101010
 /**
- * Convert a non‑negative decimal number to binary.
+ * Fibonacci search for a sorted array of numbers.
+ * @param arr  - The sorted array (ascending).
+ * @param target - The value to locate.
+ * @returns The index of target in `arr`, or -1 if not found.
  */
-function decimalToBinary(n: number): string {
-  if (n === 0) return '0';
-  let result: string = '';
-  let num = n;
+function fibSearch(arr: number[], target: number): number {
+  const n = arr.length;
 
-  while (num > 0) {
-    // `num % 2` is the remainder (0 or 1)
-    const bit = (num % 2).toString();
-    result = bit + result;          // prepend the bit
-    num = Math.floor(num / 2);       // shift right
+  /* ------- 1. Build a Fibonacci sequence long enough ---- */
+  // fibMm2 = fib(m‑2), fibMm1 = fib(m‑1), fibM   = fib(m)
+  let fibMm2 = 0; // (m-2)'th Fibonacci number
+  let fibMm1 = 1; // (m-1)'th Fibonacci number
+  let fibM   = fibMm2 + fibMm1; // m'th Fibonacci
+
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
   }
 
-  return result;
-}
+  /* ------- 2. Mark the boundary of the eliminated range ------- */
+  // The offset is the index of the last removed element
+  let offset = -1;
 
-// Demo
-console.log(decimalToBinary(42));   // → 101010
-console.log(decimalToBinary(0));    // → 0
-console.log(decimalToBinary(255));  // → 11111111
-function bigIntDecimalToBinary(n: bigint): string {
-  if (n === 0n) return '0';
-  let result = '';
-  let num = n;
-  while (num > 0n) {
-    result = (num & 1n).toString() + result; // `& 1n` is a fast bitwise test
-    num >>= 1n;   // shift right
+  /* ------- 3. While there are elements to investigate ----------- */
+  while (fibM > 1) {
+    // Check if fibMm2 is a valid index
+    const i = Math.min(offset + fibMm2, n - 1);
+
+    if (arr[i] === target) {
+      return i; // Found!
+    }
+
+    /* ----- Move the three Fibonacci variables down one step ----- */
+    if (arr[i] < target) {
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else {
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
+    }
   }
-  return result;
-}
-// 16 decimal → 10000 binary
-console.assert(decimalToBinary(16) === '10000');
 
-// 255 decimal → 11111111 binary
-console.assert(decimalToBinary(255) === '11111111');
+  /* ------- 4. Compare the last element in the range --------------- */
+  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
+  }
+
+  return -1; // Not found
+}
+
+/* ---- Quick demo ---- */
+const sorted = [3, 5, 8, 12, 19, 27, 34, 42, 56, 73, 91];
+console.log(fibSearch(sorted, 27)); // → 5
+console.log(fibSearch(sorted, 7));  // → -1
