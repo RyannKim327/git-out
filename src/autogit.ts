@@ -1,36 +1,45 @@
-/**
- * Performs an in‑place Shell sort on `arr`.
- * The generic makes it usable for numbers, strings, or any comparable type.
- */
-export function shellSort<T>(arr: T[], compare?: (a: T, b: T) => boolean) {
-  const len = arr.length;
-  // Default comparison: ascending numeric/string order
-  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any));
-
-  // Start with a gap (Hibbard’s sequence is simple and effective)
-  // gap = 1, 3, 7, 15, …  (2^k‑1)
-  let gap = 1;
-  while (gap < len) gap = 2 * gap + 1; // find largest Hibbard gap <= len
-
-  // Descend gaps until 1
-  while (gap >= 1) {
-    // Insertion sort on elements gap apart
-    for (let i = gap; i < len; i++) {
-      const temp = arr[i];
-      let j = i;
-      // shift earlier gap‑sorted elements that are greater
-      while (j >= gap && cmp(temp, arr[j - gap])) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
-    // Next gap
-    gap = Math.floor((gap - 1) / 2); // inverse of 2*gap + 1
-  }
+// 1️⃣  Node definition
+export interface ListNode<T> {
+  val: T
+  next: ListNode<T> | null
 }
-const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
-shellSort(numbers);
-console.log(numbers); // [1, 2, 3, 8, 12, 23, 34, 54]
-const desc = (a: number, b: number) => a > b;
-shellSort(numbers, desc);
+
+// 2️⃣  Utility: build list from array (for demo/testing)
+export function fromArray<T>(arr: T[]): ListNode<T> | null {
+  if (!arr.length) return null
+  let head: ListNode<T> = { val: arr[0], next: null }
+  let cur = head
+  for (let i = 1; i < arr.length; i++) {
+    cur.next = { val: arr[i], next: null }
+    cur = cur.next
+  }
+  return head
+}
+
+// 3️⃣  Fast‑/slow‑pointer algorithm (one pass, O(1) extra memory)
+export function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  // Edge checks – return null if n is out of range
+  if (n <= 0) return null
+
+  let fast: ListNode<T> | null = head
+  let slow: ListNode<T> | null = head
+
+  // Move `fast` n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null              // n > length
+    fast = fast.next
+  }
+
+  // Move both until `fast` hits the end
+  while (fast) {
+    fast = fast.next
+    slow = slow!.next
+  }
+
+  // `slow` is now the nth from the end
+  return slow
+}
+const list = fromArray([10, 20, 30, 40, 50])
+console.log(nthFromEnd(list, 1)?.val) // 50   (last)
+console.log(nthFromEnd(list, 3)?.val) // 30   (3rd from the end)
+console.log(nthFromEnd(list, 6))       // null  (n > length)
