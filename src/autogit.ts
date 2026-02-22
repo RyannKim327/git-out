@@ -1,27 +1,28 @@
-/**
- * Returns the second largest number in `arr`.
- * If the array has fewer than two distinct numbers, returns `undefined`.
- */
-function secondLargest(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
-
-  let first: number | null = null;
-  let second: number | null = null;
-
-  for (const x of arr) {
-    if (first === null || x > first) {
-      // New maximum found – push the old maximum down to second
-      second = first;
-      first = x;
-    } else if (x !== first && (second === null || x > second)) {
-      // Candidate for second maximum
-      second = x;
-    }
-  }
-
-  return second ?? undefined;
+function countChar(str: string, ch: string): number {
+  // split on the target char and subtract 1 (the split always creates one
+  // more slice than the number of matches)
+  return str.split(ch).length - 1;
 }
-console.log(secondLargest([1, 3, 5, 7])); // 5
-console.log(secondLargest([10, 9]));      // 9
-console.log(secondLargest([4]));          // undefined
-console.log(secondLargest([2, 2, 2]));    // undefined
+
+// Example
+console.log(countChar("hello world", "l")); // 3
+function countChar(str: string, ch: string): number {
+  const matches = str.match(new RegExp(ch, "g")); // global search
+  // If no matches, null is returned; length is 0 in that case
+  return matches ? matches.length : 0;
+}
+
+// Example
+console.log(countChar("hello world", "l")); // 3
+const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const regex = new RegExp(escaped, "g");
+function countChar(str: string, ch: string): number {
+  let count = 0;
+  for (const c of str) {
+    if (c === ch) count++;
+  }
+  return count;
+}
+
+// Example
+console.log(countChar("hello world", "l")); // 3
