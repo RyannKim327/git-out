@@ -1,59 +1,61 @@
+export interface ListNode<T> {
+  val: T;               // the payload
+  next: ListNode<T> | null; // pointer to the next node
+}
 /**
- * Fibonacci search for a sorted array of numbers.
- * @param arr  - The sorted array (ascending).
- * @param target - The value to locate.
- * @returns The index of target in `arr`, or -1 if not found.
+ * Reverses a singly linked list.
+ * @param head: the first node of the list (or null for an empty list)
+ * @returns the new head of the reversed list
  */
-function fibSearch(arr: number[], target: number): number {
-  const n = arr.length;
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;   // will become the new head
+  let curr: ListNode<T> | null = head;   // current node being processed
 
-  /* ------- 1. Build a Fibonacci sequence long enough ---- */
-  // fibMm2 = fib(m‑2), fibMm1 = fib(m‑1), fibM   = fib(m)
-  let fibMm2 = 0; // (m-2)'th Fibonacci number
-  let fibMm1 = 1; // (m-1)'th Fibonacci number
-  let fibM   = fibMm2 + fibMm1; // m'th Fibonacci
-
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM   = fibMm2 + fibMm1;
+  while (curr) {
+    const nextTemp = curr.next; // keep reference to the next node
+    curr.next = prev;           // reverse the link
+    prev = curr;                // move prev forward
+    curr = nextTemp;            // move curr forward
   }
 
-  /* ------- 2. Mark the boundary of the eliminated range ------- */
-  // The offset is the index of the last removed element
-  let offset = -1;
-
-  /* ------- 3. While there are elements to investigate ----------- */
-  while (fibM > 1) {
-    // Check if fibMm2 is a valid index
-    const i = Math.min(offset + fibMm2, n - 1);
-
-    if (arr[i] === target) {
-      return i; // Found!
-    }
-
-    /* ----- Move the three Fibonacci variables down one step ----- */
-    if (arr[i] < target) {
-      fibM   = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i;
-    } else {
-      fibM   = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
-    }
+  // At this point, prev points to the new head
+  return prev;
+}
+export function reverseListRec<T>(node: ListNode<T> | null): ListNode<T> | null {
+  if (!node || !node.next) {
+    return node; // new head (either the original head if list is 1 or 0 nodes)
   }
 
-  /* ------- 4. Compare the last element in the range --------------- */
-  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
-    return offset + 1;
+  const newHead = reverseListRec(node.next);   // recurse to the end
+  node.next.next = node;   // make the next node point back to the current one
+  node.next = null;        // sever original forward link
+  return newHead;
+}
+// Helper to build a list [1, 2, 3]
+function buildList(arr: number[]): ListNode<number> | null {
+  let head: ListNode<number> | null = null;
+  for (let i = arr.length - 1; i >= 0; i--) {
+    head = { val: arr[i], next: head };
   }
-
-  return -1; // Not found
+  return head;
 }
 
-/* ---- Quick demo ---- */
-const sorted = [3, 5, 8, 12, 19, 27, 34, 42, 56, 73, 91];
-console.log(fibSearch(sorted, 27)); // → 5
-console.log(fibSearch(sorted, 7));  // → -1
+// Helper to convert list back to array for easy viewing
+function toArray<T>(head: ListNode<T> | null): T[] {
+  const result: T[] = [];
+  let cur = head;
+  while (cur) {
+    result.push(cur.val);
+    cur = cur.next;
+  }
+  return result;
+}
+
+// Demo
+const original = buildList([1, 2, 3, 4, 5]);
+console.log('original:', toArray(original));
+
+const reversed = reverseList(original);
+console.log('reversed:', toArray(reversed));
+original: [1, 2, 3, 4, 5]
+reversed: [5, 4, 3, 2, 1]
