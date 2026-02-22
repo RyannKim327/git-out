@@ -1,42 +1,39 @@
-// cron-demo.ts
-import { CronJob } from 'cron';
-import * as dotenv from 'dotenv';
+class ListNode<T> {
+    constructor(public val: T, public next: ListNode<T> | null = null) {}
+}
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+    if (!head) return false;
 
-dotenv.config(); // optional – pulls cron expression from .env
+    let slow: ListNode<T> | null = head;
+    let fast: ListNode<T> | null = head;
 
-/**
- * A simple scheduled task that
- * • runs every minute (or whatever pattern you set)
- * • prints a timestamp
- * • gracefully handles potential errors
- */
-const job = new CronJob(
-  // Default cron date string: every minute of every hour of every day
-  process.env.CRON_EXPRESSION || '* * * * *',
-  () => {
-    const now = new Date().toISOString();
-    console.log(`[${now}] Tick – cron job fired!`);
-  },
-  // onComplete – fires when the job finishes its last scheduled run (not used here)
-  null,
-  // start immediately
-  true,
-  // timezone – string like 'America/New_York'
-  process.env.TZ || 'UTC',
-);
+    while (fast !== null && fast.next !== null) {
+        slow = slow!.next;           // move 1 step
+        fast = fast.next.next;       // move 2 steps
 
-job.on('error', (err) => {
-  console.error(`❌ Cron job encountered an error: ${err.message}`);
-});
+        if (slow === fast) {         // same node → cycle
+            return true;
+        }
+    }
+    return false;                    // fast reached end → no cycle
+}
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+    const visited = new Set<ListNode<T>>();
 
-process.once('SIGINT', () => {
-  console.log('\n🛑 Shutting down cron job gracefully...');
-  job.stop();
-  process.exit(0);
-});
+    let current: ListNode<T> | null = head;
+    while (current !== null) {
+        if (visited.has(current)) return true; // already seen
+        visited.add(current);
+        current = current.next;
+    }
+    return false;
+}
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b;  // 1 → 2 → 3
+b.next = c;
+c.next = a;  // cycle back to 1
 
-console.log(`✅ Cron job started with pattern: ${job.cronTime.source}`);
-✅ Cron job started with pattern: * * * * *
-[2026-02-15T12:00:00.000Z] Tick – cron job fired!
-[2026-02-15T12:01:00.000Z] Tick – cron job fired!
-…
+console.log(hasCycle(a));        // → true
+console.log(hasCycleWithSet(a)); // → true
