@@ -1,24 +1,29 @@
 /**
- * Return the first character in `s` that occurs exactly once.
- * If every character repeats, return null.
+ * Reverses the order of words in a string.
+ *
+ * Words are split on whitespace.  Consecutive whitespace is collapsed,
+ * but you can tweak the regex if you need to keep it intact.
+ *
+ * @param txt – The string to reverse
+ * @returns The string with words in reverse order
  */
-function firstNonRepeatingChar(s: string): string | null {
-  // 1️⃣  Count how many times each char appears.
-  const freq = new Map<string, number>();
-
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
-
-  // 2️⃣  Walk the string a second time, looking for a count of 1.
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;          // first non‑repeating character found
-    }
-  }
-
-  return null;              // no unique character
+function reverseWordOrder(txt: string): string {
+  return txt
+    .trim()                      // Strip leading/trailing gaps
+    .split(/\s+/)                // Break on any run of whitespace
+    .reverse()                   // Flip the array
+    .join(' ');                  // Stitch back together
 }
-console.log(firstNonRepeatingChar('abacabad')); // "c"
-console.log(firstNonRepeatingChar('aabbcc'));   // null
-console.log(firstNonRepeatingChar('😀😃😀😄')); // "😃"
+
+// Example usage
+const original = "Hello world, this is TypeScript.";
+const reversed = reverseWordOrder(original);
+console.log(reversed);  // "TypeScript. is this world, Hello"
+function reverseWordOrder(txt: string) {
+  const words = txt.trim().match(/\w+|\s+/g) ?? [];
+  const textOnly = words.filter(Boolean).join(' ');
+  const reversed = textOnly.split(/\s+/).reverse().join(' ');
+  // re‑insert spaces that were originally present
+  // (not shown here for brevity)
+  return reversed;
+}
