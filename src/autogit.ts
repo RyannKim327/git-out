@@ -1,81 +1,66 @@
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+/**
+ * Checks whether the given string is a palindrome, ignoring case and
+ * non‑alphanumeric characters.  It uses only constant extra space.
+ *
+ * @param s  The string to check.
+ * @returns  true if `s` is a palindrome, false otherwise.
+ */
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  get size() { return this._size; }
-}
-append(value: T): void {
-  const newNode = new ListNode(value);
+  while (left < right) {
+    // Skip any *non*‑alphanumeric character on the left
+    while (left < right && !isAlphaNum(s.charCodeAt(left))) {
+      left++;
+    }
+    // Skip any *non*‑alphanumeric character on the right
+    while (left < right && !isAlphaNum(s.charCodeAt(right))) {
+      right--;
+    }
 
-  if (!this.head) {          // empty list
-    this.head = this.tail = newNode;
-  } else {
-    if (this.tail) this.tail.next = newNode;
-    this.tail = newNode;
+    // If indices crossed after skipping, we're done
+    if (left >= right) break;
+
+    // Compare the characters case‑insensitively
+    const leftChar = s.charCodeAt(left);
+    const rightChar = s.charCodeAt(right);
+
+    if (normalize(leftChar) !== normalize(rightChar)) {
+      return false;
+    }
+
+    left++;
+    right--;
   }
 
-  this._size++;
+  return true;
 }
-prepend(value: T): void {
-  const newNode = new ListNode(value, this.head);
-  this.head = newNode;
 
-  if (!this.tail) this.tail = newNode;
-  this._size++;
+/**
+ * Helper to test whether a character code is alphanumeric.
+ */
+function isAlphaNum(code: number): boolean {
+  // 0-9
+  if (code >= 48 && code <= 57) return true;
+  // A-Z
+  if (code >= 65 && code <= 90) return true;
+  // a-z
+  if (code >= 97 && code <= 122) return true;
+  return false;
 }
-remove(index: number): T | null {
-  if (index < 0 || index >= this._size) return null;
 
-  let current = this.head;
-  let prev: ListNode<T> | null = null;
-  let i = 0;
-
-  while (current && i < index) {
-    prev = current;
-    current = current.next;
-    i++;
+/**
+ * Normalises a character code to be lowercase ASCII when possible.
+ * For Unicode other than ASCII it simply returns the original code.
+ */
+function normalize(code: number): number {
+  // Convert uppercase A-Z to lowercase a-z
+  if (code >= 65 && code <= 90) {
+    return code + 32;
   }
-
-  if (!current) return null;
-
-  if (prev) prev.next = current.next;
-  else this.head = current.next;      // removed head
-
-  if (current === this.tail) this.tail = prev;
-  this._size--;
-  return current.value;
+  return code;
 }
-find(value: T): number {
-  let current = this.head;
-  let index = 0;
-
-  while (current) {
-    if (current.value === value) return index;
-    current = current.next;
-    index++;
-  }
-  return -1;  // not found
-}
-toArray(): T[] {
-  const result: T[] = [];
-  let current = this.head;
-  while (current) {
-    result.push(current.value);
-    current = current.next;
-  }
-  return result;
-}
-const list = new LinkedList<number>();
-
-list.append(10);
-list.append(20);
-list.prepend(5);
-
-console.log(list.toArray());     // [5, 10, 20]
-console.log(list.find(10));      // 1
-console.log(list.remove(0));     // 5
-console.log(list.toArray());     // [10, 20]
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("race a car"));                      // false
+console.log(isPalindrome("   abcba   "));                     // true
