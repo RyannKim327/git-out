@@ -1,128 +1,132 @@
-type Compare<T> = (a: T, b: T) => boolean;
+// ---------- Types ---------------------------------------------------------
+type Vertex = string | number // whatever sort of key you like
 
+// an edge is directed; the weight can be positive, negative or zero
+interface Edge {
+  from: Vertex
+  to: Vertex
+  weight: number
+}
+
+// ---------- Graph wrapper -----------------------------------------------
+class Graph {
+  private vertices: Set<Vertex> = new Set()
+  private edges: Edge[] = []
+
+  // you can add vertices explicitly if you want; adding an edge will
+  // automatically pull its endpoints into the vertex set
+  public addVertex(v: Vertex) {
+    this.vertices.add(v)
+  }
+
+  public addEdge(from: Vertex, to: Vertex, weight: number) {
+    this.vertices.add(from)
+    this.vertices.add(to)
+    this.edges.push({ from, to, weight })
+  }
+
+  public getVertices() {
+    return Array.from(this.vertices)
+  }
+
+  public getEdges() {
+    return this.edges.slice()
+  }
+}
+
+// ---------- Bellman‑Ford algorithm ---------------------------------------
 /**
- * If `compare(child, parent)` is true, swap them and continue
- * until the heap property is restored.
+ * Returns an object containing:
+ *   distances:  map from vertex to its shortest‑path distance from source
+ *   previous:   map from vertex to its predecessor on that shortest path
+ *
+ * Throws an Error if a negative‑weight cycle is reachable from `source`.
  */
-function siftDown<T>(heap: T[], start: number, end: number, compare: Compare<T>) {
-  let root = start;
+function bellmanFord(
+  graph: Graph,
+  source: Vertex
+): { distances: Record<Vertex, number>; previous: Record<Vertex, Vertex | null> } {
+  const INF = Number.POSITIVE_INFINITY
 
-  while (true) {
-    const left = root * 2 + 1;
-    const right = left + 1;
-    let swap = root;
+  // 1. initialise
+  const distance: Record<Vertex, number> = {}
+  const previous: Record<Vertex, Vertex | null> = {}
 
-    if (left <= end && compare(heap[left], heap[swap])) {
-      swap = left;
+  for (const v of graph.getVertices()) {
+    distance[v] = INF
+    previous[v] = null
+  }
+  distance[source] = 0
+
+  const edges = graph.getEdges()
+  const nvertices = graph.getVertices().length
+
+  // 2. relaxation loop (nvertices - 1) times
+  for (let i = 0; i < nvertices - 1; i++) {
+    let updated = false
+    for (const { from, to, weight } of edges) {
+      const alt = distance[from] + weight
+      if (alt < distance[to]) {
+        distance[to] = alt
+        previous[to] = from
+        updated = true
+      }
     }
-    if (right <= end && compare(heap[right], heap[swap])) {
-      swap = right;
-    }
-
-    if (swap === root) break;
-
-    [heap[root], heap[swap]] = [heap[swap], heap[root]];
-    root = swap;
-  }
-}
-
-/**
- * Moves the root element down the heap until it finds the right spot.
- * Called during `remove` after we swap the last element into the root.
- */
-export function heapify<T>(heap: T[], compare: Compare<T>) {
-  const length = heap.length;
-  if (length <= 1) return;
-
-  // Start from the last non‑leaf node.
-  for (let i = Math.floor((length - 2) / 2); i >= 0; i--) {
-    siftDown(heap, i, length - 1, compare);
-  }
-}
-export class PriorityQueue<T> {
-  private heap: T[] = [];
-  private readonly compare: Compare<T>;
-
-  constructor(compare: Compare<T>) {
-    this.compare = compare;
+    // early exit if nothing changed
+    if (!updated) break
   }
 
-  get size() {
-    return this.heap.length;
-  }
-
-  /** Insert a new item, maintaining heap property */
-  push(item: T): void {
-    this.heap.push(item);
-    // bubble‑up
-    let idx = this.heap.length - 1;
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      if (!this.compare(this.heap[idx], this.heap[parentIdx])) break;
-      [this.heap[idx], this.heap[parentIdx]] = [this.heap[parentIdx], this.heap[idx]];
-      idx = parentIdx;
+  // 3. check for negative‑weight cycles
+  for (const { from, to, weight } of edges) {
+    if (distance[from] + weight < distance[to]) {
+      throw new Error(
+        `Negative‑weight cycle detected: edge ${from} → ${to} (weight ${weight})`
+      )
     }
   }
 
-  /** Return the root element (minimum) without removing it */
-  peek(): T | undefined {
-    return this.heap[0];
+  return { distances: distance, previous }
+}
+
+// ---------- Reconstruct path helper ---------------------------------------
+function reconstructPath(
+  previous: Record<Vertex, Vertex | null>,
+  source: Vertex,
+  target: Vertex
+): Vertex[] {
+  const path: Vertex[] = []
+  let v: Vertex | null = target
+
+  while (v !== null && v !== source) {
+    path.unshift(v)
+    v = previous[v]
   }
-
-  /**
-   * Remove and return the root element.
-   * The last element is moved to the root and sifted down.
-   */
-  pop(): T | undefined {
-    const length = this.heap.length;
-    if (!length) return undefined;
-    const root = this.heap[0];
-    const last = this.heap.pop()!; // last is defined because length > 0
-
-    if (length > 1) {
-      this.heap[0] = last;
-      siftDown(this.heap, 0, this.heap.length - 1, this.compare);
-    }
-
-    return root;
+  if (v !== source) {
+    // no path
+    return []
   }
+  path.unshift(source)
+  return path
+}
 
-  /** Convert the current array into a heap (in‑place) */
-  build() {
-    heapify(this.heap, this.compare);
+// ---------- Example usage -----------------------------------------------
+const g = new Graph()
+
+// sample graph: 0 → 1 (4), 0 → 2 (5), 1 → 2 (-1), 2 → 3 (3), 3 → 1 (-2)
+g.addEdge(0, 1, 4)
+g.addEdge(0, 2, 5)
+g.addEdge(1, 2, -1)
+g.addEdge(2, 3, 3)
+g.addEdge(3, 1, -2)
+
+try {
+  const { distances, previous } = bellmanFord(g, 0)
+  console.log('distances:', distances)
+
+  for (const v of g.getVertices()) {
+    const path = reconstructPath(previous, 0, v)
+    console.log(`0 → ${v}  (dist=${distances[v]})  path:`, path.join(' → '))
   }
+} catch (e) {
+  console.error(e)
 }
-// Simple numeric priority queue
-const pq = new PriorityQueue<number>((a, b) => a < b);
-
-pq.push(5);
-pq.push(2);
-pq.push(8);
-pq.push(1);
-
-console.log(pq.peek()); // 1
-while (pq.size) {
-  console.log(pq.pop()); // 1, 2, 5, 8
-}
-interface Task {
-  id: number;
-  priority: number; // smaller = higher priority
-  payload: string;
-}
-
-const taskCompare = (a: Task, b: Task) => a.priority < b.priority;
-const taskQueue = new PriorityQueue<Task>(taskCompare);
-
-taskQueue.push({ id: 1, priority: 10, payload: 'work' });
-taskQueue.push({ id: 2, priority: 3, payload: 'urgent' });
-taskQueue.push({ id: 3, priority: 7, payload: 'normal' });
-
-while (taskQueue.size) {
-  const t = taskQueue.pop()!;
-  console.log(`${t.id} (${t.priority}): ${t.payload}`);
-}
-2 (3): urgent
-3 (7): normal
-1 (10): work
-const maxComparator = (a: number, b: number) => a > b;
-const maxPQ = new PriorityQueue<number>(maxComparator);
