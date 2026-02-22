@@ -1,45 +1,52 @@
-/**
- * A classic LIFO stack that stores items in an array.
- * @template T The type of the values stored inside the stack.
- */
-export class Stack<T> {
-  /** The underlying array that holds the stack's data. */
-  private data: T[] = [];
-
-  /** Adds an element to the top of the stack. */
-  push(item: T): void {
-    this.data.push(item);
-  }
-
-  /**
-   * Removes and returns the element at the top of the stack.
-   * Returns undefined if the stack is empty.
-   */
-  pop(): T | undefined {
-    return this.data.pop();
-  }
-
-  /** Peeks at the element on the top without removing it. */
-  peek(): T | undefined {
-    return this.data[this.data.length - 1];
-  }
-
-  /** Returns the number of elements in the stack. */
-  get size(): number {
-    return this.data.length;
-  }
-
-  /** Returns true when the stack has nothing inside. */
-  get isEmpty(): boolean {
-    return this.data.length === 0;
-  }
+interface TreeNode<T = number> {
+  val: T;                // single value (you can change the type)
+  left: TreeNode<T> | null;
+  right: TreeNode<T> | null;
 }
-const stack = new Stack<number>();
+const root: TreeNode = {
+  val: 10,
+  left: { val: 5, left: null, right: null },
+  right: { val: 15, left: null, right: null },
+};
+function maxDepth<T>(node: TreeNode<T> | null): number {
+  if (!node) return 0;
+  const leftDepth = maxDepth(node.left);
+  const rightDepth = maxDepth(node.right);
+  return Math.max(leftDepth, rightDepth) + 1;
+}
+function maxDepthIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
+  const queue: TreeNode<T>[] = [root];
+  let depth = 0;
 
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size);   // 2
+  while (queue.length) {
+    const levelSize = queue.length; // nodes at current depth
+    depth++;                        // we’re going to finish this level
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift() as TreeNode<T>;
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
+  }
+
+  return depth;
+}
+// build a quick tree
+const tree: TreeNode = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: null, right: null },
+    right: null,
+  },
+  right: {
+    val: 3,
+    left: null,
+    right: { val: 5, left: null, right: null },
+  },
+};
+
+console.log(maxDepth(tree));      // -> 3
+console.log(maxDepthIter(tree));  // -> 3
