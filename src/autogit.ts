@@ -1,93 +1,21 @@
-// `Graph<T>` maps a node of type T to an array of its adjacent nodes.
-type Graph<T> = Map<T, T[]>;
+const numbers = [3, 7, 2, 9, 4];
 
-// A helper to add an undirected edge
-function addEdge<T>(g: Graph<T>, a: T, b: T) {
-  g.set(a, (g.get(a) ?? []).concat(b));
-  g.set(b, (g.get(b) ?? []).concat(a));
+const max = Math.max(...numbers); // 9
+console.log(max);
+const numbers = [3, 7, 2, 9, 4];
+
+const max = numbers.reduce((prev, cur) => (cur > prev ? cur : prev));
+
+console.log(max); // 9
+function maxNumber<T extends number>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
+  return arr.reduce((a, b) => (b > a ? b : a));
 }
-/**
- * Performs a breadth‑first search on an unweighted graph.
- *
- * @param start   the starting node
- * @param graph   the graph to search
- * @param visitor a callback that receives each visited node in the order
- *                it’s discovered. The callback can return `false` to stop
- *                the search early.
- */
-function bfs<T>(
-  start: T,
-  graph: Graph<T>,
-  visitor: (node: T) => void | boolean
-): void {
-  const visited = new Set<T>();
-  const queue = [start];
 
-  visited.add(start);
+const nums = [1, 5, 3];
+console.log(maxNumber(nums)); // 5
+const bigNumbers = [10n, 500n, 200n];
 
-  while (queue.length) {
-    const node = queue.shift()!;      // Non‑null because we just tested length
-    const result = visitor(node);
+const maxBig = bigNumbers.reduce((a, b) => (b > a ? b : a)); // 500n
 
-    // If the visitor explicitly returned false, break out early.
-    if (result === false) break;
-
-    const neighbors = graph.get(node) ?? [];
-    for (const n of neighbors) {
-      if (!visited.has(n)) {
-        visited.add(n);
-        queue.push(n);
-      }
-    }
-  }
-}
-/**
- * Returns an array representing the shortest path from `start` to `target`
- * (inclusive), or `null` if no path exists.
- */
-function shortestPath<T>(start: T, target: T, graph: Graph<T>): T[] | null {
-  const prev = new Map<T, T | undefined>(); // child → parent
-  const visited = new Set<T>();
-  const queue: T[] = [start];
-  visited.add(start);
-  let found = false;
-
-  while (queue.length && !found) {
-    const node = queue.shift()!;
-    for (const nb of graph.get(node) ?? []) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        prev.set(nb, node);
-        if (nb === target) {
-          found = true;
-          break;
-        }
-        queue.push(nb);
-      }
-    }
-  }
-
-  if (!found) return null;
-
-  // Walk backwards from target to start
-  const path = [];
-  for (let cur: T | undefined = target; cur !== undefined; cur = prev.get(cur)) {
-    path.push(cur);
-  }
-  path.reverse();
-  return path;
-}
-const g: Graph<string> = new Map();
-addEdge(g, 'A', 'B');
-addEdge(g, 'A', 'C');
-addEdge(g, 'B', 'D');
-addEdge(g, 'C', 'D');
-addEdge(g, 'C', 'E');
-
-console.log('BFS visiting order:', () => {
-  const order: string[] = [];
-  bfs('A', g, node => { order.push(node); });
-  return order;
-}()); // ['A', 'B', 'C', 'D', 'E']
-
-console.log('Shortest path A → D:', shortestPath('A', 'D', g)); // ['A', 'B', 'D']
+console.log(maxBig);
