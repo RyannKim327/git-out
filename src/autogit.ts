@@ -1,24 +1,45 @@
-function areaBaseHeight(base: number, height: number): number {
-  return (base * height) / 2;
+// 1️⃣  Node definition
+export interface ListNode<T> {
+  val: T
+  next: ListNode<T> | null
 }
 
-// Example
-const a = areaBaseHeight(10, 6);   // → 30
-console.log(a);
-function areaBySides(a: number, b: number, c: number): number {
-  // Check triangle inequality first (optional but nice)
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('Not a valid triangle');
+// 2️⃣  Utility: build list from array (for demo/testing)
+export function fromArray<T>(arr: T[]): ListNode<T> | null {
+  if (!arr.length) return null
+  let head: ListNode<T> = { val: arr[0], next: null }
+  let cur = head
+  for (let i = 1; i < arr.length; i++) {
+    cur.next = { val: arr[i], next: null }
+    cur = cur.next
+  }
+  return head
+}
+
+// 3️⃣  Fast‑/slow‑pointer algorithm (one pass, O(1) extra memory)
+export function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  // Edge checks – return null if n is out of range
+  if (n <= 0) return null
+
+  let fast: ListNode<T> | null = head
+  let slow: ListNode<T> | null = head
+
+  // Move `fast` n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null              // n > length
+    fast = fast.next
   }
 
-  const s = (a + b + c) / 2;                // semi‑perimeter
-  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
-  return area;
-}
+  // Move both until `fast` hits the end
+  while (fast) {
+    fast = fast.next
+    slow = slow!.next
+  }
 
-// Example
-const b = areaBySides(5, 12, 13);   // right triangle → 30
-console.log(b);
-const area = Math.sqrt(
-  Math.max(0, s * (s - a) * (s - b) * (s - c))
-);
+  // `slow` is now the nth from the end
+  return slow
+}
+const list = fromArray([10, 20, 30, 40, 50])
+console.log(nthFromEnd(list, 1)?.val) // 50   (last)
+console.log(nthFromEnd(list, 3)?.val) // 30   (3rd from the end)
+console.log(nthFromEnd(list, 6))       // null  (n > length)
