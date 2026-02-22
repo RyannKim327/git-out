@@ -1,66 +1,128 @@
+type Compare<T> = (a: T, b: T) => boolean;
+
 /**
- * Checks whether the given string is a palindrome, ignoring case and
- * non‑alphanumeric characters.  It uses only constant extra space.
- *
- * @param s  The string to check.
- * @returns  true if `s` is a palindrome, false otherwise.
+ * If `compare(child, parent)` is true, swap them and continue
+ * until the heap property is restored.
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+function siftDown<T>(heap: T[], start: number, end: number, compare: Compare<T>) {
+  let root = start;
 
-  while (left < right) {
-    // Skip any *non*‑alphanumeric character on the left
-    while (left < right && !isAlphaNum(s.charCodeAt(left))) {
-      left++;
+  while (true) {
+    const left = root * 2 + 1;
+    const right = left + 1;
+    let swap = root;
+
+    if (left <= end && compare(heap[left], heap[swap])) {
+      swap = left;
     }
-    // Skip any *non*‑alphanumeric character on the right
-    while (left < right && !isAlphaNum(s.charCodeAt(right))) {
-      right--;
-    }
-
-    // If indices crossed after skipping, we're done
-    if (left >= right) break;
-
-    // Compare the characters case‑insensitively
-    const leftChar = s.charCodeAt(left);
-    const rightChar = s.charCodeAt(right);
-
-    if (normalize(leftChar) !== normalize(rightChar)) {
-      return false;
+    if (right <= end && compare(heap[right], heap[swap])) {
+      swap = right;
     }
 
-    left++;
-    right--;
+    if (swap === root) break;
+
+    [heap[root], heap[swap]] = [heap[swap], heap[root]];
+    root = swap;
+  }
+}
+
+/**
+ * Moves the root element down the heap until it finds the right spot.
+ * Called during `remove` after we swap the last element into the root.
+ */
+export function heapify<T>(heap: T[], compare: Compare<T>) {
+  const length = heap.length;
+  if (length <= 1) return;
+
+  // Start from the last non‑leaf node.
+  for (let i = Math.floor((length - 2) / 2); i >= 0; i--) {
+    siftDown(heap, i, length - 1, compare);
+  }
+}
+export class PriorityQueue<T> {
+  private heap: T[] = [];
+  private readonly compare: Compare<T>;
+
+  constructor(compare: Compare<T>) {
+    this.compare = compare;
   }
 
-  return true;
-}
-
-/**
- * Helper to test whether a character code is alphanumeric.
- */
-function isAlphaNum(code: number): boolean {
-  // 0-9
-  if (code >= 48 && code <= 57) return true;
-  // A-Z
-  if (code >= 65 && code <= 90) return true;
-  // a-z
-  if (code >= 97 && code <= 122) return true;
-  return false;
-}
-
-/**
- * Normalises a character code to be lowercase ASCII when possible.
- * For Unicode other than ASCII it simply returns the original code.
- */
-function normalize(code: number): number {
-  // Convert uppercase A-Z to lowercase a-z
-  if (code >= 65 && code <= 90) {
-    return code + 32;
+  get size() {
+    return this.heap.length;
   }
-  return code;
+
+  /** Insert a new item, maintaining heap property */
+  push(item: T): void {
+    this.heap.push(item);
+    // bubble‑up
+    let idx = this.heap.length - 1;
+    while (idx > 0) {
+      const parentIdx = Math.floor((idx - 1) / 2);
+      if (!this.compare(this.heap[idx], this.heap[parentIdx])) break;
+      [this.heap[idx], this.heap[parentIdx]] = [this.heap[parentIdx], this.heap[idx]];
+      idx = parentIdx;
+    }
+  }
+
+  /** Return the root element (minimum) without removing it */
+  peek(): T | undefined {
+    return this.heap[0];
+  }
+
+  /**
+   * Remove and return the root element.
+   * The last element is moved to the root and sifted down.
+   */
+  pop(): T | undefined {
+    const length = this.heap.length;
+    if (!length) return undefined;
+    const root = this.heap[0];
+    const last = this.heap.pop()!; // last is defined because length > 0
+
+    if (length > 1) {
+      this.heap[0] = last;
+      siftDown(this.heap, 0, this.heap.length - 1, this.compare);
+    }
+
+    return root;
+  }
+
+  /** Convert the current array into a heap (in‑place) */
+  build() {
+    heapify(this.heap, this.compare);
+  }
 }
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("race a car"));                      // false
-console.log(isPalindrome("   abcba   "));                     // true
+// Simple numeric priority queue
+const pq = new PriorityQueue<number>((a, b) => a < b);
+
+pq.push(5);
+pq.push(2);
+pq.push(8);
+pq.push(1);
+
+console.log(pq.peek()); // 1
+while (pq.size) {
+  console.log(pq.pop()); // 1, 2, 5, 8
+}
+interface Task {
+  id: number;
+  priority: number; // smaller = higher priority
+  payload: string;
+}
+
+const taskCompare = (a: Task, b: Task) => a.priority < b.priority;
+const taskQueue = new PriorityQueue<Task>(taskCompare);
+
+taskQueue.push({ id: 1, priority: 10, payload: 'work' });
+taskQueue.push({ id: 2, priority: 3, payload: 'urgent' });
+taskQueue.push({ id: 3, priority: 7, payload: 'normal' });
+
+while (taskQueue.size) {
+  const t = taskQueue.pop()!;
+  console.log(`${t.id} (${t.priority}): ${t.payload}`);
+}
+2 (3): urgent
+3 (7): normal
+1 (10): work
+const maxComparator = (a: number, b: number) => a > b;
+const maxPQ = new PriorityQueue<number>(maxComparator);
