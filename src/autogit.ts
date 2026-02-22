@@ -1,24 +1,68 @@
-function areaBaseHeight(base: number, height: number): number {
-  return (base * height) / 2;
+// -------------------------------------------
+// Node definition
+// -------------------------------------------
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
-// Example
-const a = areaBaseHeight(10, 6);   // → 30
-console.log(a);
-function areaBySides(a: number, b: number, c: number): number {
-  // Check triangle inequality first (optional but nice)
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('Not a valid triangle');
+// -------------------------------------------
+// Helper: build list from array
+// -------------------------------------------
+function arrayToLinkedList<T>(arr: T[]): ListNode<T> | null {
+  if (arr.length === 0) return null;
+  const head = new ListNode(arr[0]);
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = new ListNode(arr[i]);
+    current = current.next;
+  }
+  return head;
+}
+
+// -------------------------------------------
+// Helper: read list into array (for debugging)
+// -------------------------------------------
+function linkedListToArray<T>(head: ListNode<T> | null): T[] {
+  const arr: T[] = [];
+  let cur = head;
+  while (cur) {
+    arr.push(cur.val);
+    cur = cur.next;
+  }
+  return arr;
+}
+
+// -------------------------------------------
+// Main: find middle node
+// -------------------------------------------
+function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null;          // empty list
+
+  let slow = head;
+  let fast = head;
+
+  // Move fast two steps and slow one step until fast can't move further.
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  const s = (a + b + c) / 2;                // semi‑perimeter
-  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
-  return area;
+  // For even‑length lists, this returns the first of the two middle nodes.
+  // If you prefer the second, replace `while (fast && fast.next)` and
+  // adjust the loop accordingly.
+  return slow;
 }
 
-// Example
-const b = areaBySides(5, 12, 13);   // right triangle → 30
-console.log(b);
-const area = Math.sqrt(
-  Math.max(0, s * (s - a) * (s - b) * (s - c))
-);
+// -------------------------------------------
+// Demo
+// -------------------------------------------
+const list = arrayToLinkedList([1, 2, 3, 4, 5]);  // odd length
+console.log(linkedListToArray(list));            // [1,2,3,4,5]
+console.log(findMiddle(list)?.val);              // 3
+
+const evenList = arrayToLinkedList([10, 20, 30, 40]);
+console.log(linkedListToArray(evenList));         // [10,20,30,40]
+console.log(findMiddle(evenList)?.val);           // 20 (first middle)
+// if you want the second middle, tweak the loop condition to:
+// while (fast && fast.next)
+// then you'll get 30.
