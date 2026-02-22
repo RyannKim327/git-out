@@ -1,19 +1,20 @@
-// Original
-const original = "   \tHello, \nWorld!   ";
-
-// 1. trim (only outer whitespace)
-const trimmed = original.trim();
-console.log(trimmed); // "Hello, \nWorld!"
-
-// 2. remove all literal spaces only
-const noSpaces = original.replace(/ /g, "");
-console.log(noSpaces); // "\tHello,\nWorld!   "
-
-// 3. strip *every* whitespace
-const totallyClean = original.replace(/\s+/g, "");
-console.log(totallyClean); // "Hello,World!"
-function removeAllWhitespace(s: string): string {
-  return s.replace(/\s+/g, "");
+function removeVowels(input: string): string {
+  // Vowels (both lower‑ and upper‑case) – feel free to add accented ones if you need
+  const vowels = /[aeiouAEIOU]/g;
+  return input.replace(vowels, '');
 }
+function removeVowels(input: string): string {
+  const result: string[] = [];
 
-const cleaned = removeAllWhitespace("  a b\tc\n "); // "abc"
+  for (const char of input) {
+    if (!/[aeiouAEIOU]/.test(char)) {
+      result.push(char);
+    }
+  }
+
+  return result.join('');
+}
+const vowels = /[aeiouAEIOUÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝŸàáâãäåæçèéêëìíîïðñòóôõöøùúûüýÿ]/gu;
+const vowels = /\p{Script=Latin}\p{L}\b{vowel}/u; // not a real pattern – just an example
+const demo = "Hello World! 123";
+console.log(removeVowels(demo)); // "Hll Wrld! 123"
