@@ -1,54 +1,52 @@
-/**
- * Recursively searches for `target` in a sorted numeric array.
- *
- * @param arr    The sorted array to search.
- * @param target The value we’re looking for.
- * @param low    The lower bound index for the current search window.
- * @param high   The upper bound index for the current search window.
- * @returns The index of `target` in `arr`, or -1 if it’s absent.
- */
-function binarySearchRec(
-  arr: number[],
-  target: number,
-  low: number = 0,
-  high: number = arr.length - 1
-): number {
-  // Base case: window collapsed → not found.
-  if (low > high) return -1;
-
-  const mid = Math.floor((low + high) / 2);
-  const midVal = arr[mid];
-
-  if (midVal === target) return mid;           // Found!
-  if (midVal < target)
-    return binarySearchRec(arr, target, mid + 1, high); // Search right half
-  else
-    return binarySearchRec(arr, target, low, mid - 1);  // Search left half
+interface TreeNode<T = number> {
+  val: T;                // single value (you can change the type)
+  left: TreeNode<T> | null;
+  right: TreeNode<T> | null;
 }
-const sorted = [1, 4, 7, 9, 12, 18, 25];
-
-console.log(binarySearchRec(sorted, 9));  // → 3
-console.log(binarySearchRec(sorted, 5));  // → -1 (not present)
-function binarySearchRecGeneric<T>(
-  arr: T[],
-  target: T,
-  compare: (a: T, b: T) => number,  // Returns <0, 0, >0
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (low > high) return -1;
-
-  const mid = Math.floor((low + high) / 2);
-  const cmp = compare(arr[mid], target);
-
-  if (cmp === 0) return mid;
-  if (cmp < 0)   return binarySearchRecGeneric(arr, target, compare, mid + 1, high);
-  return binarySearchRecGeneric(arr, target, compare, low, mid - 1);
+const root: TreeNode = {
+  val: 10,
+  left: { val: 5, left: null, right: null },
+  right: { val: 15, left: null, right: null },
+};
+function maxDepth<T>(node: TreeNode<T> | null): number {
+  if (!node) return 0;
+  const leftDepth = maxDepth(node.left);
+  const rightDepth = maxDepth(node.right);
+  return Math.max(leftDepth, rightDepth) + 1;
 }
-const names = ['Alice', 'Bob', 'Charlie', 'Diana'];
-const idx = binarySearchRecGeneric(
-  names,
-  'Charlie',
-  (a, b) => a.localeCompare(b)   // Comparator
-);
-console.log(idx); // → 2
+function maxDepthIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
+
+  const queue: TreeNode<T>[] = [root];
+  let depth = 0;
+
+  while (queue.length) {
+    const levelSize = queue.length; // nodes at current depth
+    depth++;                        // we’re going to finish this level
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift() as TreeNode<T>;
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
+  }
+
+  return depth;
+}
+// build a quick tree
+const tree: TreeNode = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: null, right: null },
+    right: null,
+  },
+  right: {
+    val: 3,
+    left: null,
+    right: { val: 5, left: null, right: null },
+  },
+};
+
+console.log(maxDepth(tree));      // -> 3
+console.log(maxDepthIter(tree));  // -> 3
