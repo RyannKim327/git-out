@@ -1,43 +1,93 @@
+// `Graph<T>` maps a node of type T to an array of its adjacent nodes.
+type Graph<T> = Map<T, T[]>;
+
+// A helper to add an undirected edge
+function addEdge<T>(g: Graph<T>, a: T, b: T) {
+  g.set(a, (g.get(a) ?? []).concat(b));
+  g.set(b, (g.get(b) ?? []).concat(a));
+}
 /**
- * Returns the longest common *contiguous* substring of `a` and `b`.
+ * Performs a breadth‑first search on an unweighted graph.
  *
- * If there are multiple substrings with the same maximum length, the first
- * one that appears in `a` is returned.
- *
- * Time:  O(a.length * b.length)
- * Space: O(a.length * b.length)   (you can trim this to O(a.length) if you’re
- *                                   hunting for a memory‑tight version)
+ * @param start   the starting node
+ * @param graph   the graph to search
+ * @param visitor a callback that receives each visited node in the order
+ *                it’s discovered. The callback can return `false` to stop
+ *                the search early.
  */
-export function longestCommonSubstring(a: string, b: string): string {
-  const aLen = a.length;
-  const bLen = b.length;
+function bfs<T>(
+  start: T,
+  graph: Graph<T>,
+  visitor: (node: T) => void | boolean
+): void {
+  const visited = new Set<T>();
+  const queue = [start];
 
-  // A 2‑D array where dp[i][j] holds the length of the longest suffix that
-  // ends at a[i-1] and b[j-1].  We use 1‑based indexing to keep the math
-  // simple: dp[0][*] and dp[*][0] are zero by construction.
-  const dp: number[][] = Array.from({ length: aLen + 1 }, () =>
-    new Array(bLen + 1).fill(0)
-  );
+  visited.add(start);
 
-  let bestLen = 0;
-  let bestI = 0; // end index in `a`
+  while (queue.length) {
+    const node = queue.shift()!;      // Non‑null because we just tested length
+    const result = visitor(node);
 
-  for (let i = 1; i <= aLen; i++) {
-    for (let j = 1; j <= bLen; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-        if (dp[i][j] > bestLen) {
-          bestLen = dp[i][j];
-          bestI = i; // slice stops at `i` (exclusive)
+    // If the visitor explicitly returned false, break out early.
+    if (result === false) break;
+
+    const neighbors = graph.get(node) ?? [];
+    for (const n of neighbors) {
+      if (!visited.has(n)) {
+        visited.add(n);
+        queue.push(n);
+      }
+    }
+  }
+}
+/**
+ * Returns an array representing the shortest path from `start` to `target`
+ * (inclusive), or `null` if no path exists.
+ */
+function shortestPath<T>(start: T, target: T, graph: Graph<T>): T[] | null {
+  const prev = new Map<T, T | undefined>(); // child → parent
+  const visited = new Set<T>();
+  const queue: T[] = [start];
+  visited.add(start);
+  let found = false;
+
+  while (queue.length && !found) {
+    const node = queue.shift()!;
+    for (const nb of graph.get(node) ?? []) {
+      if (!visited.has(nb)) {
+        visited.add(nb);
+        prev.set(nb, node);
+        if (nb === target) {
+          found = true;
+          break;
         }
-      } else {
-        dp[i][j] = 0;
+        queue.push(nb);
       }
     }
   }
 
-  return bestLen > 0 ? a.slice(bestI - bestLen, bestI) : '';
+  if (!found) return null;
+
+  // Walk backwards from target to start
+  const path = [];
+  for (let cur: T | undefined = target; cur !== undefined; cur = prev.get(cur)) {
+    path.push(cur);
+  }
+  path.reverse();
+  return path;
 }
-console.log(longestCommonSubstring('BANANA', 'ANANAB')); // "ANANA"
-console.log(longestCommonSubstring('hello', 'world'));   // ""
-console.log(longestCommonSubstring('', 'something'));    // ""
+const g: Graph<string> = new Map();
+addEdge(g, 'A', 'B');
+addEdge(g, 'A', 'C');
+addEdge(g, 'B', 'D');
+addEdge(g, 'C', 'D');
+addEdge(g, 'C', 'E');
+
+console.log('BFS visiting order:', () => {
+  const order: string[] = [];
+  bfs('A', g, node => { order.push(node); });
+  return order;
+}()); // ['A', 'B', 'C', 'D', 'E']
+
+console.log('Shortest path A → D:', shortestPath('A', 'D', g)); // ['A', 'B', 'D']
