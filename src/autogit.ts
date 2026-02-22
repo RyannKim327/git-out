@@ -1,29 +1,24 @@
-/**
- * Reverses the order of words in a string.
- *
- * Words are split on whitespace.  Consecutive whitespace is collapsed,
- * but you can tweak the regex if you need to keep it intact.
- *
- * @param txt – The string to reverse
- * @returns The string with words in reverse order
- */
-function reverseWordOrder(txt: string): string {
-  return txt
-    .trim()                      // Strip leading/trailing gaps
-    .split(/\s+/)                // Break on any run of whitespace
-    .reverse()                   // Flip the array
-    .join(' ');                  // Stitch back together
+function areaBaseHeight(base: number, height: number): number {
+  return (base * height) / 2;
 }
 
-// Example usage
-const original = "Hello world, this is TypeScript.";
-const reversed = reverseWordOrder(original);
-console.log(reversed);  // "TypeScript. is this world, Hello"
-function reverseWordOrder(txt: string) {
-  const words = txt.trim().match(/\w+|\s+/g) ?? [];
-  const textOnly = words.filter(Boolean).join(' ');
-  const reversed = textOnly.split(/\s+/).reverse().join(' ');
-  // re‑insert spaces that were originally present
-  // (not shown here for brevity)
-  return reversed;
+// Example
+const a = areaBaseHeight(10, 6);   // → 30
+console.log(a);
+function areaBySides(a: number, b: number, c: number): number {
+  // Check triangle inequality first (optional but nice)
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('Not a valid triangle');
+  }
+
+  const s = (a + b + c) / 2;                // semi‑perimeter
+  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  return area;
 }
+
+// Example
+const b = areaBySides(5, 12, 13);   // right triangle → 30
+console.log(b);
+const area = Math.sqrt(
+  Math.max(0, s * (s - a) * (s - b) * (s - c))
+);
