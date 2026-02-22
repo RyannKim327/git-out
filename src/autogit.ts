@@ -1,92 +1,59 @@
-if a[j] < a[i] → candidate to extend the sequence ending at j
 /**
- * Returns the LIS of the input array.
- * O(n²) time, O(n) extra space.
+ * Returns the longest common subsequence of two strings.
+ *
+ * @param a First string.
+ * @param b Second string.
+ * @returns The LCS as a string.
  */
-function longestIncreasingSubsequenceDP(arr: number[]): number[] {
-  const n = arr.length;
-  if (n === 0) return [];
+function longestCommonSubsequence(a: string, b: string): string {
+  const n = a.length;
+  const m = b.length;
 
-  // `len[i]` – length of LIS ending at i
-  const len = new Array(n).fill(1);
-  // `prev[i]` – the previous index in the LIS that ends at i
-  const prev = new Array(n).fill(-1);
+  // dp[i][j] = LCS length for a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array(n + 1)
+    .fill(null)
+    .map(() => Array(m + 1).fill(0));
 
-  let bestIdx = 0;          // index of the overall best LIS
-
-  for (let i = 1; i < n; i++) {
-    for (let j = 0; j < i; j++) {
-      if (arr[j] < arr[i] && len[j] + 1 > len[i]) {
-        len[i] = len[j] + 1;
-        prev[i] = j;
+  // Fill table
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
       }
     }
-    if (len[i] > len[bestIdx]) bestIdx = i;
   }
 
-  /* ---------- reconstruct the sequence ---------- */
-  const result: number[] = [];
-  for (let k = bestIdx; k !== -1; k = prev[k]) {
-    result.push(arr[k]);
-  }
-  return result.reverse();
-}
-const source = [3, 4, -1, 0, 6, 2, 3];
-console.log(longestIncreasingSubsequenceDP(source));
-// → [ -1, 0, 2, 3 ]   (length 4)
-/**
- * Returns the LIS of the input array.
- * O(n log n) time, O(n) space.
- */
-function longestIncreasingSubsequenceFast(arr: number[]): number[] {
-  const n = arr.length;
-  if (n === 0) return [];
+  // Back‑track to build the subsequence
+  let i = n,
+    j = m,
+    lcs = '';
 
-  // `tails[len]` – smallest tail value of an inc. subsequence of length len+1
-  const tails: number[] = [];
-  // `prevIdx[i]` – index of the predecessor element for arr[i] in the LIS
-  const prevIdx: number[] = new Array(n).fill(-1);
-  // `posInTails[i]` – position in tails where arr[i] ends up
-  const posInTails: number[] = new Array(n);
-
-  for (let i = 0; i < n; i++) {
-    const x = arr[i];
-
-    // binary search: find first tails[idx] ≥ x
-    let left = 0, right = tails.length;
-    while (left < right) {
-      const mid = (left + right) >> 1;
-      if (tails[mid] < x) left = mid + 1;
-      else right = mid;
-    }
-
-    if (left === 0) {
-      // new smallest element
-      prevIdx[i] = -1;
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      lcs = a[i - 1] + lcs; // prepend
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;
     } else {
-      // predecessor is the element that ended the subsequence of length left
-      prevIdx[i] = posInTails[left - 1];
-    }
-
-    // update tails & helper arrays
-    if (left === tails.length) {
-      tails.push(x);
-      posInTails[left] = i;
-    } else if (x < tails[left]) {
-      tails[left] = x;
-      posInTails[left] = i;
+      j--;
     }
   }
 
-  /* ---------- reconstruct the sequence ---------- */
-  const result: number[] = [];
-  let k = posInTails[tails.length - 1];
-  while (k !== -1) {
-    result.push(arr[k]);
-    k = prevIdx[k];
-  }
-  return result.reverse();
+  return lcs;
 }
-const arr = [10, 22, 9, 33, 21, 50, 41, 60, 80];
-console.log(longestIncreasingSubsequenceFast(arr));
-// → [10, 22, 33, 50, 60, 80]  (length 6)
+console.log(longestCommonSubsequence('ABCDGH', 'AEDFHR')); // → "ADH"
+function lcsLength(a: string, b: string): number {
+  const n = a.length, m = b.length;
+  const dp = Array(n + 1).fill(0).map(() => Array(m + 1).fill(0));
+
+  for (let i = 1; i <= n; i++)
+    for (let j = 1; j <= m; j++)
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1] + 1
+        : Math.max(dp[i - 1][j], dp[i][j - 1]);
+
+  return dp[n][m];
+}
