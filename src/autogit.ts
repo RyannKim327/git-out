@@ -1,47 +1,28 @@
-class TreeNode<T = any> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+function countChar(str: string, ch: string): number {
+  // split on the target char and subtract 1 (the split always creates one
+  // more slice than the number of matches)
+  return str.split(ch).length - 1;
 }
-function countLeaves<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;                         // empty subtree → 0 leaves
 
-  // If both children are missing, this node itself is a leaf
-  if (!root.left && !root.right) return 1;
-
-  // Otherwise, count leaves in the children
-  return countLeaves(root.left) + countLeaves(root.right);
+// Example
+console.log(countChar("hello world", "l")); // 3
+function countChar(str: string, ch: string): number {
+  const matches = str.match(new RegExp(ch, "g")); // global search
+  // If no matches, null is returned; length is 0 in that case
+  return matches ? matches.length : 0;
 }
-function countLeavesIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
 
-  let stack: Array<TreeNode<T>> = [root];
-  let leafCount = 0;
-
-  while (stack.length) {
-    const node = stack.pop() as TreeNode<T>;
-
-    // A leaf if it has no children
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      // Push existing children to process later
-      if (node.left) stack.push(node.left);
-      if (node.right) stack.push(node.right);
-    }
+// Example
+console.log(countChar("hello world", "l")); // 3
+const escaped = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const regex = new RegExp(escaped, "g");
+function countChar(str: string, ch: string): number {
+  let count = 0;
+  for (const c of str) {
+    if (c === ch) count++;
   }
-
-  return leafCount;
+  return count;
 }
-const root = new TreeNode(1,
-  new TreeNode(2,
-    new TreeNode(4),           // leaf
-    new TreeNode(5)            // leaf
-  ),
-  new TreeNode(3)              // leaf
-);
 
-console.log(countLeaves(root));        // → 3
-console.log(countLeavesIter(root));    // → 3
+// Example
+console.log(countChar("hello world", "l")); // 3
