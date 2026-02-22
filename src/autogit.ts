@@ -1,132 +1,115 @@
-// ---------- Types ---------------------------------------------------------
-type Vertex = string | number // whatever sort of key you like
+// 1️⃣ Node – every node knows its children and whether it finishes a word
+class TrieNode {
+    /** Map <character, child node> */
+    children: Map<string, TrieNode>;
+    /** True if node represents the end of an inserted word */
+    isWord: boolean;
 
-// an edge is directed; the weight can be positive, negative or zero
-interface Edge {
-  from: Vertex
-  to: Vertex
-  weight: number
-}
-
-// ---------- Graph wrapper -----------------------------------------------
-class Graph {
-  private vertices: Set<Vertex> = new Set()
-  private edges: Edge[] = []
-
-  // you can add vertices explicitly if you want; adding an edge will
-  // automatically pull its endpoints into the vertex set
-  public addVertex(v: Vertex) {
-    this.vertices.add(v)
-  }
-
-  public addEdge(from: Vertex, to: Vertex, weight: number) {
-    this.vertices.add(from)
-    this.vertices.add(to)
-    this.edges.push({ from, to, weight })
-  }
-
-  public getVertices() {
-    return Array.from(this.vertices)
-  }
-
-  public getEdges() {
-    return this.edges.slice()
-  }
-}
-
-// ---------- Bellman‑Ford algorithm ---------------------------------------
-/**
- * Returns an object containing:
- *   distances:  map from vertex to its shortest‑path distance from source
- *   previous:   map from vertex to its predecessor on that shortest path
- *
- * Throws an Error if a negative‑weight cycle is reachable from `source`.
- */
-function bellmanFord(
-  graph: Graph,
-  source: Vertex
-): { distances: Record<Vertex, number>; previous: Record<Vertex, Vertex | null> } {
-  const INF = Number.POSITIVE_INFINITY
-
-  // 1. initialise
-  const distance: Record<Vertex, number> = {}
-  const previous: Record<Vertex, Vertex | null> = {}
-
-  for (const v of graph.getVertices()) {
-    distance[v] = INF
-    previous[v] = null
-  }
-  distance[source] = 0
-
-  const edges = graph.getEdges()
-  const nvertices = graph.getVertices().length
-
-  // 2. relaxation loop (nvertices - 1) times
-  for (let i = 0; i < nvertices - 1; i++) {
-    let updated = false
-    for (const { from, to, weight } of edges) {
-      const alt = distance[from] + weight
-      if (alt < distance[to]) {
-        distance[to] = alt
-        previous[to] = from
-        updated = true
-      }
+    constructor() {
+        this.children = new Map();
+        this.isWord = false;
     }
-    // early exit if nothing changed
-    if (!updated) break
-  }
+}
 
-  // 3. check for negative‑weight cycles
-  for (const { from, to, weight } of edges) {
-    if (distance[from] + weight < distance[to]) {
-      throw new Error(
-        `Negative‑weight cycle detected: edge ${from} → ${to} (weight ${weight})`
-      )
+// 2️⃣ Trie – wrapper around the root node
+class Trie {
+    private root: TrieNode;
+
+    constructor() {
+        this.root = new TrieNode();
     }
-  }
 
-  return { distances: distance, previous }
+    /** Inserts a word into the trie */
+    insert(word: string): void {
+        let node = this.root;
+        for (const ch of word) {
+            if (!node.children.has(ch)) {
+                node.children.set(ch, new TrieNode());
+            }
+            node = node.children.get(ch)!;
+        }
+        node.isWord = true;
+    }
+
+    /** Returns true if the trie contains the exact word */
+    search(word: string): boolean {
+        const node = this._traverse(word);
+        return node?.isWord ?? false;
+    }
+
+    /** Returns true if the trie contains any word that starts with the prefix */
+    startsWith(prefix: string): boolean {
+        const node = this._traverse(prefix);
+        return !!node;
+    }
+
+    /** Remove a word – returns true if a word was removed */
+    remove(word: string): boolean {
+        const stack: Array<{ node: TrieNode; char: string }> = [];
+
+        let node = this.root;
+        for (const ch of word) {
+            const child = node.children.get(ch);
+            if (!child) return false; // word not present
+            stack.push({ node, char: ch });
+            node = child;
+        }
+
+        if (!node.isWord) return false; // not a complete word
+
+        node.isWord = false;
+
+        // Clean up nodes that are no longer needed
+        while (stack.length && !node.isWord && node.children.size === 0) {
+            const { node: parent, char } = stack.pop()!;
+            parent.children.delete(char);
+            node = parent;
+        }
+
+        return true;
+    }
+
+    /** Suggest words that start with a prefix (up to maxResults) */
+    suggest(prefix: string, maxResults = 10): string[] {
+        const results: string[] = [];
+        let node = this.root;
+        for (const ch of prefix) {
+            const child = node.children.get(ch);
+            if (!child) return results;
+            node = child;
+        }
+        this._dfs(node, prefix, results, maxResults);
+        return results;
+    }
+
+    /* ---------- private helpers ---------- */
+    // walk through the trie following the key; return node or null
+    private _traverse(key: string): TrieNode | null {
+        let node: TrieNode | undefined = this.root;
+        for (const ch of key) {
+            node = node.children.get(ch);
+            if (!node) return null;
+        }
+        return node as TrieNode;
+    }
+
+    private _dfs(node: TrieNode, path: string, out: string[], limit: number): void {
+        if (out.length >= limit) return;
+        if (node.isWord) out.push(path);
+        for (const [ch, child] of node.children.entries()) {
+            this._dfs(child, path + ch, out, limit);
+        }
+    }
 }
+const trie = new Trie();
+trie.insert('apple');
+trie.insert('app');
+trie.insert('banana');
 
-// ---------- Reconstruct path helper ---------------------------------------
-function reconstructPath(
-  previous: Record<Vertex, Vertex | null>,
-  source: Vertex,
-  target: Vertex
-): Vertex[] {
-  const path: Vertex[] = []
-  let v: Vertex | null = target
+console.log(trie.search('app'));      // true
+console.log(trie.search('apricot'));  // false
+console.log(trie.startsWith('app'));  // true
+console.log(trie.suggest('app'));     // ['app', 'apple']
 
-  while (v !== null && v !== source) {
-    path.unshift(v)
-    v = previous[v]
-  }
-  if (v !== source) {
-    // no path
-    return []
-  }
-  path.unshift(source)
-  return path
-}
-
-// ---------- Example usage -----------------------------------------------
-const g = new Graph()
-
-// sample graph: 0 → 1 (4), 0 → 2 (5), 1 → 2 (-1), 2 → 3 (3), 3 → 1 (-2)
-g.addEdge(0, 1, 4)
-g.addEdge(0, 2, 5)
-g.addEdge(1, 2, -1)
-g.addEdge(2, 3, 3)
-g.addEdge(3, 1, -2)
-
-try {
-  const { distances, previous } = bellmanFord(g, 0)
-  console.log('distances:', distances)
-
-  for (const v of g.getVertices()) {
-    const path = reconstructPath(previous, 0, v)
-    console.log(`0 → ${v}  (dist=${distances[v]})  path:`, path.join(' → '))
-  }
-} catch (e) {
-  console.error(e)
-}
+trie.remove('app');
+console.log(trie.search('app'));      // false
