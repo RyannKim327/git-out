@@ -1,29 +1,52 @@
 /**
- * Reverses the order of words in a string.
- *
- * Words are split on whitespace.  Consecutive whitespace is collapsed,
- * but you can tweak the regex if you need to keep it intact.
- *
- * @param txt – The string to reverse
- * @returns The string with words in reverse order
+ * Compare two numbers (or any types that support `<` and `>`).
+ * Returns positive if a > b, negative if a < b, zero otherwise.
  */
-function reverseWordOrder(txt: string): string {
-  return txt
-    .trim()                      // Strip leading/trailing gaps
-    .split(/\s+/)                // Break on any run of whitespace
-    .reverse()                   // Flip the array
-    .join(' ');                  // Stitch back together
-}
+const compare = <T>(a: T, b: T): number => {
+  if (a > b) return 1;
+  if (a < b) return -1;
+  return 0;
+};
 
-// Example usage
-const original = "Hello world, this is TypeScript.";
-const reversed = reverseWordOrder(original);
-console.log(reversed);  // "TypeScript. is this world, Hello"
-function reverseWordOrder(txt: string) {
-  const words = txt.trim().match(/\w+|\s+/g) ?? [];
-  const textOnly = words.filter(Boolean).join(' ');
-  const reversed = textOnly.split(/\s+/).reverse().join(' ');
-  // re‑insert spaces that were originally present
-  // (not shown here for brevity)
-  return reversed;
-}
+/**
+ * Restores the max‑heap property for the sub‑array a[0 … n-1]
+ * starting from index i, assuming its children already satisfy
+ * the heap property.
+ */
+const heapify = <T>(a: T[], n: number, i: number): void => {
+  let largest = i;
+  const left  = 2 * i + 1;
+  const right = 2 * i + 2;
+
+  if (left  < n && compare(a[left],  a[largest]) > 0) largest = left;
+  if (right < n && compare(a[right], a[largest]) > 0) largest = right;
+
+  if (largest !== i) {
+    [a[i], a[largest]] = [a[largest], a[i]];
+    heapify(a, n, largest);
+  }
+};
+
+/**
+ * Turns an array into a max‑heap. Complexity O(n).
+ */
+const buildHeap = <T>(a: T[]): void => {
+  const n = a.length;
+  // start at the last parent node
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+    heapify(a, n, i);
+  }
+};
+
+/**
+ * Heap‑sort: arr is sorted in‑place.
+ */
+export const heapSort = <T>(arr: T[]): void => {
+  buildHeap(arr);
+  for (let i = arr.length - 1; i > 0; i--) {
+    // move current root (max) to the end
+    [arr[0], arr[i]] = [arr[i], arr[0]];
+    // heapify the reduced heap
+    heapify(arr, i, 0);
+  }
+};
