@@ -1,88 +1,94 @@
-/* ------------------------------------------------------------------
-   Node definitions (customise to your data shape)
-------------------------------------------------------------------- */
-export interface Node {
-  id: string | number;
-  /* Any other properties you need – e.g. parent, distance, etc. */
-}
+type AdjacencyList = Record<string, string[]>;
 
-export interface Graph {
-  /** Returns the neighbours of a given node ID. */
-  neighbours(id: Node["id"]): Node[];
+/*
+  Example:
 
-  /** Optional: expands a node – useful if nodes need lazy loading. */
-  expand?(node: Node): void;
-}
+  {
+    A: ["B"],
+    B: ["C", "E"],
+    C: ["A", "D"],
+    D: ["C"],
+    E: ["F"],
+    F: ["E", "G"],
+    G: ["H"],
+    H: ["I", "J"],
+    I: ["H"],
+    J: ["G"],
+  }
+*/
+// TarjanSCC.ts
+type AdjacencyList = Record<string, string[]>;
 
-/* ------------------------------------------------------------------
-   Breadth‑Limited Search
-------------------------------------------------------------------- */
-type GoalPredicate<T> = (node: T) => boolean;
+export function tarjanSCC(graph: AdjacencyList): string[][] {
+  let index = 0;                         // global index counter
+  const indices: Record<string, number> = {};   // vertex → index
+  const lowlinks: Record<string, number> = {};  // vertex → lowlink
+  const stack: string[] = [];
+  const onStack: Record<string, boolean> = {};
+  const sccs: string[][] = [];
 
-export function breadthLimitedSearch<T extends Node>(
-  graph: Graph,
-  root: T,
-  goal: GoalPredicate<T>,
-  maxDepth: number
-): T | null {
-  // A queue that holds tuples: [node, depth]
-  const frontier: Array<[T, number]> = [[root, 0]];
-  const visited = new Set<T["id"]>();
+  function strongConnect(v: string) {
+    // 1. Set the depth index for v to the smallest unused index
+    indices[v] = lowlinks[v] = index++;
+    stack.push(v);
+    onStack[v] = true;
 
-  visited.add(root.id);
-
-  while (frontier.length !== 0) {
-    const [current, depth] = frontier.shift()!; // pop front
-
-    // Goal hit
-    if (goal(current)) return current;
-
-    // If we reached the depth ceiling, skip expansion
-    if (depth === maxDepth) continue;
-
-    // Expand or otherwise load neighbours if you need lazy loading
-    if (graph.expand) graph.expand(current);
-
-    const neighbors = graph.neighbours(current.id);
-    for (const child of neighbors) {
-      if (!visited.has(child.id)) {
-        visited.add(child.id);
-        frontier.push([child, depth + 1]);
+    // 2. Consider successors of v
+    const neighbours = graph[v] ?? [];
+    for (const w of neighbours) {
+      if (indices[w] === undefined) {
+        // Successor w has not yet been visited; recurse on it
+        strongConnect(w);
+        lowlinks[v] = Math.min(lowlinks[v], lowlinks[w]);
+      } else if (onStack[w]) {
+        // Successor w is in stack → part of current SCC
+        lowlinks[v] = Math.min(lowlinks[v], indices[w]);
       }
+    }
+
+    // 3. If v is a root node, pop the stack and generate an SCC
+    if (lowlinks[v] === indices[v]) {
+      const component: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop() as string;
+        onStack[w] = false;
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
     }
   }
 
-  // No solution within the depth limit
-  return null;
-}
-// Simple graph representation
-class MyGraph implements Graph {
-  nodes: Record<string, Node> = {};
-
-  constructor(nodeList: Node[]) {
-    nodeList.forEach(node => (this.nodes[node.id] = node));
+  // Kick off
+  for (const v of Object.keys(graph)) {
+    if (indices[v] === undefined) {
+      strongConnect(v);
+    }
   }
 
-  neighbours(id: string | number) {
-    // Example: assume every node has a "children" array of ids
-    const node = this.nodes[id];
-    return (node as any).children?.map((cId: string | number) => this.nodes[cId]) ?? [];
-  }
+  return sccs;
 }
+import { tarjanSCC } from "./TarjanSCC";
 
-// Example nodes
-const nodes: Node[] = [
-  { id: 1, ...( { children: [2, 3] } as any ) },
-  { id: 2, ...( { children: [4] } as any ) },
-  { id: 3 },
-  { id: 4 }
-];
+const graph: AdjacencyList = {
+  A: ["B"],
+  B: ["C", "E"],
+  C: ["A", "D"],
+  D: ["C"],
+  E: ["F"],
+  F: ["E", "G"],
+  G: ["H"],
+  H: ["I", "J"],
+  I: ["H"],
+  J: ["G"],
+};
 
-const graph = new MyGraph(nodes);
-
-const root = graph.nodes[1];
-const goal = (n: Node) => n.id === 4;
-const depthLimit = 2;
-
-const solution = breadthLimitedSearch(graph, root, goal, depthLimit);
-console.log(solution); // Node with id 4 (found at depth 2)
+const sccs = tarjanSCC(graph);
+console.log("Strongly connected components:");
+sccs.forEach((comp, idx) => {
+  console.log(`  ${idx + 1}: [${comp.join(", ")}]`);
+});
+Strongly connected components:
+  1: [A, B, C, D]
+  2: [E, F]
+  3: [G, H, I, J]
