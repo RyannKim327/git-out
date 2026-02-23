@@ -1,68 +1,88 @@
-// -------------------------------------------
-// Node definition
-// -------------------------------------------
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+/* ------------------------------------------------------------------
+   Node definitions (customise to your data shape)
+------------------------------------------------------------------- */
+export interface Node {
+  id: string | number;
+  /* Any other properties you need – e.g. parent, distance, etc. */
 }
 
-// -------------------------------------------
-// Helper: build list from array
-// -------------------------------------------
-function arrayToLinkedList<T>(arr: T[]): ListNode<T> | null {
-  if (arr.length === 0) return null;
-  const head = new ListNode(arr[0]);
-  let current = head;
-  for (let i = 1; i < arr.length; i++) {
-    current.next = new ListNode(arr[i]);
-    current = current.next;
+export interface Graph {
+  /** Returns the neighbours of a given node ID. */
+  neighbours(id: Node["id"]): Node[];
+
+  /** Optional: expands a node – useful if nodes need lazy loading. */
+  expand?(node: Node): void;
+}
+
+/* ------------------------------------------------------------------
+   Breadth‑Limited Search
+------------------------------------------------------------------- */
+type GoalPredicate<T> = (node: T) => boolean;
+
+export function breadthLimitedSearch<T extends Node>(
+  graph: Graph,
+  root: T,
+  goal: GoalPredicate<T>,
+  maxDepth: number
+): T | null {
+  // A queue that holds tuples: [node, depth]
+  const frontier: Array<[T, number]> = [[root, 0]];
+  const visited = new Set<T["id"]>();
+
+  visited.add(root.id);
+
+  while (frontier.length !== 0) {
+    const [current, depth] = frontier.shift()!; // pop front
+
+    // Goal hit
+    if (goal(current)) return current;
+
+    // If we reached the depth ceiling, skip expansion
+    if (depth === maxDepth) continue;
+
+    // Expand or otherwise load neighbours if you need lazy loading
+    if (graph.expand) graph.expand(current);
+
+    const neighbors = graph.neighbours(current.id);
+    for (const child of neighbors) {
+      if (!visited.has(child.id)) {
+        visited.add(child.id);
+        frontier.push([child, depth + 1]);
+      }
+    }
   }
-  return head;
+
+  // No solution within the depth limit
+  return null;
 }
+// Simple graph representation
+class MyGraph implements Graph {
+  nodes: Record<string, Node> = {};
 
-// -------------------------------------------
-// Helper: read list into array (for debugging)
-// -------------------------------------------
-function linkedListToArray<T>(head: ListNode<T> | null): T[] {
-  const arr: T[] = [];
-  let cur = head;
-  while (cur) {
-    arr.push(cur.val);
-    cur = cur.next;
-  }
-  return arr;
-}
-
-// -------------------------------------------
-// Main: find middle node
-// -------------------------------------------
-function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null;          // empty list
-
-  let slow = head;
-  let fast = head;
-
-  // Move fast two steps and slow one step until fast can't move further.
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+  constructor(nodeList: Node[]) {
+    nodeList.forEach(node => (this.nodes[node.id] = node));
   }
 
-  // For even‑length lists, this returns the first of the two middle nodes.
-  // If you prefer the second, replace `while (fast && fast.next)` and
-  // adjust the loop accordingly.
-  return slow;
+  neighbours(id: string | number) {
+    // Example: assume every node has a "children" array of ids
+    const node = this.nodes[id];
+    return (node as any).children?.map((cId: string | number) => this.nodes[cId]) ?? [];
+  }
 }
 
-// -------------------------------------------
-// Demo
-// -------------------------------------------
-const list = arrayToLinkedList([1, 2, 3, 4, 5]);  // odd length
-console.log(linkedListToArray(list));            // [1,2,3,4,5]
-console.log(findMiddle(list)?.val);              // 3
+// Example nodes
+const nodes: Node[] = [
+  { id: 1, ...( { children: [2, 3] } as any ) },
+  { id: 2, ...( { children: [4] } as any ) },
+  { id: 3 },
+  { id: 4 }
+];
 
-const evenList = arrayToLinkedList([10, 20, 30, 40]);
-console.log(linkedListToArray(evenList));         // [10,20,30,40]
-console.log(findMiddle(evenList)?.val);           // 20 (first middle)
-// if you want the second middle, tweak the loop condition to:
-// while (fast && fast.next)
-// then you'll get 30.
+const graph = new MyGraph(nodes);
+
+const root = graph.nodes[1];
+const goal = (n: Node) => n.id === 4;
+const depthLimit = 2;
+
+const solution = breadthLimitedSearch(graph, root, goal, depthLimit);
+console.log(solution); // Node with id 4 (found at depth 2)
