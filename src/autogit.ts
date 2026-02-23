@@ -1,94 +1,47 @@
-type AdjacencyList = Record<string, string[]>;
-
-/*
-  Example:
-
-  {
-    A: ["B"],
-    B: ["C", "E"],
-    C: ["A", "D"],
-    D: ["C"],
-    E: ["F"],
-    F: ["E", "G"],
-    G: ["H"],
-    H: ["I", "J"],
-    I: ["H"],
-    J: ["G"],
-  }
-*/
-// TarjanSCC.ts
-type AdjacencyList = Record<string, string[]>;
-
-export function tarjanSCC(graph: AdjacencyList): string[][] {
-  let index = 0;                         // global index counter
-  const indices: Record<string, number> = {};   // vertex → index
-  const lowlinks: Record<string, number> = {};  // vertex → lowlink
-  const stack: string[] = [];
-  const onStack: Record<string, boolean> = {};
-  const sccs: string[][] = [];
-
-  function strongConnect(v: string) {
-    // 1. Set the depth index for v to the smallest unused index
-    indices[v] = lowlinks[v] = index++;
-    stack.push(v);
-    onStack[v] = true;
-
-    // 2. Consider successors of v
-    const neighbours = graph[v] ?? [];
-    for (const w of neighbours) {
-      if (indices[w] === undefined) {
-        // Successor w has not yet been visited; recurse on it
-        strongConnect(w);
-        lowlinks[v] = Math.min(lowlinks[v], lowlinks[w]);
-      } else if (onStack[w]) {
-        // Successor w is in stack → part of current SCC
-        lowlinks[v] = Math.min(lowlinks[v], indices[w]);
-      }
-    }
-
-    // 3. If v is a root node, pop the stack and generate an SCC
-    if (lowlinks[v] === indices[v]) {
-      const component: string[] = [];
-      let w: string;
-      do {
-        w = stack.pop() as string;
-        onStack[w] = false;
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
-    }
-  }
-
-  // Kick off
-  for (const v of Object.keys(graph)) {
-    if (indices[v] === undefined) {
-      strongConnect(v);
-    }
-  }
-
-  return sccs;
+class TreeNode<T = any> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
-import { tarjanSCC } from "./TarjanSCC";
+function countLeaves<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;                         // empty subtree → 0 leaves
 
-const graph: AdjacencyList = {
-  A: ["B"],
-  B: ["C", "E"],
-  C: ["A", "D"],
-  D: ["C"],
-  E: ["F"],
-  F: ["E", "G"],
-  G: ["H"],
-  H: ["I", "J"],
-  I: ["H"],
-  J: ["G"],
-};
+  // If both children are missing, this node itself is a leaf
+  if (!root.left && !root.right) return 1;
 
-const sccs = tarjanSCC(graph);
-console.log("Strongly connected components:");
-sccs.forEach((comp, idx) => {
-  console.log(`  ${idx + 1}: [${comp.join(", ")}]`);
-});
-Strongly connected components:
-  1: [A, B, C, D]
-  2: [E, F]
-  3: [G, H, I, J]
+  // Otherwise, count leaves in the children
+  return countLeaves(root.left) + countLeaves(root.right);
+}
+function countLeavesIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
+
+  let stack: Array<TreeNode<T>> = [root];
+  let leafCount = 0;
+
+  while (stack.length) {
+    const node = stack.pop() as TreeNode<T>;
+
+    // A leaf if it has no children
+    if (!node.left && !node.right) {
+      leafCount++;
+    } else {
+      // Push existing children to process later
+      if (node.left) stack.push(node.left);
+      if (node.right) stack.push(node.right);
+    }
+  }
+
+  return leafCount;
+}
+const root = new TreeNode(1,
+  new TreeNode(2,
+    new TreeNode(4),           // leaf
+    new TreeNode(5)            // leaf
+  ),
+  new TreeNode(3)              // leaf
+);
+
+console.log(countLeaves(root));        // → 3
+console.log(countLeavesIter(root));    // → 3
