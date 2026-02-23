@@ -1,68 +1,48 @@
 /**
- * Selection sort – O(n²) time, O(1) extra space.
+ * Random‑pivot quicksort for an array of numbers.
  *
- * @param arr The array to sort.
- * @returns The same array instance, now sorted.
+ * @param arr – the array to sort (it will be sorted in place)
+ * @returns the sorted array (same reference as the input)
  */
-function selectionSort<T>(arr: T[]): T[] {
-  const len = arr.length;
+function randomQuickSort(arr: number[]): number[] {
+  // Internal helper that works on a sub‑range [left, right]
+  function sort(left: number, right: number) {
+    if (left >= right) return;           // 0 or 1 element – nothing to do
 
-  for (let i = 0; i < len - 1; i++) {
-    // index of the smallest element in the unsorted suffix
-    let minIdx = i;
+    // Pick a random pivot index between left and right (inclusive)
+    const pivotIndex = Math.floor(Math.random() * (right - left + 1)) + left;
+    const pivotValue = arr[pivotIndex];
 
-    // search for a smaller element
-    for (let j = i + 1; j < len; j++) {
-      if (arr[j] < arr[minIdx]) {
-        minIdx = j;
+    // Move the pivot to the rightmost position for the partition step
+    [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
+
+    // Standard Lomuto partition
+    let storeIndex = left;
+    for (let i = left; i < right; i++) {
+      if (arr[i] < pivotValue) {
+        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
+        storeIndex++;
       }
     }
 
-    // swap the found minimum with the current position
-    if (minIdx !== i) {
-      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-    }
+    // Put the pivot back in its final place
+    [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
+
+    // Recurse on the two partitions
+    sort(left, storeIndex - 1);
+    sort(storeIndex + 1, right);
   }
 
-  return arr;
-}
-// Numbers
-const numbers = [64, 25, 12, 22, 11];
-console.log(selectionSort(numbers)); // [11, 12, 22, 25, 64]
-
-// Strings
-const words = ['pear', 'apple', 'orange', 'banana'];
-console.log(selectionSort(words));   // ['apple', 'banana', 'orange', 'pear']
-
-// Custom objects – provide a compare function
-interface Person { name: string; age: number }
-
-function sortByAge(a: Person, b: Person) {
-  return a.age - b.age;
-}
-
-const people: Person[] = [
-  { name: 'Alice', age: 34 },
-  { name: 'Bob', age: 28 },
-  { name: 'Carol', age: 41 }
-];
-
-// Simple wrapper to let us pass a comparator
-function selectionSortWith<T>(arr: T[], compare: (a: T, b: T) => number): T[] {
-  const len = arr.length;
-  for (let i = 0; i < len - 1; i++) {
-    let minIdx = i;
-    for (let j = i + 1; j < len; j++) {
-      if (compare(arr[j], arr[minIdx]) < 0) {
-        minIdx = j;
-      }
-    }
-    if (minIdx !== i) {
-      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-    }
-  }
+  sort(0, arr.length - 1);
   return arr;
 }
 
-console.log(selectionSortWith(people, sortByAge));
-// [{ name: 'Bob', age: 28 }, { name: 'Alice', age: 34 }, { name: 'Carol', age: 41 }]
+/*--------------------------------------------
+  Example usage
+--------------------------------------------*/
+
+const data = [34, 7, 23, 32, 5, 62];
+console.log('Unsorted:', data);
+
+const sorted = randomQuickSort([...data]); // copy to avoid mutating the original
+console.log('Sorted  :', sorted);
