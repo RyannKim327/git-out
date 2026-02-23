@@ -1,37 +1,37 @@
-// random-joke.ts
-import fetch from 'node-fetch';          // npm i node-fetch@2
-import { Console } from 'console';
-
-interface Joke {
-  id: number;
-  type: string;
-  setup: string;
-  punchline: string;
-}
-
-async function fetchRandomJoke(): Promise<Joke> {
-  const res = await fetch('https://official-joke-api.appspot.com/random_joke');
-
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} – failed to fetch joke`);
+function countChar(str: string, target: string): number {
+  let count = 0;
+  for (const ch of str) {
+    if (ch === target) count++;
   }
-
-  const data: Joke = await res.json();
-
-  return data;
+  return count;
 }
 
-async function run() {
-  try {
-    const joke = await fetchRandomJoke();
+const times = countChar("hello world", "l"); // 3
+function countChar(str: string, target: string): number {
+  return str.split(target).length - 1;
+}
 
-    console.log('😂 Here’s something to make you smile!');
-    console.log(`  ${joke.setup}`);
-    console.log(`   – ${joke.punchline}`);
-  } catch (err: any) {
-    console.error('Oops! Something went wrong:');
-    console.error(err.message ?? err);
+countChar("banana", "a"); // 3
+function countChar(str: string, target: string): number {
+  return [...str].filter(ch => ch === target).length;
+}
+
+countChar("👋👋👋 hello", "👋"); // 3
+function countChar(str: string, target: string): number {
+  const re = new RegExp(`\\${target}`, "g");
+  const matches = str.match(re);
+  return matches ? matches.length : 0;
+}
+
+countChar("mississippi", "i"); // 4
+function multicharCount(str: string, targets: string[]): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const t of targets) result[t] = 0;
+
+  for (const ch of str) {
+    if (result.hasOwnProperty(ch)) result[ch]++;
   }
+  return result;
 }
 
-run();
+multicharCount("abacaba", ["a", "b", "c"]); // { a:4, b:2, c:1 }
