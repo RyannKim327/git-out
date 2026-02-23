@@ -1,92 +1,59 @@
-if a[j] < a[i] → candidate to extend the sequence ending at j
 /**
- * Returns the LIS of the input array.
- * O(n²) time, O(n) extra space.
+ * Compare two strings for an anagram relationship.
+ *
+ * @param a – first string (the one you’re testing)
+ * @param b – candidate anagram
+ * @param ignoreCase – true will treat “A” and “a” the same
+ * @param normalize   – if true, removes all non‑alphanumeric chars
+ * @returns true if a and b are anagrams
  */
-function longestIncreasingSubsequenceDP(arr: number[]): number[] {
-  const n = arr.length;
-  if (n === 0) return [];
-
-  // `len[i]` – length of LIS ending at i
-  const len = new Array(n).fill(1);
-  // `prev[i]` – the previous index in the LIS that ends at i
-  const prev = new Array(n).fill(-1);
-
-  let bestIdx = 0;          // index of the overall best LIS
-
-  for (let i = 1; i < n; i++) {
-    for (let j = 0; j < i; j++) {
-      if (arr[j] < arr[i] && len[j] + 1 > len[i]) {
-        len[i] = len[j] + 1;
-        prev[i] = j;
-      }
-    }
-    if (len[i] > len[bestIdx]) bestIdx = i;
+function isAnagram(
+  a: string,
+  b: string,
+  ignoreCase = true,
+  normalize = true
+): boolean {
+  if (normalize) {
+    const regex = /[^a-z0-9]/gi;
+    a = a.replace(regex, '');
+    b = b.replace(regex, '');
   }
 
-  /* ---------- reconstruct the sequence ---------- */
-  const result: number[] = [];
-  for (let k = bestIdx; k !== -1; k = prev[k]) {
-    result.push(arr[k]);
+  if (ignoreCase) {
+    a = a.toLowerCase();
+    b = b.toLowerCase();
   }
-  return result.reverse();
+
+  // Quick length‐check
+  if (a.length !== b.length) return false;
+
+  // Sort characters and compare
+  const sortedA = a.split('').sort().join('');
+  const sortedB = b.split('').sort().join('');
+
+  return sortedA === sortedB;
 }
-const source = [3, 4, -1, 0, 6, 2, 3];
-console.log(longestIncreasingSubsequenceDP(source));
-// → [ -1, 0, 2, 3 ]   (length 4)
-/**
- * Returns the LIS of the input array.
- * O(n log n) time, O(n) space.
- */
-function longestIncreasingSubsequenceFast(arr: number[]): number[] {
-  const n = arr.length;
-  if (n === 0) return [];
+console.log(isAnagram('Listen', 'Silent'));               // true
+console.log(isAnagram('Astronomer', 'Moon starer'));      // true
+console.log(isAnagram('Hello', 'World'));                  // false
 
-  // `tails[len]` – smallest tail value of an inc. subsequence of length len+1
-  const tails: number[] = [];
-  // `prevIdx[i]` – index of the predecessor element for arr[i] in the LIS
-  const prevIdx: number[] = new Array(n).fill(-1);
-  // `posInTails[i]` – position in tails where arr[i] ends up
-  const posInTails: number[] = new Array(n);
+// Custom options
+console.log(isAnagram('Dormitory!', 'Dirtyroom', true, true)); // true
+console.log(isAnagram('Dormitory!', 'Dirtyroom', false, true)); // false – case sensitive
+function isAnagramFreq(a: string, b: string): boolean {
+  const makeMap = (s: string) => {
+    const map: Record<string, number> = {};
+    for (const ch of s) map[ch] = (map[ch] ?? 0) + 1;
+    return map;
+  };
 
-  for (let i = 0; i < n; i++) {
-    const x = arr[i];
+  const freqA = makeMap(a);
+  const freqB = makeMap(b);
 
-    // binary search: find first tails[idx] ≥ x
-    let left = 0, right = tails.length;
-    while (left < right) {
-      const mid = (left + right) >> 1;
-      if (tails[mid] < x) left = mid + 1;
-      else right = mid;
-    }
-
-    if (left === 0) {
-      // new smallest element
-      prevIdx[i] = -1;
-    } else {
-      // predecessor is the element that ended the subsequence of length left
-      prevIdx[i] = posInTails[left - 1];
-    }
-
-    // update tails & helper arrays
-    if (left === tails.length) {
-      tails.push(x);
-      posInTails[left] = i;
-    } else if (x < tails[left]) {
-      tails[left] = x;
-      posInTails[left] = i;
-    }
+  // Compare two maps
+  const keys = new Set([...Object.keys(freqA), ...Object.keys(freqB)]);
+  for (const k of keys) {
+    if (freqA[k] !== freqB[k]) return false;
   }
-
-  /* ---------- reconstruct the sequence ---------- */
-  const result: number[] = [];
-  let k = posInTails[tails.length - 1];
-  while (k !== -1) {
-    result.push(arr[k]);
-    k = prevIdx[k];
-  }
-  return result.reverse();
+  return true;
 }
-const arr = [10, 22, 9, 33, 21, 50, 41, 60, 80];
-console.log(longestIncreasingSubsequenceFast(arr));
-// → [10, 22, 33, 50, 60, 80]  (length 6)
