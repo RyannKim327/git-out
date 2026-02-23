@@ -1,83 +1,72 @@
-// fetch-example.ts
-/**
- * A small utility that fetches JSON from a public API
- * and logs a nicely formatted result.
- *
- * It demonstrates:
- *   • TypeScript generics for response typing
- *   • Async/await syntax
- *   • Basic error handling
- *   • Runtime type guard for JSON validation
- */
+function longestCommonPrefixVertical(strs: string[]): string {
+  if (!strs.length) return "";
 
-type PlainObject = Record<string, unknown>;
+  // The longest possible prefix is bounded by the first string’s length
+  const first = strs[0];
 
-// A small runtime check to ensure the response is
-// an object (the common case when fetching JSON).
-function isObject(value: unknown): value is PlainObject {
-  return typeof value === 'object' && value !== null;
-}
-
-/**
- * Generic fetch function that returns data of type T.
- * @param url          The URL to fetch from
- * @param init         Optional RequestInit parameters
- */
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
-
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+  for (let i = 0; i < first.length; i++) {
+    const ch = first[i];
+    for (let j = 1; j < strs.length; j++) {
+      // If any string is shorter or the current char differs: stop
+      if (i >= strs[j].length || strs[j][i] !== ch) {
+        return first.slice(0, i);
+      }
+    }
   }
 
-  const data = await response.json();
-
-  // Very light runtime validation – just make sure we got an object
-  if (!isObject(data)) {
-    throw new Error('Response is not a JSON object');
-  }
-
-  return data as T; // confidence that T matches the real shape
+  // All strings matched the entire first string
+  return first;
+}
+console.log(longestCommonPrefixVertical(["flower", "flow", "flight"])); // "fl"
+function lcpMerge(a: string, b: string): string {
+  let i = 0;
+  const limit = Math.min(a.length, b.length);
+  while (i < limit && a[i] === b[i]) i++;
+  return a.slice(0, i);
 }
 
-/**
- * Example usage: fetch a user from the JSONPlaceholder API.
- * The API returns a shape that we can describe as a type.
- */
-interface JsonPlaceholderUser {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-  address: {
-    street: string;
-    suite: string;
-    city: string;
-    zipcode: string;
-    geo: { lat: string; lng: string };
+function longestCommonPrefixDivide(strs: string[]): string {
+  if (!strs.length) return "";
+
+  const helper = (l: number, r: number): string => {
+    if (l === r) return strs[l];
+    const mid = Math.floor((l + r) / 2);
+    const left = helper(l, mid);
+    const right = helper(mid + 1, r);
+    return lcpMerge(left, right);
   };
-  phone: string;
-  website: string;
-  company: {
-    name: string;
-    catchPhrase: string;
-    bs: string;
-  };
+
+  return helper(0, strs.length - 1);
+}
+class TrieNode {
+  children = new Map<string, TrieNode>();
+  isEnd = false;
 }
 
-async function main() {
-  const userId = 1;
-  const url = `https://jsonplaceholder.typicode.com/users/${userId}`;
-
-  try {
-    const user = await fetchJson<JsonPlaceholderUser>(url);
-    console.log(`Name: ${user.name}`);
-    console.log(`Company: ${user.company.name}`);
-    console.log(`Address: ${user.address.street}, ${user.address.city}`);
-  } catch (err) {
-    console.error('Something went wrong:', err);
+function buildTrie(strs: string[]): TrieNode {
+  const root = new TrieNode();
+  for (const s of strs) {
+    let node = root;
+    for (const ch of s) {
+      if (!node.children.has(ch)) node.children.set(ch, new TrieNode());
+      node = node.children.get(ch)!;
+    }
+    node.isEnd = true;
   }
+  return root;
 }
 
-// Kick it off
-main();
+function longestCommonPrefixTrie(strs: string[]): string {
+  if (!strs.length) return "";
+  const root = buildTrie(strs);
+  let node = root;
+  let prefix = "";
+  while (node.children.size === 1 && !node.isEnd) {
+    const [ch, next] = node.children.entries().next().value;
+    prefix += ch;
+    node = next;
+  }
+  return prefix;
+}
+const data = ["algorithm", "algo", "algorithms", "all"]; 
+console.log(longestCommonPrefixVertical(data)); // "alg"
