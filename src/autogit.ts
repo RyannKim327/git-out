@@ -1,48 +1,69 @@
-// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
-//      This shape is common in interview‑style code.
-interface TreeNode {
-  val: number;         // node’s payload
-  left?: TreeNode | null;   // left child (optional)
-  right?: TreeNode | null;  // right child (optional)
+type NodeId = string | number;          // whatever you want to use for a node key
+interface Graph {
+  /** Map of node id → set of neighbour ids */
+  adjacencyList: Map<NodeId, Set<NodeId>>;
 }
+function createGraph(edges: [NodeId, NodeId][]): Graph {
+  const adjacencyList = new Map<NodeId, Set<NodeId>>();
 
-// 2️⃣  Recursive summation – easiest to read and to understand.
-//      Depth‑first, natural for a tree.
-function sumTreeRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                      // base case: empty subtree is 0
-  const leftSum = sumTreeRecursive(root.left);
-  const rightSum = sumTreeRecursive(root.right);
-  return root.val + leftSum + rightSum;      // combine the results
+  for (const [u, v] of edges) {
+    if (!adjacencyList.has(u)) adjacencyList.set(u, new Set());
+    if (!adjacencyList.has(v)) adjacencyList.set(v, new Set());
+    adjacencyList.get(u)!.add(v);
+    adjacencyList.get(v)!.add(u); // comment out for directed graph
+  }
+
+  return { adjacencyList };
 }
+function dfsRecursive(
+  graph: Graph,
+  start: NodeId,
+  visited = new Set<NodeId>()
+): NodeId[] {
+  visited.add(start);
+  const result = [start];
 
-// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
-//      where recursion might hit the call‑stack limit.
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let total = 0;
-  const stack: TreeNode[] = [root];
+  for (const neighbour of graph.adjacencyList.get(start) ?? []) {
+    if (!visited.has(neighbour)) {
+      result.push(...dfsRecursive(graph, neighbour, visited));
+    }
+  }
+
+  return result;
+}
+function dfsIterative(graph: Graph, start: NodeId): NodeId[] {
+  const visited = new Set<NodeId>();
+  const stack: NodeId[] = [start];
+  const result: NodeId[] = [];
 
   while (stack.length) {
-    const node = stack.pop()!;
-    total += node.val;
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
+    const node = stack.pop()!;           // safe: stack is non‑empty
+
+    if (visited.has(node)) continue;
+    visited.add(node);
+    result.push(node);
+
+    // Add neighbours in reverse order if you want a particular visit order
+    const neighbours = graph.adjacencyList.get(node) ?? new Set();
+    for (const neighbour of Array.from(neighbours).reverse()) {
+      if (!visited.has(neighbour)) stack.push(neighbour);
+    }
   }
-  return total;
+
+  return result;
 }
+const edges: [NodeId, NodeId][] = [
+  [1, 2],
+  [1, 3],
+  [2, 4],
+  [3, 4],
+  [4, 5],
+];
 
-// 4️⃣  Sample tree for quick sanity check
-//           5
-//          / \
-//         3   7
-//        / \   \
-//       2   4   8
+const graph = createGraph(edges);
 
-const sampleRoot: TreeNode = {
-  val: 5,
-  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
-  right: { val: 7, right: { val: 8 } },
-};
+console.log('Recursive DFS:', dfsRecursive(graph, 1));
+// → [1, 2, 4, 3, 5] (or another order depending on set iteration)
 
-console.log(sumTreeRecursive(sampleRoot)); // → 33
-console.log(sumTreeIterative(sampleRoot)); // → 33
+console.log('Iterative DFS:', dfsIterative(graph, 1));
+// → same result, but robust on deep graphs
