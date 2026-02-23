@@ -1,61 +1,121 @@
-/**
- * Radix sort for 32‑bit unsigned integers.
- * Sorts in place and returns the sorted array for convenience.
- */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length <= 1) return arr;          // already sorted
+/*-------------------------------------------------------
+  Binary‑Tree Data Structures & Operations in TypeScript
+-------------------------------------------------------*/
 
-  // Pick a base that gives a nice trade‑off between passes and bucket size.
-  // Base 256 (8 bits per pass) lets us use a Uint32Array for buckets.
-  const base = 256;
-  const maxBit = 32; // 32 bits for a signed int, but we only store positives here
-
-  // Number of passes, one per byte in this case.
-  const passes = maxBit / 8;
-
-  // Temporary array for intermediate results.
-  const temp = new Array<number>(arr.length);
-
-  // Helper: counts how many numbers have a certain digit value at a given byte.
-  const count = new Uint32Array(base);
-
-  for (let pass = 0; pass < passes; ++pass) {
-    // Reset counts.
-    count.fill(0);
-
-    // Count occurrences of each bucket value.
-    const shift = pass * 8;
-    for (const n of arr) {
-      const bucket = (n >> shift) & 0xff;
-      count[bucket]++;
-    }
-
-    // Compute cumulative counts => start indices in `temp`.
-    const startIdx = new Uint32Array(base);
-    let sum = 0;
-    for (let i = 0; i < base; ++i) {
-      startIdx[i] = sum;
-      sum += count[i];
-    }
-
-    // Place numbers into the correct bucket order.
-    for (const n of arr) {
-      const bucket = (n >> shift) & 0xff;
-      const idx = startIdx[bucket]++;
-      temp[idx] = n;
-    }
-
-    // Swap the source and destination for the next round.
-    [arr, temp] = [temp, arr];
-  }
-
-  // After an even number of passes `arr` points to original input; the sorted
-  // result ends up in `arr`. If passes were odd, the sorted array will be in `temp`.
-  // Ensure we return the sorted array reference.
-  return arr.length === sizeOfInput ? arr : temp;
+// 1️⃣ A node that holds one element and links to its children
+class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
 
-/** Quick tests */
-const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log('unsorted:', unsorted);
-console.log('sorted:  ', radixSort([...unsorted])); // use spread to leave original intact
+// 2️⃣ The tree itself – only the root is stored
+class BinaryTree<T> {
+  private root: TreeNode<T> | null = null
+
+  /* ------------ Insertion (BST style) ------------ */
+  insert(value: T): void {
+    this.root = this._insertRec(this.root, value)
+  }
+
+  private _insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
+    if (!node) return new TreeNode(value)
+
+    // Basic BST rule – < goes left, >= goes right
+    if (value < node.value) node.left = this._insertRec(node.left, value)
+    else node.right = this._insertRec(node.right, value)
+
+    return node
+  }
+
+  /* ------------ Search ------------ */
+  find(value: T): boolean {
+    return this._findRec(this.root, value)
+  }
+
+  private _findRec(node: TreeNode<T> | null, value: T): boolean {
+    if (!node) return false
+    if (node.value === value) return true
+    return value < node.value
+      ? this._findRec(node.left, value)
+      : this._findRec(node.right, value)
+  }
+
+  /* ------------ Traversals ------------ */
+
+  // In‑order: left, node, right  (sorted for BST)
+  inorder(callback: (val: T) => void) {
+    this._inorderRec(this.root, callback)
+  }
+  private _inorderRec(node: TreeNode<T> | null, cb: (val: T) => void) {
+    if (!node) return
+    this._inorderRec(node.left, cb)
+    cb(node.value)
+    this._inorderRec(node.right, cb)
+  }
+
+  // Pre‑order: node, left, right
+  preorder(callback: (val: T) => void) {
+    this._preorderRec(this.root, callback)
+  }
+  private _preorderRec(node: TreeNode<T> | null, cb: (val: T) => void) {
+    if (!node) return
+    cb(node.value)
+    this._preorderRec(node.left, cb)
+    this._preorderRec(node.right, cb)
+  }
+
+  // Post‑order: left, right, node
+  postorder(callback: (val: T) => void) {
+    this._postorderRec(this.root, callback)
+  }
+  private _postorderRec(node: TreeNode<T> | null, cb: (val: T) => void) {
+    if (!node) return
+    this._postorderRec(node.left, cb)
+    this._postorderRec(node.right, cb)
+    cb(node.value)
+  }
+
+  /* ------------ Utility ------------ */
+
+  // Height of the tree (root = 0)
+  height(): number {
+    return this._heightRec(this.root)
+  }
+  private _heightRec(node: TreeNode<T> | null): number {
+    if (!node) return -1
+    return 1 + Math.max(this._heightRec(node.left), this._heightRec(node.right))
+  }
+
+  // Size (total number of nodes)
+  size(): number {
+    return this._sizeRec(this.root)
+  }
+  private _sizeRec(node: TreeNode<T> | null): number {
+    if (!node) return 0
+    return 1 + this._sizeRec(node.left) + this._sizeRec(node.right)
+  }
+}
+
+/*-------------------------------------------------------
+  Example use
+-------------------------------------------------------*/
+const tree = new BinaryTree<number>()
+
+// Inserting some numbers
+for (const v of [7, 3, 9, 1, 5, 8, 10]) {
+  tree.insert(v)
+}
+
+// Find
+console.log('Has 5?', tree.find(5))   // true
+console.log('Has 4?', tree.find(4))   // false
+
+// In‑order prints the numbers sorted
+tree.inorder(v => console.log(v))     // 1 3 5 7 8 9 10
+
+// Tree metadata
+console.log('Height:', tree.height()) // 2
+console.log('Size:', tree.size())     // 7
