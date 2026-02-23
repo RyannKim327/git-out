@@ -1,85 +1,38 @@
-/* A node that lives inside the queue */
-class QueueNode<T> {
-  constructor(
-    public value: T,
-    public next: QueueNode<T> | null = null
-  ) {}
-}
+// fortune.ts
+import { createInterface } from 'readline';
 
-/* The queue itself */
-export class LinkedListQueue<T> {
-  // We keep pointers to both ends so that both enqueue
-  // (push) and dequeue (pop) stay O(1).
-  private head: QueueNode<T> | null = null; // front of the queue
-  private tail: QueueNode<T> | null = null; // rear of the queue
-  private _size = 0;
+// Set up a simple REPL‑style prompt
+const rl = createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-  /** Insert a new value at the rear. */
-  enqueue(value: T): void {
-    const node = new QueueNode(value);
+console.log('🃏 Welcome to the Random Fortune Machine!');
 
-    if (this.tail) {
-      // The queue already has at least one element
-      this.tail.next = node;
-      this.tail = node;
-    } else {
-      // Empty queue: head and tail become the new node
-      this.head = this.tail = node;
-    }
+// Ask the user for a number
+rl.question('Enter a number (0–9) and press Enter: ', (answer) => {
+  // Try to parse the input as an integer
+  const num = parseInt(answer.trim(), 10);
 
-    this._size++;
+  if (isNaN(num) || num < 0 || num > 9) {
+    console.log('❌ That’s not a valid single digit between 0 and 9.');
+  } else {
+    // Pick a fortune from a tiny list
+    const fortunes = [
+      "You'll find a penny on the sidewalk.",
+      "A surprise call will brighten your day.",
+      "Today is a great day to start learning something new.",
+      "You’ll discover a hidden talent for drawing.",
+      "A forgotten receipt will pop up in your inbox.",
+      "A random act of kindness will return to you.",
+      "You’ll taste your favorite food in an unexpected way.",
+      "A new friendship is just a conversation away.",
+      "You’ll hit a traffic light and notice your neighbor’s cat.",
+      "Today you will finally finish that project you’ve shelved."
+    ];
+
+    console.log(`🔮 Fortune for ${num}: ${fortunes[num]}`);
   }
 
-  /** Remove and return the value at the front. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined; // Empty queue
-
-    const value = this.head.value;
-    this.head = this.head.next;
-
-    // If we just removed the last element, clear the tail too
-    if (!this.head) {
-      this.tail = null;
-    }
-
-    this._size--;
-    return value;
-  }
-
-  /** Peek at the front value without removing it. */
-  peek(): T | undefined {
-    return this.head ? this.head.value : undefined;
-  }
-
-  /** Number of elements currently in the queue. */
-  get size(): number {
-    return this._size;
-  }
-
-  /** Are there any elements? */
-  get isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Remove everything from the queue. */
-  clear(): void {
-    this.head = null;
-    this.tail = null;
-    this._size = 0;
-  }
-}
-const queue = new LinkedListQueue<number>();
-
-queue.enqueue(1);
-queue.enqueue(2);
-queue.enqueue(3);
-
-console.log(queue.peek()); // 1
-console.log(queue.dequeue()); // 1
-console.log(queue.dequeue()); // 2
-console.log(queue.size); // 1
-
-queue.enqueue(4);
-console.log(queue.dequeue()); // 3
-console.log(queue.dequeue()); // 4
-console.log(queue.isEmpty); // true
+  rl.close();
+});
