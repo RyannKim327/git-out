@@ -1,21 +1,47 @@
-const numbers = [3, 7, 2, 9, 4];
-
-const max = Math.max(...numbers); // 9
-console.log(max);
-const numbers = [3, 7, 2, 9, 4];
-
-const max = numbers.reduce((prev, cur) => (cur > prev ? cur : prev));
-
-console.log(max); // 9
-function maxNumber<T extends number>(arr: T[]): T | undefined {
-  if (arr.length === 0) return undefined;
-  return arr.reduce((a, b) => (b > a ? b : a));
+class TreeNode<T = any> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
+function countLeaves<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;                         // empty subtree → 0 leaves
 
-const nums = [1, 5, 3];
-console.log(maxNumber(nums)); // 5
-const bigNumbers = [10n, 500n, 200n];
+  // If both children are missing, this node itself is a leaf
+  if (!root.left && !root.right) return 1;
 
-const maxBig = bigNumbers.reduce((a, b) => (b > a ? b : a)); // 500n
+  // Otherwise, count leaves in the children
+  return countLeaves(root.left) + countLeaves(root.right);
+}
+function countLeavesIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
 
-console.log(maxBig);
+  let stack: Array<TreeNode<T>> = [root];
+  let leafCount = 0;
+
+  while (stack.length) {
+    const node = stack.pop() as TreeNode<T>;
+
+    // A leaf if it has no children
+    if (!node.left && !node.right) {
+      leafCount++;
+    } else {
+      // Push existing children to process later
+      if (node.left) stack.push(node.left);
+      if (node.right) stack.push(node.right);
+    }
+  }
+
+  return leafCount;
+}
+const root = new TreeNode(1,
+  new TreeNode(2,
+    new TreeNode(4),           // leaf
+    new TreeNode(5)            // leaf
+  ),
+  new TreeNode(3)              // leaf
+);
+
+console.log(countLeaves(root));        // → 3
+console.log(countLeavesIter(root));    // → 3
