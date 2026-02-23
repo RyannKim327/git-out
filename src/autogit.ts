@@ -1,48 +1,19 @@
-/**
- * Random‑pivot quicksort for an array of numbers.
- *
- * @param arr – the array to sort (it will be sorted in place)
- * @returns the sorted array (same reference as the input)
- */
-function randomQuickSort(arr: number[]): number[] {
-  // Internal helper that works on a sub‑range [left, right]
-  function sort(left: number, right: number) {
-    if (left >= right) return;           // 0 or 1 element – nothing to do
+// Original
+const original = "   \tHello, \nWorld!   ";
 
-    // Pick a random pivot index between left and right (inclusive)
-    const pivotIndex = Math.floor(Math.random() * (right - left + 1)) + left;
-    const pivotValue = arr[pivotIndex];
+// 1. trim (only outer whitespace)
+const trimmed = original.trim();
+console.log(trimmed); // "Hello, \nWorld!"
 
-    // Move the pivot to the rightmost position for the partition step
-    [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
+// 2. remove all literal spaces only
+const noSpaces = original.replace(/ /g, "");
+console.log(noSpaces); // "\tHello,\nWorld!   "
 
-    // Standard Lomuto partition
-    let storeIndex = left;
-    for (let i = left; i < right; i++) {
-      if (arr[i] < pivotValue) {
-        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
-        storeIndex++;
-      }
-    }
-
-    // Put the pivot back in its final place
-    [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
-
-    // Recurse on the two partitions
-    sort(left, storeIndex - 1);
-    sort(storeIndex + 1, right);
-  }
-
-  sort(0, arr.length - 1);
-  return arr;
+// 3. strip *every* whitespace
+const totallyClean = original.replace(/\s+/g, "");
+console.log(totallyClean); // "Hello,World!"
+function removeAllWhitespace(s: string): string {
+  return s.replace(/\s+/g, "");
 }
 
-/*--------------------------------------------
-  Example usage
---------------------------------------------*/
-
-const data = [34, 7, 23, 32, 5, 62];
-console.log('Unsorted:', data);
-
-const sorted = randomQuickSort([...data]); // copy to avoid mutating the original
-console.log('Sorted  :', sorted);
+const cleaned = removeAllWhitespace("  a b\tc\n "); // "abc"
