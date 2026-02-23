@@ -1,105 +1,128 @@
-// A minimal node type
-export interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
-}
+type Compare<T> = (a: T, b: T) => boolean;
+
 /**
- * Returns the first common reference node of two singly linked lists,
- * or null if they do not intersect.
+ * If `compare(child, parent)` is true, swap them and continue
+ * until the heap property is restored.
  */
-export function getIntersectionNode<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  // Edge‑case: if either list is empty, there can’t be an intersection
-  if (!headA || !headB) return null;
+function siftDown<T>(heap: T[], start: number, end: number, compare: Compare<T>) {
+  let root = start;
 
-  const seen = new Set<ListNode<T>>();
+  while (true) {
+    const left = root * 2 + 1;
+    const right = left + 1;
+    let swap = root;
 
-  // Walk the first list, remember every node
-  let cur = headA;
-  while (cur) {
-    seen.add(cur);
-    cur = cur.next;
+    if (left <= end && compare(heap[left], heap[swap])) {
+      swap = left;
+    }
+    if (right <= end && compare(heap[right], heap[swap])) {
+      swap = right;
+    }
+
+    if (swap === root) break;
+
+    [heap[root], heap[swap]] = [heap[swap], heap[root]];
+    root = swap;
   }
-
-  // Walk the second list until we find a node that we already saw
-  cur = headB;
-  while (cur) {
-    if (seen.has(cur)) return cur;   // first intersection node
-    cur = cur.next;
-  }
-
-  return null; // no intersection
 }
+
 /**
- * Returns an array of values that appear in *both* lists.
- * Duplicates are preserved in the sense that each matched node
- * contributes one entry to the result.
+ * Moves the root element down the heap until it finds the right spot.
+ * Called during `remove` after we swap the last element into the root.
  */
-export function getCommonValues<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): T[] {
-  const values = new Set<T>();
-  const common: T[] = [];
+export function heapify<T>(heap: T[], compare: Compare<T>) {
+  const length = heap.length;
+  if (length <= 1) return;
 
-  // Record every value of the first list
-  for (let node = headA; node; node = node.next) {
-    values.add(node.val);
+  // Start from the last non‑leaf node.
+  for (let i = Math.floor((length - 2) / 2); i >= 0; i--) {
+    siftDown(heap, i, length - 1, compare);
   }
-
-  // Walk the second list and pick out matches
-  for (let node = headB; node; node = node.next) {
-    if (values.has(node.val)) common.push(node.val);
-  }
-
-  return common;
 }
-export function getIntersectionNodeTwoPointer<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  if (!headA || !headB) return null;
+export class PriorityQueue<T> {
+  private heap: T[] = [];
+  private readonly compare: Compare<T>;
 
-  let a: ListNode<T> | null = headA;
-  let b: ListNode<T> | null = headB;
-
-  // After at most (lenA + lenB) steps, they either meet or both hit null.
-  while (a !== b) {
-    a = a ? a.next : headB; // switch to the other list
-    b = b ? b.next : headA;
+  constructor(compare: Compare<T>) {
+    this.compare = compare;
   }
 
-  return a; // could be null (no intersection) or the meeting node
-}
-// Helper to build a list from an array
-function build<T>(vals: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null;
-  let cur: ListNode<T> | null = null;
-  for (const v of vals) {
-    const node: ListNode<T> = { val: v, next: null };
-    if (!head) head = node;
-    if (cur) cur.next = node;
-    cur = node;
+  get size() {
+    return this.heap.length;
   }
-  return head;
+
+  /** Insert a new item, maintaining heap property */
+  push(item: T): void {
+    this.heap.push(item);
+    // bubble‑up
+    let idx = this.heap.length - 1;
+    while (idx > 0) {
+      const parentIdx = Math.floor((idx - 1) / 2);
+      if (!this.compare(this.heap[idx], this.heap[parentIdx])) break;
+      [this.heap[idx], this.heap[parentIdx]] = [this.heap[parentIdx], this.heap[idx]];
+      idx = parentIdx;
+    }
+  }
+
+  /** Return the root element (minimum) without removing it */
+  peek(): T | undefined {
+    return this.heap[0];
+  }
+
+  /**
+   * Remove and return the root element.
+   * The last element is moved to the root and sifted down.
+   */
+  pop(): T | undefined {
+    const length = this.heap.length;
+    if (!length) return undefined;
+    const root = this.heap[0];
+    const last = this.heap.pop()!; // last is defined because length > 0
+
+    if (length > 1) {
+      this.heap[0] = last;
+      siftDown(this.heap, 0, this.heap.length - 1, this.compare);
+    }
+
+    return root;
+  }
+
+  /** Convert the current array into a heap (in‑place) */
+  build() {
+    heapify(this.heap, this.compare);
+  }
+}
+// Simple numeric priority queue
+const pq = new PriorityQueue<number>((a, b) => a < b);
+
+pq.push(5);
+pq.push(2);
+pq.push(8);
+pq.push(1);
+
+console.log(pq.peek()); // 1
+while (pq.size) {
+  console.log(pq.pop()); // 1, 2, 5, 8
+}
+interface Task {
+  id: number;
+  priority: number; // smaller = higher priority
+  payload: string;
 }
 
-// Example: intersecting lists
-const shared = build([7, 8, 9]);                           // shared tail
-const a1 = build([1, 2]);                                 // first list
-const a2 = build([3, 4]);                                 // second list
+const taskCompare = (a: Task, b: Task) => a.priority < b.priority;
+const taskQueue = new PriorityQueue<Task>(taskCompare);
 
-// Connect the tails
-let node = a1;
-while (node?.next) node = node.next;
-node.next = shared;
+taskQueue.push({ id: 1, priority: 10, payload: 'work' });
+taskQueue.push({ id: 2, priority: 3, payload: 'urgent' });
+taskQueue.push({ id: 3, priority: 7, payload: 'normal' });
 
-node = a2;
-while (node?.next) node = node.next;
-node.next = shared;
-
-// Find intersection
-const inter = getIntersectionNode(a1, a2);
-console.log(inter?.val); // 7
+while (taskQueue.size) {
+  const t = taskQueue.pop()!;
+  console.log(`${t.id} (${t.priority}): ${t.payload}`);
+}
+2 (3): urgent
+3 (7): normal
+1 (10): work
+const maxComparator = (a: number, b: number) => a > b;
+const maxPQ = new PriorityQueue<number>(maxComparator);
