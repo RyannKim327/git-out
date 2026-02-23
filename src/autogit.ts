@@ -1,69 +1,42 @@
-type NodeId = string | number;          // whatever you want to use for a node key
-interface Graph {
-  /** Map of node id → set of neighbour ids */
-  adjacencyList: Map<NodeId, Set<NodeId>>;
-}
-function createGraph(edges: [NodeId, NodeId][]): Graph {
-  const adjacencyList = new Map<NodeId, Set<NodeId>>();
+// cron-demo.ts
+import { CronJob } from 'cron';
+import * as dotenv from 'dotenv';
 
-  for (const [u, v] of edges) {
-    if (!adjacencyList.has(u)) adjacencyList.set(u, new Set());
-    if (!adjacencyList.has(v)) adjacencyList.set(v, new Set());
-    adjacencyList.get(u)!.add(v);
-    adjacencyList.get(v)!.add(u); // comment out for directed graph
-  }
+dotenv.config(); // optional – pulls cron expression from .env
 
-  return { adjacencyList };
-}
-function dfsRecursive(
-  graph: Graph,
-  start: NodeId,
-  visited = new Set<NodeId>()
-): NodeId[] {
-  visited.add(start);
-  const result = [start];
+/**
+ * A simple scheduled task that
+ * • runs every minute (or whatever pattern you set)
+ * • prints a timestamp
+ * • gracefully handles potential errors
+ */
+const job = new CronJob(
+  // Default cron date string: every minute of every hour of every day
+  process.env.CRON_EXPRESSION || '* * * * *',
+  () => {
+    const now = new Date().toISOString();
+    console.log(`[${now}] Tick – cron job fired!`);
+  },
+  // onComplete – fires when the job finishes its last scheduled run (not used here)
+  null,
+  // start immediately
+  true,
+  // timezone – string like 'America/New_York'
+  process.env.TZ || 'UTC',
+);
 
-  for (const neighbour of graph.adjacencyList.get(start) ?? []) {
-    if (!visited.has(neighbour)) {
-      result.push(...dfsRecursive(graph, neighbour, visited));
-    }
-  }
+job.on('error', (err) => {
+  console.error(`❌ Cron job encountered an error: ${err.message}`);
+});
 
-  return result;
-}
-function dfsIterative(graph: Graph, start: NodeId): NodeId[] {
-  const visited = new Set<NodeId>();
-  const stack: NodeId[] = [start];
-  const result: NodeId[] = [];
+process.once('SIGINT', () => {
+  console.log('\n🛑 Shutting down cron job gracefully...');
+  job.stop();
+  process.exit(0);
+});
 
-  while (stack.length) {
-    const node = stack.pop()!;           // safe: stack is non‑empty
-
-    if (visited.has(node)) continue;
-    visited.add(node);
-    result.push(node);
-
-    // Add neighbours in reverse order if you want a particular visit order
-    const neighbours = graph.adjacencyList.get(node) ?? new Set();
-    for (const neighbour of Array.from(neighbours).reverse()) {
-      if (!visited.has(neighbour)) stack.push(neighbour);
-    }
-  }
-
-  return result;
-}
-const edges: [NodeId, NodeId][] = [
-  [1, 2],
-  [1, 3],
-  [2, 4],
-  [3, 4],
-  [4, 5],
-];
-
-const graph = createGraph(edges);
-
-console.log('Recursive DFS:', dfsRecursive(graph, 1));
-// → [1, 2, 4, 3, 5] (or another order depending on set iteration)
-
-console.log('Iterative DFS:', dfsIterative(graph, 1));
-// → same result, but robust on deep graphs
+console.log(`✅ Cron job started with pattern: ${job.cronTime.source}`);
+✅ Cron job started with pattern: * * * * *
+[2026-02-15T12:00:00.000Z] Tick – cron job fired!
+[2026-02-15T12:01:00.000Z] Tick – cron job fired!
+…
