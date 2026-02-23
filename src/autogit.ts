@@ -1,69 +1,85 @@
-type NodeId = string | number;          // whatever you want to use for a node key
-interface Graph {
-  /** Map of node id → set of neighbour ids */
-  adjacencyList: Map<NodeId, Set<NodeId>>;
+/* A node that lives inside the queue */
+class QueueNode<T> {
+  constructor(
+    public value: T,
+    public next: QueueNode<T> | null = null
+  ) {}
 }
-function createGraph(edges: [NodeId, NodeId][]): Graph {
-  const adjacencyList = new Map<NodeId, Set<NodeId>>();
 
-  for (const [u, v] of edges) {
-    if (!adjacencyList.has(u)) adjacencyList.set(u, new Set());
-    if (!adjacencyList.has(v)) adjacencyList.set(v, new Set());
-    adjacencyList.get(u)!.add(v);
-    adjacencyList.get(v)!.add(u); // comment out for directed graph
-  }
+/* The queue itself */
+export class LinkedListQueue<T> {
+  // We keep pointers to both ends so that both enqueue
+  // (push) and dequeue (pop) stay O(1).
+  private head: QueueNode<T> | null = null; // front of the queue
+  private tail: QueueNode<T> | null = null; // rear of the queue
+  private _size = 0;
 
-  return { adjacencyList };
-}
-function dfsRecursive(
-  graph: Graph,
-  start: NodeId,
-  visited = new Set<NodeId>()
-): NodeId[] {
-  visited.add(start);
-  const result = [start];
+  /** Insert a new value at the rear. */
+  enqueue(value: T): void {
+    const node = new QueueNode(value);
 
-  for (const neighbour of graph.adjacencyList.get(start) ?? []) {
-    if (!visited.has(neighbour)) {
-      result.push(...dfsRecursive(graph, neighbour, visited));
+    if (this.tail) {
+      // The queue already has at least one element
+      this.tail.next = node;
+      this.tail = node;
+    } else {
+      // Empty queue: head and tail become the new node
+      this.head = this.tail = node;
     }
+
+    this._size++;
   }
 
-  return result;
-}
-function dfsIterative(graph: Graph, start: NodeId): NodeId[] {
-  const visited = new Set<NodeId>();
-  const stack: NodeId[] = [start];
-  const result: NodeId[] = [];
+  /** Remove and return the value at the front. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // Empty queue
 
-  while (stack.length) {
-    const node = stack.pop()!;           // safe: stack is non‑empty
+    const value = this.head.value;
+    this.head = this.head.next;
 
-    if (visited.has(node)) continue;
-    visited.add(node);
-    result.push(node);
-
-    // Add neighbours in reverse order if you want a particular visit order
-    const neighbours = graph.adjacencyList.get(node) ?? new Set();
-    for (const neighbour of Array.from(neighbours).reverse()) {
-      if (!visited.has(neighbour)) stack.push(neighbour);
+    // If we just removed the last element, clear the tail too
+    if (!this.head) {
+      this.tail = null;
     }
+
+    this._size--;
+    return value;
   }
 
-  return result;
+  /** Peek at the front value without removing it. */
+  peek(): T | undefined {
+    return this.head ? this.head.value : undefined;
+  }
+
+  /** Number of elements currently in the queue. */
+  get size(): number {
+    return this._size;
+  }
+
+  /** Are there any elements? */
+  get isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** Remove everything from the queue. */
+  clear(): void {
+    this.head = null;
+    this.tail = null;
+    this._size = 0;
+  }
 }
-const edges: [NodeId, NodeId][] = [
-  [1, 2],
-  [1, 3],
-  [2, 4],
-  [3, 4],
-  [4, 5],
-];
+const queue = new LinkedListQueue<number>();
 
-const graph = createGraph(edges);
+queue.enqueue(1);
+queue.enqueue(2);
+queue.enqueue(3);
 
-console.log('Recursive DFS:', dfsRecursive(graph, 1));
-// → [1, 2, 4, 3, 5] (or another order depending on set iteration)
+console.log(queue.peek()); // 1
+console.log(queue.dequeue()); // 1
+console.log(queue.dequeue()); // 2
+console.log(queue.size); // 1
 
-console.log('Iterative DFS:', dfsIterative(graph, 1));
-// → same result, but robust on deep graphs
+queue.enqueue(4);
+console.log(queue.dequeue()); // 3
+console.log(queue.dequeue()); // 4
+console.log(queue.isEmpty); // true
