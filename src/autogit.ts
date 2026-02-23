@@ -1,132 +1,85 @@
-// ---------- Types ---------------------------------------------------------
-type Vertex = string | number // whatever sort of key you like
-
-// an edge is directed; the weight can be positive, negative or zero
-interface Edge {
-  from: Vertex
-  to: Vertex
-  weight: number
+/* A node that lives inside the queue */
+class QueueNode<T> {
+  constructor(
+    public value: T,
+    public next: QueueNode<T> | null = null
+  ) {}
 }
 
-// ---------- Graph wrapper -----------------------------------------------
-class Graph {
-  private vertices: Set<Vertex> = new Set()
-  private edges: Edge[] = []
+/* The queue itself */
+export class LinkedListQueue<T> {
+  // We keep pointers to both ends so that both enqueue
+  // (push) and dequeue (pop) stay O(1).
+  private head: QueueNode<T> | null = null; // front of the queue
+  private tail: QueueNode<T> | null = null; // rear of the queue
+  private _size = 0;
 
-  // you can add vertices explicitly if you want; adding an edge will
-  // automatically pull its endpoints into the vertex set
-  public addVertex(v: Vertex) {
-    this.vertices.add(v)
-  }
+  /** Insert a new value at the rear. */
+  enqueue(value: T): void {
+    const node = new QueueNode(value);
 
-  public addEdge(from: Vertex, to: Vertex, weight: number) {
-    this.vertices.add(from)
-    this.vertices.add(to)
-    this.edges.push({ from, to, weight })
-  }
-
-  public getVertices() {
-    return Array.from(this.vertices)
-  }
-
-  public getEdges() {
-    return this.edges.slice()
-  }
-}
-
-// ---------- Bellman‑Ford algorithm ---------------------------------------
-/**
- * Returns an object containing:
- *   distances:  map from vertex to its shortest‑path distance from source
- *   previous:   map from vertex to its predecessor on that shortest path
- *
- * Throws an Error if a negative‑weight cycle is reachable from `source`.
- */
-function bellmanFord(
-  graph: Graph,
-  source: Vertex
-): { distances: Record<Vertex, number>; previous: Record<Vertex, Vertex | null> } {
-  const INF = Number.POSITIVE_INFINITY
-
-  // 1. initialise
-  const distance: Record<Vertex, number> = {}
-  const previous: Record<Vertex, Vertex | null> = {}
-
-  for (const v of graph.getVertices()) {
-    distance[v] = INF
-    previous[v] = null
-  }
-  distance[source] = 0
-
-  const edges = graph.getEdges()
-  const nvertices = graph.getVertices().length
-
-  // 2. relaxation loop (nvertices - 1) times
-  for (let i = 0; i < nvertices - 1; i++) {
-    let updated = false
-    for (const { from, to, weight } of edges) {
-      const alt = distance[from] + weight
-      if (alt < distance[to]) {
-        distance[to] = alt
-        previous[to] = from
-        updated = true
-      }
+    if (this.tail) {
+      // The queue already has at least one element
+      this.tail.next = node;
+      this.tail = node;
+    } else {
+      // Empty queue: head and tail become the new node
+      this.head = this.tail = node;
     }
-    // early exit if nothing changed
-    if (!updated) break
+
+    this._size++;
   }
 
-  // 3. check for negative‑weight cycles
-  for (const { from, to, weight } of edges) {
-    if (distance[from] + weight < distance[to]) {
-      throw new Error(
-        `Negative‑weight cycle detected: edge ${from} → ${to} (weight ${weight})`
-      )
+  /** Remove and return the value at the front. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // Empty queue
+
+    const value = this.head.value;
+    this.head = this.head.next;
+
+    // If we just removed the last element, clear the tail too
+    if (!this.head) {
+      this.tail = null;
     }
+
+    this._size--;
+    return value;
   }
 
-  return { distances: distance, previous }
+  /** Peek at the front value without removing it. */
+  peek(): T | undefined {
+    return this.head ? this.head.value : undefined;
+  }
+
+  /** Number of elements currently in the queue. */
+  get size(): number {
+    return this._size;
+  }
+
+  /** Are there any elements? */
+  get isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** Remove everything from the queue. */
+  clear(): void {
+    this.head = null;
+    this.tail = null;
+    this._size = 0;
+  }
 }
+const queue = new LinkedListQueue<number>();
 
-// ---------- Reconstruct path helper ---------------------------------------
-function reconstructPath(
-  previous: Record<Vertex, Vertex | null>,
-  source: Vertex,
-  target: Vertex
-): Vertex[] {
-  const path: Vertex[] = []
-  let v: Vertex | null = target
+queue.enqueue(1);
+queue.enqueue(2);
+queue.enqueue(3);
 
-  while (v !== null && v !== source) {
-    path.unshift(v)
-    v = previous[v]
-  }
-  if (v !== source) {
-    // no path
-    return []
-  }
-  path.unshift(source)
-  return path
-}
+console.log(queue.peek()); // 1
+console.log(queue.dequeue()); // 1
+console.log(queue.dequeue()); // 2
+console.log(queue.size); // 1
 
-// ---------- Example usage -----------------------------------------------
-const g = new Graph()
-
-// sample graph: 0 → 1 (4), 0 → 2 (5), 1 → 2 (-1), 2 → 3 (3), 3 → 1 (-2)
-g.addEdge(0, 1, 4)
-g.addEdge(0, 2, 5)
-g.addEdge(1, 2, -1)
-g.addEdge(2, 3, 3)
-g.addEdge(3, 1, -2)
-
-try {
-  const { distances, previous } = bellmanFord(g, 0)
-  console.log('distances:', distances)
-
-  for (const v of g.getVertices()) {
-    const path = reconstructPath(previous, 0, v)
-    console.log(`0 → ${v}  (dist=${distances[v]})  path:`, path.join(' → '))
-  }
-} catch (e) {
-  console.error(e)
-}
+queue.enqueue(4);
+console.log(queue.dequeue()); // 3
+console.log(queue.dequeue()); // 4
+console.log(queue.isEmpty); // true
