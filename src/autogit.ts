@@ -1,52 +1,72 @@
-interface TreeNode<T = number> {
-  val: T;                // single value (you can change the type)
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
+/**
+ * Returns the k-th smallest element of an array.
+ *
+ * @param arr   Array of numbers (or any comparable type).
+ * @param k     1‑based index of the element to find.
+ * @returns     The k‑th smallest value.
+ *
+ * @throws      If k is out of bounds.
+ */
+export function kthSmallest<T>(arr: T[], k: number): T {
+  if (k < 1 || k > arr.length) {
+    throw new Error(`k=${k} is not in the valid range 1..${arr.length}`);
+  }
+
+  // Work on a copy so the original array stays untouched.
+  const a = arr.slice();
+  let left = 0;
+  let right = a.length - 1;
+
+  while (true) {
+    // Pick a pivot – here we just pick the middle element.
+    const pivotIndex = left + Math.floor((right - left) / 2);
+    const pivot = a[pivotIndex];
+
+    // Partition step: elements < pivot go left, >= pivot go right.
+    const pivotNewIndex = partition(a, left, right, pivot);
+
+    if (pivotNewIndex === k - 1) {      // Found the k‑th smallest
+      return a[pivotNewIndex];
+    } else if (pivotNewIndex > k - 1) {  // Look in the left partition
+      right = pivotNewIndex - 1;
+    } else {                            // Look in the right partition
+      left = pivotNewIndex + 1;
+    }
+  }
 }
-const root: TreeNode = {
-  val: 10,
-  left: { val: 5, left: null, right: null },
-  right: { val: 15, left: null, right: null },
-};
-function maxDepth<T>(node: TreeNode<T> | null): number {
-  if (!node) return 0;
-  const leftDepth = maxDepth(node.left);
-  const rightDepth = maxDepth(node.right);
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
 
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
+/**
+ * Standard Lomuto partition scheme.
+ *
+ * @param a array to partition
+ * @param lo left boundary
+ * @param hi right boundary
+ * @param pivotValue value the array should be partitioned around
+ * @returns new index of the pivot after partition
+ */
+function partition<T>(a: T[], lo: number, hi: number, pivotValue: T): number {
+  // Move pivot to the end for convenience.
+  let pivotIndex = lo + (Math.random() * (hi - lo + 1)) | 0; // random pivot for stability
+  [a[pivotIndex], a[hi]] = [a[hi], a[pivotIndex]];
 
-  while (queue.length) {
-    const levelSize = queue.length; // nodes at current depth
-    depth++;                        // we’re going to finish this level
+  const pivot = a[hi];
+  let storeIndex = lo;                         // index of the first element >= pivot
 
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift() as TreeNode<T>;
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
+  for (let i = lo; i < hi; i++) {
+    if (a[i] < pivot) {
+      [a[i], a[storeIndex]] = [a[storeIndex], a[i]];
+      storeIndex++;
     }
   }
 
-  return depth;
+  // place pivot after the last smaller element
+  [a[storeIndex], a[hi]] = [a[hi], a[storeIndex]];
+  return storeIndex;
 }
-// build a quick tree
-const tree: TreeNode = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4, left: null, right: null },
-    right: null,
-  },
-  right: {
-    val: 3,
-    left: null,
-    right: { val: 5, left: null, right: null },
-  },
-};
-
-console.log(maxDepth(tree));      // -> 3
-console.log(maxDepthIter(tree));  // -> 3
+export function kthSmallestSort<T>(arr: T[], k: number): T {
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
+  return [...arr].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))[k - 1];
+}
+const nums = [7, 11, 5, 3, 9, 2];
+console.log(kthSmallest(nums, 3)); // 5
+console.log(kthSmallestSort(nums, 3)); // 5
