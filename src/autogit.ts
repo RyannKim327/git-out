@@ -1,45 +1,24 @@
 /**
- * A classic LIFO stack that stores items in an array.
- * @template T The type of the values stored inside the stack.
+ * Very light‑weight e‑mail validator – good for quick UI checks or APIs.
+ * It agrees with the majority of real‑world addresses:   local@domain.com
+ *
+ * @param address – the string to test
+ * @returns true if the format looks like an e‑mail, false otherwise
  */
-export class Stack<T> {
-  /** The underlying array that holds the stack's data. */
-  private data: T[] = [];
-
-  /** Adds an element to the top of the stack. */
-  push(item: T): void {
-    this.data.push(item);
-  }
-
-  /**
-   * Removes and returns the element at the top of the stack.
-   * Returns undefined if the stack is empty.
-   */
-  pop(): T | undefined {
-    return this.data.pop();
-  }
-
-  /** Peeks at the element on the top without removing it. */
-  peek(): T | undefined {
-    return this.data[this.data.length - 1];
-  }
-
-  /** Returns the number of elements in the stack. */
-  get size(): number {
-    return this.data.length;
-  }
-
-  /** Returns true when the stack has nothing inside. */
-  get isEmpty(): boolean {
-    return this.data.length === 0;
-  }
+export function isValidEmail(address: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(address);
 }
-const stack = new Stack<number>();
+import validator from 'email-validator';
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
+validator.validate('test@example.com'); // true
+const tests = [
+  'alice@example.com',
+  'bob@sub.domain.org',
+  'invalid-email',
+  'spaces@invalid .com',
+  '@missing.local',
+  'user@',
+];
 
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size);   // 2
+tests.forEach(email => console.log(`${email}: ${isValidEmail(email)}`));
