@@ -1,52 +1,69 @@
-interface TreeNode<T = number> {
-  val: T;                // single value (you can change the type)
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
+type NodeId = string | number;          // whatever you want to use for a node key
+interface Graph {
+  /** Map of node id → set of neighbour ids */
+  adjacencyList: Map<NodeId, Set<NodeId>>;
 }
-const root: TreeNode = {
-  val: 10,
-  left: { val: 5, left: null, right: null },
-  right: { val: 15, left: null, right: null },
-};
-function maxDepth<T>(node: TreeNode<T> | null): number {
-  if (!node) return 0;
-  const leftDepth = maxDepth(node.left);
-  const rightDepth = maxDepth(node.right);
-  return Math.max(leftDepth, rightDepth) + 1;
+function createGraph(edges: [NodeId, NodeId][]): Graph {
+  const adjacencyList = new Map<NodeId, Set<NodeId>>();
+
+  for (const [u, v] of edges) {
+    if (!adjacencyList.has(u)) adjacencyList.set(u, new Set());
+    if (!adjacencyList.has(v)) adjacencyList.set(v, new Set());
+    adjacencyList.get(u)!.add(v);
+    adjacencyList.get(v)!.add(u); // comment out for directed graph
+  }
+
+  return { adjacencyList };
 }
-function maxDepthIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
+function dfsRecursive(
+  graph: Graph,
+  start: NodeId,
+  visited = new Set<NodeId>()
+): NodeId[] {
+  visited.add(start);
+  const result = [start];
 
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
-
-  while (queue.length) {
-    const levelSize = queue.length; // nodes at current depth
-    depth++;                        // we’re going to finish this level
-
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift() as TreeNode<T>;
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
+  for (const neighbour of graph.adjacencyList.get(start) ?? []) {
+    if (!visited.has(neighbour)) {
+      result.push(...dfsRecursive(graph, neighbour, visited));
     }
   }
 
-  return depth;
+  return result;
 }
-// build a quick tree
-const tree: TreeNode = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4, left: null, right: null },
-    right: null,
-  },
-  right: {
-    val: 3,
-    left: null,
-    right: { val: 5, left: null, right: null },
-  },
-};
+function dfsIterative(graph: Graph, start: NodeId): NodeId[] {
+  const visited = new Set<NodeId>();
+  const stack: NodeId[] = [start];
+  const result: NodeId[] = [];
 
-console.log(maxDepth(tree));      // -> 3
-console.log(maxDepthIter(tree));  // -> 3
+  while (stack.length) {
+    const node = stack.pop()!;           // safe: stack is non‑empty
+
+    if (visited.has(node)) continue;
+    visited.add(node);
+    result.push(node);
+
+    // Add neighbours in reverse order if you want a particular visit order
+    const neighbours = graph.adjacencyList.get(node) ?? new Set();
+    for (const neighbour of Array.from(neighbours).reverse()) {
+      if (!visited.has(neighbour)) stack.push(neighbour);
+    }
+  }
+
+  return result;
+}
+const edges: [NodeId, NodeId][] = [
+  [1, 2],
+  [1, 3],
+  [2, 4],
+  [3, 4],
+  [4, 5],
+];
+
+const graph = createGraph(edges);
+
+console.log('Recursive DFS:', dfsRecursive(graph, 1));
+// → [1, 2, 4, 3, 5] (or another order depending on set iteration)
+
+console.log('Iterative DFS:', dfsIterative(graph, 1));
+// → same result, but robust on deep graphs
