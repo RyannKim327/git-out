@@ -1,43 +1,21 @@
 /**
- * Returns the longest common *contiguous* substring of `a` and `b`.
- *
- * If there are multiple substrings with the same maximum length, the first
- * one that appears in `a` is returned.
- *
- * Time:  O(a.length * b.length)
- * Space: O(a.length * b.length)   (you can trim this to O(a.length) if you’re
- *                                   hunting for a memory‑tight version)
+ * Returns the mean (average) of an array of numbers.
+ * If the array is empty, it throws an error; you can change that behavior if you prefer.
  */
-export function longestCommonSubstring(a: string, b: string): string {
-  const aLen = a.length;
-  const bLen = b.length;
-
-  // A 2‑D array where dp[i][j] holds the length of the longest suffix that
-  // ends at a[i-1] and b[j-1].  We use 1‑based indexing to keep the math
-  // simple: dp[0][*] and dp[*][0] are zero by construction.
-  const dp: number[][] = Array.from({ length: aLen + 1 }, () =>
-    new Array(bLen + 1).fill(0)
-  );
-
-  let bestLen = 0;
-  let bestI = 0; // end index in `a`
-
-  for (let i = 1; i <= aLen; i++) {
-    for (let j = 1; j <= bLen; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-        if (dp[i][j] > bestLen) {
-          bestLen = dp[i][j];
-          bestI = i; // slice stops at `i` (exclusive)
-        }
-      } else {
-        dp[i][j] = 0;
-      }
-    }
+function mean(nums: number[]): number {
+  if (nums.length === 0) {
+    throw new Error("Cannot compute the mean of an empty array");
   }
 
-  return bestLen > 0 ? a.slice(bestI - bestLen, bestI) : '';
+  const sum = nums.reduce((acc, v) => acc + v, 0);
+  return sum / nums.length;
 }
-console.log(longestCommonSubstring('BANANA', 'ANANAB')); // "ANANA"
-console.log(longestCommonSubstring('hello', 'world'));   // ""
-console.log(longestCommonSubstring('', 'something'));    // ""
+const values = [4, 8, 15, 16, 23, 42];
+console.log(mean(values)); // 18.833333333333332
+function meanWhenPossible(nums: number[]): number {
+  if (nums.length === 0) {
+    return NaN;
+  }
+  return nums.reduce((acc, v) => acc + v, 0) / nums.length;
+}
+console.assert(mean([2, 4, 6]) === 4, "The mean should be 4");
