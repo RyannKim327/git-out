@@ -1,101 +1,51 @@
-// A node inside the trie
-class TrieNode {
-  // Map from a character to the next node in the path
-  children: Map<string, TrieNode> = new Map();
-
-  // Marks the end of a word
-  isEndOfWord: boolean = false;
-
-  constructor(public readonly char: string | null = null) {}
+// 1️⃣ Tree node definition
+interface TreeNode {
+  val: number;          // value is irrelevant for diameter
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
 
-// The trie itself
-export class Trie {
-  private root = new TrieNode();
+// 2️⃣ Main diameter function
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let diameter = 0;                 // global accumulator
 
-  /** Inserts a word into the trie. */
-  insert(word: string): void {
-    if (!word) return;               // ignore empty strings
-    let node = this.root;
+  function dfs(node: TreeNode | null): number {
+    if (!node) return 0;            // height of empty subtree
 
-    for (const ch of word) {
-      // Grab the child if it already exists; otherwise create a new node
-      let next = node.children.get(ch);
-      if (!next) {
-        next = new TrieNode(ch);
-        node.children.set(ch, next);
-      }
-      node = next;
-    }
+    // Recursively find heights of left/right subtrees
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
 
-    // Mark that a complete word ends here
-    node.isEndOfWord = true;
+    // Path through current node (in edges)
+    const pathThrough = leftHeight + rightHeight;
+
+    // Update global diameter if this is the largest seen so far
+    diameter = Math.max(diameter, pathThrough);
+
+    // Return height from this node up to a leaf
+    return 1 + Math.max(leftHeight, rightHeight);
   }
 
-  /** Returns true if the word is in the trie. */
-  search(word: string): boolean {
-    if (!word) return false;
-    let node = this.root;
-
-    for (const ch of word) {
-      const next = node.children.get(ch);
-      if (!next) return false;      // path breaks → word absent
-      node = next;
-    }
-
-    return node.isEndOfWord;
-  }
-
-  /** Checks if any word in the trie starts with the given prefix. */
-  startsWith(prefix: string): boolean {
-    if (!prefix) return false;
-    let node = this.root;
-
-    for (const ch of prefix) {
-      const next = node.children.get(ch);
-      if (!next) return false;
-      node = next;
-    }
-
-    return true;
-  }
-
-  /** (Optional) Returns the list of all words in the trie that start with a given prefix. */
-  autocomplete(prefix: string): string[] {
-    const results: string[] = [];
-    let node = this.root;
-
-    // Walk to the node representing the prefix
-    for (const ch of prefix) {
-      const next = node.children.get(ch);
-      if (!next) return results;   // empty list if prefix not present
-      node = next;
-    }
-
-    // Depth‑first walk from that node, collecting words
-    const dfs = (n: TrieNode, acc: string) => {
-      if (n.isEndOfWord) results.push(acc);
-      for (const [ch, child] of n.children.entries()) {
-        dfs(child, acc + ch);
-      }
-    };
-
-    dfs(node, prefix);
-    return results;
-  }
+  dfs(root);
+  return diameter;
 }
-const trie = new Trie();
+// Example tree:
+//      1
+//     / \
+//    2   3
+//   / \
+//  4   5
+const tree: TreeNode = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: null, right: null },
+    right: { val: 5, left: null, right: null },
+  },
+  right: { val: 3, left: null, right: null },
+};
 
-trie.insert('cat');
-trie.insert('car');
-trie.insert('cart');
-trie.insert('dog');
-
-console.log(trie.search('cat'));      // true
-console.log(trie.search('cab'));      // false
-
-console.log(trie.startsWith('ca'));   // true
-console.log(trie.startsWith('do'));   // true
-console.log(trie.startsWith('droll'));// false
-
-console.log(trie.autocomplete('ca')); // ['cat', 'car', 'cart']
+console.log(diameterOfBinaryTree(tree)); // Output: 3
+// Explanation: path 4‑2‑1‑3 uses 3 edges
+console.log(diameterOfBinaryTree(null));           // 0
+console.log(diameterOfBinaryTree({ val: 42 }));    // 0
