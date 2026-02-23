@@ -1,59 +1,61 @@
 /**
- * Compare two strings for an anagram relationship.
- *
- * @param a – first string (the one you’re testing)
- * @param b – candidate anagram
- * @param ignoreCase – true will treat “A” and “a” the same
- * @param normalize   – if true, removes all non‑alphanumeric chars
- * @returns true if a and b are anagrams
+ * Radix sort for 32‑bit unsigned integers.
+ * Sorts in place and returns the sorted array for convenience.
  */
-function isAnagram(
-  a: string,
-  b: string,
-  ignoreCase = true,
-  normalize = true
-): boolean {
-  if (normalize) {
-    const regex = /[^a-z0-9]/gi;
-    a = a.replace(regex, '');
-    b = b.replace(regex, '');
+export function radixSort(arr: number[]): number[] {
+  if (arr.length <= 1) return arr;          // already sorted
+
+  // Pick a base that gives a nice trade‑off between passes and bucket size.
+  // Base 256 (8 bits per pass) lets us use a Uint32Array for buckets.
+  const base = 256;
+  const maxBit = 32; // 32 bits for a signed int, but we only store positives here
+
+  // Number of passes, one per byte in this case.
+  const passes = maxBit / 8;
+
+  // Temporary array for intermediate results.
+  const temp = new Array<number>(arr.length);
+
+  // Helper: counts how many numbers have a certain digit value at a given byte.
+  const count = new Uint32Array(base);
+
+  for (let pass = 0; pass < passes; ++pass) {
+    // Reset counts.
+    count.fill(0);
+
+    // Count occurrences of each bucket value.
+    const shift = pass * 8;
+    for (const n of arr) {
+      const bucket = (n >> shift) & 0xff;
+      count[bucket]++;
+    }
+
+    // Compute cumulative counts => start indices in `temp`.
+    const startIdx = new Uint32Array(base);
+    let sum = 0;
+    for (let i = 0; i < base; ++i) {
+      startIdx[i] = sum;
+      sum += count[i];
+    }
+
+    // Place numbers into the correct bucket order.
+    for (const n of arr) {
+      const bucket = (n >> shift) & 0xff;
+      const idx = startIdx[bucket]++;
+      temp[idx] = n;
+    }
+
+    // Swap the source and destination for the next round.
+    [arr, temp] = [temp, arr];
   }
 
-  if (ignoreCase) {
-    a = a.toLowerCase();
-    b = b.toLowerCase();
-  }
-
-  // Quick length‐check
-  if (a.length !== b.length) return false;
-
-  // Sort characters and compare
-  const sortedA = a.split('').sort().join('');
-  const sortedB = b.split('').sort().join('');
-
-  return sortedA === sortedB;
+  // After an even number of passes `arr` points to original input; the sorted
+  // result ends up in `arr`. If passes were odd, the sorted array will be in `temp`.
+  // Ensure we return the sorted array reference.
+  return arr.length === sizeOfInput ? arr : temp;
 }
-console.log(isAnagram('Listen', 'Silent'));               // true
-console.log(isAnagram('Astronomer', 'Moon starer'));      // true
-console.log(isAnagram('Hello', 'World'));                  // false
 
-// Custom options
-console.log(isAnagram('Dormitory!', 'Dirtyroom', true, true)); // true
-console.log(isAnagram('Dormitory!', 'Dirtyroom', false, true)); // false – case sensitive
-function isAnagramFreq(a: string, b: string): boolean {
-  const makeMap = (s: string) => {
-    const map: Record<string, number> = {};
-    for (const ch of s) map[ch] = (map[ch] ?? 0) + 1;
-    return map;
-  };
-
-  const freqA = makeMap(a);
-  const freqB = makeMap(b);
-
-  // Compare two maps
-  const keys = new Set([...Object.keys(freqA), ...Object.keys(freqB)]);
-  for (const k of keys) {
-    if (freqA[k] !== freqB[k]) return false;
-  }
-  return true;
-}
+/** Quick tests */
+const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log('unsorted:', unsorted);
+console.log('sorted:  ', radixSort([...unsorted])); // use spread to leave original intact
