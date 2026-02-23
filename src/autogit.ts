@@ -1,78 +1,132 @@
-/**
- * Build the longest‑prefix‑suffix (LPS) array for the pattern.
- * lps[i] will contain the length of the longest proper prefix
- * that is also a suffix for the substring pattern[0…i].
- *
- * @param pattern – the pattern
- * @returns the filled LPS array
- */
-function computeLPS(pattern: string): number[] {
-  const lps: number[] = new Array(pattern.length).fill(0);
-  let length = 0;          // length of the previous longest prefix suffix
-  let i = 1;               // lps[0] is always 0
+// ---------- Types ---------------------------------------------------------
+type Vertex = string | number // whatever sort of key you like
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        // don't move i here; keep looking for a smaller prefix
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i++;
+// an edge is directed; the weight can be positive, negative or zero
+interface Edge {
+  from: Vertex
+  to: Vertex
+  weight: number
+}
+
+// ---------- Graph wrapper -----------------------------------------------
+class Graph {
+  private vertices: Set<Vertex> = new Set()
+  private edges: Edge[] = []
+
+  // you can add vertices explicitly if you want; adding an edge will
+  // automatically pull its endpoints into the vertex set
+  public addVertex(v: Vertex) {
+    this.vertices.add(v)
+  }
+
+  public addEdge(from: Vertex, to: Vertex, weight: number) {
+    this.vertices.add(from)
+    this.vertices.add(to)
+    this.edges.push({ from, to, weight })
+  }
+
+  public getVertices() {
+    return Array.from(this.vertices)
+  }
+
+  public getEdges() {
+    return this.edges.slice()
+  }
+}
+
+// ---------- Bellman‑Ford algorithm ---------------------------------------
+/**
+ * Returns an object containing:
+ *   distances:  map from vertex to its shortest‑path distance from source
+ *   previous:   map from vertex to its predecessor on that shortest path
+ *
+ * Throws an Error if a negative‑weight cycle is reachable from `source`.
+ */
+function bellmanFord(
+  graph: Graph,
+  source: Vertex
+): { distances: Record<Vertex, number>; previous: Record<Vertex, Vertex | null> } {
+  const INF = Number.POSITIVE_INFINITY
+
+  // 1. initialise
+  const distance: Record<Vertex, number> = {}
+  const previous: Record<Vertex, Vertex | null> = {}
+
+  for (const v of graph.getVertices()) {
+    distance[v] = INF
+    previous[v] = null
+  }
+  distance[source] = 0
+
+  const edges = graph.getEdges()
+  const nvertices = graph.getVertices().length
+
+  // 2. relaxation loop (nvertices - 1) times
+  for (let i = 0; i < nvertices - 1; i++) {
+    let updated = false
+    for (const { from, to, weight } of edges) {
+      const alt = distance[from] + weight
+      if (alt < distance[to]) {
+        distance[to] = alt
+        previous[to] = from
+        updated = true
       }
+    }
+    // early exit if nothing changed
+    if (!updated) break
+  }
+
+  // 3. check for negative‑weight cycles
+  for (const { from, to, weight } of edges) {
+    if (distance[from] + weight < distance[to]) {
+      throw new Error(
+        `Negative‑weight cycle detected: edge ${from} → ${to} (weight ${weight})`
+      )
     }
   }
 
-  return lps;
+  return { distances: distance, previous }
 }
 
-/**
- * Perform KMP search for a pattern in a text.
- *
- * @param text     – the string to search in
- * @param pattern  – the pattern to look for
- * @returns an array of starting indices where the pattern occurs
- */
-function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return []; // nothing to search for
+// ---------- Reconstruct path helper ---------------------------------------
+function reconstructPath(
+  previous: Record<Vertex, Vertex | null>,
+  source: Vertex,
+  target: Vertex
+): Vertex[] {
+  const path: Vertex[] = []
+  let v: Vertex | null = target
 
-  const lps = computeLPS(pattern);
-  const positions: number[] = [];
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-
-      if (j === pattern.length) {
-        // match found – record starting index
-        positions.push(i - j);
-        // continue searching for next possible match
-        j = lps[j - 1];
-      }
-    } else {
-      if (j !== 0) {
-        // jump back in the pattern based on LPS
-        j = lps[j - 1];
-      } else {
-        i++; // move to next character in text
-      }
-    }
+  while (v !== null && v !== source) {
+    path.unshift(v)
+    v = previous[v]
   }
-
-  return positions;
+  if (v !== source) {
+    // no path
+    return []
+  }
+  path.unshift(source)
+  return path
 }
 
-/* Example usage */
-const haystack = "ABABDABACDABABCABAB";
-const needle = "ABABCABAB";
+// ---------- Example usage -----------------------------------------------
+const g = new Graph()
 
-const matches = kmpSearch(haystack, needle);
-console.log("Pattern found at positions:", matches);
-// Expected output: Pattern found at positions: [9]
+// sample graph: 0 → 1 (4), 0 → 2 (5), 1 → 2 (-1), 2 → 3 (3), 3 → 1 (-2)
+g.addEdge(0, 1, 4)
+g.addEdge(0, 2, 5)
+g.addEdge(1, 2, -1)
+g.addEdge(2, 3, 3)
+g.addEdge(3, 1, -2)
+
+try {
+  const { distances, previous } = bellmanFord(g, 0)
+  console.log('distances:', distances)
+
+  for (const v of g.getVertices()) {
+    const path = reconstructPath(previous, 0, v)
+    console.log(`0 → ${v}  (dist=${distances[v]})  path:`, path.join(' → '))
+  }
+} catch (e) {
+  console.error(e)
+}
