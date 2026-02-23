@@ -1,47 +1,32 @@
-class TreeNode<T = any> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+// 1️⃣  Using a Set – O(m + n) time, O(n) extra space
+function commonElements<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(item => setB.has(item));
 }
-function countLeaves<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;                         // empty subtree → 0 leaves
 
-  // If both children are missing, this node itself is a leaf
-  if (!root.left && !root.right) return 1;
-
-  // Otherwise, count leaves in the children
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-function countLeavesIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  let stack: Array<TreeNode<T>> = [root];
-  let leafCount = 0;
-
-  while (stack.length) {
-    const node = stack.pop() as TreeNode<T>;
-
-    // A leaf if it has no children
-    if (!node.left && !node.right) {
-      leafCount++;
+// 2️⃣  Using two pointers – O(m + n) time, O(1) extra space
+//     (works best if both arrays are already sorted)
+function commonSorted<T>(a: T[], b: T[]): T[] {
+  const res: T[] = [];
+  let i = 0, j = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) {
+      res.push(a[i]);
+      i++; j++;
+    } else if (a[i] < b[j]) {
+      i++;
     } else {
-      // Push existing children to process later
-      if (node.left) stack.push(node.left);
-      if (node.right) stack.push(node.right);
+      j++;
     }
   }
-
-  return leafCount;
+  return res;
 }
-const root = new TreeNode(1,
-  new TreeNode(2,
-    new TreeNode(4),           // leaf
-    new TreeNode(5)            // leaf
-  ),
-  new TreeNode(3)              // leaf
-);
 
-console.log(countLeaves(root));        // → 3
-console.log(countLeavesIter(root));    // → 3
+// 3️⃣  Using reduce – concise but less efficient for large arrays
+function commonReduce<T>(a: T[], b: T[]): T[] {
+  return a.reduce((acc, val) => (b.includes(val) ? [...acc, val] : acc), [] as T[]);
+}
+const arr1 = [1, 2, 3, 4, 5];
+const arr2 = [3, 4, 5, 6, 7];
+
+console.log(commonElements(arr1, arr2)); // [3, 4, 5]
