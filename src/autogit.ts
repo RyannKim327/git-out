@@ -1,21 +1,48 @@
-/**
- * Returns the mean (average) of an array of numbers.
- * If the array is empty, it throws an error; you can change that behavior if you prefer.
- */
-function mean(nums: number[]): number {
-  if (nums.length === 0) {
-    throw new Error("Cannot compute the mean of an empty array");
+// 1️⃣  Define a comparison helper – most of the time you’ll just pass
+//     (a, b) => a < b for ascending order.
+type Comparator<T> = (a: T, b: T) => boolean;
+
+// 2️⃣  The merge function – it expects two sorted arrays and pulls
+//     the smaller (according to the comparator) element out first.
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+  const result: T[] = [];
+  let i = 0,
+      j = 0;
+
+  while (i < left.length && j < right.length) {
+    if (cmp(left[i], right[j])) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
+    }
   }
 
-  const sum = nums.reduce((acc, v) => acc + v, 0);
-  return sum / nums.length;
+  // One side still has items – splice the rest onto the result.
+  if (i < left.length) result.push(...left.slice(i));
+  if (j < right.length) result.push(...right.slice(j));
+
+  return result;
 }
-const values = [4, 8, 15, 16, 23, 42];
-console.log(mean(values)); // 18.833333333333332
-function meanWhenPossible(nums: number[]): number {
-  if (nums.length === 0) {
-    return NaN;
-  }
-  return nums.reduce((acc, v) => acc + v, 0) / nums.length;
+
+// 3️⃣  The recursive mergeSort main function – sorts in place if you
+//     prefer not to allocate the full array during every merge.
+export function mergeSort<T>(arr: T[], cmp: Comparator<T> = (a, b) => a < b): T[] {
+  if (arr.length <= 1) return arr;     // Base case: nothing to do
+
+  const mid = Math.floor(arr.length / 2);
+  const left  = mergeSort(arr.slice(0, mid), cmp);
+  const right = mergeSort(arr.slice(mid),    cmp);
+
+  return merge(left, right, cmp);
 }
-console.assert(mean([2, 4, 6]) === 4, "The mean should be 4");
+// Numbers, ascending
+const sortedNumbers = mergeSort([8, 3, 5, 1, 9, 2]);
+
+// Strings, descending
+const sortedStrings = mergeSort(
+  ["banana", "apple", "cherry"],
+  (a, b) => a > b
+);
+
+console.log(sortedNumbers); // [1, 2, 3, 5, 8, 9]
+console.log(sortedStrings); // ["cherry", "banana", "apple"]
