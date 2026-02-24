@@ -1,42 +1,68 @@
-/**
- * Counting sort for non‑negative integers in a known range.
- *
- * @param data Array of numbers to sort.
- * @param min  Minimum possible value in `data` (inclusive).
- * @param max  Maximum possible value in `data` (inclusive).
- * @returns    A new array containing the sorted numbers.
- *
- * Example:
- *   const unsorted = [3, 0, 2, 3, 1];
- *   const sorted = countingSort(unsorted, 0, 3); // [0,1,2,3,3]
- */
-export function countingSort(data: number[], min: number, max: number): number[] {
-  if (data.length === 0) return [];
-
-  const range = max - min + 1;
-
-  // 1. Count occurrences
-  const count: number[] = new Array(range).fill(0);
-  for (const v of data) {
-    count[v - min]++;
-  }
-
-  // 2. Accumulate counts – now each count element holds the index
-  //    where that value should be placed in the output array.
-  for (let i = 1; i < range; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 3. Build the output array in a stable manner.
-  const output: number[] = new Array(data.length);
-  for (let i = data.length - 1; i >= 0; i--) {
-    const v = data[i];
-    const idx = --count[v - min];          // <-- decrement first
-    output[idx] = v;
-  }
-
-  return output;
+// -------------------------------------------
+// Node definition
+// -------------------------------------------
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-const unsorted = [5, 3, 0, 2, 5, 1];
-const sorted = countingSort(unsorted, 0, 5);
-console.log(sorted); // [0, 1, 2, 3, 5, 5]
+
+// -------------------------------------------
+// Helper: build list from array
+// -------------------------------------------
+function arrayToLinkedList<T>(arr: T[]): ListNode<T> | null {
+  if (arr.length === 0) return null;
+  const head = new ListNode(arr[0]);
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = new ListNode(arr[i]);
+    current = current.next;
+  }
+  return head;
+}
+
+// -------------------------------------------
+// Helper: read list into array (for debugging)
+// -------------------------------------------
+function linkedListToArray<T>(head: ListNode<T> | null): T[] {
+  const arr: T[] = [];
+  let cur = head;
+  while (cur) {
+    arr.push(cur.val);
+    cur = cur.next;
+  }
+  return arr;
+}
+
+// -------------------------------------------
+// Main: find middle node
+// -------------------------------------------
+function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null;          // empty list
+
+  let slow = head;
+  let fast = head;
+
+  // Move fast two steps and slow one step until fast can't move further.
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
+  }
+
+  // For even‑length lists, this returns the first of the two middle nodes.
+  // If you prefer the second, replace `while (fast && fast.next)` and
+  // adjust the loop accordingly.
+  return slow;
+}
+
+// -------------------------------------------
+// Demo
+// -------------------------------------------
+const list = arrayToLinkedList([1, 2, 3, 4, 5]);  // odd length
+console.log(linkedListToArray(list));            // [1,2,3,4,5]
+console.log(findMiddle(list)?.val);              // 3
+
+const evenList = arrayToLinkedList([10, 20, 30, 40]);
+console.log(linkedListToArray(evenList));         // [10,20,30,40]
+console.log(findMiddle(evenList)?.val);           // 20 (first middle)
+// if you want the second middle, tweak the loop condition to:
+// while (fast && fast.next)
+// then you'll get 30.
