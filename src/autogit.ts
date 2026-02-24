@@ -1,16 +1,24 @@
-/**
- * Returns a whole number between min and max (both inclusive).
- *
- * @param min The smallest possible value you want (usually a number ≥ 0)
- * @param max The largest possible value you want
- */
-function randomIntInRange(min: number, max: number): number {
-  // Clamp the inputs so min <= max
-  const [low, high] = min <= max ? [min, max] : [max, min];
-
-  // Math.random() → [0, 1).  Scale it to the desired width,
-  // then shift by the lower bound and round down.
-  return Math.floor(Math.random() * (high - low + 1)) + low;
+function factorialRec(n: number): number {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  if (n <= 1) return 1;           // base case: 0! = 1, 1! = 1
+  return n * factorialRec(n - 1);
 }
-const rand = randomIntInRange(5, 10);
-console.log(rand); // → a whole number 5, 6, 7, 8, 9, or 10
+function factorialIter(n: number): number {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
+}
+function factorialBig(n: bigint): bigint {
+  if (n < 0n) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1n;
+  for (let i = 2n; i <= n; i++) {
+    result *= i;
+  }
+  return result;
+}
+console.log(factorialIter(5));        // 120
+console.log(factorialRec(5));         // 120
+console.log(factorialBig(20n));       // 2432902008176640000n
