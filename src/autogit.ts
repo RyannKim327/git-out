@@ -1,57 +1,60 @@
 /**
- * Simple anagram checker.
- * @param a First string
- * @param b Second string
- * @returns true if a and b are anagrams, false otherwise
+ * Merges two consecutive sorted halves of `arr` into a single sorted segment.
+ * `left` … start index of the first half
+ * `mid`  … start index of the second half (i.e. left + size)
+ * `right`… end index (exclusive) of the second half
+ * The merged result is written back into `arr`.
  */
-function areAnagrams(a: string, b: string): boolean {
-  // 1. Normalize: lower‑case, strip non‑alphanumerics, trim
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")
-      .trim();
+function merge(
+  arr: number[],
+  left: number,
+  mid: number,
+  right: number,
+  temp: number[]
+) {
+  let i = left;   // index in first half
+  let j = mid;    // index in second half
+  let k = left;   // index in temp
 
-  const na = normalize(a);
-  const nb = normalize(b);
-
-  // Quick length check; if they differ early we’re done.
-  if (na.length !== nb.length) return false;
-
-  // 2. Build frequency maps
-  const freq = new Map<string, number>();
-
-  for (const ch of na) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  while (i < mid && j < right) {
+    if (arr[i] <= arr[j]) temp[k++] = arr[i++];
+    else                   temp[k++] = arr[j++];
   }
 
-  for (const ch of nb) {
-    const count = freq.get(ch);
+  // copy any remaining elements from the first half
+  while (i < mid) temp[k++] = arr[i++];
+  // anything left from the second half already sits in temp
 
-    // If we see a character not in the first string, bail
-    if (!count) return false;
+  // copy back to the original array
+  for (let p = left; p < right; ++p) arr[p] = temp[p];
+}
 
-    // Decrease the count and remove entry if it drops to zero
-    if (count === 1) freq.delete(ch);
-    else freq.set(ch, count - 1);
+/**
+ * Iterative merge sort.
+ * Works in O(n log n) time, O(n) auxiliary space for the temporary array.
+ */
+export function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  if (n <= 1) return;                 // already sorted
+
+  const temp = new Array<number>(n);   // reuse this buffer
+
+  // subarray size starts at 1 (single elements) and doubles each pass
+  for (let sz = 1; sz < n; sz *= 2) {
+    // merge adjacent subarrays of size sz
+    for (let left = 0; left < n - sz; left += sz * 2) {
+      const mid   = left + sz;          // left + sz is the start of the 2nd half
+      const right = Math.min(left + sz * 2, n);
+      merge(arr, left, mid, right, temp);
+    }
   }
-
-  // 3. If all counts cleared, the strings are anagrams
-  return freq.size === 0;
 }
-console.log(areAnagrams("listen", "silent"));   // → true
-console.log(areAnagrams("evil", "vile"));       // → true
-console.log(areAnagrams("hello", "billion"));   // → false
-console.log(areAnagrams("Clint Eastwood", "Old West Action")); // true
-function areAnagramsSort(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")
-      .trim()
-      .split("")
-      .sort()
-      .join("");
 
-  return normalize(a) === normalize(b);
-}
+// ------------------------------------------------------------------
+// Example usage
+// ------------------------------------------------------------------
+
+// Readable example – will sort the array in place
+const sample = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(sample);
+console.log(sample);  // [3, 9, 10, 27, 38, 43, 82]
