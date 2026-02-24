@@ -1,52 +1,61 @@
-interface TreeNode<T = number> {
-  val: T;                // single value (you can change the type)
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
-}
-const root: TreeNode = {
-  val: 10,
-  left: { val: 5, left: null, right: null },
-  right: { val: 15, left: null, right: null },
-};
-function maxDepth<T>(node: TreeNode<T> | null): number {
-  if (!node) return 0;
-  const leftDepth = maxDepth(node.left);
-  const rightDepth = maxDepth(node.right);
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
+/**
+ * Radix sort for 32‑bit unsigned integers.
+ * Sorts in place and returns the sorted array for convenience.
+ */
+export function radixSort(arr: number[]): number[] {
+  if (arr.length <= 1) return arr;          // already sorted
 
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
+  // Pick a base that gives a nice trade‑off between passes and bucket size.
+  // Base 256 (8 bits per pass) lets us use a Uint32Array for buckets.
+  const base = 256;
+  const maxBit = 32; // 32 bits for a signed int, but we only store positives here
 
-  while (queue.length) {
-    const levelSize = queue.length; // nodes at current depth
-    depth++;                        // we’re going to finish this level
+  // Number of passes, one per byte in this case.
+  const passes = maxBit / 8;
 
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift() as TreeNode<T>;
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
+  // Temporary array for intermediate results.
+  const temp = new Array<number>(arr.length);
+
+  // Helper: counts how many numbers have a certain digit value at a given byte.
+  const count = new Uint32Array(base);
+
+  for (let pass = 0; pass < passes; ++pass) {
+    // Reset counts.
+    count.fill(0);
+
+    // Count occurrences of each bucket value.
+    const shift = pass * 8;
+    for (const n of arr) {
+      const bucket = (n >> shift) & 0xff;
+      count[bucket]++;
     }
+
+    // Compute cumulative counts => start indices in `temp`.
+    const startIdx = new Uint32Array(base);
+    let sum = 0;
+    for (let i = 0; i < base; ++i) {
+      startIdx[i] = sum;
+      sum += count[i];
+    }
+
+    // Place numbers into the correct bucket order.
+    for (const n of arr) {
+      const bucket = (n >> shift) & 0xff;
+      const idx = startIdx[bucket]++;
+      temp[idx] = n;
+    }
+
+    // Swap the source and destination for the next round.
+    [arr, temp] = [temp, arr];
   }
 
-  return depth;
+  // After an even number of passes `arr` points to original input; the sorted
+  // result ends up in `arr`. If passes were odd, the sorted array will be in `temp`.
+  // Ensure we return the sorted array reference.
+  return arr.length === sizeOfInput ? arr : temp;
 }
-// build a quick tree
-const tree: TreeNode = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4, left: null, right: null },
-    right: null,
-  },
-  right: {
-    val: 3,
-    left: null,
-    right: { val: 5, left: null, right: null },
-  },
-};
 
-console.log(maxDepth(tree));      // -> 3
-console.log(maxDepthIter(tree));  // -> 3
+/** Quick tests */
+const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log('unsorted:', unsorted);
+console.log('sorted:  ', radixSort([...unsorted])); // use spread to leave original intact
