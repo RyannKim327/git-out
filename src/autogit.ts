@@ -1,54 +1,52 @@
 /**
- * Build the bad‑character shift table for the pattern.
- * The table maps a character code to the distance we can safely skip
- * when that character is found in the text.
+ * Compare two numbers (or any types that support `<` and `>`).
+ * Returns positive if a > b, negative if a < b, zero otherwise.
  */
-function buildShiftTable(pattern: string): Int32Array {
-  const m = pattern.length;
-  const shift = new Int32Array(256);       // ASCII table size
-  shift.fill(m);                          // default shift = pattern length
-
-  // Populate the table for every character except the last one.
-  // The last character is handled by the searches’ failure condition.
-  for (let i = 0; i < m - 1; i++) {
-    shift[pattern.charCodeAt(i)] = m - 1 - i;
-  }
-  return shift;
-}
+const compare = <T>(a: T, b: T): number => {
+  if (a > b) return 1;
+  if (a < b) return -1;
+  return 0;
+};
 
 /**
- * Boyer‑Moore‑Horspool string search.
- * @param text The string to search in.
- * @param pattern The string to find.
- * @returns The index of the first occurrence, or -1 if not found.
+ * Restores the max‑heap property for the sub‑array a[0 … n-1]
+ * starting from index i, assuming its children already satisfy
+ * the heap property.
  */
-export function boyerMooreHorspool(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
+const heapify = <T>(a: T[], n: number, i: number): void => {
+  let largest = i;
+  const left  = 2 * i + 1;
+  const right = 2 * i + 2;
 
-  if (m === 0) return 0;          // empty pattern matches at start
-  if (m > n) return -1;           // longer pattern than text → impossible
+  if (left  < n && compare(a[left],  a[largest]) > 0) largest = left;
+  if (right < n && compare(a[right], a[largest]) > 0) largest = right;
 
-  const shift = buildShiftTable(pattern);
-
-  let i = m - 1;                  // index in text aligned with last pattern char
-  while (i < n) {
-    let j = 0;                    // offset from last pattern char
-    while (j < m && pattern[m - 1 - j] === text[i - j]) {
-      j++;
-    }
-
-    if (j === m) {                // all characters matched
-      return i - m + 1;           // return starting index
-    }
-
-    // Shift by the value in the table for the mismatching text character
-    const nextChar = text.charCodeAt(i);
-    i += Math.max(shift[nextChar], 1);   // never shift by 0
+  if (largest !== i) {
+    [a[i], a[largest]] = [a[largest], a[i]];
+    heapify(a, n, largest);
   }
-  return -1;                      // not found
-}
-const txt = "abcxabcdabxabcdabcdabcy";
-const pat = "abcdabcy";
+};
 
-console.log(boyerMooreHorspool(txt, pat));  // → 15
+/**
+ * Turns an array into a max‑heap. Complexity O(n).
+ */
+const buildHeap = <T>(a: T[]): void => {
+  const n = a.length;
+  // start at the last parent node
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+    heapify(a, n, i);
+  }
+};
+
+/**
+ * Heap‑sort: arr is sorted in‑place.
+ */
+export const heapSort = <T>(arr: T[]): void => {
+  buildHeap(arr);
+  for (let i = arr.length - 1; i > 0; i--) {
+    // move current root (max) to the end
+    [arr[0], arr[i]] = [arr[i], arr[0]];
+    // heapify the reduced heap
+    heapify(arr, i, 0);
+  }
+};
