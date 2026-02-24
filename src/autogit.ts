@@ -1,57 +1,40 @@
+const decimal = 42;          // any number you want to convert
+const binary = decimal.toString(2);  // '101010'
+console.log(binary);        // → 101010
 /**
- * Simple anagram checker.
- * @param a First string
- * @param b Second string
- * @returns true if a and b are anagrams, false otherwise
+ * Convert a non‑negative decimal number to binary.
  */
-function areAnagrams(a: string, b: string): boolean {
-  // 1. Normalize: lower‑case, strip non‑alphanumerics, trim
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")
-      .trim();
+function decimalToBinary(n: number): string {
+  if (n === 0) return '0';
+  let result: string = '';
+  let num = n;
 
-  const na = normalize(a);
-  const nb = normalize(b);
-
-  // Quick length check; if they differ early we’re done.
-  if (na.length !== nb.length) return false;
-
-  // 2. Build frequency maps
-  const freq = new Map<string, number>();
-
-  for (const ch of na) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  while (num > 0) {
+    // `num % 2` is the remainder (0 or 1)
+    const bit = (num % 2).toString();
+    result = bit + result;          // prepend the bit
+    num = Math.floor(num / 2);       // shift right
   }
 
-  for (const ch of nb) {
-    const count = freq.get(ch);
+  return result;
+}
 
-    // If we see a character not in the first string, bail
-    if (!count) return false;
-
-    // Decrease the count and remove entry if it drops to zero
-    if (count === 1) freq.delete(ch);
-    else freq.set(ch, count - 1);
+// Demo
+console.log(decimalToBinary(42));   // → 101010
+console.log(decimalToBinary(0));    // → 0
+console.log(decimalToBinary(255));  // → 11111111
+function bigIntDecimalToBinary(n: bigint): string {
+  if (n === 0n) return '0';
+  let result = '';
+  let num = n;
+  while (num > 0n) {
+    result = (num & 1n).toString() + result; // `& 1n` is a fast bitwise test
+    num >>= 1n;   // shift right
   }
-
-  // 3. If all counts cleared, the strings are anagrams
-  return freq.size === 0;
+  return result;
 }
-console.log(areAnagrams("listen", "silent"));   // → true
-console.log(areAnagrams("evil", "vile"));       // → true
-console.log(areAnagrams("hello", "billion"));   // → false
-console.log(areAnagrams("Clint Eastwood", "Old West Action")); // true
-function areAnagramsSort(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")
-      .trim()
-      .split("")
-      .sort()
-      .join("");
+// 16 decimal → 10000 binary
+console.assert(decimalToBinary(16) === '10000');
 
-  return normalize(a) === normalize(b);
-}
+// 255 decimal → 11111111 binary
+console.assert(decimalToBinary(255) === '11111111');
