@@ -1,65 +1,23 @@
-/**
- * Generic insertion sort.
- * @param arr  The array to sort – it will be mutated in‑place.
- * @returns    The sorted array (the same reference that was passed in).
- */
-export function insertionSort<T>(arr: T[]): T[] {
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+function countWordOccurrences(str: string, word: string): number {
+  // Escape any regex‑special characters in the word
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(escaped, 'g');
 
-    /* shift elements that are greater than key one position to the right */
-    while (j >= 0 && arr[j] > key) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    arr[j + 1] = key;
-  }
-  return arr;
-}
-const numbers = [8, 3, 5, 4, 6, 1];
-console.log(insertionSort(numbers)); // [1, 3, 4, 5, 6, 8]
-const words = ['orange', 'apple', 'banana'];
-console.log(insertionSort(words)); // ['apple', 'banana', 'orange']
-interface Person {
-  name: string;
-  age: number;
+  const matches = str.match(regex);
+  return matches ? matches.length : 0;
 }
 
-const people: Person[] = [
-  { name: 'Zoe', age: 29 },
-  { name: 'Anna', age: 22 },
-  { name: 'Mike', age: 35 }
-];
+/* Example */
+const txt = "Lorem ipsum dolor sit amet. Lorem ipsum!";
+console.log(countWordOccurrences(txt, "Lorem")); // 2
+function countWordOccurrencesInsensitive(str: string, word: string): number {
+  const lowered = str.toLowerCase();
+  const target = word.toLowerCase();
 
-function sortByAge(arr: Person[]): Person[] {
-  return insertionSort(arr, (a, b) => a.age - b.age);
+  // Split on the target word – keep empty pieces that might appear
+  // at the boundaries or due to overlapping patterns
+  return lowered.split(target).length - 1;
 }
 
-// extended version that accepts a compare function
-export function insertionSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number
-): T[] {
-  const cmp = compareFn ?? ((a: T, b: T) => (a > b ? 1 : a < b ? -1 : 0));
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-    arr[j + 1] = key;
-  }
-  return arr;
-}
-
-console.log(sortByAge(people));
-/*
-[
-  { name: 'Anna', age: 22 },
-  { name: 'Zoe', age: 29 },
-  { name: 'Mike', age: 35 }
-]
-*/
+/* Example */
+console.log(countWordOccurrencesInsensitive(txt, "lorem")); // 2
