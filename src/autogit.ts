@@ -1,74 +1,60 @@
-/**
- * Median of two sorted arrays
- * A and B can be empty, but not both.
- */
-export function medianOfTwoSortedArrays(
-  a: number[],
-  b: number[]
-): number {
-  // Ensure a is the smaller array; this keeps the binary‑search bounds tight.
-  const [A, B] = a.length <= b.length ? [a, b] : [b, a];
-  const m = A.length;
-  const n = B.length;
-  const half = Math.floor((m + n + 1) / 2);
+function buildLps(pattern: string): number[] {
+  const lps = new Array(pattern.length).fill(0);
+  let len = 0;          // length of the previous longest prefix suffix
+  let i = 1;            // we start from the second character
 
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2); // elements taken from A
-    const j = half - i;                     // elements taken from B
-
-    const Aleft  = i === 0     ? Number.NEGATIVE_INFINITY : A[i - 1];
-    const Aright = i === m     ? Number.POSITIVE_INFINITY : A[i];
-
-    const Bleft  = j === 0     ? Number.NEGATIVE_INFINITY : B[j - 1];
-    const Bright = j === n     ? Number.POSITIVE_INFINITY : B[j];
-
-    // i is perfect if left side ≤ right side
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // Odd total → max of left side
-      if ((m + n) % 2 === 1) {
-        return Math.max(Aleft, Bleft);
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      // Mismatch after len matches
+      if (len !== 0) {
+        // Try the last known good prefix
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
       }
+    }
+  }
+  return lps;
+}
+/**
+ * Returns an array of starting indices where `pattern` occurs in `text`.
+ * If no match, returns an empty array.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  const lps = buildLps(pattern);
+  const results: number[] = [];
 
-      // Even total → average of two middle values
-      return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
-    } else if (Aleft > Bright) {
-      // i too big, shift left
-      high = i - 1;
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) {
+        // Match found at position i - j
+        results.push(i - j);
+        // Prepare for the next possible match
+        j = lps[j - 1];
+      }
     } else {
-      // i too small, shift right
-      low = i + 1;
+      if (j !== 0) {
+        // Mismatch after j matches
+        j = lps[j - 1];
+      } else {
+        // Mismatch at the start
+        i++;
+      }
     }
   }
 
-  throw new Error('Input arrays are not sorted or invalid.');
+  return results;
 }
-export function medianOfTwoSortedArraysSimple(
-  a: number[],
-  b: number[]
-): number {
-  const merged: number[] = [];
-  let i = 0, j = 0;
+const text = "ABABDABACDABABCABAB";
+const pattern = "ABABCABAB";
 
-  while (i < a.length || j < b.length) {
-    if (i >= a.length) {
-      merged.push(b[j++]);
-    } else if (j >= b.length) {
-      merged.push(a[i++]);
-    } else if (a[i] <= b[j]) {
-      merged.push(a[i++]);
-    } else {
-      merged.push(b[j++]);
-    }
-  }
-
-  const len = merged.length;
-  if (len % 2 === 1) return merged[Math.floor(len / 2)];
-  return (merged[len / 2 - 1] + merged[len / 2]) / 2;
-}
-const arr1 = [1, 3, 5, 9];
-const arr2 = [2, 4, 6, 8, 10];
-
-console.log(medianOfTwoSortedArrays(arr1, arr2)); // 5.5
+console.log(kmpSearch(text, pattern)); // [10]
