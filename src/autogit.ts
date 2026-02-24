@@ -1,40 +1,40 @@
+const decimal = 42;          // any number you want to convert
+const binary = decimal.toString(2);  // '101010'
+console.log(binary);        // → 101010
 /**
- * Binary search – recursive.  
- * @param arr        — sorted array
- * @param target     — value to find
- * @param compare    — optional comparison function (a, b) => number
- *                     returns <0 if a<b, 0 if a==b, >0 if a>b
- * @returns index of `target` or -1 if not found
+ * Convert a non‑negative decimal number to binary.
  */
-function binarySearchRec<T>(
-  arr: T[],
-  target: T,
-  compare?: (a: T, b: T) => number
-): number {
-  // Provide a default numeric comparator
-  const cmp = compare ?? ((a: any, b: any) => a - b);
+function decimalToBinary(n: number): string {
+  if (n === 0) return '0';
+  let result: string = '';
+  let num = n;
 
-  const search = (low: number, high: number): number => {
-    if (low > high) return -1;          // base case: not found
+  while (num > 0) {
+    // `num % 2` is the remainder (0 or 1)
+    const bit = (num % 2).toString();
+    result = bit + result;          // prepend the bit
+    num = Math.floor(num / 2);       // shift right
+  }
 
-    const mid = Math.floor((low + high) / 2);
-    const cmpResult = cmp(arr[mid], target);
-
-    if (cmpResult === 0) return mid;    // target is at mid
-    if (cmpResult < 0) return search(mid + 1, high); // target is right
-    return search(low, mid - 1);        // target is left
-  };
-
-  return search(0, arr.length - 1);
+  return result;
 }
-// Numbers – no comparator needed
-const nums = [1, 3, 5, 7, 9, 11, 13];
-console.log(binarySearchRec(nums, 7));  // → 3
-console.log(binarySearchRec(nums, 2));  // → -1
 
-// Strings – supply a comparator
-const words = ["apple", "banana", "cherry", "date"];
-const stringCmp = (a: string, b: string) => a.localeCompare(b);
+// Demo
+console.log(decimalToBinary(42));   // → 101010
+console.log(decimalToBinary(0));    // → 0
+console.log(decimalToBinary(255));  // → 11111111
+function bigIntDecimalToBinary(n: bigint): string {
+  if (n === 0n) return '0';
+  let result = '';
+  let num = n;
+  while (num > 0n) {
+    result = (num & 1n).toString() + result; // `& 1n` is a fast bitwise test
+    num >>= 1n;   // shift right
+  }
+  return result;
+}
+// 16 decimal → 10000 binary
+console.assert(decimalToBinary(16) === '10000');
 
-console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
-console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
+// 255 decimal → 11111111 binary
+console.assert(decimalToBinary(255) === '11111111');
