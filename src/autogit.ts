@@ -1,30 +1,45 @@
-import axios, { AxiosResponse } from 'axios';
+/**
+ * Checks if a string is a palindrome.
+ *
+ * @param txt          The input string to test.
+ * @param options      Optional flags.
+ * @returns            true if the cleaned string reads the same forwards and backwards.
+ */
+export function isPalindrome(
+  txt: string,
+  options?: {
+    /** When true (default), the check is case‑insensitive. */
+    ignoreCase?: boolean;
+    /** When true (default), only alphanumeric characters are considered. */
+    stripNonAlnum?: boolean;
+    /** When true, normalises Unicode to NFKD form before the checks. */
+    normalize?: boolean;
+  } = {}
+): boolean {
+  const {
+    ignoreCase = true,
+    stripNonAlnum = true,
+    normalize = true,
+  } = options;
 
-// Declare the shape of the data we expect from the API
-interface Quote {
-  id: number;
-  quote: string;
-  author: string;
-}
+  let processed = txt;
 
-// A helper that fetches a random quote
-async function fetchRandomQuote(): Promise<Quote> {
-  try {
-    const response: AxiosResponse<Quote> = await axios.get(
-      'https://api.quotable.io/random'
-    );
-    return response.data;
-  } catch (err) {
-    // If something goes wrong, throw a readable error
-    throw new Error(
-      `Could not fetch a quote: ${
-        err instanceof Error ? err.message : String(err)
-      }`
-    );
+  if (normalize) {
+    // This collapse accents, e.g. "café" ➜ "cafe".
+    processed = processed.normalize('NFKD');
   }
-}
 
-// Usage example – print a random quote to the console
-fetchRandomQuote()
-  .then((quote) => console.log(`${quote.quote} — ${quote.author}`))
-  .catch((err) => console.error(err.message));
+  if (stripNonAlnum) {
+    processed = processed.replace(/[^0-9a-z]+/gi, '');
+  }
+
+  if (ignoreCase) {
+    processed = processed.toLowerCase();
+  }
+
+  const reversed = processed.split('').reverse().join('');
+  return processed === reversed;
+}
+console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
+console.log(isPalindrome('Madam In Eden, I’m Adam'));          // true
+console.log(isPalindrome('Hello, world!'));                    // false
