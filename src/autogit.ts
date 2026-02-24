@@ -1,48 +1,25 @@
-/**
- * Random‑pivot quicksort for an array of numbers.
- *
- * @param arr – the array to sort (it will be sorted in place)
- * @returns the sorted array (same reference as the input)
- */
-function randomQuickSort(arr: number[]): number[] {
-  // Internal helper that works on a sub‑range [left, right]
-  function sort(left: number, right: number) {
-    if (left >= right) return;           // 0 or 1 element – nothing to do
-
-    // Pick a random pivot index between left and right (inclusive)
-    const pivotIndex = Math.floor(Math.random() * (right - left + 1)) + left;
-    const pivotValue = arr[pivotIndex];
-
-    // Move the pivot to the rightmost position for the partition step
-    [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
-
-    // Standard Lomuto partition
-    let storeIndex = left;
-    for (let i = left; i < right; i++) {
-      if (arr[i] < pivotValue) {
-        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
-        storeIndex++;
-      }
-    }
-
-    // Put the pivot back in its final place
-    [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
-
-    // Recurse on the two partitions
-    sort(left, storeIndex - 1);
-    sort(storeIndex + 1, right);
-  }
-
-  sort(0, arr.length - 1);
-  return arr;
+function reverseString(str: string): string {
+  return str.split('').reverse().join('');
 }
-
-/*--------------------------------------------
-  Example usage
---------------------------------------------*/
-
-const data = [34, 7, 23, 32, 5, 62];
-console.log('Unsorted:', data);
-
-const sorted = randomQuickSort([...data]); // copy to avoid mutating the original
-console.log('Sorted  :', sorted);
+function reverseStringNoArray(str: string): string {
+  let result = '';
+  for (let i = str.length - 1; i >= 0; i--) {
+    result += str[i];
+  }
+  return result;
+}
+function reverseStringRecursive(str: string): string {
+  if (str === '') return '';
+  return reverseStringRecursive(str.slice(1)) + str[0];
+}
+function reverseStringFlatMap(str: string): string {
+  return [...str.matchAll(/./gu)].flatMap(ch => [ch[0]]).reverse().join('');
+}
+function reverseUnicodeString(str: string): string {
+  // splitIntoGraphemes could be a library function; here’s a simple UX:
+  const graphemes = [...str];
+  return graphemes.reverse().join('');
+}
+console.log(reverseString('hello'));          // 'olleh'
+console.log(reverseStringNoArray('world'));   // 'dlrow'
+console.log(reverseStringRecursive('foo'));   // 'oof'
