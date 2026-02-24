@@ -1,85 +1,40 @@
-/* A node that lives inside the queue */
-class QueueNode<T> {
-  constructor(
-    public value: T,
-    public next: QueueNode<T> | null = null
-  ) {}
+const decimal = 42;          // any number you want to convert
+const binary = decimal.toString(2);  // '101010'
+console.log(binary);        // → 101010
+/**
+ * Convert a non‑negative decimal number to binary.
+ */
+function decimalToBinary(n: number): string {
+  if (n === 0) return '0';
+  let result: string = '';
+  let num = n;
+
+  while (num > 0) {
+    // `num % 2` is the remainder (0 or 1)
+    const bit = (num % 2).toString();
+    result = bit + result;          // prepend the bit
+    num = Math.floor(num / 2);       // shift right
+  }
+
+  return result;
 }
 
-/* The queue itself */
-export class LinkedListQueue<T> {
-  // We keep pointers to both ends so that both enqueue
-  // (push) and dequeue (pop) stay O(1).
-  private head: QueueNode<T> | null = null; // front of the queue
-  private tail: QueueNode<T> | null = null; // rear of the queue
-  private _size = 0;
-
-  /** Insert a new value at the rear. */
-  enqueue(value: T): void {
-    const node = new QueueNode(value);
-
-    if (this.tail) {
-      // The queue already has at least one element
-      this.tail.next = node;
-      this.tail = node;
-    } else {
-      // Empty queue: head and tail become the new node
-      this.head = this.tail = node;
-    }
-
-    this._size++;
+// Demo
+console.log(decimalToBinary(42));   // → 101010
+console.log(decimalToBinary(0));    // → 0
+console.log(decimalToBinary(255));  // → 11111111
+function bigIntDecimalToBinary(n: bigint): string {
+  if (n === 0n) return '0';
+  let result = '';
+  let num = n;
+  while (num > 0n) {
+    result = (num & 1n).toString() + result; // `& 1n` is a fast bitwise test
+    num >>= 1n;   // shift right
   }
-
-  /** Remove and return the value at the front. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined; // Empty queue
-
-    const value = this.head.value;
-    this.head = this.head.next;
-
-    // If we just removed the last element, clear the tail too
-    if (!this.head) {
-      this.tail = null;
-    }
-
-    this._size--;
-    return value;
-  }
-
-  /** Peek at the front value without removing it. */
-  peek(): T | undefined {
-    return this.head ? this.head.value : undefined;
-  }
-
-  /** Number of elements currently in the queue. */
-  get size(): number {
-    return this._size;
-  }
-
-  /** Are there any elements? */
-  get isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Remove everything from the queue. */
-  clear(): void {
-    this.head = null;
-    this.tail = null;
-    this._size = 0;
-  }
+  return result;
 }
-const queue = new LinkedListQueue<number>();
+// 16 decimal → 10000 binary
+console.assert(decimalToBinary(16) === '10000');
 
-queue.enqueue(1);
-queue.enqueue(2);
-queue.enqueue(3);
-
-console.log(queue.peek()); // 1
-console.log(queue.dequeue()); // 1
-console.log(queue.dequeue()); // 2
-console.log(queue.size); // 1
-
-queue.enqueue(4);
-console.log(queue.dequeue()); // 3
-console.log(queue.dequeue()); // 4
-console.log(queue.isEmpty); // true
+// 255 decimal → 11111111 binary
+console.assert(decimalToBinary(255) === '11111111');
