@@ -1,52 +1,60 @@
 /**
- * Compare two numbers (or any types that support `<` and `>`).
- * Returns positive if a > b, negative if a < b, zero otherwise.
+ * Rabin–Karp string search.
+ *
+ * @param text    the string to search in
+ * @param pattern the string to find
+ * @returns array of starting indices where pattern appears in text
  */
-const compare = <T>(a: T, b: T): number => {
-  if (a > b) return 1;
-  if (a < b) return -1;
-  return 0;
-};
+export function rabinKarp(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
 
-/**
- * Restores the max‑heap property for the sub‑array a[0 … n-1]
- * starting from index i, assuming its children already satisfy
- * the heap property.
- */
-const heapify = <T>(a: T[], n: number, i: number): void => {
-  let largest = i;
-  const left  = 2 * i + 1;
-  const right = 2 * i + 2;
-
-  if (left  < n && compare(a[left],  a[largest]) > 0) largest = left;
-  if (right < n && compare(a[right], a[largest]) > 0) largest = right;
-
-  if (largest !== i) {
-    [a[i], a[largest]] = [a[largest], a[i]];
-    heapify(a, n, largest);
+  if (m === 0 || m > n) {
+    return [];
   }
-};
 
-/**
- * Turns an array into a max‑heap. Complexity O(n).
- */
-const buildHeap = <T>(a: T[]): void => {
-  const n = a.length;
-  // start at the last parent node
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-    heapify(a, n, i);
-  }
-};
+  const base = 256;            // Number of possible ASCII characters
+  const mod  = 101;            // A prime modulus – large enough for short strings
 
-/**
- * Heap‑sort: arr is sorted in‑place.
- */
-export const heapSort = <T>(arr: T[]): void => {
-  buildHeap(arr);
-  for (let i = arr.length - 1; i > 0; i--) {
-    // move current root (max) to the end
-    [arr[0], arr[i]] = [arr[i], arr[0]];
-    // heapify the reduced heap
-    heapify(arr, i, 0);
+  /* ----------  helper: convert a substring to a hash ------------ */
+  const hash = (str: string, len: number) => {
+    let h = 0;
+    for (let i = 0; i < len; i++) {
+      h = (h * base + str.charCodeAt(i)) % mod;
+    }
+    return h;
+  };
+
+  /* ----------  pre‑compute base^(m-1)  modulo mod -------------- */
+  let highPow = 1;                 // (base^(m‑1)) % mod
+  for (let i = 1; i <= m - 1; i++) {
+    highPow = (highPow * base) % mod;
   }
-};
+
+  /* ----------  initial hashes ----------------------------------- */
+  let patternHash = hash(pattern, m);
+  let windowHash  = hash(text, m);
+
+  const result: number[] = [];
+
+  /* ----------  main loop ---------------------------------------- */
+  for (let i = 0; i <= n - m; i++) {
+    // When hashes match we still do a string comparison to rule out collisions
+    if (patternHash === windowHash) {
+      if (text.substr(i, m) === pattern) {
+        result.push(i);
+      }
+    }
+
+    // Roll the hash: remove the leftmost character, add the new rightmost
+    if (i < n - m) {
+      windowHash =
+        // Remove leftmost char contribution
+        (windowHash - text.charCodeAt(i) * highPow % mod + mod) % mod; // keep positive
+      // Add next char
+      windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
+    }
+  }
+
+  return result;
+}
