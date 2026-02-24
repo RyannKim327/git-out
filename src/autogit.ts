@@ -1,37 +1,48 @@
-// Works for numbers, strings, dates, anything that can be compared with < and >.
-export function isSorted<T extends number | string | Date>(arr: T[]): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] < arr[i - 1]) return false;
+// 1️⃣  Define a comparison helper – most of the time you’ll just pass
+//     (a, b) => a < b for ascending order.
+type Comparator<T> = (a: T, b: T) => boolean;
+
+// 2️⃣  The merge function – it expects two sorted arrays and pulls
+//     the smaller (according to the comparator) element out first.
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+  const result: T[] = [];
+  let i = 0,
+      j = 0;
+
+  while (i < left.length && j < right.length) {
+    if (cmp(left[i], right[j])) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
+    }
   }
-  return true;
+
+  // One side still has items – splice the rest onto the result.
+  if (i < left.length) result.push(...left.slice(i));
+  if (j < right.length) result.push(...right.slice(j));
+
+  return result;
 }
-isSorted([1, 2, 3, 4]);        // true
-isSorted([1, 3, 2, 4]);        // false
-isSorted(['a', 'b', 'c']);     // true
-isSorted(['c', 'b', 'a']);     // false
-type Comparator<T> = (a: T, b: T) => number;
 
-export function isSortedWith<T>(arr: T[], cmp: Comparator<T>): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) return false; // `a > b` in ascending order
-  }
-  return true;
+// 3️⃣  The recursive mergeSort main function – sorts in place if you
+//     prefer not to allocate the full array during every merge.
+export function mergeSort<T>(arr: T[], cmp: Comparator<T> = (a, b) => a < b): T[] {
+  if (arr.length <= 1) return arr;     // Base case: nothing to do
+
+  const mid = Math.floor(arr.length / 2);
+  const left  = mergeSort(arr.slice(0, mid), cmp);
+  const right = mergeSort(arr.slice(mid),    cmp);
+
+  return merge(left, right, cmp);
 }
-interface Person { name: string; age: number; }
+// Numbers, ascending
+const sortedNumbers = mergeSort([8, 3, 5, 1, 9, 2]);
 
-const people: Person[] = [
-  { name: 'Alice', age: 25 },
-  { name: 'Bob', age: 30 },
-  { name: 'Charlie', age: 35 },
-];
+// Strings, descending
+const sortedStrings = mergeSort(
+  ["banana", "apple", "cherry"],
+  (a, b) => a > b
+);
 
-isSortedWith(people, (a, b) => a.age - b.age); // true
-export const isSorted = <T>(arr: T[], cmp: Comparator<T> = (a, b) => {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}): boolean =>
-  arr
-    .map((value, index, self) => [self[index - 1], value] as const)
-    .slice(1) // skip the first undefined pair
-    .every(([prev, cur]) => cmp(prev!, cur) <= 0);
+console.log(sortedNumbers); // [1, 2, 3, 5, 8, 9]
+console.log(sortedStrings); // ["cherry", "banana", "apple"]
