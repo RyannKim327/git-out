@@ -1,78 +1,128 @@
-// AndroidAsyncDemo.ts
-import { AndroidApplication, AndroidActivityEventData } from "@nativescript/core";
-import * as http from "http";
+type Compare<T> = (a: T, b: T) => boolean;
 
-export class AndroidAsyncDemo {
-    private activity: android.app.Activity;
+/**
+ * If `compare(child, parent)` is true, swap them and continue
+ * until the heap property is restored.
+ */
+function siftDown<T>(heap: T[], start: number, end: number, compare: Compare<T>) {
+  let root = start;
 
-    constructor() {
-        const eventData = <AndroidActivityEventData>androidApplication.currentContext.getActivity();
-        this.activity = eventData.activity;
+  while (true) {
+    const left = root * 2 + 1;
+    const right = left + 1;
+    let swap = root;
+
+    if (left <= end && compare(heap[left], heap[swap])) {
+      swap = left;
+    }
+    if (right <= end && compare(heap[right], heap[swap])) {
+      swap = right;
     }
 
-    public startDemo() {
-        // URL you care about
-        const url = "https://api.github.com/users/nativescript";
+    if (swap === root) break;
 
-        // Create an instance of the AsyncTask wrapper
-        const task = new HttpGetAsyncTask(this.activity, url);
-        task.execute();
-    }
+    [heap[root], heap[swap]] = [heap[swap], heap[root]];
+    root = swap;
+  }
 }
 
-// --------------------------------------------
-//  AsyncTask wrapper – looks a bit like Java
-// --------------------------------------------
-class HttpGetAsyncTask extends java.lang.Object implements android.os.AsyncTask<string, void, string> {
+/**
+ * Moves the root element down the heap until it finds the right spot.
+ * Called during `remove` after we swap the last element into the root.
+ */
+export function heapify<T>(heap: T[], compare: Compare<T>) {
+  const length = heap.length;
+  if (length <= 1) return;
 
-    private activity: android.app.Activity;
-    private url: string;
-    private resultView: android.widget.TextView;
+  // Start from the last non‑leaf node.
+  for (let i = Math.floor((length - 2) / 2); i >= 0; i--) {
+    siftDown(heap, i, length - 1, compare);
+  }
+}
+export class PriorityQueue<T> {
+  private heap: T[] = [];
+  private readonly compare: Compare<T>;
 
-    constructor(activity: android.app.Activity, url: string) {
-        super();
-        this.activity = activity;
-        this.url = url;
-        this.resultView = new android.widget.TextView(activity);
-        this.resultView.setLayoutParams(
-            new android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        );
-        this.activity.runOnUiThread(() => {
-            const root = this.activity.findViewById(android.R.id.content);
-            if (root instanceof android.widget.LinearLayout) {
-                root.addView(this.resultView);
-            }
-        });
+  constructor(compare: Compare<T>) {
+    this.compare = compare;
+  }
+
+  get size() {
+    return this.heap.length;
+  }
+
+  /** Insert a new item, maintaining heap property */
+  push(item: T): void {
+    this.heap.push(item);
+    // bubble‑up
+    let idx = this.heap.length - 1;
+    while (idx > 0) {
+      const parentIdx = Math.floor((idx - 1) / 2);
+      if (!this.compare(this.heap[idx], this.heap[parentIdx])) break;
+      [this.heap[idx], this.heap[parentIdx]] = [this.heap[parentIdx], this.heap[idx]];
+      idx = parentIdx;
+    }
+  }
+
+  /** Return the root element (minimum) without removing it */
+  peek(): T | undefined {
+    return this.heap[0];
+  }
+
+  /**
+   * Remove and return the root element.
+   * The last element is moved to the root and sifted down.
+   */
+  pop(): T | undefined {
+    const length = this.heap.length;
+    if (!length) return undefined;
+    const root = this.heap[0];
+    const last = this.heap.pop()!; // last is defined because length > 0
+
+    if (length > 1) {
+      this.heap[0] = last;
+      siftDown(this.heap, 0, this.heap.length - 1, this.compare);
     }
 
-    // @Override
-    public doInBackground(...params: string[]): string {
-        try {
-            // Using Node's http wrapper that works in NativeScript
-            const response = http.getSync(this.url);
-            return response.content.toString();
-        } catch (err) {
-            return `Error: ${err.message || err}`;
-        }
-    }
+    return root;
+  }
 
-    // @Override
-    public onPostExecute(result: string): void {
-        this.resultView.setText(result);
-    }
+  /** Convert the current array into a heap (in‑place) */
+  build() {
+    heapify(this.heap, this.compare);
+  }
+}
+// Simple numeric priority queue
+const pq = new PriorityQueue<number>((a, b) => a < b);
 
-    // The following method signatures satisfy the interface contract
-    public onPreExecute(): void {}
-    public onProgressUpdate(...values: void[]): void {}
+pq.push(5);
+pq.push(2);
+pq.push(8);
+pq.push(1);
+
+console.log(pq.peek()); // 1
+while (pq.size) {
+  console.log(pq.pop()); // 1, 2, 5, 8
+}
+interface Task {
+  id: number;
+  priority: number; // smaller = higher priority
+  payload: string;
 }
 
-// --------------------------------------------
-//  Use it from your page or component
-// --------------------------------------------
-export function demoClicked() {
-    const demo = new AndroidAsyncDemo();
-    demo.startDemo();
+const taskCompare = (a: Task, b: Task) => a.priority < b.priority;
+const taskQueue = new PriorityQueue<Task>(taskCompare);
+
+taskQueue.push({ id: 1, priority: 10, payload: 'work' });
+taskQueue.push({ id: 2, priority: 3, payload: 'urgent' });
+taskQueue.push({ id: 3, priority: 7, payload: 'normal' });
+
+while (taskQueue.size) {
+  const t = taskQueue.pop()!;
+  console.log(`${t.id} (${t.priority}): ${t.payload}`);
 }
+2 (3): urgent
+3 (7): normal
+1 (10): work
+const maxComparator = (a: number, b: number) => a > b;
+const maxPQ = new PriorityQueue<number>(maxComparator);
