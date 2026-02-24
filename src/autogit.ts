@@ -1,47 +1,36 @@
-class TreeNode<T = any> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+const original = [1, 2, 3, 2, 4, 1, 5];
+
+// Method 1 – quick & crumb‑free
+const withoutDups = [...new Set(original)];
+console.log(withoutDups); // [1, 2, 3, 4, 5]
+
+// Method 2 – If you prefer a pure function that you can re‑use
+function uniq<T>(arr: T[]): T[] {
+  return [...new Set(arr)];
 }
-function countLeaves<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;                         // empty subtree → 0 leaves
 
-  // If both children are missing, this node itself is a leaf
-  if (!root.left && !root.right) return 1;
+const uniqueColors = uniq(['red', 'green', 'red', 'blue']);
+function uniqBy<T, K>(arr: T[], keyFn: (item: T) => K): T[] {
+  const seen = new Set<K>();
+  const result: T[] = [];
 
-  // Otherwise, count leaves in the children
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-function countLeavesIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  let stack: Array<TreeNode<T>> = [root];
-  let leafCount = 0;
-
-  while (stack.length) {
-    const node = stack.pop() as TreeNode<T>;
-
-    // A leaf if it has no children
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      // Push existing children to process later
-      if (node.left) stack.push(node.left);
-      if (node.right) stack.push(node.right);
+  for (const item of arr) {
+    const key = keyFn(item);
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(item);
     }
   }
-
-  return leafCount;
+  return result;
 }
-const root = new TreeNode(1,
-  new TreeNode(2,
-    new TreeNode(4),           // leaf
-    new TreeNode(5)            // leaf
-  ),
-  new TreeNode(3)              // leaf
-);
 
-console.log(countLeaves(root));        // → 3
-console.log(countLeavesIter(root));    // → 3
+// Example: removing duplicate users by id
+const users = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 1, name: 'Alicia' },
+];
+
+const uniqueUsers = uniqBy(users, u => u.id);
+console.log(uniqueUsers);
+// [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
