@@ -1,45 +1,21 @@
 /**
- * A classic LIFO stack that stores items in an array.
- * @template T The type of the values stored inside the stack.
+ * Returns the mean (average) of an array of numbers.
+ * If the array is empty, it throws an error; you can change that behavior if you prefer.
  */
-export class Stack<T> {
-  /** The underlying array that holds the stack's data. */
-  private data: T[] = [];
-
-  /** Adds an element to the top of the stack. */
-  push(item: T): void {
-    this.data.push(item);
+function mean(nums: number[]): number {
+  if (nums.length === 0) {
+    throw new Error("Cannot compute the mean of an empty array");
   }
 
-  /**
-   * Removes and returns the element at the top of the stack.
-   * Returns undefined if the stack is empty.
-   */
-  pop(): T | undefined {
-    return this.data.pop();
-  }
-
-  /** Peeks at the element on the top without removing it. */
-  peek(): T | undefined {
-    return this.data[this.data.length - 1];
-  }
-
-  /** Returns the number of elements in the stack. */
-  get size(): number {
-    return this.data.length;
-  }
-
-  /** Returns true when the stack has nothing inside. */
-  get isEmpty(): boolean {
-    return this.data.length === 0;
-  }
+  const sum = nums.reduce((acc, v) => acc + v, 0);
+  return sum / nums.length;
 }
-const stack = new Stack<number>();
-
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size);   // 2
+const values = [4, 8, 15, 16, 23, 42];
+console.log(mean(values)); // 18.833333333333332
+function meanWhenPossible(nums: number[]): number {
+  if (nums.length === 0) {
+    return NaN;
+  }
+  return nums.reduce((acc, v) => acc + v, 0) / nums.length;
+}
+console.assert(mean([2, 4, 6]) === 4, "The mean should be 4");
