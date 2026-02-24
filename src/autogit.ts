@@ -1,52 +1,29 @@
-interface TreeNode<T = number> {
-  val: T;                // single value (you can change the type)
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
+/**
+ * Reverses the order of words in a string.
+ *
+ * Words are split on whitespace.  Consecutive whitespace is collapsed,
+ * but you can tweak the regex if you need to keep it intact.
+ *
+ * @param txt – The string to reverse
+ * @returns The string with words in reverse order
+ */
+function reverseWordOrder(txt: string): string {
+  return txt
+    .trim()                      // Strip leading/trailing gaps
+    .split(/\s+/)                // Break on any run of whitespace
+    .reverse()                   // Flip the array
+    .join(' ');                  // Stitch back together
 }
-const root: TreeNode = {
-  val: 10,
-  left: { val: 5, left: null, right: null },
-  right: { val: 15, left: null, right: null },
-};
-function maxDepth<T>(node: TreeNode<T> | null): number {
-  if (!node) return 0;
-  const leftDepth = maxDepth(node.left);
-  const rightDepth = maxDepth(node.right);
-  return Math.max(leftDepth, rightDepth) + 1;
+
+// Example usage
+const original = "Hello world, this is TypeScript.";
+const reversed = reverseWordOrder(original);
+console.log(reversed);  // "TypeScript. is this world, Hello"
+function reverseWordOrder(txt: string) {
+  const words = txt.trim().match(/\w+|\s+/g) ?? [];
+  const textOnly = words.filter(Boolean).join(' ');
+  const reversed = textOnly.split(/\s+/).reverse().join(' ');
+  // re‑insert spaces that were originally present
+  // (not shown here for brevity)
+  return reversed;
 }
-function maxDepthIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
-
-  while (queue.length) {
-    const levelSize = queue.length; // nodes at current depth
-    depth++;                        // we’re going to finish this level
-
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift() as TreeNode<T>;
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
-    }
-  }
-
-  return depth;
-}
-// build a quick tree
-const tree: TreeNode = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4, left: null, right: null },
-    right: null,
-  },
-  right: {
-    val: 3,
-    left: null,
-    right: { val: 5, left: null, right: null },
-  },
-};
-
-console.log(maxDepth(tree));      // -> 3
-console.log(maxDepthIter(tree));  // -> 3
