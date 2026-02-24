@@ -1,66 +1,132 @@
+// ---------- Types ---------------------------------------------------------
+type Vertex = string | number // whatever sort of key you like
+
+// an edge is directed; the weight can be positive, negative or zero
+interface Edge {
+  from: Vertex
+  to: Vertex
+  weight: number
+}
+
+// ---------- Graph wrapper -----------------------------------------------
+class Graph {
+  private vertices: Set<Vertex> = new Set()
+  private edges: Edge[] = []
+
+  // you can add vertices explicitly if you want; adding an edge will
+  // automatically pull its endpoints into the vertex set
+  public addVertex(v: Vertex) {
+    this.vertices.add(v)
+  }
+
+  public addEdge(from: Vertex, to: Vertex, weight: number) {
+    this.vertices.add(from)
+    this.vertices.add(to)
+    this.edges.push({ from, to, weight })
+  }
+
+  public getVertices() {
+    return Array.from(this.vertices)
+  }
+
+  public getEdges() {
+    return this.edges.slice()
+  }
+}
+
+// ---------- Bellman‑Ford algorithm ---------------------------------------
 /**
- * Returns the largest prime factor of a positive integer.
- * Works for Number (up to ~9e15) and for BigInt.
+ * Returns an object containing:
+ *   distances:  map from vertex to its shortest‑path distance from source
+ *   previous:   map from vertex to its predecessor on that shortest path
+ *
+ * Throws an Error if a negative‑weight cycle is reachable from `source`.
  */
-export function largestPrimeFactor(nInput: number | bigint): bigint {
-  // 0 or 1 have no prime factors
-  if (nInput <= 1) {
-    throw new Error('Number must be >= 2');
+function bellmanFord(
+  graph: Graph,
+  source: Vertex
+): { distances: Record<Vertex, number>; previous: Record<Vertex, Vertex | null> } {
+  const INF = Number.POSITIVE_INFINITY
+
+  // 1. initialise
+  const distance: Record<Vertex, number> = {}
+  const previous: Record<Vertex, Vertex | null> = {}
+
+  for (const v of graph.getVertices()) {
+    distance[v] = INF
+    previous[v] = null
   }
+  distance[source] = 0
 
-  // Work with BigInt internally for uniformity
-  let n = BigInt(nInput);
+  const edges = graph.getEdges()
+  const nvertices = graph.getVertices().length
 
-  // Remove factors of 2
-  let lastFactor = 2n;
-  while (n % 2n === 0n) {
-    lastFactor = 2n;
-    n /= 2n;
-  }
-
-  // Try odd factors only
-  let factor = 3n;
-  const limit = sqrtBigInt(n);
-
-  while (factor <= limit) {
-    while (n % factor === 0n) {
-      lastFactor = factor;
-      n /= factor;
+  // 2. relaxation loop (nvertices - 1) times
+  for (let i = 0; i < nvertices - 1; i++) {
+    let updated = false
+    for (const { from, to, weight } of edges) {
+      const alt = distance[from] + weight
+      if (alt < distance[to]) {
+        distance[to] = alt
+        previous[to] = from
+        updated = true
+      }
     }
-    factor += 2n;        // skip even numbers
+    // early exit if nothing changed
+    if (!updated) break
   }
 
-  // If anything is left, it must be a prime > sqrt(original n)
-  if (n > 1n) {
-    lastFactor = n;
+  // 3. check for negative‑weight cycles
+  for (const { from, to, weight } of edges) {
+    if (distance[from] + weight < distance[to]) {
+      throw new Error(
+        `Negative‑weight cycle detected: edge ${from} → ${to} (weight ${weight})`
+      )
+    }
   }
 
-  return lastFactor;
+  return { distances: distance, previous }
 }
 
-/**
- * Integer square root of a BigInt (floor)
- * (Euclidean algorithm – takes few iterations even for 64‑bit numbers)
- */
-function sqrtBigInt(value: bigint): bigint {
-  if (value < 0n) throw new Error('square root of negative not supported');
-  if (value < 2n) return value;
+// ---------- Reconstruct path helper ---------------------------------------
+function reconstructPath(
+  previous: Record<Vertex, Vertex | null>,
+  source: Vertex,
+  target: Vertex
+): Vertex[] {
+  const path: Vertex[] = []
+  let v: Vertex | null = target
 
-  let x0 = value / 2n;
-  let x1 = (x0 + value / x0) / 2n;
-
-  while (x1 < x0) {
-    x0 = x1;
-    x1 = (x0 + value / x0) / 2n;
+  while (v !== null && v !== source) {
+    path.unshift(v)
+    v = previous[v]
   }
-  return x0;
+  if (v !== source) {
+    // no path
+    return []
+  }
+  path.unshift(source)
+  return path
 }
-console.log(largestPrimeFactor(13195));      // 29
-console.log(largestPrimeFactor(600851475143)); // 6857
 
-// Using BigInt
-console.log(
-  largestPrimeFactor(
-    BigInt("9999999967") // a 10‑digit number; you can make this much bigger
-  ).toString()
-);
+// ---------- Example usage -----------------------------------------------
+const g = new Graph()
+
+// sample graph: 0 → 1 (4), 0 → 2 (5), 1 → 2 (-1), 2 → 3 (3), 3 → 1 (-2)
+g.addEdge(0, 1, 4)
+g.addEdge(0, 2, 5)
+g.addEdge(1, 2, -1)
+g.addEdge(2, 3, 3)
+g.addEdge(3, 1, -2)
+
+try {
+  const { distances, previous } = bellmanFord(g, 0)
+  console.log('distances:', distances)
+
+  for (const v of g.getVertices()) {
+    const path = reconstructPath(previous, 0, v)
+    console.log(`0 → ${v}  (dist=${distances[v]})  path:`, path.join(' → '))
+  }
+} catch (e) {
+  console.error(e)
+}
