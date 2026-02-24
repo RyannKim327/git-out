@@ -1,72 +1,47 @@
-function longestCommonPrefixVertical(strs: string[]): string {
-  if (!strs.length) return "";
+/**
+ * Checks whether a string is a palindrome (case‑insensitive,
+ * ignoring anything that isn’t a letter or a digit).
+ *
+ * Time   : O(n)
+ * Space  : O(1)   – only a couple of integer variables
+ */
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  // The longest possible prefix is bounded by the first string’s length
-  const first = strs[0];
-
-  for (let i = 0; i < first.length; i++) {
-    const ch = first[i];
-    for (let j = 1; j < strs.length; j++) {
-      // If any string is shorter or the current char differs: stop
-      if (i >= strs[j].length || strs[j][i] !== ch) {
-        return first.slice(0, i);
-      }
-    }
-  }
-
-  // All strings matched the entire first string
-  return first;
-}
-console.log(longestCommonPrefixVertical(["flower", "flow", "flight"])); // "fl"
-function lcpMerge(a: string, b: string): string {
-  let i = 0;
-  const limit = Math.min(a.length, b.length);
-  while (i < limit && a[i] === b[i]) i++;
-  return a.slice(0, i);
-}
-
-function longestCommonPrefixDivide(strs: string[]): string {
-  if (!strs.length) return "";
-
-  const helper = (l: number, r: number): string => {
-    if (l === r) return strs[l];
-    const mid = Math.floor((l + r) / 2);
-    const left = helper(l, mid);
-    const right = helper(mid + 1, r);
-    return lcpMerge(left, right);
+  const isAlnum = (ch: string): boolean => {
+    const code = ch.charCodeAt(0);
+    // '0'‑'9'
+    if (code >= 48 && code <= 57) return true;
+    // 'A'‑'Z'
+    if (code >= 65 && code <= 90) return true;
+    // 'a'‑'z'
+    if (code >= 97 && code <= 122) return true;
+    return false;
   };
 
-  return helper(0, strs.length - 1);
-}
-class TrieNode {
-  children = new Map<string, TrieNode>();
-  isEnd = false;
-}
+  while (left < right) {
+    // Skip non‑alphanumeric characters from the left
+    while (left < right && !isAlnum(s[left])) left++;
+    // Skip non‑alphanumeric characters from the right
+    while (left < right && !isAlnum(s[right])) right--;
 
-function buildTrie(strs: string[]): TrieNode {
-  const root = new TrieNode();
-  for (const s of strs) {
-    let node = root;
-    for (const ch of s) {
-      if (!node.children.has(ch)) node.children.set(ch, new TrieNode());
-      node = node.children.get(ch)!;
-    }
-    node.isEnd = true;
-  }
-  return root;
-}
+    if (left >= right) break;          // Nothing left to compare
 
-function longestCommonPrefixTrie(strs: string[]): string {
-  if (!strs.length) return "";
-  const root = buildTrie(strs);
-  let node = root;
-  let prefix = "";
-  while (node.children.size === 1 && !node.isEnd) {
-    const [ch, next] = node.children.entries().next().value;
-    prefix += ch;
-    node = next;
+    const lc = s[left].toLowerCase();
+    const rc = s[right].toLowerCase();
+
+    if (lc !== rc) return false;
+
+    left++;
+    right--;
   }
-  return prefix;
+
+  return true;
 }
-const data = ["algorithm", "algo", "algorithms", "all"]; 
-console.log(longestCommonPrefixVertical(data)); // "alg"
+while (left < right) {
+  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
+  left++;
+  right--;
+}
+return true;
