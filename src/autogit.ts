@@ -1,143 +1,94 @@
-// 1️⃣  Bucket element (used for chaining)
-interface BucketItem<K, V> {
-  key: K;
-  value: V;
-  next?: BucketItem<K, V>;
+type AdjacencyList = Record<string, string[]>;
+
+/*
+  Example:
+
+  {
+    A: ["B"],
+    B: ["C", "E"],
+    C: ["A", "D"],
+    D: ["C"],
+    E: ["F"],
+    F: ["E", "G"],
+    G: ["H"],
+    H: ["I", "J"],
+    I: ["H"],
+    J: ["G"],
+  }
+*/
+// TarjanSCC.ts
+type AdjacencyList = Record<string, string[]>;
+
+export function tarjanSCC(graph: AdjacencyList): string[][] {
+  let index = 0;                         // global index counter
+  const indices: Record<string, number> = {};   // vertex → index
+  const lowlinks: Record<string, number> = {};  // vertex → lowlink
+  const stack: string[] = [];
+  const onStack: Record<string, boolean> = {};
+  const sccs: string[][] = [];
+
+  function strongConnect(v: string) {
+    // 1. Set the depth index for v to the smallest unused index
+    indices[v] = lowlinks[v] = index++;
+    stack.push(v);
+    onStack[v] = true;
+
+    // 2. Consider successors of v
+    const neighbours = graph[v] ?? [];
+    for (const w of neighbours) {
+      if (indices[w] === undefined) {
+        // Successor w has not yet been visited; recurse on it
+        strongConnect(w);
+        lowlinks[v] = Math.min(lowlinks[v], lowlinks[w]);
+      } else if (onStack[w]) {
+        // Successor w is in stack → part of current SCC
+        lowlinks[v] = Math.min(lowlinks[v], indices[w]);
+      }
+    }
+
+    // 3. If v is a root node, pop the stack and generate an SCC
+    if (lowlinks[v] === indices[v]) {
+      const component: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop() as string;
+        onStack[w] = false;
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
+    }
+  }
+
+  // Kick off
+  for (const v of Object.keys(graph)) {
+    if (indices[v] === undefined) {
+      strongConnect(v);
+    }
+  }
+
+  return sccs;
 }
+import { tarjanSCC } from "./TarjanSCC";
 
-// 2️⃣  Hash table implementation
-class HashTable<K extends string | number, V> {
-  // Choose a prime number for better distribution
-  private readonly bucketCount = 53;
-  private readonly buckets: Array<BucketItem<K, V> | undefined> = [];
+const graph: AdjacencyList = {
+  A: ["B"],
+  B: ["C", "E"],
+  C: ["A", "D"],
+  D: ["C"],
+  E: ["F"],
+  F: ["E", "G"],
+  G: ["H"],
+  H: ["I", "J"],
+  I: ["H"],
+  J: ["G"],
+};
 
-  constructor() {
-    // Initialize buckets array
-    this.buckets.length = this.bucketCount;
-  }
-
-  /* ---------- 🔑 Helper: hash function ---------- */
-  // Works for string & number keys; you can add more types if wanted.
-  private hash(key: K): number {
-    const str = key.toString();
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash * 31 + str.charCodeAt(i)) >>> 0; // unsigned 32‑bit arithmetic
-    }
-    return hash % this.bucketCount;
-  }
-
-  /* ---------- 🔧 Operations ---------- */
-
-  set(key: K, value: V): void {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-
-    // If the bucket is empty, insert directly
-    if (!node) {
-      this.buckets[idx] = { key, value };
-      return;
-    }
-
-    // Otherwise iterate to find key or append at end
-    let prev: BucketItem<K, V> | undefined;
-    while (node) {
-      if (node.key === key) {
-        node.value = value; // overwrite
-        return;
-      }
-      prev = node;
-      node = node.next;
-    }
-
-    prev!.next = { key, value }; // add new node at end
-  }
-
-  get(key: K): V | undefined {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-
-    while (node) {
-      if (node.key === key) return node.value;
-      node = node.next;
-    }
-
-    return undefined; // not found
-  }
-
-  delete(key: K): boolean {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-    let prev: BucketItem<K, V> | undefined;
-
-    while (node) {
-      if (node.key === key) {
-        if (!prev) {
-          // first node in bucket
-          this.buckets[idx] = node.next;
-        } else {
-          prev.next = node.next;
-        }
-        return true;
-      }
-      prev = node;
-      node = node.next;
-    }
-
-    return false; // key absent
-  }
-
-  keys(): K[] {
-    const res: K[] = [];
-    for (const bucket of this.buckets) {
-      let node = bucket;
-      while (node) {
-        res.push(node.key);
-        node = node.next;
-      }
-    }
-    return res;
-  }
-
-  values(): V[] {
-    const res: V[] = [];
-    for (const bucket of this.buckets) {
-      let node = bucket;
-      while (node) {
-        res.push(node.value);
-        node = node.next;
-      }
-    }
-    return res;
-  }
-
-  // Optional: iteration in for…of style
-  *entries(): Generator<[K, V]> {
-    for (const bucket of this.buckets) {
-      let node = bucket;
-      while (node) {
-        yield [node.key, node.value];
-        node = node.next;
-      }
-    }
-  }
-}
-
-// ---------- Demo ----------
-const ht = new HashTable<string, number>();
-
-ht.set('apple', 3);
-ht.set('banana', 7);
-ht.set('orange', 5);
-ht.set('apple', 10); // overwrite
-
-console.log(ht.get('apple')); // 10
-console.log(ht.get('banana')); // 7
-console.log(ht.get('missing')); // undefined
-
-ht.delete('orange');
-console.log(ht.keys()); // ['apple', 'banana']
-
-for (const [k, v] of ht.entries()) {
-  console.log(`key=${k}, value=${v}`);
-}
+const sccs = tarjanSCC(graph);
+console.log("Strongly connected components:");
+sccs.forEach((comp, idx) => {
+  console.log(`  ${idx + 1}: [${comp.join(", ")}]`);
+});
+Strongly connected components:
+  1: [A, B, C, D]
+  2: [E, F]
+  3: [G, H, I, J]
