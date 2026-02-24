@@ -1,25 +1,29 @@
-function reverseString(str: string): string {
-  return str.split('').reverse().join('');
-}
-function reverseStringNoArray(str: string): string {
-  let result = '';
-  for (let i = str.length - 1; i >= 0; i--) {
-    result += str[i];
+function firstRepeatedChar(str: string): string | null {
+  const seen = new Set<string>();
+
+  for (const ch of str) {
+    if (seen.has(ch)) {
+      return ch;            // ❗ hit the first duplicate
+    }
+    seen.add(ch);
   }
-  return result;
+
+  return null;               // no duplicate found
 }
-function reverseStringRecursive(str: string): string {
-  if (str === '') return '';
-  return reverseStringRecursive(str.slice(1)) + str[0];
+
+// Demo
+console.log(firstRepeatedChar("abca")); // → 'a'
+console.log(firstRepeatedChar("abcdef")); // → null
+function firstRepeatedIndex(str: string): number | -1 {
+  const seen = new Map<string, number>();
+
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (seen.has(ch)) {
+      return i;   // index of the first occurrence that was repeated
+    }
+    seen.set(ch, i);
+  }
+
+  return -1;
 }
-function reverseStringFlatMap(str: string): string {
-  return [...str.matchAll(/./gu)].flatMap(ch => [ch[0]]).reverse().join('');
-}
-function reverseUnicodeString(str: string): string {
-  // splitIntoGraphemes could be a library function; here’s a simple UX:
-  const graphemes = [...str];
-  return graphemes.reverse().join('');
-}
-console.log(reverseString('hello'));          // 'olleh'
-console.log(reverseStringNoArray('world'));   // 'dlrow'
-console.log(reverseStringRecursive('foo'));   // 'oof'
