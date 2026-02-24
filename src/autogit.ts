@@ -1,72 +1,81 @@
-/**
- * Returns the k-th smallest element of an array.
- *
- * @param arr   Array of numbers (or any comparable type).
- * @param k     1‑based index of the element to find.
- * @returns     The k‑th smallest value.
- *
- * @throws      If k is out of bounds.
- */
-export function kthSmallest<T>(arr: T[], k: number): T {
-  if (k < 1 || k > arr.length) {
-    throw new Error(`k=${k} is not in the valid range 1..${arr.length}`);
+class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
+}
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
+
+  get size() { return this._size; }
+}
+append(value: T): void {
+  const newNode = new ListNode(value);
+
+  if (!this.head) {          // empty list
+    this.head = this.tail = newNode;
+  } else {
+    if (this.tail) this.tail.next = newNode;
+    this.tail = newNode;
   }
 
-  // Work on a copy so the original array stays untouched.
-  const a = arr.slice();
-  let left = 0;
-  let right = a.length - 1;
-
-  while (true) {
-    // Pick a pivot – here we just pick the middle element.
-    const pivotIndex = left + Math.floor((right - left) / 2);
-    const pivot = a[pivotIndex];
-
-    // Partition step: elements < pivot go left, >= pivot go right.
-    const pivotNewIndex = partition(a, left, right, pivot);
-
-    if (pivotNewIndex === k - 1) {      // Found the k‑th smallest
-      return a[pivotNewIndex];
-    } else if (pivotNewIndex > k - 1) {  // Look in the left partition
-      right = pivotNewIndex - 1;
-    } else {                            // Look in the right partition
-      left = pivotNewIndex + 1;
-    }
-  }
+  this._size++;
 }
+prepend(value: T): void {
+  const newNode = new ListNode(value, this.head);
+  this.head = newNode;
 
-/**
- * Standard Lomuto partition scheme.
- *
- * @param a array to partition
- * @param lo left boundary
- * @param hi right boundary
- * @param pivotValue value the array should be partitioned around
- * @returns new index of the pivot after partition
- */
-function partition<T>(a: T[], lo: number, hi: number, pivotValue: T): number {
-  // Move pivot to the end for convenience.
-  let pivotIndex = lo + (Math.random() * (hi - lo + 1)) | 0; // random pivot for stability
-  [a[pivotIndex], a[hi]] = [a[hi], a[pivotIndex]];
+  if (!this.tail) this.tail = newNode;
+  this._size++;
+}
+remove(index: number): T | null {
+  if (index < 0 || index >= this._size) return null;
 
-  const pivot = a[hi];
-  let storeIndex = lo;                         // index of the first element >= pivot
+  let current = this.head;
+  let prev: ListNode<T> | null = null;
+  let i = 0;
 
-  for (let i = lo; i < hi; i++) {
-    if (a[i] < pivot) {
-      [a[i], a[storeIndex]] = [a[storeIndex], a[i]];
-      storeIndex++;
-    }
+  while (current && i < index) {
+    prev = current;
+    current = current.next;
+    i++;
   }
 
-  // place pivot after the last smaller element
-  [a[storeIndex], a[hi]] = [a[hi], a[storeIndex]];
-  return storeIndex;
+  if (!current) return null;
+
+  if (prev) prev.next = current.next;
+  else this.head = current.next;      // removed head
+
+  if (current === this.tail) this.tail = prev;
+  this._size--;
+  return current.value;
 }
-export function kthSmallestSort<T>(arr: T[], k: number): T {
-  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
-  return [...arr].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))[k - 1];
+find(value: T): number {
+  let current = this.head;
+  let index = 0;
+
+  while (current) {
+    if (current.value === value) return index;
+    current = current.next;
+    index++;
+  }
+  return -1;  // not found
 }
-const nums = [7, 11, 5, 3, 9, 2];
-console.log(kthSmallest(nums, 3)); // 5
-console.log(kthSmallestSort(nums, 3)); // 5
+toArray(): T[] {
+  const result: T[] = [];
+  let current = this.head;
+  while (current) {
+    result.push(current.value);
+    current = current.next;
+  }
+  return result;
+}
+const list = new LinkedList<number>();
+
+list.append(10);
+list.append(20);
+list.prepend(5);
+
+console.log(list.toArray());     // [5, 10, 20]
+console.log(list.find(10));      // 1
+console.log(list.remove(0));     // 5
+console.log(list.toArray());     // [10, 20]
