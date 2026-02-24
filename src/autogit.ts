@@ -1,41 +1,38 @@
-interface ListNode<T = any> {
-  value: T;
-  next?: ListNode<T>;
-}
 /**
- * Counts nodes in a linked list.
- * @param head The first node (or undefined if the list is empty).
- * @returns Number of nodes in the list.
+ * Find the majority element in an array.
+ *
+ * @param arr - An array of comparable items.
+ * @returns The majority element, or undefined if no majority exists.
+ *
+ * Assumes `T` supports strict equality (===).
  */
-function length<T>(head: ListNode<T> | undefined): number {
+function majorityElement<T>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
+
+  // 1️⃣ First pass: find a potential candidate
+  let candidate: T | undefined = arr[0];
   let count = 0;
-  let current = head;
 
-  while (current) {
-    count++;
-    current = current.next;   // follow the chain
+  for (const value of arr) {
+    if (count === 0) {
+      candidate = value;
+      count = 1;
+    } else {
+      count += (value === candidate) ? 1 : -1;
+    }
   }
-  return count;
-}
-function lengthRecursive<T>(node: ListNode<T> | undefined): number {
-  return node ? 1 + lengthRecursive(node.next) : 0;
-}
-function* nodes<T>(head: ListNode<T> | undefined) {
-  let cur = head;
-  while (cur) {
-    yield cur;
-    cur = cur.next;
+
+  // 2️⃣ Optional second pass (remove if you know the input always contains a majority)
+  if (candidate !== undefined) {
+    const actual = arr.filter(v => v === candidate).length;
+    if (actual > arr.length / 2) {
+      return candidate;
+    }
   }
-}
 
-function lengthFromIterable<T>(head: ListNode<T> | undefined): number {
-  let count = 0;
-  for (const _ of nodes(head)) count++;
-  return count;
+  return undefined; // No majority element
 }
-const third = { value: 3 } as ListNode<number>;
-const second = { value: 2, next: third };
-const first  = { value: 1, next: second };
+const nums = [2, 2, 1, 1, 2, 2, 2];
 
-console.log(length(first));           // 3
-console.log(lengthRecursive(first));  // 3
+const major = majorityElement(nums); // -> 2
+console.log(major); // 2
