@@ -1,20 +1,39 @@
-function removeVowels(input: string): string {
-  // Vowels (both lower‑ and upper‑case) – feel free to add accented ones if you need
-  const vowels = /[aeiouAEIOU]/g;
-  return input.replace(vowels, '');
+class ListNode<T> {
+    constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-function removeVowels(input: string): string {
-  const result: string[] = [];
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+    if (!head) return false;
 
-  for (const char of input) {
-    if (!/[aeiouAEIOU]/.test(char)) {
-      result.push(char);
+    let slow: ListNode<T> | null = head;
+    let fast: ListNode<T> | null = head;
+
+    while (fast !== null && fast.next !== null) {
+        slow = slow!.next;           // move 1 step
+        fast = fast.next.next;       // move 2 steps
+
+        if (slow === fast) {         // same node → cycle
+            return true;
+        }
     }
-  }
-
-  return result.join('');
+    return false;                    // fast reached end → no cycle
 }
-const vowels = /[aeiouAEIOUÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝŸàáâãäåæçèéêëìíîïðñòóôõöøùúûüýÿ]/gu;
-const vowels = /\p{Script=Latin}\p{L}\b{vowel}/u; // not a real pattern – just an example
-const demo = "Hello World! 123";
-console.log(removeVowels(demo)); // "Hll Wrld! 123"
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+    const visited = new Set<ListNode<T>>();
+
+    let current: ListNode<T> | null = head;
+    while (current !== null) {
+        if (visited.has(current)) return true; // already seen
+        visited.add(current);
+        current = current.next;
+    }
+    return false;
+}
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b;  // 1 → 2 → 3
+b.next = c;
+c.next = a;  // cycle back to 1
+
+console.log(hasCycle(a));        // → true
+console.log(hasCycleWithSet(a)); // → true
