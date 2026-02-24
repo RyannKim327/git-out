@@ -1,81 +1,88 @@
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
+/* ------------------------------------------------------------------
+   Node definitions (customise to your data shape)
+------------------------------------------------------------------- */
+export interface Node {
+  id: string | number;
+  /* Any other properties you need – e.g. parent, distance, etc. */
 }
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
 
-  get size() { return this._size; }
+export interface Graph {
+  /** Returns the neighbours of a given node ID. */
+  neighbours(id: Node["id"]): Node[];
+
+  /** Optional: expands a node – useful if nodes need lazy loading. */
+  expand?(node: Node): void;
 }
-append(value: T): void {
-  const newNode = new ListNode(value);
 
-  if (!this.head) {          // empty list
-    this.head = this.tail = newNode;
-  } else {
-    if (this.tail) this.tail.next = newNode;
-    this.tail = newNode;
+/* ------------------------------------------------------------------
+   Breadth‑Limited Search
+------------------------------------------------------------------- */
+type GoalPredicate<T> = (node: T) => boolean;
+
+export function breadthLimitedSearch<T extends Node>(
+  graph: Graph,
+  root: T,
+  goal: GoalPredicate<T>,
+  maxDepth: number
+): T | null {
+  // A queue that holds tuples: [node, depth]
+  const frontier: Array<[T, number]> = [[root, 0]];
+  const visited = new Set<T["id"]>();
+
+  visited.add(root.id);
+
+  while (frontier.length !== 0) {
+    const [current, depth] = frontier.shift()!; // pop front
+
+    // Goal hit
+    if (goal(current)) return current;
+
+    // If we reached the depth ceiling, skip expansion
+    if (depth === maxDepth) continue;
+
+    // Expand or otherwise load neighbours if you need lazy loading
+    if (graph.expand) graph.expand(current);
+
+    const neighbors = graph.neighbours(current.id);
+    for (const child of neighbors) {
+      if (!visited.has(child.id)) {
+        visited.add(child.id);
+        frontier.push([child, depth + 1]);
+      }
+    }
   }
 
-  this._size++;
+  // No solution within the depth limit
+  return null;
 }
-prepend(value: T): void {
-  const newNode = new ListNode(value, this.head);
-  this.head = newNode;
+// Simple graph representation
+class MyGraph implements Graph {
+  nodes: Record<string, Node> = {};
 
-  if (!this.tail) this.tail = newNode;
-  this._size++;
-}
-remove(index: number): T | null {
-  if (index < 0 || index >= this._size) return null;
-
-  let current = this.head;
-  let prev: ListNode<T> | null = null;
-  let i = 0;
-
-  while (current && i < index) {
-    prev = current;
-    current = current.next;
-    i++;
+  constructor(nodeList: Node[]) {
+    nodeList.forEach(node => (this.nodes[node.id] = node));
   }
 
-  if (!current) return null;
-
-  if (prev) prev.next = current.next;
-  else this.head = current.next;      // removed head
-
-  if (current === this.tail) this.tail = prev;
-  this._size--;
-  return current.value;
-}
-find(value: T): number {
-  let current = this.head;
-  let index = 0;
-
-  while (current) {
-    if (current.value === value) return index;
-    current = current.next;
-    index++;
+  neighbours(id: string | number) {
+    // Example: assume every node has a "children" array of ids
+    const node = this.nodes[id];
+    return (node as any).children?.map((cId: string | number) => this.nodes[cId]) ?? [];
   }
-  return -1;  // not found
 }
-toArray(): T[] {
-  const result: T[] = [];
-  let current = this.head;
-  while (current) {
-    result.push(current.value);
-    current = current.next;
-  }
-  return result;
-}
-const list = new LinkedList<number>();
 
-list.append(10);
-list.append(20);
-list.prepend(5);
+// Example nodes
+const nodes: Node[] = [
+  { id: 1, ...( { children: [2, 3] } as any ) },
+  { id: 2, ...( { children: [4] } as any ) },
+  { id: 3 },
+  { id: 4 }
+];
 
-console.log(list.toArray());     // [5, 10, 20]
-console.log(list.find(10));      // 1
-console.log(list.remove(0));     // 5
-console.log(list.toArray());     // [10, 20]
+const graph = new MyGraph(nodes);
+
+const root = graph.nodes[1];
+const goal = (n: Node) => n.id === 4;
+const depthLimit = 2;
+
+const solution = breadthLimitedSearch(graph, root, goal, depthLimit);
+console.log(solution); // Node with id 4 (found at depth 2)
