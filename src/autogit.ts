@@ -1,19 +1,24 @@
-// Original
-const original = "   \tHello, \nWorld!   ";
+/**
+ * Return the first character in `s` that occurs exactly once.
+ * If every character repeats, return null.
+ */
+function firstNonRepeatingChar(s: string): string | null {
+  // 1️⃣  Count how many times each char appears.
+  const freq = new Map<string, number>();
 
-// 1. trim (only outer whitespace)
-const trimmed = original.trim();
-console.log(trimmed); // "Hello, \nWorld!"
+  for (const ch of s) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  }
 
-// 2. remove all literal spaces only
-const noSpaces = original.replace(/ /g, "");
-console.log(noSpaces); // "\tHello,\nWorld!   "
+  // 2️⃣  Walk the string a second time, looking for a count of 1.
+  for (const ch of s) {
+    if (freq.get(ch) === 1) {
+      return ch;          // first non‑repeating character found
+    }
+  }
 
-// 3. strip *every* whitespace
-const totallyClean = original.replace(/\s+/g, "");
-console.log(totallyClean); // "Hello,World!"
-function removeAllWhitespace(s: string): string {
-  return s.replace(/\s+/g, "");
+  return null;              // no unique character
 }
-
-const cleaned = removeAllWhitespace("  a b\tc\n "); // "abc"
+console.log(firstNonRepeatingChar('abacabad')); // "c"
+console.log(firstNonRepeatingChar('aabbcc'));   // null
+console.log(firstNonRepeatingChar('😀😃😀😄')); // "😃"
