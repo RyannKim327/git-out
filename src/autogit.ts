@@ -1,85 +1,78 @@
-/* A node that lives inside the queue */
-class QueueNode<T> {
-  constructor(
-    public value: T,
-    public next: QueueNode<T> | null = null
-  ) {}
-}
+// AndroidAsyncDemo.ts
+import { AndroidApplication, AndroidActivityEventData } from "@nativescript/core";
+import * as http from "http";
 
-/* The queue itself */
-export class LinkedListQueue<T> {
-  // We keep pointers to both ends so that both enqueue
-  // (push) and dequeue (pop) stay O(1).
-  private head: QueueNode<T> | null = null; // front of the queue
-  private tail: QueueNode<T> | null = null; // rear of the queue
-  private _size = 0;
+export class AndroidAsyncDemo {
+    private activity: android.app.Activity;
 
-  /** Insert a new value at the rear. */
-  enqueue(value: T): void {
-    const node = new QueueNode(value);
-
-    if (this.tail) {
-      // The queue already has at least one element
-      this.tail.next = node;
-      this.tail = node;
-    } else {
-      // Empty queue: head and tail become the new node
-      this.head = this.tail = node;
+    constructor() {
+        const eventData = <AndroidActivityEventData>androidApplication.currentContext.getActivity();
+        this.activity = eventData.activity;
     }
 
-    this._size++;
-  }
+    public startDemo() {
+        // URL you care about
+        const url = "https://api.github.com/users/nativescript";
 
-  /** Remove and return the value at the front. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined; // Empty queue
+        // Create an instance of the AsyncTask wrapper
+        const task = new HttpGetAsyncTask(this.activity, url);
+        task.execute();
+    }
+}
 
-    const value = this.head.value;
-    this.head = this.head.next;
+// --------------------------------------------
+//  AsyncTask wrapper – looks a bit like Java
+// --------------------------------------------
+class HttpGetAsyncTask extends java.lang.Object implements android.os.AsyncTask<string, void, string> {
 
-    // If we just removed the last element, clear the tail too
-    if (!this.head) {
-      this.tail = null;
+    private activity: android.app.Activity;
+    private url: string;
+    private resultView: android.widget.TextView;
+
+    constructor(activity: android.app.Activity, url: string) {
+        super();
+        this.activity = activity;
+        this.url = url;
+        this.resultView = new android.widget.TextView(activity);
+        this.resultView.setLayoutParams(
+            new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        );
+        this.activity.runOnUiThread(() => {
+            const root = this.activity.findViewById(android.R.id.content);
+            if (root instanceof android.widget.LinearLayout) {
+                root.addView(this.resultView);
+            }
+        });
     }
 
-    this._size--;
-    return value;
-  }
+    // @Override
+    public doInBackground(...params: string[]): string {
+        try {
+            // Using Node's http wrapper that works in NativeScript
+            const response = http.getSync(this.url);
+            return response.content.toString();
+        } catch (err) {
+            return `Error: ${err.message || err}`;
+        }
+    }
 
-  /** Peek at the front value without removing it. */
-  peek(): T | undefined {
-    return this.head ? this.head.value : undefined;
-  }
+    // @Override
+    public onPostExecute(result: string): void {
+        this.resultView.setText(result);
+    }
 
-  /** Number of elements currently in the queue. */
-  get size(): number {
-    return this._size;
-  }
-
-  /** Are there any elements? */
-  get isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Remove everything from the queue. */
-  clear(): void {
-    this.head = null;
-    this.tail = null;
-    this._size = 0;
-  }
+    // The following method signatures satisfy the interface contract
+    public onPreExecute(): void {}
+    public onProgressUpdate(...values: void[]): void {}
 }
-const queue = new LinkedListQueue<number>();
 
-queue.enqueue(1);
-queue.enqueue(2);
-queue.enqueue(3);
-
-console.log(queue.peek()); // 1
-console.log(queue.dequeue()); // 1
-console.log(queue.dequeue()); // 2
-console.log(queue.size); // 1
-
-queue.enqueue(4);
-console.log(queue.dequeue()); // 3
-console.log(queue.dequeue()); // 4
-console.log(queue.isEmpty); // true
+// --------------------------------------------
+//  Use it from your page or component
+// --------------------------------------------
+export function demoClicked() {
+    const demo = new AndroidAsyncDemo();
+    demo.startDemo();
+}
