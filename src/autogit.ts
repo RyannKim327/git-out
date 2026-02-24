@@ -1,13 +1,30 @@
-// 1️⃣  Define the array (TypeScript knows it’s numbers)
-const nums: number[] = [42, 7, 13, 99, 29];
+function isPalindrome(str: string): boolean {
+  // Normalise: lowercase + remove all non‑alphanumerics (e.g. spaces, punctuation)
+  const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-// 2️⃣  Sort in place – ascending
-nums.sort((a, b) => a - b);   // -> [7, 13, 29, 42, 99]
-console.log('Ascending:', nums);
+  // Compare the cleaned string to its reverse
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
+}
+console.log(isPalindrome('Racecar'));          // true
+console.log(isPalindrome('No lemon, no melon!')); // true
+console.log(isPalindrome('Hello, world'));     // false
+function isPalindromeTwoPointer(str: string): boolean {
+  const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-// 3️⃣  If you want a new sorted array instead, copy first
-const ascending = [...nums].sort((a, b) => a - b);
+  let left = 0;
+  let right = cleaned.length - 1;
 
-// 4️⃣  Descending order
-const descending = nums.slice().sort((a, b) => b - a); // -> [99, 42, 29, 13, 7]
-console.log('Descending:', descending);
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) {
+      return false;
+    }
+    left++;
+    right--;
+  }
+  return true;
+}
+function isPalindromeSafe(input: unknown): boolean {
+  if (typeof input !== 'string') return false;
+  return isPalindrome(input);
+}
