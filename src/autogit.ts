@@ -1,45 +1,24 @@
 /**
- * Checks if a string is a palindrome.
- *
- * @param txt          The input string to test.
- * @param options      Optional flags.
- * @returns            true if the cleaned string reads the same forwards and backwards.
+ * Return the first character in `s` that occurs exactly once.
+ * If every character repeats, return null.
  */
-export function isPalindrome(
-  txt: string,
-  options?: {
-    /** When true (default), the check is case‑insensitive. */
-    ignoreCase?: boolean;
-    /** When true (default), only alphanumeric characters are considered. */
-    stripNonAlnum?: boolean;
-    /** When true, normalises Unicode to NFKD form before the checks. */
-    normalize?: boolean;
-  } = {}
-): boolean {
-  const {
-    ignoreCase = true,
-    stripNonAlnum = true,
-    normalize = true,
-  } = options;
+function firstNonRepeatingChar(s: string): string | null {
+  // 1️⃣  Count how many times each char appears.
+  const freq = new Map<string, number>();
 
-  let processed = txt;
-
-  if (normalize) {
-    // This collapse accents, e.g. "café" ➜ "cafe".
-    processed = processed.normalize('NFKD');
+  for (const ch of s) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  if (stripNonAlnum) {
-    processed = processed.replace(/[^0-9a-z]+/gi, '');
+  // 2️⃣  Walk the string a second time, looking for a count of 1.
+  for (const ch of s) {
+    if (freq.get(ch) === 1) {
+      return ch;          // first non‑repeating character found
+    }
   }
 
-  if (ignoreCase) {
-    processed = processed.toLowerCase();
-  }
-
-  const reversed = processed.split('').reverse().join('');
-  return processed === reversed;
+  return null;              // no unique character
 }
-console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
-console.log(isPalindrome('Madam In Eden, I’m Adam'));          // true
-console.log(isPalindrome('Hello, world!'));                    // false
+console.log(firstNonRepeatingChar('abacabad')); // "c"
+console.log(firstNonRepeatingChar('aabbcc'));   // null
+console.log(firstNonRepeatingChar('😀😃😀😄')); // "😃"
