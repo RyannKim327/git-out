@@ -1,47 +1,48 @@
-class TreeNode<T = any> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
-function countLeaves<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;                         // empty subtree → 0 leaves
+/**
+ * Random‑pivot quicksort for an array of numbers.
+ *
+ * @param arr – the array to sort (it will be sorted in place)
+ * @returns the sorted array (same reference as the input)
+ */
+function randomQuickSort(arr: number[]): number[] {
+  // Internal helper that works on a sub‑range [left, right]
+  function sort(left: number, right: number) {
+    if (left >= right) return;           // 0 or 1 element – nothing to do
 
-  // If both children are missing, this node itself is a leaf
-  if (!root.left && !root.right) return 1;
+    // Pick a random pivot index between left and right (inclusive)
+    const pivotIndex = Math.floor(Math.random() * (right - left + 1)) + left;
+    const pivotValue = arr[pivotIndex];
 
-  // Otherwise, count leaves in the children
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-function countLeavesIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
+    // Move the pivot to the rightmost position for the partition step
+    [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
 
-  let stack: Array<TreeNode<T>> = [root];
-  let leafCount = 0;
-
-  while (stack.length) {
-    const node = stack.pop() as TreeNode<T>;
-
-    // A leaf if it has no children
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      // Push existing children to process later
-      if (node.left) stack.push(node.left);
-      if (node.right) stack.push(node.right);
+    // Standard Lomuto partition
+    let storeIndex = left;
+    for (let i = left; i < right; i++) {
+      if (arr[i] < pivotValue) {
+        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
+        storeIndex++;
+      }
     }
+
+    // Put the pivot back in its final place
+    [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
+
+    // Recurse on the two partitions
+    sort(left, storeIndex - 1);
+    sort(storeIndex + 1, right);
   }
 
-  return leafCount;
+  sort(0, arr.length - 1);
+  return arr;
 }
-const root = new TreeNode(1,
-  new TreeNode(2,
-    new TreeNode(4),           // leaf
-    new TreeNode(5)            // leaf
-  ),
-  new TreeNode(3)              // leaf
-);
 
-console.log(countLeaves(root));        // → 3
-console.log(countLeavesIter(root));    // → 3
+/*--------------------------------------------
+  Example usage
+--------------------------------------------*/
+
+const data = [34, 7, 23, 32, 5, 62];
+console.log('Unsorted:', data);
+
+const sorted = randomQuickSort([...data]); // copy to avoid mutating the original
+console.log('Sorted  :', sorted);
