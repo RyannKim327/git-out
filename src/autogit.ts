@@ -1,59 +1,48 @@
-/**
- * Returns the longest common subsequence of two strings.
- *
- * @param a First string.
- * @param b Second string.
- * @returns The LCS as a string.
- */
-function longestCommonSubsequence(a: string, b: string): string {
-  const n = a.length;
-  const m = b.length;
+// 1️⃣  Define a comparison helper – most of the time you’ll just pass
+//     (a, b) => a < b for ascending order.
+type Comparator<T> = (a: T, b: T) => boolean;
 
-  // dp[i][j] = LCS length for a[0..i-1] and b[0..j-1]
-  const dp: number[][] = Array(n + 1)
-    .fill(null)
-    .map(() => Array(m + 1).fill(0));
+// 2️⃣  The merge function – it expects two sorted arrays and pulls
+//     the smaller (according to the comparator) element out first.
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+  const result: T[] = [];
+  let i = 0,
+      j = 0;
 
-  // Fill table
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
-
-  // Back‑track to build the subsequence
-  let i = n,
-    j = m,
-    lcs = '';
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      lcs = a[i - 1] + lcs; // prepend
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;
+  while (i < left.length && j < right.length) {
+    if (cmp(left[i], right[j])) {
+      result.push(left[i++]);
     } else {
-      j--;
+      result.push(right[j++]);
     }
   }
 
-  return lcs;
-}
-console.log(longestCommonSubsequence('ABCDGH', 'AEDFHR')); // → "ADH"
-function lcsLength(a: string, b: string): number {
-  const n = a.length, m = b.length;
-  const dp = Array(n + 1).fill(0).map(() => Array(m + 1).fill(0));
+  // One side still has items – splice the rest onto the result.
+  if (i < left.length) result.push(...left.slice(i));
+  if (j < right.length) result.push(...right.slice(j));
 
-  for (let i = 1; i <= n; i++)
-    for (let j = 1; j <= m; j++)
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1] + 1
-        : Math.max(dp[i - 1][j], dp[i][j - 1]);
-
-  return dp[n][m];
+  return result;
 }
+
+// 3️⃣  The recursive mergeSort main function – sorts in place if you
+//     prefer not to allocate the full array during every merge.
+export function mergeSort<T>(arr: T[], cmp: Comparator<T> = (a, b) => a < b): T[] {
+  if (arr.length <= 1) return arr;     // Base case: nothing to do
+
+  const mid = Math.floor(arr.length / 2);
+  const left  = mergeSort(arr.slice(0, mid), cmp);
+  const right = mergeSort(arr.slice(mid),    cmp);
+
+  return merge(left, right, cmp);
+}
+// Numbers, ascending
+const sortedNumbers = mergeSort([8, 3, 5, 1, 9, 2]);
+
+// Strings, descending
+const sortedStrings = mergeSort(
+  ["banana", "apple", "cherry"],
+  (a, b) => a > b
+);
+
+console.log(sortedNumbers); // [1, 2, 3, 5, 8, 9]
+console.log(sortedStrings); // ["cherry", "banana", "apple"]
