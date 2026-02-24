@@ -1,24 +1,37 @@
-/**
- * Very light‑weight e‑mail validator – good for quick UI checks or APIs.
- * It agrees with the majority of real‑world addresses:   local@domain.com
- *
- * @param address – the string to test
- * @returns true if the format looks like an e‑mail, false otherwise
- */
-export function isValidEmail(address: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(address);
+// random-joke.ts
+import fetch from 'node-fetch';          // npm i node-fetch@2
+import { Console } from 'console';
+
+interface Joke {
+  id: number;
+  type: string;
+  setup: string;
+  punchline: string;
 }
-import validator from 'email-validator';
 
-validator.validate('test@example.com'); // true
-const tests = [
-  'alice@example.com',
-  'bob@sub.domain.org',
-  'invalid-email',
-  'spaces@invalid .com',
-  '@missing.local',
-  'user@',
-];
+async function fetchRandomJoke(): Promise<Joke> {
+  const res = await fetch('https://official-joke-api.appspot.com/random_joke');
 
-tests.forEach(email => console.log(`${email}: ${isValidEmail(email)}`));
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} – failed to fetch joke`);
+  }
+
+  const data: Joke = await res.json();
+
+  return data;
+}
+
+async function run() {
+  try {
+    const joke = await fetchRandomJoke();
+
+    console.log('😂 Here’s something to make you smile!');
+    console.log(`  ${joke.setup}`);
+    console.log(`   – ${joke.punchline}`);
+  } catch (err: any) {
+    console.error('Oops! Something went wrong:');
+    console.error(err.message ?? err);
+  }
+}
+
+run();
