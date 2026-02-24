@@ -1,88 +1,65 @@
-/* ------------------------------------------------------------------
-   Node definitions (customise to your data shape)
-------------------------------------------------------------------- */
-export interface Node {
-  id: string | number;
-  /* Any other properties you need – e.g. parent, distance, etc. */
-}
+/**
+ * Generic insertion sort.
+ * @param arr  The array to sort – it will be mutated in‑place.
+ * @returns    The sorted array (the same reference that was passed in).
+ */
+export function insertionSort<T>(arr: T[]): T[] {
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-export interface Graph {
-  /** Returns the neighbours of a given node ID. */
-  neighbours(id: Node["id"]): Node[];
-
-  /** Optional: expands a node – useful if nodes need lazy loading. */
-  expand?(node: Node): void;
-}
-
-/* ------------------------------------------------------------------
-   Breadth‑Limited Search
-------------------------------------------------------------------- */
-type GoalPredicate<T> = (node: T) => boolean;
-
-export function breadthLimitedSearch<T extends Node>(
-  graph: Graph,
-  root: T,
-  goal: GoalPredicate<T>,
-  maxDepth: number
-): T | null {
-  // A queue that holds tuples: [node, depth]
-  const frontier: Array<[T, number]> = [[root, 0]];
-  const visited = new Set<T["id"]>();
-
-  visited.add(root.id);
-
-  while (frontier.length !== 0) {
-    const [current, depth] = frontier.shift()!; // pop front
-
-    // Goal hit
-    if (goal(current)) return current;
-
-    // If we reached the depth ceiling, skip expansion
-    if (depth === maxDepth) continue;
-
-    // Expand or otherwise load neighbours if you need lazy loading
-    if (graph.expand) graph.expand(current);
-
-    const neighbors = graph.neighbours(current.id);
-    for (const child of neighbors) {
-      if (!visited.has(child.id)) {
-        visited.add(child.id);
-        frontier.push([child, depth + 1]);
-      }
+    /* shift elements that are greater than key one position to the right */
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j];
+      j--;
     }
-  }
 
-  // No solution within the depth limit
-  return null;
+    arr[j + 1] = key;
+  }
+  return arr;
 }
-// Simple graph representation
-class MyGraph implements Graph {
-  nodes: Record<string, Node> = {};
-
-  constructor(nodeList: Node[]) {
-    nodeList.forEach(node => (this.nodes[node.id] = node));
-  }
-
-  neighbours(id: string | number) {
-    // Example: assume every node has a "children" array of ids
-    const node = this.nodes[id];
-    return (node as any).children?.map((cId: string | number) => this.nodes[cId]) ?? [];
-  }
+const numbers = [8, 3, 5, 4, 6, 1];
+console.log(insertionSort(numbers)); // [1, 3, 4, 5, 6, 8]
+const words = ['orange', 'apple', 'banana'];
+console.log(insertionSort(words)); // ['apple', 'banana', 'orange']
+interface Person {
+  name: string;
+  age: number;
 }
 
-// Example nodes
-const nodes: Node[] = [
-  { id: 1, ...( { children: [2, 3] } as any ) },
-  { id: 2, ...( { children: [4] } as any ) },
-  { id: 3 },
-  { id: 4 }
+const people: Person[] = [
+  { name: 'Zoe', age: 29 },
+  { name: 'Anna', age: 22 },
+  { name: 'Mike', age: 35 }
 ];
 
-const graph = new MyGraph(nodes);
+function sortByAge(arr: Person[]): Person[] {
+  return insertionSort(arr, (a, b) => a.age - b.age);
+}
 
-const root = graph.nodes[1];
-const goal = (n: Node) => n.id === 4;
-const depthLimit = 2;
+// extended version that accepts a compare function
+export function insertionSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number
+): T[] {
+  const cmp = compareFn ?? ((a: T, b: T) => (a > b ? 1 : a < b ? -1 : 0));
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+    arr[j + 1] = key;
+  }
+  return arr;
+}
 
-const solution = breadthLimitedSearch(graph, root, goal, depthLimit);
-console.log(solution); // Node with id 4 (found at depth 2)
+console.log(sortByAge(people));
+/*
+[
+  { name: 'Anna', age: 22 },
+  { name: 'Zoe', age: 29 },
+  { name: 'Mike', age: 35 }
+]
+*/
