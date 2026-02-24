@@ -1,78 +1,59 @@
 /**
- * Bubble Sort – in‑place, O(n²) time, O(1) space
- *
- * @param arr Array of values that implement `Comparable`
- * @returns the sorted array (same reference as input)
+ * Fibonacci search for a sorted array of numbers.
+ * @param arr  - The sorted array (ascending).
+ * @param target - The value to locate.
+ * @returns The index of target in `arr`, or -1 if not found.
  */
-export function bubbleSort<T extends Comparable>(arr: T[]): T[] {
+function fibSearch(arr: number[], target: number): number {
   const n = arr.length;
 
-  // Minor optimization: keep track of whether a swap happened
-  // in the current pass. If not, array is already sorted.
-  for (let i = 0; i < n - 1; i++) {
-    let swapped = false;
+  /* ------- 1. Build a Fibonacci sequence long enough ---- */
+  // fibMm2 = fib(m‑2), fibMm1 = fib(m‑1), fibM   = fib(m)
+  let fibMm2 = 0; // (m-2)'th Fibonacci number
+  let fibMm1 = 1; // (m-1)'th Fibonacci number
+  let fibM   = fibMm2 + fibMm1; // m'th Fibonacci
 
-    // After each outer loop pass, the largest element of the
-    // unsorted portion settles at the end of the array.
-    for (let j = 0; j < n - i - 1; j++) {
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
-    }
-
-    // If no elements were swapped, the array is already sorted.
-    if (!swapped) break;
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
   }
 
-  return arr;
-}
+  /* ------- 2. Mark the boundary of the eliminated range ------- */
+  // The offset is the index of the last removed element
+  let offset = -1;
 
-/** Simple comparable interface for primitives */
-export interface Comparable {
-  /** Return true if this > other */
-  > (other: this): boolean;
-}
-export function bubbleSortWith<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number
-): T[] {
-  for (let i = 0; i < arr.length - 1; i++) {
-    let swapped = false;
+  /* ------- 3. While there are elements to investigate ----------- */
+  while (fibM > 1) {
+    // Check if fibMm2 is a valid index
+    const i = Math.min(offset + fibMm2, n - 1);
 
-    for (let j = 0; j < arr.length - i - 1; j++) {
-      // compareFn(a, b) < 0 => a < b
-      // compareFn(a, b) > 0 => a > b
-      if (compareFn(arr[j], arr[j + 1]) > 0) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
+    if (arr[i] === target) {
+      return i; // Found!
     }
 
-    if (!swapped) break;
+    /* ----- Move the three Fibonacci variables down one step ----- */
+    if (arr[i] < target) {
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else {
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
+    }
   }
 
-  return arr;
-}
-interface Person {
-  name: string;
-  age: number;
-}
+  /* ------- 4. Compare the last element in the range --------------- */
+  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
+  }
 
-const people: Person[] = [
-  { name: "Alice", age: 34 },
-  { name: "Bob", age: 29 },
-  { name: "Carol", age: 42 },
-];
-
-bubbleSortWith(people, (a, b) => a.age - b.age);
-// people is now sorted by age ascending
-function test() {
-  const nums = [3, 1, 4, 1, 5, 9, 2, 6];
-  console.log("Before:", nums);
-  bubbleSort(nums); // mutates nums in place
-  console.log("After: ", nums);
+  return -1; // Not found
 }
 
-test(); /* → Before: [3,1,4,1,5,9,2,6]
-          After:  [1,1,2,3,4,5,6,9] */
+/* ---- Quick demo ---- */
+const sorted = [3, 5, 8, 12, 19, 27, 34, 42, 56, 73, 91];
+console.log(fibSearch(sorted, 27)); // → 5
+console.log(fibSearch(sorted, 7));  // → -1
