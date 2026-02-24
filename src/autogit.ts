@@ -1,93 +1,54 @@
-// `Graph<T>` maps a node of type T to an array of its adjacent nodes.
-type Graph<T> = Map<T, T[]>;
-
-// A helper to add an undirected edge
-function addEdge<T>(g: Graph<T>, a: T, b: T) {
-  g.set(a, (g.get(a) ?? []).concat(b));
-  g.set(b, (g.get(b) ?? []).concat(a));
-}
 /**
- * Performs a breadth‑first search on an unweighted graph.
- *
- * @param start   the starting node
- * @param graph   the graph to search
- * @param visitor a callback that receives each visited node in the order
- *                it’s discovered. The callback can return `false` to stop
- *                the search early.
+ * Build the bad‑character shift table for the pattern.
+ * The table maps a character code to the distance we can safely skip
+ * when that character is found in the text.
  */
-function bfs<T>(
-  start: T,
-  graph: Graph<T>,
-  visitor: (node: T) => void | boolean
-): void {
-  const visited = new Set<T>();
-  const queue = [start];
+function buildShiftTable(pattern: string): Int32Array {
+  const m = pattern.length;
+  const shift = new Int32Array(256);       // ASCII table size
+  shift.fill(m);                          // default shift = pattern length
 
-  visited.add(start);
-
-  while (queue.length) {
-    const node = queue.shift()!;      // Non‑null because we just tested length
-    const result = visitor(node);
-
-    // If the visitor explicitly returned false, break out early.
-    if (result === false) break;
-
-    const neighbors = graph.get(node) ?? [];
-    for (const n of neighbors) {
-      if (!visited.has(n)) {
-        visited.add(n);
-        queue.push(n);
-      }
-    }
+  // Populate the table for every character except the last one.
+  // The last character is handled by the searches’ failure condition.
+  for (let i = 0; i < m - 1; i++) {
+    shift[pattern.charCodeAt(i)] = m - 1 - i;
   }
+  return shift;
 }
+
 /**
- * Returns an array representing the shortest path from `start` to `target`
- * (inclusive), or `null` if no path exists.
+ * Boyer‑Moore‑Horspool string search.
+ * @param text The string to search in.
+ * @param pattern The string to find.
+ * @returns The index of the first occurrence, or -1 if not found.
  */
-function shortestPath<T>(start: T, target: T, graph: Graph<T>): T[] | null {
-  const prev = new Map<T, T | undefined>(); // child → parent
-  const visited = new Set<T>();
-  const queue: T[] = [start];
-  visited.add(start);
-  let found = false;
+export function boyerMooreHorspool(text: string, pattern: string): number {
+  const n = text.length;
+  const m = pattern.length;
 
-  while (queue.length && !found) {
-    const node = queue.shift()!;
-    for (const nb of graph.get(node) ?? []) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        prev.set(nb, node);
-        if (nb === target) {
-          found = true;
-          break;
-        }
-        queue.push(nb);
-      }
+  if (m === 0) return 0;          // empty pattern matches at start
+  if (m > n) return -1;           // longer pattern than text → impossible
+
+  const shift = buildShiftTable(pattern);
+
+  let i = m - 1;                  // index in text aligned with last pattern char
+  while (i < n) {
+    let j = 0;                    // offset from last pattern char
+    while (j < m && pattern[m - 1 - j] === text[i - j]) {
+      j++;
     }
-  }
 
-  if (!found) return null;
+    if (j === m) {                // all characters matched
+      return i - m + 1;           // return starting index
+    }
 
-  // Walk backwards from target to start
-  const path = [];
-  for (let cur: T | undefined = target; cur !== undefined; cur = prev.get(cur)) {
-    path.push(cur);
+    // Shift by the value in the table for the mismatching text character
+    const nextChar = text.charCodeAt(i);
+    i += Math.max(shift[nextChar], 1);   // never shift by 0
   }
-  path.reverse();
-  return path;
+  return -1;                      // not found
 }
-const g: Graph<string> = new Map();
-addEdge(g, 'A', 'B');
-addEdge(g, 'A', 'C');
-addEdge(g, 'B', 'D');
-addEdge(g, 'C', 'D');
-addEdge(g, 'C', 'E');
+const txt = "abcxabcdabxabcdabcdabcy";
+const pat = "abcdabcy";
 
-console.log('BFS visiting order:', () => {
-  const order: string[] = [];
-  bfs('A', g, node => { order.push(node); });
-  return order;
-}()); // ['A', 'B', 'C', 'D', 'E']
-
-console.log('Shortest path A → D:', shortestPath('A', 'D', g)); // ['A', 'B', 'D']
+console.log(boyerMooreHorspool(txt, pat));  // → 15
