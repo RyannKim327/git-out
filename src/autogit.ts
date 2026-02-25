@@ -1,78 +1,66 @@
 /**
- * Bubble Sort – in‑place, O(n²) time, O(1) space
- *
- * @param arr Array of values that implement `Comparable`
- * @returns the sorted array (same reference as input)
+ * Returns the largest prime factor of a positive integer.
+ * Works for Number (up to ~9e15) and for BigInt.
  */
-export function bubbleSort<T extends Comparable>(arr: T[]): T[] {
-  const n = arr.length;
-
-  // Minor optimization: keep track of whether a swap happened
-  // in the current pass. If not, array is already sorted.
-  for (let i = 0; i < n - 1; i++) {
-    let swapped = false;
-
-    // After each outer loop pass, the largest element of the
-    // unsorted portion settles at the end of the array.
-    for (let j = 0; j < n - i - 1; j++) {
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
-    }
-
-    // If no elements were swapped, the array is already sorted.
-    if (!swapped) break;
+export function largestPrimeFactor(nInput: number | bigint): bigint {
+  // 0 or 1 have no prime factors
+  if (nInput <= 1) {
+    throw new Error('Number must be >= 2');
   }
 
-  return arr;
-}
+  // Work with BigInt internally for uniformity
+  let n = BigInt(nInput);
 
-/** Simple comparable interface for primitives */
-export interface Comparable {
-  /** Return true if this > other */
-  > (other: this): boolean;
-}
-export function bubbleSortWith<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number
-): T[] {
-  for (let i = 0; i < arr.length - 1; i++) {
-    let swapped = false;
-
-    for (let j = 0; j < arr.length - i - 1; j++) {
-      // compareFn(a, b) < 0 => a < b
-      // compareFn(a, b) > 0 => a > b
-      if (compareFn(arr[j], arr[j + 1]) > 0) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
-    }
-
-    if (!swapped) break;
+  // Remove factors of 2
+  let lastFactor = 2n;
+  while (n % 2n === 0n) {
+    lastFactor = 2n;
+    n /= 2n;
   }
 
-  return arr;
-}
-interface Person {
-  name: string;
-  age: number;
-}
+  // Try odd factors only
+  let factor = 3n;
+  const limit = sqrtBigInt(n);
 
-const people: Person[] = [
-  { name: "Alice", age: 34 },
-  { name: "Bob", age: 29 },
-  { name: "Carol", age: 42 },
-];
+  while (factor <= limit) {
+    while (n % factor === 0n) {
+      lastFactor = factor;
+      n /= factor;
+    }
+    factor += 2n;        // skip even numbers
+  }
 
-bubbleSortWith(people, (a, b) => a.age - b.age);
-// people is now sorted by age ascending
-function test() {
-  const nums = [3, 1, 4, 1, 5, 9, 2, 6];
-  console.log("Before:", nums);
-  bubbleSort(nums); // mutates nums in place
-  console.log("After: ", nums);
+  // If anything is left, it must be a prime > sqrt(original n)
+  if (n > 1n) {
+    lastFactor = n;
+  }
+
+  return lastFactor;
 }
 
-test(); /* → Before: [3,1,4,1,5,9,2,6]
-          After:  [1,1,2,3,4,5,6,9] */
+/**
+ * Integer square root of a BigInt (floor)
+ * (Euclidean algorithm – takes few iterations even for 64‑bit numbers)
+ */
+function sqrtBigInt(value: bigint): bigint {
+  if (value < 0n) throw new Error('square root of negative not supported');
+  if (value < 2n) return value;
+
+  let x0 = value / 2n;
+  let x1 = (x0 + value / x0) / 2n;
+
+  while (x1 < x0) {
+    x0 = x1;
+    x1 = (x0 + value / x0) / 2n;
+  }
+  return x0;
+}
+console.log(largestPrimeFactor(13195));      // 29
+console.log(largestPrimeFactor(600851475143)); // 6857
+
+// Using BigInt
+console.log(
+  largestPrimeFactor(
+    BigInt("9999999967") // a 10‑digit number; you can make this much bigger
+  ).toString()
+);
