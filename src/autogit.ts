@@ -1,74 +1,61 @@
 /**
- * Median of two sorted arrays
- * A and B can be empty, but not both.
+ * Radix sort for 32‑bit unsigned integers.
+ * Sorts in place and returns the sorted array for convenience.
  */
-export function medianOfTwoSortedArrays(
-  a: number[],
-  b: number[]
-): number {
-  // Ensure a is the smaller array; this keeps the binary‑search bounds tight.
-  const [A, B] = a.length <= b.length ? [a, b] : [b, a];
-  const m = A.length;
-  const n = B.length;
-  const half = Math.floor((m + n + 1) / 2);
+export function radixSort(arr: number[]): number[] {
+  if (arr.length <= 1) return arr;          // already sorted
 
-  let low = 0;
-  let high = m;
+  // Pick a base that gives a nice trade‑off between passes and bucket size.
+  // Base 256 (8 bits per pass) lets us use a Uint32Array for buckets.
+  const base = 256;
+  const maxBit = 32; // 32 bits for a signed int, but we only store positives here
 
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2); // elements taken from A
-    const j = half - i;                     // elements taken from B
+  // Number of passes, one per byte in this case.
+  const passes = maxBit / 8;
 
-    const Aleft  = i === 0     ? Number.NEGATIVE_INFINITY : A[i - 1];
-    const Aright = i === m     ? Number.POSITIVE_INFINITY : A[i];
+  // Temporary array for intermediate results.
+  const temp = new Array<number>(arr.length);
 
-    const Bleft  = j === 0     ? Number.NEGATIVE_INFINITY : B[j - 1];
-    const Bright = j === n     ? Number.POSITIVE_INFINITY : B[j];
+  // Helper: counts how many numbers have a certain digit value at a given byte.
+  const count = new Uint32Array(base);
 
-    // i is perfect if left side ≤ right side
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // Odd total → max of left side
-      if ((m + n) % 2 === 1) {
-        return Math.max(Aleft, Bleft);
-      }
+  for (let pass = 0; pass < passes; ++pass) {
+    // Reset counts.
+    count.fill(0);
 
-      // Even total → average of two middle values
-      return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
-    } else if (Aleft > Bright) {
-      // i too big, shift left
-      high = i - 1;
-    } else {
-      // i too small, shift right
-      low = i + 1;
+    // Count occurrences of each bucket value.
+    const shift = pass * 8;
+    for (const n of arr) {
+      const bucket = (n >> shift) & 0xff;
+      count[bucket]++;
     }
+
+    // Compute cumulative counts => start indices in `temp`.
+    const startIdx = new Uint32Array(base);
+    let sum = 0;
+    for (let i = 0; i < base; ++i) {
+      startIdx[i] = sum;
+      sum += count[i];
+    }
+
+    // Place numbers into the correct bucket order.
+    for (const n of arr) {
+      const bucket = (n >> shift) & 0xff;
+      const idx = startIdx[bucket]++;
+      temp[idx] = n;
+    }
+
+    // Swap the source and destination for the next round.
+    [arr, temp] = [temp, arr];
   }
 
-  throw new Error('Input arrays are not sorted or invalid.');
+  // After an even number of passes `arr` points to original input; the sorted
+  // result ends up in `arr`. If passes were odd, the sorted array will be in `temp`.
+  // Ensure we return the sorted array reference.
+  return arr.length === sizeOfInput ? arr : temp;
 }
-export function medianOfTwoSortedArraysSimple(
-  a: number[],
-  b: number[]
-): number {
-  const merged: number[] = [];
-  let i = 0, j = 0;
 
-  while (i < a.length || j < b.length) {
-    if (i >= a.length) {
-      merged.push(b[j++]);
-    } else if (j >= b.length) {
-      merged.push(a[i++]);
-    } else if (a[i] <= b[j]) {
-      merged.push(a[i++]);
-    } else {
-      merged.push(b[j++]);
-    }
-  }
-
-  const len = merged.length;
-  if (len % 2 === 1) return merged[Math.floor(len / 2)];
-  return (merged[len / 2 - 1] + merged[len / 2]) / 2;
-}
-const arr1 = [1, 3, 5, 9];
-const arr2 = [2, 4, 6, 8, 10];
-
-console.log(medianOfTwoSortedArrays(arr1, arr2)); // 5.5
+/** Quick tests */
+const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log('unsorted:', unsorted);
+console.log('sorted:  ', radixSort([...unsorted])); // use spread to leave original intact
