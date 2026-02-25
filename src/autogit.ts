@@ -1,25 +1,42 @@
-function reverseString(str: string): string {
-  return str.split('').reverse().join('');
-}
-function reverseStringNoArray(str: string): string {
-  let result = '';
-  for (let i = str.length - 1; i >= 0; i--) {
-    result += str[i];
-  }
-  return result;
-}
-function reverseStringRecursive(str: string): string {
-  if (str === '') return '';
-  return reverseStringRecursive(str.slice(1)) + str[0];
-}
-function reverseStringFlatMap(str: string): string {
-  return [...str.matchAll(/./gu)].flatMap(ch => [ch[0]]).reverse().join('');
-}
-function reverseUnicodeString(str: string): string {
-  // splitIntoGraphemes could be a library function; here’s a simple UX:
-  const graphemes = [...str];
-  return graphemes.reverse().join('');
-}
-console.log(reverseString('hello'));          // 'olleh'
-console.log(reverseStringNoArray('world'));   // 'dlrow'
-console.log(reverseStringRecursive('foo'));   // 'oof'
+// cron-demo.ts
+import { CronJob } from 'cron';
+import * as dotenv from 'dotenv';
+
+dotenv.config(); // optional – pulls cron expression from .env
+
+/**
+ * A simple scheduled task that
+ * • runs every minute (or whatever pattern you set)
+ * • prints a timestamp
+ * • gracefully handles potential errors
+ */
+const job = new CronJob(
+  // Default cron date string: every minute of every hour of every day
+  process.env.CRON_EXPRESSION || '* * * * *',
+  () => {
+    const now = new Date().toISOString();
+    console.log(`[${now}] Tick – cron job fired!`);
+  },
+  // onComplete – fires when the job finishes its last scheduled run (not used here)
+  null,
+  // start immediately
+  true,
+  // timezone – string like 'America/New_York'
+  process.env.TZ || 'UTC',
+);
+
+job.on('error', (err) => {
+  console.error(`❌ Cron job encountered an error: ${err.message}`);
+});
+
+process.once('SIGINT', () => {
+  console.log('\n🛑 Shutting down cron job gracefully...');
+  job.stop();
+  process.exit(0);
+});
+
+console.log(`✅ Cron job started with pattern: ${job.cronTime.source}`);
+✅ Cron job started with pattern: * * * * *
+[2026-02-15T12:00:00.000Z] Tick – cron job fired!
+[2026-02-15T12:01:00.000Z] Tick – cron job fired!
+…
