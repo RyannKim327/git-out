@@ -1,48 +1,47 @@
-// 1️⃣  Define a comparison helper – most of the time you’ll just pass
-//     (a, b) => a < b for ascending order.
-type Comparator<T> = (a: T, b: T) => boolean;
+/**
+ * Checks whether a string is a palindrome (case‑insensitive,
+ * ignoring anything that isn’t a letter or a digit).
+ *
+ * Time   : O(n)
+ * Space  : O(1)   – only a couple of integer variables
+ */
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-// 2️⃣  The merge function – it expects two sorted arrays and pulls
-//     the smaller (according to the comparator) element out first.
-function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
-  const result: T[] = [];
-  let i = 0,
-      j = 0;
+  const isAlnum = (ch: string): boolean => {
+    const code = ch.charCodeAt(0);
+    // '0'‑'9'
+    if (code >= 48 && code <= 57) return true;
+    // 'A'‑'Z'
+    if (code >= 65 && code <= 90) return true;
+    // 'a'‑'z'
+    if (code >= 97 && code <= 122) return true;
+    return false;
+  };
 
-  while (i < left.length && j < right.length) {
-    if (cmp(left[i], right[j])) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
-    }
+  while (left < right) {
+    // Skip non‑alphanumeric characters from the left
+    while (left < right && !isAlnum(s[left])) left++;
+    // Skip non‑alphanumeric characters from the right
+    while (left < right && !isAlnum(s[right])) right--;
+
+    if (left >= right) break;          // Nothing left to compare
+
+    const lc = s[left].toLowerCase();
+    const rc = s[right].toLowerCase();
+
+    if (lc !== rc) return false;
+
+    left++;
+    right--;
   }
 
-  // One side still has items – splice the rest onto the result.
-  if (i < left.length) result.push(...left.slice(i));
-  if (j < right.length) result.push(...right.slice(j));
-
-  return result;
+  return true;
 }
-
-// 3️⃣  The recursive mergeSort main function – sorts in place if you
-//     prefer not to allocate the full array during every merge.
-export function mergeSort<T>(arr: T[], cmp: Comparator<T> = (a, b) => a < b): T[] {
-  if (arr.length <= 1) return arr;     // Base case: nothing to do
-
-  const mid = Math.floor(arr.length / 2);
-  const left  = mergeSort(arr.slice(0, mid), cmp);
-  const right = mergeSort(arr.slice(mid),    cmp);
-
-  return merge(left, right, cmp);
+while (left < right) {
+  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
+  left++;
+  right--;
 }
-// Numbers, ascending
-const sortedNumbers = mergeSort([8, 3, 5, 1, 9, 2]);
-
-// Strings, descending
-const sortedStrings = mergeSort(
-  ["banana", "apple", "cherry"],
-  (a, b) => a > b
-);
-
-console.log(sortedNumbers); // [1, 2, 3, 5, 8, 9]
-console.log(sortedStrings); // ["cherry", "banana", "apple"]
+return true;
