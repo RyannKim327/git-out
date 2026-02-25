@@ -1,25 +1,40 @@
+const decimal = 42;          // any number you want to convert
+const binary = decimal.toString(2);  // '101010'
+console.log(binary);        // → 101010
 /**
- * Computes the factorial of a non‑negative integer `n` recursively.
- * @param n - A non‑negative integer (e.g., 0, 1, 2, …)
- * @returns n! as a `number`. For values beyond ≈ 170 you’ll hit the
- *          IEEE‑754 overflow limit and get `Infinity`, so for large
- *          inputs you might want to switch to BigInt.
+ * Convert a non‑negative decimal number to binary.
  */
-function factorial(n: number): number {
-  if (n < 0) throw new Error('Negative numbers don’t have factorials');
-  if (n <= 1) return 1;          // base case: 0! = 1! = 1
-  return n * factorial(n - 1);   // recursive step
-}
-console.log(factorial(5));   // 120
-console.log(factorial(0));   // 1
-function bigIntFactorial(n: number): bigint {
-  if (n < 0) throw new Error('Negative numbers don’t have factorials');
-  if (n <= 1) return 1n;               // 1n is a BigInt literal
-  return BigInt(n) * bigIntFactorial(n - 1);
+function decimalToBinary(n: number): string {
+  if (n === 0) return '0';
+  let result: string = '';
+  let num = n;
+
+  while (num > 0) {
+    // `num % 2` is the remainder (0 or 1)
+    const bit = (num % 2).toString();
+    result = bit + result;          // prepend the bit
+    num = Math.floor(num / 2);       // shift right
+  }
+
+  return result;
 }
 
-console.log(bigIntFactorial(30).toString());
-function tailFactorial(n: number, acc: number = 1): number {
-  if (n <= 1) return acc;
-  return tailFactorial(n - 1, acc * n);
+// Demo
+console.log(decimalToBinary(42));   // → 101010
+console.log(decimalToBinary(0));    // → 0
+console.log(decimalToBinary(255));  // → 11111111
+function bigIntDecimalToBinary(n: bigint): string {
+  if (n === 0n) return '0';
+  let result = '';
+  let num = n;
+  while (num > 0n) {
+    result = (num & 1n).toString() + result; // `& 1n` is a fast bitwise test
+    num >>= 1n;   // shift right
+  }
+  return result;
 }
+// 16 decimal → 10000 binary
+console.assert(decimalToBinary(16) === '10000');
+
+// 255 decimal → 11111111 binary
+console.assert(decimalToBinary(255) === '11111111');
