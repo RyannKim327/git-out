@@ -1,94 +1,54 @@
-type AdjacencyList = Record<string, string[]>;
+/**
+ * Build the bad‑character shift table for the pattern.
+ * The table maps a character code to the distance we can safely skip
+ * when that character is found in the text.
+ */
+function buildShiftTable(pattern: string): Int32Array {
+  const m = pattern.length;
+  const shift = new Int32Array(256);       // ASCII table size
+  shift.fill(m);                          // default shift = pattern length
 
-/*
-  Example:
-
-  {
-    A: ["B"],
-    B: ["C", "E"],
-    C: ["A", "D"],
-    D: ["C"],
-    E: ["F"],
-    F: ["E", "G"],
-    G: ["H"],
-    H: ["I", "J"],
-    I: ["H"],
-    J: ["G"],
+  // Populate the table for every character except the last one.
+  // The last character is handled by the searches’ failure condition.
+  for (let i = 0; i < m - 1; i++) {
+    shift[pattern.charCodeAt(i)] = m - 1 - i;
   }
-*/
-// TarjanSCC.ts
-type AdjacencyList = Record<string, string[]>;
-
-export function tarjanSCC(graph: AdjacencyList): string[][] {
-  let index = 0;                         // global index counter
-  const indices: Record<string, number> = {};   // vertex → index
-  const lowlinks: Record<string, number> = {};  // vertex → lowlink
-  const stack: string[] = [];
-  const onStack: Record<string, boolean> = {};
-  const sccs: string[][] = [];
-
-  function strongConnect(v: string) {
-    // 1. Set the depth index for v to the smallest unused index
-    indices[v] = lowlinks[v] = index++;
-    stack.push(v);
-    onStack[v] = true;
-
-    // 2. Consider successors of v
-    const neighbours = graph[v] ?? [];
-    for (const w of neighbours) {
-      if (indices[w] === undefined) {
-        // Successor w has not yet been visited; recurse on it
-        strongConnect(w);
-        lowlinks[v] = Math.min(lowlinks[v], lowlinks[w]);
-      } else if (onStack[w]) {
-        // Successor w is in stack → part of current SCC
-        lowlinks[v] = Math.min(lowlinks[v], indices[w]);
-      }
-    }
-
-    // 3. If v is a root node, pop the stack and generate an SCC
-    if (lowlinks[v] === indices[v]) {
-      const component: string[] = [];
-      let w: string;
-      do {
-        w = stack.pop() as string;
-        onStack[w] = false;
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
-    }
-  }
-
-  // Kick off
-  for (const v of Object.keys(graph)) {
-    if (indices[v] === undefined) {
-      strongConnect(v);
-    }
-  }
-
-  return sccs;
+  return shift;
 }
-import { tarjanSCC } from "./TarjanSCC";
 
-const graph: AdjacencyList = {
-  A: ["B"],
-  B: ["C", "E"],
-  C: ["A", "D"],
-  D: ["C"],
-  E: ["F"],
-  F: ["E", "G"],
-  G: ["H"],
-  H: ["I", "J"],
-  I: ["H"],
-  J: ["G"],
-};
+/**
+ * Boyer‑Moore‑Horspool string search.
+ * @param text The string to search in.
+ * @param pattern The string to find.
+ * @returns The index of the first occurrence, or -1 if not found.
+ */
+export function boyerMooreHorspool(text: string, pattern: string): number {
+  const n = text.length;
+  const m = pattern.length;
 
-const sccs = tarjanSCC(graph);
-console.log("Strongly connected components:");
-sccs.forEach((comp, idx) => {
-  console.log(`  ${idx + 1}: [${comp.join(", ")}]`);
-});
-Strongly connected components:
-  1: [A, B, C, D]
-  2: [E, F]
-  3: [G, H, I, J]
+  if (m === 0) return 0;          // empty pattern matches at start
+  if (m > n) return -1;           // longer pattern than text → impossible
+
+  const shift = buildShiftTable(pattern);
+
+  let i = m - 1;                  // index in text aligned with last pattern char
+  while (i < n) {
+    let j = 0;                    // offset from last pattern char
+    while (j < m && pattern[m - 1 - j] === text[i - j]) {
+      j++;
+    }
+
+    if (j === m) {                // all characters matched
+      return i - m + 1;           // return starting index
+    }
+
+    // Shift by the value in the table for the mismatching text character
+    const nextChar = text.charCodeAt(i);
+    i += Math.max(shift[nextChar], 1);   // never shift by 0
+  }
+  return -1;                      // not found
+}
+const txt = "abcxabcdabxabcdabcdabcy";
+const pat = "abcdabcy";
+
+console.log(boyerMooreHorspool(txt, pat));  // → 15
