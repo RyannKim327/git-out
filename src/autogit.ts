@@ -1,48 +1,59 @@
 /**
- * Return the maximum sum sub‑array (Kadane) along with its start & end indices.
- *
- * @param nums  Array of numbers – can contain positives, zeros and negatives.
- * @returns     Object with `maxSum`, `start`, `end` (inclusive).
+ * Fibonacci search for a sorted array of numbers.
+ * @param arr  - The sorted array (ascending).
+ * @param target - The value to locate.
+ * @returns The index of target in `arr`, or -1 if not found.
  */
-export function maxSubarrayWithIndices(nums: number[]): {
-  maxSum: number;
-  start: number;
-  end: number;
-} {
-  if (nums.length === 0) throw new Error("Input array must contain at least one element");
+function fibSearch(arr: number[], target: number): number {
+  const n = arr.length;
 
-  let bestSum = nums[0];
-  let currentSum = nums[0];
+  /* ------- 1. Build a Fibonacci sequence long enough ---- */
+  // fibMm2 = fib(m‑2), fibMm1 = fib(m‑1), fibM   = fib(m)
+  let fibMm2 = 0; // (m-2)'th Fibonacci number
+  let fibMm1 = 1; // (m-1)'th Fibonacci number
+  let fibM   = fibMm2 + fibMm1; // m'th Fibonacci
 
-  // These track the best indices we’ve seen
-  let bestStart = 0;
-  let bestEnd = 0;
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
+  }
 
-  // Temporary indices for the sub‑array we are currently extending
-  let tempStart = 0;
+  /* ------- 2. Mark the boundary of the eliminated range ------- */
+  // The offset is the index of the last removed element
+  let offset = -1;
 
-  for (let i = 1; i < nums.length; i++) {
-    const num = nums[i];
+  /* ------- 3. While there are elements to investigate ----------- */
+  while (fibM > 1) {
+    // Check if fibMm2 is a valid index
+    const i = Math.min(offset + fibMm2, n - 1);
 
-    // Decide whether to extend the current sub‑array or start fresh at i
-    if (currentSum + num < num) {
-      currentSum = num;
-      tempStart = i;
-    } else {
-      currentSum += num;
+    if (arr[i] === target) {
+      return i; // Found!
     }
 
-    // Update the best found so far
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
+    /* ----- Move the three Fibonacci variables down one step ----- */
+    if (arr[i] < target) {
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else {
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
     }
   }
 
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+  /* ------- 4. Compare the last element in the range --------------- */
+  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
+  }
+
+  return -1; // Not found
 }
-const arr = [4, -1, 2, 1, -5, 4];
-const result = maxSubarrayWithIndices(arr);
-console.log(result); // { maxSum: 6, start: 0, end: 3 }
-// Sub‑array: [4, -1, 2, 1] → sum 6
+
+/* ---- Quick demo ---- */
+const sorted = [3, 5, 8, 12, 19, 27, 34, 42, 56, 73, 91];
+console.log(fibSearch(sorted, 27)); // → 5
+console.log(fibSearch(sorted, 7));  // → -1
