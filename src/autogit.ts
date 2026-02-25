@@ -1,60 +1,27 @@
-function buildLps(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let len = 0;          // length of the previous longest prefix suffix
-  let i = 1;            // we start from the second character
-
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      // Mismatch after len matches
-      if (len !== 0) {
-        // Try the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
-}
 /**
- * Returns an array of starting indices where `pattern` occurs in `text`.
- * If no match, returns an empty array.
+ * Returns the second largest number in `arr`.
+ * If the array has fewer than two distinct numbers, returns `undefined`.
  */
-export function kmpSearch(text: string, pattern: string): number[] {
-  const lps = buildLps(pattern);
-  const results: number[] = [];
+function secondLargest(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-  let i = 0; // index for text
-  let j = 0; // index for pattern
+  let first: number | null = null;
+  let second: number | null = null;
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++; j++;
-      if (j === pattern.length) {
-        // Match found at position i - j
-        results.push(i - j);
-        // Prepare for the next possible match
-        j = lps[j - 1];
-      }
-    } else {
-      if (j !== 0) {
-        // Mismatch after j matches
-        j = lps[j - 1];
-      } else {
-        // Mismatch at the start
-        i++;
-      }
+  for (const x of arr) {
+    if (first === null || x > first) {
+      // New maximum found – push the old maximum down to second
+      second = first;
+      first = x;
+    } else if (x !== first && (second === null || x > second)) {
+      // Candidate for second maximum
+      second = x;
     }
   }
 
-  return results;
+  return second ?? undefined;
 }
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
-
-console.log(kmpSearch(text, pattern)); // [10]
+console.log(secondLargest([1, 3, 5, 7])); // 5
+console.log(secondLargest([10, 9]));      // 9
+console.log(secondLargest([4]));          // undefined
+console.log(secondLargest([2, 2, 2]));    // undefined
