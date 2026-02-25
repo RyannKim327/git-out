@@ -1,74 +1,111 @@
-/**
- * Median of two sorted arrays
- * A and B can be empty, but not both.
- */
-export function medianOfTwoSortedArrays(
-  a: number[],
-  b: number[]
-): number {
-  // Ensure a is the smaller array; this keeps the binary‑search bounds tight.
-  const [A, B] = a.length <= b.length ? [a, b] : [b, a];
-  const m = A.length;
-  const n = B.length;
-  const half = Math.floor((m + n + 1) / 2);
+// Edge between two nodes
+interface Edge {
+  to: string;      // target node id
+  weight: number;  // edge weight
+}
 
-  let low = 0;
-  let high = m;
+// Graph stored as an adjacency list
+type Graph = Record<string, Edge[]>;
 
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2); // elements taken from A
-    const j = half - i;                     // elements taken from B
+// Simple min‑heap priority queue
+class MinHeap<T> {
+  private content: { key: number; value: T }[] = [];
 
-    const Aleft  = i === 0     ? Number.NEGATIVE_INFINITY : A[i - 1];
-    const Aright = i === m     ? Number.POSITIVE_INFINITY : A[i];
+  // Insert a new element
+  push(key: number, value: T): void {
+    const node = { key, value };
+    this.content.push(node);
+    this.bubbleUp(this.content.length - 1);
+  }
 
-    const Bleft  = j === 0     ? Number.NEGATIVE_INFINITY : B[j - 1];
-    const Bright = j === n     ? Number.POSITIVE_INFINITY : B[j];
+  // Remove the element with the smallest key
+  pop(): T | undefined {
+    if (this.content.length === 0) return undefined;
+    const root = this.content[0].value;
 
-    // i is perfect if left side ≤ right side
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // Odd total → max of left side
-      if ((m + n) % 2 === 1) {
-        return Math.max(Aleft, Bleft);
+    const last = this.content.pop()!;
+    if (this.content.length) {
+      this.content[0] = last;
+      this.bubbleDown(0);
+    }
+    return root;
+  }
+
+  get size(): number { return this.content.length; }
+
+  private bubbleUp(idx: number): void {
+    while (idx > 0) {
+      const parent = Math.floor((idx - 1) / 2);
+      if (this.content[parent].key <= this.content[idx].key) break;
+      [this.content[parent], this.content[idx]] = [this.content[idx], this.content[parent]];
+      idx = parent;
+    }
+  }
+
+  private bubbleDown(idx: number): void {
+    const length = this.content.length;
+    while (true) {
+      const left = 2 * idx + 1;
+      const right = 2 * idx + 2;
+      let smallest = idx;
+
+      if (left < length && this.content[left].key < this.content[smallest].key) {
+        smallest = left;
       }
+      if (right < length && this.content[right].key < this.content[smallest].key) {
+        smallest = right;
+      }
+      if (smallest === idx) break;
 
-      // Even total → average of two middle values
-      return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
-    } else if (Aleft > Bright) {
-      // i too big, shift left
-      high = i - 1;
-    } else {
-      // i too small, shift right
-      low = i + 1;
+      [this.content[idx], this.content[smallest]] = [this.content[smallest], this.content[idx]];
+      idx = smallest;
+    }
+  }
+}
+/**
+ * Computes the shortest‑path distances from `src` to every node in `graph`.
+ * @param graph     adjacency list
+ * @param src       origin node id
+ * @returns        a map of node → distance; unreachable nodes have Infinity
+ */
+function dijkstra(graph: Graph, src: string): Record<string, number> {
+  const distances: Record<string, number> = {};
+  const visited = new Set<string>();
+
+  // initialise all distances to Infinity
+  for (const node in graph) distances[node] = Infinity;
+  distances[src] = 0;
+
+  const pq = new MinHeap<string>();
+  pq.push(0, src);
+
+  while (pq.size) {
+    const u = pq.pop()!;                // node with lowest known distance
+    const d = distances[u];
+
+    if (visited.has(u)) continue; // we may have inserted u multiple times
+    visited.add(u);
+
+    for (const { to, weight } of graph[u]) {
+      const alt = d + weight;
+      if (alt < distances[to]) {
+        distances[to] = alt;
+        pq.push(alt, to);
+      }
     }
   }
 
-  throw new Error('Input arrays are not sorted or invalid.');
+  return distances;
 }
-export function medianOfTwoSortedArraysSimple(
-  a: number[],
-  b: number[]
-): number {
-  const merged: number[] = [];
-  let i = 0, j = 0;
+const graph: Graph = {
+  A: [{ to: 'B', weight: 5 }, { to: 'C', weight: 2 }],
+  B: [{ to: 'C', weight: 1 }, { to: 'D', weight: 3 }],
+  C: [{ to: 'B', weight: 4 }, { to: 'D', weight: 6 }],
+  D: [],
+};
 
-  while (i < a.length || j < b.length) {
-    if (i >= a.length) {
-      merged.push(b[j++]);
-    } else if (j >= b.length) {
-      merged.push(a[i++]);
-    } else if (a[i] <= b[j]) {
-      merged.push(a[i++]);
-    } else {
-      merged.push(b[j++]);
-    }
-  }
-
-  const len = merged.length;
-  if (len % 2 === 1) return merged[Math.floor(len / 2)];
-  return (merged[len / 2 - 1] + merged[len / 2]) / 2;
-}
-const arr1 = [1, 3, 5, 9];
-const arr2 = [2, 4, 6, 8, 10];
-
-console.log(medianOfTwoSortedArrays(arr1, arr2)); // 5.5
+const result = dijkstra(graph, 'A');
+console.log(result);
+/* prints something like:
+{ A: 0, B: 4, C: 2, D: 7 }
+*/
