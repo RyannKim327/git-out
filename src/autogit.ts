@@ -1,59 +1,85 @@
-/**
- * Returns the longest common subsequence of two strings.
- *
- * @param a First string.
- * @param b Second string.
- * @returns The LCS as a string.
+/** 
+ * At its core a node only needs to expose
+ *   - a unique identifier (for visited‑tracking)
+ *   - a way to enumerate its successors
  */
-function longestCommonSubsequence(a: string, b: string): string {
-  const n = a.length;
-  const m = b.length;
+export interface Node<T = any> {
+  id: string | number;
+  // Optional: depth, parent, cost – whatever your context needs
+  getSuccessors(): Node[];
+}
+export interface BinaryNode<T = any> extends Node {
+  left?: BinaryNode;
+  right?: BinaryNode;
+  getSuccessors(): BinaryNode[] {
+    return [this.left, this.right].filter(Boolean);
+  }
+}
+/**
+ * depthLimitedSearch
+ * ------------------
+ * Classic depth‑first search that stops when a given depth threshold is reached.
+ *
+ * @param root the node to start from
+ * @param goalTest a predicate that returns true for the desired node
+ * @param depthLimit the maximum depth to explore (0 = only the root)
+ * @returns the first node that satisfies goalTest, or null if not found
+ */
+export function depthLimitedSearch<T>(
+  root: Node<T>,
+  goalTest: (node: Node<T>) => boolean,
+  depthLimit: number
+): Node<T> | null {
 
-  // dp[i][j] = LCS length for a[0..i-1] and b[0..j-1]
-  const dp: number[][] = Array(n + 1)
-    .fill(null)
-    .map(() => Array(m + 1).fill(0));
+  // A simple iterative DFS pile that also carries the current depth.
+  const stack: { node: Node<T>; depth: number }[] = [];
+  const visited = new Set<string | number>(); // avoid cycles
 
-  // Fill table
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+  stack.push({ node: root, depth: 0 });
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!; // pop returns a value, guaranteed not undefined
+
+    // skip already visited nodes (useful for graphs)
+    if (visited.has(node.id)) continue;
+    visited.add(node.id);
+
+    if (goalTest(node)) return node;   // success!
+
+    // Recurse only if we haven't hit the limit yet
+    if (depth < depthLimit) {
+      // Add successors in reverse order so leftmost child is processed first
+      const successors = node.getSuccessors();
+      for (let i = successors.length - 1; i >= 0; i--) {
+        stack.push({ node: successors[i], depth: depth + 1 });
       }
     }
   }
 
-  // Back‑track to build the subsequence
-  let i = n,
-    j = m,
-    lcs = '';
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      lcs = a[i - 1] + lcs; // prepend
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;
-    } else {
-      j--;
-    }
+  // If we exhaust the stack without finding the goal
+  return null;
+}
+// 1‑line node type with a simple integer value
+class GraphNode implements Node {
+  constructor(public id: number, public value: number) {}
+  getSuccessors(): GraphNode[] {
+    const n = this.value;
+    return [
+      new GraphNode(n * 2, n * 2),
+      new GraphNode(n * 2 + 1, n * 2 + 1),
+    ];
   }
-
-  return lcs;
 }
-console.log(longestCommonSubsequence('ABCDGH', 'AEDFHR')); // → "ADH"
-function lcsLength(a: string, b: string): number {
-  const n = a.length, m = b.length;
-  const dp = Array(n + 1).fill(0).map(() => Array(m + 1).fill(0));
 
-  for (let i = 1; i <= n; i++)
-    for (let j = 1; j <= m; j++)
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1] + 1
-        : Math.max(dp[i - 1][j], dp[i][j - 1]);
+const start = new GraphNode(1, 1);
+const goalIf = (node: GraphNode) => node.value === 19;
 
-  return dp[n][m];
-}
+const found = depthLimitedSearch(start, goalIf, 4);
+
+console.log(found ? `found ${found.value}` : 'not found');
+          1
+        /   \
+       2     3
+      / \   / \
+     4  5  6  7
+    / \ ...   ...
