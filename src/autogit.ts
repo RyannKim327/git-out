@@ -1,72 +1,78 @@
 /**
- * Returns the k-th smallest element of an array.
+ * Bubble Sort – in‑place, O(n²) time, O(1) space
  *
- * @param arr   Array of numbers (or any comparable type).
- * @param k     1‑based index of the element to find.
- * @returns     The k‑th smallest value.
- *
- * @throws      If k is out of bounds.
+ * @param arr Array of values that implement `Comparable`
+ * @returns the sorted array (same reference as input)
  */
-export function kthSmallest<T>(arr: T[], k: number): T {
-  if (k < 1 || k > arr.length) {
-    throw new Error(`k=${k} is not in the valid range 1..${arr.length}`);
-  }
+export function bubbleSort<T extends Comparable>(arr: T[]): T[] {
+  const n = arr.length;
 
-  // Work on a copy so the original array stays untouched.
-  const a = arr.slice();
-  let left = 0;
-  let right = a.length - 1;
+  // Minor optimization: keep track of whether a swap happened
+  // in the current pass. If not, array is already sorted.
+  for (let i = 0; i < n - 1; i++) {
+    let swapped = false;
 
-  while (true) {
-    // Pick a pivot – here we just pick the middle element.
-    const pivotIndex = left + Math.floor((right - left) / 2);
-    const pivot = a[pivotIndex];
-
-    // Partition step: elements < pivot go left, >= pivot go right.
-    const pivotNewIndex = partition(a, left, right, pivot);
-
-    if (pivotNewIndex === k - 1) {      // Found the k‑th smallest
-      return a[pivotNewIndex];
-    } else if (pivotNewIndex > k - 1) {  // Look in the left partition
-      right = pivotNewIndex - 1;
-    } else {                            // Look in the right partition
-      left = pivotNewIndex + 1;
+    // After each outer loop pass, the largest element of the
+    // unsorted portion settles at the end of the array.
+    for (let j = 0; j < n - i - 1; j++) {
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swapped = true;
+      }
     }
+
+    // If no elements were swapped, the array is already sorted.
+    if (!swapped) break;
   }
+
+  return arr;
 }
 
-/**
- * Standard Lomuto partition scheme.
- *
- * @param a array to partition
- * @param lo left boundary
- * @param hi right boundary
- * @param pivotValue value the array should be partitioned around
- * @returns new index of the pivot after partition
- */
-function partition<T>(a: T[], lo: number, hi: number, pivotValue: T): number {
-  // Move pivot to the end for convenience.
-  let pivotIndex = lo + (Math.random() * (hi - lo + 1)) | 0; // random pivot for stability
-  [a[pivotIndex], a[hi]] = [a[hi], a[pivotIndex]];
+/** Simple comparable interface for primitives */
+export interface Comparable {
+  /** Return true if this > other */
+  > (other: this): boolean;
+}
+export function bubbleSortWith<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number
+): T[] {
+  for (let i = 0; i < arr.length - 1; i++) {
+    let swapped = false;
 
-  const pivot = a[hi];
-  let storeIndex = lo;                         // index of the first element >= pivot
-
-  for (let i = lo; i < hi; i++) {
-    if (a[i] < pivot) {
-      [a[i], a[storeIndex]] = [a[storeIndex], a[i]];
-      storeIndex++;
+    for (let j = 0; j < arr.length - i - 1; j++) {
+      // compareFn(a, b) < 0 => a < b
+      // compareFn(a, b) > 0 => a > b
+      if (compareFn(arr[j], arr[j + 1]) > 0) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swapped = true;
+      }
     }
+
+    if (!swapped) break;
   }
 
-  // place pivot after the last smaller element
-  [a[storeIndex], a[hi]] = [a[hi], a[storeIndex]];
-  return storeIndex;
+  return arr;
 }
-export function kthSmallestSort<T>(arr: T[], k: number): T {
-  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
-  return [...arr].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))[k - 1];
+interface Person {
+  name: string;
+  age: number;
 }
-const nums = [7, 11, 5, 3, 9, 2];
-console.log(kthSmallest(nums, 3)); // 5
-console.log(kthSmallestSort(nums, 3)); // 5
+
+const people: Person[] = [
+  { name: "Alice", age: 34 },
+  { name: "Bob", age: 29 },
+  { name: "Carol", age: 42 },
+];
+
+bubbleSortWith(people, (a, b) => a.age - b.age);
+// people is now sorted by age ascending
+function test() {
+  const nums = [3, 1, 4, 1, 5, 9, 2, 6];
+  console.log("Before:", nums);
+  bubbleSort(nums); // mutates nums in place
+  console.log("After: ", nums);
+}
+
+test(); /* → Before: [3,1,4,1,5,9,2,6]
+          After:  [1,1,2,3,4,5,6,9] */
