@@ -1,37 +1,32 @@
-function countChar(str: string, target: string): number {
-  let count = 0;
-  for (const ch of str) {
-    if (ch === target) count++;
+// 1️⃣  Using a Set – O(m + n) time, O(n) extra space
+function commonElements<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(item => setB.has(item));
+}
+
+// 2️⃣  Using two pointers – O(m + n) time, O(1) extra space
+//     (works best if both arrays are already sorted)
+function commonSorted<T>(a: T[], b: T[]): T[] {
+  const res: T[] = [];
+  let i = 0, j = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) {
+      res.push(a[i]);
+      i++; j++;
+    } else if (a[i] < b[j]) {
+      i++;
+    } else {
+      j++;
+    }
   }
-  return count;
+  return res;
 }
 
-const times = countChar("hello world", "l"); // 3
-function countChar(str: string, target: string): number {
-  return str.split(target).length - 1;
+// 3️⃣  Using reduce – concise but less efficient for large arrays
+function commonReduce<T>(a: T[], b: T[]): T[] {
+  return a.reduce((acc, val) => (b.includes(val) ? [...acc, val] : acc), [] as T[]);
 }
+const arr1 = [1, 2, 3, 4, 5];
+const arr2 = [3, 4, 5, 6, 7];
 
-countChar("banana", "a"); // 3
-function countChar(str: string, target: string): number {
-  return [...str].filter(ch => ch === target).length;
-}
-
-countChar("👋👋👋 hello", "👋"); // 3
-function countChar(str: string, target: string): number {
-  const re = new RegExp(`\\${target}`, "g");
-  const matches = str.match(re);
-  return matches ? matches.length : 0;
-}
-
-countChar("mississippi", "i"); // 4
-function multicharCount(str: string, targets: string[]): Record<string, number> {
-  const result: Record<string, number> = {};
-  for (const t of targets) result[t] = 0;
-
-  for (const ch of str) {
-    if (result.hasOwnProperty(ch)) result[ch]++;
-  }
-  return result;
-}
-
-multicharCount("abacaba", ["a", "b", "c"]); // { a:4, b:2, c:1 }
+console.log(commonElements(arr1, arr2)); // [3, 4, 5]
