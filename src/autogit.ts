@@ -1,21 +1,68 @@
-/**
- * Returns true if `n` is a prime number.
- * Handles 0, 1 and negative numbers as non‑prime.
- */
-export function isPrime(n: number): boolean {
-  if (n <= 1) return false                // 0, 1, and negatives are not prime
-  if (n <= 3) return true                 // 2 and 3 are prime
-
-  // even numbers greater than 2 fail immediately
-  if (n % 2 === 0) return false
-
-  // only test odd divisors up to √n
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 3; i <= limit; i += 2) {
-    if (n % i === 0) return false
-  }
-  return true
+// -------------------------------------------
+// Node definition
+// -------------------------------------------
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-console.log(isPrime(2));   // true
-console.log(isPrime(15));  // false
-console.log(isPrime(97));  // true
+
+// -------------------------------------------
+// Helper: build list from array
+// -------------------------------------------
+function arrayToLinkedList<T>(arr: T[]): ListNode<T> | null {
+  if (arr.length === 0) return null;
+  const head = new ListNode(arr[0]);
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = new ListNode(arr[i]);
+    current = current.next;
+  }
+  return head;
+}
+
+// -------------------------------------------
+// Helper: read list into array (for debugging)
+// -------------------------------------------
+function linkedListToArray<T>(head: ListNode<T> | null): T[] {
+  const arr: T[] = [];
+  let cur = head;
+  while (cur) {
+    arr.push(cur.val);
+    cur = cur.next;
+  }
+  return arr;
+}
+
+// -------------------------------------------
+// Main: find middle node
+// -------------------------------------------
+function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null;          // empty list
+
+  let slow = head;
+  let fast = head;
+
+  // Move fast two steps and slow one step until fast can't move further.
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
+  }
+
+  // For even‑length lists, this returns the first of the two middle nodes.
+  // If you prefer the second, replace `while (fast && fast.next)` and
+  // adjust the loop accordingly.
+  return slow;
+}
+
+// -------------------------------------------
+// Demo
+// -------------------------------------------
+const list = arrayToLinkedList([1, 2, 3, 4, 5]);  // odd length
+console.log(linkedListToArray(list));            // [1,2,3,4,5]
+console.log(findMiddle(list)?.val);              // 3
+
+const evenList = arrayToLinkedList([10, 20, 30, 40]);
+console.log(linkedListToArray(evenList));         // [10,20,30,40]
+console.log(findMiddle(evenList)?.val);           // 20 (first middle)
+// if you want the second middle, tweak the loop condition to:
+// while (fast && fast.next)
+// then you'll get 30.
