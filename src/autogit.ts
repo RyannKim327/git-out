@@ -1,19 +1,25 @@
-// Original
-const original = "   \tHello, \nWorld!   ";
-
-// 1. trim (only outer whitespace)
-const trimmed = original.trim();
-console.log(trimmed); // "Hello, \nWorld!"
-
-// 2. remove all literal spaces only
-const noSpaces = original.replace(/ /g, "");
-console.log(noSpaces); // "\tHello,\nWorld!   "
-
-// 3. strip *every* whitespace
-const totallyClean = original.replace(/\s+/g, "");
-console.log(totallyClean); // "Hello,World!"
-function removeAllWhitespace(s: string): string {
-  return s.replace(/\s+/g, "");
+function reverseString(str: string): string {
+  return str.split('').reverse().join('');
 }
-
-const cleaned = removeAllWhitespace("  a b\tc\n "); // "abc"
+function reverseStringNoArray(str: string): string {
+  let result = '';
+  for (let i = str.length - 1; i >= 0; i--) {
+    result += str[i];
+  }
+  return result;
+}
+function reverseStringRecursive(str: string): string {
+  if (str === '') return '';
+  return reverseStringRecursive(str.slice(1)) + str[0];
+}
+function reverseStringFlatMap(str: string): string {
+  return [...str.matchAll(/./gu)].flatMap(ch => [ch[0]]).reverse().join('');
+}
+function reverseUnicodeString(str: string): string {
+  // splitIntoGraphemes could be a library function; here’s a simple UX:
+  const graphemes = [...str];
+  return graphemes.reverse().join('');
+}
+console.log(reverseString('hello'));          // 'olleh'
+console.log(reverseStringNoArray('world'));   // 'dlrow'
+console.log(reverseStringRecursive('foo'));   // 'oof'
