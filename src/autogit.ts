@@ -1,43 +1,47 @@
 /**
- * Returns the longest common *contiguous* substring of `a` and `b`.
+ * Checks whether a string is a palindrome (case‑insensitive,
+ * ignoring anything that isn’t a letter or a digit).
  *
- * If there are multiple substrings with the same maximum length, the first
- * one that appears in `a` is returned.
- *
- * Time:  O(a.length * b.length)
- * Space: O(a.length * b.length)   (you can trim this to O(a.length) if you’re
- *                                   hunting for a memory‑tight version)
+ * Time   : O(n)
+ * Space  : O(1)   – only a couple of integer variables
  */
-export function longestCommonSubstring(a: string, b: string): string {
-  const aLen = a.length;
-  const bLen = b.length;
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  // A 2‑D array where dp[i][j] holds the length of the longest suffix that
-  // ends at a[i-1] and b[j-1].  We use 1‑based indexing to keep the math
-  // simple: dp[0][*] and dp[*][0] are zero by construction.
-  const dp: number[][] = Array.from({ length: aLen + 1 }, () =>
-    new Array(bLen + 1).fill(0)
-  );
+  const isAlnum = (ch: string): boolean => {
+    const code = ch.charCodeAt(0);
+    // '0'‑'9'
+    if (code >= 48 && code <= 57) return true;
+    // 'A'‑'Z'
+    if (code >= 65 && code <= 90) return true;
+    // 'a'‑'z'
+    if (code >= 97 && code <= 122) return true;
+    return false;
+  };
 
-  let bestLen = 0;
-  let bestI = 0; // end index in `a`
+  while (left < right) {
+    // Skip non‑alphanumeric characters from the left
+    while (left < right && !isAlnum(s[left])) left++;
+    // Skip non‑alphanumeric characters from the right
+    while (left < right && !isAlnum(s[right])) right--;
 
-  for (let i = 1; i <= aLen; i++) {
-    for (let j = 1; j <= bLen; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-        if (dp[i][j] > bestLen) {
-          bestLen = dp[i][j];
-          bestI = i; // slice stops at `i` (exclusive)
-        }
-      } else {
-        dp[i][j] = 0;
-      }
-    }
+    if (left >= right) break;          // Nothing left to compare
+
+    const lc = s[left].toLowerCase();
+    const rc = s[right].toLowerCase();
+
+    if (lc !== rc) return false;
+
+    left++;
+    right--;
   }
 
-  return bestLen > 0 ? a.slice(bestI - bestLen, bestI) : '';
+  return true;
 }
-console.log(longestCommonSubstring('BANANA', 'ANANAB')); // "ANANA"
-console.log(longestCommonSubstring('hello', 'world'));   // ""
-console.log(longestCommonSubstring('', 'something'));    // ""
+while (left < right) {
+  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
+  left++;
+  right--;
+}
+return true;
