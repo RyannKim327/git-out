@@ -1,32 +1,38 @@
-const nums = [1, 2, 3, 4, 5];
-
-// Remove the number 3
-const idx = nums.indexOf(3);
-if (idx !== -1) {
-  nums.splice(idx, 1); // nums → [1, 2, 4, 5]
-}
-const chars = ['a', 'b', 'c', 'b', 'd'];
-
-// Drop every 'b'
-const withoutB = chars.filter(ch => ch !== 'b');
-// withoutB → ['a', 'c', 'd']
-const original = [10, 20, 30, 40, 50];
-
-const removed = [
-  ...original.slice(0, original.indexOf(30)),
-  ...original.slice(original.indexOf(30) + 1),
-];
-
-// removed → [10, 20, 40, 50]
 /**
- * Remove the first occurrence of `value` from `array`.
- * Returns a new array; the original array is not mutated.
+ * Find the majority element in an array.
+ *
+ * @param arr - An array of comparable items.
+ * @returns The majority element, or undefined if no majority exists.
+ *
+ * Assumes `T` supports strict equality (===).
  */
-function removeFirst<T>(array: readonly T[], value: T): T[] {
-  const idx = array.indexOf(value);
-  if (idx === -1) return [...array]; // nothing to remove
-  return [...array.slice(0, idx), ...array.slice(idx + 1)];
+function majorityElement<T>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
+
+  // 1️⃣ First pass: find a potential candidate
+  let candidate: T | undefined = arr[0];
+  let count = 0;
+
+  for (const value of arr) {
+    if (count === 0) {
+      candidate = value;
+      count = 1;
+    } else {
+      count += (value === candidate) ? 1 : -1;
+    }
+  }
+
+  // 2️⃣ Optional second pass (remove if you know the input always contains a majority)
+  if (candidate !== undefined) {
+    const actual = arr.filter(v => v === candidate).length;
+    if (actual > arr.length / 2) {
+      return candidate;
+    }
+  }
+
+  return undefined; // No majority element
 }
-const data = [2, 4, 6, 8];
-const updated = removeFirst(data, 6);
-// updated → [2, 4, 8]
+const nums = [2, 2, 1, 1, 2, 2, 2];
+
+const major = majorityElement(nums); // -> 2
+console.log(major); // 2
