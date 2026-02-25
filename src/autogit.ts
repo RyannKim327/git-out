@@ -1,42 +1,59 @@
-// cron-demo.ts
-import { CronJob } from 'cron';
-import * as dotenv from 'dotenv';
-
-dotenv.config(); // optional – pulls cron expression from .env
-
 /**
- * A simple scheduled task that
- * • runs every minute (or whatever pattern you set)
- * • prints a timestamp
- * • gracefully handles potential errors
+ * Compare two strings for an anagram relationship.
+ *
+ * @param a – first string (the one you’re testing)
+ * @param b – candidate anagram
+ * @param ignoreCase – true will treat “A” and “a” the same
+ * @param normalize   – if true, removes all non‑alphanumeric chars
+ * @returns true if a and b are anagrams
  */
-const job = new CronJob(
-  // Default cron date string: every minute of every hour of every day
-  process.env.CRON_EXPRESSION || '* * * * *',
-  () => {
-    const now = new Date().toISOString();
-    console.log(`[${now}] Tick – cron job fired!`);
-  },
-  // onComplete – fires when the job finishes its last scheduled run (not used here)
-  null,
-  // start immediately
-  true,
-  // timezone – string like 'America/New_York'
-  process.env.TZ || 'UTC',
-);
+function isAnagram(
+  a: string,
+  b: string,
+  ignoreCase = true,
+  normalize = true
+): boolean {
+  if (normalize) {
+    const regex = /[^a-z0-9]/gi;
+    a = a.replace(regex, '');
+    b = b.replace(regex, '');
+  }
 
-job.on('error', (err) => {
-  console.error(`❌ Cron job encountered an error: ${err.message}`);
-});
+  if (ignoreCase) {
+    a = a.toLowerCase();
+    b = b.toLowerCase();
+  }
 
-process.once('SIGINT', () => {
-  console.log('\n🛑 Shutting down cron job gracefully...');
-  job.stop();
-  process.exit(0);
-});
+  // Quick length‐check
+  if (a.length !== b.length) return false;
 
-console.log(`✅ Cron job started with pattern: ${job.cronTime.source}`);
-✅ Cron job started with pattern: * * * * *
-[2026-02-15T12:00:00.000Z] Tick – cron job fired!
-[2026-02-15T12:01:00.000Z] Tick – cron job fired!
-…
+  // Sort characters and compare
+  const sortedA = a.split('').sort().join('');
+  const sortedB = b.split('').sort().join('');
+
+  return sortedA === sortedB;
+}
+console.log(isAnagram('Listen', 'Silent'));               // true
+console.log(isAnagram('Astronomer', 'Moon starer'));      // true
+console.log(isAnagram('Hello', 'World'));                  // false
+
+// Custom options
+console.log(isAnagram('Dormitory!', 'Dirtyroom', true, true)); // true
+console.log(isAnagram('Dormitory!', 'Dirtyroom', false, true)); // false – case sensitive
+function isAnagramFreq(a: string, b: string): boolean {
+  const makeMap = (s: string) => {
+    const map: Record<string, number> = {};
+    for (const ch of s) map[ch] = (map[ch] ?? 0) + 1;
+    return map;
+  };
+
+  const freqA = makeMap(a);
+  const freqB = makeMap(b);
+
+  // Compare two maps
+  const keys = new Set([...Object.keys(freqA), ...Object.keys(freqB)]);
+  for (const k of keys) {
+    if (freqA[k] !== freqB[k]) return false;
+  }
+  return true;
+}
