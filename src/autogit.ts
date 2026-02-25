@@ -1,40 +1,60 @@
-/**
- * Binary search – recursive.  
- * @param arr        — sorted array
- * @param target     — value to find
- * @param compare    — optional comparison function (a, b) => number
- *                     returns <0 if a<b, 0 if a==b, >0 if a>b
- * @returns index of `target` or -1 if not found
- */
-function binarySearchRec<T>(
-  arr: T[],
-  target: T,
-  compare?: (a: T, b: T) => number
-): number {
-  // Provide a default numeric comparator
-  const cmp = compare ?? ((a: any, b: any) => a - b);
+function buildLps(pattern: string): number[] {
+  const lps = new Array(pattern.length).fill(0);
+  let len = 0;          // length of the previous longest prefix suffix
+  let i = 1;            // we start from the second character
 
-  const search = (low: number, high: number): number => {
-    if (low > high) return -1;          // base case: not found
-
-    const mid = Math.floor((low + high) / 2);
-    const cmpResult = cmp(arr[mid], target);
-
-    if (cmpResult === 0) return mid;    // target is at mid
-    if (cmpResult < 0) return search(mid + 1, high); // target is right
-    return search(low, mid - 1);        // target is left
-  };
-
-  return search(0, arr.length - 1);
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      // Mismatch after len matches
+      if (len !== 0) {
+        // Try the last known good prefix
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
+    }
+  }
+  return lps;
 }
-// Numbers – no comparator needed
-const nums = [1, 3, 5, 7, 9, 11, 13];
-console.log(binarySearchRec(nums, 7));  // → 3
-console.log(binarySearchRec(nums, 2));  // → -1
+/**
+ * Returns an array of starting indices where `pattern` occurs in `text`.
+ * If no match, returns an empty array.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  const lps = buildLps(pattern);
+  const results: number[] = [];
 
-// Strings – supply a comparator
-const words = ["apple", "banana", "cherry", "date"];
-const stringCmp = (a: string, b: string) => a.localeCompare(b);
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
-console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) {
+        // Match found at position i - j
+        results.push(i - j);
+        // Prepare for the next possible match
+        j = lps[j - 1];
+      }
+    } else {
+      if (j !== 0) {
+        // Mismatch after j matches
+        j = lps[j - 1];
+      } else {
+        // Mismatch at the start
+        i++;
+      }
+    }
+  }
+
+  return results;
+}
+const text = "ABABDABACDABABCABAB";
+const pattern = "ABABCABAB";
+
+console.log(kmpSearch(text, pattern)); // [10]
