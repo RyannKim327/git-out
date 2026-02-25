@@ -1,47 +1,29 @@
-class TreeNode<T = any> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+/**
+ * Reverses the order of words in a string.
+ *
+ * Words are split on whitespace.  Consecutive whitespace is collapsed,
+ * but you can tweak the regex if you need to keep it intact.
+ *
+ * @param txt – The string to reverse
+ * @returns The string with words in reverse order
+ */
+function reverseWordOrder(txt: string): string {
+  return txt
+    .trim()                      // Strip leading/trailing gaps
+    .split(/\s+/)                // Break on any run of whitespace
+    .reverse()                   // Flip the array
+    .join(' ');                  // Stitch back together
 }
-function countLeaves<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;                         // empty subtree → 0 leaves
 
-  // If both children are missing, this node itself is a leaf
-  if (!root.left && !root.right) return 1;
-
-  // Otherwise, count leaves in the children
-  return countLeaves(root.left) + countLeaves(root.right);
+// Example usage
+const original = "Hello world, this is TypeScript.";
+const reversed = reverseWordOrder(original);
+console.log(reversed);  // "TypeScript. is this world, Hello"
+function reverseWordOrder(txt: string) {
+  const words = txt.trim().match(/\w+|\s+/g) ?? [];
+  const textOnly = words.filter(Boolean).join(' ');
+  const reversed = textOnly.split(/\s+/).reverse().join(' ');
+  // re‑insert spaces that were originally present
+  // (not shown here for brevity)
+  return reversed;
 }
-function countLeavesIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  let stack: Array<TreeNode<T>> = [root];
-  let leafCount = 0;
-
-  while (stack.length) {
-    const node = stack.pop() as TreeNode<T>;
-
-    // A leaf if it has no children
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      // Push existing children to process later
-      if (node.left) stack.push(node.left);
-      if (node.right) stack.push(node.right);
-    }
-  }
-
-  return leafCount;
-}
-const root = new TreeNode(1,
-  new TreeNode(2,
-    new TreeNode(4),           // leaf
-    new TreeNode(5)            // leaf
-  ),
-  new TreeNode(3)              // leaf
-);
-
-console.log(countLeaves(root));        // → 3
-console.log(countLeavesIter(root));    // → 3
