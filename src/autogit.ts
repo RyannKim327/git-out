@@ -1,13 +1,45 @@
-// 1️⃣  Define the array (TypeScript knows it’s numbers)
-const nums: number[] = [42, 7, 13, 99, 29];
+/**
+ * Checks if a string is a palindrome.
+ *
+ * @param txt          The input string to test.
+ * @param options      Optional flags.
+ * @returns            true if the cleaned string reads the same forwards and backwards.
+ */
+export function isPalindrome(
+  txt: string,
+  options?: {
+    /** When true (default), the check is case‑insensitive. */
+    ignoreCase?: boolean;
+    /** When true (default), only alphanumeric characters are considered. */
+    stripNonAlnum?: boolean;
+    /** When true, normalises Unicode to NFKD form before the checks. */
+    normalize?: boolean;
+  } = {}
+): boolean {
+  const {
+    ignoreCase = true,
+    stripNonAlnum = true,
+    normalize = true,
+  } = options;
 
-// 2️⃣  Sort in place – ascending
-nums.sort((a, b) => a - b);   // -> [7, 13, 29, 42, 99]
-console.log('Ascending:', nums);
+  let processed = txt;
 
-// 3️⃣  If you want a new sorted array instead, copy first
-const ascending = [...nums].sort((a, b) => a - b);
+  if (normalize) {
+    // This collapse accents, e.g. "café" ➜ "cafe".
+    processed = processed.normalize('NFKD');
+  }
 
-// 4️⃣  Descending order
-const descending = nums.slice().sort((a, b) => b - a); // -> [99, 42, 29, 13, 7]
-console.log('Descending:', descending);
+  if (stripNonAlnum) {
+    processed = processed.replace(/[^0-9a-z]+/gi, '');
+  }
+
+  if (ignoreCase) {
+    processed = processed.toLowerCase();
+  }
+
+  const reversed = processed.split('').reverse().join('');
+  return processed === reversed;
+}
+console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
+console.log(isPalindrome('Madam In Eden, I’m Adam'));          // true
+console.log(isPalindrome('Hello, world!'));                    // false
