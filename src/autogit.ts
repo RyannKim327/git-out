@@ -1,72 +1,72 @@
-// Generic, in‑place quicksort
-export function quickSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number,
-  low = 0,
-  high = arr.length - 1,
-): T[] {
-  // Default comparator: numeric/string natural order
-  const cmp = compareFn ?? ((a: T, b: T) =>
-    a < b ? -1 : a > b ? 1 : 0,
-  );
-
-  // Helper: partition using Hoare's scheme
-  const partition = (l: number, h: number): number => {
-    const pivot = arr[Math.floor((l + h) / 2)];
-    let i = l - 1;
-    let j = h + 1;
-    while (true) {
-      do { i++; } while (cmp(arr[i], pivot) < 0);
-      do { j--; } while (cmp(arr[j], pivot) > 0);
-      if (i >= j) return j;
-      [arr[i], arr[j]] = [arr[j], arr[i]]; // swap
-    }
-  };
-
-  if (low < high) {
-    const p = partition(low, high);
-    quickSort(arr, compareFn, low, p);
-    quickSort(arr, compareFn, p + 1, high);
+/**
+ * Returns the k-th smallest element of an array.
+ *
+ * @param arr   Array of numbers (or any comparable type).
+ * @param k     1‑based index of the element to find.
+ * @returns     The k‑th smallest value.
+ *
+ * @throws      If k is out of bounds.
+ */
+export function kthSmallest<T>(arr: T[], k: number): T {
+  if (k < 1 || k > arr.length) {
+    throw new Error(`k=${k} is not in the valid range 1..${arr.length}`);
   }
-  return arr; // for convenience – returns the same array reference
+
+  // Work on a copy so the original array stays untouched.
+  const a = arr.slice();
+  let left = 0;
+  let right = a.length - 1;
+
+  while (true) {
+    // Pick a pivot – here we just pick the middle element.
+    const pivotIndex = left + Math.floor((right - left) / 2);
+    const pivot = a[pivotIndex];
+
+    // Partition step: elements < pivot go left, >= pivot go right.
+    const pivotNewIndex = partition(a, left, right, pivot);
+
+    if (pivotNewIndex === k - 1) {      // Found the k‑th smallest
+      return a[pivotNewIndex];
+    } else if (pivotNewIndex > k - 1) {  // Look in the left partition
+      right = pivotNewIndex - 1;
+    } else {                            // Look in the right partition
+      left = pivotNewIndex + 1;
+    }
+  }
 }
-export function quickSortImmutable<T>(
-  arr: readonly T[],
-  compareFn?: (a: T, b: T) => number,
-): T[] {
-  if (arr.length <= 1) return [...arr];
 
-  const compare = compareFn ?? ((a: T, b: T) =>
-    a < b ? -1 : a > b ? 1 : 0,
-  );
+/**
+ * Standard Lomuto partition scheme.
+ *
+ * @param a array to partition
+ * @param lo left boundary
+ * @param hi right boundary
+ * @param pivotValue value the array should be partitioned around
+ * @returns new index of the pivot after partition
+ */
+function partition<T>(a: T[], lo: number, hi: number, pivotValue: T): number {
+  // Move pivot to the end for convenience.
+  let pivotIndex = lo + (Math.random() * (hi - lo + 1)) | 0; // random pivot for stability
+  [a[pivotIndex], a[hi]] = [a[hi], a[pivotIndex]];
 
-  const pivot = arr[Math.floor(arr.length / 2)];
-  const lows = arr.filter((x) => compare(x, pivot) < 0);
-  const highs = arr.filter((x) => compare(x, pivot) > 0);
-  const pivots = arr.filter((x) => compare(x, pivot) === 0);
+  const pivot = a[hi];
+  let storeIndex = lo;                         // index of the first element >= pivot
 
-  return [
-    ...quickSortImmutable(lows, compareFn),
-    ...pivots,
-    ...quickSortImmutable(highs, compareFn),
-  ];
+  for (let i = lo; i < hi; i++) {
+    if (a[i] < pivot) {
+      [a[i], a[storeIndex]] = [a[storeIndex], a[i]];
+      storeIndex++;
+    }
+  }
+
+  // place pivot after the last smaller element
+  [a[storeIndex], a[hi]] = [a[hi], a[storeIndex]];
+  return storeIndex;
 }
-const nums = [34, 7, 23, 32, 5, 62];
-quickSort(nums);               // mutates `nums`
-console.log(nums);             // [5, 7, 23, 32, 34, 62]
-
-let strs = ["banana", "apple", "cherry"];
-quickSort(strs, (a, b) => a.localeCompare(b));
-console.log(strs);             // ["apple", "banana", "cherry"]
-
-let objs = [
-  { id: 3, name: "c" },
-  { id: 1, name: "a" },
-  { id: 2, name: "b" },
-];
-quickSort(
-  objs,
-  (a, b) => a.id - b.id,
-);
-console.log(objs);
-// [{ id: 1, name: "a" }, { id: 2, name: "b" }, { id: 3, name: "c" }]
+export function kthSmallestSort<T>(arr: T[], k: number): T {
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
+  return [...arr].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))[k - 1];
+}
+const nums = [7, 11, 5, 3, 9, 2];
+console.log(kthSmallest(nums, 3)); // 5
+console.log(kthSmallestSort(nums, 3)); // 5
