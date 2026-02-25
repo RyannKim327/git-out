@@ -1,65 +1,74 @@
 /**
- * Generic insertion sort.
- * @param arr  The array to sort – it will be mutated in‑place.
- * @returns    The sorted array (the same reference that was passed in).
+ * Median of two sorted arrays
+ * A and B can be empty, but not both.
  */
-export function insertionSort<T>(arr: T[]): T[] {
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+export function medianOfTwoSortedArrays(
+  a: number[],
+  b: number[]
+): number {
+  // Ensure a is the smaller array; this keeps the binary‑search bounds tight.
+  const [A, B] = a.length <= b.length ? [a, b] : [b, a];
+  const m = A.length;
+  const n = B.length;
+  const half = Math.floor((m + n + 1) / 2);
 
-    /* shift elements that are greater than key one position to the right */
-    while (j >= 0 && arr[j] > key) {
-      arr[j + 1] = arr[j];
-      j--;
+  let low = 0;
+  let high = m;
+
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2); // elements taken from A
+    const j = half - i;                     // elements taken from B
+
+    const Aleft  = i === 0     ? Number.NEGATIVE_INFINITY : A[i - 1];
+    const Aright = i === m     ? Number.POSITIVE_INFINITY : A[i];
+
+    const Bleft  = j === 0     ? Number.NEGATIVE_INFINITY : B[j - 1];
+    const Bright = j === n     ? Number.POSITIVE_INFINITY : B[j];
+
+    // i is perfect if left side ≤ right side
+    if (Aleft <= Bright && Bleft <= Aright) {
+      // Odd total → max of left side
+      if ((m + n) % 2 === 1) {
+        return Math.max(Aleft, Bleft);
+      }
+
+      // Even total → average of two middle values
+      return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
+    } else if (Aleft > Bright) {
+      // i too big, shift left
+      high = i - 1;
+    } else {
+      // i too small, shift right
+      low = i + 1;
     }
-
-    arr[j + 1] = key;
   }
-  return arr;
-}
-const numbers = [8, 3, 5, 4, 6, 1];
-console.log(insertionSort(numbers)); // [1, 3, 4, 5, 6, 8]
-const words = ['orange', 'apple', 'banana'];
-console.log(insertionSort(words)); // ['apple', 'banana', 'orange']
-interface Person {
-  name: string;
-  age: number;
-}
 
-const people: Person[] = [
-  { name: 'Zoe', age: 29 },
-  { name: 'Anna', age: 22 },
-  { name: 'Mike', age: 35 }
-];
-
-function sortByAge(arr: Person[]): Person[] {
-  return insertionSort(arr, (a, b) => a.age - b.age);
+  throw new Error('Input arrays are not sorted or invalid.');
 }
+export function medianOfTwoSortedArraysSimple(
+  a: number[],
+  b: number[]
+): number {
+  const merged: number[] = [];
+  let i = 0, j = 0;
 
-// extended version that accepts a compare function
-export function insertionSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number
-): T[] {
-  const cmp = compareFn ?? ((a: T, b: T) => (a > b ? 1 : a < b ? -1 : 0));
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
+  while (i < a.length || j < b.length) {
+    if (i >= a.length) {
+      merged.push(b[j++]);
+    } else if (j >= b.length) {
+      merged.push(a[i++]);
+    } else if (a[i] <= b[j]) {
+      merged.push(a[i++]);
+    } else {
+      merged.push(b[j++]);
     }
-    arr[j + 1] = key;
   }
-  return arr;
-}
 
-console.log(sortByAge(people));
-/*
-[
-  { name: 'Anna', age: 22 },
-  { name: 'Zoe', age: 29 },
-  { name: 'Mike', age: 35 }
-]
-*/
+  const len = merged.length;
+  if (len % 2 === 1) return merged[Math.floor(len / 2)];
+  return (merged[len / 2 - 1] + merged[len / 2]) / 2;
+}
+const arr1 = [1, 3, 5, 9];
+const arr2 = [2, 4, 6, 8, 10];
+
+console.log(medianOfTwoSortedArrays(arr1, arr2)); // 5.5
