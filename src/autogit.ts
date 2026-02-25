@@ -1,66 +1,111 @@
-/**
- * Returns the largest prime factor of a positive integer.
- * Works for Number (up to ~9e15) and for BigInt.
- */
-export function largestPrimeFactor(nInput: number | bigint): bigint {
-  // 0 or 1 have no prime factors
-  if (nInput <= 1) {
-    throw new Error('Number must be >= 2');
+// Edge between two nodes
+interface Edge {
+  to: string;      // target node id
+  weight: number;  // edge weight
+}
+
+// Graph stored as an adjacency list
+type Graph = Record<string, Edge[]>;
+
+// Simple min‑heap priority queue
+class MinHeap<T> {
+  private content: { key: number; value: T }[] = [];
+
+  // Insert a new element
+  push(key: number, value: T): void {
+    const node = { key, value };
+    this.content.push(node);
+    this.bubbleUp(this.content.length - 1);
   }
 
-  // Work with BigInt internally for uniformity
-  let n = BigInt(nInput);
+  // Remove the element with the smallest key
+  pop(): T | undefined {
+    if (this.content.length === 0) return undefined;
+    const root = this.content[0].value;
 
-  // Remove factors of 2
-  let lastFactor = 2n;
-  while (n % 2n === 0n) {
-    lastFactor = 2n;
-    n /= 2n;
-  }
-
-  // Try odd factors only
-  let factor = 3n;
-  const limit = sqrtBigInt(n);
-
-  while (factor <= limit) {
-    while (n % factor === 0n) {
-      lastFactor = factor;
-      n /= factor;
+    const last = this.content.pop()!;
+    if (this.content.length) {
+      this.content[0] = last;
+      this.bubbleDown(0);
     }
-    factor += 2n;        // skip even numbers
+    return root;
   }
 
-  // If anything is left, it must be a prime > sqrt(original n)
-  if (n > 1n) {
-    lastFactor = n;
+  get size(): number { return this.content.length; }
+
+  private bubbleUp(idx: number): void {
+    while (idx > 0) {
+      const parent = Math.floor((idx - 1) / 2);
+      if (this.content[parent].key <= this.content[idx].key) break;
+      [this.content[parent], this.content[idx]] = [this.content[idx], this.content[parent]];
+      idx = parent;
+    }
   }
 
-  return lastFactor;
+  private bubbleDown(idx: number): void {
+    const length = this.content.length;
+    while (true) {
+      const left = 2 * idx + 1;
+      const right = 2 * idx + 2;
+      let smallest = idx;
+
+      if (left < length && this.content[left].key < this.content[smallest].key) {
+        smallest = left;
+      }
+      if (right < length && this.content[right].key < this.content[smallest].key) {
+        smallest = right;
+      }
+      if (smallest === idx) break;
+
+      [this.content[idx], this.content[smallest]] = [this.content[smallest], this.content[idx]];
+      idx = smallest;
+    }
+  }
 }
-
 /**
- * Integer square root of a BigInt (floor)
- * (Euclidean algorithm – takes few iterations even for 64‑bit numbers)
+ * Computes the shortest‑path distances from `src` to every node in `graph`.
+ * @param graph     adjacency list
+ * @param src       origin node id
+ * @returns        a map of node → distance; unreachable nodes have Infinity
  */
-function sqrtBigInt(value: bigint): bigint {
-  if (value < 0n) throw new Error('square root of negative not supported');
-  if (value < 2n) return value;
+function dijkstra(graph: Graph, src: string): Record<string, number> {
+  const distances: Record<string, number> = {};
+  const visited = new Set<string>();
 
-  let x0 = value / 2n;
-  let x1 = (x0 + value / x0) / 2n;
+  // initialise all distances to Infinity
+  for (const node in graph) distances[node] = Infinity;
+  distances[src] = 0;
 
-  while (x1 < x0) {
-    x0 = x1;
-    x1 = (x0 + value / x0) / 2n;
+  const pq = new MinHeap<string>();
+  pq.push(0, src);
+
+  while (pq.size) {
+    const u = pq.pop()!;                // node with lowest known distance
+    const d = distances[u];
+
+    if (visited.has(u)) continue; // we may have inserted u multiple times
+    visited.add(u);
+
+    for (const { to, weight } of graph[u]) {
+      const alt = d + weight;
+      if (alt < distances[to]) {
+        distances[to] = alt;
+        pq.push(alt, to);
+      }
+    }
   }
-  return x0;
-}
-console.log(largestPrimeFactor(13195));      // 29
-console.log(largestPrimeFactor(600851475143)); // 6857
 
-// Using BigInt
-console.log(
-  largestPrimeFactor(
-    BigInt("9999999967") // a 10‑digit number; you can make this much bigger
-  ).toString()
-);
+  return distances;
+}
+const graph: Graph = {
+  A: [{ to: 'B', weight: 5 }, { to: 'C', weight: 2 }],
+  B: [{ to: 'C', weight: 1 }, { to: 'D', weight: 3 }],
+  C: [{ to: 'B', weight: 4 }, { to: 'D', weight: 6 }],
+  D: [],
+};
+
+const result = dijkstra(graph, 'A');
+console.log(result);
+/* prints something like:
+{ A: 0, B: 4, C: 2, D: 7 }
+*/
