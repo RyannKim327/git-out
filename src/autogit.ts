@@ -1,48 +1,59 @@
-// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
-//      This shape is common in interview‑style code.
-interface TreeNode {
-  val: number;         // node’s payload
-  left?: TreeNode | null;   // left child (optional)
-  right?: TreeNode | null;  // right child (optional)
-}
+/**
+ * Returns the longest common subsequence of two strings.
+ *
+ * @param a First string.
+ * @param b Second string.
+ * @returns The LCS as a string.
+ */
+function longestCommonSubsequence(a: string, b: string): string {
+  const n = a.length;
+  const m = b.length;
 
-// 2️⃣  Recursive summation – easiest to read and to understand.
-//      Depth‑first, natural for a tree.
-function sumTreeRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                      // base case: empty subtree is 0
-  const leftSum = sumTreeRecursive(root.left);
-  const rightSum = sumTreeRecursive(root.right);
-  return root.val + leftSum + rightSum;      // combine the results
-}
+  // dp[i][j] = LCS length for a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array(n + 1)
+    .fill(null)
+    .map(() => Array(m + 1).fill(0));
 
-// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
-//      where recursion might hit the call‑stack limit.
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let total = 0;
-  const stack: TreeNode[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.val;
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
+  // Fill table
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
   }
-  return total;
+
+  // Back‑track to build the subsequence
+  let i = n,
+    j = m,
+    lcs = '';
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      lcs = a[i - 1] + lcs; // prepend
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;
+    } else {
+      j--;
+    }
+  }
+
+  return lcs;
 }
+console.log(longestCommonSubsequence('ABCDGH', 'AEDFHR')); // → "ADH"
+function lcsLength(a: string, b: string): number {
+  const n = a.length, m = b.length;
+  const dp = Array(n + 1).fill(0).map(() => Array(m + 1).fill(0));
 
-// 4️⃣  Sample tree for quick sanity check
-//           5
-//          / \
-//         3   7
-//        / \   \
-//       2   4   8
+  for (let i = 1; i <= n; i++)
+    for (let j = 1; j <= m; j++)
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1] + 1
+        : Math.max(dp[i - 1][j], dp[i][j - 1]);
 
-const sampleRoot: TreeNode = {
-  val: 5,
-  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
-  right: { val: 7, right: { val: 8 } },
-};
-
-console.log(sumTreeRecursive(sampleRoot)); // → 33
-console.log(sumTreeIterative(sampleRoot)); // → 33
+  return dp[n][m];
+}
