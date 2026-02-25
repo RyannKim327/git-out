@@ -1,66 +1,61 @@
+export interface ListNode<T> {
+  val: T;               // the payload
+  next: ListNode<T> | null; // pointer to the next node
+}
 /**
- * Returns the largest prime factor of a positive integer.
- * Works for Number (up to ~9e15) and for BigInt.
+ * Reverses a singly linked list.
+ * @param head: the first node of the list (or null for an empty list)
+ * @returns the new head of the reversed list
  */
-export function largestPrimeFactor(nInput: number | bigint): bigint {
-  // 0 or 1 have no prime factors
-  if (nInput <= 1) {
-    throw new Error('Number must be >= 2');
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;   // will become the new head
+  let curr: ListNode<T> | null = head;   // current node being processed
+
+  while (curr) {
+    const nextTemp = curr.next; // keep reference to the next node
+    curr.next = prev;           // reverse the link
+    prev = curr;                // move prev forward
+    curr = nextTemp;            // move curr forward
   }
 
-  // Work with BigInt internally for uniformity
-  let n = BigInt(nInput);
-
-  // Remove factors of 2
-  let lastFactor = 2n;
-  while (n % 2n === 0n) {
-    lastFactor = 2n;
-    n /= 2n;
+  // At this point, prev points to the new head
+  return prev;
+}
+export function reverseListRec<T>(node: ListNode<T> | null): ListNode<T> | null {
+  if (!node || !node.next) {
+    return node; // new head (either the original head if list is 1 or 0 nodes)
   }
 
-  // Try odd factors only
-  let factor = 3n;
-  const limit = sqrtBigInt(n);
-
-  while (factor <= limit) {
-    while (n % factor === 0n) {
-      lastFactor = factor;
-      n /= factor;
-    }
-    factor += 2n;        // skip even numbers
+  const newHead = reverseListRec(node.next);   // recurse to the end
+  node.next.next = node;   // make the next node point back to the current one
+  node.next = null;        // sever original forward link
+  return newHead;
+}
+// Helper to build a list [1, 2, 3]
+function buildList(arr: number[]): ListNode<number> | null {
+  let head: ListNode<number> | null = null;
+  for (let i = arr.length - 1; i >= 0; i--) {
+    head = { val: arr[i], next: head };
   }
-
-  // If anything is left, it must be a prime > sqrt(original n)
-  if (n > 1n) {
-    lastFactor = n;
-  }
-
-  return lastFactor;
+  return head;
 }
 
-/**
- * Integer square root of a BigInt (floor)
- * (Euclidean algorithm – takes few iterations even for 64‑bit numbers)
- */
-function sqrtBigInt(value: bigint): bigint {
-  if (value < 0n) throw new Error('square root of negative not supported');
-  if (value < 2n) return value;
-
-  let x0 = value / 2n;
-  let x1 = (x0 + value / x0) / 2n;
-
-  while (x1 < x0) {
-    x0 = x1;
-    x1 = (x0 + value / x0) / 2n;
+// Helper to convert list back to array for easy viewing
+function toArray<T>(head: ListNode<T> | null): T[] {
+  const result: T[] = [];
+  let cur = head;
+  while (cur) {
+    result.push(cur.val);
+    cur = cur.next;
   }
-  return x0;
+  return result;
 }
-console.log(largestPrimeFactor(13195));      // 29
-console.log(largestPrimeFactor(600851475143)); // 6857
 
-// Using BigInt
-console.log(
-  largestPrimeFactor(
-    BigInt("9999999967") // a 10‑digit number; you can make this much bigger
-  ).toString()
-);
+// Demo
+const original = buildList([1, 2, 3, 4, 5]);
+console.log('original:', toArray(original));
+
+const reversed = reverseList(original);
+console.log('reversed:', toArray(reversed));
+original: [1, 2, 3, 4, 5]
+reversed: [5, 4, 3, 2, 1]
