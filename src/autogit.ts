@@ -1,36 +1,74 @@
-const original = [1, 2, 3, 2, 4, 1, 5];
+/**
+ * Median of two sorted arrays
+ * A and B can be empty, but not both.
+ */
+export function medianOfTwoSortedArrays(
+  a: number[],
+  b: number[]
+): number {
+  // Ensure a is the smaller array; this keeps the binary‑search bounds tight.
+  const [A, B] = a.length <= b.length ? [a, b] : [b, a];
+  const m = A.length;
+  const n = B.length;
+  const half = Math.floor((m + n + 1) / 2);
 
-// Method 1 – quick & crumb‑free
-const withoutDups = [...new Set(original)];
-console.log(withoutDups); // [1, 2, 3, 4, 5]
+  let low = 0;
+  let high = m;
 
-// Method 2 – If you prefer a pure function that you can re‑use
-function uniq<T>(arr: T[]): T[] {
-  return [...new Set(arr)];
-}
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2); // elements taken from A
+    const j = half - i;                     // elements taken from B
 
-const uniqueColors = uniq(['red', 'green', 'red', 'blue']);
-function uniqBy<T, K>(arr: T[], keyFn: (item: T) => K): T[] {
-  const seen = new Set<K>();
-  const result: T[] = [];
+    const Aleft  = i === 0     ? Number.NEGATIVE_INFINITY : A[i - 1];
+    const Aright = i === m     ? Number.POSITIVE_INFINITY : A[i];
 
-  for (const item of arr) {
-    const key = keyFn(item);
-    if (!seen.has(key)) {
-      seen.add(key);
-      result.push(item);
+    const Bleft  = j === 0     ? Number.NEGATIVE_INFINITY : B[j - 1];
+    const Bright = j === n     ? Number.POSITIVE_INFINITY : B[j];
+
+    // i is perfect if left side ≤ right side
+    if (Aleft <= Bright && Bleft <= Aright) {
+      // Odd total → max of left side
+      if ((m + n) % 2 === 1) {
+        return Math.max(Aleft, Bleft);
+      }
+
+      // Even total → average of two middle values
+      return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
+    } else if (Aleft > Bright) {
+      // i too big, shift left
+      high = i - 1;
+    } else {
+      // i too small, shift right
+      low = i + 1;
     }
   }
-  return result;
+
+  throw new Error('Input arrays are not sorted or invalid.');
 }
+export function medianOfTwoSortedArraysSimple(
+  a: number[],
+  b: number[]
+): number {
+  const merged: number[] = [];
+  let i = 0, j = 0;
 
-// Example: removing duplicate users by id
-const users = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 1, name: 'Alicia' },
-];
+  while (i < a.length || j < b.length) {
+    if (i >= a.length) {
+      merged.push(b[j++]);
+    } else if (j >= b.length) {
+      merged.push(a[i++]);
+    } else if (a[i] <= b[j]) {
+      merged.push(a[i++]);
+    } else {
+      merged.push(b[j++]);
+    }
+  }
 
-const uniqueUsers = uniqBy(users, u => u.id);
-console.log(uniqueUsers);
-// [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
+  const len = merged.length;
+  if (len % 2 === 1) return merged[Math.floor(len / 2)];
+  return (merged[len / 2 - 1] + merged[len / 2]) / 2;
+}
+const arr1 = [1, 3, 5, 9];
+const arr2 = [2, 4, 6, 8, 10];
+
+console.log(medianOfTwoSortedArrays(arr1, arr2)); // 5.5
