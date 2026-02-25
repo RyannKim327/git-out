@@ -1,66 +1,42 @@
 /**
- * Returns the largest prime factor of a positive integer.
- * Works for Number (up to ~9e15) and for BigInt.
+ * Counting sort for non‑negative integers in a known range.
+ *
+ * @param data Array of numbers to sort.
+ * @param min  Minimum possible value in `data` (inclusive).
+ * @param max  Maximum possible value in `data` (inclusive).
+ * @returns    A new array containing the sorted numbers.
+ *
+ * Example:
+ *   const unsorted = [3, 0, 2, 3, 1];
+ *   const sorted = countingSort(unsorted, 0, 3); // [0,1,2,3,3]
  */
-export function largestPrimeFactor(nInput: number | bigint): bigint {
-  // 0 or 1 have no prime factors
-  if (nInput <= 1) {
-    throw new Error('Number must be >= 2');
+export function countingSort(data: number[], min: number, max: number): number[] {
+  if (data.length === 0) return [];
+
+  const range = max - min + 1;
+
+  // 1. Count occurrences
+  const count: number[] = new Array(range).fill(0);
+  for (const v of data) {
+    count[v - min]++;
   }
 
-  // Work with BigInt internally for uniformity
-  let n = BigInt(nInput);
-
-  // Remove factors of 2
-  let lastFactor = 2n;
-  while (n % 2n === 0n) {
-    lastFactor = 2n;
-    n /= 2n;
+  // 2. Accumulate counts – now each count element holds the index
+  //    where that value should be placed in the output array.
+  for (let i = 1; i < range; i++) {
+    count[i] += count[i - 1];
   }
 
-  // Try odd factors only
-  let factor = 3n;
-  const limit = sqrtBigInt(n);
-
-  while (factor <= limit) {
-    while (n % factor === 0n) {
-      lastFactor = factor;
-      n /= factor;
-    }
-    factor += 2n;        // skip even numbers
+  // 3. Build the output array in a stable manner.
+  const output: number[] = new Array(data.length);
+  for (let i = data.length - 1; i >= 0; i--) {
+    const v = data[i];
+    const idx = --count[v - min];          // <-- decrement first
+    output[idx] = v;
   }
 
-  // If anything is left, it must be a prime > sqrt(original n)
-  if (n > 1n) {
-    lastFactor = n;
-  }
-
-  return lastFactor;
+  return output;
 }
-
-/**
- * Integer square root of a BigInt (floor)
- * (Euclidean algorithm – takes few iterations even for 64‑bit numbers)
- */
-function sqrtBigInt(value: bigint): bigint {
-  if (value < 0n) throw new Error('square root of negative not supported');
-  if (value < 2n) return value;
-
-  let x0 = value / 2n;
-  let x1 = (x0 + value / x0) / 2n;
-
-  while (x1 < x0) {
-    x0 = x1;
-    x1 = (x0 + value / x0) / 2n;
-  }
-  return x0;
-}
-console.log(largestPrimeFactor(13195));      // 29
-console.log(largestPrimeFactor(600851475143)); // 6857
-
-// Using BigInt
-console.log(
-  largestPrimeFactor(
-    BigInt("9999999967") // a 10‑digit number; you can make this much bigger
-  ).toString()
-);
+const unsorted = [5, 3, 0, 2, 5, 1];
+const sorted = countingSort(unsorted, 0, 5);
+console.log(sorted); // [0, 1, 2, 3, 5, 5]
