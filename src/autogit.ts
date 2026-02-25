@@ -1,78 +1,69 @@
-/**
- * Bubble Sort – in‑place, O(n²) time, O(1) space
- *
- * @param arr Array of values that implement `Comparable`
- * @returns the sorted array (same reference as input)
- */
-export function bubbleSort<T extends Comparable>(arr: T[]): T[] {
-  const n = arr.length;
+type NodeId = string | number;          // whatever you want to use for a node key
+interface Graph {
+  /** Map of node id → set of neighbour ids */
+  adjacencyList: Map<NodeId, Set<NodeId>>;
+}
+function createGraph(edges: [NodeId, NodeId][]): Graph {
+  const adjacencyList = new Map<NodeId, Set<NodeId>>();
 
-  // Minor optimization: keep track of whether a swap happened
-  // in the current pass. If not, array is already sorted.
-  for (let i = 0; i < n - 1; i++) {
-    let swapped = false;
-
-    // After each outer loop pass, the largest element of the
-    // unsorted portion settles at the end of the array.
-    for (let j = 0; j < n - i - 1; j++) {
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
-    }
-
-    // If no elements were swapped, the array is already sorted.
-    if (!swapped) break;
+  for (const [u, v] of edges) {
+    if (!adjacencyList.has(u)) adjacencyList.set(u, new Set());
+    if (!adjacencyList.has(v)) adjacencyList.set(v, new Set());
+    adjacencyList.get(u)!.add(v);
+    adjacencyList.get(v)!.add(u); // comment out for directed graph
   }
 
-  return arr;
+  return { adjacencyList };
 }
+function dfsRecursive(
+  graph: Graph,
+  start: NodeId,
+  visited = new Set<NodeId>()
+): NodeId[] {
+  visited.add(start);
+  const result = [start];
 
-/** Simple comparable interface for primitives */
-export interface Comparable {
-  /** Return true if this > other */
-  > (other: this): boolean;
-}
-export function bubbleSortWith<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number
-): T[] {
-  for (let i = 0; i < arr.length - 1; i++) {
-    let swapped = false;
-
-    for (let j = 0; j < arr.length - i - 1; j++) {
-      // compareFn(a, b) < 0 => a < b
-      // compareFn(a, b) > 0 => a > b
-      if (compareFn(arr[j], arr[j + 1]) > 0) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
+  for (const neighbour of graph.adjacencyList.get(start) ?? []) {
+    if (!visited.has(neighbour)) {
+      result.push(...dfsRecursive(graph, neighbour, visited));
     }
-
-    if (!swapped) break;
   }
 
-  return arr;
+  return result;
 }
-interface Person {
-  name: string;
-  age: number;
-}
+function dfsIterative(graph: Graph, start: NodeId): NodeId[] {
+  const visited = new Set<NodeId>();
+  const stack: NodeId[] = [start];
+  const result: NodeId[] = [];
 
-const people: Person[] = [
-  { name: "Alice", age: 34 },
-  { name: "Bob", age: 29 },
-  { name: "Carol", age: 42 },
+  while (stack.length) {
+    const node = stack.pop()!;           // safe: stack is non‑empty
+
+    if (visited.has(node)) continue;
+    visited.add(node);
+    result.push(node);
+
+    // Add neighbours in reverse order if you want a particular visit order
+    const neighbours = graph.adjacencyList.get(node) ?? new Set();
+    for (const neighbour of Array.from(neighbours).reverse()) {
+      if (!visited.has(neighbour)) stack.push(neighbour);
+    }
+  }
+
+  return result;
+}
+const edges: [NodeId, NodeId][] = [
+  [1, 2],
+  [1, 3],
+  [2, 4],
+  [3, 4],
+  [4, 5],
 ];
 
-bubbleSortWith(people, (a, b) => a.age - b.age);
-// people is now sorted by age ascending
-function test() {
-  const nums = [3, 1, 4, 1, 5, 9, 2, 6];
-  console.log("Before:", nums);
-  bubbleSort(nums); // mutates nums in place
-  console.log("After: ", nums);
-}
+const graph = createGraph(edges);
 
-test(); /* → Before: [3,1,4,1,5,9,2,6]
-          After:  [1,1,2,3,4,5,6,9] */
+console.log('Recursive DFS:', dfsRecursive(graph, 1));
+// → [1, 2, 4, 3, 5] (or another order depending on set iteration)
+
+console.log('Iterative DFS:', dfsIterative(graph, 1));
+// → same result, but robust on deep graphs
