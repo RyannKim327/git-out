@@ -1,29 +1,32 @@
-/**
- * Reverses the order of words in a string.
- *
- * Words are split on whitespace.  Consecutive whitespace is collapsed,
- * but you can tweak the regex if you need to keep it intact.
- *
- * @param txt – The string to reverse
- * @returns The string with words in reverse order
- */
-function reverseWordOrder(txt: string): string {
-  return txt
-    .trim()                      // Strip leading/trailing gaps
-    .split(/\s+/)                // Break on any run of whitespace
-    .reverse()                   // Flip the array
-    .join(' ');                  // Stitch back together
+// 1️⃣  Using a Set – O(m + n) time, O(n) extra space
+function commonElements<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(item => setB.has(item));
 }
 
-// Example usage
-const original = "Hello world, this is TypeScript.";
-const reversed = reverseWordOrder(original);
-console.log(reversed);  // "TypeScript. is this world, Hello"
-function reverseWordOrder(txt: string) {
-  const words = txt.trim().match(/\w+|\s+/g) ?? [];
-  const textOnly = words.filter(Boolean).join(' ');
-  const reversed = textOnly.split(/\s+/).reverse().join(' ');
-  // re‑insert spaces that were originally present
-  // (not shown here for brevity)
-  return reversed;
+// 2️⃣  Using two pointers – O(m + n) time, O(1) extra space
+//     (works best if both arrays are already sorted)
+function commonSorted<T>(a: T[], b: T[]): T[] {
+  const res: T[] = [];
+  let i = 0, j = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) {
+      res.push(a[i]);
+      i++; j++;
+    } else if (a[i] < b[j]) {
+      i++;
+    } else {
+      j++;
+    }
+  }
+  return res;
 }
+
+// 3️⃣  Using reduce – concise but less efficient for large arrays
+function commonReduce<T>(a: T[], b: T[]): T[] {
+  return a.reduce((acc, val) => (b.includes(val) ? [...acc, val] : acc), [] as T[]);
+}
+const arr1 = [1, 2, 3, 4, 5];
+const arr2 = [3, 4, 5, 6, 7];
+
+console.log(commonElements(arr1, arr2)); // [3, 4, 5]
