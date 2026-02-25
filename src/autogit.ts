@@ -1,20 +1,11 @@
-function removeVowels(input: string): string {
-  // Vowels (both lower‑ and upper‑case) – feel free to add accented ones if you need
-  const vowels = /[aeiouAEIOU]/g;
-  return input.replace(vowels, '');
+// 1️⃣  The classic parseInt – give the radix to avoid surprises
+const str = "42";
+const num = parseInt(str, 10);   // 42
+// 2️⃣  The Number constructor – works for floats, hex, etc.
+const num2 = Number(str);        // 42
+// 3️⃣  Unary plus – the shorthand for Number()
+const num3 = +str;               // 42
+function toInt(str: string): number | undefined {
+  const n = Number(str);
+  return Number.isNaN(n) ? undefined : Math.floor(n);
 }
-function removeVowels(input: string): string {
-  const result: string[] = [];
-
-  for (const char of input) {
-    if (!/[aeiouAEIOU]/.test(char)) {
-      result.push(char);
-    }
-  }
-
-  return result.join('');
-}
-const vowels = /[aeiouAEIOUÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝŸàáâãäåæçèéêëìíîïðñòóôõöøùúûüýÿ]/gu;
-const vowels = /\p{Script=Latin}\p{L}\b{vowel}/u; // not a real pattern – just an example
-const demo = "Hello World! 123";
-console.log(removeVowels(demo)); // "Hll Wrld! 123"
