@@ -1,81 +1,21 @@
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
+const numbers = [3, 7, 2, 9, 4];
+
+const max = Math.max(...numbers); // 9
+console.log(max);
+const numbers = [3, 7, 2, 9, 4];
+
+const max = numbers.reduce((prev, cur) => (cur > prev ? cur : prev));
+
+console.log(max); // 9
+function maxNumber<T extends number>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
+  return arr.reduce((a, b) => (b > a ? b : a));
 }
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
 
-  get size() { return this._size; }
-}
-append(value: T): void {
-  const newNode = new ListNode(value);
+const nums = [1, 5, 3];
+console.log(maxNumber(nums)); // 5
+const bigNumbers = [10n, 500n, 200n];
 
-  if (!this.head) {          // empty list
-    this.head = this.tail = newNode;
-  } else {
-    if (this.tail) this.tail.next = newNode;
-    this.tail = newNode;
-  }
+const maxBig = bigNumbers.reduce((a, b) => (b > a ? b : a)); // 500n
 
-  this._size++;
-}
-prepend(value: T): void {
-  const newNode = new ListNode(value, this.head);
-  this.head = newNode;
-
-  if (!this.tail) this.tail = newNode;
-  this._size++;
-}
-remove(index: number): T | null {
-  if (index < 0 || index >= this._size) return null;
-
-  let current = this.head;
-  let prev: ListNode<T> | null = null;
-  let i = 0;
-
-  while (current && i < index) {
-    prev = current;
-    current = current.next;
-    i++;
-  }
-
-  if (!current) return null;
-
-  if (prev) prev.next = current.next;
-  else this.head = current.next;      // removed head
-
-  if (current === this.tail) this.tail = prev;
-  this._size--;
-  return current.value;
-}
-find(value: T): number {
-  let current = this.head;
-  let index = 0;
-
-  while (current) {
-    if (current.value === value) return index;
-    current = current.next;
-    index++;
-  }
-  return -1;  // not found
-}
-toArray(): T[] {
-  const result: T[] = [];
-  let current = this.head;
-  while (current) {
-    result.push(current.value);
-    current = current.next;
-  }
-  return result;
-}
-const list = new LinkedList<number>();
-
-list.append(10);
-list.append(20);
-list.prepend(5);
-
-console.log(list.toArray());     // [5, 10, 20]
-console.log(list.find(10));      // 1
-console.log(list.remove(0));     // 5
-console.log(list.toArray());     // [10, 20]
+console.log(maxBig);
