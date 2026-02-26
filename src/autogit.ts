@@ -1,38 +1,36 @@
-/**
- * Find the majority element in an array.
- *
- * @param arr - An array of comparable items.
- * @returns The majority element, or undefined if no majority exists.
- *
- * Assumes `T` supports strict equality (===).
- */
-function majorityElement<T>(arr: T[]): T | undefined {
-  if (arr.length === 0) return undefined;
+const original = [1, 2, 3, 2, 4, 1, 5];
 
-  // 1️⃣ First pass: find a potential candidate
-  let candidate: T | undefined = arr[0];
-  let count = 0;
+// Method 1 – quick & crumb‑free
+const withoutDups = [...new Set(original)];
+console.log(withoutDups); // [1, 2, 3, 4, 5]
 
-  for (const value of arr) {
-    if (count === 0) {
-      candidate = value;
-      count = 1;
-    } else {
-      count += (value === candidate) ? 1 : -1;
-    }
-  }
-
-  // 2️⃣ Optional second pass (remove if you know the input always contains a majority)
-  if (candidate !== undefined) {
-    const actual = arr.filter(v => v === candidate).length;
-    if (actual > arr.length / 2) {
-      return candidate;
-    }
-  }
-
-  return undefined; // No majority element
+// Method 2 – If you prefer a pure function that you can re‑use
+function uniq<T>(arr: T[]): T[] {
+  return [...new Set(arr)];
 }
-const nums = [2, 2, 1, 1, 2, 2, 2];
 
-const major = majorityElement(nums); // -> 2
-console.log(major); // 2
+const uniqueColors = uniq(['red', 'green', 'red', 'blue']);
+function uniqBy<T, K>(arr: T[], keyFn: (item: T) => K): T[] {
+  const seen = new Set<K>();
+  const result: T[] = [];
+
+  for (const item of arr) {
+    const key = keyFn(item);
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(item);
+    }
+  }
+  return result;
+}
+
+// Example: removing duplicate users by id
+const users = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 1, name: 'Alicia' },
+];
+
+const uniqueUsers = uniqBy(users, u => u.id);
+console.log(uniqueUsers);
+// [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
