@@ -1,32 +1,30 @@
-// 1️⃣  Using a Set – O(m + n) time, O(n) extra space
-function commonElements<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(item => setB.has(item));
+import axios, { AxiosResponse } from 'axios';
+
+// Declare the shape of the data we expect from the API
+interface Quote {
+  id: number;
+  quote: string;
+  author: string;
 }
 
-// 2️⃣  Using two pointers – O(m + n) time, O(1) extra space
-//     (works best if both arrays are already sorted)
-function commonSorted<T>(a: T[], b: T[]): T[] {
-  const res: T[] = [];
-  let i = 0, j = 0;
-  while (i < a.length && j < b.length) {
-    if (a[i] === b[j]) {
-      res.push(a[i]);
-      i++; j++;
-    } else if (a[i] < b[j]) {
-      i++;
-    } else {
-      j++;
-    }
+// A helper that fetches a random quote
+async function fetchRandomQuote(): Promise<Quote> {
+  try {
+    const response: AxiosResponse<Quote> = await axios.get(
+      'https://api.quotable.io/random'
+    );
+    return response.data;
+  } catch (err) {
+    // If something goes wrong, throw a readable error
+    throw new Error(
+      `Could not fetch a quote: ${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
   }
-  return res;
 }
 
-// 3️⃣  Using reduce – concise but less efficient for large arrays
-function commonReduce<T>(a: T[], b: T[]): T[] {
-  return a.reduce((acc, val) => (b.includes(val) ? [...acc, val] : acc), [] as T[]);
-}
-const arr1 = [1, 2, 3, 4, 5];
-const arr2 = [3, 4, 5, 6, 7];
-
-console.log(commonElements(arr1, arr2)); // [3, 4, 5]
+// Usage example – print a random quote to the console
+fetchRandomQuote()
+  .then((quote) => console.log(`${quote.quote} — ${quote.author}`))
+  .catch((err) => console.error(err.message));
