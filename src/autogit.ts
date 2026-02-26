@@ -1,32 +1,37 @@
-// 1️⃣  Using a Set – O(m + n) time, O(n) extra space
-function commonElements<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(item => setB.has(item));
+// random-joke.ts
+import fetch from 'node-fetch';          // npm i node-fetch@2
+import { Console } from 'console';
+
+interface Joke {
+  id: number;
+  type: string;
+  setup: string;
+  punchline: string;
 }
 
-// 2️⃣  Using two pointers – O(m + n) time, O(1) extra space
-//     (works best if both arrays are already sorted)
-function commonSorted<T>(a: T[], b: T[]): T[] {
-  const res: T[] = [];
-  let i = 0, j = 0;
-  while (i < a.length && j < b.length) {
-    if (a[i] === b[j]) {
-      res.push(a[i]);
-      i++; j++;
-    } else if (a[i] < b[j]) {
-      i++;
-    } else {
-      j++;
-    }
+async function fetchRandomJoke(): Promise<Joke> {
+  const res = await fetch('https://official-joke-api.appspot.com/random_joke');
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} – failed to fetch joke`);
   }
-  return res;
+
+  const data: Joke = await res.json();
+
+  return data;
 }
 
-// 3️⃣  Using reduce – concise but less efficient for large arrays
-function commonReduce<T>(a: T[], b: T[]): T[] {
-  return a.reduce((acc, val) => (b.includes(val) ? [...acc, val] : acc), [] as T[]);
-}
-const arr1 = [1, 2, 3, 4, 5];
-const arr2 = [3, 4, 5, 6, 7];
+async function run() {
+  try {
+    const joke = await fetchRandomJoke();
 
-console.log(commonElements(arr1, arr2)); // [3, 4, 5]
+    console.log('😂 Here’s something to make you smile!');
+    console.log(`  ${joke.setup}`);
+    console.log(`   – ${joke.punchline}`);
+  } catch (err: any) {
+    console.error('Oops! Something went wrong:');
+    console.error(err.message ?? err);
+  }
+}
+
+run();
