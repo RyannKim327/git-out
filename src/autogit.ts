@@ -1,78 +1,92 @@
+if a[j] < a[i] → candidate to extend the sequence ending at j
 /**
- * Build the longest‑prefix‑suffix (LPS) array for the pattern.
- * lps[i] will contain the length of the longest proper prefix
- * that is also a suffix for the substring pattern[0…i].
- *
- * @param pattern – the pattern
- * @returns the filled LPS array
+ * Returns the LIS of the input array.
+ * O(n²) time, O(n) extra space.
  */
-function computeLPS(pattern: string): number[] {
-  const lps: number[] = new Array(pattern.length).fill(0);
-  let length = 0;          // length of the previous longest prefix suffix
-  let i = 1;               // lps[0] is always 0
+function longestIncreasingSubsequenceDP(arr: number[]): number[] {
+  const n = arr.length;
+  if (n === 0) return [];
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        // don't move i here; keep looking for a smaller prefix
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i++;
+  // `len[i]` – length of LIS ending at i
+  const len = new Array(n).fill(1);
+  // `prev[i]` – the previous index in the LIS that ends at i
+  const prev = new Array(n).fill(-1);
+
+  let bestIdx = 0;          // index of the overall best LIS
+
+  for (let i = 1; i < n; i++) {
+    for (let j = 0; j < i; j++) {
+      if (arr[j] < arr[i] && len[j] + 1 > len[i]) {
+        len[i] = len[j] + 1;
+        prev[i] = j;
       }
+    }
+    if (len[i] > len[bestIdx]) bestIdx = i;
+  }
+
+  /* ---------- reconstruct the sequence ---------- */
+  const result: number[] = [];
+  for (let k = bestIdx; k !== -1; k = prev[k]) {
+    result.push(arr[k]);
+  }
+  return result.reverse();
+}
+const source = [3, 4, -1, 0, 6, 2, 3];
+console.log(longestIncreasingSubsequenceDP(source));
+// → [ -1, 0, 2, 3 ]   (length 4)
+/**
+ * Returns the LIS of the input array.
+ * O(n log n) time, O(n) space.
+ */
+function longestIncreasingSubsequenceFast(arr: number[]): number[] {
+  const n = arr.length;
+  if (n === 0) return [];
+
+  // `tails[len]` – smallest tail value of an inc. subsequence of length len+1
+  const tails: number[] = [];
+  // `prevIdx[i]` – index of the predecessor element for arr[i] in the LIS
+  const prevIdx: number[] = new Array(n).fill(-1);
+  // `posInTails[i]` – position in tails where arr[i] ends up
+  const posInTails: number[] = new Array(n);
+
+  for (let i = 0; i < n; i++) {
+    const x = arr[i];
+
+    // binary search: find first tails[idx] ≥ x
+    let left = 0, right = tails.length;
+    while (left < right) {
+      const mid = (left + right) >> 1;
+      if (tails[mid] < x) left = mid + 1;
+      else right = mid;
+    }
+
+    if (left === 0) {
+      // new smallest element
+      prevIdx[i] = -1;
+    } else {
+      // predecessor is the element that ended the subsequence of length left
+      prevIdx[i] = posInTails[left - 1];
+    }
+
+    // update tails & helper arrays
+    if (left === tails.length) {
+      tails.push(x);
+      posInTails[left] = i;
+    } else if (x < tails[left]) {
+      tails[left] = x;
+      posInTails[left] = i;
     }
   }
 
-  return lps;
-}
-
-/**
- * Perform KMP search for a pattern in a text.
- *
- * @param text     – the string to search in
- * @param pattern  – the pattern to look for
- * @returns an array of starting indices where the pattern occurs
- */
-function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return []; // nothing to search for
-
-  const lps = computeLPS(pattern);
-  const positions: number[] = [];
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-
-      if (j === pattern.length) {
-        // match found – record starting index
-        positions.push(i - j);
-        // continue searching for next possible match
-        j = lps[j - 1];
-      }
-    } else {
-      if (j !== 0) {
-        // jump back in the pattern based on LPS
-        j = lps[j - 1];
-      } else {
-        i++; // move to next character in text
-      }
-    }
+  /* ---------- reconstruct the sequence ---------- */
+  const result: number[] = [];
+  let k = posInTails[tails.length - 1];
+  while (k !== -1) {
+    result.push(arr[k]);
+    k = prevIdx[k];
   }
-
-  return positions;
+  return result.reverse();
 }
-
-/* Example usage */
-const haystack = "ABABDABACDABABCABAB";
-const needle = "ABABCABAB";
-
-const matches = kmpSearch(haystack, needle);
-console.log("Pattern found at positions:", matches);
-// Expected output: Pattern found at positions: [9]
+const arr = [10, 22, 9, 33, 21, 50, 41, 60, 80];
+console.log(longestIncreasingSubsequenceFast(arr));
+// → [10, 22, 33, 50, 60, 80]  (length 6)
