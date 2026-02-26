@@ -1,78 +1,64 @@
 /**
- * Bubble Sort – in‑place, O(n²) time, O(1) space
- *
- * @param arr Array of values that implement `Comparable`
- * @returns the sorted array (same reference as input)
+ * Basic node definition for a singly‑linked list.
  */
-export function bubbleSort<T extends Comparable>(arr: T[]): T[] {
-  const n = arr.length;
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
+}
 
-  // Minor optimization: keep track of whether a swap happened
-  // in the current pass. If not, array is already sorted.
-  for (let i = 0; i < n - 1; i++) {
-    let swapped = false;
+/**
+ * Returns `true` if the list reads the same forwards and backwards.
+ *
+ * Time   : O(n) – we traverse the list a constant number of times.
+ * Space  : O(1) – we only use a few pointer variables.
+ */
+function isPalindrome<T>(head: ListNode<T> | null): boolean {
+  if (!head || !head.next) return true;   // empty or single‑node list
 
-    // After each outer loop pass, the largest element of the
-    // unsorted portion settles at the end of the array.
-    for (let j = 0; j < n - i - 1; j++) {
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
-    }
-
-    // If no elements were swapped, the array is already sorted.
-    if (!swapped) break;
+  // 1. Find the middle of the list
+  let slow = head;
+  let fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  return arr;
-}
+  // 2. Reverse the second half (starting from slow.next)
+  let prev: ListNode<T> | null = null;
+  let curr: ListNode<T> | null = slow.next;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  // `prev` is now the head of the reversed second half
 
-/** Simple comparable interface for primitives */
-export interface Comparable {
-  /** Return true if this > other */
-  > (other: this): boolean;
-}
-export function bubbleSortWith<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number
-): T[] {
-  for (let i = 0; i < arr.length - 1; i++) {
-    let swapped = false;
-
-    for (let j = 0; j < arr.length - i - 1; j++) {
-      // compareFn(a, b) < 0 => a < b
-      // compareFn(a, b) > 0 => a > b
-      if (compareFn(arr[j], arr[j + 1]) > 0) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
-    }
-
-    if (!swapped) break;
+  // 3. Compare the first half with the reversed second half
+  let p1 = head;
+  let p2 = prev;
+  while (p2) {               // only need to go as far as the short half
+    if (p1.val !== p2.val) return false;
+    p1 = p1.next!;
+    p2 = p2.next!;
   }
 
-  return arr;
-}
-interface Person {
-  name: string;
-  age: number;
-}
+  // Optional: restore the list to its original order (not required for the answer)
+  // reverse(prev) again and reattach to `slow.next`
 
-const people: Person[] = [
-  { name: "Alice", age: 34 },
-  { name: "Bob", age: 29 },
-  { name: "Carol", age: 42 },
-];
-
-bubbleSortWith(people, (a, b) => a.age - b.age);
-// people is now sorted by age ascending
-function test() {
-  const nums = [3, 1, 4, 1, 5, 9, 2, 6];
-  console.log("Before:", nums);
-  bubbleSort(nums); // mutates nums in place
-  console.log("After: ", nums);
+  return true;
 }
+const build = (...vals: number[]): ListNode<number> | null => {
+  let head: ListNode<number> | null = null;
+  let tail: ListNode<number> | null = null;
+  for (const v of vals) {
+    const node = new ListNode(v);
+    if (!head) head = node;
+    else tail!.next = node;
+    tail = node;
+  }
+  return head;
+};
 
-test(); /* → Before: [3,1,4,1,5,9,2,6]
-          After:  [1,1,2,3,4,5,6,9] */
+console.log(isPalindrome(build(1, 2, 3, 2, 1))); // true
+console.log(isPalindrome(build(1, 2, 2, 1)));      // true
+console.log(isPalindrome(build(1, 2, 3, 4, 5))); // false
