@@ -1,68 +1,45 @@
-// -------------------------------------------
-// Node definition
-// -------------------------------------------
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+// 1️⃣  Node definition
+export interface ListNode<T> {
+  val: T
+  next: ListNode<T> | null
 }
 
-// -------------------------------------------
-// Helper: build list from array
-// -------------------------------------------
-function arrayToLinkedList<T>(arr: T[]): ListNode<T> | null {
-  if (arr.length === 0) return null;
-  const head = new ListNode(arr[0]);
-  let current = head;
+// 2️⃣  Utility: build list from array (for demo/testing)
+export function fromArray<T>(arr: T[]): ListNode<T> | null {
+  if (!arr.length) return null
+  let head: ListNode<T> = { val: arr[0], next: null }
+  let cur = head
   for (let i = 1; i < arr.length; i++) {
-    current.next = new ListNode(arr[i]);
-    current = current.next;
+    cur.next = { val: arr[i], next: null }
+    cur = cur.next
   }
-  return head;
+  return head
 }
 
-// -------------------------------------------
-// Helper: read list into array (for debugging)
-// -------------------------------------------
-function linkedListToArray<T>(head: ListNode<T> | null): T[] {
-  const arr: T[] = [];
-  let cur = head;
-  while (cur) {
-    arr.push(cur.val);
-    cur = cur.next;
-  }
-  return arr;
-}
+// 3️⃣  Fast‑/slow‑pointer algorithm (one pass, O(1) extra memory)
+export function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  // Edge checks – return null if n is out of range
+  if (n <= 0) return null
 
-// -------------------------------------------
-// Main: find middle node
-// -------------------------------------------
-function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null;          // empty list
+  let fast: ListNode<T> | null = head
+  let slow: ListNode<T> | null = head
 
-  let slow = head;
-  let fast = head;
-
-  // Move fast two steps and slow one step until fast can't move further.
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+  // Move `fast` n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null              // n > length
+    fast = fast.next
   }
 
-  // For even‑length lists, this returns the first of the two middle nodes.
-  // If you prefer the second, replace `while (fast && fast.next)` and
-  // adjust the loop accordingly.
-  return slow;
+  // Move both until `fast` hits the end
+  while (fast) {
+    fast = fast.next
+    slow = slow!.next
+  }
+
+  // `slow` is now the nth from the end
+  return slow
 }
-
-// -------------------------------------------
-// Demo
-// -------------------------------------------
-const list = arrayToLinkedList([1, 2, 3, 4, 5]);  // odd length
-console.log(linkedListToArray(list));            // [1,2,3,4,5]
-console.log(findMiddle(list)?.val);              // 3
-
-const evenList = arrayToLinkedList([10, 20, 30, 40]);
-console.log(linkedListToArray(evenList));         // [10,20,30,40]
-console.log(findMiddle(evenList)?.val);           // 20 (first middle)
-// if you want the second middle, tweak the loop condition to:
-// while (fast && fast.next)
-// then you'll get 30.
+const list = fromArray([10, 20, 30, 40, 50])
+console.log(nthFromEnd(list, 1)?.val) // 50   (last)
+console.log(nthFromEnd(list, 3)?.val) // 30   (3rd from the end)
+console.log(nthFromEnd(list, 6))       // null  (n > length)
