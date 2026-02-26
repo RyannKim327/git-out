@@ -1,60 +1,101 @@
-function buildLps(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let len = 0;          // length of the previous longest prefix suffix
-  let i = 1;            // we start from the second character
+// A node inside the trie
+class TrieNode {
+  // Map from a character to the next node in the path
+  children: Map<string, TrieNode> = new Map();
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      // Mismatch after len matches
-      if (len !== 0) {
-        // Try the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
+  // Marks the end of a word
+  isEndOfWord: boolean = false;
+
+  constructor(public readonly char: string | null = null) {}
 }
-/**
- * Returns an array of starting indices where `pattern` occurs in `text`.
- * If no match, returns an empty array.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  const lps = buildLps(pattern);
-  const results: number[] = [];
 
-  let i = 0; // index for text
-  let j = 0; // index for pattern
+// The trie itself
+export class Trie {
+  private root = new TrieNode();
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++; j++;
-      if (j === pattern.length) {
-        // Match found at position i - j
-        results.push(i - j);
-        // Prepare for the next possible match
-        j = lps[j - 1];
+  /** Inserts a word into the trie. */
+  insert(word: string): void {
+    if (!word) return;               // ignore empty strings
+    let node = this.root;
+
+    for (const ch of word) {
+      // Grab the child if it already exists; otherwise create a new node
+      let next = node.children.get(ch);
+      if (!next) {
+        next = new TrieNode(ch);
+        node.children.set(ch, next);
       }
-    } else {
-      if (j !== 0) {
-        // Mismatch after j matches
-        j = lps[j - 1];
-      } else {
-        // Mismatch at the start
-        i++;
-      }
+      node = next;
     }
+
+    // Mark that a complete word ends here
+    node.isEndOfWord = true;
   }
 
-  return results;
-}
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
+  /** Returns true if the word is in the trie. */
+  search(word: string): boolean {
+    if (!word) return false;
+    let node = this.root;
 
-console.log(kmpSearch(text, pattern)); // [10]
+    for (const ch of word) {
+      const next = node.children.get(ch);
+      if (!next) return false;      // path breaks → word absent
+      node = next;
+    }
+
+    return node.isEndOfWord;
+  }
+
+  /** Checks if any word in the trie starts with the given prefix. */
+  startsWith(prefix: string): boolean {
+    if (!prefix) return false;
+    let node = this.root;
+
+    for (const ch of prefix) {
+      const next = node.children.get(ch);
+      if (!next) return false;
+      node = next;
+    }
+
+    return true;
+  }
+
+  /** (Optional) Returns the list of all words in the trie that start with a given prefix. */
+  autocomplete(prefix: string): string[] {
+    const results: string[] = [];
+    let node = this.root;
+
+    // Walk to the node representing the prefix
+    for (const ch of prefix) {
+      const next = node.children.get(ch);
+      if (!next) return results;   // empty list if prefix not present
+      node = next;
+    }
+
+    // Depth‑first walk from that node, collecting words
+    const dfs = (n: TrieNode, acc: string) => {
+      if (n.isEndOfWord) results.push(acc);
+      for (const [ch, child] of n.children.entries()) {
+        dfs(child, acc + ch);
+      }
+    };
+
+    dfs(node, prefix);
+    return results;
+  }
+}
+const trie = new Trie();
+
+trie.insert('cat');
+trie.insert('car');
+trie.insert('cart');
+trie.insert('dog');
+
+console.log(trie.search('cat'));      // true
+console.log(trie.search('cab'));      // false
+
+console.log(trie.startsWith('ca'));   // true
+console.log(trie.startsWith('do'));   // true
+console.log(trie.startsWith('droll'));// false
+
+console.log(trie.autocomplete('ca')); // ['cat', 'car', 'cart']
