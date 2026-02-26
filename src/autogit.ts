@@ -1,81 +1,52 @@
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
+interface TreeNode<T = number> {
+  val: T;                // single value (you can change the type)
+  left: TreeNode<T> | null;
+  right: TreeNode<T> | null;
 }
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
-
-  get size() { return this._size; }
+const root: TreeNode = {
+  val: 10,
+  left: { val: 5, left: null, right: null },
+  right: { val: 15, left: null, right: null },
+};
+function maxDepth<T>(node: TreeNode<T> | null): number {
+  if (!node) return 0;
+  const leftDepth = maxDepth(node.left);
+  const rightDepth = maxDepth(node.right);
+  return Math.max(leftDepth, rightDepth) + 1;
 }
-append(value: T): void {
-  const newNode = new ListNode(value);
+function maxDepthIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
 
-  if (!this.head) {          // empty list
-    this.head = this.tail = newNode;
-  } else {
-    if (this.tail) this.tail.next = newNode;
-    this.tail = newNode;
+  const queue: TreeNode<T>[] = [root];
+  let depth = 0;
+
+  while (queue.length) {
+    const levelSize = queue.length; // nodes at current depth
+    depth++;                        // we’re going to finish this level
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift() as TreeNode<T>;
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
   }
 
-  this._size++;
+  return depth;
 }
-prepend(value: T): void {
-  const newNode = new ListNode(value, this.head);
-  this.head = newNode;
+// build a quick tree
+const tree: TreeNode = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: null, right: null },
+    right: null,
+  },
+  right: {
+    val: 3,
+    left: null,
+    right: { val: 5, left: null, right: null },
+  },
+};
 
-  if (!this.tail) this.tail = newNode;
-  this._size++;
-}
-remove(index: number): T | null {
-  if (index < 0 || index >= this._size) return null;
-
-  let current = this.head;
-  let prev: ListNode<T> | null = null;
-  let i = 0;
-
-  while (current && i < index) {
-    prev = current;
-    current = current.next;
-    i++;
-  }
-
-  if (!current) return null;
-
-  if (prev) prev.next = current.next;
-  else this.head = current.next;      // removed head
-
-  if (current === this.tail) this.tail = prev;
-  this._size--;
-  return current.value;
-}
-find(value: T): number {
-  let current = this.head;
-  let index = 0;
-
-  while (current) {
-    if (current.value === value) return index;
-    current = current.next;
-    index++;
-  }
-  return -1;  // not found
-}
-toArray(): T[] {
-  const result: T[] = [];
-  let current = this.head;
-  while (current) {
-    result.push(current.value);
-    current = current.next;
-  }
-  return result;
-}
-const list = new LinkedList<number>();
-
-list.append(10);
-list.append(20);
-list.prepend(5);
-
-console.log(list.toArray());     // [5, 10, 20]
-console.log(list.find(10));      // 1
-console.log(list.remove(0));     // 5
-console.log(list.toArray());     // [10, 20]
+console.log(maxDepth(tree));      // -> 3
+console.log(maxDepthIter(tree));  // -> 3
