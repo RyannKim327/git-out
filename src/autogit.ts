@@ -1,51 +1,24 @@
-// 1️⃣ Tree node definition
-interface TreeNode {
-  val: number;          // value is irrelevant for diameter
-  left?: TreeNode | null;
-  right?: TreeNode | null;
+function areaBaseHeight(base: number, height: number): number {
+  return (base * height) / 2;
 }
 
-// 2️⃣ Main diameter function
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let diameter = 0;                 // global accumulator
-
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;            // height of empty subtree
-
-    // Recursively find heights of left/right subtrees
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
-
-    // Path through current node (in edges)
-    const pathThrough = leftHeight + rightHeight;
-
-    // Update global diameter if this is the largest seen so far
-    diameter = Math.max(diameter, pathThrough);
-
-    // Return height from this node up to a leaf
-    return 1 + Math.max(leftHeight, rightHeight);
+// Example
+const a = areaBaseHeight(10, 6);   // → 30
+console.log(a);
+function areaBySides(a: number, b: number, c: number): number {
+  // Check triangle inequality first (optional but nice)
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('Not a valid triangle');
   }
 
-  dfs(root);
-  return diameter;
+  const s = (a + b + c) / 2;                // semi‑perimeter
+  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  return area;
 }
-// Example tree:
-//      1
-//     / \
-//    2   3
-//   / \
-//  4   5
-const tree: TreeNode = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4, left: null, right: null },
-    right: { val: 5, left: null, right: null },
-  },
-  right: { val: 3, left: null, right: null },
-};
 
-console.log(diameterOfBinaryTree(tree)); // Output: 3
-// Explanation: path 4‑2‑1‑3 uses 3 edges
-console.log(diameterOfBinaryTree(null));           // 0
-console.log(diameterOfBinaryTree({ val: 42 }));    // 0
+// Example
+const b = areaBySides(5, 12, 13);   // right triangle → 30
+console.log(b);
+const area = Math.sqrt(
+  Math.max(0, s * (s - a) * (s - b) * (s - c))
+);
