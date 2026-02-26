@@ -1,92 +1,61 @@
-type Node = string;                     // or number, or any keyable type
-type Edge = [Node, Node];               // (from, to)
+/**
+ * Radix sort for 32‑bit unsigned integers.
+ * Sorts in place and returns the sorted array for convenience.
+ */
+export function radixSort(arr: number[]): number[] {
+  if (arr.length <= 1) return arr;          // already sorted
 
-interface Graph {
-    nodes: Set<Node>;
-    edges: Edge[];
+  // Pick a base that gives a nice trade‑off between passes and bucket size.
+  // Base 256 (8 bits per pass) lets us use a Uint32Array for buckets.
+  const base = 256;
+  const maxBit = 32; // 32 bits for a signed int, but we only store positives here
+
+  // Number of passes, one per byte in this case.
+  const passes = maxBit / 8;
+
+  // Temporary array for intermediate results.
+  const temp = new Array<number>(arr.length);
+
+  // Helper: counts how many numbers have a certain digit value at a given byte.
+  const count = new Uint32Array(base);
+
+  for (let pass = 0; pass < passes; ++pass) {
+    // Reset counts.
+    count.fill(0);
+
+    // Count occurrences of each bucket value.
+    const shift = pass * 8;
+    for (const n of arr) {
+      const bucket = (n >> shift) & 0xff;
+      count[bucket]++;
+    }
+
+    // Compute cumulative counts => start indices in `temp`.
+    const startIdx = new Uint32Array(base);
+    let sum = 0;
+    for (let i = 0; i < base; ++i) {
+      startIdx[i] = sum;
+      sum += count[i];
+    }
+
+    // Place numbers into the correct bucket order.
+    for (const n of arr) {
+      const bucket = (n >> shift) & 0xff;
+      const idx = startIdx[bucket]++;
+      temp[idx] = n;
+    }
+
+    // Swap the source and destination for the next round.
+    [arr, temp] = [temp, arr];
+  }
+
+  // After an even number of passes `arr` points to original input; the sorted
+  // result ends up in `arr`. If passes were odd, the sorted array will be in `temp`.
+  // Ensure we return the sorted array reference.
+  return arr.length === sizeOfInput ? arr : temp;
 }
-function topologicalSortKahn(graph: Graph): Node[] | null {
-    const indeg = new Map<Node, number>();
-    const adj   = new Map<Node, Node[]>();
 
-    // init
-    graph.nodes.forEach(v => {
-        indeg.set(v, 0);
-        adj.set(v, []);
-    });
-
-    // build adjacency + indegree
-    for (const [u, v] of graph.edges) {
-        adj.get(u)!.push(v);
-        indeg.set(v, indeg.get(v)! + 1);
-    }
-
-    // queue of nodes with indegree 0
-    const q: Node[] = [];
-    indeg.forEach((cnt, node) => { if (cnt === 0) q.push(node); });
-
-    const order: Node[] = [];
-
-    while (q.length) {
-        const v = q.shift()!;
-        order.push(v);
-
-        for (const w of adj.get(v)!) {
-            const newCnt = indeg.get(w)! - 1;
-            indeg.set(w, newCnt);
-            if (newCnt === 0) q.push(w);
-        }
-    }
-
-    // If we processed every node → DAG; else cycle present
-    return order.length === graph.nodes.size ? order : null;
-}
-function topologicalSortDFS(graph: Graph): Node[] | null {
-    const adj = new Map<Node, Node[]>();
-    graph.nodes.forEach(v => adj.set(v, []));
-
-    for (const [u, v] of graph.edges) {
-        adj.get(u)!.push(v);
-    }
-
-    const visited = new Set<Node>();
-    const onStack = new Set<Node>();   // for cycle detection
-    const order: Node[] = [];
-
-    function dfs(v: Node): boolean {
-        visited.add(v);
-        onStack.add(v);
-
-        for (const w of adj.get(v)!) {
-            if (!visited.has(w)) {
-                if (!dfs(w)) return false;           // cycle deeper down
-            } else if (onStack.has(w)) {
-                return false;                       // back edge → cycle
-            }
-        }
-
-        onStack.delete(v);
-        order.push(v);                     // add after exploring all children
-        return true;
-    }
-
-    for (const node of graph.nodes) {
-        if (!visited.has(node) && !dfs(node))
-            return null;                   // cycle found
-    }
-
-    return order.reverse();               // reverse to get finish order
-}
-const g: Graph = {
-    nodes: new Set(['A','B','C','D','E']),
-    edges: [
-        ['A', 'B'],
-        ['A', 'C'],
-        ['B', 'D'],
-        ['C', 'D'],
-        ['D', 'E'],
-    ]
-};
-
-console.log('Kahn:', topologicalSortKahn(g)); // e.g. A,B,C,D,E or A,C,B,D,E
-console.log('DFS :', topologicalSortDFS(g));
+/** Quick tests */
+const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log('unsorted:', unsorted);
+console.log('sorted:  ', radixSort([...unsorted])); // use spread to leave original intact
