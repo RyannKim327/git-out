@@ -1,36 +1,30 @@
-/**
- * Performs an in‑place Shell sort on `arr`.
- * The generic makes it usable for numbers, strings, or any comparable type.
- */
-export function shellSort<T>(arr: T[], compare?: (a: T, b: T) => boolean) {
-  const len = arr.length;
-  // Default comparison: ascending numeric/string order
-  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any));
+import axios, { AxiosResponse } from 'axios';
 
-  // Start with a gap (Hibbard’s sequence is simple and effective)
-  // gap = 1, 3, 7, 15, …  (2^k‑1)
-  let gap = 1;
-  while (gap < len) gap = 2 * gap + 1; // find largest Hibbard gap <= len
+// Declare the shape of the data we expect from the API
+interface Quote {
+  id: number;
+  quote: string;
+  author: string;
+}
 
-  // Descend gaps until 1
-  while (gap >= 1) {
-    // Insertion sort on elements gap apart
-    for (let i = gap; i < len; i++) {
-      const temp = arr[i];
-      let j = i;
-      // shift earlier gap‑sorted elements that are greater
-      while (j >= gap && cmp(temp, arr[j - gap])) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
-    // Next gap
-    gap = Math.floor((gap - 1) / 2); // inverse of 2*gap + 1
+// A helper that fetches a random quote
+async function fetchRandomQuote(): Promise<Quote> {
+  try {
+    const response: AxiosResponse<Quote> = await axios.get(
+      'https://api.quotable.io/random'
+    );
+    return response.data;
+  } catch (err) {
+    // If something goes wrong, throw a readable error
+    throw new Error(
+      `Could not fetch a quote: ${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
   }
 }
-const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
-shellSort(numbers);
-console.log(numbers); // [1, 2, 3, 8, 12, 23, 34, 54]
-const desc = (a: number, b: number) => a > b;
-shellSort(numbers, desc);
+
+// Usage example – print a random quote to the console
+fetchRandomQuote()
+  .then((quote) => console.log(`${quote.quote} — ${quote.author}`))
+  .catch((err) => console.error(err.message));
