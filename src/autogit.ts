@@ -1,38 +1,38 @@
-/**
- * Find the majority element in an array.
- *
- * @param arr - An array of comparable items.
- * @returns The majority element, or undefined if no majority exists.
- *
- * Assumes `T` supports strict equality (===).
- */
-function majorityElement<T>(arr: T[]): T | undefined {
-  if (arr.length === 0) return undefined;
+// fortune.ts
+import { createInterface } from 'readline';
 
-  // 1️⃣ First pass: find a potential candidate
-  let candidate: T | undefined = arr[0];
-  let count = 0;
+// Set up a simple REPL‑style prompt
+const rl = createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-  for (const value of arr) {
-    if (count === 0) {
-      candidate = value;
-      count = 1;
-    } else {
-      count += (value === candidate) ? 1 : -1;
-    }
+console.log('🃏 Welcome to the Random Fortune Machine!');
+
+// Ask the user for a number
+rl.question('Enter a number (0–9) and press Enter: ', (answer) => {
+  // Try to parse the input as an integer
+  const num = parseInt(answer.trim(), 10);
+
+  if (isNaN(num) || num < 0 || num > 9) {
+    console.log('❌ That’s not a valid single digit between 0 and 9.');
+  } else {
+    // Pick a fortune from a tiny list
+    const fortunes = [
+      "You'll find a penny on the sidewalk.",
+      "A surprise call will brighten your day.",
+      "Today is a great day to start learning something new.",
+      "You’ll discover a hidden talent for drawing.",
+      "A forgotten receipt will pop up in your inbox.",
+      "A random act of kindness will return to you.",
+      "You’ll taste your favorite food in an unexpected way.",
+      "A new friendship is just a conversation away.",
+      "You’ll hit a traffic light and notice your neighbor’s cat.",
+      "Today you will finally finish that project you’ve shelved."
+    ];
+
+    console.log(`🔮 Fortune for ${num}: ${fortunes[num]}`);
   }
 
-  // 2️⃣ Optional second pass (remove if you know the input always contains a majority)
-  if (candidate !== undefined) {
-    const actual = arr.filter(v => v === candidate).length;
-    if (actual > arr.length / 2) {
-      return candidate;
-    }
-  }
-
-  return undefined; // No majority element
-}
-const nums = [2, 2, 1, 1, 2, 2, 2];
-
-const major = majorityElement(nums); // -> 2
-console.log(major); // 2
+  rl.close();
+});
