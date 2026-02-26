@@ -1,48 +1,78 @@
-// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
-//      This shape is common in interview‑style code.
-interface TreeNode {
-  val: number;         // node’s payload
-  left?: TreeNode | null;   // left child (optional)
-  right?: TreeNode | null;  // right child (optional)
-}
+/**
+ * Bubble Sort – in‑place, O(n²) time, O(1) space
+ *
+ * @param arr Array of values that implement `Comparable`
+ * @returns the sorted array (same reference as input)
+ */
+export function bubbleSort<T extends Comparable>(arr: T[]): T[] {
+  const n = arr.length;
 
-// 2️⃣  Recursive summation – easiest to read and to understand.
-//      Depth‑first, natural for a tree.
-function sumTreeRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                      // base case: empty subtree is 0
-  const leftSum = sumTreeRecursive(root.left);
-  const rightSum = sumTreeRecursive(root.right);
-  return root.val + leftSum + rightSum;      // combine the results
-}
+  // Minor optimization: keep track of whether a swap happened
+  // in the current pass. If not, array is already sorted.
+  for (let i = 0; i < n - 1; i++) {
+    let swapped = false;
 
-// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
-//      where recursion might hit the call‑stack limit.
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let total = 0;
-  const stack: TreeNode[] = [root];
+    // After each outer loop pass, the largest element of the
+    // unsorted portion settles at the end of the array.
+    for (let j = 0; j < n - i - 1; j++) {
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swapped = true;
+      }
+    }
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.val;
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
+    // If no elements were swapped, the array is already sorted.
+    if (!swapped) break;
   }
-  return total;
+
+  return arr;
 }
 
-// 4️⃣  Sample tree for quick sanity check
-//           5
-//          / \
-//         3   7
-//        / \   \
-//       2   4   8
+/** Simple comparable interface for primitives */
+export interface Comparable {
+  /** Return true if this > other */
+  > (other: this): boolean;
+}
+export function bubbleSortWith<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number
+): T[] {
+  for (let i = 0; i < arr.length - 1; i++) {
+    let swapped = false;
 
-const sampleRoot: TreeNode = {
-  val: 5,
-  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
-  right: { val: 7, right: { val: 8 } },
-};
+    for (let j = 0; j < arr.length - i - 1; j++) {
+      // compareFn(a, b) < 0 => a < b
+      // compareFn(a, b) > 0 => a > b
+      if (compareFn(arr[j], arr[j + 1]) > 0) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swapped = true;
+      }
+    }
 
-console.log(sumTreeRecursive(sampleRoot)); // → 33
-console.log(sumTreeIterative(sampleRoot)); // → 33
+    if (!swapped) break;
+  }
+
+  return arr;
+}
+interface Person {
+  name: string;
+  age: number;
+}
+
+const people: Person[] = [
+  { name: "Alice", age: 34 },
+  { name: "Bob", age: 29 },
+  { name: "Carol", age: 42 },
+];
+
+bubbleSortWith(people, (a, b) => a.age - b.age);
+// people is now sorted by age ascending
+function test() {
+  const nums = [3, 1, 4, 1, 5, 9, 2, 6];
+  console.log("Before:", nums);
+  bubbleSort(nums); // mutates nums in place
+  console.log("After: ", nums);
+}
+
+test(); /* → Before: [3,1,4,1,5,9,2,6]
+          After:  [1,1,2,3,4,5,6,9] */
