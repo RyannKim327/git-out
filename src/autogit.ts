@@ -1,42 +1,54 @@
-// cron-demo.ts
-import { CronJob } from 'cron';
-import * as dotenv from 'dotenv';
+// 1️⃣  Basic node interface – replace / extend it to fit your model
+export interface TreeNode<T> {
+  value: T;                 // the payload stored in the node
+  children?: TreeNode<T>[]>; // can be unset (leaf) or an empty array for a leaf
+}
 
-dotenv.config(); // optional – pulls cron expression from .env
+// 2️⃣  The actual algorithm
+export function depthLimitedSearch<T>(
+  root: TreeNode<T>,           // root of the tree
+  target: T,                   // value we’re looking for
+  depthLimit: number,          // how far the search may go (0 = only the root)
+  equals: (a: T, b: T) => boolean = (a, b) => a === b
+): TreeNode<T> | null {
+  if (depthLimit < 0) return null; // sanity check
 
-/**
- * A simple scheduled task that
- * • runs every minute (or whatever pattern you set)
- * • prints a timestamp
- * • gracefully handles potential errors
- */
-const job = new CronJob(
-  // Default cron date string: every minute of every hour of every day
-  process.env.CRON_EXPRESSION || '* * * * *',
-  () => {
-    const now = new Date().toISOString();
-    console.log(`[${now}] Tick – cron job fired!`);
-  },
-  // onComplete – fires when the job finishes its last scheduled run (not used here)
-  null,
-  // start immediately
-  true,
-  // timezone – string like 'America/New_York'
-  process.env.TZ || 'UTC',
-);
+  // stack holds {node, depth}
+  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
+    { node: root, depth: 0 },
+  ];
 
-job.on('error', (err) => {
-  console.error(`❌ Cron job encountered an error: ${err.message}`);
-});
+  while (stack.length) {
+    const { node, depth } = stack.pop()!; // pop from top of stack
 
-process.once('SIGINT', () => {
-  console.log('\n🛑 Shutting down cron job gracefully...');
-  job.stop();
-  process.exit(0);
-});
+    // 3️⃣  Stop expanding when the depth limit is reached
+    if (depth > depthLimit) {
+      continue;
+    }
 
-console.log(`✅ Cron job started with pattern: ${job.cronTime.source}`);
-✅ Cron job started with pattern: * * * * *
-[2026-02-15T12:00:00.000Z] Tick – cron job fired!
-[2026-02-15T12:01:00.000Z] Tick – cron job fired!
-…
+    // 4️⃣  Check the current node
+    if (equals(node.value, target)) {
+      return node;
+    }
+
+    // 5️⃣  Push children (DFS) – children that are undefined are skipped
+    if (node.children) {
+      // depth + 1 because we’ll go down one edge
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        stack.push({ node: node.children[i], depth: depth + 1 });
+      }
+    }
+  }
+
+  return null; // nothing found within the depth limit
+}
+const tree: TreeNode<string> = {
+  value: "A",
+  children: [
+    { value: "B", children: [{ value: "D" }, { value: "E" }] },
+    { value: "C", children: [{ value: "F" }, { value: "G" }] },
+  ],
+};
+
+console.log(depthLimitedSearch(tree, "F", 1)); // null (needs depth 2)
+console.log(depthLimitedSearch(tree, "F", 2)); // node with value "F"
