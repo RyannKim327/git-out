@@ -1,40 +1,59 @@
 /**
- * Binary search – recursive.  
- * @param arr        — sorted array
- * @param target     — value to find
- * @param compare    — optional comparison function (a, b) => number
- *                     returns <0 if a<b, 0 if a==b, >0 if a>b
- * @returns index of `target` or -1 if not found
+ * Compare two strings for an anagram relationship.
+ *
+ * @param a – first string (the one you’re testing)
+ * @param b – candidate anagram
+ * @param ignoreCase – true will treat “A” and “a” the same
+ * @param normalize   – if true, removes all non‑alphanumeric chars
+ * @returns true if a and b are anagrams
  */
-function binarySearchRec<T>(
-  arr: T[],
-  target: T,
-  compare?: (a: T, b: T) => number
-): number {
-  // Provide a default numeric comparator
-  const cmp = compare ?? ((a: any, b: any) => a - b);
+function isAnagram(
+  a: string,
+  b: string,
+  ignoreCase = true,
+  normalize = true
+): boolean {
+  if (normalize) {
+    const regex = /[^a-z0-9]/gi;
+    a = a.replace(regex, '');
+    b = b.replace(regex, '');
+  }
 
-  const search = (low: number, high: number): number => {
-    if (low > high) return -1;          // base case: not found
+  if (ignoreCase) {
+    a = a.toLowerCase();
+    b = b.toLowerCase();
+  }
 
-    const mid = Math.floor((low + high) / 2);
-    const cmpResult = cmp(arr[mid], target);
+  // Quick length‐check
+  if (a.length !== b.length) return false;
 
-    if (cmpResult === 0) return mid;    // target is at mid
-    if (cmpResult < 0) return search(mid + 1, high); // target is right
-    return search(low, mid - 1);        // target is left
+  // Sort characters and compare
+  const sortedA = a.split('').sort().join('');
+  const sortedB = b.split('').sort().join('');
+
+  return sortedA === sortedB;
+}
+console.log(isAnagram('Listen', 'Silent'));               // true
+console.log(isAnagram('Astronomer', 'Moon starer'));      // true
+console.log(isAnagram('Hello', 'World'));                  // false
+
+// Custom options
+console.log(isAnagram('Dormitory!', 'Dirtyroom', true, true)); // true
+console.log(isAnagram('Dormitory!', 'Dirtyroom', false, true)); // false – case sensitive
+function isAnagramFreq(a: string, b: string): boolean {
+  const makeMap = (s: string) => {
+    const map: Record<string, number> = {};
+    for (const ch of s) map[ch] = (map[ch] ?? 0) + 1;
+    return map;
   };
 
-  return search(0, arr.length - 1);
+  const freqA = makeMap(a);
+  const freqB = makeMap(b);
+
+  // Compare two maps
+  const keys = new Set([...Object.keys(freqA), ...Object.keys(freqB)]);
+  for (const k of keys) {
+    if (freqA[k] !== freqB[k]) return false;
+  }
+  return true;
 }
-// Numbers – no comparator needed
-const nums = [1, 3, 5, 7, 9, 11, 13];
-console.log(binarySearchRec(nums, 7));  // → 3
-console.log(binarySearchRec(nums, 2));  // → -1
-
-// Strings – supply a comparator
-const words = ["apple", "banana", "cherry", "date"];
-const stringCmp = (a: string, b: string) => a.localeCompare(b);
-
-console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
-console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
