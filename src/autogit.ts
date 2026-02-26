@@ -1,48 +1,60 @@
-/**
- * Random‑pivot quicksort for an array of numbers.
- *
- * @param arr – the array to sort (it will be sorted in place)
- * @returns the sorted array (same reference as the input)
- */
-function randomQuickSort(arr: number[]): number[] {
-  // Internal helper that works on a sub‑range [left, right]
-  function sort(left: number, right: number) {
-    if (left >= right) return;           // 0 or 1 element – nothing to do
+function buildLps(pattern: string): number[] {
+  const lps = new Array(pattern.length).fill(0);
+  let len = 0;          // length of the previous longest prefix suffix
+  let i = 1;            // we start from the second character
 
-    // Pick a random pivot index between left and right (inclusive)
-    const pivotIndex = Math.floor(Math.random() * (right - left + 1)) + left;
-    const pivotValue = arr[pivotIndex];
-
-    // Move the pivot to the rightmost position for the partition step
-    [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
-
-    // Standard Lomuto partition
-    let storeIndex = left;
-    for (let i = left; i < right; i++) {
-      if (arr[i] < pivotValue) {
-        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
-        storeIndex++;
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      // Mismatch after len matches
+      if (len !== 0) {
+        // Try the last known good prefix
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
       }
     }
+  }
+  return lps;
+}
+/**
+ * Returns an array of starting indices where `pattern` occurs in `text`.
+ * If no match, returns an empty array.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  const lps = buildLps(pattern);
+  const results: number[] = [];
 
-    // Put the pivot back in its final place
-    [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-    // Recurse on the two partitions
-    sort(left, storeIndex - 1);
-    sort(storeIndex + 1, right);
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) {
+        // Match found at position i - j
+        results.push(i - j);
+        // Prepare for the next possible match
+        j = lps[j - 1];
+      }
+    } else {
+      if (j !== 0) {
+        // Mismatch after j matches
+        j = lps[j - 1];
+      } else {
+        // Mismatch at the start
+        i++;
+      }
+    }
   }
 
-  sort(0, arr.length - 1);
-  return arr;
+  return results;
 }
+const text = "ABABDABACDABABCABAB";
+const pattern = "ABABCABAB";
 
-/*--------------------------------------------
-  Example usage
---------------------------------------------*/
-
-const data = [34, 7, 23, 32, 5, 62];
-console.log('Unsorted:', data);
-
-const sorted = randomQuickSort([...data]); // copy to avoid mutating the original
-console.log('Sorted  :', sorted);
+console.log(kmpSearch(text, pattern)); // [10]
