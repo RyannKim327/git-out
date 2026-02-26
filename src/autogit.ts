@@ -1,128 +1,121 @@
-type Compare<T> = (a: T, b: T) => boolean;
+/*-------------------------------------------------------
+  Binary‑Tree Data Structures & Operations in TypeScript
+-------------------------------------------------------*/
 
-/**
- * If `compare(child, parent)` is true, swap them and continue
- * until the heap property is restored.
- */
-function siftDown<T>(heap: T[], start: number, end: number, compare: Compare<T>) {
-  let root = start;
+// 1️⃣ A node that holds one element and links to its children
+class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
+}
 
-  while (true) {
-    const left = root * 2 + 1;
-    const right = left + 1;
-    let swap = root;
+// 2️⃣ The tree itself – only the root is stored
+class BinaryTree<T> {
+  private root: TreeNode<T> | null = null
 
-    if (left <= end && compare(heap[left], heap[swap])) {
-      swap = left;
-    }
-    if (right <= end && compare(heap[right], heap[swap])) {
-      swap = right;
-    }
+  /* ------------ Insertion (BST style) ------------ */
+  insert(value: T): void {
+    this.root = this._insertRec(this.root, value)
+  }
 
-    if (swap === root) break;
+  private _insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
+    if (!node) return new TreeNode(value)
 
-    [heap[root], heap[swap]] = [heap[swap], heap[root]];
-    root = swap;
+    // Basic BST rule – < goes left, >= goes right
+    if (value < node.value) node.left = this._insertRec(node.left, value)
+    else node.right = this._insertRec(node.right, value)
+
+    return node
+  }
+
+  /* ------------ Search ------------ */
+  find(value: T): boolean {
+    return this._findRec(this.root, value)
+  }
+
+  private _findRec(node: TreeNode<T> | null, value: T): boolean {
+    if (!node) return false
+    if (node.value === value) return true
+    return value < node.value
+      ? this._findRec(node.left, value)
+      : this._findRec(node.right, value)
+  }
+
+  /* ------------ Traversals ------------ */
+
+  // In‑order: left, node, right  (sorted for BST)
+  inorder(callback: (val: T) => void) {
+    this._inorderRec(this.root, callback)
+  }
+  private _inorderRec(node: TreeNode<T> | null, cb: (val: T) => void) {
+    if (!node) return
+    this._inorderRec(node.left, cb)
+    cb(node.value)
+    this._inorderRec(node.right, cb)
+  }
+
+  // Pre‑order: node, left, right
+  preorder(callback: (val: T) => void) {
+    this._preorderRec(this.root, callback)
+  }
+  private _preorderRec(node: TreeNode<T> | null, cb: (val: T) => void) {
+    if (!node) return
+    cb(node.value)
+    this._preorderRec(node.left, cb)
+    this._preorderRec(node.right, cb)
+  }
+
+  // Post‑order: left, right, node
+  postorder(callback: (val: T) => void) {
+    this._postorderRec(this.root, callback)
+  }
+  private _postorderRec(node: TreeNode<T> | null, cb: (val: T) => void) {
+    if (!node) return
+    this._postorderRec(node.left, cb)
+    this._postorderRec(node.right, cb)
+    cb(node.value)
+  }
+
+  /* ------------ Utility ------------ */
+
+  // Height of the tree (root = 0)
+  height(): number {
+    return this._heightRec(this.root)
+  }
+  private _heightRec(node: TreeNode<T> | null): number {
+    if (!node) return -1
+    return 1 + Math.max(this._heightRec(node.left), this._heightRec(node.right))
+  }
+
+  // Size (total number of nodes)
+  size(): number {
+    return this._sizeRec(this.root)
+  }
+  private _sizeRec(node: TreeNode<T> | null): number {
+    if (!node) return 0
+    return 1 + this._sizeRec(node.left) + this._sizeRec(node.right)
   }
 }
 
-/**
- * Moves the root element down the heap until it finds the right spot.
- * Called during `remove` after we swap the last element into the root.
- */
-export function heapify<T>(heap: T[], compare: Compare<T>) {
-  const length = heap.length;
-  if (length <= 1) return;
+/*-------------------------------------------------------
+  Example use
+-------------------------------------------------------*/
+const tree = new BinaryTree<number>()
 
-  // Start from the last non‑leaf node.
-  for (let i = Math.floor((length - 2) / 2); i >= 0; i--) {
-    siftDown(heap, i, length - 1, compare);
-  }
-}
-export class PriorityQueue<T> {
-  private heap: T[] = [];
-  private readonly compare: Compare<T>;
-
-  constructor(compare: Compare<T>) {
-    this.compare = compare;
-  }
-
-  get size() {
-    return this.heap.length;
-  }
-
-  /** Insert a new item, maintaining heap property */
-  push(item: T): void {
-    this.heap.push(item);
-    // bubble‑up
-    let idx = this.heap.length - 1;
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      if (!this.compare(this.heap[idx], this.heap[parentIdx])) break;
-      [this.heap[idx], this.heap[parentIdx]] = [this.heap[parentIdx], this.heap[idx]];
-      idx = parentIdx;
-    }
-  }
-
-  /** Return the root element (minimum) without removing it */
-  peek(): T | undefined {
-    return this.heap[0];
-  }
-
-  /**
-   * Remove and return the root element.
-   * The last element is moved to the root and sifted down.
-   */
-  pop(): T | undefined {
-    const length = this.heap.length;
-    if (!length) return undefined;
-    const root = this.heap[0];
-    const last = this.heap.pop()!; // last is defined because length > 0
-
-    if (length > 1) {
-      this.heap[0] = last;
-      siftDown(this.heap, 0, this.heap.length - 1, this.compare);
-    }
-
-    return root;
-  }
-
-  /** Convert the current array into a heap (in‑place) */
-  build() {
-    heapify(this.heap, this.compare);
-  }
-}
-// Simple numeric priority queue
-const pq = new PriorityQueue<number>((a, b) => a < b);
-
-pq.push(5);
-pq.push(2);
-pq.push(8);
-pq.push(1);
-
-console.log(pq.peek()); // 1
-while (pq.size) {
-  console.log(pq.pop()); // 1, 2, 5, 8
-}
-interface Task {
-  id: number;
-  priority: number; // smaller = higher priority
-  payload: string;
+// Inserting some numbers
+for (const v of [7, 3, 9, 1, 5, 8, 10]) {
+  tree.insert(v)
 }
 
-const taskCompare = (a: Task, b: Task) => a.priority < b.priority;
-const taskQueue = new PriorityQueue<Task>(taskCompare);
+// Find
+console.log('Has 5?', tree.find(5))   // true
+console.log('Has 4?', tree.find(4))   // false
 
-taskQueue.push({ id: 1, priority: 10, payload: 'work' });
-taskQueue.push({ id: 2, priority: 3, payload: 'urgent' });
-taskQueue.push({ id: 3, priority: 7, payload: 'normal' });
+// In‑order prints the numbers sorted
+tree.inorder(v => console.log(v))     // 1 3 5 7 8 9 10
 
-while (taskQueue.size) {
-  const t = taskQueue.pop()!;
-  console.log(`${t.id} (${t.priority}): ${t.payload}`);
-}
-2 (3): urgent
-3 (7): normal
-1 (10): work
-const maxComparator = (a: number, b: number) => a > b;
-const maxPQ = new PriorityQueue<number>(maxComparator);
+// Tree metadata
+console.log('Height:', tree.height()) // 2
+console.log('Size:', tree.size())     // 7
