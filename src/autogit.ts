@@ -1,51 +1,54 @@
-// 1️⃣ Tree node definition
-interface TreeNode {
-  val: number;          // value is irrelevant for diameter
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
+/**
+ * Build the bad‑character shift table for the pattern.
+ * The table maps a character code to the distance we can safely skip
+ * when that character is found in the text.
+ */
+function buildShiftTable(pattern: string): Int32Array {
+  const m = pattern.length;
+  const shift = new Int32Array(256);       // ASCII table size
+  shift.fill(m);                          // default shift = pattern length
 
-// 2️⃣ Main diameter function
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let diameter = 0;                 // global accumulator
-
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;            // height of empty subtree
-
-    // Recursively find heights of left/right subtrees
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
-
-    // Path through current node (in edges)
-    const pathThrough = leftHeight + rightHeight;
-
-    // Update global diameter if this is the largest seen so far
-    diameter = Math.max(diameter, pathThrough);
-
-    // Return height from this node up to a leaf
-    return 1 + Math.max(leftHeight, rightHeight);
+  // Populate the table for every character except the last one.
+  // The last character is handled by the searches’ failure condition.
+  for (let i = 0; i < m - 1; i++) {
+    shift[pattern.charCodeAt(i)] = m - 1 - i;
   }
-
-  dfs(root);
-  return diameter;
+  return shift;
 }
-// Example tree:
-//      1
-//     / \
-//    2   3
-//   / \
-//  4   5
-const tree: TreeNode = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4, left: null, right: null },
-    right: { val: 5, left: null, right: null },
-  },
-  right: { val: 3, left: null, right: null },
-};
 
-console.log(diameterOfBinaryTree(tree)); // Output: 3
-// Explanation: path 4‑2‑1‑3 uses 3 edges
-console.log(diameterOfBinaryTree(null));           // 0
-console.log(diameterOfBinaryTree({ val: 42 }));    // 0
+/**
+ * Boyer‑Moore‑Horspool string search.
+ * @param text The string to search in.
+ * @param pattern The string to find.
+ * @returns The index of the first occurrence, or -1 if not found.
+ */
+export function boyerMooreHorspool(text: string, pattern: string): number {
+  const n = text.length;
+  const m = pattern.length;
+
+  if (m === 0) return 0;          // empty pattern matches at start
+  if (m > n) return -1;           // longer pattern than text → impossible
+
+  const shift = buildShiftTable(pattern);
+
+  let i = m - 1;                  // index in text aligned with last pattern char
+  while (i < n) {
+    let j = 0;                    // offset from last pattern char
+    while (j < m && pattern[m - 1 - j] === text[i - j]) {
+      j++;
+    }
+
+    if (j === m) {                // all characters matched
+      return i - m + 1;           // return starting index
+    }
+
+    // Shift by the value in the table for the mismatching text character
+    const nextChar = text.charCodeAt(i);
+    i += Math.max(shift[nextChar], 1);   // never shift by 0
+  }
+  return -1;                      // not found
+}
+const txt = "abcxabcdabxabcdabcdabcy";
+const pat = "abcdabcy";
+
+console.log(boyerMooreHorspool(txt, pat));  // → 15
