@@ -1,37 +1,29 @@
-function countChar(str: string, target: string): number {
-  let count = 0;
-  for (const ch of str) {
-    if (ch === target) count++;
-  }
-  return count;
+/**
+ * Reverses the order of words in a string.
+ *
+ * Words are split on whitespace.  Consecutive whitespace is collapsed,
+ * but you can tweak the regex if you need to keep it intact.
+ *
+ * @param txt – The string to reverse
+ * @returns The string with words in reverse order
+ */
+function reverseWordOrder(txt: string): string {
+  return txt
+    .trim()                      // Strip leading/trailing gaps
+    .split(/\s+/)                // Break on any run of whitespace
+    .reverse()                   // Flip the array
+    .join(' ');                  // Stitch back together
 }
 
-const times = countChar("hello world", "l"); // 3
-function countChar(str: string, target: string): number {
-  return str.split(target).length - 1;
+// Example usage
+const original = "Hello world, this is TypeScript.";
+const reversed = reverseWordOrder(original);
+console.log(reversed);  // "TypeScript. is this world, Hello"
+function reverseWordOrder(txt: string) {
+  const words = txt.trim().match(/\w+|\s+/g) ?? [];
+  const textOnly = words.filter(Boolean).join(' ');
+  const reversed = textOnly.split(/\s+/).reverse().join(' ');
+  // re‑insert spaces that were originally present
+  // (not shown here for brevity)
+  return reversed;
 }
-
-countChar("banana", "a"); // 3
-function countChar(str: string, target: string): number {
-  return [...str].filter(ch => ch === target).length;
-}
-
-countChar("👋👋👋 hello", "👋"); // 3
-function countChar(str: string, target: string): number {
-  const re = new RegExp(`\\${target}`, "g");
-  const matches = str.match(re);
-  return matches ? matches.length : 0;
-}
-
-countChar("mississippi", "i"); // 4
-function multicharCount(str: string, targets: string[]): Record<string, number> {
-  const result: Record<string, number> = {};
-  for (const t of targets) result[t] = 0;
-
-  for (const ch of str) {
-    if (result.hasOwnProperty(ch)) result[ch]++;
-  }
-  return result;
-}
-
-multicharCount("abacaba", ["a", "b", "c"]); // { a:4, b:2, c:1 }
