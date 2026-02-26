@@ -1,38 +1,59 @@
-// fortune.ts
-import { createInterface } from 'readline';
-
-// Set up a simple REPL‑style prompt
-const rl = createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-console.log('🃏 Welcome to the Random Fortune Machine!');
-
-// Ask the user for a number
-rl.question('Enter a number (0–9) and press Enter: ', (answer) => {
-  // Try to parse the input as an integer
-  const num = parseInt(answer.trim(), 10);
-
-  if (isNaN(num) || num < 0 || num > 9) {
-    console.log('❌ That’s not a valid single digit between 0 and 9.');
-  } else {
-    // Pick a fortune from a tiny list
-    const fortunes = [
-      "You'll find a penny on the sidewalk.",
-      "A surprise call will brighten your day.",
-      "Today is a great day to start learning something new.",
-      "You’ll discover a hidden talent for drawing.",
-      "A forgotten receipt will pop up in your inbox.",
-      "A random act of kindness will return to you.",
-      "You’ll taste your favorite food in an unexpected way.",
-      "A new friendship is just a conversation away.",
-      "You’ll hit a traffic light and notice your neighbor’s cat.",
-      "Today you will finally finish that project you’ve shelved."
-    ];
-
-    console.log(`🔮 Fortune for ${num}: ${fortunes[num]}`);
+/**
+ * Compare two strings for an anagram relationship.
+ *
+ * @param a – first string (the one you’re testing)
+ * @param b – candidate anagram
+ * @param ignoreCase – true will treat “A” and “a” the same
+ * @param normalize   – if true, removes all non‑alphanumeric chars
+ * @returns true if a and b are anagrams
+ */
+function isAnagram(
+  a: string,
+  b: string,
+  ignoreCase = true,
+  normalize = true
+): boolean {
+  if (normalize) {
+    const regex = /[^a-z0-9]/gi;
+    a = a.replace(regex, '');
+    b = b.replace(regex, '');
   }
 
-  rl.close();
-});
+  if (ignoreCase) {
+    a = a.toLowerCase();
+    b = b.toLowerCase();
+  }
+
+  // Quick length‐check
+  if (a.length !== b.length) return false;
+
+  // Sort characters and compare
+  const sortedA = a.split('').sort().join('');
+  const sortedB = b.split('').sort().join('');
+
+  return sortedA === sortedB;
+}
+console.log(isAnagram('Listen', 'Silent'));               // true
+console.log(isAnagram('Astronomer', 'Moon starer'));      // true
+console.log(isAnagram('Hello', 'World'));                  // false
+
+// Custom options
+console.log(isAnagram('Dormitory!', 'Dirtyroom', true, true)); // true
+console.log(isAnagram('Dormitory!', 'Dirtyroom', false, true)); // false – case sensitive
+function isAnagramFreq(a: string, b: string): boolean {
+  const makeMap = (s: string) => {
+    const map: Record<string, number> = {};
+    for (const ch of s) map[ch] = (map[ch] ?? 0) + 1;
+    return map;
+  };
+
+  const freqA = makeMap(a);
+  const freqB = makeMap(b);
+
+  // Compare two maps
+  const keys = new Set([...Object.keys(freqA), ...Object.keys(freqB)]);
+  for (const k of keys) {
+    if (freqA[k] !== freqB[k]) return false;
+  }
+  return true;
+}
