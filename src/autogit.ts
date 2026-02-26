@@ -1,69 +1,39 @@
-type NodeId = string | number;          // whatever you want to use for a node key
-interface Graph {
-  /** Map of node id → set of neighbour ids */
-  adjacencyList: Map<NodeId, Set<NodeId>>;
+class ListNode<T> {
+    constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-function createGraph(edges: [NodeId, NodeId][]): Graph {
-  const adjacencyList = new Map<NodeId, Set<NodeId>>();
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+    if (!head) return false;
 
-  for (const [u, v] of edges) {
-    if (!adjacencyList.has(u)) adjacencyList.set(u, new Set());
-    if (!adjacencyList.has(v)) adjacencyList.set(v, new Set());
-    adjacencyList.get(u)!.add(v);
-    adjacencyList.get(v)!.add(u); // comment out for directed graph
-  }
+    let slow: ListNode<T> | null = head;
+    let fast: ListNode<T> | null = head;
 
-  return { adjacencyList };
-}
-function dfsRecursive(
-  graph: Graph,
-  start: NodeId,
-  visited = new Set<NodeId>()
-): NodeId[] {
-  visited.add(start);
-  const result = [start];
+    while (fast !== null && fast.next !== null) {
+        slow = slow!.next;           // move 1 step
+        fast = fast.next.next;       // move 2 steps
 
-  for (const neighbour of graph.adjacencyList.get(start) ?? []) {
-    if (!visited.has(neighbour)) {
-      result.push(...dfsRecursive(graph, neighbour, visited));
+        if (slow === fast) {         // same node → cycle
+            return true;
+        }
     }
-  }
-
-  return result;
+    return false;                    // fast reached end → no cycle
 }
-function dfsIterative(graph: Graph, start: NodeId): NodeId[] {
-  const visited = new Set<NodeId>();
-  const stack: NodeId[] = [start];
-  const result: NodeId[] = [];
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+    const visited = new Set<ListNode<T>>();
 
-  while (stack.length) {
-    const node = stack.pop()!;           // safe: stack is non‑empty
-
-    if (visited.has(node)) continue;
-    visited.add(node);
-    result.push(node);
-
-    // Add neighbours in reverse order if you want a particular visit order
-    const neighbours = graph.adjacencyList.get(node) ?? new Set();
-    for (const neighbour of Array.from(neighbours).reverse()) {
-      if (!visited.has(neighbour)) stack.push(neighbour);
+    let current: ListNode<T> | null = head;
+    while (current !== null) {
+        if (visited.has(current)) return true; // already seen
+        visited.add(current);
+        current = current.next;
     }
-  }
-
-  return result;
+    return false;
 }
-const edges: [NodeId, NodeId][] = [
-  [1, 2],
-  [1, 3],
-  [2, 4],
-  [3, 4],
-  [4, 5],
-];
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b;  // 1 → 2 → 3
+b.next = c;
+c.next = a;  // cycle back to 1
 
-const graph = createGraph(edges);
-
-console.log('Recursive DFS:', dfsRecursive(graph, 1));
-// → [1, 2, 4, 3, 5] (or another order depending on set iteration)
-
-console.log('Iterative DFS:', dfsIterative(graph, 1));
-// → same result, but robust on deep graphs
+console.log(hasCycle(a));        // → true
+console.log(hasCycleWithSet(a)); // → true
