@@ -1,5 +1,5 @@
-const original = "Hello World!";
-const lowercased = original.toLowerCase();
+const original = "Hello  world \t from TypeScript!";
 
-console.log(lowercased); // "hello world!"
-const turkish = "I".toLocaleLowerCase("tr-TR"); // yields "ı"
+const noSpaces = original.replace(/\s+/g, '');   // → "HelloworldfromTypeScript!"
+const noSpaces = original.replace(/ +/g, '');
+const noSpaces = original.split(' ').join('');
