@@ -1,20 +1,47 @@
-function removeVowels(input: string): string {
-  // Vowels (both lower‑ and upper‑case) – feel free to add accented ones if you need
-  const vowels = /[aeiouAEIOU]/g;
-  return input.replace(vowels, '');
+class TreeNode<T = any> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
-function removeVowels(input: string): string {
-  const result: string[] = [];
+function countLeaves<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;                         // empty subtree → 0 leaves
 
-  for (const char of input) {
-    if (!/[aeiouAEIOU]/.test(char)) {
-      result.push(char);
+  // If both children are missing, this node itself is a leaf
+  if (!root.left && !root.right) return 1;
+
+  // Otherwise, count leaves in the children
+  return countLeaves(root.left) + countLeaves(root.right);
+}
+function countLeavesIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
+
+  let stack: Array<TreeNode<T>> = [root];
+  let leafCount = 0;
+
+  while (stack.length) {
+    const node = stack.pop() as TreeNode<T>;
+
+    // A leaf if it has no children
+    if (!node.left && !node.right) {
+      leafCount++;
+    } else {
+      // Push existing children to process later
+      if (node.left) stack.push(node.left);
+      if (node.right) stack.push(node.right);
     }
   }
 
-  return result.join('');
+  return leafCount;
 }
-const vowels = /[aeiouAEIOUÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝŸàáâãäåæçèéêëìíîïðñòóôõöøùúûüýÿ]/gu;
-const vowels = /\p{Script=Latin}\p{L}\b{vowel}/u; // not a real pattern – just an example
-const demo = "Hello World! 123";
-console.log(removeVowels(demo)); // "Hll Wrld! 123"
+const root = new TreeNode(1,
+  new TreeNode(2,
+    new TreeNode(4),           // leaf
+    new TreeNode(5)            // leaf
+  ),
+  new TreeNode(3)              // leaf
+);
+
+console.log(countLeaves(root));        // → 3
+console.log(countLeavesIter(root));    // → 3
