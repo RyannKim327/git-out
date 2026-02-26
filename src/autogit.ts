@@ -1,36 +1,19 @@
-const original = [1, 2, 3, 2, 4, 1, 5];
+// Original
+const original = "   \tHello, \nWorld!   ";
 
-// Method 1 – quick & crumb‑free
-const withoutDups = [...new Set(original)];
-console.log(withoutDups); // [1, 2, 3, 4, 5]
+// 1. trim (only outer whitespace)
+const trimmed = original.trim();
+console.log(trimmed); // "Hello, \nWorld!"
 
-// Method 2 – If you prefer a pure function that you can re‑use
-function uniq<T>(arr: T[]): T[] {
-  return [...new Set(arr)];
+// 2. remove all literal spaces only
+const noSpaces = original.replace(/ /g, "");
+console.log(noSpaces); // "\tHello,\nWorld!   "
+
+// 3. strip *every* whitespace
+const totallyClean = original.replace(/\s+/g, "");
+console.log(totallyClean); // "Hello,World!"
+function removeAllWhitespace(s: string): string {
+  return s.replace(/\s+/g, "");
 }
 
-const uniqueColors = uniq(['red', 'green', 'red', 'blue']);
-function uniqBy<T, K>(arr: T[], keyFn: (item: T) => K): T[] {
-  const seen = new Set<K>();
-  const result: T[] = [];
-
-  for (const item of arr) {
-    const key = keyFn(item);
-    if (!seen.has(key)) {
-      seen.add(key);
-      result.push(item);
-    }
-  }
-  return result;
-}
-
-// Example: removing duplicate users by id
-const users = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 1, name: 'Alicia' },
-];
-
-const uniqueUsers = uniqBy(users, u => u.id);
-console.log(uniqueUsers);
-// [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
+const cleaned = removeAllWhitespace("  a b\tc\n "); // "abc"
