@@ -1,40 +1,72 @@
-const decimal = 42;          // any number you want to convert
-const binary = decimal.toString(2);  // '101010'
-console.log(binary);        // → 101010
 /**
- * Convert a non‑negative decimal number to binary.
+ * Returns the k-th smallest element of an array.
+ *
+ * @param arr   Array of numbers (or any comparable type).
+ * @param k     1‑based index of the element to find.
+ * @returns     The k‑th smallest value.
+ *
+ * @throws      If k is out of bounds.
  */
-function decimalToBinary(n: number): string {
-  if (n === 0) return '0';
-  let result: string = '';
-  let num = n;
-
-  while (num > 0) {
-    // `num % 2` is the remainder (0 or 1)
-    const bit = (num % 2).toString();
-    result = bit + result;          // prepend the bit
-    num = Math.floor(num / 2);       // shift right
+export function kthSmallest<T>(arr: T[], k: number): T {
+  if (k < 1 || k > arr.length) {
+    throw new Error(`k=${k} is not in the valid range 1..${arr.length}`);
   }
 
-  return result;
-}
+  // Work on a copy so the original array stays untouched.
+  const a = arr.slice();
+  let left = 0;
+  let right = a.length - 1;
 
-// Demo
-console.log(decimalToBinary(42));   // → 101010
-console.log(decimalToBinary(0));    // → 0
-console.log(decimalToBinary(255));  // → 11111111
-function bigIntDecimalToBinary(n: bigint): string {
-  if (n === 0n) return '0';
-  let result = '';
-  let num = n;
-  while (num > 0n) {
-    result = (num & 1n).toString() + result; // `& 1n` is a fast bitwise test
-    num >>= 1n;   // shift right
+  while (true) {
+    // Pick a pivot – here we just pick the middle element.
+    const pivotIndex = left + Math.floor((right - left) / 2);
+    const pivot = a[pivotIndex];
+
+    // Partition step: elements < pivot go left, >= pivot go right.
+    const pivotNewIndex = partition(a, left, right, pivot);
+
+    if (pivotNewIndex === k - 1) {      // Found the k‑th smallest
+      return a[pivotNewIndex];
+    } else if (pivotNewIndex > k - 1) {  // Look in the left partition
+      right = pivotNewIndex - 1;
+    } else {                            // Look in the right partition
+      left = pivotNewIndex + 1;
+    }
   }
-  return result;
 }
-// 16 decimal → 10000 binary
-console.assert(decimalToBinary(16) === '10000');
 
-// 255 decimal → 11111111 binary
-console.assert(decimalToBinary(255) === '11111111');
+/**
+ * Standard Lomuto partition scheme.
+ *
+ * @param a array to partition
+ * @param lo left boundary
+ * @param hi right boundary
+ * @param pivotValue value the array should be partitioned around
+ * @returns new index of the pivot after partition
+ */
+function partition<T>(a: T[], lo: number, hi: number, pivotValue: T): number {
+  // Move pivot to the end for convenience.
+  let pivotIndex = lo + (Math.random() * (hi - lo + 1)) | 0; // random pivot for stability
+  [a[pivotIndex], a[hi]] = [a[hi], a[pivotIndex]];
+
+  const pivot = a[hi];
+  let storeIndex = lo;                         // index of the first element >= pivot
+
+  for (let i = lo; i < hi; i++) {
+    if (a[i] < pivot) {
+      [a[i], a[storeIndex]] = [a[storeIndex], a[i]];
+      storeIndex++;
+    }
+  }
+
+  // place pivot after the last smaller element
+  [a[storeIndex], a[hi]] = [a[hi], a[storeIndex]];
+  return storeIndex;
+}
+export function kthSmallestSort<T>(arr: T[], k: number): T {
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
+  return [...arr].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))[k - 1];
+}
+const nums = [7, 11, 5, 3, 9, 2];
+console.log(kthSmallest(nums, 3)); // 5
+console.log(kthSmallestSort(nums, 3)); // 5
