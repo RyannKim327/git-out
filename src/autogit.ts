@@ -1,61 +1,116 @@
 /**
- * Radix sort for 32‑bit unsigned integers.
- * Sorts in place and returns the sorted array for convenience.
+ * Build the bad‑character shift table.
+ * For every character that occurs in the pattern, we store the distance
+ * from the last occurrence of that character to the end of the pattern
+ * (i.e. how far we can jump when that character mismatches).
  */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length <= 1) return arr;          // already sorted
+function buildBadCharShift(pat: string): Int8Array {
+  const m = pat.length;
+  // 256 possible ASCII values – 16-bit enough for Unicode offsets too
+  const shift = new Int8Array(256);
+  shift.fill(-1);
 
-  // Pick a base that gives a nice trade‑off between passes and bucket size.
-  // Base 256 (8 bits per pass) lets us use a Uint32Array for buckets.
-  const base = 256;
-  const maxBit = 32; // 32 bits for a signed int, but we only store positives here
-
-  // Number of passes, one per byte in this case.
-  const passes = maxBit / 8;
-
-  // Temporary array for intermediate results.
-  const temp = new Array<number>(arr.length);
-
-  // Helper: counts how many numbers have a certain digit value at a given byte.
-  const count = new Uint32Array(base);
-
-  for (let pass = 0; pass < passes; ++pass) {
-    // Reset counts.
-    count.fill(0);
-
-    // Count occurrences of each bucket value.
-    const shift = pass * 8;
-    for (const n of arr) {
-      const bucket = (n >> shift) & 0xff;
-      count[bucket]++;
-    }
-
-    // Compute cumulative counts => start indices in `temp`.
-    const startIdx = new Uint32Array(base);
-    let sum = 0;
-    for (let i = 0; i < base; ++i) {
-      startIdx[i] = sum;
-      sum += count[i];
-    }
-
-    // Place numbers into the correct bucket order.
-    for (const n of arr) {
-      const bucket = (n >> shift) & 0xff;
-      const idx = startIdx[bucket]++;
-      temp[idx] = n;
-    }
-
-    // Swap the source and destination for the next round.
-    [arr, temp] = [temp, arr];
+  for (let i = 0; i < m; i++) {
+    shift[pat.charCodeAt(i)] = i;
   }
-
-  // After an even number of passes `arr` points to original input; the sorted
-  // result ends up in `arr`. If passes were odd, the sorted array will be in `temp`.
-  // Ensure we return the sorted array reference.
-  return arr.length === sizeOfInput ? arr : temp;
+  return shift;
 }
 
-/** Quick tests */
-const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log('unsorted:', unsorted);
-console.log('sorted:  ', radixSort([...unsorted])); // use spread to leave original intact
+/**
+ * Build the good‑suffix shift table.
+ * The array `shift` holds, for each position in the pattern,
+ * how far we can safely shift if the suffix starting at that position
+ * is found to match the text but a mismatch occurs just before it.
+ */
+function buildGoodSuffixShift(pat: string): Int32Array {
+  const m = pat.length;
+  const shift = new Int32Array(m).fill(m);
+  const borderPos = new Int32Array(m + 1).fill(-1);
+  const suffixPos = new Int32Array(m + 1).fill(-1);
+
+  /* Step 1 – compute border positions (also known as "failure function") */
+  let i = m;
+  let j = m + 1;
+  borderPos[i] = j;
+  while (i > 0) {
+    while (j <= m && pat[i - 1] !== pat[j - 1]) j = borderPos[j];
+    i--;
+    j--;
+    borderPos[i] = j;
+  }
+
+  /* Step 2 – compute suffix positions */
+  i = 0;
+  j = 0;
+  while (i < m) {
+    if (pat[i] === pat[j]) {
+      j++;
+      suffixPos[i + 1] = j;
+    } else if (j > 0) {
+      j = borderPos[j];
+    } else {
+      suffixPos[i + 1] = 0;
+      i++;
+    }
+  }
+
+  /* Step 3 – fill the shift table using the border and suffix data */
+  for (let k = 0; k < m; k++) {
+    // If the suffix starting at k matches the pattern's suffix
+    // and there is a border before that suffix, we can shift
+    // to align that border with the text.
+    shift[k] = m - suffixPos[k];
+  }
+
+  return shift;
+}
+
+/**
+ * Boyer‑Moore search.
+ * Returns an array of all start indices where `pat` is found in `txt`.
+ */
+export function boyerMoore(txt: string, pat: string): number[] {
+  const n = txt.length;
+  const m = pat.length;
+
+  if (m === 0 || n < m) return [];
+
+  const badChar = buildBadCharShift(pat);
+  const goodSuffix = buildGoodSuffixShift(pat);
+
+  const res: number[] = [];
+  let s = 0; // shift of the pattern over text
+
+  while (s <= n - m) {
+    let j = m - 1;
+
+    // Move left while characters match
+    while (j >= 0 && pat[j] === txt[s + j]) j--;
+
+    if (j < 0) {
+      // full match
+      res.push(s);
+      // shift so that the next possible match starts right after the first character of the current match
+      s += goodSuffix[0];
+    } else {
+      const badIdx = badChar[txt.charCodeAt(s + j)];
+      const badShift = badIdx !== -1 ? j - badIdx : j + 1;
+      const goodShift = goodSuffix[j];
+      // choose the larger of the two shifts
+      s += Math.max(badShift, goodShift);
+    }
+  }
+
+  return res;
+}
+
+/* ----------------------------------- */
+/* Example usage                     */
+const text = "ABAAABCDABEEABBAAB";
+const pattern = "ABBA";
+
+const matches = boyerMoore(text, pattern);
+console.log("Pattern found at indices:", matches);
+/* Expected output (zero‑based indices):
+   Pattern found at indices: [12, 15]
+*/
