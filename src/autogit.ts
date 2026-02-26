@@ -1,59 +1,72 @@
 /**
- * Compare two strings for an anagram relationship.
+ * Returns the k-th smallest element of an array.
  *
- * @param a – first string (the one you’re testing)
- * @param b – candidate anagram
- * @param ignoreCase – true will treat “A” and “a” the same
- * @param normalize   – if true, removes all non‑alphanumeric chars
- * @returns true if a and b are anagrams
+ * @param arr   Array of numbers (or any comparable type).
+ * @param k     1‑based index of the element to find.
+ * @returns     The k‑th smallest value.
+ *
+ * @throws      If k is out of bounds.
  */
-function isAnagram(
-  a: string,
-  b: string,
-  ignoreCase = true,
-  normalize = true
-): boolean {
-  if (normalize) {
-    const regex = /[^a-z0-9]/gi;
-    a = a.replace(regex, '');
-    b = b.replace(regex, '');
+export function kthSmallest<T>(arr: T[], k: number): T {
+  if (k < 1 || k > arr.length) {
+    throw new Error(`k=${k} is not in the valid range 1..${arr.length}`);
   }
 
-  if (ignoreCase) {
-    a = a.toLowerCase();
-    b = b.toLowerCase();
+  // Work on a copy so the original array stays untouched.
+  const a = arr.slice();
+  let left = 0;
+  let right = a.length - 1;
+
+  while (true) {
+    // Pick a pivot – here we just pick the middle element.
+    const pivotIndex = left + Math.floor((right - left) / 2);
+    const pivot = a[pivotIndex];
+
+    // Partition step: elements < pivot go left, >= pivot go right.
+    const pivotNewIndex = partition(a, left, right, pivot);
+
+    if (pivotNewIndex === k - 1) {      // Found the k‑th smallest
+      return a[pivotNewIndex];
+    } else if (pivotNewIndex > k - 1) {  // Look in the left partition
+      right = pivotNewIndex - 1;
+    } else {                            // Look in the right partition
+      left = pivotNewIndex + 1;
+    }
   }
-
-  // Quick length‐check
-  if (a.length !== b.length) return false;
-
-  // Sort characters and compare
-  const sortedA = a.split('').sort().join('');
-  const sortedB = b.split('').sort().join('');
-
-  return sortedA === sortedB;
 }
-console.log(isAnagram('Listen', 'Silent'));               // true
-console.log(isAnagram('Astronomer', 'Moon starer'));      // true
-console.log(isAnagram('Hello', 'World'));                  // false
 
-// Custom options
-console.log(isAnagram('Dormitory!', 'Dirtyroom', true, true)); // true
-console.log(isAnagram('Dormitory!', 'Dirtyroom', false, true)); // false – case sensitive
-function isAnagramFreq(a: string, b: string): boolean {
-  const makeMap = (s: string) => {
-    const map: Record<string, number> = {};
-    for (const ch of s) map[ch] = (map[ch] ?? 0) + 1;
-    return map;
-  };
+/**
+ * Standard Lomuto partition scheme.
+ *
+ * @param a array to partition
+ * @param lo left boundary
+ * @param hi right boundary
+ * @param pivotValue value the array should be partitioned around
+ * @returns new index of the pivot after partition
+ */
+function partition<T>(a: T[], lo: number, hi: number, pivotValue: T): number {
+  // Move pivot to the end for convenience.
+  let pivotIndex = lo + (Math.random() * (hi - lo + 1)) | 0; // random pivot for stability
+  [a[pivotIndex], a[hi]] = [a[hi], a[pivotIndex]];
 
-  const freqA = makeMap(a);
-  const freqB = makeMap(b);
+  const pivot = a[hi];
+  let storeIndex = lo;                         // index of the first element >= pivot
 
-  // Compare two maps
-  const keys = new Set([...Object.keys(freqA), ...Object.keys(freqB)]);
-  for (const k of keys) {
-    if (freqA[k] !== freqB[k]) return false;
+  for (let i = lo; i < hi; i++) {
+    if (a[i] < pivot) {
+      [a[i], a[storeIndex]] = [a[storeIndex], a[i]];
+      storeIndex++;
+    }
   }
-  return true;
+
+  // place pivot after the last smaller element
+  [a[storeIndex], a[hi]] = [a[hi], a[storeIndex]];
+  return storeIndex;
 }
+export function kthSmallestSort<T>(arr: T[], k: number): T {
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
+  return [...arr].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))[k - 1];
+}
+const nums = [7, 11, 5, 3, 9, 2];
+console.log(kthSmallest(nums, 3)); // 5
+console.log(kthSmallestSort(nums, 3)); // 5
