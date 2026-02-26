@@ -1,47 +1,48 @@
-class TreeNode<T = any> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
+//      This shape is common in interview‑style code.
+interface TreeNode {
+  val: number;         // node’s payload
+  left?: TreeNode | null;   // left child (optional)
+  right?: TreeNode | null;  // right child (optional)
 }
-function countLeaves<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;                         // empty subtree → 0 leaves
 
-  // If both children are missing, this node itself is a leaf
-  if (!root.left && !root.right) return 1;
-
-  // Otherwise, count leaves in the children
-  return countLeaves(root.left) + countLeaves(root.right);
+// 2️⃣  Recursive summation – easiest to read and to understand.
+//      Depth‑first, natural for a tree.
+function sumTreeRecursive(root: TreeNode | null): number {
+  if (!root) return 0;                      // base case: empty subtree is 0
+  const leftSum = sumTreeRecursive(root.left);
+  const rightSum = sumTreeRecursive(root.right);
+  return root.val + leftSum + rightSum;      // combine the results
 }
-function countLeavesIter<T>(root: TreeNode<T> | null): number {
+
+// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
+//      where recursion might hit the call‑stack limit.
+function sumTreeIterative(root: TreeNode | null): number {
   if (!root) return 0;
-
-  let stack: Array<TreeNode<T>> = [root];
-  let leafCount = 0;
+  let total = 0;
+  const stack: TreeNode[] = [root];
 
   while (stack.length) {
-    const node = stack.pop() as TreeNode<T>;
-
-    // A leaf if it has no children
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      // Push existing children to process later
-      if (node.left) stack.push(node.left);
-      if (node.right) stack.push(node.right);
-    }
+    const node = stack.pop()!;
+    total += node.val;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
   }
-
-  return leafCount;
+  return total;
 }
-const root = new TreeNode(1,
-  new TreeNode(2,
-    new TreeNode(4),           // leaf
-    new TreeNode(5)            // leaf
-  ),
-  new TreeNode(3)              // leaf
-);
 
-console.log(countLeaves(root));        // → 3
-console.log(countLeavesIter(root));    // → 3
+// 4️⃣  Sample tree for quick sanity check
+//           5
+//          / \
+//         3   7
+//        / \   \
+//       2   4   8
+
+const sampleRoot: TreeNode = {
+  val: 5,
+  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
+  right: { val: 7, right: { val: 8 } },
+};
+
+console.log(sumTreeRecursive(sampleRoot)); // → 33
+console.log(sumTreeIterative(sampleRoot)); // → 33
