@@ -1,47 +1,38 @@
 /**
- * Checks whether a string is a palindrome (case‑insensitive,
- * ignoring anything that isn’t a letter or a digit).
+ * Find the majority element in an array.
  *
- * Time   : O(n)
- * Space  : O(1)   – only a couple of integer variables
+ * @param arr - An array of comparable items.
+ * @returns The majority element, or undefined if no majority exists.
+ *
+ * Assumes `T` supports strict equality (===).
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+function majorityElement<T>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
 
-  const isAlnum = (ch: string): boolean => {
-    const code = ch.charCodeAt(0);
-    // '0'‑'9'
-    if (code >= 48 && code <= 57) return true;
-    // 'A'‑'Z'
-    if (code >= 65 && code <= 90) return true;
-    // 'a'‑'z'
-    if (code >= 97 && code <= 122) return true;
-    return false;
-  };
+  // 1️⃣ First pass: find a potential candidate
+  let candidate: T | undefined = arr[0];
+  let count = 0;
 
-  while (left < right) {
-    // Skip non‑alphanumeric characters from the left
-    while (left < right && !isAlnum(s[left])) left++;
-    // Skip non‑alphanumeric characters from the right
-    while (left < right && !isAlnum(s[right])) right--;
-
-    if (left >= right) break;          // Nothing left to compare
-
-    const lc = s[left].toLowerCase();
-    const rc = s[right].toLowerCase();
-
-    if (lc !== rc) return false;
-
-    left++;
-    right--;
+  for (const value of arr) {
+    if (count === 0) {
+      candidate = value;
+      count = 1;
+    } else {
+      count += (value === candidate) ? 1 : -1;
+    }
   }
 
-  return true;
+  // 2️⃣ Optional second pass (remove if you know the input always contains a majority)
+  if (candidate !== undefined) {
+    const actual = arr.filter(v => v === candidate).length;
+    if (actual > arr.length / 2) {
+      return candidate;
+    }
+  }
+
+  return undefined; // No majority element
 }
-while (left < right) {
-  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
-  left++;
-  right--;
-}
-return true;
+const nums = [2, 2, 1, 1, 2, 2, 2];
+
+const major = majorityElement(nums); // -> 2
+console.log(major); // 2
