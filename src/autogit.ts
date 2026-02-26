@@ -1,41 +1,78 @@
-interface ListNode<T = any> {
-  value: T;
-  next?: ListNode<T>;
-}
 /**
- * Counts nodes in a linked list.
- * @param head The first node (or undefined if the list is empty).
- * @returns Number of nodes in the list.
+ * Bubble Sort – in‑place, O(n²) time, O(1) space
+ *
+ * @param arr Array of values that implement `Comparable`
+ * @returns the sorted array (same reference as input)
  */
-function length<T>(head: ListNode<T> | undefined): number {
-  let count = 0;
-  let current = head;
+export function bubbleSort<T extends Comparable>(arr: T[]): T[] {
+  const n = arr.length;
 
-  while (current) {
-    count++;
-    current = current.next;   // follow the chain
+  // Minor optimization: keep track of whether a swap happened
+  // in the current pass. If not, array is already sorted.
+  for (let i = 0; i < n - 1; i++) {
+    let swapped = false;
+
+    // After each outer loop pass, the largest element of the
+    // unsorted portion settles at the end of the array.
+    for (let j = 0; j < n - i - 1; j++) {
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swapped = true;
+      }
+    }
+
+    // If no elements were swapped, the array is already sorted.
+    if (!swapped) break;
   }
-  return count;
+
+  return arr;
 }
-function lengthRecursive<T>(node: ListNode<T> | undefined): number {
-  return node ? 1 + lengthRecursive(node.next) : 0;
+
+/** Simple comparable interface for primitives */
+export interface Comparable {
+  /** Return true if this > other */
+  > (other: this): boolean;
 }
-function* nodes<T>(head: ListNode<T> | undefined) {
-  let cur = head;
-  while (cur) {
-    yield cur;
-    cur = cur.next;
+export function bubbleSortWith<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number
+): T[] {
+  for (let i = 0; i < arr.length - 1; i++) {
+    let swapped = false;
+
+    for (let j = 0; j < arr.length - i - 1; j++) {
+      // compareFn(a, b) < 0 => a < b
+      // compareFn(a, b) > 0 => a > b
+      if (compareFn(arr[j], arr[j + 1]) > 0) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swapped = true;
+      }
+    }
+
+    if (!swapped) break;
   }
+
+  return arr;
+}
+interface Person {
+  name: string;
+  age: number;
 }
 
-function lengthFromIterable<T>(head: ListNode<T> | undefined): number {
-  let count = 0;
-  for (const _ of nodes(head)) count++;
-  return count;
-}
-const third = { value: 3 } as ListNode<number>;
-const second = { value: 2, next: third };
-const first  = { value: 1, next: second };
+const people: Person[] = [
+  { name: "Alice", age: 34 },
+  { name: "Bob", age: 29 },
+  { name: "Carol", age: 42 },
+];
 
-console.log(length(first));           // 3
-console.log(lengthRecursive(first));  // 3
+bubbleSortWith(people, (a, b) => a.age - b.age);
+// people is now sorted by age ascending
+function test() {
+  const nums = [3, 1, 4, 1, 5, 9, 2, 6];
+  console.log("Before:", nums);
+  bubbleSort(nums); // mutates nums in place
+  console.log("After: ", nums);
+}
+
+test(); /* → Before: [3,1,4,1,5,9,2,6]
+          After:  [1,1,2,3,4,5,6,9] */
