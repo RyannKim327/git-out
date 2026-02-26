@@ -1,30 +1,16 @@
-import axios, { AxiosResponse } from 'axios';
+/**
+ * Returns a whole number between min and max (both inclusive).
+ *
+ * @param min The smallest possible value you want (usually a number ≥ 0)
+ * @param max The largest possible value you want
+ */
+function randomIntInRange(min: number, max: number): number {
+  // Clamp the inputs so min <= max
+  const [low, high] = min <= max ? [min, max] : [max, min];
 
-// Declare the shape of the data we expect from the API
-interface Quote {
-  id: number;
-  quote: string;
-  author: string;
+  // Math.random() → [0, 1).  Scale it to the desired width,
+  // then shift by the lower bound and round down.
+  return Math.floor(Math.random() * (high - low + 1)) + low;
 }
-
-// A helper that fetches a random quote
-async function fetchRandomQuote(): Promise<Quote> {
-  try {
-    const response: AxiosResponse<Quote> = await axios.get(
-      'https://api.quotable.io/random'
-    );
-    return response.data;
-  } catch (err) {
-    // If something goes wrong, throw a readable error
-    throw new Error(
-      `Could not fetch a quote: ${
-        err instanceof Error ? err.message : String(err)
-      }`
-    );
-  }
-}
-
-// Usage example – print a random quote to the console
-fetchRandomQuote()
-  .then((quote) => console.log(`${quote.quote} — ${quote.author}`))
-  .catch((err) => console.error(err.message));
+const rand = randomIntInRange(5, 10);
+console.log(rand); // → a whole number 5, 6, 7, 8, 9, or 10
