@@ -1,93 +1,36 @@
-// `Graph<T>` maps a node of type T to an array of its adjacent nodes.
-type Graph<T> = Map<T, T[]>;
-
-// A helper to add an undirected edge
-function addEdge<T>(g: Graph<T>, a: T, b: T) {
-  g.set(a, (g.get(a) ?? []).concat(b));
-  g.set(b, (g.get(b) ?? []).concat(a));
-}
 /**
- * Performs a breadth‑first search on an unweighted graph.
- *
- * @param start   the starting node
- * @param graph   the graph to search
- * @param visitor a callback that receives each visited node in the order
- *                it’s discovered. The callback can return `false` to stop
- *                the search early.
+ * Performs an in‑place Shell sort on `arr`.
+ * The generic makes it usable for numbers, strings, or any comparable type.
  */
-function bfs<T>(
-  start: T,
-  graph: Graph<T>,
-  visitor: (node: T) => void | boolean
-): void {
-  const visited = new Set<T>();
-  const queue = [start];
+export function shellSort<T>(arr: T[], compare?: (a: T, b: T) => boolean) {
+  const len = arr.length;
+  // Default comparison: ascending numeric/string order
+  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any));
 
-  visited.add(start);
+  // Start with a gap (Hibbard’s sequence is simple and effective)
+  // gap = 1, 3, 7, 15, …  (2^k‑1)
+  let gap = 1;
+  while (gap < len) gap = 2 * gap + 1; // find largest Hibbard gap <= len
 
-  while (queue.length) {
-    const node = queue.shift()!;      // Non‑null because we just tested length
-    const result = visitor(node);
-
-    // If the visitor explicitly returned false, break out early.
-    if (result === false) break;
-
-    const neighbors = graph.get(node) ?? [];
-    for (const n of neighbors) {
-      if (!visited.has(n)) {
-        visited.add(n);
-        queue.push(n);
+  // Descend gaps until 1
+  while (gap >= 1) {
+    // Insertion sort on elements gap apart
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+      // shift earlier gap‑sorted elements that are greater
+      while (j >= gap && cmp(temp, arr[j - gap])) {
+        arr[j] = arr[j - gap];
+        j -= gap;
       }
+      arr[j] = temp;
     }
+    // Next gap
+    gap = Math.floor((gap - 1) / 2); // inverse of 2*gap + 1
   }
 }
-/**
- * Returns an array representing the shortest path from `start` to `target`
- * (inclusive), or `null` if no path exists.
- */
-function shortestPath<T>(start: T, target: T, graph: Graph<T>): T[] | null {
-  const prev = new Map<T, T | undefined>(); // child → parent
-  const visited = new Set<T>();
-  const queue: T[] = [start];
-  visited.add(start);
-  let found = false;
-
-  while (queue.length && !found) {
-    const node = queue.shift()!;
-    for (const nb of graph.get(node) ?? []) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        prev.set(nb, node);
-        if (nb === target) {
-          found = true;
-          break;
-        }
-        queue.push(nb);
-      }
-    }
-  }
-
-  if (!found) return null;
-
-  // Walk backwards from target to start
-  const path = [];
-  for (let cur: T | undefined = target; cur !== undefined; cur = prev.get(cur)) {
-    path.push(cur);
-  }
-  path.reverse();
-  return path;
-}
-const g: Graph<string> = new Map();
-addEdge(g, 'A', 'B');
-addEdge(g, 'A', 'C');
-addEdge(g, 'B', 'D');
-addEdge(g, 'C', 'D');
-addEdge(g, 'C', 'E');
-
-console.log('BFS visiting order:', () => {
-  const order: string[] = [];
-  bfs('A', g, node => { order.push(node); });
-  return order;
-}()); // ['A', 'B', 'C', 'D', 'E']
-
-console.log('Shortest path A → D:', shortestPath('A', 'D', g)); // ['A', 'B', 'D']
+const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
+shellSort(numbers);
+console.log(numbers); // [1, 2, 3, 8, 12, 23, 34, 54]
+const desc = (a: number, b: number) => a > b;
+shellSort(numbers, desc);
