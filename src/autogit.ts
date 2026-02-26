@@ -1,59 +1,93 @@
-class ListNode {
-  val: number;
-  next: ListNode | null;
+// `Graph<T>` maps a node of type T to an array of its adjacent nodes.
+type Graph<T> = Map<T, T[]>;
 
-  constructor(val: number, next: ListNode | null = null) {
-    this.val = val;
-    this.next = next;
+// A helper to add an undirected edge
+function addEdge<T>(g: Graph<T>, a: T, b: T) {
+  g.set(a, (g.get(a) ?? []).concat(b));
+  g.set(b, (g.get(b) ?? []).concat(a));
+}
+/**
+ * Performs a breadth‑first search on an unweighted graph.
+ *
+ * @param start   the starting node
+ * @param graph   the graph to search
+ * @param visitor a callback that receives each visited node in the order
+ *                it’s discovered. The callback can return `false` to stop
+ *                the search early.
+ */
+function bfs<T>(
+  start: T,
+  graph: Graph<T>,
+  visitor: (node: T) => void | boolean
+): void {
+  const visited = new Set<T>();
+  const queue = [start];
+
+  visited.add(start);
+
+  while (queue.length) {
+    const node = queue.shift()!;      // Non‑null because we just tested length
+    const result = visitor(node);
+
+    // If the visitor explicitly returned false, break out early.
+    if (result === false) break;
+
+    const neighbors = graph.get(node) ?? [];
+    for (const n of neighbors) {
+      if (!visited.has(n)) {
+        visited.add(n);
+        queue.push(n);
+      }
+    }
   }
 }
 /**
- * Returns the node where listA and listB intersect.
- * If they don't intersect, returns null.
+ * Returns an array representing the shortest path from `start` to `target`
+ * (inclusive), or `null` if no path exists.
  */
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  if (!headA || !headB) return null;
+function shortestPath<T>(start: T, target: T, graph: Graph<T>): T[] | null {
+  const prev = new Map<T, T | undefined>(); // child → parent
+  const visited = new Set<T>();
+  const queue: T[] = [start];
+  visited.add(start);
+  let found = false;
 
-  let pA: ListNode | null = headA;
-  let pB: ListNode | null = headB;
-
-  // Continue until the two pointers either match or both become null.
-  while (pA !== pB) {
-    // Move to the next node; if we're at the end, jump to the other list's head.
-    pA = pA ? pA.next : headB;
-    pB = pB ? pB.next : headA;
+  while (queue.length && !found) {
+    const node = queue.shift()!;
+    for (const nb of graph.get(node) ?? []) {
+      if (!visited.has(nb)) {
+        visited.add(nb);
+        prev.set(nb, node);
+        if (nb === target) {
+          found = true;
+          break;
+        }
+        queue.push(nb);
+      }
+    }
   }
 
-  return pA; // Either the intersection node or null.
+  if (!found) return null;
+
+  // Walk backwards from target to start
+  const path = [];
+  for (let cur: T | undefined = target; cur !== undefined; cur = prev.get(cur)) {
+    path.push(cur);
+  }
+  path.reverse();
+  return path;
 }
-// Build two intersecting lists:
-// A: 1 → 3 → 5 → 7 → 9
-// B: 2 → 4 →        → 7 → 9
-//            ^<--- intersection starts here
+const g: Graph<string> = new Map();
+addEdge(g, 'A', 'B');
+addEdge(g, 'A', 'C');
+addEdge(g, 'B', 'D');
+addEdge(g, 'C', 'D');
+addEdge(g, 'C', 'E');
 
-const common = new ListNode(7, new ListNode(9));
+console.log('BFS visiting order:', () => {
+  const order: string[] = [];
+  bfs('A', g, node => { order.push(node); });
+  return order;
+}()); // ['A', 'B', 'C', 'D', 'E']
 
-const listA = new ListNode(1, new ListNode(3, new ListNode(5, common)));
-const listB = new ListNode(2, new ListNode(4, common));
-
-const intersection = getIntersectionNode(listA, listB);
-console.log(intersection?.val); // 7
-function getIntersectionNodeHash(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  const nodes = new Set<ListNode>();
-
-  for (let cur = headA; cur; cur = cur.next) {
-    nodes.add(cur);
-  }
-
-  for (let cur = headB; cur; cur = cur.next) {
-    if (nodes.has(cur)) return cur;
-  }
-
-  return null;
-}
+console.log('Shortest path A → D:', shortestPath('A', 'D', g)); // ['A', 'B', 'D']
