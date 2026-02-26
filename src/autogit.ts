@@ -1,13 +1,25 @@
-// 1️⃣  Define the array (TypeScript knows it’s numbers)
-const nums: number[] = [42, 7, 13, 99, 29];
-
-// 2️⃣  Sort in place – ascending
-nums.sort((a, b) => a - b);   // -> [7, 13, 29, 42, 99]
-console.log('Ascending:', nums);
-
-// 3️⃣  If you want a new sorted array instead, copy first
-const ascending = [...nums].sort((a, b) => a - b);
-
-// 4️⃣  Descending order
-const descending = nums.slice().sort((a, b) => b - a); // -> [99, 42, 29, 13, 7]
-console.log('Descending:', descending);
+function reverseString(str: string): string {
+  return str.split('').reverse().join('');
+}
+function reverseStringNoArray(str: string): string {
+  let result = '';
+  for (let i = str.length - 1; i >= 0; i--) {
+    result += str[i];
+  }
+  return result;
+}
+function reverseStringRecursive(str: string): string {
+  if (str === '') return '';
+  return reverseStringRecursive(str.slice(1)) + str[0];
+}
+function reverseStringFlatMap(str: string): string {
+  return [...str.matchAll(/./gu)].flatMap(ch => [ch[0]]).reverse().join('');
+}
+function reverseUnicodeString(str: string): string {
+  // splitIntoGraphemes could be a library function; here’s a simple UX:
+  const graphemes = [...str];
+  return graphemes.reverse().join('');
+}
+console.log(reverseString('hello'));          // 'olleh'
+console.log(reverseStringNoArray('world'));   // 'dlrow'
+console.log(reverseStringRecursive('foo'));   // 'oof'
