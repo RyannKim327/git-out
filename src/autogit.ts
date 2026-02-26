@@ -1,25 +1,47 @@
-function reverseString(str: string): string {
-  return str.split('').reverse().join('');
+class TreeNode<T = any> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
-function reverseStringNoArray(str: string): string {
-  let result = '';
-  for (let i = str.length - 1; i >= 0; i--) {
-    result += str[i];
+function countLeaves<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;                         // empty subtree → 0 leaves
+
+  // If both children are missing, this node itself is a leaf
+  if (!root.left && !root.right) return 1;
+
+  // Otherwise, count leaves in the children
+  return countLeaves(root.left) + countLeaves(root.right);
+}
+function countLeavesIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
+
+  let stack: Array<TreeNode<T>> = [root];
+  let leafCount = 0;
+
+  while (stack.length) {
+    const node = stack.pop() as TreeNode<T>;
+
+    // A leaf if it has no children
+    if (!node.left && !node.right) {
+      leafCount++;
+    } else {
+      // Push existing children to process later
+      if (node.left) stack.push(node.left);
+      if (node.right) stack.push(node.right);
+    }
   }
-  return result;
+
+  return leafCount;
 }
-function reverseStringRecursive(str: string): string {
-  if (str === '') return '';
-  return reverseStringRecursive(str.slice(1)) + str[0];
-}
-function reverseStringFlatMap(str: string): string {
-  return [...str.matchAll(/./gu)].flatMap(ch => [ch[0]]).reverse().join('');
-}
-function reverseUnicodeString(str: string): string {
-  // splitIntoGraphemes could be a library function; here’s a simple UX:
-  const graphemes = [...str];
-  return graphemes.reverse().join('');
-}
-console.log(reverseString('hello'));          // 'olleh'
-console.log(reverseStringNoArray('world'));   // 'dlrow'
-console.log(reverseStringRecursive('foo'));   // 'oof'
+const root = new TreeNode(1,
+  new TreeNode(2,
+    new TreeNode(4),           // leaf
+    new TreeNode(5)            // leaf
+  ),
+  new TreeNode(3)              // leaf
+);
+
+console.log(countLeaves(root));        // → 3
+console.log(countLeavesIter(root));    // → 3
