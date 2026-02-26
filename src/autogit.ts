@@ -1,27 +1,51 @@
-/**
- * Returns the second largest number in `arr`.
- * If the array has fewer than two distinct numbers, returns `undefined`.
- */
-function secondLargest(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
+// 1️⃣ Tree node definition
+interface TreeNode {
+  val: number;          // value is irrelevant for diameter
+  left?: TreeNode | null;
+  right?: TreeNode | null;
+}
 
-  let first: number | null = null;
-  let second: number | null = null;
+// 2️⃣ Main diameter function
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let diameter = 0;                 // global accumulator
 
-  for (const x of arr) {
-    if (first === null || x > first) {
-      // New maximum found – push the old maximum down to second
-      second = first;
-      first = x;
-    } else if (x !== first && (second === null || x > second)) {
-      // Candidate for second maximum
-      second = x;
-    }
+  function dfs(node: TreeNode | null): number {
+    if (!node) return 0;            // height of empty subtree
+
+    // Recursively find heights of left/right subtrees
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
+
+    // Path through current node (in edges)
+    const pathThrough = leftHeight + rightHeight;
+
+    // Update global diameter if this is the largest seen so far
+    diameter = Math.max(diameter, pathThrough);
+
+    // Return height from this node up to a leaf
+    return 1 + Math.max(leftHeight, rightHeight);
   }
 
-  return second ?? undefined;
+  dfs(root);
+  return diameter;
 }
-console.log(secondLargest([1, 3, 5, 7])); // 5
-console.log(secondLargest([10, 9]));      // 9
-console.log(secondLargest([4]));          // undefined
-console.log(secondLargest([2, 2, 2]));    // undefined
+// Example tree:
+//      1
+//     / \
+//    2   3
+//   / \
+//  4   5
+const tree: TreeNode = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: null, right: null },
+    right: { val: 5, left: null, right: null },
+  },
+  right: { val: 3, left: null, right: null },
+};
+
+console.log(diameterOfBinaryTree(tree)); // Output: 3
+// Explanation: path 4‑2‑1‑3 uses 3 edges
+console.log(diameterOfBinaryTree(null));           // 0
+console.log(diameterOfBinaryTree({ val: 42 }));    // 0
