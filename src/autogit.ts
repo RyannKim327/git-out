@@ -1,39 +1,40 @@
-class ListNode<T> {
-    constructor(public val: T, public next: ListNode<T> | null = null) {}
+const decimal = 42;          // any number you want to convert
+const binary = decimal.toString(2);  // '101010'
+console.log(binary);        // → 101010
+/**
+ * Convert a non‑negative decimal number to binary.
+ */
+function decimalToBinary(n: number): string {
+  if (n === 0) return '0';
+  let result: string = '';
+  let num = n;
+
+  while (num > 0) {
+    // `num % 2` is the remainder (0 or 1)
+    const bit = (num % 2).toString();
+    result = bit + result;          // prepend the bit
+    num = Math.floor(num / 2);       // shift right
+  }
+
+  return result;
 }
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-    if (!head) return false;
 
-    let slow: ListNode<T> | null = head;
-    let fast: ListNode<T> | null = head;
-
-    while (fast !== null && fast.next !== null) {
-        slow = slow!.next;           // move 1 step
-        fast = fast.next.next;       // move 2 steps
-
-        if (slow === fast) {         // same node → cycle
-            return true;
-        }
-    }
-    return false;                    // fast reached end → no cycle
+// Demo
+console.log(decimalToBinary(42));   // → 101010
+console.log(decimalToBinary(0));    // → 0
+console.log(decimalToBinary(255));  // → 11111111
+function bigIntDecimalToBinary(n: bigint): string {
+  if (n === 0n) return '0';
+  let result = '';
+  let num = n;
+  while (num > 0n) {
+    result = (num & 1n).toString() + result; // `& 1n` is a fast bitwise test
+    num >>= 1n;   // shift right
+  }
+  return result;
 }
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-    const visited = new Set<ListNode<T>>();
+// 16 decimal → 10000 binary
+console.assert(decimalToBinary(16) === '10000');
 
-    let current: ListNode<T> | null = head;
-    while (current !== null) {
-        if (visited.has(current)) return true; // already seen
-        visited.add(current);
-        current = current.next;
-    }
-    return false;
-}
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b;  // 1 → 2 → 3
-b.next = c;
-c.next = a;  // cycle back to 1
-
-console.log(hasCycle(a));        // → true
-console.log(hasCycleWithSet(a)); // → true
+// 255 decimal → 11111111 binary
+console.assert(decimalToBinary(255) === '11111111');
