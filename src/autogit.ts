@@ -1,101 +1,81 @@
-// A node inside the trie
-class TrieNode {
-  // Map from a character to the next node in the path
-  children: Map<string, TrieNode> = new Map();
-
-  // Marks the end of a word
-  isEndOfWord: boolean = false;
-
-  constructor(public readonly char: string | null = null) {}
+class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
 }
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
 
-// The trie itself
-export class Trie {
-  private root = new TrieNode();
-
-  /** Inserts a word into the trie. */
-  insert(word: string): void {
-    if (!word) return;               // ignore empty strings
-    let node = this.root;
-
-    for (const ch of word) {
-      // Grab the child if it already exists; otherwise create a new node
-      let next = node.children.get(ch);
-      if (!next) {
-        next = new TrieNode(ch);
-        node.children.set(ch, next);
-      }
-      node = next;
-    }
-
-    // Mark that a complete word ends here
-    node.isEndOfWord = true;
-  }
-
-  /** Returns true if the word is in the trie. */
-  search(word: string): boolean {
-    if (!word) return false;
-    let node = this.root;
-
-    for (const ch of word) {
-      const next = node.children.get(ch);
-      if (!next) return false;      // path breaks → word absent
-      node = next;
-    }
-
-    return node.isEndOfWord;
-  }
-
-  /** Checks if any word in the trie starts with the given prefix. */
-  startsWith(prefix: string): boolean {
-    if (!prefix) return false;
-    let node = this.root;
-
-    for (const ch of prefix) {
-      const next = node.children.get(ch);
-      if (!next) return false;
-      node = next;
-    }
-
-    return true;
-  }
-
-  /** (Optional) Returns the list of all words in the trie that start with a given prefix. */
-  autocomplete(prefix: string): string[] {
-    const results: string[] = [];
-    let node = this.root;
-
-    // Walk to the node representing the prefix
-    for (const ch of prefix) {
-      const next = node.children.get(ch);
-      if (!next) return results;   // empty list if prefix not present
-      node = next;
-    }
-
-    // Depth‑first walk from that node, collecting words
-    const dfs = (n: TrieNode, acc: string) => {
-      if (n.isEndOfWord) results.push(acc);
-      for (const [ch, child] of n.children.entries()) {
-        dfs(child, acc + ch);
-      }
-    };
-
-    dfs(node, prefix);
-    return results;
-  }
+  get size() { return this._size; }
 }
-const trie = new Trie();
+append(value: T): void {
+  const newNode = new ListNode(value);
 
-trie.insert('cat');
-trie.insert('car');
-trie.insert('cart');
-trie.insert('dog');
+  if (!this.head) {          // empty list
+    this.head = this.tail = newNode;
+  } else {
+    if (this.tail) this.tail.next = newNode;
+    this.tail = newNode;
+  }
 
-console.log(trie.search('cat'));      // true
-console.log(trie.search('cab'));      // false
+  this._size++;
+}
+prepend(value: T): void {
+  const newNode = new ListNode(value, this.head);
+  this.head = newNode;
 
-console.log(trie.startsWith('ca'));   // true
-console.log(trie.startsWith('do'));   // true
-console.log(trie.startsWith('droll'));// false
+  if (!this.tail) this.tail = newNode;
+  this._size++;
+}
+remove(index: number): T | null {
+  if (index < 0 || index >= this._size) return null;
 
-console.log(trie.autocomplete('ca')); // ['cat', 'car', 'cart']
+  let current = this.head;
+  let prev: ListNode<T> | null = null;
+  let i = 0;
+
+  while (current && i < index) {
+    prev = current;
+    current = current.next;
+    i++;
+  }
+
+  if (!current) return null;
+
+  if (prev) prev.next = current.next;
+  else this.head = current.next;      // removed head
+
+  if (current === this.tail) this.tail = prev;
+  this._size--;
+  return current.value;
+}
+find(value: T): number {
+  let current = this.head;
+  let index = 0;
+
+  while (current) {
+    if (current.value === value) return index;
+    current = current.next;
+    index++;
+  }
+  return -1;  // not found
+}
+toArray(): T[] {
+  const result: T[] = [];
+  let current = this.head;
+  while (current) {
+    result.push(current.value);
+    current = current.next;
+  }
+  return result;
+}
+const list = new LinkedList<number>();
+
+list.append(10);
+list.append(20);
+list.prepend(5);
+
+console.log(list.toArray());     // [5, 10, 20]
+console.log(list.find(10));      // 1
+console.log(list.remove(0));     // 5
+console.log(list.toArray());     // [10, 20]
