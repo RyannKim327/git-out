@@ -1,61 +1,59 @@
 /**
- * Radix sort for 32‑bit unsigned integers.
- * Sorts in place and returns the sorted array for convenience.
+ * Fibonacci search for a sorted array of numbers.
+ * @param arr  - The sorted array (ascending).
+ * @param target - The value to locate.
+ * @returns The index of target in `arr`, or -1 if not found.
  */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length <= 1) return arr;          // already sorted
+function fibSearch(arr: number[], target: number): number {
+  const n = arr.length;
 
-  // Pick a base that gives a nice trade‑off between passes and bucket size.
-  // Base 256 (8 bits per pass) lets us use a Uint32Array for buckets.
-  const base = 256;
-  const maxBit = 32; // 32 bits for a signed int, but we only store positives here
+  /* ------- 1. Build a Fibonacci sequence long enough ---- */
+  // fibMm2 = fib(m‑2), fibMm1 = fib(m‑1), fibM   = fib(m)
+  let fibMm2 = 0; // (m-2)'th Fibonacci number
+  let fibMm1 = 1; // (m-1)'th Fibonacci number
+  let fibM   = fibMm2 + fibMm1; // m'th Fibonacci
 
-  // Number of passes, one per byte in this case.
-  const passes = maxBit / 8;
-
-  // Temporary array for intermediate results.
-  const temp = new Array<number>(arr.length);
-
-  // Helper: counts how many numbers have a certain digit value at a given byte.
-  const count = new Uint32Array(base);
-
-  for (let pass = 0; pass < passes; ++pass) {
-    // Reset counts.
-    count.fill(0);
-
-    // Count occurrences of each bucket value.
-    const shift = pass * 8;
-    for (const n of arr) {
-      const bucket = (n >> shift) & 0xff;
-      count[bucket]++;
-    }
-
-    // Compute cumulative counts => start indices in `temp`.
-    const startIdx = new Uint32Array(base);
-    let sum = 0;
-    for (let i = 0; i < base; ++i) {
-      startIdx[i] = sum;
-      sum += count[i];
-    }
-
-    // Place numbers into the correct bucket order.
-    for (const n of arr) {
-      const bucket = (n >> shift) & 0xff;
-      const idx = startIdx[bucket]++;
-      temp[idx] = n;
-    }
-
-    // Swap the source and destination for the next round.
-    [arr, temp] = [temp, arr];
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
   }
 
-  // After an even number of passes `arr` points to original input; the sorted
-  // result ends up in `arr`. If passes were odd, the sorted array will be in `temp`.
-  // Ensure we return the sorted array reference.
-  return arr.length === sizeOfInput ? arr : temp;
+  /* ------- 2. Mark the boundary of the eliminated range ------- */
+  // The offset is the index of the last removed element
+  let offset = -1;
+
+  /* ------- 3. While there are elements to investigate ----------- */
+  while (fibM > 1) {
+    // Check if fibMm2 is a valid index
+    const i = Math.min(offset + fibMm2, n - 1);
+
+    if (arr[i] === target) {
+      return i; // Found!
+    }
+
+    /* ----- Move the three Fibonacci variables down one step ----- */
+    if (arr[i] < target) {
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else {
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
+    }
+  }
+
+  /* ------- 4. Compare the last element in the range --------------- */
+  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
+  }
+
+  return -1; // Not found
 }
 
-/** Quick tests */
-const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log('unsorted:', unsorted);
-console.log('sorted:  ', radixSort([...unsorted])); // use spread to leave original intact
+/* ---- Quick demo ---- */
+const sorted = [3, 5, 8, 12, 19, 27, 34, 42, 56, 73, 91];
+console.log(fibSearch(sorted, 27)); // → 5
+console.log(fibSearch(sorted, 7));  // → -1
