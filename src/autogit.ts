@@ -1,59 +1,43 @@
-class ListNode {
-  val: number;
-  next: ListNode | null;
-
-  constructor(val: number, next: ListNode | null = null) {
-    this.val = val;
-    this.next = next;
-  }
-}
 /**
- * Returns the node where listA and listB intersect.
- * If they don't intersect, returns null.
+ * Returns the longest common *contiguous* substring of `a` and `b`.
+ *
+ * If there are multiple substrings with the same maximum length, the first
+ * one that appears in `a` is returned.
+ *
+ * Time:  O(a.length * b.length)
+ * Space: O(a.length * b.length)   (you can trim this to O(a.length) if you’re
+ *                                   hunting for a memory‑tight version)
  */
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  if (!headA || !headB) return null;
+export function longestCommonSubstring(a: string, b: string): string {
+  const aLen = a.length;
+  const bLen = b.length;
 
-  let pA: ListNode | null = headA;
-  let pB: ListNode | null = headB;
+  // A 2‑D array where dp[i][j] holds the length of the longest suffix that
+  // ends at a[i-1] and b[j-1].  We use 1‑based indexing to keep the math
+  // simple: dp[0][*] and dp[*][0] are zero by construction.
+  const dp: number[][] = Array.from({ length: aLen + 1 }, () =>
+    new Array(bLen + 1).fill(0)
+  );
 
-  // Continue until the two pointers either match or both become null.
-  while (pA !== pB) {
-    // Move to the next node; if we're at the end, jump to the other list's head.
-    pA = pA ? pA.next : headB;
-    pB = pB ? pB.next : headA;
+  let bestLen = 0;
+  let bestI = 0; // end index in `a`
+
+  for (let i = 1; i <= aLen; i++) {
+    for (let j = 1; j <= bLen; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > bestLen) {
+          bestLen = dp[i][j];
+          bestI = i; // slice stops at `i` (exclusive)
+        }
+      } else {
+        dp[i][j] = 0;
+      }
+    }
   }
 
-  return pA; // Either the intersection node or null.
+  return bestLen > 0 ? a.slice(bestI - bestLen, bestI) : '';
 }
-// Build two intersecting lists:
-// A: 1 → 3 → 5 → 7 → 9
-// B: 2 → 4 →        → 7 → 9
-//            ^<--- intersection starts here
-
-const common = new ListNode(7, new ListNode(9));
-
-const listA = new ListNode(1, new ListNode(3, new ListNode(5, common)));
-const listB = new ListNode(2, new ListNode(4, common));
-
-const intersection = getIntersectionNode(listA, listB);
-console.log(intersection?.val); // 7
-function getIntersectionNodeHash(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  const nodes = new Set<ListNode>();
-
-  for (let cur = headA; cur; cur = cur.next) {
-    nodes.add(cur);
-  }
-
-  for (let cur = headB; cur; cur = cur.next) {
-    if (nodes.has(cur)) return cur;
-  }
-
-  return null;
-}
+console.log(longestCommonSubstring('BANANA', 'ANANAB')); // "ANANA"
+console.log(longestCommonSubstring('hello', 'world'));   // ""
+console.log(longestCommonSubstring('', 'something'));    // ""
