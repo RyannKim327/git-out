@@ -1,60 +1,48 @@
-/**
- * Merges two consecutive sorted halves of `arr` into a single sorted segment.
- * `left` … start index of the first half
- * `mid`  … start index of the second half (i.e. left + size)
- * `right`… end index (exclusive) of the second half
- * The merged result is written back into `arr`.
- */
-function merge(
-  arr: number[],
-  left: number,
-  mid: number,
-  right: number,
-  temp: number[]
-) {
-  let i = left;   // index in first half
-  let j = mid;    // index in second half
-  let k = left;   // index in temp
+// 1️⃣  Define a comparison helper – most of the time you’ll just pass
+//     (a, b) => a < b for ascending order.
+type Comparator<T> = (a: T, b: T) => boolean;
 
-  while (i < mid && j < right) {
-    if (arr[i] <= arr[j]) temp[k++] = arr[i++];
-    else                   temp[k++] = arr[j++];
-  }
+// 2️⃣  The merge function – it expects two sorted arrays and pulls
+//     the smaller (according to the comparator) element out first.
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+  const result: T[] = [];
+  let i = 0,
+      j = 0;
 
-  // copy any remaining elements from the first half
-  while (i < mid) temp[k++] = arr[i++];
-  // anything left from the second half already sits in temp
-
-  // copy back to the original array
-  for (let p = left; p < right; ++p) arr[p] = temp[p];
-}
-
-/**
- * Iterative merge sort.
- * Works in O(n log n) time, O(n) auxiliary space for the temporary array.
- */
-export function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  if (n <= 1) return;                 // already sorted
-
-  const temp = new Array<number>(n);   // reuse this buffer
-
-  // subarray size starts at 1 (single elements) and doubles each pass
-  for (let sz = 1; sz < n; sz *= 2) {
-    // merge adjacent subarrays of size sz
-    for (let left = 0; left < n - sz; left += sz * 2) {
-      const mid   = left + sz;          // left + sz is the start of the 2nd half
-      const right = Math.min(left + sz * 2, n);
-      merge(arr, left, mid, right, temp);
+  while (i < left.length && j < right.length) {
+    if (cmp(left[i], right[j])) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
     }
   }
+
+  // One side still has items – splice the rest onto the result.
+  if (i < left.length) result.push(...left.slice(i));
+  if (j < right.length) result.push(...right.slice(j));
+
+  return result;
 }
 
-// ------------------------------------------------------------------
-// Example usage
-// ------------------------------------------------------------------
+// 3️⃣  The recursive mergeSort main function – sorts in place if you
+//     prefer not to allocate the full array during every merge.
+export function mergeSort<T>(arr: T[], cmp: Comparator<T> = (a, b) => a < b): T[] {
+  if (arr.length <= 1) return arr;     // Base case: nothing to do
 
-// Readable example – will sort the array in place
-const sample = [38, 27, 43, 3, 9, 82, 10];
-mergeSortIterative(sample);
-console.log(sample);  // [3, 9, 10, 27, 38, 43, 82]
+  const mid = Math.floor(arr.length / 2);
+  const left  = mergeSort(arr.slice(0, mid), cmp);
+  const right = mergeSort(arr.slice(mid),    cmp);
+
+  return merge(left, right, cmp);
+}
+// Numbers, ascending
+const sortedNumbers = mergeSort([8, 3, 5, 1, 9, 2]);
+
+// Strings, descending
+const sortedStrings = mergeSort(
+  ["banana", "apple", "cherry"],
+  (a, b) => a > b
+);
+
+console.log(sortedNumbers); // [1, 2, 3, 5, 8, 9]
+console.log(sortedStrings); // ["cherry", "banana", "apple"]
