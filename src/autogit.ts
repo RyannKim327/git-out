@@ -1,60 +1,85 @@
-/**
- * Rabin–Karp string search.
- *
- * @param text    the string to search in
- * @param pattern the string to find
- * @returns array of starting indices where pattern appears in text
- */
-export function rabinKarp(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-
-  if (m === 0 || m > n) {
-    return [];
-  }
-
-  const base = 256;            // Number of possible ASCII characters
-  const mod  = 101;            // A prime modulus – large enough for short strings
-
-  /* ----------  helper: convert a substring to a hash ------------ */
-  const hash = (str: string, len: number) => {
-    let h = 0;
-    for (let i = 0; i < len; i++) {
-      h = (h * base + str.charCodeAt(i)) % mod;
-    }
-    return h;
-  };
-
-  /* ----------  pre‑compute base^(m-1)  modulo mod -------------- */
-  let highPow = 1;                 // (base^(m‑1)) % mod
-  for (let i = 1; i <= m - 1; i++) {
-    highPow = (highPow * base) % mod;
-  }
-
-  /* ----------  initial hashes ----------------------------------- */
-  let patternHash = hash(pattern, m);
-  let windowHash  = hash(text, m);
-
-  const result: number[] = [];
-
-  /* ----------  main loop ---------------------------------------- */
-  for (let i = 0; i <= n - m; i++) {
-    // When hashes match we still do a string comparison to rule out collisions
-    if (patternHash === windowHash) {
-      if (text.substr(i, m) === pattern) {
-        result.push(i);
-      }
-    }
-
-    // Roll the hash: remove the leftmost character, add the new rightmost
-    if (i < n - m) {
-      windowHash =
-        // Remove leftmost char contribution
-        (windowHash - text.charCodeAt(i) * highPow % mod + mod) % mod; // keep positive
-      // Add next char
-      windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
-    }
-  }
-
-  return result;
+/* A node that lives inside the queue */
+class QueueNode<T> {
+  constructor(
+    public value: T,
+    public next: QueueNode<T> | null = null
+  ) {}
 }
+
+/* The queue itself */
+export class LinkedListQueue<T> {
+  // We keep pointers to both ends so that both enqueue
+  // (push) and dequeue (pop) stay O(1).
+  private head: QueueNode<T> | null = null; // front of the queue
+  private tail: QueueNode<T> | null = null; // rear of the queue
+  private _size = 0;
+
+  /** Insert a new value at the rear. */
+  enqueue(value: T): void {
+    const node = new QueueNode(value);
+
+    if (this.tail) {
+      // The queue already has at least one element
+      this.tail.next = node;
+      this.tail = node;
+    } else {
+      // Empty queue: head and tail become the new node
+      this.head = this.tail = node;
+    }
+
+    this._size++;
+  }
+
+  /** Remove and return the value at the front. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // Empty queue
+
+    const value = this.head.value;
+    this.head = this.head.next;
+
+    // If we just removed the last element, clear the tail too
+    if (!this.head) {
+      this.tail = null;
+    }
+
+    this._size--;
+    return value;
+  }
+
+  /** Peek at the front value without removing it. */
+  peek(): T | undefined {
+    return this.head ? this.head.value : undefined;
+  }
+
+  /** Number of elements currently in the queue. */
+  get size(): number {
+    return this._size;
+  }
+
+  /** Are there any elements? */
+  get isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** Remove everything from the queue. */
+  clear(): void {
+    this.head = null;
+    this.tail = null;
+    this._size = 0;
+  }
+}
+const queue = new LinkedListQueue<number>();
+
+queue.enqueue(1);
+queue.enqueue(2);
+queue.enqueue(3);
+
+console.log(queue.peek()); // 1
+console.log(queue.dequeue()); // 1
+console.log(queue.dequeue()); // 2
+console.log(queue.size); // 1
+
+queue.enqueue(4);
+console.log(queue.dequeue()); // 3
+console.log(queue.dequeue()); // 4
+console.log(queue.isEmpty); // true
