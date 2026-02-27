@@ -1,20 +1,13 @@
-function removeVowels(input: string): string {
-  // Vowels (both lower‑ and upper‑case) – feel free to add accented ones if you need
-  const vowels = /[aeiouAEIOU]/g;
-  return input.replace(vowels, '');
-}
-function removeVowels(input: string): string {
-  const result: string[] = [];
+// 1️⃣  Define the array (TypeScript knows it’s numbers)
+const nums: number[] = [42, 7, 13, 99, 29];
 
-  for (const char of input) {
-    if (!/[aeiouAEIOU]/.test(char)) {
-      result.push(char);
-    }
-  }
+// 2️⃣  Sort in place – ascending
+nums.sort((a, b) => a - b);   // -> [7, 13, 29, 42, 99]
+console.log('Ascending:', nums);
 
-  return result.join('');
-}
-const vowels = /[aeiouAEIOUÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝŸàáâãäåæçèéêëìíîïðñòóôõöøùúûüýÿ]/gu;
-const vowels = /\p{Script=Latin}\p{L}\b{vowel}/u; // not a real pattern – just an example
-const demo = "Hello World! 123";
-console.log(removeVowels(demo)); // "Hll Wrld! 123"
+// 3️⃣  If you want a new sorted array instead, copy first
+const ascending = [...nums].sort((a, b) => a - b);
+
+// 4️⃣  Descending order
+const descending = nums.slice().sort((a, b) => b - a); // -> [99, 42, 29, 13, 7]
+console.log('Descending:', descending);
