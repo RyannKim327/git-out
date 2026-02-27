@@ -1,36 +1,43 @@
-const original = [1, 2, 3, 2, 4, 1, 5];
+/**
+ * Binary search on a sorted array.
+ *
+ * @param arr   A sorted array that supports the supplied comparator.
+ * @param target The value you’re searching for.
+ * @param compare A comparison function: returns <0 if a<b, 0 if a===b, >0 if a>b.
+ * @returns The index of `target` if found; otherwise –1.
+ */
+export function binarySearch<T>(
+  arr: readonly T[],
+  target: T,
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): number {
+  let low = 0;
+  let high = arr.length - 1;
 
-// Method 1 – quick & crumb‑free
-const withoutDups = [...new Set(original)];
-console.log(withoutDups); // [1, 2, 3, 4, 5]
+  while (low <= high) {
+    // Use Math.floor to avoid overflow and keep mid an integer.
+    const mid = low + Math.floor((high - low) / 2);
+    const cmp = compare(arr[mid], target);
 
-// Method 2 – If you prefer a pure function that you can re‑use
-function uniq<T>(arr: T[]): T[] {
-  return [...new Set(arr)];
-}
-
-const uniqueColors = uniq(['red', 'green', 'red', 'blue']);
-function uniqBy<T, K>(arr: T[], keyFn: (item: T) => K): T[] {
-  const seen = new Set<K>();
-  const result: T[] = [];
-
-  for (const item of arr) {
-    const key = keyFn(item);
-    if (!seen.has(key)) {
-      seen.add(key);
-      result.push(item);
+    if (cmp === 0) {
+      return mid; // Found it!
+    } else if (cmp < 0) {
+      low = mid + 1; // Search right half
+    } else {
+      high = mid - 1; // Search left half
     }
   }
-  return result;
+
+  return -1; // Not found
 }
+// Example with numbers
+const nums = [3, 7, 12, 18, 25, 34];
+const index = binarySearch(nums, 18); // → 3
 
-// Example: removing duplicate users by id
-const users = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 1, name: 'Alicia' },
-];
-
-const uniqueUsers = uniqBy(users, u => u.id);
-console.log(uniqueUsers);
-// [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
+// Example with strings – note we pass a custom comparator for case‑insensitive search
+const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
+const idx = binarySearch(
+  words,
+  'CHeRry',
+  (a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' })
+); // → 2
