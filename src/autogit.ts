@@ -1,61 +1,61 @@
-export interface ListNode<T> {
-  val: T;               // the payload
-  next: ListNode<T> | null; // pointer to the next node
-}
 /**
- * Reverses a singly linked list.
- * @param head: the first node of the list (or null for an empty list)
- * @returns the new head of the reversed list
+ * Radix sort for 32‑bit unsigned integers.
+ * Sorts in place and returns the sorted array for convenience.
  */
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;   // will become the new head
-  let curr: ListNode<T> | null = head;   // current node being processed
+export function radixSort(arr: number[]): number[] {
+  if (arr.length <= 1) return arr;          // already sorted
 
-  while (curr) {
-    const nextTemp = curr.next; // keep reference to the next node
-    curr.next = prev;           // reverse the link
-    prev = curr;                // move prev forward
-    curr = nextTemp;            // move curr forward
+  // Pick a base that gives a nice trade‑off between passes and bucket size.
+  // Base 256 (8 bits per pass) lets us use a Uint32Array for buckets.
+  const base = 256;
+  const maxBit = 32; // 32 bits for a signed int, but we only store positives here
+
+  // Number of passes, one per byte in this case.
+  const passes = maxBit / 8;
+
+  // Temporary array for intermediate results.
+  const temp = new Array<number>(arr.length);
+
+  // Helper: counts how many numbers have a certain digit value at a given byte.
+  const count = new Uint32Array(base);
+
+  for (let pass = 0; pass < passes; ++pass) {
+    // Reset counts.
+    count.fill(0);
+
+    // Count occurrences of each bucket value.
+    const shift = pass * 8;
+    for (const n of arr) {
+      const bucket = (n >> shift) & 0xff;
+      count[bucket]++;
+    }
+
+    // Compute cumulative counts => start indices in `temp`.
+    const startIdx = new Uint32Array(base);
+    let sum = 0;
+    for (let i = 0; i < base; ++i) {
+      startIdx[i] = sum;
+      sum += count[i];
+    }
+
+    // Place numbers into the correct bucket order.
+    for (const n of arr) {
+      const bucket = (n >> shift) & 0xff;
+      const idx = startIdx[bucket]++;
+      temp[idx] = n;
+    }
+
+    // Swap the source and destination for the next round.
+    [arr, temp] = [temp, arr];
   }
 
-  // At this point, prev points to the new head
-  return prev;
-}
-export function reverseListRec<T>(node: ListNode<T> | null): ListNode<T> | null {
-  if (!node || !node.next) {
-    return node; // new head (either the original head if list is 1 or 0 nodes)
-  }
-
-  const newHead = reverseListRec(node.next);   // recurse to the end
-  node.next.next = node;   // make the next node point back to the current one
-  node.next = null;        // sever original forward link
-  return newHead;
-}
-// Helper to build a list [1, 2, 3]
-function buildList(arr: number[]): ListNode<number> | null {
-  let head: ListNode<number> | null = null;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = { val: arr[i], next: head };
-  }
-  return head;
+  // After an even number of passes `arr` points to original input; the sorted
+  // result ends up in `arr`. If passes were odd, the sorted array will be in `temp`.
+  // Ensure we return the sorted array reference.
+  return arr.length === sizeOfInput ? arr : temp;
 }
 
-// Helper to convert list back to array for easy viewing
-function toArray<T>(head: ListNode<T> | null): T[] {
-  const result: T[] = [];
-  let cur = head;
-  while (cur) {
-    result.push(cur.val);
-    cur = cur.next;
-  }
-  return result;
-}
-
-// Demo
-const original = buildList([1, 2, 3, 4, 5]);
-console.log('original:', toArray(original));
-
-const reversed = reverseList(original);
-console.log('reversed:', toArray(reversed));
-original: [1, 2, 3, 4, 5]
-reversed: [5, 4, 3, 2, 1]
+/** Quick tests */
+const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log('unsorted:', unsorted);
+console.log('sorted:  ', radixSort([...unsorted])); // use spread to leave original intact
