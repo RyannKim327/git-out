@@ -1,64 +1,38 @@
-/**
- * Basic node definition for a singly‑linked list.
- */
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+// fortune.ts
+import { createInterface } from 'readline';
 
-/**
- * Returns `true` if the list reads the same forwards and backwards.
- *
- * Time   : O(n) – we traverse the list a constant number of times.
- * Space  : O(1) – we only use a few pointer variables.
- */
-function isPalindrome<T>(head: ListNode<T> | null): boolean {
-  if (!head || !head.next) return true;   // empty or single‑node list
+// Set up a simple REPL‑style prompt
+const rl = createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-  // 1. Find the middle of the list
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+console.log('🃏 Welcome to the Random Fortune Machine!');
+
+// Ask the user for a number
+rl.question('Enter a number (0–9) and press Enter: ', (answer) => {
+  // Try to parse the input as an integer
+  const num = parseInt(answer.trim(), 10);
+
+  if (isNaN(num) || num < 0 || num > 9) {
+    console.log('❌ That’s not a valid single digit between 0 and 9.');
+  } else {
+    // Pick a fortune from a tiny list
+    const fortunes = [
+      "You'll find a penny on the sidewalk.",
+      "A surprise call will brighten your day.",
+      "Today is a great day to start learning something new.",
+      "You’ll discover a hidden talent for drawing.",
+      "A forgotten receipt will pop up in your inbox.",
+      "A random act of kindness will return to you.",
+      "You’ll taste your favorite food in an unexpected way.",
+      "A new friendship is just a conversation away.",
+      "You’ll hit a traffic light and notice your neighbor’s cat.",
+      "Today you will finally finish that project you’ve shelved."
+    ];
+
+    console.log(`🔮 Fortune for ${num}: ${fortunes[num]}`);
   }
 
-  // 2. Reverse the second half (starting from slow.next)
-  let prev: ListNode<T> | null = null;
-  let curr: ListNode<T> | null = slow.next;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  // `prev` is now the head of the reversed second half
-
-  // 3. Compare the first half with the reversed second half
-  let p1 = head;
-  let p2 = prev;
-  while (p2) {               // only need to go as far as the short half
-    if (p1.val !== p2.val) return false;
-    p1 = p1.next!;
-    p2 = p2.next!;
-  }
-
-  // Optional: restore the list to its original order (not required for the answer)
-  // reverse(prev) again and reattach to `slow.next`
-
-  return true;
-}
-const build = (...vals: number[]): ListNode<number> | null => {
-  let head: ListNode<number> | null = null;
-  let tail: ListNode<number> | null = null;
-  for (const v of vals) {
-    const node = new ListNode(v);
-    if (!head) head = node;
-    else tail!.next = node;
-    tail = node;
-  }
-  return head;
-};
-
-console.log(isPalindrome(build(1, 2, 3, 2, 1))); // true
-console.log(isPalindrome(build(1, 2, 2, 1)));      // true
-console.log(isPalindrome(build(1, 2, 3, 4, 5))); // false
+  rl.close();
+});
