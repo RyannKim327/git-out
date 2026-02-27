@@ -1,85 +1,52 @@
-/** 
- * At its core a node only needs to expose
- *   - a unique identifier (for visited‑tracking)
- *   - a way to enumerate its successors
- */
-export interface Node<T = any> {
-  id: string | number;
-  // Optional: depth, parent, cost – whatever your context needs
-  getSuccessors(): Node[];
+interface TreeNode<T = number> {
+  val: T;                // single value (you can change the type)
+  left: TreeNode<T> | null;
+  right: TreeNode<T> | null;
 }
-export interface BinaryNode<T = any> extends Node {
-  left?: BinaryNode;
-  right?: BinaryNode;
-  getSuccessors(): BinaryNode[] {
-    return [this.left, this.right].filter(Boolean);
-  }
+const root: TreeNode = {
+  val: 10,
+  left: { val: 5, left: null, right: null },
+  right: { val: 15, left: null, right: null },
+};
+function maxDepth<T>(node: TreeNode<T> | null): number {
+  if (!node) return 0;
+  const leftDepth = maxDepth(node.left);
+  const rightDepth = maxDepth(node.right);
+  return Math.max(leftDepth, rightDepth) + 1;
 }
-/**
- * depthLimitedSearch
- * ------------------
- * Classic depth‑first search that stops when a given depth threshold is reached.
- *
- * @param root the node to start from
- * @param goalTest a predicate that returns true for the desired node
- * @param depthLimit the maximum depth to explore (0 = only the root)
- * @returns the first node that satisfies goalTest, or null if not found
- */
-export function depthLimitedSearch<T>(
-  root: Node<T>,
-  goalTest: (node: Node<T>) => boolean,
-  depthLimit: number
-): Node<T> | null {
+function maxDepthIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
 
-  // A simple iterative DFS pile that also carries the current depth.
-  const stack: { node: Node<T>; depth: number }[] = [];
-  const visited = new Set<string | number>(); // avoid cycles
+  const queue: TreeNode<T>[] = [root];
+  let depth = 0;
 
-  stack.push({ node: root, depth: 0 });
+  while (queue.length) {
+    const levelSize = queue.length; // nodes at current depth
+    depth++;                        // we’re going to finish this level
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!; // pop returns a value, guaranteed not undefined
-
-    // skip already visited nodes (useful for graphs)
-    if (visited.has(node.id)) continue;
-    visited.add(node.id);
-
-    if (goalTest(node)) return node;   // success!
-
-    // Recurse only if we haven't hit the limit yet
-    if (depth < depthLimit) {
-      // Add successors in reverse order so leftmost child is processed first
-      const successors = node.getSuccessors();
-      for (let i = successors.length - 1; i >= 0; i--) {
-        stack.push({ node: successors[i], depth: depth + 1 });
-      }
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift() as TreeNode<T>;
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
     }
   }
 
-  // If we exhaust the stack without finding the goal
-  return null;
+  return depth;
 }
-// 1‑line node type with a simple integer value
-class GraphNode implements Node {
-  constructor(public id: number, public value: number) {}
-  getSuccessors(): GraphNode[] {
-    const n = this.value;
-    return [
-      new GraphNode(n * 2, n * 2),
-      new GraphNode(n * 2 + 1, n * 2 + 1),
-    ];
-  }
-}
+// build a quick tree
+const tree: TreeNode = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: null, right: null },
+    right: null,
+  },
+  right: {
+    val: 3,
+    left: null,
+    right: { val: 5, left: null, right: null },
+  },
+};
 
-const start = new GraphNode(1, 1);
-const goalIf = (node: GraphNode) => node.value === 19;
-
-const found = depthLimitedSearch(start, goalIf, 4);
-
-console.log(found ? `found ${found.value}` : 'not found');
-          1
-        /   \
-       2     3
-      / \   / \
-     4  5  6  7
-    / \ ...   ...
+console.log(maxDepth(tree));      // -> 3
+console.log(maxDepthIter(tree));  // -> 3
