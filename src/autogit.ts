@@ -1,61 +1,54 @@
-export interface ListNode<T> {
-  val: T;               // the payload
-  next: ListNode<T> | null; // pointer to the next node
+// 1️⃣  Basic node interface – replace / extend it to fit your model
+export interface TreeNode<T> {
+  value: T;                 // the payload stored in the node
+  children?: TreeNode<T>[]>; // can be unset (leaf) or an empty array for a leaf
 }
-/**
- * Reverses a singly linked list.
- * @param head: the first node of the list (or null for an empty list)
- * @returns the new head of the reversed list
- */
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;   // will become the new head
-  let curr: ListNode<T> | null = head;   // current node being processed
 
-  while (curr) {
-    const nextTemp = curr.next; // keep reference to the next node
-    curr.next = prev;           // reverse the link
-    prev = curr;                // move prev forward
-    curr = nextTemp;            // move curr forward
+// 2️⃣  The actual algorithm
+export function depthLimitedSearch<T>(
+  root: TreeNode<T>,           // root of the tree
+  target: T,                   // value we’re looking for
+  depthLimit: number,          // how far the search may go (0 = only the root)
+  equals: (a: T, b: T) => boolean = (a, b) => a === b
+): TreeNode<T> | null {
+  if (depthLimit < 0) return null; // sanity check
+
+  // stack holds {node, depth}
+  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
+    { node: root, depth: 0 },
+  ];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!; // pop from top of stack
+
+    // 3️⃣  Stop expanding when the depth limit is reached
+    if (depth > depthLimit) {
+      continue;
+    }
+
+    // 4️⃣  Check the current node
+    if (equals(node.value, target)) {
+      return node;
+    }
+
+    // 5️⃣  Push children (DFS) – children that are undefined are skipped
+    if (node.children) {
+      // depth + 1 because we’ll go down one edge
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        stack.push({ node: node.children[i], depth: depth + 1 });
+      }
+    }
   }
 
-  // At this point, prev points to the new head
-  return prev;
+  return null; // nothing found within the depth limit
 }
-export function reverseListRec<T>(node: ListNode<T> | null): ListNode<T> | null {
-  if (!node || !node.next) {
-    return node; // new head (either the original head if list is 1 or 0 nodes)
-  }
+const tree: TreeNode<string> = {
+  value: "A",
+  children: [
+    { value: "B", children: [{ value: "D" }, { value: "E" }] },
+    { value: "C", children: [{ value: "F" }, { value: "G" }] },
+  ],
+};
 
-  const newHead = reverseListRec(node.next);   // recurse to the end
-  node.next.next = node;   // make the next node point back to the current one
-  node.next = null;        // sever original forward link
-  return newHead;
-}
-// Helper to build a list [1, 2, 3]
-function buildList(arr: number[]): ListNode<number> | null {
-  let head: ListNode<number> | null = null;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = { val: arr[i], next: head };
-  }
-  return head;
-}
-
-// Helper to convert list back to array for easy viewing
-function toArray<T>(head: ListNode<T> | null): T[] {
-  const result: T[] = [];
-  let cur = head;
-  while (cur) {
-    result.push(cur.val);
-    cur = cur.next;
-  }
-  return result;
-}
-
-// Demo
-const original = buildList([1, 2, 3, 4, 5]);
-console.log('original:', toArray(original));
-
-const reversed = reverseList(original);
-console.log('reversed:', toArray(reversed));
-original: [1, 2, 3, 4, 5]
-reversed: [5, 4, 3, 2, 1]
+console.log(depthLimitedSearch(tree, "F", 1)); // null (needs depth 2)
+console.log(depthLimitedSearch(tree, "F", 2)); // node with value "F"
