@@ -1,64 +1,59 @@
 /**
- * Basic node definition for a singly‑linked list.
+ * Fibonacci search for a sorted array of numbers.
+ * @param arr  - The sorted array (ascending).
+ * @param target - The value to locate.
+ * @returns The index of target in `arr`, or -1 if not found.
  */
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+function fibSearch(arr: number[], target: number): number {
+  const n = arr.length;
+
+  /* ------- 1. Build a Fibonacci sequence long enough ---- */
+  // fibMm2 = fib(m‑2), fibMm1 = fib(m‑1), fibM   = fib(m)
+  let fibMm2 = 0; // (m-2)'th Fibonacci number
+  let fibMm1 = 1; // (m-1)'th Fibonacci number
+  let fibM   = fibMm2 + fibMm1; // m'th Fibonacci
+
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
+  }
+
+  /* ------- 2. Mark the boundary of the eliminated range ------- */
+  // The offset is the index of the last removed element
+  let offset = -1;
+
+  /* ------- 3. While there are elements to investigate ----------- */
+  while (fibM > 1) {
+    // Check if fibMm2 is a valid index
+    const i = Math.min(offset + fibMm2, n - 1);
+
+    if (arr[i] === target) {
+      return i; // Found!
+    }
+
+    /* ----- Move the three Fibonacci variables down one step ----- */
+    if (arr[i] < target) {
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else {
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
+    }
+  }
+
+  /* ------- 4. Compare the last element in the range --------------- */
+  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
+  }
+
+  return -1; // Not found
 }
 
-/**
- * Returns `true` if the list reads the same forwards and backwards.
- *
- * Time   : O(n) – we traverse the list a constant number of times.
- * Space  : O(1) – we only use a few pointer variables.
- */
-function isPalindrome<T>(head: ListNode<T> | null): boolean {
-  if (!head || !head.next) return true;   // empty or single‑node list
-
-  // 1. Find the middle of the list
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  // 2. Reverse the second half (starting from slow.next)
-  let prev: ListNode<T> | null = null;
-  let curr: ListNode<T> | null = slow.next;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  // `prev` is now the head of the reversed second half
-
-  // 3. Compare the first half with the reversed second half
-  let p1 = head;
-  let p2 = prev;
-  while (p2) {               // only need to go as far as the short half
-    if (p1.val !== p2.val) return false;
-    p1 = p1.next!;
-    p2 = p2.next!;
-  }
-
-  // Optional: restore the list to its original order (not required for the answer)
-  // reverse(prev) again and reattach to `slow.next`
-
-  return true;
-}
-const build = (...vals: number[]): ListNode<number> | null => {
-  let head: ListNode<number> | null = null;
-  let tail: ListNode<number> | null = null;
-  for (const v of vals) {
-    const node = new ListNode(v);
-    if (!head) head = node;
-    else tail!.next = node;
-    tail = node;
-  }
-  return head;
-};
-
-console.log(isPalindrome(build(1, 2, 3, 2, 1))); // true
-console.log(isPalindrome(build(1, 2, 2, 1)));      // true
-console.log(isPalindrome(build(1, 2, 3, 4, 5))); // false
+/* ---- Quick demo ---- */
+const sorted = [3, 5, 8, 12, 19, 27, 34, 42, 56, 73, 91];
+console.log(fibSearch(sorted, 27)); // → 5
+console.log(fibSearch(sorted, 7));  // → -1
