@@ -1,88 +1,74 @@
-/* ------------------------------------------------------------------
-   Node definitions (customise to your data shape)
-------------------------------------------------------------------- */
-export interface Node {
-  id: string | number;
-  /* Any other properties you need – e.g. parent, distance, etc. */
-}
+/**
+ * Median of two sorted arrays
+ * A and B can be empty, but not both.
+ */
+export function medianOfTwoSortedArrays(
+  a: number[],
+  b: number[]
+): number {
+  // Ensure a is the smaller array; this keeps the binary‑search bounds tight.
+  const [A, B] = a.length <= b.length ? [a, b] : [b, a];
+  const m = A.length;
+  const n = B.length;
+  const half = Math.floor((m + n + 1) / 2);
 
-export interface Graph {
-  /** Returns the neighbours of a given node ID. */
-  neighbours(id: Node["id"]): Node[];
+  let low = 0;
+  let high = m;
 
-  /** Optional: expands a node – useful if nodes need lazy loading. */
-  expand?(node: Node): void;
-}
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2); // elements taken from A
+    const j = half - i;                     // elements taken from B
 
-/* ------------------------------------------------------------------
-   Breadth‑Limited Search
-------------------------------------------------------------------- */
-type GoalPredicate<T> = (node: T) => boolean;
+    const Aleft  = i === 0     ? Number.NEGATIVE_INFINITY : A[i - 1];
+    const Aright = i === m     ? Number.POSITIVE_INFINITY : A[i];
 
-export function breadthLimitedSearch<T extends Node>(
-  graph: Graph,
-  root: T,
-  goal: GoalPredicate<T>,
-  maxDepth: number
-): T | null {
-  // A queue that holds tuples: [node, depth]
-  const frontier: Array<[T, number]> = [[root, 0]];
-  const visited = new Set<T["id"]>();
+    const Bleft  = j === 0     ? Number.NEGATIVE_INFINITY : B[j - 1];
+    const Bright = j === n     ? Number.POSITIVE_INFINITY : B[j];
 
-  visited.add(root.id);
-
-  while (frontier.length !== 0) {
-    const [current, depth] = frontier.shift()!; // pop front
-
-    // Goal hit
-    if (goal(current)) return current;
-
-    // If we reached the depth ceiling, skip expansion
-    if (depth === maxDepth) continue;
-
-    // Expand or otherwise load neighbours if you need lazy loading
-    if (graph.expand) graph.expand(current);
-
-    const neighbors = graph.neighbours(current.id);
-    for (const child of neighbors) {
-      if (!visited.has(child.id)) {
-        visited.add(child.id);
-        frontier.push([child, depth + 1]);
+    // i is perfect if left side ≤ right side
+    if (Aleft <= Bright && Bleft <= Aright) {
+      // Odd total → max of left side
+      if ((m + n) % 2 === 1) {
+        return Math.max(Aleft, Bleft);
       }
+
+      // Even total → average of two middle values
+      return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
+    } else if (Aleft > Bright) {
+      // i too big, shift left
+      high = i - 1;
+    } else {
+      // i too small, shift right
+      low = i + 1;
     }
   }
 
-  // No solution within the depth limit
-  return null;
+  throw new Error('Input arrays are not sorted or invalid.');
 }
-// Simple graph representation
-class MyGraph implements Graph {
-  nodes: Record<string, Node> = {};
+export function medianOfTwoSortedArraysSimple(
+  a: number[],
+  b: number[]
+): number {
+  const merged: number[] = [];
+  let i = 0, j = 0;
 
-  constructor(nodeList: Node[]) {
-    nodeList.forEach(node => (this.nodes[node.id] = node));
+  while (i < a.length || j < b.length) {
+    if (i >= a.length) {
+      merged.push(b[j++]);
+    } else if (j >= b.length) {
+      merged.push(a[i++]);
+    } else if (a[i] <= b[j]) {
+      merged.push(a[i++]);
+    } else {
+      merged.push(b[j++]);
+    }
   }
 
-  neighbours(id: string | number) {
-    // Example: assume every node has a "children" array of ids
-    const node = this.nodes[id];
-    return (node as any).children?.map((cId: string | number) => this.nodes[cId]) ?? [];
-  }
+  const len = merged.length;
+  if (len % 2 === 1) return merged[Math.floor(len / 2)];
+  return (merged[len / 2 - 1] + merged[len / 2]) / 2;
 }
+const arr1 = [1, 3, 5, 9];
+const arr2 = [2, 4, 6, 8, 10];
 
-// Example nodes
-const nodes: Node[] = [
-  { id: 1, ...( { children: [2, 3] } as any ) },
-  { id: 2, ...( { children: [4] } as any ) },
-  { id: 3 },
-  { id: 4 }
-];
-
-const graph = new MyGraph(nodes);
-
-const root = graph.nodes[1];
-const goal = (n: Node) => n.id === 4;
-const depthLimit = 2;
-
-const solution = breadthLimitedSearch(graph, root, goal, depthLimit);
-console.log(solution); // Node with id 4 (found at depth 2)
+console.log(medianOfTwoSortedArrays(arr1, arr2)); // 5.5
