@@ -1,81 +1,60 @@
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+/**
+ * Rabin–Karp string search.
+ *
+ * @param text    the string to search in
+ * @param pattern the string to find
+ * @returns array of starting indices where pattern appears in text
+ */
+export function rabinKarp(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
 
-  get size() { return this._size; }
-}
-append(value: T): void {
-  const newNode = new ListNode(value);
-
-  if (!this.head) {          // empty list
-    this.head = this.tail = newNode;
-  } else {
-    if (this.tail) this.tail.next = newNode;
-    this.tail = newNode;
+  if (m === 0 || m > n) {
+    return [];
   }
 
-  this._size++;
-}
-prepend(value: T): void {
-  const newNode = new ListNode(value, this.head);
-  this.head = newNode;
+  const base = 256;            // Number of possible ASCII characters
+  const mod  = 101;            // A prime modulus – large enough for short strings
 
-  if (!this.tail) this.tail = newNode;
-  this._size++;
-}
-remove(index: number): T | null {
-  if (index < 0 || index >= this._size) return null;
+  /* ----------  helper: convert a substring to a hash ------------ */
+  const hash = (str: string, len: number) => {
+    let h = 0;
+    for (let i = 0; i < len; i++) {
+      h = (h * base + str.charCodeAt(i)) % mod;
+    }
+    return h;
+  };
 
-  let current = this.head;
-  let prev: ListNode<T> | null = null;
-  let i = 0;
-
-  while (current && i < index) {
-    prev = current;
-    current = current.next;
-    i++;
+  /* ----------  pre‑compute base^(m-1)  modulo mod -------------- */
+  let highPow = 1;                 // (base^(m‑1)) % mod
+  for (let i = 1; i <= m - 1; i++) {
+    highPow = (highPow * base) % mod;
   }
 
-  if (!current) return null;
+  /* ----------  initial hashes ----------------------------------- */
+  let patternHash = hash(pattern, m);
+  let windowHash  = hash(text, m);
 
-  if (prev) prev.next = current.next;
-  else this.head = current.next;      // removed head
+  const result: number[] = [];
 
-  if (current === this.tail) this.tail = prev;
-  this._size--;
-  return current.value;
-}
-find(value: T): number {
-  let current = this.head;
-  let index = 0;
+  /* ----------  main loop ---------------------------------------- */
+  for (let i = 0; i <= n - m; i++) {
+    // When hashes match we still do a string comparison to rule out collisions
+    if (patternHash === windowHash) {
+      if (text.substr(i, m) === pattern) {
+        result.push(i);
+      }
+    }
 
-  while (current) {
-    if (current.value === value) return index;
-    current = current.next;
-    index++;
+    // Roll the hash: remove the leftmost character, add the new rightmost
+    if (i < n - m) {
+      windowHash =
+        // Remove leftmost char contribution
+        (windowHash - text.charCodeAt(i) * highPow % mod + mod) % mod; // keep positive
+      // Add next char
+      windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
+    }
   }
-  return -1;  // not found
-}
-toArray(): T[] {
-  const result: T[] = [];
-  let current = this.head;
-  while (current) {
-    result.push(current.value);
-    current = current.next;
-  }
+
   return result;
 }
-const list = new LinkedList<number>();
-
-list.append(10);
-list.append(20);
-list.prepend(5);
-
-console.log(list.toArray());     // [5, 10, 20]
-console.log(list.find(10));      // 1
-console.log(list.remove(0));     // 5
-console.log(list.toArray());     // [10, 20]
