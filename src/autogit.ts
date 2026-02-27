@@ -1,143 +1,101 @@
-// 1️⃣  Bucket element (used for chaining)
-interface BucketItem<K, V> {
-  key: K;
-  value: V;
-  next?: BucketItem<K, V>;
+// A node inside the trie
+class TrieNode {
+  // Map from a character to the next node in the path
+  children: Map<string, TrieNode> = new Map();
+
+  // Marks the end of a word
+  isEndOfWord: boolean = false;
+
+  constructor(public readonly char: string | null = null) {}
 }
 
-// 2️⃣  Hash table implementation
-class HashTable<K extends string | number, V> {
-  // Choose a prime number for better distribution
-  private readonly bucketCount = 53;
-  private readonly buckets: Array<BucketItem<K, V> | undefined> = [];
+// The trie itself
+export class Trie {
+  private root = new TrieNode();
 
-  constructor() {
-    // Initialize buckets array
-    this.buckets.length = this.bucketCount;
-  }
+  /** Inserts a word into the trie. */
+  insert(word: string): void {
+    if (!word) return;               // ignore empty strings
+    let node = this.root;
 
-  /* ---------- 🔑 Helper: hash function ---------- */
-  // Works for string & number keys; you can add more types if wanted.
-  private hash(key: K): number {
-    const str = key.toString();
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash * 31 + str.charCodeAt(i)) >>> 0; // unsigned 32‑bit arithmetic
-    }
-    return hash % this.bucketCount;
-  }
-
-  /* ---------- 🔧 Operations ---------- */
-
-  set(key: K, value: V): void {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-
-    // If the bucket is empty, insert directly
-    if (!node) {
-      this.buckets[idx] = { key, value };
-      return;
-    }
-
-    // Otherwise iterate to find key or append at end
-    let prev: BucketItem<K, V> | undefined;
-    while (node) {
-      if (node.key === key) {
-        node.value = value; // overwrite
-        return;
+    for (const ch of word) {
+      // Grab the child if it already exists; otherwise create a new node
+      let next = node.children.get(ch);
+      if (!next) {
+        next = new TrieNode(ch);
+        node.children.set(ch, next);
       }
-      prev = node;
-      node = node.next;
+      node = next;
     }
 
-    prev!.next = { key, value }; // add new node at end
+    // Mark that a complete word ends here
+    node.isEndOfWord = true;
   }
 
-  get(key: K): V | undefined {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
+  /** Returns true if the word is in the trie. */
+  search(word: string): boolean {
+    if (!word) return false;
+    let node = this.root;
 
-    while (node) {
-      if (node.key === key) return node.value;
-      node = node.next;
+    for (const ch of word) {
+      const next = node.children.get(ch);
+      if (!next) return false;      // path breaks → word absent
+      node = next;
     }
 
-    return undefined; // not found
+    return node.isEndOfWord;
   }
 
-  delete(key: K): boolean {
-    const idx = this.hash(key);
-    let node = this.buckets[idx];
-    let prev: BucketItem<K, V> | undefined;
+  /** Checks if any word in the trie starts with the given prefix. */
+  startsWith(prefix: string): boolean {
+    if (!prefix) return false;
+    let node = this.root;
 
-    while (node) {
-      if (node.key === key) {
-        if (!prev) {
-          // first node in bucket
-          this.buckets[idx] = node.next;
-        } else {
-          prev.next = node.next;
-        }
-        return true;
+    for (const ch of prefix) {
+      const next = node.children.get(ch);
+      if (!next) return false;
+      node = next;
+    }
+
+    return true;
+  }
+
+  /** (Optional) Returns the list of all words in the trie that start with a given prefix. */
+  autocomplete(prefix: string): string[] {
+    const results: string[] = [];
+    let node = this.root;
+
+    // Walk to the node representing the prefix
+    for (const ch of prefix) {
+      const next = node.children.get(ch);
+      if (!next) return results;   // empty list if prefix not present
+      node = next;
+    }
+
+    // Depth‑first walk from that node, collecting words
+    const dfs = (n: TrieNode, acc: string) => {
+      if (n.isEndOfWord) results.push(acc);
+      for (const [ch, child] of n.children.entries()) {
+        dfs(child, acc + ch);
       }
-      prev = node;
-      node = node.next;
-    }
+    };
 
-    return false; // key absent
-  }
-
-  keys(): K[] {
-    const res: K[] = [];
-    for (const bucket of this.buckets) {
-      let node = bucket;
-      while (node) {
-        res.push(node.key);
-        node = node.next;
-      }
-    }
-    return res;
-  }
-
-  values(): V[] {
-    const res: V[] = [];
-    for (const bucket of this.buckets) {
-      let node = bucket;
-      while (node) {
-        res.push(node.value);
-        node = node.next;
-      }
-    }
-    return res;
-  }
-
-  // Optional: iteration in for…of style
-  *entries(): Generator<[K, V]> {
-    for (const bucket of this.buckets) {
-      let node = bucket;
-      while (node) {
-        yield [node.key, node.value];
-        node = node.next;
-      }
-    }
+    dfs(node, prefix);
+    return results;
   }
 }
+const trie = new Trie();
 
-// ---------- Demo ----------
-const ht = new HashTable<string, number>();
+trie.insert('cat');
+trie.insert('car');
+trie.insert('cart');
+trie.insert('dog');
 
-ht.set('apple', 3);
-ht.set('banana', 7);
-ht.set('orange', 5);
-ht.set('apple', 10); // overwrite
+console.log(trie.search('cat'));      // true
+console.log(trie.search('cab'));      // false
 
-console.log(ht.get('apple')); // 10
-console.log(ht.get('banana')); // 7
-console.log(ht.get('missing')); // undefined
+console.log(trie.startsWith('ca'));   // true
+console.log(trie.startsWith('do'));   // true
+console.log(trie.startsWith('droll'));// false
 
-ht.delete('orange');
-console.log(ht.keys()); // ['apple', 'banana']
-
-for (const [k, v] of ht.entries()) {
-  console.log(`key=${k}, value=${v}`);
-}
+console.log(trie.autocomplete('ca')); // ['cat', 'car', 'cart']
