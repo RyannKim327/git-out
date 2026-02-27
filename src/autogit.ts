@@ -1,21 +1,37 @@
-/**
- * Returns the mean (average) of an array of numbers.
- * If the array is empty, it throws an error; you can change that behavior if you prefer.
- */
-function mean(nums: number[]): number {
-  if (nums.length === 0) {
-    throw new Error("Cannot compute the mean of an empty array");
+// random-joke.ts
+import fetch from 'node-fetch';          // npm i node-fetch@2
+import { Console } from 'console';
+
+interface Joke {
+  id: number;
+  type: string;
+  setup: string;
+  punchline: string;
+}
+
+async function fetchRandomJoke(): Promise<Joke> {
+  const res = await fetch('https://official-joke-api.appspot.com/random_joke');
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} – failed to fetch joke`);
   }
 
-  const sum = nums.reduce((acc, v) => acc + v, 0);
-  return sum / nums.length;
+  const data: Joke = await res.json();
+
+  return data;
 }
-const values = [4, 8, 15, 16, 23, 42];
-console.log(mean(values)); // 18.833333333333332
-function meanWhenPossible(nums: number[]): number {
-  if (nums.length === 0) {
-    return NaN;
+
+async function run() {
+  try {
+    const joke = await fetchRandomJoke();
+
+    console.log('😂 Here’s something to make you smile!');
+    console.log(`  ${joke.setup}`);
+    console.log(`   – ${joke.punchline}`);
+  } catch (err: any) {
+    console.error('Oops! Something went wrong:');
+    console.error(err.message ?? err);
   }
-  return nums.reduce((acc, v) => acc + v, 0) / nums.length;
 }
-console.assert(mean([2, 4, 6]) === 4, "The mean should be 4");
+
+run();
