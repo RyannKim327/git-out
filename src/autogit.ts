@@ -1,37 +1,36 @@
-// random-joke.ts
-import fetch from 'node-fetch';          // npm i node-fetch@2
-import { Console } from 'console';
+const original = [1, 2, 3, 2, 4, 1, 5];
 
-interface Joke {
-  id: number;
-  type: string;
-  setup: string;
-  punchline: string;
+// Method 1 – quick & crumb‑free
+const withoutDups = [...new Set(original)];
+console.log(withoutDups); // [1, 2, 3, 4, 5]
+
+// Method 2 – If you prefer a pure function that you can re‑use
+function uniq<T>(arr: T[]): T[] {
+  return [...new Set(arr)];
 }
 
-async function fetchRandomJoke(): Promise<Joke> {
-  const res = await fetch('https://official-joke-api.appspot.com/random_joke');
+const uniqueColors = uniq(['red', 'green', 'red', 'blue']);
+function uniqBy<T, K>(arr: T[], keyFn: (item: T) => K): T[] {
+  const seen = new Set<K>();
+  const result: T[] = [];
 
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} – failed to fetch joke`);
+  for (const item of arr) {
+    const key = keyFn(item);
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(item);
+    }
   }
-
-  const data: Joke = await res.json();
-
-  return data;
+  return result;
 }
 
-async function run() {
-  try {
-    const joke = await fetchRandomJoke();
+// Example: removing duplicate users by id
+const users = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 1, name: 'Alicia' },
+];
 
-    console.log('😂 Here’s something to make you smile!');
-    console.log(`  ${joke.setup}`);
-    console.log(`   – ${joke.punchline}`);
-  } catch (err: any) {
-    console.error('Oops! Something went wrong:');
-    console.error(err.message ?? err);
-  }
-}
-
-run();
+const uniqueUsers = uniqBy(users, u => u.id);
+console.log(uniqueUsers);
+// [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
