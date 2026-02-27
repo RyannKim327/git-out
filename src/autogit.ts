@@ -1,40 +1,45 @@
 /**
- * Binary search – recursive.  
- * @param arr        — sorted array
- * @param target     — value to find
- * @param compare    — optional comparison function (a, b) => number
- *                     returns <0 if a<b, 0 if a==b, >0 if a>b
- * @returns index of `target` or -1 if not found
+ * A classic LIFO stack that stores items in an array.
+ * @template T The type of the values stored inside the stack.
  */
-function binarySearchRec<T>(
-  arr: T[],
-  target: T,
-  compare?: (a: T, b: T) => number
-): number {
-  // Provide a default numeric comparator
-  const cmp = compare ?? ((a: any, b: any) => a - b);
+export class Stack<T> {
+  /** The underlying array that holds the stack's data. */
+  private data: T[] = [];
 
-  const search = (low: number, high: number): number => {
-    if (low > high) return -1;          // base case: not found
+  /** Adds an element to the top of the stack. */
+  push(item: T): void {
+    this.data.push(item);
+  }
 
-    const mid = Math.floor((low + high) / 2);
-    const cmpResult = cmp(arr[mid], target);
+  /**
+   * Removes and returns the element at the top of the stack.
+   * Returns undefined if the stack is empty.
+   */
+  pop(): T | undefined {
+    return this.data.pop();
+  }
 
-    if (cmpResult === 0) return mid;    // target is at mid
-    if (cmpResult < 0) return search(mid + 1, high); // target is right
-    return search(low, mid - 1);        // target is left
-  };
+  /** Peeks at the element on the top without removing it. */
+  peek(): T | undefined {
+    return this.data[this.data.length - 1];
+  }
 
-  return search(0, arr.length - 1);
+  /** Returns the number of elements in the stack. */
+  get size(): number {
+    return this.data.length;
+  }
+
+  /** Returns true when the stack has nothing inside. */
+  get isEmpty(): boolean {
+    return this.data.length === 0;
+  }
 }
-// Numbers – no comparator needed
-const nums = [1, 3, 5, 7, 9, 11, 13];
-console.log(binarySearchRec(nums, 7));  // → 3
-console.log(binarySearchRec(nums, 2));  // → -1
+const stack = new Stack<number>();
 
-// Strings – supply a comparator
-const words = ["apple", "banana", "cherry", "date"];
-const stringCmp = (a: string, b: string) => a.localeCompare(b);
+stack.push(10);
+stack.push(20);
+stack.push(30);
 
-console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
-console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size);   // 2
