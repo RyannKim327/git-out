@@ -1,116 +1,64 @@
 /**
- * Build the bad‑character shift table.
- * For every character that occurs in the pattern, we store the distance
- * from the last occurrence of that character to the end of the pattern
- * (i.e. how far we can jump when that character mismatches).
+ * Basic node definition for a singly‑linked list.
  */
-function buildBadCharShift(pat: string): Int8Array {
-  const m = pat.length;
-  // 256 possible ASCII values – 16-bit enough for Unicode offsets too
-  const shift = new Int8Array(256);
-  shift.fill(-1);
-
-  for (let i = 0; i < m; i++) {
-    shift[pat.charCodeAt(i)] = i;
-  }
-  return shift;
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
 /**
- * Build the good‑suffix shift table.
- * The array `shift` holds, for each position in the pattern,
- * how far we can safely shift if the suffix starting at that position
- * is found to match the text but a mismatch occurs just before it.
+ * Returns `true` if the list reads the same forwards and backwards.
+ *
+ * Time   : O(n) – we traverse the list a constant number of times.
+ * Space  : O(1) – we only use a few pointer variables.
  */
-function buildGoodSuffixShift(pat: string): Int32Array {
-  const m = pat.length;
-  const shift = new Int32Array(m).fill(m);
-  const borderPos = new Int32Array(m + 1).fill(-1);
-  const suffixPos = new Int32Array(m + 1).fill(-1);
+function isPalindrome<T>(head: ListNode<T> | null): boolean {
+  if (!head || !head.next) return true;   // empty or single‑node list
 
-  /* Step 1 – compute border positions (also known as "failure function") */
-  let i = m;
-  let j = m + 1;
-  borderPos[i] = j;
-  while (i > 0) {
-    while (j <= m && pat[i - 1] !== pat[j - 1]) j = borderPos[j];
-    i--;
-    j--;
-    borderPos[i] = j;
+  // 1. Find the middle of the list
+  let slow = head;
+  let fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  /* Step 2 – compute suffix positions */
-  i = 0;
-  j = 0;
-  while (i < m) {
-    if (pat[i] === pat[j]) {
-      j++;
-      suffixPos[i + 1] = j;
-    } else if (j > 0) {
-      j = borderPos[j];
-    } else {
-      suffixPos[i + 1] = 0;
-      i++;
-    }
+  // 2. Reverse the second half (starting from slow.next)
+  let prev: ListNode<T> | null = null;
+  let curr: ListNode<T> | null = slow.next;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  // `prev` is now the head of the reversed second half
+
+  // 3. Compare the first half with the reversed second half
+  let p1 = head;
+  let p2 = prev;
+  while (p2) {               // only need to go as far as the short half
+    if (p1.val !== p2.val) return false;
+    p1 = p1.next!;
+    p2 = p2.next!;
   }
 
-  /* Step 3 – fill the shift table using the border and suffix data */
-  for (let k = 0; k < m; k++) {
-    // If the suffix starting at k matches the pattern's suffix
-    // and there is a border before that suffix, we can shift
-    // to align that border with the text.
-    shift[k] = m - suffixPos[k];
-  }
+  // Optional: restore the list to its original order (not required for the answer)
+  // reverse(prev) again and reattach to `slow.next`
 
-  return shift;
+  return true;
 }
-
-/**
- * Boyer‑Moore search.
- * Returns an array of all start indices where `pat` is found in `txt`.
- */
-export function boyerMoore(txt: string, pat: string): number[] {
-  const n = txt.length;
-  const m = pat.length;
-
-  if (m === 0 || n < m) return [];
-
-  const badChar = buildBadCharShift(pat);
-  const goodSuffix = buildGoodSuffixShift(pat);
-
-  const res: number[] = [];
-  let s = 0; // shift of the pattern over text
-
-  while (s <= n - m) {
-    let j = m - 1;
-
-    // Move left while characters match
-    while (j >= 0 && pat[j] === txt[s + j]) j--;
-
-    if (j < 0) {
-      // full match
-      res.push(s);
-      // shift so that the next possible match starts right after the first character of the current match
-      s += goodSuffix[0];
-    } else {
-      const badIdx = badChar[txt.charCodeAt(s + j)];
-      const badShift = badIdx !== -1 ? j - badIdx : j + 1;
-      const goodShift = goodSuffix[j];
-      // choose the larger of the two shifts
-      s += Math.max(badShift, goodShift);
-    }
+const build = (...vals: number[]): ListNode<number> | null => {
+  let head: ListNode<number> | null = null;
+  let tail: ListNode<number> | null = null;
+  for (const v of vals) {
+    const node = new ListNode(v);
+    if (!head) head = node;
+    else tail!.next = node;
+    tail = node;
   }
+  return head;
+};
 
-  return res;
-}
-
-/* ----------------------------------- */
-/* Example usage                     */
-const text = "ABAAABCDABEEABBAAB";
-const pattern = "ABBA";
-
-const matches = boyerMoore(text, pattern);
-console.log("Pattern found at indices:", matches);
-/* Expected output (zero‑based indices):
-   Pattern found at indices: [12, 15]
-*/
+console.log(isPalindrome(build(1, 2, 3, 2, 1))); // true
+console.log(isPalindrome(build(1, 2, 2, 1)));      // true
+console.log(isPalindrome(build(1, 2, 3, 4, 5))); // false
