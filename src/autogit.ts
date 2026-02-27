@@ -1,59 +1,43 @@
-class ListNode {
-  val: number;
-  next: ListNode | null;
-
-  constructor(val: number, next: ListNode | null = null) {
-    this.val = val;
-    this.next = next;
-  }
-}
 /**
- * Returns the node where listA and listB intersect.
- * If they don't intersect, returns null.
+ * Binary search on a sorted array.
+ *
+ * @param arr   A sorted array that supports the supplied comparator.
+ * @param target The value you’re searching for.
+ * @param compare A comparison function: returns <0 if a<b, 0 if a===b, >0 if a>b.
+ * @returns The index of `target` if found; otherwise –1.
  */
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  if (!headA || !headB) return null;
+export function binarySearch<T>(
+  arr: readonly T[],
+  target: T,
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): number {
+  let low = 0;
+  let high = arr.length - 1;
 
-  let pA: ListNode | null = headA;
-  let pB: ListNode | null = headB;
+  while (low <= high) {
+    // Use Math.floor to avoid overflow and keep mid an integer.
+    const mid = low + Math.floor((high - low) / 2);
+    const cmp = compare(arr[mid], target);
 
-  // Continue until the two pointers either match or both become null.
-  while (pA !== pB) {
-    // Move to the next node; if we're at the end, jump to the other list's head.
-    pA = pA ? pA.next : headB;
-    pB = pB ? pB.next : headA;
+    if (cmp === 0) {
+      return mid; // Found it!
+    } else if (cmp < 0) {
+      low = mid + 1; // Search right half
+    } else {
+      high = mid - 1; // Search left half
+    }
   }
 
-  return pA; // Either the intersection node or null.
+  return -1; // Not found
 }
-// Build two intersecting lists:
-// A: 1 → 3 → 5 → 7 → 9
-// B: 2 → 4 →        → 7 → 9
-//            ^<--- intersection starts here
+// Example with numbers
+const nums = [3, 7, 12, 18, 25, 34];
+const index = binarySearch(nums, 18); // → 3
 
-const common = new ListNode(7, new ListNode(9));
-
-const listA = new ListNode(1, new ListNode(3, new ListNode(5, common)));
-const listB = new ListNode(2, new ListNode(4, common));
-
-const intersection = getIntersectionNode(listA, listB);
-console.log(intersection?.val); // 7
-function getIntersectionNodeHash(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  const nodes = new Set<ListNode>();
-
-  for (let cur = headA; cur; cur = cur.next) {
-    nodes.add(cur);
-  }
-
-  for (let cur = headB; cur; cur = cur.next) {
-    if (nodes.has(cur)) return cur;
-  }
-
-  return null;
-}
+// Example with strings – note we pass a custom comparator for case‑insensitive search
+const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
+const idx = binarySearch(
+  words,
+  'CHeRry',
+  (a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' })
+); // → 2
