@@ -1,60 +1,29 @@
-/**
- * Rabin–Karp string search.
- *
- * @param text    the string to search in
- * @param pattern the string to find
- * @returns array of starting indices where pattern appears in text
- */
-export function rabinKarp(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
+function firstRepeatedChar(str: string): string | null {
+  const seen = new Set<string>();
 
-  if (m === 0 || m > n) {
-    return [];
+  for (const ch of str) {
+    if (seen.has(ch)) {
+      return ch;            // ❗ hit the first duplicate
+    }
+    seen.add(ch);
   }
 
-  const base = 256;            // Number of possible ASCII characters
-  const mod  = 101;            // A prime modulus – large enough for short strings
+  return null;               // no duplicate found
+}
 
-  /* ----------  helper: convert a substring to a hash ------------ */
-  const hash = (str: string, len: number) => {
-    let h = 0;
-    for (let i = 0; i < len; i++) {
-      h = (h * base + str.charCodeAt(i)) % mod;
+// Demo
+console.log(firstRepeatedChar("abca")); // → 'a'
+console.log(firstRepeatedChar("abcdef")); // → null
+function firstRepeatedIndex(str: string): number | -1 {
+  const seen = new Map<string, number>();
+
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (seen.has(ch)) {
+      return i;   // index of the first occurrence that was repeated
     }
-    return h;
-  };
-
-  /* ----------  pre‑compute base^(m-1)  modulo mod -------------- */
-  let highPow = 1;                 // (base^(m‑1)) % mod
-  for (let i = 1; i <= m - 1; i++) {
-    highPow = (highPow * base) % mod;
+    seen.set(ch, i);
   }
 
-  /* ----------  initial hashes ----------------------------------- */
-  let patternHash = hash(pattern, m);
-  let windowHash  = hash(text, m);
-
-  const result: number[] = [];
-
-  /* ----------  main loop ---------------------------------------- */
-  for (let i = 0; i <= n - m; i++) {
-    // When hashes match we still do a string comparison to rule out collisions
-    if (patternHash === windowHash) {
-      if (text.substr(i, m) === pattern) {
-        result.push(i);
-      }
-    }
-
-    // Roll the hash: remove the leftmost character, add the new rightmost
-    if (i < n - m) {
-      windowHash =
-        // Remove leftmost char contribution
-        (windowHash - text.charCodeAt(i) * highPow % mod + mod) % mod; // keep positive
-      // Add next char
-      windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
-    }
-  }
-
-  return result;
+  return -1;
 }
