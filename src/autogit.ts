@@ -1,72 +1,60 @@
-// Generic, in‑place quicksort
-export function quickSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number,
-  low = 0,
-  high = arr.length - 1,
-): T[] {
-  // Default comparator: numeric/string natural order
-  const cmp = compareFn ?? ((a: T, b: T) =>
-    a < b ? -1 : a > b ? 1 : 0,
-  );
+/**
+ * Rabin–Karp string search.
+ *
+ * @param text    the string to search in
+ * @param pattern the string to find
+ * @returns array of starting indices where pattern appears in text
+ */
+export function rabinKarp(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
 
-  // Helper: partition using Hoare's scheme
-  const partition = (l: number, h: number): number => {
-    const pivot = arr[Math.floor((l + h) / 2)];
-    let i = l - 1;
-    let j = h + 1;
-    while (true) {
-      do { i++; } while (cmp(arr[i], pivot) < 0);
-      do { j--; } while (cmp(arr[j], pivot) > 0);
-      if (i >= j) return j;
-      [arr[i], arr[j]] = [arr[j], arr[i]]; // swap
+  if (m === 0 || m > n) {
+    return [];
+  }
+
+  const base = 256;            // Number of possible ASCII characters
+  const mod  = 101;            // A prime modulus – large enough for short strings
+
+  /* ----------  helper: convert a substring to a hash ------------ */
+  const hash = (str: string, len: number) => {
+    let h = 0;
+    for (let i = 0; i < len; i++) {
+      h = (h * base + str.charCodeAt(i)) % mod;
     }
+    return h;
   };
 
-  if (low < high) {
-    const p = partition(low, high);
-    quickSort(arr, compareFn, low, p);
-    quickSort(arr, compareFn, p + 1, high);
+  /* ----------  pre‑compute base^(m-1)  modulo mod -------------- */
+  let highPow = 1;                 // (base^(m‑1)) % mod
+  for (let i = 1; i <= m - 1; i++) {
+    highPow = (highPow * base) % mod;
   }
-  return arr; // for convenience – returns the same array reference
+
+  /* ----------  initial hashes ----------------------------------- */
+  let patternHash = hash(pattern, m);
+  let windowHash  = hash(text, m);
+
+  const result: number[] = [];
+
+  /* ----------  main loop ---------------------------------------- */
+  for (let i = 0; i <= n - m; i++) {
+    // When hashes match we still do a string comparison to rule out collisions
+    if (patternHash === windowHash) {
+      if (text.substr(i, m) === pattern) {
+        result.push(i);
+      }
+    }
+
+    // Roll the hash: remove the leftmost character, add the new rightmost
+    if (i < n - m) {
+      windowHash =
+        // Remove leftmost char contribution
+        (windowHash - text.charCodeAt(i) * highPow % mod + mod) % mod; // keep positive
+      // Add next char
+      windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
+    }
+  }
+
+  return result;
 }
-export function quickSortImmutable<T>(
-  arr: readonly T[],
-  compareFn?: (a: T, b: T) => number,
-): T[] {
-  if (arr.length <= 1) return [...arr];
-
-  const compare = compareFn ?? ((a: T, b: T) =>
-    a < b ? -1 : a > b ? 1 : 0,
-  );
-
-  const pivot = arr[Math.floor(arr.length / 2)];
-  const lows = arr.filter((x) => compare(x, pivot) < 0);
-  const highs = arr.filter((x) => compare(x, pivot) > 0);
-  const pivots = arr.filter((x) => compare(x, pivot) === 0);
-
-  return [
-    ...quickSortImmutable(lows, compareFn),
-    ...pivots,
-    ...quickSortImmutable(highs, compareFn),
-  ];
-}
-const nums = [34, 7, 23, 32, 5, 62];
-quickSort(nums);               // mutates `nums`
-console.log(nums);             // [5, 7, 23, 32, 34, 62]
-
-let strs = ["banana", "apple", "cherry"];
-quickSort(strs, (a, b) => a.localeCompare(b));
-console.log(strs);             // ["apple", "banana", "cherry"]
-
-let objs = [
-  { id: 3, name: "c" },
-  { id: 1, name: "a" },
-  { id: 2, name: "b" },
-];
-quickSort(
-  objs,
-  (a, b) => a.id - b.id,
-);
-console.log(objs);
-// [{ id: 1, name: "a" }, { id: 2, name: "b" }, { id: 3, name: "c" }]
