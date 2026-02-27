@@ -1,54 +1,48 @@
-// 1️⃣  Basic node interface – replace / extend it to fit your model
-export interface TreeNode<T> {
-  value: T;                 // the payload stored in the node
-  children?: TreeNode<T>[]>; // can be unset (leaf) or an empty array for a leaf
+// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
+//      This shape is common in interview‑style code.
+interface TreeNode {
+  val: number;         // node’s payload
+  left?: TreeNode | null;   // left child (optional)
+  right?: TreeNode | null;  // right child (optional)
 }
 
-// 2️⃣  The actual algorithm
-export function depthLimitedSearch<T>(
-  root: TreeNode<T>,           // root of the tree
-  target: T,                   // value we’re looking for
-  depthLimit: number,          // how far the search may go (0 = only the root)
-  equals: (a: T, b: T) => boolean = (a, b) => a === b
-): TreeNode<T> | null {
-  if (depthLimit < 0) return null; // sanity check
+// 2️⃣  Recursive summation – easiest to read and to understand.
+//      Depth‑first, natural for a tree.
+function sumTreeRecursive(root: TreeNode | null): number {
+  if (!root) return 0;                      // base case: empty subtree is 0
+  const leftSum = sumTreeRecursive(root.left);
+  const rightSum = sumTreeRecursive(root.right);
+  return root.val + leftSum + rightSum;      // combine the results
+}
 
-  // stack holds {node, depth}
-  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
-    { node: root, depth: 0 },
-  ];
+// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
+//      where recursion might hit the call‑stack limit.
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let total = 0;
+  const stack: TreeNode[] = [root];
 
   while (stack.length) {
-    const { node, depth } = stack.pop()!; // pop from top of stack
-
-    // 3️⃣  Stop expanding when the depth limit is reached
-    if (depth > depthLimit) {
-      continue;
-    }
-
-    // 4️⃣  Check the current node
-    if (equals(node.value, target)) {
-      return node;
-    }
-
-    // 5️⃣  Push children (DFS) – children that are undefined are skipped
-    if (node.children) {
-      // depth + 1 because we’ll go down one edge
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        stack.push({ node: node.children[i], depth: depth + 1 });
-      }
-    }
+    const node = stack.pop()!;
+    total += node.val;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
   }
-
-  return null; // nothing found within the depth limit
+  return total;
 }
-const tree: TreeNode<string> = {
-  value: "A",
-  children: [
-    { value: "B", children: [{ value: "D" }, { value: "E" }] },
-    { value: "C", children: [{ value: "F" }, { value: "G" }] },
-  ],
+
+// 4️⃣  Sample tree for quick sanity check
+//           5
+//          / \
+//         3   7
+//        / \   \
+//       2   4   8
+
+const sampleRoot: TreeNode = {
+  val: 5,
+  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
+  right: { val: 7, right: { val: 8 } },
 };
 
-console.log(depthLimitedSearch(tree, "F", 1)); // null (needs depth 2)
-console.log(depthLimitedSearch(tree, "F", 2)); // node with value "F"
+console.log(sumTreeRecursive(sampleRoot)); // → 33
+console.log(sumTreeIterative(sampleRoot)); // → 33
