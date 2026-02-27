@@ -1,59 +1,128 @@
+type Compare<T> = (a: T, b: T) => boolean;
+
 /**
- * Fibonacci search for a sorted array of numbers.
- * @param arr  - The sorted array (ascending).
- * @param target - The value to locate.
- * @returns The index of target in `arr`, or -1 if not found.
+ * If `compare(child, parent)` is true, swap them and continue
+ * until the heap property is restored.
  */
-function fibSearch(arr: number[], target: number): number {
-  const n = arr.length;
+function siftDown<T>(heap: T[], start: number, end: number, compare: Compare<T>) {
+  let root = start;
 
-  /* ------- 1. Build a Fibonacci sequence long enough ---- */
-  // fibMm2 = fib(m‑2), fibMm1 = fib(m‑1), fibM   = fib(m)
-  let fibMm2 = 0; // (m-2)'th Fibonacci number
-  let fibMm1 = 1; // (m-1)'th Fibonacci number
-  let fibM   = fibMm2 + fibMm1; // m'th Fibonacci
+  while (true) {
+    const left = root * 2 + 1;
+    const right = left + 1;
+    let swap = root;
 
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM   = fibMm2 + fibMm1;
-  }
-
-  /* ------- 2. Mark the boundary of the eliminated range ------- */
-  // The offset is the index of the last removed element
-  let offset = -1;
-
-  /* ------- 3. While there are elements to investigate ----------- */
-  while (fibM > 1) {
-    // Check if fibMm2 is a valid index
-    const i = Math.min(offset + fibMm2, n - 1);
-
-    if (arr[i] === target) {
-      return i; // Found!
+    if (left <= end && compare(heap[left], heap[swap])) {
+      swap = left;
+    }
+    if (right <= end && compare(heap[right], heap[swap])) {
+      swap = right;
     }
 
-    /* ----- Move the three Fibonacci variables down one step ----- */
-    if (arr[i] < target) {
-      fibM   = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i;
-    } else {
-      fibM   = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
-    }
-  }
+    if (swap === root) break;
 
-  /* ------- 4. Compare the last element in the range --------------- */
-  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
-    return offset + 1;
+    [heap[root], heap[swap]] = [heap[swap], heap[root]];
+    root = swap;
   }
-
-  return -1; // Not found
 }
 
-/* ---- Quick demo ---- */
-const sorted = [3, 5, 8, 12, 19, 27, 34, 42, 56, 73, 91];
-console.log(fibSearch(sorted, 27)); // → 5
-console.log(fibSearch(sorted, 7));  // → -1
+/**
+ * Moves the root element down the heap until it finds the right spot.
+ * Called during `remove` after we swap the last element into the root.
+ */
+export function heapify<T>(heap: T[], compare: Compare<T>) {
+  const length = heap.length;
+  if (length <= 1) return;
+
+  // Start from the last non‑leaf node.
+  for (let i = Math.floor((length - 2) / 2); i >= 0; i--) {
+    siftDown(heap, i, length - 1, compare);
+  }
+}
+export class PriorityQueue<T> {
+  private heap: T[] = [];
+  private readonly compare: Compare<T>;
+
+  constructor(compare: Compare<T>) {
+    this.compare = compare;
+  }
+
+  get size() {
+    return this.heap.length;
+  }
+
+  /** Insert a new item, maintaining heap property */
+  push(item: T): void {
+    this.heap.push(item);
+    // bubble‑up
+    let idx = this.heap.length - 1;
+    while (idx > 0) {
+      const parentIdx = Math.floor((idx - 1) / 2);
+      if (!this.compare(this.heap[idx], this.heap[parentIdx])) break;
+      [this.heap[idx], this.heap[parentIdx]] = [this.heap[parentIdx], this.heap[idx]];
+      idx = parentIdx;
+    }
+  }
+
+  /** Return the root element (minimum) without removing it */
+  peek(): T | undefined {
+    return this.heap[0];
+  }
+
+  /**
+   * Remove and return the root element.
+   * The last element is moved to the root and sifted down.
+   */
+  pop(): T | undefined {
+    const length = this.heap.length;
+    if (!length) return undefined;
+    const root = this.heap[0];
+    const last = this.heap.pop()!; // last is defined because length > 0
+
+    if (length > 1) {
+      this.heap[0] = last;
+      siftDown(this.heap, 0, this.heap.length - 1, this.compare);
+    }
+
+    return root;
+  }
+
+  /** Convert the current array into a heap (in‑place) */
+  build() {
+    heapify(this.heap, this.compare);
+  }
+}
+// Simple numeric priority queue
+const pq = new PriorityQueue<number>((a, b) => a < b);
+
+pq.push(5);
+pq.push(2);
+pq.push(8);
+pq.push(1);
+
+console.log(pq.peek()); // 1
+while (pq.size) {
+  console.log(pq.pop()); // 1, 2, 5, 8
+}
+interface Task {
+  id: number;
+  priority: number; // smaller = higher priority
+  payload: string;
+}
+
+const taskCompare = (a: Task, b: Task) => a.priority < b.priority;
+const taskQueue = new PriorityQueue<Task>(taskCompare);
+
+taskQueue.push({ id: 1, priority: 10, payload: 'work' });
+taskQueue.push({ id: 2, priority: 3, payload: 'urgent' });
+taskQueue.push({ id: 3, priority: 7, payload: 'normal' });
+
+while (taskQueue.size) {
+  const t = taskQueue.pop()!;
+  console.log(`${t.id} (${t.priority}): ${t.payload}`);
+}
+2 (3): urgent
+3 (7): normal
+1 (10): work
+const maxComparator = (a: number, b: number) => a > b;
+const maxPQ = new PriorityQueue<number>(maxComparator);
