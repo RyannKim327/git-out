@@ -1,65 +1,37 @@
-/**
- * Generic insertion sort.
- * @param arr  The array to sort – it will be mutated in‑place.
- * @returns    The sorted array (the same reference that was passed in).
- */
-export function insertionSort<T>(arr: T[]): T[] {
+// Works for numbers, strings, dates, anything that can be compared with < and >.
+export function isSorted<T extends number | string | Date>(arr: T[]): boolean {
   for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-
-    /* shift elements that are greater than key one position to the right */
-    while (j >= 0 && arr[j] > key) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    arr[j + 1] = key;
+    if (arr[i] < arr[i - 1]) return false;
   }
-  return arr;
+  return true;
 }
-const numbers = [8, 3, 5, 4, 6, 1];
-console.log(insertionSort(numbers)); // [1, 3, 4, 5, 6, 8]
-const words = ['orange', 'apple', 'banana'];
-console.log(insertionSort(words)); // ['apple', 'banana', 'orange']
-interface Person {
-  name: string;
-  age: number;
+isSorted([1, 2, 3, 4]);        // true
+isSorted([1, 3, 2, 4]);        // false
+isSorted(['a', 'b', 'c']);     // true
+isSorted(['c', 'b', 'a']);     // false
+type Comparator<T> = (a: T, b: T) => number;
+
+export function isSortedWith<T>(arr: T[], cmp: Comparator<T>): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) return false; // `a > b` in ascending order
+  }
+  return true;
 }
+interface Person { name: string; age: number; }
 
 const people: Person[] = [
-  { name: 'Zoe', age: 29 },
-  { name: 'Anna', age: 22 },
-  { name: 'Mike', age: 35 }
+  { name: 'Alice', age: 25 },
+  { name: 'Bob', age: 30 },
+  { name: 'Charlie', age: 35 },
 ];
 
-function sortByAge(arr: Person[]): Person[] {
-  return insertionSort(arr, (a, b) => a.age - b.age);
-}
-
-// extended version that accepts a compare function
-export function insertionSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number
-): T[] {
-  const cmp = compareFn ?? ((a: T, b: T) => (a > b ? 1 : a < b ? -1 : 0));
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-    arr[j + 1] = key;
-  }
-  return arr;
-}
-
-console.log(sortByAge(people));
-/*
-[
-  { name: 'Anna', age: 22 },
-  { name: 'Zoe', age: 29 },
-  { name: 'Mike', age: 35 }
-]
-*/
+isSortedWith(people, (a, b) => a.age - b.age); // true
+export const isSorted = <T>(arr: T[], cmp: Comparator<T> = (a, b) => {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}): boolean =>
+  arr
+    .map((value, index, self) => [self[index - 1], value] as const)
+    .slice(1) // skip the first undefined pair
+    .every(([prev, cur]) => cmp(prev!, cur) <= 0);
