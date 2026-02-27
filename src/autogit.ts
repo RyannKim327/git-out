@@ -1,43 +1,93 @@
+// `Graph<T>` maps a node of type T to an array of its adjacent nodes.
+type Graph<T> = Map<T, T[]>;
+
+// A helper to add an undirected edge
+function addEdge<T>(g: Graph<T>, a: T, b: T) {
+  g.set(a, (g.get(a) ?? []).concat(b));
+  g.set(b, (g.get(b) ?? []).concat(a));
+}
 /**
- * Binary search on a sorted array.
+ * Performs a breadth‑first search on an unweighted graph.
  *
- * @param arr   A sorted array that supports the supplied comparator.
- * @param target The value you’re searching for.
- * @param compare A comparison function: returns <0 if a<b, 0 if a===b, >0 if a>b.
- * @returns The index of `target` if found; otherwise –1.
+ * @param start   the starting node
+ * @param graph   the graph to search
+ * @param visitor a callback that receives each visited node in the order
+ *                it’s discovered. The callback can return `false` to stop
+ *                the search early.
  */
-export function binarySearch<T>(
-  arr: readonly T[],
-  target: T,
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): number {
-  let low = 0;
-  let high = arr.length - 1;
+function bfs<T>(
+  start: T,
+  graph: Graph<T>,
+  visitor: (node: T) => void | boolean
+): void {
+  const visited = new Set<T>();
+  const queue = [start];
 
-  while (low <= high) {
-    // Use Math.floor to avoid overflow and keep mid an integer.
-    const mid = low + Math.floor((high - low) / 2);
-    const cmp = compare(arr[mid], target);
+  visited.add(start);
 
-    if (cmp === 0) {
-      return mid; // Found it!
-    } else if (cmp < 0) {
-      low = mid + 1; // Search right half
-    } else {
-      high = mid - 1; // Search left half
+  while (queue.length) {
+    const node = queue.shift()!;      // Non‑null because we just tested length
+    const result = visitor(node);
+
+    // If the visitor explicitly returned false, break out early.
+    if (result === false) break;
+
+    const neighbors = graph.get(node) ?? [];
+    for (const n of neighbors) {
+      if (!visited.has(n)) {
+        visited.add(n);
+        queue.push(n);
+      }
+    }
+  }
+}
+/**
+ * Returns an array representing the shortest path from `start` to `target`
+ * (inclusive), or `null` if no path exists.
+ */
+function shortestPath<T>(start: T, target: T, graph: Graph<T>): T[] | null {
+  const prev = new Map<T, T | undefined>(); // child → parent
+  const visited = new Set<T>();
+  const queue: T[] = [start];
+  visited.add(start);
+  let found = false;
+
+  while (queue.length && !found) {
+    const node = queue.shift()!;
+    for (const nb of graph.get(node) ?? []) {
+      if (!visited.has(nb)) {
+        visited.add(nb);
+        prev.set(nb, node);
+        if (nb === target) {
+          found = true;
+          break;
+        }
+        queue.push(nb);
+      }
     }
   }
 
-  return -1; // Not found
-}
-// Example with numbers
-const nums = [3, 7, 12, 18, 25, 34];
-const index = binarySearch(nums, 18); // → 3
+  if (!found) return null;
 
-// Example with strings – note we pass a custom comparator for case‑insensitive search
-const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
-const idx = binarySearch(
-  words,
-  'CHeRry',
-  (a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' })
-); // → 2
+  // Walk backwards from target to start
+  const path = [];
+  for (let cur: T | undefined = target; cur !== undefined; cur = prev.get(cur)) {
+    path.push(cur);
+  }
+  path.reverse();
+  return path;
+}
+const g: Graph<string> = new Map();
+addEdge(g, 'A', 'B');
+addEdge(g, 'A', 'C');
+addEdge(g, 'B', 'D');
+addEdge(g, 'C', 'D');
+addEdge(g, 'C', 'E');
+
+console.log('BFS visiting order:', () => {
+  const order: string[] = [];
+  bfs('A', g, node => { order.push(node); });
+  return order;
+}()); // ['A', 'B', 'C', 'D', 'E']
+
+console.log('Shortest path A → D:', shortestPath('A', 'D', g)); // ['A', 'B', 'D']
