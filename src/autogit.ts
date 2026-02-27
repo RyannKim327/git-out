@@ -1,38 +1,68 @@
-// fortune.ts
-import { createInterface } from 'readline';
+// -------------------------------------------
+// Node definition
+// -------------------------------------------
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
+}
 
-// Set up a simple REPL‑style prompt
-const rl = createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+// -------------------------------------------
+// Helper: build list from array
+// -------------------------------------------
+function arrayToLinkedList<T>(arr: T[]): ListNode<T> | null {
+  if (arr.length === 0) return null;
+  const head = new ListNode(arr[0]);
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = new ListNode(arr[i]);
+    current = current.next;
+  }
+  return head;
+}
 
-console.log('🃏 Welcome to the Random Fortune Machine!');
+// -------------------------------------------
+// Helper: read list into array (for debugging)
+// -------------------------------------------
+function linkedListToArray<T>(head: ListNode<T> | null): T[] {
+  const arr: T[] = [];
+  let cur = head;
+  while (cur) {
+    arr.push(cur.val);
+    cur = cur.next;
+  }
+  return arr;
+}
 
-// Ask the user for a number
-rl.question('Enter a number (0–9) and press Enter: ', (answer) => {
-  // Try to parse the input as an integer
-  const num = parseInt(answer.trim(), 10);
+// -------------------------------------------
+// Main: find middle node
+// -------------------------------------------
+function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null;          // empty list
 
-  if (isNaN(num) || num < 0 || num > 9) {
-    console.log('❌ That’s not a valid single digit between 0 and 9.');
-  } else {
-    // Pick a fortune from a tiny list
-    const fortunes = [
-      "You'll find a penny on the sidewalk.",
-      "A surprise call will brighten your day.",
-      "Today is a great day to start learning something new.",
-      "You’ll discover a hidden talent for drawing.",
-      "A forgotten receipt will pop up in your inbox.",
-      "A random act of kindness will return to you.",
-      "You’ll taste your favorite food in an unexpected way.",
-      "A new friendship is just a conversation away.",
-      "You’ll hit a traffic light and notice your neighbor’s cat.",
-      "Today you will finally finish that project you’ve shelved."
-    ];
+  let slow = head;
+  let fast = head;
 
-    console.log(`🔮 Fortune for ${num}: ${fortunes[num]}`);
+  // Move fast two steps and slow one step until fast can't move further.
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  rl.close();
-});
+  // For even‑length lists, this returns the first of the two middle nodes.
+  // If you prefer the second, replace `while (fast && fast.next)` and
+  // adjust the loop accordingly.
+  return slow;
+}
+
+// -------------------------------------------
+// Demo
+// -------------------------------------------
+const list = arrayToLinkedList([1, 2, 3, 4, 5]);  // odd length
+console.log(linkedListToArray(list));            // [1,2,3,4,5]
+console.log(findMiddle(list)?.val);              // 3
+
+const evenList = arrayToLinkedList([10, 20, 30, 40]);
+console.log(linkedListToArray(evenList));         // [10,20,30,40]
+console.log(findMiddle(evenList)?.val);           // 20 (first middle)
+// if you want the second middle, tweak the loop condition to:
+// while (fast && fast.next)
+// then you'll get 30.
