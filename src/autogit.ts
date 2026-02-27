@@ -1,59 +1,68 @@
 /**
- * Fibonacci search for a sorted array of numbers.
- * @param arr  - The sorted array (ascending).
- * @param target - The value to locate.
- * @returns The index of target in `arr`, or -1 if not found.
+ * Selection sort – O(n²) time, O(1) extra space.
+ *
+ * @param arr The array to sort.
+ * @returns The same array instance, now sorted.
  */
-function fibSearch(arr: number[], target: number): number {
-  const n = arr.length;
+function selectionSort<T>(arr: T[]): T[] {
+  const len = arr.length;
 
-  /* ------- 1. Build a Fibonacci sequence long enough ---- */
-  // fibMm2 = fib(m‑2), fibMm1 = fib(m‑1), fibM   = fib(m)
-  let fibMm2 = 0; // (m-2)'th Fibonacci number
-  let fibMm1 = 1; // (m-1)'th Fibonacci number
-  let fibM   = fibMm2 + fibMm1; // m'th Fibonacci
+  for (let i = 0; i < len - 1; i++) {
+    // index of the smallest element in the unsorted suffix
+    let minIdx = i;
 
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM   = fibMm2 + fibMm1;
-  }
-
-  /* ------- 2. Mark the boundary of the eliminated range ------- */
-  // The offset is the index of the last removed element
-  let offset = -1;
-
-  /* ------- 3. While there are elements to investigate ----------- */
-  while (fibM > 1) {
-    // Check if fibMm2 is a valid index
-    const i = Math.min(offset + fibMm2, n - 1);
-
-    if (arr[i] === target) {
-      return i; // Found!
+    // search for a smaller element
+    for (let j = i + 1; j < len; j++) {
+      if (arr[j] < arr[minIdx]) {
+        minIdx = j;
+      }
     }
 
-    /* ----- Move the three Fibonacci variables down one step ----- */
-    if (arr[i] < target) {
-      fibM   = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i;
-    } else {
-      fibM   = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
+    // swap the found minimum with the current position
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
     }
   }
 
-  /* ------- 4. Compare the last element in the range --------------- */
-  if (fibMm1 && offset + 1 < n && arr[offset + 1] === target) {
-    return offset + 1;
-  }
+  return arr;
+}
+// Numbers
+const numbers = [64, 25, 12, 22, 11];
+console.log(selectionSort(numbers)); // [11, 12, 22, 25, 64]
 
-  return -1; // Not found
+// Strings
+const words = ['pear', 'apple', 'orange', 'banana'];
+console.log(selectionSort(words));   // ['apple', 'banana', 'orange', 'pear']
+
+// Custom objects – provide a compare function
+interface Person { name: string; age: number }
+
+function sortByAge(a: Person, b: Person) {
+  return a.age - b.age;
 }
 
-/* ---- Quick demo ---- */
-const sorted = [3, 5, 8, 12, 19, 27, 34, 42, 56, 73, 91];
-console.log(fibSearch(sorted, 27)); // → 5
-console.log(fibSearch(sorted, 7));  // → -1
+const people: Person[] = [
+  { name: 'Alice', age: 34 },
+  { name: 'Bob', age: 28 },
+  { name: 'Carol', age: 41 }
+];
+
+// Simple wrapper to let us pass a comparator
+function selectionSortWith<T>(arr: T[], compare: (a: T, b: T) => number): T[] {
+  const len = arr.length;
+  for (let i = 0; i < len - 1; i++) {
+    let minIdx = i;
+    for (let j = i + 1; j < len; j++) {
+      if (compare(arr[j], arr[minIdx]) < 0) {
+        minIdx = j;
+      }
+    }
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+    }
+  }
+  return arr;
+}
+
+console.log(selectionSortWith(people, sortByAge));
+// [{ name: 'Bob', age: 28 }, { name: 'Alice', age: 34 }, { name: 'Carol', age: 41 }]
