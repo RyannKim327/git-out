@@ -1,45 +1,60 @@
 /**
- * Checks if a string is a palindrome.
+ * Rabin–Karp string search.
  *
- * @param txt          The input string to test.
- * @param options      Optional flags.
- * @returns            true if the cleaned string reads the same forwards and backwards.
+ * @param text    the string to search in
+ * @param pattern the string to find
+ * @returns array of starting indices where pattern appears in text
  */
-export function isPalindrome(
-  txt: string,
-  options?: {
-    /** When true (default), the check is case‑insensitive. */
-    ignoreCase?: boolean;
-    /** When true (default), only alphanumeric characters are considered. */
-    stripNonAlnum?: boolean;
-    /** When true, normalises Unicode to NFKD form before the checks. */
-    normalize?: boolean;
-  } = {}
-): boolean {
-  const {
-    ignoreCase = true,
-    stripNonAlnum = true,
-    normalize = true,
-  } = options;
+export function rabinKarp(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
 
-  let processed = txt;
-
-  if (normalize) {
-    // This collapse accents, e.g. "café" ➜ "cafe".
-    processed = processed.normalize('NFKD');
+  if (m === 0 || m > n) {
+    return [];
   }
 
-  if (stripNonAlnum) {
-    processed = processed.replace(/[^0-9a-z]+/gi, '');
+  const base = 256;            // Number of possible ASCII characters
+  const mod  = 101;            // A prime modulus – large enough for short strings
+
+  /* ----------  helper: convert a substring to a hash ------------ */
+  const hash = (str: string, len: number) => {
+    let h = 0;
+    for (let i = 0; i < len; i++) {
+      h = (h * base + str.charCodeAt(i)) % mod;
+    }
+    return h;
+  };
+
+  /* ----------  pre‑compute base^(m-1)  modulo mod -------------- */
+  let highPow = 1;                 // (base^(m‑1)) % mod
+  for (let i = 1; i <= m - 1; i++) {
+    highPow = (highPow * base) % mod;
   }
 
-  if (ignoreCase) {
-    processed = processed.toLowerCase();
+  /* ----------  initial hashes ----------------------------------- */
+  let patternHash = hash(pattern, m);
+  let windowHash  = hash(text, m);
+
+  const result: number[] = [];
+
+  /* ----------  main loop ---------------------------------------- */
+  for (let i = 0; i <= n - m; i++) {
+    // When hashes match we still do a string comparison to rule out collisions
+    if (patternHash === windowHash) {
+      if (text.substr(i, m) === pattern) {
+        result.push(i);
+      }
+    }
+
+    // Roll the hash: remove the leftmost character, add the new rightmost
+    if (i < n - m) {
+      windowHash =
+        // Remove leftmost char contribution
+        (windowHash - text.charCodeAt(i) * highPow % mod + mod) % mod; // keep positive
+      // Add next char
+      windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
+    }
   }
 
-  const reversed = processed.split('').reverse().join('');
-  return processed === reversed;
+  return result;
 }
-console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
-console.log(isPalindrome('Madam In Eden, I’m Adam'));          // true
-console.log(isPalindrome('Hello, world!'));                    // false
