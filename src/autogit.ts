@@ -1,41 +1,88 @@
-interface ListNode<T = any> {
-  value: T;
-  next?: ListNode<T>;
+/* ------------------------------------------------------------------
+   Node definitions (customise to your data shape)
+------------------------------------------------------------------- */
+export interface Node {
+  id: string | number;
+  /* Any other properties you need – e.g. parent, distance, etc. */
 }
-/**
- * Counts nodes in a linked list.
- * @param head The first node (or undefined if the list is empty).
- * @returns Number of nodes in the list.
- */
-function length<T>(head: ListNode<T> | undefined): number {
-  let count = 0;
-  let current = head;
 
-  while (current) {
-    count++;
-    current = current.next;   // follow the chain
+export interface Graph {
+  /** Returns the neighbours of a given node ID. */
+  neighbours(id: Node["id"]): Node[];
+
+  /** Optional: expands a node – useful if nodes need lazy loading. */
+  expand?(node: Node): void;
+}
+
+/* ------------------------------------------------------------------
+   Breadth‑Limited Search
+------------------------------------------------------------------- */
+type GoalPredicate<T> = (node: T) => boolean;
+
+export function breadthLimitedSearch<T extends Node>(
+  graph: Graph,
+  root: T,
+  goal: GoalPredicate<T>,
+  maxDepth: number
+): T | null {
+  // A queue that holds tuples: [node, depth]
+  const frontier: Array<[T, number]> = [[root, 0]];
+  const visited = new Set<T["id"]>();
+
+  visited.add(root.id);
+
+  while (frontier.length !== 0) {
+    const [current, depth] = frontier.shift()!; // pop front
+
+    // Goal hit
+    if (goal(current)) return current;
+
+    // If we reached the depth ceiling, skip expansion
+    if (depth === maxDepth) continue;
+
+    // Expand or otherwise load neighbours if you need lazy loading
+    if (graph.expand) graph.expand(current);
+
+    const neighbors = graph.neighbours(current.id);
+    for (const child of neighbors) {
+      if (!visited.has(child.id)) {
+        visited.add(child.id);
+        frontier.push([child, depth + 1]);
+      }
+    }
   }
-  return count;
+
+  // No solution within the depth limit
+  return null;
 }
-function lengthRecursive<T>(node: ListNode<T> | undefined): number {
-  return node ? 1 + lengthRecursive(node.next) : 0;
-}
-function* nodes<T>(head: ListNode<T> | undefined) {
-  let cur = head;
-  while (cur) {
-    yield cur;
-    cur = cur.next;
+// Simple graph representation
+class MyGraph implements Graph {
+  nodes: Record<string, Node> = {};
+
+  constructor(nodeList: Node[]) {
+    nodeList.forEach(node => (this.nodes[node.id] = node));
+  }
+
+  neighbours(id: string | number) {
+    // Example: assume every node has a "children" array of ids
+    const node = this.nodes[id];
+    return (node as any).children?.map((cId: string | number) => this.nodes[cId]) ?? [];
   }
 }
 
-function lengthFromIterable<T>(head: ListNode<T> | undefined): number {
-  let count = 0;
-  for (const _ of nodes(head)) count++;
-  return count;
-}
-const third = { value: 3 } as ListNode<number>;
-const second = { value: 2, next: third };
-const first  = { value: 1, next: second };
+// Example nodes
+const nodes: Node[] = [
+  { id: 1, ...( { children: [2, 3] } as any ) },
+  { id: 2, ...( { children: [4] } as any ) },
+  { id: 3 },
+  { id: 4 }
+];
 
-console.log(length(first));           // 3
-console.log(lengthRecursive(first));  // 3
+const graph = new MyGraph(nodes);
+
+const root = graph.nodes[1];
+const goal = (n: Node) => n.id === 4;
+const depthLimit = 2;
+
+const solution = breadthLimitedSearch(graph, root, goal, depthLimit);
+console.log(solution); // Node with id 4 (found at depth 2)
