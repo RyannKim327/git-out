@@ -1,37 +1,21 @@
-// random-joke.ts
-import fetch from 'node-fetch';          // npm i node-fetch@2
-import { Console } from 'console';
+const numbers = [3, 7, 2, 9, 4];
 
-interface Joke {
-  id: number;
-  type: string;
-  setup: string;
-  punchline: string;
+const max = Math.max(...numbers); // 9
+console.log(max);
+const numbers = [3, 7, 2, 9, 4];
+
+const max = numbers.reduce((prev, cur) => (cur > prev ? cur : prev));
+
+console.log(max); // 9
+function maxNumber<T extends number>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
+  return arr.reduce((a, b) => (b > a ? b : a));
 }
 
-async function fetchRandomJoke(): Promise<Joke> {
-  const res = await fetch('https://official-joke-api.appspot.com/random_joke');
+const nums = [1, 5, 3];
+console.log(maxNumber(nums)); // 5
+const bigNumbers = [10n, 500n, 200n];
 
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} – failed to fetch joke`);
-  }
+const maxBig = bigNumbers.reduce((a, b) => (b > a ? b : a)); // 500n
 
-  const data: Joke = await res.json();
-
-  return data;
-}
-
-async function run() {
-  try {
-    const joke = await fetchRandomJoke();
-
-    console.log('😂 Here’s something to make you smile!');
-    console.log(`  ${joke.setup}`);
-    console.log(`   – ${joke.punchline}`);
-  } catch (err: any) {
-    console.error('Oops! Something went wrong:');
-    console.error(err.message ?? err);
-  }
-}
-
-run();
+console.log(maxBig);
