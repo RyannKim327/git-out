@@ -1,47 +1,40 @@
 /**
- * Checks whether a string is a palindrome (case‑insensitive,
- * ignoring anything that isn’t a letter or a digit).
- *
- * Time   : O(n)
- * Space  : O(1)   – only a couple of integer variables
+ * Binary search – recursive.  
+ * @param arr        — sorted array
+ * @param target     — value to find
+ * @param compare    — optional comparison function (a, b) => number
+ *                     returns <0 if a<b, 0 if a==b, >0 if a>b
+ * @returns index of `target` or -1 if not found
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+function binarySearchRec<T>(
+  arr: T[],
+  target: T,
+  compare?: (a: T, b: T) => number
+): number {
+  // Provide a default numeric comparator
+  const cmp = compare ?? ((a: any, b: any) => a - b);
 
-  const isAlnum = (ch: string): boolean => {
-    const code = ch.charCodeAt(0);
-    // '0'‑'9'
-    if (code >= 48 && code <= 57) return true;
-    // 'A'‑'Z'
-    if (code >= 65 && code <= 90) return true;
-    // 'a'‑'z'
-    if (code >= 97 && code <= 122) return true;
-    return false;
+  const search = (low: number, high: number): number => {
+    if (low > high) return -1;          // base case: not found
+
+    const mid = Math.floor((low + high) / 2);
+    const cmpResult = cmp(arr[mid], target);
+
+    if (cmpResult === 0) return mid;    // target is at mid
+    if (cmpResult < 0) return search(mid + 1, high); // target is right
+    return search(low, mid - 1);        // target is left
   };
 
-  while (left < right) {
-    // Skip non‑alphanumeric characters from the left
-    while (left < right && !isAlnum(s[left])) left++;
-    // Skip non‑alphanumeric characters from the right
-    while (left < right && !isAlnum(s[right])) right--;
-
-    if (left >= right) break;          // Nothing left to compare
-
-    const lc = s[left].toLowerCase();
-    const rc = s[right].toLowerCase();
-
-    if (lc !== rc) return false;
-
-    left++;
-    right--;
-  }
-
-  return true;
+  return search(0, arr.length - 1);
 }
-while (left < right) {
-  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
-  left++;
-  right--;
-}
-return true;
+// Numbers – no comparator needed
+const nums = [1, 3, 5, 7, 9, 11, 13];
+console.log(binarySearchRec(nums, 7));  // → 3
+console.log(binarySearchRec(nums, 2));  // → -1
+
+// Strings – supply a comparator
+const words = ["apple", "banana", "cherry", "date"];
+const stringCmp = (a: string, b: string) => a.localeCompare(b);
+
+console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
+console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
