@@ -1,16 +1,23 @@
-/**
- * Returns a whole number between min and max (both inclusive).
- *
- * @param min The smallest possible value you want (usually a number ≥ 0)
- * @param max The largest possible value you want
- */
-function randomIntInRange(min: number, max: number): number {
-  // Clamp the inputs so min <= max
-  const [low, high] = min <= max ? [min, max] : [max, min];
+function countWordOccurrences(str: string, word: string): number {
+  // Escape any regex‑special characters in the word
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(escaped, 'g');
 
-  // Math.random() → [0, 1).  Scale it to the desired width,
-  // then shift by the lower bound and round down.
-  return Math.floor(Math.random() * (high - low + 1)) + low;
+  const matches = str.match(regex);
+  return matches ? matches.length : 0;
 }
-const rand = randomIntInRange(5, 10);
-console.log(rand); // → a whole number 5, 6, 7, 8, 9, or 10
+
+/* Example */
+const txt = "Lorem ipsum dolor sit amet. Lorem ipsum!";
+console.log(countWordOccurrences(txt, "Lorem")); // 2
+function countWordOccurrencesInsensitive(str: string, word: string): number {
+  const lowered = str.toLowerCase();
+  const target = word.toLowerCase();
+
+  // Split on the target word – keep empty pieces that might appear
+  // at the boundaries or due to overlapping patterns
+  return lowered.split(target).length - 1;
+}
+
+/* Example */
+console.log(countWordOccurrencesInsensitive(txt, "lorem")); // 2
