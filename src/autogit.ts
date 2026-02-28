@@ -1,24 +1,52 @@
-/**
- * Return the first character in `s` that occurs exactly once.
- * If every character repeats, return null.
- */
-function firstNonRepeatingChar(s: string): string | null {
-  // 1️⃣  Count how many times each char appears.
-  const freq = new Map<string, number>();
+interface TreeNode<T = number> {
+  val: T;                // single value (you can change the type)
+  left: TreeNode<T> | null;
+  right: TreeNode<T> | null;
+}
+const root: TreeNode = {
+  val: 10,
+  left: { val: 5, left: null, right: null },
+  right: { val: 15, left: null, right: null },
+};
+function maxDepth<T>(node: TreeNode<T> | null): number {
+  if (!node) return 0;
+  const leftDepth = maxDepth(node.left);
+  const rightDepth = maxDepth(node.right);
+  return Math.max(leftDepth, rightDepth) + 1;
+}
+function maxDepthIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
 
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
+  const queue: TreeNode<T>[] = [root];
+  let depth = 0;
 
-  // 2️⃣  Walk the string a second time, looking for a count of 1.
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;          // first non‑repeating character found
+  while (queue.length) {
+    const levelSize = queue.length; // nodes at current depth
+    depth++;                        // we’re going to finish this level
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift() as TreeNode<T>;
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
     }
   }
 
-  return null;              // no unique character
+  return depth;
 }
-console.log(firstNonRepeatingChar('abacabad')); // "c"
-console.log(firstNonRepeatingChar('aabbcc'));   // null
-console.log(firstNonRepeatingChar('😀😃😀😄')); // "😃"
+// build a quick tree
+const tree: TreeNode = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: null, right: null },
+    right: null,
+  },
+  right: {
+    val: 3,
+    left: null,
+    right: { val: 5, left: null, right: null },
+  },
+};
+
+console.log(maxDepth(tree));      // -> 3
+console.log(maxDepthIter(tree));  // -> 3
