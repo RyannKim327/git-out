@@ -1,85 +1,36 @@
-/** 
- * At its core a node only needs to expose
- *   - a unique identifier (for visited‑tracking)
- *   - a way to enumerate its successors
- */
-export interface Node<T = any> {
-  id: string | number;
-  // Optional: depth, parent, cost – whatever your context needs
-  getSuccessors(): Node[];
-}
-export interface BinaryNode<T = any> extends Node {
-  left?: BinaryNode;
-  right?: BinaryNode;
-  getSuccessors(): BinaryNode[] {
-    return [this.left, this.right].filter(Boolean);
-  }
-}
 /**
- * depthLimitedSearch
- * ------------------
- * Classic depth‑first search that stops when a given depth threshold is reached.
- *
- * @param root the node to start from
- * @param goalTest a predicate that returns true for the desired node
- * @param depthLimit the maximum depth to explore (0 = only the root)
- * @returns the first node that satisfies goalTest, or null if not found
+ * Performs an in‑place Shell sort on `arr`.
+ * The generic makes it usable for numbers, strings, or any comparable type.
  */
-export function depthLimitedSearch<T>(
-  root: Node<T>,
-  goalTest: (node: Node<T>) => boolean,
-  depthLimit: number
-): Node<T> | null {
+export function shellSort<T>(arr: T[], compare?: (a: T, b: T) => boolean) {
+  const len = arr.length;
+  // Default comparison: ascending numeric/string order
+  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any));
 
-  // A simple iterative DFS pile that also carries the current depth.
-  const stack: { node: Node<T>; depth: number }[] = [];
-  const visited = new Set<string | number>(); // avoid cycles
+  // Start with a gap (Hibbard’s sequence is simple and effective)
+  // gap = 1, 3, 7, 15, …  (2^k‑1)
+  let gap = 1;
+  while (gap < len) gap = 2 * gap + 1; // find largest Hibbard gap <= len
 
-  stack.push({ node: root, depth: 0 });
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!; // pop returns a value, guaranteed not undefined
-
-    // skip already visited nodes (useful for graphs)
-    if (visited.has(node.id)) continue;
-    visited.add(node.id);
-
-    if (goalTest(node)) return node;   // success!
-
-    // Recurse only if we haven't hit the limit yet
-    if (depth < depthLimit) {
-      // Add successors in reverse order so leftmost child is processed first
-      const successors = node.getSuccessors();
-      for (let i = successors.length - 1; i >= 0; i--) {
-        stack.push({ node: successors[i], depth: depth + 1 });
+  // Descend gaps until 1
+  while (gap >= 1) {
+    // Insertion sort on elements gap apart
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+      // shift earlier gap‑sorted elements that are greater
+      while (j >= gap && cmp(temp, arr[j - gap])) {
+        arr[j] = arr[j - gap];
+        j -= gap;
       }
+      arr[j] = temp;
     }
-  }
-
-  // If we exhaust the stack without finding the goal
-  return null;
-}
-// 1‑line node type with a simple integer value
-class GraphNode implements Node {
-  constructor(public id: number, public value: number) {}
-  getSuccessors(): GraphNode[] {
-    const n = this.value;
-    return [
-      new GraphNode(n * 2, n * 2),
-      new GraphNode(n * 2 + 1, n * 2 + 1),
-    ];
+    // Next gap
+    gap = Math.floor((gap - 1) / 2); // inverse of 2*gap + 1
   }
 }
-
-const start = new GraphNode(1, 1);
-const goalIf = (node: GraphNode) => node.value === 19;
-
-const found = depthLimitedSearch(start, goalIf, 4);
-
-console.log(found ? `found ${found.value}` : 'not found');
-          1
-        /   \
-       2     3
-      / \   / \
-     4  5  6  7
-    / \ ...   ...
+const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
+shellSort(numbers);
+console.log(numbers); // [1, 2, 3, 8, 12, 23, 34, 54]
+const desc = (a: number, b: number) => a > b;
+shellSort(numbers, desc);
