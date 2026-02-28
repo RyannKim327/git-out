@@ -1,61 +1,64 @@
 /**
- * Radix sort for 32‑bit unsigned integers.
- * Sorts in place and returns the sorted array for convenience.
+ * Basic node definition for a singly‑linked list.
  */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length <= 1) return arr;          // already sorted
-
-  // Pick a base that gives a nice trade‑off between passes and bucket size.
-  // Base 256 (8 bits per pass) lets us use a Uint32Array for buckets.
-  const base = 256;
-  const maxBit = 32; // 32 bits for a signed int, but we only store positives here
-
-  // Number of passes, one per byte in this case.
-  const passes = maxBit / 8;
-
-  // Temporary array for intermediate results.
-  const temp = new Array<number>(arr.length);
-
-  // Helper: counts how many numbers have a certain digit value at a given byte.
-  const count = new Uint32Array(base);
-
-  for (let pass = 0; pass < passes; ++pass) {
-    // Reset counts.
-    count.fill(0);
-
-    // Count occurrences of each bucket value.
-    const shift = pass * 8;
-    for (const n of arr) {
-      const bucket = (n >> shift) & 0xff;
-      count[bucket]++;
-    }
-
-    // Compute cumulative counts => start indices in `temp`.
-    const startIdx = new Uint32Array(base);
-    let sum = 0;
-    for (let i = 0; i < base; ++i) {
-      startIdx[i] = sum;
-      sum += count[i];
-    }
-
-    // Place numbers into the correct bucket order.
-    for (const n of arr) {
-      const bucket = (n >> shift) & 0xff;
-      const idx = startIdx[bucket]++;
-      temp[idx] = n;
-    }
-
-    // Swap the source and destination for the next round.
-    [arr, temp] = [temp, arr];
-  }
-
-  // After an even number of passes `arr` points to original input; the sorted
-  // result ends up in `arr`. If passes were odd, the sorted array will be in `temp`.
-  // Ensure we return the sorted array reference.
-  return arr.length === sizeOfInput ? arr : temp;
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
-/** Quick tests */
-const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log('unsorted:', unsorted);
-console.log('sorted:  ', radixSort([...unsorted])); // use spread to leave original intact
+/**
+ * Returns `true` if the list reads the same forwards and backwards.
+ *
+ * Time   : O(n) – we traverse the list a constant number of times.
+ * Space  : O(1) – we only use a few pointer variables.
+ */
+function isPalindrome<T>(head: ListNode<T> | null): boolean {
+  if (!head || !head.next) return true;   // empty or single‑node list
+
+  // 1. Find the middle of the list
+  let slow = head;
+  let fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
+  }
+
+  // 2. Reverse the second half (starting from slow.next)
+  let prev: ListNode<T> | null = null;
+  let curr: ListNode<T> | null = slow.next;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  // `prev` is now the head of the reversed second half
+
+  // 3. Compare the first half with the reversed second half
+  let p1 = head;
+  let p2 = prev;
+  while (p2) {               // only need to go as far as the short half
+    if (p1.val !== p2.val) return false;
+    p1 = p1.next!;
+    p2 = p2.next!;
+  }
+
+  // Optional: restore the list to its original order (not required for the answer)
+  // reverse(prev) again and reattach to `slow.next`
+
+  return true;
+}
+const build = (...vals: number[]): ListNode<number> | null => {
+  let head: ListNode<number> | null = null;
+  let tail: ListNode<number> | null = null;
+  for (const v of vals) {
+    const node = new ListNode(v);
+    if (!head) head = node;
+    else tail!.next = node;
+    tail = node;
+  }
+  return head;
+};
+
+console.log(isPalindrome(build(1, 2, 3, 2, 1))); // true
+console.log(isPalindrome(build(1, 2, 2, 1)));      // true
+console.log(isPalindrome(build(1, 2, 3, 4, 5))); // false
