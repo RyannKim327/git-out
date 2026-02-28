@@ -1,78 +1,92 @@
-// AndroidAsyncDemo.ts
-import { AndroidApplication, AndroidActivityEventData } from "@nativescript/core";
-import * as http from "http";
+type Node = string;                     // or number, or any keyable type
+type Edge = [Node, Node];               // (from, to)
 
-export class AndroidAsyncDemo {
-    private activity: android.app.Activity;
-
-    constructor() {
-        const eventData = <AndroidActivityEventData>androidApplication.currentContext.getActivity();
-        this.activity = eventData.activity;
-    }
-
-    public startDemo() {
-        // URL you care about
-        const url = "https://api.github.com/users/nativescript";
-
-        // Create an instance of the AsyncTask wrapper
-        const task = new HttpGetAsyncTask(this.activity, url);
-        task.execute();
-    }
+interface Graph {
+    nodes: Set<Node>;
+    edges: Edge[];
 }
+function topologicalSortKahn(graph: Graph): Node[] | null {
+    const indeg = new Map<Node, number>();
+    const adj   = new Map<Node, Node[]>();
 
-// --------------------------------------------
-//  AsyncTask wrapper – looks a bit like Java
-// --------------------------------------------
-class HttpGetAsyncTask extends java.lang.Object implements android.os.AsyncTask<string, void, string> {
+    // init
+    graph.nodes.forEach(v => {
+        indeg.set(v, 0);
+        adj.set(v, []);
+    });
 
-    private activity: android.app.Activity;
-    private url: string;
-    private resultView: android.widget.TextView;
-
-    constructor(activity: android.app.Activity, url: string) {
-        super();
-        this.activity = activity;
-        this.url = url;
-        this.resultView = new android.widget.TextView(activity);
-        this.resultView.setLayoutParams(
-            new android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        );
-        this.activity.runOnUiThread(() => {
-            const root = this.activity.findViewById(android.R.id.content);
-            if (root instanceof android.widget.LinearLayout) {
-                root.addView(this.resultView);
-            }
-        });
+    // build adjacency + indegree
+    for (const [u, v] of graph.edges) {
+        adj.get(u)!.push(v);
+        indeg.set(v, indeg.get(v)! + 1);
     }
 
-    // @Override
-    public doInBackground(...params: string[]): string {
-        try {
-            // Using Node's http wrapper that works in NativeScript
-            const response = http.getSync(this.url);
-            return response.content.toString();
-        } catch (err) {
-            return `Error: ${err.message || err}`;
+    // queue of nodes with indegree 0
+    const q: Node[] = [];
+    indeg.forEach((cnt, node) => { if (cnt === 0) q.push(node); });
+
+    const order: Node[] = [];
+
+    while (q.length) {
+        const v = q.shift()!;
+        order.push(v);
+
+        for (const w of adj.get(v)!) {
+            const newCnt = indeg.get(w)! - 1;
+            indeg.set(w, newCnt);
+            if (newCnt === 0) q.push(w);
         }
     }
 
-    // @Override
-    public onPostExecute(result: string): void {
-        this.resultView.setText(result);
+    // If we processed every node → DAG; else cycle present
+    return order.length === graph.nodes.size ? order : null;
+}
+function topologicalSortDFS(graph: Graph): Node[] | null {
+    const adj = new Map<Node, Node[]>();
+    graph.nodes.forEach(v => adj.set(v, []));
+
+    for (const [u, v] of graph.edges) {
+        adj.get(u)!.push(v);
     }
 
-    // The following method signatures satisfy the interface contract
-    public onPreExecute(): void {}
-    public onProgressUpdate(...values: void[]): void {}
-}
+    const visited = new Set<Node>();
+    const onStack = new Set<Node>();   // for cycle detection
+    const order: Node[] = [];
 
-// --------------------------------------------
-//  Use it from your page or component
-// --------------------------------------------
-export function demoClicked() {
-    const demo = new AndroidAsyncDemo();
-    demo.startDemo();
+    function dfs(v: Node): boolean {
+        visited.add(v);
+        onStack.add(v);
+
+        for (const w of adj.get(v)!) {
+            if (!visited.has(w)) {
+                if (!dfs(w)) return false;           // cycle deeper down
+            } else if (onStack.has(w)) {
+                return false;                       // back edge → cycle
+            }
+        }
+
+        onStack.delete(v);
+        order.push(v);                     // add after exploring all children
+        return true;
+    }
+
+    for (const node of graph.nodes) {
+        if (!visited.has(node) && !dfs(node))
+            return null;                   // cycle found
+    }
+
+    return order.reverse();               // reverse to get finish order
 }
+const g: Graph = {
+    nodes: new Set(['A','B','C','D','E']),
+    edges: [
+        ['A', 'B'],
+        ['A', 'C'],
+        ['B', 'D'],
+        ['C', 'D'],
+        ['D', 'E'],
+    ]
+};
+
+console.log('Kahn:', topologicalSortKahn(g)); // e.g. A,B,C,D,E or A,C,B,D,E
+console.log('DFS :', topologicalSortDFS(g));
