@@ -1,74 +1,116 @@
 /**
- * Median of two sorted arrays
- * A and B can be empty, but not both.
+ * Build the bad‑character shift table.
+ * For every character that occurs in the pattern, we store the distance
+ * from the last occurrence of that character to the end of the pattern
+ * (i.e. how far we can jump when that character mismatches).
  */
-export function medianOfTwoSortedArrays(
-  a: number[],
-  b: number[]
-): number {
-  // Ensure a is the smaller array; this keeps the binary‑search bounds tight.
-  const [A, B] = a.length <= b.length ? [a, b] : [b, a];
-  const m = A.length;
-  const n = B.length;
-  const half = Math.floor((m + n + 1) / 2);
+function buildBadCharShift(pat: string): Int8Array {
+  const m = pat.length;
+  // 256 possible ASCII values – 16-bit enough for Unicode offsets too
+  const shift = new Int8Array(256);
+  shift.fill(-1);
 
-  let low = 0;
-  let high = m;
+  for (let i = 0; i < m; i++) {
+    shift[pat.charCodeAt(i)] = i;
+  }
+  return shift;
+}
 
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2); // elements taken from A
-    const j = half - i;                     // elements taken from B
+/**
+ * Build the good‑suffix shift table.
+ * The array `shift` holds, for each position in the pattern,
+ * how far we can safely shift if the suffix starting at that position
+ * is found to match the text but a mismatch occurs just before it.
+ */
+function buildGoodSuffixShift(pat: string): Int32Array {
+  const m = pat.length;
+  const shift = new Int32Array(m).fill(m);
+  const borderPos = new Int32Array(m + 1).fill(-1);
+  const suffixPos = new Int32Array(m + 1).fill(-1);
 
-    const Aleft  = i === 0     ? Number.NEGATIVE_INFINITY : A[i - 1];
-    const Aright = i === m     ? Number.POSITIVE_INFINITY : A[i];
+  /* Step 1 – compute border positions (also known as "failure function") */
+  let i = m;
+  let j = m + 1;
+  borderPos[i] = j;
+  while (i > 0) {
+    while (j <= m && pat[i - 1] !== pat[j - 1]) j = borderPos[j];
+    i--;
+    j--;
+    borderPos[i] = j;
+  }
 
-    const Bleft  = j === 0     ? Number.NEGATIVE_INFINITY : B[j - 1];
-    const Bright = j === n     ? Number.POSITIVE_INFINITY : B[j];
-
-    // i is perfect if left side ≤ right side
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // Odd total → max of left side
-      if ((m + n) % 2 === 1) {
-        return Math.max(Aleft, Bleft);
-      }
-
-      // Even total → average of two middle values
-      return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
-    } else if (Aleft > Bright) {
-      // i too big, shift left
-      high = i - 1;
+  /* Step 2 – compute suffix positions */
+  i = 0;
+  j = 0;
+  while (i < m) {
+    if (pat[i] === pat[j]) {
+      j++;
+      suffixPos[i + 1] = j;
+    } else if (j > 0) {
+      j = borderPos[j];
     } else {
-      // i too small, shift right
-      low = i + 1;
+      suffixPos[i + 1] = 0;
+      i++;
     }
   }
 
-  throw new Error('Input arrays are not sorted or invalid.');
-}
-export function medianOfTwoSortedArraysSimple(
-  a: number[],
-  b: number[]
-): number {
-  const merged: number[] = [];
-  let i = 0, j = 0;
+  /* Step 3 – fill the shift table using the border and suffix data */
+  for (let k = 0; k < m; k++) {
+    // If the suffix starting at k matches the pattern's suffix
+    // and there is a border before that suffix, we can shift
+    // to align that border with the text.
+    shift[k] = m - suffixPos[k];
+  }
 
-  while (i < a.length || j < b.length) {
-    if (i >= a.length) {
-      merged.push(b[j++]);
-    } else if (j >= b.length) {
-      merged.push(a[i++]);
-    } else if (a[i] <= b[j]) {
-      merged.push(a[i++]);
+  return shift;
+}
+
+/**
+ * Boyer‑Moore search.
+ * Returns an array of all start indices where `pat` is found in `txt`.
+ */
+export function boyerMoore(txt: string, pat: string): number[] {
+  const n = txt.length;
+  const m = pat.length;
+
+  if (m === 0 || n < m) return [];
+
+  const badChar = buildBadCharShift(pat);
+  const goodSuffix = buildGoodSuffixShift(pat);
+
+  const res: number[] = [];
+  let s = 0; // shift of the pattern over text
+
+  while (s <= n - m) {
+    let j = m - 1;
+
+    // Move left while characters match
+    while (j >= 0 && pat[j] === txt[s + j]) j--;
+
+    if (j < 0) {
+      // full match
+      res.push(s);
+      // shift so that the next possible match starts right after the first character of the current match
+      s += goodSuffix[0];
     } else {
-      merged.push(b[j++]);
+      const badIdx = badChar[txt.charCodeAt(s + j)];
+      const badShift = badIdx !== -1 ? j - badIdx : j + 1;
+      const goodShift = goodSuffix[j];
+      // choose the larger of the two shifts
+      s += Math.max(badShift, goodShift);
     }
   }
 
-  const len = merged.length;
-  if (len % 2 === 1) return merged[Math.floor(len / 2)];
-  return (merged[len / 2 - 1] + merged[len / 2]) / 2;
+  return res;
 }
-const arr1 = [1, 3, 5, 9];
-const arr2 = [2, 4, 6, 8, 10];
 
-console.log(medianOfTwoSortedArrays(arr1, arr2)); // 5.5
+/* ----------------------------------- */
+/* Example usage                     */
+const text = "ABAAABCDABEEABBAAB";
+const pattern = "ABBA";
+
+const matches = boyerMoore(text, pattern);
+console.log("Pattern found at indices:", matches);
+/* Expected output (zero‑based indices):
+   Pattern found at indices: [12, 15]
+*/
