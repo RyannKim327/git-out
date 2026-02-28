@@ -1,36 +1,41 @@
+interface ListNode<T = any> {
+  value: T;
+  next?: ListNode<T>;
+}
 /**
- * Performs an in‑place Shell sort on `arr`.
- * The generic makes it usable for numbers, strings, or any comparable type.
+ * Counts nodes in a linked list.
+ * @param head The first node (or undefined if the list is empty).
+ * @returns Number of nodes in the list.
  */
-export function shellSort<T>(arr: T[], compare?: (a: T, b: T) => boolean) {
-  const len = arr.length;
-  // Default comparison: ascending numeric/string order
-  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any));
+function length<T>(head: ListNode<T> | undefined): number {
+  let count = 0;
+  let current = head;
 
-  // Start with a gap (Hibbard’s sequence is simple and effective)
-  // gap = 1, 3, 7, 15, …  (2^k‑1)
-  let gap = 1;
-  while (gap < len) gap = 2 * gap + 1; // find largest Hibbard gap <= len
-
-  // Descend gaps until 1
-  while (gap >= 1) {
-    // Insertion sort on elements gap apart
-    for (let i = gap; i < len; i++) {
-      const temp = arr[i];
-      let j = i;
-      // shift earlier gap‑sorted elements that are greater
-      while (j >= gap && cmp(temp, arr[j - gap])) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
-    // Next gap
-    gap = Math.floor((gap - 1) / 2); // inverse of 2*gap + 1
+  while (current) {
+    count++;
+    current = current.next;   // follow the chain
+  }
+  return count;
+}
+function lengthRecursive<T>(node: ListNode<T> | undefined): number {
+  return node ? 1 + lengthRecursive(node.next) : 0;
+}
+function* nodes<T>(head: ListNode<T> | undefined) {
+  let cur = head;
+  while (cur) {
+    yield cur;
+    cur = cur.next;
   }
 }
-const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
-shellSort(numbers);
-console.log(numbers); // [1, 2, 3, 8, 12, 23, 34, 54]
-const desc = (a: number, b: number) => a > b;
-shellSort(numbers, desc);
+
+function lengthFromIterable<T>(head: ListNode<T> | undefined): number {
+  let count = 0;
+  for (const _ of nodes(head)) count++;
+  return count;
+}
+const third = { value: 3 } as ListNode<number>;
+const second = { value: 2, next: third };
+const first  = { value: 1, next: second };
+
+console.log(length(first));           // 3
+console.log(lengthRecursive(first));  // 3
