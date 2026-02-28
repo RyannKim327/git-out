@@ -1,60 +1,59 @@
-/**
- * Merges two consecutive sorted halves of `arr` into a single sorted segment.
- * `left` … start index of the first half
- * `mid`  … start index of the second half (i.e. left + size)
- * `right`… end index (exclusive) of the second half
- * The merged result is written back into `arr`.
- */
-function merge(
-  arr: number[],
-  left: number,
-  mid: number,
-  right: number,
-  temp: number[]
-) {
-  let i = left;   // index in first half
-  let j = mid;    // index in second half
-  let k = left;   // index in temp
+class ListNode {
+  val: number;
+  next: ListNode | null;
 
-  while (i < mid && j < right) {
-    if (arr[i] <= arr[j]) temp[k++] = arr[i++];
-    else                   temp[k++] = arr[j++];
-  }
-
-  // copy any remaining elements from the first half
-  while (i < mid) temp[k++] = arr[i++];
-  // anything left from the second half already sits in temp
-
-  // copy back to the original array
-  for (let p = left; p < right; ++p) arr[p] = temp[p];
-}
-
-/**
- * Iterative merge sort.
- * Works in O(n log n) time, O(n) auxiliary space for the temporary array.
- */
-export function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  if (n <= 1) return;                 // already sorted
-
-  const temp = new Array<number>(n);   // reuse this buffer
-
-  // subarray size starts at 1 (single elements) and doubles each pass
-  for (let sz = 1; sz < n; sz *= 2) {
-    // merge adjacent subarrays of size sz
-    for (let left = 0; left < n - sz; left += sz * 2) {
-      const mid   = left + sz;          // left + sz is the start of the 2nd half
-      const right = Math.min(left + sz * 2, n);
-      merge(arr, left, mid, right, temp);
-    }
+  constructor(val: number, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
   }
 }
+/**
+ * Returns the node where listA and listB intersect.
+ * If they don't intersect, returns null.
+ */
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  if (!headA || !headB) return null;
 
-// ------------------------------------------------------------------
-// Example usage
-// ------------------------------------------------------------------
+  let pA: ListNode | null = headA;
+  let pB: ListNode | null = headB;
 
-// Readable example – will sort the array in place
-const sample = [38, 27, 43, 3, 9, 82, 10];
-mergeSortIterative(sample);
-console.log(sample);  // [3, 9, 10, 27, 38, 43, 82]
+  // Continue until the two pointers either match or both become null.
+  while (pA !== pB) {
+    // Move to the next node; if we're at the end, jump to the other list's head.
+    pA = pA ? pA.next : headB;
+    pB = pB ? pB.next : headA;
+  }
+
+  return pA; // Either the intersection node or null.
+}
+// Build two intersecting lists:
+// A: 1 → 3 → 5 → 7 → 9
+// B: 2 → 4 →        → 7 → 9
+//            ^<--- intersection starts here
+
+const common = new ListNode(7, new ListNode(9));
+
+const listA = new ListNode(1, new ListNode(3, new ListNode(5, common)));
+const listB = new ListNode(2, new ListNode(4, common));
+
+const intersection = getIntersectionNode(listA, listB);
+console.log(intersection?.val); // 7
+function getIntersectionNodeHash(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  const nodes = new Set<ListNode>();
+
+  for (let cur = headA; cur; cur = cur.next) {
+    nodes.add(cur);
+  }
+
+  for (let cur = headB; cur; cur = cur.next) {
+    if (nodes.has(cur)) return cur;
+  }
+
+  return null;
+}
