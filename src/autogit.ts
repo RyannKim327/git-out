@@ -1,93 +1,78 @@
-// `Graph<T>` maps a node of type T to an array of its adjacent nodes.
-type Graph<T> = Map<T, T[]>;
-
-// A helper to add an undirected edge
-function addEdge<T>(g: Graph<T>, a: T, b: T) {
-  g.set(a, (g.get(a) ?? []).concat(b));
-  g.set(b, (g.get(b) ?? []).concat(a));
-}
 /**
- * Performs a breadth‑first search on an unweighted graph.
+ * Build the longest‑prefix‑suffix (LPS) array for the pattern.
+ * lps[i] will contain the length of the longest proper prefix
+ * that is also a suffix for the substring pattern[0…i].
  *
- * @param start   the starting node
- * @param graph   the graph to search
- * @param visitor a callback that receives each visited node in the order
- *                it’s discovered. The callback can return `false` to stop
- *                the search early.
+ * @param pattern – the pattern
+ * @returns the filled LPS array
  */
-function bfs<T>(
-  start: T,
-  graph: Graph<T>,
-  visitor: (node: T) => void | boolean
-): void {
-  const visited = new Set<T>();
-  const queue = [start];
+function computeLPS(pattern: string): number[] {
+  const lps: number[] = new Array(pattern.length).fill(0);
+  let length = 0;          // length of the previous longest prefix suffix
+  let i = 1;               // lps[0] is always 0
 
-  visited.add(start);
-
-  while (queue.length) {
-    const node = queue.shift()!;      // Non‑null because we just tested length
-    const result = visitor(node);
-
-    // If the visitor explicitly returned false, break out early.
-    if (result === false) break;
-
-    const neighbors = graph.get(node) ?? [];
-    for (const n of neighbors) {
-      if (!visited.has(n)) {
-        visited.add(n);
-        queue.push(n);
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
+    } else {
+      if (length !== 0) {
+        // don't move i here; keep looking for a smaller prefix
+        length = lps[length - 1];
+      } else {
+        lps[i] = 0;
+        i++;
       }
     }
   }
+
+  return lps;
 }
+
 /**
- * Returns an array representing the shortest path from `start` to `target`
- * (inclusive), or `null` if no path exists.
+ * Perform KMP search for a pattern in a text.
+ *
+ * @param text     – the string to search in
+ * @param pattern  – the pattern to look for
+ * @returns an array of starting indices where the pattern occurs
  */
-function shortestPath<T>(start: T, target: T, graph: Graph<T>): T[] | null {
-  const prev = new Map<T, T | undefined>(); // child → parent
-  const visited = new Set<T>();
-  const queue: T[] = [start];
-  visited.add(start);
-  let found = false;
+function kmpSearch(text: string, pattern: string): number[] {
+  if (pattern.length === 0) return []; // nothing to search for
 
-  while (queue.length && !found) {
-    const node = queue.shift()!;
-    for (const nb of graph.get(node) ?? []) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        prev.set(nb, node);
-        if (nb === target) {
-          found = true;
-          break;
-        }
-        queue.push(nb);
+  const lps = computeLPS(pattern);
+  const positions: number[] = [];
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+
+      if (j === pattern.length) {
+        // match found – record starting index
+        positions.push(i - j);
+        // continue searching for next possible match
+        j = lps[j - 1];
+      }
+    } else {
+      if (j !== 0) {
+        // jump back in the pattern based on LPS
+        j = lps[j - 1];
+      } else {
+        i++; // move to next character in text
       }
     }
   }
 
-  if (!found) return null;
-
-  // Walk backwards from target to start
-  const path = [];
-  for (let cur: T | undefined = target; cur !== undefined; cur = prev.get(cur)) {
-    path.push(cur);
-  }
-  path.reverse();
-  return path;
+  return positions;
 }
-const g: Graph<string> = new Map();
-addEdge(g, 'A', 'B');
-addEdge(g, 'A', 'C');
-addEdge(g, 'B', 'D');
-addEdge(g, 'C', 'D');
-addEdge(g, 'C', 'E');
 
-console.log('BFS visiting order:', () => {
-  const order: string[] = [];
-  bfs('A', g, node => { order.push(node); });
-  return order;
-}()); // ['A', 'B', 'C', 'D', 'E']
+/* Example usage */
+const haystack = "ABABDABACDABABCABAB";
+const needle = "ABABCABAB";
 
-console.log('Shortest path A → D:', shortestPath('A', 'D', g)); // ['A', 'B', 'D']
+const matches = kmpSearch(haystack, needle);
+console.log("Pattern found at positions:", matches);
+// Expected output: Pattern found at positions: [9]
