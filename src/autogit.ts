@@ -1,59 +1,61 @@
 /**
- * Returns the longest common subsequence of two strings.
- *
- * @param a First string.
- * @param b Second string.
- * @returns The LCS as a string.
+ * Radix sort for 32‑bit unsigned integers.
+ * Sorts in place and returns the sorted array for convenience.
  */
-function longestCommonSubsequence(a: string, b: string): string {
-  const n = a.length;
-  const m = b.length;
+export function radixSort(arr: number[]): number[] {
+  if (arr.length <= 1) return arr;          // already sorted
 
-  // dp[i][j] = LCS length for a[0..i-1] and b[0..j-1]
-  const dp: number[][] = Array(n + 1)
-    .fill(null)
-    .map(() => Array(m + 1).fill(0));
+  // Pick a base that gives a nice trade‑off between passes and bucket size.
+  // Base 256 (8 bits per pass) lets us use a Uint32Array for buckets.
+  const base = 256;
+  const maxBit = 32; // 32 bits for a signed int, but we only store positives here
 
-  // Fill table
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
+  // Number of passes, one per byte in this case.
+  const passes = maxBit / 8;
+
+  // Temporary array for intermediate results.
+  const temp = new Array<number>(arr.length);
+
+  // Helper: counts how many numbers have a certain digit value at a given byte.
+  const count = new Uint32Array(base);
+
+  for (let pass = 0; pass < passes; ++pass) {
+    // Reset counts.
+    count.fill(0);
+
+    // Count occurrences of each bucket value.
+    const shift = pass * 8;
+    for (const n of arr) {
+      const bucket = (n >> shift) & 0xff;
+      count[bucket]++;
     }
+
+    // Compute cumulative counts => start indices in `temp`.
+    const startIdx = new Uint32Array(base);
+    let sum = 0;
+    for (let i = 0; i < base; ++i) {
+      startIdx[i] = sum;
+      sum += count[i];
+    }
+
+    // Place numbers into the correct bucket order.
+    for (const n of arr) {
+      const bucket = (n >> shift) & 0xff;
+      const idx = startIdx[bucket]++;
+      temp[idx] = n;
+    }
+
+    // Swap the source and destination for the next round.
+    [arr, temp] = [temp, arr];
   }
 
-  // Back‑track to build the subsequence
-  let i = n,
-    j = m,
-    lcs = '';
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      lcs = a[i - 1] + lcs; // prepend
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;
-    } else {
-      j--;
-    }
-  }
-
-  return lcs;
+  // After an even number of passes `arr` points to original input; the sorted
+  // result ends up in `arr`. If passes were odd, the sorted array will be in `temp`.
+  // Ensure we return the sorted array reference.
+  return arr.length === sizeOfInput ? arr : temp;
 }
-console.log(longestCommonSubsequence('ABCDGH', 'AEDFHR')); // → "ADH"
-function lcsLength(a: string, b: string): number {
-  const n = a.length, m = b.length;
-  const dp = Array(n + 1).fill(0).map(() => Array(m + 1).fill(0));
 
-  for (let i = 1; i <= n; i++)
-    for (let j = 1; j <= m; j++)
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1] + 1
-        : Math.max(dp[i - 1][j], dp[i][j - 1]);
-
-  return dp[n][m];
-}
+/** Quick tests */
+const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log('unsorted:', unsorted);
+console.log('sorted:  ', radixSort([...unsorted])); // use spread to leave original intact
