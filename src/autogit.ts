@@ -1,39 +1,24 @@
-class ListNode<T> {
-    constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-    if (!head) return false;
+/**
+ * Return the first character in `s` that occurs exactly once.
+ * If every character repeats, return null.
+ */
+function firstNonRepeatingChar(s: string): string | null {
+  // 1️⃣  Count how many times each char appears.
+  const freq = new Map<string, number>();
 
-    let slow: ListNode<T> | null = head;
-    let fast: ListNode<T> | null = head;
+  for (const ch of s) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  }
 
-    while (fast !== null && fast.next !== null) {
-        slow = slow!.next;           // move 1 step
-        fast = fast.next.next;       // move 2 steps
-
-        if (slow === fast) {         // same node → cycle
-            return true;
-        }
+  // 2️⃣  Walk the string a second time, looking for a count of 1.
+  for (const ch of s) {
+    if (freq.get(ch) === 1) {
+      return ch;          // first non‑repeating character found
     }
-    return false;                    // fast reached end → no cycle
-}
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-    const visited = new Set<ListNode<T>>();
+  }
 
-    let current: ListNode<T> | null = head;
-    while (current !== null) {
-        if (visited.has(current)) return true; // already seen
-        visited.add(current);
-        current = current.next;
-    }
-    return false;
+  return null;              // no unique character
 }
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b;  // 1 → 2 → 3
-b.next = c;
-c.next = a;  // cycle back to 1
-
-console.log(hasCycle(a));        // → true
-console.log(hasCycleWithSet(a)); // → true
+console.log(firstNonRepeatingChar('abacabad')); // "c"
+console.log(firstNonRepeatingChar('aabbcc'));   // null
+console.log(firstNonRepeatingChar('😀😃😀😄')); // "😃"
