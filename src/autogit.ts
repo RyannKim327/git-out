@@ -1,57 +1,128 @@
+type Compare<T> = (a: T, b: T) => boolean;
+
 /**
- * Simple anagram checker.
- * @param a First string
- * @param b Second string
- * @returns true if a and b are anagrams, false otherwise
+ * If `compare(child, parent)` is true, swap them and continue
+ * until the heap property is restored.
  */
-function areAnagrams(a: string, b: string): boolean {
-  // 1. Normalize: lower‑case, strip non‑alphanumerics, trim
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")
-      .trim();
+function siftDown<T>(heap: T[], start: number, end: number, compare: Compare<T>) {
+  let root = start;
 
-  const na = normalize(a);
-  const nb = normalize(b);
+  while (true) {
+    const left = root * 2 + 1;
+    const right = left + 1;
+    let swap = root;
 
-  // Quick length check; if they differ early we’re done.
-  if (na.length !== nb.length) return false;
+    if (left <= end && compare(heap[left], heap[swap])) {
+      swap = left;
+    }
+    if (right <= end && compare(heap[right], heap[swap])) {
+      swap = right;
+    }
 
-  // 2. Build frequency maps
-  const freq = new Map<string, number>();
+    if (swap === root) break;
 
-  for (const ch of na) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+    [heap[root], heap[swap]] = [heap[swap], heap[root]];
+    root = swap;
+  }
+}
+
+/**
+ * Moves the root element down the heap until it finds the right spot.
+ * Called during `remove` after we swap the last element into the root.
+ */
+export function heapify<T>(heap: T[], compare: Compare<T>) {
+  const length = heap.length;
+  if (length <= 1) return;
+
+  // Start from the last non‑leaf node.
+  for (let i = Math.floor((length - 2) / 2); i >= 0; i--) {
+    siftDown(heap, i, length - 1, compare);
+  }
+}
+export class PriorityQueue<T> {
+  private heap: T[] = [];
+  private readonly compare: Compare<T>;
+
+  constructor(compare: Compare<T>) {
+    this.compare = compare;
   }
 
-  for (const ch of nb) {
-    const count = freq.get(ch);
-
-    // If we see a character not in the first string, bail
-    if (!count) return false;
-
-    // Decrease the count and remove entry if it drops to zero
-    if (count === 1) freq.delete(ch);
-    else freq.set(ch, count - 1);
+  get size() {
+    return this.heap.length;
   }
 
-  // 3. If all counts cleared, the strings are anagrams
-  return freq.size === 0;
-}
-console.log(areAnagrams("listen", "silent"));   // → true
-console.log(areAnagrams("evil", "vile"));       // → true
-console.log(areAnagrams("hello", "billion"));   // → false
-console.log(areAnagrams("Clint Eastwood", "Old West Action")); // true
-function areAnagramsSort(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")
-      .trim()
-      .split("")
-      .sort()
-      .join("");
+  /** Insert a new item, maintaining heap property */
+  push(item: T): void {
+    this.heap.push(item);
+    // bubble‑up
+    let idx = this.heap.length - 1;
+    while (idx > 0) {
+      const parentIdx = Math.floor((idx - 1) / 2);
+      if (!this.compare(this.heap[idx], this.heap[parentIdx])) break;
+      [this.heap[idx], this.heap[parentIdx]] = [this.heap[parentIdx], this.heap[idx]];
+      idx = parentIdx;
+    }
+  }
 
-  return normalize(a) === normalize(b);
+  /** Return the root element (minimum) without removing it */
+  peek(): T | undefined {
+    return this.heap[0];
+  }
+
+  /**
+   * Remove and return the root element.
+   * The last element is moved to the root and sifted down.
+   */
+  pop(): T | undefined {
+    const length = this.heap.length;
+    if (!length) return undefined;
+    const root = this.heap[0];
+    const last = this.heap.pop()!; // last is defined because length > 0
+
+    if (length > 1) {
+      this.heap[0] = last;
+      siftDown(this.heap, 0, this.heap.length - 1, this.compare);
+    }
+
+    return root;
+  }
+
+  /** Convert the current array into a heap (in‑place) */
+  build() {
+    heapify(this.heap, this.compare);
+  }
 }
+// Simple numeric priority queue
+const pq = new PriorityQueue<number>((a, b) => a < b);
+
+pq.push(5);
+pq.push(2);
+pq.push(8);
+pq.push(1);
+
+console.log(pq.peek()); // 1
+while (pq.size) {
+  console.log(pq.pop()); // 1, 2, 5, 8
+}
+interface Task {
+  id: number;
+  priority: number; // smaller = higher priority
+  payload: string;
+}
+
+const taskCompare = (a: Task, b: Task) => a.priority < b.priority;
+const taskQueue = new PriorityQueue<Task>(taskCompare);
+
+taskQueue.push({ id: 1, priority: 10, payload: 'work' });
+taskQueue.push({ id: 2, priority: 3, payload: 'urgent' });
+taskQueue.push({ id: 3, priority: 7, payload: 'normal' });
+
+while (taskQueue.size) {
+  const t = taskQueue.pop()!;
+  console.log(`${t.id} (${t.priority}): ${t.payload}`);
+}
+2 (3): urgent
+3 (7): normal
+1 (10): work
+const maxComparator = (a: number, b: number) => a > b;
+const maxPQ = new PriorityQueue<number>(maxComparator);
