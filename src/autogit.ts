@@ -1,78 +1,48 @@
 /**
- * Bubble Sort – in‑place, O(n²) time, O(1) space
+ * Return the maximum sum sub‑array (Kadane) along with its start & end indices.
  *
- * @param arr Array of values that implement `Comparable`
- * @returns the sorted array (same reference as input)
+ * @param nums  Array of numbers – can contain positives, zeros and negatives.
+ * @returns     Object with `maxSum`, `start`, `end` (inclusive).
  */
-export function bubbleSort<T extends Comparable>(arr: T[]): T[] {
-  const n = arr.length;
+export function maxSubarrayWithIndices(nums: number[]): {
+  maxSum: number;
+  start: number;
+  end: number;
+} {
+  if (nums.length === 0) throw new Error("Input array must contain at least one element");
 
-  // Minor optimization: keep track of whether a swap happened
-  // in the current pass. If not, array is already sorted.
-  for (let i = 0; i < n - 1; i++) {
-    let swapped = false;
+  let bestSum = nums[0];
+  let currentSum = nums[0];
 
-    // After each outer loop pass, the largest element of the
-    // unsorted portion settles at the end of the array.
-    for (let j = 0; j < n - i - 1; j++) {
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
+  // These track the best indices we’ve seen
+  let bestStart = 0;
+  let bestEnd = 0;
+
+  // Temporary indices for the sub‑array we are currently extending
+  let tempStart = 0;
+
+  for (let i = 1; i < nums.length; i++) {
+    const num = nums[i];
+
+    // Decide whether to extend the current sub‑array or start fresh at i
+    if (currentSum + num < num) {
+      currentSum = num;
+      tempStart = i;
+    } else {
+      currentSum += num;
     }
 
-    // If no elements were swapped, the array is already sorted.
-    if (!swapped) break;
-  }
-
-  return arr;
-}
-
-/** Simple comparable interface for primitives */
-export interface Comparable {
-  /** Return true if this > other */
-  > (other: this): boolean;
-}
-export function bubbleSortWith<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number
-): T[] {
-  for (let i = 0; i < arr.length - 1; i++) {
-    let swapped = false;
-
-    for (let j = 0; j < arr.length - i - 1; j++) {
-      // compareFn(a, b) < 0 => a < b
-      // compareFn(a, b) > 0 => a > b
-      if (compareFn(arr[j], arr[j + 1]) > 0) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-        swapped = true;
-      }
+    // Update the best found so far
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
     }
-
-    if (!swapped) break;
   }
 
-  return arr;
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-interface Person {
-  name: string;
-  age: number;
-}
-
-const people: Person[] = [
-  { name: "Alice", age: 34 },
-  { name: "Bob", age: 29 },
-  { name: "Carol", age: 42 },
-];
-
-bubbleSortWith(people, (a, b) => a.age - b.age);
-// people is now sorted by age ascending
-function test() {
-  const nums = [3, 1, 4, 1, 5, 9, 2, 6];
-  console.log("Before:", nums);
-  bubbleSort(nums); // mutates nums in place
-  console.log("After: ", nums);
-}
-
-test(); /* → Before: [3,1,4,1,5,9,2,6]
-          After:  [1,1,2,3,4,5,6,9] */
+const arr = [4, -1, 2, 1, -5, 4];
+const result = maxSubarrayWithIndices(arr);
+console.log(result); // { maxSum: 6, start: 0, end: 3 }
+// Sub‑array: [4, -1, 2, 1] → sum 6
