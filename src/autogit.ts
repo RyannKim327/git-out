@@ -1,59 +1,65 @@
 /**
- * Compare two strings for an anagram relationship.
- *
- * @param a – first string (the one you’re testing)
- * @param b – candidate anagram
- * @param ignoreCase – true will treat “A” and “a” the same
- * @param normalize   – if true, removes all non‑alphanumeric chars
- * @returns true if a and b are anagrams
+ * Generic insertion sort.
+ * @param arr  The array to sort – it will be mutated in‑place.
+ * @returns    The sorted array (the same reference that was passed in).
  */
-function isAnagram(
-  a: string,
-  b: string,
-  ignoreCase = true,
-  normalize = true
-): boolean {
-  if (normalize) {
-    const regex = /[^a-z0-9]/gi;
-    a = a.replace(regex, '');
-    b = b.replace(regex, '');
+export function insertionSort<T>(arr: T[]): T[] {
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+
+    /* shift elements that are greater than key one position to the right */
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    arr[j + 1] = key;
   }
-
-  if (ignoreCase) {
-    a = a.toLowerCase();
-    b = b.toLowerCase();
-  }
-
-  // Quick length‐check
-  if (a.length !== b.length) return false;
-
-  // Sort characters and compare
-  const sortedA = a.split('').sort().join('');
-  const sortedB = b.split('').sort().join('');
-
-  return sortedA === sortedB;
+  return arr;
 }
-console.log(isAnagram('Listen', 'Silent'));               // true
-console.log(isAnagram('Astronomer', 'Moon starer'));      // true
-console.log(isAnagram('Hello', 'World'));                  // false
-
-// Custom options
-console.log(isAnagram('Dormitory!', 'Dirtyroom', true, true)); // true
-console.log(isAnagram('Dormitory!', 'Dirtyroom', false, true)); // false – case sensitive
-function isAnagramFreq(a: string, b: string): boolean {
-  const makeMap = (s: string) => {
-    const map: Record<string, number> = {};
-    for (const ch of s) map[ch] = (map[ch] ?? 0) + 1;
-    return map;
-  };
-
-  const freqA = makeMap(a);
-  const freqB = makeMap(b);
-
-  // Compare two maps
-  const keys = new Set([...Object.keys(freqA), ...Object.keys(freqB)]);
-  for (const k of keys) {
-    if (freqA[k] !== freqB[k]) return false;
-  }
-  return true;
+const numbers = [8, 3, 5, 4, 6, 1];
+console.log(insertionSort(numbers)); // [1, 3, 4, 5, 6, 8]
+const words = ['orange', 'apple', 'banana'];
+console.log(insertionSort(words)); // ['apple', 'banana', 'orange']
+interface Person {
+  name: string;
+  age: number;
 }
+
+const people: Person[] = [
+  { name: 'Zoe', age: 29 },
+  { name: 'Anna', age: 22 },
+  { name: 'Mike', age: 35 }
+];
+
+function sortByAge(arr: Person[]): Person[] {
+  return insertionSort(arr, (a, b) => a.age - b.age);
+}
+
+// extended version that accepts a compare function
+export function insertionSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number
+): T[] {
+  const cmp = compareFn ?? ((a: T, b: T) => (a > b ? 1 : a < b ? -1 : 0));
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+    arr[j + 1] = key;
+  }
+  return arr;
+}
+
+console.log(sortByAge(people));
+/*
+[
+  { name: 'Anna', age: 22 },
+  { name: 'Zoe', age: 29 },
+  { name: 'Mike', age: 35 }
+]
+*/
