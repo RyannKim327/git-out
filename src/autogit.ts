@@ -1,23 +1,52 @@
-function countWordOccurrences(str: string, word: string): number {
-  // Escape any regex‑special characters in the word
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(escaped, 'g');
-
-  const matches = str.match(regex);
-  return matches ? matches.length : 0;
+interface TreeNode<T = number> {
+  val: T;                // single value (you can change the type)
+  left: TreeNode<T> | null;
+  right: TreeNode<T> | null;
 }
-
-/* Example */
-const txt = "Lorem ipsum dolor sit amet. Lorem ipsum!";
-console.log(countWordOccurrences(txt, "Lorem")); // 2
-function countWordOccurrencesInsensitive(str: string, word: string): number {
-  const lowered = str.toLowerCase();
-  const target = word.toLowerCase();
-
-  // Split on the target word – keep empty pieces that might appear
-  // at the boundaries or due to overlapping patterns
-  return lowered.split(target).length - 1;
+const root: TreeNode = {
+  val: 10,
+  left: { val: 5, left: null, right: null },
+  right: { val: 15, left: null, right: null },
+};
+function maxDepth<T>(node: TreeNode<T> | null): number {
+  if (!node) return 0;
+  const leftDepth = maxDepth(node.left);
+  const rightDepth = maxDepth(node.right);
+  return Math.max(leftDepth, rightDepth) + 1;
 }
+function maxDepthIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
 
-/* Example */
-console.log(countWordOccurrencesInsensitive(txt, "lorem")); // 2
+  const queue: TreeNode<T>[] = [root];
+  let depth = 0;
+
+  while (queue.length) {
+    const levelSize = queue.length; // nodes at current depth
+    depth++;                        // we’re going to finish this level
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift() as TreeNode<T>;
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
+  }
+
+  return depth;
+}
+// build a quick tree
+const tree: TreeNode = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: null, right: null },
+    right: null,
+  },
+  right: {
+    val: 3,
+    left: null,
+    right: { val: 5, left: null, right: null },
+  },
+};
+
+console.log(maxDepth(tree));      // -> 3
+console.log(maxDepthIter(tree));  // -> 3
