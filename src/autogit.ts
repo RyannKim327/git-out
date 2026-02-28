@@ -1,24 +1,38 @@
-/**
- * Very light‑weight e‑mail validator – good for quick UI checks or APIs.
- * It agrees with the majority of real‑world addresses:   local@domain.com
- *
- * @param address – the string to test
- * @returns true if the format looks like an e‑mail, false otherwise
- */
-export function isValidEmail(address: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(address);
-}
-import validator from 'email-validator';
+// fortune.ts
+import { createInterface } from 'readline';
 
-validator.validate('test@example.com'); // true
-const tests = [
-  'alice@example.com',
-  'bob@sub.domain.org',
-  'invalid-email',
-  'spaces@invalid .com',
-  '@missing.local',
-  'user@',
-];
+// Set up a simple REPL‑style prompt
+const rl = createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-tests.forEach(email => console.log(`${email}: ${isValidEmail(email)}`));
+console.log('🃏 Welcome to the Random Fortune Machine!');
+
+// Ask the user for a number
+rl.question('Enter a number (0–9) and press Enter: ', (answer) => {
+  // Try to parse the input as an integer
+  const num = parseInt(answer.trim(), 10);
+
+  if (isNaN(num) || num < 0 || num > 9) {
+    console.log('❌ That’s not a valid single digit between 0 and 9.');
+  } else {
+    // Pick a fortune from a tiny list
+    const fortunes = [
+      "You'll find a penny on the sidewalk.",
+      "A surprise call will brighten your day.",
+      "Today is a great day to start learning something new.",
+      "You’ll discover a hidden talent for drawing.",
+      "A forgotten receipt will pop up in your inbox.",
+      "A random act of kindness will return to you.",
+      "You’ll taste your favorite food in an unexpected way.",
+      "A new friendship is just a conversation away.",
+      "You’ll hit a traffic light and notice your neighbor’s cat.",
+      "Today you will finally finish that project you’ve shelved."
+    ];
+
+    console.log(`🔮 Fortune for ${num}: ${fortunes[num]}`);
+  }
+
+  rl.close();
+});
