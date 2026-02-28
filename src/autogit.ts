@@ -1,41 +1,37 @@
-interface ListNode<T = any> {
-  value: T;
-  next?: ListNode<T>;
-}
-/**
- * Counts nodes in a linked list.
- * @param head The first node (or undefined if the list is empty).
- * @returns Number of nodes in the list.
- */
-function length<T>(head: ListNode<T> | undefined): number {
+function countChar(str: string, target: string): number {
   let count = 0;
-  let current = head;
-
-  while (current) {
-    count++;
-    current = current.next;   // follow the chain
+  for (const ch of str) {
+    if (ch === target) count++;
   }
   return count;
 }
-function lengthRecursive<T>(node: ListNode<T> | undefined): number {
-  return node ? 1 + lengthRecursive(node.next) : 0;
+
+const times = countChar("hello world", "l"); // 3
+function countChar(str: string, target: string): number {
+  return str.split(target).length - 1;
 }
-function* nodes<T>(head: ListNode<T> | undefined) {
-  let cur = head;
-  while (cur) {
-    yield cur;
-    cur = cur.next;
+
+countChar("banana", "a"); // 3
+function countChar(str: string, target: string): number {
+  return [...str].filter(ch => ch === target).length;
+}
+
+countChar("👋👋👋 hello", "👋"); // 3
+function countChar(str: string, target: string): number {
+  const re = new RegExp(`\\${target}`, "g");
+  const matches = str.match(re);
+  return matches ? matches.length : 0;
+}
+
+countChar("mississippi", "i"); // 4
+function multicharCount(str: string, targets: string[]): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const t of targets) result[t] = 0;
+
+  for (const ch of str) {
+    if (result.hasOwnProperty(ch)) result[ch]++;
   }
+  return result;
 }
 
-function lengthFromIterable<T>(head: ListNode<T> | undefined): number {
-  let count = 0;
-  for (const _ of nodes(head)) count++;
-  return count;
-}
-const third = { value: 3 } as ListNode<number>;
-const second = { value: 2, next: third };
-const first  = { value: 1, next: second };
-
-console.log(length(first));           // 3
-console.log(lengthRecursive(first));  // 3
+multicharCount("abacaba", ["a", "b", "c"]); // { a:4, b:2, c:1 }
