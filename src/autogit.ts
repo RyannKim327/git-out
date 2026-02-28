@@ -1,20 +1,24 @@
-function removeVowels(input: string): string {
-  // Vowels (both lower‑ and upper‑case) – feel free to add accented ones if you need
-  const vowels = /[aeiouAEIOU]/g;
-  return input.replace(vowels, '');
-}
-function removeVowels(input: string): string {
-  const result: string[] = [];
+/**
+ * Return the first character in `s` that occurs exactly once.
+ * If every character repeats, return null.
+ */
+function firstNonRepeatingChar(s: string): string | null {
+  // 1️⃣  Count how many times each char appears.
+  const freq = new Map<string, number>();
 
-  for (const char of input) {
-    if (!/[aeiouAEIOU]/.test(char)) {
-      result.push(char);
+  for (const ch of s) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  }
+
+  // 2️⃣  Walk the string a second time, looking for a count of 1.
+  for (const ch of s) {
+    if (freq.get(ch) === 1) {
+      return ch;          // first non‑repeating character found
     }
   }
 
-  return result.join('');
+  return null;              // no unique character
 }
-const vowels = /[aeiouAEIOUÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝŸàáâãäåæçèéêëìíîïðñòóôõöøùúûüýÿ]/gu;
-const vowels = /\p{Script=Latin}\p{L}\b{vowel}/u; // not a real pattern – just an example
-const demo = "Hello World! 123";
-console.log(removeVowels(demo)); // "Hll Wrld! 123"
+console.log(firstNonRepeatingChar('abacabad')); // "c"
+console.log(firstNonRepeatingChar('aabbcc'));   // null
+console.log(firstNonRepeatingChar('😀😃😀😄')); // "😃"
