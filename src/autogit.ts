@@ -1,37 +1,83 @@
-function countChar(str: string, target: string): number {
-  let count = 0;
-  for (const ch of str) {
-    if (ch === target) count++;
+// fetch-example.ts
+/**
+ * A small utility that fetches JSON from a public API
+ * and logs a nicely formatted result.
+ *
+ * It demonstrates:
+ *   • TypeScript generics for response typing
+ *   • Async/await syntax
+ *   • Basic error handling
+ *   • Runtime type guard for JSON validation
+ */
+
+type PlainObject = Record<string, unknown>;
+
+// A small runtime check to ensure the response is
+// an object (the common case when fetching JSON).
+function isObject(value: unknown): value is PlainObject {
+  return typeof value === 'object' && value !== null;
+}
+
+/**
+ * Generic fetch function that returns data of type T.
+ * @param url          The URL to fetch from
+ * @param init         Optional RequestInit parameters
+ */
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, init);
+
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
   }
-  return count;
-}
 
-const times = countChar("hello world", "l"); // 3
-function countChar(str: string, target: string): number {
-  return str.split(target).length - 1;
-}
+  const data = await response.json();
 
-countChar("banana", "a"); // 3
-function countChar(str: string, target: string): number {
-  return [...str].filter(ch => ch === target).length;
-}
-
-countChar("👋👋👋 hello", "👋"); // 3
-function countChar(str: string, target: string): number {
-  const re = new RegExp(`\\${target}`, "g");
-  const matches = str.match(re);
-  return matches ? matches.length : 0;
-}
-
-countChar("mississippi", "i"); // 4
-function multicharCount(str: string, targets: string[]): Record<string, number> {
-  const result: Record<string, number> = {};
-  for (const t of targets) result[t] = 0;
-
-  for (const ch of str) {
-    if (result.hasOwnProperty(ch)) result[ch]++;
+  // Very light runtime validation – just make sure we got an object
+  if (!isObject(data)) {
+    throw new Error('Response is not a JSON object');
   }
-  return result;
+
+  return data as T; // confidence that T matches the real shape
 }
 
-multicharCount("abacaba", ["a", "b", "c"]); // { a:4, b:2, c:1 }
+/**
+ * Example usage: fetch a user from the JSONPlaceholder API.
+ * The API returns a shape that we can describe as a type.
+ */
+interface JsonPlaceholderUser {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  address: {
+    street: string;
+    suite: string;
+    city: string;
+    zipcode: string;
+    geo: { lat: string; lng: string };
+  };
+  phone: string;
+  website: string;
+  company: {
+    name: string;
+    catchPhrase: string;
+    bs: string;
+  };
+}
+
+async function main() {
+  const userId = 1;
+  const url = `https://jsonplaceholder.typicode.com/users/${userId}`;
+
+  try {
+    const user = await fetchJson<JsonPlaceholderUser>(url);
+    console.log(`Name: ${user.name}`);
+    console.log(`Company: ${user.company.name}`);
+    console.log(`Address: ${user.address.street}, ${user.address.city}`);
+  } catch (err) {
+    console.error('Something went wrong:', err);
+  }
+}
+
+// Kick it off
+main();
