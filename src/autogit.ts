@@ -1,27 +1,29 @@
 /**
- * Returns the second largest number in `arr`.
- * If the array has fewer than two distinct numbers, returns `undefined`.
+ * Reverses the order of words in a string.
+ *
+ * Words are split on whitespace.  Consecutive whitespace is collapsed,
+ * but you can tweak the regex if you need to keep it intact.
+ *
+ * @param txt – The string to reverse
+ * @returns The string with words in reverse order
  */
-function secondLargest(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
-
-  let first: number | null = null;
-  let second: number | null = null;
-
-  for (const x of arr) {
-    if (first === null || x > first) {
-      // New maximum found – push the old maximum down to second
-      second = first;
-      first = x;
-    } else if (x !== first && (second === null || x > second)) {
-      // Candidate for second maximum
-      second = x;
-    }
-  }
-
-  return second ?? undefined;
+function reverseWordOrder(txt: string): string {
+  return txt
+    .trim()                      // Strip leading/trailing gaps
+    .split(/\s+/)                // Break on any run of whitespace
+    .reverse()                   // Flip the array
+    .join(' ');                  // Stitch back together
 }
-console.log(secondLargest([1, 3, 5, 7])); // 5
-console.log(secondLargest([10, 9]));      // 9
-console.log(secondLargest([4]));          // undefined
-console.log(secondLargest([2, 2, 2]));    // undefined
+
+// Example usage
+const original = "Hello world, this is TypeScript.";
+const reversed = reverseWordOrder(original);
+console.log(reversed);  // "TypeScript. is this world, Hello"
+function reverseWordOrder(txt: string) {
+  const words = txt.trim().match(/\w+|\s+/g) ?? [];
+  const textOnly = words.filter(Boolean).join(' ');
+  const reversed = textOnly.split(/\s+/).reverse().join(' ');
+  // re‑insert spaces that were originally present
+  // (not shown here for brevity)
+  return reversed;
+}
