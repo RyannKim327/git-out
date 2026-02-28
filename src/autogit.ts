@@ -1,61 +1,78 @@
 /**
- * Radix sort for 32‑bit unsigned integers.
- * Sorts in place and returns the sorted array for convenience.
+ * Bubble Sort – in‑place, O(n²) time, O(1) space
+ *
+ * @param arr Array of values that implement `Comparable`
+ * @returns the sorted array (same reference as input)
  */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length <= 1) return arr;          // already sorted
+export function bubbleSort<T extends Comparable>(arr: T[]): T[] {
+  const n = arr.length;
 
-  // Pick a base that gives a nice trade‑off between passes and bucket size.
-  // Base 256 (8 bits per pass) lets us use a Uint32Array for buckets.
-  const base = 256;
-  const maxBit = 32; // 32 bits for a signed int, but we only store positives here
+  // Minor optimization: keep track of whether a swap happened
+  // in the current pass. If not, array is already sorted.
+  for (let i = 0; i < n - 1; i++) {
+    let swapped = false;
 
-  // Number of passes, one per byte in this case.
-  const passes = maxBit / 8;
-
-  // Temporary array for intermediate results.
-  const temp = new Array<number>(arr.length);
-
-  // Helper: counts how many numbers have a certain digit value at a given byte.
-  const count = new Uint32Array(base);
-
-  for (let pass = 0; pass < passes; ++pass) {
-    // Reset counts.
-    count.fill(0);
-
-    // Count occurrences of each bucket value.
-    const shift = pass * 8;
-    for (const n of arr) {
-      const bucket = (n >> shift) & 0xff;
-      count[bucket]++;
+    // After each outer loop pass, the largest element of the
+    // unsorted portion settles at the end of the array.
+    for (let j = 0; j < n - i - 1; j++) {
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swapped = true;
+      }
     }
 
-    // Compute cumulative counts => start indices in `temp`.
-    const startIdx = new Uint32Array(base);
-    let sum = 0;
-    for (let i = 0; i < base; ++i) {
-      startIdx[i] = sum;
-      sum += count[i];
-    }
-
-    // Place numbers into the correct bucket order.
-    for (const n of arr) {
-      const bucket = (n >> shift) & 0xff;
-      const idx = startIdx[bucket]++;
-      temp[idx] = n;
-    }
-
-    // Swap the source and destination for the next round.
-    [arr, temp] = [temp, arr];
+    // If no elements were swapped, the array is already sorted.
+    if (!swapped) break;
   }
 
-  // After an even number of passes `arr` points to original input; the sorted
-  // result ends up in `arr`. If passes were odd, the sorted array will be in `temp`.
-  // Ensure we return the sorted array reference.
-  return arr.length === sizeOfInput ? arr : temp;
+  return arr;
 }
 
-/** Quick tests */
-const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log('unsorted:', unsorted);
-console.log('sorted:  ', radixSort([...unsorted])); // use spread to leave original intact
+/** Simple comparable interface for primitives */
+export interface Comparable {
+  /** Return true if this > other */
+  > (other: this): boolean;
+}
+export function bubbleSortWith<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number
+): T[] {
+  for (let i = 0; i < arr.length - 1; i++) {
+    let swapped = false;
+
+    for (let j = 0; j < arr.length - i - 1; j++) {
+      // compareFn(a, b) < 0 => a < b
+      // compareFn(a, b) > 0 => a > b
+      if (compareFn(arr[j], arr[j + 1]) > 0) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swapped = true;
+      }
+    }
+
+    if (!swapped) break;
+  }
+
+  return arr;
+}
+interface Person {
+  name: string;
+  age: number;
+}
+
+const people: Person[] = [
+  { name: "Alice", age: 34 },
+  { name: "Bob", age: 29 },
+  { name: "Carol", age: 42 },
+];
+
+bubbleSortWith(people, (a, b) => a.age - b.age);
+// people is now sorted by age ascending
+function test() {
+  const nums = [3, 1, 4, 1, 5, 9, 2, 6];
+  console.log("Before:", nums);
+  bubbleSort(nums); // mutates nums in place
+  console.log("After: ", nums);
+}
+
+test(); /* → Before: [3,1,4,1,5,9,2,6]
+          After:  [1,1,2,3,4,5,6,9] */
