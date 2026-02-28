@@ -1,65 +1,48 @@
-/**
- * Generic insertion sort.
- * @param arr  The array to sort – it will be mutated in‑place.
- * @returns    The sorted array (the same reference that was passed in).
- */
-export function insertionSort<T>(arr: T[]): T[] {
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
+//      This shape is common in interview‑style code.
+interface TreeNode {
+  val: number;         // node’s payload
+  left?: TreeNode | null;   // left child (optional)
+  right?: TreeNode | null;  // right child (optional)
+}
 
-    /* shift elements that are greater than key one position to the right */
-    while (j >= 0 && arr[j] > key) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
+// 2️⃣  Recursive summation – easiest to read and to understand.
+//      Depth‑first, natural for a tree.
+function sumTreeRecursive(root: TreeNode | null): number {
+  if (!root) return 0;                      // base case: empty subtree is 0
+  const leftSum = sumTreeRecursive(root.left);
+  const rightSum = sumTreeRecursive(root.right);
+  return root.val + leftSum + rightSum;      // combine the results
+}
 
-    arr[j + 1] = key;
+// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
+//      where recursion might hit the call‑stack limit.
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let total = 0;
+  const stack: TreeNode[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.val;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
   }
-  return arr;
-}
-const numbers = [8, 3, 5, 4, 6, 1];
-console.log(insertionSort(numbers)); // [1, 3, 4, 5, 6, 8]
-const words = ['orange', 'apple', 'banana'];
-console.log(insertionSort(words)); // ['apple', 'banana', 'orange']
-interface Person {
-  name: string;
-  age: number;
+  return total;
 }
 
-const people: Person[] = [
-  { name: 'Zoe', age: 29 },
-  { name: 'Anna', age: 22 },
-  { name: 'Mike', age: 35 }
-];
+// 4️⃣  Sample tree for quick sanity check
+//           5
+//          / \
+//         3   7
+//        / \   \
+//       2   4   8
 
-function sortByAge(arr: Person[]): Person[] {
-  return insertionSort(arr, (a, b) => a.age - b.age);
-}
+const sampleRoot: TreeNode = {
+  val: 5,
+  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
+  right: { val: 7, right: { val: 8 } },
+};
 
-// extended version that accepts a compare function
-export function insertionSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number
-): T[] {
-  const cmp = compareFn ?? ((a: T, b: T) => (a > b ? 1 : a < b ? -1 : 0));
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-    arr[j + 1] = key;
-  }
-  return arr;
-}
-
-console.log(sortByAge(people));
-/*
-[
-  { name: 'Anna', age: 22 },
-  { name: 'Zoe', age: 29 },
-  { name: 'Mike', age: 35 }
-]
-*/
+console.log(sumTreeRecursive(sampleRoot)); // → 33
+console.log(sumTreeIterative(sampleRoot)); // → 33
