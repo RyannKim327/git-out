@@ -1,61 +1,40 @@
-export interface ListNode<T> {
-  val: T;               // the payload
-  next: ListNode<T> | null; // pointer to the next node
-}
 /**
- * Reverses a singly linked list.
- * @param head: the first node of the list (or null for an empty list)
- * @returns the new head of the reversed list
+ * Binary search – recursive.  
+ * @param arr        — sorted array
+ * @param target     — value to find
+ * @param compare    — optional comparison function (a, b) => number
+ *                     returns <0 if a<b, 0 if a==b, >0 if a>b
+ * @returns index of `target` or -1 if not found
  */
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;   // will become the new head
-  let curr: ListNode<T> | null = head;   // current node being processed
+function binarySearchRec<T>(
+  arr: T[],
+  target: T,
+  compare?: (a: T, b: T) => number
+): number {
+  // Provide a default numeric comparator
+  const cmp = compare ?? ((a: any, b: any) => a - b);
 
-  while (curr) {
-    const nextTemp = curr.next; // keep reference to the next node
-    curr.next = prev;           // reverse the link
-    prev = curr;                // move prev forward
-    curr = nextTemp;            // move curr forward
-  }
+  const search = (low: number, high: number): number => {
+    if (low > high) return -1;          // base case: not found
 
-  // At this point, prev points to the new head
-  return prev;
+    const mid = Math.floor((low + high) / 2);
+    const cmpResult = cmp(arr[mid], target);
+
+    if (cmpResult === 0) return mid;    // target is at mid
+    if (cmpResult < 0) return search(mid + 1, high); // target is right
+    return search(low, mid - 1);        // target is left
+  };
+
+  return search(0, arr.length - 1);
 }
-export function reverseListRec<T>(node: ListNode<T> | null): ListNode<T> | null {
-  if (!node || !node.next) {
-    return node; // new head (either the original head if list is 1 or 0 nodes)
-  }
+// Numbers – no comparator needed
+const nums = [1, 3, 5, 7, 9, 11, 13];
+console.log(binarySearchRec(nums, 7));  // → 3
+console.log(binarySearchRec(nums, 2));  // → -1
 
-  const newHead = reverseListRec(node.next);   // recurse to the end
-  node.next.next = node;   // make the next node point back to the current one
-  node.next = null;        // sever original forward link
-  return newHead;
-}
-// Helper to build a list [1, 2, 3]
-function buildList(arr: number[]): ListNode<number> | null {
-  let head: ListNode<number> | null = null;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = { val: arr[i], next: head };
-  }
-  return head;
-}
+// Strings – supply a comparator
+const words = ["apple", "banana", "cherry", "date"];
+const stringCmp = (a: string, b: string) => a.localeCompare(b);
 
-// Helper to convert list back to array for easy viewing
-function toArray<T>(head: ListNode<T> | null): T[] {
-  const result: T[] = [];
-  let cur = head;
-  while (cur) {
-    result.push(cur.val);
-    cur = cur.next;
-  }
-  return result;
-}
-
-// Demo
-const original = buildList([1, 2, 3, 4, 5]);
-console.log('original:', toArray(original));
-
-const reversed = reverseList(original);
-console.log('reversed:', toArray(reversed));
-original: [1, 2, 3, 4, 5]
-reversed: [5, 4, 3, 2, 1]
+console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
+console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
