@@ -1,72 +1,92 @@
-/**
- * Returns the k-th smallest element of an array.
- *
- * @param arr   Array of numbers (or any comparable type).
- * @param k     1‑based index of the element to find.
- * @returns     The k‑th smallest value.
- *
- * @throws      If k is out of bounds.
- */
-export function kthSmallest<T>(arr: T[], k: number): T {
-  if (k < 1 || k > arr.length) {
-    throw new Error(`k=${k} is not in the valid range 1..${arr.length}`);
-  }
+type Node = string;                     // or number, or any keyable type
+type Edge = [Node, Node];               // (from, to)
 
-  // Work on a copy so the original array stays untouched.
-  const a = arr.slice();
-  let left = 0;
-  let right = a.length - 1;
+interface Graph {
+    nodes: Set<Node>;
+    edges: Edge[];
+}
+function topologicalSortKahn(graph: Graph): Node[] | null {
+    const indeg = new Map<Node, number>();
+    const adj   = new Map<Node, Node[]>();
 
-  while (true) {
-    // Pick a pivot – here we just pick the middle element.
-    const pivotIndex = left + Math.floor((right - left) / 2);
-    const pivot = a[pivotIndex];
+    // init
+    graph.nodes.forEach(v => {
+        indeg.set(v, 0);
+        adj.set(v, []);
+    });
 
-    // Partition step: elements < pivot go left, >= pivot go right.
-    const pivotNewIndex = partition(a, left, right, pivot);
-
-    if (pivotNewIndex === k - 1) {      // Found the k‑th smallest
-      return a[pivotNewIndex];
-    } else if (pivotNewIndex > k - 1) {  // Look in the left partition
-      right = pivotNewIndex - 1;
-    } else {                            // Look in the right partition
-      left = pivotNewIndex + 1;
+    // build adjacency + indegree
+    for (const [u, v] of graph.edges) {
+        adj.get(u)!.push(v);
+        indeg.set(v, indeg.get(v)! + 1);
     }
-  }
-}
 
-/**
- * Standard Lomuto partition scheme.
- *
- * @param a array to partition
- * @param lo left boundary
- * @param hi right boundary
- * @param pivotValue value the array should be partitioned around
- * @returns new index of the pivot after partition
- */
-function partition<T>(a: T[], lo: number, hi: number, pivotValue: T): number {
-  // Move pivot to the end for convenience.
-  let pivotIndex = lo + (Math.random() * (hi - lo + 1)) | 0; // random pivot for stability
-  [a[pivotIndex], a[hi]] = [a[hi], a[pivotIndex]];
+    // queue of nodes with indegree 0
+    const q: Node[] = [];
+    indeg.forEach((cnt, node) => { if (cnt === 0) q.push(node); });
 
-  const pivot = a[hi];
-  let storeIndex = lo;                         // index of the first element >= pivot
+    const order: Node[] = [];
 
-  for (let i = lo; i < hi; i++) {
-    if (a[i] < pivot) {
-      [a[i], a[storeIndex]] = [a[storeIndex], a[i]];
-      storeIndex++;
+    while (q.length) {
+        const v = q.shift()!;
+        order.push(v);
+
+        for (const w of adj.get(v)!) {
+            const newCnt = indeg.get(w)! - 1;
+            indeg.set(w, newCnt);
+            if (newCnt === 0) q.push(w);
+        }
     }
-  }
 
-  // place pivot after the last smaller element
-  [a[storeIndex], a[hi]] = [a[hi], a[storeIndex]];
-  return storeIndex;
+    // If we processed every node → DAG; else cycle present
+    return order.length === graph.nodes.size ? order : null;
 }
-export function kthSmallestSort<T>(arr: T[], k: number): T {
-  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
-  return [...arr].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))[k - 1];
+function topologicalSortDFS(graph: Graph): Node[] | null {
+    const adj = new Map<Node, Node[]>();
+    graph.nodes.forEach(v => adj.set(v, []));
+
+    for (const [u, v] of graph.edges) {
+        adj.get(u)!.push(v);
+    }
+
+    const visited = new Set<Node>();
+    const onStack = new Set<Node>();   // for cycle detection
+    const order: Node[] = [];
+
+    function dfs(v: Node): boolean {
+        visited.add(v);
+        onStack.add(v);
+
+        for (const w of adj.get(v)!) {
+            if (!visited.has(w)) {
+                if (!dfs(w)) return false;           // cycle deeper down
+            } else if (onStack.has(w)) {
+                return false;                       // back edge → cycle
+            }
+        }
+
+        onStack.delete(v);
+        order.push(v);                     // add after exploring all children
+        return true;
+    }
+
+    for (const node of graph.nodes) {
+        if (!visited.has(node) && !dfs(node))
+            return null;                   // cycle found
+    }
+
+    return order.reverse();               // reverse to get finish order
 }
-const nums = [7, 11, 5, 3, 9, 2];
-console.log(kthSmallest(nums, 3)); // 5
-console.log(kthSmallestSort(nums, 3)); // 5
+const g: Graph = {
+    nodes: new Set(['A','B','C','D','E']),
+    edges: [
+        ['A', 'B'],
+        ['A', 'C'],
+        ['B', 'D'],
+        ['C', 'D'],
+        ['D', 'E'],
+    ]
+};
+
+console.log('Kahn:', topologicalSortKahn(g)); // e.g. A,B,C,D,E or A,C,B,D,E
+console.log('DFS :', topologicalSortDFS(g));
