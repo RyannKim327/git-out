@@ -1,21 +1,19 @@
-/**
- * Returns true if `n` is a prime number.
- * Handles 0, 1 and negative numbers as non‑prime.
- */
-export function isPrime(n: number): boolean {
-  if (n <= 1) return false                // 0, 1, and negatives are not prime
-  if (n <= 3) return true                 // 2 and 3 are prime
+// Original
+const original = "   \tHello, \nWorld!   ";
 
-  // even numbers greater than 2 fail immediately
-  if (n % 2 === 0) return false
+// 1. trim (only outer whitespace)
+const trimmed = original.trim();
+console.log(trimmed); // "Hello, \nWorld!"
 
-  // only test odd divisors up to √n
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 3; i <= limit; i += 2) {
-    if (n % i === 0) return false
-  }
-  return true
+// 2. remove all literal spaces only
+const noSpaces = original.replace(/ /g, "");
+console.log(noSpaces); // "\tHello,\nWorld!   "
+
+// 3. strip *every* whitespace
+const totallyClean = original.replace(/\s+/g, "");
+console.log(totallyClean); // "Hello,World!"
+function removeAllWhitespace(s: string): string {
+  return s.replace(/\s+/g, "");
 }
-console.log(isPrime(2));   // true
-console.log(isPrime(15));  // false
-console.log(isPrime(97));  // true
+
+const cleaned = removeAllWhitespace("  a b\tc\n "); // "abc"
