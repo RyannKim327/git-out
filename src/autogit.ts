@@ -1,47 +1,68 @@
-class TreeNode<T = any> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+// -------------------------------------------
+// Node definition
+// -------------------------------------------
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-function countLeaves<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;                         // empty subtree → 0 leaves
 
-  // If both children are missing, this node itself is a leaf
-  if (!root.left && !root.right) return 1;
-
-  // Otherwise, count leaves in the children
-  return countLeaves(root.left) + countLeaves(root.right);
+// -------------------------------------------
+// Helper: build list from array
+// -------------------------------------------
+function arrayToLinkedList<T>(arr: T[]): ListNode<T> | null {
+  if (arr.length === 0) return null;
+  const head = new ListNode(arr[0]);
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = new ListNode(arr[i]);
+    current = current.next;
+  }
+  return head;
 }
-function countLeavesIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
 
-  let stack: Array<TreeNode<T>> = [root];
-  let leafCount = 0;
+// -------------------------------------------
+// Helper: read list into array (for debugging)
+// -------------------------------------------
+function linkedListToArray<T>(head: ListNode<T> | null): T[] {
+  const arr: T[] = [];
+  let cur = head;
+  while (cur) {
+    arr.push(cur.val);
+    cur = cur.next;
+  }
+  return arr;
+}
 
-  while (stack.length) {
-    const node = stack.pop() as TreeNode<T>;
+// -------------------------------------------
+// Main: find middle node
+// -------------------------------------------
+function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null;          // empty list
 
-    // A leaf if it has no children
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      // Push existing children to process later
-      if (node.left) stack.push(node.left);
-      if (node.right) stack.push(node.right);
-    }
+  let slow = head;
+  let fast = head;
+
+  // Move fast two steps and slow one step until fast can't move further.
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  return leafCount;
+  // For even‑length lists, this returns the first of the two middle nodes.
+  // If you prefer the second, replace `while (fast && fast.next)` and
+  // adjust the loop accordingly.
+  return slow;
 }
-const root = new TreeNode(1,
-  new TreeNode(2,
-    new TreeNode(4),           // leaf
-    new TreeNode(5)            // leaf
-  ),
-  new TreeNode(3)              // leaf
-);
 
-console.log(countLeaves(root));        // → 3
-console.log(countLeavesIter(root));    // → 3
+// -------------------------------------------
+// Demo
+// -------------------------------------------
+const list = arrayToLinkedList([1, 2, 3, 4, 5]);  // odd length
+console.log(linkedListToArray(list));            // [1,2,3,4,5]
+console.log(findMiddle(list)?.val);              // 3
+
+const evenList = arrayToLinkedList([10, 20, 30, 40]);
+console.log(linkedListToArray(evenList));         // [10,20,30,40]
+console.log(findMiddle(evenList)?.val);           // 20 (first middle)
+// if you want the second middle, tweak the loop condition to:
+// while (fast && fast.next)
+// then you'll get 30.
