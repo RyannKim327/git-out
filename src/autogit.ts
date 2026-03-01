@@ -1,146 +1,132 @@
-// Node.ts
-export class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
+// ---------- Types ---------------------------------------------------------
+type Vertex = string | number // whatever sort of key you like
 
-  constructor(value: T) {
-    this.value = value;
+// an edge is directed; the weight can be positive, negative or zero
+interface Edge {
+  from: Vertex
+  to: Vertex
+  weight: number
+}
+
+// ---------- Graph wrapper -----------------------------------------------
+class Graph {
+  private vertices: Set<Vertex> = new Set()
+  private edges: Edge[] = []
+
+  // you can add vertices explicitly if you want; adding an edge will
+  // automatically pull its endpoints into the vertex set
+  public addVertex(v: Vertex) {
+    this.vertices.add(v)
+  }
+
+  public addEdge(from: Vertex, to: Vertex, weight: number) {
+    this.vertices.add(from)
+    this.vertices.add(to)
+    this.edges.push({ from, to, weight })
+  }
+
+  public getVertices() {
+    return Array.from(this.vertices)
+  }
+
+  public getEdges() {
+    return this.edges.slice()
   }
 }
-// LinkedList.ts
-import { ListNode } from "./Node";
 
-export class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _length = 0;
+// ---------- Bellman‑Ford algorithm ---------------------------------------
+/**
+ * Returns an object containing:
+ *   distances:  map from vertex to its shortest‑path distance from source
+ *   previous:   map from vertex to its predecessor on that shortest path
+ *
+ * Throws an Error if a negative‑weight cycle is reachable from `source`.
+ */
+function bellmanFord(
+  graph: Graph,
+  source: Vertex
+): { distances: Record<Vertex, number>; previous: Record<Vertex, Vertex | null> } {
+  const INF = Number.POSITIVE_INFINITY
 
-  get length() {
-    return this._length;
+  // 1. initialise
+  const distance: Record<Vertex, number> = {}
+  const previous: Record<Vertex, Vertex | null> = {}
+
+  for (const v of graph.getVertices()) {
+    distance[v] = INF
+    previous[v] = null
   }
+  distance[source] = 0
 
-  /* ---------- Basic Operations ---------- */
+  const edges = graph.getEdges()
+  const nvertices = graph.getVertices().length
 
-  // Append a value to the end of the list.
-  push(value: T): void {
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      this.tail!.next = node;
-      this.tail = node;
+  // 2. relaxation loop (nvertices - 1) times
+  for (let i = 0; i < nvertices - 1; i++) {
+    let updated = false
+    for (const { from, to, weight } of edges) {
+      const alt = distance[from] + weight
+      if (alt < distance[to]) {
+        distance[to] = alt
+        previous[to] = from
+        updated = true
+      }
     }
-    this._length++;
+    // early exit if nothing changed
+    if (!updated) break
   }
 
-  // Prepend a value to the beginning of the list.
-  unshift(value: T): void {
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      node.next = this.head;
-      this.head = node;
+  // 3. check for negative‑weight cycles
+  for (const { from, to, weight } of edges) {
+    if (distance[from] + weight < distance[to]) {
+      throw new Error(
+        `Negative‑weight cycle detected: edge ${from} → ${to} (weight ${weight})`
+      )
     }
-    this._length++;
   }
 
-  // Remove and return the value at the head of the list.
-  shift(): T | null {
-    if (!this.head) return null;
-    const value = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null; // list became empty
-    this._length--;
-    return value;
-  }
-
-  // Remove and return the value at the tail of the list.
-  pop(): T | null {
-    if (!this.head) return null;
-
-    if (this.head === this.tail) {
-      const value = this.head.value;
-      this.head = this.tail = null;
-      this._length--;
-      return value;
-    }
-
-    // Walk to the node just before the tail.
-    let current = this.head;
-    while (current.next !== this.tail) {
-      current = current.next!;
-    }
-    const value = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-    this._length--;
-    return value;
-  }
-
-  /* ---------- Traversal & Search ---------- */
-
-  // Return the node at the given zero‑based index, or null if out of bounds.
-  getNodeAt(index: number): ListNode<T> | null {
-    if (index < 0 || index >= this._length) return null;
-    let current = this.head!;
-    for (let i = 0; i < index; i++) {
-      current = current.next!;
-    }
-    return current;
-  }
-
-  // Find the first value that satisfies the predicate.
-  find(predicate: (value: T) => boolean, startIndex = 0): T | null {
-    let current = this.getNodeAt(startIndex);
-    while (current) {
-      if (predicate(current.value)) return current.value;
-      current = current.next;
-    }
-    return null;
-  }
-
-  /* ---------- Utility ---------- */
-
-  // Convert the list to an array (useful for debugging or interoperability).
-  toArray(): T[] {
-    const out: T[] = [];
-    let current = this.head;
-    while (current) {
-      out.push(current.value);
-      current = current.next;
-    }
-    return out;
-  }
-
-  // Allow for… e.g. “for … of” iteration.
-  [Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    return {
-      next: () => ({
-        value: current?.value,
-        done: current === null,
-      }),
-    };
-  }
+  return { distances: distance, previous }
 }
-import { LinkedList } from "./LinkedList";
 
-const numbers = new LinkedList<number>();
-numbers.push(10);
-numbers.push(20);
-numbers.unshift(5);   // list is now 5 -> 10 -> 20
+// ---------- Reconstruct path helper ---------------------------------------
+function reconstructPath(
+  previous: Record<Vertex, Vertex | null>,
+  source: Vertex,
+  target: Vertex
+): Vertex[] {
+  const path: Vertex[] = []
+  let v: Vertex | null = target
 
-console.log(numbers.shift()); // 5
-console.log(numbers.pop());   // 20
-console.log(numbers.length);  // 1
+  while (v !== null && v !== source) {
+    path.unshift(v)
+    v = previous[v]
+  }
+  if (v !== source) {
+    // no path
+    return []
+  }
+  path.unshift(source)
+  return path
+}
 
-// Search
-numbers.push(30);
-numbers.push(40);
-console.log(numbers.find(v => v > 15)); // 20
+// ---------- Example usage -----------------------------------------------
+const g = new Graph()
 
-// Iterate
-for (const n of numbers) {
-  console.log(n); // 10, 30, 40
+// sample graph: 0 → 1 (4), 0 → 2 (5), 1 → 2 (-1), 2 → 3 (3), 3 → 1 (-2)
+g.addEdge(0, 1, 4)
+g.addEdge(0, 2, 5)
+g.addEdge(1, 2, -1)
+g.addEdge(2, 3, 3)
+g.addEdge(3, 1, -2)
+
+try {
+  const { distances, previous } = bellmanFord(g, 0)
+  console.log('distances:', distances)
+
+  for (const v of g.getVertices()) {
+    const path = reconstructPath(previous, 0, v)
+    console.log(`0 → ${v}  (dist=${distances[v]})  path:`, path.join(' → '))
+  }
+} catch (e) {
+  console.error(e)
 }
