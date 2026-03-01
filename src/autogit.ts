@@ -1,60 +1,88 @@
-/**
- * Merges two consecutive sorted halves of `arr` into a single sorted segment.
- * `left` … start index of the first half
- * `mid`  … start index of the second half (i.e. left + size)
- * `right`… end index (exclusive) of the second half
- * The merged result is written back into `arr`.
- */
-function merge(
-  arr: number[],
-  left: number,
-  mid: number,
-  right: number,
-  temp: number[]
-) {
-  let i = left;   // index in first half
-  let j = mid;    // index in second half
-  let k = left;   // index in temp
-
-  while (i < mid && j < right) {
-    if (arr[i] <= arr[j]) temp[k++] = arr[i++];
-    else                   temp[k++] = arr[j++];
-  }
-
-  // copy any remaining elements from the first half
-  while (i < mid) temp[k++] = arr[i++];
-  // anything left from the second half already sits in temp
-
-  // copy back to the original array
-  for (let p = left; p < right; ++p) arr[p] = temp[p];
+/* ------------------------------------------------------------------
+   Node definitions (customise to your data shape)
+------------------------------------------------------------------- */
+export interface Node {
+  id: string | number;
+  /* Any other properties you need – e.g. parent, distance, etc. */
 }
 
-/**
- * Iterative merge sort.
- * Works in O(n log n) time, O(n) auxiliary space for the temporary array.
- */
-export function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  if (n <= 1) return;                 // already sorted
+export interface Graph {
+  /** Returns the neighbours of a given node ID. */
+  neighbours(id: Node["id"]): Node[];
 
-  const temp = new Array<number>(n);   // reuse this buffer
+  /** Optional: expands a node – useful if nodes need lazy loading. */
+  expand?(node: Node): void;
+}
 
-  // subarray size starts at 1 (single elements) and doubles each pass
-  for (let sz = 1; sz < n; sz *= 2) {
-    // merge adjacent subarrays of size sz
-    for (let left = 0; left < n - sz; left += sz * 2) {
-      const mid   = left + sz;          // left + sz is the start of the 2nd half
-      const right = Math.min(left + sz * 2, n);
-      merge(arr, left, mid, right, temp);
+/* ------------------------------------------------------------------
+   Breadth‑Limited Search
+------------------------------------------------------------------- */
+type GoalPredicate<T> = (node: T) => boolean;
+
+export function breadthLimitedSearch<T extends Node>(
+  graph: Graph,
+  root: T,
+  goal: GoalPredicate<T>,
+  maxDepth: number
+): T | null {
+  // A queue that holds tuples: [node, depth]
+  const frontier: Array<[T, number]> = [[root, 0]];
+  const visited = new Set<T["id"]>();
+
+  visited.add(root.id);
+
+  while (frontier.length !== 0) {
+    const [current, depth] = frontier.shift()!; // pop front
+
+    // Goal hit
+    if (goal(current)) return current;
+
+    // If we reached the depth ceiling, skip expansion
+    if (depth === maxDepth) continue;
+
+    // Expand or otherwise load neighbours if you need lazy loading
+    if (graph.expand) graph.expand(current);
+
+    const neighbors = graph.neighbours(current.id);
+    for (const child of neighbors) {
+      if (!visited.has(child.id)) {
+        visited.add(child.id);
+        frontier.push([child, depth + 1]);
+      }
     }
   }
+
+  // No solution within the depth limit
+  return null;
+}
+// Simple graph representation
+class MyGraph implements Graph {
+  nodes: Record<string, Node> = {};
+
+  constructor(nodeList: Node[]) {
+    nodeList.forEach(node => (this.nodes[node.id] = node));
+  }
+
+  neighbours(id: string | number) {
+    // Example: assume every node has a "children" array of ids
+    const node = this.nodes[id];
+    return (node as any).children?.map((cId: string | number) => this.nodes[cId]) ?? [];
+  }
 }
 
-// ------------------------------------------------------------------
-// Example usage
-// ------------------------------------------------------------------
+// Example nodes
+const nodes: Node[] = [
+  { id: 1, ...( { children: [2, 3] } as any ) },
+  { id: 2, ...( { children: [4] } as any ) },
+  { id: 3 },
+  { id: 4 }
+];
 
-// Readable example – will sort the array in place
-const sample = [38, 27, 43, 3, 9, 82, 10];
-mergeSortIterative(sample);
-console.log(sample);  // [3, 9, 10, 27, 38, 43, 82]
+const graph = new MyGraph(nodes);
+
+const root = graph.nodes[1];
+const goal = (n: Node) => n.id === 4;
+const depthLimit = 2;
+
+const solution = breadthLimitedSearch(graph, root, goal, depthLimit);
+console.log(solution); // Node with id 4 (found at depth 2)
