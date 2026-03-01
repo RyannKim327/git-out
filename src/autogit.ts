@@ -1,21 +1,27 @@
 /**
- * Returns true if `n` is a prime number.
- * Handles 0, 1 and negative numbers as non‑prime.
+ * Returns the second largest number in `arr`.
+ * If the array has fewer than two distinct numbers, returns `undefined`.
  */
-export function isPrime(n: number): boolean {
-  if (n <= 1) return false                // 0, 1, and negatives are not prime
-  if (n <= 3) return true                 // 2 and 3 are prime
+function secondLargest(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-  // even numbers greater than 2 fail immediately
-  if (n % 2 === 0) return false
+  let first: number | null = null;
+  let second: number | null = null;
 
-  // only test odd divisors up to √n
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 3; i <= limit; i += 2) {
-    if (n % i === 0) return false
+  for (const x of arr) {
+    if (first === null || x > first) {
+      // New maximum found – push the old maximum down to second
+      second = first;
+      first = x;
+    } else if (x !== first && (second === null || x > second)) {
+      // Candidate for second maximum
+      second = x;
+    }
   }
-  return true
+
+  return second ?? undefined;
 }
-console.log(isPrime(2));   // true
-console.log(isPrime(15));  // false
-console.log(isPrime(97));  // true
+console.log(secondLargest([1, 3, 5, 7])); // 5
+console.log(secondLargest([10, 9]));      // 9
+console.log(secondLargest([4]));          // undefined
+console.log(secondLargest([2, 2, 2]));    // undefined
