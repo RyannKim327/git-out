@@ -1,25 +1,52 @@
-/**
- * Computes the factorial of a non‑negative integer `n` recursively.
- * @param n - A non‑negative integer (e.g., 0, 1, 2, …)
- * @returns n! as a `number`. For values beyond ≈ 170 you’ll hit the
- *          IEEE‑754 overflow limit and get `Infinity`, so for large
- *          inputs you might want to switch to BigInt.
- */
-function factorial(n: number): number {
-  if (n < 0) throw new Error('Negative numbers don’t have factorials');
-  if (n <= 1) return 1;          // base case: 0! = 1! = 1
-  return n * factorial(n - 1);   // recursive step
+interface TreeNode<T = number> {
+  val: T;                // single value (you can change the type)
+  left: TreeNode<T> | null;
+  right: TreeNode<T> | null;
 }
-console.log(factorial(5));   // 120
-console.log(factorial(0));   // 1
-function bigIntFactorial(n: number): bigint {
-  if (n < 0) throw new Error('Negative numbers don’t have factorials');
-  if (n <= 1) return 1n;               // 1n is a BigInt literal
-  return BigInt(n) * bigIntFactorial(n - 1);
+const root: TreeNode = {
+  val: 10,
+  left: { val: 5, left: null, right: null },
+  right: { val: 15, left: null, right: null },
+};
+function maxDepth<T>(node: TreeNode<T> | null): number {
+  if (!node) return 0;
+  const leftDepth = maxDepth(node.left);
+  const rightDepth = maxDepth(node.right);
+  return Math.max(leftDepth, rightDepth) + 1;
 }
+function maxDepthIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
 
-console.log(bigIntFactorial(30).toString());
-function tailFactorial(n: number, acc: number = 1): number {
-  if (n <= 1) return acc;
-  return tailFactorial(n - 1, acc * n);
+  const queue: TreeNode<T>[] = [root];
+  let depth = 0;
+
+  while (queue.length) {
+    const levelSize = queue.length; // nodes at current depth
+    depth++;                        // we’re going to finish this level
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift() as TreeNode<T>;
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
+  }
+
+  return depth;
 }
+// build a quick tree
+const tree: TreeNode = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: null, right: null },
+    right: null,
+  },
+  right: {
+    val: 3,
+    left: null,
+    right: { val: 5, left: null, right: null },
+  },
+};
+
+console.log(maxDepth(tree));      // -> 3
+console.log(maxDepthIter(tree));  // -> 3
