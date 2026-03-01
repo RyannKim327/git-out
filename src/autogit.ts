@@ -1,93 +1,88 @@
-// `Graph<T>` maps a node of type T to an array of its adjacent nodes.
-type Graph<T> = Map<T, T[]>;
-
-// A helper to add an undirected edge
-function addEdge<T>(g: Graph<T>, a: T, b: T) {
-  g.set(a, (g.get(a) ?? []).concat(b));
-  g.set(b, (g.get(b) ?? []).concat(a));
+/* ------------------------------------------------------------------
+   Node definitions (customise to your data shape)
+------------------------------------------------------------------- */
+export interface Node {
+  id: string | number;
+  /* Any other properties you need – e.g. parent, distance, etc. */
 }
-/**
- * Performs a breadth‑first search on an unweighted graph.
- *
- * @param start   the starting node
- * @param graph   the graph to search
- * @param visitor a callback that receives each visited node in the order
- *                it’s discovered. The callback can return `false` to stop
- *                the search early.
- */
-function bfs<T>(
-  start: T,
-  graph: Graph<T>,
-  visitor: (node: T) => void | boolean
-): void {
-  const visited = new Set<T>();
-  const queue = [start];
 
-  visited.add(start);
+export interface Graph {
+  /** Returns the neighbours of a given node ID. */
+  neighbours(id: Node["id"]): Node[];
 
-  while (queue.length) {
-    const node = queue.shift()!;      // Non‑null because we just tested length
-    const result = visitor(node);
-
-    // If the visitor explicitly returned false, break out early.
-    if (result === false) break;
-
-    const neighbors = graph.get(node) ?? [];
-    for (const n of neighbors) {
-      if (!visited.has(n)) {
-        visited.add(n);
-        queue.push(n);
-      }
-    }
-  }
+  /** Optional: expands a node – useful if nodes need lazy loading. */
+  expand?(node: Node): void;
 }
-/**
- * Returns an array representing the shortest path from `start` to `target`
- * (inclusive), or `null` if no path exists.
- */
-function shortestPath<T>(start: T, target: T, graph: Graph<T>): T[] | null {
-  const prev = new Map<T, T | undefined>(); // child → parent
-  const visited = new Set<T>();
-  const queue: T[] = [start];
-  visited.add(start);
-  let found = false;
 
-  while (queue.length && !found) {
-    const node = queue.shift()!;
-    for (const nb of graph.get(node) ?? []) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        prev.set(nb, node);
-        if (nb === target) {
-          found = true;
-          break;
-        }
-        queue.push(nb);
+/* ------------------------------------------------------------------
+   Breadth‑Limited Search
+------------------------------------------------------------------- */
+type GoalPredicate<T> = (node: T) => boolean;
+
+export function breadthLimitedSearch<T extends Node>(
+  graph: Graph,
+  root: T,
+  goal: GoalPredicate<T>,
+  maxDepth: number
+): T | null {
+  // A queue that holds tuples: [node, depth]
+  const frontier: Array<[T, number]> = [[root, 0]];
+  const visited = new Set<T["id"]>();
+
+  visited.add(root.id);
+
+  while (frontier.length !== 0) {
+    const [current, depth] = frontier.shift()!; // pop front
+
+    // Goal hit
+    if (goal(current)) return current;
+
+    // If we reached the depth ceiling, skip expansion
+    if (depth === maxDepth) continue;
+
+    // Expand or otherwise load neighbours if you need lazy loading
+    if (graph.expand) graph.expand(current);
+
+    const neighbors = graph.neighbours(current.id);
+    for (const child of neighbors) {
+      if (!visited.has(child.id)) {
+        visited.add(child.id);
+        frontier.push([child, depth + 1]);
       }
     }
   }
 
-  if (!found) return null;
-
-  // Walk backwards from target to start
-  const path = [];
-  for (let cur: T | undefined = target; cur !== undefined; cur = prev.get(cur)) {
-    path.push(cur);
-  }
-  path.reverse();
-  return path;
+  // No solution within the depth limit
+  return null;
 }
-const g: Graph<string> = new Map();
-addEdge(g, 'A', 'B');
-addEdge(g, 'A', 'C');
-addEdge(g, 'B', 'D');
-addEdge(g, 'C', 'D');
-addEdge(g, 'C', 'E');
+// Simple graph representation
+class MyGraph implements Graph {
+  nodes: Record<string, Node> = {};
 
-console.log('BFS visiting order:', () => {
-  const order: string[] = [];
-  bfs('A', g, node => { order.push(node); });
-  return order;
-}()); // ['A', 'B', 'C', 'D', 'E']
+  constructor(nodeList: Node[]) {
+    nodeList.forEach(node => (this.nodes[node.id] = node));
+  }
 
-console.log('Shortest path A → D:', shortestPath('A', 'D', g)); // ['A', 'B', 'D']
+  neighbours(id: string | number) {
+    // Example: assume every node has a "children" array of ids
+    const node = this.nodes[id];
+    return (node as any).children?.map((cId: string | number) => this.nodes[cId]) ?? [];
+  }
+}
+
+// Example nodes
+const nodes: Node[] = [
+  { id: 1, ...( { children: [2, 3] } as any ) },
+  { id: 2, ...( { children: [4] } as any ) },
+  { id: 3 },
+  { id: 4 }
+];
+
+const graph = new MyGraph(nodes);
+
+const root = graph.nodes[1];
+const goal = (n: Node) => n.id === 4;
+const depthLimit = 2;
+
+const solution = breadthLimitedSearch(graph, root, goal, depthLimit);
+console.log(solution); // Node with id 4 (found at depth 2)
