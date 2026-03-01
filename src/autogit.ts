@@ -1,45 +1,57 @@
 /**
- * A classic LIFO stack that stores items in an array.
- * @template T The type of the values stored inside the stack.
+ * Simple anagram checker.
+ * @param a First string
+ * @param b Second string
+ * @returns true if a and b are anagrams, false otherwise
  */
-export class Stack<T> {
-  /** The underlying array that holds the stack's data. */
-  private data: T[] = [];
+function areAnagrams(a: string, b: string): boolean {
+  // 1. Normalize: lower‑case, strip non‑alphanumerics, trim
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .trim();
 
-  /** Adds an element to the top of the stack. */
-  push(item: T): void {
-    this.data.push(item);
+  const na = normalize(a);
+  const nb = normalize(b);
+
+  // Quick length check; if they differ early we’re done.
+  if (na.length !== nb.length) return false;
+
+  // 2. Build frequency maps
+  const freq = new Map<string, number>();
+
+  for (const ch of na) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  /**
-   * Removes and returns the element at the top of the stack.
-   * Returns undefined if the stack is empty.
-   */
-  pop(): T | undefined {
-    return this.data.pop();
+  for (const ch of nb) {
+    const count = freq.get(ch);
+
+    // If we see a character not in the first string, bail
+    if (!count) return false;
+
+    // Decrease the count and remove entry if it drops to zero
+    if (count === 1) freq.delete(ch);
+    else freq.set(ch, count - 1);
   }
 
-  /** Peeks at the element on the top without removing it. */
-  peek(): T | undefined {
-    return this.data[this.data.length - 1];
-  }
-
-  /** Returns the number of elements in the stack. */
-  get size(): number {
-    return this.data.length;
-  }
-
-  /** Returns true when the stack has nothing inside. */
-  get isEmpty(): boolean {
-    return this.data.length === 0;
-  }
+  // 3. If all counts cleared, the strings are anagrams
+  return freq.size === 0;
 }
-const stack = new Stack<number>();
+console.log(areAnagrams("listen", "silent"));   // → true
+console.log(areAnagrams("evil", "vile"));       // → true
+console.log(areAnagrams("hello", "billion"));   // → false
+console.log(areAnagrams("Clint Eastwood", "Old West Action")); // true
+function areAnagramsSort(a: string, b: string): boolean {
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .trim()
+      .split("")
+      .sort()
+      .join("");
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size);   // 2
+  return normalize(a) === normalize(b);
+}
