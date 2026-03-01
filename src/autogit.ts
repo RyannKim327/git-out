@@ -1,48 +1,60 @@
 /**
- * Return the maximum sum sub‑array (Kadane) along with its start & end indices.
- *
- * @param nums  Array of numbers – can contain positives, zeros and negatives.
- * @returns     Object with `maxSum`, `start`, `end` (inclusive).
+ * Merges two consecutive sorted halves of `arr` into a single sorted segment.
+ * `left` … start index of the first half
+ * `mid`  … start index of the second half (i.e. left + size)
+ * `right`… end index (exclusive) of the second half
+ * The merged result is written back into `arr`.
  */
-export function maxSubarrayWithIndices(nums: number[]): {
-  maxSum: number;
-  start: number;
-  end: number;
-} {
-  if (nums.length === 0) throw new Error("Input array must contain at least one element");
+function merge(
+  arr: number[],
+  left: number,
+  mid: number,
+  right: number,
+  temp: number[]
+) {
+  let i = left;   // index in first half
+  let j = mid;    // index in second half
+  let k = left;   // index in temp
 
-  let bestSum = nums[0];
-  let currentSum = nums[0];
-
-  // These track the best indices we’ve seen
-  let bestStart = 0;
-  let bestEnd = 0;
-
-  // Temporary indices for the sub‑array we are currently extending
-  let tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    const num = nums[i];
-
-    // Decide whether to extend the current sub‑array or start fresh at i
-    if (currentSum + num < num) {
-      currentSum = num;
-      tempStart = i;
-    } else {
-      currentSum += num;
-    }
-
-    // Update the best found so far
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
+  while (i < mid && j < right) {
+    if (arr[i] <= arr[j]) temp[k++] = arr[i++];
+    else                   temp[k++] = arr[j++];
   }
 
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+  // copy any remaining elements from the first half
+  while (i < mid) temp[k++] = arr[i++];
+  // anything left from the second half already sits in temp
+
+  // copy back to the original array
+  for (let p = left; p < right; ++p) arr[p] = temp[p];
 }
-const arr = [4, -1, 2, 1, -5, 4];
-const result = maxSubarrayWithIndices(arr);
-console.log(result); // { maxSum: 6, start: 0, end: 3 }
-// Sub‑array: [4, -1, 2, 1] → sum 6
+
+/**
+ * Iterative merge sort.
+ * Works in O(n log n) time, O(n) auxiliary space for the temporary array.
+ */
+export function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  if (n <= 1) return;                 // already sorted
+
+  const temp = new Array<number>(n);   // reuse this buffer
+
+  // subarray size starts at 1 (single elements) and doubles each pass
+  for (let sz = 1; sz < n; sz *= 2) {
+    // merge adjacent subarrays of size sz
+    for (let left = 0; left < n - sz; left += sz * 2) {
+      const mid   = left + sz;          // left + sz is the start of the 2nd half
+      const right = Math.min(left + sz * 2, n);
+      merge(arr, left, mid, right, temp);
+    }
+  }
+}
+
+// ------------------------------------------------------------------
+// Example usage
+// ------------------------------------------------------------------
+
+// Readable example – will sort the array in place
+const sample = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(sample);
+console.log(sample);  // [3, 9, 10, 27, 38, 43, 82]
