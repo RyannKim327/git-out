@@ -1,52 +1,40 @@
-interface TreeNode<T = number> {
-  val: T;                // single value (you can change the type)
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
-}
-const root: TreeNode = {
-  val: 10,
-  left: { val: 5, left: null, right: null },
-  right: { val: 15, left: null, right: null },
-};
-function maxDepth<T>(node: TreeNode<T> | null): number {
-  if (!node) return 0;
-  const leftDepth = maxDepth(node.left);
-  const rightDepth = maxDepth(node.right);
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
+const decimal = 42;          // any number you want to convert
+const binary = decimal.toString(2);  // '101010'
+console.log(binary);        // → 101010
+/**
+ * Convert a non‑negative decimal number to binary.
+ */
+function decimalToBinary(n: number): string {
+  if (n === 0) return '0';
+  let result: string = '';
+  let num = n;
 
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
-
-  while (queue.length) {
-    const levelSize = queue.length; // nodes at current depth
-    depth++;                        // we’re going to finish this level
-
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift() as TreeNode<T>;
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
-    }
+  while (num > 0) {
+    // `num % 2` is the remainder (0 or 1)
+    const bit = (num % 2).toString();
+    result = bit + result;          // prepend the bit
+    num = Math.floor(num / 2);       // shift right
   }
 
-  return depth;
+  return result;
 }
-// build a quick tree
-const tree: TreeNode = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4, left: null, right: null },
-    right: null,
-  },
-  right: {
-    val: 3,
-    left: null,
-    right: { val: 5, left: null, right: null },
-  },
-};
 
-console.log(maxDepth(tree));      // -> 3
-console.log(maxDepthIter(tree));  // -> 3
+// Demo
+console.log(decimalToBinary(42));   // → 101010
+console.log(decimalToBinary(0));    // → 0
+console.log(decimalToBinary(255));  // → 11111111
+function bigIntDecimalToBinary(n: bigint): string {
+  if (n === 0n) return '0';
+  let result = '';
+  let num = n;
+  while (num > 0n) {
+    result = (num & 1n).toString() + result; // `& 1n` is a fast bitwise test
+    num >>= 1n;   // shift right
+  }
+  return result;
+}
+// 16 decimal → 10000 binary
+console.assert(decimalToBinary(16) === '10000');
+
+// 255 decimal → 11111111 binary
+console.assert(decimalToBinary(255) === '11111111');
