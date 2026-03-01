@@ -1,39 +1,60 @@
-class ListNode<T> {
-    constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-    if (!head) return false;
+function buildLps(pattern: string): number[] {
+  const lps = new Array(pattern.length).fill(0);
+  let len = 0;          // length of the previous longest prefix suffix
+  let i = 1;            // we start from the second character
 
-    let slow: ListNode<T> | null = head;
-    let fast: ListNode<T> | null = head;
-
-    while (fast !== null && fast.next !== null) {
-        slow = slow!.next;           // move 1 step
-        fast = fast.next.next;       // move 2 steps
-
-        if (slow === fast) {         // same node → cycle
-            return true;
-        }
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      // Mismatch after len matches
+      if (len !== 0) {
+        // Try the last known good prefix
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
     }
-    return false;                    // fast reached end → no cycle
+  }
+  return lps;
 }
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-    const visited = new Set<ListNode<T>>();
+/**
+ * Returns an array of starting indices where `pattern` occurs in `text`.
+ * If no match, returns an empty array.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  const lps = buildLps(pattern);
+  const results: number[] = [];
 
-    let current: ListNode<T> | null = head;
-    while (current !== null) {
-        if (visited.has(current)) return true; // already seen
-        visited.add(current);
-        current = current.next;
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) {
+        // Match found at position i - j
+        results.push(i - j);
+        // Prepare for the next possible match
+        j = lps[j - 1];
+      }
+    } else {
+      if (j !== 0) {
+        // Mismatch after j matches
+        j = lps[j - 1];
+      } else {
+        // Mismatch at the start
+        i++;
+      }
     }
-    return false;
-}
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b;  // 1 → 2 → 3
-b.next = c;
-c.next = a;  // cycle back to 1
+  }
 
-console.log(hasCycle(a));        // → true
-console.log(hasCycleWithSet(a)); // → true
+  return results;
+}
+const text = "ABABDABACDABABCABAB";
+const pattern = "ABABCABAB";
+
+console.log(kmpSearch(text, pattern)); // [10]
