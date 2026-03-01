@@ -1,132 +1,54 @@
-// ---------- Types ---------------------------------------------------------
-type Vertex = string | number // whatever sort of key you like
-
-// an edge is directed; the weight can be positive, negative or zero
-interface Edge {
-  from: Vertex
-  to: Vertex
-  weight: number
+// 1️⃣  Basic node interface – replace / extend it to fit your model
+export interface TreeNode<T> {
+  value: T;                 // the payload stored in the node
+  children?: TreeNode<T>[]>; // can be unset (leaf) or an empty array for a leaf
 }
 
-// ---------- Graph wrapper -----------------------------------------------
-class Graph {
-  private vertices: Set<Vertex> = new Set()
-  private edges: Edge[] = []
+// 2️⃣  The actual algorithm
+export function depthLimitedSearch<T>(
+  root: TreeNode<T>,           // root of the tree
+  target: T,                   // value we’re looking for
+  depthLimit: number,          // how far the search may go (0 = only the root)
+  equals: (a: T, b: T) => boolean = (a, b) => a === b
+): TreeNode<T> | null {
+  if (depthLimit < 0) return null; // sanity check
 
-  // you can add vertices explicitly if you want; adding an edge will
-  // automatically pull its endpoints into the vertex set
-  public addVertex(v: Vertex) {
-    this.vertices.add(v)
-  }
+  // stack holds {node, depth}
+  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
+    { node: root, depth: 0 },
+  ];
 
-  public addEdge(from: Vertex, to: Vertex, weight: number) {
-    this.vertices.add(from)
-    this.vertices.add(to)
-    this.edges.push({ from, to, weight })
-  }
+  while (stack.length) {
+    const { node, depth } = stack.pop()!; // pop from top of stack
 
-  public getVertices() {
-    return Array.from(this.vertices)
-  }
+    // 3️⃣  Stop expanding when the depth limit is reached
+    if (depth > depthLimit) {
+      continue;
+    }
 
-  public getEdges() {
-    return this.edges.slice()
-  }
-}
+    // 4️⃣  Check the current node
+    if (equals(node.value, target)) {
+      return node;
+    }
 
-// ---------- Bellman‑Ford algorithm ---------------------------------------
-/**
- * Returns an object containing:
- *   distances:  map from vertex to its shortest‑path distance from source
- *   previous:   map from vertex to its predecessor on that shortest path
- *
- * Throws an Error if a negative‑weight cycle is reachable from `source`.
- */
-function bellmanFord(
-  graph: Graph,
-  source: Vertex
-): { distances: Record<Vertex, number>; previous: Record<Vertex, Vertex | null> } {
-  const INF = Number.POSITIVE_INFINITY
-
-  // 1. initialise
-  const distance: Record<Vertex, number> = {}
-  const previous: Record<Vertex, Vertex | null> = {}
-
-  for (const v of graph.getVertices()) {
-    distance[v] = INF
-    previous[v] = null
-  }
-  distance[source] = 0
-
-  const edges = graph.getEdges()
-  const nvertices = graph.getVertices().length
-
-  // 2. relaxation loop (nvertices - 1) times
-  for (let i = 0; i < nvertices - 1; i++) {
-    let updated = false
-    for (const { from, to, weight } of edges) {
-      const alt = distance[from] + weight
-      if (alt < distance[to]) {
-        distance[to] = alt
-        previous[to] = from
-        updated = true
+    // 5️⃣  Push children (DFS) – children that are undefined are skipped
+    if (node.children) {
+      // depth + 1 because we’ll go down one edge
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        stack.push({ node: node.children[i], depth: depth + 1 });
       }
     }
-    // early exit if nothing changed
-    if (!updated) break
   }
 
-  // 3. check for negative‑weight cycles
-  for (const { from, to, weight } of edges) {
-    if (distance[from] + weight < distance[to]) {
-      throw new Error(
-        `Negative‑weight cycle detected: edge ${from} → ${to} (weight ${weight})`
-      )
-    }
-  }
-
-  return { distances: distance, previous }
+  return null; // nothing found within the depth limit
 }
+const tree: TreeNode<string> = {
+  value: "A",
+  children: [
+    { value: "B", children: [{ value: "D" }, { value: "E" }] },
+    { value: "C", children: [{ value: "F" }, { value: "G" }] },
+  ],
+};
 
-// ---------- Reconstruct path helper ---------------------------------------
-function reconstructPath(
-  previous: Record<Vertex, Vertex | null>,
-  source: Vertex,
-  target: Vertex
-): Vertex[] {
-  const path: Vertex[] = []
-  let v: Vertex | null = target
-
-  while (v !== null && v !== source) {
-    path.unshift(v)
-    v = previous[v]
-  }
-  if (v !== source) {
-    // no path
-    return []
-  }
-  path.unshift(source)
-  return path
-}
-
-// ---------- Example usage -----------------------------------------------
-const g = new Graph()
-
-// sample graph: 0 → 1 (4), 0 → 2 (5), 1 → 2 (-1), 2 → 3 (3), 3 → 1 (-2)
-g.addEdge(0, 1, 4)
-g.addEdge(0, 2, 5)
-g.addEdge(1, 2, -1)
-g.addEdge(2, 3, 3)
-g.addEdge(3, 1, -2)
-
-try {
-  const { distances, previous } = bellmanFord(g, 0)
-  console.log('distances:', distances)
-
-  for (const v of g.getVertices()) {
-    const path = reconstructPath(previous, 0, v)
-    console.log(`0 → ${v}  (dist=${distances[v]})  path:`, path.join(' → '))
-  }
-} catch (e) {
-  console.error(e)
-}
+console.log(depthLimitedSearch(tree, "F", 1)); // null (needs depth 2)
+console.log(depthLimitedSearch(tree, "F", 2)); // node with value "F"
