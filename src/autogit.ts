@@ -1,24 +1,38 @@
 /**
- * Return the first character in `s` that occurs exactly once.
- * If every character repeats, return null.
+ * Find the majority element in an array.
+ *
+ * @param arr - An array of comparable items.
+ * @returns The majority element, or undefined if no majority exists.
+ *
+ * Assumes `T` supports strict equality (===).
  */
-function firstNonRepeatingChar(s: string): string | null {
-  // 1️⃣  Count how many times each char appears.
-  const freq = new Map<string, number>();
+function majorityElement<T>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
 
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
+  // 1️⃣ First pass: find a potential candidate
+  let candidate: T | undefined = arr[0];
+  let count = 0;
 
-  // 2️⃣  Walk the string a second time, looking for a count of 1.
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;          // first non‑repeating character found
+  for (const value of arr) {
+    if (count === 0) {
+      candidate = value;
+      count = 1;
+    } else {
+      count += (value === candidate) ? 1 : -1;
     }
   }
 
-  return null;              // no unique character
+  // 2️⃣ Optional second pass (remove if you know the input always contains a majority)
+  if (candidate !== undefined) {
+    const actual = arr.filter(v => v === candidate).length;
+    if (actual > arr.length / 2) {
+      return candidate;
+    }
+  }
+
+  return undefined; // No majority element
 }
-console.log(firstNonRepeatingChar('abacabad')); // "c"
-console.log(firstNonRepeatingChar('aabbcc'));   // null
-console.log(firstNonRepeatingChar('😀😃😀😄')); // "😃"
+const nums = [2, 2, 1, 1, 2, 2, 2];
+
+const major = majorityElement(nums); // -> 2
+console.log(major); // 2
