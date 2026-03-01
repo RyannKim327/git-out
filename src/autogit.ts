@@ -1,83 +1,32 @@
-// fetch-example.ts
-/**
- * A small utility that fetches JSON from a public API
- * and logs a nicely formatted result.
- *
- * It demonstrates:
- *   • TypeScript generics for response typing
- *   • Async/await syntax
- *   • Basic error handling
- *   • Runtime type guard for JSON validation
- */
-
-type PlainObject = Record<string, unknown>;
-
-// A small runtime check to ensure the response is
-// an object (the common case when fetching JSON).
-function isObject(value: unknown): value is PlainObject {
-  return typeof value === 'object' && value !== null;
+// 1️⃣  Using a Set – O(m + n) time, O(n) extra space
+function commonElements<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(item => setB.has(item));
 }
 
-/**
- * Generic fetch function that returns data of type T.
- * @param url          The URL to fetch from
- * @param init         Optional RequestInit parameters
- */
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
-
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+// 2️⃣  Using two pointers – O(m + n) time, O(1) extra space
+//     (works best if both arrays are already sorted)
+function commonSorted<T>(a: T[], b: T[]): T[] {
+  const res: T[] = [];
+  let i = 0, j = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) {
+      res.push(a[i]);
+      i++; j++;
+    } else if (a[i] < b[j]) {
+      i++;
+    } else {
+      j++;
+    }
   }
-
-  const data = await response.json();
-
-  // Very light runtime validation – just make sure we got an object
-  if (!isObject(data)) {
-    throw new Error('Response is not a JSON object');
-  }
-
-  return data as T; // confidence that T matches the real shape
+  return res;
 }
 
-/**
- * Example usage: fetch a user from the JSONPlaceholder API.
- * The API returns a shape that we can describe as a type.
- */
-interface JsonPlaceholderUser {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-  address: {
-    street: string;
-    suite: string;
-    city: string;
-    zipcode: string;
-    geo: { lat: string; lng: string };
-  };
-  phone: string;
-  website: string;
-  company: {
-    name: string;
-    catchPhrase: string;
-    bs: string;
-  };
+// 3️⃣  Using reduce – concise but less efficient for large arrays
+function commonReduce<T>(a: T[], b: T[]): T[] {
+  return a.reduce((acc, val) => (b.includes(val) ? [...acc, val] : acc), [] as T[]);
 }
+const arr1 = [1, 2, 3, 4, 5];
+const arr2 = [3, 4, 5, 6, 7];
 
-async function main() {
-  const userId = 1;
-  const url = `https://jsonplaceholder.typicode.com/users/${userId}`;
-
-  try {
-    const user = await fetchJson<JsonPlaceholderUser>(url);
-    console.log(`Name: ${user.name}`);
-    console.log(`Company: ${user.company.name}`);
-    console.log(`Address: ${user.address.street}, ${user.address.city}`);
-  } catch (err) {
-    console.error('Something went wrong:', err);
-  }
-}
-
-// Kick it off
-main();
+console.log(commonElements(arr1, arr2)); // [3, 4, 5]
