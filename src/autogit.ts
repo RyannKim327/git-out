@@ -1,40 +1,35 @@
 /**
- * Binary search – recursive.  
- * @param arr        — sorted array
- * @param target     — value to find
- * @param compare    — optional comparison function (a, b) => number
- *                     returns <0 if a<b, 0 if a==b, >0 if a>b
- * @returns index of `target` or -1 if not found
+ * Bottom‑up merge sort – no recursion, only loops.
+ * @param arr The array to sort, in place.
+ * @returns The sorted array (same reference as the argument).
  */
-function binarySearchRec<T>(
-  arr: T[],
-  target: T,
-  compare?: (a: T, b: T) => number
-): number {
-  // Provide a default numeric comparator
-  const cmp = compare ?? ((a: any, b: any) => a - b);
+export function mergeSortIterative<T>(arr: T[]): T[] {
+  const len = arr.length;
+  if (len < 2) return arr;          // already sorted
 
-  const search = (low: number, high: number): number => {
-    if (low > high) return -1;          // base case: not found
+  // Temporary buffer reused for each merge
+  const temp = new Array<T>(len);
 
-    const mid = Math.floor((low + high) / 2);
-    const cmpResult = cmp(arr[mid], target);
+  // Initial run width – start with runs of 1 element
+  for (let width = 1; width < len; width <<= 1) {
+    // Merge pairs of runs: left = i‑th run, right = i+width‑th run
+    for (let i = 0; i < len; i += width << 1) {
+      const left = i;
+      const mid = Math.min(i + width, len);
+      const right = Math.min(i + (width << 1), len);
 
-    if (cmpResult === 0) return mid;    // target is at mid
-    if (cmpResult < 0) return search(mid + 1, high); // target is right
-    return search(low, mid - 1);        // target is left
-  };
+      // Merge [left, mid) and [mid, right) into temp
+      let l = left, r = mid, k = left;
+      while (l < mid && r < right) {
+        temp[k++] = (arr[l] as any <= arr[r] as any) ? arr[l++] : arr[r++];
+      }
+      while (l < mid) temp[k++] = arr[l++];
+      while (r < right) temp[k++] = arr[r++];
 
-  return search(0, arr.length - 1);
+      // Copy the merged segment back into arr
+      for (let p = left; p < right; p++) arr[p] = temp[p];
+    }
+  }
+
+  return arr;
 }
-// Numbers – no comparator needed
-const nums = [1, 3, 5, 7, 9, 11, 13];
-console.log(binarySearchRec(nums, 7));  // → 3
-console.log(binarySearchRec(nums, 2));  // → -1
-
-// Strings – supply a comparator
-const words = ["apple", "banana", "cherry", "date"];
-const stringCmp = (a: string, b: string) => a.localeCompare(b);
-
-console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
-console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
