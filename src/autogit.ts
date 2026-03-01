@@ -1,64 +1,78 @@
 /**
- * Basic node definition for a singly‑linked list.
+ * Build the longest‑prefix‑suffix (LPS) array for the pattern.
+ * lps[i] will contain the length of the longest proper prefix
+ * that is also a suffix for the substring pattern[0…i].
+ *
+ * @param pattern – the pattern
+ * @returns the filled LPS array
  */
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+function computeLPS(pattern: string): number[] {
+  const lps: number[] = new Array(pattern.length).fill(0);
+  let length = 0;          // length of the previous longest prefix suffix
+  let i = 1;               // lps[0] is always 0
+
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
+    } else {
+      if (length !== 0) {
+        // don't move i here; keep looking for a smaller prefix
+        length = lps[length - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
+    }
+  }
+
+  return lps;
 }
 
 /**
- * Returns `true` if the list reads the same forwards and backwards.
+ * Perform KMP search for a pattern in a text.
  *
- * Time   : O(n) – we traverse the list a constant number of times.
- * Space  : O(1) – we only use a few pointer variables.
+ * @param text     – the string to search in
+ * @param pattern  – the pattern to look for
+ * @returns an array of starting indices where the pattern occurs
  */
-function isPalindrome<T>(head: ListNode<T> | null): boolean {
-  if (!head || !head.next) return true;   // empty or single‑node list
+function kmpSearch(text: string, pattern: string): number[] {
+  if (pattern.length === 0) return []; // nothing to search for
 
-  // 1. Find the middle of the list
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+  const lps = computeLPS(pattern);
+  const positions: number[] = [];
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+
+      if (j === pattern.length) {
+        // match found – record starting index
+        positions.push(i - j);
+        // continue searching for next possible match
+        j = lps[j - 1];
+      }
+    } else {
+      if (j !== 0) {
+        // jump back in the pattern based on LPS
+        j = lps[j - 1];
+      } else {
+        i++; // move to next character in text
+      }
+    }
   }
 
-  // 2. Reverse the second half (starting from slow.next)
-  let prev: ListNode<T> | null = null;
-  let curr: ListNode<T> | null = slow.next;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  // `prev` is now the head of the reversed second half
-
-  // 3. Compare the first half with the reversed second half
-  let p1 = head;
-  let p2 = prev;
-  while (p2) {               // only need to go as far as the short half
-    if (p1.val !== p2.val) return false;
-    p1 = p1.next!;
-    p2 = p2.next!;
-  }
-
-  // Optional: restore the list to its original order (not required for the answer)
-  // reverse(prev) again and reattach to `slow.next`
-
-  return true;
+  return positions;
 }
-const build = (...vals: number[]): ListNode<number> | null => {
-  let head: ListNode<number> | null = null;
-  let tail: ListNode<number> | null = null;
-  for (const v of vals) {
-    const node = new ListNode(v);
-    if (!head) head = node;
-    else tail!.next = node;
-    tail = node;
-  }
-  return head;
-};
 
-console.log(isPalindrome(build(1, 2, 3, 2, 1))); // true
-console.log(isPalindrome(build(1, 2, 2, 1)));      // true
-console.log(isPalindrome(build(1, 2, 3, 4, 5))); // false
+/* Example usage */
+const haystack = "ABABDABACDABABCABAB";
+const needle = "ABABCABAB";
+
+const matches = kmpSearch(haystack, needle);
+console.log("Pattern found at positions:", matches);
+// Expected output: Pattern found at positions: [9]
