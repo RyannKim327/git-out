@@ -1,54 +1,48 @@
-// 1️⃣  Basic node interface – replace / extend it to fit your model
-export interface TreeNode<T> {
-  value: T;                 // the payload stored in the node
-  children?: TreeNode<T>[]>; // can be unset (leaf) or an empty array for a leaf
-}
+// 1️⃣  Define a comparison helper – most of the time you’ll just pass
+//     (a, b) => a < b for ascending order.
+type Comparator<T> = (a: T, b: T) => boolean;
 
-// 2️⃣  The actual algorithm
-export function depthLimitedSearch<T>(
-  root: TreeNode<T>,           // root of the tree
-  target: T,                   // value we’re looking for
-  depthLimit: number,          // how far the search may go (0 = only the root)
-  equals: (a: T, b: T) => boolean = (a, b) => a === b
-): TreeNode<T> | null {
-  if (depthLimit < 0) return null; // sanity check
+// 2️⃣  The merge function – it expects two sorted arrays and pulls
+//     the smaller (according to the comparator) element out first.
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+  const result: T[] = [];
+  let i = 0,
+      j = 0;
 
-  // stack holds {node, depth}
-  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
-    { node: root, depth: 0 },
-  ];
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!; // pop from top of stack
-
-    // 3️⃣  Stop expanding when the depth limit is reached
-    if (depth > depthLimit) {
-      continue;
-    }
-
-    // 4️⃣  Check the current node
-    if (equals(node.value, target)) {
-      return node;
-    }
-
-    // 5️⃣  Push children (DFS) – children that are undefined are skipped
-    if (node.children) {
-      // depth + 1 because we’ll go down one edge
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        stack.push({ node: node.children[i], depth: depth + 1 });
-      }
+  while (i < left.length && j < right.length) {
+    if (cmp(left[i], right[j])) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
     }
   }
 
-  return null; // nothing found within the depth limit
-}
-const tree: TreeNode<string> = {
-  value: "A",
-  children: [
-    { value: "B", children: [{ value: "D" }, { value: "E" }] },
-    { value: "C", children: [{ value: "F" }, { value: "G" }] },
-  ],
-};
+  // One side still has items – splice the rest onto the result.
+  if (i < left.length) result.push(...left.slice(i));
+  if (j < right.length) result.push(...right.slice(j));
 
-console.log(depthLimitedSearch(tree, "F", 1)); // null (needs depth 2)
-console.log(depthLimitedSearch(tree, "F", 2)); // node with value "F"
+  return result;
+}
+
+// 3️⃣  The recursive mergeSort main function – sorts in place if you
+//     prefer not to allocate the full array during every merge.
+export function mergeSort<T>(arr: T[], cmp: Comparator<T> = (a, b) => a < b): T[] {
+  if (arr.length <= 1) return arr;     // Base case: nothing to do
+
+  const mid = Math.floor(arr.length / 2);
+  const left  = mergeSort(arr.slice(0, mid), cmp);
+  const right = mergeSort(arr.slice(mid),    cmp);
+
+  return merge(left, right, cmp);
+}
+// Numbers, ascending
+const sortedNumbers = mergeSort([8, 3, 5, 1, 9, 2]);
+
+// Strings, descending
+const sortedStrings = mergeSort(
+  ["banana", "apple", "cherry"],
+  (a, b) => a > b
+);
+
+console.log(sortedNumbers); // [1, 2, 3, 5, 8, 9]
+console.log(sortedStrings); // ["cherry", "banana", "apple"]
