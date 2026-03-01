@@ -1,52 +1,78 @@
-/**
- * Compare two numbers (or any types that support `<` and `>`).
- * Returns positive if a > b, negative if a < b, zero otherwise.
- */
-const compare = <T>(a: T, b: T): number => {
-  if (a > b) return 1;
-  if (a < b) return -1;
-  return 0;
-};
+// AndroidAsyncDemo.ts
+import { AndroidApplication, AndroidActivityEventData } from "@nativescript/core";
+import * as http from "http";
 
-/**
- * Restores the max‑heap property for the sub‑array a[0 … n-1]
- * starting from index i, assuming its children already satisfy
- * the heap property.
- */
-const heapify = <T>(a: T[], n: number, i: number): void => {
-  let largest = i;
-  const left  = 2 * i + 1;
-  const right = 2 * i + 2;
+export class AndroidAsyncDemo {
+    private activity: android.app.Activity;
 
-  if (left  < n && compare(a[left],  a[largest]) > 0) largest = left;
-  if (right < n && compare(a[right], a[largest]) > 0) largest = right;
+    constructor() {
+        const eventData = <AndroidActivityEventData>androidApplication.currentContext.getActivity();
+        this.activity = eventData.activity;
+    }
 
-  if (largest !== i) {
-    [a[i], a[largest]] = [a[largest], a[i]];
-    heapify(a, n, largest);
-  }
-};
+    public startDemo() {
+        // URL you care about
+        const url = "https://api.github.com/users/nativescript";
 
-/**
- * Turns an array into a max‑heap. Complexity O(n).
- */
-const buildHeap = <T>(a: T[]): void => {
-  const n = a.length;
-  // start at the last parent node
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-    heapify(a, n, i);
-  }
-};
+        // Create an instance of the AsyncTask wrapper
+        const task = new HttpGetAsyncTask(this.activity, url);
+        task.execute();
+    }
+}
 
-/**
- * Heap‑sort: arr is sorted in‑place.
- */
-export const heapSort = <T>(arr: T[]): void => {
-  buildHeap(arr);
-  for (let i = arr.length - 1; i > 0; i--) {
-    // move current root (max) to the end
-    [arr[0], arr[i]] = [arr[i], arr[0]];
-    // heapify the reduced heap
-    heapify(arr, i, 0);
-  }
-};
+// --------------------------------------------
+//  AsyncTask wrapper – looks a bit like Java
+// --------------------------------------------
+class HttpGetAsyncTask extends java.lang.Object implements android.os.AsyncTask<string, void, string> {
+
+    private activity: android.app.Activity;
+    private url: string;
+    private resultView: android.widget.TextView;
+
+    constructor(activity: android.app.Activity, url: string) {
+        super();
+        this.activity = activity;
+        this.url = url;
+        this.resultView = new android.widget.TextView(activity);
+        this.resultView.setLayoutParams(
+            new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        );
+        this.activity.runOnUiThread(() => {
+            const root = this.activity.findViewById(android.R.id.content);
+            if (root instanceof android.widget.LinearLayout) {
+                root.addView(this.resultView);
+            }
+        });
+    }
+
+    // @Override
+    public doInBackground(...params: string[]): string {
+        try {
+            // Using Node's http wrapper that works in NativeScript
+            const response = http.getSync(this.url);
+            return response.content.toString();
+        } catch (err) {
+            return `Error: ${err.message || err}`;
+        }
+    }
+
+    // @Override
+    public onPostExecute(result: string): void {
+        this.resultView.setText(result);
+    }
+
+    // The following method signatures satisfy the interface contract
+    public onPreExecute(): void {}
+    public onProgressUpdate(...values: void[]): void {}
+}
+
+// --------------------------------------------
+//  Use it from your page or component
+// --------------------------------------------
+export function demoClicked() {
+    const demo = new AndroidAsyncDemo();
+    demo.startDemo();
+}
