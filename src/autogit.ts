@@ -1,61 +1,59 @@
+class ListNode {
+  val: number;
+  next: ListNode | null;
+
+  constructor(val: number, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
+  }
+}
 /**
- * Radix sort for 32‑bit unsigned integers.
- * Sorts in place and returns the sorted array for convenience.
+ * Returns the node where listA and listB intersect.
+ * If they don't intersect, returns null.
  */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length <= 1) return arr;          // already sorted
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  if (!headA || !headB) return null;
 
-  // Pick a base that gives a nice trade‑off between passes and bucket size.
-  // Base 256 (8 bits per pass) lets us use a Uint32Array for buckets.
-  const base = 256;
-  const maxBit = 32; // 32 bits for a signed int, but we only store positives here
+  let pA: ListNode | null = headA;
+  let pB: ListNode | null = headB;
 
-  // Number of passes, one per byte in this case.
-  const passes = maxBit / 8;
-
-  // Temporary array for intermediate results.
-  const temp = new Array<number>(arr.length);
-
-  // Helper: counts how many numbers have a certain digit value at a given byte.
-  const count = new Uint32Array(base);
-
-  for (let pass = 0; pass < passes; ++pass) {
-    // Reset counts.
-    count.fill(0);
-
-    // Count occurrences of each bucket value.
-    const shift = pass * 8;
-    for (const n of arr) {
-      const bucket = (n >> shift) & 0xff;
-      count[bucket]++;
-    }
-
-    // Compute cumulative counts => start indices in `temp`.
-    const startIdx = new Uint32Array(base);
-    let sum = 0;
-    for (let i = 0; i < base; ++i) {
-      startIdx[i] = sum;
-      sum += count[i];
-    }
-
-    // Place numbers into the correct bucket order.
-    for (const n of arr) {
-      const bucket = (n >> shift) & 0xff;
-      const idx = startIdx[bucket]++;
-      temp[idx] = n;
-    }
-
-    // Swap the source and destination for the next round.
-    [arr, temp] = [temp, arr];
+  // Continue until the two pointers either match or both become null.
+  while (pA !== pB) {
+    // Move to the next node; if we're at the end, jump to the other list's head.
+    pA = pA ? pA.next : headB;
+    pB = pB ? pB.next : headA;
   }
 
-  // After an even number of passes `arr` points to original input; the sorted
-  // result ends up in `arr`. If passes were odd, the sorted array will be in `temp`.
-  // Ensure we return the sorted array reference.
-  return arr.length === sizeOfInput ? arr : temp;
+  return pA; // Either the intersection node or null.
 }
+// Build two intersecting lists:
+// A: 1 → 3 → 5 → 7 → 9
+// B: 2 → 4 →        → 7 → 9
+//            ^<--- intersection starts here
 
-/** Quick tests */
-const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log('unsorted:', unsorted);
-console.log('sorted:  ', radixSort([...unsorted])); // use spread to leave original intact
+const common = new ListNode(7, new ListNode(9));
+
+const listA = new ListNode(1, new ListNode(3, new ListNode(5, common)));
+const listB = new ListNode(2, new ListNode(4, common));
+
+const intersection = getIntersectionNode(listA, listB);
+console.log(intersection?.val); // 7
+function getIntersectionNodeHash(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  const nodes = new Set<ListNode>();
+
+  for (let cur = headA; cur; cur = cur.next) {
+    nodes.add(cur);
+  }
+
+  for (let cur = headB; cur; cur = cur.next) {
+    if (nodes.has(cur)) return cur;
+  }
+
+  return null;
+}
