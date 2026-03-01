@@ -1,60 +1,45 @@
 /**
- * Rabin–Karp string search.
- *
- * @param text    the string to search in
- * @param pattern the string to find
- * @returns array of starting indices where pattern appears in text
+ * A classic LIFO stack that stores items in an array.
+ * @template T The type of the values stored inside the stack.
  */
-export function rabinKarp(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
+export class Stack<T> {
+  /** The underlying array that holds the stack's data. */
+  private data: T[] = [];
 
-  if (m === 0 || m > n) {
-    return [];
+  /** Adds an element to the top of the stack. */
+  push(item: T): void {
+    this.data.push(item);
   }
 
-  const base = 256;            // Number of possible ASCII characters
-  const mod  = 101;            // A prime modulus – large enough for short strings
-
-  /* ----------  helper: convert a substring to a hash ------------ */
-  const hash = (str: string, len: number) => {
-    let h = 0;
-    for (let i = 0; i < len; i++) {
-      h = (h * base + str.charCodeAt(i)) % mod;
-    }
-    return h;
-  };
-
-  /* ----------  pre‑compute base^(m-1)  modulo mod -------------- */
-  let highPow = 1;                 // (base^(m‑1)) % mod
-  for (let i = 1; i <= m - 1; i++) {
-    highPow = (highPow * base) % mod;
+  /**
+   * Removes and returns the element at the top of the stack.
+   * Returns undefined if the stack is empty.
+   */
+  pop(): T | undefined {
+    return this.data.pop();
   }
 
-  /* ----------  initial hashes ----------------------------------- */
-  let patternHash = hash(pattern, m);
-  let windowHash  = hash(text, m);
-
-  const result: number[] = [];
-
-  /* ----------  main loop ---------------------------------------- */
-  for (let i = 0; i <= n - m; i++) {
-    // When hashes match we still do a string comparison to rule out collisions
-    if (patternHash === windowHash) {
-      if (text.substr(i, m) === pattern) {
-        result.push(i);
-      }
-    }
-
-    // Roll the hash: remove the leftmost character, add the new rightmost
-    if (i < n - m) {
-      windowHash =
-        // Remove leftmost char contribution
-        (windowHash - text.charCodeAt(i) * highPow % mod + mod) % mod; // keep positive
-      // Add next char
-      windowHash = (windowHash * base + text.charCodeAt(i + m)) % mod;
-    }
+  /** Peeks at the element on the top without removing it. */
+  peek(): T | undefined {
+    return this.data[this.data.length - 1];
   }
 
-  return result;
+  /** Returns the number of elements in the stack. */
+  get size(): number {
+    return this.data.length;
+  }
+
+  /** Returns true when the stack has nothing inside. */
+  get isEmpty(): boolean {
+    return this.data.length === 0;
+  }
 }
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size);   // 2
