@@ -1,32 +1,21 @@
-const nums = [1, 2, 3, 4, 5];
-
-// Remove the number 3
-const idx = nums.indexOf(3);
-if (idx !== -1) {
-  nums.splice(idx, 1); // nums → [1, 2, 4, 5]
-}
-const chars = ['a', 'b', 'c', 'b', 'd'];
-
-// Drop every 'b'
-const withoutB = chars.filter(ch => ch !== 'b');
-// withoutB → ['a', 'c', 'd']
-const original = [10, 20, 30, 40, 50];
-
-const removed = [
-  ...original.slice(0, original.indexOf(30)),
-  ...original.slice(original.indexOf(30) + 1),
-];
-
-// removed → [10, 20, 40, 50]
 /**
- * Remove the first occurrence of `value` from `array`.
- * Returns a new array; the original array is not mutated.
+ * Returns the mean (average) of an array of numbers.
+ * If the array is empty, it throws an error; you can change that behavior if you prefer.
  */
-function removeFirst<T>(array: readonly T[], value: T): T[] {
-  const idx = array.indexOf(value);
-  if (idx === -1) return [...array]; // nothing to remove
-  return [...array.slice(0, idx), ...array.slice(idx + 1)];
+function mean(nums: number[]): number {
+  if (nums.length === 0) {
+    throw new Error("Cannot compute the mean of an empty array");
+  }
+
+  const sum = nums.reduce((acc, v) => acc + v, 0);
+  return sum / nums.length;
 }
-const data = [2, 4, 6, 8];
-const updated = removeFirst(data, 6);
-// updated → [2, 4, 8]
+const values = [4, 8, 15, 16, 23, 42];
+console.log(mean(values)); // 18.833333333333332
+function meanWhenPossible(nums: number[]): number {
+  if (nums.length === 0) {
+    return NaN;
+  }
+  return nums.reduce((acc, v) => acc + v, 0) / nums.length;
+}
+console.assert(mean([2, 4, 6]) === 4, "The mean should be 4");
