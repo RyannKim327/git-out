@@ -1,47 +1,60 @@
+function buildLps(pattern: string): number[] {
+  const lps = new Array(pattern.length).fill(0);
+  let len = 0;          // length of the previous longest prefix suffix
+  let i = 1;            // we start from the second character
+
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      // Mismatch after len matches
+      if (len !== 0) {
+        // Try the last known good prefix
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
+    }
+  }
+  return lps;
+}
 /**
- * Checks whether a string is a palindrome (case‑insensitive,
- * ignoring anything that isn’t a letter or a digit).
- *
- * Time   : O(n)
- * Space  : O(1)   – only a couple of integer variables
+ * Returns an array of starting indices where `pattern` occurs in `text`.
+ * If no match, returns an empty array.
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+export function kmpSearch(text: string, pattern: string): number[] {
+  const lps = buildLps(pattern);
+  const results: number[] = [];
 
-  const isAlnum = (ch: string): boolean => {
-    const code = ch.charCodeAt(0);
-    // '0'‑'9'
-    if (code >= 48 && code <= 57) return true;
-    // 'A'‑'Z'
-    if (code >= 65 && code <= 90) return true;
-    // 'a'‑'z'
-    if (code >= 97 && code <= 122) return true;
-    return false;
-  };
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-  while (left < right) {
-    // Skip non‑alphanumeric characters from the left
-    while (left < right && !isAlnum(s[left])) left++;
-    // Skip non‑alphanumeric characters from the right
-    while (left < right && !isAlnum(s[right])) right--;
-
-    if (left >= right) break;          // Nothing left to compare
-
-    const lc = s[left].toLowerCase();
-    const rc = s[right].toLowerCase();
-
-    if (lc !== rc) return false;
-
-    left++;
-    right--;
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) {
+        // Match found at position i - j
+        results.push(i - j);
+        // Prepare for the next possible match
+        j = lps[j - 1];
+      }
+    } else {
+      if (j !== 0) {
+        // Mismatch after j matches
+        j = lps[j - 1];
+      } else {
+        // Mismatch at the start
+        i++;
+      }
+    }
   }
 
-  return true;
+  return results;
 }
-while (left < right) {
-  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
-  left++;
-  right--;
-}
-return true;
+const text = "ABABDABACDABABCABAB";
+const pattern = "ABABCABAB";
+
+console.log(kmpSearch(text, pattern)); // [10]
