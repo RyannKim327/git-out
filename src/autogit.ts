@@ -1,48 +1,87 @@
-// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
-//      This shape is common in interview‑style code.
-interface TreeNode {
-  val: number;         // node’s payload
-  left?: TreeNode | null;   // left child (optional)
-  right?: TreeNode | null;  // right child (optional)
+/**
+ * A directed graph stored as an adjacency list.
+ * Each key is a node identifier, the value is an array of successor node ids.
+ */
+interface Graph {
+  [node: string]: string[];
 }
 
-// 2️⃣  Recursive summation – easiest to read and to understand.
-//      Depth‑first, natural for a tree.
-function sumTreeRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                      // base case: empty subtree is 0
-  const leftSum = sumTreeRecursive(root.left);
-  const rightSum = sumTreeRecursive(root.right);
-  return root.val + leftSum + rightSum;      // combine the results
-}
+/**
+ * Result of the algorithm – an array of SCCs.
+ * Each SCC is an array of node ids that belong together.
+ */
+type SCC = string[][];
 
-// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
-//      where recursion might hit the call‑stack limit.
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let total = 0;
-  const stack: TreeNode[] = [root];
+/**
+ * Tarjan’s algorithm for SCCs.
+ *
+ * @param g The graph to analyse.
+ * @returns An array of strongly connected components.
+ */
+function tarjanSCC(g: Graph): SCC {
+  const indexMap: Record<string, number> = {};   // node → its index
+  const lowLink: Record<string, number> = {};    // node → low‑link value
+  const onStack: Set<string> = new Set();        // nodes currently in the stack
+  const stack: string[] = [];                    // stack of nodes
+  const sccs: SCC = [];
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.val;
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
+  let currentIndex = 0;
+
+  const strongConnect = (v: string) => {
+    indexMap[v] = currentIndex;
+    lowLink[v] = currentIndex;
+    currentIndex += 1;
+    stack.push(v);
+    onStack.add(v);
+
+    // Explore every outgoing edge v → w
+    for (const w of g[v] ?? []) {
+      if (!(w in indexMap)) {
+        // Recursively visit w
+        strongConnect(w);
+        lowLink[v] = Math.min(lowLink[v], lowLink[w]);
+      } else if (onStack.has(w)) {
+        // w is in the current SCC frontier
+        lowLink[v] = Math.min(lowLink[v], indexMap[w]);
+      }
+    }
+
+    // If v is the root of an SCC
+    if (lowLink[v] === indexMap[v]) {
+      const component: string[] = [];
+      let w: string | undefined;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
+    }
+  };
+
+  // Kick off a DFS from every unvisited node.
+  for (const v in g) {
+    if (!(v in indexMap)) {
+      strongConnect(v);
+    }
   }
-  return total;
+
+  return sccs;
 }
-
-// 4️⃣  Sample tree for quick sanity check
-//           5
-//          / \
-//         3   7
-//        / \   \
-//       2   4   8
-
-const sampleRoot: TreeNode = {
-  val: 5,
-  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
-  right: { val: 7, right: { val: 8 } },
+const example: Graph = {
+  a: ['b'],
+  b: ['c', 'e', 'f'],
+  c: ['d', 'g'],
+  d: ['c', 'h'],
+  e: ['a', 'f'],
+  f: ['g'],
+  g: ['f'],
+  h: ['d', 'g', 'i'],
+  i: ['h', 'k', 'l'],
+  j: ['k'],
+  k: ['i', 'l'],
+  l: ['k']
 };
 
-console.log(sumTreeRecursive(sampleRoot)); // → 33
-console.log(sumTreeIterative(sampleRoot)); // → 33
+console.log(tarjanSCC(example));
+// → [ [ 'g', 'f' ], [ 'c', 'd', 'h' ], [ 'i', 'l', 'k' ], [ 'a', 'b', 'e' ], [ 'j' ] ]
