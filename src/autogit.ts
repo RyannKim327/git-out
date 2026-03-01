@@ -1,54 +1,47 @@
-// 1️⃣  Basic node interface – replace / extend it to fit your model
-export interface TreeNode<T> {
-  value: T;                 // the payload stored in the node
-  children?: TreeNode<T>[]>; // can be unset (leaf) or an empty array for a leaf
-}
+/**
+ * Checks whether a string is a palindrome (case‑insensitive,
+ * ignoring anything that isn’t a letter or a digit).
+ *
+ * Time   : O(n)
+ * Space  : O(1)   – only a couple of integer variables
+ */
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-// 2️⃣  The actual algorithm
-export function depthLimitedSearch<T>(
-  root: TreeNode<T>,           // root of the tree
-  target: T,                   // value we’re looking for
-  depthLimit: number,          // how far the search may go (0 = only the root)
-  equals: (a: T, b: T) => boolean = (a, b) => a === b
-): TreeNode<T> | null {
-  if (depthLimit < 0) return null; // sanity check
+  const isAlnum = (ch: string): boolean => {
+    const code = ch.charCodeAt(0);
+    // '0'‑'9'
+    if (code >= 48 && code <= 57) return true;
+    // 'A'‑'Z'
+    if (code >= 65 && code <= 90) return true;
+    // 'a'‑'z'
+    if (code >= 97 && code <= 122) return true;
+    return false;
+  };
 
-  // stack holds {node, depth}
-  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
-    { node: root, depth: 0 },
-  ];
+  while (left < right) {
+    // Skip non‑alphanumeric characters from the left
+    while (left < right && !isAlnum(s[left])) left++;
+    // Skip non‑alphanumeric characters from the right
+    while (left < right && !isAlnum(s[right])) right--;
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!; // pop from top of stack
+    if (left >= right) break;          // Nothing left to compare
 
-    // 3️⃣  Stop expanding when the depth limit is reached
-    if (depth > depthLimit) {
-      continue;
-    }
+    const lc = s[left].toLowerCase();
+    const rc = s[right].toLowerCase();
 
-    // 4️⃣  Check the current node
-    if (equals(node.value, target)) {
-      return node;
-    }
+    if (lc !== rc) return false;
 
-    // 5️⃣  Push children (DFS) – children that are undefined are skipped
-    if (node.children) {
-      // depth + 1 because we’ll go down one edge
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        stack.push({ node: node.children[i], depth: depth + 1 });
-      }
-    }
+    left++;
+    right--;
   }
 
-  return null; // nothing found within the depth limit
+  return true;
 }
-const tree: TreeNode<string> = {
-  value: "A",
-  children: [
-    { value: "B", children: [{ value: "D" }, { value: "E" }] },
-    { value: "C", children: [{ value: "F" }, { value: "G" }] },
-  ],
-};
-
-console.log(depthLimitedSearch(tree, "F", 1)); // null (needs depth 2)
-console.log(depthLimitedSearch(tree, "F", 2)); // node with value "F"
+while (left < right) {
+  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
+  left++;
+  right--;
+}
+return true;
