@@ -1,21 +1,25 @@
-const numbers = [3, 7, 2, 9, 4];
-
-const max = Math.max(...numbers); // 9
-console.log(max);
-const numbers = [3, 7, 2, 9, 4];
-
-const max = numbers.reduce((prev, cur) => (cur > prev ? cur : prev));
-
-console.log(max); // 9
-function maxNumber<T extends number>(arr: T[]): T | undefined {
-  if (arr.length === 0) return undefined;
-  return arr.reduce((a, b) => (b > a ? b : a));
+/**
+ * Computes the factorial of a non‑negative integer `n` recursively.
+ * @param n - A non‑negative integer (e.g., 0, 1, 2, …)
+ * @returns n! as a `number`. For values beyond ≈ 170 you’ll hit the
+ *          IEEE‑754 overflow limit and get `Infinity`, so for large
+ *          inputs you might want to switch to BigInt.
+ */
+function factorial(n: number): number {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials');
+  if (n <= 1) return 1;          // base case: 0! = 1! = 1
+  return n * factorial(n - 1);   // recursive step
+}
+console.log(factorial(5));   // 120
+console.log(factorial(0));   // 1
+function bigIntFactorial(n: number): bigint {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials');
+  if (n <= 1) return 1n;               // 1n is a BigInt literal
+  return BigInt(n) * bigIntFactorial(n - 1);
 }
 
-const nums = [1, 5, 3];
-console.log(maxNumber(nums)); // 5
-const bigNumbers = [10n, 500n, 200n];
-
-const maxBig = bigNumbers.reduce((a, b) => (b > a ? b : a)); // 500n
-
-console.log(maxBig);
+console.log(bigIntFactorial(30).toString());
+function tailFactorial(n: number, acc: number = 1): number {
+  if (n <= 1) return acc;
+  return tailFactorial(n - 1, acc * n);
+}
