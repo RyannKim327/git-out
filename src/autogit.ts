@@ -1,48 +1,78 @@
 /**
- * Random‑pivot quicksort for an array of numbers.
+ * Bubble Sort – in‑place, O(n²) time, O(1) space
  *
- * @param arr – the array to sort (it will be sorted in place)
- * @returns the sorted array (same reference as the input)
+ * @param arr Array of values that implement `Comparable`
+ * @returns the sorted array (same reference as input)
  */
-function randomQuickSort(arr: number[]): number[] {
-  // Internal helper that works on a sub‑range [left, right]
-  function sort(left: number, right: number) {
-    if (left >= right) return;           // 0 or 1 element – nothing to do
+export function bubbleSort<T extends Comparable>(arr: T[]): T[] {
+  const n = arr.length;
 
-    // Pick a random pivot index between left and right (inclusive)
-    const pivotIndex = Math.floor(Math.random() * (right - left + 1)) + left;
-    const pivotValue = arr[pivotIndex];
+  // Minor optimization: keep track of whether a swap happened
+  // in the current pass. If not, array is already sorted.
+  for (let i = 0; i < n - 1; i++) {
+    let swapped = false;
 
-    // Move the pivot to the rightmost position for the partition step
-    [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
-
-    // Standard Lomuto partition
-    let storeIndex = left;
-    for (let i = left; i < right; i++) {
-      if (arr[i] < pivotValue) {
-        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
-        storeIndex++;
+    // After each outer loop pass, the largest element of the
+    // unsorted portion settles at the end of the array.
+    for (let j = 0; j < n - i - 1; j++) {
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swapped = true;
       }
     }
 
-    // Put the pivot back in its final place
-    [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
-
-    // Recurse on the two partitions
-    sort(left, storeIndex - 1);
-    sort(storeIndex + 1, right);
+    // If no elements were swapped, the array is already sorted.
+    if (!swapped) break;
   }
 
-  sort(0, arr.length - 1);
   return arr;
 }
 
-/*--------------------------------------------
-  Example usage
---------------------------------------------*/
+/** Simple comparable interface for primitives */
+export interface Comparable {
+  /** Return true if this > other */
+  > (other: this): boolean;
+}
+export function bubbleSortWith<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number
+): T[] {
+  for (let i = 0; i < arr.length - 1; i++) {
+    let swapped = false;
 
-const data = [34, 7, 23, 32, 5, 62];
-console.log('Unsorted:', data);
+    for (let j = 0; j < arr.length - i - 1; j++) {
+      // compareFn(a, b) < 0 => a < b
+      // compareFn(a, b) > 0 => a > b
+      if (compareFn(arr[j], arr[j + 1]) > 0) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swapped = true;
+      }
+    }
 
-const sorted = randomQuickSort([...data]); // copy to avoid mutating the original
-console.log('Sorted  :', sorted);
+    if (!swapped) break;
+  }
+
+  return arr;
+}
+interface Person {
+  name: string;
+  age: number;
+}
+
+const people: Person[] = [
+  { name: "Alice", age: 34 },
+  { name: "Bob", age: 29 },
+  { name: "Carol", age: 42 },
+];
+
+bubbleSortWith(people, (a, b) => a.age - b.age);
+// people is now sorted by age ascending
+function test() {
+  const nums = [3, 1, 4, 1, 5, 9, 2, 6];
+  console.log("Before:", nums);
+  bubbleSort(nums); // mutates nums in place
+  console.log("After: ", nums);
+}
+
+test(); /* → Before: [3,1,4,1,5,9,2,6]
+          After:  [1,1,2,3,4,5,6,9] */
