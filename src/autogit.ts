@@ -1,20 +1,16 @@
-function removeVowels(input: string): string {
-  // Vowels (both lower‑ and upper‑case) – feel free to add accented ones if you need
-  const vowels = /[aeiouAEIOU]/g;
-  return input.replace(vowels, '');
-}
-function removeVowels(input: string): string {
-  const result: string[] = [];
+/**
+ * Returns a whole number between min and max (both inclusive).
+ *
+ * @param min The smallest possible value you want (usually a number ≥ 0)
+ * @param max The largest possible value you want
+ */
+function randomIntInRange(min: number, max: number): number {
+  // Clamp the inputs so min <= max
+  const [low, high] = min <= max ? [min, max] : [max, min];
 
-  for (const char of input) {
-    if (!/[aeiouAEIOU]/.test(char)) {
-      result.push(char);
-    }
-  }
-
-  return result.join('');
+  // Math.random() → [0, 1).  Scale it to the desired width,
+  // then shift by the lower bound and round down.
+  return Math.floor(Math.random() * (high - low + 1)) + low;
 }
-const vowels = /[aeiouAEIOUÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝŸàáâãäåæçèéêëìíîïðñòóôõöøùúûüýÿ]/gu;
-const vowels = /\p{Script=Latin}\p{L}\b{vowel}/u; // not a real pattern – just an example
-const demo = "Hello World! 123";
-console.log(removeVowels(demo)); // "Hll Wrld! 123"
+const rand = randomIntInRange(5, 10);
+console.log(rand); // → a whole number 5, 6, 7, 8, 9, or 10
