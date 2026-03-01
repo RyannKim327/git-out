@@ -1,24 +1,21 @@
-function factorialRec(n: number): number {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  if (n <= 1) return 1;           // base case: 0! = 1, 1! = 1
-  return n * factorialRec(n - 1);
-}
-function factorialIter(n: number): number {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+/**
+ * Returns true if `n` is a prime number.
+ * Handles 0, 1 and negative numbers as non‑prime.
+ */
+export function isPrime(n: number): boolean {
+  if (n <= 1) return false                // 0, 1, and negatives are not prime
+  if (n <= 3) return true                 // 2 and 3 are prime
+
+  // even numbers greater than 2 fail immediately
+  if (n % 2 === 0) return false
+
+  // only test odd divisors up to √n
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false
   }
-  return result;
+  return true
 }
-function factorialBig(n: bigint): bigint {
-  if (n < 0n) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1n;
-  for (let i = 2n; i <= n; i++) {
-    result *= i;
-  }
-  return result;
-}
-console.log(factorialIter(5));        // 120
-console.log(factorialRec(5));         // 120
-console.log(factorialBig(20n));       // 2432902008176640000n
+console.log(isPrime(2));   // true
+console.log(isPrime(15));  // false
+console.log(isPrime(97));  // true
