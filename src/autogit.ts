@@ -1,60 +1,81 @@
-/**
- * Merges two consecutive sorted halves of `arr` into a single sorted segment.
- * `left` … start index of the first half
- * `mid`  … start index of the second half (i.e. left + size)
- * `right`… end index (exclusive) of the second half
- * The merged result is written back into `arr`.
- */
-function merge(
-  arr: number[],
-  left: number,
-  mid: number,
-  right: number,
-  temp: number[]
-) {
-  let i = left;   // index in first half
-  let j = mid;    // index in second half
-  let k = left;   // index in temp
+class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
+}
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
 
-  while (i < mid && j < right) {
-    if (arr[i] <= arr[j]) temp[k++] = arr[i++];
-    else                   temp[k++] = arr[j++];
+  get size() { return this._size; }
+}
+append(value: T): void {
+  const newNode = new ListNode(value);
+
+  if (!this.head) {          // empty list
+    this.head = this.tail = newNode;
+  } else {
+    if (this.tail) this.tail.next = newNode;
+    this.tail = newNode;
   }
 
-  // copy any remaining elements from the first half
-  while (i < mid) temp[k++] = arr[i++];
-  // anything left from the second half already sits in temp
-
-  // copy back to the original array
-  for (let p = left; p < right; ++p) arr[p] = temp[p];
+  this._size++;
 }
+prepend(value: T): void {
+  const newNode = new ListNode(value, this.head);
+  this.head = newNode;
 
-/**
- * Iterative merge sort.
- * Works in O(n log n) time, O(n) auxiliary space for the temporary array.
- */
-export function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  if (n <= 1) return;                 // already sorted
+  if (!this.tail) this.tail = newNode;
+  this._size++;
+}
+remove(index: number): T | null {
+  if (index < 0 || index >= this._size) return null;
 
-  const temp = new Array<number>(n);   // reuse this buffer
+  let current = this.head;
+  let prev: ListNode<T> | null = null;
+  let i = 0;
 
-  // subarray size starts at 1 (single elements) and doubles each pass
-  for (let sz = 1; sz < n; sz *= 2) {
-    // merge adjacent subarrays of size sz
-    for (let left = 0; left < n - sz; left += sz * 2) {
-      const mid   = left + sz;          // left + sz is the start of the 2nd half
-      const right = Math.min(left + sz * 2, n);
-      merge(arr, left, mid, right, temp);
-    }
+  while (current && i < index) {
+    prev = current;
+    current = current.next;
+    i++;
   }
+
+  if (!current) return null;
+
+  if (prev) prev.next = current.next;
+  else this.head = current.next;      // removed head
+
+  if (current === this.tail) this.tail = prev;
+  this._size--;
+  return current.value;
 }
+find(value: T): number {
+  let current = this.head;
+  let index = 0;
 
-// ------------------------------------------------------------------
-// Example usage
-// ------------------------------------------------------------------
+  while (current) {
+    if (current.value === value) return index;
+    current = current.next;
+    index++;
+  }
+  return -1;  // not found
+}
+toArray(): T[] {
+  const result: T[] = [];
+  let current = this.head;
+  while (current) {
+    result.push(current.value);
+    current = current.next;
+  }
+  return result;
+}
+const list = new LinkedList<number>();
 
-// Readable example – will sort the array in place
-const sample = [38, 27, 43, 3, 9, 82, 10];
-mergeSortIterative(sample);
-console.log(sample);  // [3, 9, 10, 27, 38, 43, 82]
+list.append(10);
+list.append(20);
+list.prepend(5);
+
+console.log(list.toArray());     // [5, 10, 20]
+console.log(list.find(10));      // 1
+console.log(list.remove(0));     // 5
+console.log(list.toArray());     // [10, 20]
