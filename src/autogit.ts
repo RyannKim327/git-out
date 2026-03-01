@@ -1,23 +1,48 @@
-function countWordOccurrences(str: string, word: string): number {
-  // Escape any regex‑special characters in the word
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(escaped, 'g');
+/**
+ * Random‑pivot quicksort for an array of numbers.
+ *
+ * @param arr – the array to sort (it will be sorted in place)
+ * @returns the sorted array (same reference as the input)
+ */
+function randomQuickSort(arr: number[]): number[] {
+  // Internal helper that works on a sub‑range [left, right]
+  function sort(left: number, right: number) {
+    if (left >= right) return;           // 0 or 1 element – nothing to do
 
-  const matches = str.match(regex);
-  return matches ? matches.length : 0;
+    // Pick a random pivot index between left and right (inclusive)
+    const pivotIndex = Math.floor(Math.random() * (right - left + 1)) + left;
+    const pivotValue = arr[pivotIndex];
+
+    // Move the pivot to the rightmost position for the partition step
+    [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
+
+    // Standard Lomuto partition
+    let storeIndex = left;
+    for (let i = left; i < right; i++) {
+      if (arr[i] < pivotValue) {
+        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
+        storeIndex++;
+      }
+    }
+
+    // Put the pivot back in its final place
+    [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
+
+    // Recurse on the two partitions
+    sort(left, storeIndex - 1);
+    sort(storeIndex + 1, right);
+  }
+
+  sort(0, arr.length - 1);
+  return arr;
 }
 
-/* Example */
-const txt = "Lorem ipsum dolor sit amet. Lorem ipsum!";
-console.log(countWordOccurrences(txt, "Lorem")); // 2
-function countWordOccurrencesInsensitive(str: string, word: string): number {
-  const lowered = str.toLowerCase();
-  const target = word.toLowerCase();
+/*--------------------------------------------
+  Example usage
+--------------------------------------------*/
 
-  // Split on the target word – keep empty pieces that might appear
-  // at the boundaries or due to overlapping patterns
-  return lowered.split(target).length - 1;
-}
+const data = [34, 7, 23, 32, 5, 62];
+console.log('Unsorted:', data);
 
-/* Example */
-console.log(countWordOccurrencesInsensitive(txt, "lorem")); // 2
+const sorted = randomQuickSort([...data]); // copy to avoid mutating the original
+console.log('Sorted  :', sorted);
