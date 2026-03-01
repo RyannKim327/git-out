@@ -1,81 +1,41 @@
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
+interface ListNode<T = any> {
+  value: T;
+  next?: ListNode<T>;
 }
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
-
-  get size() { return this._size; }
-}
-append(value: T): void {
-  const newNode = new ListNode(value);
-
-  if (!this.head) {          // empty list
-    this.head = this.tail = newNode;
-  } else {
-    if (this.tail) this.tail.next = newNode;
-    this.tail = newNode;
-  }
-
-  this._size++;
-}
-prepend(value: T): void {
-  const newNode = new ListNode(value, this.head);
-  this.head = newNode;
-
-  if (!this.tail) this.tail = newNode;
-  this._size++;
-}
-remove(index: number): T | null {
-  if (index < 0 || index >= this._size) return null;
-
-  let current = this.head;
-  let prev: ListNode<T> | null = null;
-  let i = 0;
-
-  while (current && i < index) {
-    prev = current;
-    current = current.next;
-    i++;
-  }
-
-  if (!current) return null;
-
-  if (prev) prev.next = current.next;
-  else this.head = current.next;      // removed head
-
-  if (current === this.tail) this.tail = prev;
-  this._size--;
-  return current.value;
-}
-find(value: T): number {
-  let current = this.head;
-  let index = 0;
+/**
+ * Counts nodes in a linked list.
+ * @param head The first node (or undefined if the list is empty).
+ * @returns Number of nodes in the list.
+ */
+function length<T>(head: ListNode<T> | undefined): number {
+  let count = 0;
+  let current = head;
 
   while (current) {
-    if (current.value === value) return index;
-    current = current.next;
-    index++;
+    count++;
+    current = current.next;   // follow the chain
   }
-  return -1;  // not found
+  return count;
 }
-toArray(): T[] {
-  const result: T[] = [];
-  let current = this.head;
-  while (current) {
-    result.push(current.value);
-    current = current.next;
+function lengthRecursive<T>(node: ListNode<T> | undefined): number {
+  return node ? 1 + lengthRecursive(node.next) : 0;
+}
+function* nodes<T>(head: ListNode<T> | undefined) {
+  let cur = head;
+  while (cur) {
+    yield cur;
+    cur = cur.next;
   }
-  return result;
 }
-const list = new LinkedList<number>();
 
-list.append(10);
-list.append(20);
-list.prepend(5);
+function lengthFromIterable<T>(head: ListNode<T> | undefined): number {
+  let count = 0;
+  for (const _ of nodes(head)) count++;
+  return count;
+}
+const third = { value: 3 } as ListNode<number>;
+const second = { value: 2, next: third };
+const first  = { value: 1, next: second };
 
-console.log(list.toArray());     // [5, 10, 20]
-console.log(list.find(10));      // 1
-console.log(list.remove(0));     // 5
-console.log(list.toArray());     // [10, 20]
+console.log(length(first));           // 3
+console.log(lengthRecursive(first));  // 3
