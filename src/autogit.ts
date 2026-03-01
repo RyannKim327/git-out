@@ -1,24 +1,21 @@
 /**
- * Very light‑weight e‑mail validator – good for quick UI checks or APIs.
- * It agrees with the majority of real‑world addresses:   local@domain.com
- *
- * @param address – the string to test
- * @returns true if the format looks like an e‑mail, false otherwise
+ * Returns true if `n` is a prime number.
+ * Handles 0, 1 and negative numbers as non‑prime.
  */
-export function isValidEmail(address: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(address);
+export function isPrime(n: number): boolean {
+  if (n <= 1) return false                // 0, 1, and negatives are not prime
+  if (n <= 3) return true                 // 2 and 3 are prime
+
+  // even numbers greater than 2 fail immediately
+  if (n % 2 === 0) return false
+
+  // only test odd divisors up to √n
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false
+  }
+  return true
 }
-import validator from 'email-validator';
-
-validator.validate('test@example.com'); // true
-const tests = [
-  'alice@example.com',
-  'bob@sub.domain.org',
-  'invalid-email',
-  'spaces@invalid .com',
-  '@missing.local',
-  'user@',
-];
-
-tests.forEach(email => console.log(`${email}: ${isValidEmail(email)}`));
+console.log(isPrime(2));   // true
+console.log(isPrime(15));  // false
+console.log(isPrime(97));  // true
