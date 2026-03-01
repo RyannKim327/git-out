@@ -1,48 +1,48 @@
-/**
- * Random‑pivot quicksort for an array of numbers.
- *
- * @param arr – the array to sort (it will be sorted in place)
- * @returns the sorted array (same reference as the input)
- */
-function randomQuickSort(arr: number[]): number[] {
-  // Internal helper that works on a sub‑range [left, right]
-  function sort(left: number, right: number) {
-    if (left >= right) return;           // 0 or 1 element – nothing to do
-
-    // Pick a random pivot index between left and right (inclusive)
-    const pivotIndex = Math.floor(Math.random() * (right - left + 1)) + left;
-    const pivotValue = arr[pivotIndex];
-
-    // Move the pivot to the rightmost position for the partition step
-    [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
-
-    // Standard Lomuto partition
-    let storeIndex = left;
-    for (let i = left; i < right; i++) {
-      if (arr[i] < pivotValue) {
-        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
-        storeIndex++;
-      }
-    }
-
-    // Put the pivot back in its final place
-    [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
-
-    // Recurse on the two partitions
-    sort(left, storeIndex - 1);
-    sort(storeIndex + 1, right);
-  }
-
-  sort(0, arr.length - 1);
-  return arr;
+// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
+//      This shape is common in interview‑style code.
+interface TreeNode {
+  val: number;         // node’s payload
+  left?: TreeNode | null;   // left child (optional)
+  right?: TreeNode | null;  // right child (optional)
 }
 
-/*--------------------------------------------
-  Example usage
---------------------------------------------*/
+// 2️⃣  Recursive summation – easiest to read and to understand.
+//      Depth‑first, natural for a tree.
+function sumTreeRecursive(root: TreeNode | null): number {
+  if (!root) return 0;                      // base case: empty subtree is 0
+  const leftSum = sumTreeRecursive(root.left);
+  const rightSum = sumTreeRecursive(root.right);
+  return root.val + leftSum + rightSum;      // combine the results
+}
 
-const data = [34, 7, 23, 32, 5, 62];
-console.log('Unsorted:', data);
+// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
+//      where recursion might hit the call‑stack limit.
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let total = 0;
+  const stack: TreeNode[] = [root];
 
-const sorted = randomQuickSort([...data]); // copy to avoid mutating the original
-console.log('Sorted  :', sorted);
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.val;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
+  }
+  return total;
+}
+
+// 4️⃣  Sample tree for quick sanity check
+//           5
+//          / \
+//         3   7
+//        / \   \
+//       2   4   8
+
+const sampleRoot: TreeNode = {
+  val: 5,
+  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
+  right: { val: 7, right: { val: 8 } },
+};
+
+console.log(sumTreeRecursive(sampleRoot)); // → 33
+console.log(sumTreeIterative(sampleRoot)); // → 33
