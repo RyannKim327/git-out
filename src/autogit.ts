@@ -1,32 +1,47 @@
-// 1️⃣  Using a Set – O(m + n) time, O(n) extra space
-function commonElements<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(item => setB.has(item));
-}
+/**
+ * Checks whether a string is a palindrome (case‑insensitive,
+ * ignoring anything that isn’t a letter or a digit).
+ *
+ * Time   : O(n)
+ * Space  : O(1)   – only a couple of integer variables
+ */
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-// 2️⃣  Using two pointers – O(m + n) time, O(1) extra space
-//     (works best if both arrays are already sorted)
-function commonSorted<T>(a: T[], b: T[]): T[] {
-  const res: T[] = [];
-  let i = 0, j = 0;
-  while (i < a.length && j < b.length) {
-    if (a[i] === b[j]) {
-      res.push(a[i]);
-      i++; j++;
-    } else if (a[i] < b[j]) {
-      i++;
-    } else {
-      j++;
-    }
+  const isAlnum = (ch: string): boolean => {
+    const code = ch.charCodeAt(0);
+    // '0'‑'9'
+    if (code >= 48 && code <= 57) return true;
+    // 'A'‑'Z'
+    if (code >= 65 && code <= 90) return true;
+    // 'a'‑'z'
+    if (code >= 97 && code <= 122) return true;
+    return false;
+  };
+
+  while (left < right) {
+    // Skip non‑alphanumeric characters from the left
+    while (left < right && !isAlnum(s[left])) left++;
+    // Skip non‑alphanumeric characters from the right
+    while (left < right && !isAlnum(s[right])) right--;
+
+    if (left >= right) break;          // Nothing left to compare
+
+    const lc = s[left].toLowerCase();
+    const rc = s[right].toLowerCase();
+
+    if (lc !== rc) return false;
+
+    left++;
+    right--;
   }
-  return res;
-}
 
-// 3️⃣  Using reduce – concise but less efficient for large arrays
-function commonReduce<T>(a: T[], b: T[]): T[] {
-  return a.reduce((acc, val) => (b.includes(val) ? [...acc, val] : acc), [] as T[]);
+  return true;
 }
-const arr1 = [1, 2, 3, 4, 5];
-const arr2 = [3, 4, 5, 6, 7];
-
-console.log(commonElements(arr1, arr2)); // [3, 4, 5]
+while (left < right) {
+  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
+  left++;
+  right--;
+}
+return true;
