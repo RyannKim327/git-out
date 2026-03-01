@@ -1,68 +1,132 @@
+// ---------- Types ---------------------------------------------------------
+type Vertex = string | number // whatever sort of key you like
+
+// an edge is directed; the weight can be positive, negative or zero
+interface Edge {
+  from: Vertex
+  to: Vertex
+  weight: number
+}
+
+// ---------- Graph wrapper -----------------------------------------------
+class Graph {
+  private vertices: Set<Vertex> = new Set()
+  private edges: Edge[] = []
+
+  // you can add vertices explicitly if you want; adding an edge will
+  // automatically pull its endpoints into the vertex set
+  public addVertex(v: Vertex) {
+    this.vertices.add(v)
+  }
+
+  public addEdge(from: Vertex, to: Vertex, weight: number) {
+    this.vertices.add(from)
+    this.vertices.add(to)
+    this.edges.push({ from, to, weight })
+  }
+
+  public getVertices() {
+    return Array.from(this.vertices)
+  }
+
+  public getEdges() {
+    return this.edges.slice()
+  }
+}
+
+// ---------- Bellman‑Ford algorithm ---------------------------------------
 /**
- * Selection sort – O(n²) time, O(1) extra space.
+ * Returns an object containing:
+ *   distances:  map from vertex to its shortest‑path distance from source
+ *   previous:   map from vertex to its predecessor on that shortest path
  *
- * @param arr The array to sort.
- * @returns The same array instance, now sorted.
+ * Throws an Error if a negative‑weight cycle is reachable from `source`.
  */
-function selectionSort<T>(arr: T[]): T[] {
-  const len = arr.length;
+function bellmanFord(
+  graph: Graph,
+  source: Vertex
+): { distances: Record<Vertex, number>; previous: Record<Vertex, Vertex | null> } {
+  const INF = Number.POSITIVE_INFINITY
 
-  for (let i = 0; i < len - 1; i++) {
-    // index of the smallest element in the unsorted suffix
-    let minIdx = i;
+  // 1. initialise
+  const distance: Record<Vertex, number> = {}
+  const previous: Record<Vertex, Vertex | null> = {}
 
-    // search for a smaller element
-    for (let j = i + 1; j < len; j++) {
-      if (arr[j] < arr[minIdx]) {
-        minIdx = j;
+  for (const v of graph.getVertices()) {
+    distance[v] = INF
+    previous[v] = null
+  }
+  distance[source] = 0
+
+  const edges = graph.getEdges()
+  const nvertices = graph.getVertices().length
+
+  // 2. relaxation loop (nvertices - 1) times
+  for (let i = 0; i < nvertices - 1; i++) {
+    let updated = false
+    for (const { from, to, weight } of edges) {
+      const alt = distance[from] + weight
+      if (alt < distance[to]) {
+        distance[to] = alt
+        previous[to] = from
+        updated = true
       }
     }
+    // early exit if nothing changed
+    if (!updated) break
+  }
 
-    // swap the found minimum with the current position
-    if (minIdx !== i) {
-      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+  // 3. check for negative‑weight cycles
+  for (const { from, to, weight } of edges) {
+    if (distance[from] + weight < distance[to]) {
+      throw new Error(
+        `Negative‑weight cycle detected: edge ${from} → ${to} (weight ${weight})`
+      )
     }
   }
 
-  return arr;
-}
-// Numbers
-const numbers = [64, 25, 12, 22, 11];
-console.log(selectionSort(numbers)); // [11, 12, 22, 25, 64]
-
-// Strings
-const words = ['pear', 'apple', 'orange', 'banana'];
-console.log(selectionSort(words));   // ['apple', 'banana', 'orange', 'pear']
-
-// Custom objects – provide a compare function
-interface Person { name: string; age: number }
-
-function sortByAge(a: Person, b: Person) {
-  return a.age - b.age;
+  return { distances: distance, previous }
 }
 
-const people: Person[] = [
-  { name: 'Alice', age: 34 },
-  { name: 'Bob', age: 28 },
-  { name: 'Carol', age: 41 }
-];
+// ---------- Reconstruct path helper ---------------------------------------
+function reconstructPath(
+  previous: Record<Vertex, Vertex | null>,
+  source: Vertex,
+  target: Vertex
+): Vertex[] {
+  const path: Vertex[] = []
+  let v: Vertex | null = target
 
-// Simple wrapper to let us pass a comparator
-function selectionSortWith<T>(arr: T[], compare: (a: T, b: T) => number): T[] {
-  const len = arr.length;
-  for (let i = 0; i < len - 1; i++) {
-    let minIdx = i;
-    for (let j = i + 1; j < len; j++) {
-      if (compare(arr[j], arr[minIdx]) < 0) {
-        minIdx = j;
-      }
-    }
-    if (minIdx !== i) {
-      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-    }
+  while (v !== null && v !== source) {
+    path.unshift(v)
+    v = previous[v]
   }
-  return arr;
+  if (v !== source) {
+    // no path
+    return []
+  }
+  path.unshift(source)
+  return path
 }
 
-console.log(selectionSortWith(people, sortByAge));
-// [{ name: 'Bob', age: 28 }, { name: 'Alice', age: 34 }, { name: 'Carol', age: 41 }]
+// ---------- Example usage -----------------------------------------------
+const g = new Graph()
+
+// sample graph: 0 → 1 (4), 0 → 2 (5), 1 → 2 (-1), 2 → 3 (3), 3 → 1 (-2)
+g.addEdge(0, 1, 4)
+g.addEdge(0, 2, 5)
+g.addEdge(1, 2, -1)
+g.addEdge(2, 3, 3)
+g.addEdge(3, 1, -2)
+
+try {
+  const { distances, previous } = bellmanFord(g, 0)
+  console.log('distances:', distances)
+
+  for (const v of g.getVertices()) {
+    const path = reconstructPath(previous, 0, v)
+    console.log(`0 → ${v}  (dist=${distances[v]})  path:`, path.join(' → '))
+  }
+} catch (e) {
+  console.error(e)
+}
