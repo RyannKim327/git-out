@@ -1,121 +1,83 @@
-/*-------------------------------------------------------
-  Binary‑Tree Data Structures & Operations in TypeScript
--------------------------------------------------------*/
+// fetch-example.ts
+/**
+ * A small utility that fetches JSON from a public API
+ * and logs a nicely formatted result.
+ *
+ * It demonstrates:
+ *   • TypeScript generics for response typing
+ *   • Async/await syntax
+ *   • Basic error handling
+ *   • Runtime type guard for JSON validation
+ */
 
-// 1️⃣ A node that holds one element and links to its children
-class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+type PlainObject = Record<string, unknown>;
+
+// A small runtime check to ensure the response is
+// an object (the common case when fetching JSON).
+function isObject(value: unknown): value is PlainObject {
+  return typeof value === 'object' && value !== null;
 }
 
-// 2️⃣ The tree itself – only the root is stored
-class BinaryTree<T> {
-  private root: TreeNode<T> | null = null
+/**
+ * Generic fetch function that returns data of type T.
+ * @param url          The URL to fetch from
+ * @param init         Optional RequestInit parameters
+ */
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, init);
 
-  /* ------------ Insertion (BST style) ------------ */
-  insert(value: T): void {
-    this.root = this._insertRec(this.root, value)
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
   }
 
-  private _insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
-    if (!node) return new TreeNode(value)
+  const data = await response.json();
 
-    // Basic BST rule – < goes left, >= goes right
-    if (value < node.value) node.left = this._insertRec(node.left, value)
-    else node.right = this._insertRec(node.right, value)
-
-    return node
+  // Very light runtime validation – just make sure we got an object
+  if (!isObject(data)) {
+    throw new Error('Response is not a JSON object');
   }
 
-  /* ------------ Search ------------ */
-  find(value: T): boolean {
-    return this._findRec(this.root, value)
-  }
+  return data as T; // confidence that T matches the real shape
+}
 
-  private _findRec(node: TreeNode<T> | null, value: T): boolean {
-    if (!node) return false
-    if (node.value === value) return true
-    return value < node.value
-      ? this._findRec(node.left, value)
-      : this._findRec(node.right, value)
-  }
+/**
+ * Example usage: fetch a user from the JSONPlaceholder API.
+ * The API returns a shape that we can describe as a type.
+ */
+interface JsonPlaceholderUser {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  address: {
+    street: string;
+    suite: string;
+    city: string;
+    zipcode: string;
+    geo: { lat: string; lng: string };
+  };
+  phone: string;
+  website: string;
+  company: {
+    name: string;
+    catchPhrase: string;
+    bs: string;
+  };
+}
 
-  /* ------------ Traversals ------------ */
+async function main() {
+  const userId = 1;
+  const url = `https://jsonplaceholder.typicode.com/users/${userId}`;
 
-  // In‑order: left, node, right  (sorted for BST)
-  inorder(callback: (val: T) => void) {
-    this._inorderRec(this.root, callback)
-  }
-  private _inorderRec(node: TreeNode<T> | null, cb: (val: T) => void) {
-    if (!node) return
-    this._inorderRec(node.left, cb)
-    cb(node.value)
-    this._inorderRec(node.right, cb)
-  }
-
-  // Pre‑order: node, left, right
-  preorder(callback: (val: T) => void) {
-    this._preorderRec(this.root, callback)
-  }
-  private _preorderRec(node: TreeNode<T> | null, cb: (val: T) => void) {
-    if (!node) return
-    cb(node.value)
-    this._preorderRec(node.left, cb)
-    this._preorderRec(node.right, cb)
-  }
-
-  // Post‑order: left, right, node
-  postorder(callback: (val: T) => void) {
-    this._postorderRec(this.root, callback)
-  }
-  private _postorderRec(node: TreeNode<T> | null, cb: (val: T) => void) {
-    if (!node) return
-    this._postorderRec(node.left, cb)
-    this._postorderRec(node.right, cb)
-    cb(node.value)
-  }
-
-  /* ------------ Utility ------------ */
-
-  // Height of the tree (root = 0)
-  height(): number {
-    return this._heightRec(this.root)
-  }
-  private _heightRec(node: TreeNode<T> | null): number {
-    if (!node) return -1
-    return 1 + Math.max(this._heightRec(node.left), this._heightRec(node.right))
-  }
-
-  // Size (total number of nodes)
-  size(): number {
-    return this._sizeRec(this.root)
-  }
-  private _sizeRec(node: TreeNode<T> | null): number {
-    if (!node) return 0
-    return 1 + this._sizeRec(node.left) + this._sizeRec(node.right)
+  try {
+    const user = await fetchJson<JsonPlaceholderUser>(url);
+    console.log(`Name: ${user.name}`);
+    console.log(`Company: ${user.company.name}`);
+    console.log(`Address: ${user.address.street}, ${user.address.city}`);
+  } catch (err) {
+    console.error('Something went wrong:', err);
   }
 }
 
-/*-------------------------------------------------------
-  Example use
--------------------------------------------------------*/
-const tree = new BinaryTree<number>()
-
-// Inserting some numbers
-for (const v of [7, 3, 9, 1, 5, 8, 10]) {
-  tree.insert(v)
-}
-
-// Find
-console.log('Has 5?', tree.find(5))   // true
-console.log('Has 4?', tree.find(4))   // false
-
-// In‑order prints the numbers sorted
-tree.inorder(v => console.log(v))     // 1 3 5 7 8 9 10
-
-// Tree metadata
-console.log('Height:', tree.height()) // 2
-console.log('Size:', tree.size())     // 7
+// Kick it off
+main();
