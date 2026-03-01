@@ -1,46 +1,43 @@
 /**
- * Returns true if `a` and `b` are anagrams.
- * Works for any Unicode characters, but
- * it ignores case and whitespace by default.
+ * Returns the longest common *contiguous* substring of `a` and `b`.
+ *
+ * If there are multiple substrings with the same maximum length, the first
+ * one that appears in `a` is returned.
+ *
+ * Time:  O(a.length * b.length)
+ * Space: O(a.length * b.length)   (you can trim this to O(a.length) if you’re
+ *                                   hunting for a memory‑tight version)
  */
-function areAnagrams(a: string, b: string, ignoreCase = true, ignoreWhitespace = true): boolean {
-  // Normalise: trim, collapse spaces, lower‑case if requested
-  const normalize = (s: string) =>
-    s
-      .replace(/\s+/g, "")        // delete spaces
-      .toLowerCase();             // lower‑case
+export function longestCommonSubstring(a: string, b: string): string {
+  const aLen = a.length;
+  const bLen = b.length;
 
-  if (ignoreCase && ignoreWhitespace) {
-    a = normalize(a);
-    b = normalize(b);
-  } else if (ignoreCase) {
-    a = a.toLowerCase();
-    b = b.toLowerCase();
-  } else if (ignoreWhitespace) {
-    a = a.replace(/\s+/g, "");
-    b = b.replace(/\s+/g, "");
+  // A 2‑D array where dp[i][j] holds the length of the longest suffix that
+  // ends at a[i-1] and b[j-1].  We use 1‑based indexing to keep the math
+  // simple: dp[0][*] and dp[*][0] are zero by construction.
+  const dp: number[][] = Array.from({ length: aLen + 1 }, () =>
+    new Array(bLen + 1).fill(0)
+  );
+
+  let bestLen = 0;
+  let bestI = 0; // end index in `a`
+
+  for (let i = 1; i <= aLen; i++) {
+    for (let j = 1; j <= bLen; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > bestLen) {
+          bestLen = dp[i][j];
+          bestI = i; // slice stops at `i` (exclusive)
+        }
+      } else {
+        dp[i][j] = 0;
+      }
+    }
   }
 
-  // Quick length check
-  if (a.length !== b.length) return false;
-
-  // Count characters in the first string
-  const counts: Record<string, number> = {};
-
-  for (const ch of a) {
-    counts[ch] = (counts[ch] ?? 0) + 1;
-  }
-
-  // Subtract counts using the second string
-  for (const ch of b) {
-    const current = counts[ch];
-    if (!current) return false;          // character not seen before or already exhausted
-    if (--current === 0) delete counts[ch];
-  }
-
-  // If everything matched, the object should be empty
-  return Object.keys(counts).length === 0;
+  return bestLen > 0 ? a.slice(bestI - bestLen, bestI) : '';
 }
-console.log(areAnagrams("listen", "silent"));           // true
-console.log(areAnagrams("Hello, World!", "world!hello")); // true
-console.log(areAnagrams("foo", "bar"));                 // false
+console.log(longestCommonSubstring('BANANA', 'ANANAB')); // "ANANA"
+console.log(longestCommonSubstring('hello', 'world'));   // ""
+console.log(longestCommonSubstring('', 'something'));    // ""
