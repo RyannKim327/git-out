@@ -1,37 +1,48 @@
-// random-joke.ts
-import fetch from 'node-fetch';          // npm i node-fetch@2
-import { Console } from 'console';
-
-interface Joke {
-  id: number;
-  type: string;
-  setup: string;
-  punchline: string;
+// 1️⃣  Define the tree node.  You can use an interface, a class, or a type alias.
+//      This shape is common in interview‑style code.
+interface TreeNode {
+  val: number;         // node’s payload
+  left?: TreeNode | null;   // left child (optional)
+  right?: TreeNode | null;  // right child (optional)
 }
 
-async function fetchRandomJoke(): Promise<Joke> {
-  const res = await fetch('https://official-joke-api.appspot.com/random_joke');
+// 2️⃣  Recursive summation – easiest to read and to understand.
+//      Depth‑first, natural for a tree.
+function sumTreeRecursive(root: TreeNode | null): number {
+  if (!root) return 0;                      // base case: empty subtree is 0
+  const leftSum = sumTreeRecursive(root.left);
+  const rightSum = sumTreeRecursive(root.right);
+  return root.val + leftSum + rightSum;      // combine the results
+}
 
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} – failed to fetch joke`);
+// 3️⃣  Iterative version (DFS using a stack).  Handy if you expect a very deep tree
+//      where recursion might hit the call‑stack limit.
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let total = 0;
+  const stack: TreeNode[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.val;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
   }
-
-  const data: Joke = await res.json();
-
-  return data;
+  return total;
 }
 
-async function run() {
-  try {
-    const joke = await fetchRandomJoke();
+// 4️⃣  Sample tree for quick sanity check
+//           5
+//          / \
+//         3   7
+//        / \   \
+//       2   4   8
 
-    console.log('😂 Here’s something to make you smile!');
-    console.log(`  ${joke.setup}`);
-    console.log(`   – ${joke.punchline}`);
-  } catch (err: any) {
-    console.error('Oops! Something went wrong:');
-    console.error(err.message ?? err);
-  }
-}
+const sampleRoot: TreeNode = {
+  val: 5,
+  left: { val: 3, left: { val: 2 }, right: { val: 4 } },
+  right: { val: 7, right: { val: 8 } },
+};
 
-run();
+console.log(sumTreeRecursive(sampleRoot)); // → 33
+console.log(sumTreeIterative(sampleRoot)); // → 33
