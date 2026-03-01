@@ -1,52 +1,40 @@
-interface TreeNode<T = number> {
-  val: T;                // single value (you can change the type)
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
+/**
+ * Binary search – recursive.  
+ * @param arr        — sorted array
+ * @param target     — value to find
+ * @param compare    — optional comparison function (a, b) => number
+ *                     returns <0 if a<b, 0 if a==b, >0 if a>b
+ * @returns index of `target` or -1 if not found
+ */
+function binarySearchRec<T>(
+  arr: T[],
+  target: T,
+  compare?: (a: T, b: T) => number
+): number {
+  // Provide a default numeric comparator
+  const cmp = compare ?? ((a: any, b: any) => a - b);
+
+  const search = (low: number, high: number): number => {
+    if (low > high) return -1;          // base case: not found
+
+    const mid = Math.floor((low + high) / 2);
+    const cmpResult = cmp(arr[mid], target);
+
+    if (cmpResult === 0) return mid;    // target is at mid
+    if (cmpResult < 0) return search(mid + 1, high); // target is right
+    return search(low, mid - 1);        // target is left
+  };
+
+  return search(0, arr.length - 1);
 }
-const root: TreeNode = {
-  val: 10,
-  left: { val: 5, left: null, right: null },
-  right: { val: 15, left: null, right: null },
-};
-function maxDepth<T>(node: TreeNode<T> | null): number {
-  if (!node) return 0;
-  const leftDepth = maxDepth(node.left);
-  const rightDepth = maxDepth(node.right);
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
+// Numbers – no comparator needed
+const nums = [1, 3, 5, 7, 9, 11, 13];
+console.log(binarySearchRec(nums, 7));  // → 3
+console.log(binarySearchRec(nums, 2));  // → -1
 
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
+// Strings – supply a comparator
+const words = ["apple", "banana", "cherry", "date"];
+const stringCmp = (a: string, b: string) => a.localeCompare(b);
 
-  while (queue.length) {
-    const levelSize = queue.length; // nodes at current depth
-    depth++;                        // we’re going to finish this level
-
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift() as TreeNode<T>;
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
-    }
-  }
-
-  return depth;
-}
-// build a quick tree
-const tree: TreeNode = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4, left: null, right: null },
-    right: null,
-  },
-  right: {
-    val: 3,
-    left: null,
-    right: { val: 5, left: null, right: null },
-  },
-};
-
-console.log(maxDepth(tree));      // -> 3
-console.log(maxDepthIter(tree));  // -> 3
+console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
+console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
