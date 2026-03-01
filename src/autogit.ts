@@ -1,24 +1,47 @@
-/**
- * Very light‑weight e‑mail validator – good for quick UI checks or APIs.
- * It agrees with the majority of real‑world addresses:   local@domain.com
- *
- * @param address – the string to test
- * @returns true if the format looks like an e‑mail, false otherwise
- */
-export function isValidEmail(address: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(address);
+class TreeNode<T = any> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
-import validator from 'email-validator';
+function countLeaves<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;                         // empty subtree → 0 leaves
 
-validator.validate('test@example.com'); // true
-const tests = [
-  'alice@example.com',
-  'bob@sub.domain.org',
-  'invalid-email',
-  'spaces@invalid .com',
-  '@missing.local',
-  'user@',
-];
+  // If both children are missing, this node itself is a leaf
+  if (!root.left && !root.right) return 1;
 
-tests.forEach(email => console.log(`${email}: ${isValidEmail(email)}`));
+  // Otherwise, count leaves in the children
+  return countLeaves(root.left) + countLeaves(root.right);
+}
+function countLeavesIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
+
+  let stack: Array<TreeNode<T>> = [root];
+  let leafCount = 0;
+
+  while (stack.length) {
+    const node = stack.pop() as TreeNode<T>;
+
+    // A leaf if it has no children
+    if (!node.left && !node.right) {
+      leafCount++;
+    } else {
+      // Push existing children to process later
+      if (node.left) stack.push(node.left);
+      if (node.right) stack.push(node.right);
+    }
+  }
+
+  return leafCount;
+}
+const root = new TreeNode(1,
+  new TreeNode(2,
+    new TreeNode(4),           // leaf
+    new TreeNode(5)            // leaf
+  ),
+  new TreeNode(3)              // leaf
+);
+
+console.log(countLeaves(root));        // → 3
+console.log(countLeavesIter(root));    // → 3
