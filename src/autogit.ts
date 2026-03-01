@@ -1,32 +1,48 @@
-const nums = [1, 2, 3, 4, 5];
+// 1️⃣  Define a comparison helper – most of the time you’ll just pass
+//     (a, b) => a < b for ascending order.
+type Comparator<T> = (a: T, b: T) => boolean;
 
-// Remove the number 3
-const idx = nums.indexOf(3);
-if (idx !== -1) {
-  nums.splice(idx, 1); // nums → [1, 2, 4, 5]
+// 2️⃣  The merge function – it expects two sorted arrays and pulls
+//     the smaller (according to the comparator) element out first.
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+  const result: T[] = [];
+  let i = 0,
+      j = 0;
+
+  while (i < left.length && j < right.length) {
+    if (cmp(left[i], right[j])) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
+    }
+  }
+
+  // One side still has items – splice the rest onto the result.
+  if (i < left.length) result.push(...left.slice(i));
+  if (j < right.length) result.push(...right.slice(j));
+
+  return result;
 }
-const chars = ['a', 'b', 'c', 'b', 'd'];
 
-// Drop every 'b'
-const withoutB = chars.filter(ch => ch !== 'b');
-// withoutB → ['a', 'c', 'd']
-const original = [10, 20, 30, 40, 50];
+// 3️⃣  The recursive mergeSort main function – sorts in place if you
+//     prefer not to allocate the full array during every merge.
+export function mergeSort<T>(arr: T[], cmp: Comparator<T> = (a, b) => a < b): T[] {
+  if (arr.length <= 1) return arr;     // Base case: nothing to do
 
-const removed = [
-  ...original.slice(0, original.indexOf(30)),
-  ...original.slice(original.indexOf(30) + 1),
-];
+  const mid = Math.floor(arr.length / 2);
+  const left  = mergeSort(arr.slice(0, mid), cmp);
+  const right = mergeSort(arr.slice(mid),    cmp);
 
-// removed → [10, 20, 40, 50]
-/**
- * Remove the first occurrence of `value` from `array`.
- * Returns a new array; the original array is not mutated.
- */
-function removeFirst<T>(array: readonly T[], value: T): T[] {
-  const idx = array.indexOf(value);
-  if (idx === -1) return [...array]; // nothing to remove
-  return [...array.slice(0, idx), ...array.slice(idx + 1)];
+  return merge(left, right, cmp);
 }
-const data = [2, 4, 6, 8];
-const updated = removeFirst(data, 6);
-// updated → [2, 4, 8]
+// Numbers, ascending
+const sortedNumbers = mergeSort([8, 3, 5, 1, 9, 2]);
+
+// Strings, descending
+const sortedStrings = mergeSort(
+  ["banana", "apple", "cherry"],
+  (a, b) => a > b
+);
+
+console.log(sortedNumbers); // [1, 2, 3, 5, 8, 9]
+console.log(sortedStrings); // ["cherry", "banana", "apple"]
