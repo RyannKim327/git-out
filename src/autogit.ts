@@ -1,37 +1,54 @@
-// Works for numbers, strings, dates, anything that can be compared with < and >.
-export function isSorted<T extends number | string | Date>(arr: T[]): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] < arr[i - 1]) return false;
-  }
-  return true;
+// 1️⃣  Basic node interface – replace / extend it to fit your model
+export interface TreeNode<T> {
+  value: T;                 // the payload stored in the node
+  children?: TreeNode<T>[]>; // can be unset (leaf) or an empty array for a leaf
 }
-isSorted([1, 2, 3, 4]);        // true
-isSorted([1, 3, 2, 4]);        // false
-isSorted(['a', 'b', 'c']);     // true
-isSorted(['c', 'b', 'a']);     // false
-type Comparator<T> = (a: T, b: T) => number;
 
-export function isSortedWith<T>(arr: T[], cmp: Comparator<T>): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) return false; // `a > b` in ascending order
+// 2️⃣  The actual algorithm
+export function depthLimitedSearch<T>(
+  root: TreeNode<T>,           // root of the tree
+  target: T,                   // value we’re looking for
+  depthLimit: number,          // how far the search may go (0 = only the root)
+  equals: (a: T, b: T) => boolean = (a, b) => a === b
+): TreeNode<T> | null {
+  if (depthLimit < 0) return null; // sanity check
+
+  // stack holds {node, depth}
+  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
+    { node: root, depth: 0 },
+  ];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!; // pop from top of stack
+
+    // 3️⃣  Stop expanding when the depth limit is reached
+    if (depth > depthLimit) {
+      continue;
+    }
+
+    // 4️⃣  Check the current node
+    if (equals(node.value, target)) {
+      return node;
+    }
+
+    // 5️⃣  Push children (DFS) – children that are undefined are skipped
+    if (node.children) {
+      // depth + 1 because we’ll go down one edge
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        stack.push({ node: node.children[i], depth: depth + 1 });
+      }
+    }
   }
-  return true;
+
+  return null; // nothing found within the depth limit
 }
-interface Person { name: string; age: number; }
+const tree: TreeNode<string> = {
+  value: "A",
+  children: [
+    { value: "B", children: [{ value: "D" }, { value: "E" }] },
+    { value: "C", children: [{ value: "F" }, { value: "G" }] },
+  ],
+};
 
-const people: Person[] = [
-  { name: 'Alice', age: 25 },
-  { name: 'Bob', age: 30 },
-  { name: 'Charlie', age: 35 },
-];
-
-isSortedWith(people, (a, b) => a.age - b.age); // true
-export const isSorted = <T>(arr: T[], cmp: Comparator<T> = (a, b) => {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}): boolean =>
-  arr
-    .map((value, index, self) => [self[index - 1], value] as const)
-    .slice(1) // skip the first undefined pair
-    .every(([prev, cur]) => cmp(prev!, cur) <= 0);
+console.log(depthLimitedSearch(tree, "F", 1)); // null (needs depth 2)
+console.log(depthLimitedSearch(tree, "F", 2)); // node with value "F"
