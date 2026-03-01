@@ -1,38 +1,79 @@
-// fortune.ts
-import { createInterface } from 'readline';
+// `T` can be any comparable type – string, number, object with an id, etc.
+export function bfs<T>(
+  start: T,
+  graph: Map<T, T[]>,          // adjacency list
+  onVisit?: (node: T) => void // optional per‑node work
+): T[] {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  const order: T[] = [];
 
-// Set up a simple REPL‑style prompt
-const rl = createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+  visited.add(start);
 
-console.log('🃏 Welcome to the Random Fortune Machine!');
+  while (queue.length) {
+    const node = queue.shift()!;   // node is guaranteed non‑null inside loop
 
-// Ask the user for a number
-rl.question('Enter a number (0–9) and press Enter: ', (answer) => {
-  // Try to parse the input as an integer
-  const num = parseInt(answer.trim(), 10);
+    // Optional callback that lets you do something with the node as you visit it
+    if (onVisit) onVisit(node);
 
-  if (isNaN(num) || num < 0 || num > 9) {
-    console.log('❌ That’s not a valid single digit between 0 and 9.');
-  } else {
-    // Pick a fortune from a tiny list
-    const fortunes = [
-      "You'll find a penny on the sidewalk.",
-      "A surprise call will brighten your day.",
-      "Today is a great day to start learning something new.",
-      "You’ll discover a hidden talent for drawing.",
-      "A forgotten receipt will pop up in your inbox.",
-      "A random act of kindness will return to you.",
-      "You’ll taste your favorite food in an unexpected way.",
-      "A new friendship is just a conversation away.",
-      "You’ll hit a traffic light and notice your neighbor’s cat.",
-      "Today you will finally finish that project you’ve shelved."
-    ];
+    order.push(node);
 
-    console.log(`🔮 Fortune for ${num}: ${fortunes[num]}`);
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
   }
 
-  rl.close();
-});
+  return order;
+}
+// Example graph (adjacency list)
+const g = new Map<string, string[]>([
+  ['A', ['B', 'C']],
+  ['B', ['D', 'E']],
+  ['C', ['F']],
+  ['D', []],
+  ['E', ['F']],
+  ['F', []]
+]);
+
+const order = bfs('A', g);          // ["A", "B", "C", "D", "E", "F"]
+
+console.log('BFS order:', order);
+export function bfsFind<T>(
+  start: T,
+  graph: Map<T, T[]>,
+  goal: T
+): T[] | null {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  visited.add(start);
+
+  while (queue.length) {
+    const node = queue.shift()!;
+
+    if (node === goal) {
+      // Re‑construct the path if you need it – here we just return the node that found it.
+      return [node];
+    }
+
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  return null; // goal not reachable
+}
+// Small graph with a cycle
+const g2 = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [3]],
+  [3, [1, 4]],
+  [4, []]
+]);
+
+console.log(bfs(1, g2)); // [1, 2, 3, 4]
