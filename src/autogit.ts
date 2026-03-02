@@ -1,47 +1,57 @@
 /**
- * Checks whether a string is a palindrome (case‑insensitive,
- * ignoring anything that isn’t a letter or a digit).
- *
- * Time   : O(n)
- * Space  : O(1)   – only a couple of integer variables
+ * Simple anagram checker.
+ * @param a First string
+ * @param b Second string
+ * @returns true if a and b are anagrams, false otherwise
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+function areAnagrams(a: string, b: string): boolean {
+  // 1. Normalize: lower‑case, strip non‑alphanumerics, trim
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .trim();
 
-  const isAlnum = (ch: string): boolean => {
-    const code = ch.charCodeAt(0);
-    // '0'‑'9'
-    if (code >= 48 && code <= 57) return true;
-    // 'A'‑'Z'
-    if (code >= 65 && code <= 90) return true;
-    // 'a'‑'z'
-    if (code >= 97 && code <= 122) return true;
-    return false;
-  };
+  const na = normalize(a);
+  const nb = normalize(b);
 
-  while (left < right) {
-    // Skip non‑alphanumeric characters from the left
-    while (left < right && !isAlnum(s[left])) left++;
-    // Skip non‑alphanumeric characters from the right
-    while (left < right && !isAlnum(s[right])) right--;
+  // Quick length check; if they differ early we’re done.
+  if (na.length !== nb.length) return false;
 
-    if (left >= right) break;          // Nothing left to compare
+  // 2. Build frequency maps
+  const freq = new Map<string, number>();
 
-    const lc = s[left].toLowerCase();
-    const rc = s[right].toLowerCase();
-
-    if (lc !== rc) return false;
-
-    left++;
-    right--;
+  for (const ch of na) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  return true;
+  for (const ch of nb) {
+    const count = freq.get(ch);
+
+    // If we see a character not in the first string, bail
+    if (!count) return false;
+
+    // Decrease the count and remove entry if it drops to zero
+    if (count === 1) freq.delete(ch);
+    else freq.set(ch, count - 1);
+  }
+
+  // 3. If all counts cleared, the strings are anagrams
+  return freq.size === 0;
 }
-while (left < right) {
-  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
-  left++;
-  right--;
+console.log(areAnagrams("listen", "silent"));   // → true
+console.log(areAnagrams("evil", "vile"));       // → true
+console.log(areAnagrams("hello", "billion"));   // → false
+console.log(areAnagrams("Clint Eastwood", "Old West Action")); // true
+function areAnagramsSort(a: string, b: string): boolean {
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .trim()
+      .split("")
+      .sort()
+      .join("");
+
+  return normalize(a) === normalize(b);
 }
-return true;
