@@ -1,51 +1,44 @@
-// 1️⃣ Tree node definition
-interface TreeNode {
-  val: number;          // value is irrelevant for diameter
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
-
-// 2️⃣ Main diameter function
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let diameter = 0;                 // global accumulator
-
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;            // height of empty subtree
-
-    // Recursively find heights of left/right subtrees
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
-
-    // Path through current node (in edges)
-    const pathThrough = leftHeight + rightHeight;
-
-    // Update global diameter if this is the largest seen so far
-    diameter = Math.max(diameter, pathThrough);
-
-    // Return height from this node up to a leaf
-    return 1 + Math.max(leftHeight, rightHeight);
+/**
+ * Returns n! (n factorial) for a non‑negative integer.
+ *
+ * @param n A non‑negative integer (0, 1, 2, …).
+ * @returns The factorial of n. Returns 1 for n = 0.
+ * @throws Error if n is negative.
+ */
+function factorial(n: number): number {
+  if (n < 0) {
+    throw new Error("Factorial is not defined for negative numbers.");
   }
 
-  dfs(root);
-  return diameter;
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
 }
-// Example tree:
-//      1
-//     / \
-//    2   3
-//   / \
-//  4   5
-const tree: TreeNode = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4, left: null, right: null },
-    right: { val: 5, left: null, right: null },
-  },
-  right: { val: 3, left: null, right: null },
-};
 
-console.log(diameterOfBinaryTree(tree)); // Output: 3
-// Explanation: path 4‑2‑1‑3 uses 3 edges
-console.log(diameterOfBinaryTree(null));           // 0
-console.log(diameterOfBinaryTree({ val: 42 }));    // 0
+// Example
+console.log(factorial(5)); // 120
+function factorialRecursive(n: number): number {
+  if (n < 0) {
+    throw new Error("Negative input not allowed.");
+  }
+  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
+}
+
+console.log(factorialRecursive(5)); // 120
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error("Negative input not allowed.");
+  let result = 1n;          // BigInt literal starts with n
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
+}
+
+console.log(factorialBigInt(100).toString());
+// "933262154... (full 158‑digit number)"
+console.assert(factorial(0) === 1);
+console.assert(factorial(1) === 1);
+console.assert(factorial(5) === 120);
+console.assert(factorialBigInt(10).toString() === "3628800");
