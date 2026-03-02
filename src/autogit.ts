@@ -1,83 +1,41 @@
-// --------------------------------------------------
-// 1️⃣  Linked‑list node definition
-// --------------------------------------------------
-export interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
+/** A very small “binary‑tree node” type. */
+interface TreeNode {
+  val: number;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
-
-// --------------------------------------------------
-// 2️⃣  Helper: reverse a list, returns new head
-// --------------------------------------------------
-/**
- * Reverses the linked list starting at node `head`.
- * Returns the new head of the reversed list.
- */
-function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let current = head;
-
-  while (current) {
-    const next = current.next;
-    current.next = prev;
-    prev = current;
-    current = next;
-  }
-  return prev;          // new head
+function sumTreeRecursive(root: TreeNode | null): number {
+  if (!root) return 0;                     // base case – no node
+  const leftSum  = sumTreeRecursive(root.left);
+  const rightSum = sumTreeRecursive(root.right);
+  return root.val + leftSum + rightSum;    // process node after its children
 }
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
 
-// --------------------------------------------------
-// 3️⃣  Palindrome checker
-// --------------------------------------------------
-export function isPalindrome<T>(head: ListNode<T> | null): boolean {
-  if (!head || !head.next) return true;   // Empty or single‑node list
+  const queue: TreeNode[] = [root];
+  let total = 0;
 
-  // ----- 3.1  Find the middle (slow stops at middle)
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+  while (queue.length) {
+    const node = queue.shift()!;   // non‑null assertion – queue always contains real nodes
+    total += node.val;
 
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+    if (node.left)  queue.push(node.left);
+    if (node.right) queue.push(node.right);
   }
 
-  // ----- 3.2  Reverse second half
-  const secondHalfStart = reverse(slow!.next);
-  let firstHalfIter = head;
-  let secondHalfIter = secondHalfStart;
-
-  // ----- 3.3  Compare halves
-  let palindrome = true;
-  while (secondHalfIter) {
-    if (firstHalfIter!.val !== secondHalfIter.val) {
-      palindrome = false;
-      break;
-    }
-    firstHalfIter = firstHalfIter!.next;
-    secondHalfIter = secondHalfIter.next;
-  }
-
-  // ----- 3.4  Restore the original order (optional)
-  slow!.next = reverse(secondHalfStart);
-
-  return palindrome;
+  return total;
 }
-
-// --------------------------------------------------
-// 4️⃣  Example usage
-// --------------------------------------------------
-function buildList(values: any[]): ListNode | null {
-  let dummy: ListNode | null = null;
-  for (let i = values.length - 1; i >= 0; i--) {
-    dummy = { val: values[i], next: dummy };
+// Small example
+const tree: TreeNode = {
+  val: 10,
+  left: { val: 5 },
+  right: {
+    val: 20,
+    left: { val: 15 },
+    right: { val: 25 }
   }
-  return dummy;
-}
+};
 
-// Palindrome case
-const list1 = buildList([1, 2, 3, 2, 1]);
-console.log(isPalindrome(list1)); // true
-
-// Non‑palindrome
-const list2 = buildList([1, 2, 3, 4, 5]);
-console.log(isPalindrome(list2)); // false
+console.log(sumTreeRecursive(tree)); // 75
+console.log(sumTreeIterative(tree)); // 75
