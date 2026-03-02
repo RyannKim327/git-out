@@ -1,44 +1,21 @@
 /**
- * Returns n! (n factorial) for a non‑negative integer.
- *
- * @param n A non‑negative integer (0, 1, 2, …).
- * @returns The factorial of n. Returns 1 for n = 0.
- * @throws Error if n is negative.
+ * Returns true if `n` is a prime number.
+ * Handles 0, 1 and negative numbers as non‑prime.
  */
-function factorial(n: number): number {
-  if (n < 0) {
-    throw new Error("Factorial is not defined for negative numbers.");
-  }
+export function isPrime(n: number): boolean {
+  if (n <= 1) return false                // 0, 1, and negatives are not prime
+  if (n <= 3) return true                 // 2 and 3 are prime
 
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+  // even numbers greater than 2 fail immediately
+  if (n % 2 === 0) return false
+
+  // only test odd divisors up to √n
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false
   }
-  return result;
+  return true
 }
-
-// Example
-console.log(factorial(5)); // 120
-function factorialRecursive(n: number): number {
-  if (n < 0) {
-    throw new Error("Negative input not allowed.");
-  }
-  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
-}
-
-console.log(factorialRecursive(5)); // 120
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error("Negative input not allowed.");
-  let result = 1n;          // BigInt literal starts with n
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
-}
-
-console.log(factorialBigInt(100).toString());
-// "933262154... (full 158‑digit number)"
-console.assert(factorial(0) === 1);
-console.assert(factorial(1) === 1);
-console.assert(factorial(5) === 120);
-console.assert(factorialBigInt(10).toString() === "3628800");
+console.log(isPrime(2));   // true
+console.log(isPrime(15));  // false
+console.log(isPrime(97));  // true
