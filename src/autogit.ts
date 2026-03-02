@@ -1,59 +1,46 @@
 /**
- * Return the index of the first occurrence of `pattern` inside `text`,
- * or -1 if the pattern is absent.
+ * Returns true if `a` and `b` are anagrams.
+ * Works for any Unicode characters, but
+ * it ignores case and whitespace by default.
  */
-export function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0; // trivially found at start
+function areAnagrams(a: string, b: string, ignoreCase = true, ignoreWhitespace = true): boolean {
+  // Normalise: trim, collapse spaces, lower‑case if requested
+  const normalize = (s: string) =>
+    s
+      .replace(/\s+/g, "")        // delete spaces
+      .toLowerCase();             // lower‑case
 
-  const lps = computeLPSArray(pattern); // longest‑prefix‑suffix table
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) { // whole pattern matched
-        return i - j; // match start index
-      }
-    } else if (j > 0) {
-      // mismatch after j matches – skip ahead by lps[j‑1]
-      j = lps[j - 1];
-    } else {
-      // mismatch at start of pattern
-      i++;
-    }
+  if (ignoreCase && ignoreWhitespace) {
+    a = normalize(a);
+    b = normalize(b);
+  } else if (ignoreCase) {
+    a = a.toLowerCase();
+    b = b.toLowerCase();
+  } else if (ignoreWhitespace) {
+    a = a.replace(/\s+/g, "");
+    b = b.replace(/\s+/g, "");
   }
 
-  return -1; // no match
-}
+  // Quick length check
+  if (a.length !== b.length) return false;
 
-/**
- * Pre‑process the pattern to build the “longest prefix that is also a suffix”
- * (LPS) array. lps[i] = the length of the longest proper prefix of
- * pattern[0..i] that is also a suffix of pattern[0..i].
- */
-function computeLPSArray(pattern: string): number[] {
-  const lps: number[] = Array(pattern.length).fill(0);
-  let len = 0;   // length of previous longest prefix suffix
-  let i = 1;     // lps[0] is always 0
+  // Count characters in the first string
+  const counts: Record<string, number> = {};
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else if (len !== 0) {
-      // use the previous lps value to avoid re‑checking
-      len = lps[len - 1];
-    } else {
-      lps[i] = 0;
-      i++;
-    }
+  for (const ch of a) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
   }
 
-  return lps;
+  // Subtract counts using the second string
+  for (const ch of b) {
+    const current = counts[ch];
+    if (!current) return false;          // character not seen before or already exhausted
+    if (--current === 0) delete counts[ch];
+  }
+
+  // If everything matched, the object should be empty
+  return Object.keys(counts).length === 0;
 }
-console.log(kmpSearch("ababcabcababc", "abc"));   // 2
-console.log(kmpSearch("ababcabcababc", "abcd"));  // -1
-console.log(kmpSearch("aaaaa", "aaa"));           // 0
+console.log(areAnagrams("listen", "silent"));           // true
+console.log(areAnagrams("Hello, World!", "world!hello")); // true
+console.log(areAnagrams("foo", "bar"));                 // false
