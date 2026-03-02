@@ -1,81 +1,51 @@
-//   ┌─── Imports ────────────────────────────────────────────────────────┐
-import { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
-
-//   ┌─── Types ───────────────────────────────────────────────────────────────┐
-interface TodoItem {
-  id: number;
-  title: string;
-  completed: boolean;
+// A classic singly‑linked‑list node
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
-//   ┌─── Async helper ────────────────────────────────────────────────────────┐
-async function fetchTodos(): Promise<TodoItem[]> {
-  const url = 'https://jsonplaceholder.typicode.com/todos?_limit=5';
+/**
+ * Returns the nth node from the end (1‑based) or null if n is out of range.
+ */
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;          // natural guard for mis‑ed input
 
-  // Simulate a "slow" network: optional, just for demo
-  await new Promise(r => setTimeout(r, 800));
+  let first: ListNode<T> | null = head;
+  let second: ListNode<T> | null = head;
 
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`❌ ${response.status} ${response.statusText}`);
+  /* Advance `first` n steps ahead. */
+  for (let i = 0; i < n; i++) {
+    if (!first) return null;   // n is larger than list length
+    first = first.next;
+  }
 
-  const json = await response.json();
-  // Map to our interface – TypeScript will check types
-  return json.map((x: any) => ({
-    id: x.id,
-    title: x.title,
-    completed: x.completed,
-  }));
+  /* Move both pointers until `first` hits the end. */
+  while (first) {
+    first = first.next;
+    second = second!.next;     // second is guaranteed not null here
+  }
+
+  return second;   // `second` is the nth node from the end
 }
+function nthFromEndTwoPass<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let len = 0;
+  for (let cur = head; cur; cur = cur.next) len++;
 
-//   ┌─── Component that uses the async task ──────────────────────────────────┐
-export default function AsyncExample() {
-  const [todos, setTodos] = useState<TodoItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  if (n <= 0 || n > len) return null;
 
-  const load = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await fetchTodos();
-      console.log('Fetched:', data);
-      setTodos(data);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Unknown error';
-      console.warn(msg);
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
+  let cur = head;
+  for (let i = 0; i < len - n; i++) cur = cur!.next;
 
-  // Run once on mount
-  useEffect(() => {
-    load();
-  }, []);
-
-  return (
-    <View style={styles.container}>
-      {loading && <ActivityIndicator size="large" />}
-      {error && <Text style={styles.error}>{error}</Text>}
-      {!loading && !error && (
-        <>
-          {todos.map(t => (
-            <Text key={t.id} style={styles.todo}>
-              {t.completed ? '✅' : '🕒'} {t.title}
-            </Text>
-          ))}
-        </>
-      )}
-      <Button title="Reload" onPress={load} disabled={loading} />
-    </View>
-  );
+  return cur;
 }
+// Example list: 1 → 2 → 3 → 4 → 5
+const tail = new ListNode(5);
+const middle = new ListNode(4, tail);
+const head = new ListNode(1,
+           new ListNode(2,
+           new ListNode(3,
+           middle)));
 
-//   ┌─── Styles ───────────────────────────────────────────────────────────────┐
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center' },
-  todo: { fontSize: 18, marginVertical: 4 },
-  error: { color: 'red', marginBottom: 12 },
-});
+console.log(nthFromEnd(head, 1)?.val); // 5
+console.log(nthFromEnd(head, 2)?.val); // 4
+console.log(nthFromEnd(head, 5)?.val); // 1
+console.log(nthFromEnd(head, 6));      // null
