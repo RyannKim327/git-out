@@ -1,37 +1,57 @@
-function countChar(str: string, target: string): number {
-  let count = 0;
-  for (const ch of str) {
-    if (ch === target) count++;
+/**
+ * Simple anagram checker.
+ * @param a First string
+ * @param b Second string
+ * @returns true if a and b are anagrams, false otherwise
+ */
+function areAnagrams(a: string, b: string): boolean {
+  // 1. Normalize: lower‑case, strip non‑alphanumerics, trim
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .trim();
+
+  const na = normalize(a);
+  const nb = normalize(b);
+
+  // Quick length check; if they differ early we’re done.
+  if (na.length !== nb.length) return false;
+
+  // 2. Build frequency maps
+  const freq = new Map<string, number>();
+
+  for (const ch of na) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
-  return count;
-}
 
-const times = countChar("hello world", "l"); // 3
-function countChar(str: string, target: string): number {
-  return str.split(target).length - 1;
-}
+  for (const ch of nb) {
+    const count = freq.get(ch);
 
-countChar("banana", "a"); // 3
-function countChar(str: string, target: string): number {
-  return [...str].filter(ch => ch === target).length;
-}
+    // If we see a character not in the first string, bail
+    if (!count) return false;
 
-countChar("👋👋👋 hello", "👋"); // 3
-function countChar(str: string, target: string): number {
-  const re = new RegExp(`\\${target}`, "g");
-  const matches = str.match(re);
-  return matches ? matches.length : 0;
-}
-
-countChar("mississippi", "i"); // 4
-function multicharCount(str: string, targets: string[]): Record<string, number> {
-  const result: Record<string, number> = {};
-  for (const t of targets) result[t] = 0;
-
-  for (const ch of str) {
-    if (result.hasOwnProperty(ch)) result[ch]++;
+    // Decrease the count and remove entry if it drops to zero
+    if (count === 1) freq.delete(ch);
+    else freq.set(ch, count - 1);
   }
-  return result;
-}
 
-multicharCount("abacaba", ["a", "b", "c"]); // { a:4, b:2, c:1 }
+  // 3. If all counts cleared, the strings are anagrams
+  return freq.size === 0;
+}
+console.log(areAnagrams("listen", "silent"));   // → true
+console.log(areAnagrams("evil", "vile"));       // → true
+console.log(areAnagrams("hello", "billion"));   // → false
+console.log(areAnagrams("Clint Eastwood", "Old West Action")); // true
+function areAnagramsSort(a: string, b: string): boolean {
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .trim()
+      .split("")
+      .sort()
+      .join("");
+
+  return normalize(a) === normalize(b);
+}
