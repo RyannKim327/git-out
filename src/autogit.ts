@@ -1,41 +1,51 @@
-/** A very small “binary‑tree node” type. */
-interface TreeNode {
-  val: number;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
+// A classic singly‑linked‑list node
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-function sumTreeRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                     // base case – no node
-  const leftSum  = sumTreeRecursive(root.left);
-  const rightSum = sumTreeRecursive(root.right);
-  return root.val + leftSum + rightSum;    // process node after its children
-}
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
 
-  const queue: TreeNode[] = [root];
-  let total = 0;
+/**
+ * Returns the nth node from the end (1‑based) or null if n is out of range.
+ */
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;          // natural guard for mis‑ed input
 
-  while (queue.length) {
-    const node = queue.shift()!;   // non‑null assertion – queue always contains real nodes
-    total += node.val;
+  let first: ListNode<T> | null = head;
+  let second: ListNode<T> | null = head;
 
-    if (node.left)  queue.push(node.left);
-    if (node.right) queue.push(node.right);
+  /* Advance `first` n steps ahead. */
+  for (let i = 0; i < n; i++) {
+    if (!first) return null;   // n is larger than list length
+    first = first.next;
   }
 
-  return total;
-}
-// Small example
-const tree: TreeNode = {
-  val: 10,
-  left: { val: 5 },
-  right: {
-    val: 20,
-    left: { val: 15 },
-    right: { val: 25 }
+  /* Move both pointers until `first` hits the end. */
+  while (first) {
+    first = first.next;
+    second = second!.next;     // second is guaranteed not null here
   }
-};
 
-console.log(sumTreeRecursive(tree)); // 75
-console.log(sumTreeIterative(tree)); // 75
+  return second;   // `second` is the nth node from the end
+}
+function nthFromEndTwoPass<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let len = 0;
+  for (let cur = head; cur; cur = cur.next) len++;
+
+  if (n <= 0 || n > len) return null;
+
+  let cur = head;
+  for (let i = 0; i < len - n; i++) cur = cur!.next;
+
+  return cur;
+}
+// Example list: 1 → 2 → 3 → 4 → 5
+const tail = new ListNode(5);
+const middle = new ListNode(4, tail);
+const head = new ListNode(1,
+           new ListNode(2,
+           new ListNode(3,
+           middle)));
+
+console.log(nthFromEnd(head, 1)?.val); // 5
+console.log(nthFromEnd(head, 2)?.val); // 4
+console.log(nthFromEnd(head, 5)?.val); // 1
+console.log(nthFromEnd(head, 6));      // null
