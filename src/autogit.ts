@@ -1,43 +1,45 @@
-/**
- * Binary search on a sorted array.
- *
- * @param arr   A sorted array that supports the supplied comparator.
- * @param target The value you’re searching for.
- * @param compare A comparison function: returns <0 if a<b, 0 if a===b, >0 if a>b.
- * @returns The index of `target` if found; otherwise –1.
- */
-export function binarySearch<T>(
-  arr: readonly T[],
-  target: T,
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): number {
-  let low = 0;
-  let high = arr.length - 1;
+const raw = [1, 2, 2, 3, 4, 4, 5];
 
-  while (low <= high) {
-    // Use Math.floor to avoid overflow and keep mid an integer.
-    const mid = low + Math.floor((high - low) / 2);
-    const cmp = compare(arr[mid], target);
+const unique = Array.from(new Set(raw));
+// or: const unique = [...new Set(raw)];
 
-    if (cmp === 0) {
-      return mid; // Found it!
-    } else if (cmp < 0) {
-      low = mid + 1; // Search right half
+console.log(unique); // [1, 2, 3, 4, 5]
+function uniqueInPlace<T>(arr: T[]): void {
+  const seen = new Set<T>();
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (seen.has(arr[i])) {
+      arr.splice(i, 1);          // remove duplicate
     } else {
-      high = mid - 1; // Search left half
+      seen.add(arr[i]);          // record first appearance
     }
   }
-
-  return -1; // Not found
 }
-// Example with numbers
-const nums = [3, 7, 12, 18, 25, 34];
-const index = binarySearch(nums, 18); // → 3
 
-// Example with strings – note we pass a custom comparator for case‑insensitive search
-const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
-const idx = binarySearch(
-  words,
-  'CHeRry',
-  (a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' })
-); // → 2
+const data = ['a', 'b', 'a', 'c', 'b'];
+uniqueInPlace(data);
+console.log(data); // ['a', 'b', 'c']
+const raw = [1, 2, 3, 2, 4, 1];
+const unique = raw.filter((v, i) => raw.indexOf(v) === i);
+console.log(unique); // [1, 2, 3, 4]
+interface User { id: number; name: string }
+
+const users: User[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 1, name: 'Alice (dup)' }, // duplicate id
+];
+
+const uniqueById = Array.from(
+  users.reduce((map, user) => {
+    if (!map.has(user.id)) map.set(user.id, user);
+    return map;
+  }, new Map<number, User>())
+);
+
+console.log(uniqueById);
+/*
+[
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' }
+]
+*/
