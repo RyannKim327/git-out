@@ -1,47 +1,25 @@
 /**
- * Checks whether a string is a palindrome (case‑insensitive,
- * ignoring anything that isn’t a letter or a digit).
- *
- * Time   : O(n)
- * Space  : O(1)   – only a couple of integer variables
+ * Computes the factorial of a non‑negative integer `n` recursively.
+ * @param n - A non‑negative integer (e.g., 0, 1, 2, …)
+ * @returns n! as a `number`. For values beyond ≈ 170 you’ll hit the
+ *          IEEE‑754 overflow limit and get `Infinity`, so for large
+ *          inputs you might want to switch to BigInt.
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
-
-  const isAlnum = (ch: string): boolean => {
-    const code = ch.charCodeAt(0);
-    // '0'‑'9'
-    if (code >= 48 && code <= 57) return true;
-    // 'A'‑'Z'
-    if (code >= 65 && code <= 90) return true;
-    // 'a'‑'z'
-    if (code >= 97 && code <= 122) return true;
-    return false;
-  };
-
-  while (left < right) {
-    // Skip non‑alphanumeric characters from the left
-    while (left < right && !isAlnum(s[left])) left++;
-    // Skip non‑alphanumeric characters from the right
-    while (left < right && !isAlnum(s[right])) right--;
-
-    if (left >= right) break;          // Nothing left to compare
-
-    const lc = s[left].toLowerCase();
-    const rc = s[right].toLowerCase();
-
-    if (lc !== rc) return false;
-
-    left++;
-    right--;
-  }
-
-  return true;
+function factorial(n: number): number {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials');
+  if (n <= 1) return 1;          // base case: 0! = 1! = 1
+  return n * factorial(n - 1);   // recursive step
 }
-while (left < right) {
-  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
-  left++;
-  right--;
+console.log(factorial(5));   // 120
+console.log(factorial(0));   // 1
+function bigIntFactorial(n: number): bigint {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials');
+  if (n <= 1) return 1n;               // 1n is a BigInt literal
+  return BigInt(n) * bigIntFactorial(n - 1);
 }
-return true;
+
+console.log(bigIntFactorial(30).toString());
+function tailFactorial(n: number, acc: number = 1): number {
+  if (n <= 1) return acc;
+  return tailFactorial(n - 1, acc * n);
+}
