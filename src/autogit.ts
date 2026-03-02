@@ -1,30 +1,26 @@
-import axios, { AxiosResponse } from 'axios';
-
-// Declare the shape of the data we expect from the API
-interface Quote {
-  id: number;
-  quote: string;
-  author: string;
+function maxOfArray(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;   // or throw an error if you prefer
+  return Math.max(...nums);
 }
+function maxOfArray(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  return nums.reduce((max, n) => (n > max ? n : max), nums[0]);
+}
+function maxOfArray(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
 
-// A helper that fetches a random quote
-async function fetchRandomQuote(): Promise<Quote> {
-  try {
-    const response: AxiosResponse<Quote> = await axios.get(
-      'https://api.quotable.io/random'
-    );
-    return response.data;
-  } catch (err) {
-    // If something goes wrong, throw a readable error
-    throw new Error(
-      `Could not fetch a quote: ${
-        err instanceof Error ? err.message : String(err)
-      }`
-    );
+  let max = nums[0];
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] > max) {
+      max = nums[i];
+    }
   }
+  return max;
 }
-
-// Usage example – print a random quote to the console
-fetchRandomQuote()
-  .then((quote) => console.log(`${quote.quote} — ${quote.author}`))
-  .catch((err) => console.error(err.message));
+const myNumbers = [12, 7, 22, 5, 18];
+console.log(maxOfArray(myNumbers)); // 22
+function maxWithFallback(nums: number[], fallback = 0): number {
+  return nums.length > 0
+    ? nums.reduce((a, b) => Math.max(a, b))
+    : fallback;
+}
