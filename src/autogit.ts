@@ -1,48 +1,41 @@
-// 1️⃣  Define a comparison helper – most of the time you’ll just pass
-//     (a, b) => a < b for ascending order.
-type Comparator<T> = (a: T, b: T) => boolean;
+// schedule.ts
+import cron from 'node-cron';
 
-// 2️⃣  The merge function – it expects two sorted arrays and pulls
-//     the smaller (according to the comparator) element out first.
-function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
-  const result: T[] = [];
-  let i = 0,
-      j = 0;
+let runCount = 0;
+const maxRuns = 5;
 
-  while (i < left.length && j < right.length) {
-    if (cmp(left[i], right[j])) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
-    }
+// Pick a playful string at random each time the job fires.
+const messages = [
+  "🍕 Time for a pizza break!",
+  "🐱‍🏍 Speedy coding vibes!",
+  "🧐 Did you know: A group of flamingos is called a flamboyance?",
+  "🚀 Launching into the cosmos…",
+  "🔮 Future content will appear here!"
+];
+
+const job = cron.schedule('* * * * *', () => {
+  // Bot says something random
+  const msg = messages[Math.floor(Math.random() * messages.length)];
+  console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
+
+  runCount += 1;
+  if (runCount >= maxRuns) {
+    console.log('Stopping the cron job after 5 runs.');
+    job.stop();
   }
+}, {
+  scheduled: true,
+  timezone: "UTC"
+});
 
-  // One side still has items – splice the rest onto the result.
-  if (i < left.length) result.push(...left.slice(i));
-  if (j < right.length) result.push(...right.slice(j));
+console.log('Cron job started—will run every minute up to 5 times.');
+# 1. Init a barebones project if you haven’t already
+npm init -y
 
-  return result;
-}
+# 2. Install the cron package and types for Node
+npm i node-cron
+npm i -D @types/node @types/node-cron typescript ts-node
 
-// 3️⃣  The recursive mergeSort main function – sorts in place if you
-//     prefer not to allocate the full array during every merge.
-export function mergeSort<T>(arr: T[], cmp: Comparator<T> = (a, b) => a < b): T[] {
-  if (arr.length <= 1) return arr;     // Base case: nothing to do
-
-  const mid = Math.floor(arr.length / 2);
-  const left  = mergeSort(arr.slice(0, mid), cmp);
-  const right = mergeSort(arr.slice(mid),    cmp);
-
-  return merge(left, right, cmp);
-}
-// Numbers, ascending
-const sortedNumbers = mergeSort([8, 3, 5, 1, 9, 2]);
-
-// Strings, descending
-const sortedStrings = mergeSort(
-  ["banana", "apple", "cherry"],
-  (a, b) => a > b
-);
-
-console.log(sortedNumbers); // [1, 2, 3, 5, 8, 9]
-console.log(sortedStrings); // ["cherry", "banana", "apple"]
+# 3. Compile and run
+npx ts-node schedule.ts
+[12:00:00 AM] 🚀 Launching into the cosmos…
