@@ -1,51 +1,39 @@
-// A classic singly‑linked‑list node
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+export class Stack<T> {
+  /** internal buffer – the array that stores the stack items */
+  private readonly items: T[] = [];
 
-/**
- * Returns the nth node from the end (1‑based) or null if n is out of range.
- */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;          // natural guard for mis‑ed input
-
-  let first: ListNode<T> | null = head;
-  let second: ListNode<T> | null = head;
-
-  /* Advance `first` n steps ahead. */
-  for (let i = 0; i < n; i++) {
-    if (!first) return null;   // n is larger than list length
-    first = first.next;
+  /** push an item onto the stack */
+  push(value: T): void {
+    this.items.push(value);
   }
 
-  /* Move both pointers until `first` hits the end. */
-  while (first) {
-    first = first.next;
-    second = second!.next;     // second is guaranteed not null here
+  /** pop the top item; returns `undefined` if the stack is empty */
+  pop(): T | undefined {
+    return this.items.pop();
   }
 
-  return second;   // `second` is the nth node from the end
+  /** peek at the top item without removing it */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** true if the stack has no elements */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** number of elements currently on the stack */
+  size(): number {
+    return this.items.length;
+  }
 }
-function nthFromEndTwoPass<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let len = 0;
-  for (let cur = head; cur; cur = cur.next) len++;
+const stack = new Stack<number>();
 
-  if (n <= 0 || n > len) return null;
+stack.push(10);
+stack.push(20);
+stack.push(30);
 
-  let cur = head;
-  for (let i = 0; i < len - n; i++) cur = cur!.next;
-
-  return cur;
-}
-// Example list: 1 → 2 → 3 → 4 → 5
-const tail = new ListNode(5);
-const middle = new ListNode(4, tail);
-const head = new ListNode(1,
-           new ListNode(2,
-           new ListNode(3,
-           middle)));
-
-console.log(nthFromEnd(head, 1)?.val); // 5
-console.log(nthFromEnd(head, 2)?.val); // 4
-console.log(nthFromEnd(head, 5)?.val); // 1
-console.log(nthFromEnd(head, 6));      // null
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size()); // 2
+console.log(stack.isEmpty()); // false
