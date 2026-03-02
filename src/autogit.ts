@@ -1,37 +1,48 @@
-function countChar(str: string, target: string): number {
-  let count = 0;
-  for (const ch of str) {
-    if (ch === target) count++;
+/**
+ * Return the maximum sum sub‑array (Kadane) along with its start & end indices.
+ *
+ * @param nums  Array of numbers – can contain positives, zeros and negatives.
+ * @returns     Object with `maxSum`, `start`, `end` (inclusive).
+ */
+export function maxSubarrayWithIndices(nums: number[]): {
+  maxSum: number;
+  start: number;
+  end: number;
+} {
+  if (nums.length === 0) throw new Error("Input array must contain at least one element");
+
+  let bestSum = nums[0];
+  let currentSum = nums[0];
+
+  // These track the best indices we’ve seen
+  let bestStart = 0;
+  let bestEnd = 0;
+
+  // Temporary indices for the sub‑array we are currently extending
+  let tempStart = 0;
+
+  for (let i = 1; i < nums.length; i++) {
+    const num = nums[i];
+
+    // Decide whether to extend the current sub‑array or start fresh at i
+    if (currentSum + num < num) {
+      currentSum = num;
+      tempStart = i;
+    } else {
+      currentSum += num;
+    }
+
+    // Update the best found so far
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
+    }
   }
-  return count;
+
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-
-const times = countChar("hello world", "l"); // 3
-function countChar(str: string, target: string): number {
-  return str.split(target).length - 1;
-}
-
-countChar("banana", "a"); // 3
-function countChar(str: string, target: string): number {
-  return [...str].filter(ch => ch === target).length;
-}
-
-countChar("👋👋👋 hello", "👋"); // 3
-function countChar(str: string, target: string): number {
-  const re = new RegExp(`\\${target}`, "g");
-  const matches = str.match(re);
-  return matches ? matches.length : 0;
-}
-
-countChar("mississippi", "i"); // 4
-function multicharCount(str: string, targets: string[]): Record<string, number> {
-  const result: Record<string, number> = {};
-  for (const t of targets) result[t] = 0;
-
-  for (const ch of str) {
-    if (result.hasOwnProperty(ch)) result[ch]++;
-  }
-  return result;
-}
-
-multicharCount("abacaba", ["a", "b", "c"]); // { a:4, b:2, c:1 }
+const arr = [4, -1, 2, 1, -5, 4];
+const result = maxSubarrayWithIndices(arr);
+console.log(result); // { maxSum: 6, start: 0, end: 3 }
+// Sub‑array: [4, -1, 2, 1] → sum 6
