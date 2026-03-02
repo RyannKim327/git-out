@@ -1,23 +1,28 @@
-function countWordOccurrences(str: string, word: string): number {
-  // Escape any regex‑special characters in the word
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(escaped, 'g');
+/**
+ * Convert a decimal number to a binary string.
+ * 
+ * @param n – A non‑negative integer
+ * @returns The binary representation as a string
+ */
+function decimalToBinary(n: number): string {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new Error('Input must be a non‑negative integer.');
+  }
 
-  const matches = str.match(regex);
-  return matches ? matches.length : 0;
+  // Handling zero explicitly – Math.pow(2, 0) is 1 but we still want "0"
+  if (n === 0) return '0';
+
+  let binary = '';
+  let current = n;
+
+  while (current > 0) {
+    // Prepend the remainder (0 or 1) to the binary string
+    binary = (current % 2) + binary;
+    current = Math.floor(current / 2);
+  }
+
+  return binary;
 }
-
-/* Example */
-const txt = "Lorem ipsum dolor sit amet. Lorem ipsum!";
-console.log(countWordOccurrences(txt, "Lorem")); // 2
-function countWordOccurrencesInsensitive(str: string, word: string): number {
-  const lowered = str.toLowerCase();
-  const target = word.toLowerCase();
-
-  // Split on the target word – keep empty pieces that might appear
-  // at the boundaries or due to overlapping patterns
-  return lowered.split(target).length - 1;
-}
-
-/* Example */
-console.log(countWordOccurrencesInsensitive(txt, "lorem")); // 2
+console.log(decimalToBinary(10)); // "1010"
+console.log(decimalToBinary(255)); // "11111111"
+console.log(decimalToBinary(0)); // "0"
