@@ -1,24 +1,37 @@
-function areaBaseHeight(base: number, height: number): number {
-  return (base * height) / 2;
+// random-joke.ts
+import fetch from 'node-fetch';          // npm i node-fetch@2
+import { Console } from 'console';
+
+interface Joke {
+  id: number;
+  type: string;
+  setup: string;
+  punchline: string;
 }
 
-// Example
-const a = areaBaseHeight(10, 6);   // → 30
-console.log(a);
-function areaBySides(a: number, b: number, c: number): number {
-  // Check triangle inequality first (optional but nice)
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('Not a valid triangle');
+async function fetchRandomJoke(): Promise<Joke> {
+  const res = await fetch('https://official-joke-api.appspot.com/random_joke');
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} – failed to fetch joke`);
   }
 
-  const s = (a + b + c) / 2;                // semi‑perimeter
-  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
-  return area;
+  const data: Joke = await res.json();
+
+  return data;
 }
 
-// Example
-const b = areaBySides(5, 12, 13);   // right triangle → 30
-console.log(b);
-const area = Math.sqrt(
-  Math.max(0, s * (s - a) * (s - b) * (s - c))
-);
+async function run() {
+  try {
+    const joke = await fetchRandomJoke();
+
+    console.log('😂 Here’s something to make you smile!');
+    console.log(`  ${joke.setup}`);
+    console.log(`   – ${joke.punchline}`);
+  } catch (err: any) {
+    console.error('Oops! Something went wrong:');
+    console.error(err.message ?? err);
+  }
+}
+
+run();
