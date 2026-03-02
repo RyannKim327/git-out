@@ -1,16 +1,38 @@
 /**
- * Returns a whole number between min and max (both inclusive).
+ * Find the majority element in an array.
  *
- * @param min The smallest possible value you want (usually a number ≥ 0)
- * @param max The largest possible value you want
+ * @param arr - An array of comparable items.
+ * @returns The majority element, or undefined if no majority exists.
+ *
+ * Assumes `T` supports strict equality (===).
  */
-function randomIntInRange(min: number, max: number): number {
-  // Clamp the inputs so min <= max
-  const [low, high] = min <= max ? [min, max] : [max, min];
+function majorityElement<T>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
 
-  // Math.random() → [0, 1).  Scale it to the desired width,
-  // then shift by the lower bound and round down.
-  return Math.floor(Math.random() * (high - low + 1)) + low;
+  // 1️⃣ First pass: find a potential candidate
+  let candidate: T | undefined = arr[0];
+  let count = 0;
+
+  for (const value of arr) {
+    if (count === 0) {
+      candidate = value;
+      count = 1;
+    } else {
+      count += (value === candidate) ? 1 : -1;
+    }
+  }
+
+  // 2️⃣ Optional second pass (remove if you know the input always contains a majority)
+  if (candidate !== undefined) {
+    const actual = arr.filter(v => v === candidate).length;
+    if (actual > arr.length / 2) {
+      return candidate;
+    }
+  }
+
+  return undefined; // No majority element
 }
-const rand = randomIntInRange(5, 10);
-console.log(rand); // → a whole number 5, 6, 7, 8, 9, or 10
+const nums = [2, 2, 1, 1, 2, 2, 2];
+
+const major = majorityElement(nums); // -> 2
+console.log(major); // 2
