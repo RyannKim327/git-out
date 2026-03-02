@@ -1,57 +1,56 @@
+Let   S = s1 s2 … sn
+      T = t1 t2 … tm
+
+DP[i][j] = length of the longest common suffix that ends at S[i‑1] and T[j‑1]
+DP[i][j] = DP[i-1][j-1] + 1
 /**
- * Simple anagram checker.
- * @param a First string
- * @param b Second string
- * @returns true if a and b are anagrams, false otherwise
+ * Returns the longest common substring of `a` and `b`.
+ * If there are multiple substrings of the same maximum length,
+ * the first one found in `a` will be returned.
  */
-function areAnagrams(a: string, b: string): boolean {
-  // 1. Normalize: lower‑case, strip non‑alphanumerics, trim
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")
-      .trim();
+export function longestCommonSubstring(a: string, b: string): string {
+  const n = a.length, m = b.length;
+  if (n === 0 || m === 0) return '';
 
-  const na = normalize(a);
-  const nb = normalize(b);
+  // `prev` holds DP values for row i-1
+  const prev = new Array(m + 1).fill(0);
+  // `curr` holds DP values for current row i
+  const curr = new Array(m + 1).fill(0);
 
-  // Quick length check; if they differ early we’re done.
-  if (na.length !== nb.length) return false;
+  let maxLen = 0;          // longest length so far
+  let maxEndIndexA = 0;    // index in `a` where this substring ends
 
-  // 2. Build frequency maps
-  const freq = new Map<string, number>();
+  for (let i = 1; i <= n; i++) {
+    // Iterate columns
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        curr[j] = prev[j - 1] + 1;
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          maxEndIndexA = i - 1;   // keep the end idx in a
+        }
+      } else {
+        curr[j] = 0;
+      }
+    }
 
-  for (const ch of na) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+    // Swap rows for next iteration
+    //  curr becomes prev, prev becomes curr (reuse the same arrays)
+    for (let j = 0; j <= m; j++) {
+      prev[j] = curr[j];
+      curr[j] = 0;   // reset current row for the next round
+    }
   }
 
-  for (const ch of nb) {
-    const count = freq.get(ch);
-
-    // If we see a character not in the first string, bail
-    if (!count) return false;
-
-    // Decrease the count and remove entry if it drops to zero
-    if (count === 1) freq.delete(ch);
-    else freq.set(ch, count - 1);
-  }
-
-  // 3. If all counts cleared, the strings are anagrams
-  return freq.size === 0;
+  return a.slice(maxEndIndexA - maxLen + 1, maxEndIndexA + 1);
 }
-console.log(areAnagrams("listen", "silent"));   // → true
-console.log(areAnagrams("evil", "vile"));       // → true
-console.log(areAnagrams("hello", "billion"));   // → false
-console.log(areAnagrams("Clint Eastwood", "Old West Action")); // true
-function areAnagramsSort(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")
-      .trim()
-      .split("")
-      .sort()
-      .join("");
+import { longestCommonSubstring } from './common-substring';
 
-  return normalize(a) === normalize(b);
-}
+const a = "ABABCDA";
+const b = "CBADABABC";
+
+console.log(longestCommonSubstring(a, b)); // → "ABC"
+console.log(longestCommonSubstring('foo', ''));          // ''
+console.log(longestCommonSubstring('abc', 'xyz'));       // ''
+console.log(longestCommonSubstring('same', 'same'));     // 'same'
+console.log(longestCommonSubstring('aaaaa', 'bbaaa'));   // 'aaa'
