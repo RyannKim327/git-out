@@ -1,81 +1,59 @@
-//   ┌─── Imports ────────────────────────────────────────────────────────┐
-import { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
+/**
+ * Return the index of the first occurrence of `pattern` inside `text`,
+ * or -1 if the pattern is absent.
+ */
+export function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0; // trivially found at start
 
-//   ┌─── Types ───────────────────────────────────────────────────────────────┐
-interface TodoItem {
-  id: number;
-  title: string;
-  completed: boolean;
-}
+  const lps = computeLPSArray(pattern); // longest‑prefix‑suffix table
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-//   ┌─── Async helper ────────────────────────────────────────────────────────┐
-async function fetchTodos(): Promise<TodoItem[]> {
-  const url = 'https://jsonplaceholder.typicode.com/todos?_limit=5';
-
-  // Simulate a "slow" network: optional, just for demo
-  await new Promise(r => setTimeout(r, 800));
-
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`❌ ${response.status} ${response.statusText}`);
-
-  const json = await response.json();
-  // Map to our interface – TypeScript will check types
-  return json.map((x: any) => ({
-    id: x.id,
-    title: x.title,
-    completed: x.completed,
-  }));
-}
-
-//   ┌─── Component that uses the async task ──────────────────────────────────┐
-export default function AsyncExample() {
-  const [todos, setTodos] = useState<TodoItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await fetchTodos();
-      console.log('Fetched:', data);
-      setTodos(data);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Unknown error';
-      console.warn(msg);
-      setError(msg);
-    } finally {
-      setLoading(false);
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) { // whole pattern matched
+        return i - j; // match start index
+      }
+    } else if (j > 0) {
+      // mismatch after j matches – skip ahead by lps[j‑1]
+      j = lps[j - 1];
+    } else {
+      // mismatch at start of pattern
+      i++;
     }
-  };
+  }
 
-  // Run once on mount
-  useEffect(() => {
-    load();
-  }, []);
-
-  return (
-    <View style={styles.container}>
-      {loading && <ActivityIndicator size="large" />}
-      {error && <Text style={styles.error}>{error}</Text>}
-      {!loading && !error && (
-        <>
-          {todos.map(t => (
-            <Text key={t.id} style={styles.todo}>
-              {t.completed ? '✅' : '🕒'} {t.title}
-            </Text>
-          ))}
-        </>
-      )}
-      <Button title="Reload" onPress={load} disabled={loading} />
-    </View>
-  );
+  return -1; // no match
 }
 
-//   ┌─── Styles ───────────────────────────────────────────────────────────────┐
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center' },
-  todo: { fontSize: 18, marginVertical: 4 },
-  error: { color: 'red', marginBottom: 12 },
-});
+/**
+ * Pre‑process the pattern to build the “longest prefix that is also a suffix”
+ * (LPS) array. lps[i] = the length of the longest proper prefix of
+ * pattern[0..i] that is also a suffix of pattern[0..i].
+ */
+function computeLPSArray(pattern: string): number[] {
+  const lps: number[] = Array(pattern.length).fill(0);
+  let len = 0;   // length of previous longest prefix suffix
+  let i = 1;     // lps[0] is always 0
+
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else if (len !== 0) {
+      // use the previous lps value to avoid re‑checking
+      len = lps[len - 1];
+    } else {
+      lps[i] = 0;
+      i++;
+    }
+  }
+
+  return lps;
+}
+console.log(kmpSearch("ababcabcababc", "abc"));   // 2
+console.log(kmpSearch("ababcabcababc", "abcd"));  // -1
+console.log(kmpSearch("aaaaa", "aaa"));           // 0
