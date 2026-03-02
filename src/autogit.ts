@@ -1,38 +1,30 @@
-/**
- * Find the majority element in an array.
- *
- * @param arr - An array of comparable items.
- * @returns The majority element, or undefined if no majority exists.
- *
- * Assumes `T` supports strict equality (===).
- */
-function majorityElement<T>(arr: T[]): T | undefined {
-  if (arr.length === 0) return undefined;
-
-  // 1️⃣ First pass: find a potential candidate
-  let candidate: T | undefined = arr[0];
+function getLength(str: string): number {
   let count = 0;
-
-  for (const value of arr) {
-    if (count === 0) {
-      candidate = value;
-      count = 1;
-    } else {
-      count += (value === candidate) ? 1 : -1;
-    }
+  for (const _ of str) {
+    count++;
   }
-
-  // 2️⃣ Optional second pass (remove if you know the input always contains a majority)
-  if (candidate !== undefined) {
-    const actual = arr.filter(v => v === candidate).length;
-    if (actual > arr.length / 2) {
-      return candidate;
-    }
-  }
-
-  return undefined; // No majority element
+  return count;
 }
-const nums = [2, 2, 1, 1, 2, 2, 2];
-
-const major = majorityElement(nums); // -> 2
-console.log(major); // 2
+function recurseLen(str: string, idx = 0): number {
+  return idx >= str.length ? idx : recurseLen(str, idx + 1);
+}
+function recurseLen(str: string, idx = 0): number {
+  return str === '' ? idx : recurseLen(str.slice(1), idx + 1);
+}
+function lengthFromArray(str: string): number {
+  return Array.from(str).length; // still uses .length on the array
+}
+function lengthSpread(str: string): number {
+  return [...str].length; // element count after spreading
+}
+function lengthWithMatch(str: string): number {
+  const matches = str.match(/[\s\S]/g); // one match per character, including newlines
+  return matches ? matches.length : 0;
+}
+function whileLoop(str: string): number {
+  let i = 0;
+  while (str.charAt(i) !== '') {
+    i++;
+  }
+  return i;
+}
