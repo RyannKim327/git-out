@@ -1,72 +1,67 @@
-/**
- * Returns the k-th smallest element of an array.
- *
- * @param arr   Array of numbers (or any comparable type).
- * @param k     1‑based index of the element to find.
- * @returns     The k‑th smallest value.
- *
- * @throws      If k is out of bounds.
- */
-export function kthSmallest<T>(arr: T[], k: number): T {
-  if (k < 1 || k > arr.length) {
-    throw new Error(`k=${k} is not in the valid range 1..${arr.length}`);
+class Graph<T> {
+  private adjacency = new Map<T, Set<T>>();
+
+  addVertex(v: T) {
+    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
   }
 
-  // Work on a copy so the original array stays untouched.
-  const a = arr.slice();
-  let left = 0;
-  let right = a.length - 1;
+  addEdge(v: T, w: T, directed = false) {
+    this.addVertex(v);
+    this.addVertex(w);
+    this.adjacency.get(v)!.add(w);
+    if (!directed) this.adjacency.get(w)!.add(v);
+  }
 
-  while (true) {
-    // Pick a pivot – here we just pick the middle element.
-    const pivotIndex = left + Math.floor((right - left) / 2);
-    const pivot = a[pivotIndex];
+  neighbours(v: T): Iterable<T> {
+    return this.adjacency.get(v) || [];
+  }
 
-    // Partition step: elements < pivot go left, >= pivot go right.
-    const pivotNewIndex = partition(a, left, right, pivot);
-
-    if (pivotNewIndex === k - 1) {      // Found the k‑th smallest
-      return a[pivotNewIndex];
-    } else if (pivotNewIndex > k - 1) {  // Look in the left partition
-      right = pivotNewIndex - 1;
-    } else {                            // Look in the right partition
-      left = pivotNewIndex + 1;
-    }
+  vertices(): Iterable<T> {
+    return this.adjacency.keys();
   }
 }
+function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
+  const visited = new Set<T>();
+  const result: T[] = [];
 
-/**
- * Standard Lomuto partition scheme.
- *
- * @param a array to partition
- * @param lo left boundary
- * @param hi right boundary
- * @param pivotValue value the array should be partitioned around
- * @returns new index of the pivot after partition
- */
-function partition<T>(a: T[], lo: number, hi: number, pivotValue: T): number {
-  // Move pivot to the end for convenience.
-  let pivotIndex = lo + (Math.random() * (hi - lo + 1)) | 0; // random pivot for stability
-  [a[pivotIndex], a[hi]] = [a[hi], a[pivotIndex]];
+  function visit(v: T) {
+    if (visited.has(v)) return;
+    visited.add(v);
+    result.push(v);
 
-  const pivot = a[hi];
-  let storeIndex = lo;                         // index of the first element >= pivot
+    for (const n of graph.neighbours(v)) visit(n);
+  }
 
-  for (let i = lo; i < hi; i++) {
-    if (a[i] < pivot) {
-      [a[i], a[storeIndex]] = [a[storeIndex], a[i]];
-      storeIndex++;
+  visit(start);
+  return result;
+}
+function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
+  const stack: T[] = [start];
+  const visited = new Set<T>();
+  const result: T[] = [];
+
+  while (stack.length) {
+    const v = stack.pop()!;
+    if (visited.has(v)) continue;
+
+    visited.add(v);
+    result.push(v);
+
+    // Push neighbours in reverse order if you want the same order
+    // as the recursive version (depends on adjacency list ordering).
+    for (const n of graph.neighbours(v)) {
+      if (!visited.has(n)) stack.push(n);
     }
   }
 
-  // place pivot after the last smaller element
-  [a[storeIndex], a[hi]] = [a[hi], a[storeIndex]];
-  return storeIndex;
+  return result;
 }
-export function kthSmallestSort<T>(arr: T[], k: number): T {
-  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
-  return [...arr].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))[k - 1];
-}
-const nums = [7, 11, 5, 3, 9, 2];
-console.log(kthSmallest(nums, 3)); // 5
-console.log(kthSmallestSort(nums, 3)); // 5
+const g = new Graph<string>();
+g.addEdge('A', 'B');
+g.addEdge('A', 'C');
+g.addEdge('B', 'D');
+g.addEdge('C', 'D');
+g.addEdge('D', 'E');
+
+console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
+console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
