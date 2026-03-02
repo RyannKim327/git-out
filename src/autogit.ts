@@ -1,36 +1,50 @@
 /**
- * Returns the longest common prefix among all given strings.
- * If the array is empty it returns an empty string.
+ * Median of two sorted arrays (each array is sorted in ascending order).
+ * Works in O(log (min(nums1.length, nums2.length))) time.
  */
-function longestCommonPrefix(words: string[]): string {
-  if (!words.length) return '';
+function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Make sure nums1 is the smaller array for a lighter binary‑search range
+  if (nums1.length > nums2.length) {
+    return findMedianSortedArrays(nums2, nums1);
+  }
 
-  // The first string will act as a reference; we hammer it down
-  // as far as we need to.
-  let prefix = words[0];
+  const m = nums1.length;
+  const n = nums2.length;
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-  // Compare the current prefix to every other word.
-  for (const w of words.slice(1)) {
-    // Keep truncating the prefix until it matches the start of w.
-    while (!w.startsWith(prefix)) {
-      prefix = prefix.slice(0, -1); // strip last char
-      if (!prefix) return ''; // nothing common any more
+  let low = 0;
+  let high = m;
+
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2);      // partition in nums1
+    const j = halfLen - i;                       // partition in nums2
+
+    const nums1LeftMax  = (i === 0) ? -Infinity : nums1[i - 1];
+    const nums1RightMin = (i === m) ? Infinity  : nums1[i];
+    const nums2LeftMax  = (j === 0) ? -Infinity : nums2[j - 1];
+    const nums2RightMin = (j === n) ? Infinity  : nums2[j];
+
+    // If we’ve partitioned correctly, compute the median
+    if (nums1LeftMax <= nums2RightMin && nums2LeftMax <= nums1RightMin) {
+      if ((m + n) % 2 === 1) {              // odd total length
+        return Math.max(nums1LeftMax, nums2LeftMax);
+      } else {                               // even total length
+        return (Math.max(nums1LeftMax, nums2LeftMax) +
+                Math.min(nums1RightMin, nums2RightMin)) / 2;
+      }
+    }
+    // Adjust the binary‑search range
+    else if (nums1LeftMax > nums2RightMin) {
+      high = i - 1;
+    } else {
+      low = i + 1;
     }
   }
 
-  return prefix;
+  throw new Error("Input arrays are not sorted or invalid");
 }
-console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // "fl"
-console.log(longestCommonPrefix(['dog', 'racecar', 'car']));    // ""
-function lcpSort(words: string[]): string {
-  if (!words.length) return '';
-
-  const sorted = [...words].sort();
-  const a = sorted[0];
-  const b = sorted[sorted.length - 1];
-  let i = 0;
-
-  while (i < a.length && a[i] === b[i]) i++;
-
-  return a.slice(0, i);
-}
+console.log(findMedianSortedArrays([1, 3], [2]));                    // 2
+console.log(findMedianSortedArrays([1, 2], [3, 4]));                  // 2.5
+console.log(findMedianSortedArrays([0, 0], [0, 0]));                  // 0
+console.log(findMedianSortedArrays([], [1]));                        // 1
+console.log(findMedianSortedArrays([2], []));                        // 2
