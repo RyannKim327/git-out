@@ -1,38 +1,37 @@
-/**
- * Find the majority element in an array.
- *
- * @param arr - An array of comparable items.
- * @returns The majority element, or undefined if no majority exists.
- *
- * Assumes `T` supports strict equality (===).
- */
-function majorityElement<T>(arr: T[]): T | undefined {
-  if (arr.length === 0) return undefined;
-
-  // 1️⃣ First pass: find a potential candidate
-  let candidate: T | undefined = arr[0];
-  let count = 0;
-
-  for (const value of arr) {
-    if (count === 0) {
-      candidate = value;
-      count = 1;
-    } else {
-      count += (value === candidate) ? 1 : -1;
-    }
+// Works for numbers, strings, dates, anything that can be compared with < and >.
+export function isSorted<T extends number | string | Date>(arr: T[]): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] < arr[i - 1]) return false;
   }
-
-  // 2️⃣ Optional second pass (remove if you know the input always contains a majority)
-  if (candidate !== undefined) {
-    const actual = arr.filter(v => v === candidate).length;
-    if (actual > arr.length / 2) {
-      return candidate;
-    }
-  }
-
-  return undefined; // No majority element
+  return true;
 }
-const nums = [2, 2, 1, 1, 2, 2, 2];
+isSorted([1, 2, 3, 4]);        // true
+isSorted([1, 3, 2, 4]);        // false
+isSorted(['a', 'b', 'c']);     // true
+isSorted(['c', 'b', 'a']);     // false
+type Comparator<T> = (a: T, b: T) => number;
 
-const major = majorityElement(nums); // -> 2
-console.log(major); // 2
+export function isSortedWith<T>(arr: T[], cmp: Comparator<T>): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) return false; // `a > b` in ascending order
+  }
+  return true;
+}
+interface Person { name: string; age: number; }
+
+const people: Person[] = [
+  { name: 'Alice', age: 25 },
+  { name: 'Bob', age: 30 },
+  { name: 'Charlie', age: 35 },
+];
+
+isSortedWith(people, (a, b) => a.age - b.age); // true
+export const isSorted = <T>(arr: T[], cmp: Comparator<T> = (a, b) => {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}): boolean =>
+  arr
+    .map((value, index, self) => [self[index - 1], value] as const)
+    .slice(1) // skip the first undefined pair
+    .every(([prev, cur]) => cmp(prev!, cur) <= 0);
