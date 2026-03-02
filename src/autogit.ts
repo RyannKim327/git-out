@@ -1,110 +1,79 @@
-// ──────────────────────────────────────────────────────────
-// 1. Graph representation
-// ──────────────────────────────────────────────────────────
-type Vertex = string | number;
+// `T` can be any comparable type – string, number, object with an id, etc.
+export function bfs<T>(
+  start: T,
+  graph: Map<T, T[]>,          // adjacency list
+  onVisit?: (node: T) => void // optional per‑node work
+): T[] {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  const order: T[] = [];
 
-// An adjacency list where each vertex maps to an array of its outgoing neighbours.
-class Graph {
-  private readonly edges: Map<Vertex, Vertex[]> = new Map();
+  visited.add(start);
 
-  constructor(edges?: [Vertex, Vertex][]) {
-    if (edges) this.addEdges(edges);
-  }
-
-  /** Adds one or more directed edges to the graph. */
-  addEdges(edges: [Vertex, Vertex][]): void {
-    for (const [from, to] of edges) {
-      if (!this.edges.has(from)) this.edges.set(from, []);
-      this.edges.get(from)!.push(to);
-      // Ensure the destination vertex exists in the map so it shows up in the keys.
-      if (!this.edges.has(to)) this.edges.set(to, []);
-    }
-  }
-
-  /** Returns all vertices in the graph. */
-  vertices(): Vertex[] {
-    return Array.from(this.edges.keys());
-  }
-
-  /** Returns the neighbours of a given vertex. */
-  neighbours(v: Vertex): Vertex[] {
-    return this.edges.get(v) ?? [];
-  }
-}
-
-// ──────────────────────────────────────────────────────────
-// 2. DFS‑based topological sort
-// ──────────────────────────────────────────────────────────
-function topoSortDFS(g: Graph): Vertex[] | null {
-  const visited = new Set<Vertex>();
-  const temp = new Set<Vertex>();   // vertices currently on recursion stack
-  const order: Vertex[] = [];
-
-  const visit = (v: Vertex): boolean => {
-    if (temp.has(v)) return false; // cycle detected
-
-    if (!visited.has(v)) {
-      temp.add(v);
-      for (const nb of g.neighbours(v)) {
-        if (!visit(nb)) return false;
-      }
-      temp.delete(v);
-      visited.add(v);
-      order.push(v);
-    }
-    return true;
-  };
-
-  for (const v of g.vertices()) {
-    if (!visit(v)) return null; // if a cycle is found, return null
-  }
-
-  return order.reverse(); // reverse to get the correct order
-}
-
-// ──────────────────────────────────────────────────────────
-// 3. Kahn’s algorithm (BFS‑based)
-// ──────────────────────────────────────────────────────────
-function topoSortKahn(g: Graph): Vertex[] | null {
-  // Compute in‑degree of each vertex
-  const inDeg = new Map<Vertex, number>();
-  for (const v of g.vertices()) inDeg.set(v, 0);
-  for (const v of g.vertices()) {
-    for (const nb of g.neighbours(v)) {
-      inDeg.set(nb, (inDeg.get(nb) ?? 0) + 1);
-    }
-  }
-
-  const queue: Vertex[] = [];
-  for (const [v, d] of inDeg) if (d === 0) queue.push(v);
-
-  const order: Vertex[] = [];
   while (queue.length) {
-    const v = queue.shift()!;
-    order.push(v);
-    for (const nb of g.neighbours(v)) {
-      const d = inDeg.get(nb)! - 1;
-      inDeg.set(nb, d);
-      if (d === 0) queue.push(nb);
+    const node = queue.shift()!;   // node is guaranteed non‑null inside loop
+
+    // Optional callback that lets you do something with the node as you visit it
+    if (onVisit) onVisit(node);
+
+    order.push(node);
+
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
     }
   }
 
-  if (order.length !== g.vertices().length) return null; // cycle exists
   return order;
 }
+// Example graph (adjacency list)
+const g = new Map<string, string[]>([
+  ['A', ['B', 'C']],
+  ['B', ['D', 'E']],
+  ['C', ['F']],
+  ['D', []],
+  ['E', ['F']],
+  ['F', []]
+]);
 
-// ──────────────────────────────────────────────────────────
-// 4. Demo / usage
-// ──────────────────────────────────────────────────────────
-const edges: [Vertex, Vertex][] = [
-  ['a', 'd'],
-  ['f', 'b'],
-  ['b', 'd'],
-  ['f', 'a'],
-  ['d', 'c']
-];
+const order = bfs('A', g);          // ["A", "B", "C", "D", "E", "F"]
 
-const graph = new Graph(edges);
+console.log('BFS order:', order);
+export function bfsFind<T>(
+  start: T,
+  graph: Map<T, T[]>,
+  goal: T
+): T[] | null {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  visited.add(start);
 
-console.log('DFS order:', topoSortDFS(graph));   // legal order or null
-console.log('Kahn order:', topoSortKahn(graph)); // same result
+  while (queue.length) {
+    const node = queue.shift()!;
+
+    if (node === goal) {
+      // Re‑construct the path if you need it – here we just return the node that found it.
+      return [node];
+    }
+
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  return null; // goal not reachable
+}
+// Small graph with a cycle
+const g2 = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [3]],
+  [3, [1, 4]],
+  [4, []]
+]);
+
+console.log(bfs(1, g2)); // [1, 2, 3, 4]
