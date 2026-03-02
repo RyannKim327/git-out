@@ -1,51 +1,72 @@
-// A classic singly‑linked‑list node
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+/**
+ * Returns the k-th smallest element of an array.
+ *
+ * @param arr   Array of numbers (or any comparable type).
+ * @param k     1‑based index of the element to find.
+ * @returns     The k‑th smallest value.
+ *
+ * @throws      If k is out of bounds.
+ */
+export function kthSmallest<T>(arr: T[], k: number): T {
+  if (k < 1 || k > arr.length) {
+    throw new Error(`k=${k} is not in the valid range 1..${arr.length}`);
+  }
+
+  // Work on a copy so the original array stays untouched.
+  const a = arr.slice();
+  let left = 0;
+  let right = a.length - 1;
+
+  while (true) {
+    // Pick a pivot – here we just pick the middle element.
+    const pivotIndex = left + Math.floor((right - left) / 2);
+    const pivot = a[pivotIndex];
+
+    // Partition step: elements < pivot go left, >= pivot go right.
+    const pivotNewIndex = partition(a, left, right, pivot);
+
+    if (pivotNewIndex === k - 1) {      // Found the k‑th smallest
+      return a[pivotNewIndex];
+    } else if (pivotNewIndex > k - 1) {  // Look in the left partition
+      right = pivotNewIndex - 1;
+    } else {                            // Look in the right partition
+      left = pivotNewIndex + 1;
+    }
+  }
 }
 
 /**
- * Returns the nth node from the end (1‑based) or null if n is out of range.
+ * Standard Lomuto partition scheme.
+ *
+ * @param a array to partition
+ * @param lo left boundary
+ * @param hi right boundary
+ * @param pivotValue value the array should be partitioned around
+ * @returns new index of the pivot after partition
  */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;          // natural guard for mis‑ed input
+function partition<T>(a: T[], lo: number, hi: number, pivotValue: T): number {
+  // Move pivot to the end for convenience.
+  let pivotIndex = lo + (Math.random() * (hi - lo + 1)) | 0; // random pivot for stability
+  [a[pivotIndex], a[hi]] = [a[hi], a[pivotIndex]];
 
-  let first: ListNode<T> | null = head;
-  let second: ListNode<T> | null = head;
+  const pivot = a[hi];
+  let storeIndex = lo;                         // index of the first element >= pivot
 
-  /* Advance `first` n steps ahead. */
-  for (let i = 0; i < n; i++) {
-    if (!first) return null;   // n is larger than list length
-    first = first.next;
+  for (let i = lo; i < hi; i++) {
+    if (a[i] < pivot) {
+      [a[i], a[storeIndex]] = [a[storeIndex], a[i]];
+      storeIndex++;
+    }
   }
 
-  /* Move both pointers until `first` hits the end. */
-  while (first) {
-    first = first.next;
-    second = second!.next;     // second is guaranteed not null here
-  }
-
-  return second;   // `second` is the nth node from the end
+  // place pivot after the last smaller element
+  [a[storeIndex], a[hi]] = [a[hi], a[storeIndex]];
+  return storeIndex;
 }
-function nthFromEndTwoPass<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let len = 0;
-  for (let cur = head; cur; cur = cur.next) len++;
-
-  if (n <= 0 || n > len) return null;
-
-  let cur = head;
-  for (let i = 0; i < len - n; i++) cur = cur!.next;
-
-  return cur;
+export function kthSmallestSort<T>(arr: T[], k: number): T {
+  if (k < 1 || k > arr.length) throw new Error('k out of bounds');
+  return [...arr].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))[k - 1];
 }
-// Example list: 1 → 2 → 3 → 4 → 5
-const tail = new ListNode(5);
-const middle = new ListNode(4, tail);
-const head = new ListNode(1,
-           new ListNode(2,
-           new ListNode(3,
-           middle)));
-
-console.log(nthFromEnd(head, 1)?.val); // 5
-console.log(nthFromEnd(head, 2)?.val); // 4
-console.log(nthFromEnd(head, 5)?.val); // 1
-console.log(nthFromEnd(head, 6));      // null
+const nums = [7, 11, 5, 3, 9, 2];
+console.log(kthSmallest(nums, 3)); // 5
+console.log(kthSmallestSort(nums, 3)); // 5
