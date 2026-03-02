@@ -1,30 +1,45 @@
-function getLength(str: string): number {
-  let count = 0;
-  for (const _ of str) {
-    count++;
+const raw = [1, 2, 2, 3, 4, 4, 5];
+
+const unique = Array.from(new Set(raw));
+// or: const unique = [...new Set(raw)];
+
+console.log(unique); // [1, 2, 3, 4, 5]
+function uniqueInPlace<T>(arr: T[]): void {
+  const seen = new Set<T>();
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (seen.has(arr[i])) {
+      arr.splice(i, 1);          // remove duplicate
+    } else {
+      seen.add(arr[i]);          // record first appearance
+    }
   }
-  return count;
 }
-function recurseLen(str: string, idx = 0): number {
-  return idx >= str.length ? idx : recurseLen(str, idx + 1);
-}
-function recurseLen(str: string, idx = 0): number {
-  return str === '' ? idx : recurseLen(str.slice(1), idx + 1);
-}
-function lengthFromArray(str: string): number {
-  return Array.from(str).length; // still uses .length on the array
-}
-function lengthSpread(str: string): number {
-  return [...str].length; // element count after spreading
-}
-function lengthWithMatch(str: string): number {
-  const matches = str.match(/[\s\S]/g); // one match per character, including newlines
-  return matches ? matches.length : 0;
-}
-function whileLoop(str: string): number {
-  let i = 0;
-  while (str.charAt(i) !== '') {
-    i++;
-  }
-  return i;
-}
+
+const data = ['a', 'b', 'a', 'c', 'b'];
+uniqueInPlace(data);
+console.log(data); // ['a', 'b', 'c']
+const raw = [1, 2, 3, 2, 4, 1];
+const unique = raw.filter((v, i) => raw.indexOf(v) === i);
+console.log(unique); // [1, 2, 3, 4]
+interface User { id: number; name: string }
+
+const users: User[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 1, name: 'Alice (dup)' }, // duplicate id
+];
+
+const uniqueById = Array.from(
+  users.reduce((map, user) => {
+    if (!map.has(user.id)) map.set(user.id, user);
+    return map;
+  }, new Map<number, User>())
+);
+
+console.log(uniqueById);
+/*
+[
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' }
+]
+*/
