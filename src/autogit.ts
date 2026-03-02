@@ -1,21 +1,37 @@
-/**
- * Returns the mean (average) of an array of numbers.
- * If the array is empty, it throws an error; you can change that behavior if you prefer.
- */
-function mean(nums: number[]): number {
-  if (nums.length === 0) {
-    throw new Error("Cannot compute the mean of an empty array");
+function countChar(str: string, target: string): number {
+  let count = 0;
+  for (const ch of str) {
+    if (ch === target) count++;
   }
+  return count;
+}
 
-  const sum = nums.reduce((acc, v) => acc + v, 0);
-  return sum / nums.length;
+const times = countChar("hello world", "l"); // 3
+function countChar(str: string, target: string): number {
+  return str.split(target).length - 1;
 }
-const values = [4, 8, 15, 16, 23, 42];
-console.log(mean(values)); // 18.833333333333332
-function meanWhenPossible(nums: number[]): number {
-  if (nums.length === 0) {
-    return NaN;
+
+countChar("banana", "a"); // 3
+function countChar(str: string, target: string): number {
+  return [...str].filter(ch => ch === target).length;
+}
+
+countChar("👋👋👋 hello", "👋"); // 3
+function countChar(str: string, target: string): number {
+  const re = new RegExp(`\\${target}`, "g");
+  const matches = str.match(re);
+  return matches ? matches.length : 0;
+}
+
+countChar("mississippi", "i"); // 4
+function multicharCount(str: string, targets: string[]): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const t of targets) result[t] = 0;
+
+  for (const ch of str) {
+    if (result.hasOwnProperty(ch)) result[ch]++;
   }
-  return nums.reduce((acc, v) => acc + v, 0) / nums.length;
+  return result;
 }
-console.assert(mean([2, 4, 6]) === 4, "The mean should be 4");
+
+multicharCount("abacaba", ["a", "b", "c"]); // { a:4, b:2, c:1 }
