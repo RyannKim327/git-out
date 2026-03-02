@@ -1,45 +1,30 @@
-const raw = [1, 2, 2, 3, 4, 4, 5];
+import axios, { AxiosResponse } from 'axios';
 
-const unique = Array.from(new Set(raw));
-// or: const unique = [...new Set(raw)];
+// Declare the shape of the data we expect from the API
+interface Quote {
+  id: number;
+  quote: string;
+  author: string;
+}
 
-console.log(unique); // [1, 2, 3, 4, 5]
-function uniqueInPlace<T>(arr: T[]): void {
-  const seen = new Set<T>();
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (seen.has(arr[i])) {
-      arr.splice(i, 1);          // remove duplicate
-    } else {
-      seen.add(arr[i]);          // record first appearance
-    }
+// A helper that fetches a random quote
+async function fetchRandomQuote(): Promise<Quote> {
+  try {
+    const response: AxiosResponse<Quote> = await axios.get(
+      'https://api.quotable.io/random'
+    );
+    return response.data;
+  } catch (err) {
+    // If something goes wrong, throw a readable error
+    throw new Error(
+      `Could not fetch a quote: ${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
   }
 }
 
-const data = ['a', 'b', 'a', 'c', 'b'];
-uniqueInPlace(data);
-console.log(data); // ['a', 'b', 'c']
-const raw = [1, 2, 3, 2, 4, 1];
-const unique = raw.filter((v, i) => raw.indexOf(v) === i);
-console.log(unique); // [1, 2, 3, 4]
-interface User { id: number; name: string }
-
-const users: User[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 1, name: 'Alice (dup)' }, // duplicate id
-];
-
-const uniqueById = Array.from(
-  users.reduce((map, user) => {
-    if (!map.has(user.id)) map.set(user.id, user);
-    return map;
-  }, new Map<number, User>())
-);
-
-console.log(uniqueById);
-/*
-[
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' }
-]
-*/
+// Usage example – print a random quote to the console
+fetchRandomQuote()
+  .then((quote) => console.log(`${quote.quote} — ${quote.author}`))
+  .catch((err) => console.error(err.message));
