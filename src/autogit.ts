@@ -1,30 +1,39 @@
-import axios, { AxiosResponse } from 'axios';
-
-// Declare the shape of the data we expect from the API
-interface Quote {
-  id: number;
-  quote: string;
-  author: string;
+function isPalindrome(str: string): boolean {
+  // Compare the string to its reverse
+  const reversed = str.split('').reverse().join('');
+  return str === reversed;
 }
 
-// A helper that fetches a random quote
-async function fetchRandomQuote(): Promise<Quote> {
-  try {
-    const response: AxiosResponse<Quote> = await axios.get(
-      'https://api.quotable.io/random'
-    );
-    return response.data;
-  } catch (err) {
-    // If something goes wrong, throw a readable error
-    throw new Error(
-      `Could not fetch a quote: ${
-        err instanceof Error ? err.message : String(err)
-      }`
-    );
+// Examples
+console.log(isPalindrome('radar'));   // true
+console.log(isPalindrome('hello'));   // false
+function isPalindromeCI(str: string): boolean {
+  const normalized = str.toLowerCase();          // make everything lowercase
+  return normalized === normalized.split('').reverse().join('');
+}
+
+console.log(isPalindromeCI('Radar'));   // true
+console.log(isPalindromeCI('Racecar')); // true
+function isPalindromeClean(str: string): boolean {
+  const cleaned = str
+    .replace(/[^a-z0-9]/gi, '')      // strip non-alphanumerics
+    .toLowerCase();                  // normalize case
+  
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
+}
+
+console.log(isPalindromeClean('A man, a plan, a canal: Panama')); // true
+function isPalindromeTwoPointer(str: string): boolean {
+  let left = 0;
+  let right = str.length - 1;
+
+  while (left < right) {
+    if (str[left] !== str[right]) return false;
+    left++;
+    right--;
   }
+  return true;
 }
 
-// Usage example – print a random quote to the console
-fetchRandomQuote()
-  .then((quote) => console.log(`${quote.quote} — ${quote.author}`))
-  .catch((err) => console.error(err.message));
+console.log(isPalindromeTwoPointer('radar')); // true
