@@ -1,50 +1,57 @@
 /**
- * Median of two sorted arrays (each array is sorted in ascending order).
- * Works in O(log (min(nums1.length, nums2.length))) time.
+ * Simple anagram checker.
+ * @param a First string
+ * @param b Second string
+ * @returns true if a and b are anagrams, false otherwise
  */
-function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Make sure nums1 is the smaller array for a lighter binary‑search range
-  if (nums1.length > nums2.length) {
-    return findMedianSortedArrays(nums2, nums1);
+function areAnagrams(a: string, b: string): boolean {
+  // 1. Normalize: lower‑case, strip non‑alphanumerics, trim
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .trim();
+
+  const na = normalize(a);
+  const nb = normalize(b);
+
+  // Quick length check; if they differ early we’re done.
+  if (na.length !== nb.length) return false;
+
+  // 2. Build frequency maps
+  const freq = new Map<string, number>();
+
+  for (const ch of na) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  const m = nums1.length;
-  const n = nums2.length;
-  const halfLen = Math.floor((m + n + 1) / 2);
+  for (const ch of nb) {
+    const count = freq.get(ch);
 
-  let low = 0;
-  let high = m;
+    // If we see a character not in the first string, bail
+    if (!count) return false;
 
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);      // partition in nums1
-    const j = halfLen - i;                       // partition in nums2
-
-    const nums1LeftMax  = (i === 0) ? -Infinity : nums1[i - 1];
-    const nums1RightMin = (i === m) ? Infinity  : nums1[i];
-    const nums2LeftMax  = (j === 0) ? -Infinity : nums2[j - 1];
-    const nums2RightMin = (j === n) ? Infinity  : nums2[j];
-
-    // If we’ve partitioned correctly, compute the median
-    if (nums1LeftMax <= nums2RightMin && nums2LeftMax <= nums1RightMin) {
-      if ((m + n) % 2 === 1) {              // odd total length
-        return Math.max(nums1LeftMax, nums2LeftMax);
-      } else {                               // even total length
-        return (Math.max(nums1LeftMax, nums2LeftMax) +
-                Math.min(nums1RightMin, nums2RightMin)) / 2;
-      }
-    }
-    // Adjust the binary‑search range
-    else if (nums1LeftMax > nums2RightMin) {
-      high = i - 1;
-    } else {
-      low = i + 1;
-    }
+    // Decrease the count and remove entry if it drops to zero
+    if (count === 1) freq.delete(ch);
+    else freq.set(ch, count - 1);
   }
 
-  throw new Error("Input arrays are not sorted or invalid");
+  // 3. If all counts cleared, the strings are anagrams
+  return freq.size === 0;
 }
-console.log(findMedianSortedArrays([1, 3], [2]));                    // 2
-console.log(findMedianSortedArrays([1, 2], [3, 4]));                  // 2.5
-console.log(findMedianSortedArrays([0, 0], [0, 0]));                  // 0
-console.log(findMedianSortedArrays([], [1]));                        // 1
-console.log(findMedianSortedArrays([2], []));                        // 2
+console.log(areAnagrams("listen", "silent"));   // → true
+console.log(areAnagrams("evil", "vile"));       // → true
+console.log(areAnagrams("hello", "billion"));   // → false
+console.log(areAnagrams("Clint Eastwood", "Old West Action")); // true
+function areAnagramsSort(a: string, b: string): boolean {
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .trim()
+      .split("")
+      .sort()
+      .join("");
+
+  return normalize(a) === normalize(b);
+}
