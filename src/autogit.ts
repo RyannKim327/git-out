@@ -1,36 +1,116 @@
 /**
- * Performs an in‑place Shell sort on `arr`.
- * The generic makes it usable for numbers, strings, or any comparable type.
+ * Build the bad‑character shift table.
+ * For every character that occurs in the pattern, we store the distance
+ * from the last occurrence of that character to the end of the pattern
+ * (i.e. how far we can jump when that character mismatches).
  */
-export function shellSort<T>(arr: T[], compare?: (a: T, b: T) => boolean) {
-  const len = arr.length;
-  // Default comparison: ascending numeric/string order
-  const cmp = compare ?? ((a: T, b: T) => (a as any) < (b as any));
+function buildBadCharShift(pat: string): Int8Array {
+  const m = pat.length;
+  // 256 possible ASCII values – 16-bit enough for Unicode offsets too
+  const shift = new Int8Array(256);
+  shift.fill(-1);
 
-  // Start with a gap (Hibbard’s sequence is simple and effective)
-  // gap = 1, 3, 7, 15, …  (2^k‑1)
-  let gap = 1;
-  while (gap < len) gap = 2 * gap + 1; // find largest Hibbard gap <= len
-
-  // Descend gaps until 1
-  while (gap >= 1) {
-    // Insertion sort on elements gap apart
-    for (let i = gap; i < len; i++) {
-      const temp = arr[i];
-      let j = i;
-      // shift earlier gap‑sorted elements that are greater
-      while (j >= gap && cmp(temp, arr[j - gap])) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
-    // Next gap
-    gap = Math.floor((gap - 1) / 2); // inverse of 2*gap + 1
+  for (let i = 0; i < m; i++) {
+    shift[pat.charCodeAt(i)] = i;
   }
+  return shift;
 }
-const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
-shellSort(numbers);
-console.log(numbers); // [1, 2, 3, 8, 12, 23, 34, 54]
-const desc = (a: number, b: number) => a > b;
-shellSort(numbers, desc);
+
+/**
+ * Build the good‑suffix shift table.
+ * The array `shift` holds, for each position in the pattern,
+ * how far we can safely shift if the suffix starting at that position
+ * is found to match the text but a mismatch occurs just before it.
+ */
+function buildGoodSuffixShift(pat: string): Int32Array {
+  const m = pat.length;
+  const shift = new Int32Array(m).fill(m);
+  const borderPos = new Int32Array(m + 1).fill(-1);
+  const suffixPos = new Int32Array(m + 1).fill(-1);
+
+  /* Step 1 – compute border positions (also known as "failure function") */
+  let i = m;
+  let j = m + 1;
+  borderPos[i] = j;
+  while (i > 0) {
+    while (j <= m && pat[i - 1] !== pat[j - 1]) j = borderPos[j];
+    i--;
+    j--;
+    borderPos[i] = j;
+  }
+
+  /* Step 2 – compute suffix positions */
+  i = 0;
+  j = 0;
+  while (i < m) {
+    if (pat[i] === pat[j]) {
+      j++;
+      suffixPos[i + 1] = j;
+    } else if (j > 0) {
+      j = borderPos[j];
+    } else {
+      suffixPos[i + 1] = 0;
+      i++;
+    }
+  }
+
+  /* Step 3 – fill the shift table using the border and suffix data */
+  for (let k = 0; k < m; k++) {
+    // If the suffix starting at k matches the pattern's suffix
+    // and there is a border before that suffix, we can shift
+    // to align that border with the text.
+    shift[k] = m - suffixPos[k];
+  }
+
+  return shift;
+}
+
+/**
+ * Boyer‑Moore search.
+ * Returns an array of all start indices where `pat` is found in `txt`.
+ */
+export function boyerMoore(txt: string, pat: string): number[] {
+  const n = txt.length;
+  const m = pat.length;
+
+  if (m === 0 || n < m) return [];
+
+  const badChar = buildBadCharShift(pat);
+  const goodSuffix = buildGoodSuffixShift(pat);
+
+  const res: number[] = [];
+  let s = 0; // shift of the pattern over text
+
+  while (s <= n - m) {
+    let j = m - 1;
+
+    // Move left while characters match
+    while (j >= 0 && pat[j] === txt[s + j]) j--;
+
+    if (j < 0) {
+      // full match
+      res.push(s);
+      // shift so that the next possible match starts right after the first character of the current match
+      s += goodSuffix[0];
+    } else {
+      const badIdx = badChar[txt.charCodeAt(s + j)];
+      const badShift = badIdx !== -1 ? j - badIdx : j + 1;
+      const goodShift = goodSuffix[j];
+      // choose the larger of the two shifts
+      s += Math.max(badShift, goodShift);
+    }
+  }
+
+  return res;
+}
+
+/* ----------------------------------- */
+/* Example usage                     */
+const text = "ABAAABCDABEEABBAAB";
+const pattern = "ABBA";
+
+const matches = boyerMoore(text, pattern);
+console.log("Pattern found at indices:", matches);
+/* Expected output (zero‑based indices):
+   Pattern found at indices: [12, 15]
+*/
