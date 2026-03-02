@@ -1,44 +1,43 @@
 /**
- * Returns n! (n factorial) for a non‑negative integer.
+ * Binary search on a sorted array.
  *
- * @param n A non‑negative integer (0, 1, 2, …).
- * @returns The factorial of n. Returns 1 for n = 0.
- * @throws Error if n is negative.
+ * @param arr   A sorted array that supports the supplied comparator.
+ * @param target The value you’re searching for.
+ * @param compare A comparison function: returns <0 if a<b, 0 if a===b, >0 if a>b.
+ * @returns The index of `target` if found; otherwise –1.
  */
-function factorial(n: number): number {
-  if (n < 0) {
-    throw new Error("Factorial is not defined for negative numbers.");
+export function binarySearch<T>(
+  arr: readonly T[],
+  target: T,
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): number {
+  let low = 0;
+  let high = arr.length - 1;
+
+  while (low <= high) {
+    // Use Math.floor to avoid overflow and keep mid an integer.
+    const mid = low + Math.floor((high - low) / 2);
+    const cmp = compare(arr[mid], target);
+
+    if (cmp === 0) {
+      return mid; // Found it!
+    } else if (cmp < 0) {
+      low = mid + 1; // Search right half
+    } else {
+      high = mid - 1; // Search left half
+    }
   }
 
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
+  return -1; // Not found
 }
+// Example with numbers
+const nums = [3, 7, 12, 18, 25, 34];
+const index = binarySearch(nums, 18); // → 3
 
-// Example
-console.log(factorial(5)); // 120
-function factorialRecursive(n: number): number {
-  if (n < 0) {
-    throw new Error("Negative input not allowed.");
-  }
-  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
-}
-
-console.log(factorialRecursive(5)); // 120
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error("Negative input not allowed.");
-  let result = 1n;          // BigInt literal starts with n
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
-}
-
-console.log(factorialBigInt(100).toString());
-// "933262154... (full 158‑digit number)"
-console.assert(factorial(0) === 1);
-console.assert(factorial(1) === 1);
-console.assert(factorial(5) === 120);
-console.assert(factorialBigInt(10).toString() === "3628800");
+// Example with strings – note we pass a custom comparator for case‑insensitive search
+const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
+const idx = binarySearch(
+  words,
+  'CHeRry',
+  (a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' })
+); // → 2
