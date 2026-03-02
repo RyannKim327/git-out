@@ -1,37 +1,30 @@
-function countChar(str: string, target: string): number {
-  let count = 0;
-  for (const ch of str) {
-    if (ch === target) count++;
+/**
+ * Returns the second largest value in an array.
+ * Uses a single pass – O(n) time, O(1) extra space.
+ *
+ * @param nums – numeric array
+ * @returns second largest number, or `undefined` if it can’t be determined
+ */
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
+
+  let largest = -Infinity;
+  let second = -Infinity;
+
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;   // old largest becomes second
+      largest = n;
+    } else if (n > second && n !== largest) {
+      // n is between largest and second – update second
+      second = n;
+    }
   }
-  return count;
+
+  return second === -Infinity ? undefined : second;
 }
 
-const times = countChar("hello world", "l"); // 3
-function countChar(str: string, target: string): number {
-  return str.split(target).length - 1;
-}
-
-countChar("banana", "a"); // 3
-function countChar(str: string, target: string): number {
-  return [...str].filter(ch => ch === target).length;
-}
-
-countChar("👋👋👋 hello", "👋"); // 3
-function countChar(str: string, target: string): number {
-  const re = new RegExp(`\\${target}`, "g");
-  const matches = str.match(re);
-  return matches ? matches.length : 0;
-}
-
-countChar("mississippi", "i"); // 4
-function multicharCount(str: string, targets: string[]): Record<string, number> {
-  const result: Record<string, number> = {};
-  for (const t of targets) result[t] = 0;
-
-  for (const ch of str) {
-    if (result.hasOwnProperty(ch)) result[ch]++;
-  }
-  return result;
-}
-
-multicharCount("abacaba", ["a", "b", "c"]); // { a:4, b:2, c:1 }
+// quick demo
+console.log(secondLargest([3, 1, 4, 1, 5, 9, 2, 6, 5])); // 8
+console.log(secondLargest([42]));                         // undefined
+console.log(secondLargest([7, 7, 7]));                     // undefined – no distinct second value
