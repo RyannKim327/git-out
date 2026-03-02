@@ -1,121 +1,59 @@
-/*-------------------------------------------------------
-  Binary‑Tree Data Structures & Operations in TypeScript
--------------------------------------------------------*/
+class ListNode {
+  val: number;
+  next: ListNode | null;
 
-// 1️⃣ A node that holds one element and links to its children
-class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
-
-// 2️⃣ The tree itself – only the root is stored
-class BinaryTree<T> {
-  private root: TreeNode<T> | null = null
-
-  /* ------------ Insertion (BST style) ------------ */
-  insert(value: T): void {
-    this.root = this._insertRec(this.root, value)
-  }
-
-  private _insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
-    if (!node) return new TreeNode(value)
-
-    // Basic BST rule – < goes left, >= goes right
-    if (value < node.value) node.left = this._insertRec(node.left, value)
-    else node.right = this._insertRec(node.right, value)
-
-    return node
-  }
-
-  /* ------------ Search ------------ */
-  find(value: T): boolean {
-    return this._findRec(this.root, value)
-  }
-
-  private _findRec(node: TreeNode<T> | null, value: T): boolean {
-    if (!node) return false
-    if (node.value === value) return true
-    return value < node.value
-      ? this._findRec(node.left, value)
-      : this._findRec(node.right, value)
-  }
-
-  /* ------------ Traversals ------------ */
-
-  // In‑order: left, node, right  (sorted for BST)
-  inorder(callback: (val: T) => void) {
-    this._inorderRec(this.root, callback)
-  }
-  private _inorderRec(node: TreeNode<T> | null, cb: (val: T) => void) {
-    if (!node) return
-    this._inorderRec(node.left, cb)
-    cb(node.value)
-    this._inorderRec(node.right, cb)
-  }
-
-  // Pre‑order: node, left, right
-  preorder(callback: (val: T) => void) {
-    this._preorderRec(this.root, callback)
-  }
-  private _preorderRec(node: TreeNode<T> | null, cb: (val: T) => void) {
-    if (!node) return
-    cb(node.value)
-    this._preorderRec(node.left, cb)
-    this._preorderRec(node.right, cb)
-  }
-
-  // Post‑order: left, right, node
-  postorder(callback: (val: T) => void) {
-    this._postorderRec(this.root, callback)
-  }
-  private _postorderRec(node: TreeNode<T> | null, cb: (val: T) => void) {
-    if (!node) return
-    this._postorderRec(node.left, cb)
-    this._postorderRec(node.right, cb)
-    cb(node.value)
-  }
-
-  /* ------------ Utility ------------ */
-
-  // Height of the tree (root = 0)
-  height(): number {
-    return this._heightRec(this.root)
-  }
-  private _heightRec(node: TreeNode<T> | null): number {
-    if (!node) return -1
-    return 1 + Math.max(this._heightRec(node.left), this._heightRec(node.right))
-  }
-
-  // Size (total number of nodes)
-  size(): number {
-    return this._sizeRec(this.root)
-  }
-  private _sizeRec(node: TreeNode<T> | null): number {
-    if (!node) return 0
-    return 1 + this._sizeRec(node.left) + this._sizeRec(node.right)
+  constructor(val: number, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
   }
 }
+/**
+ * Returns the node where listA and listB intersect.
+ * If they don't intersect, returns null.
+ */
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  if (!headA || !headB) return null;
 
-/*-------------------------------------------------------
-  Example use
--------------------------------------------------------*/
-const tree = new BinaryTree<number>()
+  let pA: ListNode | null = headA;
+  let pB: ListNode | null = headB;
 
-// Inserting some numbers
-for (const v of [7, 3, 9, 1, 5, 8, 10]) {
-  tree.insert(v)
+  // Continue until the two pointers either match or both become null.
+  while (pA !== pB) {
+    // Move to the next node; if we're at the end, jump to the other list's head.
+    pA = pA ? pA.next : headB;
+    pB = pB ? pB.next : headA;
+  }
+
+  return pA; // Either the intersection node or null.
 }
+// Build two intersecting lists:
+// A: 1 → 3 → 5 → 7 → 9
+// B: 2 → 4 →        → 7 → 9
+//            ^<--- intersection starts here
 
-// Find
-console.log('Has 5?', tree.find(5))   // true
-console.log('Has 4?', tree.find(4))   // false
+const common = new ListNode(7, new ListNode(9));
 
-// In‑order prints the numbers sorted
-tree.inorder(v => console.log(v))     // 1 3 5 7 8 9 10
+const listA = new ListNode(1, new ListNode(3, new ListNode(5, common)));
+const listB = new ListNode(2, new ListNode(4, common));
 
-// Tree metadata
-console.log('Height:', tree.height()) // 2
-console.log('Size:', tree.size())     // 7
+const intersection = getIntersectionNode(listA, listB);
+console.log(intersection?.val); // 7
+function getIntersectionNodeHash(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  const nodes = new Set<ListNode>();
+
+  for (let cur = headA; cur; cur = cur.next) {
+    nodes.add(cur);
+  }
+
+  for (let cur = headB; cur; cur = cur.next) {
+    if (nodes.has(cur)) return cur;
+  }
+
+  return null;
+}
