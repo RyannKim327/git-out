@@ -1,51 +1,83 @@
-// A classic singly‑linked‑list node
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+// --------------------------------------------------
+// 1️⃣  Linked‑list node definition
+// --------------------------------------------------
+export interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
 
+// --------------------------------------------------
+// 2️⃣  Helper: reverse a list, returns new head
+// --------------------------------------------------
 /**
- * Returns the nth node from the end (1‑based) or null if n is out of range.
+ * Reverses the linked list starting at node `head`.
+ * Returns the new head of the reversed list.
  */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;          // natural guard for mis‑ed input
+function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let current = head;
 
-  let first: ListNode<T> | null = head;
-  let second: ListNode<T> | null = head;
+  while (current) {
+    const next = current.next;
+    current.next = prev;
+    prev = current;
+    current = next;
+  }
+  return prev;          // new head
+}
 
-  /* Advance `first` n steps ahead. */
-  for (let i = 0; i < n; i++) {
-    if (!first) return null;   // n is larger than list length
-    first = first.next;
+// --------------------------------------------------
+// 3️⃣  Palindrome checker
+// --------------------------------------------------
+export function isPalindrome<T>(head: ListNode<T> | null): boolean {
+  if (!head || !head.next) return true;   // Empty or single‑node list
+
+  // ----- 3.1  Find the middle (slow stops at middle)
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
+
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  /* Move both pointers until `first` hits the end. */
-  while (first) {
-    first = first.next;
-    second = second!.next;     // second is guaranteed not null here
+  // ----- 3.2  Reverse second half
+  const secondHalfStart = reverse(slow!.next);
+  let firstHalfIter = head;
+  let secondHalfIter = secondHalfStart;
+
+  // ----- 3.3  Compare halves
+  let palindrome = true;
+  while (secondHalfIter) {
+    if (firstHalfIter!.val !== secondHalfIter.val) {
+      palindrome = false;
+      break;
+    }
+    firstHalfIter = firstHalfIter!.next;
+    secondHalfIter = secondHalfIter.next;
   }
 
-  return second;   // `second` is the nth node from the end
+  // ----- 3.4  Restore the original order (optional)
+  slow!.next = reverse(secondHalfStart);
+
+  return palindrome;
 }
-function nthFromEndTwoPass<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let len = 0;
-  for (let cur = head; cur; cur = cur.next) len++;
 
-  if (n <= 0 || n > len) return null;
-
-  let cur = head;
-  for (let i = 0; i < len - n; i++) cur = cur!.next;
-
-  return cur;
+// --------------------------------------------------
+// 4️⃣  Example usage
+// --------------------------------------------------
+function buildList(values: any[]): ListNode | null {
+  let dummy: ListNode | null = null;
+  for (let i = values.length - 1; i >= 0; i--) {
+    dummy = { val: values[i], next: dummy };
+  }
+  return dummy;
 }
-// Example list: 1 → 2 → 3 → 4 → 5
-const tail = new ListNode(5);
-const middle = new ListNode(4, tail);
-const head = new ListNode(1,
-           new ListNode(2,
-           new ListNode(3,
-           middle)));
 
-console.log(nthFromEnd(head, 1)?.val); // 5
-console.log(nthFromEnd(head, 2)?.val); // 4
-console.log(nthFromEnd(head, 5)?.val); // 1
-console.log(nthFromEnd(head, 6));      // null
+// Palindrome case
+const list1 = buildList([1, 2, 3, 2, 1]);
+console.log(isPalindrome(list1)); // true
+
+// Non‑palindrome
+const list2 = buildList([1, 2, 3, 4, 5]);
+console.log(isPalindrome(list2)); // false
