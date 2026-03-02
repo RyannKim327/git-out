@@ -1,37 +1,7 @@
-// random-joke.ts
-import fetch from 'node-fetch';          // npm i node-fetch@2
-import { Console } from 'console';
-
-interface Joke {
-  id: number;
-  type: string;
-  setup: string;
-  punchline: string;
+const num = parseInt("123", 10);   // 123 as a number
+const num = Number("123");          // 123
+const num = +"123";                // 123
+const big = BigInt("123456789123456789123"); // 123456789123456789123n
+if (Number.isInteger(num)) {
+  // safe to use `num` as an int
 }
-
-async function fetchRandomJoke(): Promise<Joke> {
-  const res = await fetch('https://official-joke-api.appspot.com/random_joke');
-
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} – failed to fetch joke`);
-  }
-
-  const data: Joke = await res.json();
-
-  return data;
-}
-
-async function run() {
-  try {
-    const joke = await fetchRandomJoke();
-
-    console.log('😂 Here’s something to make you smile!');
-    console.log(`  ${joke.setup}`);
-    console.log(`   – ${joke.punchline}`);
-  } catch (err: any) {
-    console.error('Oops! Something went wrong:');
-    console.error(err.message ?? err);
-  }
-}
-
-run();
