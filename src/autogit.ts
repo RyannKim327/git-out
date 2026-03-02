@@ -1,83 +1,43 @@
-// --------------------------------------------------
-// 1️⃣  Linked‑list node definition
-// --------------------------------------------------
-export interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
-}
-
-// --------------------------------------------------
-// 2️⃣  Helper: reverse a list, returns new head
-// --------------------------------------------------
 /**
- * Reverses the linked list starting at node `head`.
- * Returns the new head of the reversed list.
+ * Binary search on a sorted array.
+ *
+ * @param arr   A sorted array that supports the supplied comparator.
+ * @param target The value you’re searching for.
+ * @param compare A comparison function: returns <0 if a<b, 0 if a===b, >0 if a>b.
+ * @returns The index of `target` if found; otherwise –1.
  */
-function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let current = head;
+export function binarySearch<T>(
+  arr: readonly T[],
+  target: T,
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): number {
+  let low = 0;
+  let high = arr.length - 1;
 
-  while (current) {
-    const next = current.next;
-    current.next = prev;
-    prev = current;
-    current = next;
-  }
-  return prev;          // new head
-}
+  while (low <= high) {
+    // Use Math.floor to avoid overflow and keep mid an integer.
+    const mid = low + Math.floor((high - low) / 2);
+    const cmp = compare(arr[mid], target);
 
-// --------------------------------------------------
-// 3️⃣  Palindrome checker
-// --------------------------------------------------
-export function isPalindrome<T>(head: ListNode<T> | null): boolean {
-  if (!head || !head.next) return true;   // Empty or single‑node list
-
-  // ----- 3.1  Find the middle (slow stops at middle)
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
-
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  // ----- 3.2  Reverse second half
-  const secondHalfStart = reverse(slow!.next);
-  let firstHalfIter = head;
-  let secondHalfIter = secondHalfStart;
-
-  // ----- 3.3  Compare halves
-  let palindrome = true;
-  while (secondHalfIter) {
-    if (firstHalfIter!.val !== secondHalfIter.val) {
-      palindrome = false;
-      break;
+    if (cmp === 0) {
+      return mid; // Found it!
+    } else if (cmp < 0) {
+      low = mid + 1; // Search right half
+    } else {
+      high = mid - 1; // Search left half
     }
-    firstHalfIter = firstHalfIter!.next;
-    secondHalfIter = secondHalfIter.next;
   }
 
-  // ----- 3.4  Restore the original order (optional)
-  slow!.next = reverse(secondHalfStart);
-
-  return palindrome;
+  return -1; // Not found
 }
+// Example with numbers
+const nums = [3, 7, 12, 18, 25, 34];
+const index = binarySearch(nums, 18); // → 3
 
-// --------------------------------------------------
-// 4️⃣  Example usage
-// --------------------------------------------------
-function buildList(values: any[]): ListNode | null {
-  let dummy: ListNode | null = null;
-  for (let i = values.length - 1; i >= 0; i--) {
-    dummy = { val: values[i], next: dummy };
-  }
-  return dummy;
-}
-
-// Palindrome case
-const list1 = buildList([1, 2, 3, 2, 1]);
-console.log(isPalindrome(list1)); // true
-
-// Non‑palindrome
-const list2 = buildList([1, 2, 3, 4, 5]);
-console.log(isPalindrome(list2)); // false
+// Example with strings – note we pass a custom comparator for case‑insensitive search
+const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
+const idx = binarySearch(
+  words,
+  'CHeRry',
+  (a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' })
+); // → 2
