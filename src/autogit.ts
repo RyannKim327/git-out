@@ -1,43 +1,30 @@
-/**
- * Binary search on a sorted array.
- *
- * @param arr   A sorted array that supports the supplied comparator.
- * @param target The value you’re searching for.
- * @param compare A comparison function: returns <0 if a<b, 0 if a===b, >0 if a>b.
- * @returns The index of `target` if found; otherwise –1.
- */
-export function binarySearch<T>(
-  arr: readonly T[],
-  target: T,
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): number {
-  let low = 0;
-  let high = arr.length - 1;
+import axios, { AxiosResponse } from 'axios';
 
-  while (low <= high) {
-    // Use Math.floor to avoid overflow and keep mid an integer.
-    const mid = low + Math.floor((high - low) / 2);
-    const cmp = compare(arr[mid], target);
-
-    if (cmp === 0) {
-      return mid; // Found it!
-    } else if (cmp < 0) {
-      low = mid + 1; // Search right half
-    } else {
-      high = mid - 1; // Search left half
-    }
-  }
-
-  return -1; // Not found
+// Declare the shape of the data we expect from the API
+interface Quote {
+  id: number;
+  quote: string;
+  author: string;
 }
-// Example with numbers
-const nums = [3, 7, 12, 18, 25, 34];
-const index = binarySearch(nums, 18); // → 3
 
-// Example with strings – note we pass a custom comparator for case‑insensitive search
-const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
-const idx = binarySearch(
-  words,
-  'CHeRry',
-  (a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' })
-); // → 2
+// A helper that fetches a random quote
+async function fetchRandomQuote(): Promise<Quote> {
+  try {
+    const response: AxiosResponse<Quote> = await axios.get(
+      'https://api.quotable.io/random'
+    );
+    return response.data;
+  } catch (err) {
+    // If something goes wrong, throw a readable error
+    throw new Error(
+      `Could not fetch a quote: ${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
+  }
+}
+
+// Usage example – print a random quote to the console
+fetchRandomQuote()
+  .then((quote) => console.log(`${quote.quote} — ${quote.author}`))
+  .catch((err) => console.error(err.message));
