@@ -1,25 +1,37 @@
-/**
- * Computes the factorial of a non‑negative integer `n` recursively.
- * @param n - A non‑negative integer (e.g., 0, 1, 2, …)
- * @returns n! as a `number`. For values beyond ≈ 170 you’ll hit the
- *          IEEE‑754 overflow limit and get `Infinity`, so for large
- *          inputs you might want to switch to BigInt.
- */
-function factorial(n: number): number {
-  if (n < 0) throw new Error('Negative numbers don’t have factorials');
-  if (n <= 1) return 1;          // base case: 0! = 1! = 1
-  return n * factorial(n - 1);   // recursive step
-}
-console.log(factorial(5));   // 120
-console.log(factorial(0));   // 1
-function bigIntFactorial(n: number): bigint {
-  if (n < 0) throw new Error('Negative numbers don’t have factorials');
-  if (n <= 1) return 1n;               // 1n is a BigInt literal
-  return BigInt(n) * bigIntFactorial(n - 1);
+// random-joke.ts
+import fetch from 'node-fetch';          // npm i node-fetch@2
+import { Console } from 'console';
+
+interface Joke {
+  id: number;
+  type: string;
+  setup: string;
+  punchline: string;
 }
 
-console.log(bigIntFactorial(30).toString());
-function tailFactorial(n: number, acc: number = 1): number {
-  if (n <= 1) return acc;
-  return tailFactorial(n - 1, acc * n);
+async function fetchRandomJoke(): Promise<Joke> {
+  const res = await fetch('https://official-joke-api.appspot.com/random_joke');
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} – failed to fetch joke`);
+  }
+
+  const data: Joke = await res.json();
+
+  return data;
 }
+
+async function run() {
+  try {
+    const joke = await fetchRandomJoke();
+
+    console.log('😂 Here’s something to make you smile!');
+    console.log(`  ${joke.setup}`);
+    console.log(`   – ${joke.punchline}`);
+  } catch (err: any) {
+    console.error('Oops! Something went wrong:');
+    console.error(err.message ?? err);
+  }
+}
+
+run();
