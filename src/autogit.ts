@@ -1,56 +1,48 @@
-Let   S = s1 s2 … sn
-      T = t1 t2 … tm
-
-DP[i][j] = length of the longest common suffix that ends at S[i‑1] and T[j‑1]
-DP[i][j] = DP[i-1][j-1] + 1
 /**
- * Returns the longest common substring of `a` and `b`.
- * If there are multiple substrings of the same maximum length,
- * the first one found in `a` will be returned.
+ * Random‑pivot quicksort for an array of numbers.
+ *
+ * @param arr – the array to sort (it will be sorted in place)
+ * @returns the sorted array (same reference as the input)
  */
-export function longestCommonSubstring(a: string, b: string): string {
-  const n = a.length, m = b.length;
-  if (n === 0 || m === 0) return '';
+function randomQuickSort(arr: number[]): number[] {
+  // Internal helper that works on a sub‑range [left, right]
+  function sort(left: number, right: number) {
+    if (left >= right) return;           // 0 or 1 element – nothing to do
 
-  // `prev` holds DP values for row i-1
-  const prev = new Array(m + 1).fill(0);
-  // `curr` holds DP values for current row i
-  const curr = new Array(m + 1).fill(0);
+    // Pick a random pivot index between left and right (inclusive)
+    const pivotIndex = Math.floor(Math.random() * (right - left + 1)) + left;
+    const pivotValue = arr[pivotIndex];
 
-  let maxLen = 0;          // longest length so far
-  let maxEndIndexA = 0;    // index in `a` where this substring ends
+    // Move the pivot to the rightmost position for the partition step
+    [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
 
-  for (let i = 1; i <= n; i++) {
-    // Iterate columns
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        curr[j] = prev[j - 1] + 1;
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          maxEndIndexA = i - 1;   // keep the end idx in a
-        }
-      } else {
-        curr[j] = 0;
+    // Standard Lomuto partition
+    let storeIndex = left;
+    for (let i = left; i < right; i++) {
+      if (arr[i] < pivotValue) {
+        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
+        storeIndex++;
       }
     }
 
-    // Swap rows for next iteration
-    //  curr becomes prev, prev becomes curr (reuse the same arrays)
-    for (let j = 0; j <= m; j++) {
-      prev[j] = curr[j];
-      curr[j] = 0;   // reset current row for the next round
-    }
+    // Put the pivot back in its final place
+    [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
+
+    // Recurse on the two partitions
+    sort(left, storeIndex - 1);
+    sort(storeIndex + 1, right);
   }
 
-  return a.slice(maxEndIndexA - maxLen + 1, maxEndIndexA + 1);
+  sort(0, arr.length - 1);
+  return arr;
 }
-import { longestCommonSubstring } from './common-substring';
 
-const a = "ABABCDA";
-const b = "CBADABABC";
+/*--------------------------------------------
+  Example usage
+--------------------------------------------*/
 
-console.log(longestCommonSubstring(a, b)); // → "ABC"
-console.log(longestCommonSubstring('foo', ''));          // ''
-console.log(longestCommonSubstring('abc', 'xyz'));       // ''
-console.log(longestCommonSubstring('same', 'same'));     // 'same'
-console.log(longestCommonSubstring('aaaaa', 'bbaaa'));   // 'aaa'
+const data = [34, 7, 23, 32, 5, 62];
+console.log('Unsorted:', data);
+
+const sorted = randomQuickSort([...data]); // copy to avoid mutating the original
+console.log('Sorted  :', sorted);
