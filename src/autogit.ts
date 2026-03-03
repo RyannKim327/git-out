@@ -1,75 +1,24 @@
-/* --------------------------------------------------------
-   Fibonacci Search – TypeScript version
-   -------------------------------------------------------- */
-
-type Comparator<T> = (a: T, b: T) => number;
-
-/**
- * Searches a sorted array using the Fibonacci search technique.
- *
- * @param arr       The sorted array to search
- * @param key       The value we’re looking for
- * @param cmp       Optional comparator – defaults to numeric comparison
- * @returns The index of `key` in `arr`, or -1 if not found
- */
-export function fibonacciSearch<T>(
-  arr: readonly T[],
-  key: T,
-  cmp: Comparator<T> = (a, b) => a! < b! ? -1 : (a! > b! ? 1 : 0)
-): number {
-  const n = arr.length;
-  if (n === 0) return -1;
-
-  /* ---------- build the smallest Fibonacci number ≥ n ------------- */
-  let fibMm2 = 0;            // (m‑2)’th Fibonacci
-  let fibMm1 = 1;            // (m‑1)’th Fibonacci
-  let fibM   = fibMm2 + fibMm1; // m’th Fibonacci
-
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM   = fibMm2 + fibMm1;
-  }
-
-  /* ---------- we now have a Fibonacci number >= array length ---------- */
-  let offset = -1; // Marks the eliminated range from front
-
-  while (fibM > 1) {
-    // Keep fibMm2 ≥ 0
-    // Index to be checked – clamp to array bounds
-    const i = Math.min(offset + fibMm2, n - 1);
-
-    const comparison = cmp(arr[i], key);
-
-    if (comparison < 0) {
-      /* key is after arr[i] */
-      fibM   = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i;
-    } else if (comparison > 0) {
-      /* key is before arr[i] */
-      fibM   = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
-    } else {
-      return i;                // Found at index i
-    }
-  }
-
-  /* ---------- check the last element -------------------------------- */
-  if (fibMm1 && offset + 1 < n && cmp(arr[offset + 1], key) === 0) {
-    return offset + 1;
-  }
-
-  return -1; // Not found
+function areaBaseHeight(base: number, height: number): number {
+  return (base * height) / 2;
 }
 
-/* --------------------------------------------------------
-   Example usage
-   -------------------------------------------------------- */
+// Example
+const a = areaBaseHeight(10, 6);   // → 30
+console.log(a);
+function areaBySides(a: number, b: number, c: number): number {
+  // Check triangle inequality first (optional but nice)
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('Not a valid triangle');
+  }
 
-const nums = [3, 9, 15, 21, 27, 31, 38, 54, 72, 95];
+  const s = (a + b + c) / 2;                // semi‑perimeter
+  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  return area;
+}
 
-console.log(fibonacciSearch(nums, 54)); // → 7
-console.log(fibonacciSearch(nums, 10)); // → -1
+// Example
+const b = areaBySides(5, 12, 13);   // right triangle → 30
+console.log(b);
+const area = Math.sqrt(
+  Math.max(0, s * (s - a) * (s - b) * (s - c))
+);
