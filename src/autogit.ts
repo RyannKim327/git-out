@@ -1,36 +1,41 @@
-/**
- * Returns the longest common prefix among all given strings.
- * If the array is empty it returns an empty string.
- */
-function longestCommonPrefix(words: string[]): string {
-  if (!words.length) return '';
+/** A very small “binary‑tree node” type. */
+interface TreeNode {
+  val: number;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
+}
+function sumTreeRecursive(root: TreeNode | null): number {
+  if (!root) return 0;                     // base case – no node
+  const leftSum  = sumTreeRecursive(root.left);
+  const rightSum = sumTreeRecursive(root.right);
+  return root.val + leftSum + rightSum;    // process node after its children
+}
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
 
-  // The first string will act as a reference; we hammer it down
-  // as far as we need to.
-  let prefix = words[0];
+  const queue: TreeNode[] = [root];
+  let total = 0;
 
-  // Compare the current prefix to every other word.
-  for (const w of words.slice(1)) {
-    // Keep truncating the prefix until it matches the start of w.
-    while (!w.startsWith(prefix)) {
-      prefix = prefix.slice(0, -1); // strip last char
-      if (!prefix) return ''; // nothing common any more
-    }
+  while (queue.length) {
+    const node = queue.shift()!;   // non‑null assertion – queue always contains real nodes
+    total += node.val;
+
+    if (node.left)  queue.push(node.left);
+    if (node.right) queue.push(node.right);
   }
 
-  return prefix;
+  return total;
 }
-console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // "fl"
-console.log(longestCommonPrefix(['dog', 'racecar', 'car']));    // ""
-function lcpSort(words: string[]): string {
-  if (!words.length) return '';
+// Small example
+const tree: TreeNode = {
+  val: 10,
+  left: { val: 5 },
+  right: {
+    val: 20,
+    left: { val: 15 },
+    right: { val: 25 }
+  }
+};
 
-  const sorted = [...words].sort();
-  const a = sorted[0];
-  const b = sorted[sorted.length - 1];
-  let i = 0;
-
-  while (i < a.length && a[i] === b[i]) i++;
-
-  return a.slice(0, i);
-}
+console.log(sumTreeRecursive(tree)); // 75
+console.log(sumTreeIterative(tree)); // 75
