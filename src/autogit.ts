@@ -1,45 +1,112 @@
 /**
- * Returns the contiguous segment of `arr` that yields the highest possible sum.
- *
- * @param arr - Array of numbers (integer or float)
- * @returns An object containing:
- *   `maxSum`  – the total sum of the best segment
- *   `start`   – the index where the segment begins
- *   `end`     – the index where the segment ends (inclusive)
+ * Generic type that can be compared with the <=> operator.
+ * For custom objects you can supply a comparator function.
  */
-function maxSubarray(arr: number[]) {
-  if (arr.length === 0) throw new Error('Array cannot be empty');
+type Comparable = number | string | boolean;
 
-  let bestSum = arr[0];
-  let currentSum = arr[0];
-  let bestStart = 0;
-  let bestEnd = 0;
-  let tempStart = 0;
+/**
+ * Swap two elements in an array
+ */
+function swap<T>(arr: T[], i: number, j: number): void {
+  const tmp = arr[i];
+  arr[i] = arr[j];
+  arr[j] = tmp;
+}
 
-  for (let i = 1; i < arr.length; i++) {
-    const val = arr[i];
+/**
+ * Heapify the subtree rooted at `i`, assuming that the binary trees
+ * rooted at its children are already heaps.
+ *
+ * @param arr    the array
+ * @param heapSize the current size of the heap
+ * @param i      the index of the root of the subtree
+ * @param compare comparison function (a, b) => true if a > b
+ */
+function heapify<T>(
+  arr: T[],
+  heapSize: number,
+  i: number,
+  compare: (a: T, b: T) => boolean
+): void {
+  let largest = i;
+  const left   = 2 * i + 1;
+  const right  = 2 * i + 2;
 
-    // Either start a new sub‑array at i or extend the existing one
-    if (currentSum + val < val) {
-      currentSum = val;
-      tempStart = i;       // new potential start
-    } else {
-      currentSum += val;   // keep extending
-    }
-
-    // Update the best segment seen so far
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
+  if (left < heapSize && compare(arr[left], arr[largest])) {
+    largest = left;
+  }
+  if (right < heapSize && compare(arr[right], arr[largest])) {
+    largest = right;
   }
 
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+  if (largest !== i) {
+    swap(arr, i, largest);
+    heapify(arr, heapSize, largest, compare);
+  }
 }
-const data = [-2, -3, 4, -1, -2, 1, 5, -3];
-const result = maxSubarray(data);
-console.log(result);
-// Expected output:
-// { maxSum: 7, start: 2, end: 6 }
-// (segment [4, -1, -2, 1, 5] sums to 7)
+
+/**
+ * Build a max‑heap from an unsorted array
+ */
+function buildMaxHeap<T>(
+  arr: T[],
+  compare: (a: T, b: T) => boolean
+): void {
+  const heapSize = arr.length;
+  // Start from the last non‑leaf node
+  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
+    heapify(arr, heapSize, i, compare);
+  }
+}
+
+/**
+ * Heap sort – sorts `arr` *in place*.
+ *
+ * @param arr      the array to sort
+ * @param compare  optional comparator; defaults to (a > b)
+ */
+export function heapSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => boolean
+): void {
+  const cmp = compare ?? ((a: any, b: any) => a > b);
+
+  buildMaxHeap(arr, cmp);
+
+  for (let i = arr.length - 1; i > 0; i--) {
+    // The max element is at index 0; move it to its final place
+    swap(arr, 0, i);
+    // Re‑heapify the reduced heap
+    heapify(arr, i, 0, cmp);
+  }
+}
+
+/* --------------------------------------------------------------------- */
+/* Example usage & tiny tests                                           */
+/* --------------------------------------------------------------------- */
+
+// 1️⃣ Numbers ---------------------------------------------------------
+const nums = [5, 3, 8, 4, 1, 7, 2, 6];
+heapSort(nums);
+console.log('Sorted numbers:', nums); // [1, 2, 3, 4, 5, 6, 7, 8]
+
+// 2️⃣ Strings ---------------------------------------------------------
+const words = ['pear', 'apple', 'orange', 'banana'];
+heapSort(words); // default lexicographic order
+console.log('Sorted words:', words); // ['apple', 'banana', 'orange', 'pear']
+
+// 3️⃣ Custom objects --------------------------------------------------
+interface Person { name: string; age: number }
+const people: Person[] = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob',   age: 22 },
+  { name: 'Eva',   age: 27 }
+];
+// Sort by age ascending
+heapSort(people, (a, b) => a.age > b.age);
+console.log('People sorted by age:', people);
+/* [
+  { name: 'Bob', age: 22 },
+  { name: 'Eva', age: 27 },
+  { name: 'Alice', age: 30 }
+] */
