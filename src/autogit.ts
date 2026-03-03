@@ -1,101 +1,40 @@
-// A node inside the trie
-class TrieNode {
-  // Map from a character to the next node in the path
-  children: Map<string, TrieNode> = new Map();
+/**
+ * Classic in‑place quick‑sort.
+ *
+ * @param arr  The array to be sorted (in‑place).
+ * @param left The starting index (default: 0).
+ * @param right The ending index (default: arr.length‑1).
+ *
+ * @returns The same array, now sorted.
+ */
+function quickSort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
+  if (left >= right) return arr;          // base case: 0 or 1 item
 
-  // Marks the end of a word
-  isEndOfWord: boolean = false;
+  // Pick a pivot—here we just take the middle element.
+  const pivotIndex = Math.floor((left + right) / 2);
+  const pivot = arr[pivotIndex];
 
-  constructor(public readonly char: string | null = null) {}
+  // Partition: everything less than the pivot goes left, everything
+  // greater or equal goes right.  Elements equal to the pivot can go either side.
+  let i = left;
+  let j = right;
+  while (i <= j) {
+    while (arr[i] < pivot) i++;   // find an element on the wrong side (left)
+    while (arr[j] > pivot) j--;   // find an element on the wrong side (right)
+
+    if (i <= j) {                 // swap the out‑of‑place elements
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
+      j--;
+    }
+  }
+
+  // Recursively sort the two partitions.
+  // The first call deals with the left two halves *unless* they overlap.
+  if (left < j) quickSort(arr, left, j);
+  if (i < right) quickSort(arr, i, right);
+
+  return arr;
 }
-
-// The trie itself
-export class Trie {
-  private root = new TrieNode();
-
-  /** Inserts a word into the trie. */
-  insert(word: string): void {
-    if (!word) return;               // ignore empty strings
-    let node = this.root;
-
-    for (const ch of word) {
-      // Grab the child if it already exists; otherwise create a new node
-      let next = node.children.get(ch);
-      if (!next) {
-        next = new TrieNode(ch);
-        node.children.set(ch, next);
-      }
-      node = next;
-    }
-
-    // Mark that a complete word ends here
-    node.isEndOfWord = true;
-  }
-
-  /** Returns true if the word is in the trie. */
-  search(word: string): boolean {
-    if (!word) return false;
-    let node = this.root;
-
-    for (const ch of word) {
-      const next = node.children.get(ch);
-      if (!next) return false;      // path breaks → word absent
-      node = next;
-    }
-
-    return node.isEndOfWord;
-  }
-
-  /** Checks if any word in the trie starts with the given prefix. */
-  startsWith(prefix: string): boolean {
-    if (!prefix) return false;
-    let node = this.root;
-
-    for (const ch of prefix) {
-      const next = node.children.get(ch);
-      if (!next) return false;
-      node = next;
-    }
-
-    return true;
-  }
-
-  /** (Optional) Returns the list of all words in the trie that start with a given prefix. */
-  autocomplete(prefix: string): string[] {
-    const results: string[] = [];
-    let node = this.root;
-
-    // Walk to the node representing the prefix
-    for (const ch of prefix) {
-      const next = node.children.get(ch);
-      if (!next) return results;   // empty list if prefix not present
-      node = next;
-    }
-
-    // Depth‑first walk from that node, collecting words
-    const dfs = (n: TrieNode, acc: string) => {
-      if (n.isEndOfWord) results.push(acc);
-      for (const [ch, child] of n.children.entries()) {
-        dfs(child, acc + ch);
-      }
-    };
-
-    dfs(node, prefix);
-    return results;
-  }
-}
-const trie = new Trie();
-
-trie.insert('cat');
-trie.insert('car');
-trie.insert('cart');
-trie.insert('dog');
-
-console.log(trie.search('cat'));      // true
-console.log(trie.search('cab'));      // false
-
-console.log(trie.startsWith('ca'));   // true
-console.log(trie.startsWith('do'));   // true
-console.log(trie.startsWith('droll'));// false
-
-console.log(trie.autocomplete('ca')); // ['cat', 'car', 'cart']
+const unsorted = [3, 7, 2, 5, 1, 4, 6];
+quickSort(unsorted);        // unsorted is now [1,2,3,4,5,6,7]
