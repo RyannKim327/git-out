@@ -1,32 +1,26 @@
-// largestPrimeFactor.ts
-export function largestPrimeFactor(n: number): number | null {
-    if (n < 2) return null;          // No prime factor for 0, 1 or negatives
-
-    let largest = 0;
-
-    // Handle factor 2 first – it’s the only even prime
-    while (n % 2 === 0) {
-        largest = 2;
-        n = Math.floor(n / 2);
-    }
-
-    // Now n is odd.  Test odd divisors from 3 upward.
-    // Only need to go up to sqrt(n); beyond that any remaining n is prime.
-    for (let d = 3; d * d <= n; d += 2) {
-        while (n % d === 0) {
-            largest = d;
-            n = Math.floor(n / d);
-        }
-    }
-
-    // If after the loop n > 1 it means n itself is prime and larger
-    // than any divisor we removed.
-    if (n > 1) largest = n;
-
-    return largest;
+function maxOfArray(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;   // or throw an error if you prefer
+  return Math.max(...nums);
 }
-console.log(largestPrimeFactor(210)); // 7
-console.log(largestPrimeFactor(2));   // 2
-console.log(largestPrimeFactor(17));  // 17
-console.log(largestPrimeFactor(18));  // 3
-console.log(largestPrimeFactor(0));   // null
+function maxOfArray(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  return nums.reduce((max, n) => (n > max ? n : max), nums[0]);
+}
+function maxOfArray(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+
+  let max = nums[0];
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] > max) {
+      max = nums[i];
+    }
+  }
+  return max;
+}
+const myNumbers = [12, 7, 22, 5, 18];
+console.log(maxOfArray(myNumbers)); // 22
+function maxWithFallback(nums: number[], fallback = 0): number {
+  return nums.length > 0
+    ? nums.reduce((a, b) => Math.max(a, b))
+    : fallback;
+}
