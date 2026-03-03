@@ -1,30 +1,12 @@
-import axios, { AxiosResponse } from 'axios';
+const numbers = [3, 5, 7, 9];
+const mean = numbers.reduce((sum, n) => sum + n, 0) / numbers.length;
+console.log(mean); // 6
+function mean(arr: number[]): number {
+  if (arr.length === 0) throw new Error('Cannot compute mean of empty array');
 
-// Declare the shape of the data we expect from the API
-interface Quote {
-  id: number;
-  quote: string;
-  author: string;
+  const total = arr.reduce((sum, val) => sum + val, 0);
+  return total / arr.length;
 }
 
-// A helper that fetches a random quote
-async function fetchRandomQuote(): Promise<Quote> {
-  try {
-    const response: AxiosResponse<Quote> = await axios.get(
-      'https://api.quotable.io/random'
-    );
-    return response.data;
-  } catch (err) {
-    // If something goes wrong, throw a readable error
-    throw new Error(
-      `Could not fetch a quote: ${
-        err instanceof Error ? err.message : String(err)
-      }`
-    );
-  }
-}
-
-// Usage example – print a random quote to the console
-fetchRandomQuote()
-  .then((quote) => console.log(`${quote.quote} — ${quote.author}`))
-  .catch((err) => console.error(err.message));
+// Usage
+const avg = mean([10, 20, 30]); // 20
