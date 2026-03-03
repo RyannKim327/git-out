@@ -1,68 +1,59 @@
-// -------------------------------------------
-// Node definition
-// -------------------------------------------
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+/**
+ * Shell sort – a simple, in‑place algorithm that improves on insertion sort.
+ * Sorts an array of numbers in ascending order.
+ *
+ * @param arr The array to sort (modified in place)
+ * @param compare Optional compare function (defaults to numeric comparison)
+ */
+export function shellSort(
+  arr: number[],
+  compare?: (a: number, b: number) => number
+): void {
+  const len = arr.length;
+  const cmp = compare ?? ((a, b) => a - b);
 
-// -------------------------------------------
-// Helper: build list from array
-// -------------------------------------------
-function arrayToLinkedList<T>(arr: T[]): ListNode<T> | null {
-  if (arr.length === 0) return null;
-  const head = new ListNode(arr[0]);
-  let current = head;
-  for (let i = 1; i < arr.length; i++) {
-    current.next = new ListNode(arr[i]);
-    current = current.next;
+  // A common gap sequence: halving each time (Shell's original)
+  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Gapped insertion sort
+    for (let i = gap; i < len; i++) {
+      let temp = arr[i];
+      let j = i;
+
+      // Move elements that are greater than temp backward by 'gap' places
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      // Bring temp into its spot
+      arr[j] = temp;
+    }
   }
-  return head;
 }
+const data = [40, 3, 10, 5, 1, 15];
+shellSort(data);
 
-// -------------------------------------------
-// Helper: read list into array (for debugging)
-// -------------------------------------------
-function linkedListToArray<T>(head: ListNode<T> | null): T[] {
-  const arr: T[] = [];
-  let cur = head;
-  while (cur) {
-    arr.push(cur.val);
-    cur = cur.next;
+console.log(data); // [1, 3, 5, 10, 15, 40]
+export function shellSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): void {
+  const len = arr.length;
+  const cmp = compare ?? ((a, b) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
+
+  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
+    }
   }
-  return arr;
 }
-
-// -------------------------------------------
-// Main: find middle node
-// -------------------------------------------
-function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null;          // empty list
-
-  let slow = head;
-  let fast = head;
-
-  // Move fast two steps and slow one step until fast can't move further.
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  // For even‑length lists, this returns the first of the two middle nodes.
-  // If you prefer the second, replace `while (fast && fast.next)` and
-  // adjust the loop accordingly.
-  return slow;
-}
-
-// -------------------------------------------
-// Demo
-// -------------------------------------------
-const list = arrayToLinkedList([1, 2, 3, 4, 5]);  // odd length
-console.log(linkedListToArray(list));            // [1,2,3,4,5]
-console.log(findMiddle(list)?.val);              // 3
-
-const evenList = arrayToLinkedList([10, 20, 30, 40]);
-console.log(linkedListToArray(evenList));         // [10,20,30,40]
-console.log(findMiddle(evenList)?.val);           // 20 (first middle)
-// if you want the second middle, tweak the loop condition to:
-// while (fast && fast.next)
-// then you'll get 30.
+shellSort(['banana', 'apple', 'pear'], (a, b) => a.localeCompare(b));
