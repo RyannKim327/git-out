@@ -1,45 +1,39 @@
-/**
- * Checks if a string is a palindrome.
- *
- * @param txt          The input string to test.
- * @param options      Optional flags.
- * @returns            true if the cleaned string reads the same forwards and backwards.
- */
-export function isPalindrome(
-  txt: string,
-  options?: {
-    /** When true (default), the check is case‑insensitive. */
-    ignoreCase?: boolean;
-    /** When true (default), only alphanumeric characters are considered. */
-    stripNonAlnum?: boolean;
-    /** When true, normalises Unicode to NFKD form before the checks. */
-    normalize?: boolean;
-  } = {}
-): boolean {
-  const {
-    ignoreCase = true,
-    stripNonAlnum = true,
-    normalize = true,
-  } = options;
-
-  let processed = txt;
-
-  if (normalize) {
-    // This collapse accents, e.g. "café" ➜ "cafe".
-    processed = processed.normalize('NFKD');
-  }
-
-  if (stripNonAlnum) {
-    processed = processed.replace(/[^0-9a-z]+/gi, '');
-  }
-
-  if (ignoreCase) {
-    processed = processed.toLowerCase();
-  }
-
-  const reversed = processed.split('').reverse().join('');
-  return processed === reversed;
+class ListNode<T> {
+    constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
-console.log(isPalindrome('Madam In Eden, I’m Adam'));          // true
-console.log(isPalindrome('Hello, world!'));                    // false
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+    if (!head) return false;
+
+    let slow: ListNode<T> | null = head;
+    let fast: ListNode<T> | null = head;
+
+    while (fast !== null && fast.next !== null) {
+        slow = slow!.next;           // move 1 step
+        fast = fast.next.next;       // move 2 steps
+
+        if (slow === fast) {         // same node → cycle
+            return true;
+        }
+    }
+    return false;                    // fast reached end → no cycle
+}
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+    const visited = new Set<ListNode<T>>();
+
+    let current: ListNode<T> | null = head;
+    while (current !== null) {
+        if (visited.has(current)) return true; // already seen
+        visited.add(current);
+        current = current.next;
+    }
+    return false;
+}
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b;  // 1 → 2 → 3
+b.next = c;
+c.next = a;  // cycle back to 1
+
+console.log(hasCycle(a));        // → true
+console.log(hasCycleWithSet(a)); // → true
