@@ -1,51 +1,48 @@
-// 1️⃣ Tree node definition
-interface TreeNode {
-  val: number;          // value is irrelevant for diameter
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
+// 1️⃣  Define a comparison helper – most of the time you’ll just pass
+//     (a, b) => a < b for ascending order.
+type Comparator<T> = (a: T, b: T) => boolean;
 
-// 2️⃣ Main diameter function
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let diameter = 0;                 // global accumulator
+// 2️⃣  The merge function – it expects two sorted arrays and pulls
+//     the smaller (according to the comparator) element out first.
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+  const result: T[] = [];
+  let i = 0,
+      j = 0;
 
-  function dfs(node: TreeNode | null): number {
-    if (!node) return 0;            // height of empty subtree
-
-    // Recursively find heights of left/right subtrees
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
-
-    // Path through current node (in edges)
-    const pathThrough = leftHeight + rightHeight;
-
-    // Update global diameter if this is the largest seen so far
-    diameter = Math.max(diameter, pathThrough);
-
-    // Return height from this node up to a leaf
-    return 1 + Math.max(leftHeight, rightHeight);
+  while (i < left.length && j < right.length) {
+    if (cmp(left[i], right[j])) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
+    }
   }
 
-  dfs(root);
-  return diameter;
-}
-// Example tree:
-//      1
-//     / \
-//    2   3
-//   / \
-//  4   5
-const tree: TreeNode = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4, left: null, right: null },
-    right: { val: 5, left: null, right: null },
-  },
-  right: { val: 3, left: null, right: null },
-};
+  // One side still has items – splice the rest onto the result.
+  if (i < left.length) result.push(...left.slice(i));
+  if (j < right.length) result.push(...right.slice(j));
 
-console.log(diameterOfBinaryTree(tree)); // Output: 3
-// Explanation: path 4‑2‑1‑3 uses 3 edges
-console.log(diameterOfBinaryTree(null));           // 0
-console.log(diameterOfBinaryTree({ val: 42 }));    // 0
+  return result;
+}
+
+// 3️⃣  The recursive mergeSort main function – sorts in place if you
+//     prefer not to allocate the full array during every merge.
+export function mergeSort<T>(arr: T[], cmp: Comparator<T> = (a, b) => a < b): T[] {
+  if (arr.length <= 1) return arr;     // Base case: nothing to do
+
+  const mid = Math.floor(arr.length / 2);
+  const left  = mergeSort(arr.slice(0, mid), cmp);
+  const right = mergeSort(arr.slice(mid),    cmp);
+
+  return merge(left, right, cmp);
+}
+// Numbers, ascending
+const sortedNumbers = mergeSort([8, 3, 5, 1, 9, 2]);
+
+// Strings, descending
+const sortedStrings = mergeSort(
+  ["banana", "apple", "cherry"],
+  (a, b) => a > b
+);
+
+console.log(sortedNumbers); // [1, 2, 3, 5, 8, 9]
+console.log(sortedStrings); // ["cherry", "banana", "apple"]
