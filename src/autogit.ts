@@ -1,79 +1,75 @@
-// `T` can be any comparable type – string, number, object with an id, etc.
-export function bfs<T>(
-  start: T,
-  graph: Map<T, T[]>,          // adjacency list
-  onVisit?: (node: T) => void // optional per‑node work
-): T[] {
-  const queue: T[] = [start];
-  const visited = new Set<T>();
-  const order: T[] = [];
+/**
+ * Binary search on a sorted array (ascending order).
+ * @param arr   Sorted array of comparable items.
+ * @param value Item you’re hunting for.
+ * @param compare Optional comparison function:
+ *                (a,b) => 0 if a==b, <0 if a<b, >0 if a>b.
+ *                If omitted, '<'/'>' operators are used.
+ * @returns Index of the value, or -1 if it isn’t present.
+ */
+export function binarySearch<T>(
+  arr: readonly T[],
+  value: T,
+  compare?: (a: T, b: T) => number,
+): number {
+  let low = 0;
+  let high = arr.length;
 
-  visited.add(start);
-
-  while (queue.length) {
-    const node = queue.shift()!;   // node is guaranteed non‑null inside loop
-
-    // Optional callback that lets you do something with the node as you visit it
-    if (onVisit) onVisit(node);
-
-    order.push(node);
-
-    for (const neighbor of graph.get(node) ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
+  const cmp = compare ?? ((a: T, b: T) => {
+    /* eslint-disable-next-line no-prototype-builtins */
+    if ((a as any as object).hasOwnProperty && typeof a === 'object' && typeof b === 'object') {
+      // For objects that implement `valueOf()` – optional
+      return (a as any) < b ? -1 : (a as any) > b ? 1 : 0;
     }
+    return a < b ? -1 : a > b ? 1 : 0;
+  });
+
+  while (low < high) {
+    const mid = (low + high) >>> 1; // fast floor division by 2
+    const comp = cmp(arr[mid], value);
+
+    if (comp === 0) return mid;   // found it
+    if (comp < 0) low = mid + 1;  // value is higher
+    else high = mid;              // value is lower
   }
 
-  return order;
+  return -1; // not found
 }
-// Example graph (adjacency list)
-const g = new Map<string, string[]>([
-  ['A', ['B', 'C']],
-  ['B', ['D', 'E']],
-  ['C', ['F']],
-  ['D', []],
-  ['E', ['F']],
-  ['F', []]
-]);
+const nums = [1, 3, 5, 7, 9, 11, 13];
+const idx = binarySearch(nums, 7); // → 3
 
-const order = bfs('A', g);          // ["A", "B", "C", "D", "E", "F"]
+const words = ['apple', 'banana', 'cherry', 'date'];
+const wIdx = binarySearch(words, 'cherry'); // → 2
+export function binarySearchRecursive<T>(
+  arr: readonly T[],
+  value: T,
+  compare?: (a: T, b: T) => number,
+  low = 0,
+  high = arr.length - 1,
+): number {
+  if (low > high) return -1;
 
-console.log('BFS order:', order);
-export function bfsFind<T>(
-  start: T,
-  graph: Map<T, T[]>,
-  goal: T
-): T[] | null {
-  const queue: T[] = [start];
-  const visited = new Set<T>();
-  visited.add(start);
+  const cmp = compare ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-  while (queue.length) {
-    const node = queue.shift()!;
+  const mid = (low + high) >>> 1;
+  const comp = cmp(arr[mid], value);
 
-    if (node === goal) {
-      // Re‑construct the path if you need it – here we just return the node that found it.
-      return [node];
-    }
-
-    for (const neighbor of graph.get(node) ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
-    }
-  }
-
-  return null; // goal not reachable
+  if (comp === 0) return mid;
+  return comp < 0
+    ? binarySearchRecursive(arr, value, compare, mid + 1, high)
+    : binarySearchRecursive(arr, value, compare, low, mid - 1);
 }
-// Small graph with a cycle
-const g2 = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [3]],
-  [3, [1, 4]],
-  [4, []]
-]);
+interface Person { name: string; age: number; }
 
-console.log(bfs(1, g2)); // [1, 2, 3, 4]
+const people: Person[] = [
+  { name: 'Alice', age: 28 },
+  { name: 'Bob', age: 35 },
+  { name: 'Carol', age: 41 },
+];
+
+// Sorted by age
+const idx = binarySearch(
+  people,
+  { name: '', age: 35 },             // value (name ignored)
+  (a, b) => a.age - b.age
+); // → 1
