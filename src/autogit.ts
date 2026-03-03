@@ -1,5 +1,9 @@
-const original = "Hello  world \t from TypeScript!";
+function reverseStr(str: string): string {
+  // 1️⃣  Split the string into an array of characters
+  // 2️⃣  Reverse the array in‑place
+  // 3️⃣  Join the array back into a string
+  return str.split('').reverse().join('');
+}
 
-const noSpaces = original.replace(/\s+/g, '');   // → "HelloworldfromTypeScript!"
-const noSpaces = original.replace(/ +/g, '');
-const noSpaces = original.split(' ').join('');
+// Example
+console.log(reverseStr('hello')); // → "olleh"
