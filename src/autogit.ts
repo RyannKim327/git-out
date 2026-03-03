@@ -1,79 +1,79 @@
-// A simple graph representation.
-// All nodes must be comparable with === (e.g. numbers, strings, or objects with a unique id).
-interface Graph<T> {
-  /** Return the directly connected nodes of `node`.  */
-  neighbors(node: T): T[];
-}
-
 /**
- * Iterative depth‑limited DFS.
- *
- * @param graph      the graph to search
- * @param start      the node to start from
- * @param goal       the node we are looking for
- * @param maxDepth   limit recursion depth (0 = only start node)
- * @returns           true if goal is reachable within maxDepth, false otherwise
+ * Returns the kth smallest value in `arr` (1‑based k).
+ *  Throws an error if k is out of bounds.
  */
-function depthLimitedSearch<T>(
-  graph: Graph<T>,
-  start: T,
-  goal: T,
-  maxDepth: number
-): boolean {
-  // Stack entries hold a node and its depth in the search space.
-  const stack: Array<{ node: T; depth: number }> = [{ node: start, depth: 0 }];
-  const visited = new Set<T>();
+export function kthSmallest(arr: number[], k: number): number {
+  if (k <= 0 || k > arr.length) {
+    throw new RangeError('k is out of bounds');
+  }
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;   // pop() never returns undefined here
+  // Work on a copy so the original array stays intact.
+  const a = arr.slice();
 
-    // If we hit the goal, we're done.
-    if (node === goal) return true;
+  const quickSelect = (left: number, right: number, index: number) => {
+    // If the segment contains only one element, that's the answer.
+    if (left === right) return a[left];
 
-    // Skip revisiting nodes; this keeps the search linear in the number of edges.
-    if (visited.has(node)) continue;
-    visited.add(node);
-
-    // Stop exploring deeper than we’re allowed.
-    if (depth === maxDepth) continue;
-
-    // Push neighbours onto the stack with incremented depth.
-    for (const neighbour of graph.neighbors(node)) {
-      // No need to push a node that is already visited; but doing so is harmless.
-      stack.push({ node: neighbour, depth: depth + 1 });
+    const pivotIndex = partition(left, right);
+    if (pivotIndex === index) {
+      return a[pivotIndex];
+    } else if (pivotIndex < index) {
+      return quickSelect(pivotIndex + 1, right, index);
+    } else {
+      return quickSelect(left, pivotIndex - 1, index);
     }
-  }
+  };
 
-  return false;   // exhausted everything within the depth limit
-}
-// Simple adjacency‑list example
-class SimpleGraph implements Graph<number> {
-  adjacency: Map<number, number[]>;
+  const partition = (left: number, right: number): number => {
+    // Pick a pivot.  Using the middle element keeps the code short; you could
+    // shuffle or use Median‑of‑Three for better worst‑case guarantees.
+    const pivot = a[Math.floor((left + right) / 2)];
+    let i = left;
+    let j = right;
 
-  constructor(edges: Array<[number, number]>) {
-    this.adjacency = new Map();
-    for (const [a, b] of edges) {
-      this.adjacency
-        .get(a) ??= [];
-      this.adjacency.get(a)!.push(b);
-
-      this.adjacency
-        .get(b) ??= [];
-      this.adjacency.get(b)!.push(a);   // undirected
+    while (i <= j) {
+      while (a[i] < pivot) i++;
+      while (a[j] > pivot) j--;
+      if (i <= j) {
+        [a[i], a[j]] = [a[j], a[i]];
+        i++;
+        j--;
+      }
     }
-  }
+    return i - 1; // pivot final position
+  };
 
-  neighbors(node: number): number[] {
-    return this.adjacency.get(node) ?? [];
-  }
+  // `k-1` because the array index is 0‑based.
+  return quickSelect(0, a.length - 1, k - 1);
 }
+export function kthSmallestBySort(arr: number[], k: number): number {
+  if (k <= 0 || k > arr.length) throw new RangeError('k is out of bounds');
+  const sorted = [...arr].sort((a, b) => a - b);
+  return sorted[k - 1];
+}
+class MinHeap {
+  private data: number[] = [];
 
-const g = new SimpleGraph([
-  [1, 2],
-  [1, 3],
-  [2, 4],
-  [3, 5],
-]);
+  push(val: number) {
+    this.data.push(val);
+    this.bubbleUp(this.data.length - 1);
+  }
 
-console.log(depthLimitedSearch(g, 1, 5, 1)); // false (needs depth 2)
-console.log(depthLimitedSearch(g, 1, 5, 2)); // true
+  /* ... bubbleUp, bubbleDown, peek, pop ... */
+
+  /** Return kth smallest (1‑based). */
+  kth(k: number): number {
+    if (k <= 0 || k > this.data.length) throw new RangeError();
+    const heapCopy = [...this.data];
+    let result = -Infinity;
+    for (let i = 0; i < k; i++) {
+      result = heapCopy[0];
+      this.swap(heapCopy, 0, heapCopy.length - 1);
+      heapCopy.pop();
+      this.sinkDown(heapCopy, 0);
+    }
+    return result;
+  }
+
+  /* helper methods omitted for brevity */
+}
