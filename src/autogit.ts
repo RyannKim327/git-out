@@ -1,32 +1,65 @@
 /**
- * Returns the area of a triangle when you know its base and height.
- *
- * @param base   The length of the triangle’s base.
- * @param height The height (altitude) drawn to that base.
- * @returns The area in whatever units the inputs are in.
+ * Generic insertion sort.
+ * @param arr  The array to sort – it will be mutated in‑place.
+ * @returns    The sorted array (the same reference that was passed in).
  */
-function triangleAreaFromBaseHeight(base: number, height: number): number {
-  return 0.5 * base * height;
+export function insertionSort<T>(arr: T[]): T[] {
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+
+    /* shift elements that are greater than key one position to the right */
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    arr[j + 1] = key;
+  }
+  return arr;
 }
-/**
- * Returns the area of a triangle given its three vertices.
- *
- * @param x1 x‑coordinate of the first vertex
- * @param y1 y‑coordinate of the first vertex
- * @param x2 x‑coordinate of the second vertex
- * @param y2 y‑coordinate of the second vertex
- * @param x3 x‑coordinate of the third vertex
- * @param y3 y‑coordinate of the third vertex
- * @returns The absolute area (non‑negative) of the triangle.
- */
-function triangleAreaFromPoints(
-  x1: number, y1: number,
-  x2: number, y2: number,
-  x3: number, y3: number
-): number {
-  return Math.abs(
-    x1 * (y2 - y3) +
-    x2 * (y3 - y1) +
-    x3 * (y1 - y2)
-  ) / 2;
+const numbers = [8, 3, 5, 4, 6, 1];
+console.log(insertionSort(numbers)); // [1, 3, 4, 5, 6, 8]
+const words = ['orange', 'apple', 'banana'];
+console.log(insertionSort(words)); // ['apple', 'banana', 'orange']
+interface Person {
+  name: string;
+  age: number;
 }
+
+const people: Person[] = [
+  { name: 'Zoe', age: 29 },
+  { name: 'Anna', age: 22 },
+  { name: 'Mike', age: 35 }
+];
+
+function sortByAge(arr: Person[]): Person[] {
+  return insertionSort(arr, (a, b) => a.age - b.age);
+}
+
+// extended version that accepts a compare function
+export function insertionSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number
+): T[] {
+  const cmp = compareFn ?? ((a: T, b: T) => (a > b ? 1 : a < b ? -1 : 0));
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+    arr[j + 1] = key;
+  }
+  return arr;
+}
+
+console.log(sortByAge(people));
+/*
+[
+  { name: 'Anna', age: 22 },
+  { name: 'Zoe', age: 29 },
+  { name: 'Mike', age: 35 }
+]
+*/
