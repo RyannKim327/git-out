@@ -1,75 +1,67 @@
-/**
- * Binary search on a sorted array (ascending order).
- * @param arr   Sorted array of comparable items.
- * @param value Item you’re hunting for.
- * @param compare Optional comparison function:
- *                (a,b) => 0 if a==b, <0 if a<b, >0 if a>b.
- *                If omitted, '<'/'>' operators are used.
- * @returns Index of the value, or -1 if it isn’t present.
- */
-export function binarySearch<T>(
-  arr: readonly T[],
-  value: T,
-  compare?: (a: T, b: T) => number,
-): number {
-  let low = 0;
-  let high = arr.length;
+class Graph<T> {
+  private adjacency = new Map<T, Set<T>>();
 
-  const cmp = compare ?? ((a: T, b: T) => {
-    /* eslint-disable-next-line no-prototype-builtins */
-    if ((a as any as object).hasOwnProperty && typeof a === 'object' && typeof b === 'object') {
-      // For objects that implement `valueOf()` – optional
-      return (a as any) < b ? -1 : (a as any) > b ? 1 : 0;
-    }
-    return a < b ? -1 : a > b ? 1 : 0;
-  });
-
-  while (low < high) {
-    const mid = (low + high) >>> 1; // fast floor division by 2
-    const comp = cmp(arr[mid], value);
-
-    if (comp === 0) return mid;   // found it
-    if (comp < 0) low = mid + 1;  // value is higher
-    else high = mid;              // value is lower
+  addVertex(v: T) {
+    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
   }
 
-  return -1; // not found
+  addEdge(v: T, w: T, directed = false) {
+    this.addVertex(v);
+    this.addVertex(w);
+    this.adjacency.get(v)!.add(w);
+    if (!directed) this.adjacency.get(w)!.add(v);
+  }
+
+  neighbours(v: T): Iterable<T> {
+    return this.adjacency.get(v) || [];
+  }
+
+  vertices(): Iterable<T> {
+    return this.adjacency.keys();
+  }
 }
-const nums = [1, 3, 5, 7, 9, 11, 13];
-const idx = binarySearch(nums, 7); // → 3
+function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
+  const visited = new Set<T>();
+  const result: T[] = [];
 
-const words = ['apple', 'banana', 'cherry', 'date'];
-const wIdx = binarySearch(words, 'cherry'); // → 2
-export function binarySearchRecursive<T>(
-  arr: readonly T[],
-  value: T,
-  compare?: (a: T, b: T) => number,
-  low = 0,
-  high = arr.length - 1,
-): number {
-  if (low > high) return -1;
+  function visit(v: T) {
+    if (visited.has(v)) return;
+    visited.add(v);
+    result.push(v);
 
-  const cmp = compare ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+    for (const n of graph.neighbours(v)) visit(n);
+  }
 
-  const mid = (low + high) >>> 1;
-  const comp = cmp(arr[mid], value);
-
-  if (comp === 0) return mid;
-  return comp < 0
-    ? binarySearchRecursive(arr, value, compare, mid + 1, high)
-    : binarySearchRecursive(arr, value, compare, low, mid - 1);
+  visit(start);
+  return result;
 }
-interface Person { name: string; age: number; }
+function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
+  const stack: T[] = [start];
+  const visited = new Set<T>();
+  const result: T[] = [];
 
-const people: Person[] = [
-  { name: 'Alice', age: 28 },
-  { name: 'Bob', age: 35 },
-  { name: 'Carol', age: 41 },
-];
+  while (stack.length) {
+    const v = stack.pop()!;
+    if (visited.has(v)) continue;
 
-// Sorted by age
-const idx = binarySearch(
-  people,
-  { name: '', age: 35 },             // value (name ignored)
-  (a, b) => a.age - b.age
-); // → 1
+    visited.add(v);
+    result.push(v);
+
+    // Push neighbours in reverse order if you want the same order
+    // as the recursive version (depends on adjacency list ordering).
+    for (const n of graph.neighbours(v)) {
+      if (!visited.has(n)) stack.push(n);
+    }
+  }
+
+  return result;
+}
+const g = new Graph<string>();
+g.addEdge('A', 'B');
+g.addEdge('A', 'C');
+g.addEdge('B', 'D');
+g.addEdge('C', 'D');
+g.addEdge('D', 'E');
+
+console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
+console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
