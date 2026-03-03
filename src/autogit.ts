@@ -1,110 +1,59 @@
-// ──────────────────────────────────────────────────────────
-// 1. Graph representation
-// ──────────────────────────────────────────────────────────
-type Vertex = string | number;
+/**
+ * Shell sort – a simple, in‑place algorithm that improves on insertion sort.
+ * Sorts an array of numbers in ascending order.
+ *
+ * @param arr The array to sort (modified in place)
+ * @param compare Optional compare function (defaults to numeric comparison)
+ */
+export function shellSort(
+  arr: number[],
+  compare?: (a: number, b: number) => number
+): void {
+  const len = arr.length;
+  const cmp = compare ?? ((a, b) => a - b);
 
-// An adjacency list where each vertex maps to an array of its outgoing neighbours.
-class Graph {
-  private readonly edges: Map<Vertex, Vertex[]> = new Map();
+  // A common gap sequence: halving each time (Shell's original)
+  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Gapped insertion sort
+    for (let i = gap; i < len; i++) {
+      let temp = arr[i];
+      let j = i;
 
-  constructor(edges?: [Vertex, Vertex][]) {
-    if (edges) this.addEdges(edges);
-  }
-
-  /** Adds one or more directed edges to the graph. */
-  addEdges(edges: [Vertex, Vertex][]): void {
-    for (const [from, to] of edges) {
-      if (!this.edges.has(from)) this.edges.set(from, []);
-      this.edges.get(from)!.push(to);
-      // Ensure the destination vertex exists in the map so it shows up in the keys.
-      if (!this.edges.has(to)) this.edges.set(to, []);
-    }
-  }
-
-  /** Returns all vertices in the graph. */
-  vertices(): Vertex[] {
-    return Array.from(this.edges.keys());
-  }
-
-  /** Returns the neighbours of a given vertex. */
-  neighbours(v: Vertex): Vertex[] {
-    return this.edges.get(v) ?? [];
-  }
-}
-
-// ──────────────────────────────────────────────────────────
-// 2. DFS‑based topological sort
-// ──────────────────────────────────────────────────────────
-function topoSortDFS(g: Graph): Vertex[] | null {
-  const visited = new Set<Vertex>();
-  const temp = new Set<Vertex>();   // vertices currently on recursion stack
-  const order: Vertex[] = [];
-
-  const visit = (v: Vertex): boolean => {
-    if (temp.has(v)) return false; // cycle detected
-
-    if (!visited.has(v)) {
-      temp.add(v);
-      for (const nb of g.neighbours(v)) {
-        if (!visit(nb)) return false;
+      // Move elements that are greater than temp backward by 'gap' places
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
       }
-      temp.delete(v);
-      visited.add(v);
-      order.push(v);
+      // Bring temp into its spot
+      arr[j] = temp;
     }
-    return true;
-  };
-
-  for (const v of g.vertices()) {
-    if (!visit(v)) return null; // if a cycle is found, return null
   }
-
-  return order.reverse(); // reverse to get the correct order
 }
+const data = [40, 3, 10, 5, 1, 15];
+shellSort(data);
 
-// ──────────────────────────────────────────────────────────
-// 3. Kahn’s algorithm (BFS‑based)
-// ──────────────────────────────────────────────────────────
-function topoSortKahn(g: Graph): Vertex[] | null {
-  // Compute in‑degree of each vertex
-  const inDeg = new Map<Vertex, number>();
-  for (const v of g.vertices()) inDeg.set(v, 0);
-  for (const v of g.vertices()) {
-    for (const nb of g.neighbours(v)) {
-      inDeg.set(nb, (inDeg.get(nb) ?? 0) + 1);
+console.log(data); // [1, 3, 5, 10, 15, 40]
+export function shellSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): void {
+  const len = arr.length;
+  const cmp = compare ?? ((a, b) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
+
+  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
     }
   }
-
-  const queue: Vertex[] = [];
-  for (const [v, d] of inDeg) if (d === 0) queue.push(v);
-
-  const order: Vertex[] = [];
-  while (queue.length) {
-    const v = queue.shift()!;
-    order.push(v);
-    for (const nb of g.neighbours(v)) {
-      const d = inDeg.get(nb)! - 1;
-      inDeg.set(nb, d);
-      if (d === 0) queue.push(nb);
-    }
-  }
-
-  if (order.length !== g.vertices().length) return null; // cycle exists
-  return order;
 }
-
-// ──────────────────────────────────────────────────────────
-// 4. Demo / usage
-// ──────────────────────────────────────────────────────────
-const edges: [Vertex, Vertex][] = [
-  ['a', 'd'],
-  ['f', 'b'],
-  ['b', 'd'],
-  ['f', 'a'],
-  ['d', 'c']
-];
-
-const graph = new Graph(edges);
-
-console.log('DFS order:', topoSortDFS(graph));   // legal order or null
-console.log('Kahn order:', topoSortKahn(graph)); // same result
+shellSort(['banana', 'apple', 'pear'], (a, b) => a.localeCompare(b));
