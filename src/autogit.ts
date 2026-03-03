@@ -1,45 +1,32 @@
 /**
- * Returns the contiguous segment of `arr` that yields the highest possible sum.
+ * Returns the area of a triangle when you know its base and height.
  *
- * @param arr - Array of numbers (integer or float)
- * @returns An object containing:
- *   `maxSum`  – the total sum of the best segment
- *   `start`   – the index where the segment begins
- *   `end`     – the index where the segment ends (inclusive)
+ * @param base   The length of the triangle’s base.
+ * @param height The height (altitude) drawn to that base.
+ * @returns The area in whatever units the inputs are in.
  */
-function maxSubarray(arr: number[]) {
-  if (arr.length === 0) throw new Error('Array cannot be empty');
-
-  let bestSum = arr[0];
-  let currentSum = arr[0];
-  let bestStart = 0;
-  let bestEnd = 0;
-  let tempStart = 0;
-
-  for (let i = 1; i < arr.length; i++) {
-    const val = arr[i];
-
-    // Either start a new sub‑array at i or extend the existing one
-    if (currentSum + val < val) {
-      currentSum = val;
-      tempStart = i;       // new potential start
-    } else {
-      currentSum += val;   // keep extending
-    }
-
-    // Update the best segment seen so far
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
-  }
-
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+function triangleAreaFromBaseHeight(base: number, height: number): number {
+  return 0.5 * base * height;
 }
-const data = [-2, -3, 4, -1, -2, 1, 5, -3];
-const result = maxSubarray(data);
-console.log(result);
-// Expected output:
-// { maxSum: 7, start: 2, end: 6 }
-// (segment [4, -1, -2, 1, 5] sums to 7)
+/**
+ * Returns the area of a triangle given its three vertices.
+ *
+ * @param x1 x‑coordinate of the first vertex
+ * @param y1 y‑coordinate of the first vertex
+ * @param x2 x‑coordinate of the second vertex
+ * @param y2 y‑coordinate of the second vertex
+ * @param x3 x‑coordinate of the third vertex
+ * @param y3 y‑coordinate of the third vertex
+ * @returns The absolute area (non‑negative) of the triangle.
+ */
+function triangleAreaFromPoints(
+  x1: number, y1: number,
+  x2: number, y2: number,
+  x3: number, y3: number
+): number {
+  return Math.abs(
+    x1 * (y2 - y3) +
+    x2 * (y3 - y1) +
+    x3 * (y1 - y2)
+  ) / 2;
+}
