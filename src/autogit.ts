@@ -1,146 +1,45 @@
-// Node.ts
-export class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
+// 1️⃣  Install node‑fetch (or use the built‑in fetch in environments that have it)
+//    npm install node-fetch @types/node-fetch
+import fetch from "node-fetch";
 
-  constructor(value: T) {
-    this.value = value;
-  }
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
-// LinkedList.ts
-import { ListNode } from "./Node";
 
-export class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _length = 0;
+/**
+ * Fetch a single Todo by its numeric ID.
+ * @param id - The ID of the Todo to request.
+ * @returns Promises a Todo object.
+ */
+async function getTodoById(id: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
 
-  get length() {
-    return this._length;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+
+  // 2️⃣  Basic status check – throws if not 2xx
+  if (!response.ok) {
+    throw new Error(`Request failed with ${response.status} ${response.statusText}`);
   }
 
-  /* ---------- Basic Operations ---------- */
-
-  // Append a value to the end of the list.
-  push(value: T): void {
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      this.tail!.next = node;
-      this.tail = node;
-    }
-    this._length++;
-  }
-
-  // Prepend a value to the beginning of the list.
-  unshift(value: T): void {
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      node.next = this.head;
-      this.head = node;
-    }
-    this._length++;
-  }
-
-  // Remove and return the value at the head of the list.
-  shift(): T | null {
-    if (!this.head) return null;
-    const value = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null; // list became empty
-    this._length--;
-    return value;
-  }
-
-  // Remove and return the value at the tail of the list.
-  pop(): T | null {
-    if (!this.head) return null;
-
-    if (this.head === this.tail) {
-      const value = this.head.value;
-      this.head = this.tail = null;
-      this._length--;
-      return value;
-    }
-
-    // Walk to the node just before the tail.
-    let current = this.head;
-    while (current.next !== this.tail) {
-      current = current.next!;
-    }
-    const value = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-    this._length--;
-    return value;
-  }
-
-  /* ---------- Traversal & Search ---------- */
-
-  // Return the node at the given zero‑based index, or null if out of bounds.
-  getNodeAt(index: number): ListNode<T> | null {
-    if (index < 0 || index >= this._length) return null;
-    let current = this.head!;
-    for (let i = 0; i < index; i++) {
-      current = current.next!;
-    }
-    return current;
-  }
-
-  // Find the first value that satisfies the predicate.
-  find(predicate: (value: T) => boolean, startIndex = 0): T | null {
-    let current = this.getNodeAt(startIndex);
-    while (current) {
-      if (predicate(current.value)) return current.value;
-      current = current.next;
-    }
-    return null;
-  }
-
-  /* ---------- Utility ---------- */
-
-  // Convert the list to an array (useful for debugging or interoperability).
-  toArray(): T[] {
-    const out: T[] = [];
-    let current = this.head;
-    while (current) {
-      out.push(current.value);
-      current = current.next;
-    }
-    return out;
-  }
-
-  // Allow for… e.g. “for … of” iteration.
-  [Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    return {
-      next: () => ({
-        value: current?.value,
-        done: current === null,
-      }),
-    };
-  }
+  // 3️⃣  Parse the JSON body and return it as a Todo
+  const data = (await response.json()) as Todo;
+  return data;
 }
-import { LinkedList } from "./LinkedList";
 
-const numbers = new LinkedList<number>();
-numbers.push(10);
-numbers.push(20);
-numbers.unshift(5);   // list is now 5 -> 10 -> 20
-
-console.log(numbers.shift()); // 5
-console.log(numbers.pop());   // 20
-console.log(numbers.length);  // 1
-
-// Search
-numbers.push(30);
-numbers.push(40);
-console.log(numbers.find(v => v > 15)); // 20
-
-// Iterate
-for (const n of numbers) {
-  console.log(n); // 10, 30, 40
-}
+/**
+ * Demo of calling `getTodoById` and logging the result or an error.
+ */
+(async () => {
+  try {
+    const todo = await getTodoById(3);
+    console.log("Fetched Todo:", todo);
+  } catch (err) {
+    console.error("Error fetching Todo:", err);
+  }
+})();
