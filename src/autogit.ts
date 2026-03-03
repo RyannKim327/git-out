@@ -1,19 +1,24 @@
-// Original
-const original = "   \tHello, \nWorld!   ";
-
-// 1. trim (only outer whitespace)
-const trimmed = original.trim();
-console.log(trimmed); // "Hello, \nWorld!"
-
-// 2. remove all literal spaces only
-const noSpaces = original.replace(/ /g, "");
-console.log(noSpaces); // "\tHello,\nWorld!   "
-
-// 3. strip *every* whitespace
-const totallyClean = original.replace(/\s+/g, "");
-console.log(totallyClean); // "Hello,World!"
-function removeAllWhitespace(s: string): string {
-  return s.replace(/\s+/g, "");
+/**
+ * Very light‑weight e‑mail validator – good for quick UI checks or APIs.
+ * It agrees with the majority of real‑world addresses:   local@domain.com
+ *
+ * @param address – the string to test
+ * @returns true if the format looks like an e‑mail, false otherwise
+ */
+export function isValidEmail(address: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(address);
 }
+import validator from 'email-validator';
 
-const cleaned = removeAllWhitespace("  a b\tc\n "); // "abc"
+validator.validate('test@example.com'); // true
+const tests = [
+  'alice@example.com',
+  'bob@sub.domain.org',
+  'invalid-email',
+  'spaces@invalid .com',
+  '@missing.local',
+  'user@',
+];
+
+tests.forEach(email => console.log(`${email}: ${isValidEmail(email)}`));
