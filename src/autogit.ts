@@ -1,19 +1,41 @@
-function removeVowels(str: string): string {
-  // The regex /[aeiou]/gi matches any vowel, case‑insensitively
-  return str.replace(/[aeiou]/gi, '');
-}
+// schedule.ts
+import cron from 'node-cron';
 
-// Examples
-console.log(removeVowels('Hello World'));    // "Hll Wrld"
-console.log(removeVowels('Typescript'));     // "TypScrpt"
-console.log(removeVowels('AEIOU aeioU'));    // ""
-function removeAllVowels(str: string): string {
-  // Matches any vowel character in the Latin vowel block
-  return str.replace(/[aeiouAEIOU]/g, ''); // still plain Latin
-  // OR with property escapes (if your environment supports it):
-  // return str.replace(/\p{Script=Latin}&&[aeiou]/gi, '');
-}
-function removeVowels(arr: string): string {
-  const vowels = new Set('aeiouAEIOU');
-  return arr.split('').filter(ch => !vowels.has(ch)).join('');
-}
+let runCount = 0;
+const maxRuns = 5;
+
+// Pick a playful string at random each time the job fires.
+const messages = [
+  "🍕 Time for a pizza break!",
+  "🐱‍🏍 Speedy coding vibes!",
+  "🧐 Did you know: A group of flamingos is called a flamboyance?",
+  "🚀 Launching into the cosmos…",
+  "🔮 Future content will appear here!"
+];
+
+const job = cron.schedule('* * * * *', () => {
+  // Bot says something random
+  const msg = messages[Math.floor(Math.random() * messages.length)];
+  console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
+
+  runCount += 1;
+  if (runCount >= maxRuns) {
+    console.log('Stopping the cron job after 5 runs.');
+    job.stop();
+  }
+}, {
+  scheduled: true,
+  timezone: "UTC"
+});
+
+console.log('Cron job started—will run every minute up to 5 times.');
+# 1. Init a barebones project if you haven’t already
+npm init -y
+
+# 2. Install the cron package and types for Node
+npm i node-cron
+npm i -D @types/node @types/node-cron typescript ts-node
+
+# 3. Compile and run
+npx ts-node schedule.ts
+[12:00:00 AM] 🚀 Launching into the cosmos…
