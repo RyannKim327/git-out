@@ -1,75 +1,101 @@
-/**
- * Binary search on a sorted array (ascending order).
- * @param arr   Sorted array of comparable items.
- * @param value Item you’re hunting for.
- * @param compare Optional comparison function:
- *                (a,b) => 0 if a==b, <0 if a<b, >0 if a>b.
- *                If omitted, '<'/'>' operators are used.
- * @returns Index of the value, or -1 if it isn’t present.
- */
-export function binarySearch<T>(
-  arr: readonly T[],
-  value: T,
-  compare?: (a: T, b: T) => number,
-): number {
-  let low = 0;
-  let high = arr.length;
+// A node inside the trie
+class TrieNode {
+  // Map from a character to the next node in the path
+  children: Map<string, TrieNode> = new Map();
 
-  const cmp = compare ?? ((a: T, b: T) => {
-    /* eslint-disable-next-line no-prototype-builtins */
-    if ((a as any as object).hasOwnProperty && typeof a === 'object' && typeof b === 'object') {
-      // For objects that implement `valueOf()` – optional
-      return (a as any) < b ? -1 : (a as any) > b ? 1 : 0;
+  // Marks the end of a word
+  isEndOfWord: boolean = false;
+
+  constructor(public readonly char: string | null = null) {}
+}
+
+// The trie itself
+export class Trie {
+  private root = new TrieNode();
+
+  /** Inserts a word into the trie. */
+  insert(word: string): void {
+    if (!word) return;               // ignore empty strings
+    let node = this.root;
+
+    for (const ch of word) {
+      // Grab the child if it already exists; otherwise create a new node
+      let next = node.children.get(ch);
+      if (!next) {
+        next = new TrieNode(ch);
+        node.children.set(ch, next);
+      }
+      node = next;
     }
-    return a < b ? -1 : a > b ? 1 : 0;
-  });
 
-  while (low < high) {
-    const mid = (low + high) >>> 1; // fast floor division by 2
-    const comp = cmp(arr[mid], value);
-
-    if (comp === 0) return mid;   // found it
-    if (comp < 0) low = mid + 1;  // value is higher
-    else high = mid;              // value is lower
+    // Mark that a complete word ends here
+    node.isEndOfWord = true;
   }
 
-  return -1; // not found
+  /** Returns true if the word is in the trie. */
+  search(word: string): boolean {
+    if (!word) return false;
+    let node = this.root;
+
+    for (const ch of word) {
+      const next = node.children.get(ch);
+      if (!next) return false;      // path breaks → word absent
+      node = next;
+    }
+
+    return node.isEndOfWord;
+  }
+
+  /** Checks if any word in the trie starts with the given prefix. */
+  startsWith(prefix: string): boolean {
+    if (!prefix) return false;
+    let node = this.root;
+
+    for (const ch of prefix) {
+      const next = node.children.get(ch);
+      if (!next) return false;
+      node = next;
+    }
+
+    return true;
+  }
+
+  /** (Optional) Returns the list of all words in the trie that start with a given prefix. */
+  autocomplete(prefix: string): string[] {
+    const results: string[] = [];
+    let node = this.root;
+
+    // Walk to the node representing the prefix
+    for (const ch of prefix) {
+      const next = node.children.get(ch);
+      if (!next) return results;   // empty list if prefix not present
+      node = next;
+    }
+
+    // Depth‑first walk from that node, collecting words
+    const dfs = (n: TrieNode, acc: string) => {
+      if (n.isEndOfWord) results.push(acc);
+      for (const [ch, child] of n.children.entries()) {
+        dfs(child, acc + ch);
+      }
+    };
+
+    dfs(node, prefix);
+    return results;
+  }
 }
-const nums = [1, 3, 5, 7, 9, 11, 13];
-const idx = binarySearch(nums, 7); // → 3
+const trie = new Trie();
 
-const words = ['apple', 'banana', 'cherry', 'date'];
-const wIdx = binarySearch(words, 'cherry'); // → 2
-export function binarySearchRecursive<T>(
-  arr: readonly T[],
-  value: T,
-  compare?: (a: T, b: T) => number,
-  low = 0,
-  high = arr.length - 1,
-): number {
-  if (low > high) return -1;
+trie.insert('cat');
+trie.insert('car');
+trie.insert('cart');
+trie.insert('dog');
 
-  const cmp = compare ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+console.log(trie.search('cat'));      // true
+console.log(trie.search('cab'));      // false
 
-  const mid = (low + high) >>> 1;
-  const comp = cmp(arr[mid], value);
+console.log(trie.startsWith('ca'));   // true
+console.log(trie.startsWith('do'));   // true
+console.log(trie.startsWith('droll'));// false
 
-  if (comp === 0) return mid;
-  return comp < 0
-    ? binarySearchRecursive(arr, value, compare, mid + 1, high)
-    : binarySearchRecursive(arr, value, compare, low, mid - 1);
-}
-interface Person { name: string; age: number; }
-
-const people: Person[] = [
-  { name: 'Alice', age: 28 },
-  { name: 'Bob', age: 35 },
-  { name: 'Carol', age: 41 },
-];
-
-// Sorted by age
-const idx = binarySearch(
-  people,
-  { name: '', age: 35 },             // value (name ignored)
-  (a, b) => a.age - b.age
-); // → 1
+console.log(trie.autocomplete('ca')); // ['cat', 'car', 'cart']
