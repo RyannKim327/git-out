@@ -1,16 +1,40 @@
 /**
- * Returns a whole number between min and max (both inclusive).
- *
- * @param min The smallest possible value you want (usually a number ≥ 0)
- * @param max The largest possible value you want
+ * Binary search – recursive.  
+ * @param arr        — sorted array
+ * @param target     — value to find
+ * @param compare    — optional comparison function (a, b) => number
+ *                     returns <0 if a<b, 0 if a==b, >0 if a>b
+ * @returns index of `target` or -1 if not found
  */
-function randomIntInRange(min: number, max: number): number {
-  // Clamp the inputs so min <= max
-  const [low, high] = min <= max ? [min, max] : [max, min];
+function binarySearchRec<T>(
+  arr: T[],
+  target: T,
+  compare?: (a: T, b: T) => number
+): number {
+  // Provide a default numeric comparator
+  const cmp = compare ?? ((a: any, b: any) => a - b);
 
-  // Math.random() → [0, 1).  Scale it to the desired width,
-  // then shift by the lower bound and round down.
-  return Math.floor(Math.random() * (high - low + 1)) + low;
+  const search = (low: number, high: number): number => {
+    if (low > high) return -1;          // base case: not found
+
+    const mid = Math.floor((low + high) / 2);
+    const cmpResult = cmp(arr[mid], target);
+
+    if (cmpResult === 0) return mid;    // target is at mid
+    if (cmpResult < 0) return search(mid + 1, high); // target is right
+    return search(low, mid - 1);        // target is left
+  };
+
+  return search(0, arr.length - 1);
 }
-const rand = randomIntInRange(5, 10);
-console.log(rand); // → a whole number 5, 6, 7, 8, 9, or 10
+// Numbers – no comparator needed
+const nums = [1, 3, 5, 7, 9, 11, 13];
+console.log(binarySearchRec(nums, 7));  // → 3
+console.log(binarySearchRec(nums, 2));  // → -1
+
+// Strings – supply a comparator
+const words = ["apple", "banana", "cherry", "date"];
+const stringCmp = (a: string, b: string) => a.localeCompare(b);
+
+console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
+console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
