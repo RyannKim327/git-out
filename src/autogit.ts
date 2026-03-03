@@ -1,45 +1,67 @@
-// 1️⃣  Install node‑fetch (or use the built‑in fetch in environments that have it)
-//    npm install node-fetch @types/node-fetch
-import fetch from "node-fetch";
+class Graph<T> {
+  private adjacency = new Map<T, Set<T>>();
 
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
-/**
- * Fetch a single Todo by its numeric ID.
- * @param id - The ID of the Todo to request.
- * @returns Promises a Todo object.
- */
-async function getTodoById(id: number): Promise<Todo> {
-  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-  });
-
-  // 2️⃣  Basic status check – throws if not 2xx
-  if (!response.ok) {
-    throw new Error(`Request failed with ${response.status} ${response.statusText}`);
+  addVertex(v: T) {
+    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
   }
 
-  // 3️⃣  Parse the JSON body and return it as a Todo
-  const data = (await response.json()) as Todo;
-  return data;
-}
-
-/**
- * Demo of calling `getTodoById` and logging the result or an error.
- */
-(async () => {
-  try {
-    const todo = await getTodoById(3);
-    console.log("Fetched Todo:", todo);
-  } catch (err) {
-    console.error("Error fetching Todo:", err);
+  addEdge(v: T, w: T, directed = false) {
+    this.addVertex(v);
+    this.addVertex(w);
+    this.adjacency.get(v)!.add(w);
+    if (!directed) this.adjacency.get(w)!.add(v);
   }
-})();
+
+  neighbours(v: T): Iterable<T> {
+    return this.adjacency.get(v) || [];
+  }
+
+  vertices(): Iterable<T> {
+    return this.adjacency.keys();
+  }
+}
+function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
+  const visited = new Set<T>();
+  const result: T[] = [];
+
+  function visit(v: T) {
+    if (visited.has(v)) return;
+    visited.add(v);
+    result.push(v);
+
+    for (const n of graph.neighbours(v)) visit(n);
+  }
+
+  visit(start);
+  return result;
+}
+function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
+  const stack: T[] = [start];
+  const visited = new Set<T>();
+  const result: T[] = [];
+
+  while (stack.length) {
+    const v = stack.pop()!;
+    if (visited.has(v)) continue;
+
+    visited.add(v);
+    result.push(v);
+
+    // Push neighbours in reverse order if you want the same order
+    // as the recursive version (depends on adjacency list ordering).
+    for (const n of graph.neighbours(v)) {
+      if (!visited.has(n)) stack.push(n);
+    }
+  }
+
+  return result;
+}
+const g = new Graph<string>();
+g.addEdge('A', 'B');
+g.addEdge('A', 'C');
+g.addEdge('B', 'D');
+g.addEdge('C', 'D');
+g.addEdge('D', 'E');
+
+console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
+console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
