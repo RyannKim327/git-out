@@ -1,39 +1,41 @@
-class ListNode<T> {
-    constructor(public val: T, public next: ListNode<T> | null = null) {}
+interface ListNode<T = any> {
+  value: T;
+  next?: ListNode<T>;
 }
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-    if (!head) return false;
+/**
+ * Counts nodes in a linked list.
+ * @param head The first node (or undefined if the list is empty).
+ * @returns Number of nodes in the list.
+ */
+function length<T>(head: ListNode<T> | undefined): number {
+  let count = 0;
+  let current = head;
 
-    let slow: ListNode<T> | null = head;
-    let fast: ListNode<T> | null = head;
-
-    while (fast !== null && fast.next !== null) {
-        slow = slow!.next;           // move 1 step
-        fast = fast.next.next;       // move 2 steps
-
-        if (slow === fast) {         // same node → cycle
-            return true;
-        }
-    }
-    return false;                    // fast reached end → no cycle
+  while (current) {
+    count++;
+    current = current.next;   // follow the chain
+  }
+  return count;
 }
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-    const visited = new Set<ListNode<T>>();
-
-    let current: ListNode<T> | null = head;
-    while (current !== null) {
-        if (visited.has(current)) return true; // already seen
-        visited.add(current);
-        current = current.next;
-    }
-    return false;
+function lengthRecursive<T>(node: ListNode<T> | undefined): number {
+  return node ? 1 + lengthRecursive(node.next) : 0;
 }
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b;  // 1 → 2 → 3
-b.next = c;
-c.next = a;  // cycle back to 1
+function* nodes<T>(head: ListNode<T> | undefined) {
+  let cur = head;
+  while (cur) {
+    yield cur;
+    cur = cur.next;
+  }
+}
 
-console.log(hasCycle(a));        // → true
-console.log(hasCycleWithSet(a)); // → true
+function lengthFromIterable<T>(head: ListNode<T> | undefined): number {
+  let count = 0;
+  for (const _ of nodes(head)) count++;
+  return count;
+}
+const third = { value: 3 } as ListNode<number>;
+const second = { value: 2, next: third };
+const first  = { value: 1, next: second };
+
+console.log(length(first));           // 3
+console.log(lengthRecursive(first));  // 3
