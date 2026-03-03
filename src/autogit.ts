@@ -1,112 +1,47 @@
-/**
- * Generic type that can be compared with the <=> operator.
- * For custom objects you can supply a comparator function.
- */
-type Comparable = number | string | boolean;
-
-/**
- * Swap two elements in an array
- */
-function swap<T>(arr: T[], i: number, j: number): void {
-  const tmp = arr[i];
-  arr[i] = arr[j];
-  arr[j] = tmp;
+class TreeNode<T = any> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
+function countLeaves<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;                         // empty subtree → 0 leaves
 
-/**
- * Heapify the subtree rooted at `i`, assuming that the binary trees
- * rooted at its children are already heaps.
- *
- * @param arr    the array
- * @param heapSize the current size of the heap
- * @param i      the index of the root of the subtree
- * @param compare comparison function (a, b) => true if a > b
- */
-function heapify<T>(
-  arr: T[],
-  heapSize: number,
-  i: number,
-  compare: (a: T, b: T) => boolean
-): void {
-  let largest = i;
-  const left   = 2 * i + 1;
-  const right  = 2 * i + 2;
+  // If both children are missing, this node itself is a leaf
+  if (!root.left && !root.right) return 1;
 
-  if (left < heapSize && compare(arr[left], arr[largest])) {
-    largest = left;
-  }
-  if (right < heapSize && compare(arr[right], arr[largest])) {
-    largest = right;
-  }
-
-  if (largest !== i) {
-    swap(arr, i, largest);
-    heapify(arr, heapSize, largest, compare);
-  }
+  // Otherwise, count leaves in the children
+  return countLeaves(root.left) + countLeaves(root.right);
 }
+function countLeavesIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
 
-/**
- * Build a max‑heap from an unsorted array
- */
-function buildMaxHeap<T>(
-  arr: T[],
-  compare: (a: T, b: T) => boolean
-): void {
-  const heapSize = arr.length;
-  // Start from the last non‑leaf node
-  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
-    heapify(arr, heapSize, i, compare);
+  let stack: Array<TreeNode<T>> = [root];
+  let leafCount = 0;
+
+  while (stack.length) {
+    const node = stack.pop() as TreeNode<T>;
+
+    // A leaf if it has no children
+    if (!node.left && !node.right) {
+      leafCount++;
+    } else {
+      // Push existing children to process later
+      if (node.left) stack.push(node.left);
+      if (node.right) stack.push(node.right);
+    }
   }
+
+  return leafCount;
 }
+const root = new TreeNode(1,
+  new TreeNode(2,
+    new TreeNode(4),           // leaf
+    new TreeNode(5)            // leaf
+  ),
+  new TreeNode(3)              // leaf
+);
 
-/**
- * Heap sort – sorts `arr` *in place*.
- *
- * @param arr      the array to sort
- * @param compare  optional comparator; defaults to (a > b)
- */
-export function heapSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => boolean
-): void {
-  const cmp = compare ?? ((a: any, b: any) => a > b);
-
-  buildMaxHeap(arr, cmp);
-
-  for (let i = arr.length - 1; i > 0; i--) {
-    // The max element is at index 0; move it to its final place
-    swap(arr, 0, i);
-    // Re‑heapify the reduced heap
-    heapify(arr, i, 0, cmp);
-  }
-}
-
-/* --------------------------------------------------------------------- */
-/* Example usage & tiny tests                                           */
-/* --------------------------------------------------------------------- */
-
-// 1️⃣ Numbers ---------------------------------------------------------
-const nums = [5, 3, 8, 4, 1, 7, 2, 6];
-heapSort(nums);
-console.log('Sorted numbers:', nums); // [1, 2, 3, 4, 5, 6, 7, 8]
-
-// 2️⃣ Strings ---------------------------------------------------------
-const words = ['pear', 'apple', 'orange', 'banana'];
-heapSort(words); // default lexicographic order
-console.log('Sorted words:', words); // ['apple', 'banana', 'orange', 'pear']
-
-// 3️⃣ Custom objects --------------------------------------------------
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob',   age: 22 },
-  { name: 'Eva',   age: 27 }
-];
-// Sort by age ascending
-heapSort(people, (a, b) => a.age > b.age);
-console.log('People sorted by age:', people);
-/* [
-  { name: 'Bob', age: 22 },
-  { name: 'Eva', age: 27 },
-  { name: 'Alice', age: 30 }
-] */
+console.log(countLeaves(root));        // → 3
+console.log(countLeavesIter(root));    // → 3
