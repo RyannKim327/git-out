@@ -1,26 +1,45 @@
-function maxOfArray(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;   // or throw an error if you prefer
-  return Math.max(...nums);
-}
-function maxOfArray(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;
-  return nums.reduce((max, n) => (n > max ? n : max), nums[0]);
-}
-function maxOfArray(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;
+// 1️⃣  Install node‑fetch (or use the built‑in fetch in environments that have it)
+//    npm install node-fetch @types/node-fetch
+import fetch from "node-fetch";
 
-  let max = nums[0];
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] > max) {
-      max = nums[i];
-    }
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
+/**
+ * Fetch a single Todo by its numeric ID.
+ * @param id - The ID of the Todo to request.
+ * @returns Promises a Todo object.
+ */
+async function getTodoById(id: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+
+  // 2️⃣  Basic status check – throws if not 2xx
+  if (!response.ok) {
+    throw new Error(`Request failed with ${response.status} ${response.statusText}`);
   }
-  return max;
+
+  // 3️⃣  Parse the JSON body and return it as a Todo
+  const data = (await response.json()) as Todo;
+  return data;
 }
-const myNumbers = [12, 7, 22, 5, 18];
-console.log(maxOfArray(myNumbers)); // 22
-function maxWithFallback(nums: number[], fallback = 0): number {
-  return nums.length > 0
-    ? nums.reduce((a, b) => Math.max(a, b))
-    : fallback;
-}
+
+/**
+ * Demo of calling `getTodoById` and logging the result or an error.
+ */
+(async () => {
+  try {
+    const todo = await getTodoById(3);
+    console.log("Fetched Todo:", todo);
+  } catch (err) {
+    console.error("Error fetching Todo:", err);
+  }
+})();
