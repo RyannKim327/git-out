@@ -1,21 +1,51 @@
-/**
- * Return the intersection of two arrays.
- *
- * @param a First array
- * @param b Second array
- * @returns Array containing only the values that appear in both `a` and `b`
- */
-export function intersection<T>(a: T[], b: T[]): T[] {
-  // Turn the second array into a Set for O(1) look‑ups.
-  const lookup = new Set(b);
-
-  // Keep every element of `a` that also exists in the Set.
-  return a.filter(item => lookup.has(item));
+// 1️⃣ Tree node definition
+interface TreeNode {
+  val: number;          // value is irrelevant for diameter
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
 
-// Example usage:
-const colors1 = ['red', 'green', 'blue', 'green'];
-const colors2 = ['cyan', 'green', 'red', 'yellow'];
+// 2️⃣ Main diameter function
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let diameter = 0;                 // global accumulator
 
-const commonColors = intersection(colors1, colors2);
-console.log(commonColors); // → ['red', 'green', 'green']
+  function dfs(node: TreeNode | null): number {
+    if (!node) return 0;            // height of empty subtree
+
+    // Recursively find heights of left/right subtrees
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
+
+    // Path through current node (in edges)
+    const pathThrough = leftHeight + rightHeight;
+
+    // Update global diameter if this is the largest seen so far
+    diameter = Math.max(diameter, pathThrough);
+
+    // Return height from this node up to a leaf
+    return 1 + Math.max(leftHeight, rightHeight);
+  }
+
+  dfs(root);
+  return diameter;
+}
+// Example tree:
+//      1
+//     / \
+//    2   3
+//   / \
+//  4   5
+const tree: TreeNode = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: null, right: null },
+    right: { val: 5, left: null, right: null },
+  },
+  right: { val: 3, left: null, right: null },
+};
+
+console.log(diameterOfBinaryTree(tree)); // Output: 3
+// Explanation: path 4‑2‑1‑3 uses 3 edges
+console.log(diameterOfBinaryTree(null));           // 0
+console.log(diameterOfBinaryTree({ val: 42 }));    // 0
