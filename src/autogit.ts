@@ -1,45 +1,16 @@
 /**
- * Returns the contiguous segment of `arr` that yields the highest possible sum.
+ * Returns a whole number between min and max (both inclusive).
  *
- * @param arr - Array of numbers (integer or float)
- * @returns An object containing:
- *   `maxSum`  – the total sum of the best segment
- *   `start`   – the index where the segment begins
- *   `end`     – the index where the segment ends (inclusive)
+ * @param min The smallest possible value you want (usually a number ≥ 0)
+ * @param max The largest possible value you want
  */
-function maxSubarray(arr: number[]) {
-  if (arr.length === 0) throw new Error('Array cannot be empty');
+function randomIntInRange(min: number, max: number): number {
+  // Clamp the inputs so min <= max
+  const [low, high] = min <= max ? [min, max] : [max, min];
 
-  let bestSum = arr[0];
-  let currentSum = arr[0];
-  let bestStart = 0;
-  let bestEnd = 0;
-  let tempStart = 0;
-
-  for (let i = 1; i < arr.length; i++) {
-    const val = arr[i];
-
-    // Either start a new sub‑array at i or extend the existing one
-    if (currentSum + val < val) {
-      currentSum = val;
-      tempStart = i;       // new potential start
-    } else {
-      currentSum += val;   // keep extending
-    }
-
-    // Update the best segment seen so far
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
-  }
-
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+  // Math.random() → [0, 1).  Scale it to the desired width,
+  // then shift by the lower bound and round down.
+  return Math.floor(Math.random() * (high - low + 1)) + low;
 }
-const data = [-2, -3, 4, -1, -2, 1, 5, -3];
-const result = maxSubarray(data);
-console.log(result);
-// Expected output:
-// { maxSum: 7, start: 2, end: 6 }
-// (segment [4, -1, -2, 1, 5] sums to 7)
+const rand = randomIntInRange(5, 10);
+console.log(rand); // → a whole number 5, 6, 7, 8, 9, or 10
