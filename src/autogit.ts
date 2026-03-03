@@ -1,81 +1,146 @@
-//   ┌─── Imports ────────────────────────────────────────────────────────┐
-import { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
+// Node.ts
+export class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
 
-//   ┌─── Types ───────────────────────────────────────────────────────────────┐
-interface TodoItem {
-  id: number;
-  title: string;
-  completed: boolean;
+  constructor(value: T) {
+    this.value = value;
+  }
 }
+// LinkedList.ts
+import { ListNode } from "./Node";
 
-//   ┌─── Async helper ────────────────────────────────────────────────────────┐
-async function fetchTodos(): Promise<TodoItem[]> {
-  const url = 'https://jsonplaceholder.typicode.com/todos?_limit=5';
+export class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _length = 0;
 
-  // Simulate a "slow" network: optional, just for demo
-  await new Promise(r => setTimeout(r, 800));
+  get length() {
+    return this._length;
+  }
 
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`❌ ${response.status} ${response.statusText}`);
+  /* ---------- Basic Operations ---------- */
 
-  const json = await response.json();
-  // Map to our interface – TypeScript will check types
-  return json.map((x: any) => ({
-    id: x.id,
-    title: x.title,
-    completed: x.completed,
-  }));
-}
-
-//   ┌─── Component that uses the async task ──────────────────────────────────┐
-export default function AsyncExample() {
-  const [todos, setTodos] = useState<TodoItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await fetchTodos();
-      console.log('Fetched:', data);
-      setTodos(data);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Unknown error';
-      console.warn(msg);
-      setError(msg);
-    } finally {
-      setLoading(false);
+  // Append a value to the end of the list.
+  push(value: T): void {
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      this.tail!.next = node;
+      this.tail = node;
     }
-  };
+    this._length++;
+  }
 
-  // Run once on mount
-  useEffect(() => {
-    load();
-  }, []);
+  // Prepend a value to the beginning of the list.
+  unshift(value: T): void {
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      node.next = this.head;
+      this.head = node;
+    }
+    this._length++;
+  }
 
-  return (
-    <View style={styles.container}>
-      {loading && <ActivityIndicator size="large" />}
-      {error && <Text style={styles.error}>{error}</Text>}
-      {!loading && !error && (
-        <>
-          {todos.map(t => (
-            <Text key={t.id} style={styles.todo}>
-              {t.completed ? '✅' : '🕒'} {t.title}
-            </Text>
-          ))}
-        </>
-      )}
-      <Button title="Reload" onPress={load} disabled={loading} />
-    </View>
-  );
+  // Remove and return the value at the head of the list.
+  shift(): T | null {
+    if (!this.head) return null;
+    const value = this.head.value;
+    this.head = this.head.next;
+    if (!this.head) this.tail = null; // list became empty
+    this._length--;
+    return value;
+  }
+
+  // Remove and return the value at the tail of the list.
+  pop(): T | null {
+    if (!this.head) return null;
+
+    if (this.head === this.tail) {
+      const value = this.head.value;
+      this.head = this.tail = null;
+      this._length--;
+      return value;
+    }
+
+    // Walk to the node just before the tail.
+    let current = this.head;
+    while (current.next !== this.tail) {
+      current = current.next!;
+    }
+    const value = this.tail!.value;
+    current.next = null;
+    this.tail = current;
+    this._length--;
+    return value;
+  }
+
+  /* ---------- Traversal & Search ---------- */
+
+  // Return the node at the given zero‑based index, or null if out of bounds.
+  getNodeAt(index: number): ListNode<T> | null {
+    if (index < 0 || index >= this._length) return null;
+    let current = this.head!;
+    for (let i = 0; i < index; i++) {
+      current = current.next!;
+    }
+    return current;
+  }
+
+  // Find the first value that satisfies the predicate.
+  find(predicate: (value: T) => boolean, startIndex = 0): T | null {
+    let current = this.getNodeAt(startIndex);
+    while (current) {
+      if (predicate(current.value)) return current.value;
+      current = current.next;
+    }
+    return null;
+  }
+
+  /* ---------- Utility ---------- */
+
+  // Convert the list to an array (useful for debugging or interoperability).
+  toArray(): T[] {
+    const out: T[] = [];
+    let current = this.head;
+    while (current) {
+      out.push(current.value);
+      current = current.next;
+    }
+    return out;
+  }
+
+  // Allow for… e.g. “for … of” iteration.
+  [Symbol.iterator](): Iterator<T> {
+    let current = this.head;
+    return {
+      next: () => ({
+        value: current?.value,
+        done: current === null,
+      }),
+    };
+  }
 }
+import { LinkedList } from "./LinkedList";
 
-//   ┌─── Styles ───────────────────────────────────────────────────────────────┐
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center' },
-  todo: { fontSize: 18, marginVertical: 4 },
-  error: { color: 'red', marginBottom: 12 },
-});
+const numbers = new LinkedList<number>();
+numbers.push(10);
+numbers.push(20);
+numbers.unshift(5);   // list is now 5 -> 10 -> 20
+
+console.log(numbers.shift()); // 5
+console.log(numbers.pop());   // 20
+console.log(numbers.length);  // 1
+
+// Search
+numbers.push(30);
+numbers.push(40);
+console.log(numbers.find(v => v > 15)); // 20
+
+// Iterate
+for (const n of numbers) {
+  console.log(n); // 10, 30, 40
+}
