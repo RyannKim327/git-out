@@ -1,56 +1,47 @@
-Let   S = s1 s2 … sn
-      T = t1 t2 … tm
-
-DP[i][j] = length of the longest common suffix that ends at S[i‑1] and T[j‑1]
-DP[i][j] = DP[i-1][j-1] + 1
 /**
- * Returns the longest common substring of `a` and `b`.
- * If there are multiple substrings of the same maximum length,
- * the first one found in `a` will be returned.
+ * Checks whether a string is a palindrome (case‑insensitive,
+ * ignoring anything that isn’t a letter or a digit).
+ *
+ * Time   : O(n)
+ * Space  : O(1)   – only a couple of integer variables
  */
-export function longestCommonSubstring(a: string, b: string): string {
-  const n = a.length, m = b.length;
-  if (n === 0 || m === 0) return '';
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  // `prev` holds DP values for row i-1
-  const prev = new Array(m + 1).fill(0);
-  // `curr` holds DP values for current row i
-  const curr = new Array(m + 1).fill(0);
+  const isAlnum = (ch: string): boolean => {
+    const code = ch.charCodeAt(0);
+    // '0'‑'9'
+    if (code >= 48 && code <= 57) return true;
+    // 'A'‑'Z'
+    if (code >= 65 && code <= 90) return true;
+    // 'a'‑'z'
+    if (code >= 97 && code <= 122) return true;
+    return false;
+  };
 
-  let maxLen = 0;          // longest length so far
-  let maxEndIndexA = 0;    // index in `a` where this substring ends
+  while (left < right) {
+    // Skip non‑alphanumeric characters from the left
+    while (left < right && !isAlnum(s[left])) left++;
+    // Skip non‑alphanumeric characters from the right
+    while (left < right && !isAlnum(s[right])) right--;
 
-  for (let i = 1; i <= n; i++) {
-    // Iterate columns
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        curr[j] = prev[j - 1] + 1;
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          maxEndIndexA = i - 1;   // keep the end idx in a
-        }
-      } else {
-        curr[j] = 0;
-      }
-    }
+    if (left >= right) break;          // Nothing left to compare
 
-    // Swap rows for next iteration
-    //  curr becomes prev, prev becomes curr (reuse the same arrays)
-    for (let j = 0; j <= m; j++) {
-      prev[j] = curr[j];
-      curr[j] = 0;   // reset current row for the next round
-    }
+    const lc = s[left].toLowerCase();
+    const rc = s[right].toLowerCase();
+
+    if (lc !== rc) return false;
+
+    left++;
+    right--;
   }
 
-  return a.slice(maxEndIndexA - maxLen + 1, maxEndIndexA + 1);
+  return true;
 }
-import { longestCommonSubstring } from './common-substring';
-
-const a = "ABABCDA";
-const b = "CBADABABC";
-
-console.log(longestCommonSubstring(a, b)); // → "ABC"
-console.log(longestCommonSubstring('foo', ''));          // ''
-console.log(longestCommonSubstring('abc', 'xyz'));       // ''
-console.log(longestCommonSubstring('same', 'same'));     // 'same'
-console.log(longestCommonSubstring('aaaaa', 'bbaaa'));   // 'aaa'
+while (left < right) {
+  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
+  left++;
+  right--;
+}
+return true;
