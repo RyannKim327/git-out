@@ -1,92 +1,79 @@
-if a[j] < a[i] → candidate to extend the sequence ending at j
-/**
- * Returns the LIS of the input array.
- * O(n²) time, O(n) extra space.
- */
-function longestIncreasingSubsequenceDP(arr: number[]): number[] {
-  const n = arr.length;
-  if (n === 0) return [];
-
-  // `len[i]` – length of LIS ending at i
-  const len = new Array(n).fill(1);
-  // `prev[i]` – the previous index in the LIS that ends at i
-  const prev = new Array(n).fill(-1);
-
-  let bestIdx = 0;          // index of the overall best LIS
-
-  for (let i = 1; i < n; i++) {
-    for (let j = 0; j < i; j++) {
-      if (arr[j] < arr[i] && len[j] + 1 > len[i]) {
-        len[i] = len[j] + 1;
-        prev[i] = j;
-      }
-    }
-    if (len[i] > len[bestIdx]) bestIdx = i;
-  }
-
-  /* ---------- reconstruct the sequence ---------- */
-  const result: number[] = [];
-  for (let k = bestIdx; k !== -1; k = prev[k]) {
-    result.push(arr[k]);
-  }
-  return result.reverse();
+// A simple graph representation.
+// All nodes must be comparable with === (e.g. numbers, strings, or objects with a unique id).
+interface Graph<T> {
+  /** Return the directly connected nodes of `node`.  */
+  neighbors(node: T): T[];
 }
-const source = [3, 4, -1, 0, 6, 2, 3];
-console.log(longestIncreasingSubsequenceDP(source));
-// → [ -1, 0, 2, 3 ]   (length 4)
+
 /**
- * Returns the LIS of the input array.
- * O(n log n) time, O(n) space.
+ * Iterative depth‑limited DFS.
+ *
+ * @param graph      the graph to search
+ * @param start      the node to start from
+ * @param goal       the node we are looking for
+ * @param maxDepth   limit recursion depth (0 = only start node)
+ * @returns           true if goal is reachable within maxDepth, false otherwise
  */
-function longestIncreasingSubsequenceFast(arr: number[]): number[] {
-  const n = arr.length;
-  if (n === 0) return [];
+function depthLimitedSearch<T>(
+  graph: Graph<T>,
+  start: T,
+  goal: T,
+  maxDepth: number
+): boolean {
+  // Stack entries hold a node and its depth in the search space.
+  const stack: Array<{ node: T; depth: number }> = [{ node: start, depth: 0 }];
+  const visited = new Set<T>();
 
-  // `tails[len]` – smallest tail value of an inc. subsequence of length len+1
-  const tails: number[] = [];
-  // `prevIdx[i]` – index of the predecessor element for arr[i] in the LIS
-  const prevIdx: number[] = new Array(n).fill(-1);
-  // `posInTails[i]` – position in tails where arr[i] ends up
-  const posInTails: number[] = new Array(n);
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;   // pop() never returns undefined here
 
-  for (let i = 0; i < n; i++) {
-    const x = arr[i];
+    // If we hit the goal, we're done.
+    if (node === goal) return true;
 
-    // binary search: find first tails[idx] ≥ x
-    let left = 0, right = tails.length;
-    while (left < right) {
-      const mid = (left + right) >> 1;
-      if (tails[mid] < x) left = mid + 1;
-      else right = mid;
-    }
+    // Skip revisiting nodes; this keeps the search linear in the number of edges.
+    if (visited.has(node)) continue;
+    visited.add(node);
 
-    if (left === 0) {
-      // new smallest element
-      prevIdx[i] = -1;
-    } else {
-      // predecessor is the element that ended the subsequence of length left
-      prevIdx[i] = posInTails[left - 1];
-    }
+    // Stop exploring deeper than we’re allowed.
+    if (depth === maxDepth) continue;
 
-    // update tails & helper arrays
-    if (left === tails.length) {
-      tails.push(x);
-      posInTails[left] = i;
-    } else if (x < tails[left]) {
-      tails[left] = x;
-      posInTails[left] = i;
+    // Push neighbours onto the stack with incremented depth.
+    for (const neighbour of graph.neighbors(node)) {
+      // No need to push a node that is already visited; but doing so is harmless.
+      stack.push({ node: neighbour, depth: depth + 1 });
     }
   }
 
-  /* ---------- reconstruct the sequence ---------- */
-  const result: number[] = [];
-  let k = posInTails[tails.length - 1];
-  while (k !== -1) {
-    result.push(arr[k]);
-    k = prevIdx[k];
-  }
-  return result.reverse();
+  return false;   // exhausted everything within the depth limit
 }
-const arr = [10, 22, 9, 33, 21, 50, 41, 60, 80];
-console.log(longestIncreasingSubsequenceFast(arr));
-// → [10, 22, 33, 50, 60, 80]  (length 6)
+// Simple adjacency‑list example
+class SimpleGraph implements Graph<number> {
+  adjacency: Map<number, number[]>;
+
+  constructor(edges: Array<[number, number]>) {
+    this.adjacency = new Map();
+    for (const [a, b] of edges) {
+      this.adjacency
+        .get(a) ??= [];
+      this.adjacency.get(a)!.push(b);
+
+      this.adjacency
+        .get(b) ??= [];
+      this.adjacency.get(b)!.push(a);   // undirected
+    }
+  }
+
+  neighbors(node: number): number[] {
+    return this.adjacency.get(node) ?? [];
+  }
+}
+
+const g = new SimpleGraph([
+  [1, 2],
+  [1, 3],
+  [2, 4],
+  [3, 5],
+]);
+
+console.log(depthLimitedSearch(g, 1, 5, 1)); // false (needs depth 2)
+console.log(depthLimitedSearch(g, 1, 5, 2)); // true
