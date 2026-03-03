@@ -1,45 +1,45 @@
 /**
- * Checks if a string is a palindrome.
+ * Returns the contiguous segment of `arr` that yields the highest possible sum.
  *
- * @param txt          The input string to test.
- * @param options      Optional flags.
- * @returns            true if the cleaned string reads the same forwards and backwards.
+ * @param arr - Array of numbers (integer or float)
+ * @returns An object containing:
+ *   `maxSum`  – the total sum of the best segment
+ *   `start`   – the index where the segment begins
+ *   `end`     – the index where the segment ends (inclusive)
  */
-export function isPalindrome(
-  txt: string,
-  options?: {
-    /** When true (default), the check is case‑insensitive. */
-    ignoreCase?: boolean;
-    /** When true (default), only alphanumeric characters are considered. */
-    stripNonAlnum?: boolean;
-    /** When true, normalises Unicode to NFKD form before the checks. */
-    normalize?: boolean;
-  } = {}
-): boolean {
-  const {
-    ignoreCase = true,
-    stripNonAlnum = true,
-    normalize = true,
-  } = options;
+function maxSubarray(arr: number[]) {
+  if (arr.length === 0) throw new Error('Array cannot be empty');
 
-  let processed = txt;
+  let bestSum = arr[0];
+  let currentSum = arr[0];
+  let bestStart = 0;
+  let bestEnd = 0;
+  let tempStart = 0;
 
-  if (normalize) {
-    // This collapse accents, e.g. "café" ➜ "cafe".
-    processed = processed.normalize('NFKD');
+  for (let i = 1; i < arr.length; i++) {
+    const val = arr[i];
+
+    // Either start a new sub‑array at i or extend the existing one
+    if (currentSum + val < val) {
+      currentSum = val;
+      tempStart = i;       // new potential start
+    } else {
+      currentSum += val;   // keep extending
+    }
+
+    // Update the best segment seen so far
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
+    }
   }
 
-  if (stripNonAlnum) {
-    processed = processed.replace(/[^0-9a-z]+/gi, '');
-  }
-
-  if (ignoreCase) {
-    processed = processed.toLowerCase();
-  }
-
-  const reversed = processed.split('').reverse().join('');
-  return processed === reversed;
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
-console.log(isPalindrome('Madam In Eden, I’m Adam'));          // true
-console.log(isPalindrome('Hello, world!'));                    // false
+const data = [-2, -3, 4, -1, -2, 1, 5, -3];
+const result = maxSubarray(data);
+console.log(result);
+// Expected output:
+// { maxSum: 7, start: 2, end: 6 }
+// (segment [4, -1, -2, 1, 5] sums to 7)
