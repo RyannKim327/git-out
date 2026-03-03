@@ -1,65 +1,110 @@
-/**
- * Generic insertion sort.
- * @param arr  The array to sort – it will be mutated in‑place.
- * @returns    The sorted array (the same reference that was passed in).
- */
-export function insertionSort<T>(arr: T[]): T[] {
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+// ──────────────────────────────────────────────────────────
+// 1. Graph representation
+// ──────────────────────────────────────────────────────────
+type Vertex = string | number;
 
-    /* shift elements that are greater than key one position to the right */
-    while (j >= 0 && arr[j] > key) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
+// An adjacency list where each vertex maps to an array of its outgoing neighbours.
+class Graph {
+  private readonly edges: Map<Vertex, Vertex[]> = new Map();
 
-    arr[j + 1] = key;
+  constructor(edges?: [Vertex, Vertex][]) {
+    if (edges) this.addEdges(edges);
   }
-  return arr;
-}
-const numbers = [8, 3, 5, 4, 6, 1];
-console.log(insertionSort(numbers)); // [1, 3, 4, 5, 6, 8]
-const words = ['orange', 'apple', 'banana'];
-console.log(insertionSort(words)); // ['apple', 'banana', 'orange']
-interface Person {
-  name: string;
-  age: number;
+
+  /** Adds one or more directed edges to the graph. */
+  addEdges(edges: [Vertex, Vertex][]): void {
+    for (const [from, to] of edges) {
+      if (!this.edges.has(from)) this.edges.set(from, []);
+      this.edges.get(from)!.push(to);
+      // Ensure the destination vertex exists in the map so it shows up in the keys.
+      if (!this.edges.has(to)) this.edges.set(to, []);
+    }
+  }
+
+  /** Returns all vertices in the graph. */
+  vertices(): Vertex[] {
+    return Array.from(this.edges.keys());
+  }
+
+  /** Returns the neighbours of a given vertex. */
+  neighbours(v: Vertex): Vertex[] {
+    return this.edges.get(v) ?? [];
+  }
 }
 
-const people: Person[] = [
-  { name: 'Zoe', age: 29 },
-  { name: 'Anna', age: 22 },
-  { name: 'Mike', age: 35 }
+// ──────────────────────────────────────────────────────────
+// 2. DFS‑based topological sort
+// ──────────────────────────────────────────────────────────
+function topoSortDFS(g: Graph): Vertex[] | null {
+  const visited = new Set<Vertex>();
+  const temp = new Set<Vertex>();   // vertices currently on recursion stack
+  const order: Vertex[] = [];
+
+  const visit = (v: Vertex): boolean => {
+    if (temp.has(v)) return false; // cycle detected
+
+    if (!visited.has(v)) {
+      temp.add(v);
+      for (const nb of g.neighbours(v)) {
+        if (!visit(nb)) return false;
+      }
+      temp.delete(v);
+      visited.add(v);
+      order.push(v);
+    }
+    return true;
+  };
+
+  for (const v of g.vertices()) {
+    if (!visit(v)) return null; // if a cycle is found, return null
+  }
+
+  return order.reverse(); // reverse to get the correct order
+}
+
+// ──────────────────────────────────────────────────────────
+// 3. Kahn’s algorithm (BFS‑based)
+// ──────────────────────────────────────────────────────────
+function topoSortKahn(g: Graph): Vertex[] | null {
+  // Compute in‑degree of each vertex
+  const inDeg = new Map<Vertex, number>();
+  for (const v of g.vertices()) inDeg.set(v, 0);
+  for (const v of g.vertices()) {
+    for (const nb of g.neighbours(v)) {
+      inDeg.set(nb, (inDeg.get(nb) ?? 0) + 1);
+    }
+  }
+
+  const queue: Vertex[] = [];
+  for (const [v, d] of inDeg) if (d === 0) queue.push(v);
+
+  const order: Vertex[] = [];
+  while (queue.length) {
+    const v = queue.shift()!;
+    order.push(v);
+    for (const nb of g.neighbours(v)) {
+      const d = inDeg.get(nb)! - 1;
+      inDeg.set(nb, d);
+      if (d === 0) queue.push(nb);
+    }
+  }
+
+  if (order.length !== g.vertices().length) return null; // cycle exists
+  return order;
+}
+
+// ──────────────────────────────────────────────────────────
+// 4. Demo / usage
+// ──────────────────────────────────────────────────────────
+const edges: [Vertex, Vertex][] = [
+  ['a', 'd'],
+  ['f', 'b'],
+  ['b', 'd'],
+  ['f', 'a'],
+  ['d', 'c']
 ];
 
-function sortByAge(arr: Person[]): Person[] {
-  return insertionSort(arr, (a, b) => a.age - b.age);
-}
+const graph = new Graph(edges);
 
-// extended version that accepts a compare function
-export function insertionSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number
-): T[] {
-  const cmp = compareFn ?? ((a: T, b: T) => (a > b ? 1 : a < b ? -1 : 0));
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-    arr[j + 1] = key;
-  }
-  return arr;
-}
-
-console.log(sortByAge(people));
-/*
-[
-  { name: 'Anna', age: 22 },
-  { name: 'Zoe', age: 29 },
-  { name: 'Mike', age: 35 }
-]
-*/
+console.log('DFS order:', topoSortDFS(graph));   // legal order or null
+console.log('Kahn order:', topoSortKahn(graph)); // same result
