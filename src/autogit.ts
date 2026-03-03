@@ -1,56 +1,111 @@
-Let   S = s1 s2 … sn
-      T = t1 t2 … tm
+// Edge between two nodes
+interface Edge {
+  to: string;      // target node id
+  weight: number;  // edge weight
+}
 
-DP[i][j] = length of the longest common suffix that ends at S[i‑1] and T[j‑1]
-DP[i][j] = DP[i-1][j-1] + 1
-/**
- * Returns the longest common substring of `a` and `b`.
- * If there are multiple substrings of the same maximum length,
- * the first one found in `a` will be returned.
- */
-export function longestCommonSubstring(a: string, b: string): string {
-  const n = a.length, m = b.length;
-  if (n === 0 || m === 0) return '';
+// Graph stored as an adjacency list
+type Graph = Record<string, Edge[]>;
 
-  // `prev` holds DP values for row i-1
-  const prev = new Array(m + 1).fill(0);
-  // `curr` holds DP values for current row i
-  const curr = new Array(m + 1).fill(0);
+// Simple min‑heap priority queue
+class MinHeap<T> {
+  private content: { key: number; value: T }[] = [];
 
-  let maxLen = 0;          // longest length so far
-  let maxEndIndexA = 0;    // index in `a` where this substring ends
+  // Insert a new element
+  push(key: number, value: T): void {
+    const node = { key, value };
+    this.content.push(node);
+    this.bubbleUp(this.content.length - 1);
+  }
 
-  for (let i = 1; i <= n; i++) {
-    // Iterate columns
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        curr[j] = prev[j - 1] + 1;
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          maxEndIndexA = i - 1;   // keep the end idx in a
-        }
-      } else {
-        curr[j] = 0;
-      }
+  // Remove the element with the smallest key
+  pop(): T | undefined {
+    if (this.content.length === 0) return undefined;
+    const root = this.content[0].value;
+
+    const last = this.content.pop()!;
+    if (this.content.length) {
+      this.content[0] = last;
+      this.bubbleDown(0);
     }
+    return root;
+  }
 
-    // Swap rows for next iteration
-    //  curr becomes prev, prev becomes curr (reuse the same arrays)
-    for (let j = 0; j <= m; j++) {
-      prev[j] = curr[j];
-      curr[j] = 0;   // reset current row for the next round
+  get size(): number { return this.content.length; }
+
+  private bubbleUp(idx: number): void {
+    while (idx > 0) {
+      const parent = Math.floor((idx - 1) / 2);
+      if (this.content[parent].key <= this.content[idx].key) break;
+      [this.content[parent], this.content[idx]] = [this.content[idx], this.content[parent]];
+      idx = parent;
     }
   }
 
-  return a.slice(maxEndIndexA - maxLen + 1, maxEndIndexA + 1);
+  private bubbleDown(idx: number): void {
+    const length = this.content.length;
+    while (true) {
+      const left = 2 * idx + 1;
+      const right = 2 * idx + 2;
+      let smallest = idx;
+
+      if (left < length && this.content[left].key < this.content[smallest].key) {
+        smallest = left;
+      }
+      if (right < length && this.content[right].key < this.content[smallest].key) {
+        smallest = right;
+      }
+      if (smallest === idx) break;
+
+      [this.content[idx], this.content[smallest]] = [this.content[smallest], this.content[idx]];
+      idx = smallest;
+    }
+  }
 }
-import { longestCommonSubstring } from './common-substring';
+/**
+ * Computes the shortest‑path distances from `src` to every node in `graph`.
+ * @param graph     adjacency list
+ * @param src       origin node id
+ * @returns        a map of node → distance; unreachable nodes have Infinity
+ */
+function dijkstra(graph: Graph, src: string): Record<string, number> {
+  const distances: Record<string, number> = {};
+  const visited = new Set<string>();
 
-const a = "ABABCDA";
-const b = "CBADABABC";
+  // initialise all distances to Infinity
+  for (const node in graph) distances[node] = Infinity;
+  distances[src] = 0;
 
-console.log(longestCommonSubstring(a, b)); // → "ABC"
-console.log(longestCommonSubstring('foo', ''));          // ''
-console.log(longestCommonSubstring('abc', 'xyz'));       // ''
-console.log(longestCommonSubstring('same', 'same'));     // 'same'
-console.log(longestCommonSubstring('aaaaa', 'bbaaa'));   // 'aaa'
+  const pq = new MinHeap<string>();
+  pq.push(0, src);
+
+  while (pq.size) {
+    const u = pq.pop()!;                // node with lowest known distance
+    const d = distances[u];
+
+    if (visited.has(u)) continue; // we may have inserted u multiple times
+    visited.add(u);
+
+    for (const { to, weight } of graph[u]) {
+      const alt = d + weight;
+      if (alt < distances[to]) {
+        distances[to] = alt;
+        pq.push(alt, to);
+      }
+    }
+  }
+
+  return distances;
+}
+const graph: Graph = {
+  A: [{ to: 'B', weight: 5 }, { to: 'C', weight: 2 }],
+  B: [{ to: 'C', weight: 1 }, { to: 'D', weight: 3 }],
+  C: [{ to: 'B', weight: 4 }, { to: 'D', weight: 6 }],
+  D: [],
+};
+
+const result = dijkstra(graph, 'A');
+console.log(result);
+/* prints something like:
+{ A: 0, B: 4, C: 2, D: 7 }
+*/
