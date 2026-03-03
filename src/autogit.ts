@@ -1,47 +1,77 @@
+low  = 0
+high = length–1
+
+while low ≤ high and target ∈ [arr[low], arr[high]]:
+    // Edge cases
+    if arr[low] == arr[high]:
+        return (arr[low] == target) ? low : -1
+
+    // Interpolated index
+    pos = low + ((target – arr[low]) * (high – low))
+          / (arr[high] – arr[low])
+
+    // Clamp to array bounds
+    pos = Math.round(pos)
+
+    if arr[pos] == target:
+        return pos
+    else if arr[pos] < target:
+        low = pos + 1
+    else:
+        high = pos – 1
+
+return –1   // not found
 /**
- * Checks whether a string is a palindrome (case‑insensitive,
- * ignoring anything that isn’t a letter or a digit).
- *
- * Time   : O(n)
- * Space  : O(1)   – only a couple of integer variables
+ * Interpolation search for a strictly sorted numeric array.
+ * @param arr   - Sorted numbers (ascending)
+ * @param target - Number to find
+ * @returns Index of target, or -1 if not found
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+export function interpolationSearch(
+  arr: readonly number[],
+  target: number
+): number {
+  if (arr.length === 0) return -1;
 
-  const isAlnum = (ch: string): boolean => {
-    const code = ch.charCodeAt(0);
-    // '0'‑'9'
-    if (code >= 48 && code <= 57) return true;
-    // 'A'‑'Z'
-    if (code >= 65 && code <= 90) return true;
-    // 'a'‑'z'
-    if (code >= 97 && code <= 122) return true;
-    return false;
-  };
+  let low = 0;
+  let high = arr.length - 1;
 
-  while (left < right) {
-    // Skip non‑alphanumeric characters from the left
-    while (left < right && !isAlnum(s[left])) left++;
-    // Skip non‑alphanumeric characters from the right
-    while (left < right && !isAlnum(s[right])) right--;
+  // Keep going while target is inside the current window
+  while (low <= high && target >= arr[low] && target <= arr[high]) {
+    // All remaining values equal – either hit or miss.
+    if (arr[low] === arr[high]) {
+      return arr[low] === target ? low : -1;
+    }
 
-    if (left >= right) break;          // Nothing left to compare
+    // Linear interpolation to guess position.
+    const pos =
+      low +
+      Math.round(
+        ((target - arr[low]) * (high - low)) / (arr[high] - arr[low])
+      );
 
-    const lc = s[left].toLowerCase();
-    const rc = s[right].toLowerCase();
+    // Just in case rounding pushes us outside: clamp bounds.
+    const index = Math.min(Math.max(pos, low), high);
 
-    if (lc !== rc) return false;
-
-    left++;
-    right--;
+    const value = arr[index];
+    if (value === target) {
+      return index;
+    }
+    if (value < target) {
+      low = index + 1;
+    } else {
+      high = index - 1;
+    }
   }
 
-  return true;
+  return -1; // Not found
 }
-while (left < right) {
-  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
-  left++;
-  right--;
-}
-return true;
+const sorted = [3, 7, 13, 19, 23, 29, 31, 47, 53, 59];
+const target = 23;
+
+const idx = interpolationSearch(sorted, target);
+console.log(idx); // → 4
+console.log(interpolationSearch(sorted, 22)); // → -1
+const idx = interpolationSearch(sortedArray, key);
+if (idx !== -1) console.log(`Found at ${idx}`);
+else console.log('Not there');
