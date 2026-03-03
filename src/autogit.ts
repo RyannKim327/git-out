@@ -1,39 +1,79 @@
-class ListNode<T> {
-    constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-    if (!head) return false;
+// `T` can be any comparable type – string, number, object with an id, etc.
+export function bfs<T>(
+  start: T,
+  graph: Map<T, T[]>,          // adjacency list
+  onVisit?: (node: T) => void // optional per‑node work
+): T[] {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  const order: T[] = [];
 
-    let slow: ListNode<T> | null = head;
-    let fast: ListNode<T> | null = head;
+  visited.add(start);
 
-    while (fast !== null && fast.next !== null) {
-        slow = slow!.next;           // move 1 step
-        fast = fast.next.next;       // move 2 steps
+  while (queue.length) {
+    const node = queue.shift()!;   // node is guaranteed non‑null inside loop
 
-        if (slow === fast) {         // same node → cycle
-            return true;
-        }
+    // Optional callback that lets you do something with the node as you visit it
+    if (onVisit) onVisit(node);
+
+    order.push(node);
+
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
     }
-    return false;                    // fast reached end → no cycle
-}
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-    const visited = new Set<ListNode<T>>();
+  }
 
-    let current: ListNode<T> | null = head;
-    while (current !== null) {
-        if (visited.has(current)) return true; // already seen
-        visited.add(current);
-        current = current.next;
+  return order;
+}
+// Example graph (adjacency list)
+const g = new Map<string, string[]>([
+  ['A', ['B', 'C']],
+  ['B', ['D', 'E']],
+  ['C', ['F']],
+  ['D', []],
+  ['E', ['F']],
+  ['F', []]
+]);
+
+const order = bfs('A', g);          // ["A", "B", "C", "D", "E", "F"]
+
+console.log('BFS order:', order);
+export function bfsFind<T>(
+  start: T,
+  graph: Map<T, T[]>,
+  goal: T
+): T[] | null {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  visited.add(start);
+
+  while (queue.length) {
+    const node = queue.shift()!;
+
+    if (node === goal) {
+      // Re‑construct the path if you need it – here we just return the node that found it.
+      return [node];
     }
-    return false;
-}
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b;  // 1 → 2 → 3
-b.next = c;
-c.next = a;  // cycle back to 1
 
-console.log(hasCycle(a));        // → true
-console.log(hasCycleWithSet(a)); // → true
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  return null; // goal not reachable
+}
+// Small graph with a cycle
+const g2 = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [3]],
+  [3, [1, 4]],
+  [4, []]
+]);
+
+console.log(bfs(1, g2)); // [1, 2, 3, 4]
