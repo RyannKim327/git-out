@@ -1,83 +1,81 @@
-// --------------------------------------------------
-// 1️⃣  Linked‑list node definition
-// --------------------------------------------------
-export interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
-}
+class ListNode<T> {
+  data: T;
+  next: ListNode<T> | null = null;
 
-// --------------------------------------------------
-// 2️⃣  Helper: reverse a list, returns new head
-// --------------------------------------------------
-/**
- * Reverses the linked list starting at node `head`.
- * Returns the new head of the reversed list.
- */
-function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let current = head;
-
-  while (current) {
-    const next = current.next;
-    current.next = prev;
-    prev = current;
-    current = next;
+  constructor(data: T) {
+    this.data = data;
   }
-  return prev;          // new head
 }
+export class LinkedListQueue<T> {
+  private head: ListNode<T> | null = null; // front
+  private tail: ListNode<T> | null = null; // rear
+  private _size = 0;
 
-// --------------------------------------------------
-// 3️⃣  Palindrome checker
-// --------------------------------------------------
-export function isPalindrome<T>(head: ListNode<T> | null): boolean {
-  if (!head || !head.next) return true;   // Empty or single‑node list
+  /** Enqueue the value at the rear */
+  enqueue(value: T): void {
+    const node = new ListNode(value);
 
-  // ----- 3.1  Find the middle (slow stops at middle)
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
-
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  // ----- 3.2  Reverse second half
-  const secondHalfStart = reverse(slow!.next);
-  let firstHalfIter = head;
-  let secondHalfIter = secondHalfStart;
-
-  // ----- 3.3  Compare halves
-  let palindrome = true;
-  while (secondHalfIter) {
-    if (firstHalfIter!.val !== secondHalfIter.val) {
-      palindrome = false;
-      break;
+    if (!this.tail) {        // empty queue
+      this.head = this.tail = node;
+    } else {
+      this.tail.next = node;
+      this.tail = node;
     }
-    firstHalfIter = firstHalfIter!.next;
-    secondHalfIter = secondHalfIter.next;
+    this._size++;
   }
 
-  // ----- 3.4  Restore the original order (optional)
-  slow!.next = reverse(secondHalfStart);
+  /** Dequeue the value at the front */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // empty
 
-  return palindrome;
-}
+    const value = this.head.data;
+    this.head = this.head.next;
 
-// --------------------------------------------------
-// 4️⃣  Example usage
-// --------------------------------------------------
-function buildList(values: any[]): ListNode | null {
-  let dummy: ListNode | null = null;
-  for (let i = values.length - 1; i >= 0; i--) {
-    dummy = { val: values[i], next: dummy };
+    if (!this.head) {          // queue became empty
+      this.tail = null;
+    }
+
+    this._size--;
+    return value;
   }
-  return dummy;
+
+  /** Peek at the front without removing it */
+  peek(): T | undefined {
+    return this.head?.data;
+  }
+
+  /** Current number of elements */
+  size(): number {
+    return this._size;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** Consume the internal list into an array (useful for tests) */
+  toArray(): T[] {
+    const arr: T[] = [];
+    let node = this.head;
+    while (node) {
+      arr.push(node.data);
+      node = node.next;
+    }
+    return arr;
+  }
 }
+const q = new LinkedListQueue<number>();
 
-// Palindrome case
-const list1 = buildList([1, 2, 3, 2, 1]);
-console.log(isPalindrome(list1)); // true
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
 
-// Non‑palindrome
-const list2 = buildList([1, 2, 3, 4, 5]);
-console.log(isPalindrome(list2)); // false
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size());    // 1
+console.log(q.isEmpty()); // false
+
+q.dequeue();              // removes 30
+console.log(q.isEmpty()); // true
