@@ -1,68 +1,110 @@
-// -------------------------------------------
-// Node definition
-// -------------------------------------------
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+// ──────────────────────────────────────────────────────────
+// 1. Graph representation
+// ──────────────────────────────────────────────────────────
+type Vertex = string | number;
 
-// -------------------------------------------
-// Helper: build list from array
-// -------------------------------------------
-function arrayToLinkedList<T>(arr: T[]): ListNode<T> | null {
-  if (arr.length === 0) return null;
-  const head = new ListNode(arr[0]);
-  let current = head;
-  for (let i = 1; i < arr.length; i++) {
-    current.next = new ListNode(arr[i]);
-    current = current.next;
-  }
-  return head;
-}
+// An adjacency list where each vertex maps to an array of its outgoing neighbours.
+class Graph {
+  private readonly edges: Map<Vertex, Vertex[]> = new Map();
 
-// -------------------------------------------
-// Helper: read list into array (for debugging)
-// -------------------------------------------
-function linkedListToArray<T>(head: ListNode<T> | null): T[] {
-  const arr: T[] = [];
-  let cur = head;
-  while (cur) {
-    arr.push(cur.val);
-    cur = cur.next;
-  }
-  return arr;
-}
-
-// -------------------------------------------
-// Main: find middle node
-// -------------------------------------------
-function findMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null;          // empty list
-
-  let slow = head;
-  let fast = head;
-
-  // Move fast two steps and slow one step until fast can't move further.
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+  constructor(edges?: [Vertex, Vertex][]) {
+    if (edges) this.addEdges(edges);
   }
 
-  // For even‑length lists, this returns the first of the two middle nodes.
-  // If you prefer the second, replace `while (fast && fast.next)` and
-  // adjust the loop accordingly.
-  return slow;
+  /** Adds one or more directed edges to the graph. */
+  addEdges(edges: [Vertex, Vertex][]): void {
+    for (const [from, to] of edges) {
+      if (!this.edges.has(from)) this.edges.set(from, []);
+      this.edges.get(from)!.push(to);
+      // Ensure the destination vertex exists in the map so it shows up in the keys.
+      if (!this.edges.has(to)) this.edges.set(to, []);
+    }
+  }
+
+  /** Returns all vertices in the graph. */
+  vertices(): Vertex[] {
+    return Array.from(this.edges.keys());
+  }
+
+  /** Returns the neighbours of a given vertex. */
+  neighbours(v: Vertex): Vertex[] {
+    return this.edges.get(v) ?? [];
+  }
 }
 
-// -------------------------------------------
-// Demo
-// -------------------------------------------
-const list = arrayToLinkedList([1, 2, 3, 4, 5]);  // odd length
-console.log(linkedListToArray(list));            // [1,2,3,4,5]
-console.log(findMiddle(list)?.val);              // 3
+// ──────────────────────────────────────────────────────────
+// 2. DFS‑based topological sort
+// ──────────────────────────────────────────────────────────
+function topoSortDFS(g: Graph): Vertex[] | null {
+  const visited = new Set<Vertex>();
+  const temp = new Set<Vertex>();   // vertices currently on recursion stack
+  const order: Vertex[] = [];
 
-const evenList = arrayToLinkedList([10, 20, 30, 40]);
-console.log(linkedListToArray(evenList));         // [10,20,30,40]
-console.log(findMiddle(evenList)?.val);           // 20 (first middle)
-// if you want the second middle, tweak the loop condition to:
-// while (fast && fast.next)
-// then you'll get 30.
+  const visit = (v: Vertex): boolean => {
+    if (temp.has(v)) return false; // cycle detected
+
+    if (!visited.has(v)) {
+      temp.add(v);
+      for (const nb of g.neighbours(v)) {
+        if (!visit(nb)) return false;
+      }
+      temp.delete(v);
+      visited.add(v);
+      order.push(v);
+    }
+    return true;
+  };
+
+  for (const v of g.vertices()) {
+    if (!visit(v)) return null; // if a cycle is found, return null
+  }
+
+  return order.reverse(); // reverse to get the correct order
+}
+
+// ──────────────────────────────────────────────────────────
+// 3. Kahn’s algorithm (BFS‑based)
+// ──────────────────────────────────────────────────────────
+function topoSortKahn(g: Graph): Vertex[] | null {
+  // Compute in‑degree of each vertex
+  const inDeg = new Map<Vertex, number>();
+  for (const v of g.vertices()) inDeg.set(v, 0);
+  for (const v of g.vertices()) {
+    for (const nb of g.neighbours(v)) {
+      inDeg.set(nb, (inDeg.get(nb) ?? 0) + 1);
+    }
+  }
+
+  const queue: Vertex[] = [];
+  for (const [v, d] of inDeg) if (d === 0) queue.push(v);
+
+  const order: Vertex[] = [];
+  while (queue.length) {
+    const v = queue.shift()!;
+    order.push(v);
+    for (const nb of g.neighbours(v)) {
+      const d = inDeg.get(nb)! - 1;
+      inDeg.set(nb, d);
+      if (d === 0) queue.push(nb);
+    }
+  }
+
+  if (order.length !== g.vertices().length) return null; // cycle exists
+  return order;
+}
+
+// ──────────────────────────────────────────────────────────
+// 4. Demo / usage
+// ──────────────────────────────────────────────────────────
+const edges: [Vertex, Vertex][] = [
+  ['a', 'd'],
+  ['f', 'b'],
+  ['b', 'd'],
+  ['f', 'a'],
+  ['d', 'c']
+];
+
+const graph = new Graph(edges);
+
+console.log('DFS order:', topoSortDFS(graph));   // legal order or null
+console.log('Kahn order:', topoSortKahn(graph)); // same result
