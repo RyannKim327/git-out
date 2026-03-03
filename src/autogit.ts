@@ -1,35 +1,45 @@
 /**
- * Bottom‑up merge sort – no recursion, only loops.
- * @param arr The array to sort, in place.
- * @returns The sorted array (same reference as the argument).
+ * Checks if a string is a palindrome.
+ *
+ * @param txt          The input string to test.
+ * @param options      Optional flags.
+ * @returns            true if the cleaned string reads the same forwards and backwards.
  */
-export function mergeSortIterative<T>(arr: T[]): T[] {
-  const len = arr.length;
-  if (len < 2) return arr;          // already sorted
+export function isPalindrome(
+  txt: string,
+  options?: {
+    /** When true (default), the check is case‑insensitive. */
+    ignoreCase?: boolean;
+    /** When true (default), only alphanumeric characters are considered. */
+    stripNonAlnum?: boolean;
+    /** When true, normalises Unicode to NFKD form before the checks. */
+    normalize?: boolean;
+  } = {}
+): boolean {
+  const {
+    ignoreCase = true,
+    stripNonAlnum = true,
+    normalize = true,
+  } = options;
 
-  // Temporary buffer reused for each merge
-  const temp = new Array<T>(len);
+  let processed = txt;
 
-  // Initial run width – start with runs of 1 element
-  for (let width = 1; width < len; width <<= 1) {
-    // Merge pairs of runs: left = i‑th run, right = i+width‑th run
-    for (let i = 0; i < len; i += width << 1) {
-      const left = i;
-      const mid = Math.min(i + width, len);
-      const right = Math.min(i + (width << 1), len);
-
-      // Merge [left, mid) and [mid, right) into temp
-      let l = left, r = mid, k = left;
-      while (l < mid && r < right) {
-        temp[k++] = (arr[l] as any <= arr[r] as any) ? arr[l++] : arr[r++];
-      }
-      while (l < mid) temp[k++] = arr[l++];
-      while (r < right) temp[k++] = arr[r++];
-
-      // Copy the merged segment back into arr
-      for (let p = left; p < right; p++) arr[p] = temp[p];
-    }
+  if (normalize) {
+    // This collapse accents, e.g. "café" ➜ "cafe".
+    processed = processed.normalize('NFKD');
   }
 
-  return arr;
+  if (stripNonAlnum) {
+    processed = processed.replace(/[^0-9a-z]+/gi, '');
+  }
+
+  if (ignoreCase) {
+    processed = processed.toLowerCase();
+  }
+
+  const reversed = processed.split('').reverse().join('');
+  return processed === reversed;
 }
+console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
+console.log(isPalindrome('Madam In Eden, I’m Adam'));          // true
+console.log(isPalindrome('Hello, world!'));                    // false
