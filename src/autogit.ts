@@ -1,50 +1,59 @@
-// A node of a singly linked list
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-
-// Helper to build a list from an array (optional)
-function buildList<T>(values: T[]): ListNode<T> | null {
-  if (values.length === 0) return null
-  const head = new ListNode(values[0])
-  let cur = head
-  for (let i = 1; i < values.length; i++) {
-    cur.next = new ListNode(values[i])
-    cur = cur.next
-  }
-  return head
-}
 /**
- * Returns the middle ListNode of a singly linked list.
- * If the list has an even number of nodes, the *second* middle one is returned
- * (you can customize this if you prefer the first one).
+ * Shell sort – a simple, in‑place algorithm that improves on insertion sort.
+ * Sorts an array of numbers in ascending order.
+ *
+ * @param arr The array to sort (modified in place)
+ * @param compare Optional compare function (defaults to numeric comparison)
  */
-function getMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null
+export function shellSort(
+  arr: number[],
+  compare?: (a: number, b: number) => number
+): void {
+  const len = arr.length;
+  const cmp = compare ?? ((a, b) => a - b);
 
-  let slow: ListNode<T> | null = head
-  let fast: ListNode<T> | null = head
+  // A common gap sequence: halving each time (Shell's original)
+  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Gapped insertion sort
+    for (let i = gap; i < len; i++) {
+      let temp = arr[i];
+      let j = i;
 
-  // Move fast twice as fast as slow
-  while (fast && fast.next) {
-    slow = slow!.next            // safe because slow ≠ null in loop
-    fast = fast.next.next
+      // Move elements that are greater than temp backward by 'gap' places
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      // Bring temp into its spot
+      arr[j] = temp;
+    }
   }
-
-  return slow
 }
-const list = buildList([1, 2, 3, 4, 5])          // Odd‑length list
-console.log(getMiddle(list)?.val)                // → 3
+const data = [40, 3, 10, 5, 1, 15];
+shellSort(data);
 
-const list2 = buildList([10, 20, 30, 40])        // Even‑length list
-console.log(getMiddle(list2)?.val)               // → 30  (second middle)
-function getMiddleViaArray<T>(head: ListNode<T> | null): ListNode<T> | null {
-  const values: ListNode<T>[] = []
-  let cur = head
-  while (cur) {
-    values.push(cur)
-    cur = cur.next
+console.log(data); // [1, 3, 5, 10, 15, 40]
+export function shellSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): void {
+  const len = arr.length;
+  const cmp = compare ?? ((a, b) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
+
+  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
+    }
   }
-  const midIndex = Math.floor(values.length / 2)
-  return values[midIndex] ?? null
 }
+shellSort(['banana', 'apple', 'pear'], (a, b) => a.localeCompare(b));
