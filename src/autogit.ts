@@ -1,79 +1,59 @@
 /**
- * Returns the kth smallest value in `arr` (1‑based k).
- *  Throws an error if k is out of bounds.
+ * Shell sort – a simple, in‑place algorithm that improves on insertion sort.
+ * Sorts an array of numbers in ascending order.
+ *
+ * @param arr The array to sort (modified in place)
+ * @param compare Optional compare function (defaults to numeric comparison)
  */
-export function kthSmallest(arr: number[], k: number): number {
-  if (k <= 0 || k > arr.length) {
-    throw new RangeError('k is out of bounds');
-  }
+export function shellSort(
+  arr: number[],
+  compare?: (a: number, b: number) => number
+): void {
+  const len = arr.length;
+  const cmp = compare ?? ((a, b) => a - b);
 
-  // Work on a copy so the original array stays intact.
-  const a = arr.slice();
+  // A common gap sequence: halving each time (Shell's original)
+  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Gapped insertion sort
+    for (let i = gap; i < len; i++) {
+      let temp = arr[i];
+      let j = i;
 
-  const quickSelect = (left: number, right: number, index: number) => {
-    // If the segment contains only one element, that's the answer.
-    if (left === right) return a[left];
-
-    const pivotIndex = partition(left, right);
-    if (pivotIndex === index) {
-      return a[pivotIndex];
-    } else if (pivotIndex < index) {
-      return quickSelect(pivotIndex + 1, right, index);
-    } else {
-      return quickSelect(left, pivotIndex - 1, index);
-    }
-  };
-
-  const partition = (left: number, right: number): number => {
-    // Pick a pivot.  Using the middle element keeps the code short; you could
-    // shuffle or use Median‑of‑Three for better worst‑case guarantees.
-    const pivot = a[Math.floor((left + right) / 2)];
-    let i = left;
-    let j = right;
-
-    while (i <= j) {
-      while (a[i] < pivot) i++;
-      while (a[j] > pivot) j--;
-      if (i <= j) {
-        [a[i], a[j]] = [a[j], a[i]];
-        i++;
-        j--;
+      // Move elements that are greater than temp backward by 'gap' places
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
       }
+      // Bring temp into its spot
+      arr[j] = temp;
     }
-    return i - 1; // pivot final position
-  };
-
-  // `k-1` because the array index is 0‑based.
-  return quickSelect(0, a.length - 1, k - 1);
-}
-export function kthSmallestBySort(arr: number[], k: number): number {
-  if (k <= 0 || k > arr.length) throw new RangeError('k is out of bounds');
-  const sorted = [...arr].sort((a, b) => a - b);
-  return sorted[k - 1];
-}
-class MinHeap {
-  private data: number[] = [];
-
-  push(val: number) {
-    this.data.push(val);
-    this.bubbleUp(this.data.length - 1);
   }
+}
+const data = [40, 3, 10, 5, 1, 15];
+shellSort(data);
 
-  /* ... bubbleUp, bubbleDown, peek, pop ... */
+console.log(data); // [1, 3, 5, 10, 15, 40]
+export function shellSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): void {
+  const len = arr.length;
+  const cmp = compare ?? ((a, b) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
 
-  /** Return kth smallest (1‑based). */
-  kth(k: number): number {
-    if (k <= 0 || k > this.data.length) throw new RangeError();
-    const heapCopy = [...this.data];
-    let result = -Infinity;
-    for (let i = 0; i < k; i++) {
-      result = heapCopy[0];
-      this.swap(heapCopy, 0, heapCopy.length - 1);
-      heapCopy.pop();
-      this.sinkDown(heapCopy, 0);
+  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
     }
-    return result;
   }
-
-  /* helper methods omitted for brevity */
 }
+shellSort(['banana', 'apple', 'pear'], (a, b) => a.localeCompare(b));
