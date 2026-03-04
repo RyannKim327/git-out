@@ -1,40 +1,37 @@
-// Basic node interface – can be turned into a class if you like.
-interface TreeNode<T = number> {
-  val: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
-}
-function maxDepth<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                 // empty subtree → depth 0
-
-  const leftDepth  = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
-
-  // Depth of current node = 1 (itself) + depth of deeper side
-  return 1 + Math.max(leftDepth, rightDepth);
-}
-const root: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3, right: { val: 5, right: { val: 6 } } }
-};
-
-console.log(maxDepth(root));   // → 4
-function maxDepthIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
-
-  let max = 0;
-  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
-    { node: root, depth: 1 },
-  ];
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    max = Math.max(max, depth);
-
-    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
-    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
+// Works for numbers, strings, dates, anything that can be compared with < and >.
+export function isSorted<T extends number | string | Date>(arr: T[]): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] < arr[i - 1]) return false;
   }
-
-  return max;
+  return true;
 }
+isSorted([1, 2, 3, 4]);        // true
+isSorted([1, 3, 2, 4]);        // false
+isSorted(['a', 'b', 'c']);     // true
+isSorted(['c', 'b', 'a']);     // false
+type Comparator<T> = (a: T, b: T) => number;
+
+export function isSortedWith<T>(arr: T[], cmp: Comparator<T>): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) return false; // `a > b` in ascending order
+  }
+  return true;
+}
+interface Person { name: string; age: number; }
+
+const people: Person[] = [
+  { name: 'Alice', age: 25 },
+  { name: 'Bob', age: 30 },
+  { name: 'Charlie', age: 35 },
+];
+
+isSortedWith(people, (a, b) => a.age - b.age); // true
+export const isSorted = <T>(arr: T[], cmp: Comparator<T> = (a, b) => {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}): boolean =>
+  arr
+    .map((value, index, self) => [self[index - 1], value] as const)
+    .slice(1) // skip the first undefined pair
+    .every(([prev, cur]) => cmp(prev!, cur) <= 0);
