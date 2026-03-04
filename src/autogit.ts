@@ -1,28 +1,13 @@
-/**
- * Convert a decimal number to a binary string.
- * 
- * @param n – A non‑negative integer
- * @returns The binary representation as a string
- */
-function decimalToBinary(n: number): string {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new Error('Input must be a non‑negative integer.');
-  }
+// 1️⃣  Define the array (TypeScript knows it’s numbers)
+const nums: number[] = [42, 7, 13, 99, 29];
 
-  // Handling zero explicitly – Math.pow(2, 0) is 1 but we still want "0"
-  if (n === 0) return '0';
+// 2️⃣  Sort in place – ascending
+nums.sort((a, b) => a - b);   // -> [7, 13, 29, 42, 99]
+console.log('Ascending:', nums);
 
-  let binary = '';
-  let current = n;
+// 3️⃣  If you want a new sorted array instead, copy first
+const ascending = [...nums].sort((a, b) => a - b);
 
-  while (current > 0) {
-    // Prepend the remainder (0 or 1) to the binary string
-    binary = (current % 2) + binary;
-    current = Math.floor(current / 2);
-  }
-
-  return binary;
-}
-console.log(decimalToBinary(10)); // "1010"
-console.log(decimalToBinary(255)); // "11111111"
-console.log(decimalToBinary(0)); // "0"
+// 4️⃣  Descending order
+const descending = nums.slice().sort((a, b) => b - a); // -> [99, 42, 29, 13, 7]
+console.log('Descending:', descending);
