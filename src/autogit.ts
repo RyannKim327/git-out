@@ -1,37 +1,39 @@
-// random-joke.ts
-import fetch from 'node-fetch';          // npm i node-fetch@2
-import { Console } from 'console';
-
-interface Joke {
-  id: number;
-  type: string;
-  setup: string;
-  punchline: string;
+function isPalindrome(str: string): boolean {
+  // Compare the string to its reverse
+  const reversed = str.split('').reverse().join('');
+  return str === reversed;
 }
 
-async function fetchRandomJoke(): Promise<Joke> {
-  const res = await fetch('https://official-joke-api.appspot.com/random_joke');
+// Examples
+console.log(isPalindrome('radar'));   // true
+console.log(isPalindrome('hello'));   // false
+function isPalindromeCI(str: string): boolean {
+  const normalized = str.toLowerCase();          // make everything lowercase
+  return normalized === normalized.split('').reverse().join('');
+}
 
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} – failed to fetch joke`);
+console.log(isPalindromeCI('Radar'));   // true
+console.log(isPalindromeCI('Racecar')); // true
+function isPalindromeClean(str: string): boolean {
+  const cleaned = str
+    .replace(/[^a-z0-9]/gi, '')      // strip non-alphanumerics
+    .toLowerCase();                  // normalize case
+  
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
+}
+
+console.log(isPalindromeClean('A man, a plan, a canal: Panama')); // true
+function isPalindromeTwoPointer(str: string): boolean {
+  let left = 0;
+  let right = str.length - 1;
+
+  while (left < right) {
+    if (str[left] !== str[right]) return false;
+    left++;
+    right--;
   }
-
-  const data: Joke = await res.json();
-
-  return data;
+  return true;
 }
 
-async function run() {
-  try {
-    const joke = await fetchRandomJoke();
-
-    console.log('😂 Here’s something to make you smile!');
-    console.log(`  ${joke.setup}`);
-    console.log(`   – ${joke.punchline}`);
-  } catch (err: any) {
-    console.error('Oops! Something went wrong:');
-    console.error(err.message ?? err);
-  }
-}
-
-run();
+console.log(isPalindromeTwoPointer('radar')); // true
