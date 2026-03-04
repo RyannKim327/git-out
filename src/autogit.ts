@@ -1,41 +1,51 @@
-/**
- * Random‑pivot quick sort.
- *
- * @param arr   The array to sort (in‑place).
- * @returns     The sorted array (the same reference as `arr`).
- */
-export function quickSortRandom<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
-  if (arr.length <= 1)
-    return arr;
-
-  // So we can provide a custom comparison, but default is the usual "<".
-  const cmp = compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-
-  // Pick a random index as pivot
-  const pivotIndex = Math.floor(Math.random() * arr.length);
-  const pivotValue = arr[pivotIndex];
-
-  // Partition into two new arrays
-  const lows: T[] = [];
-  const highs: T[] = [];
-  const pivots: T[] = [];
-
-  for (let i = 0; i < arr.length; i++) {
-    const value = arr[i];
-    const comparison = cmp(value, pivotValue);
-    if (comparison < 0)    lows.push(value);
-    else if (comparison > 0) highs.push(value);
-    else                    pivots.push(value);   // equals pivot
-  }
-
-  // Recurse and concatenate
-  return quickSortRandom(lows, cmp)
-          .concat(pivots, quickSortRandom(highs, cmp));
+// A classic singly‑linked‑list node
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
-// ---- Demo ---------------------------------------------------------
+/**
+ * Returns the nth node from the end (1‑based) or null if n is out of range.
+ */
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;          // natural guard for mis‑ed input
 
-const unsorted = [7, 2, 9, 4, 1, 5, 3, 8, 6];
-console.log('original: ', unsorted);
-const sorted = quickSortRandom(unsorted);
-console.log('sorted:   ', sorted);
+  let first: ListNode<T> | null = head;
+  let second: ListNode<T> | null = head;
+
+  /* Advance `first` n steps ahead. */
+  for (let i = 0; i < n; i++) {
+    if (!first) return null;   // n is larger than list length
+    first = first.next;
+  }
+
+  /* Move both pointers until `first` hits the end. */
+  while (first) {
+    first = first.next;
+    second = second!.next;     // second is guaranteed not null here
+  }
+
+  return second;   // `second` is the nth node from the end
+}
+function nthFromEndTwoPass<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let len = 0;
+  for (let cur = head; cur; cur = cur.next) len++;
+
+  if (n <= 0 || n > len) return null;
+
+  let cur = head;
+  for (let i = 0; i < len - n; i++) cur = cur!.next;
+
+  return cur;
+}
+// Example list: 1 → 2 → 3 → 4 → 5
+const tail = new ListNode(5);
+const middle = new ListNode(4, tail);
+const head = new ListNode(1,
+           new ListNode(2,
+           new ListNode(3,
+           middle)));
+
+console.log(nthFromEnd(head, 1)?.val); // 5
+console.log(nthFromEnd(head, 2)?.val); // 4
+console.log(nthFromEnd(head, 5)?.val); // 1
+console.log(nthFromEnd(head, 6));      // null
