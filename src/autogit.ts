@@ -1,47 +1,47 @@
-/**
- * Checks whether a string is a palindrome (case‑insensitive,
- * ignoring anything that isn’t a letter or a digit).
- *
- * Time   : O(n)
- * Space  : O(1)   – only a couple of integer variables
- */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+function countWordOccurrences(text: string, word: string): number {
+  // Escape any regex meta‑characters in the search word
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  const isAlnum = (ch: string): boolean => {
-    const code = ch.charCodeAt(0);
-    // '0'‑'9'
-    if (code >= 48 && code <= 57) return true;
-    // 'A'‑'Z'
-    if (code >= 65 && code <= 90) return true;
-    // 'a'‑'z'
-    if (code >= 97 && code <= 122) return true;
-    return false;
-  };
+  // \b = word boundary, i = ignore case, g = global (find all)
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
 
-  while (left < right) {
-    // Skip non‑alphanumeric characters from the left
-    while (left < right && !isAlnum(s[left])) left++;
-    // Skip non‑alphanumeric characters from the right
-    while (left < right && !isAlnum(s[right])) right--;
-
-    if (left >= right) break;          // Nothing left to compare
-
-    const lc = s[left].toLowerCase();
-    const rc = s[right].toLowerCase();
-
-    if (lc !== rc) return false;
-
-    left++;
-    right--;
-  }
-
-  return true;
+  // .match() returns an array of all matches, null if none
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
 }
-while (left < right) {
-  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
-  left++;
-  right--;
+
+// Usage
+const msg = "The quick brown fox jumps over the lazy fox. Foxes are clever.";
+console.log(countWordOccurrences(msg, "fox")); // → 2 (fox, fox)
+const regex = new RegExp(escaped, 'gi');
+function countSplit(text: string, word: string): number {
+  // Empty string returns 0
+  if (!text) return 0;
+  return text.split(word).length - 1;
 }
-return true;
+function countWithMatchAll(text: string, word: string): number {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+  const allMatches = text.matchAll(regex); // Iterable<{ index: … }>
+
+  let count = 0;
+  for (const _ of allMatches) count++;
+  return count;
+}
+export function countOccurrences(
+  text: string,
+  word: string,
+  options?: { caseSensitive?: boolean; wholeWord?: boolean }
+): number {
+  const { caseSensitive = false, wholeWord = true } = options ?? {};
+
+  // Escape regex meta‑chars
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  let pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
+  let flags = 'g' + (caseSensitive ? '' : 'i');
+
+  const regex = new RegExp(pattern, flags);
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
+}
