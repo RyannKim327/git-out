@@ -1,87 +1,77 @@
+low  = 0
+high = length–1
+
+while low ≤ high and target ∈ [arr[low], arr[high]]:
+    // Edge cases
+    if arr[low] == arr[high]:
+        return (arr[low] == target) ? low : -1
+
+    // Interpolated index
+    pos = low + ((target – arr[low]) * (high – low))
+          / (arr[high] – arr[low])
+
+    // Clamp to array bounds
+    pos = Math.round(pos)
+
+    if arr[pos] == target:
+        return pos
+    else if arr[pos] < target:
+        low = pos + 1
+    else:
+        high = pos – 1
+
+return –1   // not found
 /**
- * A directed graph stored as an adjacency list.
- * Each key is a node identifier, the value is an array of successor node ids.
+ * Interpolation search for a strictly sorted numeric array.
+ * @param arr   - Sorted numbers (ascending)
+ * @param target - Number to find
+ * @returns Index of target, or -1 if not found
  */
-interface Graph {
-  [node: string]: string[];
-}
+export function interpolationSearch(
+  arr: readonly number[],
+  target: number
+): number {
+  if (arr.length === 0) return -1;
 
-/**
- * Result of the algorithm – an array of SCCs.
- * Each SCC is an array of node ids that belong together.
- */
-type SCC = string[][];
+  let low = 0;
+  let high = arr.length - 1;
 
-/**
- * Tarjan’s algorithm for SCCs.
- *
- * @param g The graph to analyse.
- * @returns An array of strongly connected components.
- */
-function tarjanSCC(g: Graph): SCC {
-  const indexMap: Record<string, number> = {};   // node → its index
-  const lowLink: Record<string, number> = {};    // node → low‑link value
-  const onStack: Set<string> = new Set();        // nodes currently in the stack
-  const stack: string[] = [];                    // stack of nodes
-  const sccs: SCC = [];
-
-  let currentIndex = 0;
-
-  const strongConnect = (v: string) => {
-    indexMap[v] = currentIndex;
-    lowLink[v] = currentIndex;
-    currentIndex += 1;
-    stack.push(v);
-    onStack.add(v);
-
-    // Explore every outgoing edge v → w
-    for (const w of g[v] ?? []) {
-      if (!(w in indexMap)) {
-        // Recursively visit w
-        strongConnect(w);
-        lowLink[v] = Math.min(lowLink[v], lowLink[w]);
-      } else if (onStack.has(w)) {
-        // w is in the current SCC frontier
-        lowLink[v] = Math.min(lowLink[v], indexMap[w]);
-      }
+  // Keep going while target is inside the current window
+  while (low <= high && target >= arr[low] && target <= arr[high]) {
+    // All remaining values equal – either hit or miss.
+    if (arr[low] === arr[high]) {
+      return arr[low] === target ? low : -1;
     }
 
-    // If v is the root of an SCC
-    if (lowLink[v] === indexMap[v]) {
-      const component: string[] = [];
-      let w: string | undefined;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
-    }
-  };
+    // Linear interpolation to guess position.
+    const pos =
+      low +
+      Math.round(
+        ((target - arr[low]) * (high - low)) / (arr[high] - arr[low])
+      );
 
-  // Kick off a DFS from every unvisited node.
-  for (const v in g) {
-    if (!(v in indexMap)) {
-      strongConnect(v);
+    // Just in case rounding pushes us outside: clamp bounds.
+    const index = Math.min(Math.max(pos, low), high);
+
+    const value = arr[index];
+    if (value === target) {
+      return index;
+    }
+    if (value < target) {
+      low = index + 1;
+    } else {
+      high = index - 1;
     }
   }
 
-  return sccs;
+  return -1; // Not found
 }
-const example: Graph = {
-  a: ['b'],
-  b: ['c', 'e', 'f'],
-  c: ['d', 'g'],
-  d: ['c', 'h'],
-  e: ['a', 'f'],
-  f: ['g'],
-  g: ['f'],
-  h: ['d', 'g', 'i'],
-  i: ['h', 'k', 'l'],
-  j: ['k'],
-  k: ['i', 'l'],
-  l: ['k']
-};
+const sorted = [3, 7, 13, 19, 23, 29, 31, 47, 53, 59];
+const target = 23;
 
-console.log(tarjanSCC(example));
-// → [ [ 'g', 'f' ], [ 'c', 'd', 'h' ], [ 'i', 'l', 'k' ], [ 'a', 'b', 'e' ], [ 'j' ] ]
+const idx = interpolationSearch(sorted, target);
+console.log(idx); // → 4
+console.log(interpolationSearch(sorted, 22)); // → -1
+const idx = interpolationSearch(sortedArray, key);
+if (idx !== -1) console.log(`Found at ${idx}`);
+else console.log('Not there');
