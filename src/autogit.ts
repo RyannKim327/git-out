@@ -1,81 +1,101 @@
-//   ┌─── Imports ────────────────────────────────────────────────────────┐
-import { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
+// A node inside the trie
+class TrieNode {
+  // Map from a character to the next node in the path
+  children: Map<string, TrieNode> = new Map();
 
-//   ┌─── Types ───────────────────────────────────────────────────────────────┐
-interface TodoItem {
-  id: number;
-  title: string;
-  completed: boolean;
+  // Marks the end of a word
+  isEndOfWord: boolean = false;
+
+  constructor(public readonly char: string | null = null) {}
 }
 
-//   ┌─── Async helper ────────────────────────────────────────────────────────┐
-async function fetchTodos(): Promise<TodoItem[]> {
-  const url = 'https://jsonplaceholder.typicode.com/todos?_limit=5';
+// The trie itself
+export class Trie {
+  private root = new TrieNode();
 
-  // Simulate a "slow" network: optional, just for demo
-  await new Promise(r => setTimeout(r, 800));
+  /** Inserts a word into the trie. */
+  insert(word: string): void {
+    if (!word) return;               // ignore empty strings
+    let node = this.root;
 
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`❌ ${response.status} ${response.statusText}`);
-
-  const json = await response.json();
-  // Map to our interface – TypeScript will check types
-  return json.map((x: any) => ({
-    id: x.id,
-    title: x.title,
-    completed: x.completed,
-  }));
-}
-
-//   ┌─── Component that uses the async task ──────────────────────────────────┐
-export default function AsyncExample() {
-  const [todos, setTodos] = useState<TodoItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await fetchTodos();
-      console.log('Fetched:', data);
-      setTodos(data);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Unknown error';
-      console.warn(msg);
-      setError(msg);
-    } finally {
-      setLoading(false);
+    for (const ch of word) {
+      // Grab the child if it already exists; otherwise create a new node
+      let next = node.children.get(ch);
+      if (!next) {
+        next = new TrieNode(ch);
+        node.children.set(ch, next);
+      }
+      node = next;
     }
-  };
 
-  // Run once on mount
-  useEffect(() => {
-    load();
-  }, []);
+    // Mark that a complete word ends here
+    node.isEndOfWord = true;
+  }
 
-  return (
-    <View style={styles.container}>
-      {loading && <ActivityIndicator size="large" />}
-      {error && <Text style={styles.error}>{error}</Text>}
-      {!loading && !error && (
-        <>
-          {todos.map(t => (
-            <Text key={t.id} style={styles.todo}>
-              {t.completed ? '✅' : '🕒'} {t.title}
-            </Text>
-          ))}
-        </>
-      )}
-      <Button title="Reload" onPress={load} disabled={loading} />
-    </View>
-  );
+  /** Returns true if the word is in the trie. */
+  search(word: string): boolean {
+    if (!word) return false;
+    let node = this.root;
+
+    for (const ch of word) {
+      const next = node.children.get(ch);
+      if (!next) return false;      // path breaks → word absent
+      node = next;
+    }
+
+    return node.isEndOfWord;
+  }
+
+  /** Checks if any word in the trie starts with the given prefix. */
+  startsWith(prefix: string): boolean {
+    if (!prefix) return false;
+    let node = this.root;
+
+    for (const ch of prefix) {
+      const next = node.children.get(ch);
+      if (!next) return false;
+      node = next;
+    }
+
+    return true;
+  }
+
+  /** (Optional) Returns the list of all words in the trie that start with a given prefix. */
+  autocomplete(prefix: string): string[] {
+    const results: string[] = [];
+    let node = this.root;
+
+    // Walk to the node representing the prefix
+    for (const ch of prefix) {
+      const next = node.children.get(ch);
+      if (!next) return results;   // empty list if prefix not present
+      node = next;
+    }
+
+    // Depth‑first walk from that node, collecting words
+    const dfs = (n: TrieNode, acc: string) => {
+      if (n.isEndOfWord) results.push(acc);
+      for (const [ch, child] of n.children.entries()) {
+        dfs(child, acc + ch);
+      }
+    };
+
+    dfs(node, prefix);
+    return results;
+  }
 }
+const trie = new Trie();
 
-//   ┌─── Styles ───────────────────────────────────────────────────────────────┐
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center' },
-  todo: { fontSize: 18, marginVertical: 4 },
-  error: { color: 'red', marginBottom: 12 },
-});
+trie.insert('cat');
+trie.insert('car');
+trie.insert('cart');
+trie.insert('dog');
+
+console.log(trie.search('cat'));      // true
+console.log(trie.search('cab'));      // false
+
+console.log(trie.startsWith('ca'));   // true
+console.log(trie.startsWith('do'));   // true
+console.log(trie.startsWith('droll'));// false
+
+console.log(trie.autocomplete('ca')); // ['cat', 'car', 'cart']
