@@ -1,12 +1,37 @@
-function reverseWords(str: string): string {
-  // Split on any amount of whitespace, filter out empty chunks,
-  // reverse the array, then join with a single space.
-  return str
-    .trim()
-    .split(/\s+/)
-    .reverse()
-    .join(' ');
+// random-joke.ts
+import fetch from 'node-fetch';          // npm i node-fetch@2
+import { Console } from 'console';
+
+interface Joke {
+  id: number;
+  type: string;
+  setup: string;
+  punchline: string;
 }
 
-// Example
-console.log(reverseWords("Hello world this is TypeScript")); // "TypeScript is this world Hello"
+async function fetchRandomJoke(): Promise<Joke> {
+  const res = await fetch('https://official-joke-api.appspot.com/random_joke');
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} – failed to fetch joke`);
+  }
+
+  const data: Joke = await res.json();
+
+  return data;
+}
+
+async function run() {
+  try {
+    const joke = await fetchRandomJoke();
+
+    console.log('😂 Here’s something to make you smile!');
+    console.log(`  ${joke.setup}`);
+    console.log(`   – ${joke.punchline}`);
+  } catch (err: any) {
+    console.error('Oops! Something went wrong:');
+    console.error(err.message ?? err);
+  }
+}
+
+run();
