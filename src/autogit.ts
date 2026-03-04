@@ -1,79 +1,87 @@
-// A simple graph representation.
-// All nodes must be comparable with === (e.g. numbers, strings, or objects with a unique id).
-interface Graph<T> {
-  /** Return the directly connected nodes of `node`.  */
-  neighbors(node: T): T[];
+/**
+ * A directed graph stored as an adjacency list.
+ * Each key is a node identifier, the value is an array of successor node ids.
+ */
+interface Graph {
+  [node: string]: string[];
 }
 
 /**
- * Iterative depth‑limited DFS.
- *
- * @param graph      the graph to search
- * @param start      the node to start from
- * @param goal       the node we are looking for
- * @param maxDepth   limit recursion depth (0 = only start node)
- * @returns           true if goal is reachable within maxDepth, false otherwise
+ * Result of the algorithm – an array of SCCs.
+ * Each SCC is an array of node ids that belong together.
  */
-function depthLimitedSearch<T>(
-  graph: Graph<T>,
-  start: T,
-  goal: T,
-  maxDepth: number
-): boolean {
-  // Stack entries hold a node and its depth in the search space.
-  const stack: Array<{ node: T; depth: number }> = [{ node: start, depth: 0 }];
-  const visited = new Set<T>();
+type SCC = string[][];
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;   // pop() never returns undefined here
+/**
+ * Tarjan’s algorithm for SCCs.
+ *
+ * @param g The graph to analyse.
+ * @returns An array of strongly connected components.
+ */
+function tarjanSCC(g: Graph): SCC {
+  const indexMap: Record<string, number> = {};   // node → its index
+  const lowLink: Record<string, number> = {};    // node → low‑link value
+  const onStack: Set<string> = new Set();        // nodes currently in the stack
+  const stack: string[] = [];                    // stack of nodes
+  const sccs: SCC = [];
 
-    // If we hit the goal, we're done.
-    if (node === goal) return true;
+  let currentIndex = 0;
 
-    // Skip revisiting nodes; this keeps the search linear in the number of edges.
-    if (visited.has(node)) continue;
-    visited.add(node);
+  const strongConnect = (v: string) => {
+    indexMap[v] = currentIndex;
+    lowLink[v] = currentIndex;
+    currentIndex += 1;
+    stack.push(v);
+    onStack.add(v);
 
-    // Stop exploring deeper than we’re allowed.
-    if (depth === maxDepth) continue;
+    // Explore every outgoing edge v → w
+    for (const w of g[v] ?? []) {
+      if (!(w in indexMap)) {
+        // Recursively visit w
+        strongConnect(w);
+        lowLink[v] = Math.min(lowLink[v], lowLink[w]);
+      } else if (onStack.has(w)) {
+        // w is in the current SCC frontier
+        lowLink[v] = Math.min(lowLink[v], indexMap[w]);
+      }
+    }
 
-    // Push neighbours onto the stack with incremented depth.
-    for (const neighbour of graph.neighbors(node)) {
-      // No need to push a node that is already visited; but doing so is harmless.
-      stack.push({ node: neighbour, depth: depth + 1 });
+    // If v is the root of an SCC
+    if (lowLink[v] === indexMap[v]) {
+      const component: string[] = [];
+      let w: string | undefined;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
+    }
+  };
+
+  // Kick off a DFS from every unvisited node.
+  for (const v in g) {
+    if (!(v in indexMap)) {
+      strongConnect(v);
     }
   }
 
-  return false;   // exhausted everything within the depth limit
+  return sccs;
 }
-// Simple adjacency‑list example
-class SimpleGraph implements Graph<number> {
-  adjacency: Map<number, number[]>;
+const example: Graph = {
+  a: ['b'],
+  b: ['c', 'e', 'f'],
+  c: ['d', 'g'],
+  d: ['c', 'h'],
+  e: ['a', 'f'],
+  f: ['g'],
+  g: ['f'],
+  h: ['d', 'g', 'i'],
+  i: ['h', 'k', 'l'],
+  j: ['k'],
+  k: ['i', 'l'],
+  l: ['k']
+};
 
-  constructor(edges: Array<[number, number]>) {
-    this.adjacency = new Map();
-    for (const [a, b] of edges) {
-      this.adjacency
-        .get(a) ??= [];
-      this.adjacency.get(a)!.push(b);
-
-      this.adjacency
-        .get(b) ??= [];
-      this.adjacency.get(b)!.push(a);   // undirected
-    }
-  }
-
-  neighbors(node: number): number[] {
-    return this.adjacency.get(node) ?? [];
-  }
-}
-
-const g = new SimpleGraph([
-  [1, 2],
-  [1, 3],
-  [2, 4],
-  [3, 5],
-]);
-
-console.log(depthLimitedSearch(g, 1, 5, 1)); // false (needs depth 2)
-console.log(depthLimitedSearch(g, 1, 5, 2)); // true
+console.log(tarjanSCC(example));
+// → [ [ 'g', 'f' ], [ 'c', 'd', 'h' ], [ 'i', 'l', 'k' ], [ 'a', 'b', 'e' ], [ 'j' ] ]
