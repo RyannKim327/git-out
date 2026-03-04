@@ -1,59 +1,25 @@
-class ListNode {
-  val: number;
-  next: ListNode | null;
-
-  constructor(val: number, next: ListNode | null = null) {
-    this.val = val;
-    this.next = next;
-  }
-}
 /**
- * Returns the node where listA and listB intersect.
- * If they don't intersect, returns null.
+ * Computes the factorial of a non‑negative integer `n` recursively.
+ * @param n - A non‑negative integer (e.g., 0, 1, 2, …)
+ * @returns n! as a `number`. For values beyond ≈ 170 you’ll hit the
+ *          IEEE‑754 overflow limit and get `Infinity`, so for large
+ *          inputs you might want to switch to BigInt.
  */
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  if (!headA || !headB) return null;
-
-  let pA: ListNode | null = headA;
-  let pB: ListNode | null = headB;
-
-  // Continue until the two pointers either match or both become null.
-  while (pA !== pB) {
-    // Move to the next node; if we're at the end, jump to the other list's head.
-    pA = pA ? pA.next : headB;
-    pB = pB ? pB.next : headA;
-  }
-
-  return pA; // Either the intersection node or null.
+function factorial(n: number): number {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials');
+  if (n <= 1) return 1;          // base case: 0! = 1! = 1
+  return n * factorial(n - 1);   // recursive step
 }
-// Build two intersecting lists:
-// A: 1 → 3 → 5 → 7 → 9
-// B: 2 → 4 →        → 7 → 9
-//            ^<--- intersection starts here
+console.log(factorial(5));   // 120
+console.log(factorial(0));   // 1
+function bigIntFactorial(n: number): bigint {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials');
+  if (n <= 1) return 1n;               // 1n is a BigInt literal
+  return BigInt(n) * bigIntFactorial(n - 1);
+}
 
-const common = new ListNode(7, new ListNode(9));
-
-const listA = new ListNode(1, new ListNode(3, new ListNode(5, common)));
-const listB = new ListNode(2, new ListNode(4, common));
-
-const intersection = getIntersectionNode(listA, listB);
-console.log(intersection?.val); // 7
-function getIntersectionNodeHash(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  const nodes = new Set<ListNode>();
-
-  for (let cur = headA; cur; cur = cur.next) {
-    nodes.add(cur);
-  }
-
-  for (let cur = headB; cur; cur = cur.next) {
-    if (nodes.has(cur)) return cur;
-  }
-
-  return null;
+console.log(bigIntFactorial(30).toString());
+function tailFactorial(n: number, acc: number = 1): number {
+  if (n <= 1) return acc;
+  return tailFactorial(n - 1, acc * n);
 }
