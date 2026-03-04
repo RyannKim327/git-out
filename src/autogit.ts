@@ -1,56 +1,48 @@
-Let   S = s1 s2 … sn
-      T = t1 t2 … tm
+// 1️⃣  Define a comparison helper – most of the time you’ll just pass
+//     (a, b) => a < b for ascending order.
+type Comparator<T> = (a: T, b: T) => boolean;
 
-DP[i][j] = length of the longest common suffix that ends at S[i‑1] and T[j‑1]
-DP[i][j] = DP[i-1][j-1] + 1
-/**
- * Returns the longest common substring of `a` and `b`.
- * If there are multiple substrings of the same maximum length,
- * the first one found in `a` will be returned.
- */
-export function longestCommonSubstring(a: string, b: string): string {
-  const n = a.length, m = b.length;
-  if (n === 0 || m === 0) return '';
+// 2️⃣  The merge function – it expects two sorted arrays and pulls
+//     the smaller (according to the comparator) element out first.
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+  const result: T[] = [];
+  let i = 0,
+      j = 0;
 
-  // `prev` holds DP values for row i-1
-  const prev = new Array(m + 1).fill(0);
-  // `curr` holds DP values for current row i
-  const curr = new Array(m + 1).fill(0);
-
-  let maxLen = 0;          // longest length so far
-  let maxEndIndexA = 0;    // index in `a` where this substring ends
-
-  for (let i = 1; i <= n; i++) {
-    // Iterate columns
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        curr[j] = prev[j - 1] + 1;
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          maxEndIndexA = i - 1;   // keep the end idx in a
-        }
-      } else {
-        curr[j] = 0;
-      }
-    }
-
-    // Swap rows for next iteration
-    //  curr becomes prev, prev becomes curr (reuse the same arrays)
-    for (let j = 0; j <= m; j++) {
-      prev[j] = curr[j];
-      curr[j] = 0;   // reset current row for the next round
+  while (i < left.length && j < right.length) {
+    if (cmp(left[i], right[j])) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
     }
   }
 
-  return a.slice(maxEndIndexA - maxLen + 1, maxEndIndexA + 1);
+  // One side still has items – splice the rest onto the result.
+  if (i < left.length) result.push(...left.slice(i));
+  if (j < right.length) result.push(...right.slice(j));
+
+  return result;
 }
-import { longestCommonSubstring } from './common-substring';
 
-const a = "ABABCDA";
-const b = "CBADABABC";
+// 3️⃣  The recursive mergeSort main function – sorts in place if you
+//     prefer not to allocate the full array during every merge.
+export function mergeSort<T>(arr: T[], cmp: Comparator<T> = (a, b) => a < b): T[] {
+  if (arr.length <= 1) return arr;     // Base case: nothing to do
 
-console.log(longestCommonSubstring(a, b)); // → "ABC"
-console.log(longestCommonSubstring('foo', ''));          // ''
-console.log(longestCommonSubstring('abc', 'xyz'));       // ''
-console.log(longestCommonSubstring('same', 'same'));     // 'same'
-console.log(longestCommonSubstring('aaaaa', 'bbaaa'));   // 'aaa'
+  const mid = Math.floor(arr.length / 2);
+  const left  = mergeSort(arr.slice(0, mid), cmp);
+  const right = mergeSort(arr.slice(mid),    cmp);
+
+  return merge(left, right, cmp);
+}
+// Numbers, ascending
+const sortedNumbers = mergeSort([8, 3, 5, 1, 9, 2]);
+
+// Strings, descending
+const sortedStrings = mergeSort(
+  ["banana", "apple", "cherry"],
+  (a, b) => a > b
+);
+
+console.log(sortedNumbers); // [1, 2, 3, 5, 8, 9]
+console.log(sortedStrings); // ["cherry", "banana", "apple"]
