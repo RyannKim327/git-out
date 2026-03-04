@@ -1,40 +1,51 @@
-// Basic node interface – can be turned into a class if you like.
-interface TreeNode<T = number> {
-  val: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+// A classic singly‑linked‑list node
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-function maxDepth<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                 // empty subtree → depth 0
 
-  const leftDepth  = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
+/**
+ * Returns the nth node from the end (1‑based) or null if n is out of range.
+ */
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;          // natural guard for mis‑ed input
 
-  // Depth of current node = 1 (itself) + depth of deeper side
-  return 1 + Math.max(leftDepth, rightDepth);
-}
-const root: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3, right: { val: 5, right: { val: 6 } } }
-};
+  let first: ListNode<T> | null = head;
+  let second: ListNode<T> | null = head;
 
-console.log(maxDepth(root));   // → 4
-function maxDepthIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
-
-  let max = 0;
-  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
-    { node: root, depth: 1 },
-  ];
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    max = Math.max(max, depth);
-
-    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
-    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
+  /* Advance `first` n steps ahead. */
+  for (let i = 0; i < n; i++) {
+    if (!first) return null;   // n is larger than list length
+    first = first.next;
   }
 
-  return max;
+  /* Move both pointers until `first` hits the end. */
+  while (first) {
+    first = first.next;
+    second = second!.next;     // second is guaranteed not null here
+  }
+
+  return second;   // `second` is the nth node from the end
 }
+function nthFromEndTwoPass<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let len = 0;
+  for (let cur = head; cur; cur = cur.next) len++;
+
+  if (n <= 0 || n > len) return null;
+
+  let cur = head;
+  for (let i = 0; i < len - n; i++) cur = cur!.next;
+
+  return cur;
+}
+// Example list: 1 → 2 → 3 → 4 → 5
+const tail = new ListNode(5);
+const middle = new ListNode(4, tail);
+const head = new ListNode(1,
+           new ListNode(2,
+           new ListNode(3,
+           middle)));
+
+console.log(nthFromEnd(head, 1)?.val); // 5
+console.log(nthFromEnd(head, 2)?.val); // 4
+console.log(nthFromEnd(head, 5)?.val); // 1
+console.log(nthFromEnd(head, 6));      // null
