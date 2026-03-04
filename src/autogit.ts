@@ -1,41 +1,101 @@
-// schedule.ts
-import cron from 'node-cron';
+// A node inside the trie
+class TrieNode {
+  // Map from a character to the next node in the path
+  children: Map<string, TrieNode> = new Map();
 
-let runCount = 0;
-const maxRuns = 5;
+  // Marks the end of a word
+  isEndOfWord: boolean = false;
 
-// Pick a playful string at random each time the job fires.
-const messages = [
-  "🍕 Time for a pizza break!",
-  "🐱‍🏍 Speedy coding vibes!",
-  "🧐 Did you know: A group of flamingos is called a flamboyance?",
-  "🚀 Launching into the cosmos…",
-  "🔮 Future content will appear here!"
-];
+  constructor(public readonly char: string | null = null) {}
+}
 
-const job = cron.schedule('* * * * *', () => {
-  // Bot says something random
-  const msg = messages[Math.floor(Math.random() * messages.length)];
-  console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
+// The trie itself
+export class Trie {
+  private root = new TrieNode();
 
-  runCount += 1;
-  if (runCount >= maxRuns) {
-    console.log('Stopping the cron job after 5 runs.');
-    job.stop();
+  /** Inserts a word into the trie. */
+  insert(word: string): void {
+    if (!word) return;               // ignore empty strings
+    let node = this.root;
+
+    for (const ch of word) {
+      // Grab the child if it already exists; otherwise create a new node
+      let next = node.children.get(ch);
+      if (!next) {
+        next = new TrieNode(ch);
+        node.children.set(ch, next);
+      }
+      node = next;
+    }
+
+    // Mark that a complete word ends here
+    node.isEndOfWord = true;
   }
-}, {
-  scheduled: true,
-  timezone: "UTC"
-});
 
-console.log('Cron job started—will run every minute up to 5 times.');
-# 1. Init a barebones project if you haven’t already
-npm init -y
+  /** Returns true if the word is in the trie. */
+  search(word: string): boolean {
+    if (!word) return false;
+    let node = this.root;
 
-# 2. Install the cron package and types for Node
-npm i node-cron
-npm i -D @types/node @types/node-cron typescript ts-node
+    for (const ch of word) {
+      const next = node.children.get(ch);
+      if (!next) return false;      // path breaks → word absent
+      node = next;
+    }
 
-# 3. Compile and run
-npx ts-node schedule.ts
-[12:00:00 AM] 🚀 Launching into the cosmos…
+    return node.isEndOfWord;
+  }
+
+  /** Checks if any word in the trie starts with the given prefix. */
+  startsWith(prefix: string): boolean {
+    if (!prefix) return false;
+    let node = this.root;
+
+    for (const ch of prefix) {
+      const next = node.children.get(ch);
+      if (!next) return false;
+      node = next;
+    }
+
+    return true;
+  }
+
+  /** (Optional) Returns the list of all words in the trie that start with a given prefix. */
+  autocomplete(prefix: string): string[] {
+    const results: string[] = [];
+    let node = this.root;
+
+    // Walk to the node representing the prefix
+    for (const ch of prefix) {
+      const next = node.children.get(ch);
+      if (!next) return results;   // empty list if prefix not present
+      node = next;
+    }
+
+    // Depth‑first walk from that node, collecting words
+    const dfs = (n: TrieNode, acc: string) => {
+      if (n.isEndOfWord) results.push(acc);
+      for (const [ch, child] of n.children.entries()) {
+        dfs(child, acc + ch);
+      }
+    };
+
+    dfs(node, prefix);
+    return results;
+  }
+}
+const trie = new Trie();
+
+trie.insert('cat');
+trie.insert('car');
+trie.insert('cart');
+trie.insert('dog');
+
+console.log(trie.search('cat'));      // true
+console.log(trie.search('cab'));      // false
+
+console.log(trie.startsWith('ca'));   // true
+console.log(trie.startsWith('do'));   // true
+console.log(trie.startsWith('droll'));// false
+
+console.log(trie.autocomplete('ca')); // ['cat', 'car', 'cart']
