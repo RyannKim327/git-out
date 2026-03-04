@@ -1,83 +1,38 @@
-// --------------------------------------------------
-// 1️⃣  Linked‑list node definition
-// --------------------------------------------------
-export interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
-}
+// fortune.ts
+import { createInterface } from 'readline';
 
-// --------------------------------------------------
-// 2️⃣  Helper: reverse a list, returns new head
-// --------------------------------------------------
-/**
- * Reverses the linked list starting at node `head`.
- * Returns the new head of the reversed list.
- */
-function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let current = head;
+// Set up a simple REPL‑style prompt
+const rl = createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-  while (current) {
-    const next = current.next;
-    current.next = prev;
-    prev = current;
-    current = next;
-  }
-  return prev;          // new head
-}
+console.log('🃏 Welcome to the Random Fortune Machine!');
 
-// --------------------------------------------------
-// 3️⃣  Palindrome checker
-// --------------------------------------------------
-export function isPalindrome<T>(head: ListNode<T> | null): boolean {
-  if (!head || !head.next) return true;   // Empty or single‑node list
+// Ask the user for a number
+rl.question('Enter a number (0–9) and press Enter: ', (answer) => {
+  // Try to parse the input as an integer
+  const num = parseInt(answer.trim(), 10);
 
-  // ----- 3.1  Find the middle (slow stops at middle)
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+  if (isNaN(num) || num < 0 || num > 9) {
+    console.log('❌ That’s not a valid single digit between 0 and 9.');
+  } else {
+    // Pick a fortune from a tiny list
+    const fortunes = [
+      "You'll find a penny on the sidewalk.",
+      "A surprise call will brighten your day.",
+      "Today is a great day to start learning something new.",
+      "You’ll discover a hidden talent for drawing.",
+      "A forgotten receipt will pop up in your inbox.",
+      "A random act of kindness will return to you.",
+      "You’ll taste your favorite food in an unexpected way.",
+      "A new friendship is just a conversation away.",
+      "You’ll hit a traffic light and notice your neighbor’s cat.",
+      "Today you will finally finish that project you’ve shelved."
+    ];
 
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+    console.log(`🔮 Fortune for ${num}: ${fortunes[num]}`);
   }
 
-  // ----- 3.2  Reverse second half
-  const secondHalfStart = reverse(slow!.next);
-  let firstHalfIter = head;
-  let secondHalfIter = secondHalfStart;
-
-  // ----- 3.3  Compare halves
-  let palindrome = true;
-  while (secondHalfIter) {
-    if (firstHalfIter!.val !== secondHalfIter.val) {
-      palindrome = false;
-      break;
-    }
-    firstHalfIter = firstHalfIter!.next;
-    secondHalfIter = secondHalfIter.next;
-  }
-
-  // ----- 3.4  Restore the original order (optional)
-  slow!.next = reverse(secondHalfStart);
-
-  return palindrome;
-}
-
-// --------------------------------------------------
-// 4️⃣  Example usage
-// --------------------------------------------------
-function buildList(values: any[]): ListNode | null {
-  let dummy: ListNode | null = null;
-  for (let i = values.length - 1; i >= 0; i--) {
-    dummy = { val: values[i], next: dummy };
-  }
-  return dummy;
-}
-
-// Palindrome case
-const list1 = buildList([1, 2, 3, 2, 1]);
-console.log(isPalindrome(list1)); // true
-
-// Non‑palindrome
-const list2 = buildList([1, 2, 3, 4, 5]);
-console.log(isPalindrome(list2)); // false
+  rl.close();
+});
