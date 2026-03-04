@@ -1,56 +1,57 @@
-Let   S = s1 s2 … sn
-      T = t1 t2 … tm
+text:   abcdefghijk
+        ‖~~~~~~~~~~
+pattern:   def
+function buildShiftTable(pattern: string): Map<string, number> {
+  const table = new Map<string, number>();
+  const m = pattern.length;
 
-DP[i][j] = length of the longest common suffix that ends at S[i‑1] and T[j‑1]
-DP[i][j] = DP[i-1][j-1] + 1
-/**
- * Returns the longest common substring of `a` and `b`.
- * If there are multiple substrings of the same maximum length,
- * the first one found in `a` will be returned.
- */
-export function longestCommonSubstring(a: string, b: string): string {
-  const n = a.length, m = b.length;
-  if (n === 0 || m === 0) return '';
+  // For all chars except the last one
+  for (let i = 0; i < m - 1; i++) {
+    table.set(pattern[i], m - 1 - i);
+  }
+  return table;
+}
+function boyerMooreHorspool(pattern: string, text: string): number | null {
+  const m = pattern.length;
+  const n = text.length;
 
-  // `prev` holds DP values for row i-1
-  const prev = new Array(m + 1).fill(0);
-  // `curr` holds DP values for current row i
-  const curr = new Array(m + 1).fill(0);
+  if (m === 0) return 0;          // Empty pattern matches at start
+  if (m > n) return null;         // Impossible to find
 
-  let maxLen = 0;          // longest length so far
-  let maxEndIndexA = 0;    // index in `a` where this substring ends
+  const shiftTable = buildShiftTable(pattern);
+  const defaultShift = m;
 
-  for (let i = 1; i <= n; i++) {
-    // Iterate columns
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        curr[j] = prev[j - 1] + 1;
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          maxEndIndexA = i - 1;   // keep the end idx in a
-        }
-      } else {
-        curr[j] = 0;
-      }
+  let i = 0; // Current alignment of pattern in text
+
+  while (i <= n - m) {
+    let j = m - 1;
+
+    // Compare from right to left
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
     }
 
-    // Swap rows for next iteration
-    //  curr becomes prev, prev becomes curr (reuse the same arrays)
-    for (let j = 0; j <= m; j++) {
-      prev[j] = curr[j];
-      curr[j] = 0;   // reset current row for the next round
+    if (j < 0) {
+      // Full match
+      return i;
     }
+
+    // Mismatch: decide how far to shift
+    const mismatchedChar = text[i + j];
+    const shift = shiftTable.get(mismatchedChar) ?? defaultShift;
+
+    i += shift;
   }
 
-  return a.slice(maxEndIndexA - maxLen + 1, maxEndIndexA + 1);
+  return null; // No match found
 }
-import { longestCommonSubstring } from './common-substring';
+const sampleText = "The quick brown fox jumps over the lazy dog. The fox was quick.";
+const samplePattern = "quick";
 
-const a = "ABABCDA";
-const b = "CBADABABC";
+const matchIdx = boyerMooreHorspool(samplePattern, sampleText);
 
-console.log(longestCommonSubstring(a, b)); // → "ABC"
-console.log(longestCommonSubstring('foo', ''));          // ''
-console.log(longestCommonSubstring('abc', 'xyz'));       // ''
-console.log(longestCommonSubstring('same', 'same'));     // 'same'
-console.log(longestCommonSubstring('aaaaa', 'bbaaa'));   // 'aaa'
+if (matchIdx !== null) {
+  console.log(`Found at index ${matchIdx}`);
+} else {
+  console.log("No match");
+}
