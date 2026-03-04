@@ -1,35 +1,36 @@
 /**
- * Bottom‑up merge sort – no recursion, only loops.
- * @param arr The array to sort, in place.
- * @returns The sorted array (same reference as the argument).
+ * Returns the longest common prefix among all given strings.
+ * If the array is empty it returns an empty string.
  */
-export function mergeSortIterative<T>(arr: T[]): T[] {
-  const len = arr.length;
-  if (len < 2) return arr;          // already sorted
+function longestCommonPrefix(words: string[]): string {
+  if (!words.length) return '';
 
-  // Temporary buffer reused for each merge
-  const temp = new Array<T>(len);
+  // The first string will act as a reference; we hammer it down
+  // as far as we need to.
+  let prefix = words[0];
 
-  // Initial run width – start with runs of 1 element
-  for (let width = 1; width < len; width <<= 1) {
-    // Merge pairs of runs: left = i‑th run, right = i+width‑th run
-    for (let i = 0; i < len; i += width << 1) {
-      const left = i;
-      const mid = Math.min(i + width, len);
-      const right = Math.min(i + (width << 1), len);
-
-      // Merge [left, mid) and [mid, right) into temp
-      let l = left, r = mid, k = left;
-      while (l < mid && r < right) {
-        temp[k++] = (arr[l] as any <= arr[r] as any) ? arr[l++] : arr[r++];
-      }
-      while (l < mid) temp[k++] = arr[l++];
-      while (r < right) temp[k++] = arr[r++];
-
-      // Copy the merged segment back into arr
-      for (let p = left; p < right; p++) arr[p] = temp[p];
+  // Compare the current prefix to every other word.
+  for (const w of words.slice(1)) {
+    // Keep truncating the prefix until it matches the start of w.
+    while (!w.startsWith(prefix)) {
+      prefix = prefix.slice(0, -1); // strip last char
+      if (!prefix) return ''; // nothing common any more
     }
   }
 
-  return arr;
+  return prefix;
+}
+console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // "fl"
+console.log(longestCommonPrefix(['dog', 'racecar', 'car']));    // ""
+function lcpSort(words: string[]): string {
+  if (!words.length) return '';
+
+  const sorted = [...words].sort();
+  const a = sorted[0];
+  const b = sorted[sorted.length - 1];
+  let i = 0;
+
+  while (i < a.length && a[i] === b[i]) i++;
+
+  return a.slice(0, i);
 }
