@@ -1,38 +1,30 @@
-/**
- * Return the first non‑repeating character in a string.
- * If every character repeats, return `null`.
- */
-function firstNonRepeating(str: string): string | null {
-  const counts: Record<string, number> = {};
+const str = "hello world";
+const hasFoo = str.includes("world");   // true
+const hasBar = str.includes("bar");     // false
+const hasCapital = str.includes("WORLD");          // false
+const hasCapitalIgnoreCase = str.toLowerCase()
+                                .includes("WORLD".toLowerCase()); // true
+const hasCapitalIgnoreCase = /world/i.test(str);   // true
+const index = str.indexOf("world"); // 6
+const missing = str.indexOf("bar"); // -1
+const present = str.indexOf("world") !== -1; // true
+const hasPrefix = /^hello/.test(str); // true
 
-  // 1️⃣ Count each character
-  for (const ch of str) {
-    counts[ch] = (counts[ch] ?? 0) + 1;
-  }
+// With dynamic patterns
+const word = "world";
+const pattern = new RegExp(word);    // case‑sensitive
+const result = pattern.test(str);    // true
+// Presence
+const contains = text.includes(sub);
 
-  // 2️⃣ Scan once more to find the first with count 1
-  for (const ch of str) {
-    if (counts[ch] === 1) {
-      return ch;
-    }
-  }
+// Presence (index form)
+const containsIndex = text.indexOf(sub) !== -1;
 
-  return null;
-}
+// Position
+const pos = text.indexOf(sub); // -1 if absent
 
-// quick examples
-console.log(firstNonRepeating('abacabad')); // "b"
-console.log(firstNonRepeating('aabbcc'));   // null
-function firstNonRepeatingMap(str: string): string | null {
-  const freq = new Map<string, number>();
+// Case‑insensitive
+const containsIC = text.toLowerCase().includes(sub.toLowerCase());
 
-  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
-
-  for (const ch of str) if (freq.get(ch) === 1) return ch;
-  return null;
-}
-function allNonRepeating(str: string): string[] {
-  const freq = new Map<string, number>();
-  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  return [...str].filter(ch => freq.get(ch) === 1);
-}
+// Regex
+const containsRegex = /world/i.test(text);
