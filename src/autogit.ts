@@ -1,37 +1,59 @@
-// Works for numbers, strings, dates, anything that can be compared with < and >.
-export function isSorted<T extends number | string | Date>(arr: T[]): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] < arr[i - 1]) return false;
+/**
+ * Shell sort – a simple, in‑place algorithm that improves on insertion sort.
+ * Sorts an array of numbers in ascending order.
+ *
+ * @param arr The array to sort (modified in place)
+ * @param compare Optional compare function (defaults to numeric comparison)
+ */
+export function shellSort(
+  arr: number[],
+  compare?: (a: number, b: number) => number
+): void {
+  const len = arr.length;
+  const cmp = compare ?? ((a, b) => a - b);
+
+  // A common gap sequence: halving each time (Shell's original)
+  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Gapped insertion sort
+    for (let i = gap; i < len; i++) {
+      let temp = arr[i];
+      let j = i;
+
+      // Move elements that are greater than temp backward by 'gap' places
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      // Bring temp into its spot
+      arr[j] = temp;
+    }
   }
-  return true;
 }
-isSorted([1, 2, 3, 4]);        // true
-isSorted([1, 3, 2, 4]);        // false
-isSorted(['a', 'b', 'c']);     // true
-isSorted(['c', 'b', 'a']);     // false
-type Comparator<T> = (a: T, b: T) => number;
+const data = [40, 3, 10, 5, 1, 15];
+shellSort(data);
 
-export function isSortedWith<T>(arr: T[], cmp: Comparator<T>): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) return false; // `a > b` in ascending order
+console.log(data); // [1, 3, 5, 10, 15, 40]
+export function shellSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): void {
+  const len = arr.length;
+  const cmp = compare ?? ((a, b) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
+
+  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
+    }
   }
-  return true;
 }
-interface Person { name: string; age: number; }
-
-const people: Person[] = [
-  { name: 'Alice', age: 25 },
-  { name: 'Bob', age: 30 },
-  { name: 'Charlie', age: 35 },
-];
-
-isSortedWith(people, (a, b) => a.age - b.age); // true
-export const isSorted = <T>(arr: T[], cmp: Comparator<T> = (a, b) => {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}): boolean =>
-  arr
-    .map((value, index, self) => [self[index - 1], value] as const)
-    .slice(1) // skip the first undefined pair
-    .every(([prev, cur]) => cmp(prev!, cur) <= 0);
+shellSort(['banana', 'apple', 'pear'], (a, b) => a.localeCompare(b));
