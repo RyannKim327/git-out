@@ -1,59 +1,69 @@
 /**
- * Return the index of the first occurrence of `pattern` inside `text`,
- * or -1 if the pattern is absent.
+ * Returns the LCS length of two strings.
  */
-export function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0; // trivially found at start
+export function lcsLength(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
 
-  const lps = computeLPSArray(pattern); // longest‑prefix‑suffix table
-  let i = 0; // index for text
-  let j = 0; // index for pattern
+  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) { // whole pattern matched
-        return i - j; // match start index
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
       }
-    } else if (j > 0) {
-      // mismatch after j matches – skip ahead by lps[j‑1]
-      j = lps[j - 1];
-    } else {
-      // mismatch at start of pattern
-      i++;
     }
   }
 
-  return -1; // no match
+  return dp[m][n];
 }
 
 /**
- * Pre‑process the pattern to build the “longest prefix that is also a suffix”
- * (LPS) array. lps[i] = the length of the longest proper prefix of
- * pattern[0..i] that is also a suffix of pattern[0..i].
+ * Returns the actual longest common subsequence.
+ * In case of multiple LCS of the same length, the one found
+ * will consist of the characters chosen by the DP traversal.
  */
-function computeLPSArray(pattern: string): number[] {
-  const lps: number[] = Array(pattern.length).fill(0);
-  let len = 0;   // length of previous longest prefix suffix
-  let i = 1;     // lps[0] is always 0
+export function lcs(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else if (len !== 0) {
-      // use the previous lps value to avoid re‑checking
-      len = lps[len - 1];
-    } else {
-      lps[i] = 0;
-      i++;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+  // Build the DP table – same recurrence as in lcsLength
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
   }
 
-  return lps;
+  // Backtrack to rebuild the sequence
+  let i = m;
+  let j = n;
+  const seq: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      seq.push(a[i - 1]); // they match
+      i--;
+      j--;
+    } else if (dp[i - 1][j] > dp[i][j - 1]) {
+      i--; // move up
+    } else {
+      j--; // move left
+    }
+  }
+
+  return seq.reverse().join('');
 }
-console.log(kmpSearch("ababcabcababc", "abc"));   // 2
-console.log(kmpSearch("ababcabcababc", "abcd"));  // -1
-console.log(kmpSearch("aaaaa", "aaa"));           // 0
+const a = "AGGTAB";
+const b = "GXTXAYB";
+
+console.log(lcsLength(a, b)); // 4
+console.log(lcs(a, b));       // "GTAB"
