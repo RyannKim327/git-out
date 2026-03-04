@@ -1,46 +1,77 @@
+low  = 0
+high = length–1
+
+while low ≤ high and target ∈ [arr[low], arr[high]]:
+    // Edge cases
+    if arr[low] == arr[high]:
+        return (arr[low] == target) ? low : -1
+
+    // Interpolated index
+    pos = low + ((target – arr[low]) * (high – low))
+          / (arr[high] – arr[low])
+
+    // Clamp to array bounds
+    pos = Math.round(pos)
+
+    if arr[pos] == target:
+        return pos
+    else if arr[pos] < target:
+        low = pos + 1
+    else:
+        high = pos – 1
+
+return –1   // not found
 /**
- * Returns true if `a` and `b` are anagrams.
- * Works for any Unicode characters, but
- * it ignores case and whitespace by default.
+ * Interpolation search for a strictly sorted numeric array.
+ * @param arr   - Sorted numbers (ascending)
+ * @param target - Number to find
+ * @returns Index of target, or -1 if not found
  */
-function areAnagrams(a: string, b: string, ignoreCase = true, ignoreWhitespace = true): boolean {
-  // Normalise: trim, collapse spaces, lower‑case if requested
-  const normalize = (s: string) =>
-    s
-      .replace(/\s+/g, "")        // delete spaces
-      .toLowerCase();             // lower‑case
+export function interpolationSearch(
+  arr: readonly number[],
+  target: number
+): number {
+  if (arr.length === 0) return -1;
 
-  if (ignoreCase && ignoreWhitespace) {
-    a = normalize(a);
-    b = normalize(b);
-  } else if (ignoreCase) {
-    a = a.toLowerCase();
-    b = b.toLowerCase();
-  } else if (ignoreWhitespace) {
-    a = a.replace(/\s+/g, "");
-    b = b.replace(/\s+/g, "");
+  let low = 0;
+  let high = arr.length - 1;
+
+  // Keep going while target is inside the current window
+  while (low <= high && target >= arr[low] && target <= arr[high]) {
+    // All remaining values equal – either hit or miss.
+    if (arr[low] === arr[high]) {
+      return arr[low] === target ? low : -1;
+    }
+
+    // Linear interpolation to guess position.
+    const pos =
+      low +
+      Math.round(
+        ((target - arr[low]) * (high - low)) / (arr[high] - arr[low])
+      );
+
+    // Just in case rounding pushes us outside: clamp bounds.
+    const index = Math.min(Math.max(pos, low), high);
+
+    const value = arr[index];
+    if (value === target) {
+      return index;
+    }
+    if (value < target) {
+      low = index + 1;
+    } else {
+      high = index - 1;
+    }
   }
 
-  // Quick length check
-  if (a.length !== b.length) return false;
-
-  // Count characters in the first string
-  const counts: Record<string, number> = {};
-
-  for (const ch of a) {
-    counts[ch] = (counts[ch] ?? 0) + 1;
-  }
-
-  // Subtract counts using the second string
-  for (const ch of b) {
-    const current = counts[ch];
-    if (!current) return false;          // character not seen before or already exhausted
-    if (--current === 0) delete counts[ch];
-  }
-
-  // If everything matched, the object should be empty
-  return Object.keys(counts).length === 0;
+  return -1; // Not found
 }
-console.log(areAnagrams("listen", "silent"));           // true
-console.log(areAnagrams("Hello, World!", "world!hello")); // true
-console.log(areAnagrams("foo", "bar"));                 // false
+const sorted = [3, 7, 13, 19, 23, 29, 31, 47, 53, 59];
+const target = 23;
+
+const idx = interpolationSearch(sorted, target);
+console.log(idx); // → 4
+console.log(interpolationSearch(sorted, 22)); // → -1
+const idx = interpolationSearch(sortedArray, key);
+if (idx !== -1) console.log(`Found at ${idx}`);
+else console.log('Not there');
