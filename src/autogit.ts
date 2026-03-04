@@ -1,16 +1,81 @@
-/**
- * Returns a whole number between min and max (both inclusive).
- *
- * @param min The smallest possible value you want (usually a number ≥ 0)
- * @param max The largest possible value you want
- */
-function randomIntInRange(min: number, max: number): number {
-  // Clamp the inputs so min <= max
-  const [low, high] = min <= max ? [min, max] : [max, min];
+class ListNode<T> {
+  data: T;
+  next: ListNode<T> | null = null;
 
-  // Math.random() → [0, 1).  Scale it to the desired width,
-  // then shift by the lower bound and round down.
-  return Math.floor(Math.random() * (high - low + 1)) + low;
+  constructor(data: T) {
+    this.data = data;
+  }
 }
-const rand = randomIntInRange(5, 10);
-console.log(rand); // → a whole number 5, 6, 7, 8, 9, or 10
+export class LinkedListQueue<T> {
+  private head: ListNode<T> | null = null; // front
+  private tail: ListNode<T> | null = null; // rear
+  private _size = 0;
+
+  /** Enqueue the value at the rear */
+  enqueue(value: T): void {
+    const node = new ListNode(value);
+
+    if (!this.tail) {        // empty queue
+      this.head = this.tail = node;
+    } else {
+      this.tail.next = node;
+      this.tail = node;
+    }
+    this._size++;
+  }
+
+  /** Dequeue the value at the front */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // empty
+
+    const value = this.head.data;
+    this.head = this.head.next;
+
+    if (!this.head) {          // queue became empty
+      this.tail = null;
+    }
+
+    this._size--;
+    return value;
+  }
+
+  /** Peek at the front without removing it */
+  peek(): T | undefined {
+    return this.head?.data;
+  }
+
+  /** Current number of elements */
+  size(): number {
+    return this._size;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** Consume the internal list into an array (useful for tests) */
+  toArray(): T[] {
+    const arr: T[] = [];
+    let node = this.head;
+    while (node) {
+      arr.push(node.data);
+      node = node.next;
+    }
+    return arr;
+  }
+}
+const q = new LinkedListQueue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size());    // 1
+console.log(q.isEmpty()); // false
+
+q.dequeue();              // removes 30
+console.log(q.isEmpty()); // true
