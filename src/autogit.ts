@@ -1,128 +1,83 @@
-type Compare<T> = (a: T, b: T) => boolean;
+// --------------------------------------------------
+// 1️⃣  Linked‑list node definition
+// --------------------------------------------------
+export interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
+}
 
+// --------------------------------------------------
+// 2️⃣  Helper: reverse a list, returns new head
+// --------------------------------------------------
 /**
- * If `compare(child, parent)` is true, swap them and continue
- * until the heap property is restored.
+ * Reverses the linked list starting at node `head`.
+ * Returns the new head of the reversed list.
  */
-function siftDown<T>(heap: T[], start: number, end: number, compare: Compare<T>) {
-  let root = start;
+function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let current = head;
 
-  while (true) {
-    const left = root * 2 + 1;
-    const right = left + 1;
-    let swap = root;
+  while (current) {
+    const next = current.next;
+    current.next = prev;
+    prev = current;
+    current = next;
+  }
+  return prev;          // new head
+}
 
-    if (left <= end && compare(heap[left], heap[swap])) {
-      swap = left;
+// --------------------------------------------------
+// 3️⃣  Palindrome checker
+// --------------------------------------------------
+export function isPalindrome<T>(head: ListNode<T> | null): boolean {
+  if (!head || !head.next) return true;   // Empty or single‑node list
+
+  // ----- 3.1  Find the middle (slow stops at middle)
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
+
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
+  }
+
+  // ----- 3.2  Reverse second half
+  const secondHalfStart = reverse(slow!.next);
+  let firstHalfIter = head;
+  let secondHalfIter = secondHalfStart;
+
+  // ----- 3.3  Compare halves
+  let palindrome = true;
+  while (secondHalfIter) {
+    if (firstHalfIter!.val !== secondHalfIter.val) {
+      palindrome = false;
+      break;
     }
-    if (right <= end && compare(heap[right], heap[swap])) {
-      swap = right;
-    }
-
-    if (swap === root) break;
-
-    [heap[root], heap[swap]] = [heap[swap], heap[root]];
-    root = swap;
+    firstHalfIter = firstHalfIter!.next;
+    secondHalfIter = secondHalfIter.next;
   }
+
+  // ----- 3.4  Restore the original order (optional)
+  slow!.next = reverse(secondHalfStart);
+
+  return palindrome;
 }
 
-/**
- * Moves the root element down the heap until it finds the right spot.
- * Called during `remove` after we swap the last element into the root.
- */
-export function heapify<T>(heap: T[], compare: Compare<T>) {
-  const length = heap.length;
-  if (length <= 1) return;
-
-  // Start from the last non‑leaf node.
-  for (let i = Math.floor((length - 2) / 2); i >= 0; i--) {
-    siftDown(heap, i, length - 1, compare);
+// --------------------------------------------------
+// 4️⃣  Example usage
+// --------------------------------------------------
+function buildList(values: any[]): ListNode | null {
+  let dummy: ListNode | null = null;
+  for (let i = values.length - 1; i >= 0; i--) {
+    dummy = { val: values[i], next: dummy };
   }
-}
-export class PriorityQueue<T> {
-  private heap: T[] = [];
-  private readonly compare: Compare<T>;
-
-  constructor(compare: Compare<T>) {
-    this.compare = compare;
-  }
-
-  get size() {
-    return this.heap.length;
-  }
-
-  /** Insert a new item, maintaining heap property */
-  push(item: T): void {
-    this.heap.push(item);
-    // bubble‑up
-    let idx = this.heap.length - 1;
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      if (!this.compare(this.heap[idx], this.heap[parentIdx])) break;
-      [this.heap[idx], this.heap[parentIdx]] = [this.heap[parentIdx], this.heap[idx]];
-      idx = parentIdx;
-    }
-  }
-
-  /** Return the root element (minimum) without removing it */
-  peek(): T | undefined {
-    return this.heap[0];
-  }
-
-  /**
-   * Remove and return the root element.
-   * The last element is moved to the root and sifted down.
-   */
-  pop(): T | undefined {
-    const length = this.heap.length;
-    if (!length) return undefined;
-    const root = this.heap[0];
-    const last = this.heap.pop()!; // last is defined because length > 0
-
-    if (length > 1) {
-      this.heap[0] = last;
-      siftDown(this.heap, 0, this.heap.length - 1, this.compare);
-    }
-
-    return root;
-  }
-
-  /** Convert the current array into a heap (in‑place) */
-  build() {
-    heapify(this.heap, this.compare);
-  }
-}
-// Simple numeric priority queue
-const pq = new PriorityQueue<number>((a, b) => a < b);
-
-pq.push(5);
-pq.push(2);
-pq.push(8);
-pq.push(1);
-
-console.log(pq.peek()); // 1
-while (pq.size) {
-  console.log(pq.pop()); // 1, 2, 5, 8
-}
-interface Task {
-  id: number;
-  priority: number; // smaller = higher priority
-  payload: string;
+  return dummy;
 }
 
-const taskCompare = (a: Task, b: Task) => a.priority < b.priority;
-const taskQueue = new PriorityQueue<Task>(taskCompare);
+// Palindrome case
+const list1 = buildList([1, 2, 3, 2, 1]);
+console.log(isPalindrome(list1)); // true
 
-taskQueue.push({ id: 1, priority: 10, payload: 'work' });
-taskQueue.push({ id: 2, priority: 3, payload: 'urgent' });
-taskQueue.push({ id: 3, priority: 7, payload: 'normal' });
-
-while (taskQueue.size) {
-  const t = taskQueue.pop()!;
-  console.log(`${t.id} (${t.priority}): ${t.payload}`);
-}
-2 (3): urgent
-3 (7): normal
-1 (10): work
-const maxComparator = (a: number, b: number) => a > b;
-const maxPQ = new PriorityQueue<number>(maxComparator);
+// Non‑palindrome
+const list2 = buildList([1, 2, 3, 4, 5]);
+console.log(isPalindrome(list2)); // false
