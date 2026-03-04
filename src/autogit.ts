@@ -1,79 +1,40 @@
-// `T` can be any comparable type – string, number, object with an id, etc.
-export function bfs<T>(
-  start: T,
-  graph: Map<T, T[]>,          // adjacency list
-  onVisit?: (node: T) => void // optional per‑node work
-): T[] {
-  const queue: T[] = [start];
-  const visited = new Set<T>();
-  const order: T[] = [];
+/**
+ * Binary search – recursive.  
+ * @param arr        — sorted array
+ * @param target     — value to find
+ * @param compare    — optional comparison function (a, b) => number
+ *                     returns <0 if a<b, 0 if a==b, >0 if a>b
+ * @returns index of `target` or -1 if not found
+ */
+function binarySearchRec<T>(
+  arr: T[],
+  target: T,
+  compare?: (a: T, b: T) => number
+): number {
+  // Provide a default numeric comparator
+  const cmp = compare ?? ((a: any, b: any) => a - b);
 
-  visited.add(start);
+  const search = (low: number, high: number): number => {
+    if (low > high) return -1;          // base case: not found
 
-  while (queue.length) {
-    const node = queue.shift()!;   // node is guaranteed non‑null inside loop
+    const mid = Math.floor((low + high) / 2);
+    const cmpResult = cmp(arr[mid], target);
 
-    // Optional callback that lets you do something with the node as you visit it
-    if (onVisit) onVisit(node);
+    if (cmpResult === 0) return mid;    // target is at mid
+    if (cmpResult < 0) return search(mid + 1, high); // target is right
+    return search(low, mid - 1);        // target is left
+  };
 
-    order.push(node);
-
-    for (const neighbor of graph.get(node) ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
-    }
-  }
-
-  return order;
+  return search(0, arr.length - 1);
 }
-// Example graph (adjacency list)
-const g = new Map<string, string[]>([
-  ['A', ['B', 'C']],
-  ['B', ['D', 'E']],
-  ['C', ['F']],
-  ['D', []],
-  ['E', ['F']],
-  ['F', []]
-]);
+// Numbers – no comparator needed
+const nums = [1, 3, 5, 7, 9, 11, 13];
+console.log(binarySearchRec(nums, 7));  // → 3
+console.log(binarySearchRec(nums, 2));  // → -1
 
-const order = bfs('A', g);          // ["A", "B", "C", "D", "E", "F"]
+// Strings – supply a comparator
+const words = ["apple", "banana", "cherry", "date"];
+const stringCmp = (a: string, b: string) => a.localeCompare(b);
 
-console.log('BFS order:', order);
-export function bfsFind<T>(
-  start: T,
-  graph: Map<T, T[]>,
-  goal: T
-): T[] | null {
-  const queue: T[] = [start];
-  const visited = new Set<T>();
-  visited.add(start);
-
-  while (queue.length) {
-    const node = queue.shift()!;
-
-    if (node === goal) {
-      // Re‑construct the path if you need it – here we just return the node that found it.
-      return [node];
-    }
-
-    for (const neighbor of graph.get(node) ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
-    }
-  }
-
-  return null; // goal not reachable
-}
-// Small graph with a cycle
-const g2 = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [3]],
-  [3, [1, 4]],
-  [4, []]
-]);
-
-console.log(bfs(1, g2)); // [1, 2, 3, 4]
+console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
+console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
