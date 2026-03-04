@@ -1,57 +1,35 @@
-text:   abcdefghijk
-        ‖~~~~~~~~~~
-pattern:   def
-function buildShiftTable(pattern: string): Map<string, number> {
-  const table = new Map<string, number>();
-  const m = pattern.length;
+/**
+ * Bottom‑up merge sort – no recursion, only loops.
+ * @param arr The array to sort, in place.
+ * @returns The sorted array (same reference as the argument).
+ */
+export function mergeSortIterative<T>(arr: T[]): T[] {
+  const len = arr.length;
+  if (len < 2) return arr;          // already sorted
 
-  // For all chars except the last one
-  for (let i = 0; i < m - 1; i++) {
-    table.set(pattern[i], m - 1 - i);
-  }
-  return table;
-}
-function boyerMooreHorspool(pattern: string, text: string): number | null {
-  const m = pattern.length;
-  const n = text.length;
+  // Temporary buffer reused for each merge
+  const temp = new Array<T>(len);
 
-  if (m === 0) return 0;          // Empty pattern matches at start
-  if (m > n) return null;         // Impossible to find
+  // Initial run width – start with runs of 1 element
+  for (let width = 1; width < len; width <<= 1) {
+    // Merge pairs of runs: left = i‑th run, right = i+width‑th run
+    for (let i = 0; i < len; i += width << 1) {
+      const left = i;
+      const mid = Math.min(i + width, len);
+      const right = Math.min(i + (width << 1), len);
 
-  const shiftTable = buildShiftTable(pattern);
-  const defaultShift = m;
+      // Merge [left, mid) and [mid, right) into temp
+      let l = left, r = mid, k = left;
+      while (l < mid && r < right) {
+        temp[k++] = (arr[l] as any <= arr[r] as any) ? arr[l++] : arr[r++];
+      }
+      while (l < mid) temp[k++] = arr[l++];
+      while (r < right) temp[k++] = arr[r++];
 
-  let i = 0; // Current alignment of pattern in text
-
-  while (i <= n - m) {
-    let j = m - 1;
-
-    // Compare from right to left
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j--;
+      // Copy the merged segment back into arr
+      for (let p = left; p < right; p++) arr[p] = temp[p];
     }
-
-    if (j < 0) {
-      // Full match
-      return i;
-    }
-
-    // Mismatch: decide how far to shift
-    const mismatchedChar = text[i + j];
-    const shift = shiftTable.get(mismatchedChar) ?? defaultShift;
-
-    i += shift;
   }
 
-  return null; // No match found
-}
-const sampleText = "The quick brown fox jumps over the lazy dog. The fox was quick.";
-const samplePattern = "quick";
-
-const matchIdx = boyerMooreHorspool(samplePattern, sampleText);
-
-if (matchIdx !== null) {
-  console.log(`Found at index ${matchIdx}`);
-} else {
-  console.log("No match");
+  return arr;
 }
