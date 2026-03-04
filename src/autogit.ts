@@ -1,69 +1,79 @@
-/**
- * Returns the LCS length of two strings.
- */
-export function lcsLength(a: string, b: string): number {
-  const m = a.length;
-  const n = b.length;
+// `T` can be any comparable type – string, number, object with an id, etc.
+export function bfs<T>(
+  start: T,
+  graph: Map<T, T[]>,          // adjacency list
+  onVisit?: (node: T) => void // optional per‑node work
+): T[] {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  const order: T[] = [];
 
-  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  visited.add(start);
 
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+  while (queue.length) {
+    const node = queue.shift()!;   // node is guaranteed non‑null inside loop
+
+    // Optional callback that lets you do something with the node as you visit it
+    if (onVisit) onVisit(node);
+
+    order.push(node);
+
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
       }
     }
   }
 
-  return dp[m][n];
+  return order;
 }
+// Example graph (adjacency list)
+const g = new Map<string, string[]>([
+  ['A', ['B', 'C']],
+  ['B', ['D', 'E']],
+  ['C', ['F']],
+  ['D', []],
+  ['E', ['F']],
+  ['F', []]
+]);
 
-/**
- * Returns the actual longest common subsequence.
- * In case of multiple LCS of the same length, the one found
- * will consist of the characters chosen by the DP traversal.
- */
-export function lcs(a: string, b: string): string {
-  const m = a.length;
-  const n = b.length;
+const order = bfs('A', g);          // ["A", "B", "C", "D", "E", "F"]
 
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+console.log('BFS order:', order);
+export function bfsFind<T>(
+  start: T,
+  graph: Map<T, T[]>,
+  goal: T
+): T[] | null {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  visited.add(start);
 
-  // Build the DP table – same recurrence as in lcsLength
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+  while (queue.length) {
+    const node = queue.shift()!;
+
+    if (node === goal) {
+      // Re‑construct the path if you need it – here we just return the node that found it.
+      return [node];
+    }
+
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
       }
     }
   }
 
-  // Backtrack to rebuild the sequence
-  let i = m;
-  let j = n;
-  const seq: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      seq.push(a[i - 1]); // they match
-      i--;
-      j--;
-    } else if (dp[i - 1][j] > dp[i][j - 1]) {
-      i--; // move up
-    } else {
-      j--; // move left
-    }
-  }
-
-  return seq.reverse().join('');
+  return null; // goal not reachable
 }
-const a = "AGGTAB";
-const b = "GXTXAYB";
+// Small graph with a cycle
+const g2 = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [3]],
+  [3, [1, 4]],
+  [4, []]
+]);
 
-console.log(lcsLength(a, b)); // 4
-console.log(lcs(a, b));       // "GTAB"
+console.log(bfs(1, g2)); // [1, 2, 3, 4]
