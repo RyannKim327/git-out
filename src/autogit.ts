@@ -1,112 +1,47 @@
 /**
- * Generic type that can be compared with the <=> operator.
- * For custom objects you can supply a comparator function.
- */
-type Comparable = number | string | boolean;
-
-/**
- * Swap two elements in an array
- */
-function swap<T>(arr: T[], i: number, j: number): void {
-  const tmp = arr[i];
-  arr[i] = arr[j];
-  arr[j] = tmp;
-}
-
-/**
- * Heapify the subtree rooted at `i`, assuming that the binary trees
- * rooted at its children are already heaps.
+ * Checks whether a string is a palindrome (case‑insensitive,
+ * ignoring anything that isn’t a letter or a digit).
  *
- * @param arr    the array
- * @param heapSize the current size of the heap
- * @param i      the index of the root of the subtree
- * @param compare comparison function (a, b) => true if a > b
+ * Time   : O(n)
+ * Space  : O(1)   – only a couple of integer variables
  */
-function heapify<T>(
-  arr: T[],
-  heapSize: number,
-  i: number,
-  compare: (a: T, b: T) => boolean
-): void {
-  let largest = i;
-  const left   = 2 * i + 1;
-  const right  = 2 * i + 2;
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  if (left < heapSize && compare(arr[left], arr[largest])) {
-    largest = left;
-  }
-  if (right < heapSize && compare(arr[right], arr[largest])) {
-    largest = right;
+  const isAlnum = (ch: string): boolean => {
+    const code = ch.charCodeAt(0);
+    // '0'‑'9'
+    if (code >= 48 && code <= 57) return true;
+    // 'A'‑'Z'
+    if (code >= 65 && code <= 90) return true;
+    // 'a'‑'z'
+    if (code >= 97 && code <= 122) return true;
+    return false;
+  };
+
+  while (left < right) {
+    // Skip non‑alphanumeric characters from the left
+    while (left < right && !isAlnum(s[left])) left++;
+    // Skip non‑alphanumeric characters from the right
+    while (left < right && !isAlnum(s[right])) right--;
+
+    if (left >= right) break;          // Nothing left to compare
+
+    const lc = s[left].toLowerCase();
+    const rc = s[right].toLowerCase();
+
+    if (lc !== rc) return false;
+
+    left++;
+    right--;
   }
 
-  if (largest !== i) {
-    swap(arr, i, largest);
-    heapify(arr, heapSize, largest, compare);
-  }
+  return true;
 }
-
-/**
- * Build a max‑heap from an unsorted array
- */
-function buildMaxHeap<T>(
-  arr: T[],
-  compare: (a: T, b: T) => boolean
-): void {
-  const heapSize = arr.length;
-  // Start from the last non‑leaf node
-  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
-    heapify(arr, heapSize, i, compare);
-  }
+while (left < right) {
+  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
+  left++;
+  right--;
 }
-
-/**
- * Heap sort – sorts `arr` *in place*.
- *
- * @param arr      the array to sort
- * @param compare  optional comparator; defaults to (a > b)
- */
-export function heapSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => boolean
-): void {
-  const cmp = compare ?? ((a: any, b: any) => a > b);
-
-  buildMaxHeap(arr, cmp);
-
-  for (let i = arr.length - 1; i > 0; i--) {
-    // The max element is at index 0; move it to its final place
-    swap(arr, 0, i);
-    // Re‑heapify the reduced heap
-    heapify(arr, i, 0, cmp);
-  }
-}
-
-/* --------------------------------------------------------------------- */
-/* Example usage & tiny tests                                           */
-/* --------------------------------------------------------------------- */
-
-// 1️⃣ Numbers ---------------------------------------------------------
-const nums = [5, 3, 8, 4, 1, 7, 2, 6];
-heapSort(nums);
-console.log('Sorted numbers:', nums); // [1, 2, 3, 4, 5, 6, 7, 8]
-
-// 2️⃣ Strings ---------------------------------------------------------
-const words = ['pear', 'apple', 'orange', 'banana'];
-heapSort(words); // default lexicographic order
-console.log('Sorted words:', words); // ['apple', 'banana', 'orange', 'pear']
-
-// 3️⃣ Custom objects --------------------------------------------------
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob',   age: 22 },
-  { name: 'Eva',   age: 27 }
-];
-// Sort by age ascending
-heapSort(people, (a, b) => a.age > b.age);
-console.log('People sorted by age:', people);
-/* [
-  { name: 'Bob', age: 22 },
-  { name: 'Eva', age: 27 },
-  { name: 'Alice', age: 30 }
-] */
+return true;
