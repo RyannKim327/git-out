@@ -1,47 +1,50 @@
-function removeValue<T>(arr: T[], value: T): T[] {
-  return arr.filter((el) => el !== value);
+export interface TreeNode {
+  val: number;                // or any type you like
+  left?: TreeNode | null;     // child nodes (undefined is treated as null)
+  right?: TreeNode | null;
 }
+const tree: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
+  right: { val: 3, right: { val: 6 }}
+};
+/**
+ * Returns the diameter (number of edges on the longest path) of a binary tree.
+ *
+ * @param root root node of the tree
+ * @returns diameter in edges
+ */
+export function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;           // will hold the best diameter found
 
-// Example
-const numbers = [1, 2, 3, 4, 5];
-const withoutThree = removeValue(numbers, 3);
-console.log(withoutThree); // [1, 2, 4, 5]
-function removeAtIndex<T>(arr: T[], index: number): void {
-  if (index >= 0 && index < arr.length) {
-    arr.splice(index, 1); // splice mutates the array
+  /**
+   * Post‑order DFS that returns the height of the subtree.
+   * While unwinding, we update `maxDiameter`.
+   */
+  function dfs(node: TreeNode | null): number {
+    if (!node) return -1;       // height of null is -1 so that leaf node height = 0
+
+    const leftHeight  = dfs(node.left)  + 1;
+    const rightHeight = dfs(node.right) + 1;
+
+    // The path that goes from the leftmost leaf of this subtree
+    // through this node to the rightmost leaf gives a candidate
+    // diameter.  `+1` is not needed for edges because heights already
+    // count edges from node to leaf.
+    const candidate = leftHeight + rightHeight;
+    if (candidate > maxDiameter) maxDiameter = candidate;
+
+    // Return height of this node for the parent call
+    return Math.max(leftHeight, rightHeight);
   }
-}
 
-// Example
-const letters = ['a', 'b', 'c', 'd'];
-removeAtIndex(letters, 2);
-console.log(letters); // ['a', 'b', 'd']
-function removeIf<T>(arr: T[], predicate: (el: T) => boolean): T[] {
-  return arr.filter(el => !predicate(el));
+  dfs(root);
+  return maxDiameter;
 }
+const tree: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
+  right: { val: 3, right: { val: 6 }}
+};
 
-// Example: remove all even numbers
-const evensGone = removeIf(numbers, n => n % 2 === 0);
-console.log(evensGone); // [1, 3, 5]
-type User = { id: number; name: string };
-const users: User[] = [
-  { id: 1, name: 'Ada' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Cal' },
-];
-
-function removeById(arr: User[], id: number): User[] {
-  return arr.filter(u => u.id !== id);
-}
-
-const afterRemoval = removeById(users, 2);
-console.log(afterRemoval); // keeps Bob out
-function removeInPlace<T>(arr: T[], predicate: (el: T) => boolean): void {
-  for (let i = 0; i < arr.length; ) {
-    if (predicate(arr[i])) {
-      arr.splice(i, 1); // or use arr.splice(i--, 1) if you want to keep index logic simple
-    } else {
-      i++;
-    }
-  }
-}
+console.log(diameterOfBinaryTree(tree));   // → 3
