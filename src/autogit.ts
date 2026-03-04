@@ -1,77 +1,25 @@
-low  = 0
-high = length–1
-
-while low ≤ high and target ∈ [arr[low], arr[high]]:
-    // Edge cases
-    if arr[low] == arr[high]:
-        return (arr[low] == target) ? low : -1
-
-    // Interpolated index
-    pos = low + ((target – arr[low]) * (high – low))
-          / (arr[high] – arr[low])
-
-    // Clamp to array bounds
-    pos = Math.round(pos)
-
-    if arr[pos] == target:
-        return pos
-    else if arr[pos] < target:
-        low = pos + 1
-    else:
-        high = pos – 1
-
-return –1   // not found
 /**
- * Interpolation search for a strictly sorted numeric array.
- * @param arr   - Sorted numbers (ascending)
- * @param target - Number to find
- * @returns Index of target, or -1 if not found
+ * Computes the factorial of a non‑negative integer `n` recursively.
+ * @param n - A non‑negative integer (e.g., 0, 1, 2, …)
+ * @returns n! as a `number`. For values beyond ≈ 170 you’ll hit the
+ *          IEEE‑754 overflow limit and get `Infinity`, so for large
+ *          inputs you might want to switch to BigInt.
  */
-export function interpolationSearch(
-  arr: readonly number[],
-  target: number
-): number {
-  if (arr.length === 0) return -1;
-
-  let low = 0;
-  let high = arr.length - 1;
-
-  // Keep going while target is inside the current window
-  while (low <= high && target >= arr[low] && target <= arr[high]) {
-    // All remaining values equal – either hit or miss.
-    if (arr[low] === arr[high]) {
-      return arr[low] === target ? low : -1;
-    }
-
-    // Linear interpolation to guess position.
-    const pos =
-      low +
-      Math.round(
-        ((target - arr[low]) * (high - low)) / (arr[high] - arr[low])
-      );
-
-    // Just in case rounding pushes us outside: clamp bounds.
-    const index = Math.min(Math.max(pos, low), high);
-
-    const value = arr[index];
-    if (value === target) {
-      return index;
-    }
-    if (value < target) {
-      low = index + 1;
-    } else {
-      high = index - 1;
-    }
-  }
-
-  return -1; // Not found
+function factorial(n: number): number {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials');
+  if (n <= 1) return 1;          // base case: 0! = 1! = 1
+  return n * factorial(n - 1);   // recursive step
 }
-const sorted = [3, 7, 13, 19, 23, 29, 31, 47, 53, 59];
-const target = 23;
+console.log(factorial(5));   // 120
+console.log(factorial(0));   // 1
+function bigIntFactorial(n: number): bigint {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials');
+  if (n <= 1) return 1n;               // 1n is a BigInt literal
+  return BigInt(n) * bigIntFactorial(n - 1);
+}
 
-const idx = interpolationSearch(sorted, target);
-console.log(idx); // → 4
-console.log(interpolationSearch(sorted, 22)); // → -1
-const idx = interpolationSearch(sortedArray, key);
-if (idx !== -1) console.log(`Found at ${idx}`);
-else console.log('Not there');
+console.log(bigIntFactorial(30).toString());
+function tailFactorial(n: number, acc: number = 1): number {
+  if (n <= 1) return acc;
+  return tailFactorial(n - 1, acc * n);
+}
