@@ -1,41 +1,79 @@
-// schedule.ts
-import cron from 'node-cron';
+// `T` can be any comparable type – string, number, object with an id, etc.
+export function bfs<T>(
+  start: T,
+  graph: Map<T, T[]>,          // adjacency list
+  onVisit?: (node: T) => void // optional per‑node work
+): T[] {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  const order: T[] = [];
 
-let runCount = 0;
-const maxRuns = 5;
+  visited.add(start);
 
-// Pick a playful string at random each time the job fires.
-const messages = [
-  "🍕 Time for a pizza break!",
-  "🐱‍🏍 Speedy coding vibes!",
-  "🧐 Did you know: A group of flamingos is called a flamboyance?",
-  "🚀 Launching into the cosmos…",
-  "🔮 Future content will appear here!"
-];
+  while (queue.length) {
+    const node = queue.shift()!;   // node is guaranteed non‑null inside loop
 
-const job = cron.schedule('* * * * *', () => {
-  // Bot says something random
-  const msg = messages[Math.floor(Math.random() * messages.length)];
-  console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
+    // Optional callback that lets you do something with the node as you visit it
+    if (onVisit) onVisit(node);
 
-  runCount += 1;
-  if (runCount >= maxRuns) {
-    console.log('Stopping the cron job after 5 runs.');
-    job.stop();
+    order.push(node);
+
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
   }
-}, {
-  scheduled: true,
-  timezone: "UTC"
-});
 
-console.log('Cron job started—will run every minute up to 5 times.');
-# 1. Init a barebones project if you haven’t already
-npm init -y
+  return order;
+}
+// Example graph (adjacency list)
+const g = new Map<string, string[]>([
+  ['A', ['B', 'C']],
+  ['B', ['D', 'E']],
+  ['C', ['F']],
+  ['D', []],
+  ['E', ['F']],
+  ['F', []]
+]);
 
-# 2. Install the cron package and types for Node
-npm i node-cron
-npm i -D @types/node @types/node-cron typescript ts-node
+const order = bfs('A', g);          // ["A", "B", "C", "D", "E", "F"]
 
-# 3. Compile and run
-npx ts-node schedule.ts
-[12:00:00 AM] 🚀 Launching into the cosmos…
+console.log('BFS order:', order);
+export function bfsFind<T>(
+  start: T,
+  graph: Map<T, T[]>,
+  goal: T
+): T[] | null {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  visited.add(start);
+
+  while (queue.length) {
+    const node = queue.shift()!;
+
+    if (node === goal) {
+      // Re‑construct the path if you need it – here we just return the node that found it.
+      return [node];
+    }
+
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  return null; // goal not reachable
+}
+// Small graph with a cycle
+const g2 = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [3]],
+  [3, [1, 4]],
+  [4, []]
+]);
+
+console.log(bfs(1, g2)); // [1, 2, 3, 4]
