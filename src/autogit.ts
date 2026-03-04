@@ -1,47 +1,57 @@
-function countWordOccurrences(text: string, word: string): number {
-  // Escape any regex meta‑characters in the search word
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+text:   abcdefghijk
+        ‖~~~~~~~~~~
+pattern:   def
+function buildShiftTable(pattern: string): Map<string, number> {
+  const table = new Map<string, number>();
+  const m = pattern.length;
 
-  // \b = word boundary, i = ignore case, g = global (find all)
-  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
-
-  // .match() returns an array of all matches, null if none
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
+  // For all chars except the last one
+  for (let i = 0; i < m - 1; i++) {
+    table.set(pattern[i], m - 1 - i);
+  }
+  return table;
 }
+function boyerMooreHorspool(pattern: string, text: string): number | null {
+  const m = pattern.length;
+  const n = text.length;
 
-// Usage
-const msg = "The quick brown fox jumps over the lazy fox. Foxes are clever.";
-console.log(countWordOccurrences(msg, "fox")); // → 2 (fox, fox)
-const regex = new RegExp(escaped, 'gi');
-function countSplit(text: string, word: string): number {
-  // Empty string returns 0
-  if (!text) return 0;
-  return text.split(word).length - 1;
+  if (m === 0) return 0;          // Empty pattern matches at start
+  if (m > n) return null;         // Impossible to find
+
+  const shiftTable = buildShiftTable(pattern);
+  const defaultShift = m;
+
+  let i = 0; // Current alignment of pattern in text
+
+  while (i <= n - m) {
+    let j = m - 1;
+
+    // Compare from right to left
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      // Full match
+      return i;
+    }
+
+    // Mismatch: decide how far to shift
+    const mismatchedChar = text[i + j];
+    const shift = shiftTable.get(mismatchedChar) ?? defaultShift;
+
+    i += shift;
+  }
+
+  return null; // No match found
 }
-function countWithMatchAll(text: string, word: string): number {
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
-  const allMatches = text.matchAll(regex); // Iterable<{ index: … }>
+const sampleText = "The quick brown fox jumps over the lazy dog. The fox was quick.";
+const samplePattern = "quick";
 
-  let count = 0;
-  for (const _ of allMatches) count++;
-  return count;
-}
-export function countOccurrences(
-  text: string,
-  word: string,
-  options?: { caseSensitive?: boolean; wholeWord?: boolean }
-): number {
-  const { caseSensitive = false, wholeWord = true } = options ?? {};
+const matchIdx = boyerMooreHorspool(samplePattern, sampleText);
 
-  // Escape regex meta‑chars
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-  let pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
-  let flags = 'g' + (caseSensitive ? '' : 'i');
-
-  const regex = new RegExp(pattern, flags);
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
+if (matchIdx !== null) {
+  console.log(`Found at index ${matchIdx}`);
+} else {
+  console.log("No match");
 }
