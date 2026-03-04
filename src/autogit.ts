@@ -1,47 +1,57 @@
-function removeValue<T>(arr: T[], value: T): T[] {
-  return arr.filter((el) => el !== value);
-}
+/**
+ * Simple anagram checker.
+ * @param a First string
+ * @param b Second string
+ * @returns true if a and b are anagrams, false otherwise
+ */
+function areAnagrams(a: string, b: string): boolean {
+  // 1. Normalize: lower‑case, strip non‑alphanumerics, trim
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .trim();
 
-// Example
-const numbers = [1, 2, 3, 4, 5];
-const withoutThree = removeValue(numbers, 3);
-console.log(withoutThree); // [1, 2, 4, 5]
-function removeAtIndex<T>(arr: T[], index: number): void {
-  if (index >= 0 && index < arr.length) {
-    arr.splice(index, 1); // splice mutates the array
+  const na = normalize(a);
+  const nb = normalize(b);
+
+  // Quick length check; if they differ early we’re done.
+  if (na.length !== nb.length) return false;
+
+  // 2. Build frequency maps
+  const freq = new Map<string, number>();
+
+  for (const ch of na) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
-}
 
-// Example
-const letters = ['a', 'b', 'c', 'd'];
-removeAtIndex(letters, 2);
-console.log(letters); // ['a', 'b', 'd']
-function removeIf<T>(arr: T[], predicate: (el: T) => boolean): T[] {
-  return arr.filter(el => !predicate(el));
-}
+  for (const ch of nb) {
+    const count = freq.get(ch);
 
-// Example: remove all even numbers
-const evensGone = removeIf(numbers, n => n % 2 === 0);
-console.log(evensGone); // [1, 3, 5]
-type User = { id: number; name: string };
-const users: User[] = [
-  { id: 1, name: 'Ada' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Cal' },
-];
+    // If we see a character not in the first string, bail
+    if (!count) return false;
 
-function removeById(arr: User[], id: number): User[] {
-  return arr.filter(u => u.id !== id);
-}
-
-const afterRemoval = removeById(users, 2);
-console.log(afterRemoval); // keeps Bob out
-function removeInPlace<T>(arr: T[], predicate: (el: T) => boolean): void {
-  for (let i = 0; i < arr.length; ) {
-    if (predicate(arr[i])) {
-      arr.splice(i, 1); // or use arr.splice(i--, 1) if you want to keep index logic simple
-    } else {
-      i++;
-    }
+    // Decrease the count and remove entry if it drops to zero
+    if (count === 1) freq.delete(ch);
+    else freq.set(ch, count - 1);
   }
+
+  // 3. If all counts cleared, the strings are anagrams
+  return freq.size === 0;
+}
+console.log(areAnagrams("listen", "silent"));   // → true
+console.log(areAnagrams("evil", "vile"));       // → true
+console.log(areAnagrams("hello", "billion"));   // → false
+console.log(areAnagrams("Clint Eastwood", "Old West Action")); // true
+function areAnagramsSort(a: string, b: string): boolean {
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .trim()
+      .split("")
+      .sort()
+      .join("");
+
+  return normalize(a) === normalize(b);
 }
