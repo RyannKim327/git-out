@@ -1,81 +1,45 @@
-class ListNode<T> {
-  data: T;
-  next: ListNode<T> | null = null;
+// 1️⃣  Install node‑fetch (or use the built‑in fetch in environments that have it)
+//    npm install node-fetch @types/node-fetch
+import fetch from "node-fetch";
 
-  constructor(data: T) {
-    this.data = data;
-  }
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
-export class LinkedListQueue<T> {
-  private head: ListNode<T> | null = null; // front
-  private tail: ListNode<T> | null = null; // rear
-  private _size = 0;
 
-  /** Enqueue the value at the rear */
-  enqueue(value: T): void {
-    const node = new ListNode(value);
+/**
+ * Fetch a single Todo by its numeric ID.
+ * @param id - The ID of the Todo to request.
+ * @returns Promises a Todo object.
+ */
+async function getTodoById(id: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
 
-    if (!this.tail) {        // empty queue
-      this.head = this.tail = node;
-    } else {
-      this.tail.next = node;
-      this.tail = node;
-    }
-    this._size++;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+
+  // 2️⃣  Basic status check – throws if not 2xx
+  if (!response.ok) {
+    throw new Error(`Request failed with ${response.status} ${response.statusText}`);
   }
 
-  /** Dequeue the value at the front */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined; // empty
-
-    const value = this.head.data;
-    this.head = this.head.next;
-
-    if (!this.head) {          // queue became empty
-      this.tail = null;
-    }
-
-    this._size--;
-    return value;
-  }
-
-  /** Peek at the front without removing it */
-  peek(): T | undefined {
-    return this.head?.data;
-  }
-
-  /** Current number of elements */
-  size(): number {
-    return this._size;
-  }
-
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Consume the internal list into an array (useful for tests) */
-  toArray(): T[] {
-    const arr: T[] = [];
-    let node = this.head;
-    while (node) {
-      arr.push(node.data);
-      node = node.next;
-    }
-    return arr;
-  }
+  // 3️⃣  Parse the JSON body and return it as a Todo
+  const data = (await response.json()) as Todo;
+  return data;
 }
-const q = new LinkedListQueue<number>();
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
-
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size());    // 1
-console.log(q.isEmpty()); // false
-
-q.dequeue();              // removes 30
-console.log(q.isEmpty()); // true
+/**
+ * Demo of calling `getTodoById` and logging the result or an error.
+ */
+(async () => {
+  try {
+    const todo = await getTodoById(3);
+    console.log("Fetched Todo:", todo);
+  } catch (err) {
+    console.error("Error fetching Todo:", err);
+  }
+})();
