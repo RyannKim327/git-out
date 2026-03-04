@@ -1,111 +1,146 @@
-// Edge between two nodes
-interface Edge {
-  to: string;      // target node id
-  weight: number;  // edge weight
-}
+// Node.ts
+export class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
 
-// Graph stored as an adjacency list
-type Graph = Record<string, Edge[]>;
-
-// Simple min‑heap priority queue
-class MinHeap<T> {
-  private content: { key: number; value: T }[] = [];
-
-  // Insert a new element
-  push(key: number, value: T): void {
-    const node = { key, value };
-    this.content.push(node);
-    this.bubbleUp(this.content.length - 1);
-  }
-
-  // Remove the element with the smallest key
-  pop(): T | undefined {
-    if (this.content.length === 0) return undefined;
-    const root = this.content[0].value;
-
-    const last = this.content.pop()!;
-    if (this.content.length) {
-      this.content[0] = last;
-      this.bubbleDown(0);
-    }
-    return root;
-  }
-
-  get size(): number { return this.content.length; }
-
-  private bubbleUp(idx: number): void {
-    while (idx > 0) {
-      const parent = Math.floor((idx - 1) / 2);
-      if (this.content[parent].key <= this.content[idx].key) break;
-      [this.content[parent], this.content[idx]] = [this.content[idx], this.content[parent]];
-      idx = parent;
-    }
-  }
-
-  private bubbleDown(idx: number): void {
-    const length = this.content.length;
-    while (true) {
-      const left = 2 * idx + 1;
-      const right = 2 * idx + 2;
-      let smallest = idx;
-
-      if (left < length && this.content[left].key < this.content[smallest].key) {
-        smallest = left;
-      }
-      if (right < length && this.content[right].key < this.content[smallest].key) {
-        smallest = right;
-      }
-      if (smallest === idx) break;
-
-      [this.content[idx], this.content[smallest]] = [this.content[smallest], this.content[idx]];
-      idx = smallest;
-    }
+  constructor(value: T) {
+    this.value = value;
   }
 }
-/**
- * Computes the shortest‑path distances from `src` to every node in `graph`.
- * @param graph     adjacency list
- * @param src       origin node id
- * @returns        a map of node → distance; unreachable nodes have Infinity
- */
-function dijkstra(graph: Graph, src: string): Record<string, number> {
-  const distances: Record<string, number> = {};
-  const visited = new Set<string>();
+// LinkedList.ts
+import { ListNode } from "./Node";
 
-  // initialise all distances to Infinity
-  for (const node in graph) distances[node] = Infinity;
-  distances[src] = 0;
+export class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _length = 0;
 
-  const pq = new MinHeap<string>();
-  pq.push(0, src);
-
-  while (pq.size) {
-    const u = pq.pop()!;                // node with lowest known distance
-    const d = distances[u];
-
-    if (visited.has(u)) continue; // we may have inserted u multiple times
-    visited.add(u);
-
-    for (const { to, weight } of graph[u]) {
-      const alt = d + weight;
-      if (alt < distances[to]) {
-        distances[to] = alt;
-        pq.push(alt, to);
-      }
-    }
+  get length() {
+    return this._length;
   }
 
-  return distances;
-}
-const graph: Graph = {
-  A: [{ to: 'B', weight: 5 }, { to: 'C', weight: 2 }],
-  B: [{ to: 'C', weight: 1 }, { to: 'D', weight: 3 }],
-  C: [{ to: 'B', weight: 4 }, { to: 'D', weight: 6 }],
-  D: [],
-};
+  /* ---------- Basic Operations ---------- */
 
-const result = dijkstra(graph, 'A');
-console.log(result);
-/* prints something like:
-{ A: 0, B: 4, C: 2, D: 7 }
-*/
+  // Append a value to the end of the list.
+  push(value: T): void {
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      this.tail!.next = node;
+      this.tail = node;
+    }
+    this._length++;
+  }
+
+  // Prepend a value to the beginning of the list.
+  unshift(value: T): void {
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      node.next = this.head;
+      this.head = node;
+    }
+    this._length++;
+  }
+
+  // Remove and return the value at the head of the list.
+  shift(): T | null {
+    if (!this.head) return null;
+    const value = this.head.value;
+    this.head = this.head.next;
+    if (!this.head) this.tail = null; // list became empty
+    this._length--;
+    return value;
+  }
+
+  // Remove and return the value at the tail of the list.
+  pop(): T | null {
+    if (!this.head) return null;
+
+    if (this.head === this.tail) {
+      const value = this.head.value;
+      this.head = this.tail = null;
+      this._length--;
+      return value;
+    }
+
+    // Walk to the node just before the tail.
+    let current = this.head;
+    while (current.next !== this.tail) {
+      current = current.next!;
+    }
+    const value = this.tail!.value;
+    current.next = null;
+    this.tail = current;
+    this._length--;
+    return value;
+  }
+
+  /* ---------- Traversal & Search ---------- */
+
+  // Return the node at the given zero‑based index, or null if out of bounds.
+  getNodeAt(index: number): ListNode<T> | null {
+    if (index < 0 || index >= this._length) return null;
+    let current = this.head!;
+    for (let i = 0; i < index; i++) {
+      current = current.next!;
+    }
+    return current;
+  }
+
+  // Find the first value that satisfies the predicate.
+  find(predicate: (value: T) => boolean, startIndex = 0): T | null {
+    let current = this.getNodeAt(startIndex);
+    while (current) {
+      if (predicate(current.value)) return current.value;
+      current = current.next;
+    }
+    return null;
+  }
+
+  /* ---------- Utility ---------- */
+
+  // Convert the list to an array (useful for debugging or interoperability).
+  toArray(): T[] {
+    const out: T[] = [];
+    let current = this.head;
+    while (current) {
+      out.push(current.value);
+      current = current.next;
+    }
+    return out;
+  }
+
+  // Allow for… e.g. “for … of” iteration.
+  [Symbol.iterator](): Iterator<T> {
+    let current = this.head;
+    return {
+      next: () => ({
+        value: current?.value,
+        done: current === null,
+      }),
+    };
+  }
+}
+import { LinkedList } from "./LinkedList";
+
+const numbers = new LinkedList<number>();
+numbers.push(10);
+numbers.push(20);
+numbers.unshift(5);   // list is now 5 -> 10 -> 20
+
+console.log(numbers.shift()); // 5
+console.log(numbers.pop());   // 20
+console.log(numbers.length);  // 1
+
+// Search
+numbers.push(30);
+numbers.push(40);
+console.log(numbers.find(v => v > 15)); // 20
+
+// Iterate
+for (const n of numbers) {
+  console.log(n); // 10, 30, 40
+}
