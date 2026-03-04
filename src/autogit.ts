@@ -1,30 +1,21 @@
-import axios, { AxiosResponse } from 'axios';
+/**
+ * Return the intersection of two arrays.
+ *
+ * @param a First array
+ * @param b Second array
+ * @returns Array containing only the values that appear in both `a` and `b`
+ */
+export function intersection<T>(a: T[], b: T[]): T[] {
+  // Turn the second array into a Set for O(1) look‑ups.
+  const lookup = new Set(b);
 
-// Declare the shape of the data we expect from the API
-interface Quote {
-  id: number;
-  quote: string;
-  author: string;
+  // Keep every element of `a` that also exists in the Set.
+  return a.filter(item => lookup.has(item));
 }
 
-// A helper that fetches a random quote
-async function fetchRandomQuote(): Promise<Quote> {
-  try {
-    const response: AxiosResponse<Quote> = await axios.get(
-      'https://api.quotable.io/random'
-    );
-    return response.data;
-  } catch (err) {
-    // If something goes wrong, throw a readable error
-    throw new Error(
-      `Could not fetch a quote: ${
-        err instanceof Error ? err.message : String(err)
-      }`
-    );
-  }
-}
+// Example usage:
+const colors1 = ['red', 'green', 'blue', 'green'];
+const colors2 = ['cyan', 'green', 'red', 'yellow'];
 
-// Usage example – print a random quote to the console
-fetchRandomQuote()
-  .then((quote) => console.log(`${quote.quote} — ${quote.author}`))
-  .catch((err) => console.error(err.message));
+const commonColors = intersection(colors1, colors2);
+console.log(commonColors); // → ['red', 'green', 'green']
