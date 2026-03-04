@@ -1,25 +1,47 @@
-/**
- * Computes the factorial of a non‑negative integer `n` recursively.
- * @param n - A non‑negative integer (e.g., 0, 1, 2, …)
- * @returns n! as a `number`. For values beyond ≈ 170 you’ll hit the
- *          IEEE‑754 overflow limit and get `Infinity`, so for large
- *          inputs you might want to switch to BigInt.
- */
-function factorial(n: number): number {
-  if (n < 0) throw new Error('Negative numbers don’t have factorials');
-  if (n <= 1) return 1;          // base case: 0! = 1! = 1
-  return n * factorial(n - 1);   // recursive step
-}
-console.log(factorial(5));   // 120
-console.log(factorial(0));   // 1
-function bigIntFactorial(n: number): bigint {
-  if (n < 0) throw new Error('Negative numbers don’t have factorials');
-  if (n <= 1) return 1n;               // 1n is a BigInt literal
-  return BigInt(n) * bigIntFactorial(n - 1);
+function countWordOccurrences(text: string, word: string): number {
+  // Escape any regex meta‑characters in the search word
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // \b = word boundary, i = ignore case, g = global (find all)
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+
+  // .match() returns an array of all matches, null if none
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
 }
 
-console.log(bigIntFactorial(30).toString());
-function tailFactorial(n: number, acc: number = 1): number {
-  if (n <= 1) return acc;
-  return tailFactorial(n - 1, acc * n);
+// Usage
+const msg = "The quick brown fox jumps over the lazy fox. Foxes are clever.";
+console.log(countWordOccurrences(msg, "fox")); // → 2 (fox, fox)
+const regex = new RegExp(escaped, 'gi');
+function countSplit(text: string, word: string): number {
+  // Empty string returns 0
+  if (!text) return 0;
+  return text.split(word).length - 1;
+}
+function countWithMatchAll(text: string, word: string): number {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+  const allMatches = text.matchAll(regex); // Iterable<{ index: … }>
+
+  let count = 0;
+  for (const _ of allMatches) count++;
+  return count;
+}
+export function countOccurrences(
+  text: string,
+  word: string,
+  options?: { caseSensitive?: boolean; wholeWord?: boolean }
+): number {
+  const { caseSensitive = false, wholeWord = true } = options ?? {};
+
+  // Escape regex meta‑chars
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  let pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
+  let flags = 'g' + (caseSensitive ? '' : 'i');
+
+  const regex = new RegExp(pattern, flags);
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
 }
