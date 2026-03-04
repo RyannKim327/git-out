@@ -1,40 +1,17 @@
-// Basic node interface – can be turned into a class if you like.
-interface TreeNode<T = number> {
-  val: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
-}
-function maxDepth<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                 // empty subtree → depth 0
+const numbers = [1, 2, 3, 4];
+numbers.reverse();          // → [4, 3, 2, 1]
+console.log(numbers);       // the same array has changed
+const numbers = [1, 2, 3, 4];
+const reversed = numbers.slice().reverse(); // or [...numbers].reverse()
 
-  const leftDepth  = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
-
-  // Depth of current node = 1 (itself) + depth of deeper side
-  return 1 + Math.max(leftDepth, rightDepth);
-}
-const root: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3, right: { val: 5, right: { val: 6 } } }
-};
-
-console.log(maxDepth(root));   // → 4
-function maxDepthIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
-
-  let max = 0;
-  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
-    { node: root, depth: 1 },
-  ];
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    max = Math.max(max, depth);
-
-    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
-    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
+console.log(numbers);   // → [1, 2, 3, 4]
+console.log(reversed);  // → [4, 3, 2, 1]
+function reverseArray<T>(arr: T[]): T[] {
+  const out = new Array<T>(arr.length);
+  for (let i = 0, j = arr.length - 1; i <= j; ++i, --j) {
+    out[i] = arr[j];
+    out[j] = arr[i];
   }
-
-  return max;
+  return out;
 }
+const rev = reverseArray([10, 20, 30]); // → [30, 20, 10]
