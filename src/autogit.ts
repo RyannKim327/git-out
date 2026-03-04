@@ -1,17 +1,24 @@
-const numbers = [1, 2, 3, 4];
-numbers.reverse();          // → [4, 3, 2, 1]
-console.log(numbers);       // the same array has changed
-const numbers = [1, 2, 3, 4];
-const reversed = numbers.slice().reverse(); // or [...numbers].reverse()
-
-console.log(numbers);   // → [1, 2, 3, 4]
-console.log(reversed);  // → [4, 3, 2, 1]
-function reverseArray<T>(arr: T[]): T[] {
-  const out = new Array<T>(arr.length);
-  for (let i = 0, j = arr.length - 1; i <= j; ++i, --j) {
-    out[i] = arr[j];
-    out[j] = arr[i];
-  }
-  return out;
+/**
+ * Very light‑weight e‑mail validator – good for quick UI checks or APIs.
+ * It agrees with the majority of real‑world addresses:   local@domain.com
+ *
+ * @param address – the string to test
+ * @returns true if the format looks like an e‑mail, false otherwise
+ */
+export function isValidEmail(address: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(address);
 }
-const rev = reverseArray([10, 20, 30]); // → [30, 20, 10]
+import validator from 'email-validator';
+
+validator.validate('test@example.com'); // true
+const tests = [
+  'alice@example.com',
+  'bob@sub.domain.org',
+  'invalid-email',
+  'spaces@invalid .com',
+  '@missing.local',
+  'user@',
+];
+
+tests.forEach(email => console.log(`${email}: ${isValidEmail(email)}`));
