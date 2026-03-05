@@ -1,26 +1,41 @@
-function maxOfArray(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;   // or throw an error if you prefer
-  return Math.max(...nums);
-}
-function maxOfArray(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;
-  return nums.reduce((max, n) => (n > max ? n : max), nums[0]);
-}
-function maxOfArray(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;
+// schedule.ts
+import cron from 'node-cron';
 
-  let max = nums[0];
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] > max) {
-      max = nums[i];
-    }
+let runCount = 0;
+const maxRuns = 5;
+
+// Pick a playful string at random each time the job fires.
+const messages = [
+  "🍕 Time for a pizza break!",
+  "🐱‍🏍 Speedy coding vibes!",
+  "🧐 Did you know: A group of flamingos is called a flamboyance?",
+  "🚀 Launching into the cosmos…",
+  "🔮 Future content will appear here!"
+];
+
+const job = cron.schedule('* * * * *', () => {
+  // Bot says something random
+  const msg = messages[Math.floor(Math.random() * messages.length)];
+  console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
+
+  runCount += 1;
+  if (runCount >= maxRuns) {
+    console.log('Stopping the cron job after 5 runs.');
+    job.stop();
   }
-  return max;
-}
-const myNumbers = [12, 7, 22, 5, 18];
-console.log(maxOfArray(myNumbers)); // 22
-function maxWithFallback(nums: number[], fallback = 0): number {
-  return nums.length > 0
-    ? nums.reduce((a, b) => Math.max(a, b))
-    : fallback;
-}
+}, {
+  scheduled: true,
+  timezone: "UTC"
+});
+
+console.log('Cron job started—will run every minute up to 5 times.');
+# 1. Init a barebones project if you haven’t already
+npm init -y
+
+# 2. Install the cron package and types for Node
+npm i node-cron
+npm i -D @types/node @types/node-cron typescript ts-node
+
+# 3. Compile and run
+npx ts-node schedule.ts
+[12:00:00 AM] 🚀 Launching into the cosmos…
