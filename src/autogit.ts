@@ -1,59 +1,47 @@
-class ListNode {
-  val: number;
-  next: ListNode | null;
+function removeValue<T>(arr: T[], value: T): T[] {
+  return arr.filter((el) => el !== value);
+}
 
-  constructor(val: number, next: ListNode | null = null) {
-    this.val = val;
-    this.next = next;
+// Example
+const numbers = [1, 2, 3, 4, 5];
+const withoutThree = removeValue(numbers, 3);
+console.log(withoutThree); // [1, 2, 4, 5]
+function removeAtIndex<T>(arr: T[], index: number): void {
+  if (index >= 0 && index < arr.length) {
+    arr.splice(index, 1); // splice mutates the array
   }
 }
-/**
- * Returns the node where listA and listB intersect.
- * If they don't intersect, returns null.
- */
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  if (!headA || !headB) return null;
 
-  let pA: ListNode | null = headA;
-  let pB: ListNode | null = headB;
-
-  // Continue until the two pointers either match or both become null.
-  while (pA !== pB) {
-    // Move to the next node; if we're at the end, jump to the other list's head.
-    pA = pA ? pA.next : headB;
-    pB = pB ? pB.next : headA;
-  }
-
-  return pA; // Either the intersection node or null.
+// Example
+const letters = ['a', 'b', 'c', 'd'];
+removeAtIndex(letters, 2);
+console.log(letters); // ['a', 'b', 'd']
+function removeIf<T>(arr: T[], predicate: (el: T) => boolean): T[] {
+  return arr.filter(el => !predicate(el));
 }
-// Build two intersecting lists:
-// A: 1 → 3 → 5 → 7 → 9
-// B: 2 → 4 →        → 7 → 9
-//            ^<--- intersection starts here
 
-const common = new ListNode(7, new ListNode(9));
+// Example: remove all even numbers
+const evensGone = removeIf(numbers, n => n % 2 === 0);
+console.log(evensGone); // [1, 3, 5]
+type User = { id: number; name: string };
+const users: User[] = [
+  { id: 1, name: 'Ada' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Cal' },
+];
 
-const listA = new ListNode(1, new ListNode(3, new ListNode(5, common)));
-const listB = new ListNode(2, new ListNode(4, common));
+function removeById(arr: User[], id: number): User[] {
+  return arr.filter(u => u.id !== id);
+}
 
-const intersection = getIntersectionNode(listA, listB);
-console.log(intersection?.val); // 7
-function getIntersectionNodeHash(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  const nodes = new Set<ListNode>();
-
-  for (let cur = headA; cur; cur = cur.next) {
-    nodes.add(cur);
+const afterRemoval = removeById(users, 2);
+console.log(afterRemoval); // keeps Bob out
+function removeInPlace<T>(arr: T[], predicate: (el: T) => boolean): void {
+  for (let i = 0; i < arr.length; ) {
+    if (predicate(arr[i])) {
+      arr.splice(i, 1); // or use arr.splice(i--, 1) if you want to keep index logic simple
+    } else {
+      i++;
+    }
   }
-
-  for (let cur = headB; cur; cur = cur.next) {
-    if (nodes.has(cur)) return cur;
-  }
-
-  return null;
 }
