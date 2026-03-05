@@ -1,32 +1,53 @@
 /**
- * Returns the area of a triangle when you know its base and height.
+ * Sorts an array using the bubble‑sort algorithm.
  *
- * @param base   The length of the triangle’s base.
- * @param height The height (altitude) drawn to that base.
- * @returns The area in whatever units the inputs are in.
- */
-function triangleAreaFromBaseHeight(base: number, height: number): number {
-  return 0.5 * base * height;
-}
-/**
- * Returns the area of a triangle given its three vertices.
+ * @param arr       The array to sort. The sort is performed in-place.
+ * @param compare   Optional comparison function. It should return:
+ *                  - a negative number if a < b
+ *                  - zero if a == b
+ *                  - a positive number if a > b
  *
- * @param x1 x‑coordinate of the first vertex
- * @param y1 y‑coordinate of the first vertex
- * @param x2 x‑coordinate of the second vertex
- * @param y2 y‑coordinate of the second vertex
- * @param x3 x‑coordinate of the third vertex
- * @param y3 y‑coordinate of the third vertex
- * @returns The absolute area (non‑negative) of the triangle.
+ * @returns The sorted array (the same instance that was passed in).
  */
-function triangleAreaFromPoints(
-  x1: number, y1: number,
-  x2: number, y2: number,
-  x3: number, y3: number
-): number {
-  return Math.abs(
-    x1 * (y2 - y3) +
-    x2 * (y3 - y1) +
-    x3 * (y1 - y2)
-  ) / 2;
+export function bubbleSort<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
+  // Default to natural order for numbers and strings
+  const cmp = compare ?? ((a: any, b: any) => (a > b ? 1 : a < b ? -1 : 0));
+
+  const len = arr.length;
+  if (len < 2) return arr; // already sorted
+
+  let swapped: boolean;
+  // We keep looping until no swaps happen in a full pass
+  do {
+    swapped = false;
+    // After each round the largest element in the unsorted portion
+    // "bubbles" to its final position, so we can skip the last i elements
+    for (let i = 1; i < len; i++) {
+      if (cmp(arr[i - 1], arr[i]) > 0) {
+        // swap
+        [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+        swapped = true;
+      }
+    }
+  } while (swapped);
+
+  return arr;
 }
+// 1️⃣ Sort plain numbers
+const nums = [5, 3, 8, 1, 2];
+bubbleSort(nums);           // nums → [1, 2, 3, 5, 8]
+
+// 2️⃣ Sort strings alphabetically
+const words = ['banana', 'apple', 'cherry'];
+bubbleSort(words);          // words → ['apple', 'banana', 'cherry']
+
+// 3️⃣ Sort objects with a custom key
+type Person = { name: string; age: number };
+const people: Person[] = [
+  { name: 'Zoe',   age: 28 },
+  { name: 'Adam',  age: 34 },
+  { name: 'Mira',  age: 23 }
+];
+
+bubbleSort(people, (p1, p2) => p1.age - p2.age);
+// people → [{name:'Mira',age:23}, {name:'Zoe',age:28}, {name:'Adam',age:34}]
