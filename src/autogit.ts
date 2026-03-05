@@ -1,47 +1,75 @@
-function removeValue<T>(arr: T[], value: T): T[] {
-  return arr.filter((el) => el !== value);
-}
+/**
+ * Binary search on a sorted array (ascending order).
+ * @param arr   Sorted array of comparable items.
+ * @param value Item you’re hunting for.
+ * @param compare Optional comparison function:
+ *                (a,b) => 0 if a==b, <0 if a<b, >0 if a>b.
+ *                If omitted, '<'/'>' operators are used.
+ * @returns Index of the value, or -1 if it isn’t present.
+ */
+export function binarySearch<T>(
+  arr: readonly T[],
+  value: T,
+  compare?: (a: T, b: T) => number,
+): number {
+  let low = 0;
+  let high = arr.length;
 
-// Example
-const numbers = [1, 2, 3, 4, 5];
-const withoutThree = removeValue(numbers, 3);
-console.log(withoutThree); // [1, 2, 4, 5]
-function removeAtIndex<T>(arr: T[], index: number): void {
-  if (index >= 0 && index < arr.length) {
-    arr.splice(index, 1); // splice mutates the array
+  const cmp = compare ?? ((a: T, b: T) => {
+    /* eslint-disable-next-line no-prototype-builtins */
+    if ((a as any as object).hasOwnProperty && typeof a === 'object' && typeof b === 'object') {
+      // For objects that implement `valueOf()` – optional
+      return (a as any) < b ? -1 : (a as any) > b ? 1 : 0;
+    }
+    return a < b ? -1 : a > b ? 1 : 0;
+  });
+
+  while (low < high) {
+    const mid = (low + high) >>> 1; // fast floor division by 2
+    const comp = cmp(arr[mid], value);
+
+    if (comp === 0) return mid;   // found it
+    if (comp < 0) low = mid + 1;  // value is higher
+    else high = mid;              // value is lower
   }
-}
 
-// Example
-const letters = ['a', 'b', 'c', 'd'];
-removeAtIndex(letters, 2);
-console.log(letters); // ['a', 'b', 'd']
-function removeIf<T>(arr: T[], predicate: (el: T) => boolean): T[] {
-  return arr.filter(el => !predicate(el));
+  return -1; // not found
 }
+const nums = [1, 3, 5, 7, 9, 11, 13];
+const idx = binarySearch(nums, 7); // → 3
 
-// Example: remove all even numbers
-const evensGone = removeIf(numbers, n => n % 2 === 0);
-console.log(evensGone); // [1, 3, 5]
-type User = { id: number; name: string };
-const users: User[] = [
-  { id: 1, name: 'Ada' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Cal' },
+const words = ['apple', 'banana', 'cherry', 'date'];
+const wIdx = binarySearch(words, 'cherry'); // → 2
+export function binarySearchRecursive<T>(
+  arr: readonly T[],
+  value: T,
+  compare?: (a: T, b: T) => number,
+  low = 0,
+  high = arr.length - 1,
+): number {
+  if (low > high) return -1;
+
+  const cmp = compare ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+
+  const mid = (low + high) >>> 1;
+  const comp = cmp(arr[mid], value);
+
+  if (comp === 0) return mid;
+  return comp < 0
+    ? binarySearchRecursive(arr, value, compare, mid + 1, high)
+    : binarySearchRecursive(arr, value, compare, low, mid - 1);
+}
+interface Person { name: string; age: number; }
+
+const people: Person[] = [
+  { name: 'Alice', age: 28 },
+  { name: 'Bob', age: 35 },
+  { name: 'Carol', age: 41 },
 ];
 
-function removeById(arr: User[], id: number): User[] {
-  return arr.filter(u => u.id !== id);
-}
-
-const afterRemoval = removeById(users, 2);
-console.log(afterRemoval); // keeps Bob out
-function removeInPlace<T>(arr: T[], predicate: (el: T) => boolean): void {
-  for (let i = 0; i < arr.length; ) {
-    if (predicate(arr[i])) {
-      arr.splice(i, 1); // or use arr.splice(i--, 1) if you want to keep index logic simple
-    } else {
-      i++;
-    }
-  }
-}
+// Sorted by age
+const idx = binarySearch(
+  people,
+  { name: '', age: 35 },             // value (name ignored)
+  (a, b) => a.age - b.age
+); // → 1
