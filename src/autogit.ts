@@ -1,51 +1,44 @@
-// A classic singly‑linked‑list node
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-
 /**
- * Returns the nth node from the end (1‑based) or null if n is out of range.
+ * Returns n! (n factorial) for a non‑negative integer.
+ *
+ * @param n A non‑negative integer (0, 1, 2, …).
+ * @returns The factorial of n. Returns 1 for n = 0.
+ * @throws Error if n is negative.
  */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;          // natural guard for mis‑ed input
-
-  let first: ListNode<T> | null = head;
-  let second: ListNode<T> | null = head;
-
-  /* Advance `first` n steps ahead. */
-  for (let i = 0; i < n; i++) {
-    if (!first) return null;   // n is larger than list length
-    first = first.next;
+function factorial(n: number): number {
+  if (n < 0) {
+    throw new Error("Factorial is not defined for negative numbers.");
   }
 
-  /* Move both pointers until `first` hits the end. */
-  while (first) {
-    first = first.next;
-    second = second!.next;     // second is guaranteed not null here
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-
-  return second;   // `second` is the nth node from the end
+  return result;
 }
-function nthFromEndTwoPass<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let len = 0;
-  for (let cur = head; cur; cur = cur.next) len++;
 
-  if (n <= 0 || n > len) return null;
-
-  let cur = head;
-  for (let i = 0; i < len - n; i++) cur = cur!.next;
-
-  return cur;
+// Example
+console.log(factorial(5)); // 120
+function factorialRecursive(n: number): number {
+  if (n < 0) {
+    throw new Error("Negative input not allowed.");
+  }
+  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
 }
-// Example list: 1 → 2 → 3 → 4 → 5
-const tail = new ListNode(5);
-const middle = new ListNode(4, tail);
-const head = new ListNode(1,
-           new ListNode(2,
-           new ListNode(3,
-           middle)));
 
-console.log(nthFromEnd(head, 1)?.val); // 5
-console.log(nthFromEnd(head, 2)?.val); // 4
-console.log(nthFromEnd(head, 5)?.val); // 1
-console.log(nthFromEnd(head, 6));      // null
+console.log(factorialRecursive(5)); // 120
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error("Negative input not allowed.");
+  let result = 1n;          // BigInt literal starts with n
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
+}
+
+console.log(factorialBigInt(100).toString());
+// "933262154... (full 158‑digit number)"
+console.assert(factorial(0) === 1);
+console.assert(factorial(1) === 1);
+console.assert(factorial(5) === 120);
+console.assert(factorialBigInt(10).toString() === "3628800");
