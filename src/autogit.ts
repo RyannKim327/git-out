@@ -1,53 +1,47 @@
-/**
- * Sorts an array using the bubble‑sort algorithm.
- *
- * @param arr       The array to sort. The sort is performed in-place.
- * @param compare   Optional comparison function. It should return:
- *                  - a negative number if a < b
- *                  - zero if a == b
- *                  - a positive number if a > b
- *
- * @returns The sorted array (the same instance that was passed in).
- */
-export function bubbleSort<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
-  // Default to natural order for numbers and strings
-  const cmp = compare ?? ((a: any, b: any) => (a > b ? 1 : a < b ? -1 : 0));
-
-  const len = arr.length;
-  if (len < 2) return arr; // already sorted
-
-  let swapped: boolean;
-  // We keep looping until no swaps happen in a full pass
-  do {
-    swapped = false;
-    // After each round the largest element in the unsorted portion
-    // "bubbles" to its final position, so we can skip the last i elements
-    for (let i = 1; i < len; i++) {
-      if (cmp(arr[i - 1], arr[i]) > 0) {
-        // swap
-        [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
-        swapped = true;
-      }
-    }
-  } while (swapped);
-
-  return arr;
+function removeValue<T>(arr: T[], value: T): T[] {
+  return arr.filter((el) => el !== value);
 }
-// 1️⃣ Sort plain numbers
-const nums = [5, 3, 8, 1, 2];
-bubbleSort(nums);           // nums → [1, 2, 3, 5, 8]
 
-// 2️⃣ Sort strings alphabetically
-const words = ['banana', 'apple', 'cherry'];
-bubbleSort(words);          // words → ['apple', 'banana', 'cherry']
+// Example
+const numbers = [1, 2, 3, 4, 5];
+const withoutThree = removeValue(numbers, 3);
+console.log(withoutThree); // [1, 2, 4, 5]
+function removeAtIndex<T>(arr: T[], index: number): void {
+  if (index >= 0 && index < arr.length) {
+    arr.splice(index, 1); // splice mutates the array
+  }
+}
 
-// 3️⃣ Sort objects with a custom key
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: 'Zoe',   age: 28 },
-  { name: 'Adam',  age: 34 },
-  { name: 'Mira',  age: 23 }
+// Example
+const letters = ['a', 'b', 'c', 'd'];
+removeAtIndex(letters, 2);
+console.log(letters); // ['a', 'b', 'd']
+function removeIf<T>(arr: T[], predicate: (el: T) => boolean): T[] {
+  return arr.filter(el => !predicate(el));
+}
+
+// Example: remove all even numbers
+const evensGone = removeIf(numbers, n => n % 2 === 0);
+console.log(evensGone); // [1, 3, 5]
+type User = { id: number; name: string };
+const users: User[] = [
+  { id: 1, name: 'Ada' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Cal' },
 ];
 
-bubbleSort(people, (p1, p2) => p1.age - p2.age);
-// people → [{name:'Mira',age:23}, {name:'Zoe',age:28}, {name:'Adam',age:34}]
+function removeById(arr: User[], id: number): User[] {
+  return arr.filter(u => u.id !== id);
+}
+
+const afterRemoval = removeById(users, 2);
+console.log(afterRemoval); // keeps Bob out
+function removeInPlace<T>(arr: T[], predicate: (el: T) => boolean): void {
+  for (let i = 0; i < arr.length; ) {
+    if (predicate(arr[i])) {
+      arr.splice(i, 1); // or use arr.splice(i--, 1) if you want to keep index logic simple
+    } else {
+      i++;
+    }
+  }
+}
