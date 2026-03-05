@@ -1,17 +1,77 @@
-const numbers = [1, 2, 3, 4];
-numbers.reverse();          // → [4, 3, 2, 1]
-console.log(numbers);       // the same array has changed
-const numbers = [1, 2, 3, 4];
-const reversed = numbers.slice().reverse(); // or [...numbers].reverse()
+low  = 0
+high = length–1
 
-console.log(numbers);   // → [1, 2, 3, 4]
-console.log(reversed);  // → [4, 3, 2, 1]
-function reverseArray<T>(arr: T[]): T[] {
-  const out = new Array<T>(arr.length);
-  for (let i = 0, j = arr.length - 1; i <= j; ++i, --j) {
-    out[i] = arr[j];
-    out[j] = arr[i];
+while low ≤ high and target ∈ [arr[low], arr[high]]:
+    // Edge cases
+    if arr[low] == arr[high]:
+        return (arr[low] == target) ? low : -1
+
+    // Interpolated index
+    pos = low + ((target – arr[low]) * (high – low))
+          / (arr[high] – arr[low])
+
+    // Clamp to array bounds
+    pos = Math.round(pos)
+
+    if arr[pos] == target:
+        return pos
+    else if arr[pos] < target:
+        low = pos + 1
+    else:
+        high = pos – 1
+
+return –1   // not found
+/**
+ * Interpolation search for a strictly sorted numeric array.
+ * @param arr   - Sorted numbers (ascending)
+ * @param target - Number to find
+ * @returns Index of target, or -1 if not found
+ */
+export function interpolationSearch(
+  arr: readonly number[],
+  target: number
+): number {
+  if (arr.length === 0) return -1;
+
+  let low = 0;
+  let high = arr.length - 1;
+
+  // Keep going while target is inside the current window
+  while (low <= high && target >= arr[low] && target <= arr[high]) {
+    // All remaining values equal – either hit or miss.
+    if (arr[low] === arr[high]) {
+      return arr[low] === target ? low : -1;
+    }
+
+    // Linear interpolation to guess position.
+    const pos =
+      low +
+      Math.round(
+        ((target - arr[low]) * (high - low)) / (arr[high] - arr[low])
+      );
+
+    // Just in case rounding pushes us outside: clamp bounds.
+    const index = Math.min(Math.max(pos, low), high);
+
+    const value = arr[index];
+    if (value === target) {
+      return index;
+    }
+    if (value < target) {
+      low = index + 1;
+    } else {
+      high = index - 1;
+    }
   }
-  return out;
+
+  return -1; // Not found
 }
-const rev = reverseArray([10, 20, 30]); // → [30, 20, 10]
+const sorted = [3, 7, 13, 19, 23, 29, 31, 47, 53, 59];
+const target = 23;
+
+const idx = interpolationSearch(sorted, target);
+console.log(idx); // → 4
+console.log(interpolationSearch(sorted, 22)); // → -1
+const idx = interpolationSearch(sortedArray, key);
+if (idx !== -1) console.log(`Found at ${idx}`);
+else console.log('Not there');
