@@ -1,30 +1,38 @@
 /**
- * Returns the second largest value in an array.
- * Uses a single pass – O(n) time, O(1) extra space.
- *
- * @param nums – numeric array
- * @returns second largest number, or `undefined` if it can’t be determined
+ * Return the first non‑repeating character in a string.
+ * If every character repeats, return `null`.
  */
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined;
+function firstNonRepeating(str: string): string | null {
+  const counts: Record<string, number> = {};
 
-  let largest = -Infinity;
-  let second = -Infinity;
+  // 1️⃣ Count each character
+  for (const ch of str) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
+  }
 
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;   // old largest becomes second
-      largest = n;
-    } else if (n > second && n !== largest) {
-      // n is between largest and second – update second
-      second = n;
+  // 2️⃣ Scan once more to find the first with count 1
+  for (const ch of str) {
+    if (counts[ch] === 1) {
+      return ch;
     }
   }
 
-  return second === -Infinity ? undefined : second;
+  return null;
 }
 
-// quick demo
-console.log(secondLargest([3, 1, 4, 1, 5, 9, 2, 6, 5])); // 8
-console.log(secondLargest([42]));                         // undefined
-console.log(secondLargest([7, 7, 7]));                     // undefined – no distinct second value
+// quick examples
+console.log(firstNonRepeating('abacabad')); // "b"
+console.log(firstNonRepeating('aabbcc'));   // null
+function firstNonRepeatingMap(str: string): string | null {
+  const freq = new Map<string, number>();
+
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
+
+  for (const ch of str) if (freq.get(ch) === 1) return ch;
+  return null;
+}
+function allNonRepeating(str: string): string[] {
+  const freq = new Map<string, number>();
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  return [...str].filter(ch => freq.get(ch) === 1);
+}
