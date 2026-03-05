@@ -1,44 +1,13 @@
-/**
- * Returns n! (n factorial) for a non‑negative integer.
- *
- * @param n A non‑negative integer (0, 1, 2, …).
- * @returns The factorial of n. Returns 1 for n = 0.
- * @throws Error if n is negative.
- */
-function factorial(n: number): number {
-  if (n < 0) {
-    throw new Error("Factorial is not defined for negative numbers.");
-  }
+// 1️⃣  Define the array (TypeScript knows it’s numbers)
+const nums: number[] = [42, 7, 13, 99, 29];
 
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
-}
+// 2️⃣  Sort in place – ascending
+nums.sort((a, b) => a - b);   // -> [7, 13, 29, 42, 99]
+console.log('Ascending:', nums);
 
-// Example
-console.log(factorial(5)); // 120
-function factorialRecursive(n: number): number {
-  if (n < 0) {
-    throw new Error("Negative input not allowed.");
-  }
-  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
-}
+// 3️⃣  If you want a new sorted array instead, copy first
+const ascending = [...nums].sort((a, b) => a - b);
 
-console.log(factorialRecursive(5)); // 120
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error("Negative input not allowed.");
-  let result = 1n;          // BigInt literal starts with n
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
-}
-
-console.log(factorialBigInt(100).toString());
-// "933262154... (full 158‑digit number)"
-console.assert(factorial(0) === 1);
-console.assert(factorial(1) === 1);
-console.assert(factorial(5) === 120);
-console.assert(factorialBigInt(10).toString() === "3628800");
+// 4️⃣  Descending order
+const descending = nums.slice().sort((a, b) => b - a); // -> [99, 42, 29, 13, 7]
+console.log('Descending:', descending);
