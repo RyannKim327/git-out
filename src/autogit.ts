@@ -1,37 +1,28 @@
-function countChar(str: string, target: string): number {
-  let count = 0;
-  for (const ch of str) {
-    if (ch === target) count++;
+/**
+ * Convert a decimal number to a binary string.
+ * 
+ * @param n – A non‑negative integer
+ * @returns The binary representation as a string
+ */
+function decimalToBinary(n: number): string {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new Error('Input must be a non‑negative integer.');
   }
-  return count;
-}
 
-const times = countChar("hello world", "l"); // 3
-function countChar(str: string, target: string): number {
-  return str.split(target).length - 1;
-}
+  // Handling zero explicitly – Math.pow(2, 0) is 1 but we still want "0"
+  if (n === 0) return '0';
 
-countChar("banana", "a"); // 3
-function countChar(str: string, target: string): number {
-  return [...str].filter(ch => ch === target).length;
-}
+  let binary = '';
+  let current = n;
 
-countChar("👋👋👋 hello", "👋"); // 3
-function countChar(str: string, target: string): number {
-  const re = new RegExp(`\\${target}`, "g");
-  const matches = str.match(re);
-  return matches ? matches.length : 0;
-}
-
-countChar("mississippi", "i"); // 4
-function multicharCount(str: string, targets: string[]): Record<string, number> {
-  const result: Record<string, number> = {};
-  for (const t of targets) result[t] = 0;
-
-  for (const ch of str) {
-    if (result.hasOwnProperty(ch)) result[ch]++;
+  while (current > 0) {
+    // Prepend the remainder (0 or 1) to the binary string
+    binary = (current % 2) + binary;
+    current = Math.floor(current / 2);
   }
-  return result;
-}
 
-multicharCount("abacaba", ["a", "b", "c"]); // { a:4, b:2, c:1 }
+  return binary;
+}
+console.log(decimalToBinary(10)); // "1010"
+console.log(decimalToBinary(255)); // "11111111"
+console.log(decimalToBinary(0)); // "0"
