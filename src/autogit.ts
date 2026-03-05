@@ -1,146 +1,40 @@
-// Node.ts
-export class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
+/**
+ * Binary search – recursive.  
+ * @param arr        — sorted array
+ * @param target     — value to find
+ * @param compare    — optional comparison function (a, b) => number
+ *                     returns <0 if a<b, 0 if a==b, >0 if a>b
+ * @returns index of `target` or -1 if not found
+ */
+function binarySearchRec<T>(
+  arr: T[],
+  target: T,
+  compare?: (a: T, b: T) => number
+): number {
+  // Provide a default numeric comparator
+  const cmp = compare ?? ((a: any, b: any) => a - b);
 
-  constructor(value: T) {
-    this.value = value;
-  }
+  const search = (low: number, high: number): number => {
+    if (low > high) return -1;          // base case: not found
+
+    const mid = Math.floor((low + high) / 2);
+    const cmpResult = cmp(arr[mid], target);
+
+    if (cmpResult === 0) return mid;    // target is at mid
+    if (cmpResult < 0) return search(mid + 1, high); // target is right
+    return search(low, mid - 1);        // target is left
+  };
+
+  return search(0, arr.length - 1);
 }
-// LinkedList.ts
-import { ListNode } from "./Node";
+// Numbers – no comparator needed
+const nums = [1, 3, 5, 7, 9, 11, 13];
+console.log(binarySearchRec(nums, 7));  // → 3
+console.log(binarySearchRec(nums, 2));  // → -1
 
-export class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _length = 0;
+// Strings – supply a comparator
+const words = ["apple", "banana", "cherry", "date"];
+const stringCmp = (a: string, b: string) => a.localeCompare(b);
 
-  get length() {
-    return this._length;
-  }
-
-  /* ---------- Basic Operations ---------- */
-
-  // Append a value to the end of the list.
-  push(value: T): void {
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      this.tail!.next = node;
-      this.tail = node;
-    }
-    this._length++;
-  }
-
-  // Prepend a value to the beginning of the list.
-  unshift(value: T): void {
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      node.next = this.head;
-      this.head = node;
-    }
-    this._length++;
-  }
-
-  // Remove and return the value at the head of the list.
-  shift(): T | null {
-    if (!this.head) return null;
-    const value = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null; // list became empty
-    this._length--;
-    return value;
-  }
-
-  // Remove and return the value at the tail of the list.
-  pop(): T | null {
-    if (!this.head) return null;
-
-    if (this.head === this.tail) {
-      const value = this.head.value;
-      this.head = this.tail = null;
-      this._length--;
-      return value;
-    }
-
-    // Walk to the node just before the tail.
-    let current = this.head;
-    while (current.next !== this.tail) {
-      current = current.next!;
-    }
-    const value = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-    this._length--;
-    return value;
-  }
-
-  /* ---------- Traversal & Search ---------- */
-
-  // Return the node at the given zero‑based index, or null if out of bounds.
-  getNodeAt(index: number): ListNode<T> | null {
-    if (index < 0 || index >= this._length) return null;
-    let current = this.head!;
-    for (let i = 0; i < index; i++) {
-      current = current.next!;
-    }
-    return current;
-  }
-
-  // Find the first value that satisfies the predicate.
-  find(predicate: (value: T) => boolean, startIndex = 0): T | null {
-    let current = this.getNodeAt(startIndex);
-    while (current) {
-      if (predicate(current.value)) return current.value;
-      current = current.next;
-    }
-    return null;
-  }
-
-  /* ---------- Utility ---------- */
-
-  // Convert the list to an array (useful for debugging or interoperability).
-  toArray(): T[] {
-    const out: T[] = [];
-    let current = this.head;
-    while (current) {
-      out.push(current.value);
-      current = current.next;
-    }
-    return out;
-  }
-
-  // Allow for… e.g. “for … of” iteration.
-  [Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    return {
-      next: () => ({
-        value: current?.value,
-        done: current === null,
-      }),
-    };
-  }
-}
-import { LinkedList } from "./LinkedList";
-
-const numbers = new LinkedList<number>();
-numbers.push(10);
-numbers.push(20);
-numbers.unshift(5);   // list is now 5 -> 10 -> 20
-
-console.log(numbers.shift()); // 5
-console.log(numbers.pop());   // 20
-console.log(numbers.length);  // 1
-
-// Search
-numbers.push(30);
-numbers.push(40);
-console.log(numbers.find(v => v > 15)); // 20
-
-// Iterate
-for (const n of numbers) {
-  console.log(n); // 10, 30, 40
-}
+console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
+console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
