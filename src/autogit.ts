@@ -1,38 +1,40 @@
-// fortune.ts
-import { createInterface } from 'readline';
+// Basic node interface – can be turned into a class if you like.
+interface TreeNode<T = number> {
+  val: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
+}
+function maxDepth<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                 // empty subtree → depth 0
 
-// Set up a simple REPL‑style prompt
-const rl = createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+  const leftDepth  = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
 
-console.log('🃏 Welcome to the Random Fortune Machine!');
+  // Depth of current node = 1 (itself) + depth of deeper side
+  return 1 + Math.max(leftDepth, rightDepth);
+}
+const root: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 } },
+  right: { val: 3, right: { val: 5, right: { val: 6 } } }
+};
 
-// Ask the user for a number
-rl.question('Enter a number (0–9) and press Enter: ', (answer) => {
-  // Try to parse the input as an integer
-  const num = parseInt(answer.trim(), 10);
+console.log(maxDepth(root));   // → 4
+function maxDepthIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
 
-  if (isNaN(num) || num < 0 || num > 9) {
-    console.log('❌ That’s not a valid single digit between 0 and 9.');
-  } else {
-    // Pick a fortune from a tiny list
-    const fortunes = [
-      "You'll find a penny on the sidewalk.",
-      "A surprise call will brighten your day.",
-      "Today is a great day to start learning something new.",
-      "You’ll discover a hidden talent for drawing.",
-      "A forgotten receipt will pop up in your inbox.",
-      "A random act of kindness will return to you.",
-      "You’ll taste your favorite food in an unexpected way.",
-      "A new friendship is just a conversation away.",
-      "You’ll hit a traffic light and notice your neighbor’s cat.",
-      "Today you will finally finish that project you’ve shelved."
-    ];
+  let max = 0;
+  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
+    { node: root, depth: 1 },
+  ];
 
-    console.log(`🔮 Fortune for ${num}: ${fortunes[num]}`);
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    max = Math.max(max, depth);
+
+    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
+    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
   }
 
-  rl.close();
-});
+  return max;
+}
