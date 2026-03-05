@@ -1,39 +1,37 @@
-function isPalindrome(str: string): boolean {
-  // Compare the string to its reverse
-  const reversed = str.split('').reverse().join('');
-  return str === reversed;
-}
-
-// Examples
-console.log(isPalindrome('radar'));   // true
-console.log(isPalindrome('hello'));   // false
-function isPalindromeCI(str: string): boolean {
-  const normalized = str.toLowerCase();          // make everything lowercase
-  return normalized === normalized.split('').reverse().join('');
-}
-
-console.log(isPalindromeCI('Radar'));   // true
-console.log(isPalindromeCI('Racecar')); // true
-function isPalindromeClean(str: string): boolean {
-  const cleaned = str
-    .replace(/[^a-z0-9]/gi, '')      // strip non-alphanumerics
-    .toLowerCase();                  // normalize case
-  
-  const reversed = cleaned.split('').reverse().join('');
-  return cleaned === reversed;
-}
-
-console.log(isPalindromeClean('A man, a plan, a canal: Panama')); // true
-function isPalindromeTwoPointer(str: string): boolean {
-  let left = 0;
-  let right = str.length - 1;
-
-  while (left < right) {
-    if (str[left] !== str[right]) return false;
-    left++;
-    right--;
+function countChar(str: string, target: string): number {
+  let count = 0;
+  for (const ch of str) {
+    if (ch === target) count++;
   }
-  return true;
+  return count;
 }
 
-console.log(isPalindromeTwoPointer('radar')); // true
+const times = countChar("hello world", "l"); // 3
+function countChar(str: string, target: string): number {
+  return str.split(target).length - 1;
+}
+
+countChar("banana", "a"); // 3
+function countChar(str: string, target: string): number {
+  return [...str].filter(ch => ch === target).length;
+}
+
+countChar("👋👋👋 hello", "👋"); // 3
+function countChar(str: string, target: string): number {
+  const re = new RegExp(`\\${target}`, "g");
+  const matches = str.match(re);
+  return matches ? matches.length : 0;
+}
+
+countChar("mississippi", "i"); // 4
+function multicharCount(str: string, targets: string[]): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const t of targets) result[t] = 0;
+
+  for (const ch of str) {
+    if (result.hasOwnProperty(ch)) result[ch]++;
+  }
+  return result;
+}
+
+multicharCount("abacaba", ["a", "b", "c"]); // { a:4, b:2, c:1 }
