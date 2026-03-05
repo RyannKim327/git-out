@@ -1,41 +1,26 @@
-export interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
+function maxOfArray(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;   // or throw an error if you prefer
+  return Math.max(...nums);
 }
-export class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
+function maxOfArray(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  return nums.reduce((max, n) => (n > max ? n : max), nums[0]);
 }
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null
-  let curr = head
+function maxOfArray(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
 
-  while (curr) {
-    const nxt = curr.next      // keep reference to next node
-    curr.next = prev           // flip the link
-    prev = curr                // advance prev
-    curr = nxt                 // advance curr
+  let max = nums[0];
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] > max) {
+      max = nums[i];
+    }
   }
-
-  return prev   // new head
+  return max;
 }
-export function reverseListRec<T>(node: ListNode<T> | null, prev: ListNode<T> | null = null): ListNode<T> | null {
-  if (!node) return prev
-  const nxt = node.next
-  node.next = prev
-  return reverseListRec(nxt, node)
+const myNumbers = [12, 7, 22, 5, 18];
+console.log(maxOfArray(myNumbers)); // 22
+function maxWithFallback(nums: number[], fallback = 0): number {
+  return nums.length > 0
+    ? nums.reduce((a, b) => Math.max(a, b))
+    : fallback;
 }
-// build 1 → 2 → 3
-const n3 = new ListNode(3)
-const n2 = new ListNode(2, n3)
-const n1 = new ListNode(1, n2)
-
-// reverse
-const reversed = reverseList(n1)
-
-// print results
-let cur = reversed
-while (cur) {
-  console.log(cur.value)
-  cur = cur.next
-}
-// → 3, 2, 1
