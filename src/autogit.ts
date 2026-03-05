@@ -1,30 +1,41 @@
-function getLength(str: string): number {
-  let count = 0;
-  for (const _ of str) {
-    count++;
+export interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
+}
+export class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
+}
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null
+  let curr = head
+
+  while (curr) {
+    const nxt = curr.next      // keep reference to next node
+    curr.next = prev           // flip the link
+    prev = curr                // advance prev
+    curr = nxt                 // advance curr
   }
-  return count;
+
+  return prev   // new head
 }
-function recurseLen(str: string, idx = 0): number {
-  return idx >= str.length ? idx : recurseLen(str, idx + 1);
+export function reverseListRec<T>(node: ListNode<T> | null, prev: ListNode<T> | null = null): ListNode<T> | null {
+  if (!node) return prev
+  const nxt = node.next
+  node.next = prev
+  return reverseListRec(nxt, node)
 }
-function recurseLen(str: string, idx = 0): number {
-  return str === '' ? idx : recurseLen(str.slice(1), idx + 1);
+// build 1 → 2 → 3
+const n3 = new ListNode(3)
+const n2 = new ListNode(2, n3)
+const n1 = new ListNode(1, n2)
+
+// reverse
+const reversed = reverseList(n1)
+
+// print results
+let cur = reversed
+while (cur) {
+  console.log(cur.value)
+  cur = cur.next
 }
-function lengthFromArray(str: string): number {
-  return Array.from(str).length; // still uses .length on the array
-}
-function lengthSpread(str: string): number {
-  return [...str].length; // element count after spreading
-}
-function lengthWithMatch(str: string): number {
-  const matches = str.match(/[\s\S]/g); // one match per character, including newlines
-  return matches ? matches.length : 0;
-}
-function whileLoop(str: string): number {
-  let i = 0;
-  while (str.charAt(i) !== '') {
-    i++;
-  }
-  return i;
-}
+// → 3, 2, 1
