@@ -1,41 +1,37 @@
-export interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-}
-export class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null
-  let curr = head
-
-  while (curr) {
-    const nxt = curr.next      // keep reference to next node
-    curr.next = prev           // flip the link
-    prev = curr                // advance prev
-    curr = nxt                 // advance curr
+function countChar(str: string, target: string): number {
+  let count = 0;
+  for (const ch of str) {
+    if (ch === target) count++;
   }
-
-  return prev   // new head
+  return count;
 }
-export function reverseListRec<T>(node: ListNode<T> | null, prev: ListNode<T> | null = null): ListNode<T> | null {
-  if (!node) return prev
-  const nxt = node.next
-  node.next = prev
-  return reverseListRec(nxt, node)
-}
-// build 1 → 2 → 3
-const n3 = new ListNode(3)
-const n2 = new ListNode(2, n3)
-const n1 = new ListNode(1, n2)
 
-// reverse
-const reversed = reverseList(n1)
-
-// print results
-let cur = reversed
-while (cur) {
-  console.log(cur.value)
-  cur = cur.next
+const times = countChar("hello world", "l"); // 3
+function countChar(str: string, target: string): number {
+  return str.split(target).length - 1;
 }
-// → 3, 2, 1
+
+countChar("banana", "a"); // 3
+function countChar(str: string, target: string): number {
+  return [...str].filter(ch => ch === target).length;
+}
+
+countChar("👋👋👋 hello", "👋"); // 3
+function countChar(str: string, target: string): number {
+  const re = new RegExp(`\\${target}`, "g");
+  const matches = str.match(re);
+  return matches ? matches.length : 0;
+}
+
+countChar("mississippi", "i"); // 4
+function multicharCount(str: string, targets: string[]): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const t of targets) result[t] = 0;
+
+  for (const ch of str) {
+    if (result.hasOwnProperty(ch)) result[ch]++;
+  }
+  return result;
+}
+
+multicharCount("abacaba", ["a", "b", "c"]); // { a:4, b:2, c:1 }
