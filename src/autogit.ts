@@ -1,41 +1,47 @@
-interface ListNode<T = any> {
-  value: T;
-  next?: ListNode<T>;
+function removeValue<T>(arr: T[], value: T): T[] {
+  return arr.filter((el) => el !== value);
 }
-/**
- * Counts nodes in a linked list.
- * @param head The first node (or undefined if the list is empty).
- * @returns Number of nodes in the list.
- */
-function length<T>(head: ListNode<T> | undefined): number {
-  let count = 0;
-  let current = head;
 
-  while (current) {
-    count++;
-    current = current.next;   // follow the chain
-  }
-  return count;
-}
-function lengthRecursive<T>(node: ListNode<T> | undefined): number {
-  return node ? 1 + lengthRecursive(node.next) : 0;
-}
-function* nodes<T>(head: ListNode<T> | undefined) {
-  let cur = head;
-  while (cur) {
-    yield cur;
-    cur = cur.next;
+// Example
+const numbers = [1, 2, 3, 4, 5];
+const withoutThree = removeValue(numbers, 3);
+console.log(withoutThree); // [1, 2, 4, 5]
+function removeAtIndex<T>(arr: T[], index: number): void {
+  if (index >= 0 && index < arr.length) {
+    arr.splice(index, 1); // splice mutates the array
   }
 }
 
-function lengthFromIterable<T>(head: ListNode<T> | undefined): number {
-  let count = 0;
-  for (const _ of nodes(head)) count++;
-  return count;
+// Example
+const letters = ['a', 'b', 'c', 'd'];
+removeAtIndex(letters, 2);
+console.log(letters); // ['a', 'b', 'd']
+function removeIf<T>(arr: T[], predicate: (el: T) => boolean): T[] {
+  return arr.filter(el => !predicate(el));
 }
-const third = { value: 3 } as ListNode<number>;
-const second = { value: 2, next: third };
-const first  = { value: 1, next: second };
 
-console.log(length(first));           // 3
-console.log(lengthRecursive(first));  // 3
+// Example: remove all even numbers
+const evensGone = removeIf(numbers, n => n % 2 === 0);
+console.log(evensGone); // [1, 3, 5]
+type User = { id: number; name: string };
+const users: User[] = [
+  { id: 1, name: 'Ada' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Cal' },
+];
+
+function removeById(arr: User[], id: number): User[] {
+  return arr.filter(u => u.id !== id);
+}
+
+const afterRemoval = removeById(users, 2);
+console.log(afterRemoval); // keeps Bob out
+function removeInPlace<T>(arr: T[], predicate: (el: T) => boolean): void {
+  for (let i = 0; i < arr.length; ) {
+    if (predicate(arr[i])) {
+      arr.splice(i, 1); // or use arr.splice(i--, 1) if you want to keep index logic simple
+    } else {
+      i++;
+    }
+  }
+}
