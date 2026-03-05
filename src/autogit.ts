@@ -1,41 +1,36 @@
-// schedule.ts
-import cron from 'node-cron';
+/**
+ * Returns the longest common prefix among all given strings.
+ * If the array is empty it returns an empty string.
+ */
+function longestCommonPrefix(words: string[]): string {
+  if (!words.length) return '';
 
-let runCount = 0;
-const maxRuns = 5;
+  // The first string will act as a reference; we hammer it down
+  // as far as we need to.
+  let prefix = words[0];
 
-// Pick a playful string at random each time the job fires.
-const messages = [
-  "🍕 Time for a pizza break!",
-  "🐱‍🏍 Speedy coding vibes!",
-  "🧐 Did you know: A group of flamingos is called a flamboyance?",
-  "🚀 Launching into the cosmos…",
-  "🔮 Future content will appear here!"
-];
-
-const job = cron.schedule('* * * * *', () => {
-  // Bot says something random
-  const msg = messages[Math.floor(Math.random() * messages.length)];
-  console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
-
-  runCount += 1;
-  if (runCount >= maxRuns) {
-    console.log('Stopping the cron job after 5 runs.');
-    job.stop();
+  // Compare the current prefix to every other word.
+  for (const w of words.slice(1)) {
+    // Keep truncating the prefix until it matches the start of w.
+    while (!w.startsWith(prefix)) {
+      prefix = prefix.slice(0, -1); // strip last char
+      if (!prefix) return ''; // nothing common any more
+    }
   }
-}, {
-  scheduled: true,
-  timezone: "UTC"
-});
 
-console.log('Cron job started—will run every minute up to 5 times.');
-# 1. Init a barebones project if you haven’t already
-npm init -y
+  return prefix;
+}
+console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // "fl"
+console.log(longestCommonPrefix(['dog', 'racecar', 'car']));    // ""
+function lcpSort(words: string[]): string {
+  if (!words.length) return '';
 
-# 2. Install the cron package and types for Node
-npm i node-cron
-npm i -D @types/node @types/node-cron typescript ts-node
+  const sorted = [...words].sort();
+  const a = sorted[0];
+  const b = sorted[sorted.length - 1];
+  let i = 0;
 
-# 3. Compile and run
-npx ts-node schedule.ts
-[12:00:00 AM] 🚀 Launching into the cosmos…
+  while (i < a.length && a[i] === b[i]) i++;
+
+  return a.slice(0, i);
+}
