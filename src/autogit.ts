@@ -1,37 +1,21 @@
-// Works for numbers, strings, dates, anything that can be compared with < and >.
-export function isSorted<T extends number | string | Date>(arr: T[]): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] < arr[i - 1]) return false;
+/**
+ * Returns true if `n` is a prime number.
+ * Handles 0, 1 and negative numbers as non‑prime.
+ */
+export function isPrime(n: number): boolean {
+  if (n <= 1) return false                // 0, 1, and negatives are not prime
+  if (n <= 3) return true                 // 2 and 3 are prime
+
+  // even numbers greater than 2 fail immediately
+  if (n % 2 === 0) return false
+
+  // only test odd divisors up to √n
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false
   }
-  return true;
+  return true
 }
-isSorted([1, 2, 3, 4]);        // true
-isSorted([1, 3, 2, 4]);        // false
-isSorted(['a', 'b', 'c']);     // true
-isSorted(['c', 'b', 'a']);     // false
-type Comparator<T> = (a: T, b: T) => number;
-
-export function isSortedWith<T>(arr: T[], cmp: Comparator<T>): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) return false; // `a > b` in ascending order
-  }
-  return true;
-}
-interface Person { name: string; age: number; }
-
-const people: Person[] = [
-  { name: 'Alice', age: 25 },
-  { name: 'Bob', age: 30 },
-  { name: 'Charlie', age: 35 },
-];
-
-isSortedWith(people, (a, b) => a.age - b.age); // true
-export const isSorted = <T>(arr: T[], cmp: Comparator<T> = (a, b) => {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}): boolean =>
-  arr
-    .map((value, index, self) => [self[index - 1], value] as const)
-    .slice(1) // skip the first undefined pair
-    .every(([prev, cur]) => cmp(prev!, cur) <= 0);
+console.log(isPrime(2));   // true
+console.log(isPrime(15));  // false
+console.log(isPrime(97));  // true
