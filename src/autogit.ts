@@ -1,40 +1,40 @@
 /**
- * Classic in‑place quick‑sort.
- *
- * @param arr  The array to be sorted (in‑place).
- * @param left The starting index (default: 0).
- * @param right The ending index (default: arr.length‑1).
- *
- * @returns The same array, now sorted.
+ * Binary search – recursive.  
+ * @param arr        — sorted array
+ * @param target     — value to find
+ * @param compare    — optional comparison function (a, b) => number
+ *                     returns <0 if a<b, 0 if a==b, >0 if a>b
+ * @returns index of `target` or -1 if not found
  */
-function quickSort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
-  if (left >= right) return arr;          // base case: 0 or 1 item
+function binarySearchRec<T>(
+  arr: T[],
+  target: T,
+  compare?: (a: T, b: T) => number
+): number {
+  // Provide a default numeric comparator
+  const cmp = compare ?? ((a: any, b: any) => a - b);
 
-  // Pick a pivot—here we just take the middle element.
-  const pivotIndex = Math.floor((left + right) / 2);
-  const pivot = arr[pivotIndex];
+  const search = (low: number, high: number): number => {
+    if (low > high) return -1;          // base case: not found
 
-  // Partition: everything less than the pivot goes left, everything
-  // greater or equal goes right.  Elements equal to the pivot can go either side.
-  let i = left;
-  let j = right;
-  while (i <= j) {
-    while (arr[i] < pivot) i++;   // find an element on the wrong side (left)
-    while (arr[j] > pivot) j--;   // find an element on the wrong side (right)
+    const mid = Math.floor((low + high) / 2);
+    const cmpResult = cmp(arr[mid], target);
 
-    if (i <= j) {                 // swap the out‑of‑place elements
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
-    }
-  }
+    if (cmpResult === 0) return mid;    // target is at mid
+    if (cmpResult < 0) return search(mid + 1, high); // target is right
+    return search(low, mid - 1);        // target is left
+  };
 
-  // Recursively sort the two partitions.
-  // The first call deals with the left two halves *unless* they overlap.
-  if (left < j) quickSort(arr, left, j);
-  if (i < right) quickSort(arr, i, right);
-
-  return arr;
+  return search(0, arr.length - 1);
 }
-const unsorted = [3, 7, 2, 5, 1, 4, 6];
-quickSort(unsorted);        // unsorted is now [1,2,3,4,5,6,7]
+// Numbers – no comparator needed
+const nums = [1, 3, 5, 7, 9, 11, 13];
+console.log(binarySearchRec(nums, 7));  // → 3
+console.log(binarySearchRec(nums, 2));  // → -1
+
+// Strings – supply a comparator
+const words = ["apple", "banana", "cherry", "date"];
+const stringCmp = (a: string, b: string) => a.localeCompare(b);
+
+console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
+console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
