@@ -1,45 +1,40 @@
-const raw = [1, 2, 2, 3, 4, 4, 5];
+/**
+ * Binary search – recursive.  
+ * @param arr        — sorted array
+ * @param target     — value to find
+ * @param compare    — optional comparison function (a, b) => number
+ *                     returns <0 if a<b, 0 if a==b, >0 if a>b
+ * @returns index of `target` or -1 if not found
+ */
+function binarySearchRec<T>(
+  arr: T[],
+  target: T,
+  compare?: (a: T, b: T) => number
+): number {
+  // Provide a default numeric comparator
+  const cmp = compare ?? ((a: any, b: any) => a - b);
 
-const unique = Array.from(new Set(raw));
-// or: const unique = [...new Set(raw)];
+  const search = (low: number, high: number): number => {
+    if (low > high) return -1;          // base case: not found
 
-console.log(unique); // [1, 2, 3, 4, 5]
-function uniqueInPlace<T>(arr: T[]): void {
-  const seen = new Set<T>();
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (seen.has(arr[i])) {
-      arr.splice(i, 1);          // remove duplicate
-    } else {
-      seen.add(arr[i]);          // record first appearance
-    }
-  }
+    const mid = Math.floor((low + high) / 2);
+    const cmpResult = cmp(arr[mid], target);
+
+    if (cmpResult === 0) return mid;    // target is at mid
+    if (cmpResult < 0) return search(mid + 1, high); // target is right
+    return search(low, mid - 1);        // target is left
+  };
+
+  return search(0, arr.length - 1);
 }
+// Numbers – no comparator needed
+const nums = [1, 3, 5, 7, 9, 11, 13];
+console.log(binarySearchRec(nums, 7));  // → 3
+console.log(binarySearchRec(nums, 2));  // → -1
 
-const data = ['a', 'b', 'a', 'c', 'b'];
-uniqueInPlace(data);
-console.log(data); // ['a', 'b', 'c']
-const raw = [1, 2, 3, 2, 4, 1];
-const unique = raw.filter((v, i) => raw.indexOf(v) === i);
-console.log(unique); // [1, 2, 3, 4]
-interface User { id: number; name: string }
+// Strings – supply a comparator
+const words = ["apple", "banana", "cherry", "date"];
+const stringCmp = (a: string, b: string) => a.localeCompare(b);
 
-const users: User[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 1, name: 'Alice (dup)' }, // duplicate id
-];
-
-const uniqueById = Array.from(
-  users.reduce((map, user) => {
-    if (!map.has(user.id)) map.set(user.id, user);
-    return map;
-  }, new Map<number, User>())
-);
-
-console.log(uniqueById);
-/*
-[
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' }
-]
-*/
+console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
+console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
