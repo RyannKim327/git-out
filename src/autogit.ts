@@ -1,79 +1,45 @@
-// A simple graph representation.
-// All nodes must be comparable with === (e.g. numbers, strings, or objects with a unique id).
-interface Graph<T> {
-  /** Return the directly connected nodes of `node`.  */
-  neighbors(node: T): T[];
-}
-
 /**
- * Iterative depth‑limited DFS.
+ * Returns the contiguous segment of `arr` that yields the highest possible sum.
  *
- * @param graph      the graph to search
- * @param start      the node to start from
- * @param goal       the node we are looking for
- * @param maxDepth   limit recursion depth (0 = only start node)
- * @returns           true if goal is reachable within maxDepth, false otherwise
+ * @param arr - Array of numbers (integer or float)
+ * @returns An object containing:
+ *   `maxSum`  – the total sum of the best segment
+ *   `start`   – the index where the segment begins
+ *   `end`     – the index where the segment ends (inclusive)
  */
-function depthLimitedSearch<T>(
-  graph: Graph<T>,
-  start: T,
-  goal: T,
-  maxDepth: number
-): boolean {
-  // Stack entries hold a node and its depth in the search space.
-  const stack: Array<{ node: T; depth: number }> = [{ node: start, depth: 0 }];
-  const visited = new Set<T>();
+function maxSubarray(arr: number[]) {
+  if (arr.length === 0) throw new Error('Array cannot be empty');
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;   // pop() never returns undefined here
+  let bestSum = arr[0];
+  let currentSum = arr[0];
+  let bestStart = 0;
+  let bestEnd = 0;
+  let tempStart = 0;
 
-    // If we hit the goal, we're done.
-    if (node === goal) return true;
+  for (let i = 1; i < arr.length; i++) {
+    const val = arr[i];
 
-    // Skip revisiting nodes; this keeps the search linear in the number of edges.
-    if (visited.has(node)) continue;
-    visited.add(node);
+    // Either start a new sub‑array at i or extend the existing one
+    if (currentSum + val < val) {
+      currentSum = val;
+      tempStart = i;       // new potential start
+    } else {
+      currentSum += val;   // keep extending
+    }
 
-    // Stop exploring deeper than we’re allowed.
-    if (depth === maxDepth) continue;
-
-    // Push neighbours onto the stack with incremented depth.
-    for (const neighbour of graph.neighbors(node)) {
-      // No need to push a node that is already visited; but doing so is harmless.
-      stack.push({ node: neighbour, depth: depth + 1 });
+    // Update the best segment seen so far
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
     }
   }
 
-  return false;   // exhausted everything within the depth limit
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-// Simple adjacency‑list example
-class SimpleGraph implements Graph<number> {
-  adjacency: Map<number, number[]>;
-
-  constructor(edges: Array<[number, number]>) {
-    this.adjacency = new Map();
-    for (const [a, b] of edges) {
-      this.adjacency
-        .get(a) ??= [];
-      this.adjacency.get(a)!.push(b);
-
-      this.adjacency
-        .get(b) ??= [];
-      this.adjacency.get(b)!.push(a);   // undirected
-    }
-  }
-
-  neighbors(node: number): number[] {
-    return this.adjacency.get(node) ?? [];
-  }
-}
-
-const g = new SimpleGraph([
-  [1, 2],
-  [1, 3],
-  [2, 4],
-  [3, 5],
-]);
-
-console.log(depthLimitedSearch(g, 1, 5, 1)); // false (needs depth 2)
-console.log(depthLimitedSearch(g, 1, 5, 2)); // true
+const data = [-2, -3, 4, -1, -2, 1, 5, -3];
+const result = maxSubarray(data);
+console.log(result);
+// Expected output:
+// { maxSum: 7, start: 2, end: 6 }
+// (segment [4, -1, -2, 1, 5] sums to 7)
