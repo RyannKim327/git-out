@@ -1,39 +1,19 @@
-export class Stack<T> {
-  /** internal buffer – the array that stores the stack items */
-  private readonly items: T[] = [];
-
-  /** push an item onto the stack */
-  push(value: T): void {
-    this.items.push(value);
-  }
-
-  /** pop the top item; returns `undefined` if the stack is empty */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  /** peek at the top item without removing it */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** true if the stack has no elements */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** number of elements currently on the stack */
-  size(): number {
-    return this.items.length;
-  }
+function removeVowels(str: string): string {
+  // The regex /[aeiou]/gi matches any vowel, case‑insensitively
+  return str.replace(/[aeiou]/gi, '');
 }
-const stack = new Stack<number>();
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size()); // 2
-console.log(stack.isEmpty()); // false
+// Examples
+console.log(removeVowels('Hello World'));    // "Hll Wrld"
+console.log(removeVowels('Typescript'));     // "TypScrpt"
+console.log(removeVowels('AEIOU aeioU'));    // ""
+function removeAllVowels(str: string): string {
+  // Matches any vowel character in the Latin vowel block
+  return str.replace(/[aeiouAEIOU]/g, ''); // still plain Latin
+  // OR with property escapes (if your environment supports it):
+  // return str.replace(/\p{Script=Latin}&&[aeiou]/gi, '');
+}
+function removeVowels(arr: string): string {
+  const vowels = new Set('aeiouAEIOU');
+  return arr.split('').filter(ch => !vowels.has(ch)).join('');
+}
