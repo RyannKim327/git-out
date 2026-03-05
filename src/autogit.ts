@@ -1,67 +1,47 @@
-class Graph<T> {
-  private adjacency = new Map<T, Set<T>>();
+function removeValue<T>(arr: T[], value: T): T[] {
+  return arr.filter((el) => el !== value);
+}
 
-  addVertex(v: T) {
-    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
-  }
-
-  addEdge(v: T, w: T, directed = false) {
-    this.addVertex(v);
-    this.addVertex(w);
-    this.adjacency.get(v)!.add(w);
-    if (!directed) this.adjacency.get(w)!.add(v);
-  }
-
-  neighbours(v: T): Iterable<T> {
-    return this.adjacency.get(v) || [];
-  }
-
-  vertices(): Iterable<T> {
-    return this.adjacency.keys();
+// Example
+const numbers = [1, 2, 3, 4, 5];
+const withoutThree = removeValue(numbers, 3);
+console.log(withoutThree); // [1, 2, 4, 5]
+function removeAtIndex<T>(arr: T[], index: number): void {
+  if (index >= 0 && index < arr.length) {
+    arr.splice(index, 1); // splice mutates the array
   }
 }
-function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
-  const visited = new Set<T>();
-  const result: T[] = [];
 
-  function visit(v: T) {
-    if (visited.has(v)) return;
-    visited.add(v);
-    result.push(v);
-
-    for (const n of graph.neighbours(v)) visit(n);
-  }
-
-  visit(start);
-  return result;
+// Example
+const letters = ['a', 'b', 'c', 'd'];
+removeAtIndex(letters, 2);
+console.log(letters); // ['a', 'b', 'd']
+function removeIf<T>(arr: T[], predicate: (el: T) => boolean): T[] {
+  return arr.filter(el => !predicate(el));
 }
-function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
-  const stack: T[] = [start];
-  const visited = new Set<T>();
-  const result: T[] = [];
 
-  while (stack.length) {
-    const v = stack.pop()!;
-    if (visited.has(v)) continue;
+// Example: remove all even numbers
+const evensGone = removeIf(numbers, n => n % 2 === 0);
+console.log(evensGone); // [1, 3, 5]
+type User = { id: number; name: string };
+const users: User[] = [
+  { id: 1, name: 'Ada' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Cal' },
+];
 
-    visited.add(v);
-    result.push(v);
+function removeById(arr: User[], id: number): User[] {
+  return arr.filter(u => u.id !== id);
+}
 
-    // Push neighbours in reverse order if you want the same order
-    // as the recursive version (depends on adjacency list ordering).
-    for (const n of graph.neighbours(v)) {
-      if (!visited.has(n)) stack.push(n);
+const afterRemoval = removeById(users, 2);
+console.log(afterRemoval); // keeps Bob out
+function removeInPlace<T>(arr: T[], predicate: (el: T) => boolean): void {
+  for (let i = 0; i < arr.length; ) {
+    if (predicate(arr[i])) {
+      arr.splice(i, 1); // or use arr.splice(i--, 1) if you want to keep index logic simple
+    } else {
+      i++;
     }
   }
-
-  return result;
 }
-const g = new Graph<string>();
-g.addEdge('A', 'B');
-g.addEdge('A', 'C');
-g.addEdge('B', 'D');
-g.addEdge('C', 'D');
-g.addEdge('D', 'E');
-
-console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
-console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
