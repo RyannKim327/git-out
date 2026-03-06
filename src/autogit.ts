@@ -1,35 +1,83 @@
+// --------------------------------------------------
+// 1️⃣  Linked‑list node definition
+// --------------------------------------------------
+export interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
+}
+
+// --------------------------------------------------
+// 2️⃣  Helper: reverse a list, returns new head
+// --------------------------------------------------
 /**
- * Bottom‑up merge sort – no recursion, only loops.
- * @param arr The array to sort, in place.
- * @returns The sorted array (same reference as the argument).
+ * Reverses the linked list starting at node `head`.
+ * Returns the new head of the reversed list.
  */
-export function mergeSortIterative<T>(arr: T[]): T[] {
-  const len = arr.length;
-  if (len < 2) return arr;          // already sorted
+function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let current = head;
 
-  // Temporary buffer reused for each merge
-  const temp = new Array<T>(len);
+  while (current) {
+    const next = current.next;
+    current.next = prev;
+    prev = current;
+    current = next;
+  }
+  return prev;          // new head
+}
 
-  // Initial run width – start with runs of 1 element
-  for (let width = 1; width < len; width <<= 1) {
-    // Merge pairs of runs: left = i‑th run, right = i+width‑th run
-    for (let i = 0; i < len; i += width << 1) {
-      const left = i;
-      const mid = Math.min(i + width, len);
-      const right = Math.min(i + (width << 1), len);
+// --------------------------------------------------
+// 3️⃣  Palindrome checker
+// --------------------------------------------------
+export function isPalindrome<T>(head: ListNode<T> | null): boolean {
+  if (!head || !head.next) return true;   // Empty or single‑node list
 
-      // Merge [left, mid) and [mid, right) into temp
-      let l = left, r = mid, k = left;
-      while (l < mid && r < right) {
-        temp[k++] = (arr[l] as any <= arr[r] as any) ? arr[l++] : arr[r++];
-      }
-      while (l < mid) temp[k++] = arr[l++];
-      while (r < right) temp[k++] = arr[r++];
+  // ----- 3.1  Find the middle (slow stops at middle)
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-      // Copy the merged segment back into arr
-      for (let p = left; p < right; p++) arr[p] = temp[p];
-    }
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  return arr;
+  // ----- 3.2  Reverse second half
+  const secondHalfStart = reverse(slow!.next);
+  let firstHalfIter = head;
+  let secondHalfIter = secondHalfStart;
+
+  // ----- 3.3  Compare halves
+  let palindrome = true;
+  while (secondHalfIter) {
+    if (firstHalfIter!.val !== secondHalfIter.val) {
+      palindrome = false;
+      break;
+    }
+    firstHalfIter = firstHalfIter!.next;
+    secondHalfIter = secondHalfIter.next;
+  }
+
+  // ----- 3.4  Restore the original order (optional)
+  slow!.next = reverse(secondHalfStart);
+
+  return palindrome;
 }
+
+// --------------------------------------------------
+// 4️⃣  Example usage
+// --------------------------------------------------
+function buildList(values: any[]): ListNode | null {
+  let dummy: ListNode | null = null;
+  for (let i = values.length - 1; i >= 0; i--) {
+    dummy = { val: values[i], next: dummy };
+  }
+  return dummy;
+}
+
+// Palindrome case
+const list1 = buildList([1, 2, 3, 2, 1]);
+console.log(isPalindrome(list1)); // true
+
+// Non‑palindrome
+const list2 = buildList([1, 2, 3, 4, 5]);
+console.log(isPalindrome(list2)); // false
