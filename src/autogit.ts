@@ -1,46 +1,42 @@
 /**
- * Returns true if `a` and `b` are anagrams.
- * Works for any Unicode characters, but
- * it ignores case and whitespace by default.
+ * Counting sort for non‑negative integers in a known range.
+ *
+ * @param data Array of numbers to sort.
+ * @param min  Minimum possible value in `data` (inclusive).
+ * @param max  Maximum possible value in `data` (inclusive).
+ * @returns    A new array containing the sorted numbers.
+ *
+ * Example:
+ *   const unsorted = [3, 0, 2, 3, 1];
+ *   const sorted = countingSort(unsorted, 0, 3); // [0,1,2,3,3]
  */
-function areAnagrams(a: string, b: string, ignoreCase = true, ignoreWhitespace = true): boolean {
-  // Normalise: trim, collapse spaces, lower‑case if requested
-  const normalize = (s: string) =>
-    s
-      .replace(/\s+/g, "")        // delete spaces
-      .toLowerCase();             // lower‑case
+export function countingSort(data: number[], min: number, max: number): number[] {
+  if (data.length === 0) return [];
 
-  if (ignoreCase && ignoreWhitespace) {
-    a = normalize(a);
-    b = normalize(b);
-  } else if (ignoreCase) {
-    a = a.toLowerCase();
-    b = b.toLowerCase();
-  } else if (ignoreWhitespace) {
-    a = a.replace(/\s+/g, "");
-    b = b.replace(/\s+/g, "");
+  const range = max - min + 1;
+
+  // 1. Count occurrences
+  const count: number[] = new Array(range).fill(0);
+  for (const v of data) {
+    count[v - min]++;
   }
 
-  // Quick length check
-  if (a.length !== b.length) return false;
-
-  // Count characters in the first string
-  const counts: Record<string, number> = {};
-
-  for (const ch of a) {
-    counts[ch] = (counts[ch] ?? 0) + 1;
+  // 2. Accumulate counts – now each count element holds the index
+  //    where that value should be placed in the output array.
+  for (let i = 1; i < range; i++) {
+    count[i] += count[i - 1];
   }
 
-  // Subtract counts using the second string
-  for (const ch of b) {
-    const current = counts[ch];
-    if (!current) return false;          // character not seen before or already exhausted
-    if (--current === 0) delete counts[ch];
+  // 3. Build the output array in a stable manner.
+  const output: number[] = new Array(data.length);
+  for (let i = data.length - 1; i >= 0; i--) {
+    const v = data[i];
+    const idx = --count[v - min];          // <-- decrement first
+    output[idx] = v;
   }
 
-  // If everything matched, the object should be empty
-  return Object.keys(counts).length === 0;
+  return output;
 }
-console.log(areAnagrams("listen", "silent"));           // true
-console.log(areAnagrams("Hello, World!", "world!hello")); // true
-console.log(areAnagrams("foo", "bar"));                 // false
+const unsorted = [5, 3, 0, 2, 5, 1];
+const sorted = countingSort(unsorted, 0, 5);
+console.log(sorted); // [0, 1, 2, 3, 5, 5]
