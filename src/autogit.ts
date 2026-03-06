@@ -1,26 +1,30 @@
-function maxOfArray(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;   // or throw an error if you prefer
-  return Math.max(...nums);
-}
-function maxOfArray(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;
-  return nums.reduce((max, n) => (n > max ? n : max), nums[0]);
-}
-function maxOfArray(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;
-
-  let max = nums[0];
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] > max) {
-      max = nums[i];
-    }
+function getLength(str: string): number {
+  let count = 0;
+  for (const _ of str) {
+    count++;
   }
-  return max;
+  return count;
 }
-const myNumbers = [12, 7, 22, 5, 18];
-console.log(maxOfArray(myNumbers)); // 22
-function maxWithFallback(nums: number[], fallback = 0): number {
-  return nums.length > 0
-    ? nums.reduce((a, b) => Math.max(a, b))
-    : fallback;
+function recurseLen(str: string, idx = 0): number {
+  return idx >= str.length ? idx : recurseLen(str, idx + 1);
+}
+function recurseLen(str: string, idx = 0): number {
+  return str === '' ? idx : recurseLen(str.slice(1), idx + 1);
+}
+function lengthFromArray(str: string): number {
+  return Array.from(str).length; // still uses .length on the array
+}
+function lengthSpread(str: string): number {
+  return [...str].length; // element count after spreading
+}
+function lengthWithMatch(str: string): number {
+  const matches = str.match(/[\s\S]/g); // one match per character, including newlines
+  return matches ? matches.length : 0;
+}
+function whileLoop(str: string): number {
+  let i = 0;
+  while (str.charAt(i) !== '') {
+    i++;
+  }
+  return i;
 }
