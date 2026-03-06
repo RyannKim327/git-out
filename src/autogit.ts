@@ -1,40 +1,37 @@
-/**
- * Binary search – recursive.  
- * @param arr        — sorted array
- * @param target     — value to find
- * @param compare    — optional comparison function (a, b) => number
- *                     returns <0 if a<b, 0 if a==b, >0 if a>b
- * @returns index of `target` or -1 if not found
- */
-function binarySearchRec<T>(
-  arr: T[],
-  target: T,
-  compare?: (a: T, b: T) => number
-): number {
-  // Provide a default numeric comparator
-  const cmp = compare ?? ((a: any, b: any) => a - b);
-
-  const search = (low: number, high: number): number => {
-    if (low > high) return -1;          // base case: not found
-
-    const mid = Math.floor((low + high) / 2);
-    const cmpResult = cmp(arr[mid], target);
-
-    if (cmpResult === 0) return mid;    // target is at mid
-    if (cmpResult < 0) return search(mid + 1, high); // target is right
-    return search(low, mid - 1);        // target is left
-  };
-
-  return search(0, arr.length - 1);
+// Works for numbers, strings, dates, anything that can be compared with < and >.
+export function isSorted<T extends number | string | Date>(arr: T[]): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] < arr[i - 1]) return false;
+  }
+  return true;
 }
-// Numbers – no comparator needed
-const nums = [1, 3, 5, 7, 9, 11, 13];
-console.log(binarySearchRec(nums, 7));  // → 3
-console.log(binarySearchRec(nums, 2));  // → -1
+isSorted([1, 2, 3, 4]);        // true
+isSorted([1, 3, 2, 4]);        // false
+isSorted(['a', 'b', 'c']);     // true
+isSorted(['c', 'b', 'a']);     // false
+type Comparator<T> = (a: T, b: T) => number;
 
-// Strings – supply a comparator
-const words = ["apple", "banana", "cherry", "date"];
-const stringCmp = (a: string, b: string) => a.localeCompare(b);
+export function isSortedWith<T>(arr: T[], cmp: Comparator<T>): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) return false; // `a > b` in ascending order
+  }
+  return true;
+}
+interface Person { name: string; age: number; }
 
-console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
-console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
+const people: Person[] = [
+  { name: 'Alice', age: 25 },
+  { name: 'Bob', age: 30 },
+  { name: 'Charlie', age: 35 },
+];
+
+isSortedWith(people, (a, b) => a.age - b.age); // true
+export const isSorted = <T>(arr: T[], cmp: Comparator<T> = (a, b) => {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}): boolean =>
+  arr
+    .map((value, index, self) => [self[index - 1], value] as const)
+    .slice(1) // skip the first undefined pair
+    .every(([prev, cur]) => cmp(prev!, cur) <= 0);
