@@ -1,28 +1,40 @@
 /**
- * Convert a decimal number to a binary string.
- * 
- * @param n – A non‑negative integer
- * @returns The binary representation as a string
+ * Binary search – recursive.  
+ * @param arr        — sorted array
+ * @param target     — value to find
+ * @param compare    — optional comparison function (a, b) => number
+ *                     returns <0 if a<b, 0 if a==b, >0 if a>b
+ * @returns index of `target` or -1 if not found
  */
-function decimalToBinary(n: number): string {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new Error('Input must be a non‑negative integer.');
-  }
+function binarySearchRec<T>(
+  arr: T[],
+  target: T,
+  compare?: (a: T, b: T) => number
+): number {
+  // Provide a default numeric comparator
+  const cmp = compare ?? ((a: any, b: any) => a - b);
 
-  // Handling zero explicitly – Math.pow(2, 0) is 1 but we still want "0"
-  if (n === 0) return '0';
+  const search = (low: number, high: number): number => {
+    if (low > high) return -1;          // base case: not found
 
-  let binary = '';
-  let current = n;
+    const mid = Math.floor((low + high) / 2);
+    const cmpResult = cmp(arr[mid], target);
 
-  while (current > 0) {
-    // Prepend the remainder (0 or 1) to the binary string
-    binary = (current % 2) + binary;
-    current = Math.floor(current / 2);
-  }
+    if (cmpResult === 0) return mid;    // target is at mid
+    if (cmpResult < 0) return search(mid + 1, high); // target is right
+    return search(low, mid - 1);        // target is left
+  };
 
-  return binary;
+  return search(0, arr.length - 1);
 }
-console.log(decimalToBinary(10)); // "1010"
-console.log(decimalToBinary(255)); // "11111111"
-console.log(decimalToBinary(0)); // "0"
+// Numbers – no comparator needed
+const nums = [1, 3, 5, 7, 9, 11, 13];
+console.log(binarySearchRec(nums, 7));  // → 3
+console.log(binarySearchRec(nums, 2));  // → -1
+
+// Strings – supply a comparator
+const words = ["apple", "banana", "cherry", "date"];
+const stringCmp = (a: string, b: string) => a.localeCompare(b);
+
+console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
+console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
