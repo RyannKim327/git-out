@@ -1,39 +1,26 @@
-class ListNode<T> {
-    constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-    if (!head) return false;
+function firstRepeatedChar(str: string): string | undefined {
+  const seen = new Set<string>();
 
-    let slow: ListNode<T> | null = head;
-    let fast: ListNode<T> | null = head;
-
-    while (fast !== null && fast.next !== null) {
-        slow = slow!.next;           // move 1 step
-        fast = fast.next.next;       // move 2 steps
-
-        if (slow === fast) {         // same node → cycle
-            return true;
-        }
+  for (const ch of str) {
+    if (seen.has(ch)) {
+      return ch;            // first duplicate encountered
     }
-    return false;                    // fast reached end → no cycle
+    seen.add(ch);
+  }
+  return undefined;          // no repeats
 }
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-    const visited = new Set<ListNode<T>>();
+console.log(firstRepeatedChar("hello"));  // "l"
+console.log(firstRepeatedChar("abc"));    // undefined
+console.log(firstRepeatedChar(""));       // undefined
+function firstRepeatedCharWithIndex(str: string): {char: string, index: number} | undefined {
+  const seen = new Set<string>();
 
-    let current: ListNode<T> | null = head;
-    while (current !== null) {
-        if (visited.has(current)) return true; // already seen
-        visited.add(current);
-        current = current.next;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (seen.has(ch)) {
+      return { char: ch, index: i };
     }
-    return false;
+    seen.add(ch);
+  }
+  return undefined;
 }
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b;  // 1 → 2 → 3
-b.next = c;
-c.next = a;  // cycle back to 1
-
-console.log(hasCycle(a));        // → true
-console.log(hasCycleWithSet(a)); // → true
