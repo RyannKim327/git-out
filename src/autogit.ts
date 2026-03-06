@@ -1,30 +1,21 @@
-const str = "hello world";
-const hasFoo = str.includes("world");   // true
-const hasBar = str.includes("bar");     // false
-const hasCapital = str.includes("WORLD");          // false
-const hasCapitalIgnoreCase = str.toLowerCase()
-                                .includes("WORLD".toLowerCase()); // true
-const hasCapitalIgnoreCase = /world/i.test(str);   // true
-const index = str.indexOf("world"); // 6
-const missing = str.indexOf("bar"); // -1
-const present = str.indexOf("world") !== -1; // true
-const hasPrefix = /^hello/.test(str); // true
+/**
+ * Return the intersection of two arrays.
+ *
+ * @param a First array
+ * @param b Second array
+ * @returns Array containing only the values that appear in both `a` and `b`
+ */
+export function intersection<T>(a: T[], b: T[]): T[] {
+  // Turn the second array into a Set for O(1) look‑ups.
+  const lookup = new Set(b);
 
-// With dynamic patterns
-const word = "world";
-const pattern = new RegExp(word);    // case‑sensitive
-const result = pattern.test(str);    // true
-// Presence
-const contains = text.includes(sub);
+  // Keep every element of `a` that also exists in the Set.
+  return a.filter(item => lookup.has(item));
+}
 
-// Presence (index form)
-const containsIndex = text.indexOf(sub) !== -1;
+// Example usage:
+const colors1 = ['red', 'green', 'blue', 'green'];
+const colors2 = ['cyan', 'green', 'red', 'yellow'];
 
-// Position
-const pos = text.indexOf(sub); // -1 if absent
-
-// Case‑insensitive
-const containsIC = text.toLowerCase().includes(sub.toLowerCase());
-
-// Regex
-const containsRegex = /world/i.test(text);
+const commonColors = intersection(colors1, colors2);
+console.log(commonColors); // → ['red', 'green', 'green']
