@@ -1,40 +1,103 @@
-// Basic node interface – can be turned into a class if you like.
-interface TreeNode<T = number> {
-  val: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+/* -------------------------------------------------------------
+   Edge definition – just a source, destination and weight
+------------------------------------------------------------- */
+interface Edge {
+  from: string;      // vertex id (string or number, just pick one type)
+  to: string;
+  weight: number;    // can be negative
 }
-function maxDepth<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                 // empty subtree → depth 0
 
-  const leftDepth  = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
+/* -------------------------------------------------------------
+   Bellman‑Ford implementation
+   Parameters
+   ----------  graph: Array<Edge>  – all directed edges
+               source: string      – id of source vertex
+   Returns
+   -------  { dist: Map<string, number>,
+              next: Map<string, string | null>,
+              hasNegativeCycle: boolean }
+------------------------------------------------------------- */
+function bellmanFord(
+  graph: Edge[],
+  source: string
+): { dist: Map<string, number>; next: Map<string, string | null>; hasNegativeCycle: boolean } {
+  const dist = new Map<string, number>();
+  const next = new Map<string, string | null>();
 
-  // Depth of current node = 1 (itself) + depth of deeper side
-  return 1 + Math.max(leftDepth, rightDepth);
-}
-const root: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3, right: { val: 5, right: { val: 6 } } }
-};
+  // initialise distances
+  graph.forEach(({ from }) => {
+    dist.set(from, Infinity);
+    next.set(from, null);
+  });
+  // if the source isn’t mentioned in any edge, we still need it in the map
+  dist.set(source, 0);
+  next.set(source, null);
 
-console.log(maxDepth(root));   // → 4
-function maxDepthIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
+  // total distinct vertices
+  const vertices = Array.from(dist.keys());
+  const V = vertices.length;
 
-  let max = 0;
-  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
-    { node: root, depth: 1 },
-  ];
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    max = Math.max(max, depth);
-
-    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
-    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
+  // Relax edges V−1 times
+  for (let i = 0; i < V - 1; i++) {
+    let didRelax = false;
+    for (const { from, to, weight } of graph) {
+      const dFrom = dist.get(from);
+      const dTo   = dist.get(to);
+      if (dFrom! === Infinity) continue;                   // unreachable
+      const newDist = dFrom! + weight;
+      if (newDist < dTo!) {
+        dist.set(to, newDist);
+        next.set(to, from);
+        didRelax = true;
+      }
+    }
+    // early exit: no distance changed this round → we’re done
+    if (!didRelax) break;
   }
 
-  return max;
+  // Check for negative‑weight cycles reachable from source
+  let hasNegativeCycle = false;
+  for (const { from, to, weight } of graph) {
+    const dFrom = dist.get(from);
+    const dTo   = dist.get(to);
+    if (dFrom! !== Infinity && dFrom! + weight < dTo!) {
+      hasNegativeCycle = true;
+      break;
+    }
+  }
+
+  return { dist, next, hasNegativeCycle };
+}
+
+/* -------------------------------------------------------------
+   Example usage
+------------------------------------------------------------- */
+const edges: Edge[] = [
+  { from: 'A', to: 'B', weight: 5 },
+  { from: 'A', to: 'C', weight: 2 },
+  { from: 'B', to: 'C', weight: -3 },
+  { from: 'B', to: 'D', weight: 9 },
+  { from: 'C', to: 'D', weight: 12 },
+];
+
+const { dist, next, hasNegativeCycle } = bellmanFord(edges, 'A');
+
+if (hasNegativeCycle) {
+  console.log('The graph contains a negative‑weight cycle reachable from A.');
+} else {
+  console.log('Shortest distances from A:');
+  dist.forEach((d, v) => console.log(v, d));
+
+  // helper to print a whole path from source to target
+  function buildPath(target: string): string[] {
+    const path: string[] = [];
+    let cur: string | null = target;
+    while (cur !== null) {
+      path.unshift(cur);
+      cur = next.get(cur) ?? null;
+    }
+    return path;
+  }
+
+  console.log('Path to D:', buildPath('D').join(' → '));
 }
