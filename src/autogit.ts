@@ -1,38 +1,41 @@
-// fortune.ts
-import { createInterface } from 'readline';
+interface ListNode<T = any> {
+  value: T;
+  next?: ListNode<T>;
+}
+/**
+ * Counts nodes in a linked list.
+ * @param head The first node (or undefined if the list is empty).
+ * @returns Number of nodes in the list.
+ */
+function length<T>(head: ListNode<T> | undefined): number {
+  let count = 0;
+  let current = head;
 
-// Set up a simple REPL‑style prompt
-const rl = createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-console.log('🃏 Welcome to the Random Fortune Machine!');
-
-// Ask the user for a number
-rl.question('Enter a number (0–9) and press Enter: ', (answer) => {
-  // Try to parse the input as an integer
-  const num = parseInt(answer.trim(), 10);
-
-  if (isNaN(num) || num < 0 || num > 9) {
-    console.log('❌ That’s not a valid single digit between 0 and 9.');
-  } else {
-    // Pick a fortune from a tiny list
-    const fortunes = [
-      "You'll find a penny on the sidewalk.",
-      "A surprise call will brighten your day.",
-      "Today is a great day to start learning something new.",
-      "You’ll discover a hidden talent for drawing.",
-      "A forgotten receipt will pop up in your inbox.",
-      "A random act of kindness will return to you.",
-      "You’ll taste your favorite food in an unexpected way.",
-      "A new friendship is just a conversation away.",
-      "You’ll hit a traffic light and notice your neighbor’s cat.",
-      "Today you will finally finish that project you’ve shelved."
-    ];
-
-    console.log(`🔮 Fortune for ${num}: ${fortunes[num]}`);
+  while (current) {
+    count++;
+    current = current.next;   // follow the chain
   }
+  return count;
+}
+function lengthRecursive<T>(node: ListNode<T> | undefined): number {
+  return node ? 1 + lengthRecursive(node.next) : 0;
+}
+function* nodes<T>(head: ListNode<T> | undefined) {
+  let cur = head;
+  while (cur) {
+    yield cur;
+    cur = cur.next;
+  }
+}
 
-  rl.close();
-});
+function lengthFromIterable<T>(head: ListNode<T> | undefined): number {
+  let count = 0;
+  for (const _ of nodes(head)) count++;
+  return count;
+}
+const third = { value: 3 } as ListNode<number>;
+const second = { value: 2, next: third };
+const first  = { value: 1, next: second };
+
+console.log(length(first));           // 3
+console.log(lengthRecursive(first));  // 3
