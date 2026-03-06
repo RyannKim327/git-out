@@ -1,59 +1,47 @@
 /**
- * Shell sort – a simple, in‑place algorithm that improves on insertion sort.
- * Sorts an array of numbers in ascending order.
+ * Checks whether a string is a palindrome (case‑insensitive,
+ * ignoring anything that isn’t a letter or a digit).
  *
- * @param arr The array to sort (modified in place)
- * @param compare Optional compare function (defaults to numeric comparison)
+ * Time   : O(n)
+ * Space  : O(1)   – only a couple of integer variables
  */
-export function shellSort(
-  arr: number[],
-  compare?: (a: number, b: number) => number
-): void {
-  const len = arr.length;
-  const cmp = compare ?? ((a, b) => a - b);
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  // A common gap sequence: halving each time (Shell's original)
-  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Gapped insertion sort
-    for (let i = gap; i < len; i++) {
-      let temp = arr[i];
-      let j = i;
+  const isAlnum = (ch: string): boolean => {
+    const code = ch.charCodeAt(0);
+    // '0'‑'9'
+    if (code >= 48 && code <= 57) return true;
+    // 'A'‑'Z'
+    if (code >= 65 && code <= 90) return true;
+    // 'a'‑'z'
+    if (code >= 97 && code <= 122) return true;
+    return false;
+  };
 
-      // Move elements that are greater than temp backward by 'gap' places
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      // Bring temp into its spot
-      arr[j] = temp;
-    }
+  while (left < right) {
+    // Skip non‑alphanumeric characters from the left
+    while (left < right && !isAlnum(s[left])) left++;
+    // Skip non‑alphanumeric characters from the right
+    while (left < right && !isAlnum(s[right])) right--;
+
+    if (left >= right) break;          // Nothing left to compare
+
+    const lc = s[left].toLowerCase();
+    const rc = s[right].toLowerCase();
+
+    if (lc !== rc) return false;
+
+    left++;
+    right--;
   }
-}
-const data = [40, 3, 10, 5, 1, 15];
-shellSort(data);
 
-console.log(data); // [1, 3, 5, 10, 15, 40]
-export function shellSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): void {
-  const len = arr.length;
-  const cmp = compare ?? ((a, b) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
-
-  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    for (let i = gap; i < len; i++) {
-      const temp = arr[i];
-      let j = i;
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
-  }
+  return true;
 }
-shellSort(['banana', 'apple', 'pear'], (a, b) => a.localeCompare(b));
+while (left < right) {
+  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
+  left++;
+  right--;
+}
+return true;
