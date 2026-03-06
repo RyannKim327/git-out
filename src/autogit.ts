@@ -1,92 +1,47 @@
-if a[j] < a[i] → candidate to extend the sequence ending at j
 /**
- * Returns the LIS of the input array.
- * O(n²) time, O(n) extra space.
+ * Checks whether a string is a palindrome (case‑insensitive,
+ * ignoring anything that isn’t a letter or a digit).
+ *
+ * Time   : O(n)
+ * Space  : O(1)   – only a couple of integer variables
  */
-function longestIncreasingSubsequenceDP(arr: number[]): number[] {
-  const n = arr.length;
-  if (n === 0) return [];
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  // `len[i]` – length of LIS ending at i
-  const len = new Array(n).fill(1);
-  // `prev[i]` – the previous index in the LIS that ends at i
-  const prev = new Array(n).fill(-1);
+  const isAlnum = (ch: string): boolean => {
+    const code = ch.charCodeAt(0);
+    // '0'‑'9'
+    if (code >= 48 && code <= 57) return true;
+    // 'A'‑'Z'
+    if (code >= 65 && code <= 90) return true;
+    // 'a'‑'z'
+    if (code >= 97 && code <= 122) return true;
+    return false;
+  };
 
-  let bestIdx = 0;          // index of the overall best LIS
+  while (left < right) {
+    // Skip non‑alphanumeric characters from the left
+    while (left < right && !isAlnum(s[left])) left++;
+    // Skip non‑alphanumeric characters from the right
+    while (left < right && !isAlnum(s[right])) right--;
 
-  for (let i = 1; i < n; i++) {
-    for (let j = 0; j < i; j++) {
-      if (arr[j] < arr[i] && len[j] + 1 > len[i]) {
-        len[i] = len[j] + 1;
-        prev[i] = j;
-      }
-    }
-    if (len[i] > len[bestIdx]) bestIdx = i;
+    if (left >= right) break;          // Nothing left to compare
+
+    const lc = s[left].toLowerCase();
+    const rc = s[right].toLowerCase();
+
+    if (lc !== rc) return false;
+
+    left++;
+    right--;
   }
 
-  /* ---------- reconstruct the sequence ---------- */
-  const result: number[] = [];
-  for (let k = bestIdx; k !== -1; k = prev[k]) {
-    result.push(arr[k]);
-  }
-  return result.reverse();
+  return true;
 }
-const source = [3, 4, -1, 0, 6, 2, 3];
-console.log(longestIncreasingSubsequenceDP(source));
-// → [ -1, 0, 2, 3 ]   (length 4)
-/**
- * Returns the LIS of the input array.
- * O(n log n) time, O(n) space.
- */
-function longestIncreasingSubsequenceFast(arr: number[]): number[] {
-  const n = arr.length;
-  if (n === 0) return [];
-
-  // `tails[len]` – smallest tail value of an inc. subsequence of length len+1
-  const tails: number[] = [];
-  // `prevIdx[i]` – index of the predecessor element for arr[i] in the LIS
-  const prevIdx: number[] = new Array(n).fill(-1);
-  // `posInTails[i]` – position in tails where arr[i] ends up
-  const posInTails: number[] = new Array(n);
-
-  for (let i = 0; i < n; i++) {
-    const x = arr[i];
-
-    // binary search: find first tails[idx] ≥ x
-    let left = 0, right = tails.length;
-    while (left < right) {
-      const mid = (left + right) >> 1;
-      if (tails[mid] < x) left = mid + 1;
-      else right = mid;
-    }
-
-    if (left === 0) {
-      // new smallest element
-      prevIdx[i] = -1;
-    } else {
-      // predecessor is the element that ended the subsequence of length left
-      prevIdx[i] = posInTails[left - 1];
-    }
-
-    // update tails & helper arrays
-    if (left === tails.length) {
-      tails.push(x);
-      posInTails[left] = i;
-    } else if (x < tails[left]) {
-      tails[left] = x;
-      posInTails[left] = i;
-    }
-  }
-
-  /* ---------- reconstruct the sequence ---------- */
-  const result: number[] = [];
-  let k = posInTails[tails.length - 1];
-  while (k !== -1) {
-    result.push(arr[k]);
-    k = prevIdx[k];
-  }
-  return result.reverse();
+while (left < right) {
+  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
+  left++;
+  right--;
 }
-const arr = [10, 22, 9, 33, 21, 50, 41, 60, 80];
-console.log(longestIncreasingSubsequenceFast(arr));
-// → [10, 22, 33, 50, 60, 80]  (length 6)
+return true;
