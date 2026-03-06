@@ -1,41 +1,24 @@
-/** A very small “binary‑tree node” type. */
-interface TreeNode {
-  val: number;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
+/**
+ * Very light‑weight e‑mail validator – good for quick UI checks or APIs.
+ * It agrees with the majority of real‑world addresses:   local@domain.com
+ *
+ * @param address – the string to test
+ * @returns true if the format looks like an e‑mail, false otherwise
+ */
+export function isValidEmail(address: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(address);
 }
-function sumTreeRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                     // base case – no node
-  const leftSum  = sumTreeRecursive(root.left);
-  const rightSum = sumTreeRecursive(root.right);
-  return root.val + leftSum + rightSum;    // process node after its children
-}
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
+import validator from 'email-validator';
 
-  const queue: TreeNode[] = [root];
-  let total = 0;
+validator.validate('test@example.com'); // true
+const tests = [
+  'alice@example.com',
+  'bob@sub.domain.org',
+  'invalid-email',
+  'spaces@invalid .com',
+  '@missing.local',
+  'user@',
+];
 
-  while (queue.length) {
-    const node = queue.shift()!;   // non‑null assertion – queue always contains real nodes
-    total += node.val;
-
-    if (node.left)  queue.push(node.left);
-    if (node.right) queue.push(node.right);
-  }
-
-  return total;
-}
-// Small example
-const tree: TreeNode = {
-  val: 10,
-  left: { val: 5 },
-  right: {
-    val: 20,
-    left: { val: 15 },
-    right: { val: 25 }
-  }
-};
-
-console.log(sumTreeRecursive(tree)); // 75
-console.log(sumTreeIterative(tree)); // 75
+tests.forEach(email => console.log(`${email}: ${isValidEmail(email)}`));
