@@ -1,103 +1,79 @@
-/* -------------------------------------------------------------
-   Edge definition – just a source, destination and weight
-------------------------------------------------------------- */
-interface Edge {
-  from: string;      // vertex id (string or number, just pick one type)
-  to: string;
-  weight: number;    // can be negative
-}
+/**
+ * Returns the kth smallest value in `arr` (1‑based k).
+ *  Throws an error if k is out of bounds.
+ */
+export function kthSmallest(arr: number[], k: number): number {
+  if (k <= 0 || k > arr.length) {
+    throw new RangeError('k is out of bounds');
+  }
 
-/* -------------------------------------------------------------
-   Bellman‑Ford implementation
-   Parameters
-   ----------  graph: Array<Edge>  – all directed edges
-               source: string      – id of source vertex
-   Returns
-   -------  { dist: Map<string, number>,
-              next: Map<string, string | null>,
-              hasNegativeCycle: boolean }
-------------------------------------------------------------- */
-function bellmanFord(
-  graph: Edge[],
-  source: string
-): { dist: Map<string, number>; next: Map<string, string | null>; hasNegativeCycle: boolean } {
-  const dist = new Map<string, number>();
-  const next = new Map<string, string | null>();
+  // Work on a copy so the original array stays intact.
+  const a = arr.slice();
 
-  // initialise distances
-  graph.forEach(({ from }) => {
-    dist.set(from, Infinity);
-    next.set(from, null);
-  });
-  // if the source isn’t mentioned in any edge, we still need it in the map
-  dist.set(source, 0);
-  next.set(source, null);
+  const quickSelect = (left: number, right: number, index: number) => {
+    // If the segment contains only one element, that's the answer.
+    if (left === right) return a[left];
 
-  // total distinct vertices
-  const vertices = Array.from(dist.keys());
-  const V = vertices.length;
+    const pivotIndex = partition(left, right);
+    if (pivotIndex === index) {
+      return a[pivotIndex];
+    } else if (pivotIndex < index) {
+      return quickSelect(pivotIndex + 1, right, index);
+    } else {
+      return quickSelect(left, pivotIndex - 1, index);
+    }
+  };
 
-  // Relax edges V−1 times
-  for (let i = 0; i < V - 1; i++) {
-    let didRelax = false;
-    for (const { from, to, weight } of graph) {
-      const dFrom = dist.get(from);
-      const dTo   = dist.get(to);
-      if (dFrom! === Infinity) continue;                   // unreachable
-      const newDist = dFrom! + weight;
-      if (newDist < dTo!) {
-        dist.set(to, newDist);
-        next.set(to, from);
-        didRelax = true;
+  const partition = (left: number, right: number): number => {
+    // Pick a pivot.  Using the middle element keeps the code short; you could
+    // shuffle or use Median‑of‑Three for better worst‑case guarantees.
+    const pivot = a[Math.floor((left + right) / 2)];
+    let i = left;
+    let j = right;
+
+    while (i <= j) {
+      while (a[i] < pivot) i++;
+      while (a[j] > pivot) j--;
+      if (i <= j) {
+        [a[i], a[j]] = [a[j], a[i]];
+        i++;
+        j--;
       }
     }
-    // early exit: no distance changed this round → we’re done
-    if (!didRelax) break;
-  }
+    return i - 1; // pivot final position
+  };
 
-  // Check for negative‑weight cycles reachable from source
-  let hasNegativeCycle = false;
-  for (const { from, to, weight } of graph) {
-    const dFrom = dist.get(from);
-    const dTo   = dist.get(to);
-    if (dFrom! !== Infinity && dFrom! + weight < dTo!) {
-      hasNegativeCycle = true;
-      break;
-    }
-  }
-
-  return { dist, next, hasNegativeCycle };
+  // `k-1` because the array index is 0‑based.
+  return quickSelect(0, a.length - 1, k - 1);
 }
+export function kthSmallestBySort(arr: number[], k: number): number {
+  if (k <= 0 || k > arr.length) throw new RangeError('k is out of bounds');
+  const sorted = [...arr].sort((a, b) => a - b);
+  return sorted[k - 1];
+}
+class MinHeap {
+  private data: number[] = [];
 
-/* -------------------------------------------------------------
-   Example usage
-------------------------------------------------------------- */
-const edges: Edge[] = [
-  { from: 'A', to: 'B', weight: 5 },
-  { from: 'A', to: 'C', weight: 2 },
-  { from: 'B', to: 'C', weight: -3 },
-  { from: 'B', to: 'D', weight: 9 },
-  { from: 'C', to: 'D', weight: 12 },
-];
-
-const { dist, next, hasNegativeCycle } = bellmanFord(edges, 'A');
-
-if (hasNegativeCycle) {
-  console.log('The graph contains a negative‑weight cycle reachable from A.');
-} else {
-  console.log('Shortest distances from A:');
-  dist.forEach((d, v) => console.log(v, d));
-
-  // helper to print a whole path from source to target
-  function buildPath(target: string): string[] {
-    const path: string[] = [];
-    let cur: string | null = target;
-    while (cur !== null) {
-      path.unshift(cur);
-      cur = next.get(cur) ?? null;
-    }
-    return path;
+  push(val: number) {
+    this.data.push(val);
+    this.bubbleUp(this.data.length - 1);
   }
 
-  console.log('Path to D:', buildPath('D').join(' → '));
+  /* ... bubbleUp, bubbleDown, peek, pop ... */
+
+  /** Return kth smallest (1‑based). */
+  kth(k: number): number {
+    if (k <= 0 || k > this.data.length) throw new RangeError();
+    const heapCopy = [...this.data];
+    let result = -Infinity;
+    for (let i = 0; i < k; i++) {
+      result = heapCopy[0];
+      this.swap(heapCopy, 0, heapCopy.length - 1);
+      heapCopy.pop();
+      this.sinkDown(heapCopy, 0);
+    }
+    return result;
+  }
+
+  /* helper methods omitted for brevity */
 }
