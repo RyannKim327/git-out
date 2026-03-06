@@ -1,121 +1,98 @@
-/*-------------------------------------------------------
-  Binary‑Tree Data Structures & Operations in TypeScript
--------------------------------------------------------*/
+/** A minimal generic priority queue built on a binary heap */
+export class PriorityQueue<T> {
+  /** Internal storage array (0‑based). 0 is the root. */
+  private heap: T[] = [];
 
-// 1️⃣ A node that holds one element and links to its children
-class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
+  /** Comparator that returns true if a should come before b. */
+  private readonly less: (a: T, b: T) => boolean;
 
-// 2️⃣ The tree itself – only the root is stored
-class BinaryTree<T> {
-  private root: TreeNode<T> | null = null
+  /** Number of queued elements */
+  public get size(): number { return this.heap.length; }
 
-  /* ------------ Insertion (BST style) ------------ */
-  insert(value: T): void {
-    this.root = this._insertRec(this.root, value)
+  /** Peek at the top element without removing it.  Returns undefined if empty. */
+  public peek(): T | undefined { return this.heap[0]; }
+
+  constructor(comparator?: (a: T, b: T) => boolean) {
+    // Default to a min‑heap using < for primitives
+    this.less = comparator ?? ((a, b) => (a as any) < (b as any));
   }
 
-  private _insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
-    if (!node) return new TreeNode(value)
-
-    // Basic BST rule – < goes left, >= goes right
-    if (value < node.value) node.left = this._insertRec(node.left, value)
-    else node.right = this._insertRec(node.right, value)
-
-    return node
+  /** Insert a new element into the queue */
+  public push(item: T): void {
+    this.heap.push(item);
+    this.bubbleUp(this.heap.length - 1);
   }
 
-  /* ------------ Search ------------ */
-  find(value: T): boolean {
-    return this._findRec(this.root, value)
+  /** Remove and return the top element.  Returns undefined if empty. */
+  public pop(): T | undefined {
+    const n = this.heap.length;
+    if (n === 0) return undefined;
+    if (n === 1) return this.heap.pop();
+
+    const top = this.heap[0];
+    this.heap[0] = this.heap.pop() as T; // Set last element to root
+    this.sinkDown(0);
+    return top;
   }
 
-  private _findRec(node: TreeNode<T> | null, value: T): boolean {
-    if (!node) return false
-    if (node.value === value) return true
-    return value < node.value
-      ? this._findRec(node.left, value)
-      : this._findRec(node.right, value)
+  /** Swap two indices in the heap */
+  private swap(i: number, j: number): void {
+    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
   }
 
-  /* ------------ Traversals ------------ */
-
-  // In‑order: left, node, right  (sorted for BST)
-  inorder(callback: (val: T) => void) {
-    this._inorderRec(this.root, callback)
-  }
-  private _inorderRec(node: TreeNode<T> | null, cb: (val: T) => void) {
-    if (!node) return
-    this._inorderRec(node.left, cb)
-    cb(node.value)
-    this._inorderRec(node.right, cb)
-  }
-
-  // Pre‑order: node, left, right
-  preorder(callback: (val: T) => void) {
-    this._preorderRec(this.root, callback)
-  }
-  private _preorderRec(node: TreeNode<T> | null, cb: (val: T) => void) {
-    if (!node) return
-    cb(node.value)
-    this._preorderRec(node.left, cb)
-    this._preorderRec(node.right, cb)
+  /** Restore heap order by moving the element at idx up */
+  private bubbleUp(idx: number): void {
+    const element = this.heap[idx];
+    while (idx > 0) {
+      const parentIdx = (idx - 1) >> 1;
+      const parent = this.heap[parentIdx];
+      if (!this.less(element, parent)) break;
+      this.swap(idx, parentIdx);
+      idx = parentIdx;
+    }
   }
 
-  // Post‑order: left, right, node
-  postorder(callback: (val: T) => void) {
-    this._postorderRec(this.root, callback)
-  }
-  private _postorderRec(node: TreeNode<T> | null, cb: (val: T) => void) {
-    if (!node) return
-    this._postorderRec(node.left, cb)
-    this._postorderRec(node.right, cb)
-    cb(node.value)
-  }
+  /** Restore heap order by moving the element at idx down */
+  private sinkDown(idx: number): void {
+    const n = this.heap.length;
+    const element = this.heap[idx];
 
-  /* ------------ Utility ------------ */
+    while (true) {
+      const leftIdx = (idx << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let smallestIdx = idx;
 
-  // Height of the tree (root = 0)
-  height(): number {
-    return this._heightRec(this.root)
-  }
-  private _heightRec(node: TreeNode<T> | null): number {
-    if (!node) return -1
-    return 1 + Math.max(this._heightRec(node.left), this._heightRec(node.right))
-  }
+      if (leftIdx < n && this.less(this.heap[leftIdx], this.heap[smallestIdx])) {
+        smallestIdx = leftIdx;
+      }
+      if (rightIdx < n && this.less(this.heap[rightIdx], this.heap[smallestIdx])) {
+        smallestIdx = rightIdx;
+      }
 
-  // Size (total number of nodes)
-  size(): number {
-    return this._sizeRec(this.root)
-  }
-  private _sizeRec(node: TreeNode<T> | null): number {
-    if (!node) return 0
-    return 1 + this._sizeRec(node.left) + this._sizeRec(node.right)
+      if (smallestIdx === idx) break;
+      this.swap(idx, smallestIdx);
+      idx = smallestIdx;
+    }
   }
 }
+// Minimum priority queue (default)
+const minQ = new PriorityQueue<number>();
+minQ.push(5);
+minQ.push(2);
+minQ.push(8);
+console.log(minQ.peek()); // 2
+console.log(minQ.pop());  // 2
+console.log(minQ.pop());  // 5
 
-/*-------------------------------------------------------
-  Example use
--------------------------------------------------------*/
-const tree = new BinaryTree<number>()
+// Maximum priority queue
+const maxQ = new PriorityQueue<number>((a, b) => a > b);
+maxQ.push(5);
+maxQ.push(2);
+maxQ.push(8);
+console.log(maxQ.pop()); // 8
+interface Task { id: string; priority: number; }
 
-// Inserting some numbers
-for (const v of [7, 3, 9, 1, 5, 8, 10]) {
-  tree.insert(v)
-}
-
-// Find
-console.log('Has 5?', tree.find(5))   // true
-console.log('Has 4?', tree.find(4))   // false
-
-// In‑order prints the numbers sorted
-tree.inorder(v => console.log(v))     // 1 3 5 7 8 9 10
-
-// Tree metadata
-console.log('Height:', tree.height()) // 2
-console.log('Size:', tree.size())     // 7
+const taskQueue = new PriorityQueue<Task>((a, b) => a.priority < b.priority); // min‑heap by priority
+taskQueue.push({ id: 'A', priority: 10 });
+taskQueue.push({ id: 'B', priority: 5 });
+console.log(taskQueue.pop()); // { id: 'B', priority: 5 }
