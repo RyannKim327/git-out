@@ -1,79 +1,44 @@
-// A simple graph representation.
-// All nodes must be comparable with === (e.g. numbers, strings, or objects with a unique id).
-interface Graph<T> {
-  /** Return the directly connected nodes of `node`.  */
-  neighbors(node: T): T[];
-}
-
 /**
- * Iterative depth‑limited DFS.
+ * Returns n! (n factorial) for a non‑negative integer.
  *
- * @param graph      the graph to search
- * @param start      the node to start from
- * @param goal       the node we are looking for
- * @param maxDepth   limit recursion depth (0 = only start node)
- * @returns           true if goal is reachable within maxDepth, false otherwise
+ * @param n A non‑negative integer (0, 1, 2, …).
+ * @returns The factorial of n. Returns 1 for n = 0.
+ * @throws Error if n is negative.
  */
-function depthLimitedSearch<T>(
-  graph: Graph<T>,
-  start: T,
-  goal: T,
-  maxDepth: number
-): boolean {
-  // Stack entries hold a node and its depth in the search space.
-  const stack: Array<{ node: T; depth: number }> = [{ node: start, depth: 0 }];
-  const visited = new Set<T>();
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;   // pop() never returns undefined here
-
-    // If we hit the goal, we're done.
-    if (node === goal) return true;
-
-    // Skip revisiting nodes; this keeps the search linear in the number of edges.
-    if (visited.has(node)) continue;
-    visited.add(node);
-
-    // Stop exploring deeper than we’re allowed.
-    if (depth === maxDepth) continue;
-
-    // Push neighbours onto the stack with incremented depth.
-    for (const neighbour of graph.neighbors(node)) {
-      // No need to push a node that is already visited; but doing so is harmless.
-      stack.push({ node: neighbour, depth: depth + 1 });
-    }
+function factorial(n: number): number {
+  if (n < 0) {
+    throw new Error("Factorial is not defined for negative numbers.");
   }
 
-  return false;   // exhausted everything within the depth limit
-}
-// Simple adjacency‑list example
-class SimpleGraph implements Graph<number> {
-  adjacency: Map<number, number[]>;
-
-  constructor(edges: Array<[number, number]>) {
-    this.adjacency = new Map();
-    for (const [a, b] of edges) {
-      this.adjacency
-        .get(a) ??= [];
-      this.adjacency.get(a)!.push(b);
-
-      this.adjacency
-        .get(b) ??= [];
-      this.adjacency.get(b)!.push(a);   // undirected
-    }
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-
-  neighbors(node: number): number[] {
-    return this.adjacency.get(node) ?? [];
-  }
+  return result;
 }
 
-const g = new SimpleGraph([
-  [1, 2],
-  [1, 3],
-  [2, 4],
-  [3, 5],
-]);
+// Example
+console.log(factorial(5)); // 120
+function factorialRecursive(n: number): number {
+  if (n < 0) {
+    throw new Error("Negative input not allowed.");
+  }
+  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
+}
 
-console.log(depthLimitedSearch(g, 1, 5, 1)); // false (needs depth 2)
-console.log(depthLimitedSearch(g, 1, 5, 2)); // true
+console.log(factorialRecursive(5)); // 120
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error("Negative input not allowed.");
+  let result = 1n;          // BigInt literal starts with n
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
+}
+
+console.log(factorialBigInt(100).toString());
+// "933262154... (full 158‑digit number)"
+console.assert(factorial(0) === 1);
+console.assert(factorial(1) === 1);
+console.assert(factorial(5) === 120);
+console.assert(factorialBigInt(10).toString() === "3628800");
