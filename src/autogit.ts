@@ -1,45 +1,46 @@
-const raw = [1, 2, 2, 3, 4, 4, 5];
+/**
+ * Returns true if `a` and `b` are anagrams.
+ * Works for any Unicode characters, but
+ * it ignores case and whitespace by default.
+ */
+function areAnagrams(a: string, b: string, ignoreCase = true, ignoreWhitespace = true): boolean {
+  // Normalise: trim, collapse spaces, lower‑case if requested
+  const normalize = (s: string) =>
+    s
+      .replace(/\s+/g, "")        // delete spaces
+      .toLowerCase();             // lower‑case
 
-const unique = Array.from(new Set(raw));
-// or: const unique = [...new Set(raw)];
-
-console.log(unique); // [1, 2, 3, 4, 5]
-function uniqueInPlace<T>(arr: T[]): void {
-  const seen = new Set<T>();
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (seen.has(arr[i])) {
-      arr.splice(i, 1);          // remove duplicate
-    } else {
-      seen.add(arr[i]);          // record first appearance
-    }
+  if (ignoreCase && ignoreWhitespace) {
+    a = normalize(a);
+    b = normalize(b);
+  } else if (ignoreCase) {
+    a = a.toLowerCase();
+    b = b.toLowerCase();
+  } else if (ignoreWhitespace) {
+    a = a.replace(/\s+/g, "");
+    b = b.replace(/\s+/g, "");
   }
+
+  // Quick length check
+  if (a.length !== b.length) return false;
+
+  // Count characters in the first string
+  const counts: Record<string, number> = {};
+
+  for (const ch of a) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
+  }
+
+  // Subtract counts using the second string
+  for (const ch of b) {
+    const current = counts[ch];
+    if (!current) return false;          // character not seen before or already exhausted
+    if (--current === 0) delete counts[ch];
+  }
+
+  // If everything matched, the object should be empty
+  return Object.keys(counts).length === 0;
 }
-
-const data = ['a', 'b', 'a', 'c', 'b'];
-uniqueInPlace(data);
-console.log(data); // ['a', 'b', 'c']
-const raw = [1, 2, 3, 2, 4, 1];
-const unique = raw.filter((v, i) => raw.indexOf(v) === i);
-console.log(unique); // [1, 2, 3, 4]
-interface User { id: number; name: string }
-
-const users: User[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 1, name: 'Alice (dup)' }, // duplicate id
-];
-
-const uniqueById = Array.from(
-  users.reduce((map, user) => {
-    if (!map.has(user.id)) map.set(user.id, user);
-    return map;
-  }, new Map<number, User>())
-);
-
-console.log(uniqueById);
-/*
-[
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' }
-]
-*/
+console.log(areAnagrams("listen", "silent"));           // true
+console.log(areAnagrams("Hello, World!", "world!hello")); // true
+console.log(areAnagrams("foo", "bar"));                 // false
