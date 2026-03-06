@@ -1,19 +1,41 @@
-function removeVowels(str: string): string {
-  // The regex /[aeiou]/gi matches any vowel, case‑insensitively
-  return str.replace(/[aeiou]/gi, '');
+/**
+ * Random‑pivot quick sort.
+ *
+ * @param arr   The array to sort (in‑place).
+ * @returns     The sorted array (the same reference as `arr`).
+ */
+export function quickSortRandom<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
+  if (arr.length <= 1)
+    return arr;
+
+  // So we can provide a custom comparison, but default is the usual "<".
+  const cmp = compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+  // Pick a random index as pivot
+  const pivotIndex = Math.floor(Math.random() * arr.length);
+  const pivotValue = arr[pivotIndex];
+
+  // Partition into two new arrays
+  const lows: T[] = [];
+  const highs: T[] = [];
+  const pivots: T[] = [];
+
+  for (let i = 0; i < arr.length; i++) {
+    const value = arr[i];
+    const comparison = cmp(value, pivotValue);
+    if (comparison < 0)    lows.push(value);
+    else if (comparison > 0) highs.push(value);
+    else                    pivots.push(value);   // equals pivot
+  }
+
+  // Recurse and concatenate
+  return quickSortRandom(lows, cmp)
+          .concat(pivots, quickSortRandom(highs, cmp));
 }
 
-// Examples
-console.log(removeVowels('Hello World'));    // "Hll Wrld"
-console.log(removeVowels('Typescript'));     // "TypScrpt"
-console.log(removeVowels('AEIOU aeioU'));    // ""
-function removeAllVowels(str: string): string {
-  // Matches any vowel character in the Latin vowel block
-  return str.replace(/[aeiouAEIOU]/g, ''); // still plain Latin
-  // OR with property escapes (if your environment supports it):
-  // return str.replace(/\p{Script=Latin}&&[aeiou]/gi, '');
-}
-function removeVowels(arr: string): string {
-  const vowels = new Set('aeiouAEIOU');
-  return arr.split('').filter(ch => !vowels.has(ch)).join('');
-}
+// ---- Demo ---------------------------------------------------------
+
+const unsorted = [7, 2, 9, 4, 1, 5, 3, 8, 6];
+console.log('original: ', unsorted);
+const sorted = quickSortRandom(unsorted);
+console.log('sorted:   ', sorted);
