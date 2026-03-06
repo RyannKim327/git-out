@@ -1,51 +1,28 @@
-// A classic singly‑linked‑list node
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-
 /**
- * Returns the nth node from the end (1‑based) or null if n is out of range.
+ * Convert a decimal number to a binary string.
+ * 
+ * @param n – A non‑negative integer
+ * @returns The binary representation as a string
  */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;          // natural guard for mis‑ed input
-
-  let first: ListNode<T> | null = head;
-  let second: ListNode<T> | null = head;
-
-  /* Advance `first` n steps ahead. */
-  for (let i = 0; i < n; i++) {
-    if (!first) return null;   // n is larger than list length
-    first = first.next;
+function decimalToBinary(n: number): string {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new Error('Input must be a non‑negative integer.');
   }
 
-  /* Move both pointers until `first` hits the end. */
-  while (first) {
-    first = first.next;
-    second = second!.next;     // second is guaranteed not null here
+  // Handling zero explicitly – Math.pow(2, 0) is 1 but we still want "0"
+  if (n === 0) return '0';
+
+  let binary = '';
+  let current = n;
+
+  while (current > 0) {
+    // Prepend the remainder (0 or 1) to the binary string
+    binary = (current % 2) + binary;
+    current = Math.floor(current / 2);
   }
 
-  return second;   // `second` is the nth node from the end
+  return binary;
 }
-function nthFromEndTwoPass<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let len = 0;
-  for (let cur = head; cur; cur = cur.next) len++;
-
-  if (n <= 0 || n > len) return null;
-
-  let cur = head;
-  for (let i = 0; i < len - n; i++) cur = cur!.next;
-
-  return cur;
-}
-// Example list: 1 → 2 → 3 → 4 → 5
-const tail = new ListNode(5);
-const middle = new ListNode(4, tail);
-const head = new ListNode(1,
-           new ListNode(2,
-           new ListNode(3,
-           middle)));
-
-console.log(nthFromEnd(head, 1)?.val); // 5
-console.log(nthFromEnd(head, 2)?.val); // 4
-console.log(nthFromEnd(head, 5)?.val); // 1
-console.log(nthFromEnd(head, 6));      // null
+console.log(decimalToBinary(10)); // "1010"
+console.log(decimalToBinary(255)); // "11111111"
+console.log(decimalToBinary(0)); // "0"
