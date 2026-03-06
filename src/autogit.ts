@@ -1,47 +1,30 @@
 /**
- * Checks whether a string is a palindrome (case‑insensitive,
- * ignoring anything that isn’t a letter or a digit).
+ * Returns the second largest value in an array.
+ * Uses a single pass – O(n) time, O(1) extra space.
  *
- * Time   : O(n)
- * Space  : O(1)   – only a couple of integer variables
+ * @param nums – numeric array
+ * @returns second largest number, or `undefined` if it can’t be determined
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
 
-  const isAlnum = (ch: string): boolean => {
-    const code = ch.charCodeAt(0);
-    // '0'‑'9'
-    if (code >= 48 && code <= 57) return true;
-    // 'A'‑'Z'
-    if (code >= 65 && code <= 90) return true;
-    // 'a'‑'z'
-    if (code >= 97 && code <= 122) return true;
-    return false;
-  };
+  let largest = -Infinity;
+  let second = -Infinity;
 
-  while (left < right) {
-    // Skip non‑alphanumeric characters from the left
-    while (left < right && !isAlnum(s[left])) left++;
-    // Skip non‑alphanumeric characters from the right
-    while (left < right && !isAlnum(s[right])) right--;
-
-    if (left >= right) break;          // Nothing left to compare
-
-    const lc = s[left].toLowerCase();
-    const rc = s[right].toLowerCase();
-
-    if (lc !== rc) return false;
-
-    left++;
-    right--;
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;   // old largest becomes second
+      largest = n;
+    } else if (n > second && n !== largest) {
+      // n is between largest and second – update second
+      second = n;
+    }
   }
 
-  return true;
+  return second === -Infinity ? undefined : second;
 }
-while (left < right) {
-  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
-  left++;
-  right--;
-}
-return true;
+
+// quick demo
+console.log(secondLargest([3, 1, 4, 1, 5, 9, 2, 6, 5])); // 8
+console.log(secondLargest([42]));                         // undefined
+console.log(secondLargest([7, 7, 7]));                     // undefined – no distinct second value
