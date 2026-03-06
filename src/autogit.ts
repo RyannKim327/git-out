@@ -1,21 +1,13 @@
-/**
- * Return the intersection of two arrays.
- *
- * @param a First array
- * @param b Second array
- * @returns Array containing only the values that appear in both `a` and `b`
- */
-export function intersection<T>(a: T[], b: T[]): T[] {
-  // Turn the second array into a Set for O(1) look‑ups.
-  const lookup = new Set(b);
+// 1️⃣  Define the array (TypeScript knows it’s numbers)
+const nums: number[] = [42, 7, 13, 99, 29];
 
-  // Keep every element of `a` that also exists in the Set.
-  return a.filter(item => lookup.has(item));
-}
+// 2️⃣  Sort in place – ascending
+nums.sort((a, b) => a - b);   // -> [7, 13, 29, 42, 99]
+console.log('Ascending:', nums);
 
-// Example usage:
-const colors1 = ['red', 'green', 'blue', 'green'];
-const colors2 = ['cyan', 'green', 'red', 'yellow'];
+// 3️⃣  If you want a new sorted array instead, copy first
+const ascending = [...nums].sort((a, b) => a - b);
 
-const commonColors = intersection(colors1, colors2);
-console.log(commonColors); // → ['red', 'green', 'green']
+// 4️⃣  Descending order
+const descending = nums.slice().sort((a, b) => b - a); // -> [99, 42, 29, 13, 7]
+console.log('Descending:', descending);
