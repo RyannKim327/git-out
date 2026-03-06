@@ -1,24 +1,40 @@
-/**
- * Very light‑weight e‑mail validator – good for quick UI checks or APIs.
- * It agrees with the majority of real‑world addresses:   local@domain.com
- *
- * @param address – the string to test
- * @returns true if the format looks like an e‑mail, false otherwise
- */
-export function isValidEmail(address: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(address);
+// Basic node interface – can be turned into a class if you like.
+interface TreeNode<T = number> {
+  val: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
-import validator from 'email-validator';
+function maxDepth<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                 // empty subtree → depth 0
 
-validator.validate('test@example.com'); // true
-const tests = [
-  'alice@example.com',
-  'bob@sub.domain.org',
-  'invalid-email',
-  'spaces@invalid .com',
-  '@missing.local',
-  'user@',
-];
+  const leftDepth  = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
 
-tests.forEach(email => console.log(`${email}: ${isValidEmail(email)}`));
+  // Depth of current node = 1 (itself) + depth of deeper side
+  return 1 + Math.max(leftDepth, rightDepth);
+}
+const root: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 } },
+  right: { val: 3, right: { val: 5, right: { val: 6 } } }
+};
+
+console.log(maxDepth(root));   // → 4
+function maxDepthIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let max = 0;
+  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
+    { node: root, depth: 1 },
+  ];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    max = Math.max(max, depth);
+
+    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
+    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
+  }
+
+  return max;
+}
