@@ -1,47 +1,77 @@
-function countWordOccurrences(text: string, word: string): number {
-  // Escape any regex meta‑characters in the search word
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+low  = 0
+high = length–1
 
-  // \b = word boundary, i = ignore case, g = global (find all)
-  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+while low ≤ high and target ∈ [arr[low], arr[high]]:
+    // Edge cases
+    if arr[low] == arr[high]:
+        return (arr[low] == target) ? low : -1
 
-  // .match() returns an array of all matches, null if none
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
-}
+    // Interpolated index
+    pos = low + ((target – arr[low]) * (high – low))
+          / (arr[high] – arr[low])
 
-// Usage
-const msg = "The quick brown fox jumps over the lazy fox. Foxes are clever.";
-console.log(countWordOccurrences(msg, "fox")); // → 2 (fox, fox)
-const regex = new RegExp(escaped, 'gi');
-function countSplit(text: string, word: string): number {
-  // Empty string returns 0
-  if (!text) return 0;
-  return text.split(word).length - 1;
-}
-function countWithMatchAll(text: string, word: string): number {
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
-  const allMatches = text.matchAll(regex); // Iterable<{ index: … }>
+    // Clamp to array bounds
+    pos = Math.round(pos)
 
-  let count = 0;
-  for (const _ of allMatches) count++;
-  return count;
-}
-export function countOccurrences(
-  text: string,
-  word: string,
-  options?: { caseSensitive?: boolean; wholeWord?: boolean }
+    if arr[pos] == target:
+        return pos
+    else if arr[pos] < target:
+        low = pos + 1
+    else:
+        high = pos – 1
+
+return –1   // not found
+/**
+ * Interpolation search for a strictly sorted numeric array.
+ * @param arr   - Sorted numbers (ascending)
+ * @param target - Number to find
+ * @returns Index of target, or -1 if not found
+ */
+export function interpolationSearch(
+  arr: readonly number[],
+  target: number
 ): number {
-  const { caseSensitive = false, wholeWord = true } = options ?? {};
+  if (arr.length === 0) return -1;
 
-  // Escape regex meta‑chars
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  let low = 0;
+  let high = arr.length - 1;
 
-  let pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
-  let flags = 'g' + (caseSensitive ? '' : 'i');
+  // Keep going while target is inside the current window
+  while (low <= high && target >= arr[low] && target <= arr[high]) {
+    // All remaining values equal – either hit or miss.
+    if (arr[low] === arr[high]) {
+      return arr[low] === target ? low : -1;
+    }
 
-  const regex = new RegExp(pattern, flags);
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
+    // Linear interpolation to guess position.
+    const pos =
+      low +
+      Math.round(
+        ((target - arr[low]) * (high - low)) / (arr[high] - arr[low])
+      );
+
+    // Just in case rounding pushes us outside: clamp bounds.
+    const index = Math.min(Math.max(pos, low), high);
+
+    const value = arr[index];
+    if (value === target) {
+      return index;
+    }
+    if (value < target) {
+      low = index + 1;
+    } else {
+      high = index - 1;
+    }
+  }
+
+  return -1; // Not found
 }
+const sorted = [3, 7, 13, 19, 23, 29, 31, 47, 53, 59];
+const target = 23;
+
+const idx = interpolationSearch(sorted, target);
+console.log(idx); // → 4
+console.log(interpolationSearch(sorted, 22)); // → -1
+const idx = interpolationSearch(sortedArray, key);
+if (idx !== -1) console.log(`Found at ${idx}`);
+else console.log('Not there');
