@@ -1,42 +1,75 @@
 /**
- * Counting sort for non‑negative integers in a known range.
- *
- * @param data Array of numbers to sort.
- * @param min  Minimum possible value in `data` (inclusive).
- * @param max  Maximum possible value in `data` (inclusive).
- * @returns    A new array containing the sorted numbers.
- *
- * Example:
- *   const unsorted = [3, 0, 2, 3, 1];
- *   const sorted = countingSort(unsorted, 0, 3); // [0,1,2,3,3]
+ * Binary search on a sorted array (ascending order).
+ * @param arr   Sorted array of comparable items.
+ * @param value Item you’re hunting for.
+ * @param compare Optional comparison function:
+ *                (a,b) => 0 if a==b, <0 if a<b, >0 if a>b.
+ *                If omitted, '<'/'>' operators are used.
+ * @returns Index of the value, or -1 if it isn’t present.
  */
-export function countingSort(data: number[], min: number, max: number): number[] {
-  if (data.length === 0) return [];
+export function binarySearch<T>(
+  arr: readonly T[],
+  value: T,
+  compare?: (a: T, b: T) => number,
+): number {
+  let low = 0;
+  let high = arr.length;
 
-  const range = max - min + 1;
+  const cmp = compare ?? ((a: T, b: T) => {
+    /* eslint-disable-next-line no-prototype-builtins */
+    if ((a as any as object).hasOwnProperty && typeof a === 'object' && typeof b === 'object') {
+      // For objects that implement `valueOf()` – optional
+      return (a as any) < b ? -1 : (a as any) > b ? 1 : 0;
+    }
+    return a < b ? -1 : a > b ? 1 : 0;
+  });
 
-  // 1. Count occurrences
-  const count: number[] = new Array(range).fill(0);
-  for (const v of data) {
-    count[v - min]++;
+  while (low < high) {
+    const mid = (low + high) >>> 1; // fast floor division by 2
+    const comp = cmp(arr[mid], value);
+
+    if (comp === 0) return mid;   // found it
+    if (comp < 0) low = mid + 1;  // value is higher
+    else high = mid;              // value is lower
   }
 
-  // 2. Accumulate counts – now each count element holds the index
-  //    where that value should be placed in the output array.
-  for (let i = 1; i < range; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 3. Build the output array in a stable manner.
-  const output: number[] = new Array(data.length);
-  for (let i = data.length - 1; i >= 0; i--) {
-    const v = data[i];
-    const idx = --count[v - min];          // <-- decrement first
-    output[idx] = v;
-  }
-
-  return output;
+  return -1; // not found
 }
-const unsorted = [5, 3, 0, 2, 5, 1];
-const sorted = countingSort(unsorted, 0, 5);
-console.log(sorted); // [0, 1, 2, 3, 5, 5]
+const nums = [1, 3, 5, 7, 9, 11, 13];
+const idx = binarySearch(nums, 7); // → 3
+
+const words = ['apple', 'banana', 'cherry', 'date'];
+const wIdx = binarySearch(words, 'cherry'); // → 2
+export function binarySearchRecursive<T>(
+  arr: readonly T[],
+  value: T,
+  compare?: (a: T, b: T) => number,
+  low = 0,
+  high = arr.length - 1,
+): number {
+  if (low > high) return -1;
+
+  const cmp = compare ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+
+  const mid = (low + high) >>> 1;
+  const comp = cmp(arr[mid], value);
+
+  if (comp === 0) return mid;
+  return comp < 0
+    ? binarySearchRecursive(arr, value, compare, mid + 1, high)
+    : binarySearchRecursive(arr, value, compare, low, mid - 1);
+}
+interface Person { name: string; age: number; }
+
+const people: Person[] = [
+  { name: 'Alice', age: 28 },
+  { name: 'Bob', age: 35 },
+  { name: 'Carol', age: 41 },
+];
+
+// Sorted by age
+const idx = binarySearch(
+  people,
+  { name: '', age: 35 },             // value (name ignored)
+  (a, b) => a.age - b.age
+); // → 1
