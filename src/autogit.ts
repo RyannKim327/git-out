@@ -1,57 +1,59 @@
 /**
- * Simple anagram checker.
- * @param a First string
- * @param b Second string
- * @returns true if a and b are anagrams, false otherwise
+ * Return the index of the first occurrence of `pattern` inside `text`,
+ * or -1 if the pattern is absent.
  */
-function areAnagrams(a: string, b: string): boolean {
-  // 1. Normalize: lower‑case, strip non‑alphanumerics, trim
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")
-      .trim();
+export function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0; // trivially found at start
 
-  const na = normalize(a);
-  const nb = normalize(b);
+  const lps = computeLPSArray(pattern); // longest‑prefix‑suffix table
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-  // Quick length check; if they differ early we’re done.
-  if (na.length !== nb.length) return false;
-
-  // 2. Build frequency maps
-  const freq = new Map<string, number>();
-
-  for (const ch of na) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) { // whole pattern matched
+        return i - j; // match start index
+      }
+    } else if (j > 0) {
+      // mismatch after j matches – skip ahead by lps[j‑1]
+      j = lps[j - 1];
+    } else {
+      // mismatch at start of pattern
+      i++;
+    }
   }
 
-  for (const ch of nb) {
-    const count = freq.get(ch);
+  return -1; // no match
+}
 
-    // If we see a character not in the first string, bail
-    if (!count) return false;
+/**
+ * Pre‑process the pattern to build the “longest prefix that is also a suffix”
+ * (LPS) array. lps[i] = the length of the longest proper prefix of
+ * pattern[0..i] that is also a suffix of pattern[0..i].
+ */
+function computeLPSArray(pattern: string): number[] {
+  const lps: number[] = Array(pattern.length).fill(0);
+  let len = 0;   // length of previous longest prefix suffix
+  let i = 1;     // lps[0] is always 0
 
-    // Decrease the count and remove entry if it drops to zero
-    if (count === 1) freq.delete(ch);
-    else freq.set(ch, count - 1);
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else if (len !== 0) {
+      // use the previous lps value to avoid re‑checking
+      len = lps[len - 1];
+    } else {
+      lps[i] = 0;
+      i++;
+    }
   }
 
-  // 3. If all counts cleared, the strings are anagrams
-  return freq.size === 0;
+  return lps;
 }
-console.log(areAnagrams("listen", "silent"));   // → true
-console.log(areAnagrams("evil", "vile"));       // → true
-console.log(areAnagrams("hello", "billion"));   // → false
-console.log(areAnagrams("Clint Eastwood", "Old West Action")); // true
-function areAnagramsSort(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")
-      .trim()
-      .split("")
-      .sort()
-      .join("");
-
-  return normalize(a) === normalize(b);
-}
+console.log(kmpSearch("ababcabcababc", "abc"));   // 2
+console.log(kmpSearch("ababcabcababc", "abcd"));  // -1
+console.log(kmpSearch("aaaaa", "aaa"));           // 0
