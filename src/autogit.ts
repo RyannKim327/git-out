@@ -1,50 +1,44 @@
-// A node of a singly linked list
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-
-// Helper to build a list from an array (optional)
-function buildList<T>(values: T[]): ListNode<T> | null {
-  if (values.length === 0) return null
-  const head = new ListNode(values[0])
-  let cur = head
-  for (let i = 1; i < values.length; i++) {
-    cur.next = new ListNode(values[i])
-    cur = cur.next
-  }
-  return head
-}
 /**
- * Returns the middle ListNode of a singly linked list.
- * If the list has an even number of nodes, the *second* middle one is returned
- * (you can customize this if you prefer the first one).
+ * Returns n! (n factorial) for a non‑negative integer.
+ *
+ * @param n A non‑negative integer (0, 1, 2, …).
+ * @returns The factorial of n. Returns 1 for n = 0.
+ * @throws Error if n is negative.
  */
-function getMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null
-
-  let slow: ListNode<T> | null = head
-  let fast: ListNode<T> | null = head
-
-  // Move fast twice as fast as slow
-  while (fast && fast.next) {
-    slow = slow!.next            // safe because slow ≠ null in loop
-    fast = fast.next.next
+function factorial(n: number): number {
+  if (n < 0) {
+    throw new Error("Factorial is not defined for negative numbers.");
   }
 
-  return slow
-}
-const list = buildList([1, 2, 3, 4, 5])          // Odd‑length list
-console.log(getMiddle(list)?.val)                // → 3
-
-const list2 = buildList([10, 20, 30, 40])        // Even‑length list
-console.log(getMiddle(list2)?.val)               // → 30  (second middle)
-function getMiddleViaArray<T>(head: ListNode<T> | null): ListNode<T> | null {
-  const values: ListNode<T>[] = []
-  let cur = head
-  while (cur) {
-    values.push(cur)
-    cur = cur.next
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-  const midIndex = Math.floor(values.length / 2)
-  return values[midIndex] ?? null
+  return result;
 }
+
+// Example
+console.log(factorial(5)); // 120
+function factorialRecursive(n: number): number {
+  if (n < 0) {
+    throw new Error("Negative input not allowed.");
+  }
+  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
+}
+
+console.log(factorialRecursive(5)); // 120
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error("Negative input not allowed.");
+  let result = 1n;          // BigInt literal starts with n
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
+}
+
+console.log(factorialBigInt(100).toString());
+// "933262154... (full 158‑digit number)"
+console.assert(factorial(0) === 1);
+console.assert(factorial(1) === 1);
+console.assert(factorial(5) === 120);
+console.assert(factorialBigInt(10).toString() === "3628800");
