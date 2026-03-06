@@ -1,50 +1,75 @@
-export interface TreeNode {
-  val: number;                // or any type you like
-  left?: TreeNode | null;     // child nodes (undefined is treated as null)
-  right?: TreeNode | null;
-}
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
+/* --------------------------------------------------------
+   Fibonacci Search – TypeScript version
+   -------------------------------------------------------- */
+
+type Comparator<T> = (a: T, b: T) => number;
+
 /**
- * Returns the diameter (number of edges on the longest path) of a binary tree.
+ * Searches a sorted array using the Fibonacci search technique.
  *
- * @param root root node of the tree
- * @returns diameter in edges
+ * @param arr       The sorted array to search
+ * @param key       The value we’re looking for
+ * @param cmp       Optional comparator – defaults to numeric comparison
+ * @returns The index of `key` in `arr`, or -1 if not found
  */
-export function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;           // will hold the best diameter found
+export function fibonacciSearch<T>(
+  arr: readonly T[],
+  key: T,
+  cmp: Comparator<T> = (a, b) => a! < b! ? -1 : (a! > b! ? 1 : 0)
+): number {
+  const n = arr.length;
+  if (n === 0) return -1;
 
-  /**
-   * Post‑order DFS that returns the height of the subtree.
-   * While unwinding, we update `maxDiameter`.
-   */
-  function dfs(node: TreeNode | null): number {
-    if (!node) return -1;       // height of null is -1 so that leaf node height = 0
+  /* ---------- build the smallest Fibonacci number ≥ n ------------- */
+  let fibMm2 = 0;            // (m‑2)’th Fibonacci
+  let fibMm1 = 1;            // (m‑1)’th Fibonacci
+  let fibM   = fibMm2 + fibMm1; // m’th Fibonacci
 
-    const leftHeight  = dfs(node.left)  + 1;
-    const rightHeight = dfs(node.right) + 1;
-
-    // The path that goes from the leftmost leaf of this subtree
-    // through this node to the rightmost leaf gives a candidate
-    // diameter.  `+1` is not needed for edges because heights already
-    // count edges from node to leaf.
-    const candidate = leftHeight + rightHeight;
-    if (candidate > maxDiameter) maxDiameter = candidate;
-
-    // Return height of this node for the parent call
-    return Math.max(leftHeight, rightHeight);
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
   }
 
-  dfs(root);
-  return maxDiameter;
-}
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
+  /* ---------- we now have a Fibonacci number >= array length ---------- */
+  let offset = -1; // Marks the eliminated range from front
 
-console.log(diameterOfBinaryTree(tree));   // → 3
+  while (fibM > 1) {
+    // Keep fibMm2 ≥ 0
+    // Index to be checked – clamp to array bounds
+    const i = Math.min(offset + fibMm2, n - 1);
+
+    const comparison = cmp(arr[i], key);
+
+    if (comparison < 0) {
+      /* key is after arr[i] */
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else if (comparison > 0) {
+      /* key is before arr[i] */
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
+    } else {
+      return i;                // Found at index i
+    }
+  }
+
+  /* ---------- check the last element -------------------------------- */
+  if (fibMm1 && offset + 1 < n && cmp(arr[offset + 1], key) === 0) {
+    return offset + 1;
+  }
+
+  return -1; // Not found
+}
+
+/* --------------------------------------------------------
+   Example usage
+   -------------------------------------------------------- */
+
+const nums = [3, 9, 15, 21, 27, 31, 38, 54, 72, 95];
+
+console.log(fibonacciSearch(nums, 54)); // → 7
+console.log(fibonacciSearch(nums, 10)); // → -1
