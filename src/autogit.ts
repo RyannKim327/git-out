@@ -1,37 +1,51 @@
-// random-joke.ts
-import fetch from 'node-fetch';          // npm i node-fetch@2
-import { Console } from 'console';
-
-interface Joke {
-  id: number;
-  type: string;
-  setup: string;
-  punchline: string;
+// A classic singly‑linked‑list node
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
-async function fetchRandomJoke(): Promise<Joke> {
-  const res = await fetch('https://official-joke-api.appspot.com/random_joke');
+/**
+ * Returns the nth node from the end (1‑based) or null if n is out of range.
+ */
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;          // natural guard for mis‑ed input
 
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} – failed to fetch joke`);
+  let first: ListNode<T> | null = head;
+  let second: ListNode<T> | null = head;
+
+  /* Advance `first` n steps ahead. */
+  for (let i = 0; i < n; i++) {
+    if (!first) return null;   // n is larger than list length
+    first = first.next;
   }
 
-  const data: Joke = await res.json();
-
-  return data;
-}
-
-async function run() {
-  try {
-    const joke = await fetchRandomJoke();
-
-    console.log('😂 Here’s something to make you smile!');
-    console.log(`  ${joke.setup}`);
-    console.log(`   – ${joke.punchline}`);
-  } catch (err: any) {
-    console.error('Oops! Something went wrong:');
-    console.error(err.message ?? err);
+  /* Move both pointers until `first` hits the end. */
+  while (first) {
+    first = first.next;
+    second = second!.next;     // second is guaranteed not null here
   }
-}
 
-run();
+  return second;   // `second` is the nth node from the end
+}
+function nthFromEndTwoPass<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let len = 0;
+  for (let cur = head; cur; cur = cur.next) len++;
+
+  if (n <= 0 || n > len) return null;
+
+  let cur = head;
+  for (let i = 0; i < len - n; i++) cur = cur!.next;
+
+  return cur;
+}
+// Example list: 1 → 2 → 3 → 4 → 5
+const tail = new ListNode(5);
+const middle = new ListNode(4, tail);
+const head = new ListNode(1,
+           new ListNode(2,
+           new ListNode(3,
+           middle)));
+
+console.log(nthFromEnd(head, 1)?.val); // 5
+console.log(nthFromEnd(head, 2)?.val); // 4
+console.log(nthFromEnd(head, 5)?.val); // 1
+console.log(nthFromEnd(head, 6));      // null
