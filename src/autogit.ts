@@ -1,45 +1,47 @@
 /**
- * Checks if a string is a palindrome.
+ * Checks whether a string is a palindrome (case‑insensitive,
+ * ignoring anything that isn’t a letter or a digit).
  *
- * @param txt          The input string to test.
- * @param options      Optional flags.
- * @returns            true if the cleaned string reads the same forwards and backwards.
+ * Time   : O(n)
+ * Space  : O(1)   – only a couple of integer variables
  */
-export function isPalindrome(
-  txt: string,
-  options?: {
-    /** When true (default), the check is case‑insensitive. */
-    ignoreCase?: boolean;
-    /** When true (default), only alphanumeric characters are considered. */
-    stripNonAlnum?: boolean;
-    /** When true, normalises Unicode to NFKD form before the checks. */
-    normalize?: boolean;
-  } = {}
-): boolean {
-  const {
-    ignoreCase = true,
-    stripNonAlnum = true,
-    normalize = true,
-  } = options;
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  let processed = txt;
+  const isAlnum = (ch: string): boolean => {
+    const code = ch.charCodeAt(0);
+    // '0'‑'9'
+    if (code >= 48 && code <= 57) return true;
+    // 'A'‑'Z'
+    if (code >= 65 && code <= 90) return true;
+    // 'a'‑'z'
+    if (code >= 97 && code <= 122) return true;
+    return false;
+  };
 
-  if (normalize) {
-    // This collapse accents, e.g. "café" ➜ "cafe".
-    processed = processed.normalize('NFKD');
+  while (left < right) {
+    // Skip non‑alphanumeric characters from the left
+    while (left < right && !isAlnum(s[left])) left++;
+    // Skip non‑alphanumeric characters from the right
+    while (left < right && !isAlnum(s[right])) right--;
+
+    if (left >= right) break;          // Nothing left to compare
+
+    const lc = s[left].toLowerCase();
+    const rc = s[right].toLowerCase();
+
+    if (lc !== rc) return false;
+
+    left++;
+    right--;
   }
 
-  if (stripNonAlnum) {
-    processed = processed.replace(/[^0-9a-z]+/gi, '');
-  }
-
-  if (ignoreCase) {
-    processed = processed.toLowerCase();
-  }
-
-  const reversed = processed.split('').reverse().join('');
-  return processed === reversed;
+  return true;
 }
-console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
-console.log(isPalindrome('Madam In Eden, I’m Adam'));          // true
-console.log(isPalindrome('Hello, world!'));                    // false
+while (left < right) {
+  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
+  left++;
+  right--;
+}
+return true;
