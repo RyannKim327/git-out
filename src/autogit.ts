@@ -1,44 +1,81 @@
-/**
- * Returns n! (n factorial) for a non‑negative integer.
- *
- * @param n A non‑negative integer (0, 1, 2, …).
- * @returns The factorial of n. Returns 1 for n = 0.
- * @throws Error if n is negative.
- */
-function factorial(n: number): number {
-  if (n < 0) {
-    throw new Error("Factorial is not defined for negative numbers.");
-  }
+//   ┌─── Imports ────────────────────────────────────────────────────────┐
+import { useEffect, useState } from 'react';
+import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
 
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
+//   ┌─── Types ───────────────────────────────────────────────────────────────┐
+interface TodoItem {
+  id: number;
+  title: string;
+  completed: boolean;
 }
 
-// Example
-console.log(factorial(5)); // 120
-function factorialRecursive(n: number): number {
-  if (n < 0) {
-    throw new Error("Negative input not allowed.");
-  }
-  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
+//   ┌─── Async helper ────────────────────────────────────────────────────────┐
+async function fetchTodos(): Promise<TodoItem[]> {
+  const url = 'https://jsonplaceholder.typicode.com/todos?_limit=5';
+
+  // Simulate a "slow" network: optional, just for demo
+  await new Promise(r => setTimeout(r, 800));
+
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`❌ ${response.status} ${response.statusText}`);
+
+  const json = await response.json();
+  // Map to our interface – TypeScript will check types
+  return json.map((x: any) => ({
+    id: x.id,
+    title: x.title,
+    completed: x.completed,
+  }));
 }
 
-console.log(factorialRecursive(5)); // 120
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error("Negative input not allowed.");
-  let result = 1n;          // BigInt literal starts with n
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
+//   ┌─── Component that uses the async task ──────────────────────────────────┐
+export default function AsyncExample() {
+  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchTodos();
+      console.log('Fetched:', data);
+      setTodos(data);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      console.warn(msg);
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Run once on mount
+  useEffect(() => {
+    load();
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      {loading && <ActivityIndicator size="large" />}
+      {error && <Text style={styles.error}>{error}</Text>}
+      {!loading && !error && (
+        <>
+          {todos.map(t => (
+            <Text key={t.id} style={styles.todo}>
+              {t.completed ? '✅' : '🕒'} {t.title}
+            </Text>
+          ))}
+        </>
+      )}
+      <Button title="Reload" onPress={load} disabled={loading} />
+    </View>
+  );
 }
 
-console.log(factorialBigInt(100).toString());
-// "933262154... (full 158‑digit number)"
-console.assert(factorial(0) === 1);
-console.assert(factorial(1) === 1);
-console.assert(factorial(5) === 120);
-console.assert(factorialBigInt(10).toString() === "3628800");
+//   ┌─── Styles ───────────────────────────────────────────────────────────────┐
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, justifyContent: 'center' },
+  todo: { fontSize: 18, marginVertical: 4 },
+  error: { color: 'red', marginBottom: 12 },
+});
