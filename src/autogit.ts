@@ -1,79 +1,46 @@
 /**
- * Returns the kth smallest value in `arr` (1‑based k).
- *  Throws an error if k is out of bounds.
+ * Returns true if `a` and `b` are anagrams.
+ * Works for any Unicode characters, but
+ * it ignores case and whitespace by default.
  */
-export function kthSmallest(arr: number[], k: number): number {
-  if (k <= 0 || k > arr.length) {
-    throw new RangeError('k is out of bounds');
+function areAnagrams(a: string, b: string, ignoreCase = true, ignoreWhitespace = true): boolean {
+  // Normalise: trim, collapse spaces, lower‑case if requested
+  const normalize = (s: string) =>
+    s
+      .replace(/\s+/g, "")        // delete spaces
+      .toLowerCase();             // lower‑case
+
+  if (ignoreCase && ignoreWhitespace) {
+    a = normalize(a);
+    b = normalize(b);
+  } else if (ignoreCase) {
+    a = a.toLowerCase();
+    b = b.toLowerCase();
+  } else if (ignoreWhitespace) {
+    a = a.replace(/\s+/g, "");
+    b = b.replace(/\s+/g, "");
   }
 
-  // Work on a copy so the original array stays intact.
-  const a = arr.slice();
+  // Quick length check
+  if (a.length !== b.length) return false;
 
-  const quickSelect = (left: number, right: number, index: number) => {
-    // If the segment contains only one element, that's the answer.
-    if (left === right) return a[left];
+  // Count characters in the first string
+  const counts: Record<string, number> = {};
 
-    const pivotIndex = partition(left, right);
-    if (pivotIndex === index) {
-      return a[pivotIndex];
-    } else if (pivotIndex < index) {
-      return quickSelect(pivotIndex + 1, right, index);
-    } else {
-      return quickSelect(left, pivotIndex - 1, index);
-    }
-  };
-
-  const partition = (left: number, right: number): number => {
-    // Pick a pivot.  Using the middle element keeps the code short; you could
-    // shuffle or use Median‑of‑Three for better worst‑case guarantees.
-    const pivot = a[Math.floor((left + right) / 2)];
-    let i = left;
-    let j = right;
-
-    while (i <= j) {
-      while (a[i] < pivot) i++;
-      while (a[j] > pivot) j--;
-      if (i <= j) {
-        [a[i], a[j]] = [a[j], a[i]];
-        i++;
-        j--;
-      }
-    }
-    return i - 1; // pivot final position
-  };
-
-  // `k-1` because the array index is 0‑based.
-  return quickSelect(0, a.length - 1, k - 1);
-}
-export function kthSmallestBySort(arr: number[], k: number): number {
-  if (k <= 0 || k > arr.length) throw new RangeError('k is out of bounds');
-  const sorted = [...arr].sort((a, b) => a - b);
-  return sorted[k - 1];
-}
-class MinHeap {
-  private data: number[] = [];
-
-  push(val: number) {
-    this.data.push(val);
-    this.bubbleUp(this.data.length - 1);
+  for (const ch of a) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
   }
 
-  /* ... bubbleUp, bubbleDown, peek, pop ... */
-
-  /** Return kth smallest (1‑based). */
-  kth(k: number): number {
-    if (k <= 0 || k > this.data.length) throw new RangeError();
-    const heapCopy = [...this.data];
-    let result = -Infinity;
-    for (let i = 0; i < k; i++) {
-      result = heapCopy[0];
-      this.swap(heapCopy, 0, heapCopy.length - 1);
-      heapCopy.pop();
-      this.sinkDown(heapCopy, 0);
-    }
-    return result;
+  // Subtract counts using the second string
+  for (const ch of b) {
+    const current = counts[ch];
+    if (!current) return false;          // character not seen before or already exhausted
+    if (--current === 0) delete counts[ch];
   }
 
-  /* helper methods omitted for brevity */
+  // If everything matched, the object should be empty
+  return Object.keys(counts).length === 0;
 }
+console.log(areAnagrams("listen", "silent"));           // true
+console.log(areAnagrams("Hello, World!", "world!hello")); // true
+console.log(areAnagrams("foo", "bar"));                 // false
