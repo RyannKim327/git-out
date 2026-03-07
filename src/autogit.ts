@@ -1,37 +1,56 @@
-// Works for numbers, strings, dates, anything that can be compared with < and >.
-export function isSorted<T extends number | string | Date>(arr: T[]): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] < arr[i - 1]) return false;
+Let   S = s1 s2 … sn
+      T = t1 t2 … tm
+
+DP[i][j] = length of the longest common suffix that ends at S[i‑1] and T[j‑1]
+DP[i][j] = DP[i-1][j-1] + 1
+/**
+ * Returns the longest common substring of `a` and `b`.
+ * If there are multiple substrings of the same maximum length,
+ * the first one found in `a` will be returned.
+ */
+export function longestCommonSubstring(a: string, b: string): string {
+  const n = a.length, m = b.length;
+  if (n === 0 || m === 0) return '';
+
+  // `prev` holds DP values for row i-1
+  const prev = new Array(m + 1).fill(0);
+  // `curr` holds DP values for current row i
+  const curr = new Array(m + 1).fill(0);
+
+  let maxLen = 0;          // longest length so far
+  let maxEndIndexA = 0;    // index in `a` where this substring ends
+
+  for (let i = 1; i <= n; i++) {
+    // Iterate columns
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        curr[j] = prev[j - 1] + 1;
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          maxEndIndexA = i - 1;   // keep the end idx in a
+        }
+      } else {
+        curr[j] = 0;
+      }
+    }
+
+    // Swap rows for next iteration
+    //  curr becomes prev, prev becomes curr (reuse the same arrays)
+    for (let j = 0; j <= m; j++) {
+      prev[j] = curr[j];
+      curr[j] = 0;   // reset current row for the next round
+    }
   }
-  return true;
+
+  return a.slice(maxEndIndexA - maxLen + 1, maxEndIndexA + 1);
 }
-isSorted([1, 2, 3, 4]);        // true
-isSorted([1, 3, 2, 4]);        // false
-isSorted(['a', 'b', 'c']);     // true
-isSorted(['c', 'b', 'a']);     // false
-type Comparator<T> = (a: T, b: T) => number;
+import { longestCommonSubstring } from './common-substring';
 
-export function isSortedWith<T>(arr: T[], cmp: Comparator<T>): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) return false; // `a > b` in ascending order
-  }
-  return true;
-}
-interface Person { name: string; age: number; }
+const a = "ABABCDA";
+const b = "CBADABABC";
 
-const people: Person[] = [
-  { name: 'Alice', age: 25 },
-  { name: 'Bob', age: 30 },
-  { name: 'Charlie', age: 35 },
-];
-
-isSortedWith(people, (a, b) => a.age - b.age); // true
-export const isSorted = <T>(arr: T[], cmp: Comparator<T> = (a, b) => {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}): boolean =>
-  arr
-    .map((value, index, self) => [self[index - 1], value] as const)
-    .slice(1) // skip the first undefined pair
-    .every(([prev, cur]) => cmp(prev!, cur) <= 0);
+console.log(longestCommonSubstring(a, b)); // → "ABC"
+console.log(longestCommonSubstring('foo', ''));          // ''
+console.log(longestCommonSubstring('abc', 'xyz'));       // ''
+console.log(longestCommonSubstring('same', 'same'));     // 'same'
+console.log(longestCommonSubstring('aaaaa', 'bbaaa'));   // 'aaa'
