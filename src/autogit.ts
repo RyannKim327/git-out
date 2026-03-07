@@ -1,35 +1,21 @@
 /**
- * Bottom‑up merge sort – no recursion, only loops.
- * @param arr The array to sort, in place.
- * @returns The sorted array (same reference as the argument).
+ * Returns true if `n` is a prime number.
+ * Handles 0, 1 and negative numbers as non‑prime.
  */
-export function mergeSortIterative<T>(arr: T[]): T[] {
-  const len = arr.length;
-  if (len < 2) return arr;          // already sorted
+export function isPrime(n: number): boolean {
+  if (n <= 1) return false                // 0, 1, and negatives are not prime
+  if (n <= 3) return true                 // 2 and 3 are prime
 
-  // Temporary buffer reused for each merge
-  const temp = new Array<T>(len);
+  // even numbers greater than 2 fail immediately
+  if (n % 2 === 0) return false
 
-  // Initial run width – start with runs of 1 element
-  for (let width = 1; width < len; width <<= 1) {
-    // Merge pairs of runs: left = i‑th run, right = i+width‑th run
-    for (let i = 0; i < len; i += width << 1) {
-      const left = i;
-      const mid = Math.min(i + width, len);
-      const right = Math.min(i + (width << 1), len);
-
-      // Merge [left, mid) and [mid, right) into temp
-      let l = left, r = mid, k = left;
-      while (l < mid && r < right) {
-        temp[k++] = (arr[l] as any <= arr[r] as any) ? arr[l++] : arr[r++];
-      }
-      while (l < mid) temp[k++] = arr[l++];
-      while (r < right) temp[k++] = arr[r++];
-
-      // Copy the merged segment back into arr
-      for (let p = left; p < right; p++) arr[p] = temp[p];
-    }
+  // only test odd divisors up to √n
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false
   }
-
-  return arr;
+  return true
 }
+console.log(isPrime(2));   // true
+console.log(isPrime(15));  // false
+console.log(isPrime(97));  // true
