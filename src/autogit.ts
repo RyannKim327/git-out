@@ -1,48 +1,47 @@
-// 1️⃣  Define a comparison helper – most of the time you’ll just pass
-//     (a, b) => a < b for ascending order.
-type Comparator<T> = (a: T, b: T) => boolean;
+function countWordOccurrences(text: string, word: string): number {
+  // Escape any regex meta‑characters in the search word
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// 2️⃣  The merge function – it expects two sorted arrays and pulls
-//     the smaller (according to the comparator) element out first.
-function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
-  const result: T[] = [];
-  let i = 0,
-      j = 0;
+  // \b = word boundary, i = ignore case, g = global (find all)
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
 
-  while (i < left.length && j < right.length) {
-    if (cmp(left[i], right[j])) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
-    }
-  }
-
-  // One side still has items – splice the rest onto the result.
-  if (i < left.length) result.push(...left.slice(i));
-  if (j < right.length) result.push(...right.slice(j));
-
-  return result;
+  // .match() returns an array of all matches, null if none
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
 }
 
-// 3️⃣  The recursive mergeSort main function – sorts in place if you
-//     prefer not to allocate the full array during every merge.
-export function mergeSort<T>(arr: T[], cmp: Comparator<T> = (a, b) => a < b): T[] {
-  if (arr.length <= 1) return arr;     // Base case: nothing to do
-
-  const mid = Math.floor(arr.length / 2);
-  const left  = mergeSort(arr.slice(0, mid), cmp);
-  const right = mergeSort(arr.slice(mid),    cmp);
-
-  return merge(left, right, cmp);
+// Usage
+const msg = "The quick brown fox jumps over the lazy fox. Foxes are clever.";
+console.log(countWordOccurrences(msg, "fox")); // → 2 (fox, fox)
+const regex = new RegExp(escaped, 'gi');
+function countSplit(text: string, word: string): number {
+  // Empty string returns 0
+  if (!text) return 0;
+  return text.split(word).length - 1;
 }
-// Numbers, ascending
-const sortedNumbers = mergeSort([8, 3, 5, 1, 9, 2]);
+function countWithMatchAll(text: string, word: string): number {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+  const allMatches = text.matchAll(regex); // Iterable<{ index: … }>
 
-// Strings, descending
-const sortedStrings = mergeSort(
-  ["banana", "apple", "cherry"],
-  (a, b) => a > b
-);
+  let count = 0;
+  for (const _ of allMatches) count++;
+  return count;
+}
+export function countOccurrences(
+  text: string,
+  word: string,
+  options?: { caseSensitive?: boolean; wholeWord?: boolean }
+): number {
+  const { caseSensitive = false, wholeWord = true } = options ?? {};
 
-console.log(sortedNumbers); // [1, 2, 3, 5, 8, 9]
-console.log(sortedStrings); // ["cherry", "banana", "apple"]
+  // Escape regex meta‑chars
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  let pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
+  let flags = 'g' + (caseSensitive ? '' : 'i');
+
+  const regex = new RegExp(pattern, flags);
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
+}
