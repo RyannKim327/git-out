@@ -1,37 +1,41 @@
-/**
- * Selection Sort – stable‑like, O(n²) time, O(1) extra space.
- *
- * @param arr   The array to be sorted (in‑place).
- * @param cmp   Optional comparator: (a, b) => number.
- *              If omitted, numerical ascending order is assumed.
- */
-export function selectionSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): void {
-  const compare = cmp ?? ((a: any, b: any) => a - b);
-
-  for (let i = 0; i < arr.length - 1; i++) {
-    // Assume the smallest is at i.
-    let minIdx = i;
-
-    // Search the rest of the array for a smaller element.
-    for (let j = i + 1; j < arr.length; j++) {
-      if (compare(arr[j], arr[minIdx]) < 0) {
-        minIdx = j;
-      }
-    }
-
-    // If the smallest isn't already in place, swap.
-    if (minIdx !== i) {
-      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-    }
-  }
+export interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
-const nums = [64, 25, 12, 22, 11];
-selectionSort(nums);
-console.log(nums); // → [11, 12, 22, 25, 64]
+export class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
+}
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null
+  let curr = head
 
-const words = ["pear", "apple", "orange"];
-selectionSort(words, (a, b) => a.localeCompare(b));
-console.log(words); // → ["apple", "orange", "pear"]
+  while (curr) {
+    const nxt = curr.next      // keep reference to next node
+    curr.next = prev           // flip the link
+    prev = curr                // advance prev
+    curr = nxt                 // advance curr
+  }
+
+  return prev   // new head
+}
+export function reverseListRec<T>(node: ListNode<T> | null, prev: ListNode<T> | null = null): ListNode<T> | null {
+  if (!node) return prev
+  const nxt = node.next
+  node.next = prev
+  return reverseListRec(nxt, node)
+}
+// build 1 → 2 → 3
+const n3 = new ListNode(3)
+const n2 = new ListNode(2, n3)
+const n1 = new ListNode(1, n2)
+
+// reverse
+const reversed = reverseList(n1)
+
+// print results
+let cur = reversed
+while (cur) {
+  console.log(cur.value)
+  cur = cur.next
+}
+// → 3, 2, 1
