@@ -1,38 +1,48 @@
-// fortune.ts
-import { createInterface } from 'readline';
+// 1️⃣  Define a comparison helper – most of the time you’ll just pass
+//     (a, b) => a < b for ascending order.
+type Comparator<T> = (a: T, b: T) => boolean;
 
-// Set up a simple REPL‑style prompt
-const rl = createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+// 2️⃣  The merge function – it expects two sorted arrays and pulls
+//     the smaller (according to the comparator) element out first.
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+  const result: T[] = [];
+  let i = 0,
+      j = 0;
 
-console.log('🃏 Welcome to the Random Fortune Machine!');
-
-// Ask the user for a number
-rl.question('Enter a number (0–9) and press Enter: ', (answer) => {
-  // Try to parse the input as an integer
-  const num = parseInt(answer.trim(), 10);
-
-  if (isNaN(num) || num < 0 || num > 9) {
-    console.log('❌ That’s not a valid single digit between 0 and 9.');
-  } else {
-    // Pick a fortune from a tiny list
-    const fortunes = [
-      "You'll find a penny on the sidewalk.",
-      "A surprise call will brighten your day.",
-      "Today is a great day to start learning something new.",
-      "You’ll discover a hidden talent for drawing.",
-      "A forgotten receipt will pop up in your inbox.",
-      "A random act of kindness will return to you.",
-      "You’ll taste your favorite food in an unexpected way.",
-      "A new friendship is just a conversation away.",
-      "You’ll hit a traffic light and notice your neighbor’s cat.",
-      "Today you will finally finish that project you’ve shelved."
-    ];
-
-    console.log(`🔮 Fortune for ${num}: ${fortunes[num]}`);
+  while (i < left.length && j < right.length) {
+    if (cmp(left[i], right[j])) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
+    }
   }
 
-  rl.close();
-});
+  // One side still has items – splice the rest onto the result.
+  if (i < left.length) result.push(...left.slice(i));
+  if (j < right.length) result.push(...right.slice(j));
+
+  return result;
+}
+
+// 3️⃣  The recursive mergeSort main function – sorts in place if you
+//     prefer not to allocate the full array during every merge.
+export function mergeSort<T>(arr: T[], cmp: Comparator<T> = (a, b) => a < b): T[] {
+  if (arr.length <= 1) return arr;     // Base case: nothing to do
+
+  const mid = Math.floor(arr.length / 2);
+  const left  = mergeSort(arr.slice(0, mid), cmp);
+  const right = mergeSort(arr.slice(mid),    cmp);
+
+  return merge(left, right, cmp);
+}
+// Numbers, ascending
+const sortedNumbers = mergeSort([8, 3, 5, 1, 9, 2]);
+
+// Strings, descending
+const sortedStrings = mergeSort(
+  ["banana", "apple", "cherry"],
+  (a, b) => a > b
+);
+
+console.log(sortedNumbers); // [1, 2, 3, 5, 8, 9]
+console.log(sortedStrings); // ["cherry", "banana", "apple"]
