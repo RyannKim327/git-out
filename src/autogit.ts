@@ -1,37 +1,30 @@
-// random-joke.ts
-import fetch from 'node-fetch';          // npm i node-fetch@2
-import { Console } from 'console';
-
-interface Joke {
-  id: number;
-  type: string;
-  setup: string;
-  punchline: string;
-}
-
-async function fetchRandomJoke(): Promise<Joke> {
-  const res = await fetch('https://official-joke-api.appspot.com/random_joke');
-
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} – failed to fetch joke`);
+function getLength(str: string): number {
+  let count = 0;
+  for (const _ of str) {
+    count++;
   }
-
-  const data: Joke = await res.json();
-
-  return data;
+  return count;
 }
-
-async function run() {
-  try {
-    const joke = await fetchRandomJoke();
-
-    console.log('😂 Here’s something to make you smile!');
-    console.log(`  ${joke.setup}`);
-    console.log(`   – ${joke.punchline}`);
-  } catch (err: any) {
-    console.error('Oops! Something went wrong:');
-    console.error(err.message ?? err);
+function recurseLen(str: string, idx = 0): number {
+  return idx >= str.length ? idx : recurseLen(str, idx + 1);
+}
+function recurseLen(str: string, idx = 0): number {
+  return str === '' ? idx : recurseLen(str.slice(1), idx + 1);
+}
+function lengthFromArray(str: string): number {
+  return Array.from(str).length; // still uses .length on the array
+}
+function lengthSpread(str: string): number {
+  return [...str].length; // element count after spreading
+}
+function lengthWithMatch(str: string): number {
+  const matches = str.match(/[\s\S]/g); // one match per character, including newlines
+  return matches ? matches.length : 0;
+}
+function whileLoop(str: string): number {
+  let i = 0;
+  while (str.charAt(i) !== '') {
+    i++;
   }
+  return i;
 }
-
-run();
