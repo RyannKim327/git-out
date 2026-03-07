@@ -1,16 +1,45 @@
 /**
- * Returns a whole number between min and max (both inclusive).
+ * Checks if a string is a palindrome.
  *
- * @param min The smallest possible value you want (usually a number ≥ 0)
- * @param max The largest possible value you want
+ * @param txt          The input string to test.
+ * @param options      Optional flags.
+ * @returns            true if the cleaned string reads the same forwards and backwards.
  */
-function randomIntInRange(min: number, max: number): number {
-  // Clamp the inputs so min <= max
-  const [low, high] = min <= max ? [min, max] : [max, min];
+export function isPalindrome(
+  txt: string,
+  options?: {
+    /** When true (default), the check is case‑insensitive. */
+    ignoreCase?: boolean;
+    /** When true (default), only alphanumeric characters are considered. */
+    stripNonAlnum?: boolean;
+    /** When true, normalises Unicode to NFKD form before the checks. */
+    normalize?: boolean;
+  } = {}
+): boolean {
+  const {
+    ignoreCase = true,
+    stripNonAlnum = true,
+    normalize = true,
+  } = options;
 
-  // Math.random() → [0, 1).  Scale it to the desired width,
-  // then shift by the lower bound and round down.
-  return Math.floor(Math.random() * (high - low + 1)) + low;
+  let processed = txt;
+
+  if (normalize) {
+    // This collapse accents, e.g. "café" ➜ "cafe".
+    processed = processed.normalize('NFKD');
+  }
+
+  if (stripNonAlnum) {
+    processed = processed.replace(/[^0-9a-z]+/gi, '');
+  }
+
+  if (ignoreCase) {
+    processed = processed.toLowerCase();
+  }
+
+  const reversed = processed.split('').reverse().join('');
+  return processed === reversed;
 }
-const rand = randomIntInRange(5, 10);
-console.log(rand); // → a whole number 5, 6, 7, 8, 9, or 10
+console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
+console.log(isPalindrome('Madam In Eden, I’m Adam'));          // true
+console.log(isPalindrome('Hello, world!'));                    // false
