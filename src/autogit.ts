@@ -1,28 +1,45 @@
 /**
- * Convert a decimal number to a binary string.
- * 
- * @param n – A non‑negative integer
- * @returns The binary representation as a string
+ * Returns the contiguous segment of `arr` that yields the highest possible sum.
+ *
+ * @param arr - Array of numbers (integer or float)
+ * @returns An object containing:
+ *   `maxSum`  – the total sum of the best segment
+ *   `start`   – the index where the segment begins
+ *   `end`     – the index where the segment ends (inclusive)
  */
-function decimalToBinary(n: number): string {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new Error('Input must be a non‑negative integer.');
+function maxSubarray(arr: number[]) {
+  if (arr.length === 0) throw new Error('Array cannot be empty');
+
+  let bestSum = arr[0];
+  let currentSum = arr[0];
+  let bestStart = 0;
+  let bestEnd = 0;
+  let tempStart = 0;
+
+  for (let i = 1; i < arr.length; i++) {
+    const val = arr[i];
+
+    // Either start a new sub‑array at i or extend the existing one
+    if (currentSum + val < val) {
+      currentSum = val;
+      tempStart = i;       // new potential start
+    } else {
+      currentSum += val;   // keep extending
+    }
+
+    // Update the best segment seen so far
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
+    }
   }
 
-  // Handling zero explicitly – Math.pow(2, 0) is 1 but we still want "0"
-  if (n === 0) return '0';
-
-  let binary = '';
-  let current = n;
-
-  while (current > 0) {
-    // Prepend the remainder (0 or 1) to the binary string
-    binary = (current % 2) + binary;
-    current = Math.floor(current / 2);
-  }
-
-  return binary;
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-console.log(decimalToBinary(10)); // "1010"
-console.log(decimalToBinary(255)); // "11111111"
-console.log(decimalToBinary(0)); // "0"
+const data = [-2, -3, 4, -1, -2, 1, 5, -3];
+const result = maxSubarray(data);
+console.log(result);
+// Expected output:
+// { maxSum: 7, start: 2, end: 6 }
+// (segment [4, -1, -2, 1, 5] sums to 7)
