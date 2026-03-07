@@ -1,39 +1,38 @@
-class ListNode<T> {
-    constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-    if (!head) return false;
+/**
+ * Finds the majority element in an array (appears > n/2 times).
+ * If no majority exists, undefined is returned.
+ *
+ * @param arr   - Array of comparable values (number, string ...).
+ * @returns     - The majority element or undefined.
+ */
+export function majorityElement<T extends number | string | symbol>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
 
-    let slow: ListNode<T> | null = head;
-    let fast: ListNode<T> | null = head;
+  // Boyer‑Moore majority vote algorithm
+  let candidate: T | undefined = arr[0];
+  let count = 1;
 
-    while (fast !== null && fast.next !== null) {
-        slow = slow!.next;           // move 1 step
-        fast = fast.next.next;       // move 2 steps
-
-        if (slow === fast) {         // same node → cycle
-            return true;
-        }
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === candidate) {
+      count++;
+    } else {
+      count--;
+      if (count === 0) {
+        candidate = arr[i];
+        count = 1;
+      }
     }
-    return false;                    // fast reached end → no cycle
-}
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-    const visited = new Set<ListNode<T>>();
+  }
 
-    let current: ListNode<T> | null = head;
-    while (current !== null) {
-        if (visited.has(current)) return true; // already seen
-        visited.add(current);
-        current = current.next;
-    }
-    return false;
-}
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b;  // 1 → 2 → 3
-b.next = c;
-c.next = a;  // cycle back to 1
+  // Verify that candidate really is the majority
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
+  }
 
-console.log(hasCycle(a));        // → true
-console.log(hasCycleWithSet(a)); // → true
+  return count > Math.floor(arr.length / 2) ? candidate : undefined;
+}
+majorityElement([1, 2, 3, 2, 2]);      // → 2
+majorityElement(['a', 'b', 'a', 'c']); // → undefined
+majorityElement([5, 5, 5, 5]);          // → 5
+majorityElement([]);                   // → undefined
