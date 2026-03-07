@@ -1,67 +1,41 @@
-class Graph<T> {
-  private adjacency = new Map<T, Set<T>>();
+/**
+ * Random‑pivot quick sort.
+ *
+ * @param arr   The array to sort (in‑place).
+ * @returns     The sorted array (the same reference as `arr`).
+ */
+export function quickSortRandom<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
+  if (arr.length <= 1)
+    return arr;
 
-  addVertex(v: T) {
-    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
+  // So we can provide a custom comparison, but default is the usual "<".
+  const cmp = compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+  // Pick a random index as pivot
+  const pivotIndex = Math.floor(Math.random() * arr.length);
+  const pivotValue = arr[pivotIndex];
+
+  // Partition into two new arrays
+  const lows: T[] = [];
+  const highs: T[] = [];
+  const pivots: T[] = [];
+
+  for (let i = 0; i < arr.length; i++) {
+    const value = arr[i];
+    const comparison = cmp(value, pivotValue);
+    if (comparison < 0)    lows.push(value);
+    else if (comparison > 0) highs.push(value);
+    else                    pivots.push(value);   // equals pivot
   }
 
-  addEdge(v: T, w: T, directed = false) {
-    this.addVertex(v);
-    this.addVertex(w);
-    this.adjacency.get(v)!.add(w);
-    if (!directed) this.adjacency.get(w)!.add(v);
-  }
-
-  neighbours(v: T): Iterable<T> {
-    return this.adjacency.get(v) || [];
-  }
-
-  vertices(): Iterable<T> {
-    return this.adjacency.keys();
-  }
+  // Recurse and concatenate
+  return quickSortRandom(lows, cmp)
+          .concat(pivots, quickSortRandom(highs, cmp));
 }
-function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
-  const visited = new Set<T>();
-  const result: T[] = [];
 
-  function visit(v: T) {
-    if (visited.has(v)) return;
-    visited.add(v);
-    result.push(v);
+// ---- Demo ---------------------------------------------------------
 
-    for (const n of graph.neighbours(v)) visit(n);
-  }
-
-  visit(start);
-  return result;
-}
-function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
-  const stack: T[] = [start];
-  const visited = new Set<T>();
-  const result: T[] = [];
-
-  while (stack.length) {
-    const v = stack.pop()!;
-    if (visited.has(v)) continue;
-
-    visited.add(v);
-    result.push(v);
-
-    // Push neighbours in reverse order if you want the same order
-    // as the recursive version (depends on adjacency list ordering).
-    for (const n of graph.neighbours(v)) {
-      if (!visited.has(n)) stack.push(n);
-    }
-  }
-
-  return result;
-}
-const g = new Graph<string>();
-g.addEdge('A', 'B');
-g.addEdge('A', 'C');
-g.addEdge('B', 'D');
-g.addEdge('C', 'D');
-g.addEdge('D', 'E');
-
-console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
-console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
+const unsorted = [7, 2, 9, 4, 1, 5, 3, 8, 6];
+console.log('original: ', unsorted);
+const sorted = quickSortRandom(unsorted);
+console.log('sorted:   ', sorted);
