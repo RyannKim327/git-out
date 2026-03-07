@@ -1,9 +1,13 @@
-function reverseStr(str: string): string {
-  // 1️⃣  Split the string into an array of characters
-  // 2️⃣  Reverse the array in‑place
-  // 3️⃣  Join the array back into a string
-  return str.split('').reverse().join('');
-}
+// 1️⃣  Define the array (TypeScript knows it’s numbers)
+const nums: number[] = [42, 7, 13, 99, 29];
 
-// Example
-console.log(reverseStr('hello')); // → "olleh"
+// 2️⃣  Sort in place – ascending
+nums.sort((a, b) => a - b);   // -> [7, 13, 29, 42, 99]
+console.log('Ascending:', nums);
+
+// 3️⃣  If you want a new sorted array instead, copy first
+const ascending = [...nums].sort((a, b) => a - b);
+
+// 4️⃣  Descending order
+const descending = nums.slice().sort((a, b) => b - a); // -> [99, 42, 29, 13, 7]
+console.log('Descending:', descending);
