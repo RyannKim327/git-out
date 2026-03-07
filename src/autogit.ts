@@ -1,32 +1,75 @@
-// largestPrimeFactor.ts
-export function largestPrimeFactor(n: number): number | null {
-    if (n < 2) return null;          // No prime factor for 0, 1 or negatives
+/* --------------------------------------------------------
+   Fibonacci Search – TypeScript version
+   -------------------------------------------------------- */
 
-    let largest = 0;
+type Comparator<T> = (a: T, b: T) => number;
 
-    // Handle factor 2 first – it’s the only even prime
-    while (n % 2 === 0) {
-        largest = 2;
-        n = Math.floor(n / 2);
+/**
+ * Searches a sorted array using the Fibonacci search technique.
+ *
+ * @param arr       The sorted array to search
+ * @param key       The value we’re looking for
+ * @param cmp       Optional comparator – defaults to numeric comparison
+ * @returns The index of `key` in `arr`, or -1 if not found
+ */
+export function fibonacciSearch<T>(
+  arr: readonly T[],
+  key: T,
+  cmp: Comparator<T> = (a, b) => a! < b! ? -1 : (a! > b! ? 1 : 0)
+): number {
+  const n = arr.length;
+  if (n === 0) return -1;
+
+  /* ---------- build the smallest Fibonacci number ≥ n ------------- */
+  let fibMm2 = 0;            // (m‑2)’th Fibonacci
+  let fibMm1 = 1;            // (m‑1)’th Fibonacci
+  let fibM   = fibMm2 + fibMm1; // m’th Fibonacci
+
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
+  }
+
+  /* ---------- we now have a Fibonacci number >= array length ---------- */
+  let offset = -1; // Marks the eliminated range from front
+
+  while (fibM > 1) {
+    // Keep fibMm2 ≥ 0
+    // Index to be checked – clamp to array bounds
+    const i = Math.min(offset + fibMm2, n - 1);
+
+    const comparison = cmp(arr[i], key);
+
+    if (comparison < 0) {
+      /* key is after arr[i] */
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else if (comparison > 0) {
+      /* key is before arr[i] */
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
+    } else {
+      return i;                // Found at index i
     }
+  }
 
-    // Now n is odd.  Test odd divisors from 3 upward.
-    // Only need to go up to sqrt(n); beyond that any remaining n is prime.
-    for (let d = 3; d * d <= n; d += 2) {
-        while (n % d === 0) {
-            largest = d;
-            n = Math.floor(n / d);
-        }
-    }
+  /* ---------- check the last element -------------------------------- */
+  if (fibMm1 && offset + 1 < n && cmp(arr[offset + 1], key) === 0) {
+    return offset + 1;
+  }
 
-    // If after the loop n > 1 it means n itself is prime and larger
-    // than any divisor we removed.
-    if (n > 1) largest = n;
-
-    return largest;
+  return -1; // Not found
 }
-console.log(largestPrimeFactor(210)); // 7
-console.log(largestPrimeFactor(2));   // 2
-console.log(largestPrimeFactor(17));  // 17
-console.log(largestPrimeFactor(18));  // 3
-console.log(largestPrimeFactor(0));   // null
+
+/* --------------------------------------------------------
+   Example usage
+   -------------------------------------------------------- */
+
+const nums = [3, 9, 15, 21, 27, 31, 38, 54, 72, 95];
+
+console.log(fibonacciSearch(nums, 54)); // → 7
+console.log(fibonacciSearch(nums, 10)); // → -1
