@@ -1,67 +1,50 @@
+export interface TreeNode {
+  val: number;                // or any type you like
+  left?: TreeNode | null;     // child nodes (undefined is treated as null)
+  right?: TreeNode | null;
+}
+const tree: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
+  right: { val: 3, right: { val: 6 }}
+};
 /**
- * A generic insertion‑sort implementation.
+ * Returns the diameter (number of edges on the longest path) of a binary tree.
  *
- * @param arr The array to sort (in‑place).
- * @param cmp Optional comparison callback. It should return:
- *            < 0 if a < b
- *            = 0 if a === b
- *            > 0 if a > b
- *
- * @returns The same array reference, now sorted.
+ * @param root root node of the tree
+ * @returns diameter in edges
  */
-export function insertionSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  // If no custom comparator is supplied, use the default < / >.
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore - allow primitive coercion for < and > operators
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-      };
+export function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;           // will hold the best diameter found
 
-  // Iterate from the second element to the end.
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+  /**
+   * Post‑order DFS that returns the height of the subtree.
+   * While unwinding, we update `maxDiameter`.
+   */
+  function dfs(node: TreeNode | null): number {
+    if (!node) return -1;       // height of null is -1 so that leaf node height = 0
 
-    // Shift larger elements one position to the right.
-    while (j >= 0 && compare(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
+    const leftHeight  = dfs(node.left)  + 1;
+    const rightHeight = dfs(node.right) + 1;
 
-    // Place key in its correct position.
-    arr[j + 1] = key;
+    // The path that goes from the leftmost leaf of this subtree
+    // through this node to the rightmost leaf gives a candidate
+    // diameter.  `+1` is not needed for edges because heights already
+    // count edges from node to leaf.
+    const candidate = leftHeight + rightHeight;
+    if (candidate > maxDiameter) maxDiameter = candidate;
+
+    // Return height of this node for the parent call
+    return Math.max(leftHeight, rightHeight);
   }
 
-  return arr;
+  dfs(root);
+  return maxDiameter;
 }
-const numbers = [5, 3, 8, 1, 4];
-insertionSort(numbers);
-console.log(numbers); // [1, 3, 4, 5, 8]
-const names = ["Zoe", "Andrew", "bella", "Clara"];
-insertionSort(names);
-console.log(names); // ["Andrew", "Clara", "bella", "Zoe"]
-interface Item {
-  id: number;
-  name: string;
-}
+const tree: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
+  right: { val: 3, right: { val: 6 }}
+};
 
-const items: Item[] = [
-  { id: 3, name: "apple" },
-  { id: 1, name: "orange" },
-  { id: 2, name: "banana" },
-];
-
-insertionSort(items, (a, b) => a.id - b.id);
-console.log(items);
-// [{ id: 1, name: "orange" }, { id: 2, name: "banana" }, { id: 3, name: "apple" }]
-export function sorted<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-  const copy = [...arr];
-  return insertionSort(copy, cmp);
-}
+console.log(diameterOfBinaryTree(tree));   // → 3
