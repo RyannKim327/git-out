@@ -1,50 +1,111 @@
-// A node of a singly linked list
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+// Edge between two nodes
+interface Edge {
+  to: string;      // target node id
+  weight: number;  // edge weight
 }
 
-// Helper to build a list from an array (optional)
-function buildList<T>(values: T[]): ListNode<T> | null {
-  if (values.length === 0) return null
-  const head = new ListNode(values[0])
-  let cur = head
-  for (let i = 1; i < values.length; i++) {
-    cur.next = new ListNode(values[i])
-    cur = cur.next
+// Graph stored as an adjacency list
+type Graph = Record<string, Edge[]>;
+
+// Simple min‑heap priority queue
+class MinHeap<T> {
+  private content: { key: number; value: T }[] = [];
+
+  // Insert a new element
+  push(key: number, value: T): void {
+    const node = { key, value };
+    this.content.push(node);
+    this.bubbleUp(this.content.length - 1);
   }
-  return head
+
+  // Remove the element with the smallest key
+  pop(): T | undefined {
+    if (this.content.length === 0) return undefined;
+    const root = this.content[0].value;
+
+    const last = this.content.pop()!;
+    if (this.content.length) {
+      this.content[0] = last;
+      this.bubbleDown(0);
+    }
+    return root;
+  }
+
+  get size(): number { return this.content.length; }
+
+  private bubbleUp(idx: number): void {
+    while (idx > 0) {
+      const parent = Math.floor((idx - 1) / 2);
+      if (this.content[parent].key <= this.content[idx].key) break;
+      [this.content[parent], this.content[idx]] = [this.content[idx], this.content[parent]];
+      idx = parent;
+    }
+  }
+
+  private bubbleDown(idx: number): void {
+    const length = this.content.length;
+    while (true) {
+      const left = 2 * idx + 1;
+      const right = 2 * idx + 2;
+      let smallest = idx;
+
+      if (left < length && this.content[left].key < this.content[smallest].key) {
+        smallest = left;
+      }
+      if (right < length && this.content[right].key < this.content[smallest].key) {
+        smallest = right;
+      }
+      if (smallest === idx) break;
+
+      [this.content[idx], this.content[smallest]] = [this.content[smallest], this.content[idx]];
+      idx = smallest;
+    }
+  }
 }
 /**
- * Returns the middle ListNode of a singly linked list.
- * If the list has an even number of nodes, the *second* middle one is returned
- * (you can customize this if you prefer the first one).
+ * Computes the shortest‑path distances from `src` to every node in `graph`.
+ * @param graph     adjacency list
+ * @param src       origin node id
+ * @returns        a map of node → distance; unreachable nodes have Infinity
  */
-function getMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null
+function dijkstra(graph: Graph, src: string): Record<string, number> {
+  const distances: Record<string, number> = {};
+  const visited = new Set<string>();
 
-  let slow: ListNode<T> | null = head
-  let fast: ListNode<T> | null = head
+  // initialise all distances to Infinity
+  for (const node in graph) distances[node] = Infinity;
+  distances[src] = 0;
 
-  // Move fast twice as fast as slow
-  while (fast && fast.next) {
-    slow = slow!.next            // safe because slow ≠ null in loop
-    fast = fast.next.next
+  const pq = new MinHeap<string>();
+  pq.push(0, src);
+
+  while (pq.size) {
+    const u = pq.pop()!;                // node with lowest known distance
+    const d = distances[u];
+
+    if (visited.has(u)) continue; // we may have inserted u multiple times
+    visited.add(u);
+
+    for (const { to, weight } of graph[u]) {
+      const alt = d + weight;
+      if (alt < distances[to]) {
+        distances[to] = alt;
+        pq.push(alt, to);
+      }
+    }
   }
 
-  return slow
+  return distances;
 }
-const list = buildList([1, 2, 3, 4, 5])          // Odd‑length list
-console.log(getMiddle(list)?.val)                // → 3
+const graph: Graph = {
+  A: [{ to: 'B', weight: 5 }, { to: 'C', weight: 2 }],
+  B: [{ to: 'C', weight: 1 }, { to: 'D', weight: 3 }],
+  C: [{ to: 'B', weight: 4 }, { to: 'D', weight: 6 }],
+  D: [],
+};
 
-const list2 = buildList([10, 20, 30, 40])        // Even‑length list
-console.log(getMiddle(list2)?.val)               // → 30  (second middle)
-function getMiddleViaArray<T>(head: ListNode<T> | null): ListNode<T> | null {
-  const values: ListNode<T>[] = []
-  let cur = head
-  while (cur) {
-    values.push(cur)
-    cur = cur.next
-  }
-  const midIndex = Math.floor(values.length / 2)
-  return values[midIndex] ?? null
-}
+const result = dijkstra(graph, 'A');
+console.log(result);
+/* prints something like:
+{ A: 0, B: 4, C: 2, D: 7 }
+*/
