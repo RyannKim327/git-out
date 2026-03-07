@@ -1,92 +1,59 @@
-if a[j] < a[i] → candidate to extend the sequence ending at j
 /**
- * Returns the LIS of the input array.
- * O(n²) time, O(n) extra space.
+ * Return the index of the first occurrence of `pattern` inside `text`,
+ * or -1 if the pattern is absent.
  */
-function longestIncreasingSubsequenceDP(arr: number[]): number[] {
-  const n = arr.length;
-  if (n === 0) return [];
+export function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0; // trivially found at start
 
-  // `len[i]` – length of LIS ending at i
-  const len = new Array(n).fill(1);
-  // `prev[i]` – the previous index in the LIS that ends at i
-  const prev = new Array(n).fill(-1);
+  const lps = computeLPSArray(pattern); // longest‑prefix‑suffix table
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-  let bestIdx = 0;          // index of the overall best LIS
-
-  for (let i = 1; i < n; i++) {
-    for (let j = 0; j < i; j++) {
-      if (arr[j] < arr[i] && len[j] + 1 > len[i]) {
-        len[i] = len[j] + 1;
-        prev[i] = j;
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) { // whole pattern matched
+        return i - j; // match start index
       }
-    }
-    if (len[i] > len[bestIdx]) bestIdx = i;
-  }
-
-  /* ---------- reconstruct the sequence ---------- */
-  const result: number[] = [];
-  for (let k = bestIdx; k !== -1; k = prev[k]) {
-    result.push(arr[k]);
-  }
-  return result.reverse();
-}
-const source = [3, 4, -1, 0, 6, 2, 3];
-console.log(longestIncreasingSubsequenceDP(source));
-// → [ -1, 0, 2, 3 ]   (length 4)
-/**
- * Returns the LIS of the input array.
- * O(n log n) time, O(n) space.
- */
-function longestIncreasingSubsequenceFast(arr: number[]): number[] {
-  const n = arr.length;
-  if (n === 0) return [];
-
-  // `tails[len]` – smallest tail value of an inc. subsequence of length len+1
-  const tails: number[] = [];
-  // `prevIdx[i]` – index of the predecessor element for arr[i] in the LIS
-  const prevIdx: number[] = new Array(n).fill(-1);
-  // `posInTails[i]` – position in tails where arr[i] ends up
-  const posInTails: number[] = new Array(n);
-
-  for (let i = 0; i < n; i++) {
-    const x = arr[i];
-
-    // binary search: find first tails[idx] ≥ x
-    let left = 0, right = tails.length;
-    while (left < right) {
-      const mid = (left + right) >> 1;
-      if (tails[mid] < x) left = mid + 1;
-      else right = mid;
-    }
-
-    if (left === 0) {
-      // new smallest element
-      prevIdx[i] = -1;
+    } else if (j > 0) {
+      // mismatch after j matches – skip ahead by lps[j‑1]
+      j = lps[j - 1];
     } else {
-      // predecessor is the element that ended the subsequence of length left
-      prevIdx[i] = posInTails[left - 1];
-    }
-
-    // update tails & helper arrays
-    if (left === tails.length) {
-      tails.push(x);
-      posInTails[left] = i;
-    } else if (x < tails[left]) {
-      tails[left] = x;
-      posInTails[left] = i;
+      // mismatch at start of pattern
+      i++;
     }
   }
 
-  /* ---------- reconstruct the sequence ---------- */
-  const result: number[] = [];
-  let k = posInTails[tails.length - 1];
-  while (k !== -1) {
-    result.push(arr[k]);
-    k = prevIdx[k];
-  }
-  return result.reverse();
+  return -1; // no match
 }
-const arr = [10, 22, 9, 33, 21, 50, 41, 60, 80];
-console.log(longestIncreasingSubsequenceFast(arr));
-// → [10, 22, 33, 50, 60, 80]  (length 6)
+
+/**
+ * Pre‑process the pattern to build the “longest prefix that is also a suffix”
+ * (LPS) array. lps[i] = the length of the longest proper prefix of
+ * pattern[0..i] that is also a suffix of pattern[0..i].
+ */
+function computeLPSArray(pattern: string): number[] {
+  const lps: number[] = Array(pattern.length).fill(0);
+  let len = 0;   // length of previous longest prefix suffix
+  let i = 1;     // lps[0] is always 0
+
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else if (len !== 0) {
+      // use the previous lps value to avoid re‑checking
+      len = lps[len - 1];
+    } else {
+      lps[i] = 0;
+      i++;
+    }
+  }
+
+  return lps;
+}
+console.log(kmpSearch("ababcabcababc", "abc"));   // 2
+console.log(kmpSearch("ababcabcababc", "abcd"));  // -1
+console.log(kmpSearch("aaaaa", "aaa"));           // 0
