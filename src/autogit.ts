@@ -1,13 +1,57 @@
-// 1️⃣  Define the array (TypeScript knows it’s numbers)
-const nums: number[] = [42, 7, 13, 99, 29];
+text:   abcdefghijk
+        ‖~~~~~~~~~~
+pattern:   def
+function buildShiftTable(pattern: string): Map<string, number> {
+  const table = new Map<string, number>();
+  const m = pattern.length;
 
-// 2️⃣  Sort in place – ascending
-nums.sort((a, b) => a - b);   // -> [7, 13, 29, 42, 99]
-console.log('Ascending:', nums);
+  // For all chars except the last one
+  for (let i = 0; i < m - 1; i++) {
+    table.set(pattern[i], m - 1 - i);
+  }
+  return table;
+}
+function boyerMooreHorspool(pattern: string, text: string): number | null {
+  const m = pattern.length;
+  const n = text.length;
 
-// 3️⃣  If you want a new sorted array instead, copy first
-const ascending = [...nums].sort((a, b) => a - b);
+  if (m === 0) return 0;          // Empty pattern matches at start
+  if (m > n) return null;         // Impossible to find
 
-// 4️⃣  Descending order
-const descending = nums.slice().sort((a, b) => b - a); // -> [99, 42, 29, 13, 7]
-console.log('Descending:', descending);
+  const shiftTable = buildShiftTable(pattern);
+  const defaultShift = m;
+
+  let i = 0; // Current alignment of pattern in text
+
+  while (i <= n - m) {
+    let j = m - 1;
+
+    // Compare from right to left
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      // Full match
+      return i;
+    }
+
+    // Mismatch: decide how far to shift
+    const mismatchedChar = text[i + j];
+    const shift = shiftTable.get(mismatchedChar) ?? defaultShift;
+
+    i += shift;
+  }
+
+  return null; // No match found
+}
+const sampleText = "The quick brown fox jumps over the lazy dog. The fox was quick.";
+const samplePattern = "quick";
+
+const matchIdx = boyerMooreHorspool(samplePattern, sampleText);
+
+if (matchIdx !== null) {
+  console.log(`Found at index ${matchIdx}`);
+} else {
+  console.log("No match");
+}
