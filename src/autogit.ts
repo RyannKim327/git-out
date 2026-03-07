@@ -1,50 +1,87 @@
-export interface TreeNode {
-  val: number;                // or any type you like
-  left?: TreeNode | null;     // child nodes (undefined is treated as null)
-  right?: TreeNode | null;
-}
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
 /**
- * Returns the diameter (number of edges on the longest path) of a binary tree.
- *
- * @param root root node of the tree
- * @returns diameter in edges
+ * A directed graph stored as an adjacency list.
+ * Each key is a node identifier, the value is an array of successor node ids.
  */
-export function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;           // will hold the best diameter found
+interface Graph {
+  [node: string]: string[];
+}
 
-  /**
-   * Post‑order DFS that returns the height of the subtree.
-   * While unwinding, we update `maxDiameter`.
-   */
-  function dfs(node: TreeNode | null): number {
-    if (!node) return -1;       // height of null is -1 so that leaf node height = 0
+/**
+ * Result of the algorithm – an array of SCCs.
+ * Each SCC is an array of node ids that belong together.
+ */
+type SCC = string[][];
 
-    const leftHeight  = dfs(node.left)  + 1;
-    const rightHeight = dfs(node.right) + 1;
+/**
+ * Tarjan’s algorithm for SCCs.
+ *
+ * @param g The graph to analyse.
+ * @returns An array of strongly connected components.
+ */
+function tarjanSCC(g: Graph): SCC {
+  const indexMap: Record<string, number> = {};   // node → its index
+  const lowLink: Record<string, number> = {};    // node → low‑link value
+  const onStack: Set<string> = new Set();        // nodes currently in the stack
+  const stack: string[] = [];                    // stack of nodes
+  const sccs: SCC = [];
 
-    // The path that goes from the leftmost leaf of this subtree
-    // through this node to the rightmost leaf gives a candidate
-    // diameter.  `+1` is not needed for edges because heights already
-    // count edges from node to leaf.
-    const candidate = leftHeight + rightHeight;
-    if (candidate > maxDiameter) maxDiameter = candidate;
+  let currentIndex = 0;
 
-    // Return height of this node for the parent call
-    return Math.max(leftHeight, rightHeight);
+  const strongConnect = (v: string) => {
+    indexMap[v] = currentIndex;
+    lowLink[v] = currentIndex;
+    currentIndex += 1;
+    stack.push(v);
+    onStack.add(v);
+
+    // Explore every outgoing edge v → w
+    for (const w of g[v] ?? []) {
+      if (!(w in indexMap)) {
+        // Recursively visit w
+        strongConnect(w);
+        lowLink[v] = Math.min(lowLink[v], lowLink[w]);
+      } else if (onStack.has(w)) {
+        // w is in the current SCC frontier
+        lowLink[v] = Math.min(lowLink[v], indexMap[w]);
+      }
+    }
+
+    // If v is the root of an SCC
+    if (lowLink[v] === indexMap[v]) {
+      const component: string[] = [];
+      let w: string | undefined;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
+    }
+  };
+
+  // Kick off a DFS from every unvisited node.
+  for (const v in g) {
+    if (!(v in indexMap)) {
+      strongConnect(v);
+    }
   }
 
-  dfs(root);
-  return maxDiameter;
+  return sccs;
 }
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
+const example: Graph = {
+  a: ['b'],
+  b: ['c', 'e', 'f'],
+  c: ['d', 'g'],
+  d: ['c', 'h'],
+  e: ['a', 'f'],
+  f: ['g'],
+  g: ['f'],
+  h: ['d', 'g', 'i'],
+  i: ['h', 'k', 'l'],
+  j: ['k'],
+  k: ['i', 'l'],
+  l: ['k']
 };
 
-console.log(diameterOfBinaryTree(tree));   // → 3
+console.log(tarjanSCC(example));
+// → [ [ 'g', 'f' ], [ 'c', 'd', 'h' ], [ 'i', 'l', 'k' ], [ 'a', 'b', 'e' ], [ 'j' ] ]
