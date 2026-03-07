@@ -1,30 +1,13 @@
-/**
- * Returns the second largest value in an array.
- * Uses a single pass – O(n) time, O(1) extra space.
- *
- * @param nums – numeric array
- * @returns second largest number, or `undefined` if it can’t be determined
- */
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined;
+// 1️⃣  Define the array (TypeScript knows it’s numbers)
+const nums: number[] = [42, 7, 13, 99, 29];
 
-  let largest = -Infinity;
-  let second = -Infinity;
+// 2️⃣  Sort in place – ascending
+nums.sort((a, b) => a - b);   // -> [7, 13, 29, 42, 99]
+console.log('Ascending:', nums);
 
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;   // old largest becomes second
-      largest = n;
-    } else if (n > second && n !== largest) {
-      // n is between largest and second – update second
-      second = n;
-    }
-  }
+// 3️⃣  If you want a new sorted array instead, copy first
+const ascending = [...nums].sort((a, b) => a - b);
 
-  return second === -Infinity ? undefined : second;
-}
-
-// quick demo
-console.log(secondLargest([3, 1, 4, 1, 5, 9, 2, 6, 5])); // 8
-console.log(secondLargest([42]));                         // undefined
-console.log(secondLargest([7, 7, 7]));                     // undefined – no distinct second value
+// 4️⃣  Descending order
+const descending = nums.slice().sort((a, b) => b - a); // -> [99, 42, 29, 13, 7]
+console.log('Descending:', descending);
