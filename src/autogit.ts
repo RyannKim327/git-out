@@ -1,41 +1,79 @@
-/**
- * Random‑pivot quick sort.
- *
- * @param arr   The array to sort (in‑place).
- * @returns     The sorted array (the same reference as `arr`).
- */
-export function quickSortRandom<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
-  if (arr.length <= 1)
-    return arr;
+// `T` can be any comparable type – string, number, object with an id, etc.
+export function bfs<T>(
+  start: T,
+  graph: Map<T, T[]>,          // adjacency list
+  onVisit?: (node: T) => void // optional per‑node work
+): T[] {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  const order: T[] = [];
 
-  // So we can provide a custom comparison, but default is the usual "<".
-  const cmp = compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  visited.add(start);
 
-  // Pick a random index as pivot
-  const pivotIndex = Math.floor(Math.random() * arr.length);
-  const pivotValue = arr[pivotIndex];
+  while (queue.length) {
+    const node = queue.shift()!;   // node is guaranteed non‑null inside loop
 
-  // Partition into two new arrays
-  const lows: T[] = [];
-  const highs: T[] = [];
-  const pivots: T[] = [];
+    // Optional callback that lets you do something with the node as you visit it
+    if (onVisit) onVisit(node);
 
-  for (let i = 0; i < arr.length; i++) {
-    const value = arr[i];
-    const comparison = cmp(value, pivotValue);
-    if (comparison < 0)    lows.push(value);
-    else if (comparison > 0) highs.push(value);
-    else                    pivots.push(value);   // equals pivot
+    order.push(node);
+
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
   }
 
-  // Recurse and concatenate
-  return quickSortRandom(lows, cmp)
-          .concat(pivots, quickSortRandom(highs, cmp));
+  return order;
 }
+// Example graph (adjacency list)
+const g = new Map<string, string[]>([
+  ['A', ['B', 'C']],
+  ['B', ['D', 'E']],
+  ['C', ['F']],
+  ['D', []],
+  ['E', ['F']],
+  ['F', []]
+]);
 
-// ---- Demo ---------------------------------------------------------
+const order = bfs('A', g);          // ["A", "B", "C", "D", "E", "F"]
 
-const unsorted = [7, 2, 9, 4, 1, 5, 3, 8, 6];
-console.log('original: ', unsorted);
-const sorted = quickSortRandom(unsorted);
-console.log('sorted:   ', sorted);
+console.log('BFS order:', order);
+export function bfsFind<T>(
+  start: T,
+  graph: Map<T, T[]>,
+  goal: T
+): T[] | null {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  visited.add(start);
+
+  while (queue.length) {
+    const node = queue.shift()!;
+
+    if (node === goal) {
+      // Re‑construct the path if you need it – here we just return the node that found it.
+      return [node];
+    }
+
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  return null; // goal not reachable
+}
+// Small graph with a cycle
+const g2 = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [3]],
+  [3, [1, 4]],
+  [4, []]
+]);
+
+console.log(bfs(1, g2)); // [1, 2, 3, 4]
