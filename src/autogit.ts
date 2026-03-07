@@ -1,38 +1,37 @@
-/**
- * Finds the majority element in an array (appears > n/2 times).
- * If no majority exists, undefined is returned.
- *
- * @param arr   - Array of comparable values (number, string ...).
- * @returns     - The majority element or undefined.
- */
-export function majorityElement<T extends number | string | symbol>(arr: T[]): T | undefined {
-  if (arr.length === 0) return undefined;
+// random-joke.ts
+import fetch from 'node-fetch';          // npm i node-fetch@2
+import { Console } from 'console';
 
-  // Boyer‑Moore majority vote algorithm
-  let candidate: T | undefined = arr[0];
-  let count = 1;
-
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] === candidate) {
-      count++;
-    } else {
-      count--;
-      if (count === 0) {
-        candidate = arr[i];
-        count = 1;
-      }
-    }
-  }
-
-  // Verify that candidate really is the majority
-  count = 0;
-  for (const v of arr) {
-    if (v === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : undefined;
+interface Joke {
+  id: number;
+  type: string;
+  setup: string;
+  punchline: string;
 }
-majorityElement([1, 2, 3, 2, 2]);      // → 2
-majorityElement(['a', 'b', 'a', 'c']); // → undefined
-majorityElement([5, 5, 5, 5]);          // → 5
-majorityElement([]);                   // → undefined
+
+async function fetchRandomJoke(): Promise<Joke> {
+  const res = await fetch('https://official-joke-api.appspot.com/random_joke');
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} – failed to fetch joke`);
+  }
+
+  const data: Joke = await res.json();
+
+  return data;
+}
+
+async function run() {
+  try {
+    const joke = await fetchRandomJoke();
+
+    console.log('😂 Here’s something to make you smile!');
+    console.log(`  ${joke.setup}`);
+    console.log(`   – ${joke.punchline}`);
+  } catch (err: any) {
+    console.error('Oops! Something went wrong:');
+    console.error(err.message ?? err);
+  }
+}
+
+run();
