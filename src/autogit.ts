@@ -1,75 +1,48 @@
-/* --------------------------------------------------------
-   Fibonacci Search – TypeScript version
-   -------------------------------------------------------- */
+// 1️⃣  Define a comparison helper – most of the time you’ll just pass
+//     (a, b) => a < b for ascending order.
+type Comparator<T> = (a: T, b: T) => boolean;
 
-type Comparator<T> = (a: T, b: T) => number;
+// 2️⃣  The merge function – it expects two sorted arrays and pulls
+//     the smaller (according to the comparator) element out first.
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+  const result: T[] = [];
+  let i = 0,
+      j = 0;
 
-/**
- * Searches a sorted array using the Fibonacci search technique.
- *
- * @param arr       The sorted array to search
- * @param key       The value we’re looking for
- * @param cmp       Optional comparator – defaults to numeric comparison
- * @returns The index of `key` in `arr`, or -1 if not found
- */
-export function fibonacciSearch<T>(
-  arr: readonly T[],
-  key: T,
-  cmp: Comparator<T> = (a, b) => a! < b! ? -1 : (a! > b! ? 1 : 0)
-): number {
-  const n = arr.length;
-  if (n === 0) return -1;
-
-  /* ---------- build the smallest Fibonacci number ≥ n ------------- */
-  let fibMm2 = 0;            // (m‑2)’th Fibonacci
-  let fibMm1 = 1;            // (m‑1)’th Fibonacci
-  let fibM   = fibMm2 + fibMm1; // m’th Fibonacci
-
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM   = fibMm2 + fibMm1;
-  }
-
-  /* ---------- we now have a Fibonacci number >= array length ---------- */
-  let offset = -1; // Marks the eliminated range from front
-
-  while (fibM > 1) {
-    // Keep fibMm2 ≥ 0
-    // Index to be checked – clamp to array bounds
-    const i = Math.min(offset + fibMm2, n - 1);
-
-    const comparison = cmp(arr[i], key);
-
-    if (comparison < 0) {
-      /* key is after arr[i] */
-      fibM   = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i;
-    } else if (comparison > 0) {
-      /* key is before arr[i] */
-      fibM   = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
+  while (i < left.length && j < right.length) {
+    if (cmp(left[i], right[j])) {
+      result.push(left[i++]);
     } else {
-      return i;                // Found at index i
+      result.push(right[j++]);
     }
   }
 
-  /* ---------- check the last element -------------------------------- */
-  if (fibMm1 && offset + 1 < n && cmp(arr[offset + 1], key) === 0) {
-    return offset + 1;
-  }
+  // One side still has items – splice the rest onto the result.
+  if (i < left.length) result.push(...left.slice(i));
+  if (j < right.length) result.push(...right.slice(j));
 
-  return -1; // Not found
+  return result;
 }
 
-/* --------------------------------------------------------
-   Example usage
-   -------------------------------------------------------- */
+// 3️⃣  The recursive mergeSort main function – sorts in place if you
+//     prefer not to allocate the full array during every merge.
+export function mergeSort<T>(arr: T[], cmp: Comparator<T> = (a, b) => a < b): T[] {
+  if (arr.length <= 1) return arr;     // Base case: nothing to do
 
-const nums = [3, 9, 15, 21, 27, 31, 38, 54, 72, 95];
+  const mid = Math.floor(arr.length / 2);
+  const left  = mergeSort(arr.slice(0, mid), cmp);
+  const right = mergeSort(arr.slice(mid),    cmp);
 
-console.log(fibonacciSearch(nums, 54)); // → 7
-console.log(fibonacciSearch(nums, 10)); // → -1
+  return merge(left, right, cmp);
+}
+// Numbers, ascending
+const sortedNumbers = mergeSort([8, 3, 5, 1, 9, 2]);
+
+// Strings, descending
+const sortedStrings = mergeSort(
+  ["banana", "apple", "cherry"],
+  (a, b) => a > b
+);
+
+console.log(sortedNumbers); // [1, 2, 3, 5, 8, 9]
+console.log(sortedStrings); // ["cherry", "banana", "apple"]
