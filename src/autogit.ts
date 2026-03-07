@@ -1,110 +1,50 @@
-// ──────────────────────────────────────────────────────────
-// 1. Graph representation
-// ──────────────────────────────────────────────────────────
-type Vertex = string | number;
-
-// An adjacency list where each vertex maps to an array of its outgoing neighbours.
-class Graph {
-  private readonly edges: Map<Vertex, Vertex[]> = new Map();
-
-  constructor(edges?: [Vertex, Vertex][]) {
-    if (edges) this.addEdges(edges);
-  }
-
-  /** Adds one or more directed edges to the graph. */
-  addEdges(edges: [Vertex, Vertex][]): void {
-    for (const [from, to] of edges) {
-      if (!this.edges.has(from)) this.edges.set(from, []);
-      this.edges.get(from)!.push(to);
-      // Ensure the destination vertex exists in the map so it shows up in the keys.
-      if (!this.edges.has(to)) this.edges.set(to, []);
-    }
-  }
-
-  /** Returns all vertices in the graph. */
-  vertices(): Vertex[] {
-    return Array.from(this.edges.keys());
-  }
-
-  /** Returns the neighbours of a given vertex. */
-  neighbours(v: Vertex): Vertex[] {
-    return this.edges.get(v) ?? [];
-  }
+export interface TreeNode {
+  val: number;                // or any type you like
+  left?: TreeNode | null;     // child nodes (undefined is treated as null)
+  right?: TreeNode | null;
 }
+const tree: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
+  right: { val: 3, right: { val: 6 }}
+};
+/**
+ * Returns the diameter (number of edges on the longest path) of a binary tree.
+ *
+ * @param root root node of the tree
+ * @returns diameter in edges
+ */
+export function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;           // will hold the best diameter found
 
-// ──────────────────────────────────────────────────────────
-// 2. DFS‑based topological sort
-// ──────────────────────────────────────────────────────────
-function topoSortDFS(g: Graph): Vertex[] | null {
-  const visited = new Set<Vertex>();
-  const temp = new Set<Vertex>();   // vertices currently on recursion stack
-  const order: Vertex[] = [];
+  /**
+   * Post‑order DFS that returns the height of the subtree.
+   * While unwinding, we update `maxDiameter`.
+   */
+  function dfs(node: TreeNode | null): number {
+    if (!node) return -1;       // height of null is -1 so that leaf node height = 0
 
-  const visit = (v: Vertex): boolean => {
-    if (temp.has(v)) return false; // cycle detected
+    const leftHeight  = dfs(node.left)  + 1;
+    const rightHeight = dfs(node.right) + 1;
 
-    if (!visited.has(v)) {
-      temp.add(v);
-      for (const nb of g.neighbours(v)) {
-        if (!visit(nb)) return false;
-      }
-      temp.delete(v);
-      visited.add(v);
-      order.push(v);
-    }
-    return true;
-  };
+    // The path that goes from the leftmost leaf of this subtree
+    // through this node to the rightmost leaf gives a candidate
+    // diameter.  `+1` is not needed for edges because heights already
+    // count edges from node to leaf.
+    const candidate = leftHeight + rightHeight;
+    if (candidate > maxDiameter) maxDiameter = candidate;
 
-  for (const v of g.vertices()) {
-    if (!visit(v)) return null; // if a cycle is found, return null
+    // Return height of this node for the parent call
+    return Math.max(leftHeight, rightHeight);
   }
 
-  return order.reverse(); // reverse to get the correct order
+  dfs(root);
+  return maxDiameter;
 }
+const tree: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
+  right: { val: 3, right: { val: 6 }}
+};
 
-// ──────────────────────────────────────────────────────────
-// 3. Kahn’s algorithm (BFS‑based)
-// ──────────────────────────────────────────────────────────
-function topoSortKahn(g: Graph): Vertex[] | null {
-  // Compute in‑degree of each vertex
-  const inDeg = new Map<Vertex, number>();
-  for (const v of g.vertices()) inDeg.set(v, 0);
-  for (const v of g.vertices()) {
-    for (const nb of g.neighbours(v)) {
-      inDeg.set(nb, (inDeg.get(nb) ?? 0) + 1);
-    }
-  }
-
-  const queue: Vertex[] = [];
-  for (const [v, d] of inDeg) if (d === 0) queue.push(v);
-
-  const order: Vertex[] = [];
-  while (queue.length) {
-    const v = queue.shift()!;
-    order.push(v);
-    for (const nb of g.neighbours(v)) {
-      const d = inDeg.get(nb)! - 1;
-      inDeg.set(nb, d);
-      if (d === 0) queue.push(nb);
-    }
-  }
-
-  if (order.length !== g.vertices().length) return null; // cycle exists
-  return order;
-}
-
-// ──────────────────────────────────────────────────────────
-// 4. Demo / usage
-// ──────────────────────────────────────────────────────────
-const edges: [Vertex, Vertex][] = [
-  ['a', 'd'],
-  ['f', 'b'],
-  ['b', 'd'],
-  ['f', 'a'],
-  ['d', 'c']
-];
-
-const graph = new Graph(edges);
-
-console.log('DFS order:', topoSortDFS(graph));   // legal order or null
-console.log('Kahn order:', topoSortKahn(graph)); // same result
+console.log(diameterOfBinaryTree(tree));   // → 3
