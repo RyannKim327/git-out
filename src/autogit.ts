@@ -1,48 +1,67 @@
-// 1️⃣  Define a comparison helper – most of the time you’ll just pass
-//     (a, b) => a < b for ascending order.
-type Comparator<T> = (a: T, b: T) => boolean;
+class Graph<T> {
+  private adjacency = new Map<T, Set<T>>();
 
-// 2️⃣  The merge function – it expects two sorted arrays and pulls
-//     the smaller (according to the comparator) element out first.
-function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+  addVertex(v: T) {
+    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
+  }
+
+  addEdge(v: T, w: T, directed = false) {
+    this.addVertex(v);
+    this.addVertex(w);
+    this.adjacency.get(v)!.add(w);
+    if (!directed) this.adjacency.get(w)!.add(v);
+  }
+
+  neighbours(v: T): Iterable<T> {
+    return this.adjacency.get(v) || [];
+  }
+
+  vertices(): Iterable<T> {
+    return this.adjacency.keys();
+  }
+}
+function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
+  const visited = new Set<T>();
   const result: T[] = [];
-  let i = 0,
-      j = 0;
 
-  while (i < left.length && j < right.length) {
-    if (cmp(left[i], right[j])) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
+  function visit(v: T) {
+    if (visited.has(v)) return;
+    visited.add(v);
+    result.push(v);
+
+    for (const n of graph.neighbours(v)) visit(n);
+  }
+
+  visit(start);
+  return result;
+}
+function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
+  const stack: T[] = [start];
+  const visited = new Set<T>();
+  const result: T[] = [];
+
+  while (stack.length) {
+    const v = stack.pop()!;
+    if (visited.has(v)) continue;
+
+    visited.add(v);
+    result.push(v);
+
+    // Push neighbours in reverse order if you want the same order
+    // as the recursive version (depends on adjacency list ordering).
+    for (const n of graph.neighbours(v)) {
+      if (!visited.has(n)) stack.push(n);
     }
   }
 
-  // One side still has items – splice the rest onto the result.
-  if (i < left.length) result.push(...left.slice(i));
-  if (j < right.length) result.push(...right.slice(j));
-
   return result;
 }
+const g = new Graph<string>();
+g.addEdge('A', 'B');
+g.addEdge('A', 'C');
+g.addEdge('B', 'D');
+g.addEdge('C', 'D');
+g.addEdge('D', 'E');
 
-// 3️⃣  The recursive mergeSort main function – sorts in place if you
-//     prefer not to allocate the full array during every merge.
-export function mergeSort<T>(arr: T[], cmp: Comparator<T> = (a, b) => a < b): T[] {
-  if (arr.length <= 1) return arr;     // Base case: nothing to do
-
-  const mid = Math.floor(arr.length / 2);
-  const left  = mergeSort(arr.slice(0, mid), cmp);
-  const right = mergeSort(arr.slice(mid),    cmp);
-
-  return merge(left, right, cmp);
-}
-// Numbers, ascending
-const sortedNumbers = mergeSort([8, 3, 5, 1, 9, 2]);
-
-// Strings, descending
-const sortedStrings = mergeSort(
-  ["banana", "apple", "cherry"],
-  (a, b) => a > b
-);
-
-console.log(sortedNumbers); // [1, 2, 3, 5, 8, 9]
-console.log(sortedStrings); // ["cherry", "banana", "apple"]
+console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
+console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
