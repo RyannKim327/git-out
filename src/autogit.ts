@@ -1,50 +1,48 @@
-export interface TreeNode {
-  val: number;                // or any type you like
-  left?: TreeNode | null;     // child nodes (undefined is treated as null)
-  right?: TreeNode | null;
-}
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
-/**
- * Returns the diameter (number of edges on the longest path) of a binary tree.
- *
- * @param root root node of the tree
- * @returns diameter in edges
- */
-export function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;           // will hold the best diameter found
+// 1️⃣  Define a comparison helper – most of the time you’ll just pass
+//     (a, b) => a < b for ascending order.
+type Comparator<T> = (a: T, b: T) => boolean;
 
-  /**
-   * Post‑order DFS that returns the height of the subtree.
-   * While unwinding, we update `maxDiameter`.
-   */
-  function dfs(node: TreeNode | null): number {
-    if (!node) return -1;       // height of null is -1 so that leaf node height = 0
+// 2️⃣  The merge function – it expects two sorted arrays and pulls
+//     the smaller (according to the comparator) element out first.
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+  const result: T[] = [];
+  let i = 0,
+      j = 0;
 
-    const leftHeight  = dfs(node.left)  + 1;
-    const rightHeight = dfs(node.right) + 1;
-
-    // The path that goes from the leftmost leaf of this subtree
-    // through this node to the rightmost leaf gives a candidate
-    // diameter.  `+1` is not needed for edges because heights already
-    // count edges from node to leaf.
-    const candidate = leftHeight + rightHeight;
-    if (candidate > maxDiameter) maxDiameter = candidate;
-
-    // Return height of this node for the parent call
-    return Math.max(leftHeight, rightHeight);
+  while (i < left.length && j < right.length) {
+    if (cmp(left[i], right[j])) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
+    }
   }
 
-  dfs(root);
-  return maxDiameter;
-}
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
+  // One side still has items – splice the rest onto the result.
+  if (i < left.length) result.push(...left.slice(i));
+  if (j < right.length) result.push(...right.slice(j));
 
-console.log(diameterOfBinaryTree(tree));   // → 3
+  return result;
+}
+
+// 3️⃣  The recursive mergeSort main function – sorts in place if you
+//     prefer not to allocate the full array during every merge.
+export function mergeSort<T>(arr: T[], cmp: Comparator<T> = (a, b) => a < b): T[] {
+  if (arr.length <= 1) return arr;     // Base case: nothing to do
+
+  const mid = Math.floor(arr.length / 2);
+  const left  = mergeSort(arr.slice(0, mid), cmp);
+  const right = mergeSort(arr.slice(mid),    cmp);
+
+  return merge(left, right, cmp);
+}
+// Numbers, ascending
+const sortedNumbers = mergeSort([8, 3, 5, 1, 9, 2]);
+
+// Strings, descending
+const sortedStrings = mergeSort(
+  ["banana", "apple", "cherry"],
+  (a, b) => a > b
+);
+
+console.log(sortedNumbers); // [1, 2, 3, 5, 8, 9]
+console.log(sortedStrings); // ["cherry", "banana", "apple"]
