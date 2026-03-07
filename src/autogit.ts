@@ -1,47 +1,41 @@
-function countWordOccurrences(text: string, word: string): number {
-  // Escape any regex meta‑characters in the search word
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * Random‑pivot quick sort.
+ *
+ * @param arr   The array to sort (in‑place).
+ * @returns     The sorted array (the same reference as `arr`).
+ */
+export function quickSortRandom<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
+  if (arr.length <= 1)
+    return arr;
 
-  // \b = word boundary, i = ignore case, g = global (find all)
-  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+  // So we can provide a custom comparison, but default is the usual "<".
+  const cmp = compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
-  // .match() returns an array of all matches, null if none
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
+  // Pick a random index as pivot
+  const pivotIndex = Math.floor(Math.random() * arr.length);
+  const pivotValue = arr[pivotIndex];
+
+  // Partition into two new arrays
+  const lows: T[] = [];
+  const highs: T[] = [];
+  const pivots: T[] = [];
+
+  for (let i = 0; i < arr.length; i++) {
+    const value = arr[i];
+    const comparison = cmp(value, pivotValue);
+    if (comparison < 0)    lows.push(value);
+    else if (comparison > 0) highs.push(value);
+    else                    pivots.push(value);   // equals pivot
+  }
+
+  // Recurse and concatenate
+  return quickSortRandom(lows, cmp)
+          .concat(pivots, quickSortRandom(highs, cmp));
 }
 
-// Usage
-const msg = "The quick brown fox jumps over the lazy fox. Foxes are clever.";
-console.log(countWordOccurrences(msg, "fox")); // → 2 (fox, fox)
-const regex = new RegExp(escaped, 'gi');
-function countSplit(text: string, word: string): number {
-  // Empty string returns 0
-  if (!text) return 0;
-  return text.split(word).length - 1;
-}
-function countWithMatchAll(text: string, word: string): number {
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
-  const allMatches = text.matchAll(regex); // Iterable<{ index: … }>
+// ---- Demo ---------------------------------------------------------
 
-  let count = 0;
-  for (const _ of allMatches) count++;
-  return count;
-}
-export function countOccurrences(
-  text: string,
-  word: string,
-  options?: { caseSensitive?: boolean; wholeWord?: boolean }
-): number {
-  const { caseSensitive = false, wholeWord = true } = options ?? {};
-
-  // Escape regex meta‑chars
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-  let pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
-  let flags = 'g' + (caseSensitive ? '' : 'i');
-
-  const regex = new RegExp(pattern, flags);
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
-}
+const unsorted = [7, 2, 9, 4, 1, 5, 3, 8, 6];
+console.log('original: ', unsorted);
+const sorted = quickSortRandom(unsorted);
+console.log('sorted:   ', sorted);
