@@ -1,59 +1,39 @@
-class ListNode {
-  val: number;
-  next: ListNode | null;
-
-  constructor(val: number, next: ListNode | null = null) {
-    this.val = val;
-    this.next = next;
-  }
+class ListNode<T> {
+    constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-/**
- * Returns the node where listA and listB intersect.
- * If they don't intersect, returns null.
- */
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  if (!headA || !headB) return null;
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+    if (!head) return false;
 
-  let pA: ListNode | null = headA;
-  let pB: ListNode | null = headB;
+    let slow: ListNode<T> | null = head;
+    let fast: ListNode<T> | null = head;
 
-  // Continue until the two pointers either match or both become null.
-  while (pA !== pB) {
-    // Move to the next node; if we're at the end, jump to the other list's head.
-    pA = pA ? pA.next : headB;
-    pB = pB ? pB.next : headA;
-  }
+    while (fast !== null && fast.next !== null) {
+        slow = slow!.next;           // move 1 step
+        fast = fast.next.next;       // move 2 steps
 
-  return pA; // Either the intersection node or null.
+        if (slow === fast) {         // same node → cycle
+            return true;
+        }
+    }
+    return false;                    // fast reached end → no cycle
 }
-// Build two intersecting lists:
-// A: 1 → 3 → 5 → 7 → 9
-// B: 2 → 4 →        → 7 → 9
-//            ^<--- intersection starts here
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+    const visited = new Set<ListNode<T>>();
 
-const common = new ListNode(7, new ListNode(9));
-
-const listA = new ListNode(1, new ListNode(3, new ListNode(5, common)));
-const listB = new ListNode(2, new ListNode(4, common));
-
-const intersection = getIntersectionNode(listA, listB);
-console.log(intersection?.val); // 7
-function getIntersectionNodeHash(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  const nodes = new Set<ListNode>();
-
-  for (let cur = headA; cur; cur = cur.next) {
-    nodes.add(cur);
-  }
-
-  for (let cur = headB; cur; cur = cur.next) {
-    if (nodes.has(cur)) return cur;
-  }
-
-  return null;
+    let current: ListNode<T> | null = head;
+    while (current !== null) {
+        if (visited.has(current)) return true; // already seen
+        visited.add(current);
+        current = current.next;
+    }
+    return false;
 }
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b;  // 1 → 2 → 3
+b.next = c;
+c.next = a;  // cycle back to 1
+
+console.log(hasCycle(a));        // → true
+console.log(hasCycleWithSet(a)); // → true
