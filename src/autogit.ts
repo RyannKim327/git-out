@@ -1,81 +1,45 @@
-//   ┌─── Imports ────────────────────────────────────────────────────────┐
-import { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
+const raw = [1, 2, 2, 3, 4, 4, 5];
 
-//   ┌─── Types ───────────────────────────────────────────────────────────────┐
-interface TodoItem {
-  id: number;
-  title: string;
-  completed: boolean;
-}
+const unique = Array.from(new Set(raw));
+// or: const unique = [...new Set(raw)];
 
-//   ┌─── Async helper ────────────────────────────────────────────────────────┐
-async function fetchTodos(): Promise<TodoItem[]> {
-  const url = 'https://jsonplaceholder.typicode.com/todos?_limit=5';
-
-  // Simulate a "slow" network: optional, just for demo
-  await new Promise(r => setTimeout(r, 800));
-
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`❌ ${response.status} ${response.statusText}`);
-
-  const json = await response.json();
-  // Map to our interface – TypeScript will check types
-  return json.map((x: any) => ({
-    id: x.id,
-    title: x.title,
-    completed: x.completed,
-  }));
-}
-
-//   ┌─── Component that uses the async task ──────────────────────────────────┐
-export default function AsyncExample() {
-  const [todos, setTodos] = useState<TodoItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await fetchTodos();
-      console.log('Fetched:', data);
-      setTodos(data);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Unknown error';
-      console.warn(msg);
-      setError(msg);
-    } finally {
-      setLoading(false);
+console.log(unique); // [1, 2, 3, 4, 5]
+function uniqueInPlace<T>(arr: T[]): void {
+  const seen = new Set<T>();
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (seen.has(arr[i])) {
+      arr.splice(i, 1);          // remove duplicate
+    } else {
+      seen.add(arr[i]);          // record first appearance
     }
-  };
-
-  // Run once on mount
-  useEffect(() => {
-    load();
-  }, []);
-
-  return (
-    <View style={styles.container}>
-      {loading && <ActivityIndicator size="large" />}
-      {error && <Text style={styles.error}>{error}</Text>}
-      {!loading && !error && (
-        <>
-          {todos.map(t => (
-            <Text key={t.id} style={styles.todo}>
-              {t.completed ? '✅' : '🕒'} {t.title}
-            </Text>
-          ))}
-        </>
-      )}
-      <Button title="Reload" onPress={load} disabled={loading} />
-    </View>
-  );
+  }
 }
 
-//   ┌─── Styles ───────────────────────────────────────────────────────────────┐
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center' },
-  todo: { fontSize: 18, marginVertical: 4 },
-  error: { color: 'red', marginBottom: 12 },
-});
+const data = ['a', 'b', 'a', 'c', 'b'];
+uniqueInPlace(data);
+console.log(data); // ['a', 'b', 'c']
+const raw = [1, 2, 3, 2, 4, 1];
+const unique = raw.filter((v, i) => raw.indexOf(v) === i);
+console.log(unique); // [1, 2, 3, 4]
+interface User { id: number; name: string }
+
+const users: User[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 1, name: 'Alice (dup)' }, // duplicate id
+];
+
+const uniqueById = Array.from(
+  users.reduce((map, user) => {
+    if (!map.has(user.id)) map.set(user.id, user);
+    return map;
+  }, new Map<number, User>())
+);
+
+console.log(uniqueById);
+/*
+[
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' }
+]
+*/
