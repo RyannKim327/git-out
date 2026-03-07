@@ -1,101 +1,40 @@
-// A node inside the trie
-class TrieNode {
-  // Map from a character to the next node in the path
-  children: Map<string, TrieNode> = new Map();
+/**
+ * Binary search – recursive.  
+ * @param arr        — sorted array
+ * @param target     — value to find
+ * @param compare    — optional comparison function (a, b) => number
+ *                     returns <0 if a<b, 0 if a==b, >0 if a>b
+ * @returns index of `target` or -1 if not found
+ */
+function binarySearchRec<T>(
+  arr: T[],
+  target: T,
+  compare?: (a: T, b: T) => number
+): number {
+  // Provide a default numeric comparator
+  const cmp = compare ?? ((a: any, b: any) => a - b);
 
-  // Marks the end of a word
-  isEndOfWord: boolean = false;
+  const search = (low: number, high: number): number => {
+    if (low > high) return -1;          // base case: not found
 
-  constructor(public readonly char: string | null = null) {}
+    const mid = Math.floor((low + high) / 2);
+    const cmpResult = cmp(arr[mid], target);
+
+    if (cmpResult === 0) return mid;    // target is at mid
+    if (cmpResult < 0) return search(mid + 1, high); // target is right
+    return search(low, mid - 1);        // target is left
+  };
+
+  return search(0, arr.length - 1);
 }
+// Numbers – no comparator needed
+const nums = [1, 3, 5, 7, 9, 11, 13];
+console.log(binarySearchRec(nums, 7));  // → 3
+console.log(binarySearchRec(nums, 2));  // → -1
 
-// The trie itself
-export class Trie {
-  private root = new TrieNode();
+// Strings – supply a comparator
+const words = ["apple", "banana", "cherry", "date"];
+const stringCmp = (a: string, b: string) => a.localeCompare(b);
 
-  /** Inserts a word into the trie. */
-  insert(word: string): void {
-    if (!word) return;               // ignore empty strings
-    let node = this.root;
-
-    for (const ch of word) {
-      // Grab the child if it already exists; otherwise create a new node
-      let next = node.children.get(ch);
-      if (!next) {
-        next = new TrieNode(ch);
-        node.children.set(ch, next);
-      }
-      node = next;
-    }
-
-    // Mark that a complete word ends here
-    node.isEndOfWord = true;
-  }
-
-  /** Returns true if the word is in the trie. */
-  search(word: string): boolean {
-    if (!word) return false;
-    let node = this.root;
-
-    for (const ch of word) {
-      const next = node.children.get(ch);
-      if (!next) return false;      // path breaks → word absent
-      node = next;
-    }
-
-    return node.isEndOfWord;
-  }
-
-  /** Checks if any word in the trie starts with the given prefix. */
-  startsWith(prefix: string): boolean {
-    if (!prefix) return false;
-    let node = this.root;
-
-    for (const ch of prefix) {
-      const next = node.children.get(ch);
-      if (!next) return false;
-      node = next;
-    }
-
-    return true;
-  }
-
-  /** (Optional) Returns the list of all words in the trie that start with a given prefix. */
-  autocomplete(prefix: string): string[] {
-    const results: string[] = [];
-    let node = this.root;
-
-    // Walk to the node representing the prefix
-    for (const ch of prefix) {
-      const next = node.children.get(ch);
-      if (!next) return results;   // empty list if prefix not present
-      node = next;
-    }
-
-    // Depth‑first walk from that node, collecting words
-    const dfs = (n: TrieNode, acc: string) => {
-      if (n.isEndOfWord) results.push(acc);
-      for (const [ch, child] of n.children.entries()) {
-        dfs(child, acc + ch);
-      }
-    };
-
-    dfs(node, prefix);
-    return results;
-  }
-}
-const trie = new Trie();
-
-trie.insert('cat');
-trie.insert('car');
-trie.insert('cart');
-trie.insert('dog');
-
-console.log(trie.search('cat'));      // true
-console.log(trie.search('cab'));      // false
-
-console.log(trie.startsWith('ca'));   // true
-console.log(trie.startsWith('do'));   // true
-console.log(trie.startsWith('droll'));// false
-
-console.log(trie.autocomplete('ca')); // ['cat', 'car', 'cart']
+console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
+console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
