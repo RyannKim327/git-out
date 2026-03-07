@@ -1,48 +1,47 @@
-// 1️⃣  Define a comparison helper – most of the time you’ll just pass
-//     (a, b) => a < b for ascending order.
-type Comparator<T> = (a: T, b: T) => boolean;
+function removeValue<T>(arr: T[], value: T): T[] {
+  return arr.filter((el) => el !== value);
+}
 
-// 2️⃣  The merge function – it expects two sorted arrays and pulls
-//     the smaller (according to the comparator) element out first.
-function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
-  const result: T[] = [];
-  let i = 0,
-      j = 0;
+// Example
+const numbers = [1, 2, 3, 4, 5];
+const withoutThree = removeValue(numbers, 3);
+console.log(withoutThree); // [1, 2, 4, 5]
+function removeAtIndex<T>(arr: T[], index: number): void {
+  if (index >= 0 && index < arr.length) {
+    arr.splice(index, 1); // splice mutates the array
+  }
+}
 
-  while (i < left.length && j < right.length) {
-    if (cmp(left[i], right[j])) {
-      result.push(left[i++]);
+// Example
+const letters = ['a', 'b', 'c', 'd'];
+removeAtIndex(letters, 2);
+console.log(letters); // ['a', 'b', 'd']
+function removeIf<T>(arr: T[], predicate: (el: T) => boolean): T[] {
+  return arr.filter(el => !predicate(el));
+}
+
+// Example: remove all even numbers
+const evensGone = removeIf(numbers, n => n % 2 === 0);
+console.log(evensGone); // [1, 3, 5]
+type User = { id: number; name: string };
+const users: User[] = [
+  { id: 1, name: 'Ada' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Cal' },
+];
+
+function removeById(arr: User[], id: number): User[] {
+  return arr.filter(u => u.id !== id);
+}
+
+const afterRemoval = removeById(users, 2);
+console.log(afterRemoval); // keeps Bob out
+function removeInPlace<T>(arr: T[], predicate: (el: T) => boolean): void {
+  for (let i = 0; i < arr.length; ) {
+    if (predicate(arr[i])) {
+      arr.splice(i, 1); // or use arr.splice(i--, 1) if you want to keep index logic simple
     } else {
-      result.push(right[j++]);
+      i++;
     }
   }
-
-  // One side still has items – splice the rest onto the result.
-  if (i < left.length) result.push(...left.slice(i));
-  if (j < right.length) result.push(...right.slice(j));
-
-  return result;
 }
-
-// 3️⃣  The recursive mergeSort main function – sorts in place if you
-//     prefer not to allocate the full array during every merge.
-export function mergeSort<T>(arr: T[], cmp: Comparator<T> = (a, b) => a < b): T[] {
-  if (arr.length <= 1) return arr;     // Base case: nothing to do
-
-  const mid = Math.floor(arr.length / 2);
-  const left  = mergeSort(arr.slice(0, mid), cmp);
-  const right = mergeSort(arr.slice(mid),    cmp);
-
-  return merge(left, right, cmp);
-}
-// Numbers, ascending
-const sortedNumbers = mergeSort([8, 3, 5, 1, 9, 2]);
-
-// Strings, descending
-const sortedStrings = mergeSort(
-  ["banana", "apple", "cherry"],
-  (a, b) => a > b
-);
-
-console.log(sortedNumbers); // [1, 2, 3, 5, 8, 9]
-console.log(sortedStrings); // ["cherry", "banana", "apple"]
