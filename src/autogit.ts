@@ -1,67 +1,59 @@
-class Graph<T> {
-  private adjacency = new Map<T, Set<T>>();
+class ListNode {
+  val: number;
+  next: ListNode | null;
 
-  addVertex(v: T) {
-    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
-  }
-
-  addEdge(v: T, w: T, directed = false) {
-    this.addVertex(v);
-    this.addVertex(w);
-    this.adjacency.get(v)!.add(w);
-    if (!directed) this.adjacency.get(w)!.add(v);
-  }
-
-  neighbours(v: T): Iterable<T> {
-    return this.adjacency.get(v) || [];
-  }
-
-  vertices(): Iterable<T> {
-    return this.adjacency.keys();
+  constructor(val: number, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
   }
 }
-function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
-  const visited = new Set<T>();
-  const result: T[] = [];
+/**
+ * Returns the node where listA and listB intersect.
+ * If they don't intersect, returns null.
+ */
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  if (!headA || !headB) return null;
 
-  function visit(v: T) {
-    if (visited.has(v)) return;
-    visited.add(v);
-    result.push(v);
+  let pA: ListNode | null = headA;
+  let pB: ListNode | null = headB;
 
-    for (const n of graph.neighbours(v)) visit(n);
+  // Continue until the two pointers either match or both become null.
+  while (pA !== pB) {
+    // Move to the next node; if we're at the end, jump to the other list's head.
+    pA = pA ? pA.next : headB;
+    pB = pB ? pB.next : headA;
   }
 
-  visit(start);
-  return result;
+  return pA; // Either the intersection node or null.
 }
-function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
-  const stack: T[] = [start];
-  const visited = new Set<T>();
-  const result: T[] = [];
+// Build two intersecting lists:
+// A: 1 → 3 → 5 → 7 → 9
+// B: 2 → 4 →        → 7 → 9
+//            ^<--- intersection starts here
 
-  while (stack.length) {
-    const v = stack.pop()!;
-    if (visited.has(v)) continue;
+const common = new ListNode(7, new ListNode(9));
 
-    visited.add(v);
-    result.push(v);
+const listA = new ListNode(1, new ListNode(3, new ListNode(5, common)));
+const listB = new ListNode(2, new ListNode(4, common));
 
-    // Push neighbours in reverse order if you want the same order
-    // as the recursive version (depends on adjacency list ordering).
-    for (const n of graph.neighbours(v)) {
-      if (!visited.has(n)) stack.push(n);
-    }
+const intersection = getIntersectionNode(listA, listB);
+console.log(intersection?.val); // 7
+function getIntersectionNodeHash(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  const nodes = new Set<ListNode>();
+
+  for (let cur = headA; cur; cur = cur.next) {
+    nodes.add(cur);
   }
 
-  return result;
-}
-const g = new Graph<string>();
-g.addEdge('A', 'B');
-g.addEdge('A', 'C');
-g.addEdge('B', 'D');
-g.addEdge('C', 'D');
-g.addEdge('D', 'E');
+  for (let cur = headB; cur; cur = cur.next) {
+    if (nodes.has(cur)) return cur;
+  }
 
-console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
-console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
+  return null;
+}
