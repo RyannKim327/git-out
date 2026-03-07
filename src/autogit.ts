@@ -1,57 +1,67 @@
-/**
- * Simple anagram checker.
- * @param a First string
- * @param b Second string
- * @returns true if a and b are anagrams, false otherwise
- */
-function areAnagrams(a: string, b: string): boolean {
-  // 1. Normalize: lower‑case, strip non‑alphanumerics, trim
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")
-      .trim();
+class Graph<T> {
+  private adjacency = new Map<T, Set<T>>();
 
-  const na = normalize(a);
-  const nb = normalize(b);
-
-  // Quick length check; if they differ early we’re done.
-  if (na.length !== nb.length) return false;
-
-  // 2. Build frequency maps
-  const freq = new Map<string, number>();
-
-  for (const ch of na) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  addVertex(v: T) {
+    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
   }
 
-  for (const ch of nb) {
-    const count = freq.get(ch);
-
-    // If we see a character not in the first string, bail
-    if (!count) return false;
-
-    // Decrease the count and remove entry if it drops to zero
-    if (count === 1) freq.delete(ch);
-    else freq.set(ch, count - 1);
+  addEdge(v: T, w: T, directed = false) {
+    this.addVertex(v);
+    this.addVertex(w);
+    this.adjacency.get(v)!.add(w);
+    if (!directed) this.adjacency.get(w)!.add(v);
   }
 
-  // 3. If all counts cleared, the strings are anagrams
-  return freq.size === 0;
-}
-console.log(areAnagrams("listen", "silent"));   // → true
-console.log(areAnagrams("evil", "vile"));       // → true
-console.log(areAnagrams("hello", "billion"));   // → false
-console.log(areAnagrams("Clint Eastwood", "Old West Action")); // true
-function areAnagramsSort(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")
-      .trim()
-      .split("")
-      .sort()
-      .join("");
+  neighbours(v: T): Iterable<T> {
+    return this.adjacency.get(v) || [];
+  }
 
-  return normalize(a) === normalize(b);
+  vertices(): Iterable<T> {
+    return this.adjacency.keys();
+  }
 }
+function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
+  const visited = new Set<T>();
+  const result: T[] = [];
+
+  function visit(v: T) {
+    if (visited.has(v)) return;
+    visited.add(v);
+    result.push(v);
+
+    for (const n of graph.neighbours(v)) visit(n);
+  }
+
+  visit(start);
+  return result;
+}
+function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
+  const stack: T[] = [start];
+  const visited = new Set<T>();
+  const result: T[] = [];
+
+  while (stack.length) {
+    const v = stack.pop()!;
+    if (visited.has(v)) continue;
+
+    visited.add(v);
+    result.push(v);
+
+    // Push neighbours in reverse order if you want the same order
+    // as the recursive version (depends on adjacency list ordering).
+    for (const n of graph.neighbours(v)) {
+      if (!visited.has(n)) stack.push(n);
+    }
+  }
+
+  return result;
+}
+const g = new Graph<string>();
+g.addEdge('A', 'B');
+g.addEdge('A', 'C');
+g.addEdge('B', 'D');
+g.addEdge('C', 'D');
+g.addEdge('D', 'E');
+
+console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
+console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
