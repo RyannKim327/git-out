@@ -1,32 +1,47 @@
-/**
- * Returns the area of a triangle when you know its base and height.
- *
- * @param base   The length of the triangle’s base.
- * @param height The height (altitude) drawn to that base.
- * @returns The area in whatever units the inputs are in.
- */
-function triangleAreaFromBaseHeight(base: number, height: number): number {
-  return 0.5 * base * height;
+function countWordOccurrences(text: string, word: string): number {
+  // Escape any regex meta‑characters in the search word
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // \b = word boundary, i = ignore case, g = global (find all)
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+
+  // .match() returns an array of all matches, null if none
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
 }
-/**
- * Returns the area of a triangle given its three vertices.
- *
- * @param x1 x‑coordinate of the first vertex
- * @param y1 y‑coordinate of the first vertex
- * @param x2 x‑coordinate of the second vertex
- * @param y2 y‑coordinate of the second vertex
- * @param x3 x‑coordinate of the third vertex
- * @param y3 y‑coordinate of the third vertex
- * @returns The absolute area (non‑negative) of the triangle.
- */
-function triangleAreaFromPoints(
-  x1: number, y1: number,
-  x2: number, y2: number,
-  x3: number, y3: number
+
+// Usage
+const msg = "The quick brown fox jumps over the lazy fox. Foxes are clever.";
+console.log(countWordOccurrences(msg, "fox")); // → 2 (fox, fox)
+const regex = new RegExp(escaped, 'gi');
+function countSplit(text: string, word: string): number {
+  // Empty string returns 0
+  if (!text) return 0;
+  return text.split(word).length - 1;
+}
+function countWithMatchAll(text: string, word: string): number {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+  const allMatches = text.matchAll(regex); // Iterable<{ index: … }>
+
+  let count = 0;
+  for (const _ of allMatches) count++;
+  return count;
+}
+export function countOccurrences(
+  text: string,
+  word: string,
+  options?: { caseSensitive?: boolean; wholeWord?: boolean }
 ): number {
-  return Math.abs(
-    x1 * (y2 - y3) +
-    x2 * (y3 - y1) +
-    x3 * (y1 - y2)
-  ) / 2;
+  const { caseSensitive = false, wholeWord = true } = options ?? {};
+
+  // Escape regex meta‑chars
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  let pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
+  let flags = 'g' + (caseSensitive ? '' : 'i');
+
+  const regex = new RegExp(pattern, flags);
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
 }
