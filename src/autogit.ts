@@ -1,32 +1,21 @@
-// largestPrimeFactor.ts
-export function largestPrimeFactor(n: number): number | null {
-    if (n < 2) return null;          // No prime factor for 0, 1 or negatives
+/**
+ * Returns true if `n` is a prime number.
+ * Handles 0, 1 and negative numbers as non‑prime.
+ */
+export function isPrime(n: number): boolean {
+  if (n <= 1) return false                // 0, 1, and negatives are not prime
+  if (n <= 3) return true                 // 2 and 3 are prime
 
-    let largest = 0;
+  // even numbers greater than 2 fail immediately
+  if (n % 2 === 0) return false
 
-    // Handle factor 2 first – it’s the only even prime
-    while (n % 2 === 0) {
-        largest = 2;
-        n = Math.floor(n / 2);
-    }
-
-    // Now n is odd.  Test odd divisors from 3 upward.
-    // Only need to go up to sqrt(n); beyond that any remaining n is prime.
-    for (let d = 3; d * d <= n; d += 2) {
-        while (n % d === 0) {
-            largest = d;
-            n = Math.floor(n / d);
-        }
-    }
-
-    // If after the loop n > 1 it means n itself is prime and larger
-    // than any divisor we removed.
-    if (n > 1) largest = n;
-
-    return largest;
+  // only test odd divisors up to √n
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false
+  }
+  return true
 }
-console.log(largestPrimeFactor(210)); // 7
-console.log(largestPrimeFactor(2));   // 2
-console.log(largestPrimeFactor(17));  // 17
-console.log(largestPrimeFactor(18));  // 3
-console.log(largestPrimeFactor(0));   // null
+console.log(isPrime(2));   // true
+console.log(isPrime(15));  // false
+console.log(isPrime(97));  // true
