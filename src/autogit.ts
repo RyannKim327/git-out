@@ -1,45 +1,40 @@
-/**
- * Checks if a string is a palindrome.
- *
- * @param txt          The input string to test.
- * @param options      Optional flags.
- * @returns            true if the cleaned string reads the same forwards and backwards.
- */
-export function isPalindrome(
-  txt: string,
-  options?: {
-    /** When true (default), the check is case‑insensitive. */
-    ignoreCase?: boolean;
-    /** When true (default), only alphanumeric characters are considered. */
-    stripNonAlnum?: boolean;
-    /** When true, normalises Unicode to NFKD form before the checks. */
-    normalize?: boolean;
-  } = {}
-): boolean {
-  const {
-    ignoreCase = true,
-    stripNonAlnum = true,
-    normalize = true,
-  } = options;
-
-  let processed = txt;
-
-  if (normalize) {
-    // This collapse accents, e.g. "café" ➜ "cafe".
-    processed = processed.normalize('NFKD');
-  }
-
-  if (stripNonAlnum) {
-    processed = processed.replace(/[^0-9a-z]+/gi, '');
-  }
-
-  if (ignoreCase) {
-    processed = processed.toLowerCase();
-  }
-
-  const reversed = processed.split('').reverse().join('');
-  return processed === reversed;
+// Basic node interface – can be turned into a class if you like.
+interface TreeNode<T = number> {
+  val: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
-console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
-console.log(isPalindrome('Madam In Eden, I’m Adam'));          // true
-console.log(isPalindrome('Hello, world!'));                    // false
+function maxDepth<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                 // empty subtree → depth 0
+
+  const leftDepth  = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
+
+  // Depth of current node = 1 (itself) + depth of deeper side
+  return 1 + Math.max(leftDepth, rightDepth);
+}
+const root: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 } },
+  right: { val: 3, right: { val: 5, right: { val: 6 } } }
+};
+
+console.log(maxDepth(root));   // → 4
+function maxDepthIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let max = 0;
+  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
+    { node: root, depth: 1 },
+  ];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    max = Math.max(max, depth);
+
+    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
+    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
+  }
+
+  return max;
+}
