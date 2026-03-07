@@ -1,47 +1,41 @@
-/**
- * Checks whether a string is a palindrome (case‑insensitive,
- * ignoring anything that isn’t a letter or a digit).
- *
- * Time   : O(n)
- * Space  : O(1)   – only a couple of integer variables
- */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+export interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
+}
+export class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
+}
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null
+  let curr = head
 
-  const isAlnum = (ch: string): boolean => {
-    const code = ch.charCodeAt(0);
-    // '0'‑'9'
-    if (code >= 48 && code <= 57) return true;
-    // 'A'‑'Z'
-    if (code >= 65 && code <= 90) return true;
-    // 'a'‑'z'
-    if (code >= 97 && code <= 122) return true;
-    return false;
-  };
-
-  while (left < right) {
-    // Skip non‑alphanumeric characters from the left
-    while (left < right && !isAlnum(s[left])) left++;
-    // Skip non‑alphanumeric characters from the right
-    while (left < right && !isAlnum(s[right])) right--;
-
-    if (left >= right) break;          // Nothing left to compare
-
-    const lc = s[left].toLowerCase();
-    const rc = s[right].toLowerCase();
-
-    if (lc !== rc) return false;
-
-    left++;
-    right--;
+  while (curr) {
+    const nxt = curr.next      // keep reference to next node
+    curr.next = prev           // flip the link
+    prev = curr                // advance prev
+    curr = nxt                 // advance curr
   }
 
-  return true;
+  return prev   // new head
 }
-while (left < right) {
-  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
-  left++;
-  right--;
+export function reverseListRec<T>(node: ListNode<T> | null, prev: ListNode<T> | null = null): ListNode<T> | null {
+  if (!node) return prev
+  const nxt = node.next
+  node.next = prev
+  return reverseListRec(nxt, node)
 }
-return true;
+// build 1 → 2 → 3
+const n3 = new ListNode(3)
+const n2 = new ListNode(2, n3)
+const n1 = new ListNode(1, n2)
+
+// reverse
+const reversed = reverseList(n1)
+
+// print results
+let cur = reversed
+while (cur) {
+  console.log(cur.value)
+  cur = cur.next
+}
+// → 3, 2, 1
