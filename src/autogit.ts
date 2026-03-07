@@ -1,25 +1,79 @@
 /**
- * Computes the factorial of a non‑negative integer `n` recursively.
- * @param n - A non‑negative integer (e.g., 0, 1, 2, …)
- * @returns n! as a `number`. For values beyond ≈ 170 you’ll hit the
- *          IEEE‑754 overflow limit and get `Infinity`, so for large
- *          inputs you might want to switch to BigInt.
+ * Returns the kth smallest value in `arr` (1‑based k).
+ *  Throws an error if k is out of bounds.
  */
-function factorial(n: number): number {
-  if (n < 0) throw new Error('Negative numbers don’t have factorials');
-  if (n <= 1) return 1;          // base case: 0! = 1! = 1
-  return n * factorial(n - 1);   // recursive step
-}
-console.log(factorial(5));   // 120
-console.log(factorial(0));   // 1
-function bigIntFactorial(n: number): bigint {
-  if (n < 0) throw new Error('Negative numbers don’t have factorials');
-  if (n <= 1) return 1n;               // 1n is a BigInt literal
-  return BigInt(n) * bigIntFactorial(n - 1);
-}
+export function kthSmallest(arr: number[], k: number): number {
+  if (k <= 0 || k > arr.length) {
+    throw new RangeError('k is out of bounds');
+  }
 
-console.log(bigIntFactorial(30).toString());
-function tailFactorial(n: number, acc: number = 1): number {
-  if (n <= 1) return acc;
-  return tailFactorial(n - 1, acc * n);
+  // Work on a copy so the original array stays intact.
+  const a = arr.slice();
+
+  const quickSelect = (left: number, right: number, index: number) => {
+    // If the segment contains only one element, that's the answer.
+    if (left === right) return a[left];
+
+    const pivotIndex = partition(left, right);
+    if (pivotIndex === index) {
+      return a[pivotIndex];
+    } else if (pivotIndex < index) {
+      return quickSelect(pivotIndex + 1, right, index);
+    } else {
+      return quickSelect(left, pivotIndex - 1, index);
+    }
+  };
+
+  const partition = (left: number, right: number): number => {
+    // Pick a pivot.  Using the middle element keeps the code short; you could
+    // shuffle or use Median‑of‑Three for better worst‑case guarantees.
+    const pivot = a[Math.floor((left + right) / 2)];
+    let i = left;
+    let j = right;
+
+    while (i <= j) {
+      while (a[i] < pivot) i++;
+      while (a[j] > pivot) j--;
+      if (i <= j) {
+        [a[i], a[j]] = [a[j], a[i]];
+        i++;
+        j--;
+      }
+    }
+    return i - 1; // pivot final position
+  };
+
+  // `k-1` because the array index is 0‑based.
+  return quickSelect(0, a.length - 1, k - 1);
+}
+export function kthSmallestBySort(arr: number[], k: number): number {
+  if (k <= 0 || k > arr.length) throw new RangeError('k is out of bounds');
+  const sorted = [...arr].sort((a, b) => a - b);
+  return sorted[k - 1];
+}
+class MinHeap {
+  private data: number[] = [];
+
+  push(val: number) {
+    this.data.push(val);
+    this.bubbleUp(this.data.length - 1);
+  }
+
+  /* ... bubbleUp, bubbleDown, peek, pop ... */
+
+  /** Return kth smallest (1‑based). */
+  kth(k: number): number {
+    if (k <= 0 || k > this.data.length) throw new RangeError();
+    const heapCopy = [...this.data];
+    let result = -Infinity;
+    for (let i = 0; i < k; i++) {
+      result = heapCopy[0];
+      this.swap(heapCopy, 0, heapCopy.length - 1);
+      heapCopy.pop();
+      this.sinkDown(heapCopy, 0);
+    }
+    return result;
+  }
+
+  /* helper methods omitted for brevity */
 }
