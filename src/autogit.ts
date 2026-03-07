@@ -1,30 +1,47 @@
-const str = "hello world";
-const hasFoo = str.includes("world");   // true
-const hasBar = str.includes("bar");     // false
-const hasCapital = str.includes("WORLD");          // false
-const hasCapitalIgnoreCase = str.toLowerCase()
-                                .includes("WORLD".toLowerCase()); // true
-const hasCapitalIgnoreCase = /world/i.test(str);   // true
-const index = str.indexOf("world"); // 6
-const missing = str.indexOf("bar"); // -1
-const present = str.indexOf("world") !== -1; // true
-const hasPrefix = /^hello/.test(str); // true
+/**
+ * Checks whether a string is a palindrome (case‑insensitive,
+ * ignoring anything that isn’t a letter or a digit).
+ *
+ * Time   : O(n)
+ * Space  : O(1)   – only a couple of integer variables
+ */
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-// With dynamic patterns
-const word = "world";
-const pattern = new RegExp(word);    // case‑sensitive
-const result = pattern.test(str);    // true
-// Presence
-const contains = text.includes(sub);
+  const isAlnum = (ch: string): boolean => {
+    const code = ch.charCodeAt(0);
+    // '0'‑'9'
+    if (code >= 48 && code <= 57) return true;
+    // 'A'‑'Z'
+    if (code >= 65 && code <= 90) return true;
+    // 'a'‑'z'
+    if (code >= 97 && code <= 122) return true;
+    return false;
+  };
 
-// Presence (index form)
-const containsIndex = text.indexOf(sub) !== -1;
+  while (left < right) {
+    // Skip non‑alphanumeric characters from the left
+    while (left < right && !isAlnum(s[left])) left++;
+    // Skip non‑alphanumeric characters from the right
+    while (left < right && !isAlnum(s[right])) right--;
 
-// Position
-const pos = text.indexOf(sub); // -1 if absent
+    if (left >= right) break;          // Nothing left to compare
 
-// Case‑insensitive
-const containsIC = text.toLowerCase().includes(sub.toLowerCase());
+    const lc = s[left].toLowerCase();
+    const rc = s[right].toLowerCase();
 
-// Regex
-const containsRegex = /world/i.test(text);
+    if (lc !== rc) return false;
+
+    left++;
+    right--;
+  }
+
+  return true;
+}
+while (left < right) {
+  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
+  left++;
+  right--;
+}
+return true;
