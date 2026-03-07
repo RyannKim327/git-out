@@ -1,87 +1,67 @@
-/**
- * A directed graph stored as an adjacency list.
- * Each key is a node identifier, the value is an array of successor node ids.
- */
-interface Graph {
-  [node: string]: string[];
+class Graph<T> {
+  private adjacency = new Map<T, Set<T>>();
+
+  addVertex(v: T) {
+    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
+  }
+
+  addEdge(v: T, w: T, directed = false) {
+    this.addVertex(v);
+    this.addVertex(w);
+    this.adjacency.get(v)!.add(w);
+    if (!directed) this.adjacency.get(w)!.add(v);
+  }
+
+  neighbours(v: T): Iterable<T> {
+    return this.adjacency.get(v) || [];
+  }
+
+  vertices(): Iterable<T> {
+    return this.adjacency.keys();
+  }
 }
+function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
+  const visited = new Set<T>();
+  const result: T[] = [];
 
-/**
- * Result of the algorithm – an array of SCCs.
- * Each SCC is an array of node ids that belong together.
- */
-type SCC = string[][];
+  function visit(v: T) {
+    if (visited.has(v)) return;
+    visited.add(v);
+    result.push(v);
 
-/**
- * Tarjan’s algorithm for SCCs.
- *
- * @param g The graph to analyse.
- * @returns An array of strongly connected components.
- */
-function tarjanSCC(g: Graph): SCC {
-  const indexMap: Record<string, number> = {};   // node → its index
-  const lowLink: Record<string, number> = {};    // node → low‑link value
-  const onStack: Set<string> = new Set();        // nodes currently in the stack
-  const stack: string[] = [];                    // stack of nodes
-  const sccs: SCC = [];
+    for (const n of graph.neighbours(v)) visit(n);
+  }
 
-  let currentIndex = 0;
+  visit(start);
+  return result;
+}
+function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
+  const stack: T[] = [start];
+  const visited = new Set<T>();
+  const result: T[] = [];
 
-  const strongConnect = (v: string) => {
-    indexMap[v] = currentIndex;
-    lowLink[v] = currentIndex;
-    currentIndex += 1;
-    stack.push(v);
-    onStack.add(v);
+  while (stack.length) {
+    const v = stack.pop()!;
+    if (visited.has(v)) continue;
 
-    // Explore every outgoing edge v → w
-    for (const w of g[v] ?? []) {
-      if (!(w in indexMap)) {
-        // Recursively visit w
-        strongConnect(w);
-        lowLink[v] = Math.min(lowLink[v], lowLink[w]);
-      } else if (onStack.has(w)) {
-        // w is in the current SCC frontier
-        lowLink[v] = Math.min(lowLink[v], indexMap[w]);
-      }
-    }
+    visited.add(v);
+    result.push(v);
 
-    // If v is the root of an SCC
-    if (lowLink[v] === indexMap[v]) {
-      const component: string[] = [];
-      let w: string | undefined;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
-    }
-  };
-
-  // Kick off a DFS from every unvisited node.
-  for (const v in g) {
-    if (!(v in indexMap)) {
-      strongConnect(v);
+    // Push neighbours in reverse order if you want the same order
+    // as the recursive version (depends on adjacency list ordering).
+    for (const n of graph.neighbours(v)) {
+      if (!visited.has(n)) stack.push(n);
     }
   }
 
-  return sccs;
+  return result;
 }
-const example: Graph = {
-  a: ['b'],
-  b: ['c', 'e', 'f'],
-  c: ['d', 'g'],
-  d: ['c', 'h'],
-  e: ['a', 'f'],
-  f: ['g'],
-  g: ['f'],
-  h: ['d', 'g', 'i'],
-  i: ['h', 'k', 'l'],
-  j: ['k'],
-  k: ['i', 'l'],
-  l: ['k']
-};
+const g = new Graph<string>();
+g.addEdge('A', 'B');
+g.addEdge('A', 'C');
+g.addEdge('B', 'D');
+g.addEdge('C', 'D');
+g.addEdge('D', 'E');
 
-console.log(tarjanSCC(example));
-// → [ [ 'g', 'f' ], [ 'c', 'd', 'h' ], [ 'i', 'l', 'k' ], [ 'a', 'b', 'e' ], [ 'j' ] ]
+console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
+console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
