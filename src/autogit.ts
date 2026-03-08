@@ -1,57 +1,35 @@
 /**
- * Simple anagram checker.
- * @param a First string
- * @param b Second string
- * @returns true if a and b are anagrams, false otherwise
+ * Bottom‑up merge sort – no recursion, only loops.
+ * @param arr The array to sort, in place.
+ * @returns The sorted array (same reference as the argument).
  */
-function areAnagrams(a: string, b: string): boolean {
-  // 1. Normalize: lower‑case, strip non‑alphanumerics, trim
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")
-      .trim();
+export function mergeSortIterative<T>(arr: T[]): T[] {
+  const len = arr.length;
+  if (len < 2) return arr;          // already sorted
 
-  const na = normalize(a);
-  const nb = normalize(b);
+  // Temporary buffer reused for each merge
+  const temp = new Array<T>(len);
 
-  // Quick length check; if they differ early we’re done.
-  if (na.length !== nb.length) return false;
+  // Initial run width – start with runs of 1 element
+  for (let width = 1; width < len; width <<= 1) {
+    // Merge pairs of runs: left = i‑th run, right = i+width‑th run
+    for (let i = 0; i < len; i += width << 1) {
+      const left = i;
+      const mid = Math.min(i + width, len);
+      const right = Math.min(i + (width << 1), len);
 
-  // 2. Build frequency maps
-  const freq = new Map<string, number>();
+      // Merge [left, mid) and [mid, right) into temp
+      let l = left, r = mid, k = left;
+      while (l < mid && r < right) {
+        temp[k++] = (arr[l] as any <= arr[r] as any) ? arr[l++] : arr[r++];
+      }
+      while (l < mid) temp[k++] = arr[l++];
+      while (r < right) temp[k++] = arr[r++];
 
-  for (const ch of na) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+      // Copy the merged segment back into arr
+      for (let p = left; p < right; p++) arr[p] = temp[p];
+    }
   }
 
-  for (const ch of nb) {
-    const count = freq.get(ch);
-
-    // If we see a character not in the first string, bail
-    if (!count) return false;
-
-    // Decrease the count and remove entry if it drops to zero
-    if (count === 1) freq.delete(ch);
-    else freq.set(ch, count - 1);
-  }
-
-  // 3. If all counts cleared, the strings are anagrams
-  return freq.size === 0;
-}
-console.log(areAnagrams("listen", "silent"));   // → true
-console.log(areAnagrams("evil", "vile"));       // → true
-console.log(areAnagrams("hello", "billion"));   // → false
-console.log(areAnagrams("Clint Eastwood", "Old West Action")); // true
-function areAnagramsSort(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")
-      .trim()
-      .split("")
-      .sort()
-      .join("");
-
-  return normalize(a) === normalize(b);
+  return arr;
 }
