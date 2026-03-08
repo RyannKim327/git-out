@@ -1,32 +1,16 @@
 /**
- * Returns the area of a triangle when you know its base and height.
+ * Returns a whole number between min and max (both inclusive).
  *
- * @param base   The length of the triangle’s base.
- * @param height The height (altitude) drawn to that base.
- * @returns The area in whatever units the inputs are in.
+ * @param min The smallest possible value you want (usually a number ≥ 0)
+ * @param max The largest possible value you want
  */
-function triangleAreaFromBaseHeight(base: number, height: number): number {
-  return 0.5 * base * height;
+function randomIntInRange(min: number, max: number): number {
+  // Clamp the inputs so min <= max
+  const [low, high] = min <= max ? [min, max] : [max, min];
+
+  // Math.random() → [0, 1).  Scale it to the desired width,
+  // then shift by the lower bound and round down.
+  return Math.floor(Math.random() * (high - low + 1)) + low;
 }
-/**
- * Returns the area of a triangle given its three vertices.
- *
- * @param x1 x‑coordinate of the first vertex
- * @param y1 y‑coordinate of the first vertex
- * @param x2 x‑coordinate of the second vertex
- * @param y2 y‑coordinate of the second vertex
- * @param x3 x‑coordinate of the third vertex
- * @param y3 y‑coordinate of the third vertex
- * @returns The absolute area (non‑negative) of the triangle.
- */
-function triangleAreaFromPoints(
-  x1: number, y1: number,
-  x2: number, y2: number,
-  x3: number, y3: number
-): number {
-  return Math.abs(
-    x1 * (y2 - y3) +
-    x2 * (y3 - y1) +
-    x3 * (y1 - y2)
-  ) / 2;
-}
+const rand = randomIntInRange(5, 10);
+console.log(rand); // → a whole number 5, 6, 7, 8, 9, or 10
