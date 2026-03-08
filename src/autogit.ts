@@ -1,45 +1,30 @@
-// 1️⃣  Install node‑fetch (or use the built‑in fetch in environments that have it)
-//    npm install node-fetch @types/node-fetch
-import fetch from "node-fetch";
+import axios, { AxiosResponse } from 'axios';
 
-interface Todo {
-  userId: number;
+// Declare the shape of the data we expect from the API
+interface Quote {
   id: number;
-  title: string;
-  completed: boolean;
+  quote: string;
+  author: string;
 }
 
-/**
- * Fetch a single Todo by its numeric ID.
- * @param id - The ID of the Todo to request.
- * @returns Promises a Todo object.
- */
-async function getTodoById(id: number): Promise<Todo> {
-  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-  });
-
-  // 2️⃣  Basic status check – throws if not 2xx
-  if (!response.ok) {
-    throw new Error(`Request failed with ${response.status} ${response.statusText}`);
-  }
-
-  // 3️⃣  Parse the JSON body and return it as a Todo
-  const data = (await response.json()) as Todo;
-  return data;
-}
-
-/**
- * Demo of calling `getTodoById` and logging the result or an error.
- */
-(async () => {
+// A helper that fetches a random quote
+async function fetchRandomQuote(): Promise<Quote> {
   try {
-    const todo = await getTodoById(3);
-    console.log("Fetched Todo:", todo);
+    const response: AxiosResponse<Quote> = await axios.get(
+      'https://api.quotable.io/random'
+    );
+    return response.data;
   } catch (err) {
-    console.error("Error fetching Todo:", err);
+    // If something goes wrong, throw a readable error
+    throw new Error(
+      `Could not fetch a quote: ${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
   }
-})();
+}
+
+// Usage example – print a random quote to the console
+fetchRandomQuote()
+  .then((quote) => console.log(`${quote.quote} — ${quote.author}`))
+  .catch((err) => console.error(err.message));
