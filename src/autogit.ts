@@ -1,45 +1,69 @@
-// 1️⃣  Install node‑fetch (or use the built‑in fetch in environments that have it)
-//    npm install node-fetch @types/node-fetch
-import fetch from "node-fetch";
+/**
+ * Returns the LCS length of two strings.
+ */
+export function lcsLength(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
 
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
+  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+
+  return dp[m][n];
 }
 
 /**
- * Fetch a single Todo by its numeric ID.
- * @param id - The ID of the Todo to request.
- * @returns Promises a Todo object.
+ * Returns the actual longest common subsequence.
+ * In case of multiple LCS of the same length, the one found
+ * will consist of the characters chosen by the DP traversal.
  */
-async function getTodoById(id: number): Promise<Todo> {
-  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
+export function lcs(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-  const response = await fetch(url, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-  });
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  // 2️⃣  Basic status check – throws if not 2xx
-  if (!response.ok) {
-    throw new Error(`Request failed with ${response.status} ${response.statusText}`);
+  // Build the DP table – same recurrence as in lcsLength
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
   }
 
-  // 3️⃣  Parse the JSON body and return it as a Todo
-  const data = (await response.json()) as Todo;
-  return data;
+  // Backtrack to rebuild the sequence
+  let i = m;
+  let j = n;
+  const seq: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      seq.push(a[i - 1]); // they match
+      i--;
+      j--;
+    } else if (dp[i - 1][j] > dp[i][j - 1]) {
+      i--; // move up
+    } else {
+      j--; // move left
+    }
+  }
+
+  return seq.reverse().join('');
 }
+const a = "AGGTAB";
+const b = "GXTXAYB";
 
-/**
- * Demo of calling `getTodoById` and logging the result or an error.
- */
-(async () => {
-  try {
-    const todo = await getTodoById(3);
-    console.log("Fetched Todo:", todo);
-  } catch (err) {
-    console.error("Error fetching Todo:", err);
-  }
-})();
+console.log(lcsLength(a, b)); // 4
+console.log(lcs(a, b));       // "GTAB"
