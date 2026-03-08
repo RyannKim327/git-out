@@ -1,45 +1,67 @@
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+class Graph<T> {
+  private adjacency = new Map<T, Set<T>>();
 
-  while (fast && fast.next) {
-    slow = slow!.next;            // move one step
-    fast = fast.next.next;        // move two steps
-
-    if (slow === fast) return true;   // they met → cycle
+  addVertex(v: T) {
+    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
   }
 
-  return false;   // hit the end → no cycle
-}
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const visited = new Set<ListNode<T>>();
-
-  let current = head;
-  while (current) {
-    if (visited.has(current)) return true;
-    visited.add(current);
-    current = current.next;
+  addEdge(v: T, w: T, directed = false) {
+    this.addVertex(v);
+    this.addVertex(w);
+    this.adjacency.get(v)!.add(w);
+    if (!directed) this.adjacency.get(w)!.add(v);
   }
-  return false;
+
+  neighbours(v: T): Iterable<T> {
+    return this.adjacency.get(v) || [];
+  }
+
+  vertices(): Iterable<T> {
+    return this.adjacency.keys();
+  }
 }
-// Linear list (no cycle)
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
+function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
+  const visited = new Set<T>();
+  const result: T[] = [];
 
-console.log(hasCycle(a)); // false
+  function visit(v: T) {
+    if (visited.has(v)) return;
+    visited.add(v);
+    result.push(v);
 
-// Cyclic list
-const d = new ListNode(4);
-const e = new ListNode(5);
-const f = new ListNode(6);
-d.next = e; e.next = f; f.next = d; // f points back to d
+    for (const n of graph.neighbours(v)) visit(n);
+  }
 
-console.log(hasCycle(d)); // true
+  visit(start);
+  return result;
+}
+function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
+  const stack: T[] = [start];
+  const visited = new Set<T>();
+  const result: T[] = [];
+
+  while (stack.length) {
+    const v = stack.pop()!;
+    if (visited.has(v)) continue;
+
+    visited.add(v);
+    result.push(v);
+
+    // Push neighbours in reverse order if you want the same order
+    // as the recursive version (depends on adjacency list ordering).
+    for (const n of graph.neighbours(v)) {
+      if (!visited.has(n)) stack.push(n);
+    }
+  }
+
+  return result;
+}
+const g = new Graph<string>();
+g.addEdge('A', 'B');
+g.addEdge('A', 'C');
+g.addEdge('B', 'D');
+g.addEdge('C', 'D');
+g.addEdge('D', 'E');
+
+console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
+console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
