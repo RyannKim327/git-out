@@ -1,41 +1,69 @@
-/** A very small “binary‑tree node” type. */
-interface TreeNode {
-  val: number;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
-function sumTreeRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                     // base case – no node
-  const leftSum  = sumTreeRecursive(root.left);
-  const rightSum = sumTreeRecursive(root.right);
-  return root.val + leftSum + rightSum;    // process node after its children
-}
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
+/**
+ * Returns the LCS length of two strings.
+ */
+export function lcsLength(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
 
-  const queue: TreeNode[] = [root];
-  let total = 0;
+  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  while (queue.length) {
-    const node = queue.shift()!;   // non‑null assertion – queue always contains real nodes
-    total += node.val;
-
-    if (node.left)  queue.push(node.left);
-    if (node.right) queue.push(node.right);
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
   }
 
-  return total;
+  return dp[m][n];
 }
-// Small example
-const tree: TreeNode = {
-  val: 10,
-  left: { val: 5 },
-  right: {
-    val: 20,
-    left: { val: 15 },
-    right: { val: 25 }
-  }
-};
 
-console.log(sumTreeRecursive(tree)); // 75
-console.log(sumTreeIterative(tree)); // 75
+/**
+ * Returns the actual longest common subsequence.
+ * In case of multiple LCS of the same length, the one found
+ * will consist of the characters chosen by the DP traversal.
+ */
+export function lcs(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
+
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+  // Build the DP table – same recurrence as in lcsLength
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+
+  // Backtrack to rebuild the sequence
+  let i = m;
+  let j = n;
+  const seq: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      seq.push(a[i - 1]); // they match
+      i--;
+      j--;
+    } else if (dp[i - 1][j] > dp[i][j - 1]) {
+      i--; // move up
+    } else {
+      j--; // move left
+    }
+  }
+
+  return seq.reverse().join('');
+}
+const a = "AGGTAB";
+const b = "GXTXAYB";
+
+console.log(lcsLength(a, b)); // 4
+console.log(lcs(a, b));       // "GTAB"
