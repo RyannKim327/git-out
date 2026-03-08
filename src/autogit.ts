@@ -1,50 +1,42 @@
-export interface TreeNode {
-  val: number;                // or any type you like
-  left?: TreeNode | null;     // child nodes (undefined is treated as null)
-  right?: TreeNode | null;
-}
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
 /**
- * Returns the diameter (number of edges on the longest path) of a binary tree.
+ * Counting sort for non‑negative integers in a known range.
  *
- * @param root root node of the tree
- * @returns diameter in edges
+ * @param data Array of numbers to sort.
+ * @param min  Minimum possible value in `data` (inclusive).
+ * @param max  Maximum possible value in `data` (inclusive).
+ * @returns    A new array containing the sorted numbers.
+ *
+ * Example:
+ *   const unsorted = [3, 0, 2, 3, 1];
+ *   const sorted = countingSort(unsorted, 0, 3); // [0,1,2,3,3]
  */
-export function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;           // will hold the best diameter found
+export function countingSort(data: number[], min: number, max: number): number[] {
+  if (data.length === 0) return [];
 
-  /**
-   * Post‑order DFS that returns the height of the subtree.
-   * While unwinding, we update `maxDiameter`.
-   */
-  function dfs(node: TreeNode | null): number {
-    if (!node) return -1;       // height of null is -1 so that leaf node height = 0
+  const range = max - min + 1;
 
-    const leftHeight  = dfs(node.left)  + 1;
-    const rightHeight = dfs(node.right) + 1;
-
-    // The path that goes from the leftmost leaf of this subtree
-    // through this node to the rightmost leaf gives a candidate
-    // diameter.  `+1` is not needed for edges because heights already
-    // count edges from node to leaf.
-    const candidate = leftHeight + rightHeight;
-    if (candidate > maxDiameter) maxDiameter = candidate;
-
-    // Return height of this node for the parent call
-    return Math.max(leftHeight, rightHeight);
+  // 1. Count occurrences
+  const count: number[] = new Array(range).fill(0);
+  for (const v of data) {
+    count[v - min]++;
   }
 
-  dfs(root);
-  return maxDiameter;
-}
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
+  // 2. Accumulate counts – now each count element holds the index
+  //    where that value should be placed in the output array.
+  for (let i = 1; i < range; i++) {
+    count[i] += count[i - 1];
+  }
 
-console.log(diameterOfBinaryTree(tree));   // → 3
+  // 3. Build the output array in a stable manner.
+  const output: number[] = new Array(data.length);
+  for (let i = data.length - 1; i >= 0; i--) {
+    const v = data[i];
+    const idx = --count[v - min];          // <-- decrement first
+    output[idx] = v;
+  }
+
+  return output;
+}
+const unsorted = [5, 3, 0, 2, 5, 1];
+const sorted = countingSort(unsorted, 0, 5);
+console.log(sorted); // [0, 1, 2, 3, 5, 5]
