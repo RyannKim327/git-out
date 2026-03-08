@@ -1,28 +1,41 @@
-/**
- * Convert a decimal number to a binary string.
- * 
- * @param n – A non‑negative integer
- * @returns The binary representation as a string
- */
-function decimalToBinary(n: number): string {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new Error('Input must be a non‑negative integer.');
-  }
-
-  // Handling zero explicitly – Math.pow(2, 0) is 1 but we still want "0"
-  if (n === 0) return '0';
-
-  let binary = '';
-  let current = n;
-
-  while (current > 0) {
-    // Prepend the remainder (0 or 1) to the binary string
-    binary = (current % 2) + binary;
-    current = Math.floor(current / 2);
-  }
-
-  return binary;
+export interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
-console.log(decimalToBinary(10)); // "1010"
-console.log(decimalToBinary(255)); // "11111111"
-console.log(decimalToBinary(0)); // "0"
+export class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
+}
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null
+  let curr = head
+
+  while (curr) {
+    const nxt = curr.next      // keep reference to next node
+    curr.next = prev           // flip the link
+    prev = curr                // advance prev
+    curr = nxt                 // advance curr
+  }
+
+  return prev   // new head
+}
+export function reverseListRec<T>(node: ListNode<T> | null, prev: ListNode<T> | null = null): ListNode<T> | null {
+  if (!node) return prev
+  const nxt = node.next
+  node.next = prev
+  return reverseListRec(nxt, node)
+}
+// build 1 → 2 → 3
+const n3 = new ListNode(3)
+const n2 = new ListNode(2, n3)
+const n1 = new ListNode(1, n2)
+
+// reverse
+const reversed = reverseList(n1)
+
+// print results
+let cur = reversed
+while (cur) {
+  console.log(cur.value)
+  cur = cur.next
+}
+// → 3, 2, 1
