@@ -1,32 +1,45 @@
-// largestPrimeFactor.ts
-export function largestPrimeFactor(n: number): number | null {
-    if (n < 2) return null;          // No prime factor for 0, 1 or negatives
+/**
+ * Checks if a string is a palindrome.
+ *
+ * @param txt          The input string to test.
+ * @param options      Optional flags.
+ * @returns            true if the cleaned string reads the same forwards and backwards.
+ */
+export function isPalindrome(
+  txt: string,
+  options?: {
+    /** When true (default), the check is case‑insensitive. */
+    ignoreCase?: boolean;
+    /** When true (default), only alphanumeric characters are considered. */
+    stripNonAlnum?: boolean;
+    /** When true, normalises Unicode to NFKD form before the checks. */
+    normalize?: boolean;
+  } = {}
+): boolean {
+  const {
+    ignoreCase = true,
+    stripNonAlnum = true,
+    normalize = true,
+  } = options;
 
-    let largest = 0;
+  let processed = txt;
 
-    // Handle factor 2 first – it’s the only even prime
-    while (n % 2 === 0) {
-        largest = 2;
-        n = Math.floor(n / 2);
-    }
+  if (normalize) {
+    // This collapse accents, e.g. "café" ➜ "cafe".
+    processed = processed.normalize('NFKD');
+  }
 
-    // Now n is odd.  Test odd divisors from 3 upward.
-    // Only need to go up to sqrt(n); beyond that any remaining n is prime.
-    for (let d = 3; d * d <= n; d += 2) {
-        while (n % d === 0) {
-            largest = d;
-            n = Math.floor(n / d);
-        }
-    }
+  if (stripNonAlnum) {
+    processed = processed.replace(/[^0-9a-z]+/gi, '');
+  }
 
-    // If after the loop n > 1 it means n itself is prime and larger
-    // than any divisor we removed.
-    if (n > 1) largest = n;
+  if (ignoreCase) {
+    processed = processed.toLowerCase();
+  }
 
-    return largest;
+  const reversed = processed.split('').reverse().join('');
+  return processed === reversed;
 }
-console.log(largestPrimeFactor(210)); // 7
-console.log(largestPrimeFactor(2));   // 2
-console.log(largestPrimeFactor(17));  // 17
-console.log(largestPrimeFactor(18));  // 3
-console.log(largestPrimeFactor(0));   // null
+console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
+console.log(isPalindrome('Madam In Eden, I’m Adam'));          // true
+console.log(isPalindrome('Hello, world!'));                    // false
