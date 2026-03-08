@@ -1,40 +1,81 @@
-// Basic node interface – can be turned into a class if you like.
-interface TreeNode<T = number> {
-  val: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+//   ┌─── Imports ────────────────────────────────────────────────────────┐
+import { useEffect, useState } from 'react';
+import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
+
+//   ┌─── Types ───────────────────────────────────────────────────────────────┐
+interface TodoItem {
+  id: number;
+  title: string;
+  completed: boolean;
 }
-function maxDepth<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                 // empty subtree → depth 0
 
-  const leftDepth  = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
+//   ┌─── Async helper ────────────────────────────────────────────────────────┐
+async function fetchTodos(): Promise<TodoItem[]> {
+  const url = 'https://jsonplaceholder.typicode.com/todos?_limit=5';
 
-  // Depth of current node = 1 (itself) + depth of deeper side
-  return 1 + Math.max(leftDepth, rightDepth);
+  // Simulate a "slow" network: optional, just for demo
+  await new Promise(r => setTimeout(r, 800));
+
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`❌ ${response.status} ${response.statusText}`);
+
+  const json = await response.json();
+  // Map to our interface – TypeScript will check types
+  return json.map((x: any) => ({
+    id: x.id,
+    title: x.title,
+    completed: x.completed,
+  }));
 }
-const root: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3, right: { val: 5, right: { val: 6 } } }
-};
 
-console.log(maxDepth(root));   // → 4
-function maxDepthIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
+//   ┌─── Component that uses the async task ──────────────────────────────────┐
+export default function AsyncExample() {
+  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  let max = 0;
-  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
-    { node: root, depth: 1 },
-  ];
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchTodos();
+      console.log('Fetched:', data);
+      setTodos(data);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      console.warn(msg);
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    max = Math.max(max, depth);
+  // Run once on mount
+  useEffect(() => {
+    load();
+  }, []);
 
-    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
-    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
-  }
-
-  return max;
+  return (
+    <View style={styles.container}>
+      {loading && <ActivityIndicator size="large" />}
+      {error && <Text style={styles.error}>{error}</Text>}
+      {!loading && !error && (
+        <>
+          {todos.map(t => (
+            <Text key={t.id} style={styles.todo}>
+              {t.completed ? '✅' : '🕒'} {t.title}
+            </Text>
+          ))}
+        </>
+      )}
+      <Button title="Reload" onPress={load} disabled={loading} />
+    </View>
+  );
 }
+
+//   ┌─── Styles ───────────────────────────────────────────────────────────────┐
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, justifyContent: 'center' },
+  todo: { fontSize: 18, marginVertical: 4 },
+  error: { color: 'red', marginBottom: 12 },
+});
