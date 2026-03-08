@@ -1,38 +1,45 @@
 /**
- * Finds the majority element in an array (appears > n/2 times).
- * If no majority exists, undefined is returned.
+ * Returns the contiguous segment of `arr` that yields the highest possible sum.
  *
- * @param arr   - Array of comparable values (number, string ...).
- * @returns     - The majority element or undefined.
+ * @param arr - Array of numbers (integer or float)
+ * @returns An object containing:
+ *   `maxSum`  – the total sum of the best segment
+ *   `start`   – the index where the segment begins
+ *   `end`     – the index where the segment ends (inclusive)
  */
-export function majorityElement<T extends number | string | symbol>(arr: T[]): T | undefined {
-  if (arr.length === 0) return undefined;
+function maxSubarray(arr: number[]) {
+  if (arr.length === 0) throw new Error('Array cannot be empty');
 
-  // Boyer‑Moore majority vote algorithm
-  let candidate: T | undefined = arr[0];
-  let count = 1;
+  let bestSum = arr[0];
+  let currentSum = arr[0];
+  let bestStart = 0;
+  let bestEnd = 0;
+  let tempStart = 0;
 
   for (let i = 1; i < arr.length; i++) {
-    if (arr[i] === candidate) {
-      count++;
+    const val = arr[i];
+
+    // Either start a new sub‑array at i or extend the existing one
+    if (currentSum + val < val) {
+      currentSum = val;
+      tempStart = i;       // new potential start
     } else {
-      count--;
-      if (count === 0) {
-        candidate = arr[i];
-        count = 1;
-      }
+      currentSum += val;   // keep extending
+    }
+
+    // Update the best segment seen so far
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
     }
   }
 
-  // Verify that candidate really is the majority
-  count = 0;
-  for (const v of arr) {
-    if (v === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : undefined;
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-majorityElement([1, 2, 3, 2, 2]);      // → 2
-majorityElement(['a', 'b', 'a', 'c']); // → undefined
-majorityElement([5, 5, 5, 5]);          // → 5
-majorityElement([]);                   // → undefined
+const data = [-2, -3, 4, -1, -2, 1, 5, -3];
+const result = maxSubarray(data);
+console.log(result);
+// Expected output:
+// { maxSum: 7, start: 2, end: 6 }
+// (segment [4, -1, -2, 1, 5] sums to 7)
