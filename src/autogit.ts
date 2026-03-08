@@ -1,47 +1,50 @@
-class TreeNode<T = any> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+export interface TreeNode {
+  val: number;                // or any type you like
+  left?: TreeNode | null;     // child nodes (undefined is treated as null)
+  right?: TreeNode | null;
 }
-function countLeaves<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;                         // empty subtree → 0 leaves
+const tree: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
+  right: { val: 3, right: { val: 6 }}
+};
+/**
+ * Returns the diameter (number of edges on the longest path) of a binary tree.
+ *
+ * @param root root node of the tree
+ * @returns diameter in edges
+ */
+export function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;           // will hold the best diameter found
 
-  // If both children are missing, this node itself is a leaf
-  if (!root.left && !root.right) return 1;
+  /**
+   * Post‑order DFS that returns the height of the subtree.
+   * While unwinding, we update `maxDiameter`.
+   */
+  function dfs(node: TreeNode | null): number {
+    if (!node) return -1;       // height of null is -1 so that leaf node height = 0
 
-  // Otherwise, count leaves in the children
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-function countLeavesIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
+    const leftHeight  = dfs(node.left)  + 1;
+    const rightHeight = dfs(node.right) + 1;
 
-  let stack: Array<TreeNode<T>> = [root];
-  let leafCount = 0;
+    // The path that goes from the leftmost leaf of this subtree
+    // through this node to the rightmost leaf gives a candidate
+    // diameter.  `+1` is not needed for edges because heights already
+    // count edges from node to leaf.
+    const candidate = leftHeight + rightHeight;
+    if (candidate > maxDiameter) maxDiameter = candidate;
 
-  while (stack.length) {
-    const node = stack.pop() as TreeNode<T>;
-
-    // A leaf if it has no children
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      // Push existing children to process later
-      if (node.left) stack.push(node.left);
-      if (node.right) stack.push(node.right);
-    }
+    // Return height of this node for the parent call
+    return Math.max(leftHeight, rightHeight);
   }
 
-  return leafCount;
+  dfs(root);
+  return maxDiameter;
 }
-const root = new TreeNode(1,
-  new TreeNode(2,
-    new TreeNode(4),           // leaf
-    new TreeNode(5)            // leaf
-  ),
-  new TreeNode(3)              // leaf
-);
+const tree: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
+  right: { val: 3, right: { val: 6 }}
+};
 
-console.log(countLeaves(root));        // → 3
-console.log(countLeavesIter(root));    // → 3
+console.log(diameterOfBinaryTree(tree));   // → 3
