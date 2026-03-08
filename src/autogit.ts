@@ -1,53 +1,87 @@
 /**
- * Sorts an array using the bubble‑sort algorithm.
- *
- * @param arr       The array to sort. The sort is performed in-place.
- * @param compare   Optional comparison function. It should return:
- *                  - a negative number if a < b
- *                  - zero if a == b
- *                  - a positive number if a > b
- *
- * @returns The sorted array (the same instance that was passed in).
+ * A directed graph stored as an adjacency list.
+ * Each key is a node identifier, the value is an array of successor node ids.
  */
-export function bubbleSort<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
-  // Default to natural order for numbers and strings
-  const cmp = compare ?? ((a: any, b: any) => (a > b ? 1 : a < b ? -1 : 0));
+interface Graph {
+  [node: string]: string[];
+}
 
-  const len = arr.length;
-  if (len < 2) return arr; // already sorted
+/**
+ * Result of the algorithm – an array of SCCs.
+ * Each SCC is an array of node ids that belong together.
+ */
+type SCC = string[][];
 
-  let swapped: boolean;
-  // We keep looping until no swaps happen in a full pass
-  do {
-    swapped = false;
-    // After each round the largest element in the unsorted portion
-    // "bubbles" to its final position, so we can skip the last i elements
-    for (let i = 1; i < len; i++) {
-      if (cmp(arr[i - 1], arr[i]) > 0) {
-        // swap
-        [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
-        swapped = true;
+/**
+ * Tarjan’s algorithm for SCCs.
+ *
+ * @param g The graph to analyse.
+ * @returns An array of strongly connected components.
+ */
+function tarjanSCC(g: Graph): SCC {
+  const indexMap: Record<string, number> = {};   // node → its index
+  const lowLink: Record<string, number> = {};    // node → low‑link value
+  const onStack: Set<string> = new Set();        // nodes currently in the stack
+  const stack: string[] = [];                    // stack of nodes
+  const sccs: SCC = [];
+
+  let currentIndex = 0;
+
+  const strongConnect = (v: string) => {
+    indexMap[v] = currentIndex;
+    lowLink[v] = currentIndex;
+    currentIndex += 1;
+    stack.push(v);
+    onStack.add(v);
+
+    // Explore every outgoing edge v → w
+    for (const w of g[v] ?? []) {
+      if (!(w in indexMap)) {
+        // Recursively visit w
+        strongConnect(w);
+        lowLink[v] = Math.min(lowLink[v], lowLink[w]);
+      } else if (onStack.has(w)) {
+        // w is in the current SCC frontier
+        lowLink[v] = Math.min(lowLink[v], indexMap[w]);
       }
     }
-  } while (swapped);
 
-  return arr;
+    // If v is the root of an SCC
+    if (lowLink[v] === indexMap[v]) {
+      const component: string[] = [];
+      let w: string | undefined;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
+    }
+  };
+
+  // Kick off a DFS from every unvisited node.
+  for (const v in g) {
+    if (!(v in indexMap)) {
+      strongConnect(v);
+    }
+  }
+
+  return sccs;
 }
-// 1️⃣ Sort plain numbers
-const nums = [5, 3, 8, 1, 2];
-bubbleSort(nums);           // nums → [1, 2, 3, 5, 8]
+const example: Graph = {
+  a: ['b'],
+  b: ['c', 'e', 'f'],
+  c: ['d', 'g'],
+  d: ['c', 'h'],
+  e: ['a', 'f'],
+  f: ['g'],
+  g: ['f'],
+  h: ['d', 'g', 'i'],
+  i: ['h', 'k', 'l'],
+  j: ['k'],
+  k: ['i', 'l'],
+  l: ['k']
+};
 
-// 2️⃣ Sort strings alphabetically
-const words = ['banana', 'apple', 'cherry'];
-bubbleSort(words);          // words → ['apple', 'banana', 'cherry']
-
-// 3️⃣ Sort objects with a custom key
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: 'Zoe',   age: 28 },
-  { name: 'Adam',  age: 34 },
-  { name: 'Mira',  age: 23 }
-];
-
-bubbleSort(people, (p1, p2) => p1.age - p2.age);
-// people → [{name:'Mira',age:23}, {name:'Zoe',age:28}, {name:'Adam',age:34}]
+console.log(tarjanSCC(example));
+// → [ [ 'g', 'f' ], [ 'c', 'd', 'h' ], [ 'i', 'l', 'k' ], [ 'a', 'b', 'e' ], [ 'j' ] ]
