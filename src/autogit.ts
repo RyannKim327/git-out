@@ -1,79 +1,59 @@
-// A simple graph representation.
-// All nodes must be comparable with === (e.g. numbers, strings, or objects with a unique id).
-interface Graph<T> {
-  /** Return the directly connected nodes of `node`.  */
-  neighbors(node: T): T[];
+/**
+ * Return the index of the first occurrence of `pattern` inside `text`,
+ * or -1 if the pattern is absent.
+ */
+export function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0; // trivially found at start
+
+  const lps = computeLPSArray(pattern); // longest‑prefix‑suffix table
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) { // whole pattern matched
+        return i - j; // match start index
+      }
+    } else if (j > 0) {
+      // mismatch after j matches – skip ahead by lps[j‑1]
+      j = lps[j - 1];
+    } else {
+      // mismatch at start of pattern
+      i++;
+    }
+  }
+
+  return -1; // no match
 }
 
 /**
- * Iterative depth‑limited DFS.
- *
- * @param graph      the graph to search
- * @param start      the node to start from
- * @param goal       the node we are looking for
- * @param maxDepth   limit recursion depth (0 = only start node)
- * @returns           true if goal is reachable within maxDepth, false otherwise
+ * Pre‑process the pattern to build the “longest prefix that is also a suffix”
+ * (LPS) array. lps[i] = the length of the longest proper prefix of
+ * pattern[0..i] that is also a suffix of pattern[0..i].
  */
-function depthLimitedSearch<T>(
-  graph: Graph<T>,
-  start: T,
-  goal: T,
-  maxDepth: number
-): boolean {
-  // Stack entries hold a node and its depth in the search space.
-  const stack: Array<{ node: T; depth: number }> = [{ node: start, depth: 0 }];
-  const visited = new Set<T>();
+function computeLPSArray(pattern: string): number[] {
+  const lps: number[] = Array(pattern.length).fill(0);
+  let len = 0;   // length of previous longest prefix suffix
+  let i = 1;     // lps[0] is always 0
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;   // pop() never returns undefined here
-
-    // If we hit the goal, we're done.
-    if (node === goal) return true;
-
-    // Skip revisiting nodes; this keeps the search linear in the number of edges.
-    if (visited.has(node)) continue;
-    visited.add(node);
-
-    // Stop exploring deeper than we’re allowed.
-    if (depth === maxDepth) continue;
-
-    // Push neighbours onto the stack with incremented depth.
-    for (const neighbour of graph.neighbors(node)) {
-      // No need to push a node that is already visited; but doing so is harmless.
-      stack.push({ node: neighbour, depth: depth + 1 });
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else if (len !== 0) {
+      // use the previous lps value to avoid re‑checking
+      len = lps[len - 1];
+    } else {
+      lps[i] = 0;
+      i++;
     }
   }
 
-  return false;   // exhausted everything within the depth limit
+  return lps;
 }
-// Simple adjacency‑list example
-class SimpleGraph implements Graph<number> {
-  adjacency: Map<number, number[]>;
-
-  constructor(edges: Array<[number, number]>) {
-    this.adjacency = new Map();
-    for (const [a, b] of edges) {
-      this.adjacency
-        .get(a) ??= [];
-      this.adjacency.get(a)!.push(b);
-
-      this.adjacency
-        .get(b) ??= [];
-      this.adjacency.get(b)!.push(a);   // undirected
-    }
-  }
-
-  neighbors(node: number): number[] {
-    return this.adjacency.get(node) ?? [];
-  }
-}
-
-const g = new SimpleGraph([
-  [1, 2],
-  [1, 3],
-  [2, 4],
-  [3, 5],
-]);
-
-console.log(depthLimitedSearch(g, 1, 5, 1)); // false (needs depth 2)
-console.log(depthLimitedSearch(g, 1, 5, 2)); // true
+console.log(kmpSearch("ababcabcababc", "abc"));   // 2
+console.log(kmpSearch("ababcabcababc", "abcd"));  // -1
+console.log(kmpSearch("aaaaa", "aaa"));           // 0
