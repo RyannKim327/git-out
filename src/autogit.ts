@@ -1,9 +1,18 @@
-function reverseStr(str: string): string {
-  // 1️⃣  Split the string into an array of characters
-  // 2️⃣  Reverse the array in‑place
-  // 3️⃣  Join the array back into a string
-  return str.split('').reverse().join('');
+// ✅ Basic “looks‑right” test
+function isValidEmail(email: string): boolean {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
 }
 
-// Example
-console.log(reverseStr('hello')); // → "olleh"
+// usage
+console.log(isValidEmail('user@example.com')); // true
+console.log(isValidEmail('bad-email.com'));    // false
+// ✅ Covers quoted local‑part, IP domains, and "newer" TLDs
+function isValidEmailBetter(email: string): boolean {
+  const re = /^(?:(?:\"[^\"]+\")|(?:[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+))@(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}|(?:\[[0-9]{1,3}(?:\.[0-9]{1,3}){3}\]))$/;
+  return re.test(email);
+}
+// In a React hook or any form library
+const validateEmail = (value: string) => (
+  isValidEmail(value) ? undefined : 'Invalid email address'
+);
