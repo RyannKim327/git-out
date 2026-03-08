@@ -1,47 +1,38 @@
-function removeValue<T>(arr: T[], value: T): T[] {
-  return arr.filter((el) => el !== value);
-}
+// fortune.ts
+import { createInterface } from 'readline';
 
-// Example
-const numbers = [1, 2, 3, 4, 5];
-const withoutThree = removeValue(numbers, 3);
-console.log(withoutThree); // [1, 2, 4, 5]
-function removeAtIndex<T>(arr: T[], index: number): void {
-  if (index >= 0 && index < arr.length) {
-    arr.splice(index, 1); // splice mutates the array
+// Set up a simple REPL‑style prompt
+const rl = createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+console.log('🃏 Welcome to the Random Fortune Machine!');
+
+// Ask the user for a number
+rl.question('Enter a number (0–9) and press Enter: ', (answer) => {
+  // Try to parse the input as an integer
+  const num = parseInt(answer.trim(), 10);
+
+  if (isNaN(num) || num < 0 || num > 9) {
+    console.log('❌ That’s not a valid single digit between 0 and 9.');
+  } else {
+    // Pick a fortune from a tiny list
+    const fortunes = [
+      "You'll find a penny on the sidewalk.",
+      "A surprise call will brighten your day.",
+      "Today is a great day to start learning something new.",
+      "You’ll discover a hidden talent for drawing.",
+      "A forgotten receipt will pop up in your inbox.",
+      "A random act of kindness will return to you.",
+      "You’ll taste your favorite food in an unexpected way.",
+      "A new friendship is just a conversation away.",
+      "You’ll hit a traffic light and notice your neighbor’s cat.",
+      "Today you will finally finish that project you’ve shelved."
+    ];
+
+    console.log(`🔮 Fortune for ${num}: ${fortunes[num]}`);
   }
-}
 
-// Example
-const letters = ['a', 'b', 'c', 'd'];
-removeAtIndex(letters, 2);
-console.log(letters); // ['a', 'b', 'd']
-function removeIf<T>(arr: T[], predicate: (el: T) => boolean): T[] {
-  return arr.filter(el => !predicate(el));
-}
-
-// Example: remove all even numbers
-const evensGone = removeIf(numbers, n => n % 2 === 0);
-console.log(evensGone); // [1, 3, 5]
-type User = { id: number; name: string };
-const users: User[] = [
-  { id: 1, name: 'Ada' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Cal' },
-];
-
-function removeById(arr: User[], id: number): User[] {
-  return arr.filter(u => u.id !== id);
-}
-
-const afterRemoval = removeById(users, 2);
-console.log(afterRemoval); // keeps Bob out
-function removeInPlace<T>(arr: T[], predicate: (el: T) => boolean): void {
-  for (let i = 0; i < arr.length; ) {
-    if (predicate(arr[i])) {
-      arr.splice(i, 1); // or use arr.splice(i--, 1) if you want to keep index logic simple
-    } else {
-      i++;
-    }
-  }
-}
+  rl.close();
+});
