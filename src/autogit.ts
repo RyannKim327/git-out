@@ -1,45 +1,41 @@
-const raw = [1, 2, 2, 3, 4, 4, 5];
-
-const unique = Array.from(new Set(raw));
-// or: const unique = [...new Set(raw)];
-
-console.log(unique); // [1, 2, 3, 4, 5]
-function uniqueInPlace<T>(arr: T[]): void {
-  const seen = new Set<T>();
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (seen.has(arr[i])) {
-      arr.splice(i, 1);          // remove duplicate
-    } else {
-      seen.add(arr[i]);          // record first appearance
-    }
-  }
+/** A very small “binary‑tree node” type. */
+interface TreeNode {
+  val: number;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
+function sumTreeRecursive(root: TreeNode | null): number {
+  if (!root) return 0;                     // base case – no node
+  const leftSum  = sumTreeRecursive(root.left);
+  const rightSum = sumTreeRecursive(root.right);
+  return root.val + leftSum + rightSum;    // process node after its children
+}
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
 
-const data = ['a', 'b', 'a', 'c', 'b'];
-uniqueInPlace(data);
-console.log(data); // ['a', 'b', 'c']
-const raw = [1, 2, 3, 2, 4, 1];
-const unique = raw.filter((v, i) => raw.indexOf(v) === i);
-console.log(unique); // [1, 2, 3, 4]
-interface User { id: number; name: string }
+  const queue: TreeNode[] = [root];
+  let total = 0;
 
-const users: User[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 1, name: 'Alice (dup)' }, // duplicate id
-];
+  while (queue.length) {
+    const node = queue.shift()!;   // non‑null assertion – queue always contains real nodes
+    total += node.val;
 
-const uniqueById = Array.from(
-  users.reduce((map, user) => {
-    if (!map.has(user.id)) map.set(user.id, user);
-    return map;
-  }, new Map<number, User>())
-);
+    if (node.left)  queue.push(node.left);
+    if (node.right) queue.push(node.right);
+  }
 
-console.log(uniqueById);
-/*
-[
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' }
-]
-*/
+  return total;
+}
+// Small example
+const tree: TreeNode = {
+  val: 10,
+  left: { val: 5 },
+  right: {
+    val: 20,
+    left: { val: 15 },
+    right: { val: 25 }
+  }
+};
+
+console.log(sumTreeRecursive(tree)); // 75
+console.log(sumTreeIterative(tree)); // 75
