@@ -1,45 +1,26 @@
-const raw = [1, 2, 2, 3, 4, 4, 5];
+function maxOfArray(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;   // or throw an error if you prefer
+  return Math.max(...nums);
+}
+function maxOfArray(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  return nums.reduce((max, n) => (n > max ? n : max), nums[0]);
+}
+function maxOfArray(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
 
-const unique = Array.from(new Set(raw));
-// or: const unique = [...new Set(raw)];
-
-console.log(unique); // [1, 2, 3, 4, 5]
-function uniqueInPlace<T>(arr: T[]): void {
-  const seen = new Set<T>();
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (seen.has(arr[i])) {
-      arr.splice(i, 1);          // remove duplicate
-    } else {
-      seen.add(arr[i]);          // record first appearance
+  let max = nums[0];
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] > max) {
+      max = nums[i];
     }
   }
+  return max;
 }
-
-const data = ['a', 'b', 'a', 'c', 'b'];
-uniqueInPlace(data);
-console.log(data); // ['a', 'b', 'c']
-const raw = [1, 2, 3, 2, 4, 1];
-const unique = raw.filter((v, i) => raw.indexOf(v) === i);
-console.log(unique); // [1, 2, 3, 4]
-interface User { id: number; name: string }
-
-const users: User[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 1, name: 'Alice (dup)' }, // duplicate id
-];
-
-const uniqueById = Array.from(
-  users.reduce((map, user) => {
-    if (!map.has(user.id)) map.set(user.id, user);
-    return map;
-  }, new Map<number, User>())
-);
-
-console.log(uniqueById);
-/*
-[
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' }
-]
-*/
+const myNumbers = [12, 7, 22, 5, 18];
+console.log(maxOfArray(myNumbers)); // 22
+function maxWithFallback(nums: number[], fallback = 0): number {
+  return nums.length > 0
+    ? nums.reduce((a, b) => Math.max(a, b))
+    : fallback;
+}
