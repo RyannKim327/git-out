@@ -1,69 +1,103 @@
-/**
- * Returns the LCS length of two strings.
- */
-export function lcsLength(a: string, b: string): number {
-  const m = a.length;
-  const n = b.length;
-
-  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
-
-  return dp[m][n];
+/* -------------------------------------------------------------
+   Edge definition – just a source, destination and weight
+------------------------------------------------------------- */
+interface Edge {
+  from: string;      // vertex id (string or number, just pick one type)
+  to: string;
+  weight: number;    // can be negative
 }
 
-/**
- * Returns the actual longest common subsequence.
- * In case of multiple LCS of the same length, the one found
- * will consist of the characters chosen by the DP traversal.
- */
-export function lcs(a: string, b: string): string {
-  const m = a.length;
-  const n = b.length;
+/* -------------------------------------------------------------
+   Bellman‑Ford implementation
+   Parameters
+   ----------  graph: Array<Edge>  – all directed edges
+               source: string      – id of source vertex
+   Returns
+   -------  { dist: Map<string, number>,
+              next: Map<string, string | null>,
+              hasNegativeCycle: boolean }
+------------------------------------------------------------- */
+function bellmanFord(
+  graph: Edge[],
+  source: string
+): { dist: Map<string, number>; next: Map<string, string | null>; hasNegativeCycle: boolean } {
+  const dist = new Map<string, number>();
+  const next = new Map<string, string | null>();
 
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  // initialise distances
+  graph.forEach(({ from }) => {
+    dist.set(from, Infinity);
+    next.set(from, null);
+  });
+  // if the source isn’t mentioned in any edge, we still need it in the map
+  dist.set(source, 0);
+  next.set(source, null);
 
-  // Build the DP table – same recurrence as in lcsLength
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+  // total distinct vertices
+  const vertices = Array.from(dist.keys());
+  const V = vertices.length;
+
+  // Relax edges V−1 times
+  for (let i = 0; i < V - 1; i++) {
+    let didRelax = false;
+    for (const { from, to, weight } of graph) {
+      const dFrom = dist.get(from);
+      const dTo   = dist.get(to);
+      if (dFrom! === Infinity) continue;                   // unreachable
+      const newDist = dFrom! + weight;
+      if (newDist < dTo!) {
+        dist.set(to, newDist);
+        next.set(to, from);
+        didRelax = true;
       }
     }
+    // early exit: no distance changed this round → we’re done
+    if (!didRelax) break;
   }
 
-  // Backtrack to rebuild the sequence
-  let i = m;
-  let j = n;
-  const seq: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      seq.push(a[i - 1]); // they match
-      i--;
-      j--;
-    } else if (dp[i - 1][j] > dp[i][j - 1]) {
-      i--; // move up
-    } else {
-      j--; // move left
+  // Check for negative‑weight cycles reachable from source
+  let hasNegativeCycle = false;
+  for (const { from, to, weight } of graph) {
+    const dFrom = dist.get(from);
+    const dTo   = dist.get(to);
+    if (dFrom! !== Infinity && dFrom! + weight < dTo!) {
+      hasNegativeCycle = true;
+      break;
     }
   }
 
-  return seq.reverse().join('');
+  return { dist, next, hasNegativeCycle };
 }
-const a = "AGGTAB";
-const b = "GXTXAYB";
 
-console.log(lcsLength(a, b)); // 4
-console.log(lcs(a, b));       // "GTAB"
+/* -------------------------------------------------------------
+   Example usage
+------------------------------------------------------------- */
+const edges: Edge[] = [
+  { from: 'A', to: 'B', weight: 5 },
+  { from: 'A', to: 'C', weight: 2 },
+  { from: 'B', to: 'C', weight: -3 },
+  { from: 'B', to: 'D', weight: 9 },
+  { from: 'C', to: 'D', weight: 12 },
+];
+
+const { dist, next, hasNegativeCycle } = bellmanFord(edges, 'A');
+
+if (hasNegativeCycle) {
+  console.log('The graph contains a negative‑weight cycle reachable from A.');
+} else {
+  console.log('Shortest distances from A:');
+  dist.forEach((d, v) => console.log(v, d));
+
+  // helper to print a whole path from source to target
+  function buildPath(target: string): string[] {
+    const path: string[] = [];
+    let cur: string | null = target;
+    while (cur !== null) {
+      path.unshift(cur);
+      cur = next.get(cur) ?? null;
+    }
+    return path;
+  }
+
+  console.log('Path to D:', buildPath('D').join(' → '));
+}
