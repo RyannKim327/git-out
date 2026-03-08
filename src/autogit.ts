@@ -1,51 +1,69 @@
-// A classic singly‑linked‑list node
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+/**
+ * Returns the LCS length of two strings.
+ */
+export function lcsLength(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+
+  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+
+  return dp[m][n];
 }
 
 /**
- * Returns the nth node from the end (1‑based) or null if n is out of range.
+ * Returns the actual longest common subsequence.
+ * In case of multiple LCS of the same length, the one found
+ * will consist of the characters chosen by the DP traversal.
  */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;          // natural guard for mis‑ed input
+export function lcs(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-  let first: ListNode<T> | null = head;
-  let second: ListNode<T> | null = head;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  /* Advance `first` n steps ahead. */
-  for (let i = 0; i < n; i++) {
-    if (!first) return null;   // n is larger than list length
-    first = first.next;
+  // Build the DP table – same recurrence as in lcsLength
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
   }
 
-  /* Move both pointers until `first` hits the end. */
-  while (first) {
-    first = first.next;
-    second = second!.next;     // second is guaranteed not null here
+  // Backtrack to rebuild the sequence
+  let i = m;
+  let j = n;
+  const seq: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      seq.push(a[i - 1]); // they match
+      i--;
+      j--;
+    } else if (dp[i - 1][j] > dp[i][j - 1]) {
+      i--; // move up
+    } else {
+      j--; // move left
+    }
   }
 
-  return second;   // `second` is the nth node from the end
+  return seq.reverse().join('');
 }
-function nthFromEndTwoPass<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let len = 0;
-  for (let cur = head; cur; cur = cur.next) len++;
+const a = "AGGTAB";
+const b = "GXTXAYB";
 
-  if (n <= 0 || n > len) return null;
-
-  let cur = head;
-  for (let i = 0; i < len - n; i++) cur = cur!.next;
-
-  return cur;
-}
-// Example list: 1 → 2 → 3 → 4 → 5
-const tail = new ListNode(5);
-const middle = new ListNode(4, tail);
-const head = new ListNode(1,
-           new ListNode(2,
-           new ListNode(3,
-           middle)));
-
-console.log(nthFromEnd(head, 1)?.val); // 5
-console.log(nthFromEnd(head, 2)?.val); // 4
-console.log(nthFromEnd(head, 5)?.val); // 1
-console.log(nthFromEnd(head, 6));      // null
+console.log(lcsLength(a, b)); // 4
+console.log(lcs(a, b));       // "GTAB"
