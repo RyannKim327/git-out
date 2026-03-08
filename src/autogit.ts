@@ -1,39 +1,45 @@
-function isPalindrome(str: string): boolean {
-  // Compare the string to its reverse
-  const reversed = str.split('').reverse().join('');
-  return str === reversed;
-}
+const raw = [1, 2, 2, 3, 4, 4, 5];
 
-// Examples
-console.log(isPalindrome('radar'));   // true
-console.log(isPalindrome('hello'));   // false
-function isPalindromeCI(str: string): boolean {
-  const normalized = str.toLowerCase();          // make everything lowercase
-  return normalized === normalized.split('').reverse().join('');
-}
+const unique = Array.from(new Set(raw));
+// or: const unique = [...new Set(raw)];
 
-console.log(isPalindromeCI('Radar'));   // true
-console.log(isPalindromeCI('Racecar')); // true
-function isPalindromeClean(str: string): boolean {
-  const cleaned = str
-    .replace(/[^a-z0-9]/gi, '')      // strip non-alphanumerics
-    .toLowerCase();                  // normalize case
-  
-  const reversed = cleaned.split('').reverse().join('');
-  return cleaned === reversed;
-}
-
-console.log(isPalindromeClean('A man, a plan, a canal: Panama')); // true
-function isPalindromeTwoPointer(str: string): boolean {
-  let left = 0;
-  let right = str.length - 1;
-
-  while (left < right) {
-    if (str[left] !== str[right]) return false;
-    left++;
-    right--;
+console.log(unique); // [1, 2, 3, 4, 5]
+function uniqueInPlace<T>(arr: T[]): void {
+  const seen = new Set<T>();
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (seen.has(arr[i])) {
+      arr.splice(i, 1);          // remove duplicate
+    } else {
+      seen.add(arr[i]);          // record first appearance
+    }
   }
-  return true;
 }
 
-console.log(isPalindromeTwoPointer('radar')); // true
+const data = ['a', 'b', 'a', 'c', 'b'];
+uniqueInPlace(data);
+console.log(data); // ['a', 'b', 'c']
+const raw = [1, 2, 3, 2, 4, 1];
+const unique = raw.filter((v, i) => raw.indexOf(v) === i);
+console.log(unique); // [1, 2, 3, 4]
+interface User { id: number; name: string }
+
+const users: User[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 1, name: 'Alice (dup)' }, // duplicate id
+];
+
+const uniqueById = Array.from(
+  users.reduce((map, user) => {
+    if (!map.has(user.id)) map.set(user.id, user);
+    return map;
+  }, new Map<number, User>())
+);
+
+console.log(uniqueById);
+/*
+[
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' }
+]
+*/
