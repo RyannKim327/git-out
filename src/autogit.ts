@@ -1,12 +1,5 @@
-function reverseWords(str: string): string {
-  // Split on any amount of whitespace, filter out empty chunks,
-  // reverse the array, then join with a single space.
-  return str
-    .trim()
-    .split(/\s+/)
-    .reverse()
-    .join(' ');
-}
+const original = "Hello  world \t from TypeScript!";
 
-// Example
-console.log(reverseWords("Hello world this is TypeScript")); // "TypeScript is this world Hello"
+const noSpaces = original.replace(/\s+/g, '');   // → "HelloworldfromTypeScript!"
+const noSpaces = original.replace(/ +/g, '');
+const noSpaces = original.split(' ').join('');
