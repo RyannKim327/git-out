@@ -1,37 +1,38 @@
 /**
- * Selection Sort – stable‑like, O(n²) time, O(1) extra space.
- *
- * @param arr   The array to be sorted (in‑place).
- * @param cmp   Optional comparator: (a, b) => number.
- *              If omitted, numerical ascending order is assumed.
+ * Return the first non‑repeating character in a string.
+ * If every character repeats, return `null`.
  */
-export function selectionSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): void {
-  const compare = cmp ?? ((a: any, b: any) => a - b);
+function firstNonRepeating(str: string): string | null {
+  const counts: Record<string, number> = {};
 
-  for (let i = 0; i < arr.length - 1; i++) {
-    // Assume the smallest is at i.
-    let minIdx = i;
+  // 1️⃣ Count each character
+  for (const ch of str) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
+  }
 
-    // Search the rest of the array for a smaller element.
-    for (let j = i + 1; j < arr.length; j++) {
-      if (compare(arr[j], arr[minIdx]) < 0) {
-        minIdx = j;
-      }
-    }
-
-    // If the smallest isn't already in place, swap.
-    if (minIdx !== i) {
-      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+  // 2️⃣ Scan once more to find the first with count 1
+  for (const ch of str) {
+    if (counts[ch] === 1) {
+      return ch;
     }
   }
-}
-const nums = [64, 25, 12, 22, 11];
-selectionSort(nums);
-console.log(nums); // → [11, 12, 22, 25, 64]
 
-const words = ["pear", "apple", "orange"];
-selectionSort(words, (a, b) => a.localeCompare(b));
-console.log(words); // → ["apple", "orange", "pear"]
+  return null;
+}
+
+// quick examples
+console.log(firstNonRepeating('abacabad')); // "b"
+console.log(firstNonRepeating('aabbcc'));   // null
+function firstNonRepeatingMap(str: string): string | null {
+  const freq = new Map<string, number>();
+
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
+
+  for (const ch of str) if (freq.get(ch) === 1) return ch;
+  return null;
+}
+function allNonRepeating(str: string): string[] {
+  const freq = new Map<string, number>();
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  return [...str].filter(ch => freq.get(ch) === 1);
+}
