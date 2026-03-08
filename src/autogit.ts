@@ -1,41 +1,57 @@
 /**
- * Random‑pivot quick sort.
- *
- * @param arr   The array to sort (in‑place).
- * @returns     The sorted array (the same reference as `arr`).
+ * Simple anagram checker.
+ * @param a First string
+ * @param b Second string
+ * @returns true if a and b are anagrams, false otherwise
  */
-export function quickSortRandom<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
-  if (arr.length <= 1)
-    return arr;
+function areAnagrams(a: string, b: string): boolean {
+  // 1. Normalize: lower‑case, strip non‑alphanumerics, trim
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .trim();
 
-  // So we can provide a custom comparison, but default is the usual "<".
-  const cmp = compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  const na = normalize(a);
+  const nb = normalize(b);
 
-  // Pick a random index as pivot
-  const pivotIndex = Math.floor(Math.random() * arr.length);
-  const pivotValue = arr[pivotIndex];
+  // Quick length check; if they differ early we’re done.
+  if (na.length !== nb.length) return false;
 
-  // Partition into two new arrays
-  const lows: T[] = [];
-  const highs: T[] = [];
-  const pivots: T[] = [];
+  // 2. Build frequency maps
+  const freq = new Map<string, number>();
 
-  for (let i = 0; i < arr.length; i++) {
-    const value = arr[i];
-    const comparison = cmp(value, pivotValue);
-    if (comparison < 0)    lows.push(value);
-    else if (comparison > 0) highs.push(value);
-    else                    pivots.push(value);   // equals pivot
+  for (const ch of na) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  // Recurse and concatenate
-  return quickSortRandom(lows, cmp)
-          .concat(pivots, quickSortRandom(highs, cmp));
+  for (const ch of nb) {
+    const count = freq.get(ch);
+
+    // If we see a character not in the first string, bail
+    if (!count) return false;
+
+    // Decrease the count and remove entry if it drops to zero
+    if (count === 1) freq.delete(ch);
+    else freq.set(ch, count - 1);
+  }
+
+  // 3. If all counts cleared, the strings are anagrams
+  return freq.size === 0;
 }
+console.log(areAnagrams("listen", "silent"));   // → true
+console.log(areAnagrams("evil", "vile"));       // → true
+console.log(areAnagrams("hello", "billion"));   // → false
+console.log(areAnagrams("Clint Eastwood", "Old West Action")); // true
+function areAnagramsSort(a: string, b: string): boolean {
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .trim()
+      .split("")
+      .sort()
+      .join("");
 
-// ---- Demo ---------------------------------------------------------
-
-const unsorted = [7, 2, 9, 4, 1, 5, 3, 8, 6];
-console.log('original: ', unsorted);
-const sorted = quickSortRandom(unsorted);
-console.log('sorted:   ', sorted);
+  return normalize(a) === normalize(b);
+}
