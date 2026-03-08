@@ -1,38 +1,47 @@
-/**
- * Finds the majority element in an array (appears > n/2 times).
- * If no majority exists, undefined is returned.
- *
- * @param arr   - Array of comparable values (number, string ...).
- * @returns     - The majority element or undefined.
- */
-export function majorityElement<T extends number | string | symbol>(arr: T[]): T | undefined {
-  if (arr.length === 0) return undefined;
+function countWordOccurrences(text: string, word: string): number {
+  // Escape any regex meta‑characters in the search word
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  // Boyer‑Moore majority vote algorithm
-  let candidate: T | undefined = arr[0];
-  let count = 1;
+  // \b = word boundary, i = ignore case, g = global (find all)
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
 
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] === candidate) {
-      count++;
-    } else {
-      count--;
-      if (count === 0) {
-        candidate = arr[i];
-        count = 1;
-      }
-    }
-  }
-
-  // Verify that candidate really is the majority
-  count = 0;
-  for (const v of arr) {
-    if (v === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : undefined;
+  // .match() returns an array of all matches, null if none
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
 }
-majorityElement([1, 2, 3, 2, 2]);      // → 2
-majorityElement(['a', 'b', 'a', 'c']); // → undefined
-majorityElement([5, 5, 5, 5]);          // → 5
-majorityElement([]);                   // → undefined
+
+// Usage
+const msg = "The quick brown fox jumps over the lazy fox. Foxes are clever.";
+console.log(countWordOccurrences(msg, "fox")); // → 2 (fox, fox)
+const regex = new RegExp(escaped, 'gi');
+function countSplit(text: string, word: string): number {
+  // Empty string returns 0
+  if (!text) return 0;
+  return text.split(word).length - 1;
+}
+function countWithMatchAll(text: string, word: string): number {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+  const allMatches = text.matchAll(regex); // Iterable<{ index: … }>
+
+  let count = 0;
+  for (const _ of allMatches) count++;
+  return count;
+}
+export function countOccurrences(
+  text: string,
+  word: string,
+  options?: { caseSensitive?: boolean; wholeWord?: boolean }
+): number {
+  const { caseSensitive = false, wholeWord = true } = options ?? {};
+
+  // Escape regex meta‑chars
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  let pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
+  let flags = 'g' + (caseSensitive ? '' : 'i');
+
+  const regex = new RegExp(pattern, flags);
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
+}
