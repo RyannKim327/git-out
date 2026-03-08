@@ -1,79 +1,40 @@
 /**
- * Returns the kth smallest value in `arr` (1‑based k).
- *  Throws an error if k is out of bounds.
+ * Binary search – recursive.  
+ * @param arr        — sorted array
+ * @param target     — value to find
+ * @param compare    — optional comparison function (a, b) => number
+ *                     returns <0 if a<b, 0 if a==b, >0 if a>b
+ * @returns index of `target` or -1 if not found
  */
-export function kthSmallest(arr: number[], k: number): number {
-  if (k <= 0 || k > arr.length) {
-    throw new RangeError('k is out of bounds');
-  }
+function binarySearchRec<T>(
+  arr: T[],
+  target: T,
+  compare?: (a: T, b: T) => number
+): number {
+  // Provide a default numeric comparator
+  const cmp = compare ?? ((a: any, b: any) => a - b);
 
-  // Work on a copy so the original array stays intact.
-  const a = arr.slice();
+  const search = (low: number, high: number): number => {
+    if (low > high) return -1;          // base case: not found
 
-  const quickSelect = (left: number, right: number, index: number) => {
-    // If the segment contains only one element, that's the answer.
-    if (left === right) return a[left];
+    const mid = Math.floor((low + high) / 2);
+    const cmpResult = cmp(arr[mid], target);
 
-    const pivotIndex = partition(left, right);
-    if (pivotIndex === index) {
-      return a[pivotIndex];
-    } else if (pivotIndex < index) {
-      return quickSelect(pivotIndex + 1, right, index);
-    } else {
-      return quickSelect(left, pivotIndex - 1, index);
-    }
+    if (cmpResult === 0) return mid;    // target is at mid
+    if (cmpResult < 0) return search(mid + 1, high); // target is right
+    return search(low, mid - 1);        // target is left
   };
 
-  const partition = (left: number, right: number): number => {
-    // Pick a pivot.  Using the middle element keeps the code short; you could
-    // shuffle or use Median‑of‑Three for better worst‑case guarantees.
-    const pivot = a[Math.floor((left + right) / 2)];
-    let i = left;
-    let j = right;
-
-    while (i <= j) {
-      while (a[i] < pivot) i++;
-      while (a[j] > pivot) j--;
-      if (i <= j) {
-        [a[i], a[j]] = [a[j], a[i]];
-        i++;
-        j--;
-      }
-    }
-    return i - 1; // pivot final position
-  };
-
-  // `k-1` because the array index is 0‑based.
-  return quickSelect(0, a.length - 1, k - 1);
+  return search(0, arr.length - 1);
 }
-export function kthSmallestBySort(arr: number[], k: number): number {
-  if (k <= 0 || k > arr.length) throw new RangeError('k is out of bounds');
-  const sorted = [...arr].sort((a, b) => a - b);
-  return sorted[k - 1];
-}
-class MinHeap {
-  private data: number[] = [];
+// Numbers – no comparator needed
+const nums = [1, 3, 5, 7, 9, 11, 13];
+console.log(binarySearchRec(nums, 7));  // → 3
+console.log(binarySearchRec(nums, 2));  // → -1
 
-  push(val: number) {
-    this.data.push(val);
-    this.bubbleUp(this.data.length - 1);
-  }
+// Strings – supply a comparator
+const words = ["apple", "banana", "cherry", "date"];
+const stringCmp = (a: string, b: string) => a.localeCompare(b);
 
-  /* ... bubbleUp, bubbleDown, peek, pop ... */
-
-  /** Return kth smallest (1‑based). */
-  kth(k: number): number {
-    if (k <= 0 || k > this.data.length) throw new RangeError();
-    const heapCopy = [...this.data];
-    let result = -Infinity;
-    for (let i = 0; i < k; i++) {
-      result = heapCopy[0];
-      this.swap(heapCopy, 0, heapCopy.length - 1);
-      heapCopy.pop();
-      this.sinkDown(heapCopy, 0);
-    }
-    return result;
-  }
-
-  /* helper methods omitted for brevity */
-}
+console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
+console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
