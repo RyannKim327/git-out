@@ -1,40 +1,45 @@
-/**
- * Binary search – recursive.  
- * @param arr        — sorted array
- * @param target     — value to find
- * @param compare    — optional comparison function (a, b) => number
- *                     returns <0 if a<b, 0 if a==b, >0 if a>b
- * @returns index of `target` or -1 if not found
- */
-function binarySearchRec<T>(
-  arr: T[],
-  target: T,
-  compare?: (a: T, b: T) => number
-): number {
-  // Provide a default numeric comparator
-  const cmp = compare ?? ((a: any, b: any) => a - b);
-
-  const search = (low: number, high: number): number => {
-    if (low > high) return -1;          // base case: not found
-
-    const mid = Math.floor((low + high) / 2);
-    const cmpResult = cmp(arr[mid], target);
-
-    if (cmpResult === 0) return mid;    // target is at mid
-    if (cmpResult < 0) return search(mid + 1, high); // target is right
-    return search(low, mid - 1);        // target is left
-  };
-
-  return search(0, arr.length - 1);
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
-// Numbers – no comparator needed
-const nums = [1, 3, 5, 7, 9, 11, 13];
-console.log(binarySearchRec(nums, 7));  // → 3
-console.log(binarySearchRec(nums, 2));  // → -1
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-// Strings – supply a comparator
-const words = ["apple", "banana", "cherry", "date"];
-const stringCmp = (a: string, b: string) => a.localeCompare(b);
+  while (fast && fast.next) {
+    slow = slow!.next;            // move one step
+    fast = fast.next.next;        // move two steps
 
-console.log(binarySearchRec(words, "cherry", stringCmp)); // → 2
-console.log(binarySearchRec(words, "fig", stringCmp));    // → -1
+    if (slow === fast) return true;   // they met → cycle
+  }
+
+  return false;   // hit the end → no cycle
+}
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+  const visited = new Set<ListNode<T>>();
+
+  let current = head;
+  while (current) {
+    if (visited.has(current)) return true;
+    visited.add(current);
+    current = current.next;
+  }
+  return false;
+}
+// Linear list (no cycle)
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b; b.next = c;
+
+console.log(hasCycle(a)); // false
+
+// Cyclic list
+const d = new ListNode(4);
+const e = new ListNode(5);
+const f = new ListNode(6);
+d.next = e; e.next = f; f.next = d; // f points back to d
+
+console.log(hasCycle(d)); // true
