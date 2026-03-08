@@ -1,72 +1,41 @@
 /**
- * Encodes a string using Burrows–Wheeler transform.
+ * Random‑pivot quick sort.
  *
- * @param input – Source text (any length, any chars including nulls).
- * @returns {bwt: string, index: number} – BWT string + original row index.
+ * @param arr   The array to sort (in‑place).
+ * @returns     The sorted array (the same reference as `arr`).
  */
-export function bwtEncode(input: string): { bwt: string; index: number } {
-  const n = input.length;
-  // Quick escape for empty string.
-  if (n === 0) return { bwt: "", index: 0 };
+export function quickSortRandom<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
+  if (arr.length <= 1)
+    return arr;
 
-  // Build the rotation array.
-  const rotations: string[] = [];
-  for (let offset = 0; offset < n; offset++) {
-    const rotation = input.slice(offset) + input.slice(0, offset);
-    rotations.push(rotation);
+  // So we can provide a custom comparison, but default is the usual "<".
+  const cmp = compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+  // Pick a random index as pivot
+  const pivotIndex = Math.floor(Math.random() * arr.length);
+  const pivotValue = arr[pivotIndex];
+
+  // Partition into two new arrays
+  const lows: T[] = [];
+  const highs: T[] = [];
+  const pivots: T[] = [];
+
+  for (let i = 0; i < arr.length; i++) {
+    const value = arr[i];
+    const comparison = cmp(value, pivotValue);
+    if (comparison < 0)    lows.push(value);
+    else if (comparison > 0) highs.push(value);
+    else                    pivots.push(value);   // equals pivot
   }
 
-  // Sort the rotations.
-  rotations.sort();
-
-  // Construct the BWT string (last column) and locate the original string.
-  let lastColumn = "";
-  let origIndex = -1;
-  for (let i = 0; i < n; i++) {
-    const rot = rotations[i];
-    lastColumn += rot.charAt(n - 1);          // last char of the rotation
-    if (rot === input) origIndex = i;        // original text keeps its place
-  }
-
-  return { bwt: lastColumn, index: origIndex };
+  // Recurse and concatenate
+  return quickSortRandom(lows, cmp)
+          .concat(pivots, quickSortRandom(highs, cmp));
 }
 
-/**
- * Decodes a BWT pair back to the original string.
- *
- * @param bwt – String produced by bwtEncode (last column).
- * @param index – Index returned by bwtEncode.
- * @returns original string.
- */
-export function bwtDecode(bwt: string, index: number): string {
-  const n = bwt.length;
-  if (n === 0) return "";
+// ---- Demo ---------------------------------------------------------
 
-  // Initialize table with empty strings.
-  const table: string[] = Array(n).fill("");
-
-  // Each iteration prepends a character from the BWT to every row,
-  // then sorts. After n iterations the table is the sorted matrix.
-  for (let step = 0; step < n; step++) {
-    // Prepend the BWT characters.
-    for (let i = 0; i < n; i++) {
-      table[i] = bwt.charAt(i) + table[i];
-    }
-    // Stable sort by the whole string.
-    table.sort();
-  }
-
-  // The row at the recorded index is the original string.
-  return table[index];
-}
-import { bwtEncode, bwtDecode } from "./bwt";
-
-const text = "The quick brown fox jumps over the lazy dog";
-
-const { bwt, index } = bwtEncode(text);
-console.log("BWT String:", bwt);
-console.log("Original index =", index);
-
-const recovered = bwtDecode(bwt, index);
-console.log("Recovered:", recovered);
-console.log("Match:", recovered === text); // true
+const unsorted = [7, 2, 9, 4, 1, 5, 3, 8, 6];
+console.log('original: ', unsorted);
+const sorted = quickSortRandom(unsorted);
+console.log('sorted:   ', sorted);
