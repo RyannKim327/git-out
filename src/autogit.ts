@@ -1,59 +1,57 @@
-/**
- * Shell sort – a simple, in‑place algorithm that improves on insertion sort.
- * Sorts an array of numbers in ascending order.
- *
- * @param arr The array to sort (modified in place)
- * @param compare Optional compare function (defaults to numeric comparison)
- */
-export function shellSort(
-  arr: number[],
-  compare?: (a: number, b: number) => number
-): void {
-  const len = arr.length;
-  const cmp = compare ?? ((a, b) => a - b);
+text:   abcdefghijk
+        ‖~~~~~~~~~~
+pattern:   def
+function buildShiftTable(pattern: string): Map<string, number> {
+  const table = new Map<string, number>();
+  const m = pattern.length;
 
-  // A common gap sequence: halving each time (Shell's original)
-  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Gapped insertion sort
-    for (let i = gap; i < len; i++) {
-      let temp = arr[i];
-      let j = i;
-
-      // Move elements that are greater than temp backward by 'gap' places
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      // Bring temp into its spot
-      arr[j] = temp;
-    }
+  // For all chars except the last one
+  for (let i = 0; i < m - 1; i++) {
+    table.set(pattern[i], m - 1 - i);
   }
+  return table;
 }
-const data = [40, 3, 10, 5, 1, 15];
-shellSort(data);
+function boyerMooreHorspool(pattern: string, text: string): number | null {
+  const m = pattern.length;
+  const n = text.length;
 
-console.log(data); // [1, 3, 5, 10, 15, 40]
-export function shellSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): void {
-  const len = arr.length;
-  const cmp = compare ?? ((a, b) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
+  if (m === 0) return 0;          // Empty pattern matches at start
+  if (m > n) return null;         // Impossible to find
 
-  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    for (let i = gap; i < len; i++) {
-      const temp = arr[i];
-      let j = i;
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
+  const shiftTable = buildShiftTable(pattern);
+  const defaultShift = m;
+
+  let i = 0; // Current alignment of pattern in text
+
+  while (i <= n - m) {
+    let j = m - 1;
+
+    // Compare from right to left
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
     }
+
+    if (j < 0) {
+      // Full match
+      return i;
+    }
+
+    // Mismatch: decide how far to shift
+    const mismatchedChar = text[i + j];
+    const shift = shiftTable.get(mismatchedChar) ?? defaultShift;
+
+    i += shift;
   }
+
+  return null; // No match found
 }
-shellSort(['banana', 'apple', 'pear'], (a, b) => a.localeCompare(b));
+const sampleText = "The quick brown fox jumps over the lazy dog. The fox was quick.";
+const samplePattern = "quick";
+
+const matchIdx = boyerMooreHorspool(samplePattern, sampleText);
+
+if (matchIdx !== null) {
+  console.log(`Found at index ${matchIdx}`);
+} else {
+  console.log("No match");
+}
