@@ -1,12 +1,30 @@
-const numbers = [3, 5, 7, 9];
-const mean = numbers.reduce((sum, n) => sum + n, 0) / numbers.length;
-console.log(mean); // 6
-function mean(arr: number[]): number {
-  if (arr.length === 0) throw new Error('Cannot compute mean of empty array');
+/**
+ * Returns the second largest value in an array.
+ * Uses a single pass – O(n) time, O(1) extra space.
+ *
+ * @param nums – numeric array
+ * @returns second largest number, or `undefined` if it can’t be determined
+ */
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
 
-  const total = arr.reduce((sum, val) => sum + val, 0);
-  return total / arr.length;
+  let largest = -Infinity;
+  let second = -Infinity;
+
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;   // old largest becomes second
+      largest = n;
+    } else if (n > second && n !== largest) {
+      // n is between largest and second – update second
+      second = n;
+    }
+  }
+
+  return second === -Infinity ? undefined : second;
 }
 
-// Usage
-const avg = mean([10, 20, 30]); // 20
+// quick demo
+console.log(secondLargest([3, 1, 4, 1, 5, 9, 2, 6, 5])); // 8
+console.log(secondLargest([42]));                         // undefined
+console.log(secondLargest([7, 7, 7]));                     // undefined – no distinct second value
