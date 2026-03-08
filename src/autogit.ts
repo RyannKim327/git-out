@@ -1,79 +1,45 @@
-/**
- * Returns the kth smallest value in `arr` (1‑based k).
- *  Throws an error if k is out of bounds.
- */
-export function kthSmallest(arr: number[], k: number): number {
-  if (k <= 0 || k > arr.length) {
-    throw new RangeError('k is out of bounds');
-  }
+const raw = [1, 2, 2, 3, 4, 4, 5];
 
-  // Work on a copy so the original array stays intact.
-  const a = arr.slice();
+const unique = Array.from(new Set(raw));
+// or: const unique = [...new Set(raw)];
 
-  const quickSelect = (left: number, right: number, index: number) => {
-    // If the segment contains only one element, that's the answer.
-    if (left === right) return a[left];
-
-    const pivotIndex = partition(left, right);
-    if (pivotIndex === index) {
-      return a[pivotIndex];
-    } else if (pivotIndex < index) {
-      return quickSelect(pivotIndex + 1, right, index);
+console.log(unique); // [1, 2, 3, 4, 5]
+function uniqueInPlace<T>(arr: T[]): void {
+  const seen = new Set<T>();
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (seen.has(arr[i])) {
+      arr.splice(i, 1);          // remove duplicate
     } else {
-      return quickSelect(left, pivotIndex - 1, index);
+      seen.add(arr[i]);          // record first appearance
     }
-  };
-
-  const partition = (left: number, right: number): number => {
-    // Pick a pivot.  Using the middle element keeps the code short; you could
-    // shuffle or use Median‑of‑Three for better worst‑case guarantees.
-    const pivot = a[Math.floor((left + right) / 2)];
-    let i = left;
-    let j = right;
-
-    while (i <= j) {
-      while (a[i] < pivot) i++;
-      while (a[j] > pivot) j--;
-      if (i <= j) {
-        [a[i], a[j]] = [a[j], a[i]];
-        i++;
-        j--;
-      }
-    }
-    return i - 1; // pivot final position
-  };
-
-  // `k-1` because the array index is 0‑based.
-  return quickSelect(0, a.length - 1, k - 1);
-}
-export function kthSmallestBySort(arr: number[], k: number): number {
-  if (k <= 0 || k > arr.length) throw new RangeError('k is out of bounds');
-  const sorted = [...arr].sort((a, b) => a - b);
-  return sorted[k - 1];
-}
-class MinHeap {
-  private data: number[] = [];
-
-  push(val: number) {
-    this.data.push(val);
-    this.bubbleUp(this.data.length - 1);
   }
-
-  /* ... bubbleUp, bubbleDown, peek, pop ... */
-
-  /** Return kth smallest (1‑based). */
-  kth(k: number): number {
-    if (k <= 0 || k > this.data.length) throw new RangeError();
-    const heapCopy = [...this.data];
-    let result = -Infinity;
-    for (let i = 0; i < k; i++) {
-      result = heapCopy[0];
-      this.swap(heapCopy, 0, heapCopy.length - 1);
-      heapCopy.pop();
-      this.sinkDown(heapCopy, 0);
-    }
-    return result;
-  }
-
-  /* helper methods omitted for brevity */
 }
+
+const data = ['a', 'b', 'a', 'c', 'b'];
+uniqueInPlace(data);
+console.log(data); // ['a', 'b', 'c']
+const raw = [1, 2, 3, 2, 4, 1];
+const unique = raw.filter((v, i) => raw.indexOf(v) === i);
+console.log(unique); // [1, 2, 3, 4]
+interface User { id: number; name: string }
+
+const users: User[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 1, name: 'Alice (dup)' }, // duplicate id
+];
+
+const uniqueById = Array.from(
+  users.reduce((map, user) => {
+    if (!map.has(user.id)) map.set(user.id, user);
+    return map;
+  }, new Map<number, User>())
+);
+
+console.log(uniqueById);
+/*
+[
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' }
+]
+*/
