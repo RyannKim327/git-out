@@ -1,103 +1,59 @@
-/* -------------------------------------------------------------
-   Edge definition – just a source, destination and weight
-------------------------------------------------------------- */
-interface Edge {
-  from: string;      // vertex id (string or number, just pick one type)
-  to: string;
-  weight: number;    // can be negative
-}
+/**
+ * Shell sort – a simple, in‑place algorithm that improves on insertion sort.
+ * Sorts an array of numbers in ascending order.
+ *
+ * @param arr The array to sort (modified in place)
+ * @param compare Optional compare function (defaults to numeric comparison)
+ */
+export function shellSort(
+  arr: number[],
+  compare?: (a: number, b: number) => number
+): void {
+  const len = arr.length;
+  const cmp = compare ?? ((a, b) => a - b);
 
-/* -------------------------------------------------------------
-   Bellman‑Ford implementation
-   Parameters
-   ----------  graph: Array<Edge>  – all directed edges
-               source: string      – id of source vertex
-   Returns
-   -------  { dist: Map<string, number>,
-              next: Map<string, string | null>,
-              hasNegativeCycle: boolean }
-------------------------------------------------------------- */
-function bellmanFord(
-  graph: Edge[],
-  source: string
-): { dist: Map<string, number>; next: Map<string, string | null>; hasNegativeCycle: boolean } {
-  const dist = new Map<string, number>();
-  const next = new Map<string, string | null>();
+  // A common gap sequence: halving each time (Shell's original)
+  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Gapped insertion sort
+    for (let i = gap; i < len; i++) {
+      let temp = arr[i];
+      let j = i;
 
-  // initialise distances
-  graph.forEach(({ from }) => {
-    dist.set(from, Infinity);
-    next.set(from, null);
-  });
-  // if the source isn’t mentioned in any edge, we still need it in the map
-  dist.set(source, 0);
-  next.set(source, null);
-
-  // total distinct vertices
-  const vertices = Array.from(dist.keys());
-  const V = vertices.length;
-
-  // Relax edges V−1 times
-  for (let i = 0; i < V - 1; i++) {
-    let didRelax = false;
-    for (const { from, to, weight } of graph) {
-      const dFrom = dist.get(from);
-      const dTo   = dist.get(to);
-      if (dFrom! === Infinity) continue;                   // unreachable
-      const newDist = dFrom! + weight;
-      if (newDist < dTo!) {
-        dist.set(to, newDist);
-        next.set(to, from);
-        didRelax = true;
+      // Move elements that are greater than temp backward by 'gap' places
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
       }
-    }
-    // early exit: no distance changed this round → we’re done
-    if (!didRelax) break;
-  }
-
-  // Check for negative‑weight cycles reachable from source
-  let hasNegativeCycle = false;
-  for (const { from, to, weight } of graph) {
-    const dFrom = dist.get(from);
-    const dTo   = dist.get(to);
-    if (dFrom! !== Infinity && dFrom! + weight < dTo!) {
-      hasNegativeCycle = true;
-      break;
+      // Bring temp into its spot
+      arr[j] = temp;
     }
   }
-
-  return { dist, next, hasNegativeCycle };
 }
+const data = [40, 3, 10, 5, 1, 15];
+shellSort(data);
 
-/* -------------------------------------------------------------
-   Example usage
-------------------------------------------------------------- */
-const edges: Edge[] = [
-  { from: 'A', to: 'B', weight: 5 },
-  { from: 'A', to: 'C', weight: 2 },
-  { from: 'B', to: 'C', weight: -3 },
-  { from: 'B', to: 'D', weight: 9 },
-  { from: 'C', to: 'D', weight: 12 },
-];
+console.log(data); // [1, 3, 5, 10, 15, 40]
+export function shellSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): void {
+  const len = arr.length;
+  const cmp = compare ?? ((a, b) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
 
-const { dist, next, hasNegativeCycle } = bellmanFord(edges, 'A');
-
-if (hasNegativeCycle) {
-  console.log('The graph contains a negative‑weight cycle reachable from A.');
-} else {
-  console.log('Shortest distances from A:');
-  dist.forEach((d, v) => console.log(v, d));
-
-  // helper to print a whole path from source to target
-  function buildPath(target: string): string[] {
-    const path: string[] = [];
-    let cur: string | null = target;
-    while (cur !== null) {
-      path.unshift(cur);
-      cur = next.get(cur) ?? null;
+  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
     }
-    return path;
   }
-
-  console.log('Path to D:', buildPath('D').join(' → '));
 }
+shellSort(['banana', 'apple', 'pear'], (a, b) => a.localeCompare(b));
