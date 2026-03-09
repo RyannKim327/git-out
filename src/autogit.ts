@@ -1,38 +1,19 @@
-/**
- * Finds the majority element in an array (appears > n/2 times).
- * If no majority exists, undefined is returned.
- *
- * @param arr   - Array of comparable values (number, string ...).
- * @returns     - The majority element or undefined.
- */
-export function majorityElement<T extends number | string | symbol>(arr: T[]): T | undefined {
-  if (arr.length === 0) return undefined;
-
-  // Boyer‑Moore majority vote algorithm
-  let candidate: T | undefined = arr[0];
-  let count = 1;
-
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] === candidate) {
-      count++;
-    } else {
-      count--;
-      if (count === 0) {
-        candidate = arr[i];
-        count = 1;
-      }
-    }
-  }
-
-  // Verify that candidate really is the majority
-  count = 0;
-  for (const v of arr) {
-    if (v === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : undefined;
+function removeVowels(str: string): string {
+  // The regex /[aeiou]/gi matches any vowel, case‑insensitively
+  return str.replace(/[aeiou]/gi, '');
 }
-majorityElement([1, 2, 3, 2, 2]);      // → 2
-majorityElement(['a', 'b', 'a', 'c']); // → undefined
-majorityElement([5, 5, 5, 5]);          // → 5
-majorityElement([]);                   // → undefined
+
+// Examples
+console.log(removeVowels('Hello World'));    // "Hll Wrld"
+console.log(removeVowels('Typescript'));     // "TypScrpt"
+console.log(removeVowels('AEIOU aeioU'));    // ""
+function removeAllVowels(str: string): string {
+  // Matches any vowel character in the Latin vowel block
+  return str.replace(/[aeiouAEIOU]/g, ''); // still plain Latin
+  // OR with property escapes (if your environment supports it):
+  // return str.replace(/\p{Script=Latin}&&[aeiou]/gi, '');
+}
+function removeVowels(arr: string): string {
+  const vowels = new Set('aeiouAEIOU');
+  return arr.split('').filter(ch => !vowels.has(ch)).join('');
+}
