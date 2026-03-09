@@ -1,83 +1,40 @@
-// --------------------------------------------------
-// 1️⃣  Linked‑list node definition
-// --------------------------------------------------
-export interface ListNode<T> {
+// Basic node interface – can be turned into a class if you like.
+interface TreeNode<T = number> {
   val: T;
-  next: ListNode<T> | null;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
+function maxDepth<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                 // empty subtree → depth 0
 
-// --------------------------------------------------
-// 2️⃣  Helper: reverse a list, returns new head
-// --------------------------------------------------
-/**
- * Reverses the linked list starting at node `head`.
- * Returns the new head of the reversed list.
- */
-function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let current = head;
+  const leftDepth  = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
 
-  while (current) {
-    const next = current.next;
-    current.next = prev;
-    prev = current;
-    current = next;
-  }
-  return prev;          // new head
+  // Depth of current node = 1 (itself) + depth of deeper side
+  return 1 + Math.max(leftDepth, rightDepth);
 }
+const root: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 } },
+  right: { val: 3, right: { val: 5, right: { val: 6 } } }
+};
 
-// --------------------------------------------------
-// 3️⃣  Palindrome checker
-// --------------------------------------------------
-export function isPalindrome<T>(head: ListNode<T> | null): boolean {
-  if (!head || !head.next) return true;   // Empty or single‑node list
+console.log(maxDepth(root));   // → 4
+function maxDepthIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
 
-  // ----- 3.1  Find the middle (slow stops at middle)
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+  let max = 0;
+  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
+    { node: root, depth: 1 },
+  ];
 
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    max = Math.max(max, depth);
+
+    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
+    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
   }
 
-  // ----- 3.2  Reverse second half
-  const secondHalfStart = reverse(slow!.next);
-  let firstHalfIter = head;
-  let secondHalfIter = secondHalfStart;
-
-  // ----- 3.3  Compare halves
-  let palindrome = true;
-  while (secondHalfIter) {
-    if (firstHalfIter!.val !== secondHalfIter.val) {
-      palindrome = false;
-      break;
-    }
-    firstHalfIter = firstHalfIter!.next;
-    secondHalfIter = secondHalfIter.next;
-  }
-
-  // ----- 3.4  Restore the original order (optional)
-  slow!.next = reverse(secondHalfStart);
-
-  return palindrome;
+  return max;
 }
-
-// --------------------------------------------------
-// 4️⃣  Example usage
-// --------------------------------------------------
-function buildList(values: any[]): ListNode | null {
-  let dummy: ListNode | null = null;
-  for (let i = values.length - 1; i >= 0; i--) {
-    dummy = { val: values[i], next: dummy };
-  }
-  return dummy;
-}
-
-// Palindrome case
-const list1 = buildList([1, 2, 3, 2, 1]);
-console.log(isPalindrome(list1)); // true
-
-// Non‑palindrome
-const list2 = buildList([1, 2, 3, 4, 5]);
-console.log(isPalindrome(list2)); // false
