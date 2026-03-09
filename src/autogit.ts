@@ -1,67 +1,39 @@
-/**
- * A generic insertion‑sort implementation.
- *
- * @param arr The array to sort (in‑place).
- * @param cmp Optional comparison callback. It should return:
- *            < 0 if a < b
- *            = 0 if a === b
- *            > 0 if a > b
- *
- * @returns The same array reference, now sorted.
- */
-export function insertionSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  // If no custom comparator is supplied, use the default < / >.
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore - allow primitive coercion for < and > operators
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-      };
+export class Stack<T> {
+  /** internal buffer – the array that stores the stack items */
+  private readonly items: T[] = [];
 
-  // Iterate from the second element to the end.
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-
-    // Shift larger elements one position to the right.
-    while (j >= 0 && compare(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    // Place key in its correct position.
-    arr[j + 1] = key;
+  /** push an item onto the stack */
+  push(value: T): void {
+    this.items.push(value);
   }
 
-  return arr;
-}
-const numbers = [5, 3, 8, 1, 4];
-insertionSort(numbers);
-console.log(numbers); // [1, 3, 4, 5, 8]
-const names = ["Zoe", "Andrew", "bella", "Clara"];
-insertionSort(names);
-console.log(names); // ["Andrew", "Clara", "bella", "Zoe"]
-interface Item {
-  id: number;
-  name: string;
-}
+  /** pop the top item; returns `undefined` if the stack is empty */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
 
-const items: Item[] = [
-  { id: 3, name: "apple" },
-  { id: 1, name: "orange" },
-  { id: 2, name: "banana" },
-];
+  /** peek at the top item without removing it */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
 
-insertionSort(items, (a, b) => a.id - b.id);
-console.log(items);
-// [{ id: 1, name: "orange" }, { id: 2, name: "banana" }, { id: 3, name: "apple" }]
-export function sorted<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-  const copy = [...arr];
-  return insertionSort(copy, cmp);
+  /** true if the stack has no elements */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** number of elements currently on the stack */
+  size(): number {
+    return this.items.length;
+  }
 }
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size()); // 2
+console.log(stack.isEmpty()); // false
