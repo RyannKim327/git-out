@@ -1,41 +1,59 @@
-/** A very small “binary‑tree node” type. */
-interface TreeNode {
+class ListNode {
   val: number;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
+  next: ListNode | null;
+
+  constructor(val: number, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
+  }
 }
-function sumTreeRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                     // base case – no node
-  const leftSum  = sumTreeRecursive(root.left);
-  const rightSum = sumTreeRecursive(root.right);
-  return root.val + leftSum + rightSum;    // process node after its children
-}
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
+/**
+ * Returns the node where listA and listB intersect.
+ * If they don't intersect, returns null.
+ */
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  if (!headA || !headB) return null;
 
-  const queue: TreeNode[] = [root];
-  let total = 0;
+  let pA: ListNode | null = headA;
+  let pB: ListNode | null = headB;
 
-  while (queue.length) {
-    const node = queue.shift()!;   // non‑null assertion – queue always contains real nodes
-    total += node.val;
-
-    if (node.left)  queue.push(node.left);
-    if (node.right) queue.push(node.right);
+  // Continue until the two pointers either match or both become null.
+  while (pA !== pB) {
+    // Move to the next node; if we're at the end, jump to the other list's head.
+    pA = pA ? pA.next : headB;
+    pB = pB ? pB.next : headA;
   }
 
-  return total;
+  return pA; // Either the intersection node or null.
 }
-// Small example
-const tree: TreeNode = {
-  val: 10,
-  left: { val: 5 },
-  right: {
-    val: 20,
-    left: { val: 15 },
-    right: { val: 25 }
-  }
-};
+// Build two intersecting lists:
+// A: 1 → 3 → 5 → 7 → 9
+// B: 2 → 4 →        → 7 → 9
+//            ^<--- intersection starts here
 
-console.log(sumTreeRecursive(tree)); // 75
-console.log(sumTreeIterative(tree)); // 75
+const common = new ListNode(7, new ListNode(9));
+
+const listA = new ListNode(1, new ListNode(3, new ListNode(5, common)));
+const listB = new ListNode(2, new ListNode(4, common));
+
+const intersection = getIntersectionNode(listA, listB);
+console.log(intersection?.val); // 7
+function getIntersectionNodeHash(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  const nodes = new Set<ListNode>();
+
+  for (let cur = headA; cur; cur = cur.next) {
+    nodes.add(cur);
+  }
+
+  for (let cur = headB; cur; cur = cur.next) {
+    if (nodes.has(cur)) return cur;
+  }
+
+  return null;
+}
