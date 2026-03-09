@@ -1,46 +1,32 @@
-/**
- * Returns true if `a` and `b` are anagrams.
- * Works for any Unicode characters, but
- * it ignores case and whitespace by default.
- */
-function areAnagrams(a: string, b: string, ignoreCase = true, ignoreWhitespace = true): boolean {
-  // Normalise: trim, collapse spaces, lower‑case if requested
-  const normalize = (s: string) =>
-    s
-      .replace(/\s+/g, "")        // delete spaces
-      .toLowerCase();             // lower‑case
+// largestPrimeFactor.ts
+export function largestPrimeFactor(n: number): number | null {
+    if (n < 2) return null;          // No prime factor for 0, 1 or negatives
 
-  if (ignoreCase && ignoreWhitespace) {
-    a = normalize(a);
-    b = normalize(b);
-  } else if (ignoreCase) {
-    a = a.toLowerCase();
-    b = b.toLowerCase();
-  } else if (ignoreWhitespace) {
-    a = a.replace(/\s+/g, "");
-    b = b.replace(/\s+/g, "");
-  }
+    let largest = 0;
 
-  // Quick length check
-  if (a.length !== b.length) return false;
+    // Handle factor 2 first – it’s the only even prime
+    while (n % 2 === 0) {
+        largest = 2;
+        n = Math.floor(n / 2);
+    }
 
-  // Count characters in the first string
-  const counts: Record<string, number> = {};
+    // Now n is odd.  Test odd divisors from 3 upward.
+    // Only need to go up to sqrt(n); beyond that any remaining n is prime.
+    for (let d = 3; d * d <= n; d += 2) {
+        while (n % d === 0) {
+            largest = d;
+            n = Math.floor(n / d);
+        }
+    }
 
-  for (const ch of a) {
-    counts[ch] = (counts[ch] ?? 0) + 1;
-  }
+    // If after the loop n > 1 it means n itself is prime and larger
+    // than any divisor we removed.
+    if (n > 1) largest = n;
 
-  // Subtract counts using the second string
-  for (const ch of b) {
-    const current = counts[ch];
-    if (!current) return false;          // character not seen before or already exhausted
-    if (--current === 0) delete counts[ch];
-  }
-
-  // If everything matched, the object should be empty
-  return Object.keys(counts).length === 0;
+    return largest;
 }
-console.log(areAnagrams("listen", "silent"));           // true
-console.log(areAnagrams("Hello, World!", "world!hello")); // true
-console.log(areAnagrams("foo", "bar"));                 // false
+console.log(largestPrimeFactor(210)); // 7
+console.log(largestPrimeFactor(2));   // 2
+console.log(largestPrimeFactor(17));  // 17
+console.log(largestPrimeFactor(18));  // 3
+console.log(largestPrimeFactor(0));   // null
