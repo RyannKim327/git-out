@@ -1,59 +1,59 @@
+class ListNode {
+  val: number;
+  next: ListNode | null;
+
+  constructor(val: number, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
+  }
+}
 /**
- * Return the index of the first occurrence of `pattern` inside `text`,
- * or -1 if the pattern is absent.
+ * Returns the node where listA and listB intersect.
+ * If they don't intersect, returns null.
  */
-export function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0; // trivially found at start
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  if (!headA || !headB) return null;
 
-  const lps = computeLPSArray(pattern); // longest‑prefix‑suffix table
-  let i = 0; // index for text
-  let j = 0; // index for pattern
+  let pA: ListNode | null = headA;
+  let pB: ListNode | null = headB;
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) { // whole pattern matched
-        return i - j; // match start index
-      }
-    } else if (j > 0) {
-      // mismatch after j matches – skip ahead by lps[j‑1]
-      j = lps[j - 1];
-    } else {
-      // mismatch at start of pattern
-      i++;
-    }
+  // Continue until the two pointers either match or both become null.
+  while (pA !== pB) {
+    // Move to the next node; if we're at the end, jump to the other list's head.
+    pA = pA ? pA.next : headB;
+    pB = pB ? pB.next : headA;
   }
 
-  return -1; // no match
+  return pA; // Either the intersection node or null.
 }
+// Build two intersecting lists:
+// A: 1 → 3 → 5 → 7 → 9
+// B: 2 → 4 →        → 7 → 9
+//            ^<--- intersection starts here
 
-/**
- * Pre‑process the pattern to build the “longest prefix that is also a suffix”
- * (LPS) array. lps[i] = the length of the longest proper prefix of
- * pattern[0..i] that is also a suffix of pattern[0..i].
- */
-function computeLPSArray(pattern: string): number[] {
-  const lps: number[] = Array(pattern.length).fill(0);
-  let len = 0;   // length of previous longest prefix suffix
-  let i = 1;     // lps[0] is always 0
+const common = new ListNode(7, new ListNode(9));
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else if (len !== 0) {
-      // use the previous lps value to avoid re‑checking
-      len = lps[len - 1];
-    } else {
-      lps[i] = 0;
-      i++;
-    }
+const listA = new ListNode(1, new ListNode(3, new ListNode(5, common)));
+const listB = new ListNode(2, new ListNode(4, common));
+
+const intersection = getIntersectionNode(listA, listB);
+console.log(intersection?.val); // 7
+function getIntersectionNodeHash(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  const nodes = new Set<ListNode>();
+
+  for (let cur = headA; cur; cur = cur.next) {
+    nodes.add(cur);
   }
 
-  return lps;
+  for (let cur = headB; cur; cur = cur.next) {
+    if (nodes.has(cur)) return cur;
+  }
+
+  return null;
 }
-console.log(kmpSearch("ababcabcababc", "abc"));   // 2
-console.log(kmpSearch("ababcabcababc", "abcd"));  // -1
-console.log(kmpSearch("aaaaa", "aaa"));           // 0
