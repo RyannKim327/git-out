@@ -1,30 +1,16 @@
 /**
- * Returns the second largest value in an array.
- * Uses a single pass – O(n) time, O(1) extra space.
+ * Returns a whole number between min and max (both inclusive).
  *
- * @param nums – numeric array
- * @returns second largest number, or `undefined` if it can’t be determined
+ * @param min The smallest possible value you want (usually a number ≥ 0)
+ * @param max The largest possible value you want
  */
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined;
+function randomIntInRange(min: number, max: number): number {
+  // Clamp the inputs so min <= max
+  const [low, high] = min <= max ? [min, max] : [max, min];
 
-  let largest = -Infinity;
-  let second = -Infinity;
-
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;   // old largest becomes second
-      largest = n;
-    } else if (n > second && n !== largest) {
-      // n is between largest and second – update second
-      second = n;
-    }
-  }
-
-  return second === -Infinity ? undefined : second;
+  // Math.random() → [0, 1).  Scale it to the desired width,
+  // then shift by the lower bound and round down.
+  return Math.floor(Math.random() * (high - low + 1)) + low;
 }
-
-// quick demo
-console.log(secondLargest([3, 1, 4, 1, 5, 9, 2, 6, 5])); // 8
-console.log(secondLargest([42]));                         // undefined
-console.log(secondLargest([7, 7, 7]));                     // undefined – no distinct second value
+const rand = randomIntInRange(5, 10);
+console.log(rand); // → a whole number 5, 6, 7, 8, 9, or 10
