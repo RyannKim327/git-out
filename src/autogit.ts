@@ -1,45 +1,51 @@
+// A classic singly‑linked‑list node
 class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
 
-  while (fast && fast.next) {
-    slow = slow!.next;            // move one step
-    fast = fast.next.next;        // move two steps
+/**
+ * Returns the nth node from the end (1‑based) or null if n is out of range.
+ */
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;          // natural guard for mis‑ed input
 
-    if (slow === fast) return true;   // they met → cycle
+  let first: ListNode<T> | null = head;
+  let second: ListNode<T> | null = head;
+
+  /* Advance `first` n steps ahead. */
+  for (let i = 0; i < n; i++) {
+    if (!first) return null;   // n is larger than list length
+    first = first.next;
   }
 
-  return false;   // hit the end → no cycle
-}
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const visited = new Set<ListNode<T>>();
-
-  let current = head;
-  while (current) {
-    if (visited.has(current)) return true;
-    visited.add(current);
-    current = current.next;
+  /* Move both pointers until `first` hits the end. */
+  while (first) {
+    first = first.next;
+    second = second!.next;     // second is guaranteed not null here
   }
-  return false;
+
+  return second;   // `second` is the nth node from the end
 }
-// Linear list (no cycle)
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
+function nthFromEndTwoPass<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let len = 0;
+  for (let cur = head; cur; cur = cur.next) len++;
 
-console.log(hasCycle(a)); // false
+  if (n <= 0 || n > len) return null;
 
-// Cyclic list
-const d = new ListNode(4);
-const e = new ListNode(5);
-const f = new ListNode(6);
-d.next = e; e.next = f; f.next = d; // f points back to d
+  let cur = head;
+  for (let i = 0; i < len - n; i++) cur = cur!.next;
 
-console.log(hasCycle(d)); // true
+  return cur;
+}
+// Example list: 1 → 2 → 3 → 4 → 5
+const tail = new ListNode(5);
+const middle = new ListNode(4, tail);
+const head = new ListNode(1,
+           new ListNode(2,
+           new ListNode(3,
+           middle)));
+
+console.log(nthFromEnd(head, 1)?.val); // 5
+console.log(nthFromEnd(head, 2)?.val); // 4
+console.log(nthFromEnd(head, 5)?.val); // 1
+console.log(nthFromEnd(head, 6));      // null
