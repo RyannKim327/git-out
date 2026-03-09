@@ -1,39 +1,25 @@
-export class Stack<T> {
-  /** internal buffer – the array that stores the stack items */
-  private readonly items: T[] = [];
-
-  /** push an item onto the stack */
-  push(value: T): void {
-    this.items.push(value);
-  }
-
-  /** pop the top item; returns `undefined` if the stack is empty */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  /** peek at the top item without removing it */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** true if the stack has no elements */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** number of elements currently on the stack */
-  size(): number {
-    return this.items.length;
-  }
+/**
+ * Computes the factorial of a non‑negative integer `n` recursively.
+ * @param n - A non‑negative integer (e.g., 0, 1, 2, …)
+ * @returns n! as a `number`. For values beyond ≈ 170 you’ll hit the
+ *          IEEE‑754 overflow limit and get `Infinity`, so for large
+ *          inputs you might want to switch to BigInt.
+ */
+function factorial(n: number): number {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials');
+  if (n <= 1) return 1;          // base case: 0! = 1! = 1
+  return n * factorial(n - 1);   // recursive step
 }
-const stack = new Stack<number>();
+console.log(factorial(5));   // 120
+console.log(factorial(0));   // 1
+function bigIntFactorial(n: number): bigint {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials');
+  if (n <= 1) return 1n;               // 1n is a BigInt literal
+  return BigInt(n) * bigIntFactorial(n - 1);
+}
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size()); // 2
-console.log(stack.isEmpty()); // false
+console.log(bigIntFactorial(30).toString());
+function tailFactorial(n: number, acc: number = 1): number {
+  if (n <= 1) return acc;
+  return tailFactorial(n - 1, acc * n);
+}
