@@ -1,39 +1,41 @@
-export class Stack<T> {
-  /** internal buffer – the array that stores the stack items */
-  private readonly items: T[] = [];
-
-  /** push an item onto the stack */
-  push(value: T): void {
-    this.items.push(value);
-  }
-
-  /** pop the top item; returns `undefined` if the stack is empty */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  /** peek at the top item without removing it */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** true if the stack has no elements */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** number of elements currently on the stack */
-  size(): number {
-    return this.items.length;
-  }
+export interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
-const stack = new Stack<number>();
+export class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
+}
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null
+  let curr = head
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
+  while (curr) {
+    const nxt = curr.next      // keep reference to next node
+    curr.next = prev           // flip the link
+    prev = curr                // advance prev
+    curr = nxt                 // advance curr
+  }
 
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size()); // 2
-console.log(stack.isEmpty()); // false
+  return prev   // new head
+}
+export function reverseListRec<T>(node: ListNode<T> | null, prev: ListNode<T> | null = null): ListNode<T> | null {
+  if (!node) return prev
+  const nxt = node.next
+  node.next = prev
+  return reverseListRec(nxt, node)
+}
+// build 1 → 2 → 3
+const n3 = new ListNode(3)
+const n2 = new ListNode(2, n3)
+const n1 = new ListNode(1, n2)
+
+// reverse
+const reversed = reverseList(n1)
+
+// print results
+let cur = reversed
+while (cur) {
+  console.log(cur.value)
+  cur = cur.next
+}
+// → 3, 2, 1
