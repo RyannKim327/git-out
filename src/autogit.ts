@@ -1,57 +1,38 @@
 /**
- * Simple anagram checker.
- * @param a First string
- * @param b Second string
- * @returns true if a and b are anagrams, false otherwise
+ * Finds the majority element in an array (appears > n/2 times).
+ * If no majority exists, undefined is returned.
+ *
+ * @param arr   - Array of comparable values (number, string ...).
+ * @returns     - The majority element or undefined.
  */
-function areAnagrams(a: string, b: string): boolean {
-  // 1. Normalize: lower‑case, strip non‑alphanumerics, trim
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")
-      .trim();
+export function majorityElement<T extends number | string | symbol>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
 
-  const na = normalize(a);
-  const nb = normalize(b);
+  // Boyer‑Moore majority vote algorithm
+  let candidate: T | undefined = arr[0];
+  let count = 1;
 
-  // Quick length check; if they differ early we’re done.
-  if (na.length !== nb.length) return false;
-
-  // 2. Build frequency maps
-  const freq = new Map<string, number>();
-
-  for (const ch of na) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === candidate) {
+      count++;
+    } else {
+      count--;
+      if (count === 0) {
+        candidate = arr[i];
+        count = 1;
+      }
+    }
   }
 
-  for (const ch of nb) {
-    const count = freq.get(ch);
-
-    // If we see a character not in the first string, bail
-    if (!count) return false;
-
-    // Decrease the count and remove entry if it drops to zero
-    if (count === 1) freq.delete(ch);
-    else freq.set(ch, count - 1);
+  // Verify that candidate really is the majority
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
   }
 
-  // 3. If all counts cleared, the strings are anagrams
-  return freq.size === 0;
+  return count > Math.floor(arr.length / 2) ? candidate : undefined;
 }
-console.log(areAnagrams("listen", "silent"));   // → true
-console.log(areAnagrams("evil", "vile"));       // → true
-console.log(areAnagrams("hello", "billion"));   // → false
-console.log(areAnagrams("Clint Eastwood", "Old West Action")); // true
-function areAnagramsSort(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")
-      .trim()
-      .split("")
-      .sort()
-      .join("");
-
-  return normalize(a) === normalize(b);
-}
+majorityElement([1, 2, 3, 2, 2]);      // → 2
+majorityElement(['a', 'b', 'a', 'c']); // → undefined
+majorityElement([5, 5, 5, 5]);          // → 5
+majorityElement([]);                   // → undefined
