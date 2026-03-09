@@ -1,48 +1,110 @@
-// 1️⃣  Define a comparison helper – most of the time you’ll just pass
-//     (a, b) => a < b for ascending order.
-type Comparator<T> = (a: T, b: T) => boolean;
+// ──────────────────────────────────────────────────────────
+// 1. Graph representation
+// ──────────────────────────────────────────────────────────
+type Vertex = string | number;
 
-// 2️⃣  The merge function – it expects two sorted arrays and pulls
-//     the smaller (according to the comparator) element out first.
-function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
-  const result: T[] = [];
-  let i = 0,
-      j = 0;
+// An adjacency list where each vertex maps to an array of its outgoing neighbours.
+class Graph {
+  private readonly edges: Map<Vertex, Vertex[]> = new Map();
 
-  while (i < left.length && j < right.length) {
-    if (cmp(left[i], right[j])) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
+  constructor(edges?: [Vertex, Vertex][]) {
+    if (edges) this.addEdges(edges);
+  }
+
+  /** Adds one or more directed edges to the graph. */
+  addEdges(edges: [Vertex, Vertex][]): void {
+    for (const [from, to] of edges) {
+      if (!this.edges.has(from)) this.edges.set(from, []);
+      this.edges.get(from)!.push(to);
+      // Ensure the destination vertex exists in the map so it shows up in the keys.
+      if (!this.edges.has(to)) this.edges.set(to, []);
     }
   }
 
-  // One side still has items – splice the rest onto the result.
-  if (i < left.length) result.push(...left.slice(i));
-  if (j < right.length) result.push(...right.slice(j));
+  /** Returns all vertices in the graph. */
+  vertices(): Vertex[] {
+    return Array.from(this.edges.keys());
+  }
 
-  return result;
+  /** Returns the neighbours of a given vertex. */
+  neighbours(v: Vertex): Vertex[] {
+    return this.edges.get(v) ?? [];
+  }
 }
 
-// 3️⃣  The recursive mergeSort main function – sorts in place if you
-//     prefer not to allocate the full array during every merge.
-export function mergeSort<T>(arr: T[], cmp: Comparator<T> = (a, b) => a < b): T[] {
-  if (arr.length <= 1) return arr;     // Base case: nothing to do
+// ──────────────────────────────────────────────────────────
+// 2. DFS‑based topological sort
+// ──────────────────────────────────────────────────────────
+function topoSortDFS(g: Graph): Vertex[] | null {
+  const visited = new Set<Vertex>();
+  const temp = new Set<Vertex>();   // vertices currently on recursion stack
+  const order: Vertex[] = [];
 
-  const mid = Math.floor(arr.length / 2);
-  const left  = mergeSort(arr.slice(0, mid), cmp);
-  const right = mergeSort(arr.slice(mid),    cmp);
+  const visit = (v: Vertex): boolean => {
+    if (temp.has(v)) return false; // cycle detected
 
-  return merge(left, right, cmp);
+    if (!visited.has(v)) {
+      temp.add(v);
+      for (const nb of g.neighbours(v)) {
+        if (!visit(nb)) return false;
+      }
+      temp.delete(v);
+      visited.add(v);
+      order.push(v);
+    }
+    return true;
+  };
+
+  for (const v of g.vertices()) {
+    if (!visit(v)) return null; // if a cycle is found, return null
+  }
+
+  return order.reverse(); // reverse to get the correct order
 }
-// Numbers, ascending
-const sortedNumbers = mergeSort([8, 3, 5, 1, 9, 2]);
 
-// Strings, descending
-const sortedStrings = mergeSort(
-  ["banana", "apple", "cherry"],
-  (a, b) => a > b
-);
+// ──────────────────────────────────────────────────────────
+// 3. Kahn’s algorithm (BFS‑based)
+// ──────────────────────────────────────────────────────────
+function topoSortKahn(g: Graph): Vertex[] | null {
+  // Compute in‑degree of each vertex
+  const inDeg = new Map<Vertex, number>();
+  for (const v of g.vertices()) inDeg.set(v, 0);
+  for (const v of g.vertices()) {
+    for (const nb of g.neighbours(v)) {
+      inDeg.set(nb, (inDeg.get(nb) ?? 0) + 1);
+    }
+  }
 
-console.log(sortedNumbers); // [1, 2, 3, 5, 8, 9]
-console.log(sortedStrings); // ["cherry", "banana", "apple"]
+  const queue: Vertex[] = [];
+  for (const [v, d] of inDeg) if (d === 0) queue.push(v);
+
+  const order: Vertex[] = [];
+  while (queue.length) {
+    const v = queue.shift()!;
+    order.push(v);
+    for (const nb of g.neighbours(v)) {
+      const d = inDeg.get(nb)! - 1;
+      inDeg.set(nb, d);
+      if (d === 0) queue.push(nb);
+    }
+  }
+
+  if (order.length !== g.vertices().length) return null; // cycle exists
+  return order;
+}
+
+// ──────────────────────────────────────────────────────────
+// 4. Demo / usage
+// ──────────────────────────────────────────────────────────
+const edges: [Vertex, Vertex][] = [
+  ['a', 'd'],
+  ['f', 'b'],
+  ['b', 'd'],
+  ['f', 'a'],
+  ['d', 'c']
+];
+
+const graph = new Graph(edges);
+
+console.log('DFS order:', topoSortDFS(graph));   // legal order or null
+console.log('Kahn order:', topoSortKahn(graph)); // same result
