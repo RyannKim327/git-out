@@ -1,38 +1,38 @@
-/**
- * Finds the majority element in an array (appears > n/2 times).
- * If no majority exists, undefined is returned.
- *
- * @param arr   - Array of comparable values (number, string ...).
- * @returns     - The majority element or undefined.
- */
-export function majorityElement<T extends number | string | symbol>(arr: T[]): T | undefined {
-  if (arr.length === 0) return undefined;
+// fortune.ts
+import { createInterface } from 'readline';
 
-  // Boyer‑Moore majority vote algorithm
-  let candidate: T | undefined = arr[0];
-  let count = 1;
+// Set up a simple REPL‑style prompt
+const rl = createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] === candidate) {
-      count++;
-    } else {
-      count--;
-      if (count === 0) {
-        candidate = arr[i];
-        count = 1;
-      }
-    }
+console.log('🃏 Welcome to the Random Fortune Machine!');
+
+// Ask the user for a number
+rl.question('Enter a number (0–9) and press Enter: ', (answer) => {
+  // Try to parse the input as an integer
+  const num = parseInt(answer.trim(), 10);
+
+  if (isNaN(num) || num < 0 || num > 9) {
+    console.log('❌ That’s not a valid single digit between 0 and 9.');
+  } else {
+    // Pick a fortune from a tiny list
+    const fortunes = [
+      "You'll find a penny on the sidewalk.",
+      "A surprise call will brighten your day.",
+      "Today is a great day to start learning something new.",
+      "You’ll discover a hidden talent for drawing.",
+      "A forgotten receipt will pop up in your inbox.",
+      "A random act of kindness will return to you.",
+      "You’ll taste your favorite food in an unexpected way.",
+      "A new friendship is just a conversation away.",
+      "You’ll hit a traffic light and notice your neighbor’s cat.",
+      "Today you will finally finish that project you’ve shelved."
+    ];
+
+    console.log(`🔮 Fortune for ${num}: ${fortunes[num]}`);
   }
 
-  // Verify that candidate really is the majority
-  count = 0;
-  for (const v of arr) {
-    if (v === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : undefined;
-}
-majorityElement([1, 2, 3, 2, 2]);      // → 2
-majorityElement(['a', 'b', 'a', 'c']); // → undefined
-majorityElement([5, 5, 5, 5]);          // → 5
-majorityElement([]);                   // → undefined
+  rl.close();
+});
