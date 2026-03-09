@@ -1,87 +1,40 @@
 /**
- * A directed graph stored as an adjacency list.
- * Each key is a node identifier, the value is an array of successor node ids.
- */
-interface Graph {
-  [node: string]: string[];
-}
-
-/**
- * Result of the algorithm – an array of SCCs.
- * Each SCC is an array of node ids that belong together.
- */
-type SCC = string[][];
-
-/**
- * Tarjan’s algorithm for SCCs.
+ * Classic in‑place quick‑sort.
  *
- * @param g The graph to analyse.
- * @returns An array of strongly connected components.
+ * @param arr  The array to be sorted (in‑place).
+ * @param left The starting index (default: 0).
+ * @param right The ending index (default: arr.length‑1).
+ *
+ * @returns The same array, now sorted.
  */
-function tarjanSCC(g: Graph): SCC {
-  const indexMap: Record<string, number> = {};   // node → its index
-  const lowLink: Record<string, number> = {};    // node → low‑link value
-  const onStack: Set<string> = new Set();        // nodes currently in the stack
-  const stack: string[] = [];                    // stack of nodes
-  const sccs: SCC = [];
+function quickSort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
+  if (left >= right) return arr;          // base case: 0 or 1 item
 
-  let currentIndex = 0;
+  // Pick a pivot—here we just take the middle element.
+  const pivotIndex = Math.floor((left + right) / 2);
+  const pivot = arr[pivotIndex];
 
-  const strongConnect = (v: string) => {
-    indexMap[v] = currentIndex;
-    lowLink[v] = currentIndex;
-    currentIndex += 1;
-    stack.push(v);
-    onStack.add(v);
+  // Partition: everything less than the pivot goes left, everything
+  // greater or equal goes right.  Elements equal to the pivot can go either side.
+  let i = left;
+  let j = right;
+  while (i <= j) {
+    while (arr[i] < pivot) i++;   // find an element on the wrong side (left)
+    while (arr[j] > pivot) j--;   // find an element on the wrong side (right)
 
-    // Explore every outgoing edge v → w
-    for (const w of g[v] ?? []) {
-      if (!(w in indexMap)) {
-        // Recursively visit w
-        strongConnect(w);
-        lowLink[v] = Math.min(lowLink[v], lowLink[w]);
-      } else if (onStack.has(w)) {
-        // w is in the current SCC frontier
-        lowLink[v] = Math.min(lowLink[v], indexMap[w]);
-      }
-    }
-
-    // If v is the root of an SCC
-    if (lowLink[v] === indexMap[v]) {
-      const component: string[] = [];
-      let w: string | undefined;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
-    }
-  };
-
-  // Kick off a DFS from every unvisited node.
-  for (const v in g) {
-    if (!(v in indexMap)) {
-      strongConnect(v);
+    if (i <= j) {                 // swap the out‑of‑place elements
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
+      j--;
     }
   }
 
-  return sccs;
-}
-const example: Graph = {
-  a: ['b'],
-  b: ['c', 'e', 'f'],
-  c: ['d', 'g'],
-  d: ['c', 'h'],
-  e: ['a', 'f'],
-  f: ['g'],
-  g: ['f'],
-  h: ['d', 'g', 'i'],
-  i: ['h', 'k', 'l'],
-  j: ['k'],
-  k: ['i', 'l'],
-  l: ['k']
-};
+  // Recursively sort the two partitions.
+  // The first call deals with the left two halves *unless* they overlap.
+  if (left < j) quickSort(arr, left, j);
+  if (i < right) quickSort(arr, i, right);
 
-console.log(tarjanSCC(example));
-// → [ [ 'g', 'f' ], [ 'c', 'd', 'h' ], [ 'i', 'l', 'k' ], [ 'a', 'b', 'e' ], [ 'j' ] ]
+  return arr;
+}
+const unsorted = [3, 7, 2, 5, 1, 4, 6];
+quickSort(unsorted);        // unsorted is now [1,2,3,4,5,6,7]
