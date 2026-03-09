@@ -1,37 +1,45 @@
-// Works for numbers, strings, dates, anything that can be compared with < and >.
-export function isSorted<T extends number | string | Date>(arr: T[]): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] < arr[i - 1]) return false;
+/**
+ * Checks if a string is a palindrome.
+ *
+ * @param txt          The input string to test.
+ * @param options      Optional flags.
+ * @returns            true if the cleaned string reads the same forwards and backwards.
+ */
+export function isPalindrome(
+  txt: string,
+  options?: {
+    /** When true (default), the check is case‑insensitive. */
+    ignoreCase?: boolean;
+    /** When true (default), only alphanumeric characters are considered. */
+    stripNonAlnum?: boolean;
+    /** When true, normalises Unicode to NFKD form before the checks. */
+    normalize?: boolean;
+  } = {}
+): boolean {
+  const {
+    ignoreCase = true,
+    stripNonAlnum = true,
+    normalize = true,
+  } = options;
+
+  let processed = txt;
+
+  if (normalize) {
+    // This collapse accents, e.g. "café" ➜ "cafe".
+    processed = processed.normalize('NFKD');
   }
-  return true;
-}
-isSorted([1, 2, 3, 4]);        // true
-isSorted([1, 3, 2, 4]);        // false
-isSorted(['a', 'b', 'c']);     // true
-isSorted(['c', 'b', 'a']);     // false
-type Comparator<T> = (a: T, b: T) => number;
 
-export function isSortedWith<T>(arr: T[], cmp: Comparator<T>): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) return false; // `a > b` in ascending order
+  if (stripNonAlnum) {
+    processed = processed.replace(/[^0-9a-z]+/gi, '');
   }
-  return true;
+
+  if (ignoreCase) {
+    processed = processed.toLowerCase();
+  }
+
+  const reversed = processed.split('').reverse().join('');
+  return processed === reversed;
 }
-interface Person { name: string; age: number; }
-
-const people: Person[] = [
-  { name: 'Alice', age: 25 },
-  { name: 'Bob', age: 30 },
-  { name: 'Charlie', age: 35 },
-];
-
-isSortedWith(people, (a, b) => a.age - b.age); // true
-export const isSorted = <T>(arr: T[], cmp: Comparator<T> = (a, b) => {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}): boolean =>
-  arr
-    .map((value, index, self) => [self[index - 1], value] as const)
-    .slice(1) // skip the first undefined pair
-    .every(([prev, cur]) => cmp(prev!, cur) <= 0);
+console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
+console.log(isPalindrome('Madam In Eden, I’m Adam'));          // true
+console.log(isPalindrome('Hello, world!'));                    // false
