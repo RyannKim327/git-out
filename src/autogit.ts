@@ -1,146 +1,83 @@
-// Node.ts
-export class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
-
-  constructor(value: T) {
-    this.value = value;
-  }
+// --------------------------------------------------
+// 1️⃣  Linked‑list node definition
+// --------------------------------------------------
+export interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
-// LinkedList.ts
-import { ListNode } from "./Node";
 
-export class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _length = 0;
+// --------------------------------------------------
+// 2️⃣  Helper: reverse a list, returns new head
+// --------------------------------------------------
+/**
+ * Reverses the linked list starting at node `head`.
+ * Returns the new head of the reversed list.
+ */
+function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let current = head;
 
-  get length() {
-    return this._length;
+  while (current) {
+    const next = current.next;
+    current.next = prev;
+    prev = current;
+    current = next;
   }
-
-  /* ---------- Basic Operations ---------- */
-
-  // Append a value to the end of the list.
-  push(value: T): void {
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      this.tail!.next = node;
-      this.tail = node;
-    }
-    this._length++;
-  }
-
-  // Prepend a value to the beginning of the list.
-  unshift(value: T): void {
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      node.next = this.head;
-      this.head = node;
-    }
-    this._length++;
-  }
-
-  // Remove and return the value at the head of the list.
-  shift(): T | null {
-    if (!this.head) return null;
-    const value = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null; // list became empty
-    this._length--;
-    return value;
-  }
-
-  // Remove and return the value at the tail of the list.
-  pop(): T | null {
-    if (!this.head) return null;
-
-    if (this.head === this.tail) {
-      const value = this.head.value;
-      this.head = this.tail = null;
-      this._length--;
-      return value;
-    }
-
-    // Walk to the node just before the tail.
-    let current = this.head;
-    while (current.next !== this.tail) {
-      current = current.next!;
-    }
-    const value = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-    this._length--;
-    return value;
-  }
-
-  /* ---------- Traversal & Search ---------- */
-
-  // Return the node at the given zero‑based index, or null if out of bounds.
-  getNodeAt(index: number): ListNode<T> | null {
-    if (index < 0 || index >= this._length) return null;
-    let current = this.head!;
-    for (let i = 0; i < index; i++) {
-      current = current.next!;
-    }
-    return current;
-  }
-
-  // Find the first value that satisfies the predicate.
-  find(predicate: (value: T) => boolean, startIndex = 0): T | null {
-    let current = this.getNodeAt(startIndex);
-    while (current) {
-      if (predicate(current.value)) return current.value;
-      current = current.next;
-    }
-    return null;
-  }
-
-  /* ---------- Utility ---------- */
-
-  // Convert the list to an array (useful for debugging or interoperability).
-  toArray(): T[] {
-    const out: T[] = [];
-    let current = this.head;
-    while (current) {
-      out.push(current.value);
-      current = current.next;
-    }
-    return out;
-  }
-
-  // Allow for… e.g. “for … of” iteration.
-  [Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    return {
-      next: () => ({
-        value: current?.value,
-        done: current === null,
-      }),
-    };
-  }
+  return prev;          // new head
 }
-import { LinkedList } from "./LinkedList";
 
-const numbers = new LinkedList<number>();
-numbers.push(10);
-numbers.push(20);
-numbers.unshift(5);   // list is now 5 -> 10 -> 20
+// --------------------------------------------------
+// 3️⃣  Palindrome checker
+// --------------------------------------------------
+export function isPalindrome<T>(head: ListNode<T> | null): boolean {
+  if (!head || !head.next) return true;   // Empty or single‑node list
 
-console.log(numbers.shift()); // 5
-console.log(numbers.pop());   // 20
-console.log(numbers.length);  // 1
+  // ----- 3.1  Find the middle (slow stops at middle)
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-// Search
-numbers.push(30);
-numbers.push(40);
-console.log(numbers.find(v => v > 15)); // 20
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
+  }
 
-// Iterate
-for (const n of numbers) {
-  console.log(n); // 10, 30, 40
+  // ----- 3.2  Reverse second half
+  const secondHalfStart = reverse(slow!.next);
+  let firstHalfIter = head;
+  let secondHalfIter = secondHalfStart;
+
+  // ----- 3.3  Compare halves
+  let palindrome = true;
+  while (secondHalfIter) {
+    if (firstHalfIter!.val !== secondHalfIter.val) {
+      palindrome = false;
+      break;
+    }
+    firstHalfIter = firstHalfIter!.next;
+    secondHalfIter = secondHalfIter.next;
+  }
+
+  // ----- 3.4  Restore the original order (optional)
+  slow!.next = reverse(secondHalfStart);
+
+  return palindrome;
 }
+
+// --------------------------------------------------
+// 4️⃣  Example usage
+// --------------------------------------------------
+function buildList(values: any[]): ListNode | null {
+  let dummy: ListNode | null = null;
+  for (let i = values.length - 1; i >= 0; i--) {
+    dummy = { val: values[i], next: dummy };
+  }
+  return dummy;
+}
+
+// Palindrome case
+const list1 = buildList([1, 2, 3, 2, 1]);
+console.log(isPalindrome(list1)); // true
+
+// Non‑palindrome
+const list2 = buildList([1, 2, 3, 4, 5]);
+console.log(isPalindrome(list2)); // false
