@@ -1,32 +1,38 @@
-// largestPrimeFactor.ts
-export function largestPrimeFactor(n: number): number | null {
-    if (n < 2) return null;          // No prime factor for 0, 1 or negatives
+// fortune.ts
+import { createInterface } from 'readline';
 
-    let largest = 0;
+// Set up a simple REPL‑style prompt
+const rl = createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-    // Handle factor 2 first – it’s the only even prime
-    while (n % 2 === 0) {
-        largest = 2;
-        n = Math.floor(n / 2);
-    }
+console.log('🃏 Welcome to the Random Fortune Machine!');
 
-    // Now n is odd.  Test odd divisors from 3 upward.
-    // Only need to go up to sqrt(n); beyond that any remaining n is prime.
-    for (let d = 3; d * d <= n; d += 2) {
-        while (n % d === 0) {
-            largest = d;
-            n = Math.floor(n / d);
-        }
-    }
+// Ask the user for a number
+rl.question('Enter a number (0–9) and press Enter: ', (answer) => {
+  // Try to parse the input as an integer
+  const num = parseInt(answer.trim(), 10);
 
-    // If after the loop n > 1 it means n itself is prime and larger
-    // than any divisor we removed.
-    if (n > 1) largest = n;
+  if (isNaN(num) || num < 0 || num > 9) {
+    console.log('❌ That’s not a valid single digit between 0 and 9.');
+  } else {
+    // Pick a fortune from a tiny list
+    const fortunes = [
+      "You'll find a penny on the sidewalk.",
+      "A surprise call will brighten your day.",
+      "Today is a great day to start learning something new.",
+      "You’ll discover a hidden talent for drawing.",
+      "A forgotten receipt will pop up in your inbox.",
+      "A random act of kindness will return to you.",
+      "You’ll taste your favorite food in an unexpected way.",
+      "A new friendship is just a conversation away.",
+      "You’ll hit a traffic light and notice your neighbor’s cat.",
+      "Today you will finally finish that project you’ve shelved."
+    ];
 
-    return largest;
-}
-console.log(largestPrimeFactor(210)); // 7
-console.log(largestPrimeFactor(2));   // 2
-console.log(largestPrimeFactor(17));  // 17
-console.log(largestPrimeFactor(18));  // 3
-console.log(largestPrimeFactor(0));   // null
+    console.log(`🔮 Fortune for ${num}: ${fortunes[num]}`);
+  }
+
+  rl.close();
+});
