@@ -1,41 +1,37 @@
-export interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-}
-export class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null
-  let curr = head
-
-  while (curr) {
-    const nxt = curr.next      // keep reference to next node
-    curr.next = prev           // flip the link
-    prev = curr                // advance prev
-    curr = nxt                 // advance curr
+// Works for numbers, strings, dates, anything that can be compared with < and >.
+export function isSorted<T extends number | string | Date>(arr: T[]): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] < arr[i - 1]) return false;
   }
-
-  return prev   // new head
+  return true;
 }
-export function reverseListRec<T>(node: ListNode<T> | null, prev: ListNode<T> | null = null): ListNode<T> | null {
-  if (!node) return prev
-  const nxt = node.next
-  node.next = prev
-  return reverseListRec(nxt, node)
-}
-// build 1 → 2 → 3
-const n3 = new ListNode(3)
-const n2 = new ListNode(2, n3)
-const n1 = new ListNode(1, n2)
+isSorted([1, 2, 3, 4]);        // true
+isSorted([1, 3, 2, 4]);        // false
+isSorted(['a', 'b', 'c']);     // true
+isSorted(['c', 'b', 'a']);     // false
+type Comparator<T> = (a: T, b: T) => number;
 
-// reverse
-const reversed = reverseList(n1)
-
-// print results
-let cur = reversed
-while (cur) {
-  console.log(cur.value)
-  cur = cur.next
+export function isSortedWith<T>(arr: T[], cmp: Comparator<T>): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) return false; // `a > b` in ascending order
+  }
+  return true;
 }
-// → 3, 2, 1
+interface Person { name: string; age: number; }
+
+const people: Person[] = [
+  { name: 'Alice', age: 25 },
+  { name: 'Bob', age: 30 },
+  { name: 'Charlie', age: 35 },
+];
+
+isSortedWith(people, (a, b) => a.age - b.age); // true
+export const isSorted = <T>(arr: T[], cmp: Comparator<T> = (a, b) => {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}): boolean =>
+  arr
+    .map((value, index, self) => [self[index - 1], value] as const)
+    .slice(1) // skip the first undefined pair
+    .every(([prev, cur]) => cmp(prev!, cur) <= 0);
