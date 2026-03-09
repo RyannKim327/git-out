@@ -1,59 +1,30 @@
-/**
- * Return the index of the first occurrence of `pattern` inside `text`,
- * or -1 if the pattern is absent.
- */
-export function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0; // trivially found at start
+const str = "hello world";
+const hasFoo = str.includes("world");   // true
+const hasBar = str.includes("bar");     // false
+const hasCapital = str.includes("WORLD");          // false
+const hasCapitalIgnoreCase = str.toLowerCase()
+                                .includes("WORLD".toLowerCase()); // true
+const hasCapitalIgnoreCase = /world/i.test(str);   // true
+const index = str.indexOf("world"); // 6
+const missing = str.indexOf("bar"); // -1
+const present = str.indexOf("world") !== -1; // true
+const hasPrefix = /^hello/.test(str); // true
 
-  const lps = computeLPSArray(pattern); // longest‑prefix‑suffix table
-  let i = 0; // index for text
-  let j = 0; // index for pattern
+// With dynamic patterns
+const word = "world";
+const pattern = new RegExp(word);    // case‑sensitive
+const result = pattern.test(str);    // true
+// Presence
+const contains = text.includes(sub);
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) { // whole pattern matched
-        return i - j; // match start index
-      }
-    } else if (j > 0) {
-      // mismatch after j matches – skip ahead by lps[j‑1]
-      j = lps[j - 1];
-    } else {
-      // mismatch at start of pattern
-      i++;
-    }
-  }
+// Presence (index form)
+const containsIndex = text.indexOf(sub) !== -1;
 
-  return -1; // no match
-}
+// Position
+const pos = text.indexOf(sub); // -1 if absent
 
-/**
- * Pre‑process the pattern to build the “longest prefix that is also a suffix”
- * (LPS) array. lps[i] = the length of the longest proper prefix of
- * pattern[0..i] that is also a suffix of pattern[0..i].
- */
-function computeLPSArray(pattern: string): number[] {
-  const lps: number[] = Array(pattern.length).fill(0);
-  let len = 0;   // length of previous longest prefix suffix
-  let i = 1;     // lps[0] is always 0
+// Case‑insensitive
+const containsIC = text.toLowerCase().includes(sub.toLowerCase());
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else if (len !== 0) {
-      // use the previous lps value to avoid re‑checking
-      len = lps[len - 1];
-    } else {
-      lps[i] = 0;
-      i++;
-    }
-  }
-
-  return lps;
-}
-console.log(kmpSearch("ababcabcababc", "abc"));   // 2
-console.log(kmpSearch("ababcabcababc", "abcd"));  // -1
-console.log(kmpSearch("aaaaa", "aaa"));           // 0
+// Regex
+const containsRegex = /world/i.test(text);
