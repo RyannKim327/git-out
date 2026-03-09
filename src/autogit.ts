@@ -1,39 +1,53 @@
-export class Stack<T> {
-  /** internal buffer – the array that stores the stack items */
-  private readonly items: T[] = [];
+/**
+ * Sorts an array using the bubble‑sort algorithm.
+ *
+ * @param arr       The array to sort. The sort is performed in-place.
+ * @param compare   Optional comparison function. It should return:
+ *                  - a negative number if a < b
+ *                  - zero if a == b
+ *                  - a positive number if a > b
+ *
+ * @returns The sorted array (the same instance that was passed in).
+ */
+export function bubbleSort<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
+  // Default to natural order for numbers and strings
+  const cmp = compare ?? ((a: any, b: any) => (a > b ? 1 : a < b ? -1 : 0));
 
-  /** push an item onto the stack */
-  push(value: T): void {
-    this.items.push(value);
-  }
+  const len = arr.length;
+  if (len < 2) return arr; // already sorted
 
-  /** pop the top item; returns `undefined` if the stack is empty */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
+  let swapped: boolean;
+  // We keep looping until no swaps happen in a full pass
+  do {
+    swapped = false;
+    // After each round the largest element in the unsorted portion
+    // "bubbles" to its final position, so we can skip the last i elements
+    for (let i = 1; i < len; i++) {
+      if (cmp(arr[i - 1], arr[i]) > 0) {
+        // swap
+        [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+        swapped = true;
+      }
+    }
+  } while (swapped);
 
-  /** peek at the top item without removing it */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** true if the stack has no elements */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** number of elements currently on the stack */
-  size(): number {
-    return this.items.length;
-  }
+  return arr;
 }
-const stack = new Stack<number>();
+// 1️⃣ Sort plain numbers
+const nums = [5, 3, 8, 1, 2];
+bubbleSort(nums);           // nums → [1, 2, 3, 5, 8]
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
+// 2️⃣ Sort strings alphabetically
+const words = ['banana', 'apple', 'cherry'];
+bubbleSort(words);          // words → ['apple', 'banana', 'cherry']
 
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size()); // 2
-console.log(stack.isEmpty()); // false
+// 3️⃣ Sort objects with a custom key
+type Person = { name: string; age: number };
+const people: Person[] = [
+  { name: 'Zoe',   age: 28 },
+  { name: 'Adam',  age: 34 },
+  { name: 'Mira',  age: 23 }
+];
+
+bubbleSort(people, (p1, p2) => p1.age - p2.age);
+// people → [{name:'Mira',age:23}, {name:'Zoe',age:28}, {name:'Adam',age:34}]
