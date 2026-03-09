@@ -1,47 +1,30 @@
-/**
- * Checks whether a string is a palindrome (case‑insensitive,
- * ignoring anything that isn’t a letter or a digit).
- *
- * Time   : O(n)
- * Space  : O(1)   – only a couple of integer variables
- */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
-
-  const isAlnum = (ch: string): boolean => {
-    const code = ch.charCodeAt(0);
-    // '0'‑'9'
-    if (code >= 48 && code <= 57) return true;
-    // 'A'‑'Z'
-    if (code >= 65 && code <= 90) return true;
-    // 'a'‑'z'
-    if (code >= 97 && code <= 122) return true;
-    return false;
-  };
-
-  while (left < right) {
-    // Skip non‑alphanumeric characters from the left
-    while (left < right && !isAlnum(s[left])) left++;
-    // Skip non‑alphanumeric characters from the right
-    while (left < right && !isAlnum(s[right])) right--;
-
-    if (left >= right) break;          // Nothing left to compare
-
-    const lc = s[left].toLowerCase();
-    const rc = s[right].toLowerCase();
-
-    if (lc !== rc) return false;
-
-    left++;
-    right--;
+function getLength(str: string): number {
+  let count = 0;
+  for (const _ of str) {
+    count++;
   }
-
-  return true;
+  return count;
 }
-while (left < right) {
-  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
-  left++;
-  right--;
+function recurseLen(str: string, idx = 0): number {
+  return idx >= str.length ? idx : recurseLen(str, idx + 1);
 }
-return true;
+function recurseLen(str: string, idx = 0): number {
+  return str === '' ? idx : recurseLen(str.slice(1), idx + 1);
+}
+function lengthFromArray(str: string): number {
+  return Array.from(str).length; // still uses .length on the array
+}
+function lengthSpread(str: string): number {
+  return [...str].length; // element count after spreading
+}
+function lengthWithMatch(str: string): number {
+  const matches = str.match(/[\s\S]/g); // one match per character, including newlines
+  return matches ? matches.length : 0;
+}
+function whileLoop(str: string): number {
+  let i = 0;
+  while (str.charAt(i) !== '') {
+    i++;
+  }
+  return i;
+}
