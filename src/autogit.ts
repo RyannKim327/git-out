@@ -1,45 +1,75 @@
+/* --------------------------------------------------------
+   Fibonacci Search – TypeScript version
+   -------------------------------------------------------- */
+
+type Comparator<T> = (a: T, b: T) => number;
+
 /**
- * Returns the contiguous segment of `arr` that yields the highest possible sum.
+ * Searches a sorted array using the Fibonacci search technique.
  *
- * @param arr - Array of numbers (integer or float)
- * @returns An object containing:
- *   `maxSum`  – the total sum of the best segment
- *   `start`   – the index where the segment begins
- *   `end`     – the index where the segment ends (inclusive)
+ * @param arr       The sorted array to search
+ * @param key       The value we’re looking for
+ * @param cmp       Optional comparator – defaults to numeric comparison
+ * @returns The index of `key` in `arr`, or -1 if not found
  */
-function maxSubarray(arr: number[]) {
-  if (arr.length === 0) throw new Error('Array cannot be empty');
+export function fibonacciSearch<T>(
+  arr: readonly T[],
+  key: T,
+  cmp: Comparator<T> = (a, b) => a! < b! ? -1 : (a! > b! ? 1 : 0)
+): number {
+  const n = arr.length;
+  if (n === 0) return -1;
 
-  let bestSum = arr[0];
-  let currentSum = arr[0];
-  let bestStart = 0;
-  let bestEnd = 0;
-  let tempStart = 0;
+  /* ---------- build the smallest Fibonacci number ≥ n ------------- */
+  let fibMm2 = 0;            // (m‑2)’th Fibonacci
+  let fibMm1 = 1;            // (m‑1)’th Fibonacci
+  let fibM   = fibMm2 + fibMm1; // m’th Fibonacci
 
-  for (let i = 1; i < arr.length; i++) {
-    const val = arr[i];
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
+  }
 
-    // Either start a new sub‑array at i or extend the existing one
-    if (currentSum + val < val) {
-      currentSum = val;
-      tempStart = i;       // new potential start
+  /* ---------- we now have a Fibonacci number >= array length ---------- */
+  let offset = -1; // Marks the eliminated range from front
+
+  while (fibM > 1) {
+    // Keep fibMm2 ≥ 0
+    // Index to be checked – clamp to array bounds
+    const i = Math.min(offset + fibMm2, n - 1);
+
+    const comparison = cmp(arr[i], key);
+
+    if (comparison < 0) {
+      /* key is after arr[i] */
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else if (comparison > 0) {
+      /* key is before arr[i] */
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
     } else {
-      currentSum += val;   // keep extending
-    }
-
-    // Update the best segment seen so far
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
+      return i;                // Found at index i
     }
   }
 
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+  /* ---------- check the last element -------------------------------- */
+  if (fibMm1 && offset + 1 < n && cmp(arr[offset + 1], key) === 0) {
+    return offset + 1;
+  }
+
+  return -1; // Not found
 }
-const data = [-2, -3, 4, -1, -2, 1, 5, -3];
-const result = maxSubarray(data);
-console.log(result);
-// Expected output:
-// { maxSum: 7, start: 2, end: 6 }
-// (segment [4, -1, -2, 1, 5] sums to 7)
+
+/* --------------------------------------------------------
+   Example usage
+   -------------------------------------------------------- */
+
+const nums = [3, 9, 15, 21, 27, 31, 38, 54, 72, 95];
+
+console.log(fibonacciSearch(nums, 54)); // → 7
+console.log(fibonacciSearch(nums, 10)); // → -1
