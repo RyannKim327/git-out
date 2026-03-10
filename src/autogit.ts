@@ -1,25 +1,32 @@
 /**
- * Returns true if `n` is a prime number.
+ * Returns the area of a triangle when you know its base and height.
+ *
+ * @param base   The length of the triangle’s base.
+ * @param height The height (altitude) drawn to that base.
+ * @returns The area in whatever units the inputs are in.
  */
-export function isPrime(n: number): boolean {
-  // Prime numbers are > 1
-  if (n <= 1) return false;
-
-  // 2 and 3 are the only even/odd primes
-  if (n <= 3) return true;
-
-  // Even numbers > 2 can be rejected right away
-  if (n % 2 === 0) return false;
-
-  // Check only odd divisors up to √n
-  const limit = Math.floor(Math.sqrt(n));
-  for (let d = 3; d <= limit; d += 2) {
-    if (n % d === 0) return false;
-  }
-  return true;
+function triangleAreaFromBaseHeight(base: number, height: number): number {
+  return 0.5 * base * height;
 }
-console.log(isPrime(2));  // true
-console.log(isPrime(15)); // false
-console.log(isPrime(17)); // true
-console.log(isPrime(1));  // false
-console.log(isPrime(-5)); // false
+/**
+ * Returns the area of a triangle given its three vertices.
+ *
+ * @param x1 x‑coordinate of the first vertex
+ * @param y1 y‑coordinate of the first vertex
+ * @param x2 x‑coordinate of the second vertex
+ * @param y2 y‑coordinate of the second vertex
+ * @param x3 x‑coordinate of the third vertex
+ * @param y3 y‑coordinate of the third vertex
+ * @returns The absolute area (non‑negative) of the triangle.
+ */
+function triangleAreaFromPoints(
+  x1: number, y1: number,
+  x2: number, y2: number,
+  x3: number, y3: number
+): number {
+  return Math.abs(
+    x1 * (y2 - y3) +
+    x2 * (y3 - y1) +
+    x3 * (y1 - y2)
+  ) / 2;
+}
