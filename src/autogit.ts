@@ -1,75 +1,101 @@
 /**
- * Binary search on a sorted array (ascending order).
- * @param arr   Sorted array of comparable items.
- * @param value Item you’re hunting for.
- * @param compare Optional comparison function:
- *                (a,b) => 0 if a==b, <0 if a<b, >0 if a>b.
- *                If omitted, '<'/'>' operators are used.
- * @returns Index of the value, or -1 if it isn’t present.
+ * Build the bad‑character shift table.
+ * For each letter we record the distance from the end of the pattern
+ * where that letter last appears. If it never appears, the shift is
+ * the whole pattern length.
  */
-export function binarySearch<T>(
-  arr: readonly T[],
-  value: T,
-  compare?: (a: T, b: T) => number,
-): number {
-  let low = 0;
-  let high = arr.length;
+function buildBadCharShift(pattern: string): number[] {
+  const m = pattern.length;
+  const SHIFT_SIZE = 256; // ASCII range
+  const table = new Array<number>(SHIFT_SIZE).fill(m);
 
-  const cmp = compare ?? ((a: T, b: T) => {
-    /* eslint-disable-next-line no-prototype-builtins */
-    if ((a as any as object).hasOwnProperty && typeof a === 'object' && typeof b === 'object') {
-      // For objects that implement `valueOf()` – optional
-      return (a as any) < b ? -1 : (a as any) > b ? 1 : 0;
+  for (let i = 0; i < m - 1; i++) {
+    table[pattern.charCodeAt(i)] = m - 1 - i;
+  }
+  return table;
+}
+
+/**
+ * Build the good‑suffix shift table.
+ * Uses suffix and prefix tables derived from the reversed pattern.
+ */
+function buildGoodSuffixShift(pattern: string): number[] {
+  const m = pattern.length;
+  const table = new Array<number>(m).fill(0);
+  const suff = new Array<number>(m).fill(0);
+
+  // 1. Compute suff array: longest suffix of pattern[0..i] that is also a prefix of pattern
+  suff[m - 1] = m;
+  let g = m - 1, f = m - 1;
+  for (let i = m - 2; i >= 0; i--) {
+    if (i > g && suff[i + m - 1 - f] < i - g) {
+      suff[i] = suff[i + m - 1 - f];
+    } else {
+      g = Math.min(g, i);
+      f = i;
+      while (g >= 0 && pattern[g] === pattern[g + m - 1 - f]) g--;
+      suff[i] = f - g;
     }
-    return a < b ? -1 : a > b ? 1 : 0;
-  });
-
-  while (low < high) {
-    const mid = (low + high) >>> 1; // fast floor division by 2
-    const comp = cmp(arr[mid], value);
-
-    if (comp === 0) return mid;   // found it
-    if (comp < 0) low = mid + 1;  // value is higher
-    else high = mid;              // value is lower
   }
 
-  return -1; // not found
+  // 2. Fill table with shifts based on suff array
+  for (let i = 0; i < m; i++) table[i] = m;
+  let j = 0;
+  for (let i = m - 1; i >= 0; i--) {
+    if (suff[i] === i + 1) {
+      for (; j < m - 1 - i; j++) {
+        if (table[j] === m) table[j] = m - 1 - i;
+      }
+    }
+  }
+  for (let i = 0; i < m - 1; i++) {
+    table[m - 1 - suff[i]] = m - 1 - i;
+  }
+
+  return table;
 }
-const nums = [1, 3, 5, 7, 9, 11, 13];
-const idx = binarySearch(nums, 7); // → 3
+/**
+ * Boyer–Moore search.
+ * @param text   string to search inside
+ * @param pattern  string to find
+ * @returns index of the first occurrence or -1 if not found
+ */
+export function boyerMooreSearch(text: string, pattern: string): number {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return 0;
+  if (n < m) return -1;
 
-const words = ['apple', 'banana', 'cherry', 'date'];
-const wIdx = binarySearch(words, 'cherry'); // → 2
-export function binarySearchRecursive<T>(
-  arr: readonly T[],
-  value: T,
-  compare?: (a: T, b: T) => number,
-  low = 0,
-  high = arr.length - 1,
-): number {
-  if (low > high) return -1;
+  const badChar = buildBadCharShift(pattern);
+  const goodSuffix = buildGoodSuffixShift(pattern);
 
-  const cmp = compare ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+  let s = 0; // alignment of the pattern with the text
+  while (s <= n - m) {
+    let j = m - 1;
 
-  const mid = (low + high) >>> 1;
-  const comp = cmp(arr[mid], value);
+    // compare looking from the end of the pattern
+    while (j >= 0 && pattern[j] === text[s + j]) j--;
 
-  if (comp === 0) return mid;
-  return comp < 0
-    ? binarySearchRecursive(arr, value, compare, mid + 1, high)
-    : binarySearchRecursive(arr, value, compare, low, mid - 1);
+    if (j < 0) {
+      return s; // full match
+    }
+
+    const bcShift = badChar[text.charCodeAt(s + j)] - (m - 1 - j);
+    const gsShift = goodSuffix[j];
+
+    // maximum of both shift suggestions
+    s += Math.max(bcShift, gsShift, 1); // at least 1 to avoid infinite loop
+  }
+  return -1;
 }
-interface Person { name: string; age: number; }
+import { boyerMooreSearch } from './boyer-moore';
 
-const people: Person[] = [
-  { name: 'Alice', age: 28 },
-  { name: 'Bob', age: 35 },
-  { name: 'Carol', age: 41 },
-];
+const haystack = "Here is a simple example string for searching.";
+const needle   = "example";
 
-// Sorted by age
-const idx = binarySearch(
-  people,
-  { name: '', age: 35 },             // value (name ignored)
-  (a, b) => a.age - b.age
-); // → 1
+const pos = boyerMooreSearch(haystack, needle);
+if (pos !== -1) {
+  console.log(`'${needle}' found at index ${pos}`);
+} else {
+  console.log(`'${needle}' not found`);
+}
