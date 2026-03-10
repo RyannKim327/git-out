@@ -1,98 +1,146 @@
-/** A minimal generic priority queue built on a binary heap */
-export class PriorityQueue<T> {
-  /** Internal storage array (0‑based). 0 is the root. */
-  private heap: T[] = [];
+// Node.ts
+export class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
 
-  /** Comparator that returns true if a should come before b. */
-  private readonly less: (a: T, b: T) => boolean;
-
-  /** Number of queued elements */
-  public get size(): number { return this.heap.length; }
-
-  /** Peek at the top element without removing it.  Returns undefined if empty. */
-  public peek(): T | undefined { return this.heap[0]; }
-
-  constructor(comparator?: (a: T, b: T) => boolean) {
-    // Default to a min‑heap using < for primitives
-    this.less = comparator ?? ((a, b) => (a as any) < (b as any));
-  }
-
-  /** Insert a new element into the queue */
-  public push(item: T): void {
-    this.heap.push(item);
-    this.bubbleUp(this.heap.length - 1);
-  }
-
-  /** Remove and return the top element.  Returns undefined if empty. */
-  public pop(): T | undefined {
-    const n = this.heap.length;
-    if (n === 0) return undefined;
-    if (n === 1) return this.heap.pop();
-
-    const top = this.heap[0];
-    this.heap[0] = this.heap.pop() as T; // Set last element to root
-    this.sinkDown(0);
-    return top;
-  }
-
-  /** Swap two indices in the heap */
-  private swap(i: number, j: number): void {
-    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
-  }
-
-  /** Restore heap order by moving the element at idx up */
-  private bubbleUp(idx: number): void {
-    const element = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = (idx - 1) >> 1;
-      const parent = this.heap[parentIdx];
-      if (!this.less(element, parent)) break;
-      this.swap(idx, parentIdx);
-      idx = parentIdx;
-    }
-  }
-
-  /** Restore heap order by moving the element at idx down */
-  private sinkDown(idx: number): void {
-    const n = this.heap.length;
-    const element = this.heap[idx];
-
-    while (true) {
-      const leftIdx = (idx << 1) + 1;
-      const rightIdx = leftIdx + 1;
-      let smallestIdx = idx;
-
-      if (leftIdx < n && this.less(this.heap[leftIdx], this.heap[smallestIdx])) {
-        smallestIdx = leftIdx;
-      }
-      if (rightIdx < n && this.less(this.heap[rightIdx], this.heap[smallestIdx])) {
-        smallestIdx = rightIdx;
-      }
-
-      if (smallestIdx === idx) break;
-      this.swap(idx, smallestIdx);
-      idx = smallestIdx;
-    }
+  constructor(value: T) {
+    this.value = value;
   }
 }
-// Minimum priority queue (default)
-const minQ = new PriorityQueue<number>();
-minQ.push(5);
-minQ.push(2);
-minQ.push(8);
-console.log(minQ.peek()); // 2
-console.log(minQ.pop());  // 2
-console.log(minQ.pop());  // 5
+// LinkedList.ts
+import { ListNode } from "./Node";
 
-// Maximum priority queue
-const maxQ = new PriorityQueue<number>((a, b) => a > b);
-maxQ.push(5);
-maxQ.push(2);
-maxQ.push(8);
-console.log(maxQ.pop()); // 8
-interface Task { id: string; priority: number; }
+export class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _length = 0;
 
-const taskQueue = new PriorityQueue<Task>((a, b) => a.priority < b.priority); // min‑heap by priority
-taskQueue.push({ id: 'A', priority: 10 });
-taskQueue.push({ id: 'B', priority: 5 });
-console.log(taskQueue.pop()); // { id: 'B', priority: 5 }
+  get length() {
+    return this._length;
+  }
+
+  /* ---------- Basic Operations ---------- */
+
+  // Append a value to the end of the list.
+  push(value: T): void {
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      this.tail!.next = node;
+      this.tail = node;
+    }
+    this._length++;
+  }
+
+  // Prepend a value to the beginning of the list.
+  unshift(value: T): void {
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      node.next = this.head;
+      this.head = node;
+    }
+    this._length++;
+  }
+
+  // Remove and return the value at the head of the list.
+  shift(): T | null {
+    if (!this.head) return null;
+    const value = this.head.value;
+    this.head = this.head.next;
+    if (!this.head) this.tail = null; // list became empty
+    this._length--;
+    return value;
+  }
+
+  // Remove and return the value at the tail of the list.
+  pop(): T | null {
+    if (!this.head) return null;
+
+    if (this.head === this.tail) {
+      const value = this.head.value;
+      this.head = this.tail = null;
+      this._length--;
+      return value;
+    }
+
+    // Walk to the node just before the tail.
+    let current = this.head;
+    while (current.next !== this.tail) {
+      current = current.next!;
+    }
+    const value = this.tail!.value;
+    current.next = null;
+    this.tail = current;
+    this._length--;
+    return value;
+  }
+
+  /* ---------- Traversal & Search ---------- */
+
+  // Return the node at the given zero‑based index, or null if out of bounds.
+  getNodeAt(index: number): ListNode<T> | null {
+    if (index < 0 || index >= this._length) return null;
+    let current = this.head!;
+    for (let i = 0; i < index; i++) {
+      current = current.next!;
+    }
+    return current;
+  }
+
+  // Find the first value that satisfies the predicate.
+  find(predicate: (value: T) => boolean, startIndex = 0): T | null {
+    let current = this.getNodeAt(startIndex);
+    while (current) {
+      if (predicate(current.value)) return current.value;
+      current = current.next;
+    }
+    return null;
+  }
+
+  /* ---------- Utility ---------- */
+
+  // Convert the list to an array (useful for debugging or interoperability).
+  toArray(): T[] {
+    const out: T[] = [];
+    let current = this.head;
+    while (current) {
+      out.push(current.value);
+      current = current.next;
+    }
+    return out;
+  }
+
+  // Allow for… e.g. “for … of” iteration.
+  [Symbol.iterator](): Iterator<T> {
+    let current = this.head;
+    return {
+      next: () => ({
+        value: current?.value,
+        done: current === null,
+      }),
+    };
+  }
+}
+import { LinkedList } from "./LinkedList";
+
+const numbers = new LinkedList<number>();
+numbers.push(10);
+numbers.push(20);
+numbers.unshift(5);   // list is now 5 -> 10 -> 20
+
+console.log(numbers.shift()); // 5
+console.log(numbers.pop());   // 20
+console.log(numbers.length);  // 1
+
+// Search
+numbers.push(30);
+numbers.push(40);
+console.log(numbers.find(v => v > 15)); // 20
+
+// Iterate
+for (const n of numbers) {
+  console.log(n); // 10, 30, 40
+}
