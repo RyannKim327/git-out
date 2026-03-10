@@ -1,45 +1,16 @@
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
+/**
+ * Returns a whole number between min and max (both inclusive).
+ *
+ * @param min The smallest possible value you want (usually a number ≥ 0)
+ * @param max The largest possible value you want
+ */
+function randomIntInRange(min: number, max: number): number {
+  // Clamp the inputs so min <= max
+  const [low, high] = min <= max ? [min, max] : [max, min];
+
+  // Math.random() → [0, 1).  Scale it to the desired width,
+  // then shift by the lower bound and round down.
+  return Math.floor(Math.random() * (high - low + 1)) + low;
 }
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
-
-  while (fast && fast.next) {
-    slow = slow!.next;            // move one step
-    fast = fast.next.next;        // move two steps
-
-    if (slow === fast) return true;   // they met → cycle
-  }
-
-  return false;   // hit the end → no cycle
-}
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const visited = new Set<ListNode<T>>();
-
-  let current = head;
-  while (current) {
-    if (visited.has(current)) return true;
-    visited.add(current);
-    current = current.next;
-  }
-  return false;
-}
-// Linear list (no cycle)
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
-
-console.log(hasCycle(a)); // false
-
-// Cyclic list
-const d = new ListNode(4);
-const e = new ListNode(5);
-const f = new ListNode(6);
-d.next = e; e.next = f; f.next = d; // f points back to d
-
-console.log(hasCycle(d)); // true
+const rand = randomIntInRange(5, 10);
+console.log(rand); // → a whole number 5, 6, 7, 8, 9, or 10
