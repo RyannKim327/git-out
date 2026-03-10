@@ -1,51 +1,38 @@
-// A classic singly‑linked‑list node
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-
 /**
- * Returns the nth node from the end (1‑based) or null if n is out of range.
+ * Return the first non‑repeating character in a string.
+ * If every character repeats, return `null`.
  */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;          // natural guard for mis‑ed input
+function firstNonRepeating(str: string): string | null {
+  const counts: Record<string, number> = {};
 
-  let first: ListNode<T> | null = head;
-  let second: ListNode<T> | null = head;
-
-  /* Advance `first` n steps ahead. */
-  for (let i = 0; i < n; i++) {
-    if (!first) return null;   // n is larger than list length
-    first = first.next;
+  // 1️⃣ Count each character
+  for (const ch of str) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
   }
 
-  /* Move both pointers until `first` hits the end. */
-  while (first) {
-    first = first.next;
-    second = second!.next;     // second is guaranteed not null here
+  // 2️⃣ Scan once more to find the first with count 1
+  for (const ch of str) {
+    if (counts[ch] === 1) {
+      return ch;
+    }
   }
 
-  return second;   // `second` is the nth node from the end
+  return null;
 }
-function nthFromEndTwoPass<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let len = 0;
-  for (let cur = head; cur; cur = cur.next) len++;
 
-  if (n <= 0 || n > len) return null;
+// quick examples
+console.log(firstNonRepeating('abacabad')); // "b"
+console.log(firstNonRepeating('aabbcc'));   // null
+function firstNonRepeatingMap(str: string): string | null {
+  const freq = new Map<string, number>();
 
-  let cur = head;
-  for (let i = 0; i < len - n; i++) cur = cur!.next;
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
 
-  return cur;
+  for (const ch of str) if (freq.get(ch) === 1) return ch;
+  return null;
 }
-// Example list: 1 → 2 → 3 → 4 → 5
-const tail = new ListNode(5);
-const middle = new ListNode(4, tail);
-const head = new ListNode(1,
-           new ListNode(2,
-           new ListNode(3,
-           middle)));
-
-console.log(nthFromEnd(head, 1)?.val); // 5
-console.log(nthFromEnd(head, 2)?.val); // 4
-console.log(nthFromEnd(head, 5)?.val); // 1
-console.log(nthFromEnd(head, 6));      // null
+function allNonRepeating(str: string): string[] {
+  const freq = new Map<string, number>();
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  return [...str].filter(ch => freq.get(ch) === 1);
+}
