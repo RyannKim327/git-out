@@ -1,39 +1,18 @@
-function isPalindrome(str: string): boolean {
-  // Compare the string to its reverse
-  const reversed = str.split('').reverse().join('');
-  return str === reversed;
+// ✅ Basic “looks‑right” test
+function isValidEmail(email: string): boolean {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
 }
 
-// Examples
-console.log(isPalindrome('radar'));   // true
-console.log(isPalindrome('hello'));   // false
-function isPalindromeCI(str: string): boolean {
-  const normalized = str.toLowerCase();          // make everything lowercase
-  return normalized === normalized.split('').reverse().join('');
+// usage
+console.log(isValidEmail('user@example.com')); // true
+console.log(isValidEmail('bad-email.com'));    // false
+// ✅ Covers quoted local‑part, IP domains, and "newer" TLDs
+function isValidEmailBetter(email: string): boolean {
+  const re = /^(?:(?:\"[^\"]+\")|(?:[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+))@(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}|(?:\[[0-9]{1,3}(?:\.[0-9]{1,3}){3}\]))$/;
+  return re.test(email);
 }
-
-console.log(isPalindromeCI('Radar'));   // true
-console.log(isPalindromeCI('Racecar')); // true
-function isPalindromeClean(str: string): boolean {
-  const cleaned = str
-    .replace(/[^a-z0-9]/gi, '')      // strip non-alphanumerics
-    .toLowerCase();                  // normalize case
-  
-  const reversed = cleaned.split('').reverse().join('');
-  return cleaned === reversed;
-}
-
-console.log(isPalindromeClean('A man, a plan, a canal: Panama')); // true
-function isPalindromeTwoPointer(str: string): boolean {
-  let left = 0;
-  let right = str.length - 1;
-
-  while (left < right) {
-    if (str[left] !== str[right]) return false;
-    left++;
-    right--;
-  }
-  return true;
-}
-
-console.log(isPalindromeTwoPointer('radar')); // true
+// In a React hook or any form library
+const validateEmail = (value: string) => (
+  isValidEmail(value) ? undefined : 'Invalid email address'
+);
