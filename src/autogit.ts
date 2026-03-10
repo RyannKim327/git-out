@@ -1,45 +1,110 @@
-// 1️⃣  Install node‑fetch (or use the built‑in fetch in environments that have it)
-//    npm install node-fetch @types/node-fetch
-import fetch from "node-fetch";
+// ──────────────────────────────────────────────────────────
+// 1. Graph representation
+// ──────────────────────────────────────────────────────────
+type Vertex = string | number;
 
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
+// An adjacency list where each vertex maps to an array of its outgoing neighbours.
+class Graph {
+  private readonly edges: Map<Vertex, Vertex[]> = new Map();
 
-/**
- * Fetch a single Todo by its numeric ID.
- * @param id - The ID of the Todo to request.
- * @returns Promises a Todo object.
- */
-async function getTodoById(id: number): Promise<Todo> {
-  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-  });
-
-  // 2️⃣  Basic status check – throws if not 2xx
-  if (!response.ok) {
-    throw new Error(`Request failed with ${response.status} ${response.statusText}`);
+  constructor(edges?: [Vertex, Vertex][]) {
+    if (edges) this.addEdges(edges);
   }
 
-  // 3️⃣  Parse the JSON body and return it as a Todo
-  const data = (await response.json()) as Todo;
-  return data;
+  /** Adds one or more directed edges to the graph. */
+  addEdges(edges: [Vertex, Vertex][]): void {
+    for (const [from, to] of edges) {
+      if (!this.edges.has(from)) this.edges.set(from, []);
+      this.edges.get(from)!.push(to);
+      // Ensure the destination vertex exists in the map so it shows up in the keys.
+      if (!this.edges.has(to)) this.edges.set(to, []);
+    }
+  }
+
+  /** Returns all vertices in the graph. */
+  vertices(): Vertex[] {
+    return Array.from(this.edges.keys());
+  }
+
+  /** Returns the neighbours of a given vertex. */
+  neighbours(v: Vertex): Vertex[] {
+    return this.edges.get(v) ?? [];
+  }
 }
 
-/**
- * Demo of calling `getTodoById` and logging the result or an error.
- */
-(async () => {
-  try {
-    const todo = await getTodoById(3);
-    console.log("Fetched Todo:", todo);
-  } catch (err) {
-    console.error("Error fetching Todo:", err);
+// ──────────────────────────────────────────────────────────
+// 2. DFS‑based topological sort
+// ──────────────────────────────────────────────────────────
+function topoSortDFS(g: Graph): Vertex[] | null {
+  const visited = new Set<Vertex>();
+  const temp = new Set<Vertex>();   // vertices currently on recursion stack
+  const order: Vertex[] = [];
+
+  const visit = (v: Vertex): boolean => {
+    if (temp.has(v)) return false; // cycle detected
+
+    if (!visited.has(v)) {
+      temp.add(v);
+      for (const nb of g.neighbours(v)) {
+        if (!visit(nb)) return false;
+      }
+      temp.delete(v);
+      visited.add(v);
+      order.push(v);
+    }
+    return true;
+  };
+
+  for (const v of g.vertices()) {
+    if (!visit(v)) return null; // if a cycle is found, return null
   }
-})();
+
+  return order.reverse(); // reverse to get the correct order
+}
+
+// ──────────────────────────────────────────────────────────
+// 3. Kahn’s algorithm (BFS‑based)
+// ──────────────────────────────────────────────────────────
+function topoSortKahn(g: Graph): Vertex[] | null {
+  // Compute in‑degree of each vertex
+  const inDeg = new Map<Vertex, number>();
+  for (const v of g.vertices()) inDeg.set(v, 0);
+  for (const v of g.vertices()) {
+    for (const nb of g.neighbours(v)) {
+      inDeg.set(nb, (inDeg.get(nb) ?? 0) + 1);
+    }
+  }
+
+  const queue: Vertex[] = [];
+  for (const [v, d] of inDeg) if (d === 0) queue.push(v);
+
+  const order: Vertex[] = [];
+  while (queue.length) {
+    const v = queue.shift()!;
+    order.push(v);
+    for (const nb of g.neighbours(v)) {
+      const d = inDeg.get(nb)! - 1;
+      inDeg.set(nb, d);
+      if (d === 0) queue.push(nb);
+    }
+  }
+
+  if (order.length !== g.vertices().length) return null; // cycle exists
+  return order;
+}
+
+// ──────────────────────────────────────────────────────────
+// 4. Demo / usage
+// ──────────────────────────────────────────────────────────
+const edges: [Vertex, Vertex][] = [
+  ['a', 'd'],
+  ['f', 'b'],
+  ['b', 'd'],
+  ['f', 'a'],
+  ['d', 'c']
+];
+
+const graph = new Graph(edges);
+
+console.log('DFS order:', topoSortDFS(graph));   // legal order or null
+console.log('Kahn order:', topoSortKahn(graph)); // same result
