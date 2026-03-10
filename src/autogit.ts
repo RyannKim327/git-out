@@ -1,14 +1,34 @@
-// 1) Using a regular expression (remove *any* whitespace)
-const clean1 = originalString.replace(/\s+/g, "");
+// randomPassword.ts
+import * as readline from 'readline';
 
-// 2) If you only care about literal space characters (no tabs, newlines, etc.)
-const clean2 = originalString.replace(/ /g, "");
+// Characters that can appear in the password
+const CHARSET =
+  'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
 
-// 3) Split/join – handy if you’re scrubbing a handful of specific delimiters
-const clean3 = originalString.split(" ").join("");
-
-// 4) Manual loop (useful if you need to do something with each char)
-let clean4 = "";
-for (const ch of originalString) {
-  if (ch !== " ") clean4 += ch;
+function generatePassword(length: number): string {
+  let pwd = '';
+  for (let i = 0; i < length; i++) {
+    pwd += CHARSET[Math.floor(Math.random() * CHARSET.length)];
+  }
+  return pwd;
 }
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+rl.question('Enter desired password length: ', (answer) => {
+  const len = parseInt(answer, 10);
+  if (!isNaN(len) && len > 0) {
+    console.log(`Generated password: ${generatePassword(len)}`);
+  } else {
+    console.log('Please enter a valid positive integer.');
+  }
+  rl.close();
+});
+# 1. Compile (requires TypeScript installed)
+tsc randomPassword.ts
+
+# 2. Execute the resulting JavaScript
+node randomPassword.js
