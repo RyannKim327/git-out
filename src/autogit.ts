@@ -1,40 +1,19 @@
-// Basic node interface – can be turned into a class if you like.
-interface TreeNode<T = number> {
-  val: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+function removeVowels(str: string): string {
+  // The regex /[aeiou]/gi matches any vowel, case‑insensitively
+  return str.replace(/[aeiou]/gi, '');
 }
-function maxDepth<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                 // empty subtree → depth 0
 
-  const leftDepth  = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
-
-  // Depth of current node = 1 (itself) + depth of deeper side
-  return 1 + Math.max(leftDepth, rightDepth);
+// Examples
+console.log(removeVowels('Hello World'));    // "Hll Wrld"
+console.log(removeVowels('Typescript'));     // "TypScrpt"
+console.log(removeVowels('AEIOU aeioU'));    // ""
+function removeAllVowels(str: string): string {
+  // Matches any vowel character in the Latin vowel block
+  return str.replace(/[aeiouAEIOU]/g, ''); // still plain Latin
+  // OR with property escapes (if your environment supports it):
+  // return str.replace(/\p{Script=Latin}&&[aeiou]/gi, '');
 }
-const root: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3, right: { val: 5, right: { val: 6 } } }
-};
-
-console.log(maxDepth(root));   // → 4
-function maxDepthIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
-
-  let max = 0;
-  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
-    { node: root, depth: 1 },
-  ];
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    max = Math.max(max, depth);
-
-    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
-    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
-  }
-
-  return max;
+function removeVowels(arr: string): string {
+  const vowels = new Set('aeiouAEIOU');
+  return arr.split('').filter(ch => !vowels.has(ch)).join('');
 }
