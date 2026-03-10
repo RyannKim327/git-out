@@ -1,41 +1,35 @@
 /**
- * Random‑pivot quick sort.
- *
- * @param arr   The array to sort (in‑place).
- * @returns     The sorted array (the same reference as `arr`).
+ * Bottom‑up merge sort – no recursion, only loops.
+ * @param arr The array to sort, in place.
+ * @returns The sorted array (same reference as the argument).
  */
-export function quickSortRandom<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
-  if (arr.length <= 1)
-    return arr;
+export function mergeSortIterative<T>(arr: T[]): T[] {
+  const len = arr.length;
+  if (len < 2) return arr;          // already sorted
 
-  // So we can provide a custom comparison, but default is the usual "<".
-  const cmp = compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  // Temporary buffer reused for each merge
+  const temp = new Array<T>(len);
 
-  // Pick a random index as pivot
-  const pivotIndex = Math.floor(Math.random() * arr.length);
-  const pivotValue = arr[pivotIndex];
+  // Initial run width – start with runs of 1 element
+  for (let width = 1; width < len; width <<= 1) {
+    // Merge pairs of runs: left = i‑th run, right = i+width‑th run
+    for (let i = 0; i < len; i += width << 1) {
+      const left = i;
+      const mid = Math.min(i + width, len);
+      const right = Math.min(i + (width << 1), len);
 
-  // Partition into two new arrays
-  const lows: T[] = [];
-  const highs: T[] = [];
-  const pivots: T[] = [];
+      // Merge [left, mid) and [mid, right) into temp
+      let l = left, r = mid, k = left;
+      while (l < mid && r < right) {
+        temp[k++] = (arr[l] as any <= arr[r] as any) ? arr[l++] : arr[r++];
+      }
+      while (l < mid) temp[k++] = arr[l++];
+      while (r < right) temp[k++] = arr[r++];
 
-  for (let i = 0; i < arr.length; i++) {
-    const value = arr[i];
-    const comparison = cmp(value, pivotValue);
-    if (comparison < 0)    lows.push(value);
-    else if (comparison > 0) highs.push(value);
-    else                    pivots.push(value);   // equals pivot
+      // Copy the merged segment back into arr
+      for (let p = left; p < right; p++) arr[p] = temp[p];
+    }
   }
 
-  // Recurse and concatenate
-  return quickSortRandom(lows, cmp)
-          .concat(pivots, quickSortRandom(highs, cmp));
+  return arr;
 }
-
-// ---- Demo ---------------------------------------------------------
-
-const unsorted = [7, 2, 9, 4, 1, 5, 3, 8, 6];
-console.log('original: ', unsorted);
-const sorted = quickSortRandom(unsorted);
-console.log('sorted:   ', sorted);
