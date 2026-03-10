@@ -1,35 +1,45 @@
 /**
- * Bottom‑up merge sort – no recursion, only loops.
- * @param arr The array to sort, in place.
- * @returns The sorted array (same reference as the argument).
+ * Returns the contiguous segment of `arr` that yields the highest possible sum.
+ *
+ * @param arr - Array of numbers (integer or float)
+ * @returns An object containing:
+ *   `maxSum`  – the total sum of the best segment
+ *   `start`   – the index where the segment begins
+ *   `end`     – the index where the segment ends (inclusive)
  */
-export function mergeSortIterative<T>(arr: T[]): T[] {
-  const len = arr.length;
-  if (len < 2) return arr;          // already sorted
+function maxSubarray(arr: number[]) {
+  if (arr.length === 0) throw new Error('Array cannot be empty');
 
-  // Temporary buffer reused for each merge
-  const temp = new Array<T>(len);
+  let bestSum = arr[0];
+  let currentSum = arr[0];
+  let bestStart = 0;
+  let bestEnd = 0;
+  let tempStart = 0;
 
-  // Initial run width – start with runs of 1 element
-  for (let width = 1; width < len; width <<= 1) {
-    // Merge pairs of runs: left = i‑th run, right = i+width‑th run
-    for (let i = 0; i < len; i += width << 1) {
-      const left = i;
-      const mid = Math.min(i + width, len);
-      const right = Math.min(i + (width << 1), len);
+  for (let i = 1; i < arr.length; i++) {
+    const val = arr[i];
 
-      // Merge [left, mid) and [mid, right) into temp
-      let l = left, r = mid, k = left;
-      while (l < mid && r < right) {
-        temp[k++] = (arr[l] as any <= arr[r] as any) ? arr[l++] : arr[r++];
-      }
-      while (l < mid) temp[k++] = arr[l++];
-      while (r < right) temp[k++] = arr[r++];
+    // Either start a new sub‑array at i or extend the existing one
+    if (currentSum + val < val) {
+      currentSum = val;
+      tempStart = i;       // new potential start
+    } else {
+      currentSum += val;   // keep extending
+    }
 
-      // Copy the merged segment back into arr
-      for (let p = left; p < right; p++) arr[p] = temp[p];
+    // Update the best segment seen so far
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
     }
   }
 
-  return arr;
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
+const data = [-2, -3, 4, -1, -2, 1, 5, -3];
+const result = maxSubarray(data);
+console.log(result);
+// Expected output:
+// { maxSum: 7, start: 2, end: 6 }
+// (segment [4, -1, -2, 1, 5] sums to 7)
