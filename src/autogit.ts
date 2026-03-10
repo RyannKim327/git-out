@@ -1,17 +1,41 @@
-const numbers = [1, 2, 3, 4];
-numbers.reverse();          // → [4, 3, 2, 1]
-console.log(numbers);       // the same array has changed
-const numbers = [1, 2, 3, 4];
-const reversed = numbers.slice().reverse(); // or [...numbers].reverse()
-
-console.log(numbers);   // → [1, 2, 3, 4]
-console.log(reversed);  // → [4, 3, 2, 1]
-function reverseArray<T>(arr: T[]): T[] {
-  const out = new Array<T>(arr.length);
-  for (let i = 0, j = arr.length - 1; i <= j; ++i, --j) {
-    out[i] = arr[j];
-    out[j] = arr[i];
-  }
-  return out;
+export interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
-const rev = reverseArray([10, 20, 30]); // → [30, 20, 10]
+export class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
+}
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null
+  let curr = head
+
+  while (curr) {
+    const nxt = curr.next      // keep reference to next node
+    curr.next = prev           // flip the link
+    prev = curr                // advance prev
+    curr = nxt                 // advance curr
+  }
+
+  return prev   // new head
+}
+export function reverseListRec<T>(node: ListNode<T> | null, prev: ListNode<T> | null = null): ListNode<T> | null {
+  if (!node) return prev
+  const nxt = node.next
+  node.next = prev
+  return reverseListRec(nxt, node)
+}
+// build 1 → 2 → 3
+const n3 = new ListNode(3)
+const n2 = new ListNode(2, n3)
+const n1 = new ListNode(1, n2)
+
+// reverse
+const reversed = reverseList(n1)
+
+// print results
+let cur = reversed
+while (cur) {
+  console.log(cur.value)
+  cur = cur.next
+}
+// → 3, 2, 1
