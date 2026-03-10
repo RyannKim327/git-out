@@ -1,101 +1,59 @@
 /**
- * Build the bad‑character shift table.
- * For each letter we record the distance from the end of the pattern
- * where that letter last appears. If it never appears, the shift is
- * the whole pattern length.
+ * Return the index of the first occurrence of `pattern` inside `text`,
+ * or -1 if the pattern is absent.
  */
-function buildBadCharShift(pattern: string): number[] {
-  const m = pattern.length;
-  const SHIFT_SIZE = 256; // ASCII range
-  const table = new Array<number>(SHIFT_SIZE).fill(m);
+export function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0; // trivially found at start
 
-  for (let i = 0; i < m - 1; i++) {
-    table[pattern.charCodeAt(i)] = m - 1 - i;
-  }
-  return table;
-}
+  const lps = computeLPSArray(pattern); // longest‑prefix‑suffix table
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-/**
- * Build the good‑suffix shift table.
- * Uses suffix and prefix tables derived from the reversed pattern.
- */
-function buildGoodSuffixShift(pattern: string): number[] {
-  const m = pattern.length;
-  const table = new Array<number>(m).fill(0);
-  const suff = new Array<number>(m).fill(0);
-
-  // 1. Compute suff array: longest suffix of pattern[0..i] that is also a prefix of pattern
-  suff[m - 1] = m;
-  let g = m - 1, f = m - 1;
-  for (let i = m - 2; i >= 0; i--) {
-    if (i > g && suff[i + m - 1 - f] < i - g) {
-      suff[i] = suff[i + m - 1 - f];
-    } else {
-      g = Math.min(g, i);
-      f = i;
-      while (g >= 0 && pattern[g] === pattern[g + m - 1 - f]) g--;
-      suff[i] = f - g;
-    }
-  }
-
-  // 2. Fill table with shifts based on suff array
-  for (let i = 0; i < m; i++) table[i] = m;
-  let j = 0;
-  for (let i = m - 1; i >= 0; i--) {
-    if (suff[i] === i + 1) {
-      for (; j < m - 1 - i; j++) {
-        if (table[j] === m) table[j] = m - 1 - i;
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) { // whole pattern matched
+        return i - j; // match start index
       }
+    } else if (j > 0) {
+      // mismatch after j matches – skip ahead by lps[j‑1]
+      j = lps[j - 1];
+    } else {
+      // mismatch at start of pattern
+      i++;
     }
   }
-  for (let i = 0; i < m - 1; i++) {
-    table[m - 1 - suff[i]] = m - 1 - i;
-  }
 
-  return table;
+  return -1; // no match
 }
+
 /**
- * Boyer–Moore search.
- * @param text   string to search inside
- * @param pattern  string to find
- * @returns index of the first occurrence or -1 if not found
+ * Pre‑process the pattern to build the “longest prefix that is also a suffix”
+ * (LPS) array. lps[i] = the length of the longest proper prefix of
+ * pattern[0..i] that is also a suffix of pattern[0..i].
  */
-export function boyerMooreSearch(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return 0;
-  if (n < m) return -1;
+function computeLPSArray(pattern: string): number[] {
+  const lps: number[] = Array(pattern.length).fill(0);
+  let len = 0;   // length of previous longest prefix suffix
+  let i = 1;     // lps[0] is always 0
 
-  const badChar = buildBadCharShift(pattern);
-  const goodSuffix = buildGoodSuffixShift(pattern);
-
-  let s = 0; // alignment of the pattern with the text
-  while (s <= n - m) {
-    let j = m - 1;
-
-    // compare looking from the end of the pattern
-    while (j >= 0 && pattern[j] === text[s + j]) j--;
-
-    if (j < 0) {
-      return s; // full match
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else if (len !== 0) {
+      // use the previous lps value to avoid re‑checking
+      len = lps[len - 1];
+    } else {
+      lps[i] = 0;
+      i++;
     }
-
-    const bcShift = badChar[text.charCodeAt(s + j)] - (m - 1 - j);
-    const gsShift = goodSuffix[j];
-
-    // maximum of both shift suggestions
-    s += Math.max(bcShift, gsShift, 1); // at least 1 to avoid infinite loop
   }
-  return -1;
-}
-import { boyerMooreSearch } from './boyer-moore';
 
-const haystack = "Here is a simple example string for searching.";
-const needle   = "example";
-
-const pos = boyerMooreSearch(haystack, needle);
-if (pos !== -1) {
-  console.log(`'${needle}' found at index ${pos}`);
-} else {
-  console.log(`'${needle}' not found`);
+  return lps;
 }
+console.log(kmpSearch("ababcabcababc", "abc"));   // 2
+console.log(kmpSearch("ababcabcababc", "abcd"));  // -1
+console.log(kmpSearch("aaaaa", "aaa"));           // 0
