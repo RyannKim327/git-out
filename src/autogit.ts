@@ -1,41 +1,25 @@
-// schedule.ts
-import cron from 'node-cron';
+/**
+ * Returns true if `n` is a prime number.
+ */
+export function isPrime(n: number): boolean {
+  // Prime numbers are > 1
+  if (n <= 1) return false;
 
-let runCount = 0;
-const maxRuns = 5;
+  // 2 and 3 are the only even/odd primes
+  if (n <= 3) return true;
 
-// Pick a playful string at random each time the job fires.
-const messages = [
-  "🍕 Time for a pizza break!",
-  "🐱‍🏍 Speedy coding vibes!",
-  "🧐 Did you know: A group of flamingos is called a flamboyance?",
-  "🚀 Launching into the cosmos…",
-  "🔮 Future content will appear here!"
-];
+  // Even numbers > 2 can be rejected right away
+  if (n % 2 === 0) return false;
 
-const job = cron.schedule('* * * * *', () => {
-  // Bot says something random
-  const msg = messages[Math.floor(Math.random() * messages.length)];
-  console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
-
-  runCount += 1;
-  if (runCount >= maxRuns) {
-    console.log('Stopping the cron job after 5 runs.');
-    job.stop();
+  // Check only odd divisors up to √n
+  const limit = Math.floor(Math.sqrt(n));
+  for (let d = 3; d <= limit; d += 2) {
+    if (n % d === 0) return false;
   }
-}, {
-  scheduled: true,
-  timezone: "UTC"
-});
-
-console.log('Cron job started—will run every minute up to 5 times.');
-# 1. Init a barebones project if you haven’t already
-npm init -y
-
-# 2. Install the cron package and types for Node
-npm i node-cron
-npm i -D @types/node @types/node-cron typescript ts-node
-
-# 3. Compile and run
-npx ts-node schedule.ts
-[12:00:00 AM] 🚀 Launching into the cosmos…
+  return true;
+}
+console.log(isPrime(2));  // true
+console.log(isPrime(15)); // false
+console.log(isPrime(17)); // true
+console.log(isPrime(1));  // false
+console.log(isPrime(-5)); // false
