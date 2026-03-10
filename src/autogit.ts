@@ -1,36 +1,47 @@
 /**
- * Returns the longest common prefix among all given strings.
- * If the array is empty it returns an empty string.
+ * Return true if `s` is a palindrome (case‑insensitive, alphanumeric only).
+ * Works in O(n) time and O(1) extra space.
  */
-function longestCommonPrefix(words: string[]): string {
-  if (!words.length) return '';
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  // The first string will act as a reference; we hammer it down
-  // as far as we need to.
-  let prefix = words[0];
+  // helper: is the char code an ASCII alphanumeric?
+  const isAlnum = (c: number) =>
+    (c >= 48 && c <= 57) ||        // 0‑9
+    (c >= 65 && c <= 90) ||        // A‑Z
+    (c >= 97 && c <= 122);         // a‑z
 
-  // Compare the current prefix to every other word.
-  for (const w of words.slice(1)) {
-    // Keep truncating the prefix until it matches the start of w.
-    while (!w.startsWith(prefix)) {
-      prefix = prefix.slice(0, -1); // strip last char
-      if (!prefix) return ''; // nothing common any more
+  // helper: convert ASCII letter to its uppercase equivalent
+  const toUpper = (c: number) => (c >= 97 && c <= 122) ? (c - 32) : c;
+
+  while (left < right) {
+    // skip non‑alphanumeric characters on the left
+    while (left < right && !isAlnum(s.charCodeAt(left))) left++;
+    // skip non‑alphanumeric characters on the right
+    while (left < right && !isAlnum(s.charCodeAt(right))) right--;
+
+    if (left >= right) break;
+
+    // compare the two characters after normalizing to uppercase
+    if (toUpper(s.charCodeAt(left)) !== toUpper(s.charCodeAt(right))) {
+      return false;
     }
+    left++;
+    right--;
   }
 
-  return prefix;
+  return true;
 }
-console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // "fl"
-console.log(longestCommonPrefix(['dog', 'racecar', 'car']));    // ""
-function lcpSort(words: string[]): string {
-  if (!words.length) return '';
 
-  const sorted = [...words].sort();
-  const a = sorted[0];
-  const b = sorted[sorted.length - 1];
-  let i = 0;
+/* ---------- demo ---------- */
+const tests = [
+  "A man, a plan, a canal: Panama",
+  "race a car",
+  "No 'x' in Nixon",
+  "MadamInEdenImAdam",
+];
 
-  while (i < a.length && a[i] === b[i]) i++;
-
-  return a.slice(0, i);
-}
+tests.forEach(t => {
+  console.log(`"${t}" → ${isPalindrome(t)}`);
+});
