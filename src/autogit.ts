@@ -1,26 +1,45 @@
-function maxOfArray(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;   // or throw an error if you prefer
-  return Math.max(...nums);
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
-function maxOfArray(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;
-  return nums.reduce((max, n) => (n > max ? n : max), nums[0]);
-}
-function maxOfArray(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-  let max = nums[0];
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] > max) {
-      max = nums[i];
-    }
+  while (fast && fast.next) {
+    slow = slow!.next;            // move one step
+    fast = fast.next.next;        // move two steps
+
+    if (slow === fast) return true;   // they met → cycle
   }
-  return max;
+
+  return false;   // hit the end → no cycle
 }
-const myNumbers = [12, 7, 22, 5, 18];
-console.log(maxOfArray(myNumbers)); // 22
-function maxWithFallback(nums: number[], fallback = 0): number {
-  return nums.length > 0
-    ? nums.reduce((a, b) => Math.max(a, b))
-    : fallback;
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+  const visited = new Set<ListNode<T>>();
+
+  let current = head;
+  while (current) {
+    if (visited.has(current)) return true;
+    visited.add(current);
+    current = current.next;
+  }
+  return false;
 }
+// Linear list (no cycle)
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b; b.next = c;
+
+console.log(hasCycle(a)); // false
+
+// Cyclic list
+const d = new ListNode(4);
+const e = new ListNode(5);
+const f = new ListNode(6);
+d.next = e; e.next = f; f.next = d; // f points back to d
+
+console.log(hasCycle(d)); // true
