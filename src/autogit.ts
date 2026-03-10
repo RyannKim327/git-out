@@ -1,37 +1,98 @@
-// Works for numbers, strings, dates, anything that can be compared with < and >.
-export function isSorted<T extends number | string | Date>(arr: T[]): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] < arr[i - 1]) return false;
+/** A minimal generic priority queue built on a binary heap */
+export class PriorityQueue<T> {
+  /** Internal storage array (0‑based). 0 is the root. */
+  private heap: T[] = [];
+
+  /** Comparator that returns true if a should come before b. */
+  private readonly less: (a: T, b: T) => boolean;
+
+  /** Number of queued elements */
+  public get size(): number { return this.heap.length; }
+
+  /** Peek at the top element without removing it.  Returns undefined if empty. */
+  public peek(): T | undefined { return this.heap[0]; }
+
+  constructor(comparator?: (a: T, b: T) => boolean) {
+    // Default to a min‑heap using < for primitives
+    this.less = comparator ?? ((a, b) => (a as any) < (b as any));
   }
-  return true;
-}
-isSorted([1, 2, 3, 4]);        // true
-isSorted([1, 3, 2, 4]);        // false
-isSorted(['a', 'b', 'c']);     // true
-isSorted(['c', 'b', 'a']);     // false
-type Comparator<T> = (a: T, b: T) => number;
 
-export function isSortedWith<T>(arr: T[], cmp: Comparator<T>): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) return false; // `a > b` in ascending order
+  /** Insert a new element into the queue */
+  public push(item: T): void {
+    this.heap.push(item);
+    this.bubbleUp(this.heap.length - 1);
   }
-  return true;
+
+  /** Remove and return the top element.  Returns undefined if empty. */
+  public pop(): T | undefined {
+    const n = this.heap.length;
+    if (n === 0) return undefined;
+    if (n === 1) return this.heap.pop();
+
+    const top = this.heap[0];
+    this.heap[0] = this.heap.pop() as T; // Set last element to root
+    this.sinkDown(0);
+    return top;
+  }
+
+  /** Swap two indices in the heap */
+  private swap(i: number, j: number): void {
+    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+  }
+
+  /** Restore heap order by moving the element at idx up */
+  private bubbleUp(idx: number): void {
+    const element = this.heap[idx];
+    while (idx > 0) {
+      const parentIdx = (idx - 1) >> 1;
+      const parent = this.heap[parentIdx];
+      if (!this.less(element, parent)) break;
+      this.swap(idx, parentIdx);
+      idx = parentIdx;
+    }
+  }
+
+  /** Restore heap order by moving the element at idx down */
+  private sinkDown(idx: number): void {
+    const n = this.heap.length;
+    const element = this.heap[idx];
+
+    while (true) {
+      const leftIdx = (idx << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let smallestIdx = idx;
+
+      if (leftIdx < n && this.less(this.heap[leftIdx], this.heap[smallestIdx])) {
+        smallestIdx = leftIdx;
+      }
+      if (rightIdx < n && this.less(this.heap[rightIdx], this.heap[smallestIdx])) {
+        smallestIdx = rightIdx;
+      }
+
+      if (smallestIdx === idx) break;
+      this.swap(idx, smallestIdx);
+      idx = smallestIdx;
+    }
+  }
 }
-interface Person { name: string; age: number; }
+// Minimum priority queue (default)
+const minQ = new PriorityQueue<number>();
+minQ.push(5);
+minQ.push(2);
+minQ.push(8);
+console.log(minQ.peek()); // 2
+console.log(minQ.pop());  // 2
+console.log(minQ.pop());  // 5
 
-const people: Person[] = [
-  { name: 'Alice', age: 25 },
-  { name: 'Bob', age: 30 },
-  { name: 'Charlie', age: 35 },
-];
+// Maximum priority queue
+const maxQ = new PriorityQueue<number>((a, b) => a > b);
+maxQ.push(5);
+maxQ.push(2);
+maxQ.push(8);
+console.log(maxQ.pop()); // 8
+interface Task { id: string; priority: number; }
 
-isSortedWith(people, (a, b) => a.age - b.age); // true
-export const isSorted = <T>(arr: T[], cmp: Comparator<T> = (a, b) => {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}): boolean =>
-  arr
-    .map((value, index, self) => [self[index - 1], value] as const)
-    .slice(1) // skip the first undefined pair
-    .every(([prev, cur]) => cmp(prev!, cur) <= 0);
+const taskQueue = new PriorityQueue<Task>((a, b) => a.priority < b.priority); // min‑heap by priority
+taskQueue.push({ id: 'A', priority: 10 });
+taskQueue.push({ id: 'B', priority: 5 });
+console.log(taskQueue.pop()); // { id: 'B', priority: 5 }
