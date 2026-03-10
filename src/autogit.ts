@@ -1,30 +1,25 @@
 /**
- * Returns the second largest value in an array.
- * Uses a single pass – O(n) time, O(1) extra space.
- *
- * @param nums – numeric array
- * @returns second largest number, or `undefined` if it can’t be determined
+ * Returns true if `n` is a prime number.
  */
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined;
+export function isPrime(n: number): boolean {
+  // Prime numbers are > 1
+  if (n <= 1) return false;
 
-  let largest = -Infinity;
-  let second = -Infinity;
+  // 2 and 3 are the only even/odd primes
+  if (n <= 3) return true;
 
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;   // old largest becomes second
-      largest = n;
-    } else if (n > second && n !== largest) {
-      // n is between largest and second – update second
-      second = n;
-    }
+  // Even numbers > 2 can be rejected right away
+  if (n % 2 === 0) return false;
+
+  // Check only odd divisors up to √n
+  const limit = Math.floor(Math.sqrt(n));
+  for (let d = 3; d <= limit; d += 2) {
+    if (n % d === 0) return false;
   }
-
-  return second === -Infinity ? undefined : second;
+  return true;
 }
-
-// quick demo
-console.log(secondLargest([3, 1, 4, 1, 5, 9, 2, 6, 5])); // 8
-console.log(secondLargest([42]));                         // undefined
-console.log(secondLargest([7, 7, 7]));                     // undefined – no distinct second value
+console.log(isPrime(2));  // true
+console.log(isPrime(15)); // false
+console.log(isPrime(17)); // true
+console.log(isPrime(1));  // false
+console.log(isPrime(-5)); // false
