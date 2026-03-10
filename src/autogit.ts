@@ -1,25 +1,38 @@
 /**
- * Returns true if `n` is a prime number.
+ * Return the first non‑repeating character in a string.
+ * If every character repeats, return `null`.
  */
-export function isPrime(n: number): boolean {
-  // Prime numbers are > 1
-  if (n <= 1) return false;
+function firstNonRepeating(str: string): string | null {
+  const counts: Record<string, number> = {};
 
-  // 2 and 3 are the only even/odd primes
-  if (n <= 3) return true;
-
-  // Even numbers > 2 can be rejected right away
-  if (n % 2 === 0) return false;
-
-  // Check only odd divisors up to √n
-  const limit = Math.floor(Math.sqrt(n));
-  for (let d = 3; d <= limit; d += 2) {
-    if (n % d === 0) return false;
+  // 1️⃣ Count each character
+  for (const ch of str) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
   }
-  return true;
+
+  // 2️⃣ Scan once more to find the first with count 1
+  for (const ch of str) {
+    if (counts[ch] === 1) {
+      return ch;
+    }
+  }
+
+  return null;
 }
-console.log(isPrime(2));  // true
-console.log(isPrime(15)); // false
-console.log(isPrime(17)); // true
-console.log(isPrime(1));  // false
-console.log(isPrime(-5)); // false
+
+// quick examples
+console.log(firstNonRepeating('abacabad')); // "b"
+console.log(firstNonRepeating('aabbcc'));   // null
+function firstNonRepeatingMap(str: string): string | null {
+  const freq = new Map<string, number>();
+
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
+
+  for (const ch of str) if (freq.get(ch) === 1) return ch;
+  return null;
+}
+function allNonRepeating(str: string): string[] {
+  const freq = new Map<string, number>();
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  return [...str].filter(ch => freq.get(ch) === 1);
+}
