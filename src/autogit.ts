@@ -1,50 +1,81 @@
-export interface TreeNode {
-  val: number;                // or any type you like
-  left?: TreeNode | null;     // child nodes (undefined is treated as null)
-  right?: TreeNode | null;
+//   ┌─── Imports ────────────────────────────────────────────────────────┐
+import { useEffect, useState } from 'react';
+import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
+
+//   ┌─── Types ───────────────────────────────────────────────────────────────┐
+interface TodoItem {
+  id: number;
+  title: string;
+  completed: boolean;
 }
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
-/**
- * Returns the diameter (number of edges on the longest path) of a binary tree.
- *
- * @param root root node of the tree
- * @returns diameter in edges
- */
-export function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;           // will hold the best diameter found
 
-  /**
-   * Post‑order DFS that returns the height of the subtree.
-   * While unwinding, we update `maxDiameter`.
-   */
-  function dfs(node: TreeNode | null): number {
-    if (!node) return -1;       // height of null is -1 so that leaf node height = 0
+//   ┌─── Async helper ────────────────────────────────────────────────────────┐
+async function fetchTodos(): Promise<TodoItem[]> {
+  const url = 'https://jsonplaceholder.typicode.com/todos?_limit=5';
 
-    const leftHeight  = dfs(node.left)  + 1;
-    const rightHeight = dfs(node.right) + 1;
+  // Simulate a "slow" network: optional, just for demo
+  await new Promise(r => setTimeout(r, 800));
 
-    // The path that goes from the leftmost leaf of this subtree
-    // through this node to the rightmost leaf gives a candidate
-    // diameter.  `+1` is not needed for edges because heights already
-    // count edges from node to leaf.
-    const candidate = leftHeight + rightHeight;
-    if (candidate > maxDiameter) maxDiameter = candidate;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`❌ ${response.status} ${response.statusText}`);
 
-    // Return height of this node for the parent call
-    return Math.max(leftHeight, rightHeight);
-  }
-
-  dfs(root);
-  return maxDiameter;
+  const json = await response.json();
+  // Map to our interface – TypeScript will check types
+  return json.map((x: any) => ({
+    id: x.id,
+    title: x.title,
+    completed: x.completed,
+  }));
 }
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
 
-console.log(diameterOfBinaryTree(tree));   // → 3
+//   ┌─── Component that uses the async task ──────────────────────────────────┐
+export default function AsyncExample() {
+  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchTodos();
+      console.log('Fetched:', data);
+      setTodos(data);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      console.warn(msg);
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Run once on mount
+  useEffect(() => {
+    load();
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      {loading && <ActivityIndicator size="large" />}
+      {error && <Text style={styles.error}>{error}</Text>}
+      {!loading && !error && (
+        <>
+          {todos.map(t => (
+            <Text key={t.id} style={styles.todo}>
+              {t.completed ? '✅' : '🕒'} {t.title}
+            </Text>
+          ))}
+        </>
+      )}
+      <Button title="Reload" onPress={load} disabled={loading} />
+    </View>
+  );
+}
+
+//   ┌─── Styles ───────────────────────────────────────────────────────────────┐
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, justifyContent: 'center' },
+  todo: { fontSize: 18, marginVertical: 4 },
+  error: { color: 'red', marginBottom: 12 },
+});
