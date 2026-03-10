@@ -1,81 +1,17 @@
-class ListNode<T> {
-  data: T;
-  next: ListNode<T> | null = null;
+const numbers = [1, 2, 3, 4];
+numbers.reverse();          // → [4, 3, 2, 1]
+console.log(numbers);       // the same array has changed
+const numbers = [1, 2, 3, 4];
+const reversed = numbers.slice().reverse(); // or [...numbers].reverse()
 
-  constructor(data: T) {
-    this.data = data;
+console.log(numbers);   // → [1, 2, 3, 4]
+console.log(reversed);  // → [4, 3, 2, 1]
+function reverseArray<T>(arr: T[]): T[] {
+  const out = new Array<T>(arr.length);
+  for (let i = 0, j = arr.length - 1; i <= j; ++i, --j) {
+    out[i] = arr[j];
+    out[j] = arr[i];
   }
+  return out;
 }
-export class LinkedListQueue<T> {
-  private head: ListNode<T> | null = null; // front
-  private tail: ListNode<T> | null = null; // rear
-  private _size = 0;
-
-  /** Enqueue the value at the rear */
-  enqueue(value: T): void {
-    const node = new ListNode(value);
-
-    if (!this.tail) {        // empty queue
-      this.head = this.tail = node;
-    } else {
-      this.tail.next = node;
-      this.tail = node;
-    }
-    this._size++;
-  }
-
-  /** Dequeue the value at the front */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined; // empty
-
-    const value = this.head.data;
-    this.head = this.head.next;
-
-    if (!this.head) {          // queue became empty
-      this.tail = null;
-    }
-
-    this._size--;
-    return value;
-  }
-
-  /** Peek at the front without removing it */
-  peek(): T | undefined {
-    return this.head?.data;
-  }
-
-  /** Current number of elements */
-  size(): number {
-    return this._size;
-  }
-
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Consume the internal list into an array (useful for tests) */
-  toArray(): T[] {
-    const arr: T[] = [];
-    let node = this.head;
-    while (node) {
-      arr.push(node.data);
-      node = node.next;
-    }
-    return arr;
-  }
-}
-const q = new LinkedListQueue<number>();
-
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
-
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size());    // 1
-console.log(q.isEmpty()); // false
-
-q.dequeue();              // removes 30
-console.log(q.isEmpty()); // true
+const rev = reverseArray([10, 20, 30]); // → [30, 20, 10]
