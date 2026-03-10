@@ -1,18 +1,22 @@
-// ✅ Basic “looks‑right” test
-function isValidEmail(email: string): boolean {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
+function countChar(str: string, char: string): number {
+  let counter = 0;
+  for (const c of str) {
+    if (c === char) counter++;
+  }
+  return counter;
 }
-
-// usage
-console.log(isValidEmail('user@example.com')); // true
-console.log(isValidEmail('bad-email.com'));    // false
-// ✅ Covers quoted local‑part, IP domains, and "newer" TLDs
-function isValidEmailBetter(email: string): boolean {
-  const re = /^(?:(?:\"[^\"]+\")|(?:[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+))@(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}|(?:\[[0-9]{1,3}(?:\.[0-9]{1,3}){3}\]))$/;
-  return re.test(email);
+function countChar(str: string, char: string): number {
+  // Escape regex specials if needed
+  const escaped = char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(escaped, 'g');
+  const matches = str.match(regex);
+  return matches ? matches.length : 0;
 }
-// In a React hook or any form library
-const validateEmail = (value: string) => (
-  isValidEmail(value) ? undefined : 'Invalid email address'
-);
+function countChar(str: string, char: string): number {
+  return str.split(char).length - 1;
+}
+function countChar(str: string, char: string): number {
+  return Array.from(str).filter(c => c === char).length;
+}
+console.log(countChar('hello world', 'l')); // 3
+console.log(countChar('😀😃😄😁😆', '😄')); // 1
