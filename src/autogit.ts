@@ -1,81 +1,65 @@
-//   ┌─── Imports ────────────────────────────────────────────────────────┐
-import { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
-
-//   ┌─── Types ───────────────────────────────────────────────────────────────┐
-interface TodoItem {
-  id: number;
-  title: string;
-  completed: boolean;
+/**
+ * Returns the digit present at a given place (0‑based from right to left).
+ * Example: getDigit(381, 0) === 1, getDigit(381, 1) === 8, getDigit(381, 2) === 3
+ */
+function getDigit(num: number, place: number): number {
+  return Math.floor(Math.abs(num) / Math.pow(10, place)) % 10;
 }
 
-//   ┌─── Async helper ────────────────────────────────────────────────────────┐
-async function fetchTodos(): Promise<TodoItem[]> {
-  const url = 'https://jsonplaceholder.typicode.com/todos?_limit=5';
-
-  // Simulate a "slow" network: optional, just for demo
-  await new Promise(r => setTimeout(r, 800));
-
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`❌ ${response.status} ${response.statusText}`);
-
-  const json = await response.json();
-  // Map to our interface – TypeScript will check types
-  return json.map((x: any) => ({
-    id: x.id,
-    title: x.title,
-    completed: x.completed,
-  }));
+/**
+ * Returns the maximal number of digits among elements of array.
+ */
+function maxDigits(arr: number[]): number {
+  if (arr.length === 0) return 0;
+  const max = Math.max(...arr.map(Math.abs));
+  return Math.floor(Math.log10(max)) + 1;
 }
+/**
+ * Stable counting sort on `arr` by the digit at `place`.
+ * (`digitBase` defaults to 10 – decimal.)
+ */
+function countingSortByDigit(arr: number[], place: number, digitBase = 10): number[] {
+  const bucketCount = digitBase;
+  const buckets: number[][] = Array.from({ length: bucketCount }, () => []);
 
-//   ┌─── Component that uses the async task ──────────────────────────────────┐
-export default function AsyncExample() {
-  const [todos, setTodos] = useState<TodoItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  for (const n of arr) {
+    const digit = getDigit(n, place);
+    buckets[digit].push(n);
+  }
 
-  const load = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await fetchTodos();
-      console.log('Fetched:', data);
-      setTodos(data);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Unknown error';
-      console.warn(msg);
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Run once on mount
-  useEffect(() => {
-    load();
-  }, []);
-
-  return (
-    <View style={styles.container}>
-      {loading && <ActivityIndicator size="large" />}
-      {error && <Text style={styles.error}>{error}</Text>}
-      {!loading && !error && (
-        <>
-          {todos.map(t => (
-            <Text key={t.id} style={styles.todo}>
-              {t.completed ? '✅' : '🕒'} {t.title}
-            </Text>
-          ))}
-        </>
-      )}
-      <Button title="Reload" onPress={load} disabled={loading} />
-    </View>
-  );
+  // Flatten buckets in order; that's the stable result for this digit.
+  return buckets.flat();
 }
+/**
+ * Radix sort for non‑negative integers.
+ * @param arr array of numbers (non‑negative, but the routine will work with any integers once you wrap them)
+ * @returns sorted array (stable)
+ */
+export function radixSort(arr: number[]): number[] {
+  if (arr.length <= 1) return [...arr]; // copy so caller doesn’t mutate input
 
-//   ┌─── Styles ───────────────────────────────────────────────────────────────┐
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center' },
-  todo: { fontSize: 18, marginVertical: 4 },
-  error: { color: 'red', marginBottom: 12 },
-});
+  const numDigits = maxDigits(arr);
+  let sorted = [...arr];
+
+  for (let place = 0; place < numDigits; place++) {
+    sorted = countingSortByDigit(sorted, place);
+  }
+
+  return sorted;
+}
+export function radixSortFull(arr: number[]): number[] {
+  const negatives = arr.filter(n => n < 0).map(n => -n);
+  const positives = arr.filter(n => n >= 0);
+
+  const sortedNeg = radixSort(negatives).reverse().map(n => -n);
+  const sortedPos = radixSort(positives);
+
+  return [...sortedNeg, ...sortedPos];
+}
+import { radixSortFull } from './radixSort';
+
+const data = [170, 45, 75, 90, 802, 24, 2, 66, -15, -302, 0];
+const sorted = radixSortFull(data);
+
+console.log(sorted);
+// → [-302, -15, 0, 2, 24, 45, 66, 75, 90, 170, 802]
