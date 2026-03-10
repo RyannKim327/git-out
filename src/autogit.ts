@@ -1,46 +1,41 @@
 /**
- * Returns true if `a` and `b` are anagrams.
- * Works for any Unicode characters, but
- * it ignores case and whitespace by default.
+ * Random‑pivot quick sort.
+ *
+ * @param arr   The array to sort (in‑place).
+ * @returns     The sorted array (the same reference as `arr`).
  */
-function areAnagrams(a: string, b: string, ignoreCase = true, ignoreWhitespace = true): boolean {
-  // Normalise: trim, collapse spaces, lower‑case if requested
-  const normalize = (s: string) =>
-    s
-      .replace(/\s+/g, "")        // delete spaces
-      .toLowerCase();             // lower‑case
+export function quickSortRandom<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
+  if (arr.length <= 1)
+    return arr;
 
-  if (ignoreCase && ignoreWhitespace) {
-    a = normalize(a);
-    b = normalize(b);
-  } else if (ignoreCase) {
-    a = a.toLowerCase();
-    b = b.toLowerCase();
-  } else if (ignoreWhitespace) {
-    a = a.replace(/\s+/g, "");
-    b = b.replace(/\s+/g, "");
+  // So we can provide a custom comparison, but default is the usual "<".
+  const cmp = compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+  // Pick a random index as pivot
+  const pivotIndex = Math.floor(Math.random() * arr.length);
+  const pivotValue = arr[pivotIndex];
+
+  // Partition into two new arrays
+  const lows: T[] = [];
+  const highs: T[] = [];
+  const pivots: T[] = [];
+
+  for (let i = 0; i < arr.length; i++) {
+    const value = arr[i];
+    const comparison = cmp(value, pivotValue);
+    if (comparison < 0)    lows.push(value);
+    else if (comparison > 0) highs.push(value);
+    else                    pivots.push(value);   // equals pivot
   }
 
-  // Quick length check
-  if (a.length !== b.length) return false;
-
-  // Count characters in the first string
-  const counts: Record<string, number> = {};
-
-  for (const ch of a) {
-    counts[ch] = (counts[ch] ?? 0) + 1;
-  }
-
-  // Subtract counts using the second string
-  for (const ch of b) {
-    const current = counts[ch];
-    if (!current) return false;          // character not seen before or already exhausted
-    if (--current === 0) delete counts[ch];
-  }
-
-  // If everything matched, the object should be empty
-  return Object.keys(counts).length === 0;
+  // Recurse and concatenate
+  return quickSortRandom(lows, cmp)
+          .concat(pivots, quickSortRandom(highs, cmp));
 }
-console.log(areAnagrams("listen", "silent"));           // true
-console.log(areAnagrams("Hello, World!", "world!hello")); // true
-console.log(areAnagrams("foo", "bar"));                 // false
+
+// ---- Demo ---------------------------------------------------------
+
+const unsorted = [7, 2, 9, 4, 1, 5, 3, 8, 6];
+console.log('original: ', unsorted);
+const sorted = quickSortRandom(unsorted);
+console.log('sorted:   ', sorted);
