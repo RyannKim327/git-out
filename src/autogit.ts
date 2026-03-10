@@ -1,37 +1,59 @@
-/**
- * Selection Sort – stable‑like, O(n²) time, O(1) extra space.
- *
- * @param arr   The array to be sorted (in‑place).
- * @param cmp   Optional comparator: (a, b) => number.
- *              If omitted, numerical ascending order is assumed.
- */
-export function selectionSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): void {
-  const compare = cmp ?? ((a: any, b: any) => a - b);
+class ListNode {
+  val: number;
+  next: ListNode | null;
 
-  for (let i = 0; i < arr.length - 1; i++) {
-    // Assume the smallest is at i.
-    let minIdx = i;
-
-    // Search the rest of the array for a smaller element.
-    for (let j = i + 1; j < arr.length; j++) {
-      if (compare(arr[j], arr[minIdx]) < 0) {
-        minIdx = j;
-      }
-    }
-
-    // If the smallest isn't already in place, swap.
-    if (minIdx !== i) {
-      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-    }
+  constructor(val: number, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
   }
 }
-const nums = [64, 25, 12, 22, 11];
-selectionSort(nums);
-console.log(nums); // → [11, 12, 22, 25, 64]
+/**
+ * Returns the node where listA and listB intersect.
+ * If they don't intersect, returns null.
+ */
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  if (!headA || !headB) return null;
 
-const words = ["pear", "apple", "orange"];
-selectionSort(words, (a, b) => a.localeCompare(b));
-console.log(words); // → ["apple", "orange", "pear"]
+  let pA: ListNode | null = headA;
+  let pB: ListNode | null = headB;
+
+  // Continue until the two pointers either match or both become null.
+  while (pA !== pB) {
+    // Move to the next node; if we're at the end, jump to the other list's head.
+    pA = pA ? pA.next : headB;
+    pB = pB ? pB.next : headA;
+  }
+
+  return pA; // Either the intersection node or null.
+}
+// Build two intersecting lists:
+// A: 1 → 3 → 5 → 7 → 9
+// B: 2 → 4 →        → 7 → 9
+//            ^<--- intersection starts here
+
+const common = new ListNode(7, new ListNode(9));
+
+const listA = new ListNode(1, new ListNode(3, new ListNode(5, common)));
+const listB = new ListNode(2, new ListNode(4, common));
+
+const intersection = getIntersectionNode(listA, listB);
+console.log(intersection?.val); // 7
+function getIntersectionNodeHash(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  const nodes = new Set<ListNode>();
+
+  for (let cur = headA; cur; cur = cur.next) {
+    nodes.add(cur);
+  }
+
+  for (let cur = headB; cur; cur = cur.next) {
+    if (nodes.has(cur)) return cur;
+  }
+
+  return null;
+}
