@@ -1,7 +1,9 @@
-const num = parseInt("123", 10);   // 123 as a number
-const num = Number("123");          // 123
-const num = +"123";                // 123
-const big = BigInt("123456789123456789123"); // 123456789123456789123n
-if (Number.isInteger(num)) {
-  // safe to use `num` as an int
+function reverseStr(str: string): string {
+  // 1️⃣  Split the string into an array of characters
+  // 2️⃣  Reverse the array in‑place
+  // 3️⃣  Join the array back into a string
+  return str.split('').reverse().join('');
 }
+
+// Example
+console.log(reverseStr('hello')); // → "olleh"
