@@ -1,45 +1,72 @@
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+/**
+ * Encodes a string using Burrows–Wheeler transform.
+ *
+ * @param input – Source text (any length, any chars including nulls).
+ * @returns {bwt: string, index: number} – BWT string + original row index.
+ */
+export function bwtEncode(input: string): { bwt: string; index: number } {
+  const n = input.length;
+  // Quick escape for empty string.
+  if (n === 0) return { bwt: "", index: 0 };
 
-  while (fast && fast.next) {
-    slow = slow!.next;            // move one step
-    fast = fast.next.next;        // move two steps
-
-    if (slow === fast) return true;   // they met → cycle
+  // Build the rotation array.
+  const rotations: string[] = [];
+  for (let offset = 0; offset < n; offset++) {
+    const rotation = input.slice(offset) + input.slice(0, offset);
+    rotations.push(rotation);
   }
 
-  return false;   // hit the end → no cycle
-}
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const visited = new Set<ListNode<T>>();
+  // Sort the rotations.
+  rotations.sort();
 
-  let current = head;
-  while (current) {
-    if (visited.has(current)) return true;
-    visited.add(current);
-    current = current.next;
+  // Construct the BWT string (last column) and locate the original string.
+  let lastColumn = "";
+  let origIndex = -1;
+  for (let i = 0; i < n; i++) {
+    const rot = rotations[i];
+    lastColumn += rot.charAt(n - 1);          // last char of the rotation
+    if (rot === input) origIndex = i;        // original text keeps its place
   }
-  return false;
+
+  return { bwt: lastColumn, index: origIndex };
 }
-// Linear list (no cycle)
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
 
-console.log(hasCycle(a)); // false
+/**
+ * Decodes a BWT pair back to the original string.
+ *
+ * @param bwt – String produced by bwtEncode (last column).
+ * @param index – Index returned by bwtEncode.
+ * @returns original string.
+ */
+export function bwtDecode(bwt: string, index: number): string {
+  const n = bwt.length;
+  if (n === 0) return "";
 
-// Cyclic list
-const d = new ListNode(4);
-const e = new ListNode(5);
-const f = new ListNode(6);
-d.next = e; e.next = f; f.next = d; // f points back to d
+  // Initialize table with empty strings.
+  const table: string[] = Array(n).fill("");
 
-console.log(hasCycle(d)); // true
+  // Each iteration prepends a character from the BWT to every row,
+  // then sorts. After n iterations the table is the sorted matrix.
+  for (let step = 0; step < n; step++) {
+    // Prepend the BWT characters.
+    for (let i = 0; i < n; i++) {
+      table[i] = bwt.charAt(i) + table[i];
+    }
+    // Stable sort by the whole string.
+    table.sort();
+  }
+
+  // The row at the recorded index is the original string.
+  return table[index];
+}
+import { bwtEncode, bwtDecode } from "./bwt";
+
+const text = "The quick brown fox jumps over the lazy dog";
+
+const { bwt, index } = bwtEncode(text);
+console.log("BWT String:", bwt);
+console.log("Original index =", index);
+
+const recovered = bwtDecode(bwt, index);
+console.log("Recovered:", recovered);
+console.log("Match:", recovered === text); // true
