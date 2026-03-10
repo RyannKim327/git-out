@@ -1,44 +1,45 @@
+// 1️⃣  Install node‑fetch (or use the built‑in fetch in environments that have it)
+//    npm install node-fetch @types/node-fetch
+import fetch from "node-fetch";
+
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
 /**
- * Returns n! (n factorial) for a non‑negative integer.
- *
- * @param n A non‑negative integer (0, 1, 2, …).
- * @returns The factorial of n. Returns 1 for n = 0.
- * @throws Error if n is negative.
+ * Fetch a single Todo by its numeric ID.
+ * @param id - The ID of the Todo to request.
+ * @returns Promises a Todo object.
  */
-function factorial(n: number): number {
-  if (n < 0) {
-    throw new Error("Factorial is not defined for negative numbers.");
+async function getTodoById(id: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+
+  // 2️⃣  Basic status check – throws if not 2xx
+  if (!response.ok) {
+    throw new Error(`Request failed with ${response.status} ${response.statusText}`);
   }
 
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
+  // 3️⃣  Parse the JSON body and return it as a Todo
+  const data = (await response.json()) as Todo;
+  return data;
 }
 
-// Example
-console.log(factorial(5)); // 120
-function factorialRecursive(n: number): number {
-  if (n < 0) {
-    throw new Error("Negative input not allowed.");
+/**
+ * Demo of calling `getTodoById` and logging the result or an error.
+ */
+(async () => {
+  try {
+    const todo = await getTodoById(3);
+    console.log("Fetched Todo:", todo);
+  } catch (err) {
+    console.error("Error fetching Todo:", err);
   }
-  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
-}
-
-console.log(factorialRecursive(5)); // 120
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error("Negative input not allowed.");
-  let result = 1n;          // BigInt literal starts with n
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
-}
-
-console.log(factorialBigInt(100).toString());
-// "933262154... (full 158‑digit number)"
-console.assert(factorial(0) === 1);
-console.assert(factorial(1) === 1);
-console.assert(factorial(5) === 120);
-console.assert(factorialBigInt(10).toString() === "3628800");
+})();
