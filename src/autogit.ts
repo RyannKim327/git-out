@@ -1,77 +1,81 @@
-low  = 0
-high = length–1
+class ListNode<T> {
+  data: T;
+  next: ListNode<T> | null = null;
 
-while low ≤ high and target ∈ [arr[low], arr[high]]:
-    // Edge cases
-    if arr[low] == arr[high]:
-        return (arr[low] == target) ? low : -1
+  constructor(data: T) {
+    this.data = data;
+  }
+}
+export class LinkedListQueue<T> {
+  private head: ListNode<T> | null = null; // front
+  private tail: ListNode<T> | null = null; // rear
+  private _size = 0;
 
-    // Interpolated index
-    pos = low + ((target – arr[low]) * (high – low))
-          / (arr[high] – arr[low])
+  /** Enqueue the value at the rear */
+  enqueue(value: T): void {
+    const node = new ListNode(value);
 
-    // Clamp to array bounds
-    pos = Math.round(pos)
-
-    if arr[pos] == target:
-        return pos
-    else if arr[pos] < target:
-        low = pos + 1
-    else:
-        high = pos – 1
-
-return –1   // not found
-/**
- * Interpolation search for a strictly sorted numeric array.
- * @param arr   - Sorted numbers (ascending)
- * @param target - Number to find
- * @returns Index of target, or -1 if not found
- */
-export function interpolationSearch(
-  arr: readonly number[],
-  target: number
-): number {
-  if (arr.length === 0) return -1;
-
-  let low = 0;
-  let high = arr.length - 1;
-
-  // Keep going while target is inside the current window
-  while (low <= high && target >= arr[low] && target <= arr[high]) {
-    // All remaining values equal – either hit or miss.
-    if (arr[low] === arr[high]) {
-      return arr[low] === target ? low : -1;
-    }
-
-    // Linear interpolation to guess position.
-    const pos =
-      low +
-      Math.round(
-        ((target - arr[low]) * (high - low)) / (arr[high] - arr[low])
-      );
-
-    // Just in case rounding pushes us outside: clamp bounds.
-    const index = Math.min(Math.max(pos, low), high);
-
-    const value = arr[index];
-    if (value === target) {
-      return index;
-    }
-    if (value < target) {
-      low = index + 1;
+    if (!this.tail) {        // empty queue
+      this.head = this.tail = node;
     } else {
-      high = index - 1;
+      this.tail.next = node;
+      this.tail = node;
     }
+    this._size++;
   }
 
-  return -1; // Not found
-}
-const sorted = [3, 7, 13, 19, 23, 29, 31, 47, 53, 59];
-const target = 23;
+  /** Dequeue the value at the front */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // empty
 
-const idx = interpolationSearch(sorted, target);
-console.log(idx); // → 4
-console.log(interpolationSearch(sorted, 22)); // → -1
-const idx = interpolationSearch(sortedArray, key);
-if (idx !== -1) console.log(`Found at ${idx}`);
-else console.log('Not there');
+    const value = this.head.data;
+    this.head = this.head.next;
+
+    if (!this.head) {          // queue became empty
+      this.tail = null;
+    }
+
+    this._size--;
+    return value;
+  }
+
+  /** Peek at the front without removing it */
+  peek(): T | undefined {
+    return this.head?.data;
+  }
+
+  /** Current number of elements */
+  size(): number {
+    return this._size;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** Consume the internal list into an array (useful for tests) */
+  toArray(): T[] {
+    const arr: T[] = [];
+    let node = this.head;
+    while (node) {
+      arr.push(node.data);
+      node = node.next;
+    }
+    return arr;
+  }
+}
+const q = new LinkedListQueue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size());    // 1
+console.log(q.isEmpty()); // false
+
+q.dequeue();              // removes 30
+console.log(q.isEmpty()); // true
