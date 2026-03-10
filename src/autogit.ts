@@ -1,110 +1,81 @@
-// ──────────────────────────────────────────────────────────
-// 1. Graph representation
-// ──────────────────────────────────────────────────────────
-type Vertex = string | number;
+//   ┌─── Imports ────────────────────────────────────────────────────────┐
+import { useEffect, useState } from 'react';
+import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
 
-// An adjacency list where each vertex maps to an array of its outgoing neighbours.
-class Graph {
-  private readonly edges: Map<Vertex, Vertex[]> = new Map();
-
-  constructor(edges?: [Vertex, Vertex][]) {
-    if (edges) this.addEdges(edges);
-  }
-
-  /** Adds one or more directed edges to the graph. */
-  addEdges(edges: [Vertex, Vertex][]): void {
-    for (const [from, to] of edges) {
-      if (!this.edges.has(from)) this.edges.set(from, []);
-      this.edges.get(from)!.push(to);
-      // Ensure the destination vertex exists in the map so it shows up in the keys.
-      if (!this.edges.has(to)) this.edges.set(to, []);
-    }
-  }
-
-  /** Returns all vertices in the graph. */
-  vertices(): Vertex[] {
-    return Array.from(this.edges.keys());
-  }
-
-  /** Returns the neighbours of a given vertex. */
-  neighbours(v: Vertex): Vertex[] {
-    return this.edges.get(v) ?? [];
-  }
+//   ┌─── Types ───────────────────────────────────────────────────────────────┐
+interface TodoItem {
+  id: number;
+  title: string;
+  completed: boolean;
 }
 
-// ──────────────────────────────────────────────────────────
-// 2. DFS‑based topological sort
-// ──────────────────────────────────────────────────────────
-function topoSortDFS(g: Graph): Vertex[] | null {
-  const visited = new Set<Vertex>();
-  const temp = new Set<Vertex>();   // vertices currently on recursion stack
-  const order: Vertex[] = [];
+//   ┌─── Async helper ────────────────────────────────────────────────────────┐
+async function fetchTodos(): Promise<TodoItem[]> {
+  const url = 'https://jsonplaceholder.typicode.com/todos?_limit=5';
 
-  const visit = (v: Vertex): boolean => {
-    if (temp.has(v)) return false; // cycle detected
+  // Simulate a "slow" network: optional, just for demo
+  await new Promise(r => setTimeout(r, 800));
 
-    if (!visited.has(v)) {
-      temp.add(v);
-      for (const nb of g.neighbours(v)) {
-        if (!visit(nb)) return false;
-      }
-      temp.delete(v);
-      visited.add(v);
-      order.push(v);
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`❌ ${response.status} ${response.statusText}`);
+
+  const json = await response.json();
+  // Map to our interface – TypeScript will check types
+  return json.map((x: any) => ({
+    id: x.id,
+    title: x.title,
+    completed: x.completed,
+  }));
+}
+
+//   ┌─── Component that uses the async task ──────────────────────────────────┐
+export default function AsyncExample() {
+  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchTodos();
+      console.log('Fetched:', data);
+      setTodos(data);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      console.warn(msg);
+      setError(msg);
+    } finally {
+      setLoading(false);
     }
-    return true;
   };
 
-  for (const v of g.vertices()) {
-    if (!visit(v)) return null; // if a cycle is found, return null
-  }
+  // Run once on mount
+  useEffect(() => {
+    load();
+  }, []);
 
-  return order.reverse(); // reverse to get the correct order
+  return (
+    <View style={styles.container}>
+      {loading && <ActivityIndicator size="large" />}
+      {error && <Text style={styles.error}>{error}</Text>}
+      {!loading && !error && (
+        <>
+          {todos.map(t => (
+            <Text key={t.id} style={styles.todo}>
+              {t.completed ? '✅' : '🕒'} {t.title}
+            </Text>
+          ))}
+        </>
+      )}
+      <Button title="Reload" onPress={load} disabled={loading} />
+    </View>
+  );
 }
 
-// ──────────────────────────────────────────────────────────
-// 3. Kahn’s algorithm (BFS‑based)
-// ──────────────────────────────────────────────────────────
-function topoSortKahn(g: Graph): Vertex[] | null {
-  // Compute in‑degree of each vertex
-  const inDeg = new Map<Vertex, number>();
-  for (const v of g.vertices()) inDeg.set(v, 0);
-  for (const v of g.vertices()) {
-    for (const nb of g.neighbours(v)) {
-      inDeg.set(nb, (inDeg.get(nb) ?? 0) + 1);
-    }
-  }
-
-  const queue: Vertex[] = [];
-  for (const [v, d] of inDeg) if (d === 0) queue.push(v);
-
-  const order: Vertex[] = [];
-  while (queue.length) {
-    const v = queue.shift()!;
-    order.push(v);
-    for (const nb of g.neighbours(v)) {
-      const d = inDeg.get(nb)! - 1;
-      inDeg.set(nb, d);
-      if (d === 0) queue.push(nb);
-    }
-  }
-
-  if (order.length !== g.vertices().length) return null; // cycle exists
-  return order;
-}
-
-// ──────────────────────────────────────────────────────────
-// 4. Demo / usage
-// ──────────────────────────────────────────────────────────
-const edges: [Vertex, Vertex][] = [
-  ['a', 'd'],
-  ['f', 'b'],
-  ['b', 'd'],
-  ['f', 'a'],
-  ['d', 'c']
-];
-
-const graph = new Graph(edges);
-
-console.log('DFS order:', topoSortDFS(graph));   // legal order or null
-console.log('Kahn order:', topoSortKahn(graph)); // same result
+//   ┌─── Styles ───────────────────────────────────────────────────────────────┐
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, justifyContent: 'center' },
+  todo: { fontSize: 18, marginVertical: 4 },
+  error: { color: 'red', marginBottom: 12 },
+});
