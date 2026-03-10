@@ -1,57 +1,21 @@
-text:   abcdefghijk
-        ‖~~~~~~~~~~
-pattern:   def
-function buildShiftTable(pattern: string): Map<string, number> {
-  const table = new Map<string, number>();
-  const m = pattern.length;
+// Example array
+const nums: number[] = [42, 1, 17, 3, 99];
 
-  // For all chars except the last one
-  for (let i = 0; i < m - 1; i++) {
-    table.set(pattern[i], m - 1 - i);
-  }
-  return table;
-}
-function boyerMooreHorspool(pattern: string, text: string): number | null {
-  const m = pattern.length;
-  const n = text.length;
+// Sort in ascending order
+const asc = [...nums].sort((a, b) => a - b);
+console.log('Ascending:', asc); // [1, 3, 17, 42, 99]
 
-  if (m === 0) return 0;          // Empty pattern matches at start
-  if (m > n) return null;         // Impossible to find
+// Sort in descending order
+const desc = [...nums].sort((a, b) => b - a);
+console.log('Descending:', desc); // [99, 42, 17, 3, 1]
+const custom = [...nums].sort((a, b) => {
+  const aEven = a % 2 === 0;
+  const bEven = b % 2 === 0;
+  if (aEven && !bEven) return -1;     // a comes first
+  if (!aEven && bEven) return 1;      // b comes first
+  return a - b;                       // both same parity: numeric order
+});
+console.log(custom); // [ 42, 2, 1, 3, 17, 99 ]
+import _ from 'lodash';
 
-  const shiftTable = buildShiftTable(pattern);
-  const defaultShift = m;
-
-  let i = 0; // Current alignment of pattern in text
-
-  while (i <= n - m) {
-    let j = m - 1;
-
-    // Compare from right to left
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j--;
-    }
-
-    if (j < 0) {
-      // Full match
-      return i;
-    }
-
-    // Mismatch: decide how far to shift
-    const mismatchedChar = text[i + j];
-    const shift = shiftTable.get(mismatchedChar) ?? defaultShift;
-
-    i += shift;
-  }
-
-  return null; // No match found
-}
-const sampleText = "The quick brown fox jumps over the lazy dog. The fox was quick.";
-const samplePattern = "quick";
-
-const matchIdx = boyerMooreHorspool(samplePattern, sampleText);
-
-if (matchIdx !== null) {
-  console.log(`Found at index ${matchIdx}`);
-} else {
-  console.log("No match");
-}
+const order = _.orderBy(nums, [x => x], ['asc']); // asc by numeric value
