@@ -1,25 +1,56 @@
+Let   S = s1 s2 … sn
+      T = t1 t2 … tm
+
+DP[i][j] = length of the longest common suffix that ends at S[i‑1] and T[j‑1]
+DP[i][j] = DP[i-1][j-1] + 1
 /**
- * Returns true if `n` is a prime number.
+ * Returns the longest common substring of `a` and `b`.
+ * If there are multiple substrings of the same maximum length,
+ * the first one found in `a` will be returned.
  */
-export function isPrime(n: number): boolean {
-  // Prime numbers are > 1
-  if (n <= 1) return false;
+export function longestCommonSubstring(a: string, b: string): string {
+  const n = a.length, m = b.length;
+  if (n === 0 || m === 0) return '';
 
-  // 2 and 3 are the only even/odd primes
-  if (n <= 3) return true;
+  // `prev` holds DP values for row i-1
+  const prev = new Array(m + 1).fill(0);
+  // `curr` holds DP values for current row i
+  const curr = new Array(m + 1).fill(0);
 
-  // Even numbers > 2 can be rejected right away
-  if (n % 2 === 0) return false;
+  let maxLen = 0;          // longest length so far
+  let maxEndIndexA = 0;    // index in `a` where this substring ends
 
-  // Check only odd divisors up to √n
-  const limit = Math.floor(Math.sqrt(n));
-  for (let d = 3; d <= limit; d += 2) {
-    if (n % d === 0) return false;
+  for (let i = 1; i <= n; i++) {
+    // Iterate columns
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        curr[j] = prev[j - 1] + 1;
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          maxEndIndexA = i - 1;   // keep the end idx in a
+        }
+      } else {
+        curr[j] = 0;
+      }
+    }
+
+    // Swap rows for next iteration
+    //  curr becomes prev, prev becomes curr (reuse the same arrays)
+    for (let j = 0; j <= m; j++) {
+      prev[j] = curr[j];
+      curr[j] = 0;   // reset current row for the next round
+    }
   }
-  return true;
+
+  return a.slice(maxEndIndexA - maxLen + 1, maxEndIndexA + 1);
 }
-console.log(isPrime(2));  // true
-console.log(isPrime(15)); // false
-console.log(isPrime(17)); // true
-console.log(isPrime(1));  // false
-console.log(isPrime(-5)); // false
+import { longestCommonSubstring } from './common-substring';
+
+const a = "ABABCDA";
+const b = "CBADABABC";
+
+console.log(longestCommonSubstring(a, b)); // → "ABC"
+console.log(longestCommonSubstring('foo', ''));          // ''
+console.log(longestCommonSubstring('abc', 'xyz'));       // ''
+console.log(longestCommonSubstring('same', 'same'));     // 'same'
+console.log(longestCommonSubstring('aaaaa', 'bbaaa'));   // 'aaa'
