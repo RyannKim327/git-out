@@ -1,47 +1,69 @@
 /**
- * Checks whether a string is a palindrome (case‑insensitive,
- * ignoring anything that isn’t a letter or a digit).
- *
- * Time   : O(n)
- * Space  : O(1)   – only a couple of integer variables
+ * Returns the LCS length of two strings.
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+export function lcsLength(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
 
-  const isAlnum = (ch: string): boolean => {
-    const code = ch.charCodeAt(0);
-    // '0'‑'9'
-    if (code >= 48 && code <= 57) return true;
-    // 'A'‑'Z'
-    if (code >= 65 && code <= 90) return true;
-    // 'a'‑'z'
-    if (code >= 97 && code <= 122) return true;
-    return false;
-  };
+  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  while (left < right) {
-    // Skip non‑alphanumeric characters from the left
-    while (left < right && !isAlnum(s[left])) left++;
-    // Skip non‑alphanumeric characters from the right
-    while (left < right && !isAlnum(s[right])) right--;
-
-    if (left >= right) break;          // Nothing left to compare
-
-    const lc = s[left].toLowerCase();
-    const rc = s[right].toLowerCase();
-
-    if (lc !== rc) return false;
-
-    left++;
-    right--;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
   }
 
-  return true;
+  return dp[m][n];
 }
-while (left < right) {
-  if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
-  left++;
-  right--;
+
+/**
+ * Returns the actual longest common subsequence.
+ * In case of multiple LCS of the same length, the one found
+ * will consist of the characters chosen by the DP traversal.
+ */
+export function lcs(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
+
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+  // Build the DP table – same recurrence as in lcsLength
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+
+  // Backtrack to rebuild the sequence
+  let i = m;
+  let j = n;
+  const seq: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      seq.push(a[i - 1]); // they match
+      i--;
+      j--;
+    } else if (dp[i - 1][j] > dp[i][j - 1]) {
+      i--; // move up
+    } else {
+      j--; // move left
+    }
+  }
+
+  return seq.reverse().join('');
 }
-return true;
+const a = "AGGTAB";
+const b = "GXTXAYB";
+
+console.log(lcsLength(a, b)); // 4
+console.log(lcs(a, b));       // "GTAB"
