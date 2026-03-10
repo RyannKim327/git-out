@@ -1,67 +1,40 @@
-/**
- * A generic insertion‑sort implementation.
- *
- * @param arr The array to sort (in‑place).
- * @param cmp Optional comparison callback. It should return:
- *            < 0 if a < b
- *            = 0 if a === b
- *            > 0 if a > b
- *
- * @returns The same array reference, now sorted.
- */
-export function insertionSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  // If no custom comparator is supplied, use the default < / >.
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore - allow primitive coercion for < and > operators
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-      };
+// Basic node interface – can be turned into a class if you like.
+interface TreeNode<T = number> {
+  val: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
+}
+function maxDepth<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                 // empty subtree → depth 0
 
-  // Iterate from the second element to the end.
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+  const leftDepth  = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
 
-    // Shift larger elements one position to the right.
-    while (j >= 0 && compare(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
+  // Depth of current node = 1 (itself) + depth of deeper side
+  return 1 + Math.max(leftDepth, rightDepth);
+}
+const root: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 } },
+  right: { val: 3, right: { val: 5, right: { val: 6 } } }
+};
 
-    // Place key in its correct position.
-    arr[j + 1] = key;
+console.log(maxDepth(root));   // → 4
+function maxDepthIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let max = 0;
+  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
+    { node: root, depth: 1 },
+  ];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    max = Math.max(max, depth);
+
+    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
+    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
   }
 
-  return arr;
-}
-const numbers = [5, 3, 8, 1, 4];
-insertionSort(numbers);
-console.log(numbers); // [1, 3, 4, 5, 8]
-const names = ["Zoe", "Andrew", "bella", "Clara"];
-insertionSort(names);
-console.log(names); // ["Andrew", "Clara", "bella", "Zoe"]
-interface Item {
-  id: number;
-  name: string;
-}
-
-const items: Item[] = [
-  { id: 3, name: "apple" },
-  { id: 1, name: "orange" },
-  { id: 2, name: "banana" },
-];
-
-insertionSort(items, (a, b) => a.id - b.id);
-console.log(items);
-// [{ id: 1, name: "orange" }, { id: 2, name: "banana" }, { id: 3, name: "apple" }]
-export function sorted<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-  const copy = [...arr];
-  return insertionSort(copy, cmp);
+  return max;
 }
