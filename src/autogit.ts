@@ -1,103 +1,50 @@
-/* -------------------------------------------------------------
-   Edge definition – just a source, destination and weight
-------------------------------------------------------------- */
-interface Edge {
-  from: string;      // vertex id (string or number, just pick one type)
-  to: string;
-  weight: number;    // can be negative
+export interface TreeNode {
+  val: number;                // or any type you like
+  left?: TreeNode | null;     // child nodes (undefined is treated as null)
+  right?: TreeNode | null;
 }
+const tree: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
+  right: { val: 3, right: { val: 6 }}
+};
+/**
+ * Returns the diameter (number of edges on the longest path) of a binary tree.
+ *
+ * @param root root node of the tree
+ * @returns diameter in edges
+ */
+export function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;           // will hold the best diameter found
 
-/* -------------------------------------------------------------
-   Bellman‑Ford implementation
-   Parameters
-   ----------  graph: Array<Edge>  – all directed edges
-               source: string      – id of source vertex
-   Returns
-   -------  { dist: Map<string, number>,
-              next: Map<string, string | null>,
-              hasNegativeCycle: boolean }
-------------------------------------------------------------- */
-function bellmanFord(
-  graph: Edge[],
-  source: string
-): { dist: Map<string, number>; next: Map<string, string | null>; hasNegativeCycle: boolean } {
-  const dist = new Map<string, number>();
-  const next = new Map<string, string | null>();
+  /**
+   * Post‑order DFS that returns the height of the subtree.
+   * While unwinding, we update `maxDiameter`.
+   */
+  function dfs(node: TreeNode | null): number {
+    if (!node) return -1;       // height of null is -1 so that leaf node height = 0
 
-  // initialise distances
-  graph.forEach(({ from }) => {
-    dist.set(from, Infinity);
-    next.set(from, null);
-  });
-  // if the source isn’t mentioned in any edge, we still need it in the map
-  dist.set(source, 0);
-  next.set(source, null);
+    const leftHeight  = dfs(node.left)  + 1;
+    const rightHeight = dfs(node.right) + 1;
 
-  // total distinct vertices
-  const vertices = Array.from(dist.keys());
-  const V = vertices.length;
+    // The path that goes from the leftmost leaf of this subtree
+    // through this node to the rightmost leaf gives a candidate
+    // diameter.  `+1` is not needed for edges because heights already
+    // count edges from node to leaf.
+    const candidate = leftHeight + rightHeight;
+    if (candidate > maxDiameter) maxDiameter = candidate;
 
-  // Relax edges V−1 times
-  for (let i = 0; i < V - 1; i++) {
-    let didRelax = false;
-    for (const { from, to, weight } of graph) {
-      const dFrom = dist.get(from);
-      const dTo   = dist.get(to);
-      if (dFrom! === Infinity) continue;                   // unreachable
-      const newDist = dFrom! + weight;
-      if (newDist < dTo!) {
-        dist.set(to, newDist);
-        next.set(to, from);
-        didRelax = true;
-      }
-    }
-    // early exit: no distance changed this round → we’re done
-    if (!didRelax) break;
+    // Return height of this node for the parent call
+    return Math.max(leftHeight, rightHeight);
   }
 
-  // Check for negative‑weight cycles reachable from source
-  let hasNegativeCycle = false;
-  for (const { from, to, weight } of graph) {
-    const dFrom = dist.get(from);
-    const dTo   = dist.get(to);
-    if (dFrom! !== Infinity && dFrom! + weight < dTo!) {
-      hasNegativeCycle = true;
-      break;
-    }
-  }
-
-  return { dist, next, hasNegativeCycle };
+  dfs(root);
+  return maxDiameter;
 }
+const tree: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
+  right: { val: 3, right: { val: 6 }}
+};
 
-/* -------------------------------------------------------------
-   Example usage
-------------------------------------------------------------- */
-const edges: Edge[] = [
-  { from: 'A', to: 'B', weight: 5 },
-  { from: 'A', to: 'C', weight: 2 },
-  { from: 'B', to: 'C', weight: -3 },
-  { from: 'B', to: 'D', weight: 9 },
-  { from: 'C', to: 'D', weight: 12 },
-];
-
-const { dist, next, hasNegativeCycle } = bellmanFord(edges, 'A');
-
-if (hasNegativeCycle) {
-  console.log('The graph contains a negative‑weight cycle reachable from A.');
-} else {
-  console.log('Shortest distances from A:');
-  dist.forEach((d, v) => console.log(v, d));
-
-  // helper to print a whole path from source to target
-  function buildPath(target: string): string[] {
-    const path: string[] = [];
-    let cur: string | null = target;
-    while (cur !== null) {
-      path.unshift(cur);
-      cur = next.get(cur) ?? null;
-    }
-    return path;
-  }
-
-  console.log('Path to D:', buildPath('D').join(' → '));
-}
+console.log(diameterOfBinaryTree(tree));   // → 3
