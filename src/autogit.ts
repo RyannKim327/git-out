@@ -1,38 +1,62 @@
-/**
- * Return the first non‑repeating character in a string.
- * If every character repeats, return `null`.
- */
-function firstNonRepeating(str: string): string | null {
-  const counts: Record<string, number> = {};
+class TreeNode {
+  value: number;
+  left: TreeNode | null = null;
+  right: TreeNode | null = null;
 
-  // 1️⃣ Count each character
-  for (const ch of str) {
-    counts[ch] = (counts[ch] ?? 0) + 1;
+  constructor(value: number) {
+    this.value = value;
   }
+}
+interface TreeNode {
+  value: number;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
+}
+function countLeaves(root: TreeNode | null): number {
+  if (!root) return 0;                     // empty subtree → no leaves
 
-  // 2️⃣ Scan once more to find the first with count 1
-  for (const ch of str) {
-    if (counts[ch] === 1) {
-      return ch;
+  // leaf test
+  const isLeaf = !root.left && !root.right;
+  if (isLeaf) return 1;                    // this node itself is a leaf
+
+  // otherwise recursively count in both sub‑trees
+  return countLeaves(root.left) + countLeaves(root.right);
+}
+function countLeavesIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+
+  let count = 0;
+  const stack: (TreeNode | null)[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop() as TreeNode;
+
+    const isLeaf = !node.left && !node.right;
+    if (isLeaf) {
+      count += 1;
+    } else {
+      if (node.right) stack.push(node.right);
+      if (node.left) stack.push(node.left);
     }
   }
 
-  return null;
+  return count;
 }
+// Build the tree:
+//        1
+//       / \
+//      2   3
+//     /   / \
+//    4   5   6
+//         \
+//          7
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4);
+root.right.left = new TreeNode(5);
+root.right.right = new TreeNode(6);
+root.right.left.right = new TreeNode(7);
 
-// quick examples
-console.log(firstNonRepeating('abacabad')); // "b"
-console.log(firstNonRepeating('aabbcc'));   // null
-function firstNonRepeatingMap(str: string): string | null {
-  const freq = new Map<string, number>();
-
-  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
-
-  for (const ch of str) if (freq.get(ch) === 1) return ch;
-  return null;
-}
-function allNonRepeating(str: string): string[] {
-  const freq = new Map<string, number>();
-  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  return [...str].filter(ch => freq.get(ch) === 1);
-}
+console.log(countLeaves(root));          // → 3  (nodes 4, 7, 6)
+console.log(countLeavesIterative(root)); // → 3
