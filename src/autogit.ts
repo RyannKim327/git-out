@@ -1,72 +1,37 @@
-/**
- * Encodes a string using Burrows–Wheeler transform.
- *
- * @param input – Source text (any length, any chars including nulls).
- * @returns {bwt: string, index: number} – BWT string + original row index.
- */
-export function bwtEncode(input: string): { bwt: string; index: number } {
-  const n = input.length;
-  // Quick escape for empty string.
-  if (n === 0) return { bwt: "", index: 0 };
-
-  // Build the rotation array.
-  const rotations: string[] = [];
-  for (let offset = 0; offset < n; offset++) {
-    const rotation = input.slice(offset) + input.slice(0, offset);
-    rotations.push(rotation);
+// Works for numbers, strings, dates, anything that can be compared with < and >.
+export function isSorted<T extends number | string | Date>(arr: T[]): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] < arr[i - 1]) return false;
   }
-
-  // Sort the rotations.
-  rotations.sort();
-
-  // Construct the BWT string (last column) and locate the original string.
-  let lastColumn = "";
-  let origIndex = -1;
-  for (let i = 0; i < n; i++) {
-    const rot = rotations[i];
-    lastColumn += rot.charAt(n - 1);          // last char of the rotation
-    if (rot === input) origIndex = i;        // original text keeps its place
-  }
-
-  return { bwt: lastColumn, index: origIndex };
+  return true;
 }
+isSorted([1, 2, 3, 4]);        // true
+isSorted([1, 3, 2, 4]);        // false
+isSorted(['a', 'b', 'c']);     // true
+isSorted(['c', 'b', 'a']);     // false
+type Comparator<T> = (a: T, b: T) => number;
 
-/**
- * Decodes a BWT pair back to the original string.
- *
- * @param bwt – String produced by bwtEncode (last column).
- * @param index – Index returned by bwtEncode.
- * @returns original string.
- */
-export function bwtDecode(bwt: string, index: number): string {
-  const n = bwt.length;
-  if (n === 0) return "";
-
-  // Initialize table with empty strings.
-  const table: string[] = Array(n).fill("");
-
-  // Each iteration prepends a character from the BWT to every row,
-  // then sorts. After n iterations the table is the sorted matrix.
-  for (let step = 0; step < n; step++) {
-    // Prepend the BWT characters.
-    for (let i = 0; i < n; i++) {
-      table[i] = bwt.charAt(i) + table[i];
-    }
-    // Stable sort by the whole string.
-    table.sort();
+export function isSortedWith<T>(arr: T[], cmp: Comparator<T>): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) return false; // `a > b` in ascending order
   }
-
-  // The row at the recorded index is the original string.
-  return table[index];
+  return true;
 }
-import { bwtEncode, bwtDecode } from "./bwt";
+interface Person { name: string; age: number; }
 
-const text = "The quick brown fox jumps over the lazy dog";
+const people: Person[] = [
+  { name: 'Alice', age: 25 },
+  { name: 'Bob', age: 30 },
+  { name: 'Charlie', age: 35 },
+];
 
-const { bwt, index } = bwtEncode(text);
-console.log("BWT String:", bwt);
-console.log("Original index =", index);
-
-const recovered = bwtDecode(bwt, index);
-console.log("Recovered:", recovered);
-console.log("Match:", recovered === text); // true
+isSortedWith(people, (a, b) => a.age - b.age); // true
+export const isSorted = <T>(arr: T[], cmp: Comparator<T> = (a, b) => {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}): boolean =>
+  arr
+    .map((value, index, self) => [self[index - 1], value] as const)
+    .slice(1) // skip the first undefined pair
+    .every(([prev, cur]) => cmp(prev!, cur) <= 0);
