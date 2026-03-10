@@ -1,39 +1,30 @@
-export class Stack<T> {
-  /** internal buffer – the array that stores the stack items */
-  private readonly items: T[] = [];
+/**
+ * Returns the second largest value in an array.
+ * Uses a single pass – O(n) time, O(1) extra space.
+ *
+ * @param nums – numeric array
+ * @returns second largest number, or `undefined` if it can’t be determined
+ */
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
 
-  /** push an item onto the stack */
-  push(value: T): void {
-    this.items.push(value);
+  let largest = -Infinity;
+  let second = -Infinity;
+
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;   // old largest becomes second
+      largest = n;
+    } else if (n > second && n !== largest) {
+      // n is between largest and second – update second
+      second = n;
+    }
   }
 
-  /** pop the top item; returns `undefined` if the stack is empty */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  /** peek at the top item without removing it */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** true if the stack has no elements */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** number of elements currently on the stack */
-  size(): number {
-    return this.items.length;
-  }
+  return second === -Infinity ? undefined : second;
 }
-const stack = new Stack<number>();
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size()); // 2
-console.log(stack.isEmpty()); // false
+// quick demo
+console.log(secondLargest([3, 1, 4, 1, 5, 9, 2, 6, 5])); // 8
+console.log(secondLargest([42]));                         // undefined
+console.log(secondLargest([7, 7, 7]));                     // undefined – no distinct second value
