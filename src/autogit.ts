@@ -1,59 +1,28 @@
 /**
- * Shell sort – a simple, in‑place algorithm that improves on insertion sort.
- * Sorts an array of numbers in ascending order.
- *
- * @param arr The array to sort (modified in place)
- * @param compare Optional compare function (defaults to numeric comparison)
+ * Convert a decimal number to a binary string.
+ * 
+ * @param n – A non‑negative integer
+ * @returns The binary representation as a string
  */
-export function shellSort(
-  arr: number[],
-  compare?: (a: number, b: number) => number
-): void {
-  const len = arr.length;
-  const cmp = compare ?? ((a, b) => a - b);
-
-  // A common gap sequence: halving each time (Shell's original)
-  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Gapped insertion sort
-    for (let i = gap; i < len; i++) {
-      let temp = arr[i];
-      let j = i;
-
-      // Move elements that are greater than temp backward by 'gap' places
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      // Bring temp into its spot
-      arr[j] = temp;
-    }
+function decimalToBinary(n: number): string {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new Error('Input must be a non‑negative integer.');
   }
-}
-const data = [40, 3, 10, 5, 1, 15];
-shellSort(data);
 
-console.log(data); // [1, 3, 5, 10, 15, 40]
-export function shellSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): void {
-  const len = arr.length;
-  const cmp = compare ?? ((a, b) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
+  // Handling zero explicitly – Math.pow(2, 0) is 1 but we still want "0"
+  if (n === 0) return '0';
 
-  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    for (let i = gap; i < len; i++) {
-      const temp = arr[i];
-      let j = i;
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
+  let binary = '';
+  let current = n;
+
+  while (current > 0) {
+    // Prepend the remainder (0 or 1) to the binary string
+    binary = (current % 2) + binary;
+    current = Math.floor(current / 2);
   }
+
+  return binary;
 }
-shellSort(['banana', 'apple', 'pear'], (a, b) => a.localeCompare(b));
+console.log(decimalToBinary(10)); // "1010"
+console.log(decimalToBinary(255)); // "11111111"
+console.log(decimalToBinary(0)); // "0"
