@@ -1,45 +1,81 @@
-/**
- * Returns the contiguous segment of `arr` that yields the highest possible sum.
- *
- * @param arr - Array of numbers (integer or float)
- * @returns An object containing:
- *   `maxSum`  – the total sum of the best segment
- *   `start`   – the index where the segment begins
- *   `end`     – the index where the segment ends (inclusive)
- */
-function maxSubarray(arr: number[]) {
-  if (arr.length === 0) throw new Error('Array cannot be empty');
+class ListNode<T> {
+  data: T;
+  next: ListNode<T> | null = null;
 
-  let bestSum = arr[0];
-  let currentSum = arr[0];
-  let bestStart = 0;
-  let bestEnd = 0;
-  let tempStart = 0;
+  constructor(data: T) {
+    this.data = data;
+  }
+}
+export class LinkedListQueue<T> {
+  private head: ListNode<T> | null = null; // front
+  private tail: ListNode<T> | null = null; // rear
+  private _size = 0;
 
-  for (let i = 1; i < arr.length; i++) {
-    const val = arr[i];
+  /** Enqueue the value at the rear */
+  enqueue(value: T): void {
+    const node = new ListNode(value);
 
-    // Either start a new sub‑array at i or extend the existing one
-    if (currentSum + val < val) {
-      currentSum = val;
-      tempStart = i;       // new potential start
+    if (!this.tail) {        // empty queue
+      this.head = this.tail = node;
     } else {
-      currentSum += val;   // keep extending
+      this.tail.next = node;
+      this.tail = node;
     }
-
-    // Update the best segment seen so far
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
+    this._size++;
   }
 
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+  /** Dequeue the value at the front */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // empty
+
+    const value = this.head.data;
+    this.head = this.head.next;
+
+    if (!this.head) {          // queue became empty
+      this.tail = null;
+    }
+
+    this._size--;
+    return value;
+  }
+
+  /** Peek at the front without removing it */
+  peek(): T | undefined {
+    return this.head?.data;
+  }
+
+  /** Current number of elements */
+  size(): number {
+    return this._size;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** Consume the internal list into an array (useful for tests) */
+  toArray(): T[] {
+    const arr: T[] = [];
+    let node = this.head;
+    while (node) {
+      arr.push(node.data);
+      node = node.next;
+    }
+    return arr;
+  }
 }
-const data = [-2, -3, 4, -1, -2, 1, 5, -3];
-const result = maxSubarray(data);
-console.log(result);
-// Expected output:
-// { maxSum: 7, start: 2, end: 6 }
-// (segment [4, -1, -2, 1, 5] sums to 7)
+const q = new LinkedListQueue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size());    // 1
+console.log(q.isEmpty()); // false
+
+q.dequeue();              // removes 30
+console.log(q.isEmpty()); // true
