@@ -1,30 +1,30 @@
-/**
- * Recursively returns n! (n factorial).
- *
- * @param n - non‑negative integer (or bigint)
- * @returns n! as a bigint
- */
-export function factorial(n: bigint | number): bigint {
-  // Normalize input to bigint
-  const x = typeof n === "bigint" ? n : BigInt(n);
+const str = "hello world";
+const hasFoo = str.includes("world");   // true
+const hasBar = str.includes("bar");     // false
+const hasCapital = str.includes("WORLD");          // false
+const hasCapitalIgnoreCase = str.toLowerCase()
+                                .includes("WORLD".toLowerCase()); // true
+const hasCapitalIgnoreCase = /world/i.test(str);   // true
+const index = str.indexOf("world"); // 6
+const missing = str.indexOf("bar"); // -1
+const present = str.indexOf("world") !== -1; // true
+const hasPrefix = /^hello/.test(str); // true
 
-  // Negative numbers are not defined for factorial
-  if (x < 0n) {
-    throw new Error("Factorial is defined only for non‑negative integers.");
-  }
+// With dynamic patterns
+const word = "world";
+const pattern = new RegExp(word);    // case‑sensitive
+const result = pattern.test(str);    // true
+// Presence
+const contains = text.includes(sub);
 
-  // Base case: 0! = 1, 1! = 1
-  if (x === 0n || x === 1n) {
-    return 1n;
-  }
+// Presence (index form)
+const containsIndex = text.indexOf(sub) !== -1;
 
-  // Recursive case: n! = n * (n-1)!
-  return x * factorial(x - 1n);
-}
-console.log(factorial(5));        // 120n
-console.log(factorial(20));       // 2432902008176640000n
-console.log(factorial(25n));      // 15511210043330985984000000n
-function factorialTail(n: bigint, acc = 1n): bigint {
-  if (n <= 1n) return acc;
-  return factorialTail(n - 1n, acc * n);
-}
+// Position
+const pos = text.indexOf(sub); // -1 if absent
+
+// Case‑insensitive
+const containsIC = text.toLowerCase().includes(sub.toLowerCase());
+
+// Regex
+const containsRegex = /world/i.test(text);
