@@ -1,40 +1,39 @@
-// Basic node interface – can be turned into a class if you like.
-interface TreeNode<T = number> {
-  val: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+function isPalindrome(str: string): boolean {
+  // Compare the string to its reverse
+  const reversed = str.split('').reverse().join('');
+  return str === reversed;
 }
-function maxDepth<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                 // empty subtree → depth 0
 
-  const leftDepth  = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
-
-  // Depth of current node = 1 (itself) + depth of deeper side
-  return 1 + Math.max(leftDepth, rightDepth);
+// Examples
+console.log(isPalindrome('radar'));   // true
+console.log(isPalindrome('hello'));   // false
+function isPalindromeCI(str: string): boolean {
+  const normalized = str.toLowerCase();          // make everything lowercase
+  return normalized === normalized.split('').reverse().join('');
 }
-const root: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3, right: { val: 5, right: { val: 6 } } }
-};
 
-console.log(maxDepth(root));   // → 4
-function maxDepthIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
+console.log(isPalindromeCI('Radar'));   // true
+console.log(isPalindromeCI('Racecar')); // true
+function isPalindromeClean(str: string): boolean {
+  const cleaned = str
+    .replace(/[^a-z0-9]/gi, '')      // strip non-alphanumerics
+    .toLowerCase();                  // normalize case
+  
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
+}
 
-  let max = 0;
-  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
-    { node: root, depth: 1 },
-  ];
+console.log(isPalindromeClean('A man, a plan, a canal: Panama')); // true
+function isPalindromeTwoPointer(str: string): boolean {
+  let left = 0;
+  let right = str.length - 1;
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    max = Math.max(max, depth);
-
-    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
-    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
+  while (left < right) {
+    if (str[left] !== str[right]) return false;
+    left++;
+    right--;
   }
-
-  return max;
+  return true;
 }
+
+console.log(isPalindromeTwoPointer('radar')); // true
