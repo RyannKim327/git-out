@@ -1,21 +1,30 @@
 /**
- * Returns a random number in the closed interval [min, max].
+ * Returns the second largest value in an array.
+ * Uses a single pass – O(n) time, O(1) extra space.
  *
- * Uses the built‑in Math.random() which yields a uniformly distributed
- * 64‑bit floating‑point number in [0, 1).
- *
- * @param min - The lower bound of the range (inclusive)
- * @param max - The upper bound of the range (inclusive)
- * @returns A random number in the range [min, max]
+ * @param nums – numeric array
+ * @returns second largest number, or `undefined` if it can’t be determined
  */
-export function randomInRange(min: number, max: number): number {
-  if (min > max) throw new Error('min must be <= max');
-  // Math.random() is 0 ≤ r < 1.  Scale and shift to match [min, max].
-  return Math.random() * (max - min) + min;
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
+
+  let largest = -Infinity;
+  let second = -Infinity;
+
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;   // old largest becomes second
+      largest = n;
+    } else if (n > second && n !== largest) {
+      // n is between largest and second – update second
+      second = n;
+    }
+  }
+
+  return second === -Infinity ? undefined : second;
 }
-export function randomIntInRange(min: number, max: number): number {
-  // The +1 ensures the max is included.
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-const randomFloat = randomInRange(5.2, 10.7);      // Anything between 5.2 and 10.7
-const randomInt   = randomIntInRange(1, 6);        // 1, 2, 3, 4, 5, or 6
+
+// quick demo
+console.log(secondLargest([3, 1, 4, 1, 5, 9, 2, 6, 5])); // 8
+console.log(secondLargest([42]));                         // undefined
+console.log(secondLargest([7, 7, 7]));                     // undefined – no distinct second value
