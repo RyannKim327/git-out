@@ -1,47 +1,81 @@
-/**
- * Return true if `s` is a palindrome (case‑insensitive, alphanumeric only).
- * Works in O(n) time and O(1) extra space.
- */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+class ListNode<T> {
+  data: T;
+  next: ListNode<T> | null = null;
 
-  // helper: is the char code an ASCII alphanumeric?
-  const isAlnum = (c: number) =>
-    (c >= 48 && c <= 57) ||        // 0‑9
-    (c >= 65 && c <= 90) ||        // A‑Z
-    (c >= 97 && c <= 122);         // a‑z
+  constructor(data: T) {
+    this.data = data;
+  }
+}
+export class LinkedListQueue<T> {
+  private head: ListNode<T> | null = null; // front
+  private tail: ListNode<T> | null = null; // rear
+  private _size = 0;
 
-  // helper: convert ASCII letter to its uppercase equivalent
-  const toUpper = (c: number) => (c >= 97 && c <= 122) ? (c - 32) : c;
+  /** Enqueue the value at the rear */
+  enqueue(value: T): void {
+    const node = new ListNode(value);
 
-  while (left < right) {
-    // skip non‑alphanumeric characters on the left
-    while (left < right && !isAlnum(s.charCodeAt(left))) left++;
-    // skip non‑alphanumeric characters on the right
-    while (left < right && !isAlnum(s.charCodeAt(right))) right--;
-
-    if (left >= right) break;
-
-    // compare the two characters after normalizing to uppercase
-    if (toUpper(s.charCodeAt(left)) !== toUpper(s.charCodeAt(right))) {
-      return false;
+    if (!this.tail) {        // empty queue
+      this.head = this.tail = node;
+    } else {
+      this.tail.next = node;
+      this.tail = node;
     }
-    left++;
-    right--;
+    this._size++;
   }
 
-  return true;
+  /** Dequeue the value at the front */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // empty
+
+    const value = this.head.data;
+    this.head = this.head.next;
+
+    if (!this.head) {          // queue became empty
+      this.tail = null;
+    }
+
+    this._size--;
+    return value;
+  }
+
+  /** Peek at the front without removing it */
+  peek(): T | undefined {
+    return this.head?.data;
+  }
+
+  /** Current number of elements */
+  size(): number {
+    return this._size;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** Consume the internal list into an array (useful for tests) */
+  toArray(): T[] {
+    const arr: T[] = [];
+    let node = this.head;
+    while (node) {
+      arr.push(node.data);
+      node = node.next;
+    }
+    return arr;
+  }
 }
+const q = new LinkedListQueue<number>();
 
-/* ---------- demo ---------- */
-const tests = [
-  "A man, a plan, a canal: Panama",
-  "race a car",
-  "No 'x' in Nixon",
-  "MadamInEdenImAdam",
-];
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
 
-tests.forEach(t => {
-  console.log(`"${t}" → ${isPalindrome(t)}`);
-});
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size());    // 1
+console.log(q.isEmpty()); // false
+
+q.dequeue();              // removes 30
+console.log(q.isEmpty()); // true
