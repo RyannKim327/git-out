@@ -1,146 +1,53 @@
-// Node.ts
-export class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
+/**
+ * Sorts an array using the bubble‑sort algorithm.
+ *
+ * @param arr       The array to sort. The sort is performed in-place.
+ * @param compare   Optional comparison function. It should return:
+ *                  - a negative number if a < b
+ *                  - zero if a == b
+ *                  - a positive number if a > b
+ *
+ * @returns The sorted array (the same instance that was passed in).
+ */
+export function bubbleSort<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
+  // Default to natural order for numbers and strings
+  const cmp = compare ?? ((a: any, b: any) => (a > b ? 1 : a < b ? -1 : 0));
 
-  constructor(value: T) {
-    this.value = value;
-  }
+  const len = arr.length;
+  if (len < 2) return arr; // already sorted
+
+  let swapped: boolean;
+  // We keep looping until no swaps happen in a full pass
+  do {
+    swapped = false;
+    // After each round the largest element in the unsorted portion
+    // "bubbles" to its final position, so we can skip the last i elements
+    for (let i = 1; i < len; i++) {
+      if (cmp(arr[i - 1], arr[i]) > 0) {
+        // swap
+        [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+        swapped = true;
+      }
+    }
+  } while (swapped);
+
+  return arr;
 }
-// LinkedList.ts
-import { ListNode } from "./Node";
+// 1️⃣ Sort plain numbers
+const nums = [5, 3, 8, 1, 2];
+bubbleSort(nums);           // nums → [1, 2, 3, 5, 8]
 
-export class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _length = 0;
+// 2️⃣ Sort strings alphabetically
+const words = ['banana', 'apple', 'cherry'];
+bubbleSort(words);          // words → ['apple', 'banana', 'cherry']
 
-  get length() {
-    return this._length;
-  }
+// 3️⃣ Sort objects with a custom key
+type Person = { name: string; age: number };
+const people: Person[] = [
+  { name: 'Zoe',   age: 28 },
+  { name: 'Adam',  age: 34 },
+  { name: 'Mira',  age: 23 }
+];
 
-  /* ---------- Basic Operations ---------- */
-
-  // Append a value to the end of the list.
-  push(value: T): void {
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      this.tail!.next = node;
-      this.tail = node;
-    }
-    this._length++;
-  }
-
-  // Prepend a value to the beginning of the list.
-  unshift(value: T): void {
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      node.next = this.head;
-      this.head = node;
-    }
-    this._length++;
-  }
-
-  // Remove and return the value at the head of the list.
-  shift(): T | null {
-    if (!this.head) return null;
-    const value = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null; // list became empty
-    this._length--;
-    return value;
-  }
-
-  // Remove and return the value at the tail of the list.
-  pop(): T | null {
-    if (!this.head) return null;
-
-    if (this.head === this.tail) {
-      const value = this.head.value;
-      this.head = this.tail = null;
-      this._length--;
-      return value;
-    }
-
-    // Walk to the node just before the tail.
-    let current = this.head;
-    while (current.next !== this.tail) {
-      current = current.next!;
-    }
-    const value = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-    this._length--;
-    return value;
-  }
-
-  /* ---------- Traversal & Search ---------- */
-
-  // Return the node at the given zero‑based index, or null if out of bounds.
-  getNodeAt(index: number): ListNode<T> | null {
-    if (index < 0 || index >= this._length) return null;
-    let current = this.head!;
-    for (let i = 0; i < index; i++) {
-      current = current.next!;
-    }
-    return current;
-  }
-
-  // Find the first value that satisfies the predicate.
-  find(predicate: (value: T) => boolean, startIndex = 0): T | null {
-    let current = this.getNodeAt(startIndex);
-    while (current) {
-      if (predicate(current.value)) return current.value;
-      current = current.next;
-    }
-    return null;
-  }
-
-  /* ---------- Utility ---------- */
-
-  // Convert the list to an array (useful for debugging or interoperability).
-  toArray(): T[] {
-    const out: T[] = [];
-    let current = this.head;
-    while (current) {
-      out.push(current.value);
-      current = current.next;
-    }
-    return out;
-  }
-
-  // Allow for… e.g. “for … of” iteration.
-  [Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    return {
-      next: () => ({
-        value: current?.value,
-        done: current === null,
-      }),
-    };
-  }
-}
-import { LinkedList } from "./LinkedList";
-
-const numbers = new LinkedList<number>();
-numbers.push(10);
-numbers.push(20);
-numbers.unshift(5);   // list is now 5 -> 10 -> 20
-
-console.log(numbers.shift()); // 5
-console.log(numbers.pop());   // 20
-console.log(numbers.length);  // 1
-
-// Search
-numbers.push(30);
-numbers.push(40);
-console.log(numbers.find(v => v > 15)); // 20
-
-// Iterate
-for (const n of numbers) {
-  console.log(n); // 10, 30, 40
-}
+bubbleSort(people, (p1, p2) => p1.age - p2.age);
+// people → [{name:'Mira',age:23}, {name:'Zoe',age:28}, {name:'Adam',age:34}]
