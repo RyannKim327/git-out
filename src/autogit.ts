@@ -1,14 +1,7 @@
-// 1) Using a regular expression (remove *any* whitespace)
-const clean1 = originalString.replace(/\s+/g, "");
-
-// 2) If you only care about literal space characters (no tabs, newlines, etc.)
-const clean2 = originalString.replace(/ /g, "");
-
-// 3) Split/join – handy if you’re scrubbing a handful of specific delimiters
-const clean3 = originalString.split(" ").join("");
-
-// 4) Manual loop (useful if you need to do something with each char)
-let clean4 = "";
-for (const ch of originalString) {
-  if (ch !== " ") clean4 += ch;
+const num = parseInt("123", 10);   // 123 as a number
+const num = Number("123");          // 123
+const num = +"123";                // 123
+const big = BigInt("123456789123456789123"); // 123456789123456789123n
+if (Number.isInteger(num)) {
+  // safe to use `num` as an int
 }
