@@ -1,47 +1,25 @@
 /**
- * Return true if `s` is a palindrome (case‑insensitive, alphanumeric only).
- * Works in O(n) time and O(1) extra space.
+ * Returns true if `n` is a prime number.
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+export function isPrime(n: number): boolean {
+  // Prime numbers are > 1
+  if (n <= 1) return false;
 
-  // helper: is the char code an ASCII alphanumeric?
-  const isAlnum = (c: number) =>
-    (c >= 48 && c <= 57) ||        // 0‑9
-    (c >= 65 && c <= 90) ||        // A‑Z
-    (c >= 97 && c <= 122);         // a‑z
+  // 2 and 3 are the only even/odd primes
+  if (n <= 3) return true;
 
-  // helper: convert ASCII letter to its uppercase equivalent
-  const toUpper = (c: number) => (c >= 97 && c <= 122) ? (c - 32) : c;
+  // Even numbers > 2 can be rejected right away
+  if (n % 2 === 0) return false;
 
-  while (left < right) {
-    // skip non‑alphanumeric characters on the left
-    while (left < right && !isAlnum(s.charCodeAt(left))) left++;
-    // skip non‑alphanumeric characters on the right
-    while (left < right && !isAlnum(s.charCodeAt(right))) right--;
-
-    if (left >= right) break;
-
-    // compare the two characters after normalizing to uppercase
-    if (toUpper(s.charCodeAt(left)) !== toUpper(s.charCodeAt(right))) {
-      return false;
-    }
-    left++;
-    right--;
+  // Check only odd divisors up to √n
+  const limit = Math.floor(Math.sqrt(n));
+  for (let d = 3; d <= limit; d += 2) {
+    if (n % d === 0) return false;
   }
-
   return true;
 }
-
-/* ---------- demo ---------- */
-const tests = [
-  "A man, a plan, a canal: Panama",
-  "race a car",
-  "No 'x' in Nixon",
-  "MadamInEdenImAdam",
-];
-
-tests.forEach(t => {
-  console.log(`"${t}" → ${isPalindrome(t)}`);
-});
+console.log(isPrime(2));  // true
+console.log(isPrime(15)); // false
+console.log(isPrime(17)); // true
+console.log(isPrime(1));  // false
+console.log(isPrime(-5)); // false
