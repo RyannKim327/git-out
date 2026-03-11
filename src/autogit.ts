@@ -1,81 +1,45 @@
-class ListNode<T> {
-  data: T;
-  next: ListNode<T> | null = null;
+// apiDemo.ts
+// -----------------------------------------------------
+// Example: Call a public JSONPlaceholder API,
+// fetch a post, and log its title & body.
+//
+// Works out of the box in Node≥18 or any modern browser
+// with a `tsconfig.json` that has `"esModuleInterop": true`
+// and `"target": "es2015"` (or later).
 
-  constructor(data: T) {
-    this.data = data;
-  }
+// 1.  Types that model the JSON we expect back
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
-export class LinkedListQueue<T> {
-  private head: ListNode<T> | null = null; // front
-  private tail: ListNode<T> | null = null; // rear
-  private _size = 0;
 
-  /** Enqueue the value at the rear */
-  enqueue(value: T): void {
-    const node = new ListNode(value);
-
-    if (!this.tail) {        // empty queue
-      this.head = this.tail = node;
-    } else {
-      this.tail.next = node;
-      this.tail = node;
-    }
-    this._size++;
+// 2.  A handy helper that ensures we get JSON
+async function json<T>(resp: Response): Promise<T> {
+  if (!resp.ok) {
+    throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
   }
-
-  /** Dequeue the value at the front */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined; // empty
-
-    const value = this.head.data;
-    this.head = this.head.next;
-
-    if (!this.head) {          // queue became empty
-      this.tail = null;
-    }
-
-    this._size--;
-    return value;
-  }
-
-  /** Peek at the front without removing it */
-  peek(): T | undefined {
-    return this.head?.data;
-  }
-
-  /** Current number of elements */
-  size(): number {
-    return this._size;
-  }
-
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Consume the internal list into an array (useful for tests) */
-  toArray(): T[] {
-    const arr: T[] = [];
-    let node = this.head;
-    while (node) {
-      arr.push(node.data);
-      node = node.next;
-    }
-    return arr;
-  }
+  return resp.json() as Promise<T>;
 }
-const q = new LinkedListQueue<number>();
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+// 3.  The async routine that talks to the API
+async function fetchPost(postId: number): Promise<Post> {
+  const url = `https://jsonplaceholder.typicode.com/posts/${postId}`;
 
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size());    // 1
-console.log(q.isEmpty()); // false
+  const response = await fetch(url);        // ← call the API
+  const post = await json<Post>(response);   // ← parse & type‑check
 
-q.dequeue();              // removes 30
-console.log(q.isEmpty()); // true
+  return post;
+}
+
+// 4.  Call it and do something with the data
+(async () => {
+  try {
+    const post = await fetchPost(1);
+    console.log(`Post #1 title: ${post.title}`);
+    console.log(`Post #1 body:  ${post.body}`);
+  } catch (err) {
+    console.error("Something went wrong:", err);
+  }
+})();
