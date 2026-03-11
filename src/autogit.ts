@@ -1,79 +1,72 @@
-// `T` can be any comparable type – string, number, object with an id, etc.
-export function bfs<T>(
-  start: T,
-  graph: Map<T, T[]>,          // adjacency list
-  onVisit?: (node: T) => void // optional per‑node work
-): T[] {
-  const queue: T[] = [start];
-  const visited = new Set<T>();
-  const order: T[] = [];
+export class ListNode {
+  val: number;          // keep it generic if you want
+  next: ListNode | null;
 
-  visited.add(start);
-
-  while (queue.length) {
-    const node = queue.shift()!;   // node is guaranteed non‑null inside loop
-
-    // Optional callback that lets you do something with the node as you visit it
-    if (onVisit) onVisit(node);
-
-    order.push(node);
-
-    for (const neighbor of graph.get(node) ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
+  constructor(val: number = 0, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
+  }
+}
+export function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  // Helper: get the length of a list.
+  const length = (node: ListNode | null): number => {
+    let len = 0;
+    while (node) {
+      len++;
+      node = node.next;
     }
+    return len;
+  };
+
+  const lenA = length(headA);
+  const lenB = length(headB);
+
+  // Align the starts
+  let ptrA = headA;
+  let ptrB = headB;
+  let diff = Math.abs(lenA - lenB);
+
+  if (lenA > lenB) {
+    while (diff-- > 0 && ptrA) ptrA = ptrA.next;
+  } else {
+    while (diff-- > 0 && ptrB) ptrB = ptrB.next;
   }
 
-  return order;
-}
-// Example graph (adjacency list)
-const g = new Map<string, string[]>([
-  ['A', ['B', 'C']],
-  ['B', ['D', 'E']],
-  ['C', ['F']],
-  ['D', []],
-  ['E', ['F']],
-  ['F', []]
-]);
-
-const order = bfs('A', g);          // ["A", "B", "C", "D", "E", "F"]
-
-console.log('BFS order:', order);
-export function bfsFind<T>(
-  start: T,
-  graph: Map<T, T[]>,
-  goal: T
-): T[] | null {
-  const queue: T[] = [start];
-  const visited = new Set<T>();
-  visited.add(start);
-
-  while (queue.length) {
-    const node = queue.shift()!;
-
-    if (node === goal) {
-      // Re‑construct the path if you need it – here we just return the node that found it.
-      return [node];
-    }
-
-    for (const neighbor of graph.get(node) ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
-    }
+  // Walk together
+  while (ptrA && ptrB) {
+    if (ptrA === ptrB) return ptrA; // same reference
+    ptrA = ptrA.next;
+    ptrB = ptrB.next;
   }
 
-  return null; // goal not reachable
+  return null; // no intersection
 }
-// Small graph with a cycle
-const g2 = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [3]],
-  [3, [1, 4]],
-  [4, []]
-]);
+// Build list A: 1 → 2 → 3 → 4 → 5
+const a = new ListNode(1);
+a.next = new ListNode(2);
+a.next.next = new ListNode(3);
+a.next.next.next = new ListNode(4);
+a.next.next.next.next = new ListNode(5);
 
-console.log(bfs(1, g2)); // [1, 2, 3, 4]
+// Build list B: 9 → 4 → 5 (shared tail)
+const b = new ListNode(9);
+b.next = a.next.next.next; // shares nodes 4 and 5
+
+const intersect = getIntersectionNode(a, b);
+console.log(intersect?.val); // prints 4
+export function intersectionByValue(
+  headA: ListNode | null,
+  headB: ListNode | null
+): number[] {
+  const values = new Set<number>();
+  for (let cur = headA; cur; cur = cur.next) values.add(cur.val);
+
+  const result: number[] = [];
+  for (let cur = headB; cur; cur = cur.next) {
+    if (values.has(cur.val)) result.push(cur.val);
+  }
+  return result;
+}
