@@ -1,32 +1,40 @@
-/**
- * Returns the area of a triangle when you know its base and height.
- *
- * @param base   The length of the triangle’s base.
- * @param height The height (altitude) drawn to that base.
- * @returns The area in whatever units the inputs are in.
- */
-function triangleAreaFromBaseHeight(base: number, height: number): number {
-  return 0.5 * base * height;
+// Basic node interface – can be turned into a class if you like.
+interface TreeNode<T = number> {
+  val: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
-/**
- * Returns the area of a triangle given its three vertices.
- *
- * @param x1 x‑coordinate of the first vertex
- * @param y1 y‑coordinate of the first vertex
- * @param x2 x‑coordinate of the second vertex
- * @param y2 y‑coordinate of the second vertex
- * @param x3 x‑coordinate of the third vertex
- * @param y3 y‑coordinate of the third vertex
- * @returns The absolute area (non‑negative) of the triangle.
- */
-function triangleAreaFromPoints(
-  x1: number, y1: number,
-  x2: number, y2: number,
-  x3: number, y3: number
-): number {
-  return Math.abs(
-    x1 * (y2 - y3) +
-    x2 * (y3 - y1) +
-    x3 * (y1 - y2)
-  ) / 2;
+function maxDepth<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                 // empty subtree → depth 0
+
+  const leftDepth  = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
+
+  // Depth of current node = 1 (itself) + depth of deeper side
+  return 1 + Math.max(leftDepth, rightDepth);
+}
+const root: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 } },
+  right: { val: 3, right: { val: 5, right: { val: 6 } } }
+};
+
+console.log(maxDepth(root));   // → 4
+function maxDepthIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let max = 0;
+  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
+    { node: root, depth: 1 },
+  ];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    max = Math.max(max, depth);
+
+    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
+    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
+  }
+
+  return max;
 }
