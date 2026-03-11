@@ -1,75 +1,30 @@
 /**
- * Binary search on a sorted array (ascending order).
- * @param arr   Sorted array of comparable items.
- * @param value Item you’re hunting for.
- * @param compare Optional comparison function:
- *                (a,b) => 0 if a==b, <0 if a<b, >0 if a>b.
- *                If omitted, '<'/'>' operators are used.
- * @returns Index of the value, or -1 if it isn’t present.
+ * Recursively returns n! (n factorial).
+ *
+ * @param n - non‑negative integer (or bigint)
+ * @returns n! as a bigint
  */
-export function binarySearch<T>(
-  arr: readonly T[],
-  value: T,
-  compare?: (a: T, b: T) => number,
-): number {
-  let low = 0;
-  let high = arr.length;
+export function factorial(n: bigint | number): bigint {
+  // Normalize input to bigint
+  const x = typeof n === "bigint" ? n : BigInt(n);
 
-  const cmp = compare ?? ((a: T, b: T) => {
-    /* eslint-disable-next-line no-prototype-builtins */
-    if ((a as any as object).hasOwnProperty && typeof a === 'object' && typeof b === 'object') {
-      // For objects that implement `valueOf()` – optional
-      return (a as any) < b ? -1 : (a as any) > b ? 1 : 0;
-    }
-    return a < b ? -1 : a > b ? 1 : 0;
-  });
-
-  while (low < high) {
-    const mid = (low + high) >>> 1; // fast floor division by 2
-    const comp = cmp(arr[mid], value);
-
-    if (comp === 0) return mid;   // found it
-    if (comp < 0) low = mid + 1;  // value is higher
-    else high = mid;              // value is lower
+  // Negative numbers are not defined for factorial
+  if (x < 0n) {
+    throw new Error("Factorial is defined only for non‑negative integers.");
   }
 
-  return -1; // not found
+  // Base case: 0! = 1, 1! = 1
+  if (x === 0n || x === 1n) {
+    return 1n;
+  }
+
+  // Recursive case: n! = n * (n-1)!
+  return x * factorial(x - 1n);
 }
-const nums = [1, 3, 5, 7, 9, 11, 13];
-const idx = binarySearch(nums, 7); // → 3
-
-const words = ['apple', 'banana', 'cherry', 'date'];
-const wIdx = binarySearch(words, 'cherry'); // → 2
-export function binarySearchRecursive<T>(
-  arr: readonly T[],
-  value: T,
-  compare?: (a: T, b: T) => number,
-  low = 0,
-  high = arr.length - 1,
-): number {
-  if (low > high) return -1;
-
-  const cmp = compare ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
-
-  const mid = (low + high) >>> 1;
-  const comp = cmp(arr[mid], value);
-
-  if (comp === 0) return mid;
-  return comp < 0
-    ? binarySearchRecursive(arr, value, compare, mid + 1, high)
-    : binarySearchRecursive(arr, value, compare, low, mid - 1);
+console.log(factorial(5));        // 120n
+console.log(factorial(20));       // 2432902008176640000n
+console.log(factorial(25n));      // 15511210043330985984000000n
+function factorialTail(n: bigint, acc = 1n): bigint {
+  if (n <= 1n) return acc;
+  return factorialTail(n - 1n, acc * n);
 }
-interface Person { name: string; age: number; }
-
-const people: Person[] = [
-  { name: 'Alice', age: 28 },
-  { name: 'Bob', age: 35 },
-  { name: 'Carol', age: 41 },
-];
-
-// Sorted by age
-const idx = binarySearch(
-  people,
-  { name: '', age: 35 },             // value (name ignored)
-  (a, b) => a.age - b.age
-); // → 1
