@@ -1,79 +1,88 @@
-// `T` can be any comparable type – string, number, object with an id, etc.
-export function bfs<T>(
-  start: T,
-  graph: Map<T, T[]>,          // adjacency list
-  onVisit?: (node: T) => void // optional per‑node work
+/**
+ * Merge‑Sort for an array.
+ *
+ * @param arr   The array to sort.
+ * @param cmp   Optional comparison function. If omitted, the default <, > operators are used.
+ * @returns The sorted array (in‑place, but a new array is returned for convenience).
+ */
+export function mergeSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
 ): T[] {
-  const queue: T[] = [start];
-  const visited = new Set<T>();
-  const order: T[] = [];
+  // No need to sort if the array is empty or has a single element.
+  if (arr.length <= 1) return arr.slice();
 
-  visited.add(start);
+  const mid = Math.floor(arr.length / 2);
+  const left = mergeSort(arr.slice(0, mid), cmp);
+  const right = mergeSort(arr.slice(mid), cmp);
 
-  while (queue.length) {
-    const node = queue.shift()!;   // node is guaranteed non‑null inside loop
+  return merge(left, right, cmp);
+}
 
-    // Optional callback that lets you do something with the node as you visit it
-    if (onVisit) onVisit(node);
+/**
+ * Merges two sorted arrays into a new sorted array.
+ *
+ * @param left  The left sorted half.
+ * @param right The right sorted half.
+ * @param cmp   Comparison function (optional).
+ * @returns A new sorted array containing all elements from left and right.
+ */
+function merge<T>(
+  left: T[],
+  right: T[],
+  cmp?: (a: T, b: T) => number
+): T[] {
+  const result: T[] = [];
+  let i = 0,
+    j = 0;
 
-    order.push(node);
+  const compare = cmp
+    ? cmp
+    : (a: T, b: T) => {
+        // default numeric or string comparison
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+      };
 
-    for (const neighbor of graph.get(node) ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
+  while (i < left.length && j < right.length) {
+    if (compare(left[i], right[j]) <= 0) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
     }
   }
 
-  return order;
+  // Attach leftovers … at most one of these will push anything.
+  return result.concat(left.slice(i)).concat(right.slice(j));
 }
-// Example graph (adjacency list)
-const g = new Map<string, string[]>([
-  ['A', ['B', 'C']],
-  ['B', ['D', 'E']],
-  ['C', ['F']],
-  ['D', []],
-  ['E', ['F']],
-  ['F', []]
-]);
+// Numbers
+const nums = [38, 27, 43, 3, 9, 82, 10];
+console.log(mergeSort(nums)); // [3, 9, 10, 27, 38, 43, 82]
 
-const order = bfs('A', g);          // ["A", "B", "C", "D", "E", "F"]
+// Strings
+const words = ["pear", "apple", "banana", "cherry"];
+console.log(mergeSort(words)); // ['apple', 'banana', 'cherry', 'pear']
 
-console.log('BFS order:', order);
-export function bfsFind<T>(
-  start: T,
-  graph: Map<T, T[]>,
-  goal: T
-): T[] | null {
-  const queue: T[] = [start];
-  const visited = new Set<T>();
-  visited.add(start);
-
-  while (queue.length) {
-    const node = queue.shift()!;
-
-    if (node === goal) {
-      // Re‑construct the path if you need it – here we just return the node that found it.
-      return [node];
-    }
-
-    for (const neighbor of graph.get(node) ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
-    }
+// Custom type
+type Person = { name: string; age: number };
+const people: Person[] = [
+  { name: "Alice", age: 34 },
+  { name: "Bob", age: 23 },
+  { name: "Carol", age: 28 }
+];
+console.log(
+  mergeSort(people, (a, b) => a.age - b.age)
+);
+// People sorted by age: Bob, Carol, Alice
+function isSorted<T>(arr: T[], cmp?: (a: T, b: T) => number): boolean {
+  const compare = cmp
+    ? cmp
+    : (a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0);
+  for (let i = 1; i < arr.length; i++) {
+    if (compare(arr[i - 1], arr[i]) > 0) return false;
   }
-
-  return null; // goal not reachable
+  return true;
 }
-// Small graph with a cycle
-const g2 = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [3]],
-  [3, [1, 4]],
-  [4, []]
-]);
 
-console.log(bfs(1, g2)); // [1, 2, 3, 4]
+console.log(isSorted(mergeSort([5, 2, 9, 1, 5, 6]))); // true
