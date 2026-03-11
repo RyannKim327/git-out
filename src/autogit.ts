@@ -1,47 +1,45 @@
-/**
- * Return true if `s` is a palindrome (case‑insensitive, alphanumeric only).
- * Works in O(n) time and O(1) extra space.
- */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+// 1️⃣  Install node‑fetch (or use the built‑in fetch in environments that have it)
+//    npm install node-fetch @types/node-fetch
+import fetch from "node-fetch";
 
-  // helper: is the char code an ASCII alphanumeric?
-  const isAlnum = (c: number) =>
-    (c >= 48 && c <= 57) ||        // 0‑9
-    (c >= 65 && c <= 90) ||        // A‑Z
-    (c >= 97 && c <= 122);         // a‑z
-
-  // helper: convert ASCII letter to its uppercase equivalent
-  const toUpper = (c: number) => (c >= 97 && c <= 122) ? (c - 32) : c;
-
-  while (left < right) {
-    // skip non‑alphanumeric characters on the left
-    while (left < right && !isAlnum(s.charCodeAt(left))) left++;
-    // skip non‑alphanumeric characters on the right
-    while (left < right && !isAlnum(s.charCodeAt(right))) right--;
-
-    if (left >= right) break;
-
-    // compare the two characters after normalizing to uppercase
-    if (toUpper(s.charCodeAt(left)) !== toUpper(s.charCodeAt(right))) {
-      return false;
-    }
-    left++;
-    right--;
-  }
-
-  return true;
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
 
-/* ---------- demo ---------- */
-const tests = [
-  "A man, a plan, a canal: Panama",
-  "race a car",
-  "No 'x' in Nixon",
-  "MadamInEdenImAdam",
-];
+/**
+ * Fetch a single Todo by its numeric ID.
+ * @param id - The ID of the Todo to request.
+ * @returns Promises a Todo object.
+ */
+async function getTodoById(id: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
 
-tests.forEach(t => {
-  console.log(`"${t}" → ${isPalindrome(t)}`);
-});
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+
+  // 2️⃣  Basic status check – throws if not 2xx
+  if (!response.ok) {
+    throw new Error(`Request failed with ${response.status} ${response.statusText}`);
+  }
+
+  // 3️⃣  Parse the JSON body and return it as a Todo
+  const data = (await response.json()) as Todo;
+  return data;
+}
+
+/**
+ * Demo of calling `getTodoById` and logging the result or an error.
+ */
+(async () => {
+  try {
+    const todo = await getTodoById(3);
+    console.log("Fetched Todo:", todo);
+  } catch (err) {
+    console.error("Error fetching Todo:", err);
+  }
+})();
