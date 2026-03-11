@@ -1,39 +1,39 @@
-function isPalindrome(str: string): boolean {
-  // Compare the string to its reverse
-  const reversed = str.split('').reverse().join('');
-  return str === reversed;
-}
-
-// Examples
-console.log(isPalindrome('radar'));   // true
-console.log(isPalindrome('hello'));   // false
-function isPalindromeCI(str: string): boolean {
-  const normalized = str.toLowerCase();          // make everything lowercase
-  return normalized === normalized.split('').reverse().join('');
-}
-
-console.log(isPalindromeCI('Radar'));   // true
-console.log(isPalindromeCI('Racecar')); // true
-function isPalindromeClean(str: string): boolean {
-  const cleaned = str
-    .replace(/[^a-z0-9]/gi, '')      // strip non-alphanumerics
-    .toLowerCase();                  // normalize case
-  
-  const reversed = cleaned.split('').reverse().join('');
-  return cleaned === reversed;
-}
-
-console.log(isPalindromeClean('A man, a plan, a canal: Panama')); // true
-function isPalindromeTwoPointer(str: string): boolean {
-  let left = 0;
-  let right = str.length - 1;
-
-  while (left < right) {
-    if (str[left] !== str[right]) return false;
-    left++;
-    right--;
+/**
+ * Return true if `a` and `b` are anagrams.
+ *
+ * @param a      First string
+ * @param b      Second string
+ * @param options  Optional settings – case sensitivity & ignoring non‑letters
+ */
+function areAnagrams(
+  a: string,
+  b: string,
+  options?: {
+    caseSensitive?: boolean;
+    ignoreNonAlpha?: boolean;
   }
+): boolean {
+  const { caseSensitive = false, ignoreNonAlpha = false } = options || {};
+
+  // Helper to canonicalise a string
+  const canon = (s: string) =>
+    s
+      .split('')
+      .filter((ch) => !ignoreNonAlpha || /[a-zA-Z]/.test(ch))
+      .map((ch) => (caseSensitive ? ch : ch.toLowerCase()))
+      .sort(); // array of chars, sorted
+
+  const aChars = canon(a);
+  const bChars = canon(b);
+
+  if (aChars.length !== bChars.length) return false;
+
+  for (let i = 0; i < aChars.length; i++) {
+    if (aChars[i] !== bChars[i]) return false;
+  }
+
   return true;
 }
-
-console.log(isPalindromeTwoPointer('radar')); // true
+areAnagrams('Listen', 'Silent');           // true
+areAnagrams('Hello', 'Ollhe', { caseSensitive: true }); // false
+areAnagrams('Dormitory', 'Dirty room', { ignoreNonAlpha: true }); // true
