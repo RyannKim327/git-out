@@ -1,34 +1,67 @@
-// randomPassword.ts
-import * as readline from 'readline';
+class Graph<T> {
+  private adjacency = new Map<T, Set<T>>();
 
-// Characters that can appear in the password
-const CHARSET =
-  'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
-
-function generatePassword(length: number): string {
-  let pwd = '';
-  for (let i = 0; i < length; i++) {
-    pwd += CHARSET[Math.floor(Math.random() * CHARSET.length)];
+  addVertex(v: T) {
+    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
   }
-  return pwd;
+
+  addEdge(v: T, w: T, directed = false) {
+    this.addVertex(v);
+    this.addVertex(w);
+    this.adjacency.get(v)!.add(w);
+    if (!directed) this.adjacency.get(w)!.add(v);
+  }
+
+  neighbours(v: T): Iterable<T> {
+    return this.adjacency.get(v) || [];
+  }
+
+  vertices(): Iterable<T> {
+    return this.adjacency.keys();
+  }
 }
+function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
+  const visited = new Set<T>();
+  const result: T[] = [];
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
+  function visit(v: T) {
+    if (visited.has(v)) return;
+    visited.add(v);
+    result.push(v);
 
-rl.question('Enter desired password length: ', (answer) => {
-  const len = parseInt(answer, 10);
-  if (!isNaN(len) && len > 0) {
-    console.log(`Generated password: ${generatePassword(len)}`);
-  } else {
-    console.log('Please enter a valid positive integer.');
+    for (const n of graph.neighbours(v)) visit(n);
   }
-  rl.close();
-});
-# 1. Compile (requires TypeScript installed)
-tsc randomPassword.ts
 
-# 2. Execute the resulting JavaScript
-node randomPassword.js
+  visit(start);
+  return result;
+}
+function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
+  const stack: T[] = [start];
+  const visited = new Set<T>();
+  const result: T[] = [];
+
+  while (stack.length) {
+    const v = stack.pop()!;
+    if (visited.has(v)) continue;
+
+    visited.add(v);
+    result.push(v);
+
+    // Push neighbours in reverse order if you want the same order
+    // as the recursive version (depends on adjacency list ordering).
+    for (const n of graph.neighbours(v)) {
+      if (!visited.has(n)) stack.push(n);
+    }
+  }
+
+  return result;
+}
+const g = new Graph<string>();
+g.addEdge('A', 'B');
+g.addEdge('A', 'C');
+g.addEdge('B', 'D');
+g.addEdge('C', 'D');
+g.addEdge('D', 'E');
+
+console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
+console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
