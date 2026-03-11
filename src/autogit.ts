@@ -1,38 +1,36 @@
 /**
- * Return the first non‑repeating character in a string.
- * If every character repeats, return `null`.
+ * Returns the longest common prefix among all given strings.
+ * If the array is empty it returns an empty string.
  */
-function firstNonRepeating(str: string): string | null {
-  const counts: Record<string, number> = {};
+function longestCommonPrefix(words: string[]): string {
+  if (!words.length) return '';
 
-  // 1️⃣ Count each character
-  for (const ch of str) {
-    counts[ch] = (counts[ch] ?? 0) + 1;
-  }
+  // The first string will act as a reference; we hammer it down
+  // as far as we need to.
+  let prefix = words[0];
 
-  // 2️⃣ Scan once more to find the first with count 1
-  for (const ch of str) {
-    if (counts[ch] === 1) {
-      return ch;
+  // Compare the current prefix to every other word.
+  for (const w of words.slice(1)) {
+    // Keep truncating the prefix until it matches the start of w.
+    while (!w.startsWith(prefix)) {
+      prefix = prefix.slice(0, -1); // strip last char
+      if (!prefix) return ''; // nothing common any more
     }
   }
 
-  return null;
+  return prefix;
 }
+console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // "fl"
+console.log(longestCommonPrefix(['dog', 'racecar', 'car']));    // ""
+function lcpSort(words: string[]): string {
+  if (!words.length) return '';
 
-// quick examples
-console.log(firstNonRepeating('abacabad')); // "b"
-console.log(firstNonRepeating('aabbcc'));   // null
-function firstNonRepeatingMap(str: string): string | null {
-  const freq = new Map<string, number>();
+  const sorted = [...words].sort();
+  const a = sorted[0];
+  const b = sorted[sorted.length - 1];
+  let i = 0;
 
-  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  while (i < a.length && a[i] === b[i]) i++;
 
-  for (const ch of str) if (freq.get(ch) === 1) return ch;
-  return null;
-}
-function allNonRepeating(str: string): string[] {
-  const freq = new Map<string, number>();
-  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  return [...str].filter(ch => freq.get(ch) === 1);
+  return a.slice(0, i);
 }
