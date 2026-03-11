@@ -1,53 +1,75 @@
 /**
- * Sorts an array using the bubble‑sort algorithm.
- *
- * @param arr       The array to sort. The sort is performed in-place.
- * @param compare   Optional comparison function. It should return:
- *                  - a negative number if a < b
- *                  - zero if a == b
- *                  - a positive number if a > b
- *
- * @returns The sorted array (the same instance that was passed in).
+ * Binary search on a sorted array (ascending order).
+ * @param arr   Sorted array of comparable items.
+ * @param value Item you’re hunting for.
+ * @param compare Optional comparison function:
+ *                (a,b) => 0 if a==b, <0 if a<b, >0 if a>b.
+ *                If omitted, '<'/'>' operators are used.
+ * @returns Index of the value, or -1 if it isn’t present.
  */
-export function bubbleSort<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
-  // Default to natural order for numbers and strings
-  const cmp = compare ?? ((a: any, b: any) => (a > b ? 1 : a < b ? -1 : 0));
+export function binarySearch<T>(
+  arr: readonly T[],
+  value: T,
+  compare?: (a: T, b: T) => number,
+): number {
+  let low = 0;
+  let high = arr.length;
 
-  const len = arr.length;
-  if (len < 2) return arr; // already sorted
-
-  let swapped: boolean;
-  // We keep looping until no swaps happen in a full pass
-  do {
-    swapped = false;
-    // After each round the largest element in the unsorted portion
-    // "bubbles" to its final position, so we can skip the last i elements
-    for (let i = 1; i < len; i++) {
-      if (cmp(arr[i - 1], arr[i]) > 0) {
-        // swap
-        [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
-        swapped = true;
-      }
+  const cmp = compare ?? ((a: T, b: T) => {
+    /* eslint-disable-next-line no-prototype-builtins */
+    if ((a as any as object).hasOwnProperty && typeof a === 'object' && typeof b === 'object') {
+      // For objects that implement `valueOf()` – optional
+      return (a as any) < b ? -1 : (a as any) > b ? 1 : 0;
     }
-  } while (swapped);
+    return a < b ? -1 : a > b ? 1 : 0;
+  });
 
-  return arr;
+  while (low < high) {
+    const mid = (low + high) >>> 1; // fast floor division by 2
+    const comp = cmp(arr[mid], value);
+
+    if (comp === 0) return mid;   // found it
+    if (comp < 0) low = mid + 1;  // value is higher
+    else high = mid;              // value is lower
+  }
+
+  return -1; // not found
 }
-// 1️⃣ Sort plain numbers
-const nums = [5, 3, 8, 1, 2];
-bubbleSort(nums);           // nums → [1, 2, 3, 5, 8]
+const nums = [1, 3, 5, 7, 9, 11, 13];
+const idx = binarySearch(nums, 7); // → 3
 
-// 2️⃣ Sort strings alphabetically
-const words = ['banana', 'apple', 'cherry'];
-bubbleSort(words);          // words → ['apple', 'banana', 'cherry']
+const words = ['apple', 'banana', 'cherry', 'date'];
+const wIdx = binarySearch(words, 'cherry'); // → 2
+export function binarySearchRecursive<T>(
+  arr: readonly T[],
+  value: T,
+  compare?: (a: T, b: T) => number,
+  low = 0,
+  high = arr.length - 1,
+): number {
+  if (low > high) return -1;
 
-// 3️⃣ Sort objects with a custom key
-type Person = { name: string; age: number };
+  const cmp = compare ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+
+  const mid = (low + high) >>> 1;
+  const comp = cmp(arr[mid], value);
+
+  if (comp === 0) return mid;
+  return comp < 0
+    ? binarySearchRecursive(arr, value, compare, mid + 1, high)
+    : binarySearchRecursive(arr, value, compare, low, mid - 1);
+}
+interface Person { name: string; age: number; }
+
 const people: Person[] = [
-  { name: 'Zoe',   age: 28 },
-  { name: 'Adam',  age: 34 },
-  { name: 'Mira',  age: 23 }
+  { name: 'Alice', age: 28 },
+  { name: 'Bob', age: 35 },
+  { name: 'Carol', age: 41 },
 ];
 
-bubbleSort(people, (p1, p2) => p1.age - p2.age);
-// people → [{name:'Mira',age:23}, {name:'Zoe',age:28}, {name:'Adam',age:34}]
+// Sorted by age
+const idx = binarySearch(
+  people,
+  { name: '', age: 35 },             // value (name ignored)
+  (a, b) => a.age - b.age
+); // → 1
