@@ -1,67 +1,53 @@
-class Graph<T> {
-  private adjacency = new Map<T, Set<T>>();
+/**
+ * Sorts an array using the bubble‑sort algorithm.
+ *
+ * @param arr       The array to sort. The sort is performed in-place.
+ * @param compare   Optional comparison function. It should return:
+ *                  - a negative number if a < b
+ *                  - zero if a == b
+ *                  - a positive number if a > b
+ *
+ * @returns The sorted array (the same instance that was passed in).
+ */
+export function bubbleSort<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
+  // Default to natural order for numbers and strings
+  const cmp = compare ?? ((a: any, b: any) => (a > b ? 1 : a < b ? -1 : 0));
 
-  addVertex(v: T) {
-    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
-  }
+  const len = arr.length;
+  if (len < 2) return arr; // already sorted
 
-  addEdge(v: T, w: T, directed = false) {
-    this.addVertex(v);
-    this.addVertex(w);
-    this.adjacency.get(v)!.add(w);
-    if (!directed) this.adjacency.get(w)!.add(v);
-  }
-
-  neighbours(v: T): Iterable<T> {
-    return this.adjacency.get(v) || [];
-  }
-
-  vertices(): Iterable<T> {
-    return this.adjacency.keys();
-  }
-}
-function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
-  const visited = new Set<T>();
-  const result: T[] = [];
-
-  function visit(v: T) {
-    if (visited.has(v)) return;
-    visited.add(v);
-    result.push(v);
-
-    for (const n of graph.neighbours(v)) visit(n);
-  }
-
-  visit(start);
-  return result;
-}
-function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
-  const stack: T[] = [start];
-  const visited = new Set<T>();
-  const result: T[] = [];
-
-  while (stack.length) {
-    const v = stack.pop()!;
-    if (visited.has(v)) continue;
-
-    visited.add(v);
-    result.push(v);
-
-    // Push neighbours in reverse order if you want the same order
-    // as the recursive version (depends on adjacency list ordering).
-    for (const n of graph.neighbours(v)) {
-      if (!visited.has(n)) stack.push(n);
+  let swapped: boolean;
+  // We keep looping until no swaps happen in a full pass
+  do {
+    swapped = false;
+    // After each round the largest element in the unsorted portion
+    // "bubbles" to its final position, so we can skip the last i elements
+    for (let i = 1; i < len; i++) {
+      if (cmp(arr[i - 1], arr[i]) > 0) {
+        // swap
+        [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+        swapped = true;
+      }
     }
-  }
+  } while (swapped);
 
-  return result;
+  return arr;
 }
-const g = new Graph<string>();
-g.addEdge('A', 'B');
-g.addEdge('A', 'C');
-g.addEdge('B', 'D');
-g.addEdge('C', 'D');
-g.addEdge('D', 'E');
+// 1️⃣ Sort plain numbers
+const nums = [5, 3, 8, 1, 2];
+bubbleSort(nums);           // nums → [1, 2, 3, 5, 8]
 
-console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
-console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
+// 2️⃣ Sort strings alphabetically
+const words = ['banana', 'apple', 'cherry'];
+bubbleSort(words);          // words → ['apple', 'banana', 'cherry']
+
+// 3️⃣ Sort objects with a custom key
+type Person = { name: string; age: number };
+const people: Person[] = [
+  { name: 'Zoe',   age: 28 },
+  { name: 'Adam',  age: 34 },
+  { name: 'Mira',  age: 23 }
+];
+
+bubbleSort(people, (p1, p2) => p1.age - p2.age);
+// people → [{name:'Mira',age:23}, {name:'Zoe',age:28}, {name:'Adam',age:34}]
