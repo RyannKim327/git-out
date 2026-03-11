@@ -1,47 +1,45 @@
-function removeValue<T>(arr: T[], value: T): T[] {
-  return arr.filter((el) => el !== value);
+// 1️⃣  Install node‑fetch (or use the built‑in fetch in environments that have it)
+//    npm install node-fetch @types/node-fetch
+import fetch from "node-fetch";
+
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
 
-// Example
-const numbers = [1, 2, 3, 4, 5];
-const withoutThree = removeValue(numbers, 3);
-console.log(withoutThree); // [1, 2, 4, 5]
-function removeAtIndex<T>(arr: T[], index: number): void {
-  if (index >= 0 && index < arr.length) {
-    arr.splice(index, 1); // splice mutates the array
+/**
+ * Fetch a single Todo by its numeric ID.
+ * @param id - The ID of the Todo to request.
+ * @returns Promises a Todo object.
+ */
+async function getTodoById(id: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+
+  // 2️⃣  Basic status check – throws if not 2xx
+  if (!response.ok) {
+    throw new Error(`Request failed with ${response.status} ${response.statusText}`);
   }
+
+  // 3️⃣  Parse the JSON body and return it as a Todo
+  const data = (await response.json()) as Todo;
+  return data;
 }
 
-// Example
-const letters = ['a', 'b', 'c', 'd'];
-removeAtIndex(letters, 2);
-console.log(letters); // ['a', 'b', 'd']
-function removeIf<T>(arr: T[], predicate: (el: T) => boolean): T[] {
-  return arr.filter(el => !predicate(el));
-}
-
-// Example: remove all even numbers
-const evensGone = removeIf(numbers, n => n % 2 === 0);
-console.log(evensGone); // [1, 3, 5]
-type User = { id: number; name: string };
-const users: User[] = [
-  { id: 1, name: 'Ada' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Cal' },
-];
-
-function removeById(arr: User[], id: number): User[] {
-  return arr.filter(u => u.id !== id);
-}
-
-const afterRemoval = removeById(users, 2);
-console.log(afterRemoval); // keeps Bob out
-function removeInPlace<T>(arr: T[], predicate: (el: T) => boolean): void {
-  for (let i = 0; i < arr.length; ) {
-    if (predicate(arr[i])) {
-      arr.splice(i, 1); // or use arr.splice(i--, 1) if you want to keep index logic simple
-    } else {
-      i++;
-    }
+/**
+ * Demo of calling `getTodoById` and logging the result or an error.
+ */
+(async () => {
+  try {
+    const todo = await getTodoById(3);
+    console.log("Fetched Todo:", todo);
+  } catch (err) {
+    console.error("Error fetching Todo:", err);
   }
-}
+})();
