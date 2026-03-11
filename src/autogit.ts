@@ -1,50 +1,50 @@
-export interface TreeNode {
-  val: number;                // or any type you like
-  left?: TreeNode | null;     // child nodes (undefined is treated as null)
-  right?: TreeNode | null;
-}
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
 /**
- * Returns the diameter (number of edges on the longest path) of a binary tree.
- *
- * @param root root node of the tree
- * @returns diameter in edges
+ * Median of two sorted arrays (each array is sorted in ascending order).
+ * Works in O(log (min(nums1.length, nums2.length))) time.
  */
-export function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;           // will hold the best diameter found
-
-  /**
-   * Post‑order DFS that returns the height of the subtree.
-   * While unwinding, we update `maxDiameter`.
-   */
-  function dfs(node: TreeNode | null): number {
-    if (!node) return -1;       // height of null is -1 so that leaf node height = 0
-
-    const leftHeight  = dfs(node.left)  + 1;
-    const rightHeight = dfs(node.right) + 1;
-
-    // The path that goes from the leftmost leaf of this subtree
-    // through this node to the rightmost leaf gives a candidate
-    // diameter.  `+1` is not needed for edges because heights already
-    // count edges from node to leaf.
-    const candidate = leftHeight + rightHeight;
-    if (candidate > maxDiameter) maxDiameter = candidate;
-
-    // Return height of this node for the parent call
-    return Math.max(leftHeight, rightHeight);
+function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Make sure nums1 is the smaller array for a lighter binary‑search range
+  if (nums1.length > nums2.length) {
+    return findMedianSortedArrays(nums2, nums1);
   }
 
-  dfs(root);
-  return maxDiameter;
-}
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
+  const m = nums1.length;
+  const n = nums2.length;
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-console.log(diameterOfBinaryTree(tree));   // → 3
+  let low = 0;
+  let high = m;
+
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2);      // partition in nums1
+    const j = halfLen - i;                       // partition in nums2
+
+    const nums1LeftMax  = (i === 0) ? -Infinity : nums1[i - 1];
+    const nums1RightMin = (i === m) ? Infinity  : nums1[i];
+    const nums2LeftMax  = (j === 0) ? -Infinity : nums2[j - 1];
+    const nums2RightMin = (j === n) ? Infinity  : nums2[j];
+
+    // If we’ve partitioned correctly, compute the median
+    if (nums1LeftMax <= nums2RightMin && nums2LeftMax <= nums1RightMin) {
+      if ((m + n) % 2 === 1) {              // odd total length
+        return Math.max(nums1LeftMax, nums2LeftMax);
+      } else {                               // even total length
+        return (Math.max(nums1LeftMax, nums2LeftMax) +
+                Math.min(nums1RightMin, nums2RightMin)) / 2;
+      }
+    }
+    // Adjust the binary‑search range
+    else if (nums1LeftMax > nums2RightMin) {
+      high = i - 1;
+    } else {
+      low = i + 1;
+    }
+  }
+
+  throw new Error("Input arrays are not sorted or invalid");
+}
+console.log(findMedianSortedArrays([1, 3], [2]));                    // 2
+console.log(findMedianSortedArrays([1, 2], [3, 4]));                  // 2.5
+console.log(findMedianSortedArrays([0, 0], [0, 0]));                  // 0
+console.log(findMedianSortedArrays([], [1]));                        // 1
+console.log(findMedianSortedArrays([2], []));                        // 2
