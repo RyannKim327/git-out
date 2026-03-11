@@ -1,98 +1,17 @@
-/** A minimal generic priority queue built on a binary heap */
-export class PriorityQueue<T> {
-  /** Internal storage array (0‑based). 0 is the root. */
-  private heap: T[] = [];
+const numbers = [1, 2, 3, 4];
+numbers.reverse();          // → [4, 3, 2, 1]
+console.log(numbers);       // the same array has changed
+const numbers = [1, 2, 3, 4];
+const reversed = numbers.slice().reverse(); // or [...numbers].reverse()
 
-  /** Comparator that returns true if a should come before b. */
-  private readonly less: (a: T, b: T) => boolean;
-
-  /** Number of queued elements */
-  public get size(): number { return this.heap.length; }
-
-  /** Peek at the top element without removing it.  Returns undefined if empty. */
-  public peek(): T | undefined { return this.heap[0]; }
-
-  constructor(comparator?: (a: T, b: T) => boolean) {
-    // Default to a min‑heap using < for primitives
-    this.less = comparator ?? ((a, b) => (a as any) < (b as any));
+console.log(numbers);   // → [1, 2, 3, 4]
+console.log(reversed);  // → [4, 3, 2, 1]
+function reverseArray<T>(arr: T[]): T[] {
+  const out = new Array<T>(arr.length);
+  for (let i = 0, j = arr.length - 1; i <= j; ++i, --j) {
+    out[i] = arr[j];
+    out[j] = arr[i];
   }
-
-  /** Insert a new element into the queue */
-  public push(item: T): void {
-    this.heap.push(item);
-    this.bubbleUp(this.heap.length - 1);
-  }
-
-  /** Remove and return the top element.  Returns undefined if empty. */
-  public pop(): T | undefined {
-    const n = this.heap.length;
-    if (n === 0) return undefined;
-    if (n === 1) return this.heap.pop();
-
-    const top = this.heap[0];
-    this.heap[0] = this.heap.pop() as T; // Set last element to root
-    this.sinkDown(0);
-    return top;
-  }
-
-  /** Swap two indices in the heap */
-  private swap(i: number, j: number): void {
-    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
-  }
-
-  /** Restore heap order by moving the element at idx up */
-  private bubbleUp(idx: number): void {
-    const element = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = (idx - 1) >> 1;
-      const parent = this.heap[parentIdx];
-      if (!this.less(element, parent)) break;
-      this.swap(idx, parentIdx);
-      idx = parentIdx;
-    }
-  }
-
-  /** Restore heap order by moving the element at idx down */
-  private sinkDown(idx: number): void {
-    const n = this.heap.length;
-    const element = this.heap[idx];
-
-    while (true) {
-      const leftIdx = (idx << 1) + 1;
-      const rightIdx = leftIdx + 1;
-      let smallestIdx = idx;
-
-      if (leftIdx < n && this.less(this.heap[leftIdx], this.heap[smallestIdx])) {
-        smallestIdx = leftIdx;
-      }
-      if (rightIdx < n && this.less(this.heap[rightIdx], this.heap[smallestIdx])) {
-        smallestIdx = rightIdx;
-      }
-
-      if (smallestIdx === idx) break;
-      this.swap(idx, smallestIdx);
-      idx = smallestIdx;
-    }
-  }
+  return out;
 }
-// Minimum priority queue (default)
-const minQ = new PriorityQueue<number>();
-minQ.push(5);
-minQ.push(2);
-minQ.push(8);
-console.log(minQ.peek()); // 2
-console.log(minQ.pop());  // 2
-console.log(minQ.pop());  // 5
-
-// Maximum priority queue
-const maxQ = new PriorityQueue<number>((a, b) => a > b);
-maxQ.push(5);
-maxQ.push(2);
-maxQ.push(8);
-console.log(maxQ.pop()); // 8
-interface Task { id: string; priority: number; }
-
-const taskQueue = new PriorityQueue<Task>((a, b) => a.priority < b.priority); // min‑heap by priority
-taskQueue.push({ id: 'A', priority: 10 });
-taskQueue.push({ id: 'B', priority: 5 });
-console.log(taskQueue.pop()); // { id: 'B', priority: 5 }
+const rev = reverseArray([10, 20, 30]); // → [30, 20, 10]
