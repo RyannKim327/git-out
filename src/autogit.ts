@@ -1,25 +1,14 @@
-/**
- * Returns true if `n` is a prime number.
- */
-export function isPrime(n: number): boolean {
-  // Prime numbers are > 1
-  if (n <= 1) return false;
+// 1) Using a regular expression (remove *any* whitespace)
+const clean1 = originalString.replace(/\s+/g, "");
 
-  // 2 and 3 are the only even/odd primes
-  if (n <= 3) return true;
+// 2) If you only care about literal space characters (no tabs, newlines, etc.)
+const clean2 = originalString.replace(/ /g, "");
 
-  // Even numbers > 2 can be rejected right away
-  if (n % 2 === 0) return false;
+// 3) Split/join – handy if you’re scrubbing a handful of specific delimiters
+const clean3 = originalString.split(" ").join("");
 
-  // Check only odd divisors up to √n
-  const limit = Math.floor(Math.sqrt(n));
-  for (let d = 3; d <= limit; d += 2) {
-    if (n % d === 0) return false;
-  }
-  return true;
+// 4) Manual loop (useful if you need to do something with each char)
+let clean4 = "";
+for (const ch of originalString) {
+  if (ch !== " ") clean4 += ch;
 }
-console.log(isPrime(2));  // true
-console.log(isPrime(15)); // false
-console.log(isPrime(17)); // true
-console.log(isPrime(1));  // false
-console.log(isPrime(-5)); // false
