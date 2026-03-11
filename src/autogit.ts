@@ -1,45 +1,28 @@
-// 1️⃣  Install node‑fetch (or use the built‑in fetch in environments that have it)
-//    npm install node-fetch @types/node-fetch
-import fetch from "node-fetch";
-
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
 /**
- * Fetch a single Todo by its numeric ID.
- * @param id - The ID of the Todo to request.
- * @returns Promises a Todo object.
+ * Convert a decimal number to a binary string.
+ * 
+ * @param n – A non‑negative integer
+ * @returns The binary representation as a string
  */
-async function getTodoById(id: number): Promise<Todo> {
-  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-  });
-
-  // 2️⃣  Basic status check – throws if not 2xx
-  if (!response.ok) {
-    throw new Error(`Request failed with ${response.status} ${response.statusText}`);
+function decimalToBinary(n: number): string {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new Error('Input must be a non‑negative integer.');
   }
 
-  // 3️⃣  Parse the JSON body and return it as a Todo
-  const data = (await response.json()) as Todo;
-  return data;
-}
+  // Handling zero explicitly – Math.pow(2, 0) is 1 but we still want "0"
+  if (n === 0) return '0';
 
-/**
- * Demo of calling `getTodoById` and logging the result or an error.
- */
-(async () => {
-  try {
-    const todo = await getTodoById(3);
-    console.log("Fetched Todo:", todo);
-  } catch (err) {
-    console.error("Error fetching Todo:", err);
+  let binary = '';
+  let current = n;
+
+  while (current > 0) {
+    // Prepend the remainder (0 or 1) to the binary string
+    binary = (current % 2) + binary;
+    current = Math.floor(current / 2);
   }
-})();
+
+  return binary;
+}
+console.log(decimalToBinary(10)); // "1010"
+console.log(decimalToBinary(255)); // "11111111"
+console.log(decimalToBinary(0)); // "0"
