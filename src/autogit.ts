@@ -1,27 +1,40 @@
-/**
- * Return true if the supplied string is a palindrome (ignoring case,
- * punctuation, spaces, and other non‑alphanumeric characters).
- */
-export function isPalindrome(input: string): boolean {
-  // Keep only letters and digits, make everything lowercase
-  const cleaned = input.replace(/[^a-z0-9]/gi, '').toLowerCase();
-
-  // Quick escape: a single character or empty string is trivially a palindrome
-  if (cleaned.length <= 1) return true;
-
-  // Compare characters from the front and back
-  for (let i = 0, j = cleaned.length - 1; i < j; i++, j--) {
-    if (cleaned[i] !== cleaned[j]) return false;
-  }
-  return true;
+// Basic node interface – can be turned into a class if you like.
+interface TreeNode<T = number> {
+  val: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("racecar"));                         // true
-console.log(isPalindrome("Hello, world!"));                   // false
-export function isExactPalindrome(input: string): boolean {
-  if (input.length <= 1) return true;
-  for (let i = 0, j = input.length - 1; i < j; i++, j--) {
-    if (input[i] !== input[j]) return false;
+function maxDepth<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                 // empty subtree → depth 0
+
+  const leftDepth  = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
+
+  // Depth of current node = 1 (itself) + depth of deeper side
+  return 1 + Math.max(leftDepth, rightDepth);
+}
+const root: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 } },
+  right: { val: 3, right: { val: 5, right: { val: 6 } } }
+};
+
+console.log(maxDepth(root));   // → 4
+function maxDepthIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let max = 0;
+  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
+    { node: root, depth: 1 },
+  ];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    max = Math.max(max, depth);
+
+    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
+    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
   }
-  return true;
+
+  return max;
 }
