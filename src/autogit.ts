@@ -1,36 +1,38 @@
-// Random-ish TypeScript example that pulls in axios
+/**
+ * Return the first non‑repeating character in a string.
+ * If every character repeats, return `null`.
+ */
+function firstNonRepeating(str: string): string | null {
+  const counts: Record<string, number> = {};
 
-import axios from 'axios'
-
-interface Todo {
-  userId: number
-  id: number
-  title: string
-  completed: boolean
-}
-
-const client = axios.create({
-  baseURL: 'https://jsonplaceholder.typicode.com',
-  timeout: 3000,
-})
-
-async function fetchTodos(limit = 5): Promise<Todo[]> {
-  const { data } = await client.get<Todo[]>('/todos')
-  return data.slice(0, limit)
-}
-
-async function toggleTodo(id: number, completed: boolean): Promise<void> {
-  await client.patch(`/todos/${id}`, { completed })
-}
-
-;(async () => {
-  try {
-    const todos = await fetchTodos()
-    console.log('Sample todos:', todos)
-
-    await toggleTodo(todos[0].id, !todos[0].completed)
-    console.log(`Todo ${todos[0].id} status flipped!`)
-  } catch (err) {
-    console.error('Something went wrong:', err instanceof Error ? err.message : err)
+  // 1️⃣ Count each character
+  for (const ch of str) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
   }
-})()
+
+  // 2️⃣ Scan once more to find the first with count 1
+  for (const ch of str) {
+    if (counts[ch] === 1) {
+      return ch;
+    }
+  }
+
+  return null;
+}
+
+// quick examples
+console.log(firstNonRepeating('abacabad')); // "b"
+console.log(firstNonRepeating('aabbcc'));   // null
+function firstNonRepeatingMap(str: string): string | null {
+  const freq = new Map<string, number>();
+
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
+
+  for (const ch of str) if (freq.get(ch) === 1) return ch;
+  return null;
+}
+function allNonRepeating(str: string): string[] {
+  const freq = new Map<string, number>();
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  return [...str].filter(ch => freq.get(ch) === 1);
+}
