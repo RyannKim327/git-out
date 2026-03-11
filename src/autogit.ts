@@ -1,77 +1,40 @@
-low  = 0
-high = length–1
-
-while low ≤ high and target ∈ [arr[low], arr[high]]:
-    // Edge cases
-    if arr[low] == arr[high]:
-        return (arr[low] == target) ? low : -1
-
-    // Interpolated index
-    pos = low + ((target – arr[low]) * (high – low))
-          / (arr[high] – arr[low])
-
-    // Clamp to array bounds
-    pos = Math.round(pos)
-
-    if arr[pos] == target:
-        return pos
-    else if arr[pos] < target:
-        low = pos + 1
-    else:
-        high = pos – 1
-
-return –1   // not found
 /**
- * Interpolation search for a strictly sorted numeric array.
- * @param arr   - Sorted numbers (ascending)
- * @param target - Number to find
- * @returns Index of target, or -1 if not found
+ * Classic in‑place quick‑sort.
+ *
+ * @param arr  The array to be sorted (in‑place).
+ * @param left The starting index (default: 0).
+ * @param right The ending index (default: arr.length‑1).
+ *
+ * @returns The same array, now sorted.
  */
-export function interpolationSearch(
-  arr: readonly number[],
-  target: number
-): number {
-  if (arr.length === 0) return -1;
+function quickSort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
+  if (left >= right) return arr;          // base case: 0 or 1 item
 
-  let low = 0;
-  let high = arr.length - 1;
+  // Pick a pivot—here we just take the middle element.
+  const pivotIndex = Math.floor((left + right) / 2);
+  const pivot = arr[pivotIndex];
 
-  // Keep going while target is inside the current window
-  while (low <= high && target >= arr[low] && target <= arr[high]) {
-    // All remaining values equal – either hit or miss.
-    if (arr[low] === arr[high]) {
-      return arr[low] === target ? low : -1;
-    }
+  // Partition: everything less than the pivot goes left, everything
+  // greater or equal goes right.  Elements equal to the pivot can go either side.
+  let i = left;
+  let j = right;
+  while (i <= j) {
+    while (arr[i] < pivot) i++;   // find an element on the wrong side (left)
+    while (arr[j] > pivot) j--;   // find an element on the wrong side (right)
 
-    // Linear interpolation to guess position.
-    const pos =
-      low +
-      Math.round(
-        ((target - arr[low]) * (high - low)) / (arr[high] - arr[low])
-      );
-
-    // Just in case rounding pushes us outside: clamp bounds.
-    const index = Math.min(Math.max(pos, low), high);
-
-    const value = arr[index];
-    if (value === target) {
-      return index;
-    }
-    if (value < target) {
-      low = index + 1;
-    } else {
-      high = index - 1;
+    if (i <= j) {                 // swap the out‑of‑place elements
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
+      j--;
     }
   }
 
-  return -1; // Not found
-}
-const sorted = [3, 7, 13, 19, 23, 29, 31, 47, 53, 59];
-const target = 23;
+  // Recursively sort the two partitions.
+  // The first call deals with the left two halves *unless* they overlap.
+  if (left < j) quickSort(arr, left, j);
+  if (i < right) quickSort(arr, i, right);
 
-const idx = interpolationSearch(sorted, target);
-console.log(idx); // → 4
-console.log(interpolationSearch(sorted, 22)); // → -1
-const idx = interpolationSearch(sortedArray, key);
-if (idx !== -1) console.log(`Found at ${idx}`);
-else console.log('Not there');
+  return arr;
+}
+const unsorted = [3, 7, 2, 5, 1, 4, 6];
+quickSort(unsorted);        // unsorted is now [1,2,3,4,5,6,7]
