@@ -1,98 +1,112 @@
-/** A minimal generic priority queue built on a binary heap */
-export class PriorityQueue<T> {
-  /** Internal storage array (0‑based). 0 is the root. */
-  private heap: T[] = [];
+/**
+ * Generic type that can be compared with the <=> operator.
+ * For custom objects you can supply a comparator function.
+ */
+type Comparable = number | string | boolean;
 
-  /** Comparator that returns true if a should come before b. */
-  private readonly less: (a: T, b: T) => boolean;
+/**
+ * Swap two elements in an array
+ */
+function swap<T>(arr: T[], i: number, j: number): void {
+  const tmp = arr[i];
+  arr[i] = arr[j];
+  arr[j] = tmp;
+}
 
-  /** Number of queued elements */
-  public get size(): number { return this.heap.length; }
+/**
+ * Heapify the subtree rooted at `i`, assuming that the binary trees
+ * rooted at its children are already heaps.
+ *
+ * @param arr    the array
+ * @param heapSize the current size of the heap
+ * @param i      the index of the root of the subtree
+ * @param compare comparison function (a, b) => true if a > b
+ */
+function heapify<T>(
+  arr: T[],
+  heapSize: number,
+  i: number,
+  compare: (a: T, b: T) => boolean
+): void {
+  let largest = i;
+  const left   = 2 * i + 1;
+  const right  = 2 * i + 2;
 
-  /** Peek at the top element without removing it.  Returns undefined if empty. */
-  public peek(): T | undefined { return this.heap[0]; }
-
-  constructor(comparator?: (a: T, b: T) => boolean) {
-    // Default to a min‑heap using < for primitives
-    this.less = comparator ?? ((a, b) => (a as any) < (b as any));
+  if (left < heapSize && compare(arr[left], arr[largest])) {
+    largest = left;
+  }
+  if (right < heapSize && compare(arr[right], arr[largest])) {
+    largest = right;
   }
 
-  /** Insert a new element into the queue */
-  public push(item: T): void {
-    this.heap.push(item);
-    this.bubbleUp(this.heap.length - 1);
-  }
-
-  /** Remove and return the top element.  Returns undefined if empty. */
-  public pop(): T | undefined {
-    const n = this.heap.length;
-    if (n === 0) return undefined;
-    if (n === 1) return this.heap.pop();
-
-    const top = this.heap[0];
-    this.heap[0] = this.heap.pop() as T; // Set last element to root
-    this.sinkDown(0);
-    return top;
-  }
-
-  /** Swap two indices in the heap */
-  private swap(i: number, j: number): void {
-    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
-  }
-
-  /** Restore heap order by moving the element at idx up */
-  private bubbleUp(idx: number): void {
-    const element = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = (idx - 1) >> 1;
-      const parent = this.heap[parentIdx];
-      if (!this.less(element, parent)) break;
-      this.swap(idx, parentIdx);
-      idx = parentIdx;
-    }
-  }
-
-  /** Restore heap order by moving the element at idx down */
-  private sinkDown(idx: number): void {
-    const n = this.heap.length;
-    const element = this.heap[idx];
-
-    while (true) {
-      const leftIdx = (idx << 1) + 1;
-      const rightIdx = leftIdx + 1;
-      let smallestIdx = idx;
-
-      if (leftIdx < n && this.less(this.heap[leftIdx], this.heap[smallestIdx])) {
-        smallestIdx = leftIdx;
-      }
-      if (rightIdx < n && this.less(this.heap[rightIdx], this.heap[smallestIdx])) {
-        smallestIdx = rightIdx;
-      }
-
-      if (smallestIdx === idx) break;
-      this.swap(idx, smallestIdx);
-      idx = smallestIdx;
-    }
+  if (largest !== i) {
+    swap(arr, i, largest);
+    heapify(arr, heapSize, largest, compare);
   }
 }
-// Minimum priority queue (default)
-const minQ = new PriorityQueue<number>();
-minQ.push(5);
-minQ.push(2);
-minQ.push(8);
-console.log(minQ.peek()); // 2
-console.log(minQ.pop());  // 2
-console.log(minQ.pop());  // 5
 
-// Maximum priority queue
-const maxQ = new PriorityQueue<number>((a, b) => a > b);
-maxQ.push(5);
-maxQ.push(2);
-maxQ.push(8);
-console.log(maxQ.pop()); // 8
-interface Task { id: string; priority: number; }
+/**
+ * Build a max‑heap from an unsorted array
+ */
+function buildMaxHeap<T>(
+  arr: T[],
+  compare: (a: T, b: T) => boolean
+): void {
+  const heapSize = arr.length;
+  // Start from the last non‑leaf node
+  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
+    heapify(arr, heapSize, i, compare);
+  }
+}
 
-const taskQueue = new PriorityQueue<Task>((a, b) => a.priority < b.priority); // min‑heap by priority
-taskQueue.push({ id: 'A', priority: 10 });
-taskQueue.push({ id: 'B', priority: 5 });
-console.log(taskQueue.pop()); // { id: 'B', priority: 5 }
+/**
+ * Heap sort – sorts `arr` *in place*.
+ *
+ * @param arr      the array to sort
+ * @param compare  optional comparator; defaults to (a > b)
+ */
+export function heapSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => boolean
+): void {
+  const cmp = compare ?? ((a: any, b: any) => a > b);
+
+  buildMaxHeap(arr, cmp);
+
+  for (let i = arr.length - 1; i > 0; i--) {
+    // The max element is at index 0; move it to its final place
+    swap(arr, 0, i);
+    // Re‑heapify the reduced heap
+    heapify(arr, i, 0, cmp);
+  }
+}
+
+/* --------------------------------------------------------------------- */
+/* Example usage & tiny tests                                           */
+/* --------------------------------------------------------------------- */
+
+// 1️⃣ Numbers ---------------------------------------------------------
+const nums = [5, 3, 8, 4, 1, 7, 2, 6];
+heapSort(nums);
+console.log('Sorted numbers:', nums); // [1, 2, 3, 4, 5, 6, 7, 8]
+
+// 2️⃣ Strings ---------------------------------------------------------
+const words = ['pear', 'apple', 'orange', 'banana'];
+heapSort(words); // default lexicographic order
+console.log('Sorted words:', words); // ['apple', 'banana', 'orange', 'pear']
+
+// 3️⃣ Custom objects --------------------------------------------------
+interface Person { name: string; age: number }
+const people: Person[] = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob',   age: 22 },
+  { name: 'Eva',   age: 27 }
+];
+// Sort by age ascending
+heapSort(people, (a, b) => a.age > b.age);
+console.log('People sorted by age:', people);
+/* [
+  { name: 'Bob', age: 22 },
+  { name: 'Eva', age: 27 },
+  { name: 'Alice', age: 30 }
+] */
