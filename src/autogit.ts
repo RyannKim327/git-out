@@ -1,37 +1,38 @@
 /**
- * Selection Sort – stable‑like, O(n²) time, O(1) extra space.
+ * Finds the majority element in an array (appears > n/2 times).
+ * If no majority exists, undefined is returned.
  *
- * @param arr   The array to be sorted (in‑place).
- * @param cmp   Optional comparator: (a, b) => number.
- *              If omitted, numerical ascending order is assumed.
+ * @param arr   - Array of comparable values (number, string ...).
+ * @returns     - The majority element or undefined.
  */
-export function selectionSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): void {
-  const compare = cmp ?? ((a: any, b: any) => a - b);
+export function majorityElement<T extends number | string | symbol>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
 
-  for (let i = 0; i < arr.length - 1; i++) {
-    // Assume the smallest is at i.
-    let minIdx = i;
+  // Boyer‑Moore majority vote algorithm
+  let candidate: T | undefined = arr[0];
+  let count = 1;
 
-    // Search the rest of the array for a smaller element.
-    for (let j = i + 1; j < arr.length; j++) {
-      if (compare(arr[j], arr[minIdx]) < 0) {
-        minIdx = j;
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === candidate) {
+      count++;
+    } else {
+      count--;
+      if (count === 0) {
+        candidate = arr[i];
+        count = 1;
       }
     }
-
-    // If the smallest isn't already in place, swap.
-    if (minIdx !== i) {
-      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-    }
   }
-}
-const nums = [64, 25, 12, 22, 11];
-selectionSort(nums);
-console.log(nums); // → [11, 12, 22, 25, 64]
 
-const words = ["pear", "apple", "orange"];
-selectionSort(words, (a, b) => a.localeCompare(b));
-console.log(words); // → ["apple", "orange", "pear"]
+  // Verify that candidate really is the majority
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
+  }
+
+  return count > Math.floor(arr.length / 2) ? candidate : undefined;
+}
+majorityElement([1, 2, 3, 2, 2]);      // → 2
+majorityElement(['a', 'b', 'a', 'c']); // → undefined
+majorityElement([5, 5, 5, 5]);          // → 5
+majorityElement([]);                   // → undefined
