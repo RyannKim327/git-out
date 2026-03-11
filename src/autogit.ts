@@ -1,12 +1,5 @@
-function reverseWords(str: string): string {
-  // Split on any amount of whitespace, filter out empty chunks,
-  // reverse the array, then join with a single space.
-  return str
-    .trim()
-    .split(/\s+/)
-    .reverse()
-    .join(' ');
-}
 
-// Example
-console.log(reverseWords("Hello world this is TypeScript")); // "TypeScript is this world Hello"
+### Quick demo
+
+
+Pick the pattern that matches the kind of whitespace you want to drop and drop it into your code. If you’ve got a very specific rule (e.g., keep line breaks but remove tabs), just tweak the regex accordingly. Happy coding!
