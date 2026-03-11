@@ -1,65 +1,72 @@
-/**
- * Returns the digit present at a given place (0‑based from right to left).
- * Example: getDigit(381, 0) === 1, getDigit(381, 1) === 8, getDigit(381, 2) === 3
- */
-function getDigit(num: number, place: number): number {
-  return Math.floor(Math.abs(num) / Math.pow(10, place)) % 10;
-}
+export class ListNode {
+  val: number;          // keep it generic if you want
+  next: ListNode | null;
 
-/**
- * Returns the maximal number of digits among elements of array.
- */
-function maxDigits(arr: number[]): number {
-  if (arr.length === 0) return 0;
-  const max = Math.max(...arr.map(Math.abs));
-  return Math.floor(Math.log10(max)) + 1;
+  constructor(val: number = 0, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
+  }
 }
-/**
- * Stable counting sort on `arr` by the digit at `place`.
- * (`digitBase` defaults to 10 – decimal.)
- */
-function countingSortByDigit(arr: number[], place: number, digitBase = 10): number[] {
-  const bucketCount = digitBase;
-  const buckets: number[][] = Array.from({ length: bucketCount }, () => []);
+export function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  // Helper: get the length of a list.
+  const length = (node: ListNode | null): number => {
+    let len = 0;
+    while (node) {
+      len++;
+      node = node.next;
+    }
+    return len;
+  };
 
-  for (const n of arr) {
-    const digit = getDigit(n, place);
-    buckets[digit].push(n);
+  const lenA = length(headA);
+  const lenB = length(headB);
+
+  // Align the starts
+  let ptrA = headA;
+  let ptrB = headB;
+  let diff = Math.abs(lenA - lenB);
+
+  if (lenA > lenB) {
+    while (diff-- > 0 && ptrA) ptrA = ptrA.next;
+  } else {
+    while (diff-- > 0 && ptrB) ptrB = ptrB.next;
   }
 
-  // Flatten buckets in order; that's the stable result for this digit.
-  return buckets.flat();
-}
-/**
- * Radix sort for non‑negative integers.
- * @param arr array of numbers (non‑negative, but the routine will work with any integers once you wrap them)
- * @returns sorted array (stable)
- */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length <= 1) return [...arr]; // copy so caller doesn’t mutate input
-
-  const numDigits = maxDigits(arr);
-  let sorted = [...arr];
-
-  for (let place = 0; place < numDigits; place++) {
-    sorted = countingSortByDigit(sorted, place);
+  // Walk together
+  while (ptrA && ptrB) {
+    if (ptrA === ptrB) return ptrA; // same reference
+    ptrA = ptrA.next;
+    ptrB = ptrB.next;
   }
 
-  return sorted;
+  return null; // no intersection
 }
-export function radixSortFull(arr: number[]): number[] {
-  const negatives = arr.filter(n => n < 0).map(n => -n);
-  const positives = arr.filter(n => n >= 0);
+// Build list A: 1 → 2 → 3 → 4 → 5
+const a = new ListNode(1);
+a.next = new ListNode(2);
+a.next.next = new ListNode(3);
+a.next.next.next = new ListNode(4);
+a.next.next.next.next = new ListNode(5);
 
-  const sortedNeg = radixSort(negatives).reverse().map(n => -n);
-  const sortedPos = radixSort(positives);
+// Build list B: 9 → 4 → 5 (shared tail)
+const b = new ListNode(9);
+b.next = a.next.next.next; // shares nodes 4 and 5
 
-  return [...sortedNeg, ...sortedPos];
+const intersect = getIntersectionNode(a, b);
+console.log(intersect?.val); // prints 4
+export function intersectionByValue(
+  headA: ListNode | null,
+  headB: ListNode | null
+): number[] {
+  const values = new Set<number>();
+  for (let cur = headA; cur; cur = cur.next) values.add(cur.val);
+
+  const result: number[] = [];
+  for (let cur = headB; cur; cur = cur.next) {
+    if (values.has(cur.val)) result.push(cur.val);
+  }
+  return result;
 }
-import { radixSortFull } from './radixSort';
-
-const data = [170, 45, 75, 90, 802, 24, 2, 66, -15, -302, 0];
-const sorted = radixSortFull(data);
-
-console.log(sorted);
-// → [-302, -15, 0, 2, 24, 45, 66, 75, 90, 170, 802]
