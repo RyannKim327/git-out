@@ -1,103 +1,46 @@
-/* -------------------------------------------------------------
-   Edge definition – just a source, destination and weight
-------------------------------------------------------------- */
-interface Edge {
-  from: string;      // vertex id (string or number, just pick one type)
-  to: string;
-  weight: number;    // can be negative
-}
+/**
+ * Returns true if `a` and `b` are anagrams.
+ * Works for any Unicode characters, but
+ * it ignores case and whitespace by default.
+ */
+function areAnagrams(a: string, b: string, ignoreCase = true, ignoreWhitespace = true): boolean {
+  // Normalise: trim, collapse spaces, lower‑case if requested
+  const normalize = (s: string) =>
+    s
+      .replace(/\s+/g, "")        // delete spaces
+      .toLowerCase();             // lower‑case
 
-/* -------------------------------------------------------------
-   Bellman‑Ford implementation
-   Parameters
-   ----------  graph: Array<Edge>  – all directed edges
-               source: string      – id of source vertex
-   Returns
-   -------  { dist: Map<string, number>,
-              next: Map<string, string | null>,
-              hasNegativeCycle: boolean }
-------------------------------------------------------------- */
-function bellmanFord(
-  graph: Edge[],
-  source: string
-): { dist: Map<string, number>; next: Map<string, string | null>; hasNegativeCycle: boolean } {
-  const dist = new Map<string, number>();
-  const next = new Map<string, string | null>();
-
-  // initialise distances
-  graph.forEach(({ from }) => {
-    dist.set(from, Infinity);
-    next.set(from, null);
-  });
-  // if the source isn’t mentioned in any edge, we still need it in the map
-  dist.set(source, 0);
-  next.set(source, null);
-
-  // total distinct vertices
-  const vertices = Array.from(dist.keys());
-  const V = vertices.length;
-
-  // Relax edges V−1 times
-  for (let i = 0; i < V - 1; i++) {
-    let didRelax = false;
-    for (const { from, to, weight } of graph) {
-      const dFrom = dist.get(from);
-      const dTo   = dist.get(to);
-      if (dFrom! === Infinity) continue;                   // unreachable
-      const newDist = dFrom! + weight;
-      if (newDist < dTo!) {
-        dist.set(to, newDist);
-        next.set(to, from);
-        didRelax = true;
-      }
-    }
-    // early exit: no distance changed this round → we’re done
-    if (!didRelax) break;
+  if (ignoreCase && ignoreWhitespace) {
+    a = normalize(a);
+    b = normalize(b);
+  } else if (ignoreCase) {
+    a = a.toLowerCase();
+    b = b.toLowerCase();
+  } else if (ignoreWhitespace) {
+    a = a.replace(/\s+/g, "");
+    b = b.replace(/\s+/g, "");
   }
 
-  // Check for negative‑weight cycles reachable from source
-  let hasNegativeCycle = false;
-  for (const { from, to, weight } of graph) {
-    const dFrom = dist.get(from);
-    const dTo   = dist.get(to);
-    if (dFrom! !== Infinity && dFrom! + weight < dTo!) {
-      hasNegativeCycle = true;
-      break;
-    }
+  // Quick length check
+  if (a.length !== b.length) return false;
+
+  // Count characters in the first string
+  const counts: Record<string, number> = {};
+
+  for (const ch of a) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
   }
 
-  return { dist, next, hasNegativeCycle };
-}
-
-/* -------------------------------------------------------------
-   Example usage
-------------------------------------------------------------- */
-const edges: Edge[] = [
-  { from: 'A', to: 'B', weight: 5 },
-  { from: 'A', to: 'C', weight: 2 },
-  { from: 'B', to: 'C', weight: -3 },
-  { from: 'B', to: 'D', weight: 9 },
-  { from: 'C', to: 'D', weight: 12 },
-];
-
-const { dist, next, hasNegativeCycle } = bellmanFord(edges, 'A');
-
-if (hasNegativeCycle) {
-  console.log('The graph contains a negative‑weight cycle reachable from A.');
-} else {
-  console.log('Shortest distances from A:');
-  dist.forEach((d, v) => console.log(v, d));
-
-  // helper to print a whole path from source to target
-  function buildPath(target: string): string[] {
-    const path: string[] = [];
-    let cur: string | null = target;
-    while (cur !== null) {
-      path.unshift(cur);
-      cur = next.get(cur) ?? null;
-    }
-    return path;
+  // Subtract counts using the second string
+  for (const ch of b) {
+    const current = counts[ch];
+    if (!current) return false;          // character not seen before or already exhausted
+    if (--current === 0) delete counts[ch];
   }
 
-  console.log('Path to D:', buildPath('D').join(' → '));
+  // If everything matched, the object should be empty
+  return Object.keys(counts).length === 0;
 }
+console.log(areAnagrams("listen", "silent"));           // true
+console.log(areAnagrams("Hello, World!", "world!hello")); // true
+console.log(areAnagrams("foo", "bar"));                 // false
