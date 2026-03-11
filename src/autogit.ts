@@ -1,5 +1,26 @@
+function firstRepeatedChar(str: string): string | undefined {
+  const seen = new Set<string>();
 
-### Quick demo
+  for (const ch of str) {
+    if (seen.has(ch)) {
+      return ch;            // first duplicate encountered
+    }
+    seen.add(ch);
+  }
+  return undefined;          // no repeats
+}
+console.log(firstRepeatedChar("hello"));  // "l"
+console.log(firstRepeatedChar("abc"));    // undefined
+console.log(firstRepeatedChar(""));       // undefined
+function firstRepeatedCharWithIndex(str: string): {char: string, index: number} | undefined {
+  const seen = new Set<string>();
 
-
-Pick the pattern that matches the kind of whitespace you want to drop and drop it into your code. If you’ve got a very specific rule (e.g., keep line breaks but remove tabs), just tweak the regex accordingly. Happy coding!
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (seen.has(ch)) {
+      return { char: ch, index: i };
+    }
+    seen.add(ch);
+  }
+  return undefined;
+}
