@@ -1,40 +1,46 @@
 /**
- * Classic in‑place quick‑sort.
- *
- * @param arr  The array to be sorted (in‑place).
- * @param left The starting index (default: 0).
- * @param right The ending index (default: arr.length‑1).
- *
- * @returns The same array, now sorted.
+ * Returns true if `a` and `b` are anagrams.
+ * Works for any Unicode characters, but
+ * it ignores case and whitespace by default.
  */
-function quickSort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
-  if (left >= right) return arr;          // base case: 0 or 1 item
+function areAnagrams(a: string, b: string, ignoreCase = true, ignoreWhitespace = true): boolean {
+  // Normalise: trim, collapse spaces, lower‑case if requested
+  const normalize = (s: string) =>
+    s
+      .replace(/\s+/g, "")        // delete spaces
+      .toLowerCase();             // lower‑case
 
-  // Pick a pivot—here we just take the middle element.
-  const pivotIndex = Math.floor((left + right) / 2);
-  const pivot = arr[pivotIndex];
-
-  // Partition: everything less than the pivot goes left, everything
-  // greater or equal goes right.  Elements equal to the pivot can go either side.
-  let i = left;
-  let j = right;
-  while (i <= j) {
-    while (arr[i] < pivot) i++;   // find an element on the wrong side (left)
-    while (arr[j] > pivot) j--;   // find an element on the wrong side (right)
-
-    if (i <= j) {                 // swap the out‑of‑place elements
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
-    }
+  if (ignoreCase && ignoreWhitespace) {
+    a = normalize(a);
+    b = normalize(b);
+  } else if (ignoreCase) {
+    a = a.toLowerCase();
+    b = b.toLowerCase();
+  } else if (ignoreWhitespace) {
+    a = a.replace(/\s+/g, "");
+    b = b.replace(/\s+/g, "");
   }
 
-  // Recursively sort the two partitions.
-  // The first call deals with the left two halves *unless* they overlap.
-  if (left < j) quickSort(arr, left, j);
-  if (i < right) quickSort(arr, i, right);
+  // Quick length check
+  if (a.length !== b.length) return false;
 
-  return arr;
+  // Count characters in the first string
+  const counts: Record<string, number> = {};
+
+  for (const ch of a) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
+  }
+
+  // Subtract counts using the second string
+  for (const ch of b) {
+    const current = counts[ch];
+    if (!current) return false;          // character not seen before or already exhausted
+    if (--current === 0) delete counts[ch];
+  }
+
+  // If everything matched, the object should be empty
+  return Object.keys(counts).length === 0;
 }
-const unsorted = [3, 7, 2, 5, 1, 4, 6];
-quickSort(unsorted);        // unsorted is now [1,2,3,4,5,6,7]
+console.log(areAnagrams("listen", "silent"));           // true
+console.log(areAnagrams("Hello, World!", "world!hello")); // true
+console.log(areAnagrams("foo", "bar"));                 // false
