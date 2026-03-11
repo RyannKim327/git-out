@@ -1,34 +1,12 @@
-// randomPassword.ts
-import * as readline from 'readline';
+const numbers = [3, 5, 7, 9];
+const mean = numbers.reduce((sum, n) => sum + n, 0) / numbers.length;
+console.log(mean); // 6
+function mean(arr: number[]): number {
+  if (arr.length === 0) throw new Error('Cannot compute mean of empty array');
 
-// Characters that can appear in the password
-const CHARSET =
-  'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
-
-function generatePassword(length: number): string {
-  let pwd = '';
-  for (let i = 0; i < length; i++) {
-    pwd += CHARSET[Math.floor(Math.random() * CHARSET.length)];
-  }
-  return pwd;
+  const total = arr.reduce((sum, val) => sum + val, 0);
+  return total / arr.length;
 }
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-rl.question('Enter desired password length: ', (answer) => {
-  const len = parseInt(answer, 10);
-  if (!isNaN(len) && len > 0) {
-    console.log(`Generated password: ${generatePassword(len)}`);
-  } else {
-    console.log('Please enter a valid positive integer.');
-  }
-  rl.close();
-});
-# 1. Compile (requires TypeScript installed)
-tsc randomPassword.ts
-
-# 2. Execute the resulting JavaScript
-node randomPassword.js
+// Usage
+const avg = mean([10, 20, 30]); // 20
