@@ -1,17 +1,45 @@
-const numbers = [1, 2, 3, 4];
-numbers.reverse();          // → [4, 3, 2, 1]
-console.log(numbers);       // the same array has changed
-const numbers = [1, 2, 3, 4];
-const reversed = numbers.slice().reverse(); // or [...numbers].reverse()
+// 1️⃣  Install node‑fetch (or use the built‑in fetch in environments that have it)
+//    npm install node-fetch @types/node-fetch
+import fetch from "node-fetch";
 
-console.log(numbers);   // → [1, 2, 3, 4]
-console.log(reversed);  // → [4, 3, 2, 1]
-function reverseArray<T>(arr: T[]): T[] {
-  const out = new Array<T>(arr.length);
-  for (let i = 0, j = arr.length - 1; i <= j; ++i, --j) {
-    out[i] = arr[j];
-    out[j] = arr[i];
-  }
-  return out;
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
-const rev = reverseArray([10, 20, 30]); // → [30, 20, 10]
+
+/**
+ * Fetch a single Todo by its numeric ID.
+ * @param id - The ID of the Todo to request.
+ * @returns Promises a Todo object.
+ */
+async function getTodoById(id: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+
+  // 2️⃣  Basic status check – throws if not 2xx
+  if (!response.ok) {
+    throw new Error(`Request failed with ${response.status} ${response.statusText}`);
+  }
+
+  // 3️⃣  Parse the JSON body and return it as a Todo
+  const data = (await response.json()) as Todo;
+  return data;
+}
+
+/**
+ * Demo of calling `getTodoById` and logging the result or an error.
+ */
+(async () => {
+  try {
+    const todo = await getTodoById(3);
+    console.log("Fetched Todo:", todo);
+  } catch (err) {
+    console.error("Error fetching Todo:", err);
+  }
+})();
