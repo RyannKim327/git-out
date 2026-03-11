@@ -1,47 +1,45 @@
-function countWordOccurrences(text: string, word: string): number {
-  // Escape any regex meta‑characters in the search word
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * Returns the contiguous segment of `arr` that yields the highest possible sum.
+ *
+ * @param arr - Array of numbers (integer or float)
+ * @returns An object containing:
+ *   `maxSum`  – the total sum of the best segment
+ *   `start`   – the index where the segment begins
+ *   `end`     – the index where the segment ends (inclusive)
+ */
+function maxSubarray(arr: number[]) {
+  if (arr.length === 0) throw new Error('Array cannot be empty');
 
-  // \b = word boundary, i = ignore case, g = global (find all)
-  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+  let bestSum = arr[0];
+  let currentSum = arr[0];
+  let bestStart = 0;
+  let bestEnd = 0;
+  let tempStart = 0;
 
-  // .match() returns an array of all matches, null if none
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
+  for (let i = 1; i < arr.length; i++) {
+    const val = arr[i];
+
+    // Either start a new sub‑array at i or extend the existing one
+    if (currentSum + val < val) {
+      currentSum = val;
+      tempStart = i;       // new potential start
+    } else {
+      currentSum += val;   // keep extending
+    }
+
+    // Update the best segment seen so far
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
+    }
+  }
+
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-
-// Usage
-const msg = "The quick brown fox jumps over the lazy fox. Foxes are clever.";
-console.log(countWordOccurrences(msg, "fox")); // → 2 (fox, fox)
-const regex = new RegExp(escaped, 'gi');
-function countSplit(text: string, word: string): number {
-  // Empty string returns 0
-  if (!text) return 0;
-  return text.split(word).length - 1;
-}
-function countWithMatchAll(text: string, word: string): number {
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
-  const allMatches = text.matchAll(regex); // Iterable<{ index: … }>
-
-  let count = 0;
-  for (const _ of allMatches) count++;
-  return count;
-}
-export function countOccurrences(
-  text: string,
-  word: string,
-  options?: { caseSensitive?: boolean; wholeWord?: boolean }
-): number {
-  const { caseSensitive = false, wholeWord = true } = options ?? {};
-
-  // Escape regex meta‑chars
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-  let pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
-  let flags = 'g' + (caseSensitive ? '' : 'i');
-
-  const regex = new RegExp(pattern, flags);
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
-}
+const data = [-2, -3, 4, -1, -2, 1, 5, -3];
+const result = maxSubarray(data);
+console.log(result);
+// Expected output:
+// { maxSum: 7, start: 2, end: 6 }
+// (segment [4, -1, -2, 1, 5] sums to 7)
