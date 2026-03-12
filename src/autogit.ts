@@ -1,81 +1,72 @@
-class ListNode<T> {
-  data: T;
-  next: ListNode<T> | null = null;
+/**
+ * Encodes a string using Burrows–Wheeler transform.
+ *
+ * @param input – Source text (any length, any chars including nulls).
+ * @returns {bwt: string, index: number} – BWT string + original row index.
+ */
+export function bwtEncode(input: string): { bwt: string; index: number } {
+  const n = input.length;
+  // Quick escape for empty string.
+  if (n === 0) return { bwt: "", index: 0 };
 
-  constructor(data: T) {
-    this.data = data;
+  // Build the rotation array.
+  const rotations: string[] = [];
+  for (let offset = 0; offset < n; offset++) {
+    const rotation = input.slice(offset) + input.slice(0, offset);
+    rotations.push(rotation);
   }
+
+  // Sort the rotations.
+  rotations.sort();
+
+  // Construct the BWT string (last column) and locate the original string.
+  let lastColumn = "";
+  let origIndex = -1;
+  for (let i = 0; i < n; i++) {
+    const rot = rotations[i];
+    lastColumn += rot.charAt(n - 1);          // last char of the rotation
+    if (rot === input) origIndex = i;        // original text keeps its place
+  }
+
+  return { bwt: lastColumn, index: origIndex };
 }
-export class LinkedListQueue<T> {
-  private head: ListNode<T> | null = null; // front
-  private tail: ListNode<T> | null = null; // rear
-  private _size = 0;
 
-  /** Enqueue the value at the rear */
-  enqueue(value: T): void {
-    const node = new ListNode(value);
+/**
+ * Decodes a BWT pair back to the original string.
+ *
+ * @param bwt – String produced by bwtEncode (last column).
+ * @param index – Index returned by bwtEncode.
+ * @returns original string.
+ */
+export function bwtDecode(bwt: string, index: number): string {
+  const n = bwt.length;
+  if (n === 0) return "";
 
-    if (!this.tail) {        // empty queue
-      this.head = this.tail = node;
-    } else {
-      this.tail.next = node;
-      this.tail = node;
+  // Initialize table with empty strings.
+  const table: string[] = Array(n).fill("");
+
+  // Each iteration prepends a character from the BWT to every row,
+  // then sorts. After n iterations the table is the sorted matrix.
+  for (let step = 0; step < n; step++) {
+    // Prepend the BWT characters.
+    for (let i = 0; i < n; i++) {
+      table[i] = bwt.charAt(i) + table[i];
     }
-    this._size++;
+    // Stable sort by the whole string.
+    table.sort();
   }
 
-  /** Dequeue the value at the front */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined; // empty
-
-    const value = this.head.data;
-    this.head = this.head.next;
-
-    if (!this.head) {          // queue became empty
-      this.tail = null;
-    }
-
-    this._size--;
-    return value;
-  }
-
-  /** Peek at the front without removing it */
-  peek(): T | undefined {
-    return this.head?.data;
-  }
-
-  /** Current number of elements */
-  size(): number {
-    return this._size;
-  }
-
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Consume the internal list into an array (useful for tests) */
-  toArray(): T[] {
-    const arr: T[] = [];
-    let node = this.head;
-    while (node) {
-      arr.push(node.data);
-      node = node.next;
-    }
-    return arr;
-  }
+  // The row at the recorded index is the original string.
+  return table[index];
 }
-const q = new LinkedListQueue<number>();
+import { bwtEncode, bwtDecode } from "./bwt";
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+const text = "The quick brown fox jumps over the lazy dog";
 
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size());    // 1
-console.log(q.isEmpty()); // false
+const { bwt, index } = bwtEncode(text);
+console.log("BWT String:", bwt);
+console.log("Original index =", index);
 
-q.dequeue();              // removes 30
-console.log(q.isEmpty()); // true
+const recovered = bwtDecode(bwt, index);
+console.log("Recovered:", recovered);
+console.log("Match:", recovered === text); // true
