@@ -1,88 +1,50 @@
 /**
- * Merge‑Sort for an array.
- *
- * @param arr   The array to sort.
- * @param cmp   Optional comparison function. If omitted, the default <, > operators are used.
- * @returns The sorted array (in‑place, but a new array is returned for convenience).
+ * Median of two sorted arrays (each array is sorted in ascending order).
+ * Works in O(log (min(nums1.length, nums2.length))) time.
  */
-export function mergeSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  // No need to sort if the array is empty or has a single element.
-  if (arr.length <= 1) return arr.slice();
+function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Make sure nums1 is the smaller array for a lighter binary‑search range
+  if (nums1.length > nums2.length) {
+    return findMedianSortedArrays(nums2, nums1);
+  }
 
-  const mid = Math.floor(arr.length / 2);
-  const left = mergeSort(arr.slice(0, mid), cmp);
-  const right = mergeSort(arr.slice(mid), cmp);
+  const m = nums1.length;
+  const n = nums2.length;
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-  return merge(left, right, cmp);
-}
+  let low = 0;
+  let high = m;
 
-/**
- * Merges two sorted arrays into a new sorted array.
- *
- * @param left  The left sorted half.
- * @param right The right sorted half.
- * @param cmp   Comparison function (optional).
- * @returns A new sorted array containing all elements from left and right.
- */
-function merge<T>(
-  left: T[],
-  right: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  const result: T[] = [];
-  let i = 0,
-    j = 0;
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2);      // partition in nums1
+    const j = halfLen - i;                       // partition in nums2
 
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => {
-        // default numeric or string comparison
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-      };
+    const nums1LeftMax  = (i === 0) ? -Infinity : nums1[i - 1];
+    const nums1RightMin = (i === m) ? Infinity  : nums1[i];
+    const nums2LeftMax  = (j === 0) ? -Infinity : nums2[j - 1];
+    const nums2RightMin = (j === n) ? Infinity  : nums2[j];
 
-  while (i < left.length && j < right.length) {
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i++]);
+    // If we’ve partitioned correctly, compute the median
+    if (nums1LeftMax <= nums2RightMin && nums2LeftMax <= nums1RightMin) {
+      if ((m + n) % 2 === 1) {              // odd total length
+        return Math.max(nums1LeftMax, nums2LeftMax);
+      } else {                               // even total length
+        return (Math.max(nums1LeftMax, nums2LeftMax) +
+                Math.min(nums1RightMin, nums2RightMin)) / 2;
+      }
+    }
+    // Adjust the binary‑search range
+    else if (nums1LeftMax > nums2RightMin) {
+      high = i - 1;
     } else {
-      result.push(right[j++]);
+      low = i + 1;
     }
   }
 
-  // Attach leftovers … at most one of these will push anything.
-  return result.concat(left.slice(i)).concat(right.slice(j));
+  throw new Error("Input arrays are not sorted or invalid");
 }
-// Numbers
-const nums = [38, 27, 43, 3, 9, 82, 10];
-console.log(mergeSort(nums)); // [3, 9, 10, 27, 38, 43, 82]
-
-// Strings
-const words = ["pear", "apple", "banana", "cherry"];
-console.log(mergeSort(words)); // ['apple', 'banana', 'cherry', 'pear']
-
-// Custom type
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: "Alice", age: 34 },
-  { name: "Bob", age: 23 },
-  { name: "Carol", age: 28 }
-];
-console.log(
-  mergeSort(people, (a, b) => a.age - b.age)
-);
-// People sorted by age: Bob, Carol, Alice
-function isSorted<T>(arr: T[], cmp?: (a: T, b: T) => number): boolean {
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0);
-  for (let i = 1; i < arr.length; i++) {
-    if (compare(arr[i - 1], arr[i]) > 0) return false;
-  }
-  return true;
-}
-
-console.log(isSorted(mergeSort([5, 2, 9, 1, 5, 6]))); // true
+console.log(findMedianSortedArrays([1, 3], [2]));                    // 2
+console.log(findMedianSortedArrays([1, 2], [3, 4]));                  // 2.5
+console.log(findMedianSortedArrays([0, 0], [0, 0]));                  // 0
+console.log(findMedianSortedArrays([], [1]));                        // 1
+console.log(findMedianSortedArrays([2], []));                        // 2
