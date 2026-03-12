@@ -1,50 +1,39 @@
-/**
- * Median of two sorted arrays (each array is sorted in ascending order).
- * Works in O(log (min(nums1.length, nums2.length))) time.
- */
-function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Make sure nums1 is the smaller array for a lighter binary‑search range
-  if (nums1.length > nums2.length) {
-    return findMedianSortedArrays(nums2, nums1);
+export class Stack<T> {
+  /** internal buffer – the array that stores the stack items */
+  private readonly items: T[] = [];
+
+  /** push an item onto the stack */
+  push(value: T): void {
+    this.items.push(value);
   }
 
-  const m = nums1.length;
-  const n = nums2.length;
-  const halfLen = Math.floor((m + n + 1) / 2);
-
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);      // partition in nums1
-    const j = halfLen - i;                       // partition in nums2
-
-    const nums1LeftMax  = (i === 0) ? -Infinity : nums1[i - 1];
-    const nums1RightMin = (i === m) ? Infinity  : nums1[i];
-    const nums2LeftMax  = (j === 0) ? -Infinity : nums2[j - 1];
-    const nums2RightMin = (j === n) ? Infinity  : nums2[j];
-
-    // If we’ve partitioned correctly, compute the median
-    if (nums1LeftMax <= nums2RightMin && nums2LeftMax <= nums1RightMin) {
-      if ((m + n) % 2 === 1) {              // odd total length
-        return Math.max(nums1LeftMax, nums2LeftMax);
-      } else {                               // even total length
-        return (Math.max(nums1LeftMax, nums2LeftMax) +
-                Math.min(nums1RightMin, nums2RightMin)) / 2;
-      }
-    }
-    // Adjust the binary‑search range
-    else if (nums1LeftMax > nums2RightMin) {
-      high = i - 1;
-    } else {
-      low = i + 1;
-    }
+  /** pop the top item; returns `undefined` if the stack is empty */
+  pop(): T | undefined {
+    return this.items.pop();
   }
 
-  throw new Error("Input arrays are not sorted or invalid");
+  /** peek at the top item without removing it */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** true if the stack has no elements */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** number of elements currently on the stack */
+  size(): number {
+    return this.items.length;
+  }
 }
-console.log(findMedianSortedArrays([1, 3], [2]));                    // 2
-console.log(findMedianSortedArrays([1, 2], [3, 4]));                  // 2.5
-console.log(findMedianSortedArrays([0, 0], [0, 0]));                  // 0
-console.log(findMedianSortedArrays([], [1]));                        // 1
-console.log(findMedianSortedArrays([2], []));                        // 2
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size()); // 2
+console.log(stack.isEmpty()); // false
