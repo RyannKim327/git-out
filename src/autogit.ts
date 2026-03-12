@@ -1,112 +1,30 @@
 /**
- * Generic type that can be compared with the <=> operator.
- * For custom objects you can supply a comparator function.
- */
-type Comparable = number | string | boolean;
-
-/**
- * Swap two elements in an array
- */
-function swap<T>(arr: T[], i: number, j: number): void {
-  const tmp = arr[i];
-  arr[i] = arr[j];
-  arr[j] = tmp;
-}
-
-/**
- * Heapify the subtree rooted at `i`, assuming that the binary trees
- * rooted at its children are already heaps.
+ * Recursively returns n! (n factorial).
  *
- * @param arr    the array
- * @param heapSize the current size of the heap
- * @param i      the index of the root of the subtree
- * @param compare comparison function (a, b) => true if a > b
+ * @param n - non‑negative integer (or bigint)
+ * @returns n! as a bigint
  */
-function heapify<T>(
-  arr: T[],
-  heapSize: number,
-  i: number,
-  compare: (a: T, b: T) => boolean
-): void {
-  let largest = i;
-  const left   = 2 * i + 1;
-  const right  = 2 * i + 2;
+export function factorial(n: bigint | number): bigint {
+  // Normalize input to bigint
+  const x = typeof n === "bigint" ? n : BigInt(n);
 
-  if (left < heapSize && compare(arr[left], arr[largest])) {
-    largest = left;
-  }
-  if (right < heapSize && compare(arr[right], arr[largest])) {
-    largest = right;
+  // Negative numbers are not defined for factorial
+  if (x < 0n) {
+    throw new Error("Factorial is defined only for non‑negative integers.");
   }
 
-  if (largest !== i) {
-    swap(arr, i, largest);
-    heapify(arr, heapSize, largest, compare);
+  // Base case: 0! = 1, 1! = 1
+  if (x === 0n || x === 1n) {
+    return 1n;
   }
+
+  // Recursive case: n! = n * (n-1)!
+  return x * factorial(x - 1n);
 }
-
-/**
- * Build a max‑heap from an unsorted array
- */
-function buildMaxHeap<T>(
-  arr: T[],
-  compare: (a: T, b: T) => boolean
-): void {
-  const heapSize = arr.length;
-  // Start from the last non‑leaf node
-  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
-    heapify(arr, heapSize, i, compare);
-  }
+console.log(factorial(5));        // 120n
+console.log(factorial(20));       // 2432902008176640000n
+console.log(factorial(25n));      // 15511210043330985984000000n
+function factorialTail(n: bigint, acc = 1n): bigint {
+  if (n <= 1n) return acc;
+  return factorialTail(n - 1n, acc * n);
 }
-
-/**
- * Heap sort – sorts `arr` *in place*.
- *
- * @param arr      the array to sort
- * @param compare  optional comparator; defaults to (a > b)
- */
-export function heapSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => boolean
-): void {
-  const cmp = compare ?? ((a: any, b: any) => a > b);
-
-  buildMaxHeap(arr, cmp);
-
-  for (let i = arr.length - 1; i > 0; i--) {
-    // The max element is at index 0; move it to its final place
-    swap(arr, 0, i);
-    // Re‑heapify the reduced heap
-    heapify(arr, i, 0, cmp);
-  }
-}
-
-/* --------------------------------------------------------------------- */
-/* Example usage & tiny tests                                           */
-/* --------------------------------------------------------------------- */
-
-// 1️⃣ Numbers ---------------------------------------------------------
-const nums = [5, 3, 8, 4, 1, 7, 2, 6];
-heapSort(nums);
-console.log('Sorted numbers:', nums); // [1, 2, 3, 4, 5, 6, 7, 8]
-
-// 2️⃣ Strings ---------------------------------------------------------
-const words = ['pear', 'apple', 'orange', 'banana'];
-heapSort(words); // default lexicographic order
-console.log('Sorted words:', words); // ['apple', 'banana', 'orange', 'pear']
-
-// 3️⃣ Custom objects --------------------------------------------------
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob',   age: 22 },
-  { name: 'Eva',   age: 27 }
-];
-// Sort by age ascending
-heapSort(people, (a, b) => a.age > b.age);
-console.log('People sorted by age:', people);
-/* [
-  { name: 'Bob', age: 22 },
-  { name: 'Eva', age: 27 },
-  { name: 'Alice', age: 30 }
-] */
