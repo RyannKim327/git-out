@@ -1,21 +1,40 @@
-// Example array
-const nums: number[] = [42, 1, 17, 3, 99];
+// Basic node interface – can be turned into a class if you like.
+interface TreeNode<T = number> {
+  val: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
+}
+function maxDepth<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                 // empty subtree → depth 0
 
-// Sort in ascending order
-const asc = [...nums].sort((a, b) => a - b);
-console.log('Ascending:', asc); // [1, 3, 17, 42, 99]
+  const leftDepth  = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
 
-// Sort in descending order
-const desc = [...nums].sort((a, b) => b - a);
-console.log('Descending:', desc); // [99, 42, 17, 3, 1]
-const custom = [...nums].sort((a, b) => {
-  const aEven = a % 2 === 0;
-  const bEven = b % 2 === 0;
-  if (aEven && !bEven) return -1;     // a comes first
-  if (!aEven && bEven) return 1;      // b comes first
-  return a - b;                       // both same parity: numeric order
-});
-console.log(custom); // [ 42, 2, 1, 3, 17, 99 ]
-import _ from 'lodash';
+  // Depth of current node = 1 (itself) + depth of deeper side
+  return 1 + Math.max(leftDepth, rightDepth);
+}
+const root: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 } },
+  right: { val: 3, right: { val: 5, right: { val: 6 } } }
+};
 
-const order = _.orderBy(nums, [x => x], ['asc']); // asc by numeric value
+console.log(maxDepth(root));   // → 4
+function maxDepthIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let max = 0;
+  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
+    { node: root, depth: 1 },
+  ];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    max = Math.max(max, depth);
+
+    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
+    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
+  }
+
+  return max;
+}
