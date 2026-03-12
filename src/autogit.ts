@@ -1,38 +1,45 @@
+// 1️⃣  Install node‑fetch (or use the built‑in fetch in environments that have it)
+//    npm install node-fetch @types/node-fetch
+import fetch from "node-fetch";
+
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
 /**
- * Return the first non‑repeating character in a string.
- * If every character repeats, return `null`.
+ * Fetch a single Todo by its numeric ID.
+ * @param id - The ID of the Todo to request.
+ * @returns Promises a Todo object.
  */
-function firstNonRepeating(str: string): string | null {
-  const counts: Record<string, number> = {};
+async function getTodoById(id: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
 
-  // 1️⃣ Count each character
-  for (const ch of str) {
-    counts[ch] = (counts[ch] ?? 0) + 1;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+
+  // 2️⃣  Basic status check – throws if not 2xx
+  if (!response.ok) {
+    throw new Error(`Request failed with ${response.status} ${response.statusText}`);
   }
 
-  // 2️⃣ Scan once more to find the first with count 1
-  for (const ch of str) {
-    if (counts[ch] === 1) {
-      return ch;
-    }
+  // 3️⃣  Parse the JSON body and return it as a Todo
+  const data = (await response.json()) as Todo;
+  return data;
+}
+
+/**
+ * Demo of calling `getTodoById` and logging the result or an error.
+ */
+(async () => {
+  try {
+    const todo = await getTodoById(3);
+    console.log("Fetched Todo:", todo);
+  } catch (err) {
+    console.error("Error fetching Todo:", err);
   }
-
-  return null;
-}
-
-// quick examples
-console.log(firstNonRepeating('abacabad')); // "b"
-console.log(firstNonRepeating('aabbcc'));   // null
-function firstNonRepeatingMap(str: string): string | null {
-  const freq = new Map<string, number>();
-
-  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
-
-  for (const ch of str) if (freq.get(ch) === 1) return ch;
-  return null;
-}
-function allNonRepeating(str: string): string[] {
-  const freq = new Map<string, number>();
-  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  return [...str].filter(ch => freq.get(ch) === 1);
-}
+})();
