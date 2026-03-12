@@ -1,30 +1,45 @@
-/**
- * Returns the second largest value in an array.
- * Uses a single pass – O(n) time, O(1) extra space.
- *
- * @param nums – numeric array
- * @returns second largest number, or `undefined` if it can’t be determined
- */
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined;
+// 1️⃣  Install node‑fetch (or use the built‑in fetch in environments that have it)
+//    npm install node-fetch @types/node-fetch
+import fetch from "node-fetch";
 
-  let largest = -Infinity;
-  let second = -Infinity;
-
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;   // old largest becomes second
-      largest = n;
-    } else if (n > second && n !== largest) {
-      // n is between largest and second – update second
-      second = n;
-    }
-  }
-
-  return second === -Infinity ? undefined : second;
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
 
-// quick demo
-console.log(secondLargest([3, 1, 4, 1, 5, 9, 2, 6, 5])); // 8
-console.log(secondLargest([42]));                         // undefined
-console.log(secondLargest([7, 7, 7]));                     // undefined – no distinct second value
+/**
+ * Fetch a single Todo by its numeric ID.
+ * @param id - The ID of the Todo to request.
+ * @returns Promises a Todo object.
+ */
+async function getTodoById(id: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+
+  // 2️⃣  Basic status check – throws if not 2xx
+  if (!response.ok) {
+    throw new Error(`Request failed with ${response.status} ${response.statusText}`);
+  }
+
+  // 3️⃣  Parse the JSON body and return it as a Todo
+  const data = (await response.json()) as Todo;
+  return data;
+}
+
+/**
+ * Demo of calling `getTodoById` and logging the result or an error.
+ */
+(async () => {
+  try {
+    const todo = await getTodoById(3);
+    console.log("Fetched Todo:", todo);
+  } catch (err) {
+    console.error("Error fetching Todo:", err);
+  }
+})();
