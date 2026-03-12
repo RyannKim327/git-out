@@ -1,57 +1,45 @@
-text:   abcdefghijk
-        ‖~~~~~~~~~~
-pattern:   def
-function buildShiftTable(pattern: string): Map<string, number> {
-  const table = new Map<string, number>();
-  const m = pattern.length;
+// apiDemo.ts
+// -----------------------------------------------------
+// Example: Call a public JSONPlaceholder API,
+// fetch a post, and log its title & body.
+//
+// Works out of the box in Node≥18 or any modern browser
+// with a `tsconfig.json` that has `"esModuleInterop": true`
+// and `"target": "es2015"` (or later).
 
-  // For all chars except the last one
-  for (let i = 0; i < m - 1; i++) {
-    table.set(pattern[i], m - 1 - i);
+// 1.  Types that model the JSON we expect back
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+}
+
+// 2.  A handy helper that ensures we get JSON
+async function json<T>(resp: Response): Promise<T> {
+  if (!resp.ok) {
+    throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
   }
-  return table;
+  return resp.json() as Promise<T>;
 }
-function boyerMooreHorspool(pattern: string, text: string): number | null {
-  const m = pattern.length;
-  const n = text.length;
 
-  if (m === 0) return 0;          // Empty pattern matches at start
-  if (m > n) return null;         // Impossible to find
+// 3.  The async routine that talks to the API
+async function fetchPost(postId: number): Promise<Post> {
+  const url = `https://jsonplaceholder.typicode.com/posts/${postId}`;
 
-  const shiftTable = buildShiftTable(pattern);
-  const defaultShift = m;
+  const response = await fetch(url);        // ← call the API
+  const post = await json<Post>(response);   // ← parse & type‑check
 
-  let i = 0; // Current alignment of pattern in text
+  return post;
+}
 
-  while (i <= n - m) {
-    let j = m - 1;
-
-    // Compare from right to left
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j--;
-    }
-
-    if (j < 0) {
-      // Full match
-      return i;
-    }
-
-    // Mismatch: decide how far to shift
-    const mismatchedChar = text[i + j];
-    const shift = shiftTable.get(mismatchedChar) ?? defaultShift;
-
-    i += shift;
+// 4.  Call it and do something with the data
+(async () => {
+  try {
+    const post = await fetchPost(1);
+    console.log(`Post #1 title: ${post.title}`);
+    console.log(`Post #1 body:  ${post.body}`);
+  } catch (err) {
+    console.error("Something went wrong:", err);
   }
-
-  return null; // No match found
-}
-const sampleText = "The quick brown fox jumps over the lazy dog. The fox was quick.";
-const samplePattern = "quick";
-
-const matchIdx = boyerMooreHorspool(samplePattern, sampleText);
-
-if (matchIdx !== null) {
-  console.log(`Found at index ${matchIdx}`);
-} else {
-  console.log("No match");
-}
+})();
