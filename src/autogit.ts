@@ -1,47 +1,39 @@
-/**
- * Return true if `s` is a palindrome (case‑insensitive, alphanumeric only).
- * Works in O(n) time and O(1) extra space.
- */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+export class Stack<T> {
+  /** internal buffer – the array that stores the stack items */
+  private readonly items: T[] = [];
 
-  // helper: is the char code an ASCII alphanumeric?
-  const isAlnum = (c: number) =>
-    (c >= 48 && c <= 57) ||        // 0‑9
-    (c >= 65 && c <= 90) ||        // A‑Z
-    (c >= 97 && c <= 122);         // a‑z
-
-  // helper: convert ASCII letter to its uppercase equivalent
-  const toUpper = (c: number) => (c >= 97 && c <= 122) ? (c - 32) : c;
-
-  while (left < right) {
-    // skip non‑alphanumeric characters on the left
-    while (left < right && !isAlnum(s.charCodeAt(left))) left++;
-    // skip non‑alphanumeric characters on the right
-    while (left < right && !isAlnum(s.charCodeAt(right))) right--;
-
-    if (left >= right) break;
-
-    // compare the two characters after normalizing to uppercase
-    if (toUpper(s.charCodeAt(left)) !== toUpper(s.charCodeAt(right))) {
-      return false;
-    }
-    left++;
-    right--;
+  /** push an item onto the stack */
+  push(value: T): void {
+    this.items.push(value);
   }
 
-  return true;
+  /** pop the top item; returns `undefined` if the stack is empty */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  /** peek at the top item without removing it */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** true if the stack has no elements */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** number of elements currently on the stack */
+  size(): number {
+    return this.items.length;
+  }
 }
+const stack = new Stack<number>();
 
-/* ---------- demo ---------- */
-const tests = [
-  "A man, a plan, a canal: Panama",
-  "race a car",
-  "No 'x' in Nixon",
-  "MadamInEdenImAdam",
-];
+stack.push(10);
+stack.push(20);
+stack.push(30);
 
-tests.forEach(t => {
-  console.log(`"${t}" → ${isPalindrome(t)}`);
-});
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size()); // 2
+console.log(stack.isEmpty()); // false
