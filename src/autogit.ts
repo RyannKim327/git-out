@@ -1,41 +1,45 @@
-/** A very small “binary‑tree node” type. */
-interface TreeNode {
-  val: number;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
+// 1️⃣  Install node‑fetch (or use the built‑in fetch in environments that have it)
+//    npm install node-fetch @types/node-fetch
+import fetch from "node-fetch";
+
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
-function sumTreeRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                     // base case – no node
-  const leftSum  = sumTreeRecursive(root.left);
-  const rightSum = sumTreeRecursive(root.right);
-  return root.val + leftSum + rightSum;    // process node after its children
-}
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
 
-  const queue: TreeNode[] = [root];
-  let total = 0;
+/**
+ * Fetch a single Todo by its numeric ID.
+ * @param id - The ID of the Todo to request.
+ * @returns Promises a Todo object.
+ */
+async function getTodoById(id: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
 
-  while (queue.length) {
-    const node = queue.shift()!;   // non‑null assertion – queue always contains real nodes
-    total += node.val;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
 
-    if (node.left)  queue.push(node.left);
-    if (node.right) queue.push(node.right);
+  // 2️⃣  Basic status check – throws if not 2xx
+  if (!response.ok) {
+    throw new Error(`Request failed with ${response.status} ${response.statusText}`);
   }
 
-  return total;
+  // 3️⃣  Parse the JSON body and return it as a Todo
+  const data = (await response.json()) as Todo;
+  return data;
 }
-// Small example
-const tree: TreeNode = {
-  val: 10,
-  left: { val: 5 },
-  right: {
-    val: 20,
-    left: { val: 15 },
-    right: { val: 25 }
-  }
-};
 
-console.log(sumTreeRecursive(tree)); // 75
-console.log(sumTreeIterative(tree)); // 75
+/**
+ * Demo of calling `getTodoById` and logging the result or an error.
+ */
+(async () => {
+  try {
+    const todo = await getTodoById(3);
+    console.log("Fetched Todo:", todo);
+  } catch (err) {
+    console.error("Error fetching Todo:", err);
+  }
+})();
