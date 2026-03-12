@@ -1,40 +1,41 @@
 /**
- * Classic in‑place quick‑sort.
+ * Random‑pivot quick sort.
  *
- * @param arr  The array to be sorted (in‑place).
- * @param left The starting index (default: 0).
- * @param right The ending index (default: arr.length‑1).
- *
- * @returns The same array, now sorted.
+ * @param arr   The array to sort (in‑place).
+ * @returns     The sorted array (the same reference as `arr`).
  */
-function quickSort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
-  if (left >= right) return arr;          // base case: 0 or 1 item
+export function quickSortRandom<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
+  if (arr.length <= 1)
+    return arr;
 
-  // Pick a pivot—here we just take the middle element.
-  const pivotIndex = Math.floor((left + right) / 2);
-  const pivot = arr[pivotIndex];
+  // So we can provide a custom comparison, but default is the usual "<".
+  const cmp = compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
-  // Partition: everything less than the pivot goes left, everything
-  // greater or equal goes right.  Elements equal to the pivot can go either side.
-  let i = left;
-  let j = right;
-  while (i <= j) {
-    while (arr[i] < pivot) i++;   // find an element on the wrong side (left)
-    while (arr[j] > pivot) j--;   // find an element on the wrong side (right)
+  // Pick a random index as pivot
+  const pivotIndex = Math.floor(Math.random() * arr.length);
+  const pivotValue = arr[pivotIndex];
 
-    if (i <= j) {                 // swap the out‑of‑place elements
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
-    }
+  // Partition into two new arrays
+  const lows: T[] = [];
+  const highs: T[] = [];
+  const pivots: T[] = [];
+
+  for (let i = 0; i < arr.length; i++) {
+    const value = arr[i];
+    const comparison = cmp(value, pivotValue);
+    if (comparison < 0)    lows.push(value);
+    else if (comparison > 0) highs.push(value);
+    else                    pivots.push(value);   // equals pivot
   }
 
-  // Recursively sort the two partitions.
-  // The first call deals with the left two halves *unless* they overlap.
-  if (left < j) quickSort(arr, left, j);
-  if (i < right) quickSort(arr, i, right);
-
-  return arr;
+  // Recurse and concatenate
+  return quickSortRandom(lows, cmp)
+          .concat(pivots, quickSortRandom(highs, cmp));
 }
-const unsorted = [3, 7, 2, 5, 1, 4, 6];
-quickSort(unsorted);        // unsorted is now [1,2,3,4,5,6,7]
+
+// ---- Demo ---------------------------------------------------------
+
+const unsorted = [7, 2, 9, 4, 1, 5, 3, 8, 6];
+console.log('original: ', unsorted);
+const sorted = quickSortRandom(unsorted);
+console.log('sorted:   ', sorted);
