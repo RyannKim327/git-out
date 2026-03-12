@@ -1,14 +1,38 @@
-// 1) Using a regular expression (remove *any* whitespace)
-const clean1 = originalString.replace(/\s+/g, "");
+/**
+ * Finds the majority element in an array (appears > n/2 times).
+ * If no majority exists, undefined is returned.
+ *
+ * @param arr   - Array of comparable values (number, string ...).
+ * @returns     - The majority element or undefined.
+ */
+export function majorityElement<T extends number | string | symbol>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
 
-// 2) If you only care about literal space characters (no tabs, newlines, etc.)
-const clean2 = originalString.replace(/ /g, "");
+  // Boyer‑Moore majority vote algorithm
+  let candidate: T | undefined = arr[0];
+  let count = 1;
 
-// 3) Split/join – handy if you’re scrubbing a handful of specific delimiters
-const clean3 = originalString.split(" ").join("");
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === candidate) {
+      count++;
+    } else {
+      count--;
+      if (count === 0) {
+        candidate = arr[i];
+        count = 1;
+      }
+    }
+  }
 
-// 4) Manual loop (useful if you need to do something with each char)
-let clean4 = "";
-for (const ch of originalString) {
-  if (ch !== " ") clean4 += ch;
+  // Verify that candidate really is the majority
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
+  }
+
+  return count > Math.floor(arr.length / 2) ? candidate : undefined;
 }
+majorityElement([1, 2, 3, 2, 2]);      // → 2
+majorityElement(['a', 'b', 'a', 'c']); // → undefined
+majorityElement([5, 5, 5, 5]);          // → 5
+majorityElement([]);                   // → undefined
