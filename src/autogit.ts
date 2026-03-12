@@ -1,39 +1,27 @@
-function isPalindrome(str: string): boolean {
-  // Compare the string to its reverse
-  const reversed = str.split('').reverse().join('');
-  return str === reversed;
-}
+/**
+ * Return true if the supplied string is a palindrome (ignoring case,
+ * punctuation, spaces, and other non‑alphanumeric characters).
+ */
+export function isPalindrome(input: string): boolean {
+  // Keep only letters and digits, make everything lowercase
+  const cleaned = input.replace(/[^a-z0-9]/gi, '').toLowerCase();
 
-// Examples
-console.log(isPalindrome('radar'));   // true
-console.log(isPalindrome('hello'));   // false
-function isPalindromeCI(str: string): boolean {
-  const normalized = str.toLowerCase();          // make everything lowercase
-  return normalized === normalized.split('').reverse().join('');
-}
+  // Quick escape: a single character or empty string is trivially a palindrome
+  if (cleaned.length <= 1) return true;
 
-console.log(isPalindromeCI('Radar'));   // true
-console.log(isPalindromeCI('Racecar')); // true
-function isPalindromeClean(str: string): boolean {
-  const cleaned = str
-    .replace(/[^a-z0-9]/gi, '')      // strip non-alphanumerics
-    .toLowerCase();                  // normalize case
-  
-  const reversed = cleaned.split('').reverse().join('');
-  return cleaned === reversed;
-}
-
-console.log(isPalindromeClean('A man, a plan, a canal: Panama')); // true
-function isPalindromeTwoPointer(str: string): boolean {
-  let left = 0;
-  let right = str.length - 1;
-
-  while (left < right) {
-    if (str[left] !== str[right]) return false;
-    left++;
-    right--;
+  // Compare characters from the front and back
+  for (let i = 0, j = cleaned.length - 1; i < j; i++, j--) {
+    if (cleaned[i] !== cleaned[j]) return false;
   }
   return true;
 }
-
-console.log(isPalindromeTwoPointer('radar')); // true
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("racecar"));                         // true
+console.log(isPalindrome("Hello, world!"));                   // false
+export function isExactPalindrome(input: string): boolean {
+  if (input.length <= 1) return true;
+  for (let i = 0, j = input.length - 1; i < j; i++, j--) {
+    if (input[i] !== input[j]) return false;
+  }
+  return true;
+}
