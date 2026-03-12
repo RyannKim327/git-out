@@ -1,30 +1,50 @@
+export interface TreeNode {
+  val: number;                // or any type you like
+  left?: TreeNode | null;     // child nodes (undefined is treated as null)
+  right?: TreeNode | null;
+}
+const tree: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
+  right: { val: 3, right: { val: 6 }}
+};
 /**
- * Recursively returns n! (n factorial).
+ * Returns the diameter (number of edges on the longest path) of a binary tree.
  *
- * @param n - non‑negative integer (or bigint)
- * @returns n! as a bigint
+ * @param root root node of the tree
+ * @returns diameter in edges
  */
-export function factorial(n: bigint | number): bigint {
-  // Normalize input to bigint
-  const x = typeof n === "bigint" ? n : BigInt(n);
+export function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;           // will hold the best diameter found
 
-  // Negative numbers are not defined for factorial
-  if (x < 0n) {
-    throw new Error("Factorial is defined only for non‑negative integers.");
+  /**
+   * Post‑order DFS that returns the height of the subtree.
+   * While unwinding, we update `maxDiameter`.
+   */
+  function dfs(node: TreeNode | null): number {
+    if (!node) return -1;       // height of null is -1 so that leaf node height = 0
+
+    const leftHeight  = dfs(node.left)  + 1;
+    const rightHeight = dfs(node.right) + 1;
+
+    // The path that goes from the leftmost leaf of this subtree
+    // through this node to the rightmost leaf gives a candidate
+    // diameter.  `+1` is not needed for edges because heights already
+    // count edges from node to leaf.
+    const candidate = leftHeight + rightHeight;
+    if (candidate > maxDiameter) maxDiameter = candidate;
+
+    // Return height of this node for the parent call
+    return Math.max(leftHeight, rightHeight);
   }
 
-  // Base case: 0! = 1, 1! = 1
-  if (x === 0n || x === 1n) {
-    return 1n;
-  }
+  dfs(root);
+  return maxDiameter;
+}
+const tree: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
+  right: { val: 3, right: { val: 6 }}
+};
 
-  // Recursive case: n! = n * (n-1)!
-  return x * factorial(x - 1n);
-}
-console.log(factorial(5));        // 120n
-console.log(factorial(20));       // 2432902008176640000n
-console.log(factorial(25n));      // 15511210043330985984000000n
-function factorialTail(n: bigint, acc = 1n): bigint {
-  if (n <= 1n) return acc;
-  return factorialTail(n - 1n, acc * n);
-}
+console.log(diameterOfBinaryTree(tree));   // → 3
