@@ -1,39 +1,38 @@
-export class Stack<T> {
-  /** internal buffer – the array that stores the stack items */
-  private readonly items: T[] = [];
+/**
+ * Return the first non‑repeating character in a string.
+ * If every character repeats, return `null`.
+ */
+function firstNonRepeating(str: string): string | null {
+  const counts: Record<string, number> = {};
 
-  /** push an item onto the stack */
-  push(value: T): void {
-    this.items.push(value);
+  // 1️⃣ Count each character
+  for (const ch of str) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
   }
 
-  /** pop the top item; returns `undefined` if the stack is empty */
-  pop(): T | undefined {
-    return this.items.pop();
+  // 2️⃣ Scan once more to find the first with count 1
+  for (const ch of str) {
+    if (counts[ch] === 1) {
+      return ch;
+    }
   }
 
-  /** peek at the top item without removing it */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** true if the stack has no elements */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** number of elements currently on the stack */
-  size(): number {
-    return this.items.length;
-  }
+  return null;
 }
-const stack = new Stack<number>();
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
+// quick examples
+console.log(firstNonRepeating('abacabad')); // "b"
+console.log(firstNonRepeating('aabbcc'));   // null
+function firstNonRepeatingMap(str: string): string | null {
+  const freq = new Map<string, number>();
 
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size()); // 2
-console.log(stack.isEmpty()); // false
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
+
+  for (const ch of str) if (freq.get(ch) === 1) return ch;
+  return null;
+}
+function allNonRepeating(str: string): string[] {
+  const freq = new Map<string, number>();
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  return [...str].filter(ch => freq.get(ch) === 1);
+}
