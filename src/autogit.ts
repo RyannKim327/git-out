@@ -1,34 +1,41 @@
-// randomPassword.ts
-import * as readline from 'readline';
-
-// Characters that can appear in the password
-const CHARSET =
-  'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
-
-function generatePassword(length: number): string {
-  let pwd = '';
-  for (let i = 0; i < length; i++) {
-    pwd += CHARSET[Math.floor(Math.random() * CHARSET.length)];
-  }
-  return pwd;
+export interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
+export class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
+}
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null
+  let curr = head
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-rl.question('Enter desired password length: ', (answer) => {
-  const len = parseInt(answer, 10);
-  if (!isNaN(len) && len > 0) {
-    console.log(`Generated password: ${generatePassword(len)}`);
-  } else {
-    console.log('Please enter a valid positive integer.');
+  while (curr) {
+    const nxt = curr.next      // keep reference to next node
+    curr.next = prev           // flip the link
+    prev = curr                // advance prev
+    curr = nxt                 // advance curr
   }
-  rl.close();
-});
-# 1. Compile (requires TypeScript installed)
-tsc randomPassword.ts
 
-# 2. Execute the resulting JavaScript
-node randomPassword.js
+  return prev   // new head
+}
+export function reverseListRec<T>(node: ListNode<T> | null, prev: ListNode<T> | null = null): ListNode<T> | null {
+  if (!node) return prev
+  const nxt = node.next
+  node.next = prev
+  return reverseListRec(nxt, node)
+}
+// build 1 → 2 → 3
+const n3 = new ListNode(3)
+const n2 = new ListNode(2, n3)
+const n1 = new ListNode(1, n2)
+
+// reverse
+const reversed = reverseList(n1)
+
+// print results
+let cur = reversed
+while (cur) {
+  console.log(cur.value)
+  cur = cur.next
+}
+// → 3, 2, 1
