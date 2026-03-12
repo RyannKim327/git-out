@@ -1,53 +1,59 @@
 /**
- * Sorts an array using the bubble‑sort algorithm.
- *
- * @param arr       The array to sort. The sort is performed in-place.
- * @param compare   Optional comparison function. It should return:
- *                  - a negative number if a < b
- *                  - zero if a == b
- *                  - a positive number if a > b
- *
- * @returns The sorted array (the same instance that was passed in).
+ * Return the index of the first occurrence of `pattern` inside `text`,
+ * or -1 if the pattern is absent.
  */
-export function bubbleSort<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
-  // Default to natural order for numbers and strings
-  const cmp = compare ?? ((a: any, b: any) => (a > b ? 1 : a < b ? -1 : 0));
+export function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0; // trivially found at start
 
-  const len = arr.length;
-  if (len < 2) return arr; // already sorted
+  const lps = computeLPSArray(pattern); // longest‑prefix‑suffix table
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-  let swapped: boolean;
-  // We keep looping until no swaps happen in a full pass
-  do {
-    swapped = false;
-    // After each round the largest element in the unsorted portion
-    // "bubbles" to its final position, so we can skip the last i elements
-    for (let i = 1; i < len; i++) {
-      if (cmp(arr[i - 1], arr[i]) > 0) {
-        // swap
-        [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
-        swapped = true;
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) { // whole pattern matched
+        return i - j; // match start index
       }
+    } else if (j > 0) {
+      // mismatch after j matches – skip ahead by lps[j‑1]
+      j = lps[j - 1];
+    } else {
+      // mismatch at start of pattern
+      i++;
     }
-  } while (swapped);
+  }
 
-  return arr;
+  return -1; // no match
 }
-// 1️⃣ Sort plain numbers
-const nums = [5, 3, 8, 1, 2];
-bubbleSort(nums);           // nums → [1, 2, 3, 5, 8]
 
-// 2️⃣ Sort strings alphabetically
-const words = ['banana', 'apple', 'cherry'];
-bubbleSort(words);          // words → ['apple', 'banana', 'cherry']
+/**
+ * Pre‑process the pattern to build the “longest prefix that is also a suffix”
+ * (LPS) array. lps[i] = the length of the longest proper prefix of
+ * pattern[0..i] that is also a suffix of pattern[0..i].
+ */
+function computeLPSArray(pattern: string): number[] {
+  const lps: number[] = Array(pattern.length).fill(0);
+  let len = 0;   // length of previous longest prefix suffix
+  let i = 1;     // lps[0] is always 0
 
-// 3️⃣ Sort objects with a custom key
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: 'Zoe',   age: 28 },
-  { name: 'Adam',  age: 34 },
-  { name: 'Mira',  age: 23 }
-];
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else if (len !== 0) {
+      // use the previous lps value to avoid re‑checking
+      len = lps[len - 1];
+    } else {
+      lps[i] = 0;
+      i++;
+    }
+  }
 
-bubbleSort(people, (p1, p2) => p1.age - p2.age);
-// people → [{name:'Mira',age:23}, {name:'Zoe',age:28}, {name:'Adam',age:34}]
+  return lps;
+}
+console.log(kmpSearch("ababcabcababc", "abc"));   // 2
+console.log(kmpSearch("ababcabcababc", "abcd"));  // -1
+console.log(kmpSearch("aaaaa", "aaa"));           // 0
