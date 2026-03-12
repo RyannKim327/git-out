@@ -1,72 +1,53 @@
 /**
- * Encodes a string using Burrows–Wheeler transform.
+ * Sorts an array using the bubble‑sort algorithm.
  *
- * @param input – Source text (any length, any chars including nulls).
- * @returns {bwt: string, index: number} – BWT string + original row index.
- */
-export function bwtEncode(input: string): { bwt: string; index: number } {
-  const n = input.length;
-  // Quick escape for empty string.
-  if (n === 0) return { bwt: "", index: 0 };
-
-  // Build the rotation array.
-  const rotations: string[] = [];
-  for (let offset = 0; offset < n; offset++) {
-    const rotation = input.slice(offset) + input.slice(0, offset);
-    rotations.push(rotation);
-  }
-
-  // Sort the rotations.
-  rotations.sort();
-
-  // Construct the BWT string (last column) and locate the original string.
-  let lastColumn = "";
-  let origIndex = -1;
-  for (let i = 0; i < n; i++) {
-    const rot = rotations[i];
-    lastColumn += rot.charAt(n - 1);          // last char of the rotation
-    if (rot === input) origIndex = i;        // original text keeps its place
-  }
-
-  return { bwt: lastColumn, index: origIndex };
-}
-
-/**
- * Decodes a BWT pair back to the original string.
+ * @param arr       The array to sort. The sort is performed in-place.
+ * @param compare   Optional comparison function. It should return:
+ *                  - a negative number if a < b
+ *                  - zero if a == b
+ *                  - a positive number if a > b
  *
- * @param bwt – String produced by bwtEncode (last column).
- * @param index – Index returned by bwtEncode.
- * @returns original string.
+ * @returns The sorted array (the same instance that was passed in).
  */
-export function bwtDecode(bwt: string, index: number): string {
-  const n = bwt.length;
-  if (n === 0) return "";
+export function bubbleSort<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
+  // Default to natural order for numbers and strings
+  const cmp = compare ?? ((a: any, b: any) => (a > b ? 1 : a < b ? -1 : 0));
 
-  // Initialize table with empty strings.
-  const table: string[] = Array(n).fill("");
+  const len = arr.length;
+  if (len < 2) return arr; // already sorted
 
-  // Each iteration prepends a character from the BWT to every row,
-  // then sorts. After n iterations the table is the sorted matrix.
-  for (let step = 0; step < n; step++) {
-    // Prepend the BWT characters.
-    for (let i = 0; i < n; i++) {
-      table[i] = bwt.charAt(i) + table[i];
+  let swapped: boolean;
+  // We keep looping until no swaps happen in a full pass
+  do {
+    swapped = false;
+    // After each round the largest element in the unsorted portion
+    // "bubbles" to its final position, so we can skip the last i elements
+    for (let i = 1; i < len; i++) {
+      if (cmp(arr[i - 1], arr[i]) > 0) {
+        // swap
+        [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+        swapped = true;
+      }
     }
-    // Stable sort by the whole string.
-    table.sort();
-  }
+  } while (swapped);
 
-  // The row at the recorded index is the original string.
-  return table[index];
+  return arr;
 }
-import { bwtEncode, bwtDecode } from "./bwt";
+// 1️⃣ Sort plain numbers
+const nums = [5, 3, 8, 1, 2];
+bubbleSort(nums);           // nums → [1, 2, 3, 5, 8]
 
-const text = "The quick brown fox jumps over the lazy dog";
+// 2️⃣ Sort strings alphabetically
+const words = ['banana', 'apple', 'cherry'];
+bubbleSort(words);          // words → ['apple', 'banana', 'cherry']
 
-const { bwt, index } = bwtEncode(text);
-console.log("BWT String:", bwt);
-console.log("Original index =", index);
+// 3️⃣ Sort objects with a custom key
+type Person = { name: string; age: number };
+const people: Person[] = [
+  { name: 'Zoe',   age: 28 },
+  { name: 'Adam',  age: 34 },
+  { name: 'Mira',  age: 23 }
+];
 
-const recovered = bwtDecode(bwt, index);
-console.log("Recovered:", recovered);
-console.log("Match:", recovered === text); // true
+bubbleSort(people, (p1, p2) => p1.age - p2.age);
+// people → [{name:'Mira',age:23}, {name:'Zoe',age:28}, {name:'Adam',age:34}]
