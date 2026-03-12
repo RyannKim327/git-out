@@ -1,77 +1,59 @@
-low  = 0
-high = length–1
-
-while low ≤ high and target ∈ [arr[low], arr[high]]:
-    // Edge cases
-    if arr[low] == arr[high]:
-        return (arr[low] == target) ? low : -1
-
-    // Interpolated index
-    pos = low + ((target – arr[low]) * (high – low))
-          / (arr[high] – arr[low])
-
-    // Clamp to array bounds
-    pos = Math.round(pos)
-
-    if arr[pos] == target:
-        return pos
-    else if arr[pos] < target:
-        low = pos + 1
-    else:
-        high = pos – 1
-
-return –1   // not found
 /**
- * Interpolation search for a strictly sorted numeric array.
- * @param arr   - Sorted numbers (ascending)
- * @param target - Number to find
- * @returns Index of target, or -1 if not found
+ * Shell sort – a simple, in‑place algorithm that improves on insertion sort.
+ * Sorts an array of numbers in ascending order.
+ *
+ * @param arr The array to sort (modified in place)
+ * @param compare Optional compare function (defaults to numeric comparison)
  */
-export function interpolationSearch(
-  arr: readonly number[],
-  target: number
-): number {
-  if (arr.length === 0) return -1;
+export function shellSort(
+  arr: number[],
+  compare?: (a: number, b: number) => number
+): void {
+  const len = arr.length;
+  const cmp = compare ?? ((a, b) => a - b);
 
-  let low = 0;
-  let high = arr.length - 1;
+  // A common gap sequence: halving each time (Shell's original)
+  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Gapped insertion sort
+    for (let i = gap; i < len; i++) {
+      let temp = arr[i];
+      let j = i;
 
-  // Keep going while target is inside the current window
-  while (low <= high && target >= arr[low] && target <= arr[high]) {
-    // All remaining values equal – either hit or miss.
-    if (arr[low] === arr[high]) {
-      return arr[low] === target ? low : -1;
-    }
-
-    // Linear interpolation to guess position.
-    const pos =
-      low +
-      Math.round(
-        ((target - arr[low]) * (high - low)) / (arr[high] - arr[low])
-      );
-
-    // Just in case rounding pushes us outside: clamp bounds.
-    const index = Math.min(Math.max(pos, low), high);
-
-    const value = arr[index];
-    if (value === target) {
-      return index;
-    }
-    if (value < target) {
-      low = index + 1;
-    } else {
-      high = index - 1;
+      // Move elements that are greater than temp backward by 'gap' places
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      // Bring temp into its spot
+      arr[j] = temp;
     }
   }
-
-  return -1; // Not found
 }
-const sorted = [3, 7, 13, 19, 23, 29, 31, 47, 53, 59];
-const target = 23;
+const data = [40, 3, 10, 5, 1, 15];
+shellSort(data);
 
-const idx = interpolationSearch(sorted, target);
-console.log(idx); // → 4
-console.log(interpolationSearch(sorted, 22)); // → -1
-const idx = interpolationSearch(sortedArray, key);
-if (idx !== -1) console.log(`Found at ${idx}`);
-else console.log('Not there');
+console.log(data); // [1, 3, 5, 10, 15, 40]
+export function shellSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): void {
+  const len = arr.length;
+  const cmp = compare ?? ((a, b) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
+
+  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
+    }
+  }
+}
+shellSort(['banana', 'apple', 'pear'], (a, b) => a.localeCompare(b));
