@@ -1,69 +1,38 @@
 /**
- * Returns the LCS length of two strings.
+ * Return the first non‑repeating character in a string.
+ * If every character repeats, return `null`.
  */
-export function lcsLength(a: string, b: string): number {
-  const m = a.length;
-  const n = b.length;
+function firstNonRepeating(str: string): string | null {
+  const counts: Record<string, number> = {};
 
-  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  // 1️⃣ Count each character
+  for (const ch of str) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
+  }
 
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
+  // 2️⃣ Scan once more to find the first with count 1
+  for (const ch of str) {
+    if (counts[ch] === 1) {
+      return ch;
     }
   }
 
-  return dp[m][n];
+  return null;
 }
 
-/**
- * Returns the actual longest common subsequence.
- * In case of multiple LCS of the same length, the one found
- * will consist of the characters chosen by the DP traversal.
- */
-export function lcs(a: string, b: string): string {
-  const m = a.length;
-  const n = b.length;
+// quick examples
+console.log(firstNonRepeating('abacabad')); // "b"
+console.log(firstNonRepeating('aabbcc'));   // null
+function firstNonRepeatingMap(str: string): string | null {
+  const freq = new Map<string, number>();
 
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
 
-  // Build the DP table – same recurrence as in lcsLength
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
-
-  // Backtrack to rebuild the sequence
-  let i = m;
-  let j = n;
-  const seq: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      seq.push(a[i - 1]); // they match
-      i--;
-      j--;
-    } else if (dp[i - 1][j] > dp[i][j - 1]) {
-      i--; // move up
-    } else {
-      j--; // move left
-    }
-  }
-
-  return seq.reverse().join('');
+  for (const ch of str) if (freq.get(ch) === 1) return ch;
+  return null;
 }
-const a = "AGGTAB";
-const b = "GXTXAYB";
-
-console.log(lcsLength(a, b)); // 4
-console.log(lcs(a, b));       // "GTAB"
+function allNonRepeating(str: string): string[] {
+  const freq = new Map<string, number>();
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  return [...str].filter(ch => freq.get(ch) === 1);
+}
