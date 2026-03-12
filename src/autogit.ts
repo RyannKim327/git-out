@@ -1,40 +1,18 @@
-// Basic node interface – can be turned into a class if you like.
-interface TreeNode<T = number> {
-  val: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+// ✅ Basic “looks‑right” test
+function isValidEmail(email: string): boolean {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
 }
-function maxDepth<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                 // empty subtree → depth 0
 
-  const leftDepth  = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
-
-  // Depth of current node = 1 (itself) + depth of deeper side
-  return 1 + Math.max(leftDepth, rightDepth);
+// usage
+console.log(isValidEmail('user@example.com')); // true
+console.log(isValidEmail('bad-email.com'));    // false
+// ✅ Covers quoted local‑part, IP domains, and "newer" TLDs
+function isValidEmailBetter(email: string): boolean {
+  const re = /^(?:(?:\"[^\"]+\")|(?:[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+))@(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}|(?:\[[0-9]{1,3}(?:\.[0-9]{1,3}){3}\]))$/;
+  return re.test(email);
 }
-const root: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3, right: { val: 5, right: { val: 6 } } }
-};
-
-console.log(maxDepth(root));   // → 4
-function maxDepthIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
-
-  let max = 0;
-  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
-    { node: root, depth: 1 },
-  ];
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    max = Math.max(max, depth);
-
-    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
-    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
-  }
-
-  return max;
-}
+// In a React hook or any form library
+const validateEmail = (value: string) => (
+  isValidEmail(value) ? undefined : 'Invalid email address'
+);
