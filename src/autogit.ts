@@ -1,112 +1,57 @@
-/**
- * Generic type that can be compared with the <=> operator.
- * For custom objects you can supply a comparator function.
- */
-type Comparable = number | string | boolean;
+text:   abcdefghijk
+        ‖~~~~~~~~~~
+pattern:   def
+function buildShiftTable(pattern: string): Map<string, number> {
+  const table = new Map<string, number>();
+  const m = pattern.length;
 
-/**
- * Swap two elements in an array
- */
-function swap<T>(arr: T[], i: number, j: number): void {
-  const tmp = arr[i];
-  arr[i] = arr[j];
-  arr[j] = tmp;
+  // For all chars except the last one
+  for (let i = 0; i < m - 1; i++) {
+    table.set(pattern[i], m - 1 - i);
+  }
+  return table;
 }
+function boyerMooreHorspool(pattern: string, text: string): number | null {
+  const m = pattern.length;
+  const n = text.length;
 
-/**
- * Heapify the subtree rooted at `i`, assuming that the binary trees
- * rooted at its children are already heaps.
- *
- * @param arr    the array
- * @param heapSize the current size of the heap
- * @param i      the index of the root of the subtree
- * @param compare comparison function (a, b) => true if a > b
- */
-function heapify<T>(
-  arr: T[],
-  heapSize: number,
-  i: number,
-  compare: (a: T, b: T) => boolean
-): void {
-  let largest = i;
-  const left   = 2 * i + 1;
-  const right  = 2 * i + 2;
+  if (m === 0) return 0;          // Empty pattern matches at start
+  if (m > n) return null;         // Impossible to find
 
-  if (left < heapSize && compare(arr[left], arr[largest])) {
-    largest = left;
-  }
-  if (right < heapSize && compare(arr[right], arr[largest])) {
-    largest = right;
+  const shiftTable = buildShiftTable(pattern);
+  const defaultShift = m;
+
+  let i = 0; // Current alignment of pattern in text
+
+  while (i <= n - m) {
+    let j = m - 1;
+
+    // Compare from right to left
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      // Full match
+      return i;
+    }
+
+    // Mismatch: decide how far to shift
+    const mismatchedChar = text[i + j];
+    const shift = shiftTable.get(mismatchedChar) ?? defaultShift;
+
+    i += shift;
   }
 
-  if (largest !== i) {
-    swap(arr, i, largest);
-    heapify(arr, heapSize, largest, compare);
-  }
+  return null; // No match found
 }
+const sampleText = "The quick brown fox jumps over the lazy dog. The fox was quick.";
+const samplePattern = "quick";
 
-/**
- * Build a max‑heap from an unsorted array
- */
-function buildMaxHeap<T>(
-  arr: T[],
-  compare: (a: T, b: T) => boolean
-): void {
-  const heapSize = arr.length;
-  // Start from the last non‑leaf node
-  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
-    heapify(arr, heapSize, i, compare);
-  }
+const matchIdx = boyerMooreHorspool(samplePattern, sampleText);
+
+if (matchIdx !== null) {
+  console.log(`Found at index ${matchIdx}`);
+} else {
+  console.log("No match");
 }
-
-/**
- * Heap sort – sorts `arr` *in place*.
- *
- * @param arr      the array to sort
- * @param compare  optional comparator; defaults to (a > b)
- */
-export function heapSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => boolean
-): void {
-  const cmp = compare ?? ((a: any, b: any) => a > b);
-
-  buildMaxHeap(arr, cmp);
-
-  for (let i = arr.length - 1; i > 0; i--) {
-    // The max element is at index 0; move it to its final place
-    swap(arr, 0, i);
-    // Re‑heapify the reduced heap
-    heapify(arr, i, 0, cmp);
-  }
-}
-
-/* --------------------------------------------------------------------- */
-/* Example usage & tiny tests                                           */
-/* --------------------------------------------------------------------- */
-
-// 1️⃣ Numbers ---------------------------------------------------------
-const nums = [5, 3, 8, 4, 1, 7, 2, 6];
-heapSort(nums);
-console.log('Sorted numbers:', nums); // [1, 2, 3, 4, 5, 6, 7, 8]
-
-// 2️⃣ Strings ---------------------------------------------------------
-const words = ['pear', 'apple', 'orange', 'banana'];
-heapSort(words); // default lexicographic order
-console.log('Sorted words:', words); // ['apple', 'banana', 'orange', 'pear']
-
-// 3️⃣ Custom objects --------------------------------------------------
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob',   age: 22 },
-  { name: 'Eva',   age: 27 }
-];
-// Sort by age ascending
-heapSort(people, (a, b) => a.age > b.age);
-console.log('People sorted by age:', people);
-/* [
-  { name: 'Bob', age: 22 },
-  { name: 'Eva', age: 27 },
-  { name: 'Alice', age: 30 }
-] */
