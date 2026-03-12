@@ -1,41 +1,39 @@
-// schedule.ts
-import cron from 'node-cron';
+function isPalindrome(str: string): boolean {
+  // Compare the string to its reverse
+  const reversed = str.split('').reverse().join('');
+  return str === reversed;
+}
 
-let runCount = 0;
-const maxRuns = 5;
+// Examples
+console.log(isPalindrome('radar'));   // true
+console.log(isPalindrome('hello'));   // false
+function isPalindromeCI(str: string): boolean {
+  const normalized = str.toLowerCase();          // make everything lowercase
+  return normalized === normalized.split('').reverse().join('');
+}
 
-// Pick a playful string at random each time the job fires.
-const messages = [
-  "🍕 Time for a pizza break!",
-  "🐱‍🏍 Speedy coding vibes!",
-  "🧐 Did you know: A group of flamingos is called a flamboyance?",
-  "🚀 Launching into the cosmos…",
-  "🔮 Future content will appear here!"
-];
+console.log(isPalindromeCI('Radar'));   // true
+console.log(isPalindromeCI('Racecar')); // true
+function isPalindromeClean(str: string): boolean {
+  const cleaned = str
+    .replace(/[^a-z0-9]/gi, '')      // strip non-alphanumerics
+    .toLowerCase();                  // normalize case
+  
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
+}
 
-const job = cron.schedule('* * * * *', () => {
-  // Bot says something random
-  const msg = messages[Math.floor(Math.random() * messages.length)];
-  console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
+console.log(isPalindromeClean('A man, a plan, a canal: Panama')); // true
+function isPalindromeTwoPointer(str: string): boolean {
+  let left = 0;
+  let right = str.length - 1;
 
-  runCount += 1;
-  if (runCount >= maxRuns) {
-    console.log('Stopping the cron job after 5 runs.');
-    job.stop();
+  while (left < right) {
+    if (str[left] !== str[right]) return false;
+    left++;
+    right--;
   }
-}, {
-  scheduled: true,
-  timezone: "UTC"
-});
+  return true;
+}
 
-console.log('Cron job started—will run every minute up to 5 times.');
-# 1. Init a barebones project if you haven’t already
-npm init -y
-
-# 2. Install the cron package and types for Node
-npm i node-cron
-npm i -D @types/node @types/node-cron typescript ts-node
-
-# 3. Compile and run
-npx ts-node schedule.ts
-[12:00:00 AM] 🚀 Launching into the cosmos…
+console.log(isPalindromeTwoPointer('radar')); // true
