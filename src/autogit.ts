@@ -1,50 +1,79 @@
-/**
- * Median of two sorted arrays (each array is sorted in ascending order).
- * Works in O(log (min(nums1.length, nums2.length))) time.
- */
-function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Make sure nums1 is the smaller array for a lighter binary‑search range
-  if (nums1.length > nums2.length) {
-    return findMedianSortedArrays(nums2, nums1);
-  }
-
-  const m = nums1.length;
-  const n = nums2.length;
-  const halfLen = Math.floor((m + n + 1) / 2);
-
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);      // partition in nums1
-    const j = halfLen - i;                       // partition in nums2
-
-    const nums1LeftMax  = (i === 0) ? -Infinity : nums1[i - 1];
-    const nums1RightMin = (i === m) ? Infinity  : nums1[i];
-    const nums2LeftMax  = (j === 0) ? -Infinity : nums2[j - 1];
-    const nums2RightMin = (j === n) ? Infinity  : nums2[j];
-
-    // If we’ve partitioned correctly, compute the median
-    if (nums1LeftMax <= nums2RightMin && nums2LeftMax <= nums1RightMin) {
-      if ((m + n) % 2 === 1) {              // odd total length
-        return Math.max(nums1LeftMax, nums2LeftMax);
-      } else {                               // even total length
-        return (Math.max(nums1LeftMax, nums2LeftMax) +
-                Math.min(nums1RightMin, nums2RightMin)) / 2;
-      }
-    }
-    // Adjust the binary‑search range
-    else if (nums1LeftMax > nums2RightMin) {
-      high = i - 1;
-    } else {
-      low = i + 1;
-    }
-  }
-
-  throw new Error("Input arrays are not sorted or invalid");
+// A simple graph representation.
+// All nodes must be comparable with === (e.g. numbers, strings, or objects with a unique id).
+interface Graph<T> {
+  /** Return the directly connected nodes of `node`.  */
+  neighbors(node: T): T[];
 }
-console.log(findMedianSortedArrays([1, 3], [2]));                    // 2
-console.log(findMedianSortedArrays([1, 2], [3, 4]));                  // 2.5
-console.log(findMedianSortedArrays([0, 0], [0, 0]));                  // 0
-console.log(findMedianSortedArrays([], [1]));                        // 1
-console.log(findMedianSortedArrays([2], []));                        // 2
+
+/**
+ * Iterative depth‑limited DFS.
+ *
+ * @param graph      the graph to search
+ * @param start      the node to start from
+ * @param goal       the node we are looking for
+ * @param maxDepth   limit recursion depth (0 = only start node)
+ * @returns           true if goal is reachable within maxDepth, false otherwise
+ */
+function depthLimitedSearch<T>(
+  graph: Graph<T>,
+  start: T,
+  goal: T,
+  maxDepth: number
+): boolean {
+  // Stack entries hold a node and its depth in the search space.
+  const stack: Array<{ node: T; depth: number }> = [{ node: start, depth: 0 }];
+  const visited = new Set<T>();
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;   // pop() never returns undefined here
+
+    // If we hit the goal, we're done.
+    if (node === goal) return true;
+
+    // Skip revisiting nodes; this keeps the search linear in the number of edges.
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    // Stop exploring deeper than we’re allowed.
+    if (depth === maxDepth) continue;
+
+    // Push neighbours onto the stack with incremented depth.
+    for (const neighbour of graph.neighbors(node)) {
+      // No need to push a node that is already visited; but doing so is harmless.
+      stack.push({ node: neighbour, depth: depth + 1 });
+    }
+  }
+
+  return false;   // exhausted everything within the depth limit
+}
+// Simple adjacency‑list example
+class SimpleGraph implements Graph<number> {
+  adjacency: Map<number, number[]>;
+
+  constructor(edges: Array<[number, number]>) {
+    this.adjacency = new Map();
+    for (const [a, b] of edges) {
+      this.adjacency
+        .get(a) ??= [];
+      this.adjacency.get(a)!.push(b);
+
+      this.adjacency
+        .get(b) ??= [];
+      this.adjacency.get(b)!.push(a);   // undirected
+    }
+  }
+
+  neighbors(node: number): number[] {
+    return this.adjacency.get(node) ?? [];
+  }
+}
+
+const g = new SimpleGraph([
+  [1, 2],
+  [1, 3],
+  [2, 4],
+  [3, 5],
+]);
+
+console.log(depthLimitedSearch(g, 1, 5, 1)); // false (needs depth 2)
+console.log(depthLimitedSearch(g, 1, 5, 2)); // true
