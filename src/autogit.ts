@@ -1,57 +1,67 @@
-text:   abcdefghijk
-        ‖~~~~~~~~~~
-pattern:   def
-function buildShiftTable(pattern: string): Map<string, number> {
-  const table = new Map<string, number>();
-  const m = pattern.length;
+class Graph<T> {
+  private adjacency = new Map<T, Set<T>>();
 
-  // For all chars except the last one
-  for (let i = 0; i < m - 1; i++) {
-    table.set(pattern[i], m - 1 - i);
-  }
-  return table;
-}
-function boyerMooreHorspool(pattern: string, text: string): number | null {
-  const m = pattern.length;
-  const n = text.length;
-
-  if (m === 0) return 0;          // Empty pattern matches at start
-  if (m > n) return null;         // Impossible to find
-
-  const shiftTable = buildShiftTable(pattern);
-  const defaultShift = m;
-
-  let i = 0; // Current alignment of pattern in text
-
-  while (i <= n - m) {
-    let j = m - 1;
-
-    // Compare from right to left
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j--;
-    }
-
-    if (j < 0) {
-      // Full match
-      return i;
-    }
-
-    // Mismatch: decide how far to shift
-    const mismatchedChar = text[i + j];
-    const shift = shiftTable.get(mismatchedChar) ?? defaultShift;
-
-    i += shift;
+  addVertex(v: T) {
+    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
   }
 
-  return null; // No match found
-}
-const sampleText = "The quick brown fox jumps over the lazy dog. The fox was quick.";
-const samplePattern = "quick";
+  addEdge(v: T, w: T, directed = false) {
+    this.addVertex(v);
+    this.addVertex(w);
+    this.adjacency.get(v)!.add(w);
+    if (!directed) this.adjacency.get(w)!.add(v);
+  }
 
-const matchIdx = boyerMooreHorspool(samplePattern, sampleText);
+  neighbours(v: T): Iterable<T> {
+    return this.adjacency.get(v) || [];
+  }
 
-if (matchIdx !== null) {
-  console.log(`Found at index ${matchIdx}`);
-} else {
-  console.log("No match");
+  vertices(): Iterable<T> {
+    return this.adjacency.keys();
+  }
 }
+function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
+  const visited = new Set<T>();
+  const result: T[] = [];
+
+  function visit(v: T) {
+    if (visited.has(v)) return;
+    visited.add(v);
+    result.push(v);
+
+    for (const n of graph.neighbours(v)) visit(n);
+  }
+
+  visit(start);
+  return result;
+}
+function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
+  const stack: T[] = [start];
+  const visited = new Set<T>();
+  const result: T[] = [];
+
+  while (stack.length) {
+    const v = stack.pop()!;
+    if (visited.has(v)) continue;
+
+    visited.add(v);
+    result.push(v);
+
+    // Push neighbours in reverse order if you want the same order
+    // as the recursive version (depends on adjacency list ordering).
+    for (const n of graph.neighbours(v)) {
+      if (!visited.has(n)) stack.push(n);
+    }
+  }
+
+  return result;
+}
+const g = new Graph<string>();
+g.addEdge('A', 'B');
+g.addEdge('A', 'C');
+g.addEdge('B', 'D');
+g.addEdge('C', 'D');
+g.addEdge('D', 'E');
+
+console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
+console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
