@@ -1,21 +1,38 @@
 /**
- * Returns a random number in the closed interval [min, max].
- *
- * Uses the built‑in Math.random() which yields a uniformly distributed
- * 64‑bit floating‑point number in [0, 1).
- *
- * @param min - The lower bound of the range (inclusive)
- * @param max - The upper bound of the range (inclusive)
- * @returns A random number in the range [min, max]
+ * Return the first non‑repeating character in a string.
+ * If every character repeats, return `null`.
  */
-export function randomInRange(min: number, max: number): number {
-  if (min > max) throw new Error('min must be <= max');
-  // Math.random() is 0 ≤ r < 1.  Scale and shift to match [min, max].
-  return Math.random() * (max - min) + min;
+function firstNonRepeating(str: string): string | null {
+  const counts: Record<string, number> = {};
+
+  // 1️⃣ Count each character
+  for (const ch of str) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
+  }
+
+  // 2️⃣ Scan once more to find the first with count 1
+  for (const ch of str) {
+    if (counts[ch] === 1) {
+      return ch;
+    }
+  }
+
+  return null;
 }
-export function randomIntInRange(min: number, max: number): number {
-  // The +1 ensures the max is included.
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+
+// quick examples
+console.log(firstNonRepeating('abacabad')); // "b"
+console.log(firstNonRepeating('aabbcc'));   // null
+function firstNonRepeatingMap(str: string): string | null {
+  const freq = new Map<string, number>();
+
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
+
+  for (const ch of str) if (freq.get(ch) === 1) return ch;
+  return null;
 }
-const randomFloat = randomInRange(5.2, 10.7);      // Anything between 5.2 and 10.7
-const randomInt   = randomIntInRange(1, 6);        // 1, 2, 3, 4, 5, or 6
+function allNonRepeating(str: string): string[] {
+  const freq = new Map<string, number>();
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  return [...str].filter(ch => freq.get(ch) === 1);
+}
