@@ -1,50 +1,50 @@
-export interface TreeNode {
-  val: number;                // or any type you like
-  left?: TreeNode | null;     // child nodes (undefined is treated as null)
-  right?: TreeNode | null;
+// A node of a singly linked list
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
+
+// Helper to build a list from an array (optional)
+function buildList<T>(values: T[]): ListNode<T> | null {
+  if (values.length === 0) return null
+  const head = new ListNode(values[0])
+  let cur = head
+  for (let i = 1; i < values.length; i++) {
+    cur.next = new ListNode(values[i])
+    cur = cur.next
+  }
+  return head
+}
 /**
- * Returns the diameter (number of edges on the longest path) of a binary tree.
- *
- * @param root root node of the tree
- * @returns diameter in edges
+ * Returns the middle ListNode of a singly linked list.
+ * If the list has an even number of nodes, the *second* middle one is returned
+ * (you can customize this if you prefer the first one).
  */
-export function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;           // will hold the best diameter found
+function getMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null
 
-  /**
-   * Post‑order DFS that returns the height of the subtree.
-   * While unwinding, we update `maxDiameter`.
-   */
-  function dfs(node: TreeNode | null): number {
-    if (!node) return -1;       // height of null is -1 so that leaf node height = 0
+  let slow: ListNode<T> | null = head
+  let fast: ListNode<T> | null = head
 
-    const leftHeight  = dfs(node.left)  + 1;
-    const rightHeight = dfs(node.right) + 1;
-
-    // The path that goes from the leftmost leaf of this subtree
-    // through this node to the rightmost leaf gives a candidate
-    // diameter.  `+1` is not needed for edges because heights already
-    // count edges from node to leaf.
-    const candidate = leftHeight + rightHeight;
-    if (candidate > maxDiameter) maxDiameter = candidate;
-
-    // Return height of this node for the parent call
-    return Math.max(leftHeight, rightHeight);
+  // Move fast twice as fast as slow
+  while (fast && fast.next) {
+    slow = slow!.next            // safe because slow ≠ null in loop
+    fast = fast.next.next
   }
 
-  dfs(root);
-  return maxDiameter;
+  return slow
 }
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
+const list = buildList([1, 2, 3, 4, 5])          // Odd‑length list
+console.log(getMiddle(list)?.val)                // → 3
 
-console.log(diameterOfBinaryTree(tree));   // → 3
+const list2 = buildList([10, 20, 30, 40])        // Even‑length list
+console.log(getMiddle(list2)?.val)               // → 30  (second middle)
+function getMiddleViaArray<T>(head: ListNode<T> | null): ListNode<T> | null {
+  const values: ListNode<T>[] = []
+  let cur = head
+  while (cur) {
+    values.push(cur)
+    cur = cur.next
+  }
+  const midIndex = Math.floor(values.length / 2)
+  return values[midIndex] ?? null
+}
