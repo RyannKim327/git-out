@@ -1,45 +1,13 @@
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+const first = "Hello, ";
+const second = "world!";
 
-  while (fast && fast.next) {
-    slow = slow!.next;            // move one step
-    fast = fast.next.next;        // move two steps
+// Using + operator
+const greeting1 = first + second; // "Hello, world!"
 
-    if (slow === fast) return true;   // they met → cycle
-  }
+// Using a template literal
+const greeting2 = `${first}${second}`; // "Hello, world!"
 
-  return false;   // hit the end → no cycle
-}
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const visited = new Set<ListNode<T>>();
+// Using concat()
+const greeting3 = first.concat(second); // "Hello, world!"
 
-  let current = head;
-  while (current) {
-    if (visited.has(current)) return true;
-    visited.add(current);
-    current = current.next;
-  }
-  return false;
-}
-// Linear list (no cycle)
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
-
-console.log(hasCycle(a)); // false
-
-// Cyclic list
-const d = new ListNode(4);
-const e = new ListNode(5);
-const f = new ListNode(6);
-d.next = e; e.next = f; f.next = d; // f points back to d
-
-console.log(hasCycle(d)); // true
+console.log(greeting1, greeting2, greeting3);
