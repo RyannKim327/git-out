@@ -1,12 +1,26 @@
-const numbers = [3, 5, 7, 9];
-const mean = numbers.reduce((sum, n) => sum + n, 0) / numbers.length;
-console.log(mean); // 6
-function mean(arr: number[]): number {
-  if (arr.length === 0) throw new Error('Cannot compute mean of empty array');
-
-  const total = arr.reduce((sum, val) => sum + val, 0);
-  return total / arr.length;
+function maxOfArray(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;   // or throw an error if you prefer
+  return Math.max(...nums);
 }
+function maxOfArray(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  return nums.reduce((max, n) => (n > max ? n : max), nums[0]);
+}
+function maxOfArray(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
 
-// Usage
-const avg = mean([10, 20, 30]); // 20
+  let max = nums[0];
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] > max) {
+      max = nums[i];
+    }
+  }
+  return max;
+}
+const myNumbers = [12, 7, 22, 5, 18];
+console.log(maxOfArray(myNumbers)); // 22
+function maxWithFallback(nums: number[], fallback = 0): number {
+  return nums.length > 0
+    ? nums.reduce((a, b) => Math.max(a, b))
+    : fallback;
+}
