@@ -1,35 +1,41 @@
-/**
- * Bottom‑up merge sort – no recursion, only loops.
- * @param arr The array to sort, in place.
- * @returns The sorted array (same reference as the argument).
- */
-export function mergeSortIterative<T>(arr: T[]): T[] {
-  const len = arr.length;
-  if (len < 2) return arr;          // already sorted
+// schedule.ts
+import cron from 'node-cron';
 
-  // Temporary buffer reused for each merge
-  const temp = new Array<T>(len);
+let runCount = 0;
+const maxRuns = 5;
 
-  // Initial run width – start with runs of 1 element
-  for (let width = 1; width < len; width <<= 1) {
-    // Merge pairs of runs: left = i‑th run, right = i+width‑th run
-    for (let i = 0; i < len; i += width << 1) {
-      const left = i;
-      const mid = Math.min(i + width, len);
-      const right = Math.min(i + (width << 1), len);
+// Pick a playful string at random each time the job fires.
+const messages = [
+  "🍕 Time for a pizza break!",
+  "🐱‍🏍 Speedy coding vibes!",
+  "🧐 Did you know: A group of flamingos is called a flamboyance?",
+  "🚀 Launching into the cosmos…",
+  "🔮 Future content will appear here!"
+];
 
-      // Merge [left, mid) and [mid, right) into temp
-      let l = left, r = mid, k = left;
-      while (l < mid && r < right) {
-        temp[k++] = (arr[l] as any <= arr[r] as any) ? arr[l++] : arr[r++];
-      }
-      while (l < mid) temp[k++] = arr[l++];
-      while (r < right) temp[k++] = arr[r++];
+const job = cron.schedule('* * * * *', () => {
+  // Bot says something random
+  const msg = messages[Math.floor(Math.random() * messages.length)];
+  console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
 
-      // Copy the merged segment back into arr
-      for (let p = left; p < right; p++) arr[p] = temp[p];
-    }
+  runCount += 1;
+  if (runCount >= maxRuns) {
+    console.log('Stopping the cron job after 5 runs.');
+    job.stop();
   }
+}, {
+  scheduled: true,
+  timezone: "UTC"
+});
 
-  return arr;
-}
+console.log('Cron job started—will run every minute up to 5 times.');
+# 1. Init a barebones project if you haven’t already
+npm init -y
+
+# 2. Install the cron package and types for Node
+npm i node-cron
+npm i -D @types/node @types/node-cron typescript ts-node
+
+# 3. Compile and run
+npx ts-node schedule.ts
+[12:00:00 AM] 🚀 Launching into the cosmos…
