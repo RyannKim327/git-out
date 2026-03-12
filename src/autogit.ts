@@ -1,21 +1,77 @@
+low  = 0
+high = length–1
+
+while low ≤ high and target ∈ [arr[low], arr[high]]:
+    // Edge cases
+    if arr[low] == arr[high]:
+        return (arr[low] == target) ? low : -1
+
+    // Interpolated index
+    pos = low + ((target – arr[low]) * (high – low))
+          / (arr[high] – arr[low])
+
+    // Clamp to array bounds
+    pos = Math.round(pos)
+
+    if arr[pos] == target:
+        return pos
+    else if arr[pos] < target:
+        low = pos + 1
+    else:
+        high = pos – 1
+
+return –1   // not found
 /**
- * Returns a random number in the closed interval [min, max].
- *
- * Uses the built‑in Math.random() which yields a uniformly distributed
- * 64‑bit floating‑point number in [0, 1).
- *
- * @param min - The lower bound of the range (inclusive)
- * @param max - The upper bound of the range (inclusive)
- * @returns A random number in the range [min, max]
+ * Interpolation search for a strictly sorted numeric array.
+ * @param arr   - Sorted numbers (ascending)
+ * @param target - Number to find
+ * @returns Index of target, or -1 if not found
  */
-export function randomInRange(min: number, max: number): number {
-  if (min > max) throw new Error('min must be <= max');
-  // Math.random() is 0 ≤ r < 1.  Scale and shift to match [min, max].
-  return Math.random() * (max - min) + min;
+export function interpolationSearch(
+  arr: readonly number[],
+  target: number
+): number {
+  if (arr.length === 0) return -1;
+
+  let low = 0;
+  let high = arr.length - 1;
+
+  // Keep going while target is inside the current window
+  while (low <= high && target >= arr[low] && target <= arr[high]) {
+    // All remaining values equal – either hit or miss.
+    if (arr[low] === arr[high]) {
+      return arr[low] === target ? low : -1;
+    }
+
+    // Linear interpolation to guess position.
+    const pos =
+      low +
+      Math.round(
+        ((target - arr[low]) * (high - low)) / (arr[high] - arr[low])
+      );
+
+    // Just in case rounding pushes us outside: clamp bounds.
+    const index = Math.min(Math.max(pos, low), high);
+
+    const value = arr[index];
+    if (value === target) {
+      return index;
+    }
+    if (value < target) {
+      low = index + 1;
+    } else {
+      high = index - 1;
+    }
+  }
+
+  return -1; // Not found
 }
-export function randomIntInRange(min: number, max: number): number {
-  // The +1 ensures the max is included.
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-const randomFloat = randomInRange(5.2, 10.7);      // Anything between 5.2 and 10.7
-const randomInt   = randomIntInRange(1, 6);        // 1, 2, 3, 4, 5, or 6
+const sorted = [3, 7, 13, 19, 23, 29, 31, 47, 53, 59];
+const target = 23;
+
+const idx = interpolationSearch(sorted, target);
+console.log(idx); // → 4
+console.log(interpolationSearch(sorted, 22)); // → -1
+const idx = interpolationSearch(sortedArray, key);
+if (idx !== -1) console.log(`Found at ${idx}`);
+else console.log('Not there');
