@@ -1,50 +1,47 @@
-/**
- * Median of two sorted arrays (each array is sorted in ascending order).
- * Works in O(log (min(nums1.length, nums2.length))) time.
- */
-function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Make sure nums1 is the smaller array for a lighter binary‑search range
-  if (nums1.length > nums2.length) {
-    return findMedianSortedArrays(nums2, nums1);
-  }
+function countWordOccurrences(text: string, word: string): number {
+  // Escape any regex meta‑characters in the search word
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  const m = nums1.length;
-  const n = nums2.length;
-  const halfLen = Math.floor((m + n + 1) / 2);
+  // \b = word boundary, i = ignore case, g = global (find all)
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
 
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);      // partition in nums1
-    const j = halfLen - i;                       // partition in nums2
-
-    const nums1LeftMax  = (i === 0) ? -Infinity : nums1[i - 1];
-    const nums1RightMin = (i === m) ? Infinity  : nums1[i];
-    const nums2LeftMax  = (j === 0) ? -Infinity : nums2[j - 1];
-    const nums2RightMin = (j === n) ? Infinity  : nums2[j];
-
-    // If we’ve partitioned correctly, compute the median
-    if (nums1LeftMax <= nums2RightMin && nums2LeftMax <= nums1RightMin) {
-      if ((m + n) % 2 === 1) {              // odd total length
-        return Math.max(nums1LeftMax, nums2LeftMax);
-      } else {                               // even total length
-        return (Math.max(nums1LeftMax, nums2LeftMax) +
-                Math.min(nums1RightMin, nums2RightMin)) / 2;
-      }
-    }
-    // Adjust the binary‑search range
-    else if (nums1LeftMax > nums2RightMin) {
-      high = i - 1;
-    } else {
-      low = i + 1;
-    }
-  }
-
-  throw new Error("Input arrays are not sorted or invalid");
+  // .match() returns an array of all matches, null if none
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
 }
-console.log(findMedianSortedArrays([1, 3], [2]));                    // 2
-console.log(findMedianSortedArrays([1, 2], [3, 4]));                  // 2.5
-console.log(findMedianSortedArrays([0, 0], [0, 0]));                  // 0
-console.log(findMedianSortedArrays([], [1]));                        // 1
-console.log(findMedianSortedArrays([2], []));                        // 2
+
+// Usage
+const msg = "The quick brown fox jumps over the lazy fox. Foxes are clever.";
+console.log(countWordOccurrences(msg, "fox")); // → 2 (fox, fox)
+const regex = new RegExp(escaped, 'gi');
+function countSplit(text: string, word: string): number {
+  // Empty string returns 0
+  if (!text) return 0;
+  return text.split(word).length - 1;
+}
+function countWithMatchAll(text: string, word: string): number {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+  const allMatches = text.matchAll(regex); // Iterable<{ index: … }>
+
+  let count = 0;
+  for (const _ of allMatches) count++;
+  return count;
+}
+export function countOccurrences(
+  text: string,
+  word: string,
+  options?: { caseSensitive?: boolean; wholeWord?: boolean }
+): number {
+  const { caseSensitive = false, wholeWord = true } = options ?? {};
+
+  // Escape regex meta‑chars
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  let pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
+  let flags = 'g' + (caseSensitive ? '' : 'i');
+
+  const regex = new RegExp(pattern, flags);
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
+}
