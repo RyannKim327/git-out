@@ -1,45 +1,30 @@
-// 1️⃣  Install node‑fetch (or use the built‑in fetch in environments that have it)
-//    npm install node-fetch @types/node-fetch
-import fetch from "node-fetch";
-
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
 /**
- * Fetch a single Todo by its numeric ID.
- * @param id - The ID of the Todo to request.
- * @returns Promises a Todo object.
+ * Returns the second largest value in an array.
+ * Uses a single pass – O(n) time, O(1) extra space.
+ *
+ * @param nums – numeric array
+ * @returns second largest number, or `undefined` if it can’t be determined
  */
-async function getTodoById(id: number): Promise<Todo> {
-  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
 
-  const response = await fetch(url, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-  });
+  let largest = -Infinity;
+  let second = -Infinity;
 
-  // 2️⃣  Basic status check – throws if not 2xx
-  if (!response.ok) {
-    throw new Error(`Request failed with ${response.status} ${response.statusText}`);
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;   // old largest becomes second
+      largest = n;
+    } else if (n > second && n !== largest) {
+      // n is between largest and second – update second
+      second = n;
+    }
   }
 
-  // 3️⃣  Parse the JSON body and return it as a Todo
-  const data = (await response.json()) as Todo;
-  return data;
+  return second === -Infinity ? undefined : second;
 }
 
-/**
- * Demo of calling `getTodoById` and logging the result or an error.
- */
-(async () => {
-  try {
-    const todo = await getTodoById(3);
-    console.log("Fetched Todo:", todo);
-  } catch (err) {
-    console.error("Error fetching Todo:", err);
-  }
-})();
+// quick demo
+console.log(secondLargest([3, 1, 4, 1, 5, 9, 2, 6, 5])); // 8
+console.log(secondLargest([42]));                         // undefined
+console.log(secondLargest([7, 7, 7]));                     // undefined – no distinct second value
