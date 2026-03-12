@@ -1,19 +1,21 @@
-function removeVowels(str: string): string {
-  // The regex /[aeiou]/gi matches any vowel, case‑insensitively
-  return str.replace(/[aeiou]/gi, '');
-}
+// Example array
+const nums: number[] = [42, 1, 17, 3, 99];
 
-// Examples
-console.log(removeVowels('Hello World'));    // "Hll Wrld"
-console.log(removeVowels('Typescript'));     // "TypScrpt"
-console.log(removeVowels('AEIOU aeioU'));    // ""
-function removeAllVowels(str: string): string {
-  // Matches any vowel character in the Latin vowel block
-  return str.replace(/[aeiouAEIOU]/g, ''); // still plain Latin
-  // OR with property escapes (if your environment supports it):
-  // return str.replace(/\p{Script=Latin}&&[aeiou]/gi, '');
-}
-function removeVowels(arr: string): string {
-  const vowels = new Set('aeiouAEIOU');
-  return arr.split('').filter(ch => !vowels.has(ch)).join('');
-}
+// Sort in ascending order
+const asc = [...nums].sort((a, b) => a - b);
+console.log('Ascending:', asc); // [1, 3, 17, 42, 99]
+
+// Sort in descending order
+const desc = [...nums].sort((a, b) => b - a);
+console.log('Descending:', desc); // [99, 42, 17, 3, 1]
+const custom = [...nums].sort((a, b) => {
+  const aEven = a % 2 === 0;
+  const bEven = b % 2 === 0;
+  if (aEven && !bEven) return -1;     // a comes first
+  if (!aEven && bEven) return 1;      // b comes first
+  return a - b;                       // both same parity: numeric order
+});
+console.log(custom); // [ 42, 2, 1, 3, 17, 99 ]
+import _ from 'lodash';
+
+const order = _.orderBy(nums, [x => x], ['asc']); // asc by numeric value
