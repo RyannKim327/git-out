@@ -1,40 +1,65 @@
-// Basic node interface – can be turned into a class if you like.
-interface TreeNode<T = number> {
-  val: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+/**
+ * Returns the digit present at a given place (0‑based from right to left).
+ * Example: getDigit(381, 0) === 1, getDigit(381, 1) === 8, getDigit(381, 2) === 3
+ */
+function getDigit(num: number, place: number): number {
+  return Math.floor(Math.abs(num) / Math.pow(10, place)) % 10;
 }
-function maxDepth<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                 // empty subtree → depth 0
 
-  const leftDepth  = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
-
-  // Depth of current node = 1 (itself) + depth of deeper side
-  return 1 + Math.max(leftDepth, rightDepth);
+/**
+ * Returns the maximal number of digits among elements of array.
+ */
+function maxDigits(arr: number[]): number {
+  if (arr.length === 0) return 0;
+  const max = Math.max(...arr.map(Math.abs));
+  return Math.floor(Math.log10(max)) + 1;
 }
-const root: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3, right: { val: 5, right: { val: 6 } } }
-};
+/**
+ * Stable counting sort on `arr` by the digit at `place`.
+ * (`digitBase` defaults to 10 – decimal.)
+ */
+function countingSortByDigit(arr: number[], place: number, digitBase = 10): number[] {
+  const bucketCount = digitBase;
+  const buckets: number[][] = Array.from({ length: bucketCount }, () => []);
 
-console.log(maxDepth(root));   // → 4
-function maxDepthIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
-
-  let max = 0;
-  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
-    { node: root, depth: 1 },
-  ];
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    max = Math.max(max, depth);
-
-    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
-    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
+  for (const n of arr) {
+    const digit = getDigit(n, place);
+    buckets[digit].push(n);
   }
 
-  return max;
+  // Flatten buckets in order; that's the stable result for this digit.
+  return buckets.flat();
 }
+/**
+ * Radix sort for non‑negative integers.
+ * @param arr array of numbers (non‑negative, but the routine will work with any integers once you wrap them)
+ * @returns sorted array (stable)
+ */
+export function radixSort(arr: number[]): number[] {
+  if (arr.length <= 1) return [...arr]; // copy so caller doesn’t mutate input
+
+  const numDigits = maxDigits(arr);
+  let sorted = [...arr];
+
+  for (let place = 0; place < numDigits; place++) {
+    sorted = countingSortByDigit(sorted, place);
+  }
+
+  return sorted;
+}
+export function radixSortFull(arr: number[]): number[] {
+  const negatives = arr.filter(n => n < 0).map(n => -n);
+  const positives = arr.filter(n => n >= 0);
+
+  const sortedNeg = radixSort(negatives).reverse().map(n => -n);
+  const sortedPos = radixSort(positives);
+
+  return [...sortedNeg, ...sortedPos];
+}
+import { radixSortFull } from './radixSort';
+
+const data = [170, 45, 75, 90, 802, 24, 2, 66, -15, -302, 0];
+const sorted = radixSortFull(data);
+
+console.log(sorted);
+// → [-302, -15, 0, 2, 24, 45, 66, 75, 90, 170, 802]
