@@ -1,26 +1,39 @@
-function maxOfArray(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;   // or throw an error if you prefer
-  return Math.max(...nums);
-}
-function maxOfArray(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;
-  return nums.reduce((max, n) => (n > max ? n : max), nums[0]);
-}
-function maxOfArray(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;
-
-  let max = nums[0];
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] > max) {
-      max = nums[i];
-    }
+/**
+ * Return true if `a` and `b` are anagrams.
+ *
+ * @param a      First string
+ * @param b      Second string
+ * @param options  Optional settings – case sensitivity & ignoring non‑letters
+ */
+function areAnagrams(
+  a: string,
+  b: string,
+  options?: {
+    caseSensitive?: boolean;
+    ignoreNonAlpha?: boolean;
   }
-  return max;
+): boolean {
+  const { caseSensitive = false, ignoreNonAlpha = false } = options || {};
+
+  // Helper to canonicalise a string
+  const canon = (s: string) =>
+    s
+      .split('')
+      .filter((ch) => !ignoreNonAlpha || /[a-zA-Z]/.test(ch))
+      .map((ch) => (caseSensitive ? ch : ch.toLowerCase()))
+      .sort(); // array of chars, sorted
+
+  const aChars = canon(a);
+  const bChars = canon(b);
+
+  if (aChars.length !== bChars.length) return false;
+
+  for (let i = 0; i < aChars.length; i++) {
+    if (aChars[i] !== bChars[i]) return false;
+  }
+
+  return true;
 }
-const myNumbers = [12, 7, 22, 5, 18];
-console.log(maxOfArray(myNumbers)); // 22
-function maxWithFallback(nums: number[], fallback = 0): number {
-  return nums.length > 0
-    ? nums.reduce((a, b) => Math.max(a, b))
-    : fallback;
-}
+areAnagrams('Listen', 'Silent');           // true
+areAnagrams('Hello', 'Ollhe', { caseSensitive: true }); // false
+areAnagrams('Dormitory', 'Dirty room', { ignoreNonAlpha: true }); // true
