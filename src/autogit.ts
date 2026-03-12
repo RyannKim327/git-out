@@ -1,45 +1,79 @@
-// apiDemo.ts
-// -----------------------------------------------------
-// Example: Call a public JSONPlaceholder API,
-// fetch a post, and log its title & body.
-//
-// Works out of the box in Node≥18 or any modern browser
-// with a `tsconfig.json` that has `"esModuleInterop": true`
-// and `"target": "es2015"` (or later).
+// `T` can be any comparable type – string, number, object with an id, etc.
+export function bfs<T>(
+  start: T,
+  graph: Map<T, T[]>,          // adjacency list
+  onVisit?: (node: T) => void // optional per‑node work
+): T[] {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  const order: T[] = [];
 
-// 1.  Types that model the JSON we expect back
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+  visited.add(start);
 
-// 2.  A handy helper that ensures we get JSON
-async function json<T>(resp: Response): Promise<T> {
-  if (!resp.ok) {
-    throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+  while (queue.length) {
+    const node = queue.shift()!;   // node is guaranteed non‑null inside loop
+
+    // Optional callback that lets you do something with the node as you visit it
+    if (onVisit) onVisit(node);
+
+    order.push(node);
+
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
   }
-  return resp.json() as Promise<T>;
+
+  return order;
 }
+// Example graph (adjacency list)
+const g = new Map<string, string[]>([
+  ['A', ['B', 'C']],
+  ['B', ['D', 'E']],
+  ['C', ['F']],
+  ['D', []],
+  ['E', ['F']],
+  ['F', []]
+]);
 
-// 3.  The async routine that talks to the API
-async function fetchPost(postId: number): Promise<Post> {
-  const url = `https://jsonplaceholder.typicode.com/posts/${postId}`;
+const order = bfs('A', g);          // ["A", "B", "C", "D", "E", "F"]
 
-  const response = await fetch(url);        // ← call the API
-  const post = await json<Post>(response);   // ← parse & type‑check
+console.log('BFS order:', order);
+export function bfsFind<T>(
+  start: T,
+  graph: Map<T, T[]>,
+  goal: T
+): T[] | null {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  visited.add(start);
 
-  return post;
-}
+  while (queue.length) {
+    const node = queue.shift()!;
 
-// 4.  Call it and do something with the data
-(async () => {
-  try {
-    const post = await fetchPost(1);
-    console.log(`Post #1 title: ${post.title}`);
-    console.log(`Post #1 body:  ${post.body}`);
-  } catch (err) {
-    console.error("Something went wrong:", err);
+    if (node === goal) {
+      // Re‑construct the path if you need it – here we just return the node that found it.
+      return [node];
+    }
+
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
   }
-})();
+
+  return null; // goal not reachable
+}
+// Small graph with a cycle
+const g2 = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [3]],
+  [3, [1, 4]],
+  [4, []]
+]);
+
+console.log(bfs(1, g2)); // [1, 2, 3, 4]
