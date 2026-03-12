@@ -1,59 +1,32 @@
 /**
- * Return the index of the first occurrence of `pattern` inside `text`,
- * or -1 if the pattern is absent.
+ * Returns the area of a triangle when you know its base and height.
+ *
+ * @param base   The length of the triangle’s base.
+ * @param height The height (altitude) drawn to that base.
+ * @returns The area in whatever units the inputs are in.
  */
-export function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0; // trivially found at start
-
-  const lps = computeLPSArray(pattern); // longest‑prefix‑suffix table
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) { // whole pattern matched
-        return i - j; // match start index
-      }
-    } else if (j > 0) {
-      // mismatch after j matches – skip ahead by lps[j‑1]
-      j = lps[j - 1];
-    } else {
-      // mismatch at start of pattern
-      i++;
-    }
-  }
-
-  return -1; // no match
+function triangleAreaFromBaseHeight(base: number, height: number): number {
+  return 0.5 * base * height;
 }
-
 /**
- * Pre‑process the pattern to build the “longest prefix that is also a suffix”
- * (LPS) array. lps[i] = the length of the longest proper prefix of
- * pattern[0..i] that is also a suffix of pattern[0..i].
+ * Returns the area of a triangle given its three vertices.
+ *
+ * @param x1 x‑coordinate of the first vertex
+ * @param y1 y‑coordinate of the first vertex
+ * @param x2 x‑coordinate of the second vertex
+ * @param y2 y‑coordinate of the second vertex
+ * @param x3 x‑coordinate of the third vertex
+ * @param y3 y‑coordinate of the third vertex
+ * @returns The absolute area (non‑negative) of the triangle.
  */
-function computeLPSArray(pattern: string): number[] {
-  const lps: number[] = Array(pattern.length).fill(0);
-  let len = 0;   // length of previous longest prefix suffix
-  let i = 1;     // lps[0] is always 0
-
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else if (len !== 0) {
-      // use the previous lps value to avoid re‑checking
-      len = lps[len - 1];
-    } else {
-      lps[i] = 0;
-      i++;
-    }
-  }
-
-  return lps;
+function triangleAreaFromPoints(
+  x1: number, y1: number,
+  x2: number, y2: number,
+  x3: number, y3: number
+): number {
+  return Math.abs(
+    x1 * (y2 - y3) +
+    x2 * (y3 - y1) +
+    x3 * (y1 - y2)
+  ) / 2;
 }
-console.log(kmpSearch("ababcabcababc", "abc"));   // 2
-console.log(kmpSearch("ababcabcababc", "abcd"));  // -1
-console.log(kmpSearch("aaaaa", "aaa"));           // 0
