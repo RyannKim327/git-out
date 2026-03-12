@@ -1,47 +1,14 @@
-/**
- * Return true if `s` is a palindrome (case‑insensitive, alphanumeric only).
- * Works in O(n) time and O(1) extra space.
- */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+// 1) Using a regular expression (remove *any* whitespace)
+const clean1 = originalString.replace(/\s+/g, "");
 
-  // helper: is the char code an ASCII alphanumeric?
-  const isAlnum = (c: number) =>
-    (c >= 48 && c <= 57) ||        // 0‑9
-    (c >= 65 && c <= 90) ||        // A‑Z
-    (c >= 97 && c <= 122);         // a‑z
+// 2) If you only care about literal space characters (no tabs, newlines, etc.)
+const clean2 = originalString.replace(/ /g, "");
 
-  // helper: convert ASCII letter to its uppercase equivalent
-  const toUpper = (c: number) => (c >= 97 && c <= 122) ? (c - 32) : c;
+// 3) Split/join – handy if you’re scrubbing a handful of specific delimiters
+const clean3 = originalString.split(" ").join("");
 
-  while (left < right) {
-    // skip non‑alphanumeric characters on the left
-    while (left < right && !isAlnum(s.charCodeAt(left))) left++;
-    // skip non‑alphanumeric characters on the right
-    while (left < right && !isAlnum(s.charCodeAt(right))) right--;
-
-    if (left >= right) break;
-
-    // compare the two characters after normalizing to uppercase
-    if (toUpper(s.charCodeAt(left)) !== toUpper(s.charCodeAt(right))) {
-      return false;
-    }
-    left++;
-    right--;
-  }
-
-  return true;
+// 4) Manual loop (useful if you need to do something with each char)
+let clean4 = "";
+for (const ch of originalString) {
+  if (ch !== " ") clean4 += ch;
 }
-
-/* ---------- demo ---------- */
-const tests = [
-  "A man, a plan, a canal: Panama",
-  "race a car",
-  "No 'x' in Nixon",
-  "MadamInEdenImAdam",
-];
-
-tests.forEach(t => {
-  console.log(`"${t}" → ${isPalindrome(t)}`);
-});
