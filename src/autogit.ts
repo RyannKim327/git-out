@@ -1,79 +1,56 @@
-// `T` can be any comparable type – string, number, object with an id, etc.
-export function bfs<T>(
-  start: T,
-  graph: Map<T, T[]>,          // adjacency list
-  onVisit?: (node: T) => void // optional per‑node work
-): T[] {
-  const queue: T[] = [start];
-  const visited = new Set<T>();
-  const order: T[] = [];
+Let   S = s1 s2 … sn
+      T = t1 t2 … tm
 
-  visited.add(start);
+DP[i][j] = length of the longest common suffix that ends at S[i‑1] and T[j‑1]
+DP[i][j] = DP[i-1][j-1] + 1
+/**
+ * Returns the longest common substring of `a` and `b`.
+ * If there are multiple substrings of the same maximum length,
+ * the first one found in `a` will be returned.
+ */
+export function longestCommonSubstring(a: string, b: string): string {
+  const n = a.length, m = b.length;
+  if (n === 0 || m === 0) return '';
 
-  while (queue.length) {
-    const node = queue.shift()!;   // node is guaranteed non‑null inside loop
+  // `prev` holds DP values for row i-1
+  const prev = new Array(m + 1).fill(0);
+  // `curr` holds DP values for current row i
+  const curr = new Array(m + 1).fill(0);
 
-    // Optional callback that lets you do something with the node as you visit it
-    if (onVisit) onVisit(node);
+  let maxLen = 0;          // longest length so far
+  let maxEndIndexA = 0;    // index in `a` where this substring ends
 
-    order.push(node);
-
-    for (const neighbor of graph.get(node) ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
+  for (let i = 1; i <= n; i++) {
+    // Iterate columns
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        curr[j] = prev[j - 1] + 1;
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          maxEndIndexA = i - 1;   // keep the end idx in a
+        }
+      } else {
+        curr[j] = 0;
       }
+    }
+
+    // Swap rows for next iteration
+    //  curr becomes prev, prev becomes curr (reuse the same arrays)
+    for (let j = 0; j <= m; j++) {
+      prev[j] = curr[j];
+      curr[j] = 0;   // reset current row for the next round
     }
   }
 
-  return order;
+  return a.slice(maxEndIndexA - maxLen + 1, maxEndIndexA + 1);
 }
-// Example graph (adjacency list)
-const g = new Map<string, string[]>([
-  ['A', ['B', 'C']],
-  ['B', ['D', 'E']],
-  ['C', ['F']],
-  ['D', []],
-  ['E', ['F']],
-  ['F', []]
-]);
+import { longestCommonSubstring } from './common-substring';
 
-const order = bfs('A', g);          // ["A", "B", "C", "D", "E", "F"]
+const a = "ABABCDA";
+const b = "CBADABABC";
 
-console.log('BFS order:', order);
-export function bfsFind<T>(
-  start: T,
-  graph: Map<T, T[]>,
-  goal: T
-): T[] | null {
-  const queue: T[] = [start];
-  const visited = new Set<T>();
-  visited.add(start);
-
-  while (queue.length) {
-    const node = queue.shift()!;
-
-    if (node === goal) {
-      // Re‑construct the path if you need it – here we just return the node that found it.
-      return [node];
-    }
-
-    for (const neighbor of graph.get(node) ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
-    }
-  }
-
-  return null; // goal not reachable
-}
-// Small graph with a cycle
-const g2 = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [3]],
-  [3, [1, 4]],
-  [4, []]
-]);
-
-console.log(bfs(1, g2)); // [1, 2, 3, 4]
+console.log(longestCommonSubstring(a, b)); // → "ABC"
+console.log(longestCommonSubstring('foo', ''));          // ''
+console.log(longestCommonSubstring('abc', 'xyz'));       // ''
+console.log(longestCommonSubstring('same', 'same'));     // 'same'
+console.log(longestCommonSubstring('aaaaa', 'bbaaa'));   // 'aaa'
