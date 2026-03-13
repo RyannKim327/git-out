@@ -1,62 +1,40 @@
-class TreeNode {
-  value: number;
-  left: TreeNode | null = null;
-  right: TreeNode | null = null;
+/**
+ * Classic in‑place quick‑sort.
+ *
+ * @param arr  The array to be sorted (in‑place).
+ * @param left The starting index (default: 0).
+ * @param right The ending index (default: arr.length‑1).
+ *
+ * @returns The same array, now sorted.
+ */
+function quickSort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
+  if (left >= right) return arr;          // base case: 0 or 1 item
 
-  constructor(value: number) {
-    this.value = value;
-  }
-}
-interface TreeNode {
-  value: number;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
-function countLeaves(root: TreeNode | null): number {
-  if (!root) return 0;                     // empty subtree → no leaves
+  // Pick a pivot—here we just take the middle element.
+  const pivotIndex = Math.floor((left + right) / 2);
+  const pivot = arr[pivotIndex];
 
-  // leaf test
-  const isLeaf = !root.left && !root.right;
-  if (isLeaf) return 1;                    // this node itself is a leaf
+  // Partition: everything less than the pivot goes left, everything
+  // greater or equal goes right.  Elements equal to the pivot can go either side.
+  let i = left;
+  let j = right;
+  while (i <= j) {
+    while (arr[i] < pivot) i++;   // find an element on the wrong side (left)
+    while (arr[j] > pivot) j--;   // find an element on the wrong side (right)
 
-  // otherwise recursively count in both sub‑trees
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-function countLeavesIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  let count = 0;
-  const stack: (TreeNode | null)[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop() as TreeNode;
-
-    const isLeaf = !node.left && !node.right;
-    if (isLeaf) {
-      count += 1;
-    } else {
-      if (node.right) stack.push(node.right);
-      if (node.left) stack.push(node.left);
+    if (i <= j) {                 // swap the out‑of‑place elements
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
+      j--;
     }
   }
 
-  return count;
-}
-// Build the tree:
-//        1
-//       / \
-//      2   3
-//     /   / \
-//    4   5   6
-//         \
-//          7
-const root = new TreeNode(1);
-root.left = new TreeNode(2);
-root.right = new TreeNode(3);
-root.left.left = new TreeNode(4);
-root.right.left = new TreeNode(5);
-root.right.right = new TreeNode(6);
-root.right.left.right = new TreeNode(7);
+  // Recursively sort the two partitions.
+  // The first call deals with the left two halves *unless* they overlap.
+  if (left < j) quickSort(arr, left, j);
+  if (i < right) quickSort(arr, i, right);
 
-console.log(countLeaves(root));          // → 3  (nodes 4, 7, 6)
-console.log(countLeavesIterative(root)); // → 3
+  return arr;
+}
+const unsorted = [3, 7, 2, 5, 1, 4, 6];
+quickSort(unsorted);        // unsorted is now [1,2,3,4,5,6,7]
