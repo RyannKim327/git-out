@@ -1,57 +1,25 @@
-text:   abcdefghijk
-        ‖~~~~~~~~~~
-pattern:   def
-function buildShiftTable(pattern: string): Map<string, number> {
-  const table = new Map<string, number>();
-  const m = pattern.length;
+/**
+ * Returns true if `n` is a prime number.
+ */
+export function isPrime(n: number): boolean {
+  // Prime numbers are > 1
+  if (n <= 1) return false;
 
-  // For all chars except the last one
-  for (let i = 0; i < m - 1; i++) {
-    table.set(pattern[i], m - 1 - i);
+  // 2 and 3 are the only even/odd primes
+  if (n <= 3) return true;
+
+  // Even numbers > 2 can be rejected right away
+  if (n % 2 === 0) return false;
+
+  // Check only odd divisors up to √n
+  const limit = Math.floor(Math.sqrt(n));
+  for (let d = 3; d <= limit; d += 2) {
+    if (n % d === 0) return false;
   }
-  return table;
+  return true;
 }
-function boyerMooreHorspool(pattern: string, text: string): number | null {
-  const m = pattern.length;
-  const n = text.length;
-
-  if (m === 0) return 0;          // Empty pattern matches at start
-  if (m > n) return null;         // Impossible to find
-
-  const shiftTable = buildShiftTable(pattern);
-  const defaultShift = m;
-
-  let i = 0; // Current alignment of pattern in text
-
-  while (i <= n - m) {
-    let j = m - 1;
-
-    // Compare from right to left
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j--;
-    }
-
-    if (j < 0) {
-      // Full match
-      return i;
-    }
-
-    // Mismatch: decide how far to shift
-    const mismatchedChar = text[i + j];
-    const shift = shiftTable.get(mismatchedChar) ?? defaultShift;
-
-    i += shift;
-  }
-
-  return null; // No match found
-}
-const sampleText = "The quick brown fox jumps over the lazy dog. The fox was quick.";
-const samplePattern = "quick";
-
-const matchIdx = boyerMooreHorspool(samplePattern, sampleText);
-
-if (matchIdx !== null) {
-  console.log(`Found at index ${matchIdx}`);
-} else {
-  console.log("No match");
-}
+console.log(isPrime(2));  // true
+console.log(isPrime(15)); // false
+console.log(isPrime(17)); // true
+console.log(isPrime(1));  // false
+console.log(isPrime(-5)); // false
