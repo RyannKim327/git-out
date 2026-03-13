@@ -1,59 +1,72 @@
 /**
- * Return the index of the first occurrence of `pattern` inside `text`,
- * or -1 if the pattern is absent.
+ * Encodes a string using Burrows–Wheeler transform.
+ *
+ * @param input – Source text (any length, any chars including nulls).
+ * @returns {bwt: string, index: number} – BWT string + original row index.
  */
-export function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0; // trivially found at start
+export function bwtEncode(input: string): { bwt: string; index: number } {
+  const n = input.length;
+  // Quick escape for empty string.
+  if (n === 0) return { bwt: "", index: 0 };
 
-  const lps = computeLPSArray(pattern); // longest‑prefix‑suffix table
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) { // whole pattern matched
-        return i - j; // match start index
-      }
-    } else if (j > 0) {
-      // mismatch after j matches – skip ahead by lps[j‑1]
-      j = lps[j - 1];
-    } else {
-      // mismatch at start of pattern
-      i++;
-    }
+  // Build the rotation array.
+  const rotations: string[] = [];
+  for (let offset = 0; offset < n; offset++) {
+    const rotation = input.slice(offset) + input.slice(0, offset);
+    rotations.push(rotation);
   }
 
-  return -1; // no match
+  // Sort the rotations.
+  rotations.sort();
+
+  // Construct the BWT string (last column) and locate the original string.
+  let lastColumn = "";
+  let origIndex = -1;
+  for (let i = 0; i < n; i++) {
+    const rot = rotations[i];
+    lastColumn += rot.charAt(n - 1);          // last char of the rotation
+    if (rot === input) origIndex = i;        // original text keeps its place
+  }
+
+  return { bwt: lastColumn, index: origIndex };
 }
 
 /**
- * Pre‑process the pattern to build the “longest prefix that is also a suffix”
- * (LPS) array. lps[i] = the length of the longest proper prefix of
- * pattern[0..i] that is also a suffix of pattern[0..i].
+ * Decodes a BWT pair back to the original string.
+ *
+ * @param bwt – String produced by bwtEncode (last column).
+ * @param index – Index returned by bwtEncode.
+ * @returns original string.
  */
-function computeLPSArray(pattern: string): number[] {
-  const lps: number[] = Array(pattern.length).fill(0);
-  let len = 0;   // length of previous longest prefix suffix
-  let i = 1;     // lps[0] is always 0
+export function bwtDecode(bwt: string, index: number): string {
+  const n = bwt.length;
+  if (n === 0) return "";
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else if (len !== 0) {
-      // use the previous lps value to avoid re‑checking
-      len = lps[len - 1];
-    } else {
-      lps[i] = 0;
-      i++;
+  // Initialize table with empty strings.
+  const table: string[] = Array(n).fill("");
+
+  // Each iteration prepends a character from the BWT to every row,
+  // then sorts. After n iterations the table is the sorted matrix.
+  for (let step = 0; step < n; step++) {
+    // Prepend the BWT characters.
+    for (let i = 0; i < n; i++) {
+      table[i] = bwt.charAt(i) + table[i];
     }
+    // Stable sort by the whole string.
+    table.sort();
   }
 
-  return lps;
+  // The row at the recorded index is the original string.
+  return table[index];
 }
-console.log(kmpSearch("ababcabcababc", "abc"));   // 2
-console.log(kmpSearch("ababcabcababc", "abcd"));  // -1
-console.log(kmpSearch("aaaaa", "aaa"));           // 0
+import { bwtEncode, bwtDecode } from "./bwt";
+
+const text = "The quick brown fox jumps over the lazy dog";
+
+const { bwt, index } = bwtEncode(text);
+console.log("BWT String:", bwt);
+console.log("Original index =", index);
+
+const recovered = bwtDecode(bwt, index);
+console.log("Recovered:", recovered);
+console.log("Match:", recovered === text); // true
