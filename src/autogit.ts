@@ -1,22 +1,40 @@
-function countChar(str: string, char: string): number {
-  let counter = 0;
-  for (const c of str) {
-    if (c === char) counter++;
+// Basic node interface – can be turned into a class if you like.
+interface TreeNode<T = number> {
+  val: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
+}
+function maxDepth<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                 // empty subtree → depth 0
+
+  const leftDepth  = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
+
+  // Depth of current node = 1 (itself) + depth of deeper side
+  return 1 + Math.max(leftDepth, rightDepth);
+}
+const root: TreeNode = {
+  val: 1,
+  left: { val: 2, left: { val: 4 } },
+  right: { val: 3, right: { val: 5, right: { val: 6 } } }
+};
+
+console.log(maxDepth(root));   // → 4
+function maxDepthIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let max = 0;
+  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
+    { node: root, depth: 1 },
+  ];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    max = Math.max(max, depth);
+
+    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
+    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
   }
-  return counter;
+
+  return max;
 }
-function countChar(str: string, char: string): number {
-  // Escape regex specials if needed
-  const escaped = char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(escaped, 'g');
-  const matches = str.match(regex);
-  return matches ? matches.length : 0;
-}
-function countChar(str: string, char: string): number {
-  return str.split(char).length - 1;
-}
-function countChar(str: string, char: string): number {
-  return Array.from(str).filter(c => c === char).length;
-}
-console.log(countChar('hello world', 'l')); // 3
-console.log(countChar('😀😃😄😁😆', '😄')); // 1
