@@ -1,22 +1,44 @@
-function countChar(str: string, char: string): number {
-  let counter = 0;
-  for (const c of str) {
-    if (c === char) counter++;
+/**
+ * Returns n! (n factorial) for a non‑negative integer.
+ *
+ * @param n A non‑negative integer (0, 1, 2, …).
+ * @returns The factorial of n. Returns 1 for n = 0.
+ * @throws Error if n is negative.
+ */
+function factorial(n: number): number {
+  if (n < 0) {
+    throw new Error("Factorial is not defined for negative numbers.");
   }
-  return counter;
+
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
 }
-function countChar(str: string, char: string): number {
-  // Escape regex specials if needed
-  const escaped = char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(escaped, 'g');
-  const matches = str.match(regex);
-  return matches ? matches.length : 0;
+
+// Example
+console.log(factorial(5)); // 120
+function factorialRecursive(n: number): number {
+  if (n < 0) {
+    throw new Error("Negative input not allowed.");
+  }
+  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
 }
-function countChar(str: string, char: string): number {
-  return str.split(char).length - 1;
+
+console.log(factorialRecursive(5)); // 120
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error("Negative input not allowed.");
+  let result = 1n;          // BigInt literal starts with n
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
 }
-function countChar(str: string, char: string): number {
-  return Array.from(str).filter(c => c === char).length;
-}
-console.log(countChar('hello world', 'l')); // 3
-console.log(countChar('😀😃😄😁😆', '😄')); // 1
+
+console.log(factorialBigInt(100).toString());
+// "933262154... (full 158‑digit number)"
+console.assert(factorial(0) === 1);
+console.assert(factorial(1) === 1);
+console.assert(factorial(5) === 120);
+console.assert(factorialBigInt(10).toString() === "3628800");
