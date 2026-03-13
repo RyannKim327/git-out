@@ -1,27 +1,45 @@
-/**
- * Return true if the supplied string is a palindrome (ignoring case,
- * punctuation, spaces, and other non‑alphanumeric characters).
- */
-export function isPalindrome(input: string): boolean {
-  // Keep only letters and digits, make everything lowercase
-  const cleaned = input.replace(/[^a-z0-9]/gi, '').toLowerCase();
+const raw = [1, 2, 2, 3, 4, 4, 5];
 
-  // Quick escape: a single character or empty string is trivially a palindrome
-  if (cleaned.length <= 1) return true;
+const unique = Array.from(new Set(raw));
+// or: const unique = [...new Set(raw)];
 
-  // Compare characters from the front and back
-  for (let i = 0, j = cleaned.length - 1; i < j; i++, j--) {
-    if (cleaned[i] !== cleaned[j]) return false;
+console.log(unique); // [1, 2, 3, 4, 5]
+function uniqueInPlace<T>(arr: T[]): void {
+  const seen = new Set<T>();
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (seen.has(arr[i])) {
+      arr.splice(i, 1);          // remove duplicate
+    } else {
+      seen.add(arr[i]);          // record first appearance
+    }
   }
-  return true;
 }
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("racecar"));                         // true
-console.log(isPalindrome("Hello, world!"));                   // false
-export function isExactPalindrome(input: string): boolean {
-  if (input.length <= 1) return true;
-  for (let i = 0, j = input.length - 1; i < j; i++, j--) {
-    if (input[i] !== input[j]) return false;
-  }
-  return true;
-}
+
+const data = ['a', 'b', 'a', 'c', 'b'];
+uniqueInPlace(data);
+console.log(data); // ['a', 'b', 'c']
+const raw = [1, 2, 3, 2, 4, 1];
+const unique = raw.filter((v, i) => raw.indexOf(v) === i);
+console.log(unique); // [1, 2, 3, 4]
+interface User { id: number; name: string }
+
+const users: User[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 1, name: 'Alice (dup)' }, // duplicate id
+];
+
+const uniqueById = Array.from(
+  users.reduce((map, user) => {
+    if (!map.has(user.id)) map.set(user.id, user);
+    return map;
+  }, new Map<number, User>())
+);
+
+console.log(uniqueById);
+/*
+[
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' }
+]
+*/
