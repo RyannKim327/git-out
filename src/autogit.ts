@@ -1,26 +1,34 @@
-function firstRepeatedChar(str: string): string | undefined {
-  const seen = new Set<string>();
+// randomPassword.ts
+import * as readline from 'readline';
 
-  for (const ch of str) {
-    if (seen.has(ch)) {
-      return ch;            // first duplicate encountered
-    }
-    seen.add(ch);
-  }
-  return undefined;          // no repeats
-}
-console.log(firstRepeatedChar("hello"));  // "l"
-console.log(firstRepeatedChar("abc"));    // undefined
-console.log(firstRepeatedChar(""));       // undefined
-function firstRepeatedCharWithIndex(str: string): {char: string, index: number} | undefined {
-  const seen = new Set<string>();
+// Characters that can appear in the password
+const CHARSET =
+  'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
 
-  for (let i = 0; i < str.length; i++) {
-    const ch = str[i];
-    if (seen.has(ch)) {
-      return { char: ch, index: i };
-    }
-    seen.add(ch);
+function generatePassword(length: number): string {
+  let pwd = '';
+  for (let i = 0; i < length; i++) {
+    pwd += CHARSET[Math.floor(Math.random() * CHARSET.length)];
   }
-  return undefined;
+  return pwd;
 }
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+rl.question('Enter desired password length: ', (answer) => {
+  const len = parseInt(answer, 10);
+  if (!isNaN(len) && len > 0) {
+    console.log(`Generated password: ${generatePassword(len)}`);
+  } else {
+    console.log('Please enter a valid positive integer.');
+  }
+  rl.close();
+});
+# 1. Compile (requires TypeScript installed)
+tsc randomPassword.ts
+
+# 2. Execute the resulting JavaScript
+node randomPassword.js
