@@ -1,25 +1,41 @@
 /**
- * Returns true if `n` is a prime number.
+ * Random‑pivot quick sort.
+ *
+ * @param arr   The array to sort (in‑place).
+ * @returns     The sorted array (the same reference as `arr`).
  */
-export function isPrime(n: number): boolean {
-  // Prime numbers are > 1
-  if (n <= 1) return false;
+export function quickSortRandom<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
+  if (arr.length <= 1)
+    return arr;
 
-  // 2 and 3 are the only even/odd primes
-  if (n <= 3) return true;
+  // So we can provide a custom comparison, but default is the usual "<".
+  const cmp = compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
-  // Even numbers > 2 can be rejected right away
-  if (n % 2 === 0) return false;
+  // Pick a random index as pivot
+  const pivotIndex = Math.floor(Math.random() * arr.length);
+  const pivotValue = arr[pivotIndex];
 
-  // Check only odd divisors up to √n
-  const limit = Math.floor(Math.sqrt(n));
-  for (let d = 3; d <= limit; d += 2) {
-    if (n % d === 0) return false;
+  // Partition into two new arrays
+  const lows: T[] = [];
+  const highs: T[] = [];
+  const pivots: T[] = [];
+
+  for (let i = 0; i < arr.length; i++) {
+    const value = arr[i];
+    const comparison = cmp(value, pivotValue);
+    if (comparison < 0)    lows.push(value);
+    else if (comparison > 0) highs.push(value);
+    else                    pivots.push(value);   // equals pivot
   }
-  return true;
+
+  // Recurse and concatenate
+  return quickSortRandom(lows, cmp)
+          .concat(pivots, quickSortRandom(highs, cmp));
 }
-console.log(isPrime(2));  // true
-console.log(isPrime(15)); // false
-console.log(isPrime(17)); // true
-console.log(isPrime(1));  // false
-console.log(isPrime(-5)); // false
+
+// ---- Demo ---------------------------------------------------------
+
+const unsorted = [7, 2, 9, 4, 1, 5, 3, 8, 6];
+console.log('original: ', unsorted);
+const sorted = quickSortRandom(unsorted);
+console.log('sorted:   ', sorted);
