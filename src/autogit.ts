@@ -1,39 +1,97 @@
-export class Stack<T> {
-  /** internal buffer – the array that stores the stack items */
-  private readonly items: T[] = [];
+// ------------------------------------------------------------
+// 1. Node
+// ------------------------------------------------------------
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null = null;
+  right: TreeNode<T> | null = null;
 
-  /** push an item onto the stack */
-  push(value: T): void {
-    this.items.push(value);
-  }
-
-  /** pop the top item; returns `undefined` if the stack is empty */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  /** peek at the top item without removing it */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** true if the stack has no elements */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** number of elements currently on the stack */
-  size(): number {
-    return this.items.length;
+  constructor(value: T) {
+    this.value = value;
   }
 }
-const stack = new Stack<number>();
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
+// ------------------------------------------------------------
+// 2. BinarySearchTree
+// ------------------------------------------------------------
+class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
 
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size()); // 2
-console.log(stack.isEmpty()); // false
+  // -------------------------------------------
+  // Insert a value into the BST
+  // -------------------------------------------
+  insert(value: T, comparator?: (a: T, b: T) => number): void {
+    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+    const insertRec = (node: TreeNode<T> | null, val: T): TreeNode<T> => {
+      if (!node) return new TreeNode(val);
+
+      if (compare(val, node.value) < 0) {
+        node.left = insertRec(node.left, val);
+      } else {
+        node.right = insertRec(node.right, val);
+      }
+      return node;
+    };
+
+    this.root = insertRec(this.root, value);
+  }
+
+  // -------------------------------------------
+  // Search for a value – returns the node or null
+  // -------------------------------------------
+  search(value: T, comparator?: (a: T, b: T) => number): TreeNode<T> | null {
+    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    let curr = this.root;
+
+    while (curr) {
+      if (compare(value, curr.value) < 0) {
+        curr = curr.left;
+      } else if (compare(value, curr.value) > 0) {
+        curr = curr.right;
+      } else {
+        return curr; // found
+      }
+    }
+    return null; // not found
+  }
+
+  // -------------------------------------------
+  // In‑order traversal – returns an array of values
+  // -------------------------------------------
+  inorder(): T[] {
+    const res: T[] = [];
+    const walk = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      walk(node.left);
+      res.push(node.value);
+      walk(node.right);
+    };
+    walk(this.root);
+    return res;
+  }
+
+  // -------------------------------------------
+  // Convenience: return value of inorder traversal
+  // -------------------------------------------
+  toArray(): T[] {
+    return this.inorder();
+  }
+}
+
+// ------------------------------------------------------------
+// 3. Demo
+// ------------------------------------------------------------
+const bst = new BinarySearchTree<number>();
+
+// Inserting some numbers
+[42, 23, 57, 12, 34, 73, 8].forEach(n => bst.insert(n));
+
+console.log('In‑order traversal:', bst.inorder()); // sorted ascending
+
+const foundNode = bst.search(34);
+if (foundNode) {
+  console.log(`Found node with value ${foundNode.value}`);
+} else {
+  console.log('Value not found');
+}
