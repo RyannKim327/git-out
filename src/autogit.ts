@@ -1,38 +1,39 @@
 /**
- * Return the first non‑repeating character in a string.
- * If every character repeats, return `null`.
+ * Return true if `a` and `b` are anagrams.
+ *
+ * @param a      First string
+ * @param b      Second string
+ * @param options  Optional settings – case sensitivity & ignoring non‑letters
  */
-function firstNonRepeating(str: string): string | null {
-  const counts: Record<string, number> = {};
+function areAnagrams(
+  a: string,
+  b: string,
+  options?: {
+    caseSensitive?: boolean;
+    ignoreNonAlpha?: boolean;
+  }
+): boolean {
+  const { caseSensitive = false, ignoreNonAlpha = false } = options || {};
 
-  // 1️⃣ Count each character
-  for (const ch of str) {
-    counts[ch] = (counts[ch] ?? 0) + 1;
+  // Helper to canonicalise a string
+  const canon = (s: string) =>
+    s
+      .split('')
+      .filter((ch) => !ignoreNonAlpha || /[a-zA-Z]/.test(ch))
+      .map((ch) => (caseSensitive ? ch : ch.toLowerCase()))
+      .sort(); // array of chars, sorted
+
+  const aChars = canon(a);
+  const bChars = canon(b);
+
+  if (aChars.length !== bChars.length) return false;
+
+  for (let i = 0; i < aChars.length; i++) {
+    if (aChars[i] !== bChars[i]) return false;
   }
 
-  // 2️⃣ Scan once more to find the first with count 1
-  for (const ch of str) {
-    if (counts[ch] === 1) {
-      return ch;
-    }
-  }
-
-  return null;
+  return true;
 }
-
-// quick examples
-console.log(firstNonRepeating('abacabad')); // "b"
-console.log(firstNonRepeating('aabbcc'));   // null
-function firstNonRepeatingMap(str: string): string | null {
-  const freq = new Map<string, number>();
-
-  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
-
-  for (const ch of str) if (freq.get(ch) === 1) return ch;
-  return null;
-}
-function allNonRepeating(str: string): string[] {
-  const freq = new Map<string, number>();
-  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  return [...str].filter(ch => freq.get(ch) === 1);
-}
+areAnagrams('Listen', 'Silent');           // true
+areAnagrams('Hello', 'Ollhe', { caseSensitive: true }); // false
+areAnagrams('Dormitory', 'Dirty room', { ignoreNonAlpha: true }); // true
