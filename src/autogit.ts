@@ -1,41 +1,62 @@
-/** A very small “binary‑tree node” type. */
+class TreeNode {
+  value: number;
+  left: TreeNode | null = null;
+  right: TreeNode | null = null;
+
+  constructor(value: number) {
+    this.value = value;
+  }
+}
 interface TreeNode {
-  val: number;
+  value: number;
   left?: TreeNode | null;
   right?: TreeNode | null;
 }
-function sumTreeRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                     // base case – no node
-  const leftSum  = sumTreeRecursive(root.left);
-  const rightSum = sumTreeRecursive(root.right);
-  return root.val + leftSum + rightSum;    // process node after its children
+function countLeaves(root: TreeNode | null): number {
+  if (!root) return 0;                     // empty subtree → no leaves
+
+  // leaf test
+  const isLeaf = !root.left && !root.right;
+  if (isLeaf) return 1;                    // this node itself is a leaf
+
+  // otherwise recursively count in both sub‑trees
+  return countLeaves(root.left) + countLeaves(root.right);
 }
-function sumTreeIterative(root: TreeNode | null): number {
+function countLeavesIterative(root: TreeNode | null): number {
   if (!root) return 0;
 
-  const queue: TreeNode[] = [root];
-  let total = 0;
+  let count = 0;
+  const stack: (TreeNode | null)[] = [root];
 
-  while (queue.length) {
-    const node = queue.shift()!;   // non‑null assertion – queue always contains real nodes
-    total += node.val;
+  while (stack.length) {
+    const node = stack.pop() as TreeNode;
 
-    if (node.left)  queue.push(node.left);
-    if (node.right) queue.push(node.right);
+    const isLeaf = !node.left && !node.right;
+    if (isLeaf) {
+      count += 1;
+    } else {
+      if (node.right) stack.push(node.right);
+      if (node.left) stack.push(node.left);
+    }
   }
 
-  return total;
+  return count;
 }
-// Small example
-const tree: TreeNode = {
-  val: 10,
-  left: { val: 5 },
-  right: {
-    val: 20,
-    left: { val: 15 },
-    right: { val: 25 }
-  }
-};
+// Build the tree:
+//        1
+//       / \
+//      2   3
+//     /   / \
+//    4   5   6
+//         \
+//          7
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4);
+root.right.left = new TreeNode(5);
+root.right.right = new TreeNode(6);
+root.right.left.right = new TreeNode(7);
 
-console.log(sumTreeRecursive(tree)); // 75
-console.log(sumTreeIterative(tree)); // 75
+console.log(countLeaves(root));          // → 3  (nodes 4, 7, 6)
+console.log(countLeavesIterative(root)); // → 3
