@@ -1,112 +1,79 @@
-/**
- * Generic type that can be compared with the <=> operator.
- * For custom objects you can supply a comparator function.
- */
-type Comparable = number | string | boolean;
-
-/**
- * Swap two elements in an array
- */
-function swap<T>(arr: T[], i: number, j: number): void {
-  const tmp = arr[i];
-  arr[i] = arr[j];
-  arr[j] = tmp;
+// A simple graph representation.
+// All nodes must be comparable with === (e.g. numbers, strings, or objects with a unique id).
+interface Graph<T> {
+  /** Return the directly connected nodes of `node`.  */
+  neighbors(node: T): T[];
 }
 
 /**
- * Heapify the subtree rooted at `i`, assuming that the binary trees
- * rooted at its children are already heaps.
+ * Iterative depth‑limited DFS.
  *
- * @param arr    the array
- * @param heapSize the current size of the heap
- * @param i      the index of the root of the subtree
- * @param compare comparison function (a, b) => true if a > b
+ * @param graph      the graph to search
+ * @param start      the node to start from
+ * @param goal       the node we are looking for
+ * @param maxDepth   limit recursion depth (0 = only start node)
+ * @returns           true if goal is reachable within maxDepth, false otherwise
  */
-function heapify<T>(
-  arr: T[],
-  heapSize: number,
-  i: number,
-  compare: (a: T, b: T) => boolean
-): void {
-  let largest = i;
-  const left   = 2 * i + 1;
-  const right  = 2 * i + 2;
+function depthLimitedSearch<T>(
+  graph: Graph<T>,
+  start: T,
+  goal: T,
+  maxDepth: number
+): boolean {
+  // Stack entries hold a node and its depth in the search space.
+  const stack: Array<{ node: T; depth: number }> = [{ node: start, depth: 0 }];
+  const visited = new Set<T>();
 
-  if (left < heapSize && compare(arr[left], arr[largest])) {
-    largest = left;
-  }
-  if (right < heapSize && compare(arr[right], arr[largest])) {
-    largest = right;
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;   // pop() never returns undefined here
+
+    // If we hit the goal, we're done.
+    if (node === goal) return true;
+
+    // Skip revisiting nodes; this keeps the search linear in the number of edges.
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    // Stop exploring deeper than we’re allowed.
+    if (depth === maxDepth) continue;
+
+    // Push neighbours onto the stack with incremented depth.
+    for (const neighbour of graph.neighbors(node)) {
+      // No need to push a node that is already visited; but doing so is harmless.
+      stack.push({ node: neighbour, depth: depth + 1 });
+    }
   }
 
-  if (largest !== i) {
-    swap(arr, i, largest);
-    heapify(arr, heapSize, largest, compare);
+  return false;   // exhausted everything within the depth limit
+}
+// Simple adjacency‑list example
+class SimpleGraph implements Graph<number> {
+  adjacency: Map<number, number[]>;
+
+  constructor(edges: Array<[number, number]>) {
+    this.adjacency = new Map();
+    for (const [a, b] of edges) {
+      this.adjacency
+        .get(a) ??= [];
+      this.adjacency.get(a)!.push(b);
+
+      this.adjacency
+        .get(b) ??= [];
+      this.adjacency.get(b)!.push(a);   // undirected
+    }
+  }
+
+  neighbors(node: number): number[] {
+    return this.adjacency.get(node) ?? [];
   }
 }
 
-/**
- * Build a max‑heap from an unsorted array
- */
-function buildMaxHeap<T>(
-  arr: T[],
-  compare: (a: T, b: T) => boolean
-): void {
-  const heapSize = arr.length;
-  // Start from the last non‑leaf node
-  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
-    heapify(arr, heapSize, i, compare);
-  }
-}
+const g = new SimpleGraph([
+  [1, 2],
+  [1, 3],
+  [2, 4],
+  [3, 5],
+]);
 
-/**
- * Heap sort – sorts `arr` *in place*.
- *
- * @param arr      the array to sort
- * @param compare  optional comparator; defaults to (a > b)
- */
-export function heapSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => boolean
-): void {
-  const cmp = compare ?? ((a: any, b: any) => a > b);
-
-  buildMaxHeap(arr, cmp);
-
-  for (let i = arr.length - 1; i > 0; i--) {
-    // The max element is at index 0; move it to its final place
-    swap(arr, 0, i);
-    // Re‑heapify the reduced heap
-    heapify(arr, i, 0, cmp);
-  }
-}
-
-/* --------------------------------------------------------------------- */
-/* Example usage & tiny tests                                           */
-/* --------------------------------------------------------------------- */
-
-// 1️⃣ Numbers ---------------------------------------------------------
-const nums = [5, 3, 8, 4, 1, 7, 2, 6];
-heapSort(nums);
-console.log('Sorted numbers:', nums); // [1, 2, 3, 4, 5, 6, 7, 8]
-
-// 2️⃣ Strings ---------------------------------------------------------
-const words = ['pear', 'apple', 'orange', 'banana'];
-heapSort(words); // default lexicographic order
-console.log('Sorted words:', words); // ['apple', 'banana', 'orange', 'pear']
-
-// 3️⃣ Custom objects --------------------------------------------------
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob',   age: 22 },
-  { name: 'Eva',   age: 27 }
-];
-// Sort by age ascending
-heapSort(people, (a, b) => a.age > b.age);
-console.log('People sorted by age:', people);
-/* [
-  { name: 'Bob', age: 22 },
-  { name: 'Eva', age: 27 },
-  { name: 'Alice', age: 30 }
-] */
+console.log(depthLimitedSearch(g, 1, 5, 1)); // false (needs depth 2)
+console.log(depthLimitedSearch(g, 1, 5, 2)); // true
