@@ -1,50 +1,44 @@
-export interface TreeNode {
-  val: number;                // or any type you like
-  left?: TreeNode | null;     // child nodes (undefined is treated as null)
-  right?: TreeNode | null;
-}
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
 /**
- * Returns the diameter (number of edges on the longest path) of a binary tree.
+ * Returns n! (n factorial) for a non‑negative integer.
  *
- * @param root root node of the tree
- * @returns diameter in edges
+ * @param n A non‑negative integer (0, 1, 2, …).
+ * @returns The factorial of n. Returns 1 for n = 0.
+ * @throws Error if n is negative.
  */
-export function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;           // will hold the best diameter found
-
-  /**
-   * Post‑order DFS that returns the height of the subtree.
-   * While unwinding, we update `maxDiameter`.
-   */
-  function dfs(node: TreeNode | null): number {
-    if (!node) return -1;       // height of null is -1 so that leaf node height = 0
-
-    const leftHeight  = dfs(node.left)  + 1;
-    const rightHeight = dfs(node.right) + 1;
-
-    // The path that goes from the leftmost leaf of this subtree
-    // through this node to the rightmost leaf gives a candidate
-    // diameter.  `+1` is not needed for edges because heights already
-    // count edges from node to leaf.
-    const candidate = leftHeight + rightHeight;
-    if (candidate > maxDiameter) maxDiameter = candidate;
-
-    // Return height of this node for the parent call
-    return Math.max(leftHeight, rightHeight);
+function factorial(n: number): number {
+  if (n < 0) {
+    throw new Error("Factorial is not defined for negative numbers.");
   }
 
-  dfs(root);
-  return maxDiameter;
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
 }
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
 
-console.log(diameterOfBinaryTree(tree));   // → 3
+// Example
+console.log(factorial(5)); // 120
+function factorialRecursive(n: number): number {
+  if (n < 0) {
+    throw new Error("Negative input not allowed.");
+  }
+  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
+}
+
+console.log(factorialRecursive(5)); // 120
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error("Negative input not allowed.");
+  let result = 1n;          // BigInt literal starts with n
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
+}
+
+console.log(factorialBigInt(100).toString());
+// "933262154... (full 158‑digit number)"
+console.assert(factorial(0) === 1);
+console.assert(factorial(1) === 1);
+console.assert(factorial(5) === 120);
+console.assert(factorialBigInt(10).toString() === "3628800");
