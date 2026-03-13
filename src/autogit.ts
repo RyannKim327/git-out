@@ -1,72 +1,98 @@
-export class ListNode {
-  val: number;          // keep it generic if you want
-  next: ListNode | null;
+/** A minimal generic priority queue built on a binary heap */
+export class PriorityQueue<T> {
+  /** Internal storage array (0‑based). 0 is the root. */
+  private heap: T[] = [];
 
-  constructor(val: number = 0, next: ListNode | null = null) {
-    this.val = val;
-    this.next = next;
+  /** Comparator that returns true if a should come before b. */
+  private readonly less: (a: T, b: T) => boolean;
+
+  /** Number of queued elements */
+  public get size(): number { return this.heap.length; }
+
+  /** Peek at the top element without removing it.  Returns undefined if empty. */
+  public peek(): T | undefined { return this.heap[0]; }
+
+  constructor(comparator?: (a: T, b: T) => boolean) {
+    // Default to a min‑heap using < for primitives
+    this.less = comparator ?? ((a, b) => (a as any) < (b as any));
   }
-}
-export function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  // Helper: get the length of a list.
-  const length = (node: ListNode | null): number => {
-    let len = 0;
-    while (node) {
-      len++;
-      node = node.next;
+
+  /** Insert a new element into the queue */
+  public push(item: T): void {
+    this.heap.push(item);
+    this.bubbleUp(this.heap.length - 1);
+  }
+
+  /** Remove and return the top element.  Returns undefined if empty. */
+  public pop(): T | undefined {
+    const n = this.heap.length;
+    if (n === 0) return undefined;
+    if (n === 1) return this.heap.pop();
+
+    const top = this.heap[0];
+    this.heap[0] = this.heap.pop() as T; // Set last element to root
+    this.sinkDown(0);
+    return top;
+  }
+
+  /** Swap two indices in the heap */
+  private swap(i: number, j: number): void {
+    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+  }
+
+  /** Restore heap order by moving the element at idx up */
+  private bubbleUp(idx: number): void {
+    const element = this.heap[idx];
+    while (idx > 0) {
+      const parentIdx = (idx - 1) >> 1;
+      const parent = this.heap[parentIdx];
+      if (!this.less(element, parent)) break;
+      this.swap(idx, parentIdx);
+      idx = parentIdx;
     }
-    return len;
-  };
-
-  const lenA = length(headA);
-  const lenB = length(headB);
-
-  // Align the starts
-  let ptrA = headA;
-  let ptrB = headB;
-  let diff = Math.abs(lenA - lenB);
-
-  if (lenA > lenB) {
-    while (diff-- > 0 && ptrA) ptrA = ptrA.next;
-  } else {
-    while (diff-- > 0 && ptrB) ptrB = ptrB.next;
   }
 
-  // Walk together
-  while (ptrA && ptrB) {
-    if (ptrA === ptrB) return ptrA; // same reference
-    ptrA = ptrA.next;
-    ptrB = ptrB.next;
-  }
+  /** Restore heap order by moving the element at idx down */
+  private sinkDown(idx: number): void {
+    const n = this.heap.length;
+    const element = this.heap[idx];
 
-  return null; // no intersection
+    while (true) {
+      const leftIdx = (idx << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let smallestIdx = idx;
+
+      if (leftIdx < n && this.less(this.heap[leftIdx], this.heap[smallestIdx])) {
+        smallestIdx = leftIdx;
+      }
+      if (rightIdx < n && this.less(this.heap[rightIdx], this.heap[smallestIdx])) {
+        smallestIdx = rightIdx;
+      }
+
+      if (smallestIdx === idx) break;
+      this.swap(idx, smallestIdx);
+      idx = smallestIdx;
+    }
+  }
 }
-// Build list A: 1 → 2 → 3 → 4 → 5
-const a = new ListNode(1);
-a.next = new ListNode(2);
-a.next.next = new ListNode(3);
-a.next.next.next = new ListNode(4);
-a.next.next.next.next = new ListNode(5);
+// Minimum priority queue (default)
+const minQ = new PriorityQueue<number>();
+minQ.push(5);
+minQ.push(2);
+minQ.push(8);
+console.log(minQ.peek()); // 2
+console.log(minQ.pop());  // 2
+console.log(minQ.pop());  // 5
 
-// Build list B: 9 → 4 → 5 (shared tail)
-const b = new ListNode(9);
-b.next = a.next.next.next; // shares nodes 4 and 5
+// Maximum priority queue
+const maxQ = new PriorityQueue<number>((a, b) => a > b);
+maxQ.push(5);
+maxQ.push(2);
+maxQ.push(8);
+console.log(maxQ.pop()); // 8
+interface Task { id: string; priority: number; }
 
-const intersect = getIntersectionNode(a, b);
-console.log(intersect?.val); // prints 4
-export function intersectionByValue(
-  headA: ListNode | null,
-  headB: ListNode | null
-): number[] {
-  const values = new Set<number>();
-  for (let cur = headA; cur; cur = cur.next) values.add(cur.val);
-
-  const result: number[] = [];
-  for (let cur = headB; cur; cur = cur.next) {
-    if (values.has(cur.val)) result.push(cur.val);
-  }
-  return result;
-}
+const taskQueue = new PriorityQueue<Task>((a, b) => a.priority < b.priority); // min‑heap by priority
+taskQueue.push({ id: 'A', priority: 10 });
+taskQueue.push({ id: 'B', priority: 5 });
+console.log(taskQueue.pop()); // { id: 'B', priority: 5 }
