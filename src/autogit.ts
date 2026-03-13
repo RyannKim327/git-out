@@ -1,67 +1,45 @@
-/**
- * A generic insertion‑sort implementation.
- *
- * @param arr The array to sort (in‑place).
- * @param cmp Optional comparison callback. It should return:
- *            < 0 if a < b
- *            = 0 if a === b
- *            > 0 if a > b
- *
- * @returns The same array reference, now sorted.
- */
-export function insertionSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  // If no custom comparator is supplied, use the default < / >.
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore - allow primitive coercion for < and > operators
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-      };
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
+}
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-  // Iterate from the second element to the end.
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+  while (fast && fast.next) {
+    slow = slow!.next;            // move one step
+    fast = fast.next.next;        // move two steps
 
-    // Shift larger elements one position to the right.
-    while (j >= 0 && compare(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    // Place key in its correct position.
-    arr[j + 1] = key;
+    if (slow === fast) return true;   // they met → cycle
   }
 
-  return arr;
+  return false;   // hit the end → no cycle
 }
-const numbers = [5, 3, 8, 1, 4];
-insertionSort(numbers);
-console.log(numbers); // [1, 3, 4, 5, 8]
-const names = ["Zoe", "Andrew", "bella", "Clara"];
-insertionSort(names);
-console.log(names); // ["Andrew", "Clara", "bella", "Zoe"]
-interface Item {
-  id: number;
-  name: string;
-}
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+  const visited = new Set<ListNode<T>>();
 
-const items: Item[] = [
-  { id: 3, name: "apple" },
-  { id: 1, name: "orange" },
-  { id: 2, name: "banana" },
-];
-
-insertionSort(items, (a, b) => a.id - b.id);
-console.log(items);
-// [{ id: 1, name: "orange" }, { id: 2, name: "banana" }, { id: 3, name: "apple" }]
-export function sorted<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-  const copy = [...arr];
-  return insertionSort(copy, cmp);
+  let current = head;
+  while (current) {
+    if (visited.has(current)) return true;
+    visited.add(current);
+    current = current.next;
+  }
+  return false;
 }
+// Linear list (no cycle)
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b; b.next = c;
+
+console.log(hasCycle(a)); // false
+
+// Cyclic list
+const d = new ListNode(4);
+const e = new ListNode(5);
+const f = new ListNode(6);
+d.next = e; e.next = f; f.next = d; // f points back to d
+
+console.log(hasCycle(d)); // true
