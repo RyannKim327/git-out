@@ -1,24 +1,41 @@
-// A very minimal node definition
-interface ListNode<T> {
+export interface ListNode<T> {
   value: T;
   next: ListNode<T> | null;
 }
+export class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
+}
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null
+  let curr = head
 
-// Utility to compute length
-function linkedListLength<T>(head: ListNode<T> | null): number {
-  let len = 0;
-  let cur = head;
-
-  while (cur) {
-    len++;
-    cur = cur.next;
+  while (curr) {
+    const nxt = curr.next      // keep reference to next node
+    curr.next = prev           // flip the link
+    prev = curr                // advance prev
+    curr = nxt                 // advance curr
   }
 
-  return len;
+  return prev   // new head
 }
-// Build a simple list: 1 → 2 → 3
-const node3: ListNode<number> = { value: 3, next: null };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const node1: ListNode<number> = { value: 1, next: node2 };
+export function reverseListRec<T>(node: ListNode<T> | null, prev: ListNode<T> | null = null): ListNode<T> | null {
+  if (!node) return prev
+  const nxt = node.next
+  node.next = prev
+  return reverseListRec(nxt, node)
+}
+// build 1 → 2 → 3
+const n3 = new ListNode(3)
+const n2 = new ListNode(2, n3)
+const n1 = new ListNode(1, n2)
 
-console.log(linkedListLength(node1)); // 3
+// reverse
+const reversed = reverseList(n1)
+
+// print results
+let cur = reversed
+while (cur) {
+  console.log(cur.value)
+  cur = cur.next
+}
+// → 3, 2, 1
