@@ -1,65 +1,87 @@
 /**
- * Returns the digit present at a given place (0‑based from right to left).
- * Example: getDigit(381, 0) === 1, getDigit(381, 1) === 8, getDigit(381, 2) === 3
+ * A directed graph stored as an adjacency list.
+ * Each key is a node identifier, the value is an array of successor node ids.
  */
-function getDigit(num: number, place: number): number {
-  return Math.floor(Math.abs(num) / Math.pow(10, place)) % 10;
+interface Graph {
+  [node: string]: string[];
 }
 
 /**
- * Returns the maximal number of digits among elements of array.
+ * Result of the algorithm – an array of SCCs.
+ * Each SCC is an array of node ids that belong together.
  */
-function maxDigits(arr: number[]): number {
-  if (arr.length === 0) return 0;
-  const max = Math.max(...arr.map(Math.abs));
-  return Math.floor(Math.log10(max)) + 1;
-}
-/**
- * Stable counting sort on `arr` by the digit at `place`.
- * (`digitBase` defaults to 10 – decimal.)
- */
-function countingSortByDigit(arr: number[], place: number, digitBase = 10): number[] {
-  const bucketCount = digitBase;
-  const buckets: number[][] = Array.from({ length: bucketCount }, () => []);
+type SCC = string[][];
 
-  for (const n of arr) {
-    const digit = getDigit(n, place);
-    buckets[digit].push(n);
+/**
+ * Tarjan’s algorithm for SCCs.
+ *
+ * @param g The graph to analyse.
+ * @returns An array of strongly connected components.
+ */
+function tarjanSCC(g: Graph): SCC {
+  const indexMap: Record<string, number> = {};   // node → its index
+  const lowLink: Record<string, number> = {};    // node → low‑link value
+  const onStack: Set<string> = new Set();        // nodes currently in the stack
+  const stack: string[] = [];                    // stack of nodes
+  const sccs: SCC = [];
+
+  let currentIndex = 0;
+
+  const strongConnect = (v: string) => {
+    indexMap[v] = currentIndex;
+    lowLink[v] = currentIndex;
+    currentIndex += 1;
+    stack.push(v);
+    onStack.add(v);
+
+    // Explore every outgoing edge v → w
+    for (const w of g[v] ?? []) {
+      if (!(w in indexMap)) {
+        // Recursively visit w
+        strongConnect(w);
+        lowLink[v] = Math.min(lowLink[v], lowLink[w]);
+      } else if (onStack.has(w)) {
+        // w is in the current SCC frontier
+        lowLink[v] = Math.min(lowLink[v], indexMap[w]);
+      }
+    }
+
+    // If v is the root of an SCC
+    if (lowLink[v] === indexMap[v]) {
+      const component: string[] = [];
+      let w: string | undefined;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
+    }
+  };
+
+  // Kick off a DFS from every unvisited node.
+  for (const v in g) {
+    if (!(v in indexMap)) {
+      strongConnect(v);
+    }
   }
 
-  // Flatten buckets in order; that's the stable result for this digit.
-  return buckets.flat();
+  return sccs;
 }
-/**
- * Radix sort for non‑negative integers.
- * @param arr array of numbers (non‑negative, but the routine will work with any integers once you wrap them)
- * @returns sorted array (stable)
- */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length <= 1) return [...arr]; // copy so caller doesn’t mutate input
+const example: Graph = {
+  a: ['b'],
+  b: ['c', 'e', 'f'],
+  c: ['d', 'g'],
+  d: ['c', 'h'],
+  e: ['a', 'f'],
+  f: ['g'],
+  g: ['f'],
+  h: ['d', 'g', 'i'],
+  i: ['h', 'k', 'l'],
+  j: ['k'],
+  k: ['i', 'l'],
+  l: ['k']
+};
 
-  const numDigits = maxDigits(arr);
-  let sorted = [...arr];
-
-  for (let place = 0; place < numDigits; place++) {
-    sorted = countingSortByDigit(sorted, place);
-  }
-
-  return sorted;
-}
-export function radixSortFull(arr: number[]): number[] {
-  const negatives = arr.filter(n => n < 0).map(n => -n);
-  const positives = arr.filter(n => n >= 0);
-
-  const sortedNeg = radixSort(negatives).reverse().map(n => -n);
-  const sortedPos = radixSort(positives);
-
-  return [...sortedNeg, ...sortedPos];
-}
-import { radixSortFull } from './radixSort';
-
-const data = [170, 45, 75, 90, 802, 24, 2, 66, -15, -302, 0];
-const sorted = radixSortFull(data);
-
-console.log(sorted);
-// → [-302, -15, 0, 2, 24, 45, 66, 75, 90, 170, 802]
+console.log(tarjanSCC(example));
+// → [ [ 'g', 'f' ], [ 'c', 'd', 'h' ], [ 'i', 'l', 'k' ], [ 'a', 'b', 'e' ], [ 'j' ] ]
