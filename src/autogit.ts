@@ -1,44 +1,39 @@
 /**
- * Returns n! (n factorial) for a non‑negative integer.
+ * Return true if `a` and `b` are anagrams.
  *
- * @param n A non‑negative integer (0, 1, 2, …).
- * @returns The factorial of n. Returns 1 for n = 0.
- * @throws Error if n is negative.
+ * @param a      First string
+ * @param b      Second string
+ * @param options  Optional settings – case sensitivity & ignoring non‑letters
  */
-function factorial(n: number): number {
-  if (n < 0) {
-    throw new Error("Factorial is not defined for negative numbers.");
+function areAnagrams(
+  a: string,
+  b: string,
+  options?: {
+    caseSensitive?: boolean;
+    ignoreNonAlpha?: boolean;
+  }
+): boolean {
+  const { caseSensitive = false, ignoreNonAlpha = false } = options || {};
+
+  // Helper to canonicalise a string
+  const canon = (s: string) =>
+    s
+      .split('')
+      .filter((ch) => !ignoreNonAlpha || /[a-zA-Z]/.test(ch))
+      .map((ch) => (caseSensitive ? ch : ch.toLowerCase()))
+      .sort(); // array of chars, sorted
+
+  const aChars = canon(a);
+  const bChars = canon(b);
+
+  if (aChars.length !== bChars.length) return false;
+
+  for (let i = 0; i < aChars.length; i++) {
+    if (aChars[i] !== bChars[i]) return false;
   }
 
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
+  return true;
 }
-
-// Example
-console.log(factorial(5)); // 120
-function factorialRecursive(n: number): number {
-  if (n < 0) {
-    throw new Error("Negative input not allowed.");
-  }
-  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
-}
-
-console.log(factorialRecursive(5)); // 120
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error("Negative input not allowed.");
-  let result = 1n;          // BigInt literal starts with n
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
-}
-
-console.log(factorialBigInt(100).toString());
-// "933262154... (full 158‑digit number)"
-console.assert(factorial(0) === 1);
-console.assert(factorial(1) === 1);
-console.assert(factorial(5) === 120);
-console.assert(factorialBigInt(10).toString() === "3628800");
+areAnagrams('Listen', 'Silent');           // true
+areAnagrams('Hello', 'Ollhe', { caseSensitive: true }); // false
+areAnagrams('Dormitory', 'Dirty room', { ignoreNonAlpha: true }); // true
