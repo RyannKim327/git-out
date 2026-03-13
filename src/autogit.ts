@@ -1,87 +1,79 @@
-/**
- * A directed graph stored as an adjacency list.
- * Each key is a node identifier, the value is an array of successor node ids.
- */
-interface Graph {
-  [node: string]: string[];
-}
+// `T` can be any comparable type – string, number, object with an id, etc.
+export function bfs<T>(
+  start: T,
+  graph: Map<T, T[]>,          // adjacency list
+  onVisit?: (node: T) => void // optional per‑node work
+): T[] {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  const order: T[] = [];
 
-/**
- * Result of the algorithm – an array of SCCs.
- * Each SCC is an array of node ids that belong together.
- */
-type SCC = string[][];
+  visited.add(start);
 
-/**
- * Tarjan’s algorithm for SCCs.
- *
- * @param g The graph to analyse.
- * @returns An array of strongly connected components.
- */
-function tarjanSCC(g: Graph): SCC {
-  const indexMap: Record<string, number> = {};   // node → its index
-  const lowLink: Record<string, number> = {};    // node → low‑link value
-  const onStack: Set<string> = new Set();        // nodes currently in the stack
-  const stack: string[] = [];                    // stack of nodes
-  const sccs: SCC = [];
+  while (queue.length) {
+    const node = queue.shift()!;   // node is guaranteed non‑null inside loop
 
-  let currentIndex = 0;
+    // Optional callback that lets you do something with the node as you visit it
+    if (onVisit) onVisit(node);
 
-  const strongConnect = (v: string) => {
-    indexMap[v] = currentIndex;
-    lowLink[v] = currentIndex;
-    currentIndex += 1;
-    stack.push(v);
-    onStack.add(v);
+    order.push(node);
 
-    // Explore every outgoing edge v → w
-    for (const w of g[v] ?? []) {
-      if (!(w in indexMap)) {
-        // Recursively visit w
-        strongConnect(w);
-        lowLink[v] = Math.min(lowLink[v], lowLink[w]);
-      } else if (onStack.has(w)) {
-        // w is in the current SCC frontier
-        lowLink[v] = Math.min(lowLink[v], indexMap[w]);
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
       }
-    }
-
-    // If v is the root of an SCC
-    if (lowLink[v] === indexMap[v]) {
-      const component: string[] = [];
-      let w: string | undefined;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
-    }
-  };
-
-  // Kick off a DFS from every unvisited node.
-  for (const v in g) {
-    if (!(v in indexMap)) {
-      strongConnect(v);
     }
   }
 
-  return sccs;
+  return order;
 }
-const example: Graph = {
-  a: ['b'],
-  b: ['c', 'e', 'f'],
-  c: ['d', 'g'],
-  d: ['c', 'h'],
-  e: ['a', 'f'],
-  f: ['g'],
-  g: ['f'],
-  h: ['d', 'g', 'i'],
-  i: ['h', 'k', 'l'],
-  j: ['k'],
-  k: ['i', 'l'],
-  l: ['k']
-};
+// Example graph (adjacency list)
+const g = new Map<string, string[]>([
+  ['A', ['B', 'C']],
+  ['B', ['D', 'E']],
+  ['C', ['F']],
+  ['D', []],
+  ['E', ['F']],
+  ['F', []]
+]);
 
-console.log(tarjanSCC(example));
-// → [ [ 'g', 'f' ], [ 'c', 'd', 'h' ], [ 'i', 'l', 'k' ], [ 'a', 'b', 'e' ], [ 'j' ] ]
+const order = bfs('A', g);          // ["A", "B", "C", "D", "E", "F"]
+
+console.log('BFS order:', order);
+export function bfsFind<T>(
+  start: T,
+  graph: Map<T, T[]>,
+  goal: T
+): T[] | null {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  visited.add(start);
+
+  while (queue.length) {
+    const node = queue.shift()!;
+
+    if (node === goal) {
+      // Re‑construct the path if you need it – here we just return the node that found it.
+      return [node];
+    }
+
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  return null; // goal not reachable
+}
+// Small graph with a cycle
+const g2 = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [3]],
+  [3, [1, 4]],
+  [4, []]
+]);
+
+console.log(bfs(1, g2)); // [1, 2, 3, 4]
