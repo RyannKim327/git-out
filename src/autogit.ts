@@ -1,39 +1,41 @@
-/**
- * Recursively searches a sorted array for a target value.
- *
- * @param arr  The sorted array (ascending order).
- * @param target  The value to find.
- * @param left  The left boundary of the current search window.
- * @param right The right boundary of the current search window.
- * @returns The index of the target, or -1 if it isn’t in the array.
- */
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  left: number = 0,
-  right: number = arr.length - 1,
-  comparator?: (a: T, b: T) => number
-): number {
-  // Base case: window collapsed -> not found
-  if (left > right) return -1;
+// schedule.ts
+import cron from 'node-cron';
 
-  // Midpoint (avoid overflow by using `left + ((right - left) >> 1)` if you like)
-  const mid = Math.floor((left + right) / 2);
+let runCount = 0;
+const maxRuns = 5;
 
-  // Resolve comparison logic
-  const cmp = comparator
-    ? comparator(target, arr[mid])
-    : (target > arr[mid]) - (target < arr[mid]); // generic numeric/lexicographic
+// Pick a playful string at random each time the job fires.
+const messages = [
+  "🍕 Time for a pizza break!",
+  "🐱‍🏍 Speedy coding vibes!",
+  "🧐 Did you know: A group of flamingos is called a flamboyance?",
+  "🚀 Launching into the cosmos…",
+  "🔮 Future content will appear here!"
+];
 
-  if (cmp === 0) return mid;          // found
-  if (cmp < 0) return binarySearch(arr, target, left, mid - 1, comparator);
-  return binarySearch(arr, target, mid + 1, right, comparator);
-}
-const nums = [1, 3, 5, 7, 9, 11];
+const job = cron.schedule('* * * * *', () => {
+  // Bot says something random
+  const msg = messages[Math.floor(Math.random() * messages.length)];
+  console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
 
-console.log(binarySearch(nums, 7));   // → 3
-console.log(binarySearch(nums, 2));   // → -1
-const names = ['Alice', 'Bob', 'Charlie', 'David'].sort();
-console.log(binarySearch(names, 'bob', 0, names.length - 1, (a, b) =>
-  a.toLowerCase().localeCompare(b.toLowerCase())
-)); // → 1
+  runCount += 1;
+  if (runCount >= maxRuns) {
+    console.log('Stopping the cron job after 5 runs.');
+    job.stop();
+  }
+}, {
+  scheduled: true,
+  timezone: "UTC"
+});
+
+console.log('Cron job started—will run every minute up to 5 times.');
+# 1. Init a barebones project if you haven’t already
+npm init -y
+
+# 2. Install the cron package and types for Node
+npm i node-cron
+npm i -D @types/node @types/node-cron typescript ts-node
+
+# 3. Compile and run
+npx ts-node schedule.ts
+[12:00:00 AM] 🚀 Launching into the cosmos…
