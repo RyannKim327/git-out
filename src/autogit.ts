@@ -1,47 +1,112 @@
-function countWordOccurrences(text: string, word: string): number {
-  // Escape any regex meta‑characters in the search word
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * Generic type that can be compared with the <=> operator.
+ * For custom objects you can supply a comparator function.
+ */
+type Comparable = number | string | boolean;
 
-  // \b = word boundary, i = ignore case, g = global (find all)
-  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
-
-  // .match() returns an array of all matches, null if none
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
+/**
+ * Swap two elements in an array
+ */
+function swap<T>(arr: T[], i: number, j: number): void {
+  const tmp = arr[i];
+  arr[i] = arr[j];
+  arr[j] = tmp;
 }
 
-// Usage
-const msg = "The quick brown fox jumps over the lazy fox. Foxes are clever.";
-console.log(countWordOccurrences(msg, "fox")); // → 2 (fox, fox)
-const regex = new RegExp(escaped, 'gi');
-function countSplit(text: string, word: string): number {
-  // Empty string returns 0
-  if (!text) return 0;
-  return text.split(word).length - 1;
+/**
+ * Heapify the subtree rooted at `i`, assuming that the binary trees
+ * rooted at its children are already heaps.
+ *
+ * @param arr    the array
+ * @param heapSize the current size of the heap
+ * @param i      the index of the root of the subtree
+ * @param compare comparison function (a, b) => true if a > b
+ */
+function heapify<T>(
+  arr: T[],
+  heapSize: number,
+  i: number,
+  compare: (a: T, b: T) => boolean
+): void {
+  let largest = i;
+  const left   = 2 * i + 1;
+  const right  = 2 * i + 2;
+
+  if (left < heapSize && compare(arr[left], arr[largest])) {
+    largest = left;
+  }
+  if (right < heapSize && compare(arr[right], arr[largest])) {
+    largest = right;
+  }
+
+  if (largest !== i) {
+    swap(arr, i, largest);
+    heapify(arr, heapSize, largest, compare);
+  }
 }
-function countWithMatchAll(text: string, word: string): number {
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
-  const allMatches = text.matchAll(regex); // Iterable<{ index: … }>
 
-  let count = 0;
-  for (const _ of allMatches) count++;
-  return count;
+/**
+ * Build a max‑heap from an unsorted array
+ */
+function buildMaxHeap<T>(
+  arr: T[],
+  compare: (a: T, b: T) => boolean
+): void {
+  const heapSize = arr.length;
+  // Start from the last non‑leaf node
+  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
+    heapify(arr, heapSize, i, compare);
+  }
 }
-export function countOccurrences(
-  text: string,
-  word: string,
-  options?: { caseSensitive?: boolean; wholeWord?: boolean }
-): number {
-  const { caseSensitive = false, wholeWord = true } = options ?? {};
 
-  // Escape regex meta‑chars
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * Heap sort – sorts `arr` *in place*.
+ *
+ * @param arr      the array to sort
+ * @param compare  optional comparator; defaults to (a > b)
+ */
+export function heapSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => boolean
+): void {
+  const cmp = compare ?? ((a: any, b: any) => a > b);
 
-  let pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
-  let flags = 'g' + (caseSensitive ? '' : 'i');
+  buildMaxHeap(arr, cmp);
 
-  const regex = new RegExp(pattern, flags);
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
+  for (let i = arr.length - 1; i > 0; i--) {
+    // The max element is at index 0; move it to its final place
+    swap(arr, 0, i);
+    // Re‑heapify the reduced heap
+    heapify(arr, i, 0, cmp);
+  }
 }
+
+/* --------------------------------------------------------------------- */
+/* Example usage & tiny tests                                           */
+/* --------------------------------------------------------------------- */
+
+// 1️⃣ Numbers ---------------------------------------------------------
+const nums = [5, 3, 8, 4, 1, 7, 2, 6];
+heapSort(nums);
+console.log('Sorted numbers:', nums); // [1, 2, 3, 4, 5, 6, 7, 8]
+
+// 2️⃣ Strings ---------------------------------------------------------
+const words = ['pear', 'apple', 'orange', 'banana'];
+heapSort(words); // default lexicographic order
+console.log('Sorted words:', words); // ['apple', 'banana', 'orange', 'pear']
+
+// 3️⃣ Custom objects --------------------------------------------------
+interface Person { name: string; age: number }
+const people: Person[] = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob',   age: 22 },
+  { name: 'Eva',   age: 27 }
+];
+// Sort by age ascending
+heapSort(people, (a, b) => a.age > b.age);
+console.log('People sorted by age:', people);
+/* [
+  { name: 'Bob', age: 22 },
+  { name: 'Eva', age: 27 },
+  { name: 'Alice', age: 30 }
+] */
