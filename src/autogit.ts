@@ -1,40 +1,79 @@
-/**
- * Classic in‑place quick‑sort.
- *
- * @param arr  The array to be sorted (in‑place).
- * @param left The starting index (default: 0).
- * @param right The ending index (default: arr.length‑1).
- *
- * @returns The same array, now sorted.
- */
-function quickSort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
-  if (left >= right) return arr;          // base case: 0 or 1 item
+// `T` can be any comparable type – string, number, object with an id, etc.
+export function bfs<T>(
+  start: T,
+  graph: Map<T, T[]>,          // adjacency list
+  onVisit?: (node: T) => void // optional per‑node work
+): T[] {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  const order: T[] = [];
 
-  // Pick a pivot—here we just take the middle element.
-  const pivotIndex = Math.floor((left + right) / 2);
-  const pivot = arr[pivotIndex];
+  visited.add(start);
 
-  // Partition: everything less than the pivot goes left, everything
-  // greater or equal goes right.  Elements equal to the pivot can go either side.
-  let i = left;
-  let j = right;
-  while (i <= j) {
-    while (arr[i] < pivot) i++;   // find an element on the wrong side (left)
-    while (arr[j] > pivot) j--;   // find an element on the wrong side (right)
+  while (queue.length) {
+    const node = queue.shift()!;   // node is guaranteed non‑null inside loop
 
-    if (i <= j) {                 // swap the out‑of‑place elements
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
+    // Optional callback that lets you do something with the node as you visit it
+    if (onVisit) onVisit(node);
+
+    order.push(node);
+
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
     }
   }
 
-  // Recursively sort the two partitions.
-  // The first call deals with the left two halves *unless* they overlap.
-  if (left < j) quickSort(arr, left, j);
-  if (i < right) quickSort(arr, i, right);
-
-  return arr;
+  return order;
 }
-const unsorted = [3, 7, 2, 5, 1, 4, 6];
-quickSort(unsorted);        // unsorted is now [1,2,3,4,5,6,7]
+// Example graph (adjacency list)
+const g = new Map<string, string[]>([
+  ['A', ['B', 'C']],
+  ['B', ['D', 'E']],
+  ['C', ['F']],
+  ['D', []],
+  ['E', ['F']],
+  ['F', []]
+]);
+
+const order = bfs('A', g);          // ["A", "B", "C", "D", "E", "F"]
+
+console.log('BFS order:', order);
+export function bfsFind<T>(
+  start: T,
+  graph: Map<T, T[]>,
+  goal: T
+): T[] | null {
+  const queue: T[] = [start];
+  const visited = new Set<T>();
+  visited.add(start);
+
+  while (queue.length) {
+    const node = queue.shift()!;
+
+    if (node === goal) {
+      // Re‑construct the path if you need it – here we just return the node that found it.
+      return [node];
+    }
+
+    for (const neighbor of graph.get(node) ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  return null; // goal not reachable
+}
+// Small graph with a cycle
+const g2 = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [3]],
+  [3, [1, 4]],
+  [4, []]
+]);
+
+console.log(bfs(1, g2)); // [1, 2, 3, 4]
