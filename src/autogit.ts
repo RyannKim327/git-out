@@ -1,21 +1,27 @@
-// Example array
-const nums: number[] = [42, 1, 17, 3, 99];
+/**
+ * Return true if the supplied string is a palindrome (ignoring case,
+ * punctuation, spaces, and other non‑alphanumeric characters).
+ */
+export function isPalindrome(input: string): boolean {
+  // Keep only letters and digits, make everything lowercase
+  const cleaned = input.replace(/[^a-z0-9]/gi, '').toLowerCase();
 
-// Sort in ascending order
-const asc = [...nums].sort((a, b) => a - b);
-console.log('Ascending:', asc); // [1, 3, 17, 42, 99]
+  // Quick escape: a single character or empty string is trivially a palindrome
+  if (cleaned.length <= 1) return true;
 
-// Sort in descending order
-const desc = [...nums].sort((a, b) => b - a);
-console.log('Descending:', desc); // [99, 42, 17, 3, 1]
-const custom = [...nums].sort((a, b) => {
-  const aEven = a % 2 === 0;
-  const bEven = b % 2 === 0;
-  if (aEven && !bEven) return -1;     // a comes first
-  if (!aEven && bEven) return 1;      // b comes first
-  return a - b;                       // both same parity: numeric order
-});
-console.log(custom); // [ 42, 2, 1, 3, 17, 99 ]
-import _ from 'lodash';
-
-const order = _.orderBy(nums, [x => x], ['asc']); // asc by numeric value
+  // Compare characters from the front and back
+  for (let i = 0, j = cleaned.length - 1; i < j; i++, j--) {
+    if (cleaned[i] !== cleaned[j]) return false;
+  }
+  return true;
+}
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("racecar"));                         // true
+console.log(isPalindrome("Hello, world!"));                   // false
+export function isExactPalindrome(input: string): boolean {
+  if (input.length <= 1) return true;
+  for (let i = 0, j = input.length - 1; i < j; i++, j--) {
+    if (input[i] !== input[j]) return false;
+  }
+  return true;
+}
