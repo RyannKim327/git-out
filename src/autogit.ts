@@ -1,30 +1,39 @@
-function getLength(str: string): number {
-  let count = 0;
-  for (const _ of str) {
-    count++;
+function isPalindrome(str: string): boolean {
+  // Compare the string to its reverse
+  const reversed = str.split('').reverse().join('');
+  return str === reversed;
+}
+
+// Examples
+console.log(isPalindrome('radar'));   // true
+console.log(isPalindrome('hello'));   // false
+function isPalindromeCI(str: string): boolean {
+  const normalized = str.toLowerCase();          // make everything lowercase
+  return normalized === normalized.split('').reverse().join('');
+}
+
+console.log(isPalindromeCI('Radar'));   // true
+console.log(isPalindromeCI('Racecar')); // true
+function isPalindromeClean(str: string): boolean {
+  const cleaned = str
+    .replace(/[^a-z0-9]/gi, '')      // strip non-alphanumerics
+    .toLowerCase();                  // normalize case
+  
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
+}
+
+console.log(isPalindromeClean('A man, a plan, a canal: Panama')); // true
+function isPalindromeTwoPointer(str: string): boolean {
+  let left = 0;
+  let right = str.length - 1;
+
+  while (left < right) {
+    if (str[left] !== str[right]) return false;
+    left++;
+    right--;
   }
-  return count;
+  return true;
 }
-function recurseLen(str: string, idx = 0): number {
-  return idx >= str.length ? idx : recurseLen(str, idx + 1);
-}
-function recurseLen(str: string, idx = 0): number {
-  return str === '' ? idx : recurseLen(str.slice(1), idx + 1);
-}
-function lengthFromArray(str: string): number {
-  return Array.from(str).length; // still uses .length on the array
-}
-function lengthSpread(str: string): number {
-  return [...str].length; // element count after spreading
-}
-function lengthWithMatch(str: string): number {
-  const matches = str.match(/[\s\S]/g); // one match per character, including newlines
-  return matches ? matches.length : 0;
-}
-function whileLoop(str: string): number {
-  let i = 0;
-  while (str.charAt(i) !== '') {
-    i++;
-  }
-  return i;
-}
+
+console.log(isPalindromeTwoPointer('radar')); // true
