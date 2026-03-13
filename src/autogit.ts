@@ -1,51 +1,36 @@
-// A classic singly‑linked‑list node
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+// Random-ish TypeScript example that pulls in axios
+
+import axios from 'axios'
+
+interface Todo {
+  userId: number
+  id: number
+  title: string
+  completed: boolean
 }
 
-/**
- * Returns the nth node from the end (1‑based) or null if n is out of range.
- */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;          // natural guard for mis‑ed input
+const client = axios.create({
+  baseURL: 'https://jsonplaceholder.typicode.com',
+  timeout: 3000,
+})
 
-  let first: ListNode<T> | null = head;
-  let second: ListNode<T> | null = head;
+async function fetchTodos(limit = 5): Promise<Todo[]> {
+  const { data } = await client.get<Todo[]>('/todos')
+  return data.slice(0, limit)
+}
 
-  /* Advance `first` n steps ahead. */
-  for (let i = 0; i < n; i++) {
-    if (!first) return null;   // n is larger than list length
-    first = first.next;
+async function toggleTodo(id: number, completed: boolean): Promise<void> {
+  await client.patch(`/todos/${id}`, { completed })
+}
+
+;(async () => {
+  try {
+    const todos = await fetchTodos()
+    console.log('Sample todos:', todos)
+
+    await toggleTodo(todos[0].id, !todos[0].completed)
+    console.log(`Todo ${todos[0].id} status flipped!`)
+  } catch (err) {
+    console.error('Something went wrong:', err instanceof Error ? err.message : err)
   }
-
-  /* Move both pointers until `first` hits the end. */
-  while (first) {
-    first = first.next;
-    second = second!.next;     // second is guaranteed not null here
-  }
-
-  return second;   // `second` is the nth node from the end
-}
-function nthFromEndTwoPass<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let len = 0;
-  for (let cur = head; cur; cur = cur.next) len++;
-
-  if (n <= 0 || n > len) return null;
-
-  let cur = head;
-  for (let i = 0; i < len - n; i++) cur = cur!.next;
-
-  return cur;
-}
-// Example list: 1 → 2 → 3 → 4 → 5
-const tail = new ListNode(5);
-const middle = new ListNode(4, tail);
-const head = new ListNode(1,
-           new ListNode(2,
-           new ListNode(3,
-           middle)));
-
-console.log(nthFromEnd(head, 1)?.val); // 5
-console.log(nthFromEnd(head, 2)?.val); // 4
-console.log(nthFromEnd(head, 5)?.val); // 1
-console.log(nthFromEnd(head, 6));      // null
+})()
