@@ -1,41 +1,41 @@
-// schedule.ts
-import cron from 'node-cron';
+/**
+ * Random‑pivot quick sort.
+ *
+ * @param arr   The array to sort (in‑place).
+ * @returns     The sorted array (the same reference as `arr`).
+ */
+export function quickSortRandom<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
+  if (arr.length <= 1)
+    return arr;
 
-let runCount = 0;
-const maxRuns = 5;
+  // So we can provide a custom comparison, but default is the usual "<".
+  const cmp = compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
-// Pick a playful string at random each time the job fires.
-const messages = [
-  "🍕 Time for a pizza break!",
-  "🐱‍🏍 Speedy coding vibes!",
-  "🧐 Did you know: A group of flamingos is called a flamboyance?",
-  "🚀 Launching into the cosmos…",
-  "🔮 Future content will appear here!"
-];
+  // Pick a random index as pivot
+  const pivotIndex = Math.floor(Math.random() * arr.length);
+  const pivotValue = arr[pivotIndex];
 
-const job = cron.schedule('* * * * *', () => {
-  // Bot says something random
-  const msg = messages[Math.floor(Math.random() * messages.length)];
-  console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
+  // Partition into two new arrays
+  const lows: T[] = [];
+  const highs: T[] = [];
+  const pivots: T[] = [];
 
-  runCount += 1;
-  if (runCount >= maxRuns) {
-    console.log('Stopping the cron job after 5 runs.');
-    job.stop();
+  for (let i = 0; i < arr.length; i++) {
+    const value = arr[i];
+    const comparison = cmp(value, pivotValue);
+    if (comparison < 0)    lows.push(value);
+    else if (comparison > 0) highs.push(value);
+    else                    pivots.push(value);   // equals pivot
   }
-}, {
-  scheduled: true,
-  timezone: "UTC"
-});
 
-console.log('Cron job started—will run every minute up to 5 times.');
-# 1. Init a barebones project if you haven’t already
-npm init -y
+  // Recurse and concatenate
+  return quickSortRandom(lows, cmp)
+          .concat(pivots, quickSortRandom(highs, cmp));
+}
 
-# 2. Install the cron package and types for Node
-npm i node-cron
-npm i -D @types/node @types/node-cron typescript ts-node
+// ---- Demo ---------------------------------------------------------
 
-# 3. Compile and run
-npx ts-node schedule.ts
-[12:00:00 AM] 🚀 Launching into the cosmos…
+const unsorted = [7, 2, 9, 4, 1, 5, 3, 8, 6];
+console.log('original: ', unsorted);
+const sorted = quickSortRandom(unsorted);
+console.log('sorted:   ', sorted);
