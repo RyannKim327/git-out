@@ -1,75 +1,110 @@
-/**
- * Binary search on a sorted array (ascending order).
- * @param arr   Sorted array of comparable items.
- * @param value Item you’re hunting for.
- * @param compare Optional comparison function:
- *                (a,b) => 0 if a==b, <0 if a<b, >0 if a>b.
- *                If omitted, '<'/'>' operators are used.
- * @returns Index of the value, or -1 if it isn’t present.
- */
-export function binarySearch<T>(
-  arr: readonly T[],
-  value: T,
-  compare?: (a: T, b: T) => number,
-): number {
-  let low = 0;
-  let high = arr.length;
+// ──────────────────────────────────────────────────────────
+// 1. Graph representation
+// ──────────────────────────────────────────────────────────
+type Vertex = string | number;
 
-  const cmp = compare ?? ((a: T, b: T) => {
-    /* eslint-disable-next-line no-prototype-builtins */
-    if ((a as any as object).hasOwnProperty && typeof a === 'object' && typeof b === 'object') {
-      // For objects that implement `valueOf()` – optional
-      return (a as any) < b ? -1 : (a as any) > b ? 1 : 0;
-    }
-    return a < b ? -1 : a > b ? 1 : 0;
-  });
+// An adjacency list where each vertex maps to an array of its outgoing neighbours.
+class Graph {
+  private readonly edges: Map<Vertex, Vertex[]> = new Map();
 
-  while (low < high) {
-    const mid = (low + high) >>> 1; // fast floor division by 2
-    const comp = cmp(arr[mid], value);
-
-    if (comp === 0) return mid;   // found it
-    if (comp < 0) low = mid + 1;  // value is higher
-    else high = mid;              // value is lower
+  constructor(edges?: [Vertex, Vertex][]) {
+    if (edges) this.addEdges(edges);
   }
 
-  return -1; // not found
+  /** Adds one or more directed edges to the graph. */
+  addEdges(edges: [Vertex, Vertex][]): void {
+    for (const [from, to] of edges) {
+      if (!this.edges.has(from)) this.edges.set(from, []);
+      this.edges.get(from)!.push(to);
+      // Ensure the destination vertex exists in the map so it shows up in the keys.
+      if (!this.edges.has(to)) this.edges.set(to, []);
+    }
+  }
+
+  /** Returns all vertices in the graph. */
+  vertices(): Vertex[] {
+    return Array.from(this.edges.keys());
+  }
+
+  /** Returns the neighbours of a given vertex. */
+  neighbours(v: Vertex): Vertex[] {
+    return this.edges.get(v) ?? [];
+  }
 }
-const nums = [1, 3, 5, 7, 9, 11, 13];
-const idx = binarySearch(nums, 7); // → 3
 
-const words = ['apple', 'banana', 'cherry', 'date'];
-const wIdx = binarySearch(words, 'cherry'); // → 2
-export function binarySearchRecursive<T>(
-  arr: readonly T[],
-  value: T,
-  compare?: (a: T, b: T) => number,
-  low = 0,
-  high = arr.length - 1,
-): number {
-  if (low > high) return -1;
+// ──────────────────────────────────────────────────────────
+// 2. DFS‑based topological sort
+// ──────────────────────────────────────────────────────────
+function topoSortDFS(g: Graph): Vertex[] | null {
+  const visited = new Set<Vertex>();
+  const temp = new Set<Vertex>();   // vertices currently on recursion stack
+  const order: Vertex[] = [];
 
-  const cmp = compare ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+  const visit = (v: Vertex): boolean => {
+    if (temp.has(v)) return false; // cycle detected
 
-  const mid = (low + high) >>> 1;
-  const comp = cmp(arr[mid], value);
+    if (!visited.has(v)) {
+      temp.add(v);
+      for (const nb of g.neighbours(v)) {
+        if (!visit(nb)) return false;
+      }
+      temp.delete(v);
+      visited.add(v);
+      order.push(v);
+    }
+    return true;
+  };
 
-  if (comp === 0) return mid;
-  return comp < 0
-    ? binarySearchRecursive(arr, value, compare, mid + 1, high)
-    : binarySearchRecursive(arr, value, compare, low, mid - 1);
+  for (const v of g.vertices()) {
+    if (!visit(v)) return null; // if a cycle is found, return null
+  }
+
+  return order.reverse(); // reverse to get the correct order
 }
-interface Person { name: string; age: number; }
 
-const people: Person[] = [
-  { name: 'Alice', age: 28 },
-  { name: 'Bob', age: 35 },
-  { name: 'Carol', age: 41 },
+// ──────────────────────────────────────────────────────────
+// 3. Kahn’s algorithm (BFS‑based)
+// ──────────────────────────────────────────────────────────
+function topoSortKahn(g: Graph): Vertex[] | null {
+  // Compute in‑degree of each vertex
+  const inDeg = new Map<Vertex, number>();
+  for (const v of g.vertices()) inDeg.set(v, 0);
+  for (const v of g.vertices()) {
+    for (const nb of g.neighbours(v)) {
+      inDeg.set(nb, (inDeg.get(nb) ?? 0) + 1);
+    }
+  }
+
+  const queue: Vertex[] = [];
+  for (const [v, d] of inDeg) if (d === 0) queue.push(v);
+
+  const order: Vertex[] = [];
+  while (queue.length) {
+    const v = queue.shift()!;
+    order.push(v);
+    for (const nb of g.neighbours(v)) {
+      const d = inDeg.get(nb)! - 1;
+      inDeg.set(nb, d);
+      if (d === 0) queue.push(nb);
+    }
+  }
+
+  if (order.length !== g.vertices().length) return null; // cycle exists
+  return order;
+}
+
+// ──────────────────────────────────────────────────────────
+// 4. Demo / usage
+// ──────────────────────────────────────────────────────────
+const edges: [Vertex, Vertex][] = [
+  ['a', 'd'],
+  ['f', 'b'],
+  ['b', 'd'],
+  ['f', 'a'],
+  ['d', 'c']
 ];
 
-// Sorted by age
-const idx = binarySearch(
-  people,
-  { name: '', age: 35 },             // value (name ignored)
-  (a, b) => a.age - b.age
-); // → 1
+const graph = new Graph(edges);
+
+console.log('DFS order:', topoSortDFS(graph));   // legal order or null
+console.log('Kahn order:', topoSortKahn(graph)); // same result
