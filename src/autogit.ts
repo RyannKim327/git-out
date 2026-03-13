@@ -1,79 +1,67 @@
-// `T` can be any comparable type – string, number, object with an id, etc.
-export function bfs<T>(
-  start: T,
-  graph: Map<T, T[]>,          // adjacency list
-  onVisit?: (node: T) => void // optional per‑node work
-): T[] {
-  const queue: T[] = [start];
+class Graph<T> {
+  private adjacency = new Map<T, Set<T>>();
+
+  addVertex(v: T) {
+    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
+  }
+
+  addEdge(v: T, w: T, directed = false) {
+    this.addVertex(v);
+    this.addVertex(w);
+    this.adjacency.get(v)!.add(w);
+    if (!directed) this.adjacency.get(w)!.add(v);
+  }
+
+  neighbours(v: T): Iterable<T> {
+    return this.adjacency.get(v) || [];
+  }
+
+  vertices(): Iterable<T> {
+    return this.adjacency.keys();
+  }
+}
+function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
   const visited = new Set<T>();
-  const order: T[] = [];
+  const result: T[] = [];
 
-  visited.add(start);
+  function visit(v: T) {
+    if (visited.has(v)) return;
+    visited.add(v);
+    result.push(v);
 
-  while (queue.length) {
-    const node = queue.shift()!;   // node is guaranteed non‑null inside loop
+    for (const n of graph.neighbours(v)) visit(n);
+  }
 
-    // Optional callback that lets you do something with the node as you visit it
-    if (onVisit) onVisit(node);
+  visit(start);
+  return result;
+}
+function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
+  const stack: T[] = [start];
+  const visited = new Set<T>();
+  const result: T[] = [];
 
-    order.push(node);
+  while (stack.length) {
+    const v = stack.pop()!;
+    if (visited.has(v)) continue;
 
-    for (const neighbor of graph.get(node) ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
+    visited.add(v);
+    result.push(v);
+
+    // Push neighbours in reverse order if you want the same order
+    // as the recursive version (depends on adjacency list ordering).
+    for (const n of graph.neighbours(v)) {
+      if (!visited.has(n)) stack.push(n);
     }
   }
 
-  return order;
+  return result;
 }
-// Example graph (adjacency list)
-const g = new Map<string, string[]>([
-  ['A', ['B', 'C']],
-  ['B', ['D', 'E']],
-  ['C', ['F']],
-  ['D', []],
-  ['E', ['F']],
-  ['F', []]
-]);
+const g = new Graph<string>();
+g.addEdge('A', 'B');
+g.addEdge('A', 'C');
+g.addEdge('B', 'D');
+g.addEdge('C', 'D');
+g.addEdge('D', 'E');
 
-const order = bfs('A', g);          // ["A", "B", "C", "D", "E", "F"]
-
-console.log('BFS order:', order);
-export function bfsFind<T>(
-  start: T,
-  graph: Map<T, T[]>,
-  goal: T
-): T[] | null {
-  const queue: T[] = [start];
-  const visited = new Set<T>();
-  visited.add(start);
-
-  while (queue.length) {
-    const node = queue.shift()!;
-
-    if (node === goal) {
-      // Re‑construct the path if you need it – here we just return the node that found it.
-      return [node];
-    }
-
-    for (const neighbor of graph.get(node) ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
-    }
-  }
-
-  return null; // goal not reachable
-}
-// Small graph with a cycle
-const g2 = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [3]],
-  [3, [1, 4]],
-  [4, []]
-]);
-
-console.log(bfs(1, g2)); // [1, 2, 3, 4]
+console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
+console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
