@@ -1,27 +1,21 @@
 /**
- * Return true if the supplied string is a palindrome (ignoring case,
- * punctuation, spaces, and other non‑alphanumeric characters).
+ * Return the intersection of two arrays.
+ *
+ * @param a First array
+ * @param b Second array
+ * @returns Array containing only the values that appear in both `a` and `b`
  */
-export function isPalindrome(input: string): boolean {
-  // Keep only letters and digits, make everything lowercase
-  const cleaned = input.replace(/[^a-z0-9]/gi, '').toLowerCase();
+export function intersection<T>(a: T[], b: T[]): T[] {
+  // Turn the second array into a Set for O(1) look‑ups.
+  const lookup = new Set(b);
 
-  // Quick escape: a single character or empty string is trivially a palindrome
-  if (cleaned.length <= 1) return true;
+  // Keep every element of `a` that also exists in the Set.
+  return a.filter(item => lookup.has(item));
+}
 
-  // Compare characters from the front and back
-  for (let i = 0, j = cleaned.length - 1; i < j; i++, j--) {
-    if (cleaned[i] !== cleaned[j]) return false;
-  }
-  return true;
-}
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("racecar"));                         // true
-console.log(isPalindrome("Hello, world!"));                   // false
-export function isExactPalindrome(input: string): boolean {
-  if (input.length <= 1) return true;
-  for (let i = 0, j = input.length - 1; i < j; i++, j--) {
-    if (input[i] !== input[j]) return false;
-  }
-  return true;
-}
+// Example usage:
+const colors1 = ['red', 'green', 'blue', 'green'];
+const colors2 = ['cyan', 'green', 'red', 'yellow'];
+
+const commonColors = intersection(colors1, colors2);
+console.log(commonColors); // → ['red', 'green', 'green']
