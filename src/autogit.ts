@@ -1,20 +1,26 @@
-/**
- * Returns true if the given array is in strictly non‑decreasing order.
- * (Every element must be ≤ the next one.)
- *
- * @param arr  The array to test
- */
-function isSortedAscending<T>(arr: T[]): boolean {
-  for (let i = 0; i < arr.length - 1; i++) {
-    // If any element is larger than the one that follows, the array isn’t sorted.
-    if (arr[i] > arr[i + 1]) {
-      return false;
-    }
-  }
-  return true;
-}
-const nums = [1, 2, 2, 5, 9];
-console.log(isSortedAscending(nums)); // true
+function firstRepeatedChar(str: string): string | undefined {
+  const seen = new Set<string>();
 
-const bad = [1, 3, 2, 4];
-console.log(isSortedAscending(bad));  // false
+  for (const ch of str) {
+    if (seen.has(ch)) {
+      return ch;            // first duplicate encountered
+    }
+    seen.add(ch);
+  }
+  return undefined;          // no repeats
+}
+console.log(firstRepeatedChar("hello"));  // "l"
+console.log(firstRepeatedChar("abc"));    // undefined
+console.log(firstRepeatedChar(""));       // undefined
+function firstRepeatedCharWithIndex(str: string): {char: string, index: number} | undefined {
+  const seen = new Set<string>();
+
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (seen.has(ch)) {
+      return { char: ch, index: i };
+    }
+    seen.add(ch);
+  }
+  return undefined;
+}
