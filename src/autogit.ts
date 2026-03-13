@@ -1,53 +1,21 @@
 /**
- * Sorts an array using the bubble‑sort algorithm.
+ * Return the intersection of two arrays.
  *
- * @param arr       The array to sort. The sort is performed in-place.
- * @param compare   Optional comparison function. It should return:
- *                  - a negative number if a < b
- *                  - zero if a == b
- *                  - a positive number if a > b
- *
- * @returns The sorted array (the same instance that was passed in).
+ * @param a First array
+ * @param b Second array
+ * @returns Array containing only the values that appear in both `a` and `b`
  */
-export function bubbleSort<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
-  // Default to natural order for numbers and strings
-  const cmp = compare ?? ((a: any, b: any) => (a > b ? 1 : a < b ? -1 : 0));
+export function intersection<T>(a: T[], b: T[]): T[] {
+  // Turn the second array into a Set for O(1) look‑ups.
+  const lookup = new Set(b);
 
-  const len = arr.length;
-  if (len < 2) return arr; // already sorted
-
-  let swapped: boolean;
-  // We keep looping until no swaps happen in a full pass
-  do {
-    swapped = false;
-    // After each round the largest element in the unsorted portion
-    // "bubbles" to its final position, so we can skip the last i elements
-    for (let i = 1; i < len; i++) {
-      if (cmp(arr[i - 1], arr[i]) > 0) {
-        // swap
-        [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
-        swapped = true;
-      }
-    }
-  } while (swapped);
-
-  return arr;
+  // Keep every element of `a` that also exists in the Set.
+  return a.filter(item => lookup.has(item));
 }
-// 1️⃣ Sort plain numbers
-const nums = [5, 3, 8, 1, 2];
-bubbleSort(nums);           // nums → [1, 2, 3, 5, 8]
 
-// 2️⃣ Sort strings alphabetically
-const words = ['banana', 'apple', 'cherry'];
-bubbleSort(words);          // words → ['apple', 'banana', 'cherry']
+// Example usage:
+const colors1 = ['red', 'green', 'blue', 'green'];
+const colors2 = ['cyan', 'green', 'red', 'yellow'];
 
-// 3️⃣ Sort objects with a custom key
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: 'Zoe',   age: 28 },
-  { name: 'Adam',  age: 34 },
-  { name: 'Mira',  age: 23 }
-];
-
-bubbleSort(people, (p1, p2) => p1.age - p2.age);
-// people → [{name:'Mira',age:23}, {name:'Zoe',age:28}, {name:'Adam',age:34}]
+const commonColors = intersection(colors1, colors2);
+console.log(commonColors); // → ['red', 'green', 'green']
