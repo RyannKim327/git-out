@@ -1,62 +1,69 @@
-class TreeNode {
-  value: number;
-  left: TreeNode | null = null;
-  right: TreeNode | null = null;
+/**
+ * Returns the LCS length of two strings.
+ */
+export function lcsLength(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
 
-  constructor(value: number) {
-    this.value = value;
-  }
-}
-interface TreeNode {
-  value: number;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
-function countLeaves(root: TreeNode | null): number {
-  if (!root) return 0;                     // empty subtree → no leaves
+  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  // leaf test
-  const isLeaf = !root.left && !root.right;
-  if (isLeaf) return 1;                    // this node itself is a leaf
-
-  // otherwise recursively count in both sub‑trees
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-function countLeavesIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  let count = 0;
-  const stack: (TreeNode | null)[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop() as TreeNode;
-
-    const isLeaf = !node.left && !node.right;
-    if (isLeaf) {
-      count += 1;
-    } else {
-      if (node.right) stack.push(node.right);
-      if (node.left) stack.push(node.left);
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
   }
 
-  return count;
+  return dp[m][n];
 }
-// Build the tree:
-//        1
-//       / \
-//      2   3
-//     /   / \
-//    4   5   6
-//         \
-//          7
-const root = new TreeNode(1);
-root.left = new TreeNode(2);
-root.right = new TreeNode(3);
-root.left.left = new TreeNode(4);
-root.right.left = new TreeNode(5);
-root.right.right = new TreeNode(6);
-root.right.left.right = new TreeNode(7);
 
-console.log(countLeaves(root));          // → 3  (nodes 4, 7, 6)
-console.log(countLeavesIterative(root)); // → 3
+/**
+ * Returns the actual longest common subsequence.
+ * In case of multiple LCS of the same length, the one found
+ * will consist of the characters chosen by the DP traversal.
+ */
+export function lcs(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
+
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+  // Build the DP table – same recurrence as in lcsLength
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+
+  // Backtrack to rebuild the sequence
+  let i = m;
+  let j = n;
+  const seq: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      seq.push(a[i - 1]); // they match
+      i--;
+      j--;
+    } else if (dp[i - 1][j] > dp[i][j - 1]) {
+      i--; // move up
+    } else {
+      j--; // move left
+    }
+  }
+
+  return seq.reverse().join('');
+}
+const a = "AGGTAB";
+const b = "GXTXAYB";
+
+console.log(lcsLength(a, b)); // 4
+console.log(lcs(a, b));       // "GTAB"
