@@ -1,44 +1,39 @@
-/**
- * Returns n! (n factorial) for a non‑negative integer.
- *
- * @param n A non‑negative integer (0, 1, 2, …).
- * @returns The factorial of n. Returns 1 for n = 0.
- * @throws Error if n is negative.
- */
-function factorial(n: number): number {
-  if (n < 0) {
-    throw new Error("Factorial is not defined for negative numbers.");
+export class Stack<T> {
+  /** internal buffer – the array that stores the stack items */
+  private readonly items: T[] = [];
+
+  /** push an item onto the stack */
+  push(value: T): void {
+    this.items.push(value);
   }
 
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+  /** pop the top item; returns `undefined` if the stack is empty */
+  pop(): T | undefined {
+    return this.items.pop();
   }
-  return result;
+
+  /** peek at the top item without removing it */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** true if the stack has no elements */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** number of elements currently on the stack */
+  size(): number {
+    return this.items.length;
+  }
 }
+const stack = new Stack<number>();
 
-// Example
-console.log(factorial(5)); // 120
-function factorialRecursive(n: number): number {
-  if (n < 0) {
-    throw new Error("Negative input not allowed.");
-  }
-  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
-}
+stack.push(10);
+stack.push(20);
+stack.push(30);
 
-console.log(factorialRecursive(5)); // 120
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error("Negative input not allowed.");
-  let result = 1n;          // BigInt literal starts with n
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
-}
-
-console.log(factorialBigInt(100).toString());
-// "933262154... (full 158‑digit number)"
-console.assert(factorial(0) === 1);
-console.assert(factorial(1) === 1);
-console.assert(factorial(5) === 120);
-console.assert(factorialBigInt(10).toString() === "3628800");
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size()); // 2
+console.log(stack.isEmpty()); // false
