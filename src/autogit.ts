@@ -1,30 +1,72 @@
-/**
- * Returns the second largest value in an array.
- * Uses a single pass – O(n) time, O(1) extra space.
- *
- * @param nums – numeric array
- * @returns second largest number, or `undefined` if it can’t be determined
- */
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined;
+export class ListNode {
+  val: number;          // keep it generic if you want
+  next: ListNode | null;
 
-  let largest = -Infinity;
-  let second = -Infinity;
-
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;   // old largest becomes second
-      largest = n;
-    } else if (n > second && n !== largest) {
-      // n is between largest and second – update second
-      second = n;
+  constructor(val: number = 0, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
+  }
+}
+export function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  // Helper: get the length of a list.
+  const length = (node: ListNode | null): number => {
+    let len = 0;
+    while (node) {
+      len++;
+      node = node.next;
     }
+    return len;
+  };
+
+  const lenA = length(headA);
+  const lenB = length(headB);
+
+  // Align the starts
+  let ptrA = headA;
+  let ptrB = headB;
+  let diff = Math.abs(lenA - lenB);
+
+  if (lenA > lenB) {
+    while (diff-- > 0 && ptrA) ptrA = ptrA.next;
+  } else {
+    while (diff-- > 0 && ptrB) ptrB = ptrB.next;
   }
 
-  return second === -Infinity ? undefined : second;
-}
+  // Walk together
+  while (ptrA && ptrB) {
+    if (ptrA === ptrB) return ptrA; // same reference
+    ptrA = ptrA.next;
+    ptrB = ptrB.next;
+  }
 
-// quick demo
-console.log(secondLargest([3, 1, 4, 1, 5, 9, 2, 6, 5])); // 8
-console.log(secondLargest([42]));                         // undefined
-console.log(secondLargest([7, 7, 7]));                     // undefined – no distinct second value
+  return null; // no intersection
+}
+// Build list A: 1 → 2 → 3 → 4 → 5
+const a = new ListNode(1);
+a.next = new ListNode(2);
+a.next.next = new ListNode(3);
+a.next.next.next = new ListNode(4);
+a.next.next.next.next = new ListNode(5);
+
+// Build list B: 9 → 4 → 5 (shared tail)
+const b = new ListNode(9);
+b.next = a.next.next.next; // shares nodes 4 and 5
+
+const intersect = getIntersectionNode(a, b);
+console.log(intersect?.val); // prints 4
+export function intersectionByValue(
+  headA: ListNode | null,
+  headB: ListNode | null
+): number[] {
+  const values = new Set<number>();
+  for (let cur = headA; cur; cur = cur.next) values.add(cur.val);
+
+  const result: number[] = [];
+  for (let cur = headB; cur; cur = cur.next) {
+    if (values.has(cur.val)) result.push(cur.val);
+  }
+  return result;
+}
