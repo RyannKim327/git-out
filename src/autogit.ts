@@ -1,79 +1,46 @@
-// `T` can be any comparable type – string, number, object with an id, etc.
-export function bfs<T>(
-  start: T,
-  graph: Map<T, T[]>,          // adjacency list
-  onVisit?: (node: T) => void // optional per‑node work
-): T[] {
-  const queue: T[] = [start];
-  const visited = new Set<T>();
-  const order: T[] = [];
+/**
+ * Returns true if `a` and `b` are anagrams.
+ * Works for any Unicode characters, but
+ * it ignores case and whitespace by default.
+ */
+function areAnagrams(a: string, b: string, ignoreCase = true, ignoreWhitespace = true): boolean {
+  // Normalise: trim, collapse spaces, lower‑case if requested
+  const normalize = (s: string) =>
+    s
+      .replace(/\s+/g, "")        // delete spaces
+      .toLowerCase();             // lower‑case
 
-  visited.add(start);
-
-  while (queue.length) {
-    const node = queue.shift()!;   // node is guaranteed non‑null inside loop
-
-    // Optional callback that lets you do something with the node as you visit it
-    if (onVisit) onVisit(node);
-
-    order.push(node);
-
-    for (const neighbor of graph.get(node) ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
-    }
+  if (ignoreCase && ignoreWhitespace) {
+    a = normalize(a);
+    b = normalize(b);
+  } else if (ignoreCase) {
+    a = a.toLowerCase();
+    b = b.toLowerCase();
+  } else if (ignoreWhitespace) {
+    a = a.replace(/\s+/g, "");
+    b = b.replace(/\s+/g, "");
   }
 
-  return order;
-}
-// Example graph (adjacency list)
-const g = new Map<string, string[]>([
-  ['A', ['B', 'C']],
-  ['B', ['D', 'E']],
-  ['C', ['F']],
-  ['D', []],
-  ['E', ['F']],
-  ['F', []]
-]);
+  // Quick length check
+  if (a.length !== b.length) return false;
 
-const order = bfs('A', g);          // ["A", "B", "C", "D", "E", "F"]
+  // Count characters in the first string
+  const counts: Record<string, number> = {};
 
-console.log('BFS order:', order);
-export function bfsFind<T>(
-  start: T,
-  graph: Map<T, T[]>,
-  goal: T
-): T[] | null {
-  const queue: T[] = [start];
-  const visited = new Set<T>();
-  visited.add(start);
-
-  while (queue.length) {
-    const node = queue.shift()!;
-
-    if (node === goal) {
-      // Re‑construct the path if you need it – here we just return the node that found it.
-      return [node];
-    }
-
-    for (const neighbor of graph.get(node) ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
-    }
+  for (const ch of a) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
   }
 
-  return null; // goal not reachable
-}
-// Small graph with a cycle
-const g2 = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [3]],
-  [3, [1, 4]],
-  [4, []]
-]);
+  // Subtract counts using the second string
+  for (const ch of b) {
+    const current = counts[ch];
+    if (!current) return false;          // character not seen before or already exhausted
+    if (--current === 0) delete counts[ch];
+  }
 
-console.log(bfs(1, g2)); // [1, 2, 3, 4]
+  // If everything matched, the object should be empty
+  return Object.keys(counts).length === 0;
+}
+console.log(areAnagrams("listen", "silent"));           // true
+console.log(areAnagrams("Hello, World!", "world!hello")); // true
+console.log(areAnagrams("foo", "bar"));                 // false
