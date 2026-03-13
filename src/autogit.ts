@@ -1,69 +1,72 @@
-/**
- * Returns the LCS length of two strings.
- */
-export function lcsLength(a: string, b: string): number {
-  const m = a.length;
-  const n = b.length;
+export class ListNode {
+  val: number;          // keep it generic if you want
+  next: ListNode | null;
 
-  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
+  constructor(val: number = 0, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
   }
-
-  return dp[m][n];
 }
-
-/**
- * Returns the actual longest common subsequence.
- * In case of multiple LCS of the same length, the one found
- * will consist of the characters chosen by the DP traversal.
- */
-export function lcs(a: string, b: string): string {
-  const m = a.length;
-  const n = b.length;
-
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-
-  // Build the DP table – same recurrence as in lcsLength
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
+export function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  // Helper: get the length of a list.
+  const length = (node: ListNode | null): number => {
+    let len = 0;
+    while (node) {
+      len++;
+      node = node.next;
     }
+    return len;
+  };
+
+  const lenA = length(headA);
+  const lenB = length(headB);
+
+  // Align the starts
+  let ptrA = headA;
+  let ptrB = headB;
+  let diff = Math.abs(lenA - lenB);
+
+  if (lenA > lenB) {
+    while (diff-- > 0 && ptrA) ptrA = ptrA.next;
+  } else {
+    while (diff-- > 0 && ptrB) ptrB = ptrB.next;
   }
 
-  // Backtrack to rebuild the sequence
-  let i = m;
-  let j = n;
-  const seq: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      seq.push(a[i - 1]); // they match
-      i--;
-      j--;
-    } else if (dp[i - 1][j] > dp[i][j - 1]) {
-      i--; // move up
-    } else {
-      j--; // move left
-    }
+  // Walk together
+  while (ptrA && ptrB) {
+    if (ptrA === ptrB) return ptrA; // same reference
+    ptrA = ptrA.next;
+    ptrB = ptrB.next;
   }
 
-  return seq.reverse().join('');
+  return null; // no intersection
 }
-const a = "AGGTAB";
-const b = "GXTXAYB";
+// Build list A: 1 → 2 → 3 → 4 → 5
+const a = new ListNode(1);
+a.next = new ListNode(2);
+a.next.next = new ListNode(3);
+a.next.next.next = new ListNode(4);
+a.next.next.next.next = new ListNode(5);
 
-console.log(lcsLength(a, b)); // 4
-console.log(lcs(a, b));       // "GTAB"
+// Build list B: 9 → 4 → 5 (shared tail)
+const b = new ListNode(9);
+b.next = a.next.next.next; // shares nodes 4 and 5
+
+const intersect = getIntersectionNode(a, b);
+console.log(intersect?.val); // prints 4
+export function intersectionByValue(
+  headA: ListNode | null,
+  headB: ListNode | null
+): number[] {
+  const values = new Set<number>();
+  for (let cur = headA; cur; cur = cur.next) values.add(cur.val);
+
+  const result: number[] = [];
+  for (let cur = headB; cur; cur = cur.next) {
+    if (values.has(cur.val)) result.push(cur.val);
+  }
+  return result;
+}
