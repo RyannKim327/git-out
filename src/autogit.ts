@@ -1,41 +1,44 @@
-export interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-}
-export class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null
-  let curr = head
-
-  while (curr) {
-    const nxt = curr.next      // keep reference to next node
-    curr.next = prev           // flip the link
-    prev = curr                // advance prev
-    curr = nxt                 // advance curr
+/**
+ * Returns n! (n factorial) for a non‑negative integer.
+ *
+ * @param n A non‑negative integer (0, 1, 2, …).
+ * @returns The factorial of n. Returns 1 for n = 0.
+ * @throws Error if n is negative.
+ */
+function factorial(n: number): number {
+  if (n < 0) {
+    throw new Error("Factorial is not defined for negative numbers.");
   }
 
-  return prev   // new head
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
 }
-export function reverseListRec<T>(node: ListNode<T> | null, prev: ListNode<T> | null = null): ListNode<T> | null {
-  if (!node) return prev
-  const nxt = node.next
-  node.next = prev
-  return reverseListRec(nxt, node)
-}
-// build 1 → 2 → 3
-const n3 = new ListNode(3)
-const n2 = new ListNode(2, n3)
-const n1 = new ListNode(1, n2)
 
-// reverse
-const reversed = reverseList(n1)
-
-// print results
-let cur = reversed
-while (cur) {
-  console.log(cur.value)
-  cur = cur.next
+// Example
+console.log(factorial(5)); // 120
+function factorialRecursive(n: number): number {
+  if (n < 0) {
+    throw new Error("Negative input not allowed.");
+  }
+  return n <= 1 ? 1 : n * factorialRecursive(n - 1);
 }
-// → 3, 2, 1
+
+console.log(factorialRecursive(5)); // 120
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error("Negative input not allowed.");
+  let result = 1n;          // BigInt literal starts with n
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
+}
+
+console.log(factorialBigInt(100).toString());
+// "933262154... (full 158‑digit number)"
+console.assert(factorial(0) === 1);
+console.assert(factorial(1) === 1);
+console.assert(factorial(5) === 120);
+console.assert(factorialBigInt(10).toString() === "3628800");
