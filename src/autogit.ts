@@ -1,50 +1,37 @@
-// A node of a singly linked list
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-
-// Helper to build a list from an array (optional)
-function buildList<T>(values: T[]): ListNode<T> | null {
-  if (values.length === 0) return null
-  const head = new ListNode(values[0])
-  let cur = head
-  for (let i = 1; i < values.length; i++) {
-    cur.next = new ListNode(values[i])
-    cur = cur.next
-  }
-  return head
-}
 /**
- * Returns the middle ListNode of a singly linked list.
- * If the list has an even number of nodes, the *second* middle one is returned
- * (you can customize this if you prefer the first one).
+ * Selection Sort – stable‑like, O(n²) time, O(1) extra space.
+ *
+ * @param arr   The array to be sorted (in‑place).
+ * @param cmp   Optional comparator: (a, b) => number.
+ *              If omitted, numerical ascending order is assumed.
  */
-function getMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null
+export function selectionSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): void {
+  const compare = cmp ?? ((a: any, b: any) => a - b);
 
-  let slow: ListNode<T> | null = head
-  let fast: ListNode<T> | null = head
+  for (let i = 0; i < arr.length - 1; i++) {
+    // Assume the smallest is at i.
+    let minIdx = i;
 
-  // Move fast twice as fast as slow
-  while (fast && fast.next) {
-    slow = slow!.next            // safe because slow ≠ null in loop
-    fast = fast.next.next
+    // Search the rest of the array for a smaller element.
+    for (let j = i + 1; j < arr.length; j++) {
+      if (compare(arr[j], arr[minIdx]) < 0) {
+        minIdx = j;
+      }
+    }
+
+    // If the smallest isn't already in place, swap.
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+    }
   }
-
-  return slow
 }
-const list = buildList([1, 2, 3, 4, 5])          // Odd‑length list
-console.log(getMiddle(list)?.val)                // → 3
+const nums = [64, 25, 12, 22, 11];
+selectionSort(nums);
+console.log(nums); // → [11, 12, 22, 25, 64]
 
-const list2 = buildList([10, 20, 30, 40])        // Even‑length list
-console.log(getMiddle(list2)?.val)               // → 30  (second middle)
-function getMiddleViaArray<T>(head: ListNode<T> | null): ListNode<T> | null {
-  const values: ListNode<T>[] = []
-  let cur = head
-  while (cur) {
-    values.push(cur)
-    cur = cur.next
-  }
-  const midIndex = Math.floor(values.length / 2)
-  return values[midIndex] ?? null
-}
+const words = ["pear", "apple", "orange"];
+selectionSort(words, (a, b) => a.localeCompare(b));
+console.log(words); // → ["apple", "orange", "pear"]
