@@ -1,97 +1,30 @@
-// ------------------------------------------------------------
-// 1. Node
-// ------------------------------------------------------------
-class TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
+const str = "hello world";
+const hasFoo = str.includes("world");   // true
+const hasBar = str.includes("bar");     // false
+const hasCapital = str.includes("WORLD");          // false
+const hasCapitalIgnoreCase = str.toLowerCase()
+                                .includes("WORLD".toLowerCase()); // true
+const hasCapitalIgnoreCase = /world/i.test(str);   // true
+const index = str.indexOf("world"); // 6
+const missing = str.indexOf("bar"); // -1
+const present = str.indexOf("world") !== -1; // true
+const hasPrefix = /^hello/.test(str); // true
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
+// With dynamic patterns
+const word = "world";
+const pattern = new RegExp(word);    // case‑sensitive
+const result = pattern.test(str);    // true
+// Presence
+const contains = text.includes(sub);
 
-// ------------------------------------------------------------
-// 2. BinarySearchTree
-// ------------------------------------------------------------
-class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
+// Presence (index form)
+const containsIndex = text.indexOf(sub) !== -1;
 
-  // -------------------------------------------
-  // Insert a value into the BST
-  // -------------------------------------------
-  insert(value: T, comparator?: (a: T, b: T) => number): void {
-    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+// Position
+const pos = text.indexOf(sub); // -1 if absent
 
-    const insertRec = (node: TreeNode<T> | null, val: T): TreeNode<T> => {
-      if (!node) return new TreeNode(val);
+// Case‑insensitive
+const containsIC = text.toLowerCase().includes(sub.toLowerCase());
 
-      if (compare(val, node.value) < 0) {
-        node.left = insertRec(node.left, val);
-      } else {
-        node.right = insertRec(node.right, val);
-      }
-      return node;
-    };
-
-    this.root = insertRec(this.root, value);
-  }
-
-  // -------------------------------------------
-  // Search for a value – returns the node or null
-  // -------------------------------------------
-  search(value: T, comparator?: (a: T, b: T) => number): TreeNode<T> | null {
-    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-    let curr = this.root;
-
-    while (curr) {
-      if (compare(value, curr.value) < 0) {
-        curr = curr.left;
-      } else if (compare(value, curr.value) > 0) {
-        curr = curr.right;
-      } else {
-        return curr; // found
-      }
-    }
-    return null; // not found
-  }
-
-  // -------------------------------------------
-  // In‑order traversal – returns an array of values
-  // -------------------------------------------
-  inorder(): T[] {
-    const res: T[] = [];
-    const walk = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      walk(node.left);
-      res.push(node.value);
-      walk(node.right);
-    };
-    walk(this.root);
-    return res;
-  }
-
-  // -------------------------------------------
-  // Convenience: return value of inorder traversal
-  // -------------------------------------------
-  toArray(): T[] {
-    return this.inorder();
-  }
-}
-
-// ------------------------------------------------------------
-// 3. Demo
-// ------------------------------------------------------------
-const bst = new BinarySearchTree<number>();
-
-// Inserting some numbers
-[42, 23, 57, 12, 34, 73, 8].forEach(n => bst.insert(n));
-
-console.log('In‑order traversal:', bst.inorder()); // sorted ascending
-
-const foundNode = bst.search(34);
-if (foundNode) {
-  console.log(`Found node with value ${foundNode.value}`);
-} else {
-  console.log('Value not found');
-}
+// Regex
+const containsRegex = /world/i.test(text);
