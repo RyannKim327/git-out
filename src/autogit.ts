@@ -1,14 +1,12 @@
-// 1) Using a regular expression (remove *any* whitespace)
-const clean1 = originalString.replace(/\s+/g, "");
-
-// 2) If you only care about literal space characters (no tabs, newlines, etc.)
-const clean2 = originalString.replace(/ /g, "");
-
-// 3) Split/join – handy if you’re scrubbing a handful of specific delimiters
-const clean3 = originalString.split(" ").join("");
-
-// 4) Manual loop (useful if you need to do something with each char)
-let clean4 = "";
-for (const ch of originalString) {
-  if (ch !== " ") clean4 += ch;
+function reverseWords(str: string): string {
+  // Split on any amount of whitespace, filter out empty chunks,
+  // reverse the array, then join with a single space.
+  return str
+    .trim()
+    .split(/\s+/)
+    .reverse()
+    .join(' ');
 }
+
+// Example
+console.log(reverseWords("Hello world this is TypeScript")); // "TypeScript is this world Hello"
