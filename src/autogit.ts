@@ -1,59 +1,47 @@
-/**
- * Shell sort – a simple, in‑place algorithm that improves on insertion sort.
- * Sorts an array of numbers in ascending order.
- *
- * @param arr The array to sort (modified in place)
- * @param compare Optional compare function (defaults to numeric comparison)
- */
-export function shellSort(
-  arr: number[],
-  compare?: (a: number, b: number) => number
-): void {
-  const len = arr.length;
-  const cmp = compare ?? ((a, b) => a - b);
+function countWordOccurrences(text: string, word: string): number {
+  // Escape any regex meta‑characters in the search word
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  // A common gap sequence: halving each time (Shell's original)
-  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Gapped insertion sort
-    for (let i = gap; i < len; i++) {
-      let temp = arr[i];
-      let j = i;
+  // \b = word boundary, i = ignore case, g = global (find all)
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
 
-      // Move elements that are greater than temp backward by 'gap' places
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      // Bring temp into its spot
-      arr[j] = temp;
-    }
-  }
+  // .match() returns an array of all matches, null if none
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
 }
-const data = [40, 3, 10, 5, 1, 15];
-shellSort(data);
 
-console.log(data); // [1, 3, 5, 10, 15, 40]
-export function shellSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): void {
-  const len = arr.length;
-  const cmp = compare ?? ((a, b) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
-
-  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    for (let i = gap; i < len; i++) {
-      const temp = arr[i];
-      let j = i;
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
-  }
+// Usage
+const msg = "The quick brown fox jumps over the lazy fox. Foxes are clever.";
+console.log(countWordOccurrences(msg, "fox")); // → 2 (fox, fox)
+const regex = new RegExp(escaped, 'gi');
+function countSplit(text: string, word: string): number {
+  // Empty string returns 0
+  if (!text) return 0;
+  return text.split(word).length - 1;
 }
-shellSort(['banana', 'apple', 'pear'], (a, b) => a.localeCompare(b));
+function countWithMatchAll(text: string, word: string): number {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+  const allMatches = text.matchAll(regex); // Iterable<{ index: … }>
+
+  let count = 0;
+  for (const _ of allMatches) count++;
+  return count;
+}
+export function countOccurrences(
+  text: string,
+  word: string,
+  options?: { caseSensitive?: boolean; wholeWord?: boolean }
+): number {
+  const { caseSensitive = false, wholeWord = true } = options ?? {};
+
+  // Escape regex meta‑chars
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  let pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
+  let flags = 'g' + (caseSensitive ? '' : 'i');
+
+  const regex = new RegExp(pattern, flags);
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
+}
