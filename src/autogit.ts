@@ -1,47 +1,39 @@
-function countWordOccurrences(text: string, word: string): number {
-  // Escape any regex meta‑characters in the search word
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * Return true if `a` and `b` are anagrams.
+ *
+ * @param a      First string
+ * @param b      Second string
+ * @param options  Optional settings – case sensitivity & ignoring non‑letters
+ */
+function areAnagrams(
+  a: string,
+  b: string,
+  options?: {
+    caseSensitive?: boolean;
+    ignoreNonAlpha?: boolean;
+  }
+): boolean {
+  const { caseSensitive = false, ignoreNonAlpha = false } = options || {};
 
-  // \b = word boundary, i = ignore case, g = global (find all)
-  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+  // Helper to canonicalise a string
+  const canon = (s: string) =>
+    s
+      .split('')
+      .filter((ch) => !ignoreNonAlpha || /[a-zA-Z]/.test(ch))
+      .map((ch) => (caseSensitive ? ch : ch.toLowerCase()))
+      .sort(); // array of chars, sorted
 
-  // .match() returns an array of all matches, null if none
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
+  const aChars = canon(a);
+  const bChars = canon(b);
+
+  if (aChars.length !== bChars.length) return false;
+
+  for (let i = 0; i < aChars.length; i++) {
+    if (aChars[i] !== bChars[i]) return false;
+  }
+
+  return true;
 }
-
-// Usage
-const msg = "The quick brown fox jumps over the lazy fox. Foxes are clever.";
-console.log(countWordOccurrences(msg, "fox")); // → 2 (fox, fox)
-const regex = new RegExp(escaped, 'gi');
-function countSplit(text: string, word: string): number {
-  // Empty string returns 0
-  if (!text) return 0;
-  return text.split(word).length - 1;
-}
-function countWithMatchAll(text: string, word: string): number {
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
-  const allMatches = text.matchAll(regex); // Iterable<{ index: … }>
-
-  let count = 0;
-  for (const _ of allMatches) count++;
-  return count;
-}
-export function countOccurrences(
-  text: string,
-  word: string,
-  options?: { caseSensitive?: boolean; wholeWord?: boolean }
-): number {
-  const { caseSensitive = false, wholeWord = true } = options ?? {};
-
-  // Escape regex meta‑chars
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-  let pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
-  let flags = 'g' + (caseSensitive ? '' : 'i');
-
-  const regex = new RegExp(pattern, flags);
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
-}
+areAnagrams('Listen', 'Silent');           // true
+areAnagrams('Hello', 'Ollhe', { caseSensitive: true }); // false
+areAnagrams('Dormitory', 'Dirty room', { ignoreNonAlpha: true }); // true
