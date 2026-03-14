@@ -1,88 +1,56 @@
+Let   S = s1 s2 … sn
+      T = t1 t2 … tm
+
+DP[i][j] = length of the longest common suffix that ends at S[i‑1] and T[j‑1]
+DP[i][j] = DP[i-1][j-1] + 1
 /**
- * Merge‑Sort for an array.
- *
- * @param arr   The array to sort.
- * @param cmp   Optional comparison function. If omitted, the default <, > operators are used.
- * @returns The sorted array (in‑place, but a new array is returned for convenience).
+ * Returns the longest common substring of `a` and `b`.
+ * If there are multiple substrings of the same maximum length,
+ * the first one found in `a` will be returned.
  */
-export function mergeSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  // No need to sort if the array is empty or has a single element.
-  if (arr.length <= 1) return arr.slice();
+export function longestCommonSubstring(a: string, b: string): string {
+  const n = a.length, m = b.length;
+  if (n === 0 || m === 0) return '';
 
-  const mid = Math.floor(arr.length / 2);
-  const left = mergeSort(arr.slice(0, mid), cmp);
-  const right = mergeSort(arr.slice(mid), cmp);
+  // `prev` holds DP values for row i-1
+  const prev = new Array(m + 1).fill(0);
+  // `curr` holds DP values for current row i
+  const curr = new Array(m + 1).fill(0);
 
-  return merge(left, right, cmp);
-}
+  let maxLen = 0;          // longest length so far
+  let maxEndIndexA = 0;    // index in `a` where this substring ends
 
-/**
- * Merges two sorted arrays into a new sorted array.
- *
- * @param left  The left sorted half.
- * @param right The right sorted half.
- * @param cmp   Comparison function (optional).
- * @returns A new sorted array containing all elements from left and right.
- */
-function merge<T>(
-  left: T[],
-  right: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  const result: T[] = [];
-  let i = 0,
-    j = 0;
+  for (let i = 1; i <= n; i++) {
+    // Iterate columns
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        curr[j] = prev[j - 1] + 1;
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          maxEndIndexA = i - 1;   // keep the end idx in a
+        }
+      } else {
+        curr[j] = 0;
+      }
+    }
 
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => {
-        // default numeric or string comparison
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-      };
-
-  while (i < left.length && j < right.length) {
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
+    // Swap rows for next iteration
+    //  curr becomes prev, prev becomes curr (reuse the same arrays)
+    for (let j = 0; j <= m; j++) {
+      prev[j] = curr[j];
+      curr[j] = 0;   // reset current row for the next round
     }
   }
 
-  // Attach leftovers … at most one of these will push anything.
-  return result.concat(left.slice(i)).concat(right.slice(j));
+  return a.slice(maxEndIndexA - maxLen + 1, maxEndIndexA + 1);
 }
-// Numbers
-const nums = [38, 27, 43, 3, 9, 82, 10];
-console.log(mergeSort(nums)); // [3, 9, 10, 27, 38, 43, 82]
+import { longestCommonSubstring } from './common-substring';
 
-// Strings
-const words = ["pear", "apple", "banana", "cherry"];
-console.log(mergeSort(words)); // ['apple', 'banana', 'cherry', 'pear']
+const a = "ABABCDA";
+const b = "CBADABABC";
 
-// Custom type
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: "Alice", age: 34 },
-  { name: "Bob", age: 23 },
-  { name: "Carol", age: 28 }
-];
-console.log(
-  mergeSort(people, (a, b) => a.age - b.age)
-);
-// People sorted by age: Bob, Carol, Alice
-function isSorted<T>(arr: T[], cmp?: (a: T, b: T) => number): boolean {
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0);
-  for (let i = 1; i < arr.length; i++) {
-    if (compare(arr[i - 1], arr[i]) > 0) return false;
-  }
-  return true;
-}
-
-console.log(isSorted(mergeSort([5, 2, 9, 1, 5, 6]))); // true
+console.log(longestCommonSubstring(a, b)); // → "ABC"
+console.log(longestCommonSubstring('foo', ''));          // ''
+console.log(longestCommonSubstring('abc', 'xyz'));       // ''
+console.log(longestCommonSubstring('same', 'same'));     // 'same'
+console.log(longestCommonSubstring('aaaaa', 'bbaaa'));   // 'aaa'
