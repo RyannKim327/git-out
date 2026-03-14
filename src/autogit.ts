@@ -1,46 +1,45 @@
-/**
- * Returns true if `a` and `b` are anagrams.
- * Works for any Unicode characters, but
- * it ignores case and whitespace by default.
- */
-function areAnagrams(a: string, b: string, ignoreCase = true, ignoreWhitespace = true): boolean {
-  // Normalise: trim, collapse spaces, lower‑case if requested
-  const normalize = (s: string) =>
-    s
-      .replace(/\s+/g, "")        // delete spaces
-      .toLowerCase();             // lower‑case
+// apiDemo.ts
+// -----------------------------------------------------
+// Example: Call a public JSONPlaceholder API,
+// fetch a post, and log its title & body.
+//
+// Works out of the box in Node≥18 or any modern browser
+// with a `tsconfig.json` that has `"esModuleInterop": true`
+// and `"target": "es2015"` (or later).
 
-  if (ignoreCase && ignoreWhitespace) {
-    a = normalize(a);
-    b = normalize(b);
-  } else if (ignoreCase) {
-    a = a.toLowerCase();
-    b = b.toLowerCase();
-  } else if (ignoreWhitespace) {
-    a = a.replace(/\s+/g, "");
-    b = b.replace(/\s+/g, "");
-  }
-
-  // Quick length check
-  if (a.length !== b.length) return false;
-
-  // Count characters in the first string
-  const counts: Record<string, number> = {};
-
-  for (const ch of a) {
-    counts[ch] = (counts[ch] ?? 0) + 1;
-  }
-
-  // Subtract counts using the second string
-  for (const ch of b) {
-    const current = counts[ch];
-    if (!current) return false;          // character not seen before or already exhausted
-    if (--current === 0) delete counts[ch];
-  }
-
-  // If everything matched, the object should be empty
-  return Object.keys(counts).length === 0;
+// 1.  Types that model the JSON we expect back
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
-console.log(areAnagrams("listen", "silent"));           // true
-console.log(areAnagrams("Hello, World!", "world!hello")); // true
-console.log(areAnagrams("foo", "bar"));                 // false
+
+// 2.  A handy helper that ensures we get JSON
+async function json<T>(resp: Response): Promise<T> {
+  if (!resp.ok) {
+    throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+  }
+  return resp.json() as Promise<T>;
+}
+
+// 3.  The async routine that talks to the API
+async function fetchPost(postId: number): Promise<Post> {
+  const url = `https://jsonplaceholder.typicode.com/posts/${postId}`;
+
+  const response = await fetch(url);        // ← call the API
+  const post = await json<Post>(response);   // ← parse & type‑check
+
+  return post;
+}
+
+// 4.  Call it and do something with the data
+(async () => {
+  try {
+    const post = await fetchPost(1);
+    console.log(`Post #1 title: ${post.title}`);
+    console.log(`Post #1 body:  ${post.body}`);
+  } catch (err) {
+    console.error("Something went wrong:", err);
+  }
+})();
