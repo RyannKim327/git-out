@@ -1,67 +1,37 @@
-class Graph<T> {
-  private adjacency = new Map<T, Set<T>>();
+/**
+ * Selection Sort – stable‑like, O(n²) time, O(1) extra space.
+ *
+ * @param arr   The array to be sorted (in‑place).
+ * @param cmp   Optional comparator: (a, b) => number.
+ *              If omitted, numerical ascending order is assumed.
+ */
+export function selectionSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): void {
+  const compare = cmp ?? ((a: any, b: any) => a - b);
 
-  addVertex(v: T) {
-    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
-  }
+  for (let i = 0; i < arr.length - 1; i++) {
+    // Assume the smallest is at i.
+    let minIdx = i;
 
-  addEdge(v: T, w: T, directed = false) {
-    this.addVertex(v);
-    this.addVertex(w);
-    this.adjacency.get(v)!.add(w);
-    if (!directed) this.adjacency.get(w)!.add(v);
-  }
+    // Search the rest of the array for a smaller element.
+    for (let j = i + 1; j < arr.length; j++) {
+      if (compare(arr[j], arr[minIdx]) < 0) {
+        minIdx = j;
+      }
+    }
 
-  neighbours(v: T): Iterable<T> {
-    return this.adjacency.get(v) || [];
-  }
-
-  vertices(): Iterable<T> {
-    return this.adjacency.keys();
-  }
-}
-function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
-  const visited = new Set<T>();
-  const result: T[] = [];
-
-  function visit(v: T) {
-    if (visited.has(v)) return;
-    visited.add(v);
-    result.push(v);
-
-    for (const n of graph.neighbours(v)) visit(n);
-  }
-
-  visit(start);
-  return result;
-}
-function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
-  const stack: T[] = [start];
-  const visited = new Set<T>();
-  const result: T[] = [];
-
-  while (stack.length) {
-    const v = stack.pop()!;
-    if (visited.has(v)) continue;
-
-    visited.add(v);
-    result.push(v);
-
-    // Push neighbours in reverse order if you want the same order
-    // as the recursive version (depends on adjacency list ordering).
-    for (const n of graph.neighbours(v)) {
-      if (!visited.has(n)) stack.push(n);
+    // If the smallest isn't already in place, swap.
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
     }
   }
-
-  return result;
 }
-const g = new Graph<string>();
-g.addEdge('A', 'B');
-g.addEdge('A', 'C');
-g.addEdge('B', 'D');
-g.addEdge('C', 'D');
-g.addEdge('D', 'E');
+const nums = [64, 25, 12, 22, 11];
+selectionSort(nums);
+console.log(nums); // → [11, 12, 22, 25, 64]
 
-console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
-console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
+const words = ["pear", "apple", "orange"];
+selectionSort(words, (a, b) => a.localeCompare(b));
+console.log(words); // → ["apple", "orange", "pear"]
