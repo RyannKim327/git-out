@@ -1,41 +1,30 @@
-// schedule.ts
-import cron from 'node-cron';
+const str = "hello world";
+const hasFoo = str.includes("world");   // true
+const hasBar = str.includes("bar");     // false
+const hasCapital = str.includes("WORLD");          // false
+const hasCapitalIgnoreCase = str.toLowerCase()
+                                .includes("WORLD".toLowerCase()); // true
+const hasCapitalIgnoreCase = /world/i.test(str);   // true
+const index = str.indexOf("world"); // 6
+const missing = str.indexOf("bar"); // -1
+const present = str.indexOf("world") !== -1; // true
+const hasPrefix = /^hello/.test(str); // true
 
-let runCount = 0;
-const maxRuns = 5;
+// With dynamic patterns
+const word = "world";
+const pattern = new RegExp(word);    // case‑sensitive
+const result = pattern.test(str);    // true
+// Presence
+const contains = text.includes(sub);
 
-// Pick a playful string at random each time the job fires.
-const messages = [
-  "🍕 Time for a pizza break!",
-  "🐱‍🏍 Speedy coding vibes!",
-  "🧐 Did you know: A group of flamingos is called a flamboyance?",
-  "🚀 Launching into the cosmos…",
-  "🔮 Future content will appear here!"
-];
+// Presence (index form)
+const containsIndex = text.indexOf(sub) !== -1;
 
-const job = cron.schedule('* * * * *', () => {
-  // Bot says something random
-  const msg = messages[Math.floor(Math.random() * messages.length)];
-  console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
+// Position
+const pos = text.indexOf(sub); // -1 if absent
 
-  runCount += 1;
-  if (runCount >= maxRuns) {
-    console.log('Stopping the cron job after 5 runs.');
-    job.stop();
-  }
-}, {
-  scheduled: true,
-  timezone: "UTC"
-});
+// Case‑insensitive
+const containsIC = text.toLowerCase().includes(sub.toLowerCase());
 
-console.log('Cron job started—will run every minute up to 5 times.');
-# 1. Init a barebones project if you haven’t already
-npm init -y
-
-# 2. Install the cron package and types for Node
-npm i node-cron
-npm i -D @types/node @types/node-cron typescript ts-node
-
-# 3. Compile and run
-npx ts-node schedule.ts
-[12:00:00 AM] 🚀 Launching into the cosmos…
+// Regex
+const containsRegex = /world/i.test(text);
