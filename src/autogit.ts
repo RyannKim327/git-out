@@ -1,39 +1,81 @@
-/**
- * Return true if `a` and `b` are anagrams.
- *
- * @param a      First string
- * @param b      Second string
- * @param options  Optional settings – case sensitivity & ignoring non‑letters
- */
-function areAnagrams(
-  a: string,
-  b: string,
-  options?: {
-    caseSensitive?: boolean;
-    ignoreNonAlpha?: boolean;
-  }
-): boolean {
-  const { caseSensitive = false, ignoreNonAlpha = false } = options || {};
+//   ┌─── Imports ────────────────────────────────────────────────────────┐
+import { useEffect, useState } from 'react';
+import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
 
-  // Helper to canonicalise a string
-  const canon = (s: string) =>
-    s
-      .split('')
-      .filter((ch) => !ignoreNonAlpha || /[a-zA-Z]/.test(ch))
-      .map((ch) => (caseSensitive ? ch : ch.toLowerCase()))
-      .sort(); // array of chars, sorted
-
-  const aChars = canon(a);
-  const bChars = canon(b);
-
-  if (aChars.length !== bChars.length) return false;
-
-  for (let i = 0; i < aChars.length; i++) {
-    if (aChars[i] !== bChars[i]) return false;
-  }
-
-  return true;
+//   ┌─── Types ───────────────────────────────────────────────────────────────┐
+interface TodoItem {
+  id: number;
+  title: string;
+  completed: boolean;
 }
-areAnagrams('Listen', 'Silent');           // true
-areAnagrams('Hello', 'Ollhe', { caseSensitive: true }); // false
-areAnagrams('Dormitory', 'Dirty room', { ignoreNonAlpha: true }); // true
+
+//   ┌─── Async helper ────────────────────────────────────────────────────────┐
+async function fetchTodos(): Promise<TodoItem[]> {
+  const url = 'https://jsonplaceholder.typicode.com/todos?_limit=5';
+
+  // Simulate a "slow" network: optional, just for demo
+  await new Promise(r => setTimeout(r, 800));
+
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`❌ ${response.status} ${response.statusText}`);
+
+  const json = await response.json();
+  // Map to our interface – TypeScript will check types
+  return json.map((x: any) => ({
+    id: x.id,
+    title: x.title,
+    completed: x.completed,
+  }));
+}
+
+//   ┌─── Component that uses the async task ──────────────────────────────────┐
+export default function AsyncExample() {
+  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchTodos();
+      console.log('Fetched:', data);
+      setTodos(data);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      console.warn(msg);
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Run once on mount
+  useEffect(() => {
+    load();
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      {loading && <ActivityIndicator size="large" />}
+      {error && <Text style={styles.error}>{error}</Text>}
+      {!loading && !error && (
+        <>
+          {todos.map(t => (
+            <Text key={t.id} style={styles.todo}>
+              {t.completed ? '✅' : '🕒'} {t.title}
+            </Text>
+          ))}
+        </>
+      )}
+      <Button title="Reload" onPress={load} disabled={loading} />
+    </View>
+  );
+}
+
+//   ┌─── Styles ───────────────────────────────────────────────────────────────┐
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, justifyContent: 'center' },
+  todo: { fontSize: 18, marginVertical: 4 },
+  error: { color: 'red', marginBottom: 12 },
+});
