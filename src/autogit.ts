@@ -1,101 +1,79 @@
 /**
- * Build the bad‑character shift table.
- * For each letter we record the distance from the end of the pattern
- * where that letter last appears. If it never appears, the shift is
- * the whole pattern length.
+ * Returns the kth smallest value in `arr` (1‑based k).
+ *  Throws an error if k is out of bounds.
  */
-function buildBadCharShift(pattern: string): number[] {
-  const m = pattern.length;
-  const SHIFT_SIZE = 256; // ASCII range
-  const table = new Array<number>(SHIFT_SIZE).fill(m);
-
-  for (let i = 0; i < m - 1; i++) {
-    table[pattern.charCodeAt(i)] = m - 1 - i;
+export function kthSmallest(arr: number[], k: number): number {
+  if (k <= 0 || k > arr.length) {
+    throw new RangeError('k is out of bounds');
   }
-  return table;
-}
 
-/**
- * Build the good‑suffix shift table.
- * Uses suffix and prefix tables derived from the reversed pattern.
- */
-function buildGoodSuffixShift(pattern: string): number[] {
-  const m = pattern.length;
-  const table = new Array<number>(m).fill(0);
-  const suff = new Array<number>(m).fill(0);
+  // Work on a copy so the original array stays intact.
+  const a = arr.slice();
 
-  // 1. Compute suff array: longest suffix of pattern[0..i] that is also a prefix of pattern
-  suff[m - 1] = m;
-  let g = m - 1, f = m - 1;
-  for (let i = m - 2; i >= 0; i--) {
-    if (i > g && suff[i + m - 1 - f] < i - g) {
-      suff[i] = suff[i + m - 1 - f];
+  const quickSelect = (left: number, right: number, index: number) => {
+    // If the segment contains only one element, that's the answer.
+    if (left === right) return a[left];
+
+    const pivotIndex = partition(left, right);
+    if (pivotIndex === index) {
+      return a[pivotIndex];
+    } else if (pivotIndex < index) {
+      return quickSelect(pivotIndex + 1, right, index);
     } else {
-      g = Math.min(g, i);
-      f = i;
-      while (g >= 0 && pattern[g] === pattern[g + m - 1 - f]) g--;
-      suff[i] = f - g;
+      return quickSelect(left, pivotIndex - 1, index);
     }
-  }
+  };
 
-  // 2. Fill table with shifts based on suff array
-  for (let i = 0; i < m; i++) table[i] = m;
-  let j = 0;
-  for (let i = m - 1; i >= 0; i--) {
-    if (suff[i] === i + 1) {
-      for (; j < m - 1 - i; j++) {
-        if (table[j] === m) table[j] = m - 1 - i;
+  const partition = (left: number, right: number): number => {
+    // Pick a pivot.  Using the middle element keeps the code short; you could
+    // shuffle or use Median‑of‑Three for better worst‑case guarantees.
+    const pivot = a[Math.floor((left + right) / 2)];
+    let i = left;
+    let j = right;
+
+    while (i <= j) {
+      while (a[i] < pivot) i++;
+      while (a[j] > pivot) j--;
+      if (i <= j) {
+        [a[i], a[j]] = [a[j], a[i]];
+        i++;
+        j--;
       }
     }
-  }
-  for (let i = 0; i < m - 1; i++) {
-    table[m - 1 - suff[i]] = m - 1 - i;
-  }
+    return i - 1; // pivot final position
+  };
 
-  return table;
+  // `k-1` because the array index is 0‑based.
+  return quickSelect(0, a.length - 1, k - 1);
 }
-/**
- * Boyer–Moore search.
- * @param text   string to search inside
- * @param pattern  string to find
- * @returns index of the first occurrence or -1 if not found
- */
-export function boyerMooreSearch(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return 0;
-  if (n < m) return -1;
+export function kthSmallestBySort(arr: number[], k: number): number {
+  if (k <= 0 || k > arr.length) throw new RangeError('k is out of bounds');
+  const sorted = [...arr].sort((a, b) => a - b);
+  return sorted[k - 1];
+}
+class MinHeap {
+  private data: number[] = [];
 
-  const badChar = buildBadCharShift(pattern);
-  const goodSuffix = buildGoodSuffixShift(pattern);
+  push(val: number) {
+    this.data.push(val);
+    this.bubbleUp(this.data.length - 1);
+  }
 
-  let s = 0; // alignment of the pattern with the text
-  while (s <= n - m) {
-    let j = m - 1;
+  /* ... bubbleUp, bubbleDown, peek, pop ... */
 
-    // compare looking from the end of the pattern
-    while (j >= 0 && pattern[j] === text[s + j]) j--;
-
-    if (j < 0) {
-      return s; // full match
+  /** Return kth smallest (1‑based). */
+  kth(k: number): number {
+    if (k <= 0 || k > this.data.length) throw new RangeError();
+    const heapCopy = [...this.data];
+    let result = -Infinity;
+    for (let i = 0; i < k; i++) {
+      result = heapCopy[0];
+      this.swap(heapCopy, 0, heapCopy.length - 1);
+      heapCopy.pop();
+      this.sinkDown(heapCopy, 0);
     }
-
-    const bcShift = badChar[text.charCodeAt(s + j)] - (m - 1 - j);
-    const gsShift = goodSuffix[j];
-
-    // maximum of both shift suggestions
-    s += Math.max(bcShift, gsShift, 1); // at least 1 to avoid infinite loop
+    return result;
   }
-  return -1;
-}
-import { boyerMooreSearch } from './boyer-moore';
 
-const haystack = "Here is a simple example string for searching.";
-const needle   = "example";
-
-const pos = boyerMooreSearch(haystack, needle);
-if (pos !== -1) {
-  console.log(`'${needle}' found at index ${pos}`);
-} else {
-  console.log(`'${needle}' not found`);
+  /* helper methods omitted for brevity */
 }
