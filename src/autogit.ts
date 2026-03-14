@@ -1,72 +1,124 @@
-/**
- * Encodes a string using Burrows–Wheeler transform.
- *
- * @param input – Source text (any length, any chars including nulls).
- * @returns {bwt: string, index: number} – BWT string + original row index.
- */
-export function bwtEncode(input: string): { bwt: string; index: number } {
-  const n = input.length;
-  // Quick escape for empty string.
-  if (n === 0) return { bwt: "", index: 0 };
+// A node identifier can be any string or number
+export type Vertex = string | number;
 
-  // Build the rotation array.
-  const rotations: string[] = [];
-  for (let offset = 0; offset < n; offset++) {
-    const rotation = input.slice(offset) + input.slice(0, offset);
-    rotations.push(rotation);
-  }
-
-  // Sort the rotations.
-  rotations.sort();
-
-  // Construct the BWT string (last column) and locate the original string.
-  let lastColumn = "";
-  let origIndex = -1;
-  for (let i = 0; i < n; i++) {
-    const rot = rotations[i];
-    lastColumn += rot.charAt(n - 1);          // last char of the rotation
-    if (rot === input) origIndex = i;        // original text keeps its place
-  }
-
-  return { bwt: lastColumn, index: origIndex };
+// Directed edge with a non‑negative weight
+export interface Edge {
+    to: Vertex;
+    cost: number;
 }
 
-/**
- * Decodes a BWT pair back to the original string.
- *
- * @param bwt – String produced by bwtEncode (last column).
- * @param index – Index returned by bwtEncode.
- * @returns original string.
- */
-export function bwtDecode(bwt: string, index: number): string {
-  const n = bwt.length;
-  if (n === 0) return "";
+// Adjacency list representation
+export type Graph = Map<Vertex, Edge[]>;
 
-  // Initialize table with empty strings.
-  const table: string[] = Array(n).fill("");
+// Result of dijkstra: distance to each node, and the shortest‑path tree
+export interface DijkstraResult {
+    distances: Map<Vertex, number>;
+    previous: Map<Vertex, Vertex | null>;
+}
+class MinHeap {
+    private data: [number, Vertex][] = [];
 
-  // Each iteration prepends a character from the BWT to every row,
-  // then sorts. After n iterations the table is the sorted matrix.
-  for (let step = 0; step < n; step++) {
-    // Prepend the BWT characters.
-    for (let i = 0; i < n; i++) {
-      table[i] = bwt.charAt(i) + table[i];
+    isEmpty() {
+        return this.data.length === 0;
     }
-    // Stable sort by the whole string.
-    table.sort();
-  }
 
-  // The row at the recorded index is the original string.
-  return table[index];
+    push(item: [number, Vertex]) {
+        this.data.push(item);
+        this.bubbleUp(this.data.length - 1);
+    }
+
+    pop(): [number, Vertex] | undefined {
+        if (this.isEmpty()) return undefined;
+        const root = this.data[0];
+        const last = this.data.pop()!;
+        if (!this.isEmpty()) {
+            this.data[0] = last;
+            this.bubbleDown(0);
+        }
+        return root;
+    }
+
+    private bubbleUp(i: number) {
+        while (i > 0) {
+            const parent = (i - 1) >> 1;
+            if (this.data[parent][0] <= this.data[i][0]) break;
+            [this.data[parent], this.data[i]] = [this.data[i], this.data[parent]];
+            i = parent;
+        }
+    }
+
+    private bubbleDown(i: number) {
+        const n = this.data.length;
+        while (true) {
+            const left = (i << 1) + 1;
+            const right = left + 1;
+            let smallest = i;
+
+            if (left < n && this.data[left][0] < this.data[smallest][0]) smallest = left;
+            if (right < n && this.data[right][0] < this.data[smallest][0]) smallest = right;
+
+            if (smallest === i) break;
+
+            [this.data[i], this.data[smallest]] = [this.data[smallest], this.data[i]];
+            i = smallest;
+        }
+    }
 }
-import { bwtEncode, bwtDecode } from "./bwt";
+export function dijkstra(
+    graph: Graph,
+    source: Vertex
+): DijkstraResult {
+    const distances = new Map<Vertex, number>();
+    const previous = new Map<Vertex, Vertex | null>();
 
-const text = "The quick brown fox jumps over the lazy dog";
+    // init
+    graph.forEach((_, v) => {
+        distances.set(v, Infinity);
+        previous.set(v, null);
+    });
+    distances.set(source, 0);
 
-const { bwt, index } = bwtEncode(text);
-console.log("BWT String:", bwt);
-console.log("Original index =", index);
+    const pq = new MinHeap();
+    pq.push([0, source]);
 
-const recovered = bwtDecode(bwt, index);
-console.log("Recovered:", recovered);
-console.log("Match:", recovered === text); // true
+    while (!pq.isEmpty()) {
+        const [distU, u] = pq.pop()!;
+
+        // (optional) skip stale queue entries
+        if (distU > distances.get(u)!) continue;
+
+        const edges = graph.get(u) ?? [];
+        for (const { to: v, cost: w } of edges) {
+            const alt = distU + w;
+            if (alt < distances.get(v)!) {
+                distances.set(v, alt);
+                previous.set(v, u);
+                pq.push([alt, v]);
+            }
+        }
+    }
+
+    return { distances, previous };
+}
+const g: Graph = new Map([
+    ['A', [{ to: 'B', cost: 5 }, { to: 'C', cost: 10 }]],
+    ['B', [{ to: 'C', cost: 3 }, { to: 'D', cost: 2 }]],
+    ['C', [{ to: 'D', cost: 1 }]],
+    ['D', []]
+]);
+
+const { distances, previous } = dijkstra(g, 'A');
+console.log('Distances:', distances);
+console.log('Previous:', previous);
+
+// Reconstruct path A → D
+function buildPath(prev: Map<Vertex, Vertex | null>, target: Vertex) {
+    const path: Vertex[] = [];
+    for (let v = target; v !== null; v = prev.get(v)!) path.unshift(v);
+    return path;
+}
+
+console.log('Path A → D:', buildPath(previous, 'D'));
+Distances: Map { 'A' => 0, 'B' => 5, 'C' => 7, 'D' => 8 }
+Previous: Map { 'A' => null, 'B' => 'A', 'C' => 'B', 'D' => 'C' }
+Path A → D: ['A', 'B', 'C', 'D']
