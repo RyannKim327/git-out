@@ -1,62 +1,59 @@
-class TreeNode {
-  value: number;
-  left: TreeNode | null = null;
-  right: TreeNode | null = null;
+/**
+ * Shell sort – a simple, in‑place algorithm that improves on insertion sort.
+ * Sorts an array of numbers in ascending order.
+ *
+ * @param arr The array to sort (modified in place)
+ * @param compare Optional compare function (defaults to numeric comparison)
+ */
+export function shellSort(
+  arr: number[],
+  compare?: (a: number, b: number) => number
+): void {
+  const len = arr.length;
+  const cmp = compare ?? ((a, b) => a - b);
 
-  constructor(value: number) {
-    this.value = value;
-  }
-}
-interface TreeNode {
-  value: number;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
-function countLeaves(root: TreeNode | null): number {
-  if (!root) return 0;                     // empty subtree → no leaves
+  // A common gap sequence: halving each time (Shell's original)
+  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Gapped insertion sort
+    for (let i = gap; i < len; i++) {
+      let temp = arr[i];
+      let j = i;
 
-  // leaf test
-  const isLeaf = !root.left && !root.right;
-  if (isLeaf) return 1;                    // this node itself is a leaf
-
-  // otherwise recursively count in both sub‑trees
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-function countLeavesIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  let count = 0;
-  const stack: (TreeNode | null)[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop() as TreeNode;
-
-    const isLeaf = !node.left && !node.right;
-    if (isLeaf) {
-      count += 1;
-    } else {
-      if (node.right) stack.push(node.right);
-      if (node.left) stack.push(node.left);
+      // Move elements that are greater than temp backward by 'gap' places
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      // Bring temp into its spot
+      arr[j] = temp;
     }
   }
-
-  return count;
 }
-// Build the tree:
-//        1
-//       / \
-//      2   3
-//     /   / \
-//    4   5   6
-//         \
-//          7
-const root = new TreeNode(1);
-root.left = new TreeNode(2);
-root.right = new TreeNode(3);
-root.left.left = new TreeNode(4);
-root.right.left = new TreeNode(5);
-root.right.right = new TreeNode(6);
-root.right.left.right = new TreeNode(7);
+const data = [40, 3, 10, 5, 1, 15];
+shellSort(data);
 
-console.log(countLeaves(root));          // → 3  (nodes 4, 7, 6)
-console.log(countLeavesIterative(root)); // → 3
+console.log(data); // [1, 3, 5, 10, 15, 40]
+export function shellSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): void {
+  const len = arr.length;
+  const cmp = compare ?? ((a, b) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
+
+  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
+    }
+  }
+}
+shellSort(['banana', 'apple', 'pear'], (a, b) => a.localeCompare(b));
