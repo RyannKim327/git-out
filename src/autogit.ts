@@ -1,146 +1,67 @@
-// Node.ts
-export class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
+/**
+ * A generic insertion‑sort implementation.
+ *
+ * @param arr The array to sort (in‑place).
+ * @param cmp Optional comparison callback. It should return:
+ *            < 0 if a < b
+ *            = 0 if a === b
+ *            > 0 if a > b
+ *
+ * @returns The same array reference, now sorted.
+ */
+export function insertionSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): T[] {
+  // If no custom comparator is supplied, use the default < / >.
+  const compare = cmp
+    ? cmp
+    : (a: T, b: T) => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore - allow primitive coercion for < and > operators
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+      };
 
-  constructor(value: T) {
-    this.value = value;
+  // Iterate from the second element to the end.
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+
+    // Shift larger elements one position to the right.
+    while (j >= 0 && compare(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    // Place key in its correct position.
+    arr[j + 1] = key;
   }
+
+  return arr;
 }
-// LinkedList.ts
-import { ListNode } from "./Node";
-
-export class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _length = 0;
-
-  get length() {
-    return this._length;
-  }
-
-  /* ---------- Basic Operations ---------- */
-
-  // Append a value to the end of the list.
-  push(value: T): void {
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      this.tail!.next = node;
-      this.tail = node;
-    }
-    this._length++;
-  }
-
-  // Prepend a value to the beginning of the list.
-  unshift(value: T): void {
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      node.next = this.head;
-      this.head = node;
-    }
-    this._length++;
-  }
-
-  // Remove and return the value at the head of the list.
-  shift(): T | null {
-    if (!this.head) return null;
-    const value = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null; // list became empty
-    this._length--;
-    return value;
-  }
-
-  // Remove and return the value at the tail of the list.
-  pop(): T | null {
-    if (!this.head) return null;
-
-    if (this.head === this.tail) {
-      const value = this.head.value;
-      this.head = this.tail = null;
-      this._length--;
-      return value;
-    }
-
-    // Walk to the node just before the tail.
-    let current = this.head;
-    while (current.next !== this.tail) {
-      current = current.next!;
-    }
-    const value = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-    this._length--;
-    return value;
-  }
-
-  /* ---------- Traversal & Search ---------- */
-
-  // Return the node at the given zero‑based index, or null if out of bounds.
-  getNodeAt(index: number): ListNode<T> | null {
-    if (index < 0 || index >= this._length) return null;
-    let current = this.head!;
-    for (let i = 0; i < index; i++) {
-      current = current.next!;
-    }
-    return current;
-  }
-
-  // Find the first value that satisfies the predicate.
-  find(predicate: (value: T) => boolean, startIndex = 0): T | null {
-    let current = this.getNodeAt(startIndex);
-    while (current) {
-      if (predicate(current.value)) return current.value;
-      current = current.next;
-    }
-    return null;
-  }
-
-  /* ---------- Utility ---------- */
-
-  // Convert the list to an array (useful for debugging or interoperability).
-  toArray(): T[] {
-    const out: T[] = [];
-    let current = this.head;
-    while (current) {
-      out.push(current.value);
-      current = current.next;
-    }
-    return out;
-  }
-
-  // Allow for… e.g. “for … of” iteration.
-  [Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    return {
-      next: () => ({
-        value: current?.value,
-        done: current === null,
-      }),
-    };
-  }
+const numbers = [5, 3, 8, 1, 4];
+insertionSort(numbers);
+console.log(numbers); // [1, 3, 4, 5, 8]
+const names = ["Zoe", "Andrew", "bella", "Clara"];
+insertionSort(names);
+console.log(names); // ["Andrew", "Clara", "bella", "Zoe"]
+interface Item {
+  id: number;
+  name: string;
 }
-import { LinkedList } from "./LinkedList";
 
-const numbers = new LinkedList<number>();
-numbers.push(10);
-numbers.push(20);
-numbers.unshift(5);   // list is now 5 -> 10 -> 20
+const items: Item[] = [
+  { id: 3, name: "apple" },
+  { id: 1, name: "orange" },
+  { id: 2, name: "banana" },
+];
 
-console.log(numbers.shift()); // 5
-console.log(numbers.pop());   // 20
-console.log(numbers.length);  // 1
-
-// Search
-numbers.push(30);
-numbers.push(40);
-console.log(numbers.find(v => v > 15)); // 20
-
-// Iterate
-for (const n of numbers) {
-  console.log(n); // 10, 30, 40
+insertionSort(items, (a, b) => a.id - b.id);
+console.log(items);
+// [{ id: 1, name: "orange" }, { id: 2, name: "banana" }, { id: 3, name: "apple" }]
+export function sorted<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
+  const copy = [...arr];
+  return insertionSort(copy, cmp);
 }
