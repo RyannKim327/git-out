@@ -1,32 +1,41 @@
-// largestPrimeFactor.ts
-export function largestPrimeFactor(n: number): number | null {
-    if (n < 2) return null;          // No prime factor for 0, 1 or negatives
+// schedule.ts
+import cron from 'node-cron';
 
-    let largest = 0;
+let runCount = 0;
+const maxRuns = 5;
 
-    // Handle factor 2 first – it’s the only even prime
-    while (n % 2 === 0) {
-        largest = 2;
-        n = Math.floor(n / 2);
-    }
+// Pick a playful string at random each time the job fires.
+const messages = [
+  "🍕 Time for a pizza break!",
+  "🐱‍🏍 Speedy coding vibes!",
+  "🧐 Did you know: A group of flamingos is called a flamboyance?",
+  "🚀 Launching into the cosmos…",
+  "🔮 Future content will appear here!"
+];
 
-    // Now n is odd.  Test odd divisors from 3 upward.
-    // Only need to go up to sqrt(n); beyond that any remaining n is prime.
-    for (let d = 3; d * d <= n; d += 2) {
-        while (n % d === 0) {
-            largest = d;
-            n = Math.floor(n / d);
-        }
-    }
+const job = cron.schedule('* * * * *', () => {
+  // Bot says something random
+  const msg = messages[Math.floor(Math.random() * messages.length)];
+  console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
 
-    // If after the loop n > 1 it means n itself is prime and larger
-    // than any divisor we removed.
-    if (n > 1) largest = n;
+  runCount += 1;
+  if (runCount >= maxRuns) {
+    console.log('Stopping the cron job after 5 runs.');
+    job.stop();
+  }
+}, {
+  scheduled: true,
+  timezone: "UTC"
+});
 
-    return largest;
-}
-console.log(largestPrimeFactor(210)); // 7
-console.log(largestPrimeFactor(2));   // 2
-console.log(largestPrimeFactor(17));  // 17
-console.log(largestPrimeFactor(18));  // 3
-console.log(largestPrimeFactor(0));   // null
+console.log('Cron job started—will run every minute up to 5 times.');
+# 1. Init a barebones project if you haven’t already
+npm init -y
+
+# 2. Install the cron package and types for Node
+npm i node-cron
+npm i -D @types/node @types/node-cron typescript ts-node
+
+# 3. Compile and run
+npx ts-node schedule.ts
+[12:00:00 AM] 🚀 Launching into the cosmos…
