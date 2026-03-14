@@ -1,101 +1,69 @@
 /**
- * Build the bad‑character shift table.
- * For each letter we record the distance from the end of the pattern
- * where that letter last appears. If it never appears, the shift is
- * the whole pattern length.
+ * Returns the LCS length of two strings.
  */
-function buildBadCharShift(pattern: string): number[] {
-  const m = pattern.length;
-  const SHIFT_SIZE = 256; // ASCII range
-  const table = new Array<number>(SHIFT_SIZE).fill(m);
+export function lcsLength(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
 
-  for (let i = 0; i < m - 1; i++) {
-    table[pattern.charCodeAt(i)] = m - 1 - i;
-  }
-  return table;
-}
+  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-/**
- * Build the good‑suffix shift table.
- * Uses suffix and prefix tables derived from the reversed pattern.
- */
-function buildGoodSuffixShift(pattern: string): number[] {
-  const m = pattern.length;
-  const table = new Array<number>(m).fill(0);
-  const suff = new Array<number>(m).fill(0);
-
-  // 1. Compute suff array: longest suffix of pattern[0..i] that is also a prefix of pattern
-  suff[m - 1] = m;
-  let g = m - 1, f = m - 1;
-  for (let i = m - 2; i >= 0; i--) {
-    if (i > g && suff[i + m - 1 - f] < i - g) {
-      suff[i] = suff[i + m - 1 - f];
-    } else {
-      g = Math.min(g, i);
-      f = i;
-      while (g >= 0 && pattern[g] === pattern[g + m - 1 - f]) g--;
-      suff[i] = f - g;
-    }
-  }
-
-  // 2. Fill table with shifts based on suff array
-  for (let i = 0; i < m; i++) table[i] = m;
-  let j = 0;
-  for (let i = m - 1; i >= 0; i--) {
-    if (suff[i] === i + 1) {
-      for (; j < m - 1 - i; j++) {
-        if (table[j] === m) table[j] = m - 1 - i;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
       }
     }
   }
-  for (let i = 0; i < m - 1; i++) {
-    table[m - 1 - suff[i]] = m - 1 - i;
-  }
 
-  return table;
+  return dp[m][n];
 }
+
 /**
- * Boyer–Moore search.
- * @param text   string to search inside
- * @param pattern  string to find
- * @returns index of the first occurrence or -1 if not found
+ * Returns the actual longest common subsequence.
+ * In case of multiple LCS of the same length, the one found
+ * will consist of the characters chosen by the DP traversal.
  */
-export function boyerMooreSearch(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return 0;
-  if (n < m) return -1;
+export function lcs(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-  const badChar = buildBadCharShift(pattern);
-  const goodSuffix = buildGoodSuffixShift(pattern);
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  let s = 0; // alignment of the pattern with the text
-  while (s <= n - m) {
-    let j = m - 1;
-
-    // compare looking from the end of the pattern
-    while (j >= 0 && pattern[j] === text[s + j]) j--;
-
-    if (j < 0) {
-      return s; // full match
+  // Build the DP table – same recurrence as in lcsLength
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
-
-    const bcShift = badChar[text.charCodeAt(s + j)] - (m - 1 - j);
-    const gsShift = goodSuffix[j];
-
-    // maximum of both shift suggestions
-    s += Math.max(bcShift, gsShift, 1); // at least 1 to avoid infinite loop
   }
-  return -1;
-}
-import { boyerMooreSearch } from './boyer-moore';
 
-const haystack = "Here is a simple example string for searching.";
-const needle   = "example";
+  // Backtrack to rebuild the sequence
+  let i = m;
+  let j = n;
+  const seq: string[] = [];
 
-const pos = boyerMooreSearch(haystack, needle);
-if (pos !== -1) {
-  console.log(`'${needle}' found at index ${pos}`);
-} else {
-  console.log(`'${needle}' not found`);
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      seq.push(a[i - 1]); // they match
+      i--;
+      j--;
+    } else if (dp[i - 1][j] > dp[i][j - 1]) {
+      i--; // move up
+    } else {
+      j--; // move left
+    }
+  }
+
+  return seq.reverse().join('');
 }
+const a = "AGGTAB";
+const b = "GXTXAYB";
+
+console.log(lcsLength(a, b)); // 4
+console.log(lcs(a, b));       // "GTAB"
