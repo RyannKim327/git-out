@@ -1,59 +1,37 @@
 /**
- * Shell sort – a simple, in‑place algorithm that improves on insertion sort.
- * Sorts an array of numbers in ascending order.
+ * Selection Sort – stable‑like, O(n²) time, O(1) extra space.
  *
- * @param arr The array to sort (modified in place)
- * @param compare Optional compare function (defaults to numeric comparison)
+ * @param arr   The array to be sorted (in‑place).
+ * @param cmp   Optional comparator: (a, b) => number.
+ *              If omitted, numerical ascending order is assumed.
  */
-export function shellSort(
-  arr: number[],
-  compare?: (a: number, b: number) => number
-): void {
-  const len = arr.length;
-  const cmp = compare ?? ((a, b) => a - b);
-
-  // A common gap sequence: halving each time (Shell's original)
-  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Gapped insertion sort
-    for (let i = gap; i < len; i++) {
-      let temp = arr[i];
-      let j = i;
-
-      // Move elements that are greater than temp backward by 'gap' places
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      // Bring temp into its spot
-      arr[j] = temp;
-    }
-  }
-}
-const data = [40, 3, 10, 5, 1, 15];
-shellSort(data);
-
-console.log(data); // [1, 3, 5, 10, 15, 40]
-export function shellSort<T>(
+export function selectionSort<T>(
   arr: T[],
-  compare?: (a: T, b: T) => number
+  cmp?: (a: T, b: T) => number
 ): void {
-  const len = arr.length;
-  const cmp = compare ?? ((a, b) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
+  const compare = cmp ?? ((a: any, b: any) => a - b);
 
-  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    for (let i = gap; i < len; i++) {
-      const temp = arr[i];
-      let j = i;
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
+  for (let i = 0; i < arr.length - 1; i++) {
+    // Assume the smallest is at i.
+    let minIdx = i;
+
+    // Search the rest of the array for a smaller element.
+    for (let j = i + 1; j < arr.length; j++) {
+      if (compare(arr[j], arr[minIdx]) < 0) {
+        minIdx = j;
       }
-      arr[j] = temp;
+    }
+
+    // If the smallest isn't already in place, swap.
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
     }
   }
 }
-shellSort(['banana', 'apple', 'pear'], (a, b) => a.localeCompare(b));
+const nums = [64, 25, 12, 22, 11];
+selectionSort(nums);
+console.log(nums); // → [11, 12, 22, 25, 64]
+
+const words = ["pear", "apple", "orange"];
+selectionSort(words, (a, b) => a.localeCompare(b));
+console.log(words); // → ["apple", "orange", "pear"]
