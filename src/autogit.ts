@@ -1,67 +1,41 @@
-class Graph<T> {
-  private adjacency = new Map<T, Set<T>>();
+// schedule.ts
+import cron from 'node-cron';
 
-  addVertex(v: T) {
-    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
+let runCount = 0;
+const maxRuns = 5;
+
+// Pick a playful string at random each time the job fires.
+const messages = [
+  "🍕 Time for a pizza break!",
+  "🐱‍🏍 Speedy coding vibes!",
+  "🧐 Did you know: A group of flamingos is called a flamboyance?",
+  "🚀 Launching into the cosmos…",
+  "🔮 Future content will appear here!"
+];
+
+const job = cron.schedule('* * * * *', () => {
+  // Bot says something random
+  const msg = messages[Math.floor(Math.random() * messages.length)];
+  console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
+
+  runCount += 1;
+  if (runCount >= maxRuns) {
+    console.log('Stopping the cron job after 5 runs.');
+    job.stop();
   }
+}, {
+  scheduled: true,
+  timezone: "UTC"
+});
 
-  addEdge(v: T, w: T, directed = false) {
-    this.addVertex(v);
-    this.addVertex(w);
-    this.adjacency.get(v)!.add(w);
-    if (!directed) this.adjacency.get(w)!.add(v);
-  }
+console.log('Cron job started—will run every minute up to 5 times.');
+# 1. Init a barebones project if you haven’t already
+npm init -y
 
-  neighbours(v: T): Iterable<T> {
-    return this.adjacency.get(v) || [];
-  }
+# 2. Install the cron package and types for Node
+npm i node-cron
+npm i -D @types/node @types/node-cron typescript ts-node
 
-  vertices(): Iterable<T> {
-    return this.adjacency.keys();
-  }
-}
-function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
-  const visited = new Set<T>();
-  const result: T[] = [];
-
-  function visit(v: T) {
-    if (visited.has(v)) return;
-    visited.add(v);
-    result.push(v);
-
-    for (const n of graph.neighbours(v)) visit(n);
-  }
-
-  visit(start);
-  return result;
-}
-function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
-  const stack: T[] = [start];
-  const visited = new Set<T>();
-  const result: T[] = [];
-
-  while (stack.length) {
-    const v = stack.pop()!;
-    if (visited.has(v)) continue;
-
-    visited.add(v);
-    result.push(v);
-
-    // Push neighbours in reverse order if you want the same order
-    // as the recursive version (depends on adjacency list ordering).
-    for (const n of graph.neighbours(v)) {
-      if (!visited.has(n)) stack.push(n);
-    }
-  }
-
-  return result;
-}
-const g = new Graph<string>();
-g.addEdge('A', 'B');
-g.addEdge('A', 'C');
-g.addEdge('B', 'D');
-g.addEdge('C', 'D');
-g.addEdge('D', 'E');
-
-console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
-console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
+# 3. Compile and run
+npx ts-node schedule.ts
+[12:00:00 AM] 🚀 Launching into the cosmos…
