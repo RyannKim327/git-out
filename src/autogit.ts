@@ -1,32 +1,37 @@
 /**
- * Returns the area of a triangle when you know its base and height.
+ * Selection Sort – stable‑like, O(n²) time, O(1) extra space.
  *
- * @param base   The length of the triangle’s base.
- * @param height The height (altitude) drawn to that base.
- * @returns The area in whatever units the inputs are in.
+ * @param arr   The array to be sorted (in‑place).
+ * @param cmp   Optional comparator: (a, b) => number.
+ *              If omitted, numerical ascending order is assumed.
  */
-function triangleAreaFromBaseHeight(base: number, height: number): number {
-  return 0.5 * base * height;
+export function selectionSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): void {
+  const compare = cmp ?? ((a: any, b: any) => a - b);
+
+  for (let i = 0; i < arr.length - 1; i++) {
+    // Assume the smallest is at i.
+    let minIdx = i;
+
+    // Search the rest of the array for a smaller element.
+    for (let j = i + 1; j < arr.length; j++) {
+      if (compare(arr[j], arr[minIdx]) < 0) {
+        minIdx = j;
+      }
+    }
+
+    // If the smallest isn't already in place, swap.
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+    }
+  }
 }
-/**
- * Returns the area of a triangle given its three vertices.
- *
- * @param x1 x‑coordinate of the first vertex
- * @param y1 y‑coordinate of the first vertex
- * @param x2 x‑coordinate of the second vertex
- * @param y2 y‑coordinate of the second vertex
- * @param x3 x‑coordinate of the third vertex
- * @param y3 y‑coordinate of the third vertex
- * @returns The absolute area (non‑negative) of the triangle.
- */
-function triangleAreaFromPoints(
-  x1: number, y1: number,
-  x2: number, y2: number,
-  x3: number, y3: number
-): number {
-  return Math.abs(
-    x1 * (y2 - y3) +
-    x2 * (y3 - y1) +
-    x3 * (y1 - y2)
-  ) / 2;
-}
+const nums = [64, 25, 12, 22, 11];
+selectionSort(nums);
+console.log(nums); // → [11, 12, 22, 25, 64]
+
+const words = ["pear", "apple", "orange"];
+selectionSort(words, (a, b) => a.localeCompare(b));
+console.log(words); // → ["apple", "orange", "pear"]
