@@ -1,67 +1,35 @@
 /**
- * A generic insertion‑sort implementation.
- *
- * @param arr The array to sort (in‑place).
- * @param cmp Optional comparison callback. It should return:
- *            < 0 if a < b
- *            = 0 if a === b
- *            > 0 if a > b
- *
- * @returns The same array reference, now sorted.
+ * Bottom‑up merge sort – no recursion, only loops.
+ * @param arr The array to sort, in place.
+ * @returns The sorted array (same reference as the argument).
  */
-export function insertionSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  // If no custom comparator is supplied, use the default < / >.
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore - allow primitive coercion for < and > operators
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-      };
+export function mergeSortIterative<T>(arr: T[]): T[] {
+  const len = arr.length;
+  if (len < 2) return arr;          // already sorted
 
-  // Iterate from the second element to the end.
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+  // Temporary buffer reused for each merge
+  const temp = new Array<T>(len);
 
-    // Shift larger elements one position to the right.
-    while (j >= 0 && compare(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
+  // Initial run width – start with runs of 1 element
+  for (let width = 1; width < len; width <<= 1) {
+    // Merge pairs of runs: left = i‑th run, right = i+width‑th run
+    for (let i = 0; i < len; i += width << 1) {
+      const left = i;
+      const mid = Math.min(i + width, len);
+      const right = Math.min(i + (width << 1), len);
+
+      // Merge [left, mid) and [mid, right) into temp
+      let l = left, r = mid, k = left;
+      while (l < mid && r < right) {
+        temp[k++] = (arr[l] as any <= arr[r] as any) ? arr[l++] : arr[r++];
+      }
+      while (l < mid) temp[k++] = arr[l++];
+      while (r < right) temp[k++] = arr[r++];
+
+      // Copy the merged segment back into arr
+      for (let p = left; p < right; p++) arr[p] = temp[p];
     }
-
-    // Place key in its correct position.
-    arr[j + 1] = key;
   }
 
   return arr;
-}
-const numbers = [5, 3, 8, 1, 4];
-insertionSort(numbers);
-console.log(numbers); // [1, 3, 4, 5, 8]
-const names = ["Zoe", "Andrew", "bella", "Clara"];
-insertionSort(names);
-console.log(names); // ["Andrew", "Clara", "bella", "Zoe"]
-interface Item {
-  id: number;
-  name: string;
-}
-
-const items: Item[] = [
-  { id: 3, name: "apple" },
-  { id: 1, name: "orange" },
-  { id: 2, name: "banana" },
-];
-
-insertionSort(items, (a, b) => a.id - b.id);
-console.log(items);
-// [{ id: 1, name: "orange" }, { id: 2, name: "banana" }, { id: 3, name: "apple" }]
-export function sorted<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-  const copy = [...arr];
-  return insertionSort(copy, cmp);
 }
