@@ -1,79 +1,87 @@
 /**
- * Returns the kth smallest value in `arr` (1‑based k).
- *  Throws an error if k is out of bounds.
+ * A directed graph stored as an adjacency list.
+ * Each key is a node identifier, the value is an array of successor node ids.
  */
-export function kthSmallest(arr: number[], k: number): number {
-  if (k <= 0 || k > arr.length) {
-    throw new RangeError('k is out of bounds');
-  }
+interface Graph {
+  [node: string]: string[];
+}
 
-  // Work on a copy so the original array stays intact.
-  const a = arr.slice();
+/**
+ * Result of the algorithm – an array of SCCs.
+ * Each SCC is an array of node ids that belong together.
+ */
+type SCC = string[][];
 
-  const quickSelect = (left: number, right: number, index: number) => {
-    // If the segment contains only one element, that's the answer.
-    if (left === right) return a[left];
+/**
+ * Tarjan’s algorithm for SCCs.
+ *
+ * @param g The graph to analyse.
+ * @returns An array of strongly connected components.
+ */
+function tarjanSCC(g: Graph): SCC {
+  const indexMap: Record<string, number> = {};   // node → its index
+  const lowLink: Record<string, number> = {};    // node → low‑link value
+  const onStack: Set<string> = new Set();        // nodes currently in the stack
+  const stack: string[] = [];                    // stack of nodes
+  const sccs: SCC = [];
 
-    const pivotIndex = partition(left, right);
-    if (pivotIndex === index) {
-      return a[pivotIndex];
-    } else if (pivotIndex < index) {
-      return quickSelect(pivotIndex + 1, right, index);
-    } else {
-      return quickSelect(left, pivotIndex - 1, index);
-    }
-  };
+  let currentIndex = 0;
 
-  const partition = (left: number, right: number): number => {
-    // Pick a pivot.  Using the middle element keeps the code short; you could
-    // shuffle or use Median‑of‑Three for better worst‑case guarantees.
-    const pivot = a[Math.floor((left + right) / 2)];
-    let i = left;
-    let j = right;
+  const strongConnect = (v: string) => {
+    indexMap[v] = currentIndex;
+    lowLink[v] = currentIndex;
+    currentIndex += 1;
+    stack.push(v);
+    onStack.add(v);
 
-    while (i <= j) {
-      while (a[i] < pivot) i++;
-      while (a[j] > pivot) j--;
-      if (i <= j) {
-        [a[i], a[j]] = [a[j], a[i]];
-        i++;
-        j--;
+    // Explore every outgoing edge v → w
+    for (const w of g[v] ?? []) {
+      if (!(w in indexMap)) {
+        // Recursively visit w
+        strongConnect(w);
+        lowLink[v] = Math.min(lowLink[v], lowLink[w]);
+      } else if (onStack.has(w)) {
+        // w is in the current SCC frontier
+        lowLink[v] = Math.min(lowLink[v], indexMap[w]);
       }
     }
-    return i - 1; // pivot final position
+
+    // If v is the root of an SCC
+    if (lowLink[v] === indexMap[v]) {
+      const component: string[] = [];
+      let w: string | undefined;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
+    }
   };
 
-  // `k-1` because the array index is 0‑based.
-  return quickSelect(0, a.length - 1, k - 1);
-}
-export function kthSmallestBySort(arr: number[], k: number): number {
-  if (k <= 0 || k > arr.length) throw new RangeError('k is out of bounds');
-  const sorted = [...arr].sort((a, b) => a - b);
-  return sorted[k - 1];
-}
-class MinHeap {
-  private data: number[] = [];
-
-  push(val: number) {
-    this.data.push(val);
-    this.bubbleUp(this.data.length - 1);
-  }
-
-  /* ... bubbleUp, bubbleDown, peek, pop ... */
-
-  /** Return kth smallest (1‑based). */
-  kth(k: number): number {
-    if (k <= 0 || k > this.data.length) throw new RangeError();
-    const heapCopy = [...this.data];
-    let result = -Infinity;
-    for (let i = 0; i < k; i++) {
-      result = heapCopy[0];
-      this.swap(heapCopy, 0, heapCopy.length - 1);
-      heapCopy.pop();
-      this.sinkDown(heapCopy, 0);
+  // Kick off a DFS from every unvisited node.
+  for (const v in g) {
+    if (!(v in indexMap)) {
+      strongConnect(v);
     }
-    return result;
   }
 
-  /* helper methods omitted for brevity */
+  return sccs;
 }
+const example: Graph = {
+  a: ['b'],
+  b: ['c', 'e', 'f'],
+  c: ['d', 'g'],
+  d: ['c', 'h'],
+  e: ['a', 'f'],
+  f: ['g'],
+  g: ['f'],
+  h: ['d', 'g', 'i'],
+  i: ['h', 'k', 'l'],
+  j: ['k'],
+  k: ['i', 'l'],
+  l: ['k']
+};
+
+console.log(tarjanSCC(example));
+// → [ [ 'g', 'f' ], [ 'c', 'd', 'h' ], [ 'i', 'l', 'k' ], [ 'a', 'b', 'e' ], [ 'j' ] ]
