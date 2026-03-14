@@ -1,14 +1,38 @@
-// 1) Using a regular expression (remove *any* whitespace)
-const clean1 = originalString.replace(/\s+/g, "");
+/**
+ * Return the first non‑repeating character in a string.
+ * If every character repeats, return `null`.
+ */
+function firstNonRepeating(str: string): string | null {
+  const counts: Record<string, number> = {};
 
-// 2) If you only care about literal space characters (no tabs, newlines, etc.)
-const clean2 = originalString.replace(/ /g, "");
+  // 1️⃣ Count each character
+  for (const ch of str) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
+  }
 
-// 3) Split/join – handy if you’re scrubbing a handful of specific delimiters
-const clean3 = originalString.split(" ").join("");
+  // 2️⃣ Scan once more to find the first with count 1
+  for (const ch of str) {
+    if (counts[ch] === 1) {
+      return ch;
+    }
+  }
 
-// 4) Manual loop (useful if you need to do something with each char)
-let clean4 = "";
-for (const ch of originalString) {
-  if (ch !== " ") clean4 += ch;
+  return null;
+}
+
+// quick examples
+console.log(firstNonRepeating('abacabad')); // "b"
+console.log(firstNonRepeating('aabbcc'));   // null
+function firstNonRepeatingMap(str: string): string | null {
+  const freq = new Map<string, number>();
+
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
+
+  for (const ch of str) if (freq.get(ch) === 1) return ch;
+  return null;
+}
+function allNonRepeating(str: string): string[] {
+  const freq = new Map<string, number>();
+  for (const ch of str) freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  return [...str].filter(ch => freq.get(ch) === 1);
 }
