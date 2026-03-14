@@ -1,39 +1,21 @@
 /**
- * Recursively searches a sorted array for a target value.
+ * Returns a random number in the closed interval [min, max].
  *
- * @param arr  The sorted array (ascending order).
- * @param target  The value to find.
- * @param left  The left boundary of the current search window.
- * @param right The right boundary of the current search window.
- * @returns The index of the target, or -1 if it isn’t in the array.
+ * Uses the built‑in Math.random() which yields a uniformly distributed
+ * 64‑bit floating‑point number in [0, 1).
+ *
+ * @param min - The lower bound of the range (inclusive)
+ * @param max - The upper bound of the range (inclusive)
+ * @returns A random number in the range [min, max]
  */
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  left: number = 0,
-  right: number = arr.length - 1,
-  comparator?: (a: T, b: T) => number
-): number {
-  // Base case: window collapsed -> not found
-  if (left > right) return -1;
-
-  // Midpoint (avoid overflow by using `left + ((right - left) >> 1)` if you like)
-  const mid = Math.floor((left + right) / 2);
-
-  // Resolve comparison logic
-  const cmp = comparator
-    ? comparator(target, arr[mid])
-    : (target > arr[mid]) - (target < arr[mid]); // generic numeric/lexicographic
-
-  if (cmp === 0) return mid;          // found
-  if (cmp < 0) return binarySearch(arr, target, left, mid - 1, comparator);
-  return binarySearch(arr, target, mid + 1, right, comparator);
+export function randomInRange(min: number, max: number): number {
+  if (min > max) throw new Error('min must be <= max');
+  // Math.random() is 0 ≤ r < 1.  Scale and shift to match [min, max].
+  return Math.random() * (max - min) + min;
 }
-const nums = [1, 3, 5, 7, 9, 11];
-
-console.log(binarySearch(nums, 7));   // → 3
-console.log(binarySearch(nums, 2));   // → -1
-const names = ['Alice', 'Bob', 'Charlie', 'David'].sort();
-console.log(binarySearch(names, 'bob', 0, names.length - 1, (a, b) =>
-  a.toLowerCase().localeCompare(b.toLowerCase())
-)); // → 1
+export function randomIntInRange(min: number, max: number): number {
+  // The +1 ensures the max is included.
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+const randomFloat = randomInRange(5.2, 10.7);      // Anything between 5.2 and 10.7
+const randomInt   = randomIntInRange(1, 6);        // 1, 2, 3, 4, 5, or 6
