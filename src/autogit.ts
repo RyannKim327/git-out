@@ -1,47 +1,67 @@
-function countWordOccurrences(text: string, word: string): number {
-  // Escape any regex meta‑characters in the search word
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+class Graph<T> {
+  private adjacency = new Map<T, Set<T>>();
 
-  // \b = word boundary, i = ignore case, g = global (find all)
-  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+  addVertex(v: T) {
+    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
+  }
 
-  // .match() returns an array of all matches, null if none
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
+  addEdge(v: T, w: T, directed = false) {
+    this.addVertex(v);
+    this.addVertex(w);
+    this.adjacency.get(v)!.add(w);
+    if (!directed) this.adjacency.get(w)!.add(v);
+  }
+
+  neighbours(v: T): Iterable<T> {
+    return this.adjacency.get(v) || [];
+  }
+
+  vertices(): Iterable<T> {
+    return this.adjacency.keys();
+  }
 }
+function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
+  const visited = new Set<T>();
+  const result: T[] = [];
 
-// Usage
-const msg = "The quick brown fox jumps over the lazy fox. Foxes are clever.";
-console.log(countWordOccurrences(msg, "fox")); // → 2 (fox, fox)
-const regex = new RegExp(escaped, 'gi');
-function countSplit(text: string, word: string): number {
-  // Empty string returns 0
-  if (!text) return 0;
-  return text.split(word).length - 1;
+  function visit(v: T) {
+    if (visited.has(v)) return;
+    visited.add(v);
+    result.push(v);
+
+    for (const n of graph.neighbours(v)) visit(n);
+  }
+
+  visit(start);
+  return result;
 }
-function countWithMatchAll(text: string, word: string): number {
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
-  const allMatches = text.matchAll(regex); // Iterable<{ index: … }>
+function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
+  const stack: T[] = [start];
+  const visited = new Set<T>();
+  const result: T[] = [];
 
-  let count = 0;
-  for (const _ of allMatches) count++;
-  return count;
+  while (stack.length) {
+    const v = stack.pop()!;
+    if (visited.has(v)) continue;
+
+    visited.add(v);
+    result.push(v);
+
+    // Push neighbours in reverse order if you want the same order
+    // as the recursive version (depends on adjacency list ordering).
+    for (const n of graph.neighbours(v)) {
+      if (!visited.has(n)) stack.push(n);
+    }
+  }
+
+  return result;
 }
-export function countOccurrences(
-  text: string,
-  word: string,
-  options?: { caseSensitive?: boolean; wholeWord?: boolean }
-): number {
-  const { caseSensitive = false, wholeWord = true } = options ?? {};
+const g = new Graph<string>();
+g.addEdge('A', 'B');
+g.addEdge('A', 'C');
+g.addEdge('B', 'D');
+g.addEdge('C', 'D');
+g.addEdge('D', 'E');
 
-  // Escape regex meta‑chars
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-  let pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
-  let flags = 'g' + (caseSensitive ? '' : 'i');
-
-  const regex = new RegExp(pattern, flags);
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
-}
+console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
+console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
