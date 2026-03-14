@@ -1,39 +1,37 @@
 /**
- * Return true if `a` and `b` are anagrams.
+ * Selection Sort – stable‑like, O(n²) time, O(1) extra space.
  *
- * @param a      First string
- * @param b      Second string
- * @param options  Optional settings – case sensitivity & ignoring non‑letters
+ * @param arr   The array to be sorted (in‑place).
+ * @param cmp   Optional comparator: (a, b) => number.
+ *              If omitted, numerical ascending order is assumed.
  */
-function areAnagrams(
-  a: string,
-  b: string,
-  options?: {
-    caseSensitive?: boolean;
-    ignoreNonAlpha?: boolean;
+export function selectionSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): void {
+  const compare = cmp ?? ((a: any, b: any) => a - b);
+
+  for (let i = 0; i < arr.length - 1; i++) {
+    // Assume the smallest is at i.
+    let minIdx = i;
+
+    // Search the rest of the array for a smaller element.
+    for (let j = i + 1; j < arr.length; j++) {
+      if (compare(arr[j], arr[minIdx]) < 0) {
+        minIdx = j;
+      }
+    }
+
+    // If the smallest isn't already in place, swap.
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+    }
   }
-): boolean {
-  const { caseSensitive = false, ignoreNonAlpha = false } = options || {};
-
-  // Helper to canonicalise a string
-  const canon = (s: string) =>
-    s
-      .split('')
-      .filter((ch) => !ignoreNonAlpha || /[a-zA-Z]/.test(ch))
-      .map((ch) => (caseSensitive ? ch : ch.toLowerCase()))
-      .sort(); // array of chars, sorted
-
-  const aChars = canon(a);
-  const bChars = canon(b);
-
-  if (aChars.length !== bChars.length) return false;
-
-  for (let i = 0; i < aChars.length; i++) {
-    if (aChars[i] !== bChars[i]) return false;
-  }
-
-  return true;
 }
-areAnagrams('Listen', 'Silent');           // true
-areAnagrams('Hello', 'Ollhe', { caseSensitive: true }); // false
-areAnagrams('Dormitory', 'Dirty room', { ignoreNonAlpha: true }); // true
+const nums = [64, 25, 12, 22, 11];
+selectionSort(nums);
+console.log(nums); // → [11, 12, 22, 25, 64]
+
+const words = ["pear", "apple", "orange"];
+selectionSort(words, (a, b) => a.localeCompare(b));
+console.log(words); // → ["apple", "orange", "pear"]
