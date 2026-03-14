@@ -1,20 +1,22 @@
-/**
- * Returns true if the given array is in strictly non‑decreasing order.
- * (Every element must be ≤ the next one.)
- *
- * @param arr  The array to test
- */
-function isSortedAscending<T>(arr: T[]): boolean {
-  for (let i = 0; i < arr.length - 1; i++) {
-    // If any element is larger than the one that follows, the array isn’t sorted.
-    if (arr[i] > arr[i + 1]) {
-      return false;
-    }
+function countChar(str: string, char: string): number {
+  let counter = 0;
+  for (const c of str) {
+    if (c === char) counter++;
   }
-  return true;
+  return counter;
 }
-const nums = [1, 2, 2, 5, 9];
-console.log(isSortedAscending(nums)); // true
-
-const bad = [1, 3, 2, 4];
-console.log(isSortedAscending(bad));  // false
+function countChar(str: string, char: string): number {
+  // Escape regex specials if needed
+  const escaped = char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(escaped, 'g');
+  const matches = str.match(regex);
+  return matches ? matches.length : 0;
+}
+function countChar(str: string, char: string): number {
+  return str.split(char).length - 1;
+}
+function countChar(str: string, char: string): number {
+  return Array.from(str).filter(c => c === char).length;
+}
+console.log(countChar('hello world', 'l')); // 3
+console.log(countChar('😀😃😄😁😆', '😄')); // 1
