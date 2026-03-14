@@ -1,56 +1,39 @@
-Let   S = s1 s2 … sn
-      T = t1 t2 … tm
-
-DP[i][j] = length of the longest common suffix that ends at S[i‑1] and T[j‑1]
-DP[i][j] = DP[i-1][j-1] + 1
 /**
- * Returns the longest common substring of `a` and `b`.
- * If there are multiple substrings of the same maximum length,
- * the first one found in `a` will be returned.
+ * Recursively searches a sorted array for a target value.
+ *
+ * @param arr  The sorted array (ascending order).
+ * @param target  The value to find.
+ * @param left  The left boundary of the current search window.
+ * @param right The right boundary of the current search window.
+ * @returns The index of the target, or -1 if it isn’t in the array.
  */
-export function longestCommonSubstring(a: string, b: string): string {
-  const n = a.length, m = b.length;
-  if (n === 0 || m === 0) return '';
+function binarySearch<T>(
+  arr: T[],
+  target: T,
+  left: number = 0,
+  right: number = arr.length - 1,
+  comparator?: (a: T, b: T) => number
+): number {
+  // Base case: window collapsed -> not found
+  if (left > right) return -1;
 
-  // `prev` holds DP values for row i-1
-  const prev = new Array(m + 1).fill(0);
-  // `curr` holds DP values for current row i
-  const curr = new Array(m + 1).fill(0);
+  // Midpoint (avoid overflow by using `left + ((right - left) >> 1)` if you like)
+  const mid = Math.floor((left + right) / 2);
 
-  let maxLen = 0;          // longest length so far
-  let maxEndIndexA = 0;    // index in `a` where this substring ends
+  // Resolve comparison logic
+  const cmp = comparator
+    ? comparator(target, arr[mid])
+    : (target > arr[mid]) - (target < arr[mid]); // generic numeric/lexicographic
 
-  for (let i = 1; i <= n; i++) {
-    // Iterate columns
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        curr[j] = prev[j - 1] + 1;
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          maxEndIndexA = i - 1;   // keep the end idx in a
-        }
-      } else {
-        curr[j] = 0;
-      }
-    }
-
-    // Swap rows for next iteration
-    //  curr becomes prev, prev becomes curr (reuse the same arrays)
-    for (let j = 0; j <= m; j++) {
-      prev[j] = curr[j];
-      curr[j] = 0;   // reset current row for the next round
-    }
-  }
-
-  return a.slice(maxEndIndexA - maxLen + 1, maxEndIndexA + 1);
+  if (cmp === 0) return mid;          // found
+  if (cmp < 0) return binarySearch(arr, target, left, mid - 1, comparator);
+  return binarySearch(arr, target, mid + 1, right, comparator);
 }
-import { longestCommonSubstring } from './common-substring';
+const nums = [1, 3, 5, 7, 9, 11];
 
-const a = "ABABCDA";
-const b = "CBADABABC";
-
-console.log(longestCommonSubstring(a, b)); // → "ABC"
-console.log(longestCommonSubstring('foo', ''));          // ''
-console.log(longestCommonSubstring('abc', 'xyz'));       // ''
-console.log(longestCommonSubstring('same', 'same'));     // 'same'
-console.log(longestCommonSubstring('aaaaa', 'bbaaa'));   // 'aaa'
+console.log(binarySearch(nums, 7));   // → 3
+console.log(binarySearch(nums, 2));   // → -1
+const names = ['Alice', 'Bob', 'Charlie', 'David'].sort();
+console.log(binarySearch(names, 'bob', 0, names.length - 1, (a, b) =>
+  a.toLowerCase().localeCompare(b.toLowerCase())
+)); // → 1
