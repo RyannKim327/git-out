@@ -1,79 +1,40 @@
 /**
- * Returns the kth smallest value in `arr` (1‑based k).
- *  Throws an error if k is out of bounds.
+ * Classic in‑place quick‑sort.
+ *
+ * @param arr  The array to be sorted (in‑place).
+ * @param left The starting index (default: 0).
+ * @param right The ending index (default: arr.length‑1).
+ *
+ * @returns The same array, now sorted.
  */
-export function kthSmallest(arr: number[], k: number): number {
-  if (k <= 0 || k > arr.length) {
-    throw new RangeError('k is out of bounds');
+function quickSort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
+  if (left >= right) return arr;          // base case: 0 or 1 item
+
+  // Pick a pivot—here we just take the middle element.
+  const pivotIndex = Math.floor((left + right) / 2);
+  const pivot = arr[pivotIndex];
+
+  // Partition: everything less than the pivot goes left, everything
+  // greater or equal goes right.  Elements equal to the pivot can go either side.
+  let i = left;
+  let j = right;
+  while (i <= j) {
+    while (arr[i] < pivot) i++;   // find an element on the wrong side (left)
+    while (arr[j] > pivot) j--;   // find an element on the wrong side (right)
+
+    if (i <= j) {                 // swap the out‑of‑place elements
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
+      j--;
+    }
   }
 
-  // Work on a copy so the original array stays intact.
-  const a = arr.slice();
+  // Recursively sort the two partitions.
+  // The first call deals with the left two halves *unless* they overlap.
+  if (left < j) quickSort(arr, left, j);
+  if (i < right) quickSort(arr, i, right);
 
-  const quickSelect = (left: number, right: number, index: number) => {
-    // If the segment contains only one element, that's the answer.
-    if (left === right) return a[left];
-
-    const pivotIndex = partition(left, right);
-    if (pivotIndex === index) {
-      return a[pivotIndex];
-    } else if (pivotIndex < index) {
-      return quickSelect(pivotIndex + 1, right, index);
-    } else {
-      return quickSelect(left, pivotIndex - 1, index);
-    }
-  };
-
-  const partition = (left: number, right: number): number => {
-    // Pick a pivot.  Using the middle element keeps the code short; you could
-    // shuffle or use Median‑of‑Three for better worst‑case guarantees.
-    const pivot = a[Math.floor((left + right) / 2)];
-    let i = left;
-    let j = right;
-
-    while (i <= j) {
-      while (a[i] < pivot) i++;
-      while (a[j] > pivot) j--;
-      if (i <= j) {
-        [a[i], a[j]] = [a[j], a[i]];
-        i++;
-        j--;
-      }
-    }
-    return i - 1; // pivot final position
-  };
-
-  // `k-1` because the array index is 0‑based.
-  return quickSelect(0, a.length - 1, k - 1);
+  return arr;
 }
-export function kthSmallestBySort(arr: number[], k: number): number {
-  if (k <= 0 || k > arr.length) throw new RangeError('k is out of bounds');
-  const sorted = [...arr].sort((a, b) => a - b);
-  return sorted[k - 1];
-}
-class MinHeap {
-  private data: number[] = [];
-
-  push(val: number) {
-    this.data.push(val);
-    this.bubbleUp(this.data.length - 1);
-  }
-
-  /* ... bubbleUp, bubbleDown, peek, pop ... */
-
-  /** Return kth smallest (1‑based). */
-  kth(k: number): number {
-    if (k <= 0 || k > this.data.length) throw new RangeError();
-    const heapCopy = [...this.data];
-    let result = -Infinity;
-    for (let i = 0; i < k; i++) {
-      result = heapCopy[0];
-      this.swap(heapCopy, 0, heapCopy.length - 1);
-      heapCopy.pop();
-      this.sinkDown(heapCopy, 0);
-    }
-    return result;
-  }
-
-  /* helper methods omitted for brevity */
-}
+const unsorted = [3, 7, 2, 5, 1, 4, 6];
+quickSort(unsorted);        // unsorted is now [1,2,3,4,5,6,7]
