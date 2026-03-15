@@ -1,45 +1,39 @@
-// apiDemo.ts
-// -----------------------------------------------------
-// Example: Call a public JSONPlaceholder API,
-// fetch a post, and log its title & body.
-//
-// Works out of the box in Node≥18 or any modern browser
-// with a `tsconfig.json` that has `"esModuleInterop": true`
-// and `"target": "es2015"` (or later).
-
-// 1.  Types that model the JSON we expect back
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
-
-// 2.  A handy helper that ensures we get JSON
-async function json<T>(resp: Response): Promise<T> {
-  if (!resp.ok) {
-    throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+/**
+ * Return true if `a` and `b` are anagrams.
+ *
+ * @param a      First string
+ * @param b      Second string
+ * @param options  Optional settings – case sensitivity & ignoring non‑letters
+ */
+function areAnagrams(
+  a: string,
+  b: string,
+  options?: {
+    caseSensitive?: boolean;
+    ignoreNonAlpha?: boolean;
   }
-  return resp.json() as Promise<T>;
-}
+): boolean {
+  const { caseSensitive = false, ignoreNonAlpha = false } = options || {};
 
-// 3.  The async routine that talks to the API
-async function fetchPost(postId: number): Promise<Post> {
-  const url = `https://jsonplaceholder.typicode.com/posts/${postId}`;
+  // Helper to canonicalise a string
+  const canon = (s: string) =>
+    s
+      .split('')
+      .filter((ch) => !ignoreNonAlpha || /[a-zA-Z]/.test(ch))
+      .map((ch) => (caseSensitive ? ch : ch.toLowerCase()))
+      .sort(); // array of chars, sorted
 
-  const response = await fetch(url);        // ← call the API
-  const post = await json<Post>(response);   // ← parse & type‑check
+  const aChars = canon(a);
+  const bChars = canon(b);
 
-  return post;
-}
+  if (aChars.length !== bChars.length) return false;
 
-// 4.  Call it and do something with the data
-(async () => {
-  try {
-    const post = await fetchPost(1);
-    console.log(`Post #1 title: ${post.title}`);
-    console.log(`Post #1 body:  ${post.body}`);
-  } catch (err) {
-    console.error("Something went wrong:", err);
+  for (let i = 0; i < aChars.length; i++) {
+    if (aChars[i] !== bChars[i]) return false;
   }
-})();
+
+  return true;
+}
+areAnagrams('Listen', 'Silent');           // true
+areAnagrams('Hello', 'Ollhe', { caseSensitive: true }); // false
+areAnagrams('Dormitory', 'Dirty room', { ignoreNonAlpha: true }); // true
