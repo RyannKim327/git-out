@@ -1,41 +1,47 @@
-export interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-}
-export class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null
-  let curr = head
+function countWordOccurrences(text: string, word: string): number {
+  // Escape any regex meta‑characters in the search word
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  while (curr) {
-    const nxt = curr.next      // keep reference to next node
-    curr.next = prev           // flip the link
-    prev = curr                // advance prev
-    curr = nxt                 // advance curr
-  }
+  // \b = word boundary, i = ignore case, g = global (find all)
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
 
-  return prev   // new head
+  // .match() returns an array of all matches, null if none
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
 }
-export function reverseListRec<T>(node: ListNode<T> | null, prev: ListNode<T> | null = null): ListNode<T> | null {
-  if (!node) return prev
-  const nxt = node.next
-  node.next = prev
-  return reverseListRec(nxt, node)
-}
-// build 1 → 2 → 3
-const n3 = new ListNode(3)
-const n2 = new ListNode(2, n3)
-const n1 = new ListNode(1, n2)
 
-// reverse
-const reversed = reverseList(n1)
-
-// print results
-let cur = reversed
-while (cur) {
-  console.log(cur.value)
-  cur = cur.next
+// Usage
+const msg = "The quick brown fox jumps over the lazy fox. Foxes are clever.";
+console.log(countWordOccurrences(msg, "fox")); // → 2 (fox, fox)
+const regex = new RegExp(escaped, 'gi');
+function countSplit(text: string, word: string): number {
+  // Empty string returns 0
+  if (!text) return 0;
+  return text.split(word).length - 1;
 }
-// → 3, 2, 1
+function countWithMatchAll(text: string, word: string): number {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+  const allMatches = text.matchAll(regex); // Iterable<{ index: … }>
+
+  let count = 0;
+  for (const _ of allMatches) count++;
+  return count;
+}
+export function countOccurrences(
+  text: string,
+  word: string,
+  options?: { caseSensitive?: boolean; wholeWord?: boolean }
+): number {
+  const { caseSensitive = false, wholeWord = true } = options ?? {};
+
+  // Escape regex meta‑chars
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  let pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
+  let flags = 'g' + (caseSensitive ? '' : 'i');
+
+  const regex = new RegExp(pattern, flags);
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
+}
