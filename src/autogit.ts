@@ -1,40 +1,47 @@
 /**
- * Classic in‑place quick‑sort.
- *
- * @param arr  The array to be sorted (in‑place).
- * @param left The starting index (default: 0).
- * @param right The ending index (default: arr.length‑1).
- *
- * @returns The same array, now sorted.
+ * Return true if `s` is a palindrome (case‑insensitive, alphanumeric only).
+ * Works in O(n) time and O(1) extra space.
  */
-function quickSort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
-  if (left >= right) return arr;          // base case: 0 or 1 item
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  // Pick a pivot—here we just take the middle element.
-  const pivotIndex = Math.floor((left + right) / 2);
-  const pivot = arr[pivotIndex];
+  // helper: is the char code an ASCII alphanumeric?
+  const isAlnum = (c: number) =>
+    (c >= 48 && c <= 57) ||        // 0‑9
+    (c >= 65 && c <= 90) ||        // A‑Z
+    (c >= 97 && c <= 122);         // a‑z
 
-  // Partition: everything less than the pivot goes left, everything
-  // greater or equal goes right.  Elements equal to the pivot can go either side.
-  let i = left;
-  let j = right;
-  while (i <= j) {
-    while (arr[i] < pivot) i++;   // find an element on the wrong side (left)
-    while (arr[j] > pivot) j--;   // find an element on the wrong side (right)
+  // helper: convert ASCII letter to its uppercase equivalent
+  const toUpper = (c: number) => (c >= 97 && c <= 122) ? (c - 32) : c;
 
-    if (i <= j) {                 // swap the out‑of‑place elements
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
+  while (left < right) {
+    // skip non‑alphanumeric characters on the left
+    while (left < right && !isAlnum(s.charCodeAt(left))) left++;
+    // skip non‑alphanumeric characters on the right
+    while (left < right && !isAlnum(s.charCodeAt(right))) right--;
+
+    if (left >= right) break;
+
+    // compare the two characters after normalizing to uppercase
+    if (toUpper(s.charCodeAt(left)) !== toUpper(s.charCodeAt(right))) {
+      return false;
     }
+    left++;
+    right--;
   }
 
-  // Recursively sort the two partitions.
-  // The first call deals with the left two halves *unless* they overlap.
-  if (left < j) quickSort(arr, left, j);
-  if (i < right) quickSort(arr, i, right);
-
-  return arr;
+  return true;
 }
-const unsorted = [3, 7, 2, 5, 1, 4, 6];
-quickSort(unsorted);        // unsorted is now [1,2,3,4,5,6,7]
+
+/* ---------- demo ---------- */
+const tests = [
+  "A man, a plan, a canal: Panama",
+  "race a car",
+  "No 'x' in Nixon",
+  "MadamInEdenImAdam",
+];
+
+tests.forEach(t => {
+  console.log(`"${t}" → ${isPalindrome(t)}`);
+});
