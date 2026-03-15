@@ -1,101 +1,36 @@
 /**
- * Build the bad‑character shift table.
- * For each letter we record the distance from the end of the pattern
- * where that letter last appears. If it never appears, the shift is
- * the whole pattern length.
+ * Returns the longest common prefix among all given strings.
+ * If the array is empty it returns an empty string.
  */
-function buildBadCharShift(pattern: string): number[] {
-  const m = pattern.length;
-  const SHIFT_SIZE = 256; // ASCII range
-  const table = new Array<number>(SHIFT_SIZE).fill(m);
+function longestCommonPrefix(words: string[]): string {
+  if (!words.length) return '';
 
-  for (let i = 0; i < m - 1; i++) {
-    table[pattern.charCodeAt(i)] = m - 1 - i;
-  }
-  return table;
-}
+  // The first string will act as a reference; we hammer it down
+  // as far as we need to.
+  let prefix = words[0];
 
-/**
- * Build the good‑suffix shift table.
- * Uses suffix and prefix tables derived from the reversed pattern.
- */
-function buildGoodSuffixShift(pattern: string): number[] {
-  const m = pattern.length;
-  const table = new Array<number>(m).fill(0);
-  const suff = new Array<number>(m).fill(0);
-
-  // 1. Compute suff array: longest suffix of pattern[0..i] that is also a prefix of pattern
-  suff[m - 1] = m;
-  let g = m - 1, f = m - 1;
-  for (let i = m - 2; i >= 0; i--) {
-    if (i > g && suff[i + m - 1 - f] < i - g) {
-      suff[i] = suff[i + m - 1 - f];
-    } else {
-      g = Math.min(g, i);
-      f = i;
-      while (g >= 0 && pattern[g] === pattern[g + m - 1 - f]) g--;
-      suff[i] = f - g;
+  // Compare the current prefix to every other word.
+  for (const w of words.slice(1)) {
+    // Keep truncating the prefix until it matches the start of w.
+    while (!w.startsWith(prefix)) {
+      prefix = prefix.slice(0, -1); // strip last char
+      if (!prefix) return ''; // nothing common any more
     }
   }
 
-  // 2. Fill table with shifts based on suff array
-  for (let i = 0; i < m; i++) table[i] = m;
-  let j = 0;
-  for (let i = m - 1; i >= 0; i--) {
-    if (suff[i] === i + 1) {
-      for (; j < m - 1 - i; j++) {
-        if (table[j] === m) table[j] = m - 1 - i;
-      }
-    }
-  }
-  for (let i = 0; i < m - 1; i++) {
-    table[m - 1 - suff[i]] = m - 1 - i;
-  }
-
-  return table;
+  return prefix;
 }
-/**
- * Boyer–Moore search.
- * @param text   string to search inside
- * @param pattern  string to find
- * @returns index of the first occurrence or -1 if not found
- */
-export function boyerMooreSearch(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return 0;
-  if (n < m) return -1;
+console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // "fl"
+console.log(longestCommonPrefix(['dog', 'racecar', 'car']));    // ""
+function lcpSort(words: string[]): string {
+  if (!words.length) return '';
 
-  const badChar = buildBadCharShift(pattern);
-  const goodSuffix = buildGoodSuffixShift(pattern);
+  const sorted = [...words].sort();
+  const a = sorted[0];
+  const b = sorted[sorted.length - 1];
+  let i = 0;
 
-  let s = 0; // alignment of the pattern with the text
-  while (s <= n - m) {
-    let j = m - 1;
+  while (i < a.length && a[i] === b[i]) i++;
 
-    // compare looking from the end of the pattern
-    while (j >= 0 && pattern[j] === text[s + j]) j--;
-
-    if (j < 0) {
-      return s; // full match
-    }
-
-    const bcShift = badChar[text.charCodeAt(s + j)] - (m - 1 - j);
-    const gsShift = goodSuffix[j];
-
-    // maximum of both shift suggestions
-    s += Math.max(bcShift, gsShift, 1); // at least 1 to avoid infinite loop
-  }
-  return -1;
-}
-import { boyerMooreSearch } from './boyer-moore';
-
-const haystack = "Here is a simple example string for searching.";
-const needle   = "example";
-
-const pos = boyerMooreSearch(haystack, needle);
-if (pos !== -1) {
-  console.log(`'${needle}' found at index ${pos}`);
-} else {
-  console.log(`'${needle}' not found`);
+  return a.slice(0, i);
 }
