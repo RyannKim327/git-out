@@ -1,18 +1,30 @@
-// ✅ Basic “looks‑right” test
-function isValidEmail(email: string): boolean {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
-}
+const str = "hello world";
+const hasFoo = str.includes("world");   // true
+const hasBar = str.includes("bar");     // false
+const hasCapital = str.includes("WORLD");          // false
+const hasCapitalIgnoreCase = str.toLowerCase()
+                                .includes("WORLD".toLowerCase()); // true
+const hasCapitalIgnoreCase = /world/i.test(str);   // true
+const index = str.indexOf("world"); // 6
+const missing = str.indexOf("bar"); // -1
+const present = str.indexOf("world") !== -1; // true
+const hasPrefix = /^hello/.test(str); // true
 
-// usage
-console.log(isValidEmail('user@example.com')); // true
-console.log(isValidEmail('bad-email.com'));    // false
-// ✅ Covers quoted local‑part, IP domains, and "newer" TLDs
-function isValidEmailBetter(email: string): boolean {
-  const re = /^(?:(?:\"[^\"]+\")|(?:[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+))@(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}|(?:\[[0-9]{1,3}(?:\.[0-9]{1,3}){3}\]))$/;
-  return re.test(email);
-}
-// In a React hook or any form library
-const validateEmail = (value: string) => (
-  isValidEmail(value) ? undefined : 'Invalid email address'
-);
+// With dynamic patterns
+const word = "world";
+const pattern = new RegExp(word);    // case‑sensitive
+const result = pattern.test(str);    // true
+// Presence
+const contains = text.includes(sub);
+
+// Presence (index form)
+const containsIndex = text.indexOf(sub) !== -1;
+
+// Position
+const pos = text.indexOf(sub); // -1 if absent
+
+// Case‑insensitive
+const containsIC = text.toLowerCase().includes(sub.toLowerCase());
+
+// Regex
+const containsRegex = /world/i.test(text);
