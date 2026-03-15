@@ -1,101 +1,67 @@
-/**
- * Build the bad‑character shift table.
- * For each letter we record the distance from the end of the pattern
- * where that letter last appears. If it never appears, the shift is
- * the whole pattern length.
- */
-function buildBadCharShift(pattern: string): number[] {
-  const m = pattern.length;
-  const SHIFT_SIZE = 256; // ASCII range
-  const table = new Array<number>(SHIFT_SIZE).fill(m);
+class Graph<T> {
+  private adjacency = new Map<T, Set<T>>();
 
-  for (let i = 0; i < m - 1; i++) {
-    table[pattern.charCodeAt(i)] = m - 1 - i;
+  addVertex(v: T) {
+    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
   }
-  return table;
+
+  addEdge(v: T, w: T, directed = false) {
+    this.addVertex(v);
+    this.addVertex(w);
+    this.adjacency.get(v)!.add(w);
+    if (!directed) this.adjacency.get(w)!.add(v);
+  }
+
+  neighbours(v: T): Iterable<T> {
+    return this.adjacency.get(v) || [];
+  }
+
+  vertices(): Iterable<T> {
+    return this.adjacency.keys();
+  }
 }
+function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
+  const visited = new Set<T>();
+  const result: T[] = [];
 
-/**
- * Build the good‑suffix shift table.
- * Uses suffix and prefix tables derived from the reversed pattern.
- */
-function buildGoodSuffixShift(pattern: string): number[] {
-  const m = pattern.length;
-  const table = new Array<number>(m).fill(0);
-  const suff = new Array<number>(m).fill(0);
+  function visit(v: T) {
+    if (visited.has(v)) return;
+    visited.add(v);
+    result.push(v);
 
-  // 1. Compute suff array: longest suffix of pattern[0..i] that is also a prefix of pattern
-  suff[m - 1] = m;
-  let g = m - 1, f = m - 1;
-  for (let i = m - 2; i >= 0; i--) {
-    if (i > g && suff[i + m - 1 - f] < i - g) {
-      suff[i] = suff[i + m - 1 - f];
-    } else {
-      g = Math.min(g, i);
-      f = i;
-      while (g >= 0 && pattern[g] === pattern[g + m - 1 - f]) g--;
-      suff[i] = f - g;
+    for (const n of graph.neighbours(v)) visit(n);
+  }
+
+  visit(start);
+  return result;
+}
+function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
+  const stack: T[] = [start];
+  const visited = new Set<T>();
+  const result: T[] = [];
+
+  while (stack.length) {
+    const v = stack.pop()!;
+    if (visited.has(v)) continue;
+
+    visited.add(v);
+    result.push(v);
+
+    // Push neighbours in reverse order if you want the same order
+    // as the recursive version (depends on adjacency list ordering).
+    for (const n of graph.neighbours(v)) {
+      if (!visited.has(n)) stack.push(n);
     }
   }
 
-  // 2. Fill table with shifts based on suff array
-  for (let i = 0; i < m; i++) table[i] = m;
-  let j = 0;
-  for (let i = m - 1; i >= 0; i--) {
-    if (suff[i] === i + 1) {
-      for (; j < m - 1 - i; j++) {
-        if (table[j] === m) table[j] = m - 1 - i;
-      }
-    }
-  }
-  for (let i = 0; i < m - 1; i++) {
-    table[m - 1 - suff[i]] = m - 1 - i;
-  }
-
-  return table;
+  return result;
 }
-/**
- * Boyer–Moore search.
- * @param text   string to search inside
- * @param pattern  string to find
- * @returns index of the first occurrence or -1 if not found
- */
-export function boyerMooreSearch(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return 0;
-  if (n < m) return -1;
+const g = new Graph<string>();
+g.addEdge('A', 'B');
+g.addEdge('A', 'C');
+g.addEdge('B', 'D');
+g.addEdge('C', 'D');
+g.addEdge('D', 'E');
 
-  const badChar = buildBadCharShift(pattern);
-  const goodSuffix = buildGoodSuffixShift(pattern);
-
-  let s = 0; // alignment of the pattern with the text
-  while (s <= n - m) {
-    let j = m - 1;
-
-    // compare looking from the end of the pattern
-    while (j >= 0 && pattern[j] === text[s + j]) j--;
-
-    if (j < 0) {
-      return s; // full match
-    }
-
-    const bcShift = badChar[text.charCodeAt(s + j)] - (m - 1 - j);
-    const gsShift = goodSuffix[j];
-
-    // maximum of both shift suggestions
-    s += Math.max(bcShift, gsShift, 1); // at least 1 to avoid infinite loop
-  }
-  return -1;
-}
-import { boyerMooreSearch } from './boyer-moore';
-
-const haystack = "Here is a simple example string for searching.";
-const needle   = "example";
-
-const pos = boyerMooreSearch(haystack, needle);
-if (pos !== -1) {
-  console.log(`'${needle}' found at index ${pos}`);
-} else {
-  console.log(`'${needle}' not found`);
-}
+console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
+console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
