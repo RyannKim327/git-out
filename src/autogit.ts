@@ -1,20 +1,34 @@
-/**
- * Returns true if the given array is in strictly non‑decreasing order.
- * (Every element must be ≤ the next one.)
- *
- * @param arr  The array to test
- */
-function isSortedAscending<T>(arr: T[]): boolean {
-  for (let i = 0; i < arr.length - 1; i++) {
-    // If any element is larger than the one that follows, the array isn’t sorted.
-    if (arr[i] > arr[i + 1]) {
-      return false;
-    }
-  }
-  return true;
-}
-const nums = [1, 2, 2, 5, 9];
-console.log(isSortedAscending(nums)); // true
+// randomPassword.ts
+import * as readline from 'readline';
 
-const bad = [1, 3, 2, 4];
-console.log(isSortedAscending(bad));  // false
+// Characters that can appear in the password
+const CHARSET =
+  'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
+
+function generatePassword(length: number): string {
+  let pwd = '';
+  for (let i = 0; i < length; i++) {
+    pwd += CHARSET[Math.floor(Math.random() * CHARSET.length)];
+  }
+  return pwd;
+}
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+rl.question('Enter desired password length: ', (answer) => {
+  const len = parseInt(answer, 10);
+  if (!isNaN(len) && len > 0) {
+    console.log(`Generated password: ${generatePassword(len)}`);
+  } else {
+    console.log('Please enter a valid positive integer.');
+  }
+  rl.close();
+});
+# 1. Compile (requires TypeScript installed)
+tsc randomPassword.ts
+
+# 2. Execute the resulting JavaScript
+node randomPassword.js
