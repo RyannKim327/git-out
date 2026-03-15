@@ -1,45 +1,30 @@
 /**
- * Returns the contiguous segment of `arr` that yields the highest possible sum.
+ * Recursively returns n! (n factorial).
  *
- * @param arr - Array of numbers (integer or float)
- * @returns An object containing:
- *   `maxSum`  – the total sum of the best segment
- *   `start`   – the index where the segment begins
- *   `end`     – the index where the segment ends (inclusive)
+ * @param n - non‑negative integer (or bigint)
+ * @returns n! as a bigint
  */
-function maxSubarray(arr: number[]) {
-  if (arr.length === 0) throw new Error('Array cannot be empty');
+export function factorial(n: bigint | number): bigint {
+  // Normalize input to bigint
+  const x = typeof n === "bigint" ? n : BigInt(n);
 
-  let bestSum = arr[0];
-  let currentSum = arr[0];
-  let bestStart = 0;
-  let bestEnd = 0;
-  let tempStart = 0;
-
-  for (let i = 1; i < arr.length; i++) {
-    const val = arr[i];
-
-    // Either start a new sub‑array at i or extend the existing one
-    if (currentSum + val < val) {
-      currentSum = val;
-      tempStart = i;       // new potential start
-    } else {
-      currentSum += val;   // keep extending
-    }
-
-    // Update the best segment seen so far
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
+  // Negative numbers are not defined for factorial
+  if (x < 0n) {
+    throw new Error("Factorial is defined only for non‑negative integers.");
   }
 
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+  // Base case: 0! = 1, 1! = 1
+  if (x === 0n || x === 1n) {
+    return 1n;
+  }
+
+  // Recursive case: n! = n * (n-1)!
+  return x * factorial(x - 1n);
 }
-const data = [-2, -3, 4, -1, -2, 1, 5, -3];
-const result = maxSubarray(data);
-console.log(result);
-// Expected output:
-// { maxSum: 7, start: 2, end: 6 }
-// (segment [4, -1, -2, 1, 5] sums to 7)
+console.log(factorial(5));        // 120n
+console.log(factorial(20));       // 2432902008176640000n
+console.log(factorial(25n));      // 15511210043330985984000000n
+function factorialTail(n: bigint, acc = 1n): bigint {
+  if (n <= 1n) return acc;
+  return factorialTail(n - 1n, acc * n);
+}
