@@ -1,97 +1,75 @@
-// ------------------------------------------------------------
-// 1. Node
-// ------------------------------------------------------------
-class TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
+/**
+ * Binary search on a sorted array (ascending order).
+ * @param arr   Sorted array of comparable items.
+ * @param value Item you’re hunting for.
+ * @param compare Optional comparison function:
+ *                (a,b) => 0 if a==b, <0 if a<b, >0 if a>b.
+ *                If omitted, '<'/'>' operators are used.
+ * @returns Index of the value, or -1 if it isn’t present.
+ */
+export function binarySearch<T>(
+  arr: readonly T[],
+  value: T,
+  compare?: (a: T, b: T) => number,
+): number {
+  let low = 0;
+  let high = arr.length;
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
-
-// ------------------------------------------------------------
-// 2. BinarySearchTree
-// ------------------------------------------------------------
-class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
-
-  // -------------------------------------------
-  // Insert a value into the BST
-  // -------------------------------------------
-  insert(value: T, comparator?: (a: T, b: T) => number): void {
-    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-
-    const insertRec = (node: TreeNode<T> | null, val: T): TreeNode<T> => {
-      if (!node) return new TreeNode(val);
-
-      if (compare(val, node.value) < 0) {
-        node.left = insertRec(node.left, val);
-      } else {
-        node.right = insertRec(node.right, val);
-      }
-      return node;
-    };
-
-    this.root = insertRec(this.root, value);
-  }
-
-  // -------------------------------------------
-  // Search for a value – returns the node or null
-  // -------------------------------------------
-  search(value: T, comparator?: (a: T, b: T) => number): TreeNode<T> | null {
-    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-    let curr = this.root;
-
-    while (curr) {
-      if (compare(value, curr.value) < 0) {
-        curr = curr.left;
-      } else if (compare(value, curr.value) > 0) {
-        curr = curr.right;
-      } else {
-        return curr; // found
-      }
+  const cmp = compare ?? ((a: T, b: T) => {
+    /* eslint-disable-next-line no-prototype-builtins */
+    if ((a as any as object).hasOwnProperty && typeof a === 'object' && typeof b === 'object') {
+      // For objects that implement `valueOf()` – optional
+      return (a as any) < b ? -1 : (a as any) > b ? 1 : 0;
     }
-    return null; // not found
+    return a < b ? -1 : a > b ? 1 : 0;
+  });
+
+  while (low < high) {
+    const mid = (low + high) >>> 1; // fast floor division by 2
+    const comp = cmp(arr[mid], value);
+
+    if (comp === 0) return mid;   // found it
+    if (comp < 0) low = mid + 1;  // value is higher
+    else high = mid;              // value is lower
   }
 
-  // -------------------------------------------
-  // In‑order traversal – returns an array of values
-  // -------------------------------------------
-  inorder(): T[] {
-    const res: T[] = [];
-    const walk = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      walk(node.left);
-      res.push(node.value);
-      walk(node.right);
-    };
-    walk(this.root);
-    return res;
-  }
-
-  // -------------------------------------------
-  // Convenience: return value of inorder traversal
-  // -------------------------------------------
-  toArray(): T[] {
-    return this.inorder();
-  }
+  return -1; // not found
 }
+const nums = [1, 3, 5, 7, 9, 11, 13];
+const idx = binarySearch(nums, 7); // → 3
 
-// ------------------------------------------------------------
-// 3. Demo
-// ------------------------------------------------------------
-const bst = new BinarySearchTree<number>();
+const words = ['apple', 'banana', 'cherry', 'date'];
+const wIdx = binarySearch(words, 'cherry'); // → 2
+export function binarySearchRecursive<T>(
+  arr: readonly T[],
+  value: T,
+  compare?: (a: T, b: T) => number,
+  low = 0,
+  high = arr.length - 1,
+): number {
+  if (low > high) return -1;
 
-// Inserting some numbers
-[42, 23, 57, 12, 34, 73, 8].forEach(n => bst.insert(n));
+  const cmp = compare ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-console.log('In‑order traversal:', bst.inorder()); // sorted ascending
+  const mid = (low + high) >>> 1;
+  const comp = cmp(arr[mid], value);
 
-const foundNode = bst.search(34);
-if (foundNode) {
-  console.log(`Found node with value ${foundNode.value}`);
-} else {
-  console.log('Value not found');
+  if (comp === 0) return mid;
+  return comp < 0
+    ? binarySearchRecursive(arr, value, compare, mid + 1, high)
+    : binarySearchRecursive(arr, value, compare, low, mid - 1);
 }
+interface Person { name: string; age: number; }
+
+const people: Person[] = [
+  { name: 'Alice', age: 28 },
+  { name: 'Bob', age: 35 },
+  { name: 'Carol', age: 41 },
+];
+
+// Sorted by age
+const idx = binarySearch(
+  people,
+  { name: '', age: 35 },             // value (name ignored)
+  (a, b) => a.age - b.age
+); // → 1
