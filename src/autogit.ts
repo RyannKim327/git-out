@@ -1,7 +1,12 @@
-const num = parseInt("123", 10);   // 123 as a number
-const num = Number("123");          // 123
-const num = +"123";                // 123
-const big = BigInt("123456789123456789123"); // 123456789123456789123n
-if (Number.isInteger(num)) {
-  // safe to use `num` as an int
+function reverseWords(str: string): string {
+  // Split on any amount of whitespace, filter out empty chunks,
+  // reverse the array, then join with a single space.
+  return str
+    .trim()
+    .split(/\s+/)
+    .reverse()
+    .join(' ');
 }
+
+// Example
+console.log(reverseWords("Hello world this is TypeScript")); // "TypeScript is this world Hello"
