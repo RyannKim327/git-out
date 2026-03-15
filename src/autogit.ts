@@ -1,50 +1,21 @@
-export interface TreeNode {
-  val: number;                // or any type you like
-  left?: TreeNode | null;     // child nodes (undefined is treated as null)
-  right?: TreeNode | null;
-}
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
 /**
- * Returns the diameter (number of edges on the longest path) of a binary tree.
+ * Returns a random number in the closed interval [min, max].
  *
- * @param root root node of the tree
- * @returns diameter in edges
+ * Uses the built‑in Math.random() which yields a uniformly distributed
+ * 64‑bit floating‑point number in [0, 1).
+ *
+ * @param min - The lower bound of the range (inclusive)
+ * @param max - The upper bound of the range (inclusive)
+ * @returns A random number in the range [min, max]
  */
-export function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;           // will hold the best diameter found
-
-  /**
-   * Post‑order DFS that returns the height of the subtree.
-   * While unwinding, we update `maxDiameter`.
-   */
-  function dfs(node: TreeNode | null): number {
-    if (!node) return -1;       // height of null is -1 so that leaf node height = 0
-
-    const leftHeight  = dfs(node.left)  + 1;
-    const rightHeight = dfs(node.right) + 1;
-
-    // The path that goes from the leftmost leaf of this subtree
-    // through this node to the rightmost leaf gives a candidate
-    // diameter.  `+1` is not needed for edges because heights already
-    // count edges from node to leaf.
-    const candidate = leftHeight + rightHeight;
-    if (candidate > maxDiameter) maxDiameter = candidate;
-
-    // Return height of this node for the parent call
-    return Math.max(leftHeight, rightHeight);
-  }
-
-  dfs(root);
-  return maxDiameter;
+export function randomInRange(min: number, max: number): number {
+  if (min > max) throw new Error('min must be <= max');
+  // Math.random() is 0 ≤ r < 1.  Scale and shift to match [min, max].
+  return Math.random() * (max - min) + min;
 }
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
-
-console.log(diameterOfBinaryTree(tree));   // → 3
+export function randomIntInRange(min: number, max: number): number {
+  // The +1 ensures the max is included.
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+const randomFloat = randomInRange(5.2, 10.7);      // Anything between 5.2 and 10.7
+const randomInt   = randomIntInRange(1, 6);        // 1, 2, 3, 4, 5, or 6
