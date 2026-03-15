@@ -1,50 +1,79 @@
-export interface TreeNode {
-  val: number;                // or any type you like
-  left?: TreeNode | null;     // child nodes (undefined is treated as null)
-  right?: TreeNode | null;
-}
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
 /**
- * Returns the diameter (number of edges on the longest path) of a binary tree.
- *
- * @param root root node of the tree
- * @returns diameter in edges
+ * Returns the kth smallest value in `arr` (1‑based k).
+ *  Throws an error if k is out of bounds.
  */
-export function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;           // will hold the best diameter found
-
-  /**
-   * Post‑order DFS that returns the height of the subtree.
-   * While unwinding, we update `maxDiameter`.
-   */
-  function dfs(node: TreeNode | null): number {
-    if (!node) return -1;       // height of null is -1 so that leaf node height = 0
-
-    const leftHeight  = dfs(node.left)  + 1;
-    const rightHeight = dfs(node.right) + 1;
-
-    // The path that goes from the leftmost leaf of this subtree
-    // through this node to the rightmost leaf gives a candidate
-    // diameter.  `+1` is not needed for edges because heights already
-    // count edges from node to leaf.
-    const candidate = leftHeight + rightHeight;
-    if (candidate > maxDiameter) maxDiameter = candidate;
-
-    // Return height of this node for the parent call
-    return Math.max(leftHeight, rightHeight);
+export function kthSmallest(arr: number[], k: number): number {
+  if (k <= 0 || k > arr.length) {
+    throw new RangeError('k is out of bounds');
   }
 
-  dfs(root);
-  return maxDiameter;
-}
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
+  // Work on a copy so the original array stays intact.
+  const a = arr.slice();
 
-console.log(diameterOfBinaryTree(tree));   // → 3
+  const quickSelect = (left: number, right: number, index: number) => {
+    // If the segment contains only one element, that's the answer.
+    if (left === right) return a[left];
+
+    const pivotIndex = partition(left, right);
+    if (pivotIndex === index) {
+      return a[pivotIndex];
+    } else if (pivotIndex < index) {
+      return quickSelect(pivotIndex + 1, right, index);
+    } else {
+      return quickSelect(left, pivotIndex - 1, index);
+    }
+  };
+
+  const partition = (left: number, right: number): number => {
+    // Pick a pivot.  Using the middle element keeps the code short; you could
+    // shuffle or use Median‑of‑Three for better worst‑case guarantees.
+    const pivot = a[Math.floor((left + right) / 2)];
+    let i = left;
+    let j = right;
+
+    while (i <= j) {
+      while (a[i] < pivot) i++;
+      while (a[j] > pivot) j--;
+      if (i <= j) {
+        [a[i], a[j]] = [a[j], a[i]];
+        i++;
+        j--;
+      }
+    }
+    return i - 1; // pivot final position
+  };
+
+  // `k-1` because the array index is 0‑based.
+  return quickSelect(0, a.length - 1, k - 1);
+}
+export function kthSmallestBySort(arr: number[], k: number): number {
+  if (k <= 0 || k > arr.length) throw new RangeError('k is out of bounds');
+  const sorted = [...arr].sort((a, b) => a - b);
+  return sorted[k - 1];
+}
+class MinHeap {
+  private data: number[] = [];
+
+  push(val: number) {
+    this.data.push(val);
+    this.bubbleUp(this.data.length - 1);
+  }
+
+  /* ... bubbleUp, bubbleDown, peek, pop ... */
+
+  /** Return kth smallest (1‑based). */
+  kth(k: number): number {
+    if (k <= 0 || k > this.data.length) throw new RangeError();
+    const heapCopy = [...this.data];
+    let result = -Infinity;
+    for (let i = 0; i < k; i++) {
+      result = heapCopy[0];
+      this.swap(heapCopy, 0, heapCopy.length - 1);
+      heapCopy.pop();
+      this.sinkDown(heapCopy, 0);
+    }
+    return result;
+  }
+
+  /* helper methods omitted for brevity */
+}
