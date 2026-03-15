@@ -1,30 +1,21 @@
-const str = "hello world";
-const hasFoo = str.includes("world");   // true
-const hasBar = str.includes("bar");     // false
-const hasCapital = str.includes("WORLD");          // false
-const hasCapitalIgnoreCase = str.toLowerCase()
-                                .includes("WORLD".toLowerCase()); // true
-const hasCapitalIgnoreCase = /world/i.test(str);   // true
-const index = str.indexOf("world"); // 6
-const missing = str.indexOf("bar"); // -1
-const present = str.indexOf("world") !== -1; // true
-const hasPrefix = /^hello/.test(str); // true
+// Example array
+const nums: number[] = [42, 1, 17, 3, 99];
 
-// With dynamic patterns
-const word = "world";
-const pattern = new RegExp(word);    // case‑sensitive
-const result = pattern.test(str);    // true
-// Presence
-const contains = text.includes(sub);
+// Sort in ascending order
+const asc = [...nums].sort((a, b) => a - b);
+console.log('Ascending:', asc); // [1, 3, 17, 42, 99]
 
-// Presence (index form)
-const containsIndex = text.indexOf(sub) !== -1;
+// Sort in descending order
+const desc = [...nums].sort((a, b) => b - a);
+console.log('Descending:', desc); // [99, 42, 17, 3, 1]
+const custom = [...nums].sort((a, b) => {
+  const aEven = a % 2 === 0;
+  const bEven = b % 2 === 0;
+  if (aEven && !bEven) return -1;     // a comes first
+  if (!aEven && bEven) return 1;      // b comes first
+  return a - b;                       // both same parity: numeric order
+});
+console.log(custom); // [ 42, 2, 1, 3, 17, 99 ]
+import _ from 'lodash';
 
-// Position
-const pos = text.indexOf(sub); // -1 if absent
-
-// Case‑insensitive
-const containsIC = text.toLowerCase().includes(sub.toLowerCase());
-
-// Regex
-const containsRegex = /world/i.test(text);
+const order = _.orderBy(nums, [x => x], ['asc']); // asc by numeric value
