@@ -1,36 +1,39 @@
-/**
- * Returns the longest common prefix among all given strings.
- * If the array is empty it returns an empty string.
- */
-function longestCommonPrefix(words: string[]): string {
-  if (!words.length) return '';
+export class Stack<T> {
+  /** internal buffer – the array that stores the stack items */
+  private readonly items: T[] = [];
 
-  // The first string will act as a reference; we hammer it down
-  // as far as we need to.
-  let prefix = words[0];
-
-  // Compare the current prefix to every other word.
-  for (const w of words.slice(1)) {
-    // Keep truncating the prefix until it matches the start of w.
-    while (!w.startsWith(prefix)) {
-      prefix = prefix.slice(0, -1); // strip last char
-      if (!prefix) return ''; // nothing common any more
-    }
+  /** push an item onto the stack */
+  push(value: T): void {
+    this.items.push(value);
   }
 
-  return prefix;
+  /** pop the top item; returns `undefined` if the stack is empty */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  /** peek at the top item without removing it */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** true if the stack has no elements */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** number of elements currently on the stack */
+  size(): number {
+    return this.items.length;
+  }
 }
-console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // "fl"
-console.log(longestCommonPrefix(['dog', 'racecar', 'car']));    // ""
-function lcpSort(words: string[]): string {
-  if (!words.length) return '';
+const stack = new Stack<number>();
 
-  const sorted = [...words].sort();
-  const a = sorted[0];
-  const b = sorted[sorted.length - 1];
-  let i = 0;
+stack.push(10);
+stack.push(20);
+stack.push(30);
 
-  while (i < a.length && a[i] === b[i]) i++;
-
-  return a.slice(0, i);
-}
+console.log(stack.peek()); // 30
+console.log(stack.pop());  // 30
+console.log(stack.size()); // 2
+console.log(stack.isEmpty()); // false
