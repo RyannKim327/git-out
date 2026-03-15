@@ -1,103 +1,75 @@
-/* -------------------------------------------------------------
-   Edge definition – just a source, destination and weight
-------------------------------------------------------------- */
-interface Edge {
-  from: string;      // vertex id (string or number, just pick one type)
-  to: string;
-  weight: number;    // can be negative
-}
+/* --------------------------------------------------------
+   Fibonacci Search – TypeScript version
+   -------------------------------------------------------- */
 
-/* -------------------------------------------------------------
-   Bellman‑Ford implementation
-   Parameters
-   ----------  graph: Array<Edge>  – all directed edges
-               source: string      – id of source vertex
-   Returns
-   -------  { dist: Map<string, number>,
-              next: Map<string, string | null>,
-              hasNegativeCycle: boolean }
-------------------------------------------------------------- */
-function bellmanFord(
-  graph: Edge[],
-  source: string
-): { dist: Map<string, number>; next: Map<string, string | null>; hasNegativeCycle: boolean } {
-  const dist = new Map<string, number>();
-  const next = new Map<string, string | null>();
+type Comparator<T> = (a: T, b: T) => number;
 
-  // initialise distances
-  graph.forEach(({ from }) => {
-    dist.set(from, Infinity);
-    next.set(from, null);
-  });
-  // if the source isn’t mentioned in any edge, we still need it in the map
-  dist.set(source, 0);
-  next.set(source, null);
+/**
+ * Searches a sorted array using the Fibonacci search technique.
+ *
+ * @param arr       The sorted array to search
+ * @param key       The value we’re looking for
+ * @param cmp       Optional comparator – defaults to numeric comparison
+ * @returns The index of `key` in `arr`, or -1 if not found
+ */
+export function fibonacciSearch<T>(
+  arr: readonly T[],
+  key: T,
+  cmp: Comparator<T> = (a, b) => a! < b! ? -1 : (a! > b! ? 1 : 0)
+): number {
+  const n = arr.length;
+  if (n === 0) return -1;
 
-  // total distinct vertices
-  const vertices = Array.from(dist.keys());
-  const V = vertices.length;
+  /* ---------- build the smallest Fibonacci number ≥ n ------------- */
+  let fibMm2 = 0;            // (m‑2)’th Fibonacci
+  let fibMm1 = 1;            // (m‑1)’th Fibonacci
+  let fibM   = fibMm2 + fibMm1; // m’th Fibonacci
 
-  // Relax edges V−1 times
-  for (let i = 0; i < V - 1; i++) {
-    let didRelax = false;
-    for (const { from, to, weight } of graph) {
-      const dFrom = dist.get(from);
-      const dTo   = dist.get(to);
-      if (dFrom! === Infinity) continue;                   // unreachable
-      const newDist = dFrom! + weight;
-      if (newDist < dTo!) {
-        dist.set(to, newDist);
-        next.set(to, from);
-        didRelax = true;
-      }
-    }
-    // early exit: no distance changed this round → we’re done
-    if (!didRelax) break;
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
   }
 
-  // Check for negative‑weight cycles reachable from source
-  let hasNegativeCycle = false;
-  for (const { from, to, weight } of graph) {
-    const dFrom = dist.get(from);
-    const dTo   = dist.get(to);
-    if (dFrom! !== Infinity && dFrom! + weight < dTo!) {
-      hasNegativeCycle = true;
-      break;
+  /* ---------- we now have a Fibonacci number >= array length ---------- */
+  let offset = -1; // Marks the eliminated range from front
+
+  while (fibM > 1) {
+    // Keep fibMm2 ≥ 0
+    // Index to be checked – clamp to array bounds
+    const i = Math.min(offset + fibMm2, n - 1);
+
+    const comparison = cmp(arr[i], key);
+
+    if (comparison < 0) {
+      /* key is after arr[i] */
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else if (comparison > 0) {
+      /* key is before arr[i] */
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
+    } else {
+      return i;                // Found at index i
     }
   }
 
-  return { dist, next, hasNegativeCycle };
+  /* ---------- check the last element -------------------------------- */
+  if (fibMm1 && offset + 1 < n && cmp(arr[offset + 1], key) === 0) {
+    return offset + 1;
+  }
+
+  return -1; // Not found
 }
 
-/* -------------------------------------------------------------
+/* --------------------------------------------------------
    Example usage
-------------------------------------------------------------- */
-const edges: Edge[] = [
-  { from: 'A', to: 'B', weight: 5 },
-  { from: 'A', to: 'C', weight: 2 },
-  { from: 'B', to: 'C', weight: -3 },
-  { from: 'B', to: 'D', weight: 9 },
-  { from: 'C', to: 'D', weight: 12 },
-];
+   -------------------------------------------------------- */
 
-const { dist, next, hasNegativeCycle } = bellmanFord(edges, 'A');
+const nums = [3, 9, 15, 21, 27, 31, 38, 54, 72, 95];
 
-if (hasNegativeCycle) {
-  console.log('The graph contains a negative‑weight cycle reachable from A.');
-} else {
-  console.log('Shortest distances from A:');
-  dist.forEach((d, v) => console.log(v, d));
-
-  // helper to print a whole path from source to target
-  function buildPath(target: string): string[] {
-    const path: string[] = [];
-    let cur: string | null = target;
-    while (cur !== null) {
-      path.unshift(cur);
-      cur = next.get(cur) ?? null;
-    }
-    return path;
-  }
-
-  console.log('Path to D:', buildPath('D').join(' → '));
-}
+console.log(fibonacciSearch(nums, 54)); // → 7
+console.log(fibonacciSearch(nums, 10)); // → -1
