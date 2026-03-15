@@ -1,39 +1,81 @@
-/**
- * Recursively searches a sorted array for a target value.
- *
- * @param arr  The sorted array (ascending order).
- * @param target  The value to find.
- * @param left  The left boundary of the current search window.
- * @param right The right boundary of the current search window.
- * @returns The index of the target, or -1 if it isn’t in the array.
- */
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  left: number = 0,
-  right: number = arr.length - 1,
-  comparator?: (a: T, b: T) => number
-): number {
-  // Base case: window collapsed -> not found
-  if (left > right) return -1;
+//   ┌─── Imports ────────────────────────────────────────────────────────┐
+import { useEffect, useState } from 'react';
+import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
 
-  // Midpoint (avoid overflow by using `left + ((right - left) >> 1)` if you like)
-  const mid = Math.floor((left + right) / 2);
-
-  // Resolve comparison logic
-  const cmp = comparator
-    ? comparator(target, arr[mid])
-    : (target > arr[mid]) - (target < arr[mid]); // generic numeric/lexicographic
-
-  if (cmp === 0) return mid;          // found
-  if (cmp < 0) return binarySearch(arr, target, left, mid - 1, comparator);
-  return binarySearch(arr, target, mid + 1, right, comparator);
+//   ┌─── Types ───────────────────────────────────────────────────────────────┐
+interface TodoItem {
+  id: number;
+  title: string;
+  completed: boolean;
 }
-const nums = [1, 3, 5, 7, 9, 11];
 
-console.log(binarySearch(nums, 7));   // → 3
-console.log(binarySearch(nums, 2));   // → -1
-const names = ['Alice', 'Bob', 'Charlie', 'David'].sort();
-console.log(binarySearch(names, 'bob', 0, names.length - 1, (a, b) =>
-  a.toLowerCase().localeCompare(b.toLowerCase())
-)); // → 1
+//   ┌─── Async helper ────────────────────────────────────────────────────────┐
+async function fetchTodos(): Promise<TodoItem[]> {
+  const url = 'https://jsonplaceholder.typicode.com/todos?_limit=5';
+
+  // Simulate a "slow" network: optional, just for demo
+  await new Promise(r => setTimeout(r, 800));
+
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`❌ ${response.status} ${response.statusText}`);
+
+  const json = await response.json();
+  // Map to our interface – TypeScript will check types
+  return json.map((x: any) => ({
+    id: x.id,
+    title: x.title,
+    completed: x.completed,
+  }));
+}
+
+//   ┌─── Component that uses the async task ──────────────────────────────────┐
+export default function AsyncExample() {
+  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchTodos();
+      console.log('Fetched:', data);
+      setTodos(data);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      console.warn(msg);
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Run once on mount
+  useEffect(() => {
+    load();
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      {loading && <ActivityIndicator size="large" />}
+      {error && <Text style={styles.error}>{error}</Text>}
+      {!loading && !error && (
+        <>
+          {todos.map(t => (
+            <Text key={t.id} style={styles.todo}>
+              {t.completed ? '✅' : '🕒'} {t.title}
+            </Text>
+          ))}
+        </>
+      )}
+      <Button title="Reload" onPress={load} disabled={loading} />
+    </View>
+  );
+}
+
+//   ┌─── Styles ───────────────────────────────────────────────────────────────┐
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, justifyContent: 'center' },
+  todo: { fontSize: 18, marginVertical: 4 },
+  error: { color: 'red', marginBottom: 12 },
+});
