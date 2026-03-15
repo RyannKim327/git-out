@@ -1,112 +1,75 @@
-/**
- * Generic type that can be compared with the <=> operator.
- * For custom objects you can supply a comparator function.
- */
-type Comparable = number | string | boolean;
+/* --------------------------------------------------------
+   Fibonacci Search – TypeScript version
+   -------------------------------------------------------- */
+
+type Comparator<T> = (a: T, b: T) => number;
 
 /**
- * Swap two elements in an array
- */
-function swap<T>(arr: T[], i: number, j: number): void {
-  const tmp = arr[i];
-  arr[i] = arr[j];
-  arr[j] = tmp;
-}
-
-/**
- * Heapify the subtree rooted at `i`, assuming that the binary trees
- * rooted at its children are already heaps.
+ * Searches a sorted array using the Fibonacci search technique.
  *
- * @param arr    the array
- * @param heapSize the current size of the heap
- * @param i      the index of the root of the subtree
- * @param compare comparison function (a, b) => true if a > b
+ * @param arr       The sorted array to search
+ * @param key       The value we’re looking for
+ * @param cmp       Optional comparator – defaults to numeric comparison
+ * @returns The index of `key` in `arr`, or -1 if not found
  */
-function heapify<T>(
-  arr: T[],
-  heapSize: number,
-  i: number,
-  compare: (a: T, b: T) => boolean
-): void {
-  let largest = i;
-  const left   = 2 * i + 1;
-  const right  = 2 * i + 2;
+export function fibonacciSearch<T>(
+  arr: readonly T[],
+  key: T,
+  cmp: Comparator<T> = (a, b) => a! < b! ? -1 : (a! > b! ? 1 : 0)
+): number {
+  const n = arr.length;
+  if (n === 0) return -1;
 
-  if (left < heapSize && compare(arr[left], arr[largest])) {
-    largest = left;
-  }
-  if (right < heapSize && compare(arr[right], arr[largest])) {
-    largest = right;
+  /* ---------- build the smallest Fibonacci number ≥ n ------------- */
+  let fibMm2 = 0;            // (m‑2)’th Fibonacci
+  let fibMm1 = 1;            // (m‑1)’th Fibonacci
+  let fibM   = fibMm2 + fibMm1; // m’th Fibonacci
+
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM   = fibMm2 + fibMm1;
   }
 
-  if (largest !== i) {
-    swap(arr, i, largest);
-    heapify(arr, heapSize, largest, compare);
+  /* ---------- we now have a Fibonacci number >= array length ---------- */
+  let offset = -1; // Marks the eliminated range from front
+
+  while (fibM > 1) {
+    // Keep fibMm2 ≥ 0
+    // Index to be checked – clamp to array bounds
+    const i = Math.min(offset + fibMm2, n - 1);
+
+    const comparison = cmp(arr[i], key);
+
+    if (comparison < 0) {
+      /* key is after arr[i] */
+      fibM   = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else if (comparison > 0) {
+      /* key is before arr[i] */
+      fibM   = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
+    } else {
+      return i;                // Found at index i
+    }
   }
+
+  /* ---------- check the last element -------------------------------- */
+  if (fibMm1 && offset + 1 < n && cmp(arr[offset + 1], key) === 0) {
+    return offset + 1;
+  }
+
+  return -1; // Not found
 }
 
-/**
- * Build a max‑heap from an unsorted array
- */
-function buildMaxHeap<T>(
-  arr: T[],
-  compare: (a: T, b: T) => boolean
-): void {
-  const heapSize = arr.length;
-  // Start from the last non‑leaf node
-  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
-    heapify(arr, heapSize, i, compare);
-  }
-}
+/* --------------------------------------------------------
+   Example usage
+   -------------------------------------------------------- */
 
-/**
- * Heap sort – sorts `arr` *in place*.
- *
- * @param arr      the array to sort
- * @param compare  optional comparator; defaults to (a > b)
- */
-export function heapSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => boolean
-): void {
-  const cmp = compare ?? ((a: any, b: any) => a > b);
+const nums = [3, 9, 15, 21, 27, 31, 38, 54, 72, 95];
 
-  buildMaxHeap(arr, cmp);
-
-  for (let i = arr.length - 1; i > 0; i--) {
-    // The max element is at index 0; move it to its final place
-    swap(arr, 0, i);
-    // Re‑heapify the reduced heap
-    heapify(arr, i, 0, cmp);
-  }
-}
-
-/* --------------------------------------------------------------------- */
-/* Example usage & tiny tests                                           */
-/* --------------------------------------------------------------------- */
-
-// 1️⃣ Numbers ---------------------------------------------------------
-const nums = [5, 3, 8, 4, 1, 7, 2, 6];
-heapSort(nums);
-console.log('Sorted numbers:', nums); // [1, 2, 3, 4, 5, 6, 7, 8]
-
-// 2️⃣ Strings ---------------------------------------------------------
-const words = ['pear', 'apple', 'orange', 'banana'];
-heapSort(words); // default lexicographic order
-console.log('Sorted words:', words); // ['apple', 'banana', 'orange', 'pear']
-
-// 3️⃣ Custom objects --------------------------------------------------
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob',   age: 22 },
-  { name: 'Eva',   age: 27 }
-];
-// Sort by age ascending
-heapSort(people, (a, b) => a.age > b.age);
-console.log('People sorted by age:', people);
-/* [
-  { name: 'Bob', age: 22 },
-  { name: 'Eva', age: 27 },
-  { name: 'Alice', age: 30 }
-] */
+console.log(fibonacciSearch(nums, 54)); // → 7
+console.log(fibonacciSearch(nums, 10)); // → -1
