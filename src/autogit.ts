@@ -1,75 +1,146 @@
-/**
- * Binary search on a sorted array (ascending order).
- * @param arr   Sorted array of comparable items.
- * @param value Item you’re hunting for.
- * @param compare Optional comparison function:
- *                (a,b) => 0 if a==b, <0 if a<b, >0 if a>b.
- *                If omitted, '<'/'>' operators are used.
- * @returns Index of the value, or -1 if it isn’t present.
- */
-export function binarySearch<T>(
-  arr: readonly T[],
-  value: T,
-  compare?: (a: T, b: T) => number,
-): number {
-  let low = 0;
-  let high = arr.length;
+// Node.ts
+export class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
 
-  const cmp = compare ?? ((a: T, b: T) => {
-    /* eslint-disable-next-line no-prototype-builtins */
-    if ((a as any as object).hasOwnProperty && typeof a === 'object' && typeof b === 'object') {
-      // For objects that implement `valueOf()` – optional
-      return (a as any) < b ? -1 : (a as any) > b ? 1 : 0;
-    }
-    return a < b ? -1 : a > b ? 1 : 0;
-  });
+  constructor(value: T) {
+    this.value = value;
+  }
+}
+// LinkedList.ts
+import { ListNode } from "./Node";
 
-  while (low < high) {
-    const mid = (low + high) >>> 1; // fast floor division by 2
-    const comp = cmp(arr[mid], value);
+export class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _length = 0;
 
-    if (comp === 0) return mid;   // found it
-    if (comp < 0) low = mid + 1;  // value is higher
-    else high = mid;              // value is lower
+  get length() {
+    return this._length;
   }
 
-  return -1; // not found
+  /* ---------- Basic Operations ---------- */
+
+  // Append a value to the end of the list.
+  push(value: T): void {
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      this.tail!.next = node;
+      this.tail = node;
+    }
+    this._length++;
+  }
+
+  // Prepend a value to the beginning of the list.
+  unshift(value: T): void {
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      node.next = this.head;
+      this.head = node;
+    }
+    this._length++;
+  }
+
+  // Remove and return the value at the head of the list.
+  shift(): T | null {
+    if (!this.head) return null;
+    const value = this.head.value;
+    this.head = this.head.next;
+    if (!this.head) this.tail = null; // list became empty
+    this._length--;
+    return value;
+  }
+
+  // Remove and return the value at the tail of the list.
+  pop(): T | null {
+    if (!this.head) return null;
+
+    if (this.head === this.tail) {
+      const value = this.head.value;
+      this.head = this.tail = null;
+      this._length--;
+      return value;
+    }
+
+    // Walk to the node just before the tail.
+    let current = this.head;
+    while (current.next !== this.tail) {
+      current = current.next!;
+    }
+    const value = this.tail!.value;
+    current.next = null;
+    this.tail = current;
+    this._length--;
+    return value;
+  }
+
+  /* ---------- Traversal & Search ---------- */
+
+  // Return the node at the given zero‑based index, or null if out of bounds.
+  getNodeAt(index: number): ListNode<T> | null {
+    if (index < 0 || index >= this._length) return null;
+    let current = this.head!;
+    for (let i = 0; i < index; i++) {
+      current = current.next!;
+    }
+    return current;
+  }
+
+  // Find the first value that satisfies the predicate.
+  find(predicate: (value: T) => boolean, startIndex = 0): T | null {
+    let current = this.getNodeAt(startIndex);
+    while (current) {
+      if (predicate(current.value)) return current.value;
+      current = current.next;
+    }
+    return null;
+  }
+
+  /* ---------- Utility ---------- */
+
+  // Convert the list to an array (useful for debugging or interoperability).
+  toArray(): T[] {
+    const out: T[] = [];
+    let current = this.head;
+    while (current) {
+      out.push(current.value);
+      current = current.next;
+    }
+    return out;
+  }
+
+  // Allow for… e.g. “for … of” iteration.
+  [Symbol.iterator](): Iterator<T> {
+    let current = this.head;
+    return {
+      next: () => ({
+        value: current?.value,
+        done: current === null,
+      }),
+    };
+  }
 }
-const nums = [1, 3, 5, 7, 9, 11, 13];
-const idx = binarySearch(nums, 7); // → 3
+import { LinkedList } from "./LinkedList";
 
-const words = ['apple', 'banana', 'cherry', 'date'];
-const wIdx = binarySearch(words, 'cherry'); // → 2
-export function binarySearchRecursive<T>(
-  arr: readonly T[],
-  value: T,
-  compare?: (a: T, b: T) => number,
-  low = 0,
-  high = arr.length - 1,
-): number {
-  if (low > high) return -1;
+const numbers = new LinkedList<number>();
+numbers.push(10);
+numbers.push(20);
+numbers.unshift(5);   // list is now 5 -> 10 -> 20
 
-  const cmp = compare ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+console.log(numbers.shift()); // 5
+console.log(numbers.pop());   // 20
+console.log(numbers.length);  // 1
 
-  const mid = (low + high) >>> 1;
-  const comp = cmp(arr[mid], value);
+// Search
+numbers.push(30);
+numbers.push(40);
+console.log(numbers.find(v => v > 15)); // 20
 
-  if (comp === 0) return mid;
-  return comp < 0
-    ? binarySearchRecursive(arr, value, compare, mid + 1, high)
-    : binarySearchRecursive(arr, value, compare, low, mid - 1);
+// Iterate
+for (const n of numbers) {
+  console.log(n); // 10, 30, 40
 }
-interface Person { name: string; age: number; }
-
-const people: Person[] = [
-  { name: 'Alice', age: 28 },
-  { name: 'Bob', age: 35 },
-  { name: 'Carol', age: 41 },
-];
-
-// Sorted by age
-const idx = binarySearch(
-  people,
-  { name: '', age: 35 },             // value (name ignored)
-  (a, b) => a.age - b.age
-); // → 1
