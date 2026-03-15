@@ -1,30 +1,57 @@
-/**
- * Recursively returns n! (n factorial).
- *
- * @param n - non‑negative integer (or bigint)
- * @returns n! as a bigint
- */
-export function factorial(n: bigint | number): bigint {
-  // Normalize input to bigint
-  const x = typeof n === "bigint" ? n : BigInt(n);
+text:   abcdefghijk
+        ‖~~~~~~~~~~
+pattern:   def
+function buildShiftTable(pattern: string): Map<string, number> {
+  const table = new Map<string, number>();
+  const m = pattern.length;
 
-  // Negative numbers are not defined for factorial
-  if (x < 0n) {
-    throw new Error("Factorial is defined only for non‑negative integers.");
+  // For all chars except the last one
+  for (let i = 0; i < m - 1; i++) {
+    table.set(pattern[i], m - 1 - i);
   }
-
-  // Base case: 0! = 1, 1! = 1
-  if (x === 0n || x === 1n) {
-    return 1n;
-  }
-
-  // Recursive case: n! = n * (n-1)!
-  return x * factorial(x - 1n);
+  return table;
 }
-console.log(factorial(5));        // 120n
-console.log(factorial(20));       // 2432902008176640000n
-console.log(factorial(25n));      // 15511210043330985984000000n
-function factorialTail(n: bigint, acc = 1n): bigint {
-  if (n <= 1n) return acc;
-  return factorialTail(n - 1n, acc * n);
+function boyerMooreHorspool(pattern: string, text: string): number | null {
+  const m = pattern.length;
+  const n = text.length;
+
+  if (m === 0) return 0;          // Empty pattern matches at start
+  if (m > n) return null;         // Impossible to find
+
+  const shiftTable = buildShiftTable(pattern);
+  const defaultShift = m;
+
+  let i = 0; // Current alignment of pattern in text
+
+  while (i <= n - m) {
+    let j = m - 1;
+
+    // Compare from right to left
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      // Full match
+      return i;
+    }
+
+    // Mismatch: decide how far to shift
+    const mismatchedChar = text[i + j];
+    const shift = shiftTable.get(mismatchedChar) ?? defaultShift;
+
+    i += shift;
+  }
+
+  return null; // No match found
+}
+const sampleText = "The quick brown fox jumps over the lazy dog. The fox was quick.";
+const samplePattern = "quick";
+
+const matchIdx = boyerMooreHorspool(samplePattern, sampleText);
+
+if (matchIdx !== null) {
+  console.log(`Found at index ${matchIdx}`);
+} else {
+  console.log("No match");
 }
