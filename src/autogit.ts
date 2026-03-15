@@ -1,50 +1,45 @@
-// A node of a singly linked list
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-
-// Helper to build a list from an array (optional)
-function buildList<T>(values: T[]): ListNode<T> | null {
-  if (values.length === 0) return null
-  const head = new ListNode(values[0])
-  let cur = head
-  for (let i = 1; i < values.length; i++) {
-    cur.next = new ListNode(values[i])
-    cur = cur.next
-  }
-  return head
-}
 /**
- * Returns the middle ListNode of a singly linked list.
- * If the list has an even number of nodes, the *second* middle one is returned
- * (you can customize this if you prefer the first one).
+ * Returns the contiguous segment of `arr` that yields the highest possible sum.
+ *
+ * @param arr - Array of numbers (integer or float)
+ * @returns An object containing:
+ *   `maxSum`  – the total sum of the best segment
+ *   `start`   – the index where the segment begins
+ *   `end`     – the index where the segment ends (inclusive)
  */
-function getMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null
+function maxSubarray(arr: number[]) {
+  if (arr.length === 0) throw new Error('Array cannot be empty');
 
-  let slow: ListNode<T> | null = head
-  let fast: ListNode<T> | null = head
+  let bestSum = arr[0];
+  let currentSum = arr[0];
+  let bestStart = 0;
+  let bestEnd = 0;
+  let tempStart = 0;
 
-  // Move fast twice as fast as slow
-  while (fast && fast.next) {
-    slow = slow!.next            // safe because slow ≠ null in loop
-    fast = fast.next.next
+  for (let i = 1; i < arr.length; i++) {
+    const val = arr[i];
+
+    // Either start a new sub‑array at i or extend the existing one
+    if (currentSum + val < val) {
+      currentSum = val;
+      tempStart = i;       // new potential start
+    } else {
+      currentSum += val;   // keep extending
+    }
+
+    // Update the best segment seen so far
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
+    }
   }
 
-  return slow
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-const list = buildList([1, 2, 3, 4, 5])          // Odd‑length list
-console.log(getMiddle(list)?.val)                // → 3
-
-const list2 = buildList([10, 20, 30, 40])        // Even‑length list
-console.log(getMiddle(list2)?.val)               // → 30  (second middle)
-function getMiddleViaArray<T>(head: ListNode<T> | null): ListNode<T> | null {
-  const values: ListNode<T>[] = []
-  let cur = head
-  while (cur) {
-    values.push(cur)
-    cur = cur.next
-  }
-  const midIndex = Math.floor(values.length / 2)
-  return values[midIndex] ?? null
-}
+const data = [-2, -3, 4, -1, -2, 1, 5, -3];
+const result = maxSubarray(data);
+console.log(result);
+// Expected output:
+// { maxSum: 7, start: 2, end: 6 }
+// (segment [4, -1, -2, 1, 5] sums to 7)
