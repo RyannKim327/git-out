@@ -1,51 +1,38 @@
-// A classic singly‑linked‑list node
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-
 /**
- * Returns the nth node from the end (1‑based) or null if n is out of range.
+ * Finds the majority element in an array (appears > n/2 times).
+ * If no majority exists, undefined is returned.
+ *
+ * @param arr   - Array of comparable values (number, string ...).
+ * @returns     - The majority element or undefined.
  */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;          // natural guard for mis‑ed input
+export function majorityElement<T extends number | string | symbol>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
 
-  let first: ListNode<T> | null = head;
-  let second: ListNode<T> | null = head;
+  // Boyer‑Moore majority vote algorithm
+  let candidate: T | undefined = arr[0];
+  let count = 1;
 
-  /* Advance `first` n steps ahead. */
-  for (let i = 0; i < n; i++) {
-    if (!first) return null;   // n is larger than list length
-    first = first.next;
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === candidate) {
+      count++;
+    } else {
+      count--;
+      if (count === 0) {
+        candidate = arr[i];
+        count = 1;
+      }
+    }
   }
 
-  /* Move both pointers until `first` hits the end. */
-  while (first) {
-    first = first.next;
-    second = second!.next;     // second is guaranteed not null here
+  // Verify that candidate really is the majority
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
   }
 
-  return second;   // `second` is the nth node from the end
+  return count > Math.floor(arr.length / 2) ? candidate : undefined;
 }
-function nthFromEndTwoPass<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let len = 0;
-  for (let cur = head; cur; cur = cur.next) len++;
-
-  if (n <= 0 || n > len) return null;
-
-  let cur = head;
-  for (let i = 0; i < len - n; i++) cur = cur!.next;
-
-  return cur;
-}
-// Example list: 1 → 2 → 3 → 4 → 5
-const tail = new ListNode(5);
-const middle = new ListNode(4, tail);
-const head = new ListNode(1,
-           new ListNode(2,
-           new ListNode(3,
-           middle)));
-
-console.log(nthFromEnd(head, 1)?.val); // 5
-console.log(nthFromEnd(head, 2)?.val); // 4
-console.log(nthFromEnd(head, 5)?.val); // 1
-console.log(nthFromEnd(head, 6));      // null
+majorityElement([1, 2, 3, 2, 2]);      // → 2
+majorityElement(['a', 'b', 'a', 'c']); // → undefined
+majorityElement([5, 5, 5, 5]);          // → 5
+majorityElement([]);                   // → undefined
