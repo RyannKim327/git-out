@@ -1,41 +1,18 @@
-/** A very small “binary‑tree node” type. */
-interface TreeNode {
-  val: number;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
+// ✅ Basic “looks‑right” test
+function isValidEmail(email: string): boolean {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
 }
-function sumTreeRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                     // base case – no node
-  const leftSum  = sumTreeRecursive(root.left);
-  const rightSum = sumTreeRecursive(root.right);
-  return root.val + leftSum + rightSum;    // process node after its children
+
+// usage
+console.log(isValidEmail('user@example.com')); // true
+console.log(isValidEmail('bad-email.com'));    // false
+// ✅ Covers quoted local‑part, IP domains, and "newer" TLDs
+function isValidEmailBetter(email: string): boolean {
+  const re = /^(?:(?:\"[^\"]+\")|(?:[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+))@(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}|(?:\[[0-9]{1,3}(?:\.[0-9]{1,3}){3}\]))$/;
+  return re.test(email);
 }
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  const queue: TreeNode[] = [root];
-  let total = 0;
-
-  while (queue.length) {
-    const node = queue.shift()!;   // non‑null assertion – queue always contains real nodes
-    total += node.val;
-
-    if (node.left)  queue.push(node.left);
-    if (node.right) queue.push(node.right);
-  }
-
-  return total;
-}
-// Small example
-const tree: TreeNode = {
-  val: 10,
-  left: { val: 5 },
-  right: {
-    val: 20,
-    left: { val: 15 },
-    right: { val: 25 }
-  }
-};
-
-console.log(sumTreeRecursive(tree)); // 75
-console.log(sumTreeIterative(tree)); // 75
+// In a React hook or any form library
+const validateEmail = (value: string) => (
+  isValidEmail(value) ? undefined : 'Invalid email address'
+);
