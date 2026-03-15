@@ -1,41 +1,45 @@
-/**
- * Random‑pivot quick sort.
- *
- * @param arr   The array to sort (in‑place).
- * @returns     The sorted array (the same reference as `arr`).
- */
-export function quickSortRandom<T>(arr: T[], compare?: (a: T, b: T) => number): T[] {
-  if (arr.length <= 1)
-    return arr;
+// apiDemo.ts
+// -----------------------------------------------------
+// Example: Call a public JSONPlaceholder API,
+// fetch a post, and log its title & body.
+//
+// Works out of the box in Node≥18 or any modern browser
+// with a `tsconfig.json` that has `"esModuleInterop": true`
+// and `"target": "es2015"` (or later).
 
-  // So we can provide a custom comparison, but default is the usual "<".
-  const cmp = compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-
-  // Pick a random index as pivot
-  const pivotIndex = Math.floor(Math.random() * arr.length);
-  const pivotValue = arr[pivotIndex];
-
-  // Partition into two new arrays
-  const lows: T[] = [];
-  const highs: T[] = [];
-  const pivots: T[] = [];
-
-  for (let i = 0; i < arr.length; i++) {
-    const value = arr[i];
-    const comparison = cmp(value, pivotValue);
-    if (comparison < 0)    lows.push(value);
-    else if (comparison > 0) highs.push(value);
-    else                    pivots.push(value);   // equals pivot
-  }
-
-  // Recurse and concatenate
-  return quickSortRandom(lows, cmp)
-          .concat(pivots, quickSortRandom(highs, cmp));
+// 1.  Types that model the JSON we expect back
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
 
-// ---- Demo ---------------------------------------------------------
+// 2.  A handy helper that ensures we get JSON
+async function json<T>(resp: Response): Promise<T> {
+  if (!resp.ok) {
+    throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+  }
+  return resp.json() as Promise<T>;
+}
 
-const unsorted = [7, 2, 9, 4, 1, 5, 3, 8, 6];
-console.log('original: ', unsorted);
-const sorted = quickSortRandom(unsorted);
-console.log('sorted:   ', sorted);
+// 3.  The async routine that talks to the API
+async function fetchPost(postId: number): Promise<Post> {
+  const url = `https://jsonplaceholder.typicode.com/posts/${postId}`;
+
+  const response = await fetch(url);        // ← call the API
+  const post = await json<Post>(response);   // ← parse & type‑check
+
+  return post;
+}
+
+// 4.  Call it and do something with the data
+(async () => {
+  try {
+    const post = await fetchPost(1);
+    console.log(`Post #1 title: ${post.title}`);
+    console.log(`Post #1 body:  ${post.body}`);
+  } catch (err) {
+    console.error("Something went wrong:", err);
+  }
+})();
