@@ -1,39 +1,32 @@
-function isPalindrome(str: string): boolean {
-  // Compare the string to its reverse
-  const reversed = str.split('').reverse().join('');
-  return str === reversed;
+/**
+ * Returns the area of a triangle when you know its base and height.
+ *
+ * @param base   The length of the triangle’s base.
+ * @param height The height (altitude) drawn to that base.
+ * @returns The area in whatever units the inputs are in.
+ */
+function triangleAreaFromBaseHeight(base: number, height: number): number {
+  return 0.5 * base * height;
 }
-
-// Examples
-console.log(isPalindrome('radar'));   // true
-console.log(isPalindrome('hello'));   // false
-function isPalindromeCI(str: string): boolean {
-  const normalized = str.toLowerCase();          // make everything lowercase
-  return normalized === normalized.split('').reverse().join('');
+/**
+ * Returns the area of a triangle given its three vertices.
+ *
+ * @param x1 x‑coordinate of the first vertex
+ * @param y1 y‑coordinate of the first vertex
+ * @param x2 x‑coordinate of the second vertex
+ * @param y2 y‑coordinate of the second vertex
+ * @param x3 x‑coordinate of the third vertex
+ * @param y3 y‑coordinate of the third vertex
+ * @returns The absolute area (non‑negative) of the triangle.
+ */
+function triangleAreaFromPoints(
+  x1: number, y1: number,
+  x2: number, y2: number,
+  x3: number, y3: number
+): number {
+  return Math.abs(
+    x1 * (y2 - y3) +
+    x2 * (y3 - y1) +
+    x3 * (y1 - y2)
+  ) / 2;
 }
-
-console.log(isPalindromeCI('Radar'));   // true
-console.log(isPalindromeCI('Racecar')); // true
-function isPalindromeClean(str: string): boolean {
-  const cleaned = str
-    .replace(/[^a-z0-9]/gi, '')      // strip non-alphanumerics
-    .toLowerCase();                  // normalize case
-  
-  const reversed = cleaned.split('').reverse().join('');
-  return cleaned === reversed;
-}
-
-console.log(isPalindromeClean('A man, a plan, a canal: Panama')); // true
-function isPalindromeTwoPointer(str: string): boolean {
-  let left = 0;
-  let right = str.length - 1;
-
-  while (left < right) {
-    if (str[left] !== str[right]) return false;
-    left++;
-    right--;
-  }
-  return true;
-}
-
-console.log(isPalindromeTwoPointer('radar')); // true
