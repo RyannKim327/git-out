@@ -1,39 +1,72 @@
-/**
- * Return true if `a` and `b` are anagrams.
- *
- * @param a      First string
- * @param b      Second string
- * @param options  Optional settings – case sensitivity & ignoring non‑letters
- */
-function areAnagrams(
-  a: string,
-  b: string,
-  options?: {
-    caseSensitive?: boolean;
-    ignoreNonAlpha?: boolean;
+export class ListNode {
+  val: number;          // keep it generic if you want
+  next: ListNode | null;
+
+  constructor(val: number = 0, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
   }
-): boolean {
-  const { caseSensitive = false, ignoreNonAlpha = false } = options || {};
-
-  // Helper to canonicalise a string
-  const canon = (s: string) =>
-    s
-      .split('')
-      .filter((ch) => !ignoreNonAlpha || /[a-zA-Z]/.test(ch))
-      .map((ch) => (caseSensitive ? ch : ch.toLowerCase()))
-      .sort(); // array of chars, sorted
-
-  const aChars = canon(a);
-  const bChars = canon(b);
-
-  if (aChars.length !== bChars.length) return false;
-
-  for (let i = 0; i < aChars.length; i++) {
-    if (aChars[i] !== bChars[i]) return false;
-  }
-
-  return true;
 }
-areAnagrams('Listen', 'Silent');           // true
-areAnagrams('Hello', 'Ollhe', { caseSensitive: true }); // false
-areAnagrams('Dormitory', 'Dirty room', { ignoreNonAlpha: true }); // true
+export function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  // Helper: get the length of a list.
+  const length = (node: ListNode | null): number => {
+    let len = 0;
+    while (node) {
+      len++;
+      node = node.next;
+    }
+    return len;
+  };
+
+  const lenA = length(headA);
+  const lenB = length(headB);
+
+  // Align the starts
+  let ptrA = headA;
+  let ptrB = headB;
+  let diff = Math.abs(lenA - lenB);
+
+  if (lenA > lenB) {
+    while (diff-- > 0 && ptrA) ptrA = ptrA.next;
+  } else {
+    while (diff-- > 0 && ptrB) ptrB = ptrB.next;
+  }
+
+  // Walk together
+  while (ptrA && ptrB) {
+    if (ptrA === ptrB) return ptrA; // same reference
+    ptrA = ptrA.next;
+    ptrB = ptrB.next;
+  }
+
+  return null; // no intersection
+}
+// Build list A: 1 → 2 → 3 → 4 → 5
+const a = new ListNode(1);
+a.next = new ListNode(2);
+a.next.next = new ListNode(3);
+a.next.next.next = new ListNode(4);
+a.next.next.next.next = new ListNode(5);
+
+// Build list B: 9 → 4 → 5 (shared tail)
+const b = new ListNode(9);
+b.next = a.next.next.next; // shares nodes 4 and 5
+
+const intersect = getIntersectionNode(a, b);
+console.log(intersect?.val); // prints 4
+export function intersectionByValue(
+  headA: ListNode | null,
+  headB: ListNode | null
+): number[] {
+  const values = new Set<number>();
+  for (let cur = headA; cur; cur = cur.next) values.add(cur.val);
+
+  const result: number[] = [];
+  for (let cur = headB; cur; cur = cur.next) {
+    if (values.has(cur.val)) result.push(cur.val);
+  }
+  return result;
+}
