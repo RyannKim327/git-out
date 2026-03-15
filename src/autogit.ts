@@ -1,45 +1,30 @@
-const raw = [1, 2, 2, 3, 4, 4, 5];
+const str = "hello world";
+const hasFoo = str.includes("world");   // true
+const hasBar = str.includes("bar");     // false
+const hasCapital = str.includes("WORLD");          // false
+const hasCapitalIgnoreCase = str.toLowerCase()
+                                .includes("WORLD".toLowerCase()); // true
+const hasCapitalIgnoreCase = /world/i.test(str);   // true
+const index = str.indexOf("world"); // 6
+const missing = str.indexOf("bar"); // -1
+const present = str.indexOf("world") !== -1; // true
+const hasPrefix = /^hello/.test(str); // true
 
-const unique = Array.from(new Set(raw));
-// or: const unique = [...new Set(raw)];
+// With dynamic patterns
+const word = "world";
+const pattern = new RegExp(word);    // case‑sensitive
+const result = pattern.test(str);    // true
+// Presence
+const contains = text.includes(sub);
 
-console.log(unique); // [1, 2, 3, 4, 5]
-function uniqueInPlace<T>(arr: T[]): void {
-  const seen = new Set<T>();
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (seen.has(arr[i])) {
-      arr.splice(i, 1);          // remove duplicate
-    } else {
-      seen.add(arr[i]);          // record first appearance
-    }
-  }
-}
+// Presence (index form)
+const containsIndex = text.indexOf(sub) !== -1;
 
-const data = ['a', 'b', 'a', 'c', 'b'];
-uniqueInPlace(data);
-console.log(data); // ['a', 'b', 'c']
-const raw = [1, 2, 3, 2, 4, 1];
-const unique = raw.filter((v, i) => raw.indexOf(v) === i);
-console.log(unique); // [1, 2, 3, 4]
-interface User { id: number; name: string }
+// Position
+const pos = text.indexOf(sub); // -1 if absent
 
-const users: User[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 1, name: 'Alice (dup)' }, // duplicate id
-];
+// Case‑insensitive
+const containsIC = text.toLowerCase().includes(sub.toLowerCase());
 
-const uniqueById = Array.from(
-  users.reduce((map, user) => {
-    if (!map.has(user.id)) map.set(user.id, user);
-    return map;
-  }, new Map<number, User>())
-);
-
-console.log(uniqueById);
-/*
-[
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' }
-]
-*/
+// Regex
+const containsRegex = /world/i.test(text);
