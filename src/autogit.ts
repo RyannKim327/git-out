@@ -1,41 +1,35 @@
-export interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-}
-export class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
-export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null
-  let curr = head
+/**
+ * Bottom‑up merge sort – no recursion, only loops.
+ * @param arr The array to sort, in place.
+ * @returns The sorted array (same reference as the argument).
+ */
+export function mergeSortIterative<T>(arr: T[]): T[] {
+  const len = arr.length;
+  if (len < 2) return arr;          // already sorted
 
-  while (curr) {
-    const nxt = curr.next      // keep reference to next node
-    curr.next = prev           // flip the link
-    prev = curr                // advance prev
-    curr = nxt                 // advance curr
+  // Temporary buffer reused for each merge
+  const temp = new Array<T>(len);
+
+  // Initial run width – start with runs of 1 element
+  for (let width = 1; width < len; width <<= 1) {
+    // Merge pairs of runs: left = i‑th run, right = i+width‑th run
+    for (let i = 0; i < len; i += width << 1) {
+      const left = i;
+      const mid = Math.min(i + width, len);
+      const right = Math.min(i + (width << 1), len);
+
+      // Merge [left, mid) and [mid, right) into temp
+      let l = left, r = mid, k = left;
+      while (l < mid && r < right) {
+        temp[k++] = (arr[l] as any <= arr[r] as any) ? arr[l++] : arr[r++];
+      }
+      while (l < mid) temp[k++] = arr[l++];
+      while (r < right) temp[k++] = arr[r++];
+
+      // Copy the merged segment back into arr
+      for (let p = left; p < right; p++) arr[p] = temp[p];
+    }
   }
 
-  return prev   // new head
+  return arr;
 }
-export function reverseListRec<T>(node: ListNode<T> | null, prev: ListNode<T> | null = null): ListNode<T> | null {
-  if (!node) return prev
-  const nxt = node.next
-  node.next = prev
-  return reverseListRec(nxt, node)
-}
-// build 1 → 2 → 3
-const n3 = new ListNode(3)
-const n2 = new ListNode(2, n3)
-const n1 = new ListNode(1, n2)
-
-// reverse
-const reversed = reverseList(n1)
-
-// print results
-let cur = reversed
-while (cur) {
-  console.log(cur.value)
-  cur = cur.next
-}
-// → 3, 2, 1
