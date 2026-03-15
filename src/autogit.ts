@@ -1,50 +1,30 @@
-export interface TreeNode {
-  val: number;                // or any type you like
-  left?: TreeNode | null;     // child nodes (undefined is treated as null)
-  right?: TreeNode | null;
-}
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
-/**
- * Returns the diameter (number of edges on the longest path) of a binary tree.
- *
- * @param root root node of the tree
- * @returns diameter in edges
- */
-export function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;           // will hold the best diameter found
-
-  /**
-   * Post‑order DFS that returns the height of the subtree.
-   * While unwinding, we update `maxDiameter`.
-   */
-  function dfs(node: TreeNode | null): number {
-    if (!node) return -1;       // height of null is -1 so that leaf node height = 0
-
-    const leftHeight  = dfs(node.left)  + 1;
-    const rightHeight = dfs(node.right) + 1;
-
-    // The path that goes from the leftmost leaf of this subtree
-    // through this node to the rightmost leaf gives a candidate
-    // diameter.  `+1` is not needed for edges because heights already
-    // count edges from node to leaf.
-    const candidate = leftHeight + rightHeight;
-    if (candidate > maxDiameter) maxDiameter = candidate;
-
-    // Return height of this node for the parent call
-    return Math.max(leftHeight, rightHeight);
+function getLength(str: string): number {
+  let count = 0;
+  for (const _ of str) {
+    count++;
   }
-
-  dfs(root);
-  return maxDiameter;
+  return count;
 }
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 }, right: { val: 5 }},
-  right: { val: 3, right: { val: 6 }}
-};
-
-console.log(diameterOfBinaryTree(tree));   // → 3
+function recurseLen(str: string, idx = 0): number {
+  return idx >= str.length ? idx : recurseLen(str, idx + 1);
+}
+function recurseLen(str: string, idx = 0): number {
+  return str === '' ? idx : recurseLen(str.slice(1), idx + 1);
+}
+function lengthFromArray(str: string): number {
+  return Array.from(str).length; // still uses .length on the array
+}
+function lengthSpread(str: string): number {
+  return [...str].length; // element count after spreading
+}
+function lengthWithMatch(str: string): number {
+  const matches = str.match(/[\s\S]/g); // one match per character, including newlines
+  return matches ? matches.length : 0;
+}
+function whileLoop(str: string): number {
+  let i = 0;
+  while (str.charAt(i) !== '') {
+    i++;
+  }
+  return i;
+}
