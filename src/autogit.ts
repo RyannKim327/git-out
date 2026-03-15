@@ -1,75 +1,21 @@
-/* --------------------------------------------------------
-   Fibonacci Search – TypeScript version
-   -------------------------------------------------------- */
+// Example array
+const nums: number[] = [42, 1, 17, 3, 99];
 
-type Comparator<T> = (a: T, b: T) => number;
+// Sort in ascending order
+const asc = [...nums].sort((a, b) => a - b);
+console.log('Ascending:', asc); // [1, 3, 17, 42, 99]
 
-/**
- * Searches a sorted array using the Fibonacci search technique.
- *
- * @param arr       The sorted array to search
- * @param key       The value we’re looking for
- * @param cmp       Optional comparator – defaults to numeric comparison
- * @returns The index of `key` in `arr`, or -1 if not found
- */
-export function fibonacciSearch<T>(
-  arr: readonly T[],
-  key: T,
-  cmp: Comparator<T> = (a, b) => a! < b! ? -1 : (a! > b! ? 1 : 0)
-): number {
-  const n = arr.length;
-  if (n === 0) return -1;
+// Sort in descending order
+const desc = [...nums].sort((a, b) => b - a);
+console.log('Descending:', desc); // [99, 42, 17, 3, 1]
+const custom = [...nums].sort((a, b) => {
+  const aEven = a % 2 === 0;
+  const bEven = b % 2 === 0;
+  if (aEven && !bEven) return -1;     // a comes first
+  if (!aEven && bEven) return 1;      // b comes first
+  return a - b;                       // both same parity: numeric order
+});
+console.log(custom); // [ 42, 2, 1, 3, 17, 99 ]
+import _ from 'lodash';
 
-  /* ---------- build the smallest Fibonacci number ≥ n ------------- */
-  let fibMm2 = 0;            // (m‑2)’th Fibonacci
-  let fibMm1 = 1;            // (m‑1)’th Fibonacci
-  let fibM   = fibMm2 + fibMm1; // m’th Fibonacci
-
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM   = fibMm2 + fibMm1;
-  }
-
-  /* ---------- we now have a Fibonacci number >= array length ---------- */
-  let offset = -1; // Marks the eliminated range from front
-
-  while (fibM > 1) {
-    // Keep fibMm2 ≥ 0
-    // Index to be checked – clamp to array bounds
-    const i = Math.min(offset + fibMm2, n - 1);
-
-    const comparison = cmp(arr[i], key);
-
-    if (comparison < 0) {
-      /* key is after arr[i] */
-      fibM   = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i;
-    } else if (comparison > 0) {
-      /* key is before arr[i] */
-      fibM   = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
-    } else {
-      return i;                // Found at index i
-    }
-  }
-
-  /* ---------- check the last element -------------------------------- */
-  if (fibMm1 && offset + 1 < n && cmp(arr[offset + 1], key) === 0) {
-    return offset + 1;
-  }
-
-  return -1; // Not found
-}
-
-/* --------------------------------------------------------
-   Example usage
-   -------------------------------------------------------- */
-
-const nums = [3, 9, 15, 21, 27, 31, 38, 54, 72, 95];
-
-console.log(fibonacciSearch(nums, 54)); // → 7
-console.log(fibonacciSearch(nums, 10)); // → -1
+const order = _.orderBy(nums, [x => x], ['asc']); // asc by numeric value
