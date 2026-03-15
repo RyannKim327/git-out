@@ -1,30 +1,46 @@
-const str = "hello world";
-const hasFoo = str.includes("world");   // true
-const hasBar = str.includes("bar");     // false
-const hasCapital = str.includes("WORLD");          // false
-const hasCapitalIgnoreCase = str.toLowerCase()
-                                .includes("WORLD".toLowerCase()); // true
-const hasCapitalIgnoreCase = /world/i.test(str);   // true
-const index = str.indexOf("world"); // 6
-const missing = str.indexOf("bar"); // -1
-const present = str.indexOf("world") !== -1; // true
-const hasPrefix = /^hello/.test(str); // true
+/**
+ * Returns true if `a` and `b` are anagrams.
+ * Works for any Unicode characters, but
+ * it ignores case and whitespace by default.
+ */
+function areAnagrams(a: string, b: string, ignoreCase = true, ignoreWhitespace = true): boolean {
+  // Normalise: trim, collapse spaces, lower‑case if requested
+  const normalize = (s: string) =>
+    s
+      .replace(/\s+/g, "")        // delete spaces
+      .toLowerCase();             // lower‑case
 
-// With dynamic patterns
-const word = "world";
-const pattern = new RegExp(word);    // case‑sensitive
-const result = pattern.test(str);    // true
-// Presence
-const contains = text.includes(sub);
+  if (ignoreCase && ignoreWhitespace) {
+    a = normalize(a);
+    b = normalize(b);
+  } else if (ignoreCase) {
+    a = a.toLowerCase();
+    b = b.toLowerCase();
+  } else if (ignoreWhitespace) {
+    a = a.replace(/\s+/g, "");
+    b = b.replace(/\s+/g, "");
+  }
 
-// Presence (index form)
-const containsIndex = text.indexOf(sub) !== -1;
+  // Quick length check
+  if (a.length !== b.length) return false;
 
-// Position
-const pos = text.indexOf(sub); // -1 if absent
+  // Count characters in the first string
+  const counts: Record<string, number> = {};
 
-// Case‑insensitive
-const containsIC = text.toLowerCase().includes(sub.toLowerCase());
+  for (const ch of a) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
+  }
 
-// Regex
-const containsRegex = /world/i.test(text);
+  // Subtract counts using the second string
+  for (const ch of b) {
+    const current = counts[ch];
+    if (!current) return false;          // character not seen before or already exhausted
+    if (--current === 0) delete counts[ch];
+  }
+
+  // If everything matched, the object should be empty
+  return Object.keys(counts).length === 0;
+}
+console.log(areAnagrams("listen", "silent"));           // true
+console.log(areAnagrams("Hello, World!", "world!hello")); // true
+console.log(areAnagrams("foo", "bar"));                 // false
