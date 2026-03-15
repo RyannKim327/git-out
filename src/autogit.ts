@@ -1,67 +1,50 @@
-class Graph<T> {
-  private adjacency = new Map<T, Set<T>>();
-
-  addVertex(v: T) {
-    if (!this.adjacency.has(v)) this.adjacency.set(v, new Set());
+/**
+ * Median of two sorted arrays (each array is sorted in ascending order).
+ * Works in O(log (min(nums1.length, nums2.length))) time.
+ */
+function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Make sure nums1 is the smaller array for a lighter binary‑search range
+  if (nums1.length > nums2.length) {
+    return findMedianSortedArrays(nums2, nums1);
   }
 
-  addEdge(v: T, w: T, directed = false) {
-    this.addVertex(v);
-    this.addVertex(w);
-    this.adjacency.get(v)!.add(w);
-    if (!directed) this.adjacency.get(w)!.add(v);
-  }
+  const m = nums1.length;
+  const n = nums2.length;
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-  neighbours(v: T): Iterable<T> {
-    return this.adjacency.get(v) || [];
-  }
+  let low = 0;
+  let high = m;
 
-  vertices(): Iterable<T> {
-    return this.adjacency.keys();
-  }
-}
-function dfsRecursive<T>(graph: Graph<T>, start: T): T[] {
-  const visited = new Set<T>();
-  const result: T[] = [];
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2);      // partition in nums1
+    const j = halfLen - i;                       // partition in nums2
 
-  function visit(v: T) {
-    if (visited.has(v)) return;
-    visited.add(v);
-    result.push(v);
+    const nums1LeftMax  = (i === 0) ? -Infinity : nums1[i - 1];
+    const nums1RightMin = (i === m) ? Infinity  : nums1[i];
+    const nums2LeftMax  = (j === 0) ? -Infinity : nums2[j - 1];
+    const nums2RightMin = (j === n) ? Infinity  : nums2[j];
 
-    for (const n of graph.neighbours(v)) visit(n);
-  }
-
-  visit(start);
-  return result;
-}
-function dfsIterative<T>(graph: Graph<T>, start: T): T[] {
-  const stack: T[] = [start];
-  const visited = new Set<T>();
-  const result: T[] = [];
-
-  while (stack.length) {
-    const v = stack.pop()!;
-    if (visited.has(v)) continue;
-
-    visited.add(v);
-    result.push(v);
-
-    // Push neighbours in reverse order if you want the same order
-    // as the recursive version (depends on adjacency list ordering).
-    for (const n of graph.neighbours(v)) {
-      if (!visited.has(n)) stack.push(n);
+    // If we’ve partitioned correctly, compute the median
+    if (nums1LeftMax <= nums2RightMin && nums2LeftMax <= nums1RightMin) {
+      if ((m + n) % 2 === 1) {              // odd total length
+        return Math.max(nums1LeftMax, nums2LeftMax);
+      } else {                               // even total length
+        return (Math.max(nums1LeftMax, nums2LeftMax) +
+                Math.min(nums1RightMin, nums2RightMin)) / 2;
+      }
+    }
+    // Adjust the binary‑search range
+    else if (nums1LeftMax > nums2RightMin) {
+      high = i - 1;
+    } else {
+      low = i + 1;
     }
   }
 
-  return result;
+  throw new Error("Input arrays are not sorted or invalid");
 }
-const g = new Graph<string>();
-g.addEdge('A', 'B');
-g.addEdge('A', 'C');
-g.addEdge('B', 'D');
-g.addEdge('C', 'D');
-g.addEdge('D', 'E');
-
-console.log('Recursive:', dfsRecursive(g, 'A'));   // e.g. ['A','B','D','E','C']
-console.log('Iterative:', dfsIterative(g, 'A'));   // same set of vertices in DFS order
+console.log(findMedianSortedArrays([1, 3], [2]));                    // 2
+console.log(findMedianSortedArrays([1, 2], [3, 4]));                  // 2.5
+console.log(findMedianSortedArrays([0, 0], [0, 0]));                  // 0
+console.log(findMedianSortedArrays([], [1]));                        // 1
+console.log(findMedianSortedArrays([2], []));                        // 2
