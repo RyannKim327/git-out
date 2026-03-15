@@ -1,97 +1,98 @@
-// ------------------------------------------------------------
-// 1. Node
-// ------------------------------------------------------------
-class TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
+/** A minimal generic priority queue built on a binary heap */
+export class PriorityQueue<T> {
+  /** Internal storage array (0‑based). 0 is the root. */
+  private heap: T[] = [];
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
+  /** Comparator that returns true if a should come before b. */
+  private readonly less: (a: T, b: T) => boolean;
 
-// ------------------------------------------------------------
-// 2. BinarySearchTree
-// ------------------------------------------------------------
-class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
+  /** Number of queued elements */
+  public get size(): number { return this.heap.length; }
 
-  // -------------------------------------------
-  // Insert a value into the BST
-  // -------------------------------------------
-  insert(value: T, comparator?: (a: T, b: T) => number): void {
-    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  /** Peek at the top element without removing it.  Returns undefined if empty. */
+  public peek(): T | undefined { return this.heap[0]; }
 
-    const insertRec = (node: TreeNode<T> | null, val: T): TreeNode<T> => {
-      if (!node) return new TreeNode(val);
-
-      if (compare(val, node.value) < 0) {
-        node.left = insertRec(node.left, val);
-      } else {
-        node.right = insertRec(node.right, val);
-      }
-      return node;
-    };
-
-    this.root = insertRec(this.root, value);
+  constructor(comparator?: (a: T, b: T) => boolean) {
+    // Default to a min‑heap using < for primitives
+    this.less = comparator ?? ((a, b) => (a as any) < (b as any));
   }
 
-  // -------------------------------------------
-  // Search for a value – returns the node or null
-  // -------------------------------------------
-  search(value: T, comparator?: (a: T, b: T) => number): TreeNode<T> | null {
-    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-    let curr = this.root;
+  /** Insert a new element into the queue */
+  public push(item: T): void {
+    this.heap.push(item);
+    this.bubbleUp(this.heap.length - 1);
+  }
 
-    while (curr) {
-      if (compare(value, curr.value) < 0) {
-        curr = curr.left;
-      } else if (compare(value, curr.value) > 0) {
-        curr = curr.right;
-      } else {
-        return curr; // found
-      }
+  /** Remove and return the top element.  Returns undefined if empty. */
+  public pop(): T | undefined {
+    const n = this.heap.length;
+    if (n === 0) return undefined;
+    if (n === 1) return this.heap.pop();
+
+    const top = this.heap[0];
+    this.heap[0] = this.heap.pop() as T; // Set last element to root
+    this.sinkDown(0);
+    return top;
+  }
+
+  /** Swap two indices in the heap */
+  private swap(i: number, j: number): void {
+    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+  }
+
+  /** Restore heap order by moving the element at idx up */
+  private bubbleUp(idx: number): void {
+    const element = this.heap[idx];
+    while (idx > 0) {
+      const parentIdx = (idx - 1) >> 1;
+      const parent = this.heap[parentIdx];
+      if (!this.less(element, parent)) break;
+      this.swap(idx, parentIdx);
+      idx = parentIdx;
     }
-    return null; // not found
   }
 
-  // -------------------------------------------
-  // In‑order traversal – returns an array of values
-  // -------------------------------------------
-  inorder(): T[] {
-    const res: T[] = [];
-    const walk = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      walk(node.left);
-      res.push(node.value);
-      walk(node.right);
-    };
-    walk(this.root);
-    return res;
-  }
+  /** Restore heap order by moving the element at idx down */
+  private sinkDown(idx: number): void {
+    const n = this.heap.length;
+    const element = this.heap[idx];
 
-  // -------------------------------------------
-  // Convenience: return value of inorder traversal
-  // -------------------------------------------
-  toArray(): T[] {
-    return this.inorder();
+    while (true) {
+      const leftIdx = (idx << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let smallestIdx = idx;
+
+      if (leftIdx < n && this.less(this.heap[leftIdx], this.heap[smallestIdx])) {
+        smallestIdx = leftIdx;
+      }
+      if (rightIdx < n && this.less(this.heap[rightIdx], this.heap[smallestIdx])) {
+        smallestIdx = rightIdx;
+      }
+
+      if (smallestIdx === idx) break;
+      this.swap(idx, smallestIdx);
+      idx = smallestIdx;
+    }
   }
 }
+// Minimum priority queue (default)
+const minQ = new PriorityQueue<number>();
+minQ.push(5);
+minQ.push(2);
+minQ.push(8);
+console.log(minQ.peek()); // 2
+console.log(minQ.pop());  // 2
+console.log(minQ.pop());  // 5
 
-// ------------------------------------------------------------
-// 3. Demo
-// ------------------------------------------------------------
-const bst = new BinarySearchTree<number>();
+// Maximum priority queue
+const maxQ = new PriorityQueue<number>((a, b) => a > b);
+maxQ.push(5);
+maxQ.push(2);
+maxQ.push(8);
+console.log(maxQ.pop()); // 8
+interface Task { id: string; priority: number; }
 
-// Inserting some numbers
-[42, 23, 57, 12, 34, 73, 8].forEach(n => bst.insert(n));
-
-console.log('In‑order traversal:', bst.inorder()); // sorted ascending
-
-const foundNode = bst.search(34);
-if (foundNode) {
-  console.log(`Found node with value ${foundNode.value}`);
-} else {
-  console.log('Value not found');
-}
+const taskQueue = new PriorityQueue<Task>((a, b) => a.priority < b.priority); // min‑heap by priority
+taskQueue.push({ id: 'A', priority: 10 });
+taskQueue.push({ id: 'B', priority: 5 });
+console.log(taskQueue.pop()); // { id: 'B', priority: 5 }
