@@ -1,21 +1,37 @@
-// Example array
-const nums: number[] = [42, 1, 17, 3, 99];
+/**
+ * Selection Sort – stable‑like, O(n²) time, O(1) extra space.
+ *
+ * @param arr   The array to be sorted (in‑place).
+ * @param cmp   Optional comparator: (a, b) => number.
+ *              If omitted, numerical ascending order is assumed.
+ */
+export function selectionSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): void {
+  const compare = cmp ?? ((a: any, b: any) => a - b);
 
-// Sort in ascending order
-const asc = [...nums].sort((a, b) => a - b);
-console.log('Ascending:', asc); // [1, 3, 17, 42, 99]
+  for (let i = 0; i < arr.length - 1; i++) {
+    // Assume the smallest is at i.
+    let minIdx = i;
 
-// Sort in descending order
-const desc = [...nums].sort((a, b) => b - a);
-console.log('Descending:', desc); // [99, 42, 17, 3, 1]
-const custom = [...nums].sort((a, b) => {
-  const aEven = a % 2 === 0;
-  const bEven = b % 2 === 0;
-  if (aEven && !bEven) return -1;     // a comes first
-  if (!aEven && bEven) return 1;      // b comes first
-  return a - b;                       // both same parity: numeric order
-});
-console.log(custom); // [ 42, 2, 1, 3, 17, 99 ]
-import _ from 'lodash';
+    // Search the rest of the array for a smaller element.
+    for (let j = i + 1; j < arr.length; j++) {
+      if (compare(arr[j], arr[minIdx]) < 0) {
+        minIdx = j;
+      }
+    }
 
-const order = _.orderBy(nums, [x => x], ['asc']); // asc by numeric value
+    // If the smallest isn't already in place, swap.
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+    }
+  }
+}
+const nums = [64, 25, 12, 22, 11];
+selectionSort(nums);
+console.log(nums); // → [11, 12, 22, 25, 64]
+
+const words = ["pear", "apple", "orange"];
+selectionSort(words, (a, b) => a.localeCompare(b));
+console.log(words); // → ["apple", "orange", "pear"]
