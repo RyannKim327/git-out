@@ -1,39 +1,41 @@
-export class Stack<T> {
-  /** internal buffer – the array that stores the stack items */
-  private readonly items: T[] = [];
-
-  /** push an item onto the stack */
-  push(value: T): void {
-    this.items.push(value);
-  }
-
-  /** pop the top item; returns `undefined` if the stack is empty */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  /** peek at the top item without removing it */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** true if the stack has no elements */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** number of elements currently on the stack */
-  size(): number {
-    return this.items.length;
-  }
+/** A very small “binary‑tree node” type. */
+interface TreeNode {
+  val: number;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
-const stack = new Stack<number>();
+function sumTreeRecursive(root: TreeNode | null): number {
+  if (!root) return 0;                     // base case – no node
+  const leftSum  = sumTreeRecursive(root.left);
+  const rightSum = sumTreeRecursive(root.right);
+  return root.val + leftSum + rightSum;    // process node after its children
+}
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
+  const queue: TreeNode[] = [root];
+  let total = 0;
 
-console.log(stack.peek()); // 30
-console.log(stack.pop());  // 30
-console.log(stack.size()); // 2
-console.log(stack.isEmpty()); // false
+  while (queue.length) {
+    const node = queue.shift()!;   // non‑null assertion – queue always contains real nodes
+    total += node.val;
+
+    if (node.left)  queue.push(node.left);
+    if (node.right) queue.push(node.right);
+  }
+
+  return total;
+}
+// Small example
+const tree: TreeNode = {
+  val: 10,
+  left: { val: 5 },
+  right: {
+    val: 20,
+    left: { val: 15 },
+    right: { val: 25 }
+  }
+};
+
+console.log(sumTreeRecursive(tree)); // 75
+console.log(sumTreeIterative(tree)); // 75
