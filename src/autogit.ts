@@ -1,65 +1,50 @@
 /**
- * Returns the digit present at a given place (0‑based from right to left).
- * Example: getDigit(381, 0) === 1, getDigit(381, 1) === 8, getDigit(381, 2) === 3
+ * Median of two sorted arrays (each array is sorted in ascending order).
+ * Works in O(log (min(nums1.length, nums2.length))) time.
  */
-function getDigit(num: number, place: number): number {
-  return Math.floor(Math.abs(num) / Math.pow(10, place)) % 10;
-}
-
-/**
- * Returns the maximal number of digits among elements of array.
- */
-function maxDigits(arr: number[]): number {
-  if (arr.length === 0) return 0;
-  const max = Math.max(...arr.map(Math.abs));
-  return Math.floor(Math.log10(max)) + 1;
-}
-/**
- * Stable counting sort on `arr` by the digit at `place`.
- * (`digitBase` defaults to 10 – decimal.)
- */
-function countingSortByDigit(arr: number[], place: number, digitBase = 10): number[] {
-  const bucketCount = digitBase;
-  const buckets: number[][] = Array.from({ length: bucketCount }, () => []);
-
-  for (const n of arr) {
-    const digit = getDigit(n, place);
-    buckets[digit].push(n);
+function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Make sure nums1 is the smaller array for a lighter binary‑search range
+  if (nums1.length > nums2.length) {
+    return findMedianSortedArrays(nums2, nums1);
   }
 
-  // Flatten buckets in order; that's the stable result for this digit.
-  return buckets.flat();
-}
-/**
- * Radix sort for non‑negative integers.
- * @param arr array of numbers (non‑negative, but the routine will work with any integers once you wrap them)
- * @returns sorted array (stable)
- */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length <= 1) return [...arr]; // copy so caller doesn’t mutate input
+  const m = nums1.length;
+  const n = nums2.length;
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-  const numDigits = maxDigits(arr);
-  let sorted = [...arr];
+  let low = 0;
+  let high = m;
 
-  for (let place = 0; place < numDigits; place++) {
-    sorted = countingSortByDigit(sorted, place);
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2);      // partition in nums1
+    const j = halfLen - i;                       // partition in nums2
+
+    const nums1LeftMax  = (i === 0) ? -Infinity : nums1[i - 1];
+    const nums1RightMin = (i === m) ? Infinity  : nums1[i];
+    const nums2LeftMax  = (j === 0) ? -Infinity : nums2[j - 1];
+    const nums2RightMin = (j === n) ? Infinity  : nums2[j];
+
+    // If we’ve partitioned correctly, compute the median
+    if (nums1LeftMax <= nums2RightMin && nums2LeftMax <= nums1RightMin) {
+      if ((m + n) % 2 === 1) {              // odd total length
+        return Math.max(nums1LeftMax, nums2LeftMax);
+      } else {                               // even total length
+        return (Math.max(nums1LeftMax, nums2LeftMax) +
+                Math.min(nums1RightMin, nums2RightMin)) / 2;
+      }
+    }
+    // Adjust the binary‑search range
+    else if (nums1LeftMax > nums2RightMin) {
+      high = i - 1;
+    } else {
+      low = i + 1;
+    }
   }
 
-  return sorted;
+  throw new Error("Input arrays are not sorted or invalid");
 }
-export function radixSortFull(arr: number[]): number[] {
-  const negatives = arr.filter(n => n < 0).map(n => -n);
-  const positives = arr.filter(n => n >= 0);
-
-  const sortedNeg = radixSort(negatives).reverse().map(n => -n);
-  const sortedPos = radixSort(positives);
-
-  return [...sortedNeg, ...sortedPos];
-}
-import { radixSortFull } from './radixSort';
-
-const data = [170, 45, 75, 90, 802, 24, 2, 66, -15, -302, 0];
-const sorted = radixSortFull(data);
-
-console.log(sorted);
-// → [-302, -15, 0, 2, 24, 45, 66, 75, 90, 170, 802]
+console.log(findMedianSortedArrays([1, 3], [2]));                    // 2
+console.log(findMedianSortedArrays([1, 2], [3, 4]));                  // 2.5
+console.log(findMedianSortedArrays([0, 0], [0, 0]));                  // 0
+console.log(findMedianSortedArrays([], [1]));                        // 1
+console.log(findMedianSortedArrays([2], []));                        // 2
