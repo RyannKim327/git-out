@@ -1,37 +1,20 @@
 /**
- * Selection Sort – stable‑like, O(n²) time, O(1) extra space.
+ * Returns true if the given array is in strictly non‑decreasing order.
+ * (Every element must be ≤ the next one.)
  *
- * @param arr   The array to be sorted (in‑place).
- * @param cmp   Optional comparator: (a, b) => number.
- *              If omitted, numerical ascending order is assumed.
+ * @param arr  The array to test
  */
-export function selectionSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): void {
-  const compare = cmp ?? ((a: any, b: any) => a - b);
-
+function isSortedAscending<T>(arr: T[]): boolean {
   for (let i = 0; i < arr.length - 1; i++) {
-    // Assume the smallest is at i.
-    let minIdx = i;
-
-    // Search the rest of the array for a smaller element.
-    for (let j = i + 1; j < arr.length; j++) {
-      if (compare(arr[j], arr[minIdx]) < 0) {
-        minIdx = j;
-      }
-    }
-
-    // If the smallest isn't already in place, swap.
-    if (minIdx !== i) {
-      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+    // If any element is larger than the one that follows, the array isn’t sorted.
+    if (arr[i] > arr[i + 1]) {
+      return false;
     }
   }
+  return true;
 }
-const nums = [64, 25, 12, 22, 11];
-selectionSort(nums);
-console.log(nums); // → [11, 12, 22, 25, 64]
+const nums = [1, 2, 2, 5, 9];
+console.log(isSortedAscending(nums)); // true
 
-const words = ["pear", "apple", "orange"];
-selectionSort(words, (a, b) => a.localeCompare(b));
-console.log(words); // → ["apple", "orange", "pear"]
+const bad = [1, 3, 2, 4];
+console.log(isSortedAscending(bad));  // false
