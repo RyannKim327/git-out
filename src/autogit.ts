@@ -1,59 +1,25 @@
 /**
- * Shell sort – a simple, in‑place algorithm that improves on insertion sort.
- * Sorts an array of numbers in ascending order.
- *
- * @param arr The array to sort (modified in place)
- * @param compare Optional compare function (defaults to numeric comparison)
+ * Returns true if `n` is a prime number.
  */
-export function shellSort(
-  arr: number[],
-  compare?: (a: number, b: number) => number
-): void {
-  const len = arr.length;
-  const cmp = compare ?? ((a, b) => a - b);
+export function isPrime(n: number): boolean {
+  // Prime numbers are > 1
+  if (n <= 1) return false;
 
-  // A common gap sequence: halving each time (Shell's original)
-  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Gapped insertion sort
-    for (let i = gap; i < len; i++) {
-      let temp = arr[i];
-      let j = i;
+  // 2 and 3 are the only even/odd primes
+  if (n <= 3) return true;
 
-      // Move elements that are greater than temp backward by 'gap' places
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      // Bring temp into its spot
-      arr[j] = temp;
-    }
+  // Even numbers > 2 can be rejected right away
+  if (n % 2 === 0) return false;
+
+  // Check only odd divisors up to √n
+  const limit = Math.floor(Math.sqrt(n));
+  for (let d = 3; d <= limit; d += 2) {
+    if (n % d === 0) return false;
   }
+  return true;
 }
-const data = [40, 3, 10, 5, 1, 15];
-shellSort(data);
-
-console.log(data); // [1, 3, 5, 10, 15, 40]
-export function shellSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): void {
-  const len = arr.length;
-  const cmp = compare ?? ((a, b) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
-
-  for (let gap = Math.floor(len / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    for (let i = gap; i < len; i++) {
-      const temp = arr[i];
-      let j = i;
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
-  }
-}
-shellSort(['banana', 'apple', 'pear'], (a, b) => a.localeCompare(b));
+console.log(isPrime(2));  // true
+console.log(isPrime(15)); // false
+console.log(isPrime(17)); // true
+console.log(isPrime(1));  // false
+console.log(isPrime(-5)); // false
