@@ -1,51 +1,32 @@
-// A classic singly‑linked‑list node
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+// largestPrimeFactor.ts
+export function largestPrimeFactor(n: number): number | null {
+    if (n < 2) return null;          // No prime factor for 0, 1 or negatives
+
+    let largest = 0;
+
+    // Handle factor 2 first – it’s the only even prime
+    while (n % 2 === 0) {
+        largest = 2;
+        n = Math.floor(n / 2);
+    }
+
+    // Now n is odd.  Test odd divisors from 3 upward.
+    // Only need to go up to sqrt(n); beyond that any remaining n is prime.
+    for (let d = 3; d * d <= n; d += 2) {
+        while (n % d === 0) {
+            largest = d;
+            n = Math.floor(n / d);
+        }
+    }
+
+    // If after the loop n > 1 it means n itself is prime and larger
+    // than any divisor we removed.
+    if (n > 1) largest = n;
+
+    return largest;
 }
-
-/**
- * Returns the nth node from the end (1‑based) or null if n is out of range.
- */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;          // natural guard for mis‑ed input
-
-  let first: ListNode<T> | null = head;
-  let second: ListNode<T> | null = head;
-
-  /* Advance `first` n steps ahead. */
-  for (let i = 0; i < n; i++) {
-    if (!first) return null;   // n is larger than list length
-    first = first.next;
-  }
-
-  /* Move both pointers until `first` hits the end. */
-  while (first) {
-    first = first.next;
-    second = second!.next;     // second is guaranteed not null here
-  }
-
-  return second;   // `second` is the nth node from the end
-}
-function nthFromEndTwoPass<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let len = 0;
-  for (let cur = head; cur; cur = cur.next) len++;
-
-  if (n <= 0 || n > len) return null;
-
-  let cur = head;
-  for (let i = 0; i < len - n; i++) cur = cur!.next;
-
-  return cur;
-}
-// Example list: 1 → 2 → 3 → 4 → 5
-const tail = new ListNode(5);
-const middle = new ListNode(4, tail);
-const head = new ListNode(1,
-           new ListNode(2,
-           new ListNode(3,
-           middle)));
-
-console.log(nthFromEnd(head, 1)?.val); // 5
-console.log(nthFromEnd(head, 2)?.val); // 4
-console.log(nthFromEnd(head, 5)?.val); // 1
-console.log(nthFromEnd(head, 6));      // null
+console.log(largestPrimeFactor(210)); // 7
+console.log(largestPrimeFactor(2));   // 2
+console.log(largestPrimeFactor(17));  // 17
+console.log(largestPrimeFactor(18));  // 3
+console.log(largestPrimeFactor(0));   // null
