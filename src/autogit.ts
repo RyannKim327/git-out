@@ -1,81 +1,112 @@
-class ListNode<T> {
-  data: T;
-  next: ListNode<T> | null = null;
+/**
+ * Generic type that can be compared with the <=> operator.
+ * For custom objects you can supply a comparator function.
+ */
+type Comparable = number | string | boolean;
 
-  constructor(data: T) {
-    this.data = data;
+/**
+ * Swap two elements in an array
+ */
+function swap<T>(arr: T[], i: number, j: number): void {
+  const tmp = arr[i];
+  arr[i] = arr[j];
+  arr[j] = tmp;
+}
+
+/**
+ * Heapify the subtree rooted at `i`, assuming that the binary trees
+ * rooted at its children are already heaps.
+ *
+ * @param arr    the array
+ * @param heapSize the current size of the heap
+ * @param i      the index of the root of the subtree
+ * @param compare comparison function (a, b) => true if a > b
+ */
+function heapify<T>(
+  arr: T[],
+  heapSize: number,
+  i: number,
+  compare: (a: T, b: T) => boolean
+): void {
+  let largest = i;
+  const left   = 2 * i + 1;
+  const right  = 2 * i + 2;
+
+  if (left < heapSize && compare(arr[left], arr[largest])) {
+    largest = left;
+  }
+  if (right < heapSize && compare(arr[right], arr[largest])) {
+    largest = right;
+  }
+
+  if (largest !== i) {
+    swap(arr, i, largest);
+    heapify(arr, heapSize, largest, compare);
   }
 }
-export class LinkedListQueue<T> {
-  private head: ListNode<T> | null = null; // front
-  private tail: ListNode<T> | null = null; // rear
-  private _size = 0;
 
-  /** Enqueue the value at the rear */
-  enqueue(value: T): void {
-    const node = new ListNode(value);
-
-    if (!this.tail) {        // empty queue
-      this.head = this.tail = node;
-    } else {
-      this.tail.next = node;
-      this.tail = node;
-    }
-    this._size++;
-  }
-
-  /** Dequeue the value at the front */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined; // empty
-
-    const value = this.head.data;
-    this.head = this.head.next;
-
-    if (!this.head) {          // queue became empty
-      this.tail = null;
-    }
-
-    this._size--;
-    return value;
-  }
-
-  /** Peek at the front without removing it */
-  peek(): T | undefined {
-    return this.head?.data;
-  }
-
-  /** Current number of elements */
-  size(): number {
-    return this._size;
-  }
-
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Consume the internal list into an array (useful for tests) */
-  toArray(): T[] {
-    const arr: T[] = [];
-    let node = this.head;
-    while (node) {
-      arr.push(node.data);
-      node = node.next;
-    }
-    return arr;
+/**
+ * Build a max‑heap from an unsorted array
+ */
+function buildMaxHeap<T>(
+  arr: T[],
+  compare: (a: T, b: T) => boolean
+): void {
+  const heapSize = arr.length;
+  // Start from the last non‑leaf node
+  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
+    heapify(arr, heapSize, i, compare);
   }
 }
-const q = new LinkedListQueue<number>();
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+/**
+ * Heap sort – sorts `arr` *in place*.
+ *
+ * @param arr      the array to sort
+ * @param compare  optional comparator; defaults to (a > b)
+ */
+export function heapSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => boolean
+): void {
+  const cmp = compare ?? ((a: any, b: any) => a > b);
 
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size());    // 1
-console.log(q.isEmpty()); // false
+  buildMaxHeap(arr, cmp);
 
-q.dequeue();              // removes 30
-console.log(q.isEmpty()); // true
+  for (let i = arr.length - 1; i > 0; i--) {
+    // The max element is at index 0; move it to its final place
+    swap(arr, 0, i);
+    // Re‑heapify the reduced heap
+    heapify(arr, i, 0, cmp);
+  }
+}
+
+/* --------------------------------------------------------------------- */
+/* Example usage & tiny tests                                           */
+/* --------------------------------------------------------------------- */
+
+// 1️⃣ Numbers ---------------------------------------------------------
+const nums = [5, 3, 8, 4, 1, 7, 2, 6];
+heapSort(nums);
+console.log('Sorted numbers:', nums); // [1, 2, 3, 4, 5, 6, 7, 8]
+
+// 2️⃣ Strings ---------------------------------------------------------
+const words = ['pear', 'apple', 'orange', 'banana'];
+heapSort(words); // default lexicographic order
+console.log('Sorted words:', words); // ['apple', 'banana', 'orange', 'pear']
+
+// 3️⃣ Custom objects --------------------------------------------------
+interface Person { name: string; age: number }
+const people: Person[] = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob',   age: 22 },
+  { name: 'Eva',   age: 27 }
+];
+// Sort by age ascending
+heapSort(people, (a, b) => a.age > b.age);
+console.log('People sorted by age:', people);
+/* [
+  { name: 'Bob', age: 22 },
+  { name: 'Eva', age: 27 },
+  { name: 'Alice', age: 30 }
+] */
