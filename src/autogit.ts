@@ -1,59 +1,65 @@
 /**
- * Return the index of the first occurrence of `pattern` inside `text`,
- * or -1 if the pattern is absent.
+ * Returns the digit present at a given place (0‑based from right to left).
+ * Example: getDigit(381, 0) === 1, getDigit(381, 1) === 8, getDigit(381, 2) === 3
  */
-export function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0; // trivially found at start
-
-  const lps = computeLPSArray(pattern); // longest‑prefix‑suffix table
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) { // whole pattern matched
-        return i - j; // match start index
-      }
-    } else if (j > 0) {
-      // mismatch after j matches – skip ahead by lps[j‑1]
-      j = lps[j - 1];
-    } else {
-      // mismatch at start of pattern
-      i++;
-    }
-  }
-
-  return -1; // no match
+function getDigit(num: number, place: number): number {
+  return Math.floor(Math.abs(num) / Math.pow(10, place)) % 10;
 }
 
 /**
- * Pre‑process the pattern to build the “longest prefix that is also a suffix”
- * (LPS) array. lps[i] = the length of the longest proper prefix of
- * pattern[0..i] that is also a suffix of pattern[0..i].
+ * Returns the maximal number of digits among elements of array.
  */
-function computeLPSArray(pattern: string): number[] {
-  const lps: number[] = Array(pattern.length).fill(0);
-  let len = 0;   // length of previous longest prefix suffix
-  let i = 1;     // lps[0] is always 0
+function maxDigits(arr: number[]): number {
+  if (arr.length === 0) return 0;
+  const max = Math.max(...arr.map(Math.abs));
+  return Math.floor(Math.log10(max)) + 1;
+}
+/**
+ * Stable counting sort on `arr` by the digit at `place`.
+ * (`digitBase` defaults to 10 – decimal.)
+ */
+function countingSortByDigit(arr: number[], place: number, digitBase = 10): number[] {
+  const bucketCount = digitBase;
+  const buckets: number[][] = Array.from({ length: bucketCount }, () => []);
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else if (len !== 0) {
-      // use the previous lps value to avoid re‑checking
-      len = lps[len - 1];
-    } else {
-      lps[i] = 0;
-      i++;
-    }
+  for (const n of arr) {
+    const digit = getDigit(n, place);
+    buckets[digit].push(n);
   }
 
-  return lps;
+  // Flatten buckets in order; that's the stable result for this digit.
+  return buckets.flat();
 }
-console.log(kmpSearch("ababcabcababc", "abc"));   // 2
-console.log(kmpSearch("ababcabcababc", "abcd"));  // -1
-console.log(kmpSearch("aaaaa", "aaa"));           // 0
+/**
+ * Radix sort for non‑negative integers.
+ * @param arr array of numbers (non‑negative, but the routine will work with any integers once you wrap them)
+ * @returns sorted array (stable)
+ */
+export function radixSort(arr: number[]): number[] {
+  if (arr.length <= 1) return [...arr]; // copy so caller doesn’t mutate input
+
+  const numDigits = maxDigits(arr);
+  let sorted = [...arr];
+
+  for (let place = 0; place < numDigits; place++) {
+    sorted = countingSortByDigit(sorted, place);
+  }
+
+  return sorted;
+}
+export function radixSortFull(arr: number[]): number[] {
+  const negatives = arr.filter(n => n < 0).map(n => -n);
+  const positives = arr.filter(n => n >= 0);
+
+  const sortedNeg = radixSort(negatives).reverse().map(n => -n);
+  const sortedPos = radixSort(positives);
+
+  return [...sortedNeg, ...sortedPos];
+}
+import { radixSortFull } from './radixSort';
+
+const data = [170, 45, 75, 90, 802, 24, 2, 66, -15, -302, 0];
+const sorted = radixSortFull(data);
+
+console.log(sorted);
+// → [-302, -15, 0, 2, 24, 45, 66, 75, 90, 170, 802]
