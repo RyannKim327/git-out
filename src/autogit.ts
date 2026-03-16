@@ -1,112 +1,124 @@
-/**
- * Generic type that can be compared with the <=> operator.
- * For custom objects you can supply a comparator function.
- */
-type Comparable = number | string | boolean;
+// A node identifier can be any string or number
+export type Vertex = string | number;
 
-/**
- * Swap two elements in an array
- */
-function swap<T>(arr: T[], i: number, j: number): void {
-  const tmp = arr[i];
-  arr[i] = arr[j];
-  arr[j] = tmp;
+// Directed edge with a non‑negative weight
+export interface Edge {
+    to: Vertex;
+    cost: number;
 }
 
-/**
- * Heapify the subtree rooted at `i`, assuming that the binary trees
- * rooted at its children are already heaps.
- *
- * @param arr    the array
- * @param heapSize the current size of the heap
- * @param i      the index of the root of the subtree
- * @param compare comparison function (a, b) => true if a > b
- */
-function heapify<T>(
-  arr: T[],
-  heapSize: number,
-  i: number,
-  compare: (a: T, b: T) => boolean
-): void {
-  let largest = i;
-  const left   = 2 * i + 1;
-  const right  = 2 * i + 2;
+// Adjacency list representation
+export type Graph = Map<Vertex, Edge[]>;
 
-  if (left < heapSize && compare(arr[left], arr[largest])) {
-    largest = left;
-  }
-  if (right < heapSize && compare(arr[right], arr[largest])) {
-    largest = right;
-  }
+// Result of dijkstra: distance to each node, and the shortest‑path tree
+export interface DijkstraResult {
+    distances: Map<Vertex, number>;
+    previous: Map<Vertex, Vertex | null>;
+}
+class MinHeap {
+    private data: [number, Vertex][] = [];
 
-  if (largest !== i) {
-    swap(arr, i, largest);
-    heapify(arr, heapSize, largest, compare);
-  }
+    isEmpty() {
+        return this.data.length === 0;
+    }
+
+    push(item: [number, Vertex]) {
+        this.data.push(item);
+        this.bubbleUp(this.data.length - 1);
+    }
+
+    pop(): [number, Vertex] | undefined {
+        if (this.isEmpty()) return undefined;
+        const root = this.data[0];
+        const last = this.data.pop()!;
+        if (!this.isEmpty()) {
+            this.data[0] = last;
+            this.bubbleDown(0);
+        }
+        return root;
+    }
+
+    private bubbleUp(i: number) {
+        while (i > 0) {
+            const parent = (i - 1) >> 1;
+            if (this.data[parent][0] <= this.data[i][0]) break;
+            [this.data[parent], this.data[i]] = [this.data[i], this.data[parent]];
+            i = parent;
+        }
+    }
+
+    private bubbleDown(i: number) {
+        const n = this.data.length;
+        while (true) {
+            const left = (i << 1) + 1;
+            const right = left + 1;
+            let smallest = i;
+
+            if (left < n && this.data[left][0] < this.data[smallest][0]) smallest = left;
+            if (right < n && this.data[right][0] < this.data[smallest][0]) smallest = right;
+
+            if (smallest === i) break;
+
+            [this.data[i], this.data[smallest]] = [this.data[smallest], this.data[i]];
+            i = smallest;
+        }
+    }
+}
+export function dijkstra(
+    graph: Graph,
+    source: Vertex
+): DijkstraResult {
+    const distances = new Map<Vertex, number>();
+    const previous = new Map<Vertex, Vertex | null>();
+
+    // init
+    graph.forEach((_, v) => {
+        distances.set(v, Infinity);
+        previous.set(v, null);
+    });
+    distances.set(source, 0);
+
+    const pq = new MinHeap();
+    pq.push([0, source]);
+
+    while (!pq.isEmpty()) {
+        const [distU, u] = pq.pop()!;
+
+        // (optional) skip stale queue entries
+        if (distU > distances.get(u)!) continue;
+
+        const edges = graph.get(u) ?? [];
+        for (const { to: v, cost: w } of edges) {
+            const alt = distU + w;
+            if (alt < distances.get(v)!) {
+                distances.set(v, alt);
+                previous.set(v, u);
+                pq.push([alt, v]);
+            }
+        }
+    }
+
+    return { distances, previous };
+}
+const g: Graph = new Map([
+    ['A', [{ to: 'B', cost: 5 }, { to: 'C', cost: 10 }]],
+    ['B', [{ to: 'C', cost: 3 }, { to: 'D', cost: 2 }]],
+    ['C', [{ to: 'D', cost: 1 }]],
+    ['D', []]
+]);
+
+const { distances, previous } = dijkstra(g, 'A');
+console.log('Distances:', distances);
+console.log('Previous:', previous);
+
+// Reconstruct path A → D
+function buildPath(prev: Map<Vertex, Vertex | null>, target: Vertex) {
+    const path: Vertex[] = [];
+    for (let v = target; v !== null; v = prev.get(v)!) path.unshift(v);
+    return path;
 }
 
-/**
- * Build a max‑heap from an unsorted array
- */
-function buildMaxHeap<T>(
-  arr: T[],
-  compare: (a: T, b: T) => boolean
-): void {
-  const heapSize = arr.length;
-  // Start from the last non‑leaf node
-  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
-    heapify(arr, heapSize, i, compare);
-  }
-}
-
-/**
- * Heap sort – sorts `arr` *in place*.
- *
- * @param arr      the array to sort
- * @param compare  optional comparator; defaults to (a > b)
- */
-export function heapSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => boolean
-): void {
-  const cmp = compare ?? ((a: any, b: any) => a > b);
-
-  buildMaxHeap(arr, cmp);
-
-  for (let i = arr.length - 1; i > 0; i--) {
-    // The max element is at index 0; move it to its final place
-    swap(arr, 0, i);
-    // Re‑heapify the reduced heap
-    heapify(arr, i, 0, cmp);
-  }
-}
-
-/* --------------------------------------------------------------------- */
-/* Example usage & tiny tests                                           */
-/* --------------------------------------------------------------------- */
-
-// 1️⃣ Numbers ---------------------------------------------------------
-const nums = [5, 3, 8, 4, 1, 7, 2, 6];
-heapSort(nums);
-console.log('Sorted numbers:', nums); // [1, 2, 3, 4, 5, 6, 7, 8]
-
-// 2️⃣ Strings ---------------------------------------------------------
-const words = ['pear', 'apple', 'orange', 'banana'];
-heapSort(words); // default lexicographic order
-console.log('Sorted words:', words); // ['apple', 'banana', 'orange', 'pear']
-
-// 3️⃣ Custom objects --------------------------------------------------
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob',   age: 22 },
-  { name: 'Eva',   age: 27 }
-];
-// Sort by age ascending
-heapSort(people, (a, b) => a.age > b.age);
-console.log('People sorted by age:', people);
-/* [
-  { name: 'Bob', age: 22 },
-  { name: 'Eva', age: 27 },
-  { name: 'Alice', age: 30 }
-] */
+console.log('Path A → D:', buildPath(previous, 'D'));
+Distances: Map { 'A' => 0, 'B' => 5, 'C' => 7, 'D' => 8 }
+Previous: Map { 'A' => null, 'B' => 'A', 'C' => 'B', 'D' => 'C' }
+Path A → D: ['A', 'B', 'C', 'D']
