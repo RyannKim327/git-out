@@ -1,45 +1,36 @@
-/**
- * Returns the contiguous segment of `arr` that yields the highest possible sum.
- *
- * @param arr - Array of numbers (integer or float)
- * @returns An object containing:
- *   `maxSum`  – the total sum of the best segment
- *   `start`   – the index where the segment begins
- *   `end`     – the index where the segment ends (inclusive)
- */
-function maxSubarray(arr: number[]) {
-  if (arr.length === 0) throw new Error('Array cannot be empty');
+// Random-ish TypeScript example that pulls in axios
 
-  let bestSum = arr[0];
-  let currentSum = arr[0];
-  let bestStart = 0;
-  let bestEnd = 0;
-  let tempStart = 0;
+import axios from 'axios'
 
-  for (let i = 1; i < arr.length; i++) {
-    const val = arr[i];
-
-    // Either start a new sub‑array at i or extend the existing one
-    if (currentSum + val < val) {
-      currentSum = val;
-      tempStart = i;       // new potential start
-    } else {
-      currentSum += val;   // keep extending
-    }
-
-    // Update the best segment seen so far
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
-  }
-
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+interface Todo {
+  userId: number
+  id: number
+  title: string
+  completed: boolean
 }
-const data = [-2, -3, 4, -1, -2, 1, 5, -3];
-const result = maxSubarray(data);
-console.log(result);
-// Expected output:
-// { maxSum: 7, start: 2, end: 6 }
-// (segment [4, -1, -2, 1, 5] sums to 7)
+
+const client = axios.create({
+  baseURL: 'https://jsonplaceholder.typicode.com',
+  timeout: 3000,
+})
+
+async function fetchTodos(limit = 5): Promise<Todo[]> {
+  const { data } = await client.get<Todo[]>('/todos')
+  return data.slice(0, limit)
+}
+
+async function toggleTodo(id: number, completed: boolean): Promise<void> {
+  await client.patch(`/todos/${id}`, { completed })
+}
+
+;(async () => {
+  try {
+    const todos = await fetchTodos()
+    console.log('Sample todos:', todos)
+
+    await toggleTodo(todos[0].id, !todos[0].completed)
+    console.log(`Todo ${todos[0].id} status flipped!`)
+  } catch (err) {
+    console.error('Something went wrong:', err instanceof Error ? err.message : err)
+  }
+})()
