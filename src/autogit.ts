@@ -1,47 +1,67 @@
-function countWordOccurrences(text: string, word: string): number {
-  // Escape any regex meta‑characters in the search word
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * A generic insertion‑sort implementation.
+ *
+ * @param arr The array to sort (in‑place).
+ * @param cmp Optional comparison callback. It should return:
+ *            < 0 if a < b
+ *            = 0 if a === b
+ *            > 0 if a > b
+ *
+ * @returns The same array reference, now sorted.
+ */
+export function insertionSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): T[] {
+  // If no custom comparator is supplied, use the default < / >.
+  const compare = cmp
+    ? cmp
+    : (a: T, b: T) => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore - allow primitive coercion for < and > operators
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+      };
 
-  // \b = word boundary, i = ignore case, g = global (find all)
-  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+  // Iterate from the second element to the end.
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-  // .match() returns an array of all matches, null if none
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
+    // Shift larger elements one position to the right.
+    while (j >= 0 && compare(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    // Place key in its correct position.
+    arr[j + 1] = key;
+  }
+
+  return arr;
+}
+const numbers = [5, 3, 8, 1, 4];
+insertionSort(numbers);
+console.log(numbers); // [1, 3, 4, 5, 8]
+const names = ["Zoe", "Andrew", "bella", "Clara"];
+insertionSort(names);
+console.log(names); // ["Andrew", "Clara", "bella", "Zoe"]
+interface Item {
+  id: number;
+  name: string;
 }
 
-// Usage
-const msg = "The quick brown fox jumps over the lazy fox. Foxes are clever.";
-console.log(countWordOccurrences(msg, "fox")); // → 2 (fox, fox)
-const regex = new RegExp(escaped, 'gi');
-function countSplit(text: string, word: string): number {
-  // Empty string returns 0
-  if (!text) return 0;
-  return text.split(word).length - 1;
-}
-function countWithMatchAll(text: string, word: string): number {
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
-  const allMatches = text.matchAll(regex); // Iterable<{ index: … }>
+const items: Item[] = [
+  { id: 3, name: "apple" },
+  { id: 1, name: "orange" },
+  { id: 2, name: "banana" },
+];
 
-  let count = 0;
-  for (const _ of allMatches) count++;
-  return count;
-}
-export function countOccurrences(
-  text: string,
-  word: string,
-  options?: { caseSensitive?: boolean; wholeWord?: boolean }
-): number {
-  const { caseSensitive = false, wholeWord = true } = options ?? {};
-
-  // Escape regex meta‑chars
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-  let pattern = wholeWord ? `\\b${escaped}\\b` : escaped;
-  let flags = 'g' + (caseSensitive ? '' : 'i');
-
-  const regex = new RegExp(pattern, flags);
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
+insertionSort(items, (a, b) => a.id - b.id);
+console.log(items);
+// [{ id: 1, name: "orange" }, { id: 2, name: "banana" }, { id: 3, name: "apple" }]
+export function sorted<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
+  const copy = [...arr];
+  return insertionSort(copy, cmp);
 }
