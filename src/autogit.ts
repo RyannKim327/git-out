@@ -1,100 +1,77 @@
-/* 1️⃣  A node holds a value and a pointer to the next node   */
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
+low  = 0
+high = length–1
 
-/* 2️⃣  The list itself                                               */
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+while low ≤ high and target ∈ [arr[low], arr[high]]:
+    // Edge cases
+    if arr[low] == arr[high]:
+        return (arr[low] == target) ? low : -1
 
-  /* Useful for debugging or quick inspection */
-  get size() : number { return this._size; }
+    // Interpolated index
+    pos = low + ((target – arr[low]) * (high – low))
+          / (arr[high] – arr[low])
 
-  /* 🔄  Add at the end – amortised O(1)                      */
-  push(val: T) : void {
-    const node = new ListNode(val);
-    if (!this.head) {   // first element
-      this.head = this.tail = node;
+    // Clamp to array bounds
+    pos = Math.round(pos)
+
+    if arr[pos] == target:
+        return pos
+    else if arr[pos] < target:
+        low = pos + 1
+    else:
+        high = pos – 1
+
+return –1   // not found
+/**
+ * Interpolation search for a strictly sorted numeric array.
+ * @param arr   - Sorted numbers (ascending)
+ * @param target - Number to find
+ * @returns Index of target, or -1 if not found
+ */
+export function interpolationSearch(
+  arr: readonly number[],
+  target: number
+): number {
+  if (arr.length === 0) return -1;
+
+  let low = 0;
+  let high = arr.length - 1;
+
+  // Keep going while target is inside the current window
+  while (low <= high && target >= arr[low] && target <= arr[high]) {
+    // All remaining values equal – either hit or miss.
+    if (arr[low] === arr[high]) {
+      return arr[low] === target ? low : -1;
+    }
+
+    // Linear interpolation to guess position.
+    const pos =
+      low +
+      Math.round(
+        ((target - arr[low]) * (high - low)) / (arr[high] - arr[low])
+      );
+
+    // Just in case rounding pushes us outside: clamp bounds.
+    const index = Math.min(Math.max(pos, low), high);
+
+    const value = arr[index];
+    if (value === target) {
+      return index;
+    }
+    if (value < target) {
+      low = index + 1;
     } else {
-      // tail is guaranteed not null here
-      this.tail!.next = node;
-      this.tail = node;
+      high = index - 1;
     }
-    this._size++;
   }
 
-  /* ⬅️  Remove from the end – O(n) because we’d have to
-        find the previous node. This simple version walks
-        to the node before the tail.                        */
-  pop() : T | undefined {
-    if (!this.head) return;
-    if (this.head === this.tail) {   // one element left
-      const val = this.head.value;
-      this.head = this.tail = null;
-      this._size = 0;
-      return val;
-    }
-
-    let prev = this.head;
-    while (prev.next !== this.tail) {
-      prev = prev.next!;
-    }
-    const val = this.tail!.value;
-    prev.next = null;
-    this.tail = prev;
-    this._size--;
-    return val;
-  }
-
-  /* 🔍  Find the index of a value – O(n)                   */
-  indexOf(val: T) : number {
-    let cur = this.head;
-    let i = 0;
-    while (cur) {
-      if (cur.value === val) return i;
-      cur = cur.next;
-      i++;
-    }
-    return -1;
-  }
-
-  /* 🔢  Grab the value at an index – guard against
-        out‑of‑range access. O(n)                               */
-  getAt(index: number) : T | undefined {
-    if (index < 0 || index >= this._size) return;
-    let cur = this.head;
-    let i = 0;
-    while (cur && i < index) {
-      cur = cur.next;
-      i++;
-    }
-    return cur?.value;
-  }
-
-  /* 🔁  Iterate over values – handy for `for..of`            */
-  [Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    return {
-      next: () => {
-        if (!current) return { done: true, value: undefined };
-        const value = current.value;
-        current = current.next;
-        return { done: false, value };
-      }
-    };
-  }
+  return -1; // Not found
 }
+const sorted = [3, 7, 13, 19, 23, 29, 31, 47, 53, 59];
+const target = 23;
 
-/* 3️⃣  Quick sanity test                                   */
-const nums = new LinkedList<number>();
-nums.push(10);
-nums.push(20);
-nums.push(30);
-console.log(nums.size);          // 3
-console.log([...nums]);          // [10, 20, 30]
-console.log(nums.pop());         // 30
-console.log(nums.size);          // 2
-console.log(nums.indexOf(20));   // 1
-console.log(nums.getAt(0));      // 10
+const idx = interpolationSearch(sorted, target);
+console.log(idx); // → 4
+console.log(interpolationSearch(sorted, 22)); // → -1
+const idx = interpolationSearch(sortedArray, key);
+if (idx !== -1) console.log(`Found at ${idx}`);
+else console.log('Not there');
