@@ -1,88 +1,103 @@
-/**
- * Merge‑Sort for an array.
- *
- * @param arr   The array to sort.
- * @param cmp   Optional comparison function. If omitted, the default <, > operators are used.
- * @returns The sorted array (in‑place, but a new array is returned for convenience).
- */
-export function mergeSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  // No need to sort if the array is empty or has a single element.
-  if (arr.length <= 1) return arr.slice();
-
-  const mid = Math.floor(arr.length / 2);
-  const left = mergeSort(arr.slice(0, mid), cmp);
-  const right = mergeSort(arr.slice(mid), cmp);
-
-  return merge(left, right, cmp);
+/* -------------------------------------------------------------
+   Edge definition – just a source, destination and weight
+------------------------------------------------------------- */
+interface Edge {
+  from: string;      // vertex id (string or number, just pick one type)
+  to: string;
+  weight: number;    // can be negative
 }
 
-/**
- * Merges two sorted arrays into a new sorted array.
- *
- * @param left  The left sorted half.
- * @param right The right sorted half.
- * @param cmp   Comparison function (optional).
- * @returns A new sorted array containing all elements from left and right.
- */
-function merge<T>(
-  left: T[],
-  right: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  const result: T[] = [];
-  let i = 0,
-    j = 0;
+/* -------------------------------------------------------------
+   Bellman‑Ford implementation
+   Parameters
+   ----------  graph: Array<Edge>  – all directed edges
+               source: string      – id of source vertex
+   Returns
+   -------  { dist: Map<string, number>,
+              next: Map<string, string | null>,
+              hasNegativeCycle: boolean }
+------------------------------------------------------------- */
+function bellmanFord(
+  graph: Edge[],
+  source: string
+): { dist: Map<string, number>; next: Map<string, string | null>; hasNegativeCycle: boolean } {
+  const dist = new Map<string, number>();
+  const next = new Map<string, string | null>();
 
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => {
-        // default numeric or string comparison
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-      };
+  // initialise distances
+  graph.forEach(({ from }) => {
+    dist.set(from, Infinity);
+    next.set(from, null);
+  });
+  // if the source isn’t mentioned in any edge, we still need it in the map
+  dist.set(source, 0);
+  next.set(source, null);
 
-  while (i < left.length && j < right.length) {
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
+  // total distinct vertices
+  const vertices = Array.from(dist.keys());
+  const V = vertices.length;
+
+  // Relax edges V−1 times
+  for (let i = 0; i < V - 1; i++) {
+    let didRelax = false;
+    for (const { from, to, weight } of graph) {
+      const dFrom = dist.get(from);
+      const dTo   = dist.get(to);
+      if (dFrom! === Infinity) continue;                   // unreachable
+      const newDist = dFrom! + weight;
+      if (newDist < dTo!) {
+        dist.set(to, newDist);
+        next.set(to, from);
+        didRelax = true;
+      }
+    }
+    // early exit: no distance changed this round → we’re done
+    if (!didRelax) break;
+  }
+
+  // Check for negative‑weight cycles reachable from source
+  let hasNegativeCycle = false;
+  for (const { from, to, weight } of graph) {
+    const dFrom = dist.get(from);
+    const dTo   = dist.get(to);
+    if (dFrom! !== Infinity && dFrom! + weight < dTo!) {
+      hasNegativeCycle = true;
+      break;
     }
   }
 
-  // Attach leftovers … at most one of these will push anything.
-  return result.concat(left.slice(i)).concat(right.slice(j));
+  return { dist, next, hasNegativeCycle };
 }
-// Numbers
-const nums = [38, 27, 43, 3, 9, 82, 10];
-console.log(mergeSort(nums)); // [3, 9, 10, 27, 38, 43, 82]
 
-// Strings
-const words = ["pear", "apple", "banana", "cherry"];
-console.log(mergeSort(words)); // ['apple', 'banana', 'cherry', 'pear']
-
-// Custom type
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: "Alice", age: 34 },
-  { name: "Bob", age: 23 },
-  { name: "Carol", age: 28 }
+/* -------------------------------------------------------------
+   Example usage
+------------------------------------------------------------- */
+const edges: Edge[] = [
+  { from: 'A', to: 'B', weight: 5 },
+  { from: 'A', to: 'C', weight: 2 },
+  { from: 'B', to: 'C', weight: -3 },
+  { from: 'B', to: 'D', weight: 9 },
+  { from: 'C', to: 'D', weight: 12 },
 ];
-console.log(
-  mergeSort(people, (a, b) => a.age - b.age)
-);
-// People sorted by age: Bob, Carol, Alice
-function isSorted<T>(arr: T[], cmp?: (a: T, b: T) => number): boolean {
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0);
-  for (let i = 1; i < arr.length; i++) {
-    if (compare(arr[i - 1], arr[i]) > 0) return false;
-  }
-  return true;
-}
 
-console.log(isSorted(mergeSort([5, 2, 9, 1, 5, 6]))); // true
+const { dist, next, hasNegativeCycle } = bellmanFord(edges, 'A');
+
+if (hasNegativeCycle) {
+  console.log('The graph contains a negative‑weight cycle reachable from A.');
+} else {
+  console.log('Shortest distances from A:');
+  dist.forEach((d, v) => console.log(v, d));
+
+  // helper to print a whole path from source to target
+  function buildPath(target: string): string[] {
+    const path: string[] = [];
+    let cur: string | null = target;
+    while (cur !== null) {
+      path.unshift(cur);
+      cur = next.get(cur) ?? null;
+    }
+    return path;
+  }
+
+  console.log('Path to D:', buildPath('D').join(' → '));
+}
