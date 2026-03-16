@@ -1,77 +1,65 @@
-low  = 0
-high = length–1
-
-while low ≤ high and target ∈ [arr[low], arr[high]]:
-    // Edge cases
-    if arr[low] == arr[high]:
-        return (arr[low] == target) ? low : -1
-
-    // Interpolated index
-    pos = low + ((target – arr[low]) * (high – low))
-          / (arr[high] – arr[low])
-
-    // Clamp to array bounds
-    pos = Math.round(pos)
-
-    if arr[pos] == target:
-        return pos
-    else if arr[pos] < target:
-        low = pos + 1
-    else:
-        high = pos – 1
-
-return –1   // not found
 /**
- * Interpolation search for a strictly sorted numeric array.
- * @param arr   - Sorted numbers (ascending)
- * @param target - Number to find
- * @returns Index of target, or -1 if not found
+ * Returns the digit present at a given place (0‑based from right to left).
+ * Example: getDigit(381, 0) === 1, getDigit(381, 1) === 8, getDigit(381, 2) === 3
  */
-export function interpolationSearch(
-  arr: readonly number[],
-  target: number
-): number {
-  if (arr.length === 0) return -1;
+function getDigit(num: number, place: number): number {
+  return Math.floor(Math.abs(num) / Math.pow(10, place)) % 10;
+}
 
-  let low = 0;
-  let high = arr.length - 1;
+/**
+ * Returns the maximal number of digits among elements of array.
+ */
+function maxDigits(arr: number[]): number {
+  if (arr.length === 0) return 0;
+  const max = Math.max(...arr.map(Math.abs));
+  return Math.floor(Math.log10(max)) + 1;
+}
+/**
+ * Stable counting sort on `arr` by the digit at `place`.
+ * (`digitBase` defaults to 10 – decimal.)
+ */
+function countingSortByDigit(arr: number[], place: number, digitBase = 10): number[] {
+  const bucketCount = digitBase;
+  const buckets: number[][] = Array.from({ length: bucketCount }, () => []);
 
-  // Keep going while target is inside the current window
-  while (low <= high && target >= arr[low] && target <= arr[high]) {
-    // All remaining values equal – either hit or miss.
-    if (arr[low] === arr[high]) {
-      return arr[low] === target ? low : -1;
-    }
-
-    // Linear interpolation to guess position.
-    const pos =
-      low +
-      Math.round(
-        ((target - arr[low]) * (high - low)) / (arr[high] - arr[low])
-      );
-
-    // Just in case rounding pushes us outside: clamp bounds.
-    const index = Math.min(Math.max(pos, low), high);
-
-    const value = arr[index];
-    if (value === target) {
-      return index;
-    }
-    if (value < target) {
-      low = index + 1;
-    } else {
-      high = index - 1;
-    }
+  for (const n of arr) {
+    const digit = getDigit(n, place);
+    buckets[digit].push(n);
   }
 
-  return -1; // Not found
+  // Flatten buckets in order; that's the stable result for this digit.
+  return buckets.flat();
 }
-const sorted = [3, 7, 13, 19, 23, 29, 31, 47, 53, 59];
-const target = 23;
+/**
+ * Radix sort for non‑negative integers.
+ * @param arr array of numbers (non‑negative, but the routine will work with any integers once you wrap them)
+ * @returns sorted array (stable)
+ */
+export function radixSort(arr: number[]): number[] {
+  if (arr.length <= 1) return [...arr]; // copy so caller doesn’t mutate input
 
-const idx = interpolationSearch(sorted, target);
-console.log(idx); // → 4
-console.log(interpolationSearch(sorted, 22)); // → -1
-const idx = interpolationSearch(sortedArray, key);
-if (idx !== -1) console.log(`Found at ${idx}`);
-else console.log('Not there');
+  const numDigits = maxDigits(arr);
+  let sorted = [...arr];
+
+  for (let place = 0; place < numDigits; place++) {
+    sorted = countingSortByDigit(sorted, place);
+  }
+
+  return sorted;
+}
+export function radixSortFull(arr: number[]): number[] {
+  const negatives = arr.filter(n => n < 0).map(n => -n);
+  const positives = arr.filter(n => n >= 0);
+
+  const sortedNeg = radixSort(negatives).reverse().map(n => -n);
+  const sortedPos = radixSort(positives);
+
+  return [...sortedNeg, ...sortedPos];
+}
+import { radixSortFull } from './radixSort';
+
+const data = [170, 45, 75, 90, 802, 24, 2, 66, -15, -302, 0];
+const sorted = radixSortFull(data);
+
+console.log(sorted);
+// → [-302, -15, 0, 2, 24, 45, 66, 75, 90, 170, 802]
