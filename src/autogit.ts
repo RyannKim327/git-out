@@ -1,80 +1,79 @@
-// 1️⃣  Graph node type (you can replace this with a more complex type)
-type Node = string | number;
-
-// 2️⃣  Adjacency list: each node maps to an array of its neighbors
-type Graph = Map<Node, Node[]>;
-
-/**
- * Breadth‑first search: returns the order nodes were visited.
- * @param graph The adjacency list.
- * @param start The node to start from.
- */
-export function bfsTraversal(graph: Graph, start: Node): Node[] {
-  const queue: Node[] = [start];
-  const visited = new Set<Node>([start]);
-  const order: Node[] = [];
-
-  while (queue.length) {
-    const current = queue.shift()!;
-    order.push(current);
-
-    const neighbors = graph.get(current) ?? [];
-    for (const nb of neighbors) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        queue.push(nb);
-      }
-    }
-  }
-
-  return order;
+// A simple graph representation.
+// All nodes must be comparable with === (e.g. numbers, strings, or objects with a unique id).
+interface Graph<T> {
+  /** Return the directly connected nodes of `node`.  */
+  neighbors(node: T): T[];
 }
 
 /**
- * BFS that stops when it finds a target node.
- * Returns the path from start to target (inclusive).
- * @param graph The adjacency list.
- * @param start The node to start from.
- * @param target The node we’re looking for.
+ * Iterative depth‑limited DFS.
+ *
+ * @param graph      the graph to search
+ * @param start      the node to start from
+ * @param goal       the node we are looking for
+ * @param maxDepth   limit recursion depth (0 = only start node)
+ * @returns           true if goal is reachable within maxDepth, false otherwise
  */
-export function bfsPath(graph: Graph, start: Node, target: Node): Node[] | null {
-  if (start === target) return [start];
+function depthLimitedSearch<T>(
+  graph: Graph<T>,
+  start: T,
+  goal: T,
+  maxDepth: number
+): boolean {
+  // Stack entries hold a node and its depth in the search space.
+  const stack: Array<{ node: T; depth: number }> = [{ node: start, depth: 0 }];
+  const visited = new Set<T>();
 
-  const queue: Node[] = [start];
-  const visited = new Set<Node>([start]);
-  const parent = new Map<Node, Node>();
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;   // pop() never returns undefined here
 
-  while (queue.length) {
-    const current = queue.shift()!;
-    for (const nb of graph.get(current) ?? []) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        parent.set(nb, current);
-        if (nb === target) {
-          // Reconstruct path from target back to start
-          const path: Node[] = [target];
-          let p = nb;
-          while (p !== start) {
-            p = parent.get(p)!;
-            path.unshift(p);
-          }
-          return path;
-        }
-        queue.push(nb);
-      }
+    // If we hit the goal, we're done.
+    if (node === goal) return true;
+
+    // Skip revisiting nodes; this keeps the search linear in the number of edges.
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    // Stop exploring deeper than we’re allowed.
+    if (depth === maxDepth) continue;
+
+    // Push neighbours onto the stack with incremented depth.
+    for (const neighbour of graph.neighbors(node)) {
+      // No need to push a node that is already visited; but doing so is harmless.
+      stack.push({ node: neighbour, depth: depth + 1 });
     }
   }
 
-  return null; // target not reachable
+  return false;   // exhausted everything within the depth limit
 }
-const g: Graph = new Map([
-  ['A', ['B', 'C']],
-  ['B', ['D']],
-  ['C', ['E']],
-  ['D', ['F']],
-  ['E', []],
-  ['F', []]
+// Simple adjacency‑list example
+class SimpleGraph implements Graph<number> {
+  adjacency: Map<number, number[]>;
+
+  constructor(edges: Array<[number, number]>) {
+    this.adjacency = new Map();
+    for (const [a, b] of edges) {
+      this.adjacency
+        .get(a) ??= [];
+      this.adjacency.get(a)!.push(b);
+
+      this.adjacency
+        .get(b) ??= [];
+      this.adjacency.get(b)!.push(a);   // undirected
+    }
+  }
+
+  neighbors(node: number): number[] {
+    return this.adjacency.get(node) ?? [];
+  }
+}
+
+const g = new SimpleGraph([
+  [1, 2],
+  [1, 3],
+  [2, 4],
+  [3, 5],
 ]);
 
-console.log(bfsTraversal(g, 'A')); // ["A","B","C","D","E","F"]
-console.log(bfsPath(g, 'A', 'F')); // ["A","B","D","F"]
+console.log(depthLimitedSearch(g, 1, 5, 1)); // false (needs depth 2)
+console.log(depthLimitedSearch(g, 1, 5, 2)); // true
