@@ -1,45 +1,61 @@
-// apiDemo.ts
-// -----------------------------------------------------
-// Example: Call a public JSONPlaceholder API,
-// fetch a post, and log its title & body.
-//
-// Works out of the box in Node≥18 or any modern browser
-// with a `tsconfig.json` that has `"esModuleInterop": true`
-// and `"target": "es2015"` (or later).
+/**
+ * Return the index of `target` in `arr` or -1 if it isn’t present.
+ * `arr` must be sorted in ascending order.
+ */
+export function fibonacciSearch<T>(arr: T[], target: T, lessThan: (a: T, b: T) => boolean): number {
+  const n = arr.length;
 
-// 1.  Types that model the JSON we expect back
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+  /* Step 1 – build the smallest Fibonacci number >= n */
+  let fibMMm2 = 0; // (m-2)th Fibonacci
+  let fibMMm1 = 1; // (m-1)th Fibonacci
+  let fibM = fibMMm2 + fibMMm1; // mth Fibonacci
 
-// 2.  A handy helper that ensures we get JSON
-async function json<T>(resp: Response): Promise<T> {
-  if (!resp.ok) {
-    throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+  while (fibM < n) {
+    fibMMm2 = fibMMm1;
+    fibMMm1 = fibM;
+    fibM = fibMMm2 + fibMMm1;
   }
-  return resp.json() as Promise<T>;
-}
 
-// 3.  The async routine that talks to the API
-async function fetchPost(postId: number): Promise<Post> {
-  const url = `https://jsonplaceholder.typicode.com/posts/${postId}`;
+  /* Step 2 – this will mark the eliminated range from front */
+  let offset = -1;
 
-  const response = await fetch(url);        // ← call the API
-  const post = await json<Post>(response);   // ← parse & type‑check
+  /* While there are elements to be inspected */
+  while (fibM > 1) {
+    // Calculate the index to be checked
+    const i = Math.min(offset + fibMMm2, n - 1);
 
-  return post;
-}
+    /* If target is greater than the value at index, cut the subarray from array[0] to i */
+    if (lessThan(arr[i], target)) {
+      // Move one step further in Fibonacci series
+      fibM = fibMMm1;
+      fibMMm1 = fibMMm2;
+      fibMMm2 = fibM - fibMMm1;
 
-// 4.  Call it and do something with the data
-(async () => {
-  try {
-    const post = await fetchPost(1);
-    console.log(`Post #1 title: ${post.title}`);
-    console.log(`Post #1 body:  ${post.body}`);
-  } catch (err) {
-    console.error("Something went wrong:", err);
+      offset = i;
+    }
+    /* If target is less than the value at index, cut the subarray after i+1 */
+    else if (lessThan(target, arr[i])) {
+      fibM = fibMMm2;
+      fibMMm1 = fibMMm1 - fibMMm2;
+      fibMMm2 = fibM - fibMMm1;
+    }
+    /* Element found – return index */
+    else {
+      return i;
+    }
   }
-})();
+
+  /* Compare the last element with target */
+  if (fibMMm1 && arr[offset + 1] === target) {
+    return offset + 1;
+  }
+
+  /* Not found */
+  return -1;
+}
+const idx = fibonacciSearch(nums, target, (a, b) => a < b);
+import { fibonacciSearch } from "./fibonacciSearch";
+
+const numbers = Array.from({ length: 20 }, (_, i) => i * 5); // [0,5,10,...,95]
+const index = fibonacciSearch(numbers, 45, (a, b) => a < b);
+console.log(index); // 9 – because 45 is at index 9
