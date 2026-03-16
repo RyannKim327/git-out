@@ -1,24 +1,16 @@
-// A very minimal node definition
-interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
+function isPalindrome(s: string): boolean {
+  // Optional: make it case‑insensitive and strip non‑alphanumerics
+  const cleaned = s.replace(/[^A-Za-z0-9]/g, "").toLowerCase();
+  const rev = cleaned.split("").reverse().join("");
+  return cleaned === rev;
 }
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("race a car"));                     // false
+function isPalindromeLoop(s: string): boolean {
+  const cleaned = s.replace(/[^A-Za-z0-9]/g, "").toLowerCase();
 
-// Utility to compute length
-function linkedListLength<T>(head: ListNode<T> | null): number {
-  let len = 0;
-  let cur = head;
-
-  while (cur) {
-    len++;
-    cur = cur.next;
+  for (let i = 0, j = cleaned.length - 1; i < j; i++, j--) {
+    if (cleaned[i] !== cleaned[j]) return false;
   }
-
-  return len;
+  return true;
 }
-// Build a simple list: 1 → 2 → 3
-const node3: ListNode<number> = { value: 3, next: null };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const node1: ListNode<number> = { value: 1, next: node2 };
-
-console.log(linkedListLength(node1)); // 3
