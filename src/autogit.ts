@@ -1,45 +1,38 @@
-// src/cronJob.ts
+/**
+ * Finds the majority element in an array (appears > n/2 times).
+ * If no majority exists, undefined is returned.
+ *
+ * @param arr   - Array of comparable values (number, string ...).
+ * @returns     - The majority element or undefined.
+ */
+export function majorityElement<T extends number | string | symbol>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined;
 
-import cron from 'node-cron';
+  // Boyer‑Moore majority vote algorithm
+  let candidate: T | undefined = arr[0];
+  let count = 1;
 
-// Helper: generate a random number between 1 and 100
-const randomInt = () => Math.floor(Math.random() * 100) + 1;
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === candidate) {
+      count++;
+    } else {
+      count--;
+      if (count === 0) {
+        candidate = arr[i];
+        count = 1;
+      }
+    }
+  }
 
-// The job – runs every minute (`* * * * *`)
-const job = cron.schedule('* * * * *', () => {
-  const now = new Date().toISOString();
-  const rand = randomInt();
-  console.log(`[${now}] Random number: ${rand}`);
-  // You can place any logic here (DB ops, API calls, etc.)
-});
+  // Verify that candidate really is the majority
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
+  }
 
-// Start the job
-job.start();
-console.log('Cron job scheduled: every minute.');
-# 1️⃣ Create a new TS project (if you haven't already)
-mkdir cron-demo && cd cron-demo
-npm init -y
-
-# 2️⃣ Install the required packages
-npm i node-cron
-npm i -D typescript @types/node
-
-# 3️⃣ Add a tsconfig.json (basic version)
-cat <<'EOF' > tsconfig.json
-{
-  "compilerOptions": {
-    "target": "es2019",
-    "module": "commonjs",
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "strict": true,
-    "esModuleInterop": true
-  },
-  "include": ["src"]
+  return count > Math.floor(arr.length / 2) ? candidate : undefined;
 }
-EOF
-
-# 4️⃣ Place the `cronJob.ts` file in ./src
-# 5️⃣ Compile and run
-npx tsc
-node dist/cronJob.js
+majorityElement([1, 2, 3, 2, 2]);      // → 2
+majorityElement(['a', 'b', 'a', 'c']); // → undefined
+majorityElement([5, 5, 5, 5]);          // → 5
+majorityElement([]);                   // → undefined
