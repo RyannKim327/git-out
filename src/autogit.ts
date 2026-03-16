@@ -1,40 +1,56 @@
-/**
- * Classic in‑place quick‑sort.
- *
- * @param arr  The array to be sorted (in‑place).
- * @param left The starting index (default: 0).
- * @param right The ending index (default: arr.length‑1).
- *
- * @returns The same array, now sorted.
- */
-function quickSort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
-  if (left >= right) return arr;          // base case: 0 or 1 item
+// 1️⃣  Node definition
+class Node<T> {
+  constructor(public value: T, public next: Node<T> | null = null) {}
+}
 
-  // Pick a pivot—here we just take the middle element.
-  const pivotIndex = Math.floor((left + right) / 2);
-  const pivot = arr[pivotIndex];
+// 2️⃣  Queue skeleton
+class LinkedQueue<T> {
+  private head: Node<T> | null = null; // front of the queue
+  private tail: Node<T> | null = null; // rear of the queue
+  private _size = 0;
 
-  // Partition: everything less than the pivot goes left, everything
-  // greater or equal goes right.  Elements equal to the pivot can go either side.
-  let i = left;
-  let j = right;
-  while (i <= j) {
-    while (arr[i] < pivot) i++;   // find an element on the wrong side (left)
-    while (arr[j] > pivot) j--;   // find an element on the wrong side (right)
-
-    if (i <= j) {                 // swap the out‑of‑place elements
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
+  // 3️⃣  Enqueue: add to the tail
+  enqueue(value: T): void {
+    const newNode = new Node(value);
+    if (this.tail) {             // queue is not empty
+      this.tail.next = newNode;
+    } else {                      // queue was empty ‑ new node is both head & tail
+      this.head = newNode;
     }
+    this.tail = newNode;
+    this._size++;
   }
 
-  // Recursively sort the two partitions.
-  // The first call deals with the left two halves *unless* they overlap.
-  if (left < j) quickSort(arr, left, j);
-  if (i < right) quickSort(arr, i, right);
+  // 4️⃣  Dequeue: remove from the head
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // nothing to pop
 
-  return arr;
+    const removed = this.head.value;
+    this.head = this.head.next;       // advance head
+    if (!this.head) this.tail = null; // queue became empty
+
+    this._size--;
+    return removed;
+  }
+
+  // 5️⃣  Peek at the front without removing
+  peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  // 6️⃣  Convenience helpers
+  size(): number   { return this._size; }
+  isEmpty(): boolean { return this._size === 0; }
 }
-const unsorted = [3, 7, 2, 5, 1, 4, 6];
-quickSort(unsorted);        // unsorted is now [1,2,3,4,5,6,7]
+const q = new LinkedQueue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.dequeue()); // 30
+console.log(q.dequeue()); // undefined (empty)
+console.log(q.isEmpty()); // true
