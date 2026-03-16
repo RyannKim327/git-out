@@ -1,18 +1,13 @@
-// ✅ Basic “looks‑right” test
-function isValidEmail(email: string): boolean {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
+function removeVowels(text: string): string {
+  // Matches a, e, i, o, u in either case – change the set if you need accents, etc.
+  return text.replace(/[aeiouAEIOU]/g, '');
 }
-
-// usage
-console.log(isValidEmail('user@example.com')); // true
-console.log(isValidEmail('bad-email.com'));    // false
-// ✅ Covers quoted local‑part, IP domains, and "newer" TLDs
-function isValidEmailBetter(email: string): boolean {
-  const re = /^(?:(?:\"[^\"]+\")|(?:[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+))@(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}|(?:\[[0-9]{1,3}(?:\.[0-9]{1,3}){3}\]))$/;
-  return re.test(email);
+const original = "Hello, World!";
+const cleaned = removeVowels(original);
+console.log(cleaned); // "Hll, Wrld!"
+// Includes accented vowels and lowercase “y”
+const regex = /[aeiouáéíóúAEIOUÁÉÍÓÚyY]/g;
+function removeVowelsSafe(text?: string | null): string {
+  const safeText = text ?? '';
+  return safeText.replace(/[aeiouAEIOU]/g, '');
 }
-// In a React hook or any form library
-const validateEmail = (value: string) => (
-  isValidEmail(value) ? undefined : 'Invalid email address'
-);
