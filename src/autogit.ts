@@ -1,47 +1,40 @@
-function removeValue<T>(arr: T[], value: T): T[] {
-  return arr.filter((el) => el !== value);
-}
+/**
+ * Classic in‑place quick‑sort.
+ *
+ * @param arr  The array to be sorted (in‑place).
+ * @param left The starting index (default: 0).
+ * @param right The ending index (default: arr.length‑1).
+ *
+ * @returns The same array, now sorted.
+ */
+function quickSort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
+  if (left >= right) return arr;          // base case: 0 or 1 item
 
-// Example
-const numbers = [1, 2, 3, 4, 5];
-const withoutThree = removeValue(numbers, 3);
-console.log(withoutThree); // [1, 2, 4, 5]
-function removeAtIndex<T>(arr: T[], index: number): void {
-  if (index >= 0 && index < arr.length) {
-    arr.splice(index, 1); // splice mutates the array
-  }
-}
+  // Pick a pivot—here we just take the middle element.
+  const pivotIndex = Math.floor((left + right) / 2);
+  const pivot = arr[pivotIndex];
 
-// Example
-const letters = ['a', 'b', 'c', 'd'];
-removeAtIndex(letters, 2);
-console.log(letters); // ['a', 'b', 'd']
-function removeIf<T>(arr: T[], predicate: (el: T) => boolean): T[] {
-  return arr.filter(el => !predicate(el));
-}
+  // Partition: everything less than the pivot goes left, everything
+  // greater or equal goes right.  Elements equal to the pivot can go either side.
+  let i = left;
+  let j = right;
+  while (i <= j) {
+    while (arr[i] < pivot) i++;   // find an element on the wrong side (left)
+    while (arr[j] > pivot) j--;   // find an element on the wrong side (right)
 
-// Example: remove all even numbers
-const evensGone = removeIf(numbers, n => n % 2 === 0);
-console.log(evensGone); // [1, 3, 5]
-type User = { id: number; name: string };
-const users: User[] = [
-  { id: 1, name: 'Ada' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Cal' },
-];
-
-function removeById(arr: User[], id: number): User[] {
-  return arr.filter(u => u.id !== id);
-}
-
-const afterRemoval = removeById(users, 2);
-console.log(afterRemoval); // keeps Bob out
-function removeInPlace<T>(arr: T[], predicate: (el: T) => boolean): void {
-  for (let i = 0; i < arr.length; ) {
-    if (predicate(arr[i])) {
-      arr.splice(i, 1); // or use arr.splice(i--, 1) if you want to keep index logic simple
-    } else {
+    if (i <= j) {                 // swap the out‑of‑place elements
+      [arr[i], arr[j]] = [arr[j], arr[i]];
       i++;
+      j--;
     }
   }
+
+  // Recursively sort the two partitions.
+  // The first call deals with the left two halves *unless* they overlap.
+  if (left < j) quickSort(arr, left, j);
+  if (i < right) quickSort(arr, i, right);
+
+  return arr;
 }
+const unsorted = [3, 7, 2, 5, 1, 4, 6];
+quickSort(unsorted);        // unsorted is now [1,2,3,4,5,6,7]
