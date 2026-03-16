@@ -1,40 +1,47 @@
 /**
- * Classic in‑place quick‑sort.
- *
- * @param arr  The array to be sorted (in‑place).
- * @param left The starting index (default: 0).
- * @param right The ending index (default: arr.length‑1).
- *
- * @returns The same array, now sorted.
+ * Return the median of two sorted arrays `a` and `b`.
+ * Both inputs must be sorted in non‑decreasing order.
  */
-function quickSort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
-  if (left >= right) return arr;          // base case: 0 or 1 item
+export function medianOfTwoSortedArrays(a: number[], b: number[]): number {
+  // Make sure `a` is the shorter array – this keeps the binary search
+  // on the smaller size which guarantees the log(min(n, m)) bound.
+  if (a.length > b.length) return medianOfTwoSortedArrays(b, a);
 
-  // Pick a pivot—here we just take the middle element.
-  const pivotIndex = Math.floor((left + right) / 2);
-  const pivot = arr[pivotIndex];
+  const m = a.length;
+  const n = b.length;
+  const half = Math.floor((m + n + 1) / 2); // number of elements that go to the left side
 
-  // Partition: everything less than the pivot goes left, everything
-  // greater or equal goes right.  Elements equal to the pivot can go either side.
-  let i = left;
-  let j = right;
-  while (i <= j) {
-    while (arr[i] < pivot) i++;   // find an element on the wrong side (left)
-    while (arr[j] > pivot) j--;   // find an element on the wrong side (right)
+  let low = 0;
+  let high = m;
 
-    if (i <= j) {                 // swap the out‑of‑place elements
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2); // elements taken from `a`
+    const j = half - i;                     // elements taken from `b`
+
+    const aLeft  = (i === 0)          ? -Infinity : a[i - 1];
+    const aRight = (i === m)          ?  Infinity : a[i];
+    const bLeft  = (j === 0)          ? -Infinity : b[j - 1];
+    const bRight = (j === n)          ?  Infinity : b[j];
+
+    // Check if we have found the perfect split
+    if (aLeft <= bRight && bLeft <= aRight) {
+      // Odd total: middle element is the rightmost of the left side
+      if ((m + n) % 2 === 1) {
+        return Math.max(aLeft, bLeft);
+      }
+      // Even total: average of two middle elements
+      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
+    } else if (aLeft > bRight) {
+      // Too many elements taken from `a`, shift left
+      high = i - 1;
+    } else {
+      // Too few elements taken from `a`, shift right
+      low = i + 1;
     }
   }
 
-  // Recursively sort the two partitions.
-  // The first call deals with the left two halves *unless* they overlap.
-  if (left < j) quickSort(arr, left, j);
-  if (i < right) quickSort(arr, i, right);
-
-  return arr;
+  // If we reach here something is wrong with the inputs
+  throw new Error('Input arrays are not sorted or contain incompatible lengths.');
 }
-const unsorted = [3, 7, 2, 5, 1, 4, 6];
-quickSort(unsorted);        // unsorted is now [1,2,3,4,5,6,7]
+console.log(medianOfTwoSortedArrays([1, 3, 8], [7, 9, 10, 11])); // 8
+console.log(medianOfTwoSortedArrays([1, 2], [3, 4]));             // 2.5
