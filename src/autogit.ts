@@ -1,32 +1,47 @@
-/**
- * Returns the area of a triangle when you know its base and height.
- *
- * @param base   The length of the triangle’s base.
- * @param height The height (altitude) drawn to that base.
- * @returns The area in whatever units the inputs are in.
- */
-function triangleAreaFromBaseHeight(base: number, height: number): number {
-  return 0.5 * base * height;
+function removeValue<T>(arr: T[], value: T): T[] {
+  return arr.filter((el) => el !== value);
 }
-/**
- * Returns the area of a triangle given its three vertices.
- *
- * @param x1 x‑coordinate of the first vertex
- * @param y1 y‑coordinate of the first vertex
- * @param x2 x‑coordinate of the second vertex
- * @param y2 y‑coordinate of the second vertex
- * @param x3 x‑coordinate of the third vertex
- * @param y3 y‑coordinate of the third vertex
- * @returns The absolute area (non‑negative) of the triangle.
- */
-function triangleAreaFromPoints(
-  x1: number, y1: number,
-  x2: number, y2: number,
-  x3: number, y3: number
-): number {
-  return Math.abs(
-    x1 * (y2 - y3) +
-    x2 * (y3 - y1) +
-    x3 * (y1 - y2)
-  ) / 2;
+
+// Example
+const numbers = [1, 2, 3, 4, 5];
+const withoutThree = removeValue(numbers, 3);
+console.log(withoutThree); // [1, 2, 4, 5]
+function removeAtIndex<T>(arr: T[], index: number): void {
+  if (index >= 0 && index < arr.length) {
+    arr.splice(index, 1); // splice mutates the array
+  }
+}
+
+// Example
+const letters = ['a', 'b', 'c', 'd'];
+removeAtIndex(letters, 2);
+console.log(letters); // ['a', 'b', 'd']
+function removeIf<T>(arr: T[], predicate: (el: T) => boolean): T[] {
+  return arr.filter(el => !predicate(el));
+}
+
+// Example: remove all even numbers
+const evensGone = removeIf(numbers, n => n % 2 === 0);
+console.log(evensGone); // [1, 3, 5]
+type User = { id: number; name: string };
+const users: User[] = [
+  { id: 1, name: 'Ada' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Cal' },
+];
+
+function removeById(arr: User[], id: number): User[] {
+  return arr.filter(u => u.id !== id);
+}
+
+const afterRemoval = removeById(users, 2);
+console.log(afterRemoval); // keeps Bob out
+function removeInPlace<T>(arr: T[], predicate: (el: T) => boolean): void {
+  for (let i = 0; i < arr.length; ) {
+    if (predicate(arr[i])) {
+      arr.splice(i, 1); // or use arr.splice(i--, 1) if you want to keep index logic simple
+    } else {
+      i++;
+    }
+  }
 }
