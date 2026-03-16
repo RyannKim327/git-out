@@ -1,81 +1,112 @@
-//   ┌─── Imports ────────────────────────────────────────────────────────┐
-import { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
+/**
+ * Generic type that can be compared with the <=> operator.
+ * For custom objects you can supply a comparator function.
+ */
+type Comparable = number | string | boolean;
 
-//   ┌─── Types ───────────────────────────────────────────────────────────────┐
-interface TodoItem {
-  id: number;
-  title: string;
-  completed: boolean;
+/**
+ * Swap two elements in an array
+ */
+function swap<T>(arr: T[], i: number, j: number): void {
+  const tmp = arr[i];
+  arr[i] = arr[j];
+  arr[j] = tmp;
 }
 
-//   ┌─── Async helper ────────────────────────────────────────────────────────┐
-async function fetchTodos(): Promise<TodoItem[]> {
-  const url = 'https://jsonplaceholder.typicode.com/todos?_limit=5';
+/**
+ * Heapify the subtree rooted at `i`, assuming that the binary trees
+ * rooted at its children are already heaps.
+ *
+ * @param arr    the array
+ * @param heapSize the current size of the heap
+ * @param i      the index of the root of the subtree
+ * @param compare comparison function (a, b) => true if a > b
+ */
+function heapify<T>(
+  arr: T[],
+  heapSize: number,
+  i: number,
+  compare: (a: T, b: T) => boolean
+): void {
+  let largest = i;
+  const left   = 2 * i + 1;
+  const right  = 2 * i + 2;
 
-  // Simulate a "slow" network: optional, just for demo
-  await new Promise(r => setTimeout(r, 800));
+  if (left < heapSize && compare(arr[left], arr[largest])) {
+    largest = left;
+  }
+  if (right < heapSize && compare(arr[right], arr[largest])) {
+    largest = right;
+  }
 
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`❌ ${response.status} ${response.statusText}`);
-
-  const json = await response.json();
-  // Map to our interface – TypeScript will check types
-  return json.map((x: any) => ({
-    id: x.id,
-    title: x.title,
-    completed: x.completed,
-  }));
+  if (largest !== i) {
+    swap(arr, i, largest);
+    heapify(arr, heapSize, largest, compare);
+  }
 }
 
-//   ┌─── Component that uses the async task ──────────────────────────────────┐
-export default function AsyncExample() {
-  const [todos, setTodos] = useState<TodoItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await fetchTodos();
-      console.log('Fetched:', data);
-      setTodos(data);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Unknown error';
-      console.warn(msg);
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Run once on mount
-  useEffect(() => {
-    load();
-  }, []);
-
-  return (
-    <View style={styles.container}>
-      {loading && <ActivityIndicator size="large" />}
-      {error && <Text style={styles.error}>{error}</Text>}
-      {!loading && !error && (
-        <>
-          {todos.map(t => (
-            <Text key={t.id} style={styles.todo}>
-              {t.completed ? '✅' : '🕒'} {t.title}
-            </Text>
-          ))}
-        </>
-      )}
-      <Button title="Reload" onPress={load} disabled={loading} />
-    </View>
-  );
+/**
+ * Build a max‑heap from an unsorted array
+ */
+function buildMaxHeap<T>(
+  arr: T[],
+  compare: (a: T, b: T) => boolean
+): void {
+  const heapSize = arr.length;
+  // Start from the last non‑leaf node
+  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
+    heapify(arr, heapSize, i, compare);
+  }
 }
 
-//   ┌─── Styles ───────────────────────────────────────────────────────────────┐
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center' },
-  todo: { fontSize: 18, marginVertical: 4 },
-  error: { color: 'red', marginBottom: 12 },
-});
+/**
+ * Heap sort – sorts `arr` *in place*.
+ *
+ * @param arr      the array to sort
+ * @param compare  optional comparator; defaults to (a > b)
+ */
+export function heapSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => boolean
+): void {
+  const cmp = compare ?? ((a: any, b: any) => a > b);
+
+  buildMaxHeap(arr, cmp);
+
+  for (let i = arr.length - 1; i > 0; i--) {
+    // The max element is at index 0; move it to its final place
+    swap(arr, 0, i);
+    // Re‑heapify the reduced heap
+    heapify(arr, i, 0, cmp);
+  }
+}
+
+/* --------------------------------------------------------------------- */
+/* Example usage & tiny tests                                           */
+/* --------------------------------------------------------------------- */
+
+// 1️⃣ Numbers ---------------------------------------------------------
+const nums = [5, 3, 8, 4, 1, 7, 2, 6];
+heapSort(nums);
+console.log('Sorted numbers:', nums); // [1, 2, 3, 4, 5, 6, 7, 8]
+
+// 2️⃣ Strings ---------------------------------------------------------
+const words = ['pear', 'apple', 'orange', 'banana'];
+heapSort(words); // default lexicographic order
+console.log('Sorted words:', words); // ['apple', 'banana', 'orange', 'pear']
+
+// 3️⃣ Custom objects --------------------------------------------------
+interface Person { name: string; age: number }
+const people: Person[] = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob',   age: 22 },
+  { name: 'Eva',   age: 27 }
+];
+// Sort by age ascending
+heapSort(people, (a, b) => a.age > b.age);
+console.log('People sorted by age:', people);
+/* [
+  { name: 'Bob', age: 22 },
+  { name: 'Eva', age: 27 },
+  { name: 'Alice', age: 30 }
+] */
