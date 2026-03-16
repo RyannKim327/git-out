@@ -1,30 +1,28 @@
 /**
- * Recursively returns n! (n factorial).
- *
- * @param n - non‑negative integer (or bigint)
- * @returns n! as a bigint
+ * Convert a decimal number to a binary string.
+ * 
+ * @param n – A non‑negative integer
+ * @returns The binary representation as a string
  */
-export function factorial(n: bigint | number): bigint {
-  // Normalize input to bigint
-  const x = typeof n === "bigint" ? n : BigInt(n);
-
-  // Negative numbers are not defined for factorial
-  if (x < 0n) {
-    throw new Error("Factorial is defined only for non‑negative integers.");
+function decimalToBinary(n: number): string {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new Error('Input must be a non‑negative integer.');
   }
 
-  // Base case: 0! = 1, 1! = 1
-  if (x === 0n || x === 1n) {
-    return 1n;
+  // Handling zero explicitly – Math.pow(2, 0) is 1 but we still want "0"
+  if (n === 0) return '0';
+
+  let binary = '';
+  let current = n;
+
+  while (current > 0) {
+    // Prepend the remainder (0 or 1) to the binary string
+    binary = (current % 2) + binary;
+    current = Math.floor(current / 2);
   }
 
-  // Recursive case: n! = n * (n-1)!
-  return x * factorial(x - 1n);
+  return binary;
 }
-console.log(factorial(5));        // 120n
-console.log(factorial(20));       // 2432902008176640000n
-console.log(factorial(25n));      // 15511210043330985984000000n
-function factorialTail(n: bigint, acc = 1n): bigint {
-  if (n <= 1n) return acc;
-  return factorialTail(n - 1n, acc * n);
-}
+console.log(decimalToBinary(10)); // "1010"
+console.log(decimalToBinary(255)); // "11111111"
+console.log(decimalToBinary(0)); // "0"
