@@ -1,13 +1,24 @@
-function removeVowels(text: string): string {
-  // Matches a, e, i, o, u in either case – change the set if you need accents, etc.
-  return text.replace(/[aeiouAEIOU]/g, '');
+// A very minimal node definition
+interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
-const original = "Hello, World!";
-const cleaned = removeVowels(original);
-console.log(cleaned); // "Hll, Wrld!"
-// Includes accented vowels and lowercase “y”
-const regex = /[aeiouáéíóúAEIOUÁÉÍÓÚyY]/g;
-function removeVowelsSafe(text?: string | null): string {
-  const safeText = text ?? '';
-  return safeText.replace(/[aeiouAEIOU]/g, '');
+
+// Utility to compute length
+function linkedListLength<T>(head: ListNode<T> | null): number {
+  let len = 0;
+  let cur = head;
+
+  while (cur) {
+    len++;
+    cur = cur.next;
+  }
+
+  return len;
 }
+// Build a simple list: 1 → 2 → 3
+const node3: ListNode<number> = { value: 3, next: null };
+const node2: ListNode<number> = { value: 2, next: node3 };
+const node1: ListNode<number> = { value: 1, next: node2 };
+
+console.log(linkedListLength(node1)); // 3
