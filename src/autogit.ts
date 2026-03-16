@@ -1,43 +1,25 @@
-// shellSort.ts
-
 /**
- * Shell sort – an insertion‑sort based algorithm that improves on the
- * “gaps” of ordinary insertion sort using a diminishing sequence.
- *
- * @param arr The array to sort in place.  It must contain elements that
- *            can be compared with the `<` operator.
- * @returns The same array reference, now sorted.
+ * Returns true if `n` is a prime number.
  */
-export function shellSort<T>(arr: T[]): T[] {
-  const n = arr.length;
-  // Standard Shell sequence: start with ~n/2, then halve until 1
-  let gap = Math.floor(n / 2);
+export function isPrime(n: number): boolean {
+  // Prime numbers are > 1
+  if (n <= 1) return false;
 
-  while (gap > 0) {
-    for (let i = gap; i < n; i++) {
-      // Perform a "gapped" insertion sort on the sub‑array
-      const temp = arr[i];
-      let j = i;
+  // 2 and 3 are the only even/odd primes
+  if (n <= 3) return true;
 
-      while (j >= gap && arr[j - gap] > temp) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
+  // Even numbers > 2 can be rejected right away
+  if (n % 2 === 0) return false;
 
-      arr[j] = temp;
-    }
-
-    gap = Math.floor(gap / 2);
+  // Check only odd divisors up to √n
+  const limit = Math.floor(Math.sqrt(n));
+  for (let d = 3; d <= limit; d += 2) {
+    if (n % d === 0) return false;
   }
-
-  return arr;
+  return true;
 }
-import { shellSort } from "./shellSort";
-
-const unsorted = [23, 12, 1, 8, 33, -6, 10];
-console.log("Before:", unsorted);
-
-shellSort(unsorted);
-console.log("After:", unsorted);
-// → Before: [23, 12, 1, 8, 33, -6, 10]
-//    After:  [-6, 1, 8, 10, 12, 23, 33]
+console.log(isPrime(2));  // true
+console.log(isPrime(15)); // false
+console.log(isPrime(17)); // true
+console.log(isPrime(1));  // false
+console.log(isPrime(-5)); // false
