@@ -1,5 +1,21 @@
+/**
+ * Return the intersection of two arrays.
+ *
+ * @param a First array
+ * @param b Second array
+ * @returns Array containing only the values that appear in both `a` and `b`
+ */
+export function intersection<T>(a: T[], b: T[]): T[] {
+  // Turn the second array into a Set for O(1) look‑ups.
+  const lookup = new Set(b);
 
-### Quick demo
+  // Keep every element of `a` that also exists in the Set.
+  return a.filter(item => lookup.has(item));
+}
 
+// Example usage:
+const colors1 = ['red', 'green', 'blue', 'green'];
+const colors2 = ['cyan', 'green', 'red', 'yellow'];
 
-Pick the pattern that matches the kind of whitespace you want to drop and drop it into your code. If you’ve got a very specific rule (e.g., keep line breaks but remove tabs), just tweak the regex accordingly. Happy coding!
+const commonColors = intersection(colors1, colors2);
+console.log(commonColors); // → ['red', 'green', 'green']
