@@ -1,40 +1,30 @@
-// Basic node interface – can be turned into a class if you like.
-interface TreeNode<T = number> {
-  val: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
-}
-function maxDepth<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                 // empty subtree → depth 0
+/**
+ * Recursively returns n! (n factorial).
+ *
+ * @param n - non‑negative integer (or bigint)
+ * @returns n! as a bigint
+ */
+export function factorial(n: bigint | number): bigint {
+  // Normalize input to bigint
+  const x = typeof n === "bigint" ? n : BigInt(n);
 
-  const leftDepth  = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
-
-  // Depth of current node = 1 (itself) + depth of deeper side
-  return 1 + Math.max(leftDepth, rightDepth);
-}
-const root: TreeNode = {
-  val: 1,
-  left: { val: 2, left: { val: 4 } },
-  right: { val: 3, right: { val: 5, right: { val: 6 } } }
-};
-
-console.log(maxDepth(root));   // → 4
-function maxDepthIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
-
-  let max = 0;
-  const stack: Array<{ node: TreeNode<T>; depth: number }> = [
-    { node: root, depth: 1 },
-  ];
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    max = Math.max(max, depth);
-
-    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
-    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
+  // Negative numbers are not defined for factorial
+  if (x < 0n) {
+    throw new Error("Factorial is defined only for non‑negative integers.");
   }
 
-  return max;
+  // Base case: 0! = 1, 1! = 1
+  if (x === 0n || x === 1n) {
+    return 1n;
+  }
+
+  // Recursive case: n! = n * (n-1)!
+  return x * factorial(x - 1n);
+}
+console.log(factorial(5));        // 120n
+console.log(factorial(20));       // 2432902008176640000n
+console.log(factorial(25n));      // 15511210043330985984000000n
+function factorialTail(n: bigint, acc = 1n): bigint {
+  if (n <= 1n) return acc;
+  return factorialTail(n - 1n, acc * n);
 }
