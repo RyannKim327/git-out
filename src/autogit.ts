@@ -1,30 +1,17 @@
-/**
- * Recursively returns n! (n factorial).
- *
- * @param n - non‑negative integer (or bigint)
- * @returns n! as a bigint
- */
-export function factorial(n: bigint | number): bigint {
-  // Normalize input to bigint
-  const x = typeof n === "bigint" ? n : BigInt(n);
+const numbers = [1, 2, 3, 4];
+numbers.reverse();          // → [4, 3, 2, 1]
+console.log(numbers);       // the same array has changed
+const numbers = [1, 2, 3, 4];
+const reversed = numbers.slice().reverse(); // or [...numbers].reverse()
 
-  // Negative numbers are not defined for factorial
-  if (x < 0n) {
-    throw new Error("Factorial is defined only for non‑negative integers.");
+console.log(numbers);   // → [1, 2, 3, 4]
+console.log(reversed);  // → [4, 3, 2, 1]
+function reverseArray<T>(arr: T[]): T[] {
+  const out = new Array<T>(arr.length);
+  for (let i = 0, j = arr.length - 1; i <= j; ++i, --j) {
+    out[i] = arr[j];
+    out[j] = arr[i];
   }
-
-  // Base case: 0! = 1, 1! = 1
-  if (x === 0n || x === 1n) {
-    return 1n;
-  }
-
-  // Recursive case: n! = n * (n-1)!
-  return x * factorial(x - 1n);
+  return out;
 }
-console.log(factorial(5));        // 120n
-console.log(factorial(20));       // 2432902008176640000n
-console.log(factorial(25n));      // 15511210043330985984000000n
-function factorialTail(n: bigint, acc = 1n): bigint {
-  if (n <= 1n) return acc;
-  return factorialTail(n - 1n, acc * n);
-}
+const rev = reverseArray([10, 20, 30]); // → [30, 20, 10]
