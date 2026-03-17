@@ -1,98 +1,103 @@
-/** A minimal generic priority queue built on a binary heap */
-export class PriorityQueue<T> {
-  /** Internal storage array (0‑based). 0 is the root. */
-  private heap: T[] = [];
-
-  /** Comparator that returns true if a should come before b. */
-  private readonly less: (a: T, b: T) => boolean;
-
-  /** Number of queued elements */
-  public get size(): number { return this.heap.length; }
-
-  /** Peek at the top element without removing it.  Returns undefined if empty. */
-  public peek(): T | undefined { return this.heap[0]; }
-
-  constructor(comparator?: (a: T, b: T) => boolean) {
-    // Default to a min‑heap using < for primitives
-    this.less = comparator ?? ((a, b) => (a as any) < (b as any));
-  }
-
-  /** Insert a new element into the queue */
-  public push(item: T): void {
-    this.heap.push(item);
-    this.bubbleUp(this.heap.length - 1);
-  }
-
-  /** Remove and return the top element.  Returns undefined if empty. */
-  public pop(): T | undefined {
-    const n = this.heap.length;
-    if (n === 0) return undefined;
-    if (n === 1) return this.heap.pop();
-
-    const top = this.heap[0];
-    this.heap[0] = this.heap.pop() as T; // Set last element to root
-    this.sinkDown(0);
-    return top;
-  }
-
-  /** Swap two indices in the heap */
-  private swap(i: number, j: number): void {
-    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
-  }
-
-  /** Restore heap order by moving the element at idx up */
-  private bubbleUp(idx: number): void {
-    const element = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = (idx - 1) >> 1;
-      const parent = this.heap[parentIdx];
-      if (!this.less(element, parent)) break;
-      this.swap(idx, parentIdx);
-      idx = parentIdx;
-    }
-  }
-
-  /** Restore heap order by moving the element at idx down */
-  private sinkDown(idx: number): void {
-    const n = this.heap.length;
-    const element = this.heap[idx];
-
-    while (true) {
-      const leftIdx = (idx << 1) + 1;
-      const rightIdx = leftIdx + 1;
-      let smallestIdx = idx;
-
-      if (leftIdx < n && this.less(this.heap[leftIdx], this.heap[smallestIdx])) {
-        smallestIdx = leftIdx;
-      }
-      if (rightIdx < n && this.less(this.heap[rightIdx], this.heap[smallestIdx])) {
-        smallestIdx = rightIdx;
-      }
-
-      if (smallestIdx === idx) break;
-      this.swap(idx, smallestIdx);
-      idx = smallestIdx;
-    }
-  }
+/* -------------------------------------------------------------
+   Edge definition – just a source, destination and weight
+------------------------------------------------------------- */
+interface Edge {
+  from: string;      // vertex id (string or number, just pick one type)
+  to: string;
+  weight: number;    // can be negative
 }
-// Minimum priority queue (default)
-const minQ = new PriorityQueue<number>();
-minQ.push(5);
-minQ.push(2);
-minQ.push(8);
-console.log(minQ.peek()); // 2
-console.log(minQ.pop());  // 2
-console.log(minQ.pop());  // 5
 
-// Maximum priority queue
-const maxQ = new PriorityQueue<number>((a, b) => a > b);
-maxQ.push(5);
-maxQ.push(2);
-maxQ.push(8);
-console.log(maxQ.pop()); // 8
-interface Task { id: string; priority: number; }
+/* -------------------------------------------------------------
+   Bellman‑Ford implementation
+   Parameters
+   ----------  graph: Array<Edge>  – all directed edges
+               source: string      – id of source vertex
+   Returns
+   -------  { dist: Map<string, number>,
+              next: Map<string, string | null>,
+              hasNegativeCycle: boolean }
+------------------------------------------------------------- */
+function bellmanFord(
+  graph: Edge[],
+  source: string
+): { dist: Map<string, number>; next: Map<string, string | null>; hasNegativeCycle: boolean } {
+  const dist = new Map<string, number>();
+  const next = new Map<string, string | null>();
 
-const taskQueue = new PriorityQueue<Task>((a, b) => a.priority < b.priority); // min‑heap by priority
-taskQueue.push({ id: 'A', priority: 10 });
-taskQueue.push({ id: 'B', priority: 5 });
-console.log(taskQueue.pop()); // { id: 'B', priority: 5 }
+  // initialise distances
+  graph.forEach(({ from }) => {
+    dist.set(from, Infinity);
+    next.set(from, null);
+  });
+  // if the source isn’t mentioned in any edge, we still need it in the map
+  dist.set(source, 0);
+  next.set(source, null);
+
+  // total distinct vertices
+  const vertices = Array.from(dist.keys());
+  const V = vertices.length;
+
+  // Relax edges V−1 times
+  for (let i = 0; i < V - 1; i++) {
+    let didRelax = false;
+    for (const { from, to, weight } of graph) {
+      const dFrom = dist.get(from);
+      const dTo   = dist.get(to);
+      if (dFrom! === Infinity) continue;                   // unreachable
+      const newDist = dFrom! + weight;
+      if (newDist < dTo!) {
+        dist.set(to, newDist);
+        next.set(to, from);
+        didRelax = true;
+      }
+    }
+    // early exit: no distance changed this round → we’re done
+    if (!didRelax) break;
+  }
+
+  // Check for negative‑weight cycles reachable from source
+  let hasNegativeCycle = false;
+  for (const { from, to, weight } of graph) {
+    const dFrom = dist.get(from);
+    const dTo   = dist.get(to);
+    if (dFrom! !== Infinity && dFrom! + weight < dTo!) {
+      hasNegativeCycle = true;
+      break;
+    }
+  }
+
+  return { dist, next, hasNegativeCycle };
+}
+
+/* -------------------------------------------------------------
+   Example usage
+------------------------------------------------------------- */
+const edges: Edge[] = [
+  { from: 'A', to: 'B', weight: 5 },
+  { from: 'A', to: 'C', weight: 2 },
+  { from: 'B', to: 'C', weight: -3 },
+  { from: 'B', to: 'D', weight: 9 },
+  { from: 'C', to: 'D', weight: 12 },
+];
+
+const { dist, next, hasNegativeCycle } = bellmanFord(edges, 'A');
+
+if (hasNegativeCycle) {
+  console.log('The graph contains a negative‑weight cycle reachable from A.');
+} else {
+  console.log('Shortest distances from A:');
+  dist.forEach((d, v) => console.log(v, d));
+
+  // helper to print a whole path from source to target
+  function buildPath(target: string): string[] {
+    const path: string[] = [];
+    let cur: string | null = target;
+    while (cur !== null) {
+      path.unshift(cur);
+      cur = next.get(cur) ?? null;
+    }
+    return path;
+  }
+
+  console.log('Path to D:', buildPath('D').join(' → '));
+}
