@@ -1,45 +1,32 @@
-// src/cronJob.ts
-
-import cron from 'node-cron';
-
-// Helper: generate a random number between 1 and 100
-const randomInt = () => Math.floor(Math.random() * 100) + 1;
-
-// The job – runs every minute (`* * * * *`)
-const job = cron.schedule('* * * * *', () => {
-  const now = new Date().toISOString();
-  const rand = randomInt();
-  console.log(`[${now}] Random number: ${rand}`);
-  // You can place any logic here (DB ops, API calls, etc.)
-});
-
-// Start the job
-job.start();
-console.log('Cron job scheduled: every minute.');
-# 1️⃣ Create a new TS project (if you haven't already)
-mkdir cron-demo && cd cron-demo
-npm init -y
-
-# 2️⃣ Install the required packages
-npm i node-cron
-npm i -D typescript @types/node
-
-# 3️⃣ Add a tsconfig.json (basic version)
-cat <<'EOF' > tsconfig.json
-{
-  "compilerOptions": {
-    "target": "es2019",
-    "module": "commonjs",
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "strict": true,
-    "esModuleInterop": true
-  },
-  "include": ["src"]
+/**
+ * Returns the area of a triangle when you know its base and height.
+ *
+ * @param base   The length of the triangle’s base.
+ * @param height The height (altitude) drawn to that base.
+ * @returns The area in whatever units the inputs are in.
+ */
+function triangleAreaFromBaseHeight(base: number, height: number): number {
+  return 0.5 * base * height;
 }
-EOF
-
-# 4️⃣ Place the `cronJob.ts` file in ./src
-# 5️⃣ Compile and run
-npx tsc
-node dist/cronJob.js
+/**
+ * Returns the area of a triangle given its three vertices.
+ *
+ * @param x1 x‑coordinate of the first vertex
+ * @param y1 y‑coordinate of the first vertex
+ * @param x2 x‑coordinate of the second vertex
+ * @param y2 y‑coordinate of the second vertex
+ * @param x3 x‑coordinate of the third vertex
+ * @param y3 y‑coordinate of the third vertex
+ * @returns The absolute area (non‑negative) of the triangle.
+ */
+function triangleAreaFromPoints(
+  x1: number, y1: number,
+  x2: number, y2: number,
+  x3: number, y3: number
+): number {
+  return Math.abs(
+    x1 * (y2 - y3) +
+    x2 * (y3 - y1) +
+    x3 * (y1 - y2)
+  ) / 2;
+}
