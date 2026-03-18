@@ -1,68 +1,47 @@
 /**
- * Pre‑computes the shift table for a pattern.
- *   pattern: the pattern we’re searching for
- *   Returns: a Map from character → shift distance
+ * Return the median of two sorted arrays `a` and `b`.
+ * Both inputs must be sorted in non‑decreasing order.
  */
-function buildShiftTable(pattern: string): Map<string, number> {
-  const table = new Map<string, number>();
-  const m = pattern.length;
+export function medianOfTwoSortedArrays(a: number[], b: number[]): number {
+  // Make sure `a` is the shorter array – this keeps the binary search
+  // on the smaller size which guarantees the log(min(n, m)) bound.
+  if (a.length > b.length) return medianOfTwoSortedArrays(b, a);
 
-  // All characters that appear in the pattern get an initial shift of m
-  for (const ch of pattern) {
-    table.set(ch, m);
-  }
+  const m = a.length;
+  const n = b.length;
+  const half = Math.floor((m + n + 1) / 2); // number of elements that go to the left side
 
-  // For each character except the last one, set its shift to (m - i - 1)
-  for (let i = 0; i < m - 1; ++i) {
-    table.set(pattern[i], m - i - 1);
-  }
+  let low = 0;
+  let high = m;
 
-  return table;
-}
-/**
- * Implements Boyer‑Moore‑Horspool.
- * @param text   – the text to search
- * @param pattern – the pattern to find
- * @returns      – the index of the first match, or -1 if none
- */
-export function boyerMooreHorspool(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2); // elements taken from `a`
+    const j = half - i;                     // elements taken from `b`
 
-  if (m === 0) return 0;          // Empty pattern
-  if (m > n) return -1;           // Pattern longer than text
+    const aLeft  = (i === 0)          ? -Infinity : a[i - 1];
+    const aRight = (i === m)          ?  Infinity : a[i];
+    const bLeft  = (j === 0)          ? -Infinity : b[j - 1];
+    const bRight = (j === n)          ?  Infinity : b[j];
 
-  const shiftTable = buildShiftTable(pattern);
-
-  let idx = 0;                    // Index of the leftmost character of the window
-  while (idx <= n - m) {
-    let j = m - 1;
-
-    // Compare pattern from right to left
-    while (j >= 0 && text[idx + j] === pattern[j]) {
-      j -= 1;
+    // Check if we have found the perfect split
+    if (aLeft <= bRight && bLeft <= aRight) {
+      // Odd total: middle element is the rightmost of the left side
+      if ((m + n) % 2 === 1) {
+        return Math.max(aLeft, bLeft);
+      }
+      // Even total: average of two middle elements
+      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
+    } else if (aLeft > bRight) {
+      // Too many elements taken from `a`, shift left
+      high = i - 1;
+    } else {
+      // Too few elements taken from `a`, shift right
+      low = i + 1;
     }
-
-    // If all characters matched
-    if (j < 0) {
-      return idx;                // Found at position idx
-    }
-
-    // Mismatch: figure out how far to shift
-    const mismatchedChar = text[idx + m - 1];
-    const shift = shiftTable.get(mismatchedChar) ?? m;
-    idx += shift;
   }
 
-  return -1;                     // No match found
+  // If we reach here something is wrong with the inputs
+  throw new Error('Input arrays are not sorted or contain incompatible lengths.');
 }
-const txt = "ABAAABCDABCABABCAB";
-const pat = "ABCAB";
-
-const pos = boyerMooreHorspool(txt, pat);
-if (pos >= 0) {
-  console.log(`"${pat}" found at index ${pos}`);
-} else {
-  console.log(`"${pat}" not found`);
-}
-"ABCAB" found at index 12
+console.log(medianOfTwoSortedArrays([1, 3, 8], [7, 9, 10, 11])); // 8
+console.log(medianOfTwoSortedArrays([1, 2], [3, 4]));             // 2.5
