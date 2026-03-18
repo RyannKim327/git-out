@@ -1,39 +1,37 @@
-/**
- * Return true if `a` and `b` are anagrams.
- *
- * @param a      First string
- * @param b      Second string
- * @param options  Optional settings – case sensitivity & ignoring non‑letters
- */
-function areAnagrams(
-  a: string,
-  b: string,
-  options?: {
-    caseSensitive?: boolean;
-    ignoreNonAlpha?: boolean;
-  }
-): boolean {
-  const { caseSensitive = false, ignoreNonAlpha = false } = options || {};
-
-  // Helper to canonicalise a string
-  const canon = (s: string) =>
-    s
-      .split('')
-      .filter((ch) => !ignoreNonAlpha || /[a-zA-Z]/.test(ch))
-      .map((ch) => (caseSensitive ? ch : ch.toLowerCase()))
-      .sort(); // array of chars, sorted
-
-  const aChars = canon(a);
-  const bChars = canon(b);
-
-  if (aChars.length !== bChars.length) return false;
-
-  for (let i = 0; i < aChars.length; i++) {
-    if (aChars[i] !== bChars[i]) return false;
-  }
-
-  return true;
+// Basic binary‑tree node
+class TreeNode<T> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
-areAnagrams('Listen', 'Silent');           // true
-areAnagrams('Hello', 'Ollhe', { caseSensitive: true }); // false
-areAnagrams('Dormitory', 'Dirty room', { ignoreNonAlpha: true }); // true
+
+// Main helper that returns the height of a node and updates maxDiameter
+function computeHeight<T>(node: TreeNode<T> | null, maxDiameter: { value: number }): number {
+  if (!node) return -1; // height of empty subtree is -1 so that a single node gives 0
+
+  const leftHeight = computeHeight(node.left, maxDiameter);
+  const rightHeight = computeHeight(node.right, maxDiameter);
+
+  // Path that passes through this node
+  const diameterAtNode = leftHeight + rightHeight + 2; // +2 edges to connect left and right via current node
+  if (diameterAtNode > maxDiameter.value) {
+    maxDiameter.value = diameterAtNode;
+  }
+
+  // Return height of this subtree
+  return Math.max(leftHeight, rightHeight) + 1;
+}
+
+// Public API
+export function treeDiameter<T>(root: TreeNode<T> | null): number {
+  const maxDiameter = { value: 0 };
+  computeHeight(root, maxDiameter);
+  return maxDiameter.value; // number of edges on the longest path
+}
+        1
+       / \
+      2   3
+     / \     
+    4   5    
