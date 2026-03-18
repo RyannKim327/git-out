@@ -1,43 +1,24 @@
-// shellSort.ts
+// A very minimal node definition
+interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
+}
 
-/**
- * Shell sort – an insertion‑sort based algorithm that improves on the
- * “gaps” of ordinary insertion sort using a diminishing sequence.
- *
- * @param arr The array to sort in place.  It must contain elements that
- *            can be compared with the `<` operator.
- * @returns The same array reference, now sorted.
- */
-export function shellSort<T>(arr: T[]): T[] {
-  const n = arr.length;
-  // Standard Shell sequence: start with ~n/2, then halve until 1
-  let gap = Math.floor(n / 2);
+// Utility to compute length
+function linkedListLength<T>(head: ListNode<T> | null): number {
+  let len = 0;
+  let cur = head;
 
-  while (gap > 0) {
-    for (let i = gap; i < n; i++) {
-      // Perform a "gapped" insertion sort on the sub‑array
-      const temp = arr[i];
-      let j = i;
-
-      while (j >= gap && arr[j - gap] > temp) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-
-      arr[j] = temp;
-    }
-
-    gap = Math.floor(gap / 2);
+  while (cur) {
+    len++;
+    cur = cur.next;
   }
 
-  return arr;
+  return len;
 }
-import { shellSort } from "./shellSort";
+// Build a simple list: 1 → 2 → 3
+const node3: ListNode<number> = { value: 3, next: null };
+const node2: ListNode<number> = { value: 2, next: node3 };
+const node1: ListNode<number> = { value: 1, next: node2 };
 
-const unsorted = [23, 12, 1, 8, 33, -6, 10];
-console.log("Before:", unsorted);
-
-shellSort(unsorted);
-console.log("After:", unsorted);
-// → Before: [23, 12, 1, 8, 33, -6, 10]
-//    After:  [-6, 1, 8, 10, 12, 23, 33]
+console.log(linkedListLength(node1)); // 3
