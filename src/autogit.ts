@@ -1,37 +1,57 @@
-// Basic binary‑tree node
-class TreeNode<T> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
+/**
+ * Heap sort – sorts the array *in place* in ascending order.
+ *
+ * @param arr - mutable array of comparable values
+ */
+export function heapSort<T>(arr: T[], cmp: (a: T, b: T) => number = defaultCmp): void {
+  const n = arr.length;
 
-// Main helper that returns the height of a node and updates maxDiameter
-function computeHeight<T>(node: TreeNode<T> | null, maxDiameter: { value: number }): number {
-  if (!node) return -1; // height of empty subtree is -1 so that a single node gives 0
-
-  const leftHeight = computeHeight(node.left, maxDiameter);
-  const rightHeight = computeHeight(node.right, maxDiameter);
-
-  // Path that passes through this node
-  const diameterAtNode = leftHeight + rightHeight + 2; // +2 edges to connect left and right via current node
-  if (diameterAtNode > maxDiameter.value) {
-    maxDiameter.value = diameterAtNode;
+  /** Default comparator for numbers / strings */
+  function defaultCmp(a: T, b: T): number {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
   }
 
-  // Return height of this subtree
-  return Math.max(leftHeight, rightHeight) + 1;
+  /* ---------- heapify ----------
+   *  Rearranges subtree rooted at `i` so that
+   *  arr[i] is the largest of the subtree.
+   *  `size` is the effective heap size.
+   */
+  const heapify = (i: number, size: number): void => {
+    let largest = i;
+    const left  = 2 * i + 1;
+    const right = 2 * i + 2;
+
+    if (left < size && cmp(arr[left], arr[largest]) > 0)
+      largest = left;
+
+    if (right < size && cmp(arr[right], arr[largest]) > 0)
+      largest = right;
+
+    if (largest !== i) {
+      [arr[i], arr[largest]] = [arr[largest], arr[i]];
+      heapify(largest, size);       // continue down
+    }
+  };
+
+  /* ---------- 1. build max‑heap ---------- */
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+    heapify(i, n);
+  }
+
+  /* ---------- 2. extract max repeatedly ---------- */
+  for (let size = n; size > 1; size--) {
+    // Move current max to the end.
+    [arr[0], arr[size - 1]] = [arr[size - 1], arr[0]];
+
+    // Restore heap property on the reduced heap.
+    heapify(0, size - 1);
+  }
 }
 
-// Public API
-export function treeDiameter<T>(root: TreeNode<T> | null): number {
-  const maxDiameter = { value: 0 };
-  computeHeight(root, maxDiameter);
-  return maxDiameter.value; // number of edges on the longest path
-}
-        1
-       / \
-      2   3
-     / \     
-    4   5    
+/* ---------- Usage example ---------- */
+const data = [5, 3, 8, 4, 1, 9, 2];
+heapSort(data);          // in‑place
+console.log(data);       // [1, 2, 3, 4, 5, 8, 9]
+heapSort(array);          // sorts in place, ascending
