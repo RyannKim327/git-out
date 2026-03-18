@@ -1,24 +1,46 @@
-// A very minimal node definition
-interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
+// A typical binary‑tree node.
+export interface TreeNode {
+  value: number;
+  left?: TreeNode;
+  right?: TreeNode;
 }
 
-// Utility to compute length
-function linkedListLength<T>(head: ListNode<T> | null): number {
-  let len = 0;
-  let cur = head;
+/**
+ * Recursively finds the longest path from this node down to a leaf.
+ * depth(node) = 1 + max(depth(left), depth(right))
+ * Leaves contribute 1; an empty tree contributes 0.
+ */
+export function maxDepth(node?: TreeNode): number {
+  if (!node) return 0;
 
-  while (cur) {
-    len++;
-    cur = cur.next;
+  const leftDepth  = maxDepth(node.left);
+  const rightDepth = maxDepth(node.right);
+
+  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
+}
+export function maxDepthIterative(root?: TreeNode): number {
+  if (!root) return 0;
+
+  let max = 0;
+  const queue: Array<TreeNode> = [root];
+
+  while (queue.length) {
+    const levelSize = queue.length;
+    max++; // we’re on a new level
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!; // queue is non‑empty
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
   }
-
-  return len;
+  return max;
 }
-// Build a simple list: 1 → 2 → 3
-const node3: ListNode<number> = { value: 3, next: null };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const node1: ListNode<number> = { value: 1, next: node2 };
+const root: TreeNode = {
+  value: 1,
+  left:  { value: 2, right: { value: 4 } },
+  right: { value: 3 }
+};
 
-console.log(linkedListLength(node1)); // 3
+console.log(maxDepth(root));          // → 3
+console.log(maxDepthIterative(root)); // → 3
