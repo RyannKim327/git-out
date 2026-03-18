@@ -1,46 +1,39 @@
-// A typical binary‑tree node.
-export interface TreeNode {
-  value: number;
-  left?: TreeNode;
-  right?: TreeNode;
-}
-
 /**
- * Recursively finds the longest path from this node down to a leaf.
- * depth(node) = 1 + max(depth(left), depth(right))
- * Leaves contribute 1; an empty tree contributes 0.
+ * Return true if `a` and `b` are anagrams.
+ *
+ * @param a      First string
+ * @param b      Second string
+ * @param options  Optional settings – case sensitivity & ignoring non‑letters
  */
-export function maxDepth(node?: TreeNode): number {
-  if (!node) return 0;
-
-  const leftDepth  = maxDepth(node.left);
-  const rightDepth = maxDepth(node.right);
-
-  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
-}
-export function maxDepthIterative(root?: TreeNode): number {
-  if (!root) return 0;
-
-  let max = 0;
-  const queue: Array<TreeNode> = [root];
-
-  while (queue.length) {
-    const levelSize = queue.length;
-    max++; // we’re on a new level
-
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()!; // queue is non‑empty
-      if (node.left)  queue.push(node.left);
-      if (node.right) queue.push(node.right);
-    }
+function areAnagrams(
+  a: string,
+  b: string,
+  options?: {
+    caseSensitive?: boolean;
+    ignoreNonAlpha?: boolean;
   }
-  return max;
-}
-const root: TreeNode = {
-  value: 1,
-  left:  { value: 2, right: { value: 4 } },
-  right: { value: 3 }
-};
+): boolean {
+  const { caseSensitive = false, ignoreNonAlpha = false } = options || {};
 
-console.log(maxDepth(root));          // → 3
-console.log(maxDepthIterative(root)); // → 3
+  // Helper to canonicalise a string
+  const canon = (s: string) =>
+    s
+      .split('')
+      .filter((ch) => !ignoreNonAlpha || /[a-zA-Z]/.test(ch))
+      .map((ch) => (caseSensitive ? ch : ch.toLowerCase()))
+      .sort(); // array of chars, sorted
+
+  const aChars = canon(a);
+  const bChars = canon(b);
+
+  if (aChars.length !== bChars.length) return false;
+
+  for (let i = 0; i < aChars.length; i++) {
+    if (aChars[i] !== bChars[i]) return false;
+  }
+
+  return true;
+}
+areAnagrams('Listen', 'Silent');           // true
+areAnagrams('Hello', 'Ollhe', { caseSensitive: true }); // false
+areAnagrams('Dormitory', 'Dirty room', { ignoreNonAlpha: true }); // true
