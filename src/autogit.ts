@@ -1,66 +1,44 @@
 /**
- * In‑place selection sort.
- *
- * @param arr  The array to sort.
- * @param compare Optional comparison callback. Should return:
- *                 < 0 if a < b
- *                 > 0 if a > b
- *                 0 if a == b
+ * Area = (base * height) / 2
  */
-export function selectionSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): void {
-  const cmp = compare ?? defaultCompare;
-
-  const len = arr.length;
-  for (let i = 0; i < len - 1; i++) {
-    // Find the minimum element in arr[i…len-1]
-    let minIdx = i;
-    for (let j = i + 1; j < len; j++) {
-      if (cmp(arr[j], arr[minIdx]) < 0) {
-        minIdx = j;
-      }
-    }
-    // Swap the found minimum with the first element
-    if (minIdx !== i) {
-      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-    }
-  }
+function areaFromBaseHeight(base: number, height: number): number {
+  return (base * height) / 2;
 }
 
+// Example
+console.log(areaFromBaseHeight(10, 6)); // 30
 /**
- * Default comparer for numbers and strings.
+ * Shoelace / Gauss area formula for a polygon.
+ * For a triangle (3 vertices) it simplifies nicely.
  */
-function defaultCompare(a: any, b: any): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
+function areaFromCoords(
+  p1: { x: number; y: number },
+  p2: { x: number; y: number },
+  p3: { x: number; y: number }
+): number {
+  const s1 = p2.x * p1.y - p1.x * p2.y;
+  const s2 = p3.x * p2.y - p2.x * p3.y;
+  const s3 = p1.x * p3.y - p3.x * p1.y;
+  return Math.abs((s1 + s2 + s3) / 2);
 }
-// 1. Sorting numbers
-const nums = [64, 25, 12, 22, 11];
-selectionSort(nums);
-console.log(nums); // [11, 12, 22, 25, 64]
 
-// 2. Sorting strings
-const fruits = ['banana', 'apple', 'cherry'];
-selectionSort(fruits);
-console.log(fruits); // ['apple', 'banana', 'cherry']
+// Example
+console.log(
+  areaFromCoords(
+    { x: 0, y: 0 },
+    { x: 4, y: 0 },
+    { x: 0, y: 3 }
+  )
+); // 6
+/**
+ * Heron's formula:
+ *   s = (a + b + c) / 2
+ *   area = sqrt( s * (s - a) * (s - b) * (s - c) )
+ */
+function areaFromSides(a: number, b: number, c: number): number {
+  const s = (a + b + c) / 2;
+  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+}
 
-// 3. Sorting objects by a key
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 22 },
-  { name: 'Carol', age: 25 },
-];
-
-selectionSort(people, (a, b) => a.age - b.age);
-console.log(people);
-/*
-[
-  { name: 'Bob', age: 22 },
-  { name: 'Carol', age: 25 },
-  { name: 'Alice', age: 30 }
-]
-*/
+// Example
+console.log(areaFromSides(5, 6, 7)); // ≈ 14.6969
