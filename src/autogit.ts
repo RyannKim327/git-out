@@ -1,40 +1,68 @@
-// Generic helper – keeps the original array untouched
-function uniq<T>(arr: T[]): T[] {
-  return [...new Set(arr)];
-}
-const numbers = [1, 2, 3, 2, 4, 1, 5];
-console.log(uniq(numbers));      // [1, 2, 3, 4, 5]
+/**
+ * Pre‑computes the shift table for a pattern.
+ *   pattern: the pattern we’re searching for
+ *   Returns: a Map from character → shift distance
+ */
+function buildShiftTable(pattern: string): Map<string, number> {
+  const table = new Map<string, number>();
+  const m = pattern.length;
 
-const words = ['apple', 'banana', 'apple', 'orange'];
-console.log(uniq(words));        // ['apple', 'banana', 'orange']
-
-// With objects – note that Set checks reference equality
-const objs = [{ id: 1 }, { id: 2 }, { id: 1 }];
-console.log(uniq(objs));         // [{ id: 1 }, { id: 2 }, { id: 1 }]
-function uniqByKey<T, K extends keyof T>(arr: T[], key: K): T[] {
-  const seen = new Map<T[K], T>();
-  for (const item of arr) {
-    if (!seen.has(item[key])) {
-      seen.set(item[key], item);
-    }
+  // All characters that appear in the pattern get an initial shift of m
+  for (const ch of pattern) {
+    table.set(ch, m);
   }
-  return Array.from(seen.values());
-}
 
-const people = [
-  { id: 1, name: 'Ana' },
-  { id: 2, name: 'Ben' },
-  { id: 1, name: 'Ana' },
-];
-console.log(uniqByKey(people, 'id'));  // [{ id: 1, name: 'Ana' }, { id: 2, name: 'Ben' }]
-function uniqInPlace<T>(arr: T[]): void {
-  const seen = new Set<T>();
-  let writeIdx = 0;
-  for (const item of arr) {
-    if (!seen.has(item)) {
-      seen.add(item);
-      arr[writeIdx++] = item;
-    }
+  // For each character except the last one, set its shift to (m - i - 1)
+  for (let i = 0; i < m - 1; ++i) {
+    table.set(pattern[i], m - i - 1);
   }
-  arr.length = writeIdx; // truncate the rest
+
+  return table;
 }
+/**
+ * Implements Boyer‑Moore‑Horspool.
+ * @param text   – the text to search
+ * @param pattern – the pattern to find
+ * @returns      – the index of the first match, or -1 if none
+ */
+export function boyerMooreHorspool(text: string, pattern: string): number {
+  const n = text.length;
+  const m = pattern.length;
+
+  if (m === 0) return 0;          // Empty pattern
+  if (m > n) return -1;           // Pattern longer than text
+
+  const shiftTable = buildShiftTable(pattern);
+
+  let idx = 0;                    // Index of the leftmost character of the window
+  while (idx <= n - m) {
+    let j = m - 1;
+
+    // Compare pattern from right to left
+    while (j >= 0 && text[idx + j] === pattern[j]) {
+      j -= 1;
+    }
+
+    // If all characters matched
+    if (j < 0) {
+      return idx;                // Found at position idx
+    }
+
+    // Mismatch: figure out how far to shift
+    const mismatchedChar = text[idx + m - 1];
+    const shift = shiftTable.get(mismatchedChar) ?? m;
+    idx += shift;
+  }
+
+  return -1;                     // No match found
+}
+const txt = "ABAAABCDABCABABCAB";
+const pat = "ABCAB";
+
+const pos = boyerMooreHorspool(txt, pat);
+if (pos >= 0) {
+  console.log(`"${pat}" found at index ${pos}`);
+} else {
+  console.log(`"${pat}" not found`);
+}
+"ABCAB" found at index 12
