@@ -1,71 +1,90 @@
 /**
- * Returns true if `a` and `b` contain exactly the same letters,
- * disregarding order.
+ * Returns the k‑th smallest element (1‑based index) in `arr`.
  *
- * @param a – first string
- * @param b – second string
- * @param options – optional flags
- *   - ignoreSpaces: treat spaces as insignificant
- *   - ignorePunctuation: strip punctuation marks
- *   - ignoreCase: treat uppercase and lowercase as the same
+ * @param arr - The array of numbers (can contain duplicates).
+ * @param k   - 1 = smallest, 2 = second smallest, …, arr.length = largest.
+ * @returns   The value of the k‑th smallest element.
+ *
+ * @throws    If k is out of bounds.
  */
-export function areAnagrams(
-  a: string,
-  b: string,
-  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
-): boolean {
-  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
+function kthSmallest(arr: number[], k: number): number;
+function partition(
+  arr: number[],
+  left: number,
+  right: number,
+  pivotIndex: number
+): number {
+  const pivotValue = arr[pivotIndex];
+  // Move pivot to end
+  [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
+  let storeIndex = left;
 
-  const sanitize = (s: string) => {
-    if (ignoreCase) s = s.toLowerCase();
-    if (ignoreSpaces) s = s.replace(/\s+/g, '');
-    if (ignorePunctuation) s = s.replace(/[^\w]/g, ''); // keep letters & digits
-    return s;
-  };
-
-  const sa = sanitize(a).split('').sort().join('');
-  const sb = sanitize(b).split('').sort().join('');
-
-  return sa === sb;
-}
-/**
- * Frequency‑count version – O(n) time, O(σ) space  
- * (σ = size of alphabet, constant for ASCII/Unicode)
- */
-export function areAnagramsFast(
-  a: string,
-  b: string,
-  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
-): boolean {
-  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
-
-  const count = (s: string) => {
-    const map = new Map<string, number>();
-    for (const ch of s) {
-      const key = ignoreCase ? ch.toLowerCase() : ch;
-      if (ignoreSpaces && key === ' ') continue;
-      if (ignorePunctuation && !/[A-Za-z0-9]/.test(key)) continue;
-      map.set(key, (map.get(key) ?? 0) + 1);
+  for (let i = left; i < right; i++) {
+    if (arr[i] < pivotValue) {
+      [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
+      storeIndex++;
     }
-    return map;
-  };
-
-  const aMap = count(a);
-  const bMap = count(b);
-
-  if (aMap.size !== bMap.size) return false; // quick early exit
-
-  for (const [char, aCount] of aMap.entries()) {
-    if (bMap.get(char) !== aCount) return false;
+  }
+  // Move pivot to its final place
+  [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
+  return storeIndex;
+}
+function quickSelect(
+  arr: number[],
+  left: number,
+  right: number,
+  k: number // 0‑based rank we’re looking for
+): number {
+  if (left === right) {
+    return arr[left];
   }
 
-  return true;
+  // Pick a pivot (here: random for average‑case safety)
+  const pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
+  const pivotPos   = partition(arr, left, right, pivotIndex);
+
+  if (k === pivotPos) {
+    return arr[pivotPos];
+  } else if (k < pivotPos) {
+    return quickSelect(arr, left, pivotPos - 1, k);
+  } else {
+    return quickSelect(arr, pivotPos + 1, right, k);
+  }
 }
-// Basic usage
-areAnagrams('Listen', 'Silent'); // true
+function kthSmallest(arr: number[], k: number): number {
+  if (k < 1 || k > arr.length) {
+    throw new Error("k is out of bounds");
+  }
 
-// Ignoring case & spaces
-areAnagrams('Dormitory', 'Dirty room', { ignoreSpaces: true, ignoreCase: true }); // true
+  // idx = k‑1 because we want 1‑based → 0‑based conversion
+  const idx = k - 1;
+  // We’ll mutate the original array – if you want to avoid that, clone it:
+  // const copy = arr.slice();
+  // const result = quickSelect(copy, 0, copy.length - 1, idx);
 
-// Fast version with punctuation handling
-areAnagramsFast("A!b@c#d", "c b a d", { ignorePunctuation: true, ignoreCase: true }); // true
+  return quickSelect(arr, 0, arr.length - 1, idx);
+}
+const sample = [12, 3, 5, 7, 4, 19, 26];
+console.log(kthSmallest(sample, 1)); // 3  (smallest)
+console.log(kthSmallest(sample, 3)); // 5  (third smallest)
+console.log(kthSmallest(sample, 7)); // 26 (largest)
+function kthSmallestIter(arr: number[], k: number): number {
+  if (k < 1 || k > arr.length) throw new Error("k out of bounds");
+  let left = 0;
+  let right = arr.length - 1;
+  const target = k - 1;
+
+  while (true) {
+    const pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
+    const pivotPos = partition(arr, left, right, pivotIndex);
+
+    if (pivotPos === target) {
+      return arr[pivotPos];
+    }
+    if (pivotPos > target) {
+      right = pivotPos - 1;
+    } else {
+      left = pivotPos + 1;
+    }
+  }
+}
