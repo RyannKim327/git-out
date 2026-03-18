@@ -1,69 +1,53 @@
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElement(arr: number[]): number | null {
-  if (arr.length === 0) return null;
+/** Node definition for a singly linked list. */
+interface ListNode<T> {
+  value: T;
+  next?: ListNode<T>;
+}
 
-  // 1st pass – find a candidate
-  let candidate = arr[0];
-  let count = 0;
-
-  for (const num of arr) {
-    if (count === 0) {
-      candidate = num;
-      count = 1;
+/** Helper to build a list from an array (for demo testing). */
+function buildList<T>(arr: T[]): ListNode<T> | undefined {
+  let head: ListNode<T> | undefined;
+  let tail: ListNode<T> | undefined;
+  for (const val of arr) {
+    const node: ListNode<T> = { value: val };
+    if (!head) {
+      head = node;
+      tail = node;
     } else {
-      count += num === candidate ? 1 : -1;
+      tail!.next = node;
+      tail = node;
     }
   }
-
-  // 2nd pass – confirm candidate (optional but safe)
-  count = 0;
-  for (const num of arr) {
-    if (num === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
+  return head;
 }
+
 /**
- * Returns the majority element if it exists,
- * otherwise returns null.
+ * Finds the **lower** middle of a singly linked list.
+ * If the list is empty, returns undefined.
  */
-function majorityElementMap(arr: number[]): number | null {
-  const freq = new Map<number, number>();
+function getMiddle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
+  if (!head) return undefined;
 
-  for (const num of arr) {
-    freq.set(num, (freq.get(num) ?? 0) + 1);
+  let slow = head;
+  let fast = head;
+
+  // Advance fast by 2 and slow by 1.
+  // When fast reaches the end, slow is at the middle.
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  const n = arr.length;
-  for (const [num, count] of freq.entries()) {
-    if (count > Math.floor(n / 2)) {
-      return num;
-    }
-  }
-  return null;
+  return slow;
 }
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElementSorted(arr: number[]): number | null {
-  if (arr.length === 0) return null;
 
-  // Make a copy so we don’t mutate the caller’s array
-  const sorted = [...arr].sort((a, b) => a - b);
-  const candidate = sorted[Math.floor(sorted.length / 2)];
-  let count = 0;
+/** Demo */
+const list = buildList([10, 20, 30, 40, 50]);   // odd length
+console.log(getMiddle(list)?.value); // → 30
 
-  for (const num of sorted) {
-    if (num === candidate) count++;
-  }
+const listEven = buildList([1, 2, 3, 4]);        // even length
+console.log(getMiddle(listEven)?.value); // → 2  (lower middle)
 
-  return count > Math.floor(arr.length / 2) ? candidate : null;
-}
-const testArray = [2, 2, 1, 1, 1, 2, 2];
-console.log(majorityElement(testArray));      // 2
-console.log(majorityElementMap(testArray));   // 2
-console.log(majorityElementSorted(testArray)); // 2
+// If you want the *upper* middle for even lists, just change the loop:
+//   while (fast.next) { ... }
+//   return slow.next!;   // after the loop, slow is just before the upper middle.
