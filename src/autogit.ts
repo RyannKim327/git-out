@@ -1,19 +1,43 @@
-function firstRepeated(str: string): string | null {
-  // Map will keep a count of each char we’ve seen
-  const seen = new Map<string, number>();
+// shellSort.ts
 
-  for (const ch of str) {
-    const count = seen.get(ch) ?? 0;
-    if (count === 1) {
-      // This is the second time we’re seeing `ch`
-      return ch;
+/**
+ * Shell sort – an insertion‑sort based algorithm that improves on the
+ * “gaps” of ordinary insertion sort using a diminishing sequence.
+ *
+ * @param arr The array to sort in place.  It must contain elements that
+ *            can be compared with the `<` operator.
+ * @returns The same array reference, now sorted.
+ */
+export function shellSort<T>(arr: T[]): T[] {
+  const n = arr.length;
+  // Standard Shell sequence: start with ~n/2, then halve until 1
+  let gap = Math.floor(n / 2);
+
+  while (gap > 0) {
+    for (let i = gap; i < n; i++) {
+      // Perform a "gapped" insertion sort on the sub‑array
+      const temp = arr[i];
+      let j = i;
+
+      while (j >= gap && arr[j - gap] > temp) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+
+      arr[j] = temp;
     }
-    // Mark that we’ve seen this char once (or increment if it’s that later)
-    seen.set(ch, count + 1);
+
+    gap = Math.floor(gap / 2);
   }
-  // No repeats
-  return null;
+
+  return arr;
 }
-console.log(firstRepeated("hello")); // → "l"  (first ‘l’ repeats)
-console.log(firstRepeated("world")); // → null  (no repeats)
-console.log(firstRepeated("javascript")); // → "a"
+import { shellSort } from "./shellSort";
+
+const unsorted = [23, 12, 1, 8, 33, -6, 10];
+console.log("Before:", unsorted);
+
+shellSort(unsorted);
+console.log("After:", unsorted);
+// → Before: [23, 12, 1, 8, 33, -6, 10]
+//    After:  [-6, 1, 8, 10, 12, 23, 33]
