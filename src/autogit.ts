@@ -1,36 +1,43 @@
-// Random-ish TypeScript example that pulls in axios
+// shellSort.ts
 
-import axios from 'axios'
+/**
+ * Shell sort – an insertion‑sort based algorithm that improves on the
+ * “gaps” of ordinary insertion sort using a diminishing sequence.
+ *
+ * @param arr The array to sort in place.  It must contain elements that
+ *            can be compared with the `<` operator.
+ * @returns The same array reference, now sorted.
+ */
+export function shellSort<T>(arr: T[]): T[] {
+  const n = arr.length;
+  // Standard Shell sequence: start with ~n/2, then halve until 1
+  let gap = Math.floor(n / 2);
 
-interface Todo {
-  userId: number
-  id: number
-  title: string
-  completed: boolean
-}
+  while (gap > 0) {
+    for (let i = gap; i < n; i++) {
+      // Perform a "gapped" insertion sort on the sub‑array
+      const temp = arr[i];
+      let j = i;
 
-const client = axios.create({
-  baseURL: 'https://jsonplaceholder.typicode.com',
-  timeout: 3000,
-})
+      while (j >= gap && arr[j - gap] > temp) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
 
-async function fetchTodos(limit = 5): Promise<Todo[]> {
-  const { data } = await client.get<Todo[]>('/todos')
-  return data.slice(0, limit)
-}
+      arr[j] = temp;
+    }
 
-async function toggleTodo(id: number, completed: boolean): Promise<void> {
-  await client.patch(`/todos/${id}`, { completed })
-}
-
-;(async () => {
-  try {
-    const todos = await fetchTodos()
-    console.log('Sample todos:', todos)
-
-    await toggleTodo(todos[0].id, !todos[0].completed)
-    console.log(`Todo ${todos[0].id} status flipped!`)
-  } catch (err) {
-    console.error('Something went wrong:', err instanceof Error ? err.message : err)
+    gap = Math.floor(gap / 2);
   }
-})()
+
+  return arr;
+}
+import { shellSort } from "./shellSort";
+
+const unsorted = [23, 12, 1, 8, 33, -6, 10];
+console.log("Before:", unsorted);
+
+shellSort(unsorted);
+console.log("After:", unsorted);
+// → Before: [23, 12, 1, 8, 33, -6, 10]
+//    After:  [-6, 1, 8, 10, 12, 23, 33]
