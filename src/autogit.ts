@@ -1,58 +1,69 @@
 /**
- * Return the largest prime factor of a positive integer `n`.
- * For `n <= 1` returns `null` (no prime factors).
- *
- * @param n – a number > 0 (use Number if you’re certain it fits in a double precision float)
+ * Returns the majority element if it exists,
+ * otherwise returns null.
  */
-function largestPrimeFactor(n: number): number | null {
-  if (n <= 1) return null;          // 0 or 1 has no prime factors
+function majorityElement(arr: number[]): number | null {
+  if (arr.length === 0) return null;
 
-  let remainder = n;
-  let largest = 2;
+  // 1st pass – find a candidate
+  let candidate = arr[0];
+  let count = 0;
 
-  // Always strip out factors of 2 first – saves time later
-  while (remainder % 2 === 0) {
-    largest = 2;
-    remainder /= 2;
-  }
-
-  // Now test only odd divisors (3,5,7,…)
-  const limit = Math.sqrt(remainder);
-  for (let divisor = 3; divisor <= limit; divisor += 2) {
-    while (remainder % divisor === 0) {
-      largest = divisor;
-      remainder /= divisor;
+  for (const num of arr) {
+    if (count === 0) {
+      candidate = num;
+      count = 1;
+    } else {
+      count += num === candidate ? 1 : -1;
     }
   }
 
-  // If anything left of 1, it’s prime and bigger than any we found
-  if (remainder > 1) largest = remainder;
-
-  return largest;
-}
-console.log(largestPrimeFactor(15));    // 5
-console.log(largestPrimeFactor(21));    // 7
-console.log(largestPrimeFactor(26));    // 13
-console.log(largestPrimeFactor(120));   // 5   (120 = 2⁴·3·5)
-function largestPrimeFactorBig(n: bigint): bigint | null {
-  if (n <= 1n) return null;
-  let remainder = n;
-  let largest = 2n;
-
-  while (remainder % 2n === 0n) {
-    largest = 2n;
-    remainder /= 2n;
+  // 2nd pass – confirm candidate (optional but safe)
+  count = 0;
+  for (const num of arr) {
+    if (num === candidate) count++;
   }
 
-  let divisor = 3n;
-  while (divisor * divisor <= remainder) {
-    while (remainder % divisor === 0n) {
-      largest = divisor;
-      remainder /= divisor;
+  return count > Math.floor(arr.length / 2) ? candidate : null;
+}
+/**
+ * Returns the majority element if it exists,
+ * otherwise returns null.
+ */
+function majorityElementMap(arr: number[]): number | null {
+  const freq = new Map<number, number>();
+
+  for (const num of arr) {
+    freq.set(num, (freq.get(num) ?? 0) + 1);
+  }
+
+  const n = arr.length;
+  for (const [num, count] of freq.entries()) {
+    if (count > Math.floor(n / 2)) {
+      return num;
     }
-    divisor += 2n;
+  }
+  return null;
+}
+/**
+ * Returns the majority element if it exists,
+ * otherwise returns null.
+ */
+function majorityElementSorted(arr: number[]): number | null {
+  if (arr.length === 0) return null;
+
+  // Make a copy so we don’t mutate the caller’s array
+  const sorted = [...arr].sort((a, b) => a - b);
+  const candidate = sorted[Math.floor(sorted.length / 2)];
+  let count = 0;
+
+  for (const num of sorted) {
+    if (num === candidate) count++;
   }
 
-  if (remainder > 1n) largest = remainder;
-  return largest;
+  return count > Math.floor(arr.length / 2) ? candidate : null;
 }
+const testArray = [2, 2, 1, 1, 1, 2, 2];
+console.log(majorityElement(testArray));      // 2
+console.log(majorityElementMap(testArray));   // 2
+console.log(majorityElementSorted(testArray)); // 2
