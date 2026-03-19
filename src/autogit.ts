@@ -1,53 +1,36 @@
-/** Node definition for a singly linked list. */
-interface ListNode<T> {
-  value: T;
-  next?: ListNode<T>;
+// Random-ish TypeScript example that pulls in axios
+
+import axios from 'axios'
+
+interface Todo {
+  userId: number
+  id: number
+  title: string
+  completed: boolean
 }
 
-/** Helper to build a list from an array (for demo testing). */
-function buildList<T>(arr: T[]): ListNode<T> | undefined {
-  let head: ListNode<T> | undefined;
-  let tail: ListNode<T> | undefined;
-  for (const val of arr) {
-    const node: ListNode<T> = { value: val };
-    if (!head) {
-      head = node;
-      tail = node;
-    } else {
-      tail!.next = node;
-      tail = node;
-    }
+const client = axios.create({
+  baseURL: 'https://jsonplaceholder.typicode.com',
+  timeout: 3000,
+})
+
+async function fetchTodos(limit = 5): Promise<Todo[]> {
+  const { data } = await client.get<Todo[]>('/todos')
+  return data.slice(0, limit)
+}
+
+async function toggleTodo(id: number, completed: boolean): Promise<void> {
+  await client.patch(`/todos/${id}`, { completed })
+}
+
+;(async () => {
+  try {
+    const todos = await fetchTodos()
+    console.log('Sample todos:', todos)
+
+    await toggleTodo(todos[0].id, !todos[0].completed)
+    console.log(`Todo ${todos[0].id} status flipped!`)
+  } catch (err) {
+    console.error('Something went wrong:', err instanceof Error ? err.message : err)
   }
-  return head;
-}
-
-/**
- * Finds the **lower** middle of a singly linked list.
- * If the list is empty, returns undefined.
- */
-function getMiddle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  if (!head) return undefined;
-
-  let slow = head;
-  let fast = head;
-
-  // Advance fast by 2 and slow by 1.
-  // When fast reaches the end, slow is at the middle.
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  return slow;
-}
-
-/** Demo */
-const list = buildList([10, 20, 30, 40, 50]);   // odd length
-console.log(getMiddle(list)?.value); // → 30
-
-const listEven = buildList([1, 2, 3, 4]);        // even length
-console.log(getMiddle(listEven)?.value); // → 2  (lower middle)
-
-// If you want the *upper* middle for even lists, just change the loop:
-//   while (fast.next) { ... }
-//   return slow.next!;   // after the loop, slow is just before the upper middle.
+})()
