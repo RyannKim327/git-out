@@ -1,23 +1,40 @@
-const str = "42";
-const num = Number(str);   // 42 (a number)
-
-const maybeNum = Number("3.14"); // 3.14
-const invalid = Number("foo");   // NaN
-const str = "42";
-const num = +str;   // 42
-const intStr   = "42";
-const intVal   = parseInt(intStr, 10);  // 42
-
-const floatStr = "3.14";
-const truncated = parseInt(floatStr, 10); // 3
-function toInteger(value: string): number {
-  const result = Number(value);
-  if (!Number.isNaN(result) && Number.isInteger(result)) {
-    return result;
-  }
-  throw new Error(`"${value}" is not a valid integer`);
+// Generic helper – keeps the original array untouched
+function uniq<T>(arr: T[]): T[] {
+  return [...new Set(arr)];
 }
-const asNumber  = Number("42");      // 42
-const asInteger = parseInt("42", 10); // 42
-// or the shorthand
-const asNumberShorthand = +"42";      // 42
+const numbers = [1, 2, 3, 2, 4, 1, 5];
+console.log(uniq(numbers));      // [1, 2, 3, 4, 5]
+
+const words = ['apple', 'banana', 'apple', 'orange'];
+console.log(uniq(words));        // ['apple', 'banana', 'orange']
+
+// With objects – note that Set checks reference equality
+const objs = [{ id: 1 }, { id: 2 }, { id: 1 }];
+console.log(uniq(objs));         // [{ id: 1 }, { id: 2 }, { id: 1 }]
+function uniqByKey<T, K extends keyof T>(arr: T[], key: K): T[] {
+  const seen = new Map<T[K], T>();
+  for (const item of arr) {
+    if (!seen.has(item[key])) {
+      seen.set(item[key], item);
+    }
+  }
+  return Array.from(seen.values());
+}
+
+const people = [
+  { id: 1, name: 'Ana' },
+  { id: 2, name: 'Ben' },
+  { id: 1, name: 'Ana' },
+];
+console.log(uniqByKey(people, 'id'));  // [{ id: 1, name: 'Ana' }, { id: 2, name: 'Ben' }]
+function uniqInPlace<T>(arr: T[]): void {
+  const seen = new Set<T>();
+  let writeIdx = 0;
+  for (const item of arr) {
+    if (!seen.has(item)) {
+      seen.add(item);
+      arr[writeIdx++] = item;
+    }
+  }
+  arr.length = writeIdx; // truncate the rest
+}
