@@ -1,45 +1,37 @@
-// src/cronJob.ts
-
-import cron from 'node-cron';
-
-// Helper: generate a random number between 1 and 100
-const randomInt = () => Math.floor(Math.random() * 100) + 1;
-
-// The job – runs every minute (`* * * * *`)
-const job = cron.schedule('* * * * *', () => {
-  const now = new Date().toISOString();
-  const rand = randomInt();
-  console.log(`[${now}] Random number: ${rand}`);
-  // You can place any logic here (DB ops, API calls, etc.)
-});
-
-// Start the job
-job.start();
-console.log('Cron job scheduled: every minute.');
-# 1️⃣ Create a new TS project (if you haven't already)
-mkdir cron-demo && cd cron-demo
-npm init -y
-
-# 2️⃣ Install the required packages
-npm i node-cron
-npm i -D typescript @types/node
-
-# 3️⃣ Add a tsconfig.json (basic version)
-cat <<'EOF' > tsconfig.json
-{
-  "compilerOptions": {
-    "target": "es2019",
-    "module": "commonjs",
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "strict": true,
-    "esModuleInterop": true
-  },
-  "include": ["src"]
+// Basic binary‑tree node
+class TreeNode<T> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
-EOF
 
-# 4️⃣ Place the `cronJob.ts` file in ./src
-# 5️⃣ Compile and run
-npx tsc
-node dist/cronJob.js
+// Main helper that returns the height of a node and updates maxDiameter
+function computeHeight<T>(node: TreeNode<T> | null, maxDiameter: { value: number }): number {
+  if (!node) return -1; // height of empty subtree is -1 so that a single node gives 0
+
+  const leftHeight = computeHeight(node.left, maxDiameter);
+  const rightHeight = computeHeight(node.right, maxDiameter);
+
+  // Path that passes through this node
+  const diameterAtNode = leftHeight + rightHeight + 2; // +2 edges to connect left and right via current node
+  if (diameterAtNode > maxDiameter.value) {
+    maxDiameter.value = diameterAtNode;
+  }
+
+  // Return height of this subtree
+  return Math.max(leftHeight, rightHeight) + 1;
+}
+
+// Public API
+export function treeDiameter<T>(root: TreeNode<T> | null): number {
+  const maxDiameter = { value: 0 };
+  computeHeight(root, maxDiameter);
+  return maxDiameter.value; // number of edges on the longest path
+}
+        1
+       / \
+      2   3
+     / \     
+    4   5    
