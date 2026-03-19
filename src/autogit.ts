@@ -1,58 +1,23 @@
-/**
- * Return the largest prime factor of a positive integer `n`.
- * For `n <= 1` returns `null` (no prime factors).
- *
- * @param n – a number > 0 (use Number if you’re certain it fits in a double precision float)
- */
-function largestPrimeFactor(n: number): number | null {
-  if (n <= 1) return null;          // 0 or 1 has no prime factors
+const str = "42";
+const num = Number(str);   // 42 (a number)
 
-  let remainder = n;
-  let largest = 2;
+const maybeNum = Number("3.14"); // 3.14
+const invalid = Number("foo");   // NaN
+const str = "42";
+const num = +str;   // 42
+const intStr   = "42";
+const intVal   = parseInt(intStr, 10);  // 42
 
-  // Always strip out factors of 2 first – saves time later
-  while (remainder % 2 === 0) {
-    largest = 2;
-    remainder /= 2;
+const floatStr = "3.14";
+const truncated = parseInt(floatStr, 10); // 3
+function toInteger(value: string): number {
+  const result = Number(value);
+  if (!Number.isNaN(result) && Number.isInteger(result)) {
+    return result;
   }
-
-  // Now test only odd divisors (3,5,7,…)
-  const limit = Math.sqrt(remainder);
-  for (let divisor = 3; divisor <= limit; divisor += 2) {
-    while (remainder % divisor === 0) {
-      largest = divisor;
-      remainder /= divisor;
-    }
-  }
-
-  // If anything left of 1, it’s prime and bigger than any we found
-  if (remainder > 1) largest = remainder;
-
-  return largest;
+  throw new Error(`"${value}" is not a valid integer`);
 }
-console.log(largestPrimeFactor(15));    // 5
-console.log(largestPrimeFactor(21));    // 7
-console.log(largestPrimeFactor(26));    // 13
-console.log(largestPrimeFactor(120));   // 5   (120 = 2⁴·3·5)
-function largestPrimeFactorBig(n: bigint): bigint | null {
-  if (n <= 1n) return null;
-  let remainder = n;
-  let largest = 2n;
-
-  while (remainder % 2n === 0n) {
-    largest = 2n;
-    remainder /= 2n;
-  }
-
-  let divisor = 3n;
-  while (divisor * divisor <= remainder) {
-    while (remainder % divisor === 0n) {
-      largest = divisor;
-      remainder /= divisor;
-    }
-    divisor += 2n;
-  }
-
-  if (remainder > 1n) largest = remainder;
-  return largest;
-}
+const asNumber  = Number("42");      // 42
+const asInteger = parseInt("42", 10); // 42
+// or the shorthand
+const asNumberShorthand = +"42";      // 42
