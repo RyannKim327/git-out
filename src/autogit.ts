@@ -1,36 +1,88 @@
 /**
- * Returns the first character that appears only once.
- * If all characters repeat, null is returned.
+ * Merge‑Sort for an array.
+ *
+ * @param arr   The array to sort.
+ * @param cmp   Optional comparison function. If omitted, the default <, > operators are used.
+ * @returns The sorted array (in‑place, but a new array is returned for convenience).
  */
-function firstNonRepeating(str: string): string | null {
-  // Build a frequency map
-  const freq = new Map<string, number>();
-  for (const ch of str) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
+export function mergeSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): T[] {
+  // No need to sort if the array is empty or has a single element.
+  if (arr.length <= 1) return arr.slice();
 
-  // Find the first character with a count of 1
-  for (const ch of str) {
-    if (freq.get(ch) === 1) return ch;
-  }
+  const mid = Math.floor(arr.length / 2);
+  const left = mergeSort(arr.slice(0, mid), cmp);
+  const right = mergeSort(arr.slice(mid), cmp);
 
-  return null;   // nothing found
+  return merge(left, right, cmp);
 }
 
-// --- examples -------------------------------------------------
-console.log(firstNonRepeating('abacabad')); // "c"
-console.log(firstNonRepeating('aabbcc'));   // null
-function firstNonRepeatingOnePass(str: string): string | null {
-  const counts: Record<string, number> = {};
-  const queue: string[] = [];
+/**
+ * Merges two sorted arrays into a new sorted array.
+ *
+ * @param left  The left sorted half.
+ * @param right The right sorted half.
+ * @param cmp   Comparison function (optional).
+ * @returns A new sorted array containing all elements from left and right.
+ */
+function merge<T>(
+  left: T[],
+  right: T[],
+  cmp?: (a: T, b: T) => number
+): T[] {
+  const result: T[] = [];
+  let i = 0,
+    j = 0;
 
-  for (const ch of str) {
-    counts[ch] = (counts[ch] ?? 0) + 1;
-    if (counts[ch] === 1) queue.push(ch);
+  const compare = cmp
+    ? cmp
+    : (a: T, b: T) => {
+        // default numeric or string comparison
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+      };
 
-    // purge invalid candidates from the front
-    while (queue.length && counts[queue[0]] > 1) queue.shift();
+  while (i < left.length && j < right.length) {
+    if (compare(left[i], right[j]) <= 0) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
+    }
   }
 
-  return queue.length ? queue[0] : null;
+  // Attach leftovers … at most one of these will push anything.
+  return result.concat(left.slice(i)).concat(right.slice(j));
 }
+// Numbers
+const nums = [38, 27, 43, 3, 9, 82, 10];
+console.log(mergeSort(nums)); // [3, 9, 10, 27, 38, 43, 82]
+
+// Strings
+const words = ["pear", "apple", "banana", "cherry"];
+console.log(mergeSort(words)); // ['apple', 'banana', 'cherry', 'pear']
+
+// Custom type
+type Person = { name: string; age: number };
+const people: Person[] = [
+  { name: "Alice", age: 34 },
+  { name: "Bob", age: 23 },
+  { name: "Carol", age: 28 }
+];
+console.log(
+  mergeSort(people, (a, b) => a.age - b.age)
+);
+// People sorted by age: Bob, Carol, Alice
+function isSorted<T>(arr: T[], cmp?: (a: T, b: T) => number): boolean {
+  const compare = cmp
+    ? cmp
+    : (a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0);
+  for (let i = 1; i < arr.length; i++) {
+    if (compare(arr[i - 1], arr[i]) > 0) return false;
+  }
+  return true;
+}
+
+console.log(isSorted(mergeSort([5, 2, 9, 1, 5, 6]))); // true
