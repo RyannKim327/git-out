@@ -1,88 +1,27 @@
 /**
- * Merge‑Sort for an array.
- *
- * @param arr   The array to sort.
- * @param cmp   Optional comparison function. If omitted, the default <, > operators are used.
- * @returns The sorted array (in‑place, but a new array is returned for convenience).
+ * Return true if the supplied string is a palindrome (ignoring case,
+ * punctuation, spaces, and other non‑alphanumeric characters).
  */
-export function mergeSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  // No need to sort if the array is empty or has a single element.
-  if (arr.length <= 1) return arr.slice();
+export function isPalindrome(input: string): boolean {
+  // Keep only letters and digits, make everything lowercase
+  const cleaned = input.replace(/[^a-z0-9]/gi, '').toLowerCase();
 
-  const mid = Math.floor(arr.length / 2);
-  const left = mergeSort(arr.slice(0, mid), cmp);
-  const right = mergeSort(arr.slice(mid), cmp);
+  // Quick escape: a single character or empty string is trivially a palindrome
+  if (cleaned.length <= 1) return true;
 
-  return merge(left, right, cmp);
-}
-
-/**
- * Merges two sorted arrays into a new sorted array.
- *
- * @param left  The left sorted half.
- * @param right The right sorted half.
- * @param cmp   Comparison function (optional).
- * @returns A new sorted array containing all elements from left and right.
- */
-function merge<T>(
-  left: T[],
-  right: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  const result: T[] = [];
-  let i = 0,
-    j = 0;
-
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => {
-        // default numeric or string comparison
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-      };
-
-  while (i < left.length && j < right.length) {
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
-    }
-  }
-
-  // Attach leftovers … at most one of these will push anything.
-  return result.concat(left.slice(i)).concat(right.slice(j));
-}
-// Numbers
-const nums = [38, 27, 43, 3, 9, 82, 10];
-console.log(mergeSort(nums)); // [3, 9, 10, 27, 38, 43, 82]
-
-// Strings
-const words = ["pear", "apple", "banana", "cherry"];
-console.log(mergeSort(words)); // ['apple', 'banana', 'cherry', 'pear']
-
-// Custom type
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: "Alice", age: 34 },
-  { name: "Bob", age: 23 },
-  { name: "Carol", age: 28 }
-];
-console.log(
-  mergeSort(people, (a, b) => a.age - b.age)
-);
-// People sorted by age: Bob, Carol, Alice
-function isSorted<T>(arr: T[], cmp?: (a: T, b: T) => number): boolean {
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0);
-  for (let i = 1; i < arr.length; i++) {
-    if (compare(arr[i - 1], arr[i]) > 0) return false;
+  // Compare characters from the front and back
+  for (let i = 0, j = cleaned.length - 1; i < j; i++, j--) {
+    if (cleaned[i] !== cleaned[j]) return false;
   }
   return true;
 }
-
-console.log(isSorted(mergeSort([5, 2, 9, 1, 5, 6]))); // true
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("racecar"));                         // true
+console.log(isPalindrome("Hello, world!"));                   // false
+export function isExactPalindrome(input: string): boolean {
+  if (input.length <= 1) return true;
+  for (let i = 0, j = input.length - 1; i < j; i++, j--) {
+    if (input[i] !== input[j]) return false;
+  }
+  return true;
+}
