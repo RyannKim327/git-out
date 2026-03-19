@@ -1,54 +1,124 @@
-// ------------------------------------------------------------------
-// 1️⃣ Define the tree node (you can adapt it to your existing type)
-export interface TreeNode {
-  val: number;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
+// A node identifier can be any string or number
+export type Vertex = string | number;
+
+// Directed edge with a non‑negative weight
+export interface Edge {
+    to: Vertex;
+    cost: number;
 }
 
-// ------------------------------------------------------------------
-// 2️⃣ Recursive – the most idiomatic way in TypeScript
+// Adjacency list representation
+export type Graph = Map<Vertex, Edge[]>;
 
-export function sumRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                     // base case
-  return root.val + sumRecursive(root.left) + sumRecursive(root.right);
+// Result of dijkstra: distance to each node, and the shortest‑path tree
+export interface DijkstraResult {
+    distances: Map<Vertex, number>;
+    previous: Map<Vertex, Vertex | null>;
+}
+class MinHeap {
+    private data: [number, Vertex][] = [];
+
+    isEmpty() {
+        return this.data.length === 0;
+    }
+
+    push(item: [number, Vertex]) {
+        this.data.push(item);
+        this.bubbleUp(this.data.length - 1);
+    }
+
+    pop(): [number, Vertex] | undefined {
+        if (this.isEmpty()) return undefined;
+        const root = this.data[0];
+        const last = this.data.pop()!;
+        if (!this.isEmpty()) {
+            this.data[0] = last;
+            this.bubbleDown(0);
+        }
+        return root;
+    }
+
+    private bubbleUp(i: number) {
+        while (i > 0) {
+            const parent = (i - 1) >> 1;
+            if (this.data[parent][0] <= this.data[i][0]) break;
+            [this.data[parent], this.data[i]] = [this.data[i], this.data[parent]];
+            i = parent;
+        }
+    }
+
+    private bubbleDown(i: number) {
+        const n = this.data.length;
+        while (true) {
+            const left = (i << 1) + 1;
+            const right = left + 1;
+            let smallest = i;
+
+            if (left < n && this.data[left][0] < this.data[smallest][0]) smallest = left;
+            if (right < n && this.data[right][0] < this.data[smallest][0]) smallest = right;
+
+            if (smallest === i) break;
+
+            [this.data[i], this.data[smallest]] = [this.data[smallest], this.data[i]];
+            i = smallest;
+        }
+    }
+}
+export function dijkstra(
+    graph: Graph,
+    source: Vertex
+): DijkstraResult {
+    const distances = new Map<Vertex, number>();
+    const previous = new Map<Vertex, Vertex | null>();
+
+    // init
+    graph.forEach((_, v) => {
+        distances.set(v, Infinity);
+        previous.set(v, null);
+    });
+    distances.set(source, 0);
+
+    const pq = new MinHeap();
+    pq.push([0, source]);
+
+    while (!pq.isEmpty()) {
+        const [distU, u] = pq.pop()!;
+
+        // (optional) skip stale queue entries
+        if (distU > distances.get(u)!) continue;
+
+        const edges = graph.get(u) ?? [];
+        for (const { to: v, cost: w } of edges) {
+            const alt = distU + w;
+            if (alt < distances.get(v)!) {
+                distances.set(v, alt);
+                previous.set(v, u);
+                pq.push([alt, v]);
+            }
+        }
+    }
+
+    return { distances, previous };
+}
+const g: Graph = new Map([
+    ['A', [{ to: 'B', cost: 5 }, { to: 'C', cost: 10 }]],
+    ['B', [{ to: 'C', cost: 3 }, { to: 'D', cost: 2 }]],
+    ['C', [{ to: 'D', cost: 1 }]],
+    ['D', []]
+]);
+
+const { distances, previous } = dijkstra(g, 'A');
+console.log('Distances:', distances);
+console.log('Previous:', previous);
+
+// Reconstruct path A → D
+function buildPath(prev: Map<Vertex, Vertex | null>, target: Vertex) {
+    const path: Vertex[] = [];
+    for (let v = target; v !== null; v = prev.get(v)!) path.unshift(v);
+    return path;
 }
 
-// ------------------------------------------------------------------
-// 3️⃣ Iterative – using a stack (no recursion, useful for very deep trees)
-
-export function sumIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  let stack: Array<TreeNode> = [root];
-  let total = 0;
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.val;
-
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
-  }
-  return total;
-}
-
-// ------------------------------------------------------------------
-// 4️⃣ Quick sanity‑check
-
-// Build a tiny sample tree:
-//
-//          5
-//        /   \
-//       3     8
-//      / \     \
-//     1   4     10
-//
-const sampleRoot: TreeNode = {
-  val: 5,
-  left: { val: 3, left: { val: 1 }, right: { val: 4 } },
-  right: { val: 8, right: { val: 10 } },
-};
-
-console.log('Recursive sum:', sumRecursive(sampleRoot));   // → 31
-console.log('Iterative sum:', sumIterative(sampleRoot));   // → 31
+console.log('Path A → D:', buildPath(previous, 'D'));
+Distances: Map { 'A' => 0, 'B' => 5, 'C' => 7, 'D' => 8 }
+Previous: Map { 'A' => null, 'B' => 'A', 'C' => 'B', 'D' => 'C' }
+Path A → D: ['A', 'B', 'C', 'D']
