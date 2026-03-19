@@ -1,44 +1,45 @@
-/**
- * Area = (base * height) / 2
- */
-function areaFromBaseHeight(base: number, height: number): number {
-  return (base * height) / 2;
-}
+// src/cronJob.ts
 
-// Example
-console.log(areaFromBaseHeight(10, 6)); // 30
-/**
- * Shoelace / Gauss area formula for a polygon.
- * For a triangle (3 vertices) it simplifies nicely.
- */
-function areaFromCoords(
-  p1: { x: number; y: number },
-  p2: { x: number; y: number },
-  p3: { x: number; y: number }
-): number {
-  const s1 = p2.x * p1.y - p1.x * p2.y;
-  const s2 = p3.x * p2.y - p2.x * p3.y;
-  const s3 = p1.x * p3.y - p3.x * p1.y;
-  return Math.abs((s1 + s2 + s3) / 2);
-}
+import cron from 'node-cron';
 
-// Example
-console.log(
-  areaFromCoords(
-    { x: 0, y: 0 },
-    { x: 4, y: 0 },
-    { x: 0, y: 3 }
-  )
-); // 6
-/**
- * Heron's formula:
- *   s = (a + b + c) / 2
- *   area = sqrt( s * (s - a) * (s - b) * (s - c) )
- */
-function areaFromSides(a: number, b: number, c: number): number {
-  const s = (a + b + c) / 2;
-  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
-}
+// Helper: generate a random number between 1 and 100
+const randomInt = () => Math.floor(Math.random() * 100) + 1;
 
-// Example
-console.log(areaFromSides(5, 6, 7)); // ≈ 14.6969
+// The job – runs every minute (`* * * * *`)
+const job = cron.schedule('* * * * *', () => {
+  const now = new Date().toISOString();
+  const rand = randomInt();
+  console.log(`[${now}] Random number: ${rand}`);
+  // You can place any logic here (DB ops, API calls, etc.)
+});
+
+// Start the job
+job.start();
+console.log('Cron job scheduled: every minute.');
+# 1️⃣ Create a new TS project (if you haven't already)
+mkdir cron-demo && cd cron-demo
+npm init -y
+
+# 2️⃣ Install the required packages
+npm i node-cron
+npm i -D typescript @types/node
+
+# 3️⃣ Add a tsconfig.json (basic version)
+cat <<'EOF' > tsconfig.json
+{
+  "compilerOptions": {
+    "target": "es2019",
+    "module": "commonjs",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true
+  },
+  "include": ["src"]
+}
+EOF
+
+# 4️⃣ Place the `cronJob.ts` file in ./src
+# 5️⃣ Compile and run
+npx tsc
+node dist/cronJob.js
