@@ -1,40 +1,72 @@
-// Generic helper – keeps the original array untouched
-function uniq<T>(arr: T[]): T[] {
-  return [...new Set(arr)];
-}
-const numbers = [1, 2, 3, 2, 4, 1, 5];
-console.log(uniq(numbers));      // [1, 2, 3, 4, 5]
+export class ListNode {
+  val: number;          // keep it generic if you want
+  next: ListNode | null;
 
-const words = ['apple', 'banana', 'apple', 'orange'];
-console.log(uniq(words));        // ['apple', 'banana', 'orange']
-
-// With objects – note that Set checks reference equality
-const objs = [{ id: 1 }, { id: 2 }, { id: 1 }];
-console.log(uniq(objs));         // [{ id: 1 }, { id: 2 }, { id: 1 }]
-function uniqByKey<T, K extends keyof T>(arr: T[], key: K): T[] {
-  const seen = new Map<T[K], T>();
-  for (const item of arr) {
-    if (!seen.has(item[key])) {
-      seen.set(item[key], item);
-    }
+  constructor(val: number = 0, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
   }
-  return Array.from(seen.values());
 }
-
-const people = [
-  { id: 1, name: 'Ana' },
-  { id: 2, name: 'Ben' },
-  { id: 1, name: 'Ana' },
-];
-console.log(uniqByKey(people, 'id'));  // [{ id: 1, name: 'Ana' }, { id: 2, name: 'Ben' }]
-function uniqInPlace<T>(arr: T[]): void {
-  const seen = new Set<T>();
-  let writeIdx = 0;
-  for (const item of arr) {
-    if (!seen.has(item)) {
-      seen.add(item);
-      arr[writeIdx++] = item;
+export function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  // Helper: get the length of a list.
+  const length = (node: ListNode | null): number => {
+    let len = 0;
+    while (node) {
+      len++;
+      node = node.next;
     }
+    return len;
+  };
+
+  const lenA = length(headA);
+  const lenB = length(headB);
+
+  // Align the starts
+  let ptrA = headA;
+  let ptrB = headB;
+  let diff = Math.abs(lenA - lenB);
+
+  if (lenA > lenB) {
+    while (diff-- > 0 && ptrA) ptrA = ptrA.next;
+  } else {
+    while (diff-- > 0 && ptrB) ptrB = ptrB.next;
   }
-  arr.length = writeIdx; // truncate the rest
+
+  // Walk together
+  while (ptrA && ptrB) {
+    if (ptrA === ptrB) return ptrA; // same reference
+    ptrA = ptrA.next;
+    ptrB = ptrB.next;
+  }
+
+  return null; // no intersection
+}
+// Build list A: 1 → 2 → 3 → 4 → 5
+const a = new ListNode(1);
+a.next = new ListNode(2);
+a.next.next = new ListNode(3);
+a.next.next.next = new ListNode(4);
+a.next.next.next.next = new ListNode(5);
+
+// Build list B: 9 → 4 → 5 (shared tail)
+const b = new ListNode(9);
+b.next = a.next.next.next; // shares nodes 4 and 5
+
+const intersect = getIntersectionNode(a, b);
+console.log(intersect?.val); // prints 4
+export function intersectionByValue(
+  headA: ListNode | null,
+  headB: ListNode | null
+): number[] {
+  const values = new Set<number>();
+  for (let cur = headA; cur; cur = cur.next) values.add(cur.val);
+
+  const result: number[] = [];
+  for (let cur = headB; cur; cur = cur.next) {
+    if (values.has(cur.val)) result.push(cur.val);
+  }
+  return result;
 }
