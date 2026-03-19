@@ -1,27 +1,74 @@
 /**
- * Return true if the supplied string is a palindrome (ignoring case,
- * punctuation, spaces, and other non‑alphanumeric characters).
+ * Builds the LPS (Longest Proper Prefix which is also Suffix) table for `pattern`.
+ * The table tells us how far to jump when a mismatch occurs.
  */
-export function isPalindrome(input: string): boolean {
-  // Keep only letters and digits, make everything lowercase
-  const cleaned = input.replace(/[^a-z0-9]/gi, '').toLowerCase();
+function buildLPS(pattern: string): number[] {
+  const lps = new Array(pattern.length).fill(0);
+  let length = 0;            // length of the previous longest prefix suffix
+  let i = 1;                 // we start from the second character
 
-  // Quick escape: a single character or empty string is trivially a palindrome
-  if (cleaned.length <= 1) return true;
-
-  // Compare characters from the front and back
-  for (let i = 0, j = cleaned.length - 1; i < j; i++, j--) {
-    if (cleaned[i] !== cleaned[j]) return false;
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
+    } else {
+      if (length !== 0) {
+        length = lps[length - 1];
+        // we don't increment i here; we try the new length
+      } else {
+        lps[i] = 0;
+        i++;
+      }
+    }
   }
-  return true;
+
+  return lps;
 }
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("racecar"));                         // true
-console.log(isPalindrome("Hello, world!"));                   // false
-export function isExactPalindrome(input: string): boolean {
-  if (input.length <= 1) return true;
-  for (let i = 0, j = input.length - 1; i < j; i++, j--) {
-    if (input[i] !== input[j]) return false;
+
+/**
+ * Returns an array of all start indices where `pattern` is found in `text`.
+ * If the pattern has length 0, returns an empty array (no meaningful search).
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  if (pattern.length === 0) return [];
+
+  const lps   = buildLPS(pattern);
+  const indices: number[] = [];
+
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+    }
+
+    if (j === pattern.length) {
+      // full match found
+      indices.push(i - j);
+      j = lps[j - 1]; // continue searching for next possible match
+    } else if (i < text.length && text[i] !== pattern[j]) {
+      // mismatch after j matches
+      if (j !== 0) {
+        j = lps[j - 1];
+      } else {
+        i++;
+      }
+    }
   }
-  return true;
+
+  return indices;
+}
+import { kmpSearch } from './kmp';
+
+const text = 'ABABDABACDABABCABAB';
+const pattern = 'ABCABAB';
+
+const positions = kmpSearch(text, pattern);
+console.log(positions);   // → [ 9 ]
+export function kmpIndexOf(text: string, pattern: string): number {
+  const matches = kmpSearch(text, pattern);
+  return matches.length > 0 ? matches[0] : -1;
 }
