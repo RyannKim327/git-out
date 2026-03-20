@@ -1,44 +1,53 @@
 /**
- * Area = (base * height) / 2
+ * Shuffle an array in place using Fisher–Yates algorithm
  */
-function areaFromBaseHeight(base: number, height: number): number {
-  return (base * height) / 2;
+function shuffle<T>(arr: T[]): void {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
 }
 
-// Example
-console.log(areaFromBaseHeight(10, 6)); // 30
 /**
- * Shoelace / Gauss area formula for a polygon.
- * For a triangle (3 vertices) it simplifies nicely.
+ * Check whether an array of numbers is sorted ascending
  */
-function areaFromCoords(
-  p1: { x: number; y: number },
-  p2: { x: number; y: number },
-  p3: { x: number; y: number }
-): number {
-  const s1 = p2.x * p1.y - p1.x * p2.y;
-  const s2 = p3.x * p2.y - p2.x * p3.y;
-  const s3 = p1.x * p3.y - p3.x * p1.y;
-  return Math.abs((s1 + s2 + s3) / 2);
+function isSorted(arr: number[]): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i - 1] > arr[i]) {
+      return false;
+    }
+  }
+  return true;
 }
 
-// Example
-console.log(
-  areaFromCoords(
-    { x: 0, y: 0 },
-    { x: 4, y: 0 },
-    { x: 0, y: 3 }
-  )
-); // 6
 /**
- * Heron's formula:
- *   s = (a + b + c) / 2
- *   area = sqrt( s * (s - a) * (s - b) * (s - c) )
+ * Bogosort: shuffle until the array is sorted
  */
-function areaFromSides(a: number, b: number, c: number): number {
-  const s = (a + b + c) / 2;
-  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+function bogosort(arr: number[]): Promise<{
+  sortedArray: number[];
+  iterations: number;
+  shuffles: number;
+}> {
+  return new Promise((resolve) => {
+    let iterations = 0;
+    const attempt = () => {
+      iterations++;
+      if (isSorted(arr)) {
+        resolve({ sortedArray: arr, iterations, shuffles: iterations });
+      } else {
+        shuffle(arr);
+        // This recursion is intentionally "random"; adding a tiny async
+        // delay keeps the UI responsive if called in a browser context.
+        setTimeout(attempt, 0);
+      }
+    };
+    attempt();
+  });
 }
 
-// Example
-console.log(areaFromSides(5, 6, 7)); // ≈ 14.6969
+// Example usage:
+const data = [5, 2, 9, 1, 5, 6];
+bogosort(data).then(({ sortedArray, iterations, shuffles }) => {
+  console.log(`Sorted array: ${sortedArray}`);
+  console.log(`Iterations taken: ${iterations}`);
+});
