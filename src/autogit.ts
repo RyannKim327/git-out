@@ -1,57 +1,97 @@
-/**
- * Heap sort – sorts the array *in place* in ascending order.
- *
- * @param arr - mutable array of comparable values
- */
-export function heapSort<T>(arr: T[], cmp: (a: T, b: T) => number = defaultCmp): void {
-  const n = arr.length;
+// ------------------------------------------------------------
+// 1. Node
+// ------------------------------------------------------------
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null = null;
+  right: TreeNode<T> | null = null;
 
-  /** Default comparator for numbers / strings */
-  function defaultCmp(a: T, b: T): number {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  }
-
-  /* ---------- heapify ----------
-   *  Rearranges subtree rooted at `i` so that
-   *  arr[i] is the largest of the subtree.
-   *  `size` is the effective heap size.
-   */
-  const heapify = (i: number, size: number): void => {
-    let largest = i;
-    const left  = 2 * i + 1;
-    const right = 2 * i + 2;
-
-    if (left < size && cmp(arr[left], arr[largest]) > 0)
-      largest = left;
-
-    if (right < size && cmp(arr[right], arr[largest]) > 0)
-      largest = right;
-
-    if (largest !== i) {
-      [arr[i], arr[largest]] = [arr[largest], arr[i]];
-      heapify(largest, size);       // continue down
-    }
-  };
-
-  /* ---------- 1. build max‑heap ---------- */
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-    heapify(i, n);
-  }
-
-  /* ---------- 2. extract max repeatedly ---------- */
-  for (let size = n; size > 1; size--) {
-    // Move current max to the end.
-    [arr[0], arr[size - 1]] = [arr[size - 1], arr[0]];
-
-    // Restore heap property on the reduced heap.
-    heapify(0, size - 1);
+  constructor(value: T) {
+    this.value = value;
   }
 }
 
-/* ---------- Usage example ---------- */
-const data = [5, 3, 8, 4, 1, 9, 2];
-heapSort(data);          // in‑place
-console.log(data);       // [1, 2, 3, 4, 5, 8, 9]
-heapSort(array);          // sorts in place, ascending
+// ------------------------------------------------------------
+// 2. BinarySearchTree
+// ------------------------------------------------------------
+class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
+
+  // -------------------------------------------
+  // Insert a value into the BST
+  // -------------------------------------------
+  insert(value: T, comparator?: (a: T, b: T) => number): void {
+    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+    const insertRec = (node: TreeNode<T> | null, val: T): TreeNode<T> => {
+      if (!node) return new TreeNode(val);
+
+      if (compare(val, node.value) < 0) {
+        node.left = insertRec(node.left, val);
+      } else {
+        node.right = insertRec(node.right, val);
+      }
+      return node;
+    };
+
+    this.root = insertRec(this.root, value);
+  }
+
+  // -------------------------------------------
+  // Search for a value – returns the node or null
+  // -------------------------------------------
+  search(value: T, comparator?: (a: T, b: T) => number): TreeNode<T> | null {
+    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    let curr = this.root;
+
+    while (curr) {
+      if (compare(value, curr.value) < 0) {
+        curr = curr.left;
+      } else if (compare(value, curr.value) > 0) {
+        curr = curr.right;
+      } else {
+        return curr; // found
+      }
+    }
+    return null; // not found
+  }
+
+  // -------------------------------------------
+  // In‑order traversal – returns an array of values
+  // -------------------------------------------
+  inorder(): T[] {
+    const res: T[] = [];
+    const walk = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      walk(node.left);
+      res.push(node.value);
+      walk(node.right);
+    };
+    walk(this.root);
+    return res;
+  }
+
+  // -------------------------------------------
+  // Convenience: return value of inorder traversal
+  // -------------------------------------------
+  toArray(): T[] {
+    return this.inorder();
+  }
+}
+
+// ------------------------------------------------------------
+// 3. Demo
+// ------------------------------------------------------------
+const bst = new BinarySearchTree<number>();
+
+// Inserting some numbers
+[42, 23, 57, 12, 34, 73, 8].forEach(n => bst.insert(n));
+
+console.log('In‑order traversal:', bst.inorder()); // sorted ascending
+
+const foundNode = bst.search(34);
+if (foundNode) {
+  console.log(`Found node with value ${foundNode.value}`);
+} else {
+  console.log('Value not found');
+}
