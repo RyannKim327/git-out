@@ -1,13 +1,15 @@
-function removeVowels(text: string): string {
-  // Matches a, e, i, o, u in either case – change the set if you need accents, etc.
-  return text.replace(/[aeiouAEIOU]/g, '');
+const numbers: number[] = [4, 12, 7, 3];
+
+const max = Math.max(...numbers);
+
+console.log(max); // 12
+const max = numbers.reduce((best, cur) => (cur > best ? cur : best), -Infinity);
+
+console.log(max); // 12
+let max = -Infinity;
+for (const n of numbers) {
+  if (n > max) max = n;
 }
-const original = "Hello, World!";
-const cleaned = removeVowels(original);
-console.log(cleaned); // "Hll, Wrld!"
-// Includes accented vowels and lowercase “y”
-const regex = /[aeiouáéíóúAEIOUÁÉÍÓÚyY]/g;
-function removeVowelsSafe(text?: string | null): string {
-  const safeText = text ?? '';
-  return safeText.replace(/[aeiouAEIOU]/g, '');
+function findMax(arr: number[]): number | undefined {
+  return arr.length ? Math.max(...arr) : undefined;
 }
