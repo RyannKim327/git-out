@@ -1,80 +1,29 @@
-// 1️⃣  Graph node type (you can replace this with a more complex type)
-type Node = string | number;
-
-// 2️⃣  Adjacency list: each node maps to an array of its neighbors
-type Graph = Map<Node, Node[]>;
-
 /**
- * Breadth‑first search: returns the order nodes were visited.
- * @param graph The adjacency list.
- * @param start The node to start from.
+ * Returns the second largest number in an array.
+ * If the array has fewer than 2 distinct numbers, returns `undefined`.
  */
-export function bfsTraversal(graph: Graph, start: Node): Node[] {
-  const queue: Node[] = [start];
-  const visited = new Set<Node>([start]);
-  const order: Node[] = [];
+function secondLargest(nums: number[]): number | undefined {
+  let max = -Infinity;
+  let second = -Infinity;
 
-  while (queue.length) {
-    const current = queue.shift()!;
-    order.push(current);
-
-    const neighbors = graph.get(current) ?? [];
-    for (const nb of neighbors) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        queue.push(nb);
-      }
+  for (const n of nums) {
+    if (n > max) {
+      second = max;   // old max becomes second
+      max = n;        // new max
+    } else if (n > second && n < max) {
+      // distinct value that’s between max and second
+      second = n;
     }
   }
 
-  return order;
+  return second === -Infinity ? undefined : second;
 }
-
-/**
- * BFS that stops when it finds a target node.
- * Returns the path from start to target (inclusive).
- * @param graph The adjacency list.
- * @param start The node to start from.
- * @param target The node we’re looking for.
- */
-export function bfsPath(graph: Graph, start: Node, target: Node): Node[] | null {
-  if (start === target) return [start];
-
-  const queue: Node[] = [start];
-  const visited = new Set<Node>([start]);
-  const parent = new Map<Node, Node>();
-
-  while (queue.length) {
-    const current = queue.shift()!;
-    for (const nb of graph.get(current) ?? []) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        parent.set(nb, current);
-        if (nb === target) {
-          // Reconstruct path from target back to start
-          const path: Node[] = [target];
-          let p = nb;
-          while (p !== start) {
-            p = parent.get(p)!;
-            path.unshift(p);
-          }
-          return path;
-        }
-        queue.push(nb);
-      }
-    }
-  }
-
-  return null; // target not reachable
+console.log(secondLargest([1, 3, 5, 7, 9]));   // 7
+console.log(secondLargest([4, 4, 4, 4]));      // undefined (no distinct second)
+console.log(secondLargest([10, 9, 9, 8]));     // 9 (if duplicates count)
+console.log(secondLargest([2]));               // undefined
+function secondLargestSorted(nums: number[]): number | undefined {
+  const sorted = [...nums].sort((a, b) => b - a); // descending
+  const uniq = [...new Set(sorted)];             // drop duplicates
+  return uniq[1];                                // second element if exists
 }
-const g: Graph = new Map([
-  ['A', ['B', 'C']],
-  ['B', ['D']],
-  ['C', ['E']],
-  ['D', ['F']],
-  ['E', []],
-  ['F', []]
-]);
-
-console.log(bfsTraversal(g, 'A')); // ["A","B","C","D","E","F"]
-console.log(bfsPath(g, 'A', 'F')); // ["A","B","D","F"]
