@@ -1,97 +1,47 @@
-// ------------------------------------------------------------
-// 1. Node
-// ------------------------------------------------------------
-class TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
+/**
+ * Return true if `s` is a palindrome (case‑insensitive, alphanumeric only).
+ * Works in O(n) time and O(1) extra space.
+ */
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
+  // helper: is the char code an ASCII alphanumeric?
+  const isAlnum = (c: number) =>
+    (c >= 48 && c <= 57) ||        // 0‑9
+    (c >= 65 && c <= 90) ||        // A‑Z
+    (c >= 97 && c <= 122);         // a‑z
 
-// ------------------------------------------------------------
-// 2. BinarySearchTree
-// ------------------------------------------------------------
-class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
+  // helper: convert ASCII letter to its uppercase equivalent
+  const toUpper = (c: number) => (c >= 97 && c <= 122) ? (c - 32) : c;
 
-  // -------------------------------------------
-  // Insert a value into the BST
-  // -------------------------------------------
-  insert(value: T, comparator?: (a: T, b: T) => number): void {
-    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  while (left < right) {
+    // skip non‑alphanumeric characters on the left
+    while (left < right && !isAlnum(s.charCodeAt(left))) left++;
+    // skip non‑alphanumeric characters on the right
+    while (left < right && !isAlnum(s.charCodeAt(right))) right--;
 
-    const insertRec = (node: TreeNode<T> | null, val: T): TreeNode<T> => {
-      if (!node) return new TreeNode(val);
+    if (left >= right) break;
 
-      if (compare(val, node.value) < 0) {
-        node.left = insertRec(node.left, val);
-      } else {
-        node.right = insertRec(node.right, val);
-      }
-      return node;
-    };
-
-    this.root = insertRec(this.root, value);
-  }
-
-  // -------------------------------------------
-  // Search for a value – returns the node or null
-  // -------------------------------------------
-  search(value: T, comparator?: (a: T, b: T) => number): TreeNode<T> | null {
-    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-    let curr = this.root;
-
-    while (curr) {
-      if (compare(value, curr.value) < 0) {
-        curr = curr.left;
-      } else if (compare(value, curr.value) > 0) {
-        curr = curr.right;
-      } else {
-        return curr; // found
-      }
+    // compare the two characters after normalizing to uppercase
+    if (toUpper(s.charCodeAt(left)) !== toUpper(s.charCodeAt(right))) {
+      return false;
     }
-    return null; // not found
+    left++;
+    right--;
   }
 
-  // -------------------------------------------
-  // In‑order traversal – returns an array of values
-  // -------------------------------------------
-  inorder(): T[] {
-    const res: T[] = [];
-    const walk = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      walk(node.left);
-      res.push(node.value);
-      walk(node.right);
-    };
-    walk(this.root);
-    return res;
-  }
-
-  // -------------------------------------------
-  // Convenience: return value of inorder traversal
-  // -------------------------------------------
-  toArray(): T[] {
-    return this.inorder();
-  }
+  return true;
 }
 
-// ------------------------------------------------------------
-// 3. Demo
-// ------------------------------------------------------------
-const bst = new BinarySearchTree<number>();
+/* ---------- demo ---------- */
+const tests = [
+  "A man, a plan, a canal: Panama",
+  "race a car",
+  "No 'x' in Nixon",
+  "MadamInEdenImAdam",
+];
 
-// Inserting some numbers
-[42, 23, 57, 12, 34, 73, 8].forEach(n => bst.insert(n));
-
-console.log('In‑order traversal:', bst.inorder()); // sorted ascending
-
-const foundNode = bst.search(34);
-if (foundNode) {
-  console.log(`Found node with value ${foundNode.value}`);
-} else {
-  console.log('Value not found');
-}
+tests.forEach(t => {
+  console.log(`"${t}" → ${isPalindrome(t)}`);
+});
