@@ -1,35 +1,47 @@
 /**
- * Bubble sort for an array of numbers.
- * The function mutates the passed array and returns it so you can chain or immediately inspect it.
- *
- * @param arr – the array to sort
- * @returns the sorted array (same reference as `arr`)
+ * Return true if `s` is a palindrome (case‑insensitive, alphanumeric only).
+ * Works in O(n) time and O(1) extra space.
  */
-export function bubbleSort(arr: number[]): number[] {
-  // The array’s length is used repeatedly, so cache it for speed.
-  const n = arr.length;
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  // Outer loop – each pass pushes the next largest element to its final spot at the end.
-  // We can stop one element earlier on each pass because the last `pass` items are already sorted.
-  for (let pass = 0; pass < n - 1; pass++) {
-    // Track whether any swap happened this pass. If none, the array is sorted.
-    let swapped = false;
+  // helper: is the char code an ASCII alphanumeric?
+  const isAlnum = (c: number) =>
+    (c >= 48 && c <= 57) ||        // 0‑9
+    (c >= 65 && c <= 90) ||        // A‑Z
+    (c >= 97 && c <= 122);         // a‑z
 
-    // Inner loop – compare adjacent pairs and swap if out of order.
-    // We only need to go up to `n - pass - 1` because the last `pass` elements are in place.
-    for (let i = 0; i < n - pass - 1; i++) {
-      if (arr[i] > arr[i + 1]) {
-        // Simple swap using destructuring.
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
-        swapped = true;
-      }
+  // helper: convert ASCII letter to its uppercase equivalent
+  const toUpper = (c: number) => (c >= 97 && c <= 122) ? (c - 32) : c;
+
+  while (left < right) {
+    // skip non‑alphanumeric characters on the left
+    while (left < right && !isAlnum(s.charCodeAt(left))) left++;
+    // skip non‑alphanumeric characters on the right
+    while (left < right && !isAlnum(s.charCodeAt(right))) right--;
+
+    if (left >= right) break;
+
+    // compare the two characters after normalizing to uppercase
+    if (toUpper(s.charCodeAt(left)) !== toUpper(s.charCodeAt(right))) {
+      return false;
     }
-
-    // If no two elements were swapped, no more passes are required.
-    if (!swapped) break;
+    left++;
+    right--;
   }
 
-  return arr;
+  return true;
 }
-const unsorted = [64, 34, 25, 12, 22, 11, 90];
-console.log(bubbleSort(unsorted));        // [11, 12, 22, 25, 34, 64, 90]
+
+/* ---------- demo ---------- */
+const tests = [
+  "A man, a plan, a canal: Panama",
+  "race a car",
+  "No 'x' in Nixon",
+  "MadamInEdenImAdam",
+];
+
+tests.forEach(t => {
+  console.log(`"${t}" → ${isPalindrome(t)}`);
+});
