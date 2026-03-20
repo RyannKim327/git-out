@@ -1,44 +1,46 @@
-/**
- * Area = (base * height) / 2
- */
-function areaFromBaseHeight(base: number, height: number): number {
-  return (base * height) / 2;
+// A typical binary‑tree node.
+export interface TreeNode {
+  value: number;
+  left?: TreeNode;
+  right?: TreeNode;
 }
 
-// Example
-console.log(areaFromBaseHeight(10, 6)); // 30
 /**
- * Shoelace / Gauss area formula for a polygon.
- * For a triangle (3 vertices) it simplifies nicely.
+ * Recursively finds the longest path from this node down to a leaf.
+ * depth(node) = 1 + max(depth(left), depth(right))
+ * Leaves contribute 1; an empty tree contributes 0.
  */
-function areaFromCoords(
-  p1: { x: number; y: number },
-  p2: { x: number; y: number },
-  p3: { x: number; y: number }
-): number {
-  const s1 = p2.x * p1.y - p1.x * p2.y;
-  const s2 = p3.x * p2.y - p2.x * p3.y;
-  const s3 = p1.x * p3.y - p3.x * p1.y;
-  return Math.abs((s1 + s2 + s3) / 2);
-}
+export function maxDepth(node?: TreeNode): number {
+  if (!node) return 0;
 
-// Example
-console.log(
-  areaFromCoords(
-    { x: 0, y: 0 },
-    { x: 4, y: 0 },
-    { x: 0, y: 3 }
-  )
-); // 6
-/**
- * Heron's formula:
- *   s = (a + b + c) / 2
- *   area = sqrt( s * (s - a) * (s - b) * (s - c) )
- */
-function areaFromSides(a: number, b: number, c: number): number {
-  const s = (a + b + c) / 2;
-  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
-}
+  const leftDepth  = maxDepth(node.left);
+  const rightDepth = maxDepth(node.right);
 
-// Example
-console.log(areaFromSides(5, 6, 7)); // ≈ 14.6969
+  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
+}
+export function maxDepthIterative(root?: TreeNode): number {
+  if (!root) return 0;
+
+  let max = 0;
+  const queue: Array<TreeNode> = [root];
+
+  while (queue.length) {
+    const levelSize = queue.length;
+    max++; // we’re on a new level
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!; // queue is non‑empty
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
+  }
+  return max;
+}
+const root: TreeNode = {
+  value: 1,
+  left:  { value: 2, right: { value: 4 } },
+  right: { value: 3 }
+};
+
+console.log(maxDepth(root));          // → 3
+console.log(maxDepthIterative(root)); // → 3
