@@ -1,46 +1,68 @@
-// A typical binary‑tree node.
-export interface TreeNode {
-  value: number;
-  left?: TreeNode;
-  right?: TreeNode;
-}
+// utils.ts
+export type SearchResult = { index: number; match: string } | null;
 
 /**
- * Recursively finds the longest path from this node down to a leaf.
- * depth(node) = 1 + max(depth(left), depth(right))
- * Leaves contribute 1; an empty tree contributes 0.
+ * Rabin–Karp string search. Returns the first occurrence of `pattern`
+ * inside `text`, or null if no match is found.
+ *
+ * @param text     The string to search within – can be very long.
+ * @param pattern  The string we’re looking for. Must be non‑empty.
+ * @returns        The index of the first match or null.
  */
-export function maxDepth(node?: TreeNode): number {
-  if (!node) return 0;
+export function rabinKarpSearch(text: string, pattern: string): SearchResult {
+  if (!pattern) throw new Error('Pattern must not be empty');
+  const n = text.length;
+  const m = pattern.length;
+  if (m > n) return null;
 
-  const leftDepth  = maxDepth(node.left);
-  const rightDepth = maxDepth(node.right);
+  /* ---------- Parameters for hashing ---------- */
+  const prime = 101;                 // a small prime modulus
+  const base  = 256;                 // number of possible characters (ASCII)
 
-  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
-}
-export function maxDepthIterative(root?: TreeNode): number {
-  if (!root) return 0;
+  /* ---------- Pre‑compute base^(m‑1) % prime ----------
+   *  This value is used to drop the leading character from the
+   *  rolling hash.  For example, if the rolling hash is
+   *  h = (s[0]·base^(m‑1) + s[1]·base^(m‑2) + … + s[m‑1]) % prime,
+   *  after shifting the window by one we remove s[0]·base^(m‑1).
+   */
+  let highOrder = 1;
+  for (let i = 0; i < m - 1; i++) highOrder = (highOrder * base) % prime;
 
-  let max = 0;
-  const queue: Array<TreeNode> = [root];
+  /* ---------- Compute hash of pattern & first window ----------
+   *  Use the same formula for both.  Will be used for direct
+   *  comparison when hash values coincide.
+   */
+  let patHash   = 0;
+  let windowHash = 0;
+  for (let i = 0; i < m; i++) {
+    patHash    = (patHash * base + pattern.charCodeAt(i)) % prime;
+    windowHash = (windowHash * base + text.charCodeAt(i)) % prime;
+  }
 
-  while (queue.length) {
-    const levelSize = queue.length;
-    max++; // we’re on a new level
+  /* ---------- Slide the pattern over the text ---------- */
+  for (let i = 0; i <= n - m; i++) {
+    /* 1.  Hash match => candidate.  Verify by a literal comparison. */
+    if (patHash === windowHash) {
+      if (text.substr(i, m) === pattern) {
+        return { index: i, match: pattern };
+      }
+    }
 
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()!; // queue is non‑empty
-      if (node.left)  queue.push(node.left);
-      if (node.right) queue.push(node.right);
+    /* 2.  Roll the hash: drop the leftmost char, add the rightmost. */
+    if (i < n - m) {
+      // subtract leading contribution
+      windowHash = (windowHash - highOrder * text.charCodeAt(i)) % prime;
+      // make it positive if needed
+      if (windowHash < 0) windowHash += prime;
+      // multiply by base and add new char
+      windowHash = (windowHash * base + text.charCodeAt(i + m)) % prime;
     }
   }
-  return max;
-}
-const root: TreeNode = {
-  value: 1,
-  left:  { value: 2, right: { value: 4 } },
-  right: { value: 3 }
-};
 
-console.log(maxDepth(root));          // → 3
-console.log(maxDepthIterative(root)); // → 3
+  return null;
+}
+import { rabinKarpSearch } from './utils';
+
+console.log(rabinKarpSearch('abracadabra', 'cad'));   // { index: 4, match: 'cad' }
+console.log(rabinKarpSearch('hello world', 'world')); // { index: 6, match: 'world' }
+console.log(rabinKarpSearch('hello', 'bye'));        // null
