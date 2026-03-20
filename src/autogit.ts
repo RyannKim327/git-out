@@ -1,69 +1,40 @@
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElement(arr: number[]): number | null {
-  if (arr.length === 0) return null;
+// Generic helper – keeps the original array untouched
+function uniq<T>(arr: T[]): T[] {
+  return [...new Set(arr)];
+}
+const numbers = [1, 2, 3, 2, 4, 1, 5];
+console.log(uniq(numbers));      // [1, 2, 3, 4, 5]
 
-  // 1st pass – find a candidate
-  let candidate = arr[0];
-  let count = 0;
+const words = ['apple', 'banana', 'apple', 'orange'];
+console.log(uniq(words));        // ['apple', 'banana', 'orange']
 
-  for (const num of arr) {
-    if (count === 0) {
-      candidate = num;
-      count = 1;
-    } else {
-      count += num === candidate ? 1 : -1;
+// With objects – note that Set checks reference equality
+const objs = [{ id: 1 }, { id: 2 }, { id: 1 }];
+console.log(uniq(objs));         // [{ id: 1 }, { id: 2 }, { id: 1 }]
+function uniqByKey<T, K extends keyof T>(arr: T[], key: K): T[] {
+  const seen = new Map<T[K], T>();
+  for (const item of arr) {
+    if (!seen.has(item[key])) {
+      seen.set(item[key], item);
     }
   }
-
-  // 2nd pass – confirm candidate (optional but safe)
-  count = 0;
-  for (const num of arr) {
-    if (num === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
+  return Array.from(seen.values());
 }
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElementMap(arr: number[]): number | null {
-  const freq = new Map<number, number>();
 
-  for (const num of arr) {
-    freq.set(num, (freq.get(num) ?? 0) + 1);
-  }
-
-  const n = arr.length;
-  for (const [num, count] of freq.entries()) {
-    if (count > Math.floor(n / 2)) {
-      return num;
+const people = [
+  { id: 1, name: 'Ana' },
+  { id: 2, name: 'Ben' },
+  { id: 1, name: 'Ana' },
+];
+console.log(uniqByKey(people, 'id'));  // [{ id: 1, name: 'Ana' }, { id: 2, name: 'Ben' }]
+function uniqInPlace<T>(arr: T[]): void {
+  const seen = new Set<T>();
+  let writeIdx = 0;
+  for (const item of arr) {
+    if (!seen.has(item)) {
+      seen.add(item);
+      arr[writeIdx++] = item;
     }
   }
-  return null;
+  arr.length = writeIdx; // truncate the rest
 }
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElementSorted(arr: number[]): number | null {
-  if (arr.length === 0) return null;
-
-  // Make a copy so we don’t mutate the caller’s array
-  const sorted = [...arr].sort((a, b) => a - b);
-  const candidate = sorted[Math.floor(sorted.length / 2)];
-  let count = 0;
-
-  for (const num of sorted) {
-    if (num === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
-}
-const testArray = [2, 2, 1, 1, 1, 2, 2];
-console.log(majorityElement(testArray));      // 2
-console.log(majorityElementMap(testArray));   // 2
-console.log(majorityElementSorted(testArray)); // 2
