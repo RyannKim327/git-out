@@ -1,45 +1,23 @@
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+const str = "42";
+const num = Number(str);   // 42 (a number)
 
-  while (fast && fast.next) {
-    slow = slow!.next;            // move one step
-    fast = fast.next.next;        // move two steps
+const maybeNum = Number("3.14"); // 3.14
+const invalid = Number("foo");   // NaN
+const str = "42";
+const num = +str;   // 42
+const intStr   = "42";
+const intVal   = parseInt(intStr, 10);  // 42
 
-    if (slow === fast) return true;   // they met → cycle
+const floatStr = "3.14";
+const truncated = parseInt(floatStr, 10); // 3
+function toInteger(value: string): number {
+  const result = Number(value);
+  if (!Number.isNaN(result) && Number.isInteger(result)) {
+    return result;
   }
-
-  return false;   // hit the end → no cycle
+  throw new Error(`"${value}" is not a valid integer`);
 }
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const visited = new Set<ListNode<T>>();
-
-  let current = head;
-  while (current) {
-    if (visited.has(current)) return true;
-    visited.add(current);
-    current = current.next;
-  }
-  return false;
-}
-// Linear list (no cycle)
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
-
-console.log(hasCycle(a)); // false
-
-// Cyclic list
-const d = new ListNode(4);
-const e = new ListNode(5);
-const f = new ListNode(6);
-d.next = e; e.next = f; f.next = d; // f points back to d
-
-console.log(hasCycle(d)); // true
+const asNumber  = Number("42");      // 42
+const asInteger = parseInt("42", 10); // 42
+// or the shorthand
+const asNumberShorthand = +"42";      // 42
