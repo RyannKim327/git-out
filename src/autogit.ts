@@ -1,15 +1,22 @@
-const numbers: number[] = [4, 12, 7, 3];
-
-const max = Math.max(...numbers);
-
-console.log(max); // 12
-const max = numbers.reduce((best, cur) => (cur > best ? cur : best), -Infinity);
-
-console.log(max); // 12
-let max = -Infinity;
-for (const n of numbers) {
-  if (n > max) max = n;
+function countChar(str: string, char: string): number {
+  let counter = 0;
+  for (const c of str) {
+    if (c === char) counter++;
+  }
+  return counter;
 }
-function findMax(arr: number[]): number | undefined {
-  return arr.length ? Math.max(...arr) : undefined;
+function countChar(str: string, char: string): number {
+  // Escape regex specials if needed
+  const escaped = char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(escaped, 'g');
+  const matches = str.match(regex);
+  return matches ? matches.length : 0;
 }
+function countChar(str: string, char: string): number {
+  return str.split(char).length - 1;
+}
+function countChar(str: string, char: string): number {
+  return Array.from(str).filter(c => c === char).length;
+}
+console.log(countChar('hello world', 'l')); // 3
+console.log(countChar('😀😃😄😁😆', '😄')); // 1
