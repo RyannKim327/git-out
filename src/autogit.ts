@@ -1,54 +1,31 @@
-// ------------------------------------------------------------
-//  Fetch‑and‑hydrate example in TypeScript
-// ------------------------------------------------------------
-
-type Post = {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-};
-
-type User = {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-};
-
-async function fetchUserWithPosts(userId: number): Promise<{ user: User; posts: Post[] }> {
-  // Base endpoint
-  const base = 'https://jsonplaceholder.typicode.com';
-
-  // Helper that throws on non‑2xx
-  const safeFetch = async <T>(url: string): Promise<T> => {
-    const resp = await fetch(url);
-
-    if (!resp.ok) {
-      const text = await resp.text();
-      throw new Error(`Failed to fetch ${url} – ${resp.status}: ${text}`);
-    }
-
-    // Guard against empty body
-    const data = await resp.json();
-    return data as T;
-  };
-
-  // Pull user
-  const user = await safeFetch<User>(`${base}/users/${userId}`);
-
-  // Pull that user’s posts in parallel
-  const posts = await safeFetch<Post[]>(`${base}/posts?userId=${userId}`);
-
-  return { user, posts };
+// Returns n! for n >= 0.
+function factorial(n: number): number {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials!');
+  if (n <= 1) return 1;
+  return n * factorial(n - 1);
 }
+function factorialIter(n: number): number {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials!');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
+}
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials!');
+  let result = 1n;              // 1n is a BigInt literal
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
+}
+console.log(factorialBigInt(20)); // 2432902008176640000n
+const memo: Record<number, number> = { 0: 1, 1: 1 };
 
-
-// Demo call – tweak the ID at will
-fetchUserWithPosts(1)
-  .then(({ user, posts }) => {
-    console.log('User:', user);
-    console.log(`Found ${posts.length} posts:`);
-    posts.slice(0, 3).forEach((p) => console.log(` • ${p.title}`));
-  })
-  .catch((err) => console.error('Oops!', err.message));
+function memoisedFactorial(n: number): number {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials!');
+  if (n in memo) return memo[n];
+  memo[n] = n * memoisedFactorial(n - 1);
+  return memo[n];
+}
