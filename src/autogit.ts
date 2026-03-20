@@ -1,74 +1,61 @@
 /**
- * Builds the LPS (Longest Proper Prefix which is also Suffix) table for `pattern`.
- * The table tells us how far to jump when a mismatch occurs.
+ * Return the index of `target` in `arr` or -1 if it isn’t present.
+ * `arr` must be sorted in ascending order.
  */
-function buildLPS(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let length = 0;            // length of the previous longest prefix suffix
-  let i = 1;                 // we start from the second character
+export function fibonacciSearch<T>(arr: T[], target: T, lessThan: (a: T, b: T) => boolean): number {
+  const n = arr.length;
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        length = lps[length - 1];
-        // we don't increment i here; we try the new length
-      } else {
-        lps[i] = 0;
-        i++;
-      }
+  /* Step 1 – build the smallest Fibonacci number >= n */
+  let fibMMm2 = 0; // (m-2)th Fibonacci
+  let fibMMm1 = 1; // (m-1)th Fibonacci
+  let fibM = fibMMm2 + fibMMm1; // mth Fibonacci
+
+  while (fibM < n) {
+    fibMMm2 = fibMMm1;
+    fibMMm1 = fibM;
+    fibM = fibMMm2 + fibMMm1;
+  }
+
+  /* Step 2 – this will mark the eliminated range from front */
+  let offset = -1;
+
+  /* While there are elements to be inspected */
+  while (fibM > 1) {
+    // Calculate the index to be checked
+    const i = Math.min(offset + fibMMm2, n - 1);
+
+    /* If target is greater than the value at index, cut the subarray from array[0] to i */
+    if (lessThan(arr[i], target)) {
+      // Move one step further in Fibonacci series
+      fibM = fibMMm1;
+      fibMMm1 = fibMMm2;
+      fibMMm2 = fibM - fibMMm1;
+
+      offset = i;
+    }
+    /* If target is less than the value at index, cut the subarray after i+1 */
+    else if (lessThan(target, arr[i])) {
+      fibM = fibMMm2;
+      fibMMm1 = fibMMm1 - fibMMm2;
+      fibMMm2 = fibM - fibMMm1;
+    }
+    /* Element found – return index */
+    else {
+      return i;
     }
   }
 
-  return lps;
-}
-
-/**
- * Returns an array of all start indices where `pattern` is found in `text`.
- * If the pattern has length 0, returns an empty array (no meaningful search).
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return [];
-
-  const lps   = buildLPS(pattern);
-  const indices: number[] = [];
-
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-    }
-
-    if (j === pattern.length) {
-      // full match found
-      indices.push(i - j);
-      j = lps[j - 1]; // continue searching for next possible match
-    } else if (i < text.length && text[i] !== pattern[j]) {
-      // mismatch after j matches
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i++;
-      }
-    }
+  /* Compare the last element with target */
+  if (fibMMm1 && arr[offset + 1] === target) {
+    return offset + 1;
   }
 
-  return indices;
+  /* Not found */
+  return -1;
 }
-import { kmpSearch } from './kmp';
+const idx = fibonacciSearch(nums, target, (a, b) => a < b);
+import { fibonacciSearch } from "./fibonacciSearch";
 
-const text = 'ABABDABACDABABCABAB';
-const pattern = 'ABCABAB';
-
-const positions = kmpSearch(text, pattern);
-console.log(positions);   // → [ 9 ]
-export function kmpIndexOf(text: string, pattern: string): number {
-  const matches = kmpSearch(text, pattern);
-  return matches.length > 0 ? matches[0] : -1;
-}
+const numbers = Array.from({ length: 20 }, (_, i) => i * 5); // [0,5,10,...,95]
+const index = fibonacciSearch(numbers, 45, (a, b) => a < b);
+console.log(index); // 9 – because 45 is at index 9
