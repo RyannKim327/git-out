@@ -1,69 +1,71 @@
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElement(arr: number[]): number | null {
-  if (arr.length === 0) return null;
+// src/api/remote.ts
+import { NativeModules, NativeEventEmitter } from 'react-native';
 
-  // 1st pass – find a candidate
-  let candidate = arr[0];
-  let count = 0;
+const { AndroidAsyncTask } = NativeModules;
 
-  for (const num of arr) {
-    if (count === 0) {
-      candidate = num;
-      count = 1;
-    } else {
-      count += num === candidate ? 1 : -1;
+// -----------------------------------------------------------------
+// 1️⃣  The simple JS/TS side: an async fetch helper
+// -----------------------------------------------------------------
+export async function loadRemoteJson(url: string): Promise<any> {
+  try {
+    const response = await fetch(url, { method: 'GET' });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} – ${response.statusText}`);
     }
+    const payload = await response.json();
+    return payload;
+  } catch (err) {
+    console.error('loadRemoteJson error:', err);
+    throw err;
   }
-
-  // 2nd pass – confirm candidate (optional but safe)
-  count = 0;
-  for (const num of arr) {
-    if (num === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
 }
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElementMap(arr: number[]): number | null {
-  const freq = new Map<number, number>();
 
-  for (const num of arr) {
-    freq.set(num, (freq.get(num) ?? 0) + 1);
-  }
+// -----------------------------------------------------------------
+// 2️⃣  The bridge to Android (AsyncTask)
+// -----------------------------------------------------------------
+// On Android, create a module that exposes `runAsyncTask`
+// which internally spawns an AsyncTask that returns a JSON string.
 
-  const n = arr.length;
-  for (const [num, count] of freq.entries()) {
-    if (count > Math.floor(n / 2)) {
-      return num;
+export function runAndroidTask(
+  taskName: string,
+  args: Record<string, any>
+): Promise<any> {
+  // The native module returns a Promise that resolves with a string
+  return AndroidAsyncTask.runAsyncTask(taskName, args).then((result: string) => {
+    try {
+      return JSON.parse(result);
+    } catch (err) {
+      console.warn('Failed to parse JSON from Android:', err);
+      throw err;
     }
-  }
-  return null;
+  });
 }
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElementSorted(arr: number[]): number | null {
-  if (arr.length === 0) return null;
 
-  // Make a copy so we don’t mutate the caller’s array
-  const sorted = [...arr].sort((a, b) => a - b);
-  const candidate = sorted[Math.floor(sorted.length / 2)];
-  let count = 0;
+// -----------------------------------------------------------------
+// 3️⃣  Example usage (e.g. inside a component)
+// -----------------------------------------------------------------
+/*
+import React, { useEffect, useState } from 'react';
+import { View, Text } from 'react-native';
+import { loadRemoteJson, runAndroidTask } from './api/remote';
 
-  for (const num of sorted) {
-    if (num === candidate) count++;
-  }
+export default function Demo() {
+  const [data, setData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  return count > Math.floor(arr.length / 2) ? candidate : null;
+  useEffect(() => {
+    // Option A – vanilla fetch
+    loadRemoteJson('https://jsonplaceholder.typicode.com/todos/1')
+      .then(setData)
+      .catch(err => setError(err.message));
+
+    // Option B – delegate to Android AsyncTask
+    // runAndroidTask('fetchTodo', { id: 1 })
+    //   .then(setData)
+    //   .catch(err => setError(err.message));
+  }, []);
+
+  if (error) return <View><Text>❌ {error}</Text></View>;
+  return data ? <Text>✅ {JSON.stringify(data)}</Text> : <Text>⏳ Loading…</Text>;
 }
-const testArray = [2, 2, 1, 1, 1, 2, 2];
-console.log(majorityElement(testArray));      // 2
-console.log(majorityElementMap(testArray));   // 2
-console.log(majorityElementSorted(testArray)); // 2
+*/
