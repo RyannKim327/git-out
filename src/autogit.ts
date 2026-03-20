@@ -1,100 +1,69 @@
-/* 1️⃣  A node holds a value and a pointer to the next node   */
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
+/**
+ * Returns the majority element if it exists,
+ * otherwise returns null.
+ */
+function majorityElement(arr: number[]): number | null {
+  if (arr.length === 0) return null;
 
-/* 2️⃣  The list itself                                               */
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+  // 1st pass – find a candidate
+  let candidate = arr[0];
+  let count = 0;
 
-  /* Useful for debugging or quick inspection */
-  get size() : number { return this._size; }
-
-  /* 🔄  Add at the end – amortised O(1)                      */
-  push(val: T) : void {
-    const node = new ListNode(val);
-    if (!this.head) {   // first element
-      this.head = this.tail = node;
+  for (const num of arr) {
+    if (count === 0) {
+      candidate = num;
+      count = 1;
     } else {
-      // tail is guaranteed not null here
-      this.tail!.next = node;
-      this.tail = node;
+      count += num === candidate ? 1 : -1;
     }
-    this._size++;
   }
 
-  /* ⬅️  Remove from the end – O(n) because we’d have to
-        find the previous node. This simple version walks
-        to the node before the tail.                        */
-  pop() : T | undefined {
-    if (!this.head) return;
-    if (this.head === this.tail) {   // one element left
-      const val = this.head.value;
-      this.head = this.tail = null;
-      this._size = 0;
-      return val;
-    }
-
-    let prev = this.head;
-    while (prev.next !== this.tail) {
-      prev = prev.next!;
-    }
-    const val = this.tail!.value;
-    prev.next = null;
-    this.tail = prev;
-    this._size--;
-    return val;
+  // 2nd pass – confirm candidate (optional but safe)
+  count = 0;
+  for (const num of arr) {
+    if (num === candidate) count++;
   }
 
-  /* 🔍  Find the index of a value – O(n)                   */
-  indexOf(val: T) : number {
-    let cur = this.head;
-    let i = 0;
-    while (cur) {
-      if (cur.value === val) return i;
-      cur = cur.next;
-      i++;
-    }
-    return -1;
-  }
-
-  /* 🔢  Grab the value at an index – guard against
-        out‑of‑range access. O(n)                               */
-  getAt(index: number) : T | undefined {
-    if (index < 0 || index >= this._size) return;
-    let cur = this.head;
-    let i = 0;
-    while (cur && i < index) {
-      cur = cur.next;
-      i++;
-    }
-    return cur?.value;
-  }
-
-  /* 🔁  Iterate over values – handy for `for..of`            */
-  [Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    return {
-      next: () => {
-        if (!current) return { done: true, value: undefined };
-        const value = current.value;
-        current = current.next;
-        return { done: false, value };
-      }
-    };
-  }
+  return count > Math.floor(arr.length / 2) ? candidate : null;
 }
+/**
+ * Returns the majority element if it exists,
+ * otherwise returns null.
+ */
+function majorityElementMap(arr: number[]): number | null {
+  const freq = new Map<number, number>();
 
-/* 3️⃣  Quick sanity test                                   */
-const nums = new LinkedList<number>();
-nums.push(10);
-nums.push(20);
-nums.push(30);
-console.log(nums.size);          // 3
-console.log([...nums]);          // [10, 20, 30]
-console.log(nums.pop());         // 30
-console.log(nums.size);          // 2
-console.log(nums.indexOf(20));   // 1
-console.log(nums.getAt(0));      // 10
+  for (const num of arr) {
+    freq.set(num, (freq.get(num) ?? 0) + 1);
+  }
+
+  const n = arr.length;
+  for (const [num, count] of freq.entries()) {
+    if (count > Math.floor(n / 2)) {
+      return num;
+    }
+  }
+  return null;
+}
+/**
+ * Returns the majority element if it exists,
+ * otherwise returns null.
+ */
+function majorityElementSorted(arr: number[]): number | null {
+  if (arr.length === 0) return null;
+
+  // Make a copy so we don’t mutate the caller’s array
+  const sorted = [...arr].sort((a, b) => a - b);
+  const candidate = sorted[Math.floor(sorted.length / 2)];
+  let count = 0;
+
+  for (const num of sorted) {
+    if (num === candidate) count++;
+  }
+
+  return count > Math.floor(arr.length / 2) ? candidate : null;
+}
+const testArray = [2, 2, 1, 1, 1, 2, 2];
+console.log(majorityElement(testArray));      // 2
+console.log(majorityElementMap(testArray));   // 2
+console.log(majorityElementSorted(testArray)); // 2
