@@ -1,47 +1,45 @@
-/**
- * Return true if `s` is a palindrome (case‑insensitive, alphanumeric only).
- * Works in O(n) time and O(1) extra space.
- */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
+}
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-  // helper: is the char code an ASCII alphanumeric?
-  const isAlnum = (c: number) =>
-    (c >= 48 && c <= 57) ||        // 0‑9
-    (c >= 65 && c <= 90) ||        // A‑Z
-    (c >= 97 && c <= 122);         // a‑z
+  while (fast && fast.next) {
+    slow = slow!.next;            // move one step
+    fast = fast.next.next;        // move two steps
 
-  // helper: convert ASCII letter to its uppercase equivalent
-  const toUpper = (c: number) => (c >= 97 && c <= 122) ? (c - 32) : c;
-
-  while (left < right) {
-    // skip non‑alphanumeric characters on the left
-    while (left < right && !isAlnum(s.charCodeAt(left))) left++;
-    // skip non‑alphanumeric characters on the right
-    while (left < right && !isAlnum(s.charCodeAt(right))) right--;
-
-    if (left >= right) break;
-
-    // compare the two characters after normalizing to uppercase
-    if (toUpper(s.charCodeAt(left)) !== toUpper(s.charCodeAt(right))) {
-      return false;
-    }
-    left++;
-    right--;
+    if (slow === fast) return true;   // they met → cycle
   }
 
-  return true;
+  return false;   // hit the end → no cycle
 }
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+  const visited = new Set<ListNode<T>>();
 
-/* ---------- demo ---------- */
-const tests = [
-  "A man, a plan, a canal: Panama",
-  "race a car",
-  "No 'x' in Nixon",
-  "MadamInEdenImAdam",
-];
+  let current = head;
+  while (current) {
+    if (visited.has(current)) return true;
+    visited.add(current);
+    current = current.next;
+  }
+  return false;
+}
+// Linear list (no cycle)
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b; b.next = c;
 
-tests.forEach(t => {
-  console.log(`"${t}" → ${isPalindrome(t)}`);
-});
+console.log(hasCycle(a)); // false
+
+// Cyclic list
+const d = new ListNode(4);
+const e = new ListNode(5);
+const f = new ListNode(6);
+d.next = e; e.next = f; f.next = d; // f points back to d
+
+console.log(hasCycle(d)); // true
