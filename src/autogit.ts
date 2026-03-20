@@ -1,68 +1,40 @@
-// utils.ts
-export type SearchResult = { index: number; match: string } | null;
-
-/**
- * Rabin–Karp string search. Returns the first occurrence of `pattern`
- * inside `text`, or null if no match is found.
- *
- * @param text     The string to search within – can be very long.
- * @param pattern  The string we’re looking for. Must be non‑empty.
- * @returns        The index of the first match or null.
- */
-export function rabinKarpSearch(text: string, pattern: string): SearchResult {
-  if (!pattern) throw new Error('Pattern must not be empty');
-  const n = text.length;
-  const m = pattern.length;
-  if (m > n) return null;
-
-  /* ---------- Parameters for hashing ---------- */
-  const prime = 101;                 // a small prime modulus
-  const base  = 256;                 // number of possible characters (ASCII)
-
-  /* ---------- Pre‑compute base^(m‑1) % prime ----------
-   *  This value is used to drop the leading character from the
-   *  rolling hash.  For example, if the rolling hash is
-   *  h = (s[0]·base^(m‑1) + s[1]·base^(m‑2) + … + s[m‑1]) % prime,
-   *  after shifting the window by one we remove s[0]·base^(m‑1).
-   */
-  let highOrder = 1;
-  for (let i = 0; i < m - 1; i++) highOrder = (highOrder * base) % prime;
-
-  /* ---------- Compute hash of pattern & first window ----------
-   *  Use the same formula for both.  Will be used for direct
-   *  comparison when hash values coincide.
-   */
-  let patHash   = 0;
-  let windowHash = 0;
-  for (let i = 0; i < m; i++) {
-    patHash    = (patHash * base + pattern.charCodeAt(i)) % prime;
-    windowHash = (windowHash * base + text.charCodeAt(i)) % prime;
-  }
-
-  /* ---------- Slide the pattern over the text ---------- */
-  for (let i = 0; i <= n - m; i++) {
-    /* 1.  Hash match => candidate.  Verify by a literal comparison. */
-    if (patHash === windowHash) {
-      if (text.substr(i, m) === pattern) {
-        return { index: i, match: pattern };
-      }
-    }
-
-    /* 2.  Roll the hash: drop the leftmost char, add the rightmost. */
-    if (i < n - m) {
-      // subtract leading contribution
-      windowHash = (windowHash - highOrder * text.charCodeAt(i)) % prime;
-      // make it positive if needed
-      if (windowHash < 0) windowHash += prime;
-      // multiply by base and add new char
-      windowHash = (windowHash * base + text.charCodeAt(i + m)) % prime;
-    }
-  }
-
-  return null;
+// Generic helper – keeps the original array untouched
+function uniq<T>(arr: T[]): T[] {
+  return [...new Set(arr)];
 }
-import { rabinKarpSearch } from './utils';
+const numbers = [1, 2, 3, 2, 4, 1, 5];
+console.log(uniq(numbers));      // [1, 2, 3, 4, 5]
 
-console.log(rabinKarpSearch('abracadabra', 'cad'));   // { index: 4, match: 'cad' }
-console.log(rabinKarpSearch('hello world', 'world')); // { index: 6, match: 'world' }
-console.log(rabinKarpSearch('hello', 'bye'));        // null
+const words = ['apple', 'banana', 'apple', 'orange'];
+console.log(uniq(words));        // ['apple', 'banana', 'orange']
+
+// With objects – note that Set checks reference equality
+const objs = [{ id: 1 }, { id: 2 }, { id: 1 }];
+console.log(uniq(objs));         // [{ id: 1 }, { id: 2 }, { id: 1 }]
+function uniqByKey<T, K extends keyof T>(arr: T[], key: K): T[] {
+  const seen = new Map<T[K], T>();
+  for (const item of arr) {
+    if (!seen.has(item[key])) {
+      seen.set(item[key], item);
+    }
+  }
+  return Array.from(seen.values());
+}
+
+const people = [
+  { id: 1, name: 'Ana' },
+  { id: 2, name: 'Ben' },
+  { id: 1, name: 'Ana' },
+];
+console.log(uniqByKey(people, 'id'));  // [{ id: 1, name: 'Ana' }, { id: 2, name: 'Ben' }]
+function uniqInPlace<T>(arr: T[]): void {
+  const seen = new Set<T>();
+  let writeIdx = 0;
+  for (const item of arr) {
+    if (!seen.has(item)) {
+      seen.add(item);
+      arr[writeIdx++] = item;
+    }
+  }
+  arr.length = writeIdx; // truncate the rest
+}
