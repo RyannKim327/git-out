@@ -1,27 +1,44 @@
 /**
- * Return true if the supplied string is a palindrome (ignoring case,
- * punctuation, spaces, and other non‑alphanumeric characters).
+ * Area = (base * height) / 2
  */
-export function isPalindrome(input: string): boolean {
-  // Keep only letters and digits, make everything lowercase
-  const cleaned = input.replace(/[^a-z0-9]/gi, '').toLowerCase();
-
-  // Quick escape: a single character or empty string is trivially a palindrome
-  if (cleaned.length <= 1) return true;
-
-  // Compare characters from the front and back
-  for (let i = 0, j = cleaned.length - 1; i < j; i++, j--) {
-    if (cleaned[i] !== cleaned[j]) return false;
-  }
-  return true;
+function areaFromBaseHeight(base: number, height: number): number {
+  return (base * height) / 2;
 }
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("racecar"));                         // true
-console.log(isPalindrome("Hello, world!"));                   // false
-export function isExactPalindrome(input: string): boolean {
-  if (input.length <= 1) return true;
-  for (let i = 0, j = input.length - 1; i < j; i++, j--) {
-    if (input[i] !== input[j]) return false;
-  }
-  return true;
+
+// Example
+console.log(areaFromBaseHeight(10, 6)); // 30
+/**
+ * Shoelace / Gauss area formula for a polygon.
+ * For a triangle (3 vertices) it simplifies nicely.
+ */
+function areaFromCoords(
+  p1: { x: number; y: number },
+  p2: { x: number; y: number },
+  p3: { x: number; y: number }
+): number {
+  const s1 = p2.x * p1.y - p1.x * p2.y;
+  const s2 = p3.x * p2.y - p2.x * p3.y;
+  const s3 = p1.x * p3.y - p3.x * p1.y;
+  return Math.abs((s1 + s2 + s3) / 2);
 }
+
+// Example
+console.log(
+  areaFromCoords(
+    { x: 0, y: 0 },
+    { x: 4, y: 0 },
+    { x: 0, y: 3 }
+  )
+); // 6
+/**
+ * Heron's formula:
+ *   s = (a + b + c) / 2
+ *   area = sqrt( s * (s - a) * (s - b) * (s - c) )
+ */
+function areaFromSides(a: number, b: number, c: number): number {
+  const s = (a + b + c) / 2;
+  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+}
+
+// Example
+console.log(areaFromSides(5, 6, 7)); // ≈ 14.6969
