@@ -1,43 +1,27 @@
-// Stack.ts
-export class Stack<T> {
-  // Underlying array that holds the stack items
-  private items: T[] = [];
+/**
+ * Return true if the supplied string is a palindrome (ignoring case,
+ * punctuation, spaces, and other non‑alphanumeric characters).
+ */
+export function isPalindrome(input: string): boolean {
+  // Keep only letters and digits, make everything lowercase
+  const cleaned = input.replace(/[^a-z0-9]/gi, '').toLowerCase();
 
-  // Push a value onto the top of the stack
-  push(value: T): void {
-    this.items.push(value);
-  }
+  // Quick escape: a single character or empty string is trivially a palindrome
+  if (cleaned.length <= 1) return true;
 
-  // Remove and return the item from the top of the stack.
-  // Returns undefined if the stack is empty.
-  pop(): T | undefined {
-    return this.items.pop();
+  // Compare characters from the front and back
+  for (let i = 0, j = cleaned.length - 1; i < j; i++, j--) {
+    if (cleaned[i] !== cleaned[j]) return false;
   }
-
-  // Peek at the top item without removing it.
-  // Returns undefined if the stack is empty.
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  // Report how many items are currently in the stack
-  get size(): number {
-    return this.items.length;
-  }
-
-  // Is the stack empty?
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
+  return true;
 }
-import { Stack } from './Stack';
-
-const intStack = new Stack<number>();
-
-intStack.push(10);
-intStack.push(20);
-intStack.push(30);
-
-console.log(intStack.peek()); // 30
-console.log(intStack.pop());  // 30
-console.log(intStack.size);   // 2
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("racecar"));                         // true
+console.log(isPalindrome("Hello, world!"));                   // false
+export function isExactPalindrome(input: string): boolean {
+  if (input.length <= 1) return true;
+  for (let i = 0, j = input.length - 1; i < j; i++, j--) {
+    if (input[i] !== input[j]) return false;
+  }
+  return true;
+}
