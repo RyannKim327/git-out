@@ -1,69 +1,39 @@
 /**
- * Returns the majority element if it exists,
- * otherwise returns null.
+ * Recursively searches a sorted array for a target value.
+ *
+ * @param arr  The sorted array (ascending order).
+ * @param target  The value to find.
+ * @param left  The left boundary of the current search window.
+ * @param right The right boundary of the current search window.
+ * @returns The index of the target, or -1 if it isn’t in the array.
  */
-function majorityElement(arr: number[]): number | null {
-  if (arr.length === 0) return null;
+function binarySearch<T>(
+  arr: T[],
+  target: T,
+  left: number = 0,
+  right: number = arr.length - 1,
+  comparator?: (a: T, b: T) => number
+): number {
+  // Base case: window collapsed -> not found
+  if (left > right) return -1;
 
-  // 1st pass – find a candidate
-  let candidate = arr[0];
-  let count = 0;
+  // Midpoint (avoid overflow by using `left + ((right - left) >> 1)` if you like)
+  const mid = Math.floor((left + right) / 2);
 
-  for (const num of arr) {
-    if (count === 0) {
-      candidate = num;
-      count = 1;
-    } else {
-      count += num === candidate ? 1 : -1;
-    }
-  }
+  // Resolve comparison logic
+  const cmp = comparator
+    ? comparator(target, arr[mid])
+    : (target > arr[mid]) - (target < arr[mid]); // generic numeric/lexicographic
 
-  // 2nd pass – confirm candidate (optional but safe)
-  count = 0;
-  for (const num of arr) {
-    if (num === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
+  if (cmp === 0) return mid;          // found
+  if (cmp < 0) return binarySearch(arr, target, left, mid - 1, comparator);
+  return binarySearch(arr, target, mid + 1, right, comparator);
 }
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElementMap(arr: number[]): number | null {
-  const freq = new Map<number, number>();
+const nums = [1, 3, 5, 7, 9, 11];
 
-  for (const num of arr) {
-    freq.set(num, (freq.get(num) ?? 0) + 1);
-  }
-
-  const n = arr.length;
-  for (const [num, count] of freq.entries()) {
-    if (count > Math.floor(n / 2)) {
-      return num;
-    }
-  }
-  return null;
-}
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElementSorted(arr: number[]): number | null {
-  if (arr.length === 0) return null;
-
-  // Make a copy so we don’t mutate the caller’s array
-  const sorted = [...arr].sort((a, b) => a - b);
-  const candidate = sorted[Math.floor(sorted.length / 2)];
-  let count = 0;
-
-  for (const num of sorted) {
-    if (num === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
-}
-const testArray = [2, 2, 1, 1, 1, 2, 2];
-console.log(majorityElement(testArray));      // 2
-console.log(majorityElementMap(testArray));   // 2
-console.log(majorityElementSorted(testArray)); // 2
+console.log(binarySearch(nums, 7));   // → 3
+console.log(binarySearch(nums, 2));   // → -1
+const names = ['Alice', 'Bob', 'Charlie', 'David'].sort();
+console.log(binarySearch(names, 'bob', 0, names.length - 1, (a, b) =>
+  a.toLowerCase().localeCompare(b.toLowerCase())
+)); // → 1
