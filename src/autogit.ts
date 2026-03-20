@@ -1,88 +1,71 @@
-/**
- * Merge‑Sort for an array.
- *
- * @param arr   The array to sort.
- * @param cmp   Optional comparison function. If omitted, the default <, > operators are used.
- * @returns The sorted array (in‑place, but a new array is returned for convenience).
- */
-export function mergeSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  // No need to sort if the array is empty or has a single element.
-  if (arr.length <= 1) return arr.slice();
+// src/api/remote.ts
+import { NativeModules, NativeEventEmitter } from 'react-native';
 
-  const mid = Math.floor(arr.length / 2);
-  const left = mergeSort(arr.slice(0, mid), cmp);
-  const right = mergeSort(arr.slice(mid), cmp);
+const { AndroidAsyncTask } = NativeModules;
 
-  return merge(left, right, cmp);
-}
-
-/**
- * Merges two sorted arrays into a new sorted array.
- *
- * @param left  The left sorted half.
- * @param right The right sorted half.
- * @param cmp   Comparison function (optional).
- * @returns A new sorted array containing all elements from left and right.
- */
-function merge<T>(
-  left: T[],
-  right: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  const result: T[] = [];
-  let i = 0,
-    j = 0;
-
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => {
-        // default numeric or string comparison
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-      };
-
-  while (i < left.length && j < right.length) {
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
+// -----------------------------------------------------------------
+// 1️⃣  The simple JS/TS side: an async fetch helper
+// -----------------------------------------------------------------
+export async function loadRemoteJson(url: string): Promise<any> {
+  try {
+    const response = await fetch(url, { method: 'GET' });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} – ${response.statusText}`);
     }
+    const payload = await response.json();
+    return payload;
+  } catch (err) {
+    console.error('loadRemoteJson error:', err);
+    throw err;
   }
-
-  // Attach leftovers … at most one of these will push anything.
-  return result.concat(left.slice(i)).concat(right.slice(j));
-}
-// Numbers
-const nums = [38, 27, 43, 3, 9, 82, 10];
-console.log(mergeSort(nums)); // [3, 9, 10, 27, 38, 43, 82]
-
-// Strings
-const words = ["pear", "apple", "banana", "cherry"];
-console.log(mergeSort(words)); // ['apple', 'banana', 'cherry', 'pear']
-
-// Custom type
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: "Alice", age: 34 },
-  { name: "Bob", age: 23 },
-  { name: "Carol", age: 28 }
-];
-console.log(
-  mergeSort(people, (a, b) => a.age - b.age)
-);
-// People sorted by age: Bob, Carol, Alice
-function isSorted<T>(arr: T[], cmp?: (a: T, b: T) => number): boolean {
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0);
-  for (let i = 1; i < arr.length; i++) {
-    if (compare(arr[i - 1], arr[i]) > 0) return false;
-  }
-  return true;
 }
 
-console.log(isSorted(mergeSort([5, 2, 9, 1, 5, 6]))); // true
+// -----------------------------------------------------------------
+// 2️⃣  The bridge to Android (AsyncTask)
+// -----------------------------------------------------------------
+// On Android, create a module that exposes `runAsyncTask`
+// which internally spawns an AsyncTask that returns a JSON string.
+
+export function runAndroidTask(
+  taskName: string,
+  args: Record<string, any>
+): Promise<any> {
+  // The native module returns a Promise that resolves with a string
+  return AndroidAsyncTask.runAsyncTask(taskName, args).then((result: string) => {
+    try {
+      return JSON.parse(result);
+    } catch (err) {
+      console.warn('Failed to parse JSON from Android:', err);
+      throw err;
+    }
+  });
+}
+
+// -----------------------------------------------------------------
+// 3️⃣  Example usage (e.g. inside a component)
+// -----------------------------------------------------------------
+/*
+import React, { useEffect, useState } from 'react';
+import { View, Text } from 'react-native';
+import { loadRemoteJson, runAndroidTask } from './api/remote';
+
+export default function Demo() {
+  const [data, setData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Option A – vanilla fetch
+    loadRemoteJson('https://jsonplaceholder.typicode.com/todos/1')
+      .then(setData)
+      .catch(err => setError(err.message));
+
+    // Option B – delegate to Android AsyncTask
+    // runAndroidTask('fetchTodo', { id: 1 })
+    //   .then(setData)
+    //   .catch(err => setError(err.message));
+  }, []);
+
+  if (error) return <View><Text>❌ {error}</Text></View>;
+  return data ? <Text>✅ {JSON.stringify(data)}</Text> : <Text>⏳ Loading…</Text>;
+}
+*/
