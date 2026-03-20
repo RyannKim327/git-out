@@ -1,18 +1,54 @@
-// ✅ Basic “looks‑right” test
-function isValidEmail(email: string): boolean {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
+// ------------------------------------------------------------
+//  Fetch‑and‑hydrate example in TypeScript
+// ------------------------------------------------------------
+
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
+
+type User = {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+};
+
+async function fetchUserWithPosts(userId: number): Promise<{ user: User; posts: Post[] }> {
+  // Base endpoint
+  const base = 'https://jsonplaceholder.typicode.com';
+
+  // Helper that throws on non‑2xx
+  const safeFetch = async <T>(url: string): Promise<T> => {
+    const resp = await fetch(url);
+
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`Failed to fetch ${url} – ${resp.status}: ${text}`);
+    }
+
+    // Guard against empty body
+    const data = await resp.json();
+    return data as T;
+  };
+
+  // Pull user
+  const user = await safeFetch<User>(`${base}/users/${userId}`);
+
+  // Pull that user’s posts in parallel
+  const posts = await safeFetch<Post[]>(`${base}/posts?userId=${userId}`);
+
+  return { user, posts };
 }
 
-// usage
-console.log(isValidEmail('user@example.com')); // true
-console.log(isValidEmail('bad-email.com'));    // false
-// ✅ Covers quoted local‑part, IP domains, and "newer" TLDs
-function isValidEmailBetter(email: string): boolean {
-  const re = /^(?:(?:\"[^\"]+\")|(?:[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+))@(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}|(?:\[[0-9]{1,3}(?:\.[0-9]{1,3}){3}\]))$/;
-  return re.test(email);
-}
-// In a React hook or any form library
-const validateEmail = (value: string) => (
-  isValidEmail(value) ? undefined : 'Invalid email address'
-);
+
+// Demo call – tweak the ID at will
+fetchUserWithPosts(1)
+  .then(({ user, posts }) => {
+    console.log('User:', user);
+    console.log(`Found ${posts.length} posts:`);
+    posts.slice(0, 3).forEach((p) => console.log(` • ${p.title}`));
+  })
+  .catch((err) => console.error('Oops!', err.message));
