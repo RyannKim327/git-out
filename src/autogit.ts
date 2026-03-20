@@ -1,37 +1,69 @@
-// Basic binary‑tree node
-class TreeNode<T> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
+/**
+ * Returns the majority element if it exists,
+ * otherwise returns null.
+ */
+function majorityElement(arr: number[]): number | null {
+  if (arr.length === 0) return null;
 
-// Main helper that returns the height of a node and updates maxDiameter
-function computeHeight<T>(node: TreeNode<T> | null, maxDiameter: { value: number }): number {
-  if (!node) return -1; // height of empty subtree is -1 so that a single node gives 0
+  // 1st pass – find a candidate
+  let candidate = arr[0];
+  let count = 0;
 
-  const leftHeight = computeHeight(node.left, maxDiameter);
-  const rightHeight = computeHeight(node.right, maxDiameter);
-
-  // Path that passes through this node
-  const diameterAtNode = leftHeight + rightHeight + 2; // +2 edges to connect left and right via current node
-  if (diameterAtNode > maxDiameter.value) {
-    maxDiameter.value = diameterAtNode;
+  for (const num of arr) {
+    if (count === 0) {
+      candidate = num;
+      count = 1;
+    } else {
+      count += num === candidate ? 1 : -1;
+    }
   }
 
-  // Return height of this subtree
-  return Math.max(leftHeight, rightHeight) + 1;
-}
+  // 2nd pass – confirm candidate (optional but safe)
+  count = 0;
+  for (const num of arr) {
+    if (num === candidate) count++;
+  }
 
-// Public API
-export function treeDiameter<T>(root: TreeNode<T> | null): number {
-  const maxDiameter = { value: 0 };
-  computeHeight(root, maxDiameter);
-  return maxDiameter.value; // number of edges on the longest path
+  return count > Math.floor(arr.length / 2) ? candidate : null;
 }
-        1
-       / \
-      2   3
-     / \     
-    4   5    
+/**
+ * Returns the majority element if it exists,
+ * otherwise returns null.
+ */
+function majorityElementMap(arr: number[]): number | null {
+  const freq = new Map<number, number>();
+
+  for (const num of arr) {
+    freq.set(num, (freq.get(num) ?? 0) + 1);
+  }
+
+  const n = arr.length;
+  for (const [num, count] of freq.entries()) {
+    if (count > Math.floor(n / 2)) {
+      return num;
+    }
+  }
+  return null;
+}
+/**
+ * Returns the majority element if it exists,
+ * otherwise returns null.
+ */
+function majorityElementSorted(arr: number[]): number | null {
+  if (arr.length === 0) return null;
+
+  // Make a copy so we don’t mutate the caller’s array
+  const sorted = [...arr].sort((a, b) => a - b);
+  const candidate = sorted[Math.floor(sorted.length / 2)];
+  let count = 0;
+
+  for (const num of sorted) {
+    if (num === candidate) count++;
+  }
+
+  return count > Math.floor(arr.length / 2) ? candidate : null;
+}
+const testArray = [2, 2, 1, 1, 1, 2, 2];
+console.log(majorityElement(testArray));      // 2
+console.log(majorityElementMap(testArray));   // 2
+console.log(majorityElementSorted(testArray)); // 2
