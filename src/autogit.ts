@@ -1,71 +1,14 @@
-// src/api/remote.ts
-import { NativeModules, NativeEventEmitter } from 'react-native';
+// 1) Using a regular expression (remove *any* whitespace)
+const clean1 = originalString.replace(/\s+/g, "");
 
-const { AndroidAsyncTask } = NativeModules;
+// 2) If you only care about literal space characters (no tabs, newlines, etc.)
+const clean2 = originalString.replace(/ /g, "");
 
-// -----------------------------------------------------------------
-// 1️⃣  The simple JS/TS side: an async fetch helper
-// -----------------------------------------------------------------
-export async function loadRemoteJson(url: string): Promise<any> {
-  try {
-    const response = await fetch(url, { method: 'GET' });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} – ${response.statusText}`);
-    }
-    const payload = await response.json();
-    return payload;
-  } catch (err) {
-    console.error('loadRemoteJson error:', err);
-    throw err;
-  }
+// 3) Split/join – handy if you’re scrubbing a handful of specific delimiters
+const clean3 = originalString.split(" ").join("");
+
+// 4) Manual loop (useful if you need to do something with each char)
+let clean4 = "";
+for (const ch of originalString) {
+  if (ch !== " ") clean4 += ch;
 }
-
-// -----------------------------------------------------------------
-// 2️⃣  The bridge to Android (AsyncTask)
-// -----------------------------------------------------------------
-// On Android, create a module that exposes `runAsyncTask`
-// which internally spawns an AsyncTask that returns a JSON string.
-
-export function runAndroidTask(
-  taskName: string,
-  args: Record<string, any>
-): Promise<any> {
-  // The native module returns a Promise that resolves with a string
-  return AndroidAsyncTask.runAsyncTask(taskName, args).then((result: string) => {
-    try {
-      return JSON.parse(result);
-    } catch (err) {
-      console.warn('Failed to parse JSON from Android:', err);
-      throw err;
-    }
-  });
-}
-
-// -----------------------------------------------------------------
-// 3️⃣  Example usage (e.g. inside a component)
-// -----------------------------------------------------------------
-/*
-import React, { useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
-import { loadRemoteJson, runAndroidTask } from './api/remote';
-
-export default function Demo() {
-  const [data, setData] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Option A – vanilla fetch
-    loadRemoteJson('https://jsonplaceholder.typicode.com/todos/1')
-      .then(setData)
-      .catch(err => setError(err.message));
-
-    // Option B – delegate to Android AsyncTask
-    // runAndroidTask('fetchTodo', { id: 1 })
-    //   .then(setData)
-    //   .catch(err => setError(err.message));
-  }, []);
-
-  if (error) return <View><Text>❌ {error}</Text></View>;
-  return data ? <Text>✅ {JSON.stringify(data)}</Text> : <Text>⏳ Loading…</Text>;
-}
-*/
