@@ -1,18 +1,43 @@
-// ✅ Basic “looks‑right” test
-function isValidEmail(email: string): boolean {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
-}
+// Stack.ts
+export class Stack<T> {
+  // Underlying array that holds the stack items
+  private items: T[] = [];
 
-// usage
-console.log(isValidEmail('user@example.com')); // true
-console.log(isValidEmail('bad-email.com'));    // false
-// ✅ Covers quoted local‑part, IP domains, and "newer" TLDs
-function isValidEmailBetter(email: string): boolean {
-  const re = /^(?:(?:\"[^\"]+\")|(?:[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+))@(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}|(?:\[[0-9]{1,3}(?:\.[0-9]{1,3}){3}\]))$/;
-  return re.test(email);
+  // Push a value onto the top of the stack
+  push(value: T): void {
+    this.items.push(value);
+  }
+
+  // Remove and return the item from the top of the stack.
+  // Returns undefined if the stack is empty.
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  // Peek at the top item without removing it.
+  // Returns undefined if the stack is empty.
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  // Report how many items are currently in the stack
+  get size(): number {
+    return this.items.length;
+  }
+
+  // Is the stack empty?
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
 }
-// In a React hook or any form library
-const validateEmail = (value: string) => (
-  isValidEmail(value) ? undefined : 'Invalid email address'
-);
+import { Stack } from './Stack';
+
+const intStack = new Stack<number>();
+
+intStack.push(10);
+intStack.push(20);
+intStack.push(30);
+
+console.log(intStack.peek()); // 30
+console.log(intStack.pop());  // 30
+console.log(intStack.size);   // 2
