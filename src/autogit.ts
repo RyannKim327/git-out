@@ -1,86 +1,97 @@
-// -----------------------------------------------------------------------------
-//  Simple DFS – TypeScript
-// -----------------------------------------------------------------------------
+// ------------------------------------------------------------
+// 1. Node
+// ------------------------------------------------------------
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null = null;
+  right: TreeNode<T> | null = null;
 
-/**
- * A graph represented as an adjacency list.
- * The keys are the node identifiers (string or number) and the values are
- * arrays of neighboring node identifiers.
- */
-type Graph = Record<string, string[]>;
-
-/**
- * Depth‑first search.
- *
- * @param graph     – The adjacency list.
- * @param start     – The node to start from.
- * @param visitAll  – If true, the function visits all components of a
- *                    disconnected graph; otherwise it stops after exploring
- *                    the component that contains `start`.
- * @returns The visited nodes in the order they were first encountered.
- */
-function depthFirstSearch(
-  graph: Graph,
-  start: string,
-  visitAll: boolean = false
-): string[] {
-  const visited = new Set<string>();
-  const order: string[] = [];
-  const stack: string[] = [start];
-
-  while (stack.length) {
-    const node = stack.pop()!;           // <-- pop top of the stack
-    if (!visited.has(node)) {
-      visited.add(node);
-      order.push(node);
-
-      // push neighbors in reverse to keep the natural traversal order
-      const neighbors = graph[node] ?? [];
-      for (let i = neighbors.length - 1; i >= 0; i--) {
-        const neighbour = neighbors[i];
-        if (!visited.has(neighbour)) stack.push(neighbour);
-      }
-    }
+  constructor(value: T) {
+    this.value = value;
   }
-
-  if (visitAll) {
-    // explore every component that hasn't been visited yet
-    for (const node of Object.keys(graph)) {
-      if (!visited.has(node)) stack.push(node);
-      while (stack.length) {
-        const cur = stack.pop()!;
-        if (!visited.has(cur)) {
-          visited.add(cur);
-          order.push(cur);
-          const neighbors = graph[cur] ?? [];
-          for (let i = neighbors.length - 1; i >= 0; i--)
-            if (!visited.has(neighbors[i])) stack.push(neighbors[i]);
-        }
-      }
-    }
-  }
-
-  return order;
 }
 
-// -----------------------------------------------------------------------------
-//  Example usage
-// -----------------------------------------------------------------------------
+// ------------------------------------------------------------
+// 2. BinarySearchTree
+// ------------------------------------------------------------
+class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
 
-const sampleGraph: Graph = {
-  A: ["B", "C"],
-  B: ["D", "E"],
-  C: ["F"],
-  D: [],
-  E: ["F"],
-  F: [],
-  G: ["H"],   // disconnected component
-  H: [],
-};
+  // -------------------------------------------
+  // Insert a value into the BST
+  // -------------------------------------------
+  insert(value: T, comparator?: (a: T, b: T) => number): void {
+    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
-console.log("DFS from 'A' (component‐only):", depthFirstSearch(sampleGraph, "A"));
-// → [ 'A', 'B', 'D', 'E', 'F', 'C' ]
+    const insertRec = (node: TreeNode<T> | null, val: T): TreeNode<T> => {
+      if (!node) return new TreeNode(val);
 
-console.log("DFS from 'A' (all components):", depthFirstSearch(sampleGraph, "A", true));
-// → [ 'A', 'B', 'D', 'E', 'F', 'C', 'G', 'H' ]
+      if (compare(val, node.value) < 0) {
+        node.left = insertRec(node.left, val);
+      } else {
+        node.right = insertRec(node.right, val);
+      }
+      return node;
+    };
 
+    this.root = insertRec(this.root, value);
+  }
+
+  // -------------------------------------------
+  // Search for a value – returns the node or null
+  // -------------------------------------------
+  search(value: T, comparator?: (a: T, b: T) => number): TreeNode<T> | null {
+    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    let curr = this.root;
+
+    while (curr) {
+      if (compare(value, curr.value) < 0) {
+        curr = curr.left;
+      } else if (compare(value, curr.value) > 0) {
+        curr = curr.right;
+      } else {
+        return curr; // found
+      }
+    }
+    return null; // not found
+  }
+
+  // -------------------------------------------
+  // In‑order traversal – returns an array of values
+  // -------------------------------------------
+  inorder(): T[] {
+    const res: T[] = [];
+    const walk = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      walk(node.left);
+      res.push(node.value);
+      walk(node.right);
+    };
+    walk(this.root);
+    return res;
+  }
+
+  // -------------------------------------------
+  // Convenience: return value of inorder traversal
+  // -------------------------------------------
+  toArray(): T[] {
+    return this.inorder();
+  }
+}
+
+// ------------------------------------------------------------
+// 3. Demo
+// ------------------------------------------------------------
+const bst = new BinarySearchTree<number>();
+
+// Inserting some numbers
+[42, 23, 57, 12, 34, 73, 8].forEach(n => bst.insert(n));
+
+console.log('In‑order traversal:', bst.inorder()); // sorted ascending
+
+const foundNode = bst.search(34);
+if (foundNode) {
+  console.log(`Found node with value ${foundNode.value}`);
+} else {
+  console.log('Value not found');
+}
