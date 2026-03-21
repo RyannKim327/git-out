@@ -1,21 +1,18 @@
-/**
- * Returns a random number in the closed interval [min, max].
- *
- * Uses the built‑in Math.random() which yields a uniformly distributed
- * 64‑bit floating‑point number in [0, 1).
- *
- * @param min - The lower bound of the range (inclusive)
- * @param max - The upper bound of the range (inclusive)
- * @returns A random number in the range [min, max]
- */
-export function randomInRange(min: number, max: number): number {
-  if (min > max) throw new Error('min must be <= max');
-  // Math.random() is 0 ≤ r < 1.  Scale and shift to match [min, max].
-  return Math.random() * (max - min) + min;
+// ✅ Basic “looks‑right” test
+function isValidEmail(email: string): boolean {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
 }
-export function randomIntInRange(min: number, max: number): number {
-  // The +1 ensures the max is included.
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+
+// usage
+console.log(isValidEmail('user@example.com')); // true
+console.log(isValidEmail('bad-email.com'));    // false
+// ✅ Covers quoted local‑part, IP domains, and "newer" TLDs
+function isValidEmailBetter(email: string): boolean {
+  const re = /^(?:(?:\"[^\"]+\")|(?:[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+))@(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}|(?:\[[0-9]{1,3}(?:\.[0-9]{1,3}){3}\]))$/;
+  return re.test(email);
 }
-const randomFloat = randomInRange(5.2, 10.7);      // Anything between 5.2 and 10.7
-const randomInt   = randomIntInRange(1, 6);        // 1, 2, 3, 4, 5, or 6
+// In a React hook or any form library
+const validateEmail = (value: string) => (
+  isValidEmail(value) ? undefined : 'Invalid email address'
+);
