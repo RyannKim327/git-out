@@ -1,50 +1,25 @@
 /**
- * Returns the longest common subsequence of two strings.
- *
- * @param a The first string.
- * @param b The second string.
- * @returns The LCS string.
+ * Returns true if `n` is a prime number.
  */
-export function lcs(a: string, b: string): string {
-  const m = a.length;
-  const n = b.length;
+export function isPrime(n: number): boolean {
+  // Prime numbers are > 1
+  if (n <= 1) return false;
 
-  // dp[i][j] will hold the length of LCS of a[0..i-1] and b[0..j-1].
-  // We keep one extra row/column at index 0 for the empty prefix.
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  // 2 and 3 are the only even/odd primes
+  if (n <= 3) return true;
 
-  // Build the table bottom‑up.
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
+  // Even numbers > 2 can be rejected right away
+  if (n % 2 === 0) return false;
+
+  // Check only odd divisors up to √n
+  const limit = Math.floor(Math.sqrt(n));
+  for (let d = 3; d <= limit; d += 2) {
+    if (n % d === 0) return false;
   }
-
-  // Reconstruct one LCS by walking back through the table.
-  let i = m, j = n;
-  const chars: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      // The character is part of the LCS.
-      chars.push(a[i - 1]);
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;          // Move up.
-    } else {
-      j--;          // Move left.
-    }
-  }
-
-  // The chars array holds the LCS in reverse order.
-  return chars.reverse().join('');
+  return true;
 }
-const s1 = "AGGTAB";
-const s2 = "GXTXAYB";
-
-console.log(lcs(s1, s2)); // "GTAB"
+console.log(isPrime(2));  // true
+console.log(isPrime(15)); // false
+console.log(isPrime(17)); // true
+console.log(isPrime(1));  // false
+console.log(isPrime(-5)); // false
