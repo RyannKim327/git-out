@@ -1,124 +1,133 @@
-// A node identifier can be any string or number
-export type Vertex = string | number;
+enum Color { RED, BLACK }
 
-// Directed edge with a non‑negative weight
-export interface Edge {
-    to: Vertex;
-    cost: number;
+class RBNode<T> {
+  val: T
+  color: Color
+  left: RBNode<T> | null
+  right: RBNode<T> | null
+  parent: RBNode<T> | null
+
+  constructor(val: T, color = Color.RED) {
+    this.val = val
+    this.color = color
+    this.left = null
+    this.right = null
+    this.parent = null
+  }
 }
+class RedBlackTree<T> {
+  root: RBNode<T> | null = null
 
-// Adjacency list representation
-export type Graph = Map<Vertex, Edge[]>;
+  /* ===================== SEARCH ===================== */
+  search(val: T): RBNode<T> | null {
+    let node = this.root
+    while (node) {
+      if (val < node.val) node = node.left
+      else if (val > node.val) node = node.right
+      else return node
+    }
+    return null
+  }
 
-// Result of dijkstra: distance to each node, and the shortest‑path tree
-export interface DijkstraResult {
-    distances: Map<Vertex, number>;
-    previous: Map<Vertex, Vertex | null>;
-}
-class MinHeap {
-    private data: [number, Vertex][] = [];
+  /* ===================== INSERT ===================== */
+  insert(val: T): void {
+    const newNode = new RBNode(val)          // starts RED
+    let y: RBNode<T> | null = null
+    let x = this.root
 
-    isEmpty() {
-        return this.data.length === 0;
+    while (x) {
+      y = x
+      x = val < x.val ? x.left : x.right
     }
 
-    push(item: [number, Vertex]) {
-        this.data.push(item);
-        this.bubbleUp(this.data.length - 1);
+    newNode.parent = y
+    if (!y) {                               // tree was empty
+      this.root = newNode
+    } else if (val < y.val) {
+      y.left = newNode
+    } else {
+      y.right = newNode
     }
 
-    pop(): [number, Vertex] | undefined {
-        if (this.isEmpty()) return undefined;
-        const root = this.data[0];
-        const last = this.data.pop()!;
-        if (!this.isEmpty()) {
-            this.data[0] = last;
-            this.bubbleDown(0);
+    this.insertFixup(newNode)
+  }
+
+  private insertFixup(node: RBNode<T>) {
+    while (node.parent && node.parent.color === Color.RED) {
+      const gp = node.parent.parent!
+      if (node.parent === gp.left) {
+        const uncle = gp.right
+        if (uncle && uncle.color === Color.RED) {
+          // Case 1 – recolor
+          node.parent.color = Color.BLACK
+          uncle.color = Color.BLACK
+          gp.color = Color.RED
+          node = gp
+        } else {
+          if (node === node.parent.right) {
+            // Case 2 – left rotate at parent
+            node = node.parent
+            this.rotateLeft(node)
+          }
+          // Case 3 – right rotate at grandparent
+          node.parent!.color = Color.BLACK
+          gp.color = Color.RED
+          this.rotateRight(gp)
         }
-        return root;
-    }
-
-    private bubbleUp(i: number) {
-        while (i > 0) {
-            const parent = (i - 1) >> 1;
-            if (this.data[parent][0] <= this.data[i][0]) break;
-            [this.data[parent], this.data[i]] = [this.data[i], this.data[parent]];
-            i = parent;
+      } else {
+        // Mirror of above (swap left/right)
+        const uncle = gp.left
+        if (uncle && uncle.color === Color.RED) {
+          node.parent.color = Color.BLACK
+          uncle.color = Color.BLACK
+          gp.color = Color.RED
+          node = gp
+        } else {
+          if (node === node.parent.left) {
+            node = node.parent
+            this.rotateRight(node)
+          }
+          node.parent!.color = Color.BLACK
+          gp.color = Color.RED
+          this.rotateLeft(gp)
         }
+      }
     }
+    this.root!.color = Color.BLACK
+  }
 
-    private bubbleDown(i: number) {
-        const n = this.data.length;
-        while (true) {
-            const left = (i << 1) + 1;
-            const right = left + 1;
-            let smallest = i;
+  /* ===================== ROTAIONS ===================== */
+  private rotateLeft(x: RBNode<T>) {
+    const y = x.right!
+    x.right = y.left
+    if (y.left) y.left.parent = x
+    y.parent = x.parent
+    if (!x.parent) this.root = y
+    else if (x === x.parent.left) x.parent.left = y
+    else x.parent.right = y
+    y.left = x
+    x.parent = y
+  }
 
-            if (left < n && this.data[left][0] < this.data[smallest][0]) smallest = left;
-            if (right < n && this.data[right][0] < this.data[smallest][0]) smallest = right;
+  private rotateRight(x: RBNode<T>) {
+    const y = x.left!
+    x.left = y.right
+    if (y.right) y.right.parent = x
+    y.parent = x.parent
+    if (!x.parent) this.root = y
+    else if (x === x.parent.right) x.parent.right = y
+    else x.parent.left = y
+    y.right = x
+    x.parent = y
+  }
 
-            if (smallest === i) break;
-
-            [this.data[i], this.data[smallest]] = [this.data[smallest], this.data[i]];
-            i = smallest;
-        }
-    }
+  /* ===================== DELETE (stub) ===================== */
+  // A full delete implementation is longer – you can copy from a standard textbook
+  // or use an existing implementation if you only need it for production.
 }
-export function dijkstra(
-    graph: Graph,
-    source: Vertex
-): DijkstraResult {
-    const distances = new Map<Vertex, number>();
-    const previous = new Map<Vertex, Vertex | null>();
+const tree = new RedBlackTree<number>()
 
-    // init
-    graph.forEach((_, v) => {
-        distances.set(v, Infinity);
-        previous.set(v, null);
-    });
-    distances.set(source, 0);
+[10, 20, 30, 15, 5, 25].forEach(v => tree.insert(v))
 
-    const pq = new MinHeap();
-    pq.push([0, source]);
-
-    while (!pq.isEmpty()) {
-        const [distU, u] = pq.pop()!;
-
-        // (optional) skip stale queue entries
-        if (distU > distances.get(u)!) continue;
-
-        const edges = graph.get(u) ?? [];
-        for (const { to: v, cost: w } of edges) {
-            const alt = distU + w;
-            if (alt < distances.get(v)!) {
-                distances.set(v, alt);
-                previous.set(v, u);
-                pq.push([alt, v]);
-            }
-        }
-    }
-
-    return { distances, previous };
-}
-const g: Graph = new Map([
-    ['A', [{ to: 'B', cost: 5 }, { to: 'C', cost: 10 }]],
-    ['B', [{ to: 'C', cost: 3 }, { to: 'D', cost: 2 }]],
-    ['C', [{ to: 'D', cost: 1 }]],
-    ['D', []]
-]);
-
-const { distances, previous } = dijkstra(g, 'A');
-console.log('Distances:', distances);
-console.log('Previous:', previous);
-
-// Reconstruct path A → D
-function buildPath(prev: Map<Vertex, Vertex | null>, target: Vertex) {
-    const path: Vertex[] = [];
-    for (let v = target; v !== null; v = prev.get(v)!) path.unshift(v);
-    return path;
-}
-
-console.log('Path A → D:', buildPath(previous, 'D'));
-Distances: Map { 'A' => 0, 'B' => 5, 'C' => 7, 'D' => 8 }
-Previous: Map { 'A' => null, 'B' => 'A', 'C' => 'B', 'D' => 'C' }
-Path A → D: ['A', 'B', 'C', 'D']
+console.log(tree.search(15) !== null) // true
+console.log(tree.search(99) === null) // true
