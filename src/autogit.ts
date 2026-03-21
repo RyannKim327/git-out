@@ -1,86 +1,50 @@
-// -----------------------------------------------------------------------------
-//  Simple DFS – TypeScript
-// -----------------------------------------------------------------------------
-
-/**
- * A graph represented as an adjacency list.
- * The keys are the node identifiers (string or number) and the values are
- * arrays of neighboring node identifiers.
- */
-type Graph = Record<string, string[]>;
-
-/**
- * Depth‑first search.
- *
- * @param graph     – The adjacency list.
- * @param start     – The node to start from.
- * @param visitAll  – If true, the function visits all components of a
- *                    disconnected graph; otherwise it stops after exploring
- *                    the component that contains `start`.
- * @returns The visited nodes in the order they were first encountered.
- */
-function depthFirstSearch(
-  graph: Graph,
-  start: string,
-  visitAll: boolean = false
-): string[] {
-  const visited = new Set<string>();
-  const order: string[] = [];
-  const stack: string[] = [start];
-
-  while (stack.length) {
-    const node = stack.pop()!;           // <-- pop top of the stack
-    if (!visited.has(node)) {
-      visited.add(node);
-      order.push(node);
-
-      // push neighbors in reverse to keep the natural traversal order
-      const neighbors = graph[node] ?? [];
-      for (let i = neighbors.length - 1; i >= 0; i--) {
-        const neighbour = neighbors[i];
-        if (!visited.has(neighbour)) stack.push(neighbour);
-      }
-    }
-  }
-
-  if (visitAll) {
-    // explore every component that hasn't been visited yet
-    for (const node of Object.keys(graph)) {
-      if (!visited.has(node)) stack.push(node);
-      while (stack.length) {
-        const cur = stack.pop()!;
-        if (!visited.has(cur)) {
-          visited.add(cur);
-          order.push(cur);
-          const neighbors = graph[cur] ?? [];
-          for (let i = neighbors.length - 1; i >= 0; i--)
-            if (!visited.has(neighbors[i])) stack.push(neighbors[i]);
-        }
-      }
-    }
-  }
-
-  return order;
-}
-
-// -----------------------------------------------------------------------------
-//  Example usage
-// -----------------------------------------------------------------------------
-
-const sampleGraph: Graph = {
-  A: ["B", "C"],
-  B: ["D", "E"],
-  C: ["F"],
-  D: [],
-  E: ["F"],
-  F: [],
-  G: ["H"],   // disconnected component
-  H: [],
+// A minimal, generic node
+export type ListNode<T> = {
+  value: T;
+  next: ListNode<T> | null;
 };
+export function reverseIter<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let current: ListNode<T> | null = head;
 
-console.log("DFS from 'A' (component‐only):", depthFirstSearch(sampleGraph, "A"));
-// → [ 'A', 'B', 'D', 'E', 'F', 'C' ]
+  while (current !== null) {
+    const next = current.next; // remember where we’re going
+    current.next = prev;       // flip the link
+    prev = current;            // move prev forward
+    current = next;            // advance current
+  }
+  // prev is the new head
+  return prev;
+}
+export function reverseRec<T>(
+  head: ListNode<T> | null,
+  prev: ListNode<T> | null = null
+): ListNode<T> | null {
+  if (head === null) return prev;          // base case: end of list
+  const next = head.next;                  // keep track of next node
+  head.next = prev;                        // flip link
+  return reverseRec(next, head);           // recurse
+}
+// Build a tiny list: 1 → 2 → 3 → null
+const a: ListNode<number> = { value: 1, next: null };
+const b: ListNode<number> = { value: 2, next: a };
+const c: ListNode<number> = { value: 3, next: b };
 
-console.log("DFS from 'A' (all components):", depthFirstSearch(sampleGraph, "A", true));
-// → [ 'A', 'B', 'D', 'E', 'F', 'C', 'G', 'H' ]
+// Reverse it
+const reversed = reverseIter(c);
 
+// Print out the new list
+let node: ListNode<number> | null = reversed;
+while (node !== null) {
+  console.log(node.value); // 1, 2, 3
+  node = node.next;
+}
+class SinglyLinkedList<T> {
+  head: ListNode<T> | null = null;
+
+  // push, pop, etc.
+
+  reverse(): void {
+    this.head = reverseIter(this.head);
+  }
+}
