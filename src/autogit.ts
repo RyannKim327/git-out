@@ -1,27 +1,62 @@
 /**
- * Return true if the supplied string is a palindrome (ignoring case,
- * punctuation, spaces, and other non‑alphanumeric characters).
+ * Returns the index of `target` in a sorted array `arr` or -1 if not found.
+ *
+ * @param arr     Sorted array of numbers (ascending or descending)
+ * @param target  Value to search for
+ * @returns Index or -1
  */
-export function isPalindrome(input: string): boolean {
-  // Keep only letters and digits, make everything lowercase
-  const cleaned = input.replace(/[^a-z0-9]/gi, '').toLowerCase();
+export function interpolationSearch(arr: number[], target: number): number {
+  if (!arr.length) return -1;
 
-  // Quick escape: a single character or empty string is trivially a palindrome
-  if (cleaned.length <= 1) return true;
+  let lo = 0;
+  let hi = arr.length - 1;
 
-  // Compare characters from the front and back
-  for (let i = 0, j = cleaned.length - 1; i < j; i++, j--) {
-    if (cleaned[i] !== cleaned[j]) return false;
+  // Handle both ascending and descending arrays.
+  const isAscending = arr[hi] > arr[lo];
+
+  // If target is out of the array’s bounds, it can’t be there.
+  while (
+    (isAscending
+      ? target < arr[lo] || target > arr[hi]
+      : target > arr[lo] || target < arr[hi])
+  ) {
+    return -1;
   }
-  return true;
-}
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("racecar"));                         // true
-console.log(isPalindrome("Hello, world!"));                   // false
-export function isExactPalindrome(input: string): boolean {
-  if (input.length <= 1) return true;
-  for (let i = 0, j = input.length - 1; i < j; i++, j--) {
-    if (input[i] !== input[j]) return false;
+
+  while (lo <= hi) {
+    // Avoid division by zero when lo and hi point to the same value.
+    if (arr[lo] === arr[hi]) {
+      return arr[lo] === target ? lo : -1;
+    }
+
+    // Estimate the next probe position.
+    const pos =
+      lo +
+      Math.floor(
+        ((target - arr[lo]) * (hi - lo)) /
+          (arr[hi] - arr[lo])
+      );
+
+    // Guard against unexpected inequalities after casting to int.
+    if (pos < lo || pos > hi) return -1;
+
+    if (arr[pos] === target) return pos;
+
+    if (arr[pos] < target) {
+      lo = pos + 1;
+    } else {
+      hi = pos - 1;
+    }
   }
-  return true;
+
+  return -1;
 }
+// sorted ascending
+const asc = [1, 3, 5, 7, 9, 11, 13];
+console.log(interpolationSearch(asc, 7)); // 3
+console.log(interpolationSearch(asc, 2)); // -1
+
+// sorted descending
+const desc = [20, 15, 10, 5, 0];
+console.log(interpolationSearch(desc, 10)); // 2
+console.log(interpolationSearch(desc, -5)); // -1
