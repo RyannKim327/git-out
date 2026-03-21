@@ -1,25 +1,57 @@
 /**
- * Returns true if `n` is a prime number.
+ * Generic binary search.
+ *
+ * @param arr   Sorted array.
+ * @param key  Value you’re looking for.
+ * @param cmp  Optional comparison callback.
+ *
+ * @returns The index of `key` if found, otherwise –1.
  */
-export function isPrime(n: number): boolean {
-  // Prime numbers are > 1
-  if (n <= 1) return false;
+export function binarySearch<T>(
+    arr: T[],
+    key: T,
+    cmp?: (a: T, b: T) => number
+): number {
+    if (arr.length === 0) return -1;
 
-  // 2 and 3 are the only even/odd primes
-  if (n <= 3) return true;
+    // Default to natural ordering for primitives.
+    const compare = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
-  // Even numbers > 2 can be rejected right away
-  if (n % 2 === 0) return false;
+    let low = 0;
+    let high = arr.length - 1;
 
-  // Check only odd divisors up to √n
-  const limit = Math.floor(Math.sqrt(n));
-  for (let d = 3; d <= limit; d += 2) {
-    if (n % d === 0) return false;
-  }
-  return true;
+    while (low <= high) {
+        // Guard against overflow in large arrays.
+        const mid = low + ((high - low) >> 1);
+        const midVal = arr[mid];
+
+        const comparison = compare(midVal, key);
+
+        if (comparison === 0) {
+            return mid;          // Found!
+        } else if (comparison < 0) {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+
+    return -1;  // Not found
 }
-console.log(isPrime(2));  // true
-console.log(isPrime(15)); // false
-console.log(isPrime(17)); // true
-console.log(isPrime(1));  // false
-console.log(isPrime(-5)); // false
+// 1️⃣ Integers (no cmp needed)
+const numbers = [3, 7, 12, 19, 27];
+const idx1 = binarySearch(numbers, 12); // 2
+
+// 2️⃣ Strings
+const words = ['apple', 'banana', 'cherry', 'date'];
+const idx2 = binarySearch(words, 'cherry'); // 2
+
+// 3️⃣ Objects – supply a compare
+type User = { id: number; name: string };
+const users: User[] = [
+    { id: 10, name: 'Zoe' },
+    { id: 20, name: 'Bob' },
+    { id: 30, name: 'Alice' },
+].sort((a, b) => a.id - b.id);
+
+const idx3 = binarySearch(users, { id: 20, name: '' }, (a, b) => a.id - b.id); // 1
