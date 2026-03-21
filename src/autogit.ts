@@ -1,74 +1,45 @@
-/**
- * Builds the LPS (Longest Proper Prefix which is also Suffix) table for `pattern`.
- * The table tells us how far to jump when a mismatch occurs.
- */
-function buildLPS(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let length = 0;            // length of the previous longest prefix suffix
-  let i = 1;                 // we start from the second character
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
+}
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        length = lps[length - 1];
-        // we don't increment i here; we try the new length
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
+  while (fast && fast.next) {
+    slow = slow!.next;            // move one step
+    fast = fast.next.next;        // move two steps
+
+    if (slow === fast) return true;   // they met → cycle
   }
 
-  return lps;
+  return false;   // hit the end → no cycle
 }
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+  const visited = new Set<ListNode<T>>();
 
-/**
- * Returns an array of all start indices where `pattern` is found in `text`.
- * If the pattern has length 0, returns an empty array (no meaningful search).
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return [];
-
-  const lps   = buildLPS(pattern);
-  const indices: number[] = [];
-
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-    }
-
-    if (j === pattern.length) {
-      // full match found
-      indices.push(i - j);
-      j = lps[j - 1]; // continue searching for next possible match
-    } else if (i < text.length && text[i] !== pattern[j]) {
-      // mismatch after j matches
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i++;
-      }
-    }
+  let current = head;
+  while (current) {
+    if (visited.has(current)) return true;
+    visited.add(current);
+    current = current.next;
   }
-
-  return indices;
+  return false;
 }
-import { kmpSearch } from './kmp';
+// Linear list (no cycle)
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b; b.next = c;
 
-const text = 'ABABDABACDABABCABAB';
-const pattern = 'ABCABAB';
+console.log(hasCycle(a)); // false
 
-const positions = kmpSearch(text, pattern);
-console.log(positions);   // → [ 9 ]
-export function kmpIndexOf(text: string, pattern: string): number {
-  const matches = kmpSearch(text, pattern);
-  return matches.length > 0 ? matches[0] : -1;
-}
+// Cyclic list
+const d = new ListNode(4);
+const e = new ListNode(5);
+const f = new ListNode(6);
+d.next = e; e.next = f; f.next = d; // f points back to d
+
+console.log(hasCycle(d)); // true
