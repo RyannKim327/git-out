@@ -1,44 +1,50 @@
 /**
- * Area = (base * height) / 2
+ * Returns the longest common subsequence of two strings.
+ *
+ * @param a The first string.
+ * @param b The second string.
+ * @returns The LCS string.
  */
-function areaFromBaseHeight(base: number, height: number): number {
-  return (base * height) / 2;
-}
+export function lcs(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-// Example
-console.log(areaFromBaseHeight(10, 6)); // 30
-/**
- * Shoelace / Gauss area formula for a polygon.
- * For a triangle (3 vertices) it simplifies nicely.
- */
-function areaFromCoords(
-  p1: { x: number; y: number },
-  p2: { x: number; y: number },
-  p3: { x: number; y: number }
-): number {
-  const s1 = p2.x * p1.y - p1.x * p2.y;
-  const s2 = p3.x * p2.y - p2.x * p3.y;
-  const s3 = p1.x * p3.y - p3.x * p1.y;
-  return Math.abs((s1 + s2 + s3) / 2);
-}
+  // dp[i][j] will hold the length of LCS of a[0..i-1] and b[0..j-1].
+  // We keep one extra row/column at index 0 for the empty prefix.
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-// Example
-console.log(
-  areaFromCoords(
-    { x: 0, y: 0 },
-    { x: 4, y: 0 },
-    { x: 0, y: 3 }
-  )
-); // 6
-/**
- * Heron's formula:
- *   s = (a + b + c) / 2
- *   area = sqrt( s * (s - a) * (s - b) * (s - c) )
- */
-function areaFromSides(a: number, b: number, c: number): number {
-  const s = (a + b + c) / 2;
-  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
-}
+  // Build the table bottom‑up.
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
 
-// Example
-console.log(areaFromSides(5, 6, 7)); // ≈ 14.6969
+  // Reconstruct one LCS by walking back through the table.
+  let i = m, j = n;
+  const chars: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      // The character is part of the LCS.
+      chars.push(a[i - 1]);
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;          // Move up.
+    } else {
+      j--;          // Move left.
+    }
+  }
+
+  // The chars array holds the LCS in reverse order.
+  return chars.reverse().join('');
+}
+const s1 = "AGGTAB";
+const s2 = "GXTXAYB";
+
+console.log(lcs(s1, s2)); // "GTAB"
