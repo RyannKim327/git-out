@@ -1,71 +1,37 @@
-// src/api/remote.ts
-import { NativeModules, NativeEventEmitter } from 'react-native';
+// Basic binary‑tree node
+class TreeNode<T> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
+}
 
-const { AndroidAsyncTask } = NativeModules;
+// Main helper that returns the height of a node and updates maxDiameter
+function computeHeight<T>(node: TreeNode<T> | null, maxDiameter: { value: number }): number {
+  if (!node) return -1; // height of empty subtree is -1 so that a single node gives 0
 
-// -----------------------------------------------------------------
-// 1️⃣  The simple JS/TS side: an async fetch helper
-// -----------------------------------------------------------------
-export async function loadRemoteJson(url: string): Promise<any> {
-  try {
-    const response = await fetch(url, { method: 'GET' });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} – ${response.statusText}`);
-    }
-    const payload = await response.json();
-    return payload;
-  } catch (err) {
-    console.error('loadRemoteJson error:', err);
-    throw err;
+  const leftHeight = computeHeight(node.left, maxDiameter);
+  const rightHeight = computeHeight(node.right, maxDiameter);
+
+  // Path that passes through this node
+  const diameterAtNode = leftHeight + rightHeight + 2; // +2 edges to connect left and right via current node
+  if (diameterAtNode > maxDiameter.value) {
+    maxDiameter.value = diameterAtNode;
   }
+
+  // Return height of this subtree
+  return Math.max(leftHeight, rightHeight) + 1;
 }
 
-// -----------------------------------------------------------------
-// 2️⃣  The bridge to Android (AsyncTask)
-// -----------------------------------------------------------------
-// On Android, create a module that exposes `runAsyncTask`
-// which internally spawns an AsyncTask that returns a JSON string.
-
-export function runAndroidTask(
-  taskName: string,
-  args: Record<string, any>
-): Promise<any> {
-  // The native module returns a Promise that resolves with a string
-  return AndroidAsyncTask.runAsyncTask(taskName, args).then((result: string) => {
-    try {
-      return JSON.parse(result);
-    } catch (err) {
-      console.warn('Failed to parse JSON from Android:', err);
-      throw err;
-    }
-  });
+// Public API
+export function treeDiameter<T>(root: TreeNode<T> | null): number {
+  const maxDiameter = { value: 0 };
+  computeHeight(root, maxDiameter);
+  return maxDiameter.value; // number of edges on the longest path
 }
-
-// -----------------------------------------------------------------
-// 3️⃣  Example usage (e.g. inside a component)
-// -----------------------------------------------------------------
-/*
-import React, { useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
-import { loadRemoteJson, runAndroidTask } from './api/remote';
-
-export default function Demo() {
-  const [data, setData] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Option A – vanilla fetch
-    loadRemoteJson('https://jsonplaceholder.typicode.com/todos/1')
-      .then(setData)
-      .catch(err => setError(err.message));
-
-    // Option B – delegate to Android AsyncTask
-    // runAndroidTask('fetchTodo', { id: 1 })
-    //   .then(setData)
-    //   .catch(err => setError(err.message));
-  }, []);
-
-  if (error) return <View><Text>❌ {error}</Text></View>;
-  return data ? <Text>✅ {JSON.stringify(data)}</Text> : <Text>⏳ Loading…</Text>;
-}
-*/
+        1
+       / \
+      2   3
+     / \     
+    4   5    
