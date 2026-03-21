@@ -1,18 +1,15 @@
-// ✅ Basic “looks‑right” test
-function isValidEmail(email: string): boolean {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
+function reverseWordOrder(sentence: string): string {
+  // 1️⃣ split on whitespace (handles multiple spaces, tabs, newlines)
+  const words = sentence.trim().split(/\s+/);
+
+  // 2️⃣ reverse the array
+  const reversed = words.reverse();
+
+  // 3️⃣ join back into a string
+  return reversed.join(' ');
 }
 
-// usage
-console.log(isValidEmail('user@example.com')); // true
-console.log(isValidEmail('bad-email.com'));    // false
-// ✅ Covers quoted local‑part, IP domains, and "newer" TLDs
-function isValidEmailBetter(email: string): boolean {
-  const re = /^(?:(?:\"[^\"]+\")|(?:[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+))@(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}|(?:\[[0-9]{1,3}(?:\.[0-9]{1,3}){3}\]))$/;
-  return re.test(email);
-}
-// In a React hook or any form library
-const validateEmail = (value: string) => (
-  isValidEmail(value) ? undefined : 'Invalid email address'
-);
+// Example usage
+const original = "Hello world from TypeScript";
+const reversed = reverseWordOrder(original);
+console.log(reversed); // "TypeScript from world Hello"
