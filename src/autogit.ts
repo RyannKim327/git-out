@@ -1,81 +1,68 @@
-// 0‑based directed graph
-export type Graph = number[][];   // graph[u] = list of vertices that u points to
+// utils.ts
+export type SearchResult = { index: number; match: string } | null;
+
 /**
- * Returns an array of strongly connected components.
- * Each component is an array of vertex indices, in the order they were popped.
+ * Rabin–Karp string search. Returns the first occurrence of `pattern`
+ * inside `text`, or null if no match is found.
+ *
+ * @param text     The string to search within – can be very long.
+ * @param pattern  The string we’re looking for. Must be non‑empty.
+ * @returns        The index of the first match or null.
  */
-export function tarjanSCC(graph: Graph): number[][] {
-  const n = graph.length;
-  const indices = new Array<number>(n).fill(-1);   // -1 = unvisited
-  const lowlink = new Array<number>(n).fill(0);
-  const onStack = new Array<boolean>(n).fill(false);
-  const stack: number[] = [];
+export function rabinKarpSearch(text: string, pattern: string): SearchResult {
+  if (!pattern) throw new Error('Pattern must not be empty');
+  const n = text.length;
+  const m = pattern.length;
+  if (m > n) return null;
 
-  const sccs: number[][] = [];
-  let nextIdx = 0;
+  /* ---------- Parameters for hashing ---------- */
+  const prime = 101;                 // a small prime modulus
+  const base  = 256;                 // number of possible characters (ASCII)
 
-  function strongConnect(v: number) {
-    // 1️⃣  Discovery
-    indices[v] = lowlink[v] = nextIdx++;
-    stack.push(v);
-    onStack[v] = true;
+  /* ---------- Pre‑compute base^(m‑1) % prime ----------
+   *  This value is used to drop the leading character from the
+   *  rolling hash.  For example, if the rolling hash is
+   *  h = (s[0]·base^(m‑1) + s[1]·base^(m‑2) + … + s[m‑1]) % prime,
+   *  after shifting the window by one we remove s[0]·base^(m‑1).
+   */
+  let highOrder = 1;
+  for (let i = 0; i < m - 1; i++) highOrder = (highOrder * base) % prime;
 
-    // 2️⃣  Explore neighbors
-    for (const w of graph[v]) {
-      if (indices[w] === -1) {
-        // w has not been visited – recurse
-        strongConnect(w);
-        lowlink[v] = Math.min(lowlink[v], lowlink[w]);
-      } else if (onStack[w]) {
-        // w is on stack → back‑edge
-        lowlink[v] = Math.min(lowlink[v], indices[w]);
+  /* ---------- Compute hash of pattern & first window ----------
+   *  Use the same formula for both.  Will be used for direct
+   *  comparison when hash values coincide.
+   */
+  let patHash   = 0;
+  let windowHash = 0;
+  for (let i = 0; i < m; i++) {
+    patHash    = (patHash * base + pattern.charCodeAt(i)) % prime;
+    windowHash = (windowHash * base + text.charCodeAt(i)) % prime;
+  }
+
+  /* ---------- Slide the pattern over the text ---------- */
+  for (let i = 0; i <= n - m; i++) {
+    /* 1.  Hash match => candidate.  Verify by a literal comparison. */
+    if (patHash === windowHash) {
+      if (text.substr(i, m) === pattern) {
+        return { index: i, match: pattern };
       }
     }
 
-    // 3️⃣  Root check
-    if (lowlink[v] === indices[v]) {
-      const component: number[] = [];
-      let w: number;
-      do {
-        w = stack.pop()!;
-        onStack[w] = false;
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
+    /* 2.  Roll the hash: drop the leftmost char, add the rightmost. */
+    if (i < n - m) {
+      // subtract leading contribution
+      windowHash = (windowHash - highOrder * text.charCodeAt(i)) % prime;
+      // make it positive if needed
+      if (windowHash < 0) windowHash += prime;
+      // multiply by base and add new char
+      windowHash = (windowHash * base + text.charCodeAt(i + m)) % prime;
     }
   }
 
-  // kick off DFS from every unvisited vertex
-  for (let v = 0; v < n; v++) {
-    if (indices[v] === -1) {
-      strongConnect(v);
-    }
-  }
-
-  return sccs;
+  return null;
 }
-const graph: Graph = [
-  [1],          // 0 → 1
-  [2],          // 1 → 2
-  [0, 3],       // 2 → 0, 2 → 3
-  [4],          // 3 → 4
-  [5, 6],       // 4 → 5, 4 → 6
-  [3],          // 5 → 3
-  [4]           // 6 → 4
-];
+import { rabinKarpSearch } from './utils';
 
-const sccs = tarjanSCC(graph);
-console.log(sccs);
-// Expected output (order of components may vary):
-// [
-//   [0, 1, 2],   // one SCC (0↔1↔2)
-//   [3],         // single node
-//   [4],         // single node
-//   [5],         // single node
-//   [6]          // single node
-// ]
-// A cycle of length 5
-const cycle: Graph = [ [1], [2], [3], [4], [0] ];
-console.assert(tarjanSCC(cycle).length === 1 &&
-               tarjanSCC(cycle)[0].length === 5, 'Cycle should be one SCC');
-
+console.log(rabinKarpSearch('abracadabra', 'cad'));   // { index: 4, match: 'cad' }
+console.log(rabinKarpSearch('hello world', 'world')); // { index: 6, match: 'world' }
+console.log(rabinKarpSearch('hello', 'bye'));        // null
