@@ -1,36 +1,86 @@
-const arr = ['a', 'b', 'c', 'd'];
-const indexToRemove = 2;           // want to drop "c"
+// -----------------------------------------------------------------------------
+//  Simple DFS – TypeScript
+// -----------------------------------------------------------------------------
 
-if (indexToRemove > -1 && indexToRemove < arr.length) {
-  arr.splice(indexToRemove, 1);
-}
+/**
+ * A graph represented as an adjacency list.
+ * The keys are the node identifiers (string or number) and the values are
+ * arrays of neighboring node identifiers.
+ */
+type Graph = Record<string, string[]>;
 
-console.log(arr); // ['a', 'b', 'd']
-const index = arr.indexOf('b');
-if (index !== -1) arr.splice(index, 1);
-const arr = [1, 2, 3, 4, 2];
-const valueToRemove = 2;
+/**
+ * Depth‑first search.
+ *
+ * @param graph     – The adjacency list.
+ * @param start     – The node to start from.
+ * @param visitAll  – If true, the function visits all components of a
+ *                    disconnected graph; otherwise it stops after exploring
+ *                    the component that contains `start`.
+ * @returns The visited nodes in the order they were first encountered.
+ */
+function depthFirstSearch(
+  graph: Graph,
+  start: string,
+  visitAll: boolean = false
+): string[] {
+  const visited = new Set<string>();
+  const order: string[] = [];
+  const stack: string[] = [start];
 
-// keep everything that isn’t the value you want gone
-const newArr = arr.filter(item => item !== valueToRemove);
+  while (stack.length) {
+    const node = stack.pop()!;           // <-- pop top of the stack
+    if (!visited.has(node)) {
+      visited.add(node);
+      order.push(node);
 
-console.log(newArr); // [1, 3, 4]
-let removed = false;
-const newArr = arr.filter(item => {
-  if (!removed && item === valueToRemove) {
-    removed = true;           // skip first match
-    return false;
-  }
-  return true;
-});
-const arr = [{id: 1}, {id: 2}, {id: 3}];
-function removeIf(predicate: (elem: any) => boolean) {
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (predicate(arr[i])) {
-      arr.splice(i, 1);
+      // push neighbors in reverse to keep the natural traversal order
+      const neighbors = graph[node] ?? [];
+      for (let i = neighbors.length - 1; i >= 0; i--) {
+        const neighbour = neighbors[i];
+        if (!visited.has(neighbour)) stack.push(neighbour);
+      }
     }
   }
+
+  if (visitAll) {
+    // explore every component that hasn't been visited yet
+    for (const node of Object.keys(graph)) {
+      if (!visited.has(node)) stack.push(node);
+      while (stack.length) {
+        const cur = stack.pop()!;
+        if (!visited.has(cur)) {
+          visited.add(cur);
+          order.push(cur);
+          const neighbors = graph[cur] ?? [];
+          for (let i = neighbors.length - 1; i >= 0; i--)
+            if (!visited.has(neighbors[i])) stack.push(neighbors[i]);
+        }
+      }
+    }
+  }
+
+  return order;
 }
 
-removeIf(e => e.id === 2);
-console.log(arr); // [{id: 1}, {id: 3}]
+// -----------------------------------------------------------------------------
+//  Example usage
+// -----------------------------------------------------------------------------
+
+const sampleGraph: Graph = {
+  A: ["B", "C"],
+  B: ["D", "E"],
+  C: ["F"],
+  D: [],
+  E: ["F"],
+  F: [],
+  G: ["H"],   // disconnected component
+  H: [],
+};
+
+console.log("DFS from 'A' (component‐only):", depthFirstSearch(sampleGraph, "A"));
+// → [ 'A', 'B', 'D', 'E', 'F', 'C' ]
+
+console.log("DFS from 'A' (all components):", depthFirstSearch(sampleGraph, "A", true));
+// → [ 'A', 'B', 'D', 'E', 'F', 'C', 'G', 'H' ]
+
