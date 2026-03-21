@@ -1,80 +1,47 @@
-// 1️⃣  Graph node type (you can replace this with a more complex type)
-type Node = string | number;
-
-// 2️⃣  Adjacency list: each node maps to an array of its neighbors
-type Graph = Map<Node, Node[]>;
-
 /**
- * Breadth‑first search: returns the order nodes were visited.
- * @param graph The adjacency list.
- * @param start The node to start from.
+ * Return the median of two sorted arrays `a` and `b`.
+ * Both inputs must be sorted in non‑decreasing order.
  */
-export function bfsTraversal(graph: Graph, start: Node): Node[] {
-  const queue: Node[] = [start];
-  const visited = new Set<Node>([start]);
-  const order: Node[] = [];
+export function medianOfTwoSortedArrays(a: number[], b: number[]): number {
+  // Make sure `a` is the shorter array – this keeps the binary search
+  // on the smaller size which guarantees the log(min(n, m)) bound.
+  if (a.length > b.length) return medianOfTwoSortedArrays(b, a);
 
-  while (queue.length) {
-    const current = queue.shift()!;
-    order.push(current);
+  const m = a.length;
+  const n = b.length;
+  const half = Math.floor((m + n + 1) / 2); // number of elements that go to the left side
 
-    const neighbors = graph.get(current) ?? [];
-    for (const nb of neighbors) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        queue.push(nb);
+  let low = 0;
+  let high = m;
+
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2); // elements taken from `a`
+    const j = half - i;                     // elements taken from `b`
+
+    const aLeft  = (i === 0)          ? -Infinity : a[i - 1];
+    const aRight = (i === m)          ?  Infinity : a[i];
+    const bLeft  = (j === 0)          ? -Infinity : b[j - 1];
+    const bRight = (j === n)          ?  Infinity : b[j];
+
+    // Check if we have found the perfect split
+    if (aLeft <= bRight && bLeft <= aRight) {
+      // Odd total: middle element is the rightmost of the left side
+      if ((m + n) % 2 === 1) {
+        return Math.max(aLeft, bLeft);
       }
+      // Even total: average of two middle elements
+      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
+    } else if (aLeft > bRight) {
+      // Too many elements taken from `a`, shift left
+      high = i - 1;
+    } else {
+      // Too few elements taken from `a`, shift right
+      low = i + 1;
     }
   }
 
-  return order;
+  // If we reach here something is wrong with the inputs
+  throw new Error('Input arrays are not sorted or contain incompatible lengths.');
 }
-
-/**
- * BFS that stops when it finds a target node.
- * Returns the path from start to target (inclusive).
- * @param graph The adjacency list.
- * @param start The node to start from.
- * @param target The node we’re looking for.
- */
-export function bfsPath(graph: Graph, start: Node, target: Node): Node[] | null {
-  if (start === target) return [start];
-
-  const queue: Node[] = [start];
-  const visited = new Set<Node>([start]);
-  const parent = new Map<Node, Node>();
-
-  while (queue.length) {
-    const current = queue.shift()!;
-    for (const nb of graph.get(current) ?? []) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        parent.set(nb, current);
-        if (nb === target) {
-          // Reconstruct path from target back to start
-          const path: Node[] = [target];
-          let p = nb;
-          while (p !== start) {
-            p = parent.get(p)!;
-            path.unshift(p);
-          }
-          return path;
-        }
-        queue.push(nb);
-      }
-    }
-  }
-
-  return null; // target not reachable
-}
-const g: Graph = new Map([
-  ['A', ['B', 'C']],
-  ['B', ['D']],
-  ['C', ['E']],
-  ['D', ['F']],
-  ['E', []],
-  ['F', []]
-]);
-
-console.log(bfsTraversal(g, 'A')); // ["A","B","C","D","E","F"]
-console.log(bfsPath(g, 'A', 'F')); // ["A","B","D","F"]
+console.log(medianOfTwoSortedArrays([1, 3, 8], [7, 9, 10, 11])); // 8
+console.log(medianOfTwoSortedArrays([1, 2], [3, 4]));             // 2.5
