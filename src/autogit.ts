@@ -1,36 +1,16 @@
-// Random-ish TypeScript example that pulls in axios
-
-import axios from 'axios'
-
-interface Todo {
-  userId: number
-  id: number
-  title: string
-  completed: boolean
+function isPalindrome(s: string): boolean {
+  // Optional: make it case‑insensitive and strip non‑alphanumerics
+  const cleaned = s.replace(/[^A-Za-z0-9]/g, "").toLowerCase();
+  const rev = cleaned.split("").reverse().join("");
+  return cleaned === rev;
 }
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("race a car"));                     // false
+function isPalindromeLoop(s: string): boolean {
+  const cleaned = s.replace(/[^A-Za-z0-9]/g, "").toLowerCase();
 
-const client = axios.create({
-  baseURL: 'https://jsonplaceholder.typicode.com',
-  timeout: 3000,
-})
-
-async function fetchTodos(limit = 5): Promise<Todo[]> {
-  const { data } = await client.get<Todo[]>('/todos')
-  return data.slice(0, limit)
-}
-
-async function toggleTodo(id: number, completed: boolean): Promise<void> {
-  await client.patch(`/todos/${id}`, { completed })
-}
-
-;(async () => {
-  try {
-    const todos = await fetchTodos()
-    console.log('Sample todos:', todos)
-
-    await toggleTodo(todos[0].id, !todos[0].completed)
-    console.log(`Todo ${todos[0].id} status flipped!`)
-  } catch (err) {
-    console.error('Something went wrong:', err instanceof Error ? err.message : err)
+  for (let i = 0, j = cleaned.length - 1; i < j; i++, j--) {
+    if (cleaned[i] !== cleaned[j]) return false;
   }
-})()
+  return true;
+}
