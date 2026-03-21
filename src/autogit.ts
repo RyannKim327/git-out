@@ -1,29 +1,36 @@
-/**
- * Returns the second largest number in an array.
- * If the array has fewer than 2 distinct numbers, returns `undefined`.
- */
-function secondLargest(nums: number[]): number | undefined {
-  let max = -Infinity;
-  let second = -Infinity;
+// Random-ish TypeScript example that pulls in axios
 
-  for (const n of nums) {
-    if (n > max) {
-      second = max;   // old max becomes second
-      max = n;        // new max
-    } else if (n > second && n < max) {
-      // distinct value that’s between max and second
-      second = n;
-    }
+import axios from 'axios'
+
+interface Todo {
+  userId: number
+  id: number
+  title: string
+  completed: boolean
+}
+
+const client = axios.create({
+  baseURL: 'https://jsonplaceholder.typicode.com',
+  timeout: 3000,
+})
+
+async function fetchTodos(limit = 5): Promise<Todo[]> {
+  const { data } = await client.get<Todo[]>('/todos')
+  return data.slice(0, limit)
+}
+
+async function toggleTodo(id: number, completed: boolean): Promise<void> {
+  await client.patch(`/todos/${id}`, { completed })
+}
+
+;(async () => {
+  try {
+    const todos = await fetchTodos()
+    console.log('Sample todos:', todos)
+
+    await toggleTodo(todos[0].id, !todos[0].completed)
+    console.log(`Todo ${todos[0].id} status flipped!`)
+  } catch (err) {
+    console.error('Something went wrong:', err instanceof Error ? err.message : err)
   }
-
-  return second === -Infinity ? undefined : second;
-}
-console.log(secondLargest([1, 3, 5, 7, 9]));   // 7
-console.log(secondLargest([4, 4, 4, 4]));      // undefined (no distinct second)
-console.log(secondLargest([10, 9, 9, 8]));     // 9 (if duplicates count)
-console.log(secondLargest([2]));               // undefined
-function secondLargestSorted(nums: number[]): number | undefined {
-  const sorted = [...nums].sort((a, b) => b - a); // descending
-  const uniq = [...new Set(sorted)];             // drop duplicates
-  return uniq[1];                                // second element if exists
-}
+})()
