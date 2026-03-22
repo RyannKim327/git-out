@@ -1,21 +1,39 @@
-// Example array
-const nums: number[] = [42, 1, 17, 3, 99];
+// A minimal singly‑linked‑list node for TS
+interface ListNode<T = any> {
+  value: T;
+  next: ListNode<T> | null;
+}
 
-// Sort in ascending order
-const asc = [...nums].sort((a, b) => a - b);
-console.log('Ascending:', asc); // [1, 3, 17, 42, 99]
+// Returns the nth node from the tail (1‑based, so n = 1 gives the last node)
+// If n is larger than the length, returns null
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;           // sanity guard
 
-// Sort in descending order
-const desc = [...nums].sort((a, b) => b - a);
-console.log('Descending:', desc); // [99, 42, 17, 3, 1]
-const custom = [...nums].sort((a, b) => {
-  const aEven = a % 2 === 0;
-  const bEven = b % 2 === 0;
-  if (aEven && !bEven) return -1;     // a comes first
-  if (!aEven && bEven) return 1;      // b comes first
-  return a - b;                       // both same parity: numeric order
-});
-console.log(custom); // [ 42, 2, 1, 3, 17, 99 ]
-import _ from 'lodash';
+  let lead: ListNode<T> | null = head;
+  let trail: ListNode<T> | null = head;
 
-const order = _.orderBy(nums, [x => x], ['asc']); // asc by numeric value
+  // Move lead n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!lead) return null;          // n > length
+    lead = lead.next;
+  }
+
+  // Advance both until lead reaches the end
+  while (lead) {
+    lead = lead.next;
+    trail = trail!.next;             // trail is guaranteed non‑null here
+  }
+
+  return trail;
+}
+// build 1 → 2 → 3 → 4 → 5
+let node5: ListNode = { value: 5, next: null };
+let node4: ListNode = { value: 4, next: node5 };
+let node3: ListNode = { value: 3, next: node4 };
+let node2: ListNode = { value: 2, next: node3 };
+let node1: ListNode = { value: 1, next: node2 };
+
+console.log(nthFromEnd(node1, 1)) // → 5
+console.log(nthFromEnd(node1, 3)) // → 3
+console.log(nthFromEnd(node1, 5)) // → 1
+console.log(nthFromEnd(node1, 6)) // → null
