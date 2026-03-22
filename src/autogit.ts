@@ -1,80 +1,68 @@
-// 1️⃣  Graph node type (you can replace this with a more complex type)
-type Node = string | number;
-
-// 2️⃣  Adjacency list: each node maps to an array of its neighbors
-type Graph = Map<Node, Node[]>;
-
 /**
- * Breadth‑first search: returns the order nodes were visited.
- * @param graph The adjacency list.
- * @param start The node to start from.
+ * Pre‑computes the shift table for a pattern.
+ *   pattern: the pattern we’re searching for
+ *   Returns: a Map from character → shift distance
  */
-export function bfsTraversal(graph: Graph, start: Node): Node[] {
-  const queue: Node[] = [start];
-  const visited = new Set<Node>([start]);
-  const order: Node[] = [];
+function buildShiftTable(pattern: string): Map<string, number> {
+  const table = new Map<string, number>();
+  const m = pattern.length;
 
-  while (queue.length) {
-    const current = queue.shift()!;
-    order.push(current);
-
-    const neighbors = graph.get(current) ?? [];
-    for (const nb of neighbors) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        queue.push(nb);
-      }
-    }
+  // All characters that appear in the pattern get an initial shift of m
+  for (const ch of pattern) {
+    table.set(ch, m);
   }
 
-  return order;
-}
-
-/**
- * BFS that stops when it finds a target node.
- * Returns the path from start to target (inclusive).
- * @param graph The adjacency list.
- * @param start The node to start from.
- * @param target The node we’re looking for.
- */
-export function bfsPath(graph: Graph, start: Node, target: Node): Node[] | null {
-  if (start === target) return [start];
-
-  const queue: Node[] = [start];
-  const visited = new Set<Node>([start]);
-  const parent = new Map<Node, Node>();
-
-  while (queue.length) {
-    const current = queue.shift()!;
-    for (const nb of graph.get(current) ?? []) {
-      if (!visited.has(nb)) {
-        visited.add(nb);
-        parent.set(nb, current);
-        if (nb === target) {
-          // Reconstruct path from target back to start
-          const path: Node[] = [target];
-          let p = nb;
-          while (p !== start) {
-            p = parent.get(p)!;
-            path.unshift(p);
-          }
-          return path;
-        }
-        queue.push(nb);
-      }
-    }
+  // For each character except the last one, set its shift to (m - i - 1)
+  for (let i = 0; i < m - 1; ++i) {
+    table.set(pattern[i], m - i - 1);
   }
 
-  return null; // target not reachable
+  return table;
 }
-const g: Graph = new Map([
-  ['A', ['B', 'C']],
-  ['B', ['D']],
-  ['C', ['E']],
-  ['D', ['F']],
-  ['E', []],
-  ['F', []]
-]);
+/**
+ * Implements Boyer‑Moore‑Horspool.
+ * @param text   – the text to search
+ * @param pattern – the pattern to find
+ * @returns      – the index of the first match, or -1 if none
+ */
+export function boyerMooreHorspool(text: string, pattern: string): number {
+  const n = text.length;
+  const m = pattern.length;
 
-console.log(bfsTraversal(g, 'A')); // ["A","B","C","D","E","F"]
-console.log(bfsPath(g, 'A', 'F')); // ["A","B","D","F"]
+  if (m === 0) return 0;          // Empty pattern
+  if (m > n) return -1;           // Pattern longer than text
+
+  const shiftTable = buildShiftTable(pattern);
+
+  let idx = 0;                    // Index of the leftmost character of the window
+  while (idx <= n - m) {
+    let j = m - 1;
+
+    // Compare pattern from right to left
+    while (j >= 0 && text[idx + j] === pattern[j]) {
+      j -= 1;
+    }
+
+    // If all characters matched
+    if (j < 0) {
+      return idx;                // Found at position idx
+    }
+
+    // Mismatch: figure out how far to shift
+    const mismatchedChar = text[idx + m - 1];
+    const shift = shiftTable.get(mismatchedChar) ?? m;
+    idx += shift;
+  }
+
+  return -1;                     // No match found
+}
+const txt = "ABAAABCDABCABABCAB";
+const pat = "ABCAB";
+
+const pos = boyerMooreHorspool(txt, pat);
+if (pos >= 0) {
+  console.log(`"${pat}" found at index ${pos}`);
+} else {
+  console.log(`"${pat}" not found`);
+}
+"ABCAB" found at index 12
