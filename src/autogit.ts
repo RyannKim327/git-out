@@ -1,37 +1,21 @@
-// Basic binary‑tree node
-class TreeNode<T> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+/**
+ * Returns a random number in the closed interval [min, max].
+ *
+ * Uses the built‑in Math.random() which yields a uniformly distributed
+ * 64‑bit floating‑point number in [0, 1).
+ *
+ * @param min - The lower bound of the range (inclusive)
+ * @param max - The upper bound of the range (inclusive)
+ * @returns A random number in the range [min, max]
+ */
+export function randomInRange(min: number, max: number): number {
+  if (min > max) throw new Error('min must be <= max');
+  // Math.random() is 0 ≤ r < 1.  Scale and shift to match [min, max].
+  return Math.random() * (max - min) + min;
 }
-
-// Main helper that returns the height of a node and updates maxDiameter
-function computeHeight<T>(node: TreeNode<T> | null, maxDiameter: { value: number }): number {
-  if (!node) return -1; // height of empty subtree is -1 so that a single node gives 0
-
-  const leftHeight = computeHeight(node.left, maxDiameter);
-  const rightHeight = computeHeight(node.right, maxDiameter);
-
-  // Path that passes through this node
-  const diameterAtNode = leftHeight + rightHeight + 2; // +2 edges to connect left and right via current node
-  if (diameterAtNode > maxDiameter.value) {
-    maxDiameter.value = diameterAtNode;
-  }
-
-  // Return height of this subtree
-  return Math.max(leftHeight, rightHeight) + 1;
+export function randomIntInRange(min: number, max: number): number {
+  // The +1 ensures the max is included.
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-
-// Public API
-export function treeDiameter<T>(root: TreeNode<T> | null): number {
-  const maxDiameter = { value: 0 };
-  computeHeight(root, maxDiameter);
-  return maxDiameter.value; // number of edges on the longest path
-}
-        1
-       / \
-      2   3
-     / \     
-    4   5    
+const randomFloat = randomInRange(5.2, 10.7);      // Anything between 5.2 and 10.7
+const randomInt   = randomIntInRange(1, 6);        // 1, 2, 3, 4, 5, or 6
