@@ -1,69 +1,28 @@
 /**
- * Returns the majority element if it exists,
- * otherwise returns null.
+ * Return the maximum sum of any contiguous sub‑array.
+ *
+ * @param arr - array of numbers (can contain negatives)
+ * @returns the maximum sub‑array sum
  */
-function majorityElement(arr: number[]): number | null {
-  if (arr.length === 0) return null;
-
-  // 1st pass – find a candidate
-  let candidate = arr[0];
-  let count = 0;
-
-  for (const num of arr) {
-    if (count === 0) {
-      candidate = num;
-      count = 1;
-    } else {
-      count += num === candidate ? 1 : -1;
-    }
+export function maxSubarraySum(arr: number[]): number {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
   }
 
-  // 2nd pass – confirm candidate (optional but safe)
-  count = 0;
-  for (const num of arr) {
-    if (num === candidate) count++;
+  // Initialise both values to the first element
+  let currentSum = arr[0];
+  let maxSum = arr[0];
+
+  // Scan the rest of the array once
+  for (let i = 1; i < arr.length; i++) {
+    // Either continue the current sub‑array or start fresh at arr[i]
+    currentSum = Math.max(arr[i], currentSum + arr[i]);
+
+    // Update the global maximum if we found a bigger one
+    maxSum = Math.max(maxSum, currentSum);
   }
 
-  return count > Math.floor(arr.length / 2) ? candidate : null;
+  return maxSum;
 }
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElementMap(arr: number[]): number | null {
-  const freq = new Map<number, number>();
-
-  for (const num of arr) {
-    freq.set(num, (freq.get(num) ?? 0) + 1);
-  }
-
-  const n = arr.length;
-  for (const [num, count] of freq.entries()) {
-    if (count > Math.floor(n / 2)) {
-      return num;
-    }
-  }
-  return null;
-}
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElementSorted(arr: number[]): number | null {
-  if (arr.length === 0) return null;
-
-  // Make a copy so we don’t mutate the caller’s array
-  const sorted = [...arr].sort((a, b) => a - b);
-  const candidate = sorted[Math.floor(sorted.length / 2)];
-  let count = 0;
-
-  for (const num of sorted) {
-    if (num === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
-}
-const testArray = [2, 2, 1, 1, 1, 2, 2];
-console.log(majorityElement(testArray));      // 2
-console.log(majorityElementMap(testArray));   // 2
-console.log(majorityElementSorted(testArray)); // 2
+console.log(maxSubarraySum([2, -3, 4, -1, 2, 1])); // 6  (sub‑array 4,-1,2,1)
+console.log(maxSubarraySum([-2, -3, -1, -4]));      // -1 (single element)
