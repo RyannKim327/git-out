@@ -1,46 +1,36 @@
-// A typical binary‑tree node.
-export interface TreeNode {
-  value: number;
-  left?: TreeNode;
-  right?: TreeNode;
-}
-
 /**
- * Recursively finds the longest path from this node down to a leaf.
- * depth(node) = 1 + max(depth(left), depth(right))
- * Leaves contribute 1; an empty tree contributes 0.
+ * Returns the first character that appears only once.
+ * If all characters repeat, null is returned.
  */
-export function maxDepth(node?: TreeNode): number {
-  if (!node) return 0;
-
-  const leftDepth  = maxDepth(node.left);
-  const rightDepth = maxDepth(node.right);
-
-  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
-}
-export function maxDepthIterative(root?: TreeNode): number {
-  if (!root) return 0;
-
-  let max = 0;
-  const queue: Array<TreeNode> = [root];
-
-  while (queue.length) {
-    const levelSize = queue.length;
-    max++; // we’re on a new level
-
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()!; // queue is non‑empty
-      if (node.left)  queue.push(node.left);
-      if (node.right) queue.push(node.right);
-    }
+function firstNonRepeating(str: string): string | null {
+  // Build a frequency map
+  const freq = new Map<string, number>();
+  for (const ch of str) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
-  return max;
-}
-const root: TreeNode = {
-  value: 1,
-  left:  { value: 2, right: { value: 4 } },
-  right: { value: 3 }
-};
 
-console.log(maxDepth(root));          // → 3
-console.log(maxDepthIterative(root)); // → 3
+  // Find the first character with a count of 1
+  for (const ch of str) {
+    if (freq.get(ch) === 1) return ch;
+  }
+
+  return null;   // nothing found
+}
+
+// --- examples -------------------------------------------------
+console.log(firstNonRepeating('abacabad')); // "c"
+console.log(firstNonRepeating('aabbcc'));   // null
+function firstNonRepeatingOnePass(str: string): string | null {
+  const counts: Record<string, number> = {};
+  const queue: string[] = [];
+
+  for (const ch of str) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
+    if (counts[ch] === 1) queue.push(ch);
+
+    // purge invalid candidates from the front
+    while (queue.length && counts[queue[0]] > 1) queue.shift();
+  }
+
+  return queue.length ? queue[0] : null;
+}
