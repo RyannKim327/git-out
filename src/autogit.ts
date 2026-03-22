@@ -1,86 +1,39 @@
-// -----------------------------------------------------------------------------
-//  Simple DFS – TypeScript
-// -----------------------------------------------------------------------------
+const a = [1, 2, 3, 4, 5];
+const b = [3, 4, 5, 6, 7];
 
-/**
- * A graph represented as an adjacency list.
- * The keys are the node identifiers (string or number) and the values are
- * arrays of neighboring node identifiers.
- */
-type Graph = Record<string, string[]>;
+const intersection = a.filter(item => new Set(b).has(item));
+console.log(intersection); // [3, 4, 5]
+const a = [1, 2, 3, 4, 5, 5];
+const b = [3, 4, 5, 5, 6];
 
-/**
- * Depth‑first search.
- *
- * @param graph     – The adjacency list.
- * @param start     – The node to start from.
- * @param visitAll  – If true, the function visits all components of a
- *                    disconnected graph; otherwise it stops after exploring
- *                    the component that contains `start`.
- * @returns The visited nodes in the order they were first encountered.
- */
-function depthFirstSearch(
-  graph: Graph,
-  start: string,
-  visitAll: boolean = false
-): string[] {
-  const visited = new Set<string>();
-  const order: string[] = [];
-  const stack: string[] = [start];
+const setA = new Set(a);
+const setB = new Set(b);
 
-  while (stack.length) {
-    const node = stack.pop()!;           // <-- pop top of the stack
-    if (!visited.has(node)) {
-      visited.add(node);
-      order.push(node);
+const intersection = [...setA].filter(item => setB.has(item));
+console.log(intersection); // [3, 4, 5]
+function multisetIntersection<T>(arr1: T[], arr2: T[]): T[] {
+  const counter = new Map<T, number>();
 
-      // push neighbors in reverse to keep the natural traversal order
-      const neighbors = graph[node] ?? [];
-      for (let i = neighbors.length - 1; i >= 0; i--) {
-        const neighbour = neighbors[i];
-        if (!visited.has(neighbour)) stack.push(neighbour);
-      }
-    }
+  // Count each element of arr1
+  for (const v of arr1) {
+    counter.set(v, (counter.get(v) ?? 0) + 1);
   }
 
-  if (visitAll) {
-    // explore every component that hasn't been visited yet
-    for (const node of Object.keys(graph)) {
-      if (!visited.has(node)) stack.push(node);
-      while (stack.length) {
-        const cur = stack.pop()!;
-        if (!visited.has(cur)) {
-          visited.add(cur);
-          order.push(cur);
-          const neighbors = graph[cur] ?? [];
-          for (let i = neighbors.length - 1; i >= 0; i--)
-            if (!visited.has(neighbors[i])) stack.push(neighbors[i]);
-        }
-      }
+  // For each element in arr2, if it exists in the counter use it
+  const result: T[] = [];
+  for (const v of arr2) {
+    const count = counter.get(v);
+    if (count && count > 0) {
+      result.push(v);
+      counter.set(v, count - 1);
     }
   }
-
-  return order;
+  return result;
 }
 
-// -----------------------------------------------------------------------------
-//  Example usage
-// -----------------------------------------------------------------------------
-
-const sampleGraph: Graph = {
-  A: ["B", "C"],
-  B: ["D", "E"],
-  C: ["F"],
-  D: [],
-  E: ["F"],
-  F: [],
-  G: ["H"],   // disconnected component
-  H: [],
-};
-
-console.log("DFS from 'A' (component‐only):", depthFirstSearch(sampleGraph, "A"));
-// → [ 'A', 'B', 'D', 'E', 'F', 'C' ]
-
-console.log("DFS from 'A' (all components):", depthFirstSearch(sampleGraph, "A", true));
-// → [ 'A', 'B', 'D', 'E', 'F', 'C', 'G', 'H' ]
-
+console.log(multisetIntersection([1, 2, 2, 3], [2, 2, 4]));
+// → [2, 2]
+const intersection = a.reduce((acc, item) => {
+  if (b.includes(item) && !acc.includes(item)) acc.push(item);
+  return acc;
+}, [] as number[]);
