@@ -1,71 +1,49 @@
-// src/api/remote.ts
-import { NativeModules, NativeEventEmitter } from 'react-native';
+/*  Depth‑first search (BFS) that stops after exploring a given number of levels.
+ *
+ *  - `Node`   – a generic representation of a graph vertex.
+ *  - `getNeighbors` – a callback that returns the adjacent nodes.
+ *  - `goal` – a predicate that tells whether the node is satisfactory.
+ *  - `maxDepth` – how many edges away from the start we’ll consider.
+ *
+ *  The function yields an array of nodes in the order they were visited
+ *  (first‑in, first‑out).  The result can be empty when the goal isn’t
+ *  found before the depth limit.
+ */
 
-const { AndroidAsyncTask } = NativeModules;
+type Node = {
+  id: string | number;
+  // … other properties
+};
 
-// -----------------------------------------------------------------
-// 1️⃣  The simple JS/TS side: an async fetch helper
-// -----------------------------------------------------------------
-export async function loadRemoteJson(url: string): Promise<any> {
-  try {
-    const response = await fetch(url, { method: 'GET' });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} – ${response.statusText}`);
+export function breadthLimitedSearch(
+  start: Node,
+  maxDepth: number,
+  goal: (n: Node) => boolean,
+  getNeighbors: (n: Node) => Node[]
+): Node[] {
+  if (maxDepth < 0) return [];
+
+  const frontier: Array<{ node: Node; depth: number }> = [{ node: start, depth: 0 }];
+  const visited = new Set<Node>();
+  const result: Node[] = [];
+
+  while (frontier.length) {
+    const { node, depth } = frontier.shift()!; // safe pop because we always pop a value
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    result.push(node);
+    if (goal(node)) break;
+
+    // If we haven’t hit the depth ceiling, enqueue the next layer
+    if (depth < maxDepth) {
+      const neighbours = getNeighbors(node);
+      for (const neighbour of neighbours) {
+        if (!visited.has(neighbour)) {
+          frontier.push({ node: neighbour, depth: depth + 1 });
+        }
+      }
     }
-    const payload = await response.json();
-    return payload;
-  } catch (err) {
-    console.error('loadRemoteJson error:', err);
-    throw err;
   }
+  return result;
 }
-
-// -----------------------------------------------------------------
-// 2️⃣  The bridge to Android (AsyncTask)
-// -----------------------------------------------------------------
-// On Android, create a module that exposes `runAsyncTask`
-// which internally spawns an AsyncTask that returns a JSON string.
-
-export function runAndroidTask(
-  taskName: string,
-  args: Record<string, any>
-): Promise<any> {
-  // The native module returns a Promise that resolves with a string
-  return AndroidAsyncTask.runAsyncTask(taskName, args).then((result: string) => {
-    try {
-      return JSON.parse(result);
-    } catch (err) {
-      console.warn('Failed to parse JSON from Android:', err);
-      throw err;
-    }
-  });
-}
-
-// -----------------------------------------------------------------
-// 3️⃣  Example usage (e.g. inside a component)
-// -----------------------------------------------------------------
-/*
-import React, { useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
-import { loadRemoteJson, runAndroidTask } from './api/remote';
-
-export default function Demo() {
-  const [data, setData] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Option A – vanilla fetch
-    loadRemoteJson('https://jsonplaceholder.typicode.com/todos/1')
-      .then(setData)
-      .catch(err => setError(err.message));
-
-    // Option B – delegate to Android AsyncTask
-    // runAndroidTask('fetchTodo', { id: 1 })
-    //   .then(setData)
-    //   .catch(err => setError(err.message));
-  }, []);
-
-  if (error) return <View><Text>❌ {error}</Text></View>;
-  return data ? <Text>✅ {JSON.stringify(data)}</Text> : <Text>⏳ Loading…</Text>;
-}
-*/
