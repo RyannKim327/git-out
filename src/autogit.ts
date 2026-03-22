@@ -1,23 +1,35 @@
-const str = "42";
-const num = Number(str);   // 42 (a number)
+/**
+ * Bubble sort for an array of numbers.
+ * The function mutates the passed array and returns it so you can chain or immediately inspect it.
+ *
+ * @param arr – the array to sort
+ * @returns the sorted array (same reference as `arr`)
+ */
+export function bubbleSort(arr: number[]): number[] {
+  // The array’s length is used repeatedly, so cache it for speed.
+  const n = arr.length;
 
-const maybeNum = Number("3.14"); // 3.14
-const invalid = Number("foo");   // NaN
-const str = "42";
-const num = +str;   // 42
-const intStr   = "42";
-const intVal   = parseInt(intStr, 10);  // 42
+  // Outer loop – each pass pushes the next largest element to its final spot at the end.
+  // We can stop one element earlier on each pass because the last `pass` items are already sorted.
+  for (let pass = 0; pass < n - 1; pass++) {
+    // Track whether any swap happened this pass. If none, the array is sorted.
+    let swapped = false;
 
-const floatStr = "3.14";
-const truncated = parseInt(floatStr, 10); // 3
-function toInteger(value: string): number {
-  const result = Number(value);
-  if (!Number.isNaN(result) && Number.isInteger(result)) {
-    return result;
+    // Inner loop – compare adjacent pairs and swap if out of order.
+    // We only need to go up to `n - pass - 1` because the last `pass` elements are in place.
+    for (let i = 0; i < n - pass - 1; i++) {
+      if (arr[i] > arr[i + 1]) {
+        // Simple swap using destructuring.
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+        swapped = true;
+      }
+    }
+
+    // If no two elements were swapped, no more passes are required.
+    if (!swapped) break;
   }
-  throw new Error(`"${value}" is not a valid integer`);
+
+  return arr;
 }
-const asNumber  = Number("42");      // 42
-const asInteger = parseInt("42", 10); // 42
-// or the shorthand
-const asNumberShorthand = +"42";      // 42
+const unsorted = [64, 34, 25, 12, 22, 11, 90];
+console.log(bubbleSort(unsorted));        // [11, 12, 22, 25, 34, 64, 90]
