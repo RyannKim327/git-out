@@ -1,62 +1,25 @@
 /**
- * Returns the index of `target` in a sorted array `arr` or -1 if not found.
- *
- * @param arr     Sorted array of numbers (ascending or descending)
- * @param target  Value to search for
- * @returns Index or -1
+ * Returns true if `n` is a prime number.
  */
-export function interpolationSearch(arr: number[], target: number): number {
-  if (!arr.length) return -1;
+export function isPrime(n: number): boolean {
+  // Prime numbers are > 1
+  if (n <= 1) return false;
 
-  let lo = 0;
-  let hi = arr.length - 1;
+  // 2 and 3 are the only even/odd primes
+  if (n <= 3) return true;
 
-  // Handle both ascending and descending arrays.
-  const isAscending = arr[hi] > arr[lo];
+  // Even numbers > 2 can be rejected right away
+  if (n % 2 === 0) return false;
 
-  // If target is out of the array’s bounds, it can’t be there.
-  while (
-    (isAscending
-      ? target < arr[lo] || target > arr[hi]
-      : target > arr[lo] || target < arr[hi])
-  ) {
-    return -1;
+  // Check only odd divisors up to √n
+  const limit = Math.floor(Math.sqrt(n));
+  for (let d = 3; d <= limit; d += 2) {
+    if (n % d === 0) return false;
   }
-
-  while (lo <= hi) {
-    // Avoid division by zero when lo and hi point to the same value.
-    if (arr[lo] === arr[hi]) {
-      return arr[lo] === target ? lo : -1;
-    }
-
-    // Estimate the next probe position.
-    const pos =
-      lo +
-      Math.floor(
-        ((target - arr[lo]) * (hi - lo)) /
-          (arr[hi] - arr[lo])
-      );
-
-    // Guard against unexpected inequalities after casting to int.
-    if (pos < lo || pos > hi) return -1;
-
-    if (arr[pos] === target) return pos;
-
-    if (arr[pos] < target) {
-      lo = pos + 1;
-    } else {
-      hi = pos - 1;
-    }
-  }
-
-  return -1;
+  return true;
 }
-// sorted ascending
-const asc = [1, 3, 5, 7, 9, 11, 13];
-console.log(interpolationSearch(asc, 7)); // 3
-console.log(interpolationSearch(asc, 2)); // -1
-
-// sorted descending
-const desc = [20, 15, 10, 5, 0];
-console.log(interpolationSearch(desc, 10)); // 2
-console.log(interpolationSearch(desc, -5)); // -1
+console.log(isPrime(2));  // true
+console.log(isPrime(15)); // false
+console.log(isPrime(17)); // true
+console.log(isPrime(1));  // false
+console.log(isPrime(-5)); // false
