@@ -1,71 +1,54 @@
-// src/api/remote.ts
-import { NativeModules, NativeEventEmitter } from 'react-native';
+// ------------------------------------------------------------
+//  Fetch‑and‑hydrate example in TypeScript
+// ------------------------------------------------------------
 
-const { AndroidAsyncTask } = NativeModules;
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
 
-// -----------------------------------------------------------------
-// 1️⃣  The simple JS/TS side: an async fetch helper
-// -----------------------------------------------------------------
-export async function loadRemoteJson(url: string): Promise<any> {
-  try {
-    const response = await fetch(url, { method: 'GET' });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} – ${response.statusText}`);
+type User = {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+};
+
+async function fetchUserWithPosts(userId: number): Promise<{ user: User; posts: Post[] }> {
+  // Base endpoint
+  const base = 'https://jsonplaceholder.typicode.com';
+
+  // Helper that throws on non‑2xx
+  const safeFetch = async <T>(url: string): Promise<T> => {
+    const resp = await fetch(url);
+
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`Failed to fetch ${url} – ${resp.status}: ${text}`);
     }
-    const payload = await response.json();
-    return payload;
-  } catch (err) {
-    console.error('loadRemoteJson error:', err);
-    throw err;
-  }
+
+    // Guard against empty body
+    const data = await resp.json();
+    return data as T;
+  };
+
+  // Pull user
+  const user = await safeFetch<User>(`${base}/users/${userId}`);
+
+  // Pull that user’s posts in parallel
+  const posts = await safeFetch<Post[]>(`${base}/posts?userId=${userId}`);
+
+  return { user, posts };
 }
 
-// -----------------------------------------------------------------
-// 2️⃣  The bridge to Android (AsyncTask)
-// -----------------------------------------------------------------
-// On Android, create a module that exposes `runAsyncTask`
-// which internally spawns an AsyncTask that returns a JSON string.
 
-export function runAndroidTask(
-  taskName: string,
-  args: Record<string, any>
-): Promise<any> {
-  // The native module returns a Promise that resolves with a string
-  return AndroidAsyncTask.runAsyncTask(taskName, args).then((result: string) => {
-    try {
-      return JSON.parse(result);
-    } catch (err) {
-      console.warn('Failed to parse JSON from Android:', err);
-      throw err;
-    }
-  });
-}
-
-// -----------------------------------------------------------------
-// 3️⃣  Example usage (e.g. inside a component)
-// -----------------------------------------------------------------
-/*
-import React, { useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
-import { loadRemoteJson, runAndroidTask } from './api/remote';
-
-export default function Demo() {
-  const [data, setData] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Option A – vanilla fetch
-    loadRemoteJson('https://jsonplaceholder.typicode.com/todos/1')
-      .then(setData)
-      .catch(err => setError(err.message));
-
-    // Option B – delegate to Android AsyncTask
-    // runAndroidTask('fetchTodo', { id: 1 })
-    //   .then(setData)
-    //   .catch(err => setError(err.message));
-  }, []);
-
-  if (error) return <View><Text>❌ {error}</Text></View>;
-  return data ? <Text>✅ {JSON.stringify(data)}</Text> : <Text>⏳ Loading…</Text>;
-}
-*/
+// Demo call – tweak the ID at will
+fetchUserWithPosts(1)
+  .then(({ user, posts }) => {
+    console.log('User:', user);
+    console.log(`Found ${posts.length} posts:`);
+    posts.slice(0, 3).forEach((p) => console.log(` • ${p.title}`));
+  })
+  .catch((err) => console.error('Oops!', err.message));
