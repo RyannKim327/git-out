@@ -1,58 +1,30 @@
 /**
- * Return the largest prime factor of a positive integer `n`.
- * For `n <= 1` returns `null` (no prime factors).
+ * Recursively returns n! (n factorial).
  *
- * @param n – a number > 0 (use Number if you’re certain it fits in a double precision float)
+ * @param n - non‑negative integer (or bigint)
+ * @returns n! as a bigint
  */
-function largestPrimeFactor(n: number): number | null {
-  if (n <= 1) return null;          // 0 or 1 has no prime factors
+export function factorial(n: bigint | number): bigint {
+  // Normalize input to bigint
+  const x = typeof n === "bigint" ? n : BigInt(n);
 
-  let remainder = n;
-  let largest = 2;
-
-  // Always strip out factors of 2 first – saves time later
-  while (remainder % 2 === 0) {
-    largest = 2;
-    remainder /= 2;
+  // Negative numbers are not defined for factorial
+  if (x < 0n) {
+    throw new Error("Factorial is defined only for non‑negative integers.");
   }
 
-  // Now test only odd divisors (3,5,7,…)
-  const limit = Math.sqrt(remainder);
-  for (let divisor = 3; divisor <= limit; divisor += 2) {
-    while (remainder % divisor === 0) {
-      largest = divisor;
-      remainder /= divisor;
-    }
+  // Base case: 0! = 1, 1! = 1
+  if (x === 0n || x === 1n) {
+    return 1n;
   }
 
-  // If anything left of 1, it’s prime and bigger than any we found
-  if (remainder > 1) largest = remainder;
-
-  return largest;
+  // Recursive case: n! = n * (n-1)!
+  return x * factorial(x - 1n);
 }
-console.log(largestPrimeFactor(15));    // 5
-console.log(largestPrimeFactor(21));    // 7
-console.log(largestPrimeFactor(26));    // 13
-console.log(largestPrimeFactor(120));   // 5   (120 = 2⁴·3·5)
-function largestPrimeFactorBig(n: bigint): bigint | null {
-  if (n <= 1n) return null;
-  let remainder = n;
-  let largest = 2n;
-
-  while (remainder % 2n === 0n) {
-    largest = 2n;
-    remainder /= 2n;
-  }
-
-  let divisor = 3n;
-  while (divisor * divisor <= remainder) {
-    while (remainder % divisor === 0n) {
-      largest = divisor;
-      remainder /= divisor;
-    }
-    divisor += 2n;
-  }
-
-  if (remainder > 1n) largest = remainder;
-  return largest;
+console.log(factorial(5));        // 120n
+console.log(factorial(20));       // 2432902008176640000n
+console.log(factorial(25n));      // 15511210043330985984000000n
+function factorialTail(n: bigint, acc = 1n): bigint {
+  if (n <= 1n) return acc;
+  return factorialTail(n - 1n, acc * n);
 }
