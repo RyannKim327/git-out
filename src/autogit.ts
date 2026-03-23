@@ -1,36 +1,46 @@
-// Random-ish TypeScript example that pulls in axios
-
-import axios from 'axios'
-
-interface Todo {
-  userId: number
-  id: number
-  title: string
-  completed: boolean
+// A typical binary‑tree node.
+export interface TreeNode {
+  value: number;
+  left?: TreeNode;
+  right?: TreeNode;
 }
 
-const client = axios.create({
-  baseURL: 'https://jsonplaceholder.typicode.com',
-  timeout: 3000,
-})
+/**
+ * Recursively finds the longest path from this node down to a leaf.
+ * depth(node) = 1 + max(depth(left), depth(right))
+ * Leaves contribute 1; an empty tree contributes 0.
+ */
+export function maxDepth(node?: TreeNode): number {
+  if (!node) return 0;
 
-async function fetchTodos(limit = 5): Promise<Todo[]> {
-  const { data } = await client.get<Todo[]>('/todos')
-  return data.slice(0, limit)
+  const leftDepth  = maxDepth(node.left);
+  const rightDepth = maxDepth(node.right);
+
+  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
 }
+export function maxDepthIterative(root?: TreeNode): number {
+  if (!root) return 0;
 
-async function toggleTodo(id: number, completed: boolean): Promise<void> {
-  await client.patch(`/todos/${id}`, { completed })
-}
+  let max = 0;
+  const queue: Array<TreeNode> = [root];
 
-;(async () => {
-  try {
-    const todos = await fetchTodos()
-    console.log('Sample todos:', todos)
+  while (queue.length) {
+    const levelSize = queue.length;
+    max++; // we’re on a new level
 
-    await toggleTodo(todos[0].id, !todos[0].completed)
-    console.log(`Todo ${todos[0].id} status flipped!`)
-  } catch (err) {
-    console.error('Something went wrong:', err instanceof Error ? err.message : err)
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!; // queue is non‑empty
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
   }
-})()
+  return max;
+}
+const root: TreeNode = {
+  value: 1,
+  left:  { value: 2, right: { value: 4 } },
+  right: { value: 3 }
+};
+
+console.log(maxDepth(root));          // → 3
+console.log(maxDepthIterative(root)); // → 3
