@@ -1,97 +1,56 @@
-// ------------------------------------------------------------
-// 1. Node
-// ------------------------------------------------------------
-class TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
-
-  constructor(value: T) {
-    this.value = value;
-  }
+// 1️⃣  Node definition
+class Node<T> {
+  constructor(public value: T, public next: Node<T> | null = null) {}
 }
 
-// ------------------------------------------------------------
-// 2. BinarySearchTree
-// ------------------------------------------------------------
-class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
+// 2️⃣  Queue skeleton
+class LinkedQueue<T> {
+  private head: Node<T> | null = null; // front of the queue
+  private tail: Node<T> | null = null; // rear of the queue
+  private _size = 0;
 
-  // -------------------------------------------
-  // Insert a value into the BST
-  // -------------------------------------------
-  insert(value: T, comparator?: (a: T, b: T) => number): void {
-    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-
-    const insertRec = (node: TreeNode<T> | null, val: T): TreeNode<T> => {
-      if (!node) return new TreeNode(val);
-
-      if (compare(val, node.value) < 0) {
-        node.left = insertRec(node.left, val);
-      } else {
-        node.right = insertRec(node.right, val);
-      }
-      return node;
-    };
-
-    this.root = insertRec(this.root, value);
-  }
-
-  // -------------------------------------------
-  // Search for a value – returns the node or null
-  // -------------------------------------------
-  search(value: T, comparator?: (a: T, b: T) => number): TreeNode<T> | null {
-    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-    let curr = this.root;
-
-    while (curr) {
-      if (compare(value, curr.value) < 0) {
-        curr = curr.left;
-      } else if (compare(value, curr.value) > 0) {
-        curr = curr.right;
-      } else {
-        return curr; // found
-      }
+  // 3️⃣  Enqueue: add to the tail
+  enqueue(value: T): void {
+    const newNode = new Node(value);
+    if (this.tail) {             // queue is not empty
+      this.tail.next = newNode;
+    } else {                      // queue was empty ‑ new node is both head & tail
+      this.head = newNode;
     }
-    return null; // not found
+    this.tail = newNode;
+    this._size++;
   }
 
-  // -------------------------------------------
-  // In‑order traversal – returns an array of values
-  // -------------------------------------------
-  inorder(): T[] {
-    const res: T[] = [];
-    const walk = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      walk(node.left);
-      res.push(node.value);
-      walk(node.right);
-    };
-    walk(this.root);
-    return res;
+  // 4️⃣  Dequeue: remove from the head
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // nothing to pop
+
+    const removed = this.head.value;
+    this.head = this.head.next;       // advance head
+    if (!this.head) this.tail = null; // queue became empty
+
+    this._size--;
+    return removed;
   }
 
-  // -------------------------------------------
-  // Convenience: return value of inorder traversal
-  // -------------------------------------------
-  toArray(): T[] {
-    return this.inorder();
+  // 5️⃣  Peek at the front without removing
+  peek(): T | undefined {
+    return this.head?.value;
   }
+
+  // 6️⃣  Convenience helpers
+  size(): number   { return this._size; }
+  isEmpty(): boolean { return this._size === 0; }
 }
+const q = new LinkedQueue<number>();
 
-// ------------------------------------------------------------
-// 3. Demo
-// ------------------------------------------------------------
-const bst = new BinarySearchTree<number>();
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
 
-// Inserting some numbers
-[42, 23, 57, 12, 34, 73, 8].forEach(n => bst.insert(n));
-
-console.log('In‑order traversal:', bst.inorder()); // sorted ascending
-
-const foundNode = bst.search(34);
-if (foundNode) {
-  console.log(`Found node with value ${foundNode.value}`);
-} else {
-  console.log('Value not found');
-}
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.dequeue()); // 30
+console.log(q.dequeue()); // undefined (empty)
+console.log(q.isEmpty()); // true
