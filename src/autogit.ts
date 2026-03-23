@@ -1,21 +1,21 @@
-/**
- * Returns a random number in the closed interval [min, max].
- *
- * Uses the built‑in Math.random() which yields a uniformly distributed
- * 64‑bit floating‑point number in [0, 1).
- *
- * @param min - The lower bound of the range (inclusive)
- * @param max - The upper bound of the range (inclusive)
- * @returns A random number in the range [min, max]
- */
-export function randomInRange(min: number, max: number): number {
-  if (min > max) throw new Error('min must be <= max');
-  // Math.random() is 0 ≤ r < 1.  Scale and shift to match [min, max].
-  return Math.random() * (max - min) + min;
-}
-export function randomIntInRange(min: number, max: number): number {
-  // The +1 ensures the max is included.
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-const randomFloat = randomInRange(5.2, 10.7);      // Anything between 5.2 and 10.7
-const randomInt   = randomIntInRange(1, 6);        // 1, 2, 3, 4, 5, or 6
+// Example array
+const nums: number[] = [42, 1, 17, 3, 99];
+
+// Sort in ascending order
+const asc = [...nums].sort((a, b) => a - b);
+console.log('Ascending:', asc); // [1, 3, 17, 42, 99]
+
+// Sort in descending order
+const desc = [...nums].sort((a, b) => b - a);
+console.log('Descending:', desc); // [99, 42, 17, 3, 1]
+const custom = [...nums].sort((a, b) => {
+  const aEven = a % 2 === 0;
+  const bEven = b % 2 === 0;
+  if (aEven && !bEven) return -1;     // a comes first
+  if (!aEven && bEven) return 1;      // b comes first
+  return a - b;                       // both same parity: numeric order
+});
+console.log(custom); // [ 42, 2, 1, 3, 17, 99 ]
+import _ from 'lodash';
+
+const order = _.orderBy(nums, [x => x], ['asc']); // asc by numeric value
