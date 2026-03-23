@@ -1,35 +1,54 @@
-/**
- * Bubble sort for an array of numbers.
- * The function mutates the passed array and returns it so you can chain or immediately inspect it.
- *
- * @param arr – the array to sort
- * @returns the sorted array (same reference as `arr`)
- */
-export function bubbleSort(arr: number[]): number[] {
-  // The array’s length is used repeatedly, so cache it for speed.
-  const n = arr.length;
+// ------------------------------------------------------------
+//  Fetch‑and‑hydrate example in TypeScript
+// ------------------------------------------------------------
 
-  // Outer loop – each pass pushes the next largest element to its final spot at the end.
-  // We can stop one element earlier on each pass because the last `pass` items are already sorted.
-  for (let pass = 0; pass < n - 1; pass++) {
-    // Track whether any swap happened this pass. If none, the array is sorted.
-    let swapped = false;
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
 
-    // Inner loop – compare adjacent pairs and swap if out of order.
-    // We only need to go up to `n - pass - 1` because the last `pass` elements are in place.
-    for (let i = 0; i < n - pass - 1; i++) {
-      if (arr[i] > arr[i + 1]) {
-        // Simple swap using destructuring.
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
-        swapped = true;
-      }
+type User = {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+};
+
+async function fetchUserWithPosts(userId: number): Promise<{ user: User; posts: Post[] }> {
+  // Base endpoint
+  const base = 'https://jsonplaceholder.typicode.com';
+
+  // Helper that throws on non‑2xx
+  const safeFetch = async <T>(url: string): Promise<T> => {
+    const resp = await fetch(url);
+
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`Failed to fetch ${url} – ${resp.status}: ${text}`);
     }
 
-    // If no two elements were swapped, no more passes are required.
-    if (!swapped) break;
-  }
+    // Guard against empty body
+    const data = await resp.json();
+    return data as T;
+  };
 
-  return arr;
+  // Pull user
+  const user = await safeFetch<User>(`${base}/users/${userId}`);
+
+  // Pull that user’s posts in parallel
+  const posts = await safeFetch<Post[]>(`${base}/posts?userId=${userId}`);
+
+  return { user, posts };
 }
-const unsorted = [64, 34, 25, 12, 22, 11, 90];
-console.log(bubbleSort(unsorted));        // [11, 12, 22, 25, 34, 64, 90]
+
+
+// Demo call – tweak the ID at will
+fetchUserWithPosts(1)
+  .then(({ user, posts }) => {
+    console.log('User:', user);
+    console.log(`Found ${posts.length} posts:`);
+    posts.slice(0, 3).forEach((p) => console.log(` • ${p.title}`));
+  })
+  .catch((err) => console.error('Oops!', err.message));
