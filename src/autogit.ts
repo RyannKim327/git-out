@@ -1,68 +1,53 @@
 /**
- * Pre‑computes the shift table for a pattern.
- *   pattern: the pattern we’re searching for
- *   Returns: a Map from character → shift distance
+ * Shuffle an array in place using Fisher–Yates algorithm
  */
-function buildShiftTable(pattern: string): Map<string, number> {
-  const table = new Map<string, number>();
-  const m = pattern.length;
-
-  // All characters that appear in the pattern get an initial shift of m
-  for (const ch of pattern) {
-    table.set(ch, m);
+function shuffle<T>(arr: T[]): void {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-
-  // For each character except the last one, set its shift to (m - i - 1)
-  for (let i = 0; i < m - 1; ++i) {
-    table.set(pattern[i], m - i - 1);
-  }
-
-  return table;
 }
+
 /**
- * Implements Boyer‑Moore‑Horspool.
- * @param text   – the text to search
- * @param pattern – the pattern to find
- * @returns      – the index of the first match, or -1 if none
+ * Check whether an array of numbers is sorted ascending
  */
-export function boyerMooreHorspool(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
-
-  if (m === 0) return 0;          // Empty pattern
-  if (m > n) return -1;           // Pattern longer than text
-
-  const shiftTable = buildShiftTable(pattern);
-
-  let idx = 0;                    // Index of the leftmost character of the window
-  while (idx <= n - m) {
-    let j = m - 1;
-
-    // Compare pattern from right to left
-    while (j >= 0 && text[idx + j] === pattern[j]) {
-      j -= 1;
+function isSorted(arr: number[]): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i - 1] > arr[i]) {
+      return false;
     }
-
-    // If all characters matched
-    if (j < 0) {
-      return idx;                // Found at position idx
-    }
-
-    // Mismatch: figure out how far to shift
-    const mismatchedChar = text[idx + m - 1];
-    const shift = shiftTable.get(mismatchedChar) ?? m;
-    idx += shift;
   }
-
-  return -1;                     // No match found
+  return true;
 }
-const txt = "ABAAABCDABCABABCAB";
-const pat = "ABCAB";
 
-const pos = boyerMooreHorspool(txt, pat);
-if (pos >= 0) {
-  console.log(`"${pat}" found at index ${pos}`);
-} else {
-  console.log(`"${pat}" not found`);
+/**
+ * Bogosort: shuffle until the array is sorted
+ */
+function bogosort(arr: number[]): Promise<{
+  sortedArray: number[];
+  iterations: number;
+  shuffles: number;
+}> {
+  return new Promise((resolve) => {
+    let iterations = 0;
+    const attempt = () => {
+      iterations++;
+      if (isSorted(arr)) {
+        resolve({ sortedArray: arr, iterations, shuffles: iterations });
+      } else {
+        shuffle(arr);
+        // This recursion is intentionally "random"; adding a tiny async
+        // delay keeps the UI responsive if called in a browser context.
+        setTimeout(attempt, 0);
+      }
+    };
+    attempt();
+  });
 }
-"ABCAB" found at index 12
+
+// Example usage:
+const data = [5, 2, 9, 1, 5, 6];
+bogosort(data).then(({ sortedArray, iterations, shuffles }) => {
+  console.log(`Sorted array: ${sortedArray}`);
+  console.log(`Iterations taken: ${iterations}`);
+});
