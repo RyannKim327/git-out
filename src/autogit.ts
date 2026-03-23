@@ -1,25 +1,62 @@
-/**
- * Returns true if `n` is a prime number.
- */
-export function isPrime(n: number): boolean {
-  // Prime numbers are > 1
-  if (n <= 1) return false;
+class TreeNode {
+  value: number;
+  left: TreeNode | null = null;
+  right: TreeNode | null = null;
 
-  // 2 and 3 are the only even/odd primes
-  if (n <= 3) return true;
-
-  // Even numbers > 2 can be rejected right away
-  if (n % 2 === 0) return false;
-
-  // Check only odd divisors up to √n
-  const limit = Math.floor(Math.sqrt(n));
-  for (let d = 3; d <= limit; d += 2) {
-    if (n % d === 0) return false;
+  constructor(value: number) {
+    this.value = value;
   }
-  return true;
 }
-console.log(isPrime(2));  // true
-console.log(isPrime(15)); // false
-console.log(isPrime(17)); // true
-console.log(isPrime(1));  // false
-console.log(isPrime(-5)); // false
+interface TreeNode {
+  value: number;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
+}
+function countLeaves(root: TreeNode | null): number {
+  if (!root) return 0;                     // empty subtree → no leaves
+
+  // leaf test
+  const isLeaf = !root.left && !root.right;
+  if (isLeaf) return 1;                    // this node itself is a leaf
+
+  // otherwise recursively count in both sub‑trees
+  return countLeaves(root.left) + countLeaves(root.right);
+}
+function countLeavesIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+
+  let count = 0;
+  const stack: (TreeNode | null)[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop() as TreeNode;
+
+    const isLeaf = !node.left && !node.right;
+    if (isLeaf) {
+      count += 1;
+    } else {
+      if (node.right) stack.push(node.right);
+      if (node.left) stack.push(node.left);
+    }
+  }
+
+  return count;
+}
+// Build the tree:
+//        1
+//       / \
+//      2   3
+//     /   / \
+//    4   5   6
+//         \
+//          7
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4);
+root.right.left = new TreeNode(5);
+root.right.right = new TreeNode(6);
+root.right.left.right = new TreeNode(7);
+
+console.log(countLeaves(root));          // → 3  (nodes 4, 7, 6)
+console.log(countLeavesIterative(root)); // → 3
