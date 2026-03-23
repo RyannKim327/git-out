@@ -1,44 +1,39 @@
 /**
- * Area = (base * height) / 2
+ * Recursively searches a sorted array for a target value.
+ *
+ * @param arr  The sorted array (ascending order).
+ * @param target  The value to find.
+ * @param left  The left boundary of the current search window.
+ * @param right The right boundary of the current search window.
+ * @returns The index of the target, or -1 if it isn’t in the array.
  */
-function areaFromBaseHeight(base: number, height: number): number {
-  return (base * height) / 2;
-}
-
-// Example
-console.log(areaFromBaseHeight(10, 6)); // 30
-/**
- * Shoelace / Gauss area formula for a polygon.
- * For a triangle (3 vertices) it simplifies nicely.
- */
-function areaFromCoords(
-  p1: { x: number; y: number },
-  p2: { x: number; y: number },
-  p3: { x: number; y: number }
+function binarySearch<T>(
+  arr: T[],
+  target: T,
+  left: number = 0,
+  right: number = arr.length - 1,
+  comparator?: (a: T, b: T) => number
 ): number {
-  const s1 = p2.x * p1.y - p1.x * p2.y;
-  const s2 = p3.x * p2.y - p2.x * p3.y;
-  const s3 = p1.x * p3.y - p3.x * p1.y;
-  return Math.abs((s1 + s2 + s3) / 2);
-}
+  // Base case: window collapsed -> not found
+  if (left > right) return -1;
 
-// Example
-console.log(
-  areaFromCoords(
-    { x: 0, y: 0 },
-    { x: 4, y: 0 },
-    { x: 0, y: 3 }
-  )
-); // 6
-/**
- * Heron's formula:
- *   s = (a + b + c) / 2
- *   area = sqrt( s * (s - a) * (s - b) * (s - c) )
- */
-function areaFromSides(a: number, b: number, c: number): number {
-  const s = (a + b + c) / 2;
-  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
-}
+  // Midpoint (avoid overflow by using `left + ((right - left) >> 1)` if you like)
+  const mid = Math.floor((left + right) / 2);
 
-// Example
-console.log(areaFromSides(5, 6, 7)); // ≈ 14.6969
+  // Resolve comparison logic
+  const cmp = comparator
+    ? comparator(target, arr[mid])
+    : (target > arr[mid]) - (target < arr[mid]); // generic numeric/lexicographic
+
+  if (cmp === 0) return mid;          // found
+  if (cmp < 0) return binarySearch(arr, target, left, mid - 1, comparator);
+  return binarySearch(arr, target, mid + 1, right, comparator);
+}
+const nums = [1, 3, 5, 7, 9, 11];
+
+console.log(binarySearch(nums, 7));   // → 3
+console.log(binarySearch(nums, 2));   // → -1
+const names = ['Alice', 'Bob', 'Charlie', 'David'].sort();
+console.log(binarySearch(names, 'bob', 0, names.length - 1, (a, b) =>
+  a.toLowerCase().localeCompare(b.toLowerCase())
+)); // → 1
