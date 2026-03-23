@@ -1,100 +1,65 @@
-/* 1️⃣  A node holds a value and a pointer to the next node   */
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
+/**
+ * Returns the longest common contiguous substring of two strings.
+ * If there are multiple with the same length, the first one found
+ * (by scanning from the top‑left of the DP table) is returned.
+ *
+ * @param s1 First string
+ * @param s2 Second string
+ * @returns The longest common substring
+ */
+export function longestCommonSubstring(s1: string, s2: string): string {
+  const m = s1.length;
+  const n = s2.length;
 
-/* 2️⃣  The list itself                                               */
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+  // Early exit for empty input
+  if (m === 0 || n === 0) return '';
 
-  /* Useful for debugging or quick inspection */
-  get size() : number { return this._size; }
+  // dp[i][j] holds length of longest common suffix of s1[0..i-1] and s2[0..j-1]
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  /* 🔄  Add at the end – amortised O(1)                      */
-  push(val: T) : void {
-    const node = new ListNode(val);
-    if (!this.head) {   // first element
-      this.head = this.tail = node;
-    } else {
-      // tail is guaranteed not null here
-      this.tail!.next = node;
-      this.tail = node;
-    }
-    this._size++;
-  }
+  let maxLen = 0;
+  let endPosInS1 = 0; // index where the best substring ends in s1
 
-  /* ⬅️  Remove from the end – O(n) because we’d have to
-        find the previous node. This simple version walks
-        to the node before the tail.                        */
-  pop() : T | undefined {
-    if (!this.head) return;
-    if (this.head === this.tail) {   // one element left
-      const val = this.head.value;
-      this.head = this.tail = null;
-      this._size = 0;
-      return val;
-    }
-
-    let prev = this.head;
-    while (prev.next !== this.tail) {
-      prev = prev.next!;
-    }
-    const val = this.tail!.value;
-    prev.next = null;
-    this.tail = prev;
-    this._size--;
-    return val;
-  }
-
-  /* 🔍  Find the index of a value – O(n)                   */
-  indexOf(val: T) : number {
-    let cur = this.head;
-    let i = 0;
-    while (cur) {
-      if (cur.value === val) return i;
-      cur = cur.next;
-      i++;
-    }
-    return -1;
-  }
-
-  /* 🔢  Grab the value at an index – guard against
-        out‑of‑range access. O(n)                               */
-  getAt(index: number) : T | undefined {
-    if (index < 0 || index >= this._size) return;
-    let cur = this.head;
-    let i = 0;
-    while (cur && i < index) {
-      cur = cur.next;
-      i++;
-    }
-    return cur?.value;
-  }
-
-  /* 🔁  Iterate over values – handy for `for..of`            */
-  [Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    return {
-      next: () => {
-        if (!current) return { done: true, value: undefined };
-        const value = current.value;
-        current = current.next;
-        return { done: false, value };
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > maxLen) {
+          maxLen = dp[i][j];
+          endPosInS1 = i; // i is exclusive, so substring ends at i-1
+        }
+      } else {
+        dp[i][j] = 0;
       }
-    };
+    }
   }
-}
 
-/* 3️⃣  Quick sanity test                                   */
-const nums = new LinkedList<number>();
-nums.push(10);
-nums.push(20);
-nums.push(30);
-console.log(nums.size);          // 3
-console.log([...nums]);          // [10, 20, 30]
-console.log(nums.pop());         // 30
-console.log(nums.size);          // 2
-console.log(nums.indexOf(20));   // 1
-console.log(nums.getAt(0));      // 10
+  if (maxLen === 0) return ''; // no common substring
+
+  // Slice out the substring from the first string
+  return s1.slice(endPosInS1 - maxLen, endPosInS1);
+}
+const a = 'ababc';
+const b = 'babca';
+
+console.log(longestCommonSubstring(a, b)); // outputs: 'abc'
+export function longestCommonSubstringLength(s1: string, s2: string): number {
+  const [a, b] = s1.length >= s2.length ? [s1, s2] : [s2, s1]; // make b the shorter string
+  const m = a.length, n = b.length;
+  const prev = new Uint32Array(n + 1);
+  let maxLen = 0;
+
+  for (let i = 1; i <= m; i++) {
+    const cur = new Uint32Array(n + 1);
+    const ca = a.charCodeAt(i - 1);
+
+    for (let j = 1; j <= n; j++) {
+      if (ca === b.charCodeAt(j - 1)) {
+        cur[j] = prev[j - 1] + 1;
+        if (cur[j] > maxLen) maxLen = cur[j];
+      }
+    }
+    prev.set(cur);
+  }
+  return maxLen;
+}
