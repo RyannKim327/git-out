@@ -1,54 +1,36 @@
-// ------------------------------------------------------------------
-// 1️⃣ Define the tree node (you can adapt it to your existing type)
-export interface TreeNode {
-  val: number;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
+const arr = ['a', 'b', 'c', 'd'];
+const indexToRemove = 2;           // want to drop "c"
+
+if (indexToRemove > -1 && indexToRemove < arr.length) {
+  arr.splice(indexToRemove, 1);
 }
 
-// ------------------------------------------------------------------
-// 2️⃣ Recursive – the most idiomatic way in TypeScript
+console.log(arr); // ['a', 'b', 'd']
+const index = arr.indexOf('b');
+if (index !== -1) arr.splice(index, 1);
+const arr = [1, 2, 3, 4, 2];
+const valueToRemove = 2;
 
-export function sumRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                     // base case
-  return root.val + sumRecursive(root.left) + sumRecursive(root.right);
-}
+// keep everything that isn’t the value you want gone
+const newArr = arr.filter(item => item !== valueToRemove);
 
-// ------------------------------------------------------------------
-// 3️⃣ Iterative – using a stack (no recursion, useful for very deep trees)
-
-export function sumIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  let stack: Array<TreeNode> = [root];
-  let total = 0;
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.val;
-
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
+console.log(newArr); // [1, 3, 4]
+let removed = false;
+const newArr = arr.filter(item => {
+  if (!removed && item === valueToRemove) {
+    removed = true;           // skip first match
+    return false;
   }
-  return total;
+  return true;
+});
+const arr = [{id: 1}, {id: 2}, {id: 3}];
+function removeIf(predicate: (elem: any) => boolean) {
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (predicate(arr[i])) {
+      arr.splice(i, 1);
+    }
+  }
 }
 
-// ------------------------------------------------------------------
-// 4️⃣ Quick sanity‑check
-
-// Build a tiny sample tree:
-//
-//          5
-//        /   \
-//       3     8
-//      / \     \
-//     1   4     10
-//
-const sampleRoot: TreeNode = {
-  val: 5,
-  left: { val: 3, left: { val: 1 }, right: { val: 4 } },
-  right: { val: 8, right: { val: 10 } },
-};
-
-console.log('Recursive sum:', sumRecursive(sampleRoot));   // → 31
-console.log('Iterative sum:', sumIterative(sampleRoot));   // → 31
+removeIf(e => e.id === 2);
+console.log(arr); // [{id: 1}, {id: 3}]
