@@ -1,65 +1,50 @@
 /**
- * Returns the digit present at a given place (0‑based from right to left).
- * Example: getDigit(381, 0) === 1, getDigit(381, 1) === 8, getDigit(381, 2) === 3
+ * Returns the longest common subsequence of two strings.
+ *
+ * @param a The first string.
+ * @param b The second string.
+ * @returns The LCS string.
  */
-function getDigit(num: number, place: number): number {
-  return Math.floor(Math.abs(num) / Math.pow(10, place)) % 10;
-}
+export function lcs(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-/**
- * Returns the maximal number of digits among elements of array.
- */
-function maxDigits(arr: number[]): number {
-  if (arr.length === 0) return 0;
-  const max = Math.max(...arr.map(Math.abs));
-  return Math.floor(Math.log10(max)) + 1;
-}
-/**
- * Stable counting sort on `arr` by the digit at `place`.
- * (`digitBase` defaults to 10 – decimal.)
- */
-function countingSortByDigit(arr: number[], place: number, digitBase = 10): number[] {
-  const bucketCount = digitBase;
-  const buckets: number[][] = Array.from({ length: bucketCount }, () => []);
+  // dp[i][j] will hold the length of LCS of a[0..i-1] and b[0..j-1].
+  // We keep one extra row/column at index 0 for the empty prefix.
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  for (const n of arr) {
-    const digit = getDigit(n, place);
-    buckets[digit].push(n);
+  // Build the table bottom‑up.
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
   }
 
-  // Flatten buckets in order; that's the stable result for this digit.
-  return buckets.flat();
-}
-/**
- * Radix sort for non‑negative integers.
- * @param arr array of numbers (non‑negative, but the routine will work with any integers once you wrap them)
- * @returns sorted array (stable)
- */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length <= 1) return [...arr]; // copy so caller doesn’t mutate input
+  // Reconstruct one LCS by walking back through the table.
+  let i = m, j = n;
+  const chars: string[] = [];
 
-  const numDigits = maxDigits(arr);
-  let sorted = [...arr];
-
-  for (let place = 0; place < numDigits; place++) {
-    sorted = countingSortByDigit(sorted, place);
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      // The character is part of the LCS.
+      chars.push(a[i - 1]);
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;          // Move up.
+    } else {
+      j--;          // Move left.
+    }
   }
 
-  return sorted;
+  // The chars array holds the LCS in reverse order.
+  return chars.reverse().join('');
 }
-export function radixSortFull(arr: number[]): number[] {
-  const negatives = arr.filter(n => n < 0).map(n => -n);
-  const positives = arr.filter(n => n >= 0);
+const s1 = "AGGTAB";
+const s2 = "GXTXAYB";
 
-  const sortedNeg = radixSort(negatives).reverse().map(n => -n);
-  const sortedPos = radixSort(positives);
-
-  return [...sortedNeg, ...sortedPos];
-}
-import { radixSortFull } from './radixSort';
-
-const data = [170, 45, 75, 90, 802, 24, 2, 66, -15, -302, 0];
-const sorted = radixSortFull(data);
-
-console.log(sorted);
-// → [-302, -15, 0, 2, 24, 45, 66, 75, 90, 170, 802]
+console.log(lcs(s1, s2)); // "GTAB"
