@@ -1,35 +1,36 @@
-/**
- * Bubble sort for an array of numbers.
- * The function mutates the passed array and returns it so you can chain or immediately inspect it.
- *
- * @param arr – the array to sort
- * @returns the sorted array (same reference as `arr`)
- */
-export function bubbleSort(arr: number[]): number[] {
-  // The array’s length is used repeatedly, so cache it for speed.
-  const n = arr.length;
+// Random-ish TypeScript example that pulls in axios
 
-  // Outer loop – each pass pushes the next largest element to its final spot at the end.
-  // We can stop one element earlier on each pass because the last `pass` items are already sorted.
-  for (let pass = 0; pass < n - 1; pass++) {
-    // Track whether any swap happened this pass. If none, the array is sorted.
-    let swapped = false;
+import axios from 'axios'
 
-    // Inner loop – compare adjacent pairs and swap if out of order.
-    // We only need to go up to `n - pass - 1` because the last `pass` elements are in place.
-    for (let i = 0; i < n - pass - 1; i++) {
-      if (arr[i] > arr[i + 1]) {
-        // Simple swap using destructuring.
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
-        swapped = true;
-      }
-    }
-
-    // If no two elements were swapped, no more passes are required.
-    if (!swapped) break;
-  }
-
-  return arr;
+interface Todo {
+  userId: number
+  id: number
+  title: string
+  completed: boolean
 }
-const unsorted = [64, 34, 25, 12, 22, 11, 90];
-console.log(bubbleSort(unsorted));        // [11, 12, 22, 25, 34, 64, 90]
+
+const client = axios.create({
+  baseURL: 'https://jsonplaceholder.typicode.com',
+  timeout: 3000,
+})
+
+async function fetchTodos(limit = 5): Promise<Todo[]> {
+  const { data } = await client.get<Todo[]>('/todos')
+  return data.slice(0, limit)
+}
+
+async function toggleTodo(id: number, completed: boolean): Promise<void> {
+  await client.patch(`/todos/${id}`, { completed })
+}
+
+;(async () => {
+  try {
+    const todos = await fetchTodos()
+    console.log('Sample todos:', todos)
+
+    await toggleTodo(todos[0].id, !todos[0].completed)
+    console.log(`Todo ${todos[0].id} status flipped!`)
+  } catch (err) {
+    console.error('Something went wrong:', err instanceof Error ? err.message : err)
+  }
+})()
