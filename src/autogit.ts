@@ -1,40 +1,58 @@
-// Generic helper – keeps the original array untouched
-function uniq<T>(arr: T[]): T[] {
-  return [...new Set(arr)];
-}
-const numbers = [1, 2, 3, 2, 4, 1, 5];
-console.log(uniq(numbers));      // [1, 2, 3, 4, 5]
+/**
+ * Return the largest prime factor of a positive integer `n`.
+ * For `n <= 1` returns `null` (no prime factors).
+ *
+ * @param n – a number > 0 (use Number if you’re certain it fits in a double precision float)
+ */
+function largestPrimeFactor(n: number): number | null {
+  if (n <= 1) return null;          // 0 or 1 has no prime factors
 
-const words = ['apple', 'banana', 'apple', 'orange'];
-console.log(uniq(words));        // ['apple', 'banana', 'orange']
+  let remainder = n;
+  let largest = 2;
 
-// With objects – note that Set checks reference equality
-const objs = [{ id: 1 }, { id: 2 }, { id: 1 }];
-console.log(uniq(objs));         // [{ id: 1 }, { id: 2 }, { id: 1 }]
-function uniqByKey<T, K extends keyof T>(arr: T[], key: K): T[] {
-  const seen = new Map<T[K], T>();
-  for (const item of arr) {
-    if (!seen.has(item[key])) {
-      seen.set(item[key], item);
+  // Always strip out factors of 2 first – saves time later
+  while (remainder % 2 === 0) {
+    largest = 2;
+    remainder /= 2;
+  }
+
+  // Now test only odd divisors (3,5,7,…)
+  const limit = Math.sqrt(remainder);
+  for (let divisor = 3; divisor <= limit; divisor += 2) {
+    while (remainder % divisor === 0) {
+      largest = divisor;
+      remainder /= divisor;
     }
   }
-  return Array.from(seen.values());
-}
 
-const people = [
-  { id: 1, name: 'Ana' },
-  { id: 2, name: 'Ben' },
-  { id: 1, name: 'Ana' },
-];
-console.log(uniqByKey(people, 'id'));  // [{ id: 1, name: 'Ana' }, { id: 2, name: 'Ben' }]
-function uniqInPlace<T>(arr: T[]): void {
-  const seen = new Set<T>();
-  let writeIdx = 0;
-  for (const item of arr) {
-    if (!seen.has(item)) {
-      seen.add(item);
-      arr[writeIdx++] = item;
-    }
+  // If anything left of 1, it’s prime and bigger than any we found
+  if (remainder > 1) largest = remainder;
+
+  return largest;
+}
+console.log(largestPrimeFactor(15));    // 5
+console.log(largestPrimeFactor(21));    // 7
+console.log(largestPrimeFactor(26));    // 13
+console.log(largestPrimeFactor(120));   // 5   (120 = 2⁴·3·5)
+function largestPrimeFactorBig(n: bigint): bigint | null {
+  if (n <= 1n) return null;
+  let remainder = n;
+  let largest = 2n;
+
+  while (remainder % 2n === 0n) {
+    largest = 2n;
+    remainder /= 2n;
   }
-  arr.length = writeIdx; // truncate the rest
+
+  let divisor = 3n;
+  while (divisor * divisor <= remainder) {
+    while (remainder % divisor === 0n) {
+      largest = divisor;
+      remainder /= divisor;
+    }
+    divisor += 2n;
+  }
+
+  if (remainder > 1n) largest = remainder;
+  return largest;
 }
