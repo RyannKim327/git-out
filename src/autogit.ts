@@ -1,36 +1,21 @@
-// Random-ish TypeScript example that pulls in axios
+// Example array
+const nums: number[] = [42, 1, 17, 3, 99];
 
-import axios from 'axios'
+// Sort in ascending order
+const asc = [...nums].sort((a, b) => a - b);
+console.log('Ascending:', asc); // [1, 3, 17, 42, 99]
 
-interface Todo {
-  userId: number
-  id: number
-  title: string
-  completed: boolean
-}
+// Sort in descending order
+const desc = [...nums].sort((a, b) => b - a);
+console.log('Descending:', desc); // [99, 42, 17, 3, 1]
+const custom = [...nums].sort((a, b) => {
+  const aEven = a % 2 === 0;
+  const bEven = b % 2 === 0;
+  if (aEven && !bEven) return -1;     // a comes first
+  if (!aEven && bEven) return 1;      // b comes first
+  return a - b;                       // both same parity: numeric order
+});
+console.log(custom); // [ 42, 2, 1, 3, 17, 99 ]
+import _ from 'lodash';
 
-const client = axios.create({
-  baseURL: 'https://jsonplaceholder.typicode.com',
-  timeout: 3000,
-})
-
-async function fetchTodos(limit = 5): Promise<Todo[]> {
-  const { data } = await client.get<Todo[]>('/todos')
-  return data.slice(0, limit)
-}
-
-async function toggleTodo(id: number, completed: boolean): Promise<void> {
-  await client.patch(`/todos/${id}`, { completed })
-}
-
-;(async () => {
-  try {
-    const todos = await fetchTodos()
-    console.log('Sample todos:', todos)
-
-    await toggleTodo(todos[0].id, !todos[0].completed)
-    console.log(`Todo ${todos[0].id} status flipped!`)
-  } catch (err) {
-    console.error('Something went wrong:', err instanceof Error ? err.message : err)
-  }
-})()
+const order = _.orderBy(nums, [x => x], ['asc']); // asc by numeric value
