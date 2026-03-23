@@ -1,69 +1,39 @@
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElement(arr: number[]): number | null {
-  if (arr.length === 0) return null;
+const a = [1, 2, 3, 4, 5];
+const b = [3, 4, 5, 6, 7];
 
-  // 1st pass – find a candidate
-  let candidate = arr[0];
-  let count = 0;
+const intersection = a.filter(item => new Set(b).has(item));
+console.log(intersection); // [3, 4, 5]
+const a = [1, 2, 3, 4, 5, 5];
+const b = [3, 4, 5, 5, 6];
 
-  for (const num of arr) {
-    if (count === 0) {
-      candidate = num;
-      count = 1;
-    } else {
-      count += num === candidate ? 1 : -1;
+const setA = new Set(a);
+const setB = new Set(b);
+
+const intersection = [...setA].filter(item => setB.has(item));
+console.log(intersection); // [3, 4, 5]
+function multisetIntersection<T>(arr1: T[], arr2: T[]): T[] {
+  const counter = new Map<T, number>();
+
+  // Count each element of arr1
+  for (const v of arr1) {
+    counter.set(v, (counter.get(v) ?? 0) + 1);
+  }
+
+  // For each element in arr2, if it exists in the counter use it
+  const result: T[] = [];
+  for (const v of arr2) {
+    const count = counter.get(v);
+    if (count && count > 0) {
+      result.push(v);
+      counter.set(v, count - 1);
     }
   }
-
-  // 2nd pass – confirm candidate (optional but safe)
-  count = 0;
-  for (const num of arr) {
-    if (num === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
+  return result;
 }
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElementMap(arr: number[]): number | null {
-  const freq = new Map<number, number>();
 
-  for (const num of arr) {
-    freq.set(num, (freq.get(num) ?? 0) + 1);
-  }
-
-  const n = arr.length;
-  for (const [num, count] of freq.entries()) {
-    if (count > Math.floor(n / 2)) {
-      return num;
-    }
-  }
-  return null;
-}
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElementSorted(arr: number[]): number | null {
-  if (arr.length === 0) return null;
-
-  // Make a copy so we don’t mutate the caller’s array
-  const sorted = [...arr].sort((a, b) => a - b);
-  const candidate = sorted[Math.floor(sorted.length / 2)];
-  let count = 0;
-
-  for (const num of sorted) {
-    if (num === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
-}
-const testArray = [2, 2, 1, 1, 1, 2, 2];
-console.log(majorityElement(testArray));      // 2
-console.log(majorityElementMap(testArray));   // 2
-console.log(majorityElementSorted(testArray)); // 2
+console.log(multisetIntersection([1, 2, 2, 3], [2, 2, 4]));
+// → [2, 2]
+const intersection = a.reduce((acc, item) => {
+  if (b.includes(item) && !acc.includes(item)) acc.push(item);
+  return acc;
+}, [] as number[]);
