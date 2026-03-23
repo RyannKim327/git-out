@@ -1,21 +1,34 @@
-// Example array
-const nums: number[] = [42, 1, 17, 3, 99];
+// randomPassword.ts
+import * as readline from 'readline';
 
-// Sort in ascending order
-const asc = [...nums].sort((a, b) => a - b);
-console.log('Ascending:', asc); // [1, 3, 17, 42, 99]
+// Characters that can appear in the password
+const CHARSET =
+  'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
 
-// Sort in descending order
-const desc = [...nums].sort((a, b) => b - a);
-console.log('Descending:', desc); // [99, 42, 17, 3, 1]
-const custom = [...nums].sort((a, b) => {
-  const aEven = a % 2 === 0;
-  const bEven = b % 2 === 0;
-  if (aEven && !bEven) return -1;     // a comes first
-  if (!aEven && bEven) return 1;      // b comes first
-  return a - b;                       // both same parity: numeric order
+function generatePassword(length: number): string {
+  let pwd = '';
+  for (let i = 0; i < length; i++) {
+    pwd += CHARSET[Math.floor(Math.random() * CHARSET.length)];
+  }
+  return pwd;
+}
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
 });
-console.log(custom); // [ 42, 2, 1, 3, 17, 99 ]
-import _ from 'lodash';
 
-const order = _.orderBy(nums, [x => x], ['asc']); // asc by numeric value
+rl.question('Enter desired password length: ', (answer) => {
+  const len = parseInt(answer, 10);
+  if (!isNaN(len) && len > 0) {
+    console.log(`Generated password: ${generatePassword(len)}`);
+  } else {
+    console.log('Please enter a valid positive integer.');
+  }
+  rl.close();
+});
+# 1. Compile (requires TypeScript installed)
+tsc randomPassword.ts
+
+# 2. Execute the resulting JavaScript
+node randomPassword.js
