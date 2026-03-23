@@ -1,49 +1,25 @@
-/*  Depth‑first search (BFS) that stops after exploring a given number of levels.
- *
- *  - `Node`   – a generic representation of a graph vertex.
- *  - `getNeighbors` – a callback that returns the adjacent nodes.
- *  - `goal` – a predicate that tells whether the node is satisfactory.
- *  - `maxDepth` – how many edges away from the start we’ll consider.
- *
- *  The function yields an array of nodes in the order they were visited
- *  (first‑in, first‑out).  The result can be empty when the goal isn’t
- *  found before the depth limit.
+/**
+ * Returns true if `n` is a prime number.
  */
+export function isPrime(n: number): boolean {
+  // Prime numbers are > 1
+  if (n <= 1) return false;
 
-type Node = {
-  id: string | number;
-  // … other properties
-};
+  // 2 and 3 are the only even/odd primes
+  if (n <= 3) return true;
 
-export function breadthLimitedSearch(
-  start: Node,
-  maxDepth: number,
-  goal: (n: Node) => boolean,
-  getNeighbors: (n: Node) => Node[]
-): Node[] {
-  if (maxDepth < 0) return [];
+  // Even numbers > 2 can be rejected right away
+  if (n % 2 === 0) return false;
 
-  const frontier: Array<{ node: Node; depth: number }> = [{ node: start, depth: 0 }];
-  const visited = new Set<Node>();
-  const result: Node[] = [];
-
-  while (frontier.length) {
-    const { node, depth } = frontier.shift()!; // safe pop because we always pop a value
-    if (visited.has(node)) continue;
-    visited.add(node);
-
-    result.push(node);
-    if (goal(node)) break;
-
-    // If we haven’t hit the depth ceiling, enqueue the next layer
-    if (depth < maxDepth) {
-      const neighbours = getNeighbors(node);
-      for (const neighbour of neighbours) {
-        if (!visited.has(neighbour)) {
-          frontier.push({ node: neighbour, depth: depth + 1 });
-        }
-      }
-    }
+  // Check only odd divisors up to √n
+  const limit = Math.floor(Math.sqrt(n));
+  for (let d = 3; d <= limit; d += 2) {
+    if (n % d === 0) return false;
   }
-  return result;
+  return true;
 }
+console.log(isPrime(2));  // true
+console.log(isPrime(15)); // false
+console.log(isPrime(17)); // true
+console.log(isPrime(1));  // false
+console.log(isPrime(-5)); // false
