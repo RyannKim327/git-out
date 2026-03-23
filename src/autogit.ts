@@ -1,39 +1,72 @@
-const a = [1, 2, 3, 4, 5];
-const b = [3, 4, 5, 6, 7];
+interface Node<T = any> {
+  value: T;
+  neighbors: Node<T>[];
+  // optional metadata for the search
+  depth?: number;
+}
+function depthLimitedSearch<T>(
+  root: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  maxDepth: number
+): Node<T> | null {
+  function dfs(node: Node<T>, depth: number): Node<T> | null {
+    if (depth > maxDepth) return null;          // over the ceiling
+    if (isGoal(node)) return node;             // goal found
 
-const intersection = a.filter(item => new Set(b).has(item));
-console.log(intersection); // [3, 4, 5]
-const a = [1, 2, 3, 4, 5, 5];
-const b = [3, 4, 5, 5, 6];
-
-const setA = new Set(a);
-const setB = new Set(b);
-
-const intersection = [...setA].filter(item => setB.has(item));
-console.log(intersection); // [3, 4, 5]
-function multisetIntersection<T>(arr1: T[], arr2: T[]): T[] {
-  const counter = new Map<T, number>();
-
-  // Count each element of arr1
-  for (const v of arr1) {
-    counter.set(v, (counter.get(v) ?? 0) + 1);
+    for (const neigh of node.neighbors) {
+      const result = dfs(neigh, depth + 1);
+      if (result) return result;               // propagate up
+    }
+    return null;                               // no goal along this path
   }
 
-  // For each element in arr2, if it exists in the counter use it
-  const result: T[] = [];
-  for (const v of arr2) {
-    const count = counter.get(v);
-    if (count && count > 0) {
-      result.push(v);
-      counter.set(v, count - 1);
+  return dfs(root, 0);
+}
+function depthLimitedIterative<T>(
+  root: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  maxDepth: number
+): Node<T> | null {
+  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+
+    if (depth > maxDepth) continue;          // skip over‑depth nodes
+    if (isGoal(node)) return node;           // hit the target
+
+    // Push neighbors in reverse order if you want the left‑most first
+    for (let i = node.neighbors.length - 1; i >= 0; i--) {
+      stack.push({ node: node.neighbors[i], depth: depth + 1 });
     }
   }
-  return result;
-}
 
-console.log(multisetIntersection([1, 2, 2, 3], [2, 2, 4]));
-// → [2, 2]
-const intersection = a.reduce((acc, item) => {
-  if (b.includes(item) && !acc.includes(item)) acc.push(item);
-  return acc;
-}, [] as number[]);
+  return null; // exhausted without finding goal
+}
+// Build a tiny graph
+const leaf = { value: 'leaf', neighbors: [] };
+const mid   = { value: 'mid',   neighbors: [leaf] };
+const root  = { value: 'root',  neighbors: [mid] };
+
+const found = depthLimitedSearch(root, node => node.value === 'leaf', 3);
+console.log(found?.value); // → "leaf"
+function breadthLimitedSearch<T>(
+  root: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  maxDepth: number
+): Node<T> | null {
+  const queue: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
+
+  while (queue.length) {
+    const { node, depth } = queue.shift()!;
+
+    if (depth > maxDepth) continue;
+    if (isGoal(node)) return node;
+
+    for (const neigh of node.neighbors) {
+      queue.push({ node: neigh, depth: depth + 1 });
+    }
+  }
+
+  return null;
+}
