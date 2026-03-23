@@ -1,30 +1,21 @@
 /**
- * Recursively returns n! (n factorial).
+ * Returns a random number in the closed interval [min, max].
  *
- * @param n - non‑negative integer (or bigint)
- * @returns n! as a bigint
+ * Uses the built‑in Math.random() which yields a uniformly distributed
+ * 64‑bit floating‑point number in [0, 1).
+ *
+ * @param min - The lower bound of the range (inclusive)
+ * @param max - The upper bound of the range (inclusive)
+ * @returns A random number in the range [min, max]
  */
-export function factorial(n: bigint | number): bigint {
-  // Normalize input to bigint
-  const x = typeof n === "bigint" ? n : BigInt(n);
-
-  // Negative numbers are not defined for factorial
-  if (x < 0n) {
-    throw new Error("Factorial is defined only for non‑negative integers.");
-  }
-
-  // Base case: 0! = 1, 1! = 1
-  if (x === 0n || x === 1n) {
-    return 1n;
-  }
-
-  // Recursive case: n! = n * (n-1)!
-  return x * factorial(x - 1n);
+export function randomInRange(min: number, max: number): number {
+  if (min > max) throw new Error('min must be <= max');
+  // Math.random() is 0 ≤ r < 1.  Scale and shift to match [min, max].
+  return Math.random() * (max - min) + min;
 }
-console.log(factorial(5));        // 120n
-console.log(factorial(20));       // 2432902008176640000n
-console.log(factorial(25n));      // 15511210043330985984000000n
-function factorialTail(n: bigint, acc = 1n): bigint {
-  if (n <= 1n) return acc;
-  return factorialTail(n - 1n, acc * n);
+export function randomIntInRange(min: number, max: number): number {
+  // The +1 ensures the max is included.
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+const randomFloat = randomInRange(5.2, 10.7);      // Anything between 5.2 and 10.7
+const randomInt   = randomIntInRange(1, 6);        // 1, 2, 3, 4, 5, or 6
