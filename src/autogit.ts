@@ -1,39 +1,49 @@
-const a = [1, 2, 3, 4, 5];
-const b = [3, 4, 5, 6, 7];
+/*  Depth‑first search (BFS) that stops after exploring a given number of levels.
+ *
+ *  - `Node`   – a generic representation of a graph vertex.
+ *  - `getNeighbors` – a callback that returns the adjacent nodes.
+ *  - `goal` – a predicate that tells whether the node is satisfactory.
+ *  - `maxDepth` – how many edges away from the start we’ll consider.
+ *
+ *  The function yields an array of nodes in the order they were visited
+ *  (first‑in, first‑out).  The result can be empty when the goal isn’t
+ *  found before the depth limit.
+ */
 
-const intersection = a.filter(item => new Set(b).has(item));
-console.log(intersection); // [3, 4, 5]
-const a = [1, 2, 3, 4, 5, 5];
-const b = [3, 4, 5, 5, 6];
+type Node = {
+  id: string | number;
+  // … other properties
+};
 
-const setA = new Set(a);
-const setB = new Set(b);
+export function breadthLimitedSearch(
+  start: Node,
+  maxDepth: number,
+  goal: (n: Node) => boolean,
+  getNeighbors: (n: Node) => Node[]
+): Node[] {
+  if (maxDepth < 0) return [];
 
-const intersection = [...setA].filter(item => setB.has(item));
-console.log(intersection); // [3, 4, 5]
-function multisetIntersection<T>(arr1: T[], arr2: T[]): T[] {
-  const counter = new Map<T, number>();
+  const frontier: Array<{ node: Node; depth: number }> = [{ node: start, depth: 0 }];
+  const visited = new Set<Node>();
+  const result: Node[] = [];
 
-  // Count each element of arr1
-  for (const v of arr1) {
-    counter.set(v, (counter.get(v) ?? 0) + 1);
-  }
+  while (frontier.length) {
+    const { node, depth } = frontier.shift()!; // safe pop because we always pop a value
+    if (visited.has(node)) continue;
+    visited.add(node);
 
-  // For each element in arr2, if it exists in the counter use it
-  const result: T[] = [];
-  for (const v of arr2) {
-    const count = counter.get(v);
-    if (count && count > 0) {
-      result.push(v);
-      counter.set(v, count - 1);
+    result.push(node);
+    if (goal(node)) break;
+
+    // If we haven’t hit the depth ceiling, enqueue the next layer
+    if (depth < maxDepth) {
+      const neighbours = getNeighbors(node);
+      for (const neighbour of neighbours) {
+        if (!visited.has(neighbour)) {
+          frontier.push({ node: neighbour, depth: depth + 1 });
+        }
+      }
     }
   }
   return result;
 }
-
-console.log(multisetIntersection([1, 2, 2, 3], [2, 2, 4]));
-// → [2, 2]
-const intersection = a.reduce((acc, item) => {
-  if (b.includes(item) && !acc.includes(item)) acc.push(item);
-  return acc;
-}, [] as number[]);
