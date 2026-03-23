@@ -1,50 +1,35 @@
 /**
- * Returns the longest common subsequence of two strings.
+ * Bubble sort for an array of numbers.
+ * The function mutates the passed array and returns it so you can chain or immediately inspect it.
  *
- * @param a The first string.
- * @param b The second string.
- * @returns The LCS string.
+ * @param arr – the array to sort
+ * @returns the sorted array (same reference as `arr`)
  */
-export function lcs(a: string, b: string): string {
-  const m = a.length;
-  const n = b.length;
+export function bubbleSort(arr: number[]): number[] {
+  // The array’s length is used repeatedly, so cache it for speed.
+  const n = arr.length;
 
-  // dp[i][j] will hold the length of LCS of a[0..i-1] and b[0..j-1].
-  // We keep one extra row/column at index 0 for the empty prefix.
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  // Outer loop – each pass pushes the next largest element to its final spot at the end.
+  // We can stop one element earlier on each pass because the last `pass` items are already sorted.
+  for (let pass = 0; pass < n - 1; pass++) {
+    // Track whether any swap happened this pass. If none, the array is sorted.
+    let swapped = false;
 
-  // Build the table bottom‑up.
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+    // Inner loop – compare adjacent pairs and swap if out of order.
+    // We only need to go up to `n - pass - 1` because the last `pass` elements are in place.
+    for (let i = 0; i < n - pass - 1; i++) {
+      if (arr[i] > arr[i + 1]) {
+        // Simple swap using destructuring.
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+        swapped = true;
       }
     }
+
+    // If no two elements were swapped, no more passes are required.
+    if (!swapped) break;
   }
 
-  // Reconstruct one LCS by walking back through the table.
-  let i = m, j = n;
-  const chars: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      // The character is part of the LCS.
-      chars.push(a[i - 1]);
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;          // Move up.
-    } else {
-      j--;          // Move left.
-    }
-  }
-
-  // The chars array holds the LCS in reverse order.
-  return chars.reverse().join('');
+  return arr;
 }
-const s1 = "AGGTAB";
-const s2 = "GXTXAYB";
-
-console.log(lcs(s1, s2)); // "GTAB"
+const unsorted = [64, 34, 25, 12, 22, 11, 90];
+console.log(bubbleSort(unsorted));        // [11, 12, 22, 25, 34, 64, 90]
