@@ -1,39 +1,35 @@
 /**
- * Recursively searches a sorted array for a target value.
+ * Bubble sort for an array of numbers.
+ * The function mutates the passed array and returns it so you can chain or immediately inspect it.
  *
- * @param arr  The sorted array (ascending order).
- * @param target  The value to find.
- * @param left  The left boundary of the current search window.
- * @param right The right boundary of the current search window.
- * @returns The index of the target, or -1 if it isn’t in the array.
+ * @param arr – the array to sort
+ * @returns the sorted array (same reference as `arr`)
  */
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  left: number = 0,
-  right: number = arr.length - 1,
-  comparator?: (a: T, b: T) => number
-): number {
-  // Base case: window collapsed -> not found
-  if (left > right) return -1;
+export function bubbleSort(arr: number[]): number[] {
+  // The array’s length is used repeatedly, so cache it for speed.
+  const n = arr.length;
 
-  // Midpoint (avoid overflow by using `left + ((right - left) >> 1)` if you like)
-  const mid = Math.floor((left + right) / 2);
+  // Outer loop – each pass pushes the next largest element to its final spot at the end.
+  // We can stop one element earlier on each pass because the last `pass` items are already sorted.
+  for (let pass = 0; pass < n - 1; pass++) {
+    // Track whether any swap happened this pass. If none, the array is sorted.
+    let swapped = false;
 
-  // Resolve comparison logic
-  const cmp = comparator
-    ? comparator(target, arr[mid])
-    : (target > arr[mid]) - (target < arr[mid]); // generic numeric/lexicographic
+    // Inner loop – compare adjacent pairs and swap if out of order.
+    // We only need to go up to `n - pass - 1` because the last `pass` elements are in place.
+    for (let i = 0; i < n - pass - 1; i++) {
+      if (arr[i] > arr[i + 1]) {
+        // Simple swap using destructuring.
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+        swapped = true;
+      }
+    }
 
-  if (cmp === 0) return mid;          // found
-  if (cmp < 0) return binarySearch(arr, target, left, mid - 1, comparator);
-  return binarySearch(arr, target, mid + 1, right, comparator);
+    // If no two elements were swapped, no more passes are required.
+    if (!swapped) break;
+  }
+
+  return arr;
 }
-const nums = [1, 3, 5, 7, 9, 11];
-
-console.log(binarySearch(nums, 7));   // → 3
-console.log(binarySearch(nums, 2));   // → -1
-const names = ['Alice', 'Bob', 'Charlie', 'David'].sort();
-console.log(binarySearch(names, 'bob', 0, names.length - 1, (a, b) =>
-  a.toLowerCase().localeCompare(b.toLowerCase())
-)); // → 1
+const unsorted = [64, 34, 25, 12, 22, 11, 90];
+console.log(bubbleSort(unsorted));        // [11, 12, 22, 25, 34, 64, 90]
