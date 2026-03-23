@@ -1,34 +1,97 @@
-// randomPassword.ts
-import * as readline from 'readline';
+// ------------------------------------------------------------
+// 1. Node
+// ------------------------------------------------------------
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null = null;
+  right: TreeNode<T> | null = null;
 
-// Characters that can appear in the password
-const CHARSET =
-  'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
-
-function generatePassword(length: number): string {
-  let pwd = '';
-  for (let i = 0; i < length; i++) {
-    pwd += CHARSET[Math.floor(Math.random() * CHARSET.length)];
+  constructor(value: T) {
+    this.value = value;
   }
-  return pwd;
 }
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
+// ------------------------------------------------------------
+// 2. BinarySearchTree
+// ------------------------------------------------------------
+class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
 
-rl.question('Enter desired password length: ', (answer) => {
-  const len = parseInt(answer, 10);
-  if (!isNaN(len) && len > 0) {
-    console.log(`Generated password: ${generatePassword(len)}`);
-  } else {
-    console.log('Please enter a valid positive integer.');
+  // -------------------------------------------
+  // Insert a value into the BST
+  // -------------------------------------------
+  insert(value: T, comparator?: (a: T, b: T) => number): void {
+    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+    const insertRec = (node: TreeNode<T> | null, val: T): TreeNode<T> => {
+      if (!node) return new TreeNode(val);
+
+      if (compare(val, node.value) < 0) {
+        node.left = insertRec(node.left, val);
+      } else {
+        node.right = insertRec(node.right, val);
+      }
+      return node;
+    };
+
+    this.root = insertRec(this.root, value);
   }
-  rl.close();
-});
-# 1. Compile (requires TypeScript installed)
-tsc randomPassword.ts
 
-# 2. Execute the resulting JavaScript
-node randomPassword.js
+  // -------------------------------------------
+  // Search for a value – returns the node or null
+  // -------------------------------------------
+  search(value: T, comparator?: (a: T, b: T) => number): TreeNode<T> | null {
+    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    let curr = this.root;
+
+    while (curr) {
+      if (compare(value, curr.value) < 0) {
+        curr = curr.left;
+      } else if (compare(value, curr.value) > 0) {
+        curr = curr.right;
+      } else {
+        return curr; // found
+      }
+    }
+    return null; // not found
+  }
+
+  // -------------------------------------------
+  // In‑order traversal – returns an array of values
+  // -------------------------------------------
+  inorder(): T[] {
+    const res: T[] = [];
+    const walk = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      walk(node.left);
+      res.push(node.value);
+      walk(node.right);
+    };
+    walk(this.root);
+    return res;
+  }
+
+  // -------------------------------------------
+  // Convenience: return value of inorder traversal
+  // -------------------------------------------
+  toArray(): T[] {
+    return this.inorder();
+  }
+}
+
+// ------------------------------------------------------------
+// 3. Demo
+// ------------------------------------------------------------
+const bst = new BinarySearchTree<number>();
+
+// Inserting some numbers
+[42, 23, 57, 12, 34, 73, 8].forEach(n => bst.insert(n));
+
+console.log('In‑order traversal:', bst.inorder()); // sorted ascending
+
+const foundNode = bst.search(34);
+if (foundNode) {
+  console.log(`Found node with value ${foundNode.value}`);
+} else {
+  console.log('Value not found');
+}
