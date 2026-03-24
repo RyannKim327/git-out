@@ -1,35 +1,37 @@
-/**
- * Bubble sort for an array of numbers.
- * The function mutates the passed array and returns it so you can chain or immediately inspect it.
- *
- * @param arr – the array to sort
- * @returns the sorted array (same reference as `arr`)
- */
-export function bubbleSort(arr: number[]): number[] {
-  // The array’s length is used repeatedly, so cache it for speed.
-  const n = arr.length;
+// Basic binary‑tree node
+class TreeNode<T> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
+}
 
-  // Outer loop – each pass pushes the next largest element to its final spot at the end.
-  // We can stop one element earlier on each pass because the last `pass` items are already sorted.
-  for (let pass = 0; pass < n - 1; pass++) {
-    // Track whether any swap happened this pass. If none, the array is sorted.
-    let swapped = false;
+// Main helper that returns the height of a node and updates maxDiameter
+function computeHeight<T>(node: TreeNode<T> | null, maxDiameter: { value: number }): number {
+  if (!node) return -1; // height of empty subtree is -1 so that a single node gives 0
 
-    // Inner loop – compare adjacent pairs and swap if out of order.
-    // We only need to go up to `n - pass - 1` because the last `pass` elements are in place.
-    for (let i = 0; i < n - pass - 1; i++) {
-      if (arr[i] > arr[i + 1]) {
-        // Simple swap using destructuring.
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
-        swapped = true;
-      }
-    }
+  const leftHeight = computeHeight(node.left, maxDiameter);
+  const rightHeight = computeHeight(node.right, maxDiameter);
 
-    // If no two elements were swapped, no more passes are required.
-    if (!swapped) break;
+  // Path that passes through this node
+  const diameterAtNode = leftHeight + rightHeight + 2; // +2 edges to connect left and right via current node
+  if (diameterAtNode > maxDiameter.value) {
+    maxDiameter.value = diameterAtNode;
   }
 
-  return arr;
+  // Return height of this subtree
+  return Math.max(leftHeight, rightHeight) + 1;
 }
-const unsorted = [64, 34, 25, 12, 22, 11, 90];
-console.log(bubbleSort(unsorted));        // [11, 12, 22, 25, 34, 64, 90]
+
+// Public API
+export function treeDiameter<T>(root: TreeNode<T> | null): number {
+  const maxDiameter = { value: 0 };
+  computeHeight(root, maxDiameter);
+  return maxDiameter.value; // number of edges on the longest path
+}
+        1
+       / \
+      2   3
+     / \     
+    4   5    
