@@ -1,37 +1,27 @@
-// Basic binary‑tree node
-class TreeNode<T> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
+/**
+ * Return true if the supplied string is a palindrome (ignoring case,
+ * punctuation, spaces, and other non‑alphanumeric characters).
+ */
+export function isPalindrome(input: string): boolean {
+  // Keep only letters and digits, make everything lowercase
+  const cleaned = input.replace(/[^a-z0-9]/gi, '').toLowerCase();
 
-// Main helper that returns the height of a node and updates maxDiameter
-function computeHeight<T>(node: TreeNode<T> | null, maxDiameter: { value: number }): number {
-  if (!node) return -1; // height of empty subtree is -1 so that a single node gives 0
+  // Quick escape: a single character or empty string is trivially a palindrome
+  if (cleaned.length <= 1) return true;
 
-  const leftHeight = computeHeight(node.left, maxDiameter);
-  const rightHeight = computeHeight(node.right, maxDiameter);
-
-  // Path that passes through this node
-  const diameterAtNode = leftHeight + rightHeight + 2; // +2 edges to connect left and right via current node
-  if (diameterAtNode > maxDiameter.value) {
-    maxDiameter.value = diameterAtNode;
+  // Compare characters from the front and back
+  for (let i = 0, j = cleaned.length - 1; i < j; i++, j--) {
+    if (cleaned[i] !== cleaned[j]) return false;
   }
-
-  // Return height of this subtree
-  return Math.max(leftHeight, rightHeight) + 1;
+  return true;
 }
-
-// Public API
-export function treeDiameter<T>(root: TreeNode<T> | null): number {
-  const maxDiameter = { value: 0 };
-  computeHeight(root, maxDiameter);
-  return maxDiameter.value; // number of edges on the longest path
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("racecar"));                         // true
+console.log(isPalindrome("Hello, world!"));                   // false
+export function isExactPalindrome(input: string): boolean {
+  if (input.length <= 1) return true;
+  for (let i = 0, j = input.length - 1; i < j; i++, j--) {
+    if (input[i] !== input[j]) return false;
+  }
+  return true;
 }
-        1
-       / \
-      2   3
-     / \     
-    4   5    
