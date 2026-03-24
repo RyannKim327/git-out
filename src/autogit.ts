@@ -1,43 +1,19 @@
-// Stack.ts
-export class Stack<T> {
-  // Underlying array that holds the stack items
-  private items: T[] = [];
+const original = [1, 2, 3, 4, 5];
 
-  // Push a value onto the top of the stack
-  push(value: T): void {
-    this.items.push(value);
-  }
+// This mutates the array in place
+const reversed = original.reverse();  // reversed === [5, 4, 3, 2, 1]
+const original = [1, 2, 3, 4, 5];
 
-  // Remove and return the item from the top of the stack.
-  // Returns undefined if the stack is empty.
-  pop(): T | undefined {
-    return this.items.pop();
+// Keeps `original` intact
+const reversed = [...original].reverse(); // or: original.slice().reverse();
+function reverseArr<T>(arr: T[]): T[] {
+  const copy = [...arr];
+  let left = 0;
+  let right = copy.length - 1;
+  while (left < right) {
+    [copy[left], copy[right]] = [copy[right], copy[left]];
+    left++;
+    right--;
   }
-
-  // Peek at the top item without removing it.
-  // Returns undefined if the stack is empty.
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  // Report how many items are currently in the stack
-  get size(): number {
-    return this.items.length;
-  }
-
-  // Is the stack empty?
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
+  return copy;
 }
-import { Stack } from './Stack';
-
-const intStack = new Stack<number>();
-
-intStack.push(10);
-intStack.push(20);
-intStack.push(30);
-
-console.log(intStack.peek()); // 30
-console.log(intStack.pop());  // 30
-console.log(intStack.size);   // 2
