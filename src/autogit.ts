@@ -1,72 +1,24 @@
-interface Node<T = any> {
+// A very minimal node definition
+interface ListNode<T> {
   value: T;
-  neighbors: Node<T>[];
-  // optional metadata for the search
-  depth?: number;
+  next: ListNode<T> | null;
 }
-function depthLimitedSearch<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  function dfs(node: Node<T>, depth: number): Node<T> | null {
-    if (depth > maxDepth) return null;          // over the ceiling
-    if (isGoal(node)) return node;             // goal found
 
-    for (const neigh of node.neighbors) {
-      const result = dfs(neigh, depth + 1);
-      if (result) return result;               // propagate up
-    }
-    return null;                               // no goal along this path
+// Utility to compute length
+function linkedListLength<T>(head: ListNode<T> | null): number {
+  let len = 0;
+  let cur = head;
+
+  while (cur) {
+    len++;
+    cur = cur.next;
   }
 
-  return dfs(root, 0);
+  return len;
 }
-function depthLimitedIterative<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
+// Build a simple list: 1 → 2 → 3
+const node3: ListNode<number> = { value: 3, next: null };
+const node2: ListNode<number> = { value: 2, next: node3 };
+const node1: ListNode<number> = { value: 1, next: node2 };
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-
-    if (depth > maxDepth) continue;          // skip over‑depth nodes
-    if (isGoal(node)) return node;           // hit the target
-
-    // Push neighbors in reverse order if you want the left‑most first
-    for (let i = node.neighbors.length - 1; i >= 0; i--) {
-      stack.push({ node: node.neighbors[i], depth: depth + 1 });
-    }
-  }
-
-  return null; // exhausted without finding goal
-}
-// Build a tiny graph
-const leaf = { value: 'leaf', neighbors: [] };
-const mid   = { value: 'mid',   neighbors: [leaf] };
-const root  = { value: 'root',  neighbors: [mid] };
-
-const found = depthLimitedSearch(root, node => node.value === 'leaf', 3);
-console.log(found?.value); // → "leaf"
-function breadthLimitedSearch<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  const queue: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;
-
-    if (depth > maxDepth) continue;
-    if (isGoal(node)) return node;
-
-    for (const neigh of node.neighbors) {
-      queue.push({ node: neigh, depth: depth + 1 });
-    }
-  }
-
-  return null;
-}
+console.log(linkedListLength(node1)); // 3
