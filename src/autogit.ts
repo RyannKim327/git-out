@@ -1,68 +1,49 @@
-/**
- * Pre‑computes the shift table for a pattern.
- *   pattern: the pattern we’re searching for
- *   Returns: a Map from character → shift distance
+/*  Depth‑first search (BFS) that stops after exploring a given number of levels.
+ *
+ *  - `Node`   – a generic representation of a graph vertex.
+ *  - `getNeighbors` – a callback that returns the adjacent nodes.
+ *  - `goal` – a predicate that tells whether the node is satisfactory.
+ *  - `maxDepth` – how many edges away from the start we’ll consider.
+ *
+ *  The function yields an array of nodes in the order they were visited
+ *  (first‑in, first‑out).  The result can be empty when the goal isn’t
+ *  found before the depth limit.
  */
-function buildShiftTable(pattern: string): Map<string, number> {
-  const table = new Map<string, number>();
-  const m = pattern.length;
 
-  // All characters that appear in the pattern get an initial shift of m
-  for (const ch of pattern) {
-    table.set(ch, m);
-  }
+type Node = {
+  id: string | number;
+  // … other properties
+};
 
-  // For each character except the last one, set its shift to (m - i - 1)
-  for (let i = 0; i < m - 1; ++i) {
-    table.set(pattern[i], m - i - 1);
-  }
+export function breadthLimitedSearch(
+  start: Node,
+  maxDepth: number,
+  goal: (n: Node) => boolean,
+  getNeighbors: (n: Node) => Node[]
+): Node[] {
+  if (maxDepth < 0) return [];
 
-  return table;
-}
-/**
- * Implements Boyer‑Moore‑Horspool.
- * @param text   – the text to search
- * @param pattern – the pattern to find
- * @returns      – the index of the first match, or -1 if none
- */
-export function boyerMooreHorspool(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
+  const frontier: Array<{ node: Node; depth: number }> = [{ node: start, depth: 0 }];
+  const visited = new Set<Node>();
+  const result: Node[] = [];
 
-  if (m === 0) return 0;          // Empty pattern
-  if (m > n) return -1;           // Pattern longer than text
+  while (frontier.length) {
+    const { node, depth } = frontier.shift()!; // safe pop because we always pop a value
+    if (visited.has(node)) continue;
+    visited.add(node);
 
-  const shiftTable = buildShiftTable(pattern);
+    result.push(node);
+    if (goal(node)) break;
 
-  let idx = 0;                    // Index of the leftmost character of the window
-  while (idx <= n - m) {
-    let j = m - 1;
-
-    // Compare pattern from right to left
-    while (j >= 0 && text[idx + j] === pattern[j]) {
-      j -= 1;
+    // If we haven’t hit the depth ceiling, enqueue the next layer
+    if (depth < maxDepth) {
+      const neighbours = getNeighbors(node);
+      for (const neighbour of neighbours) {
+        if (!visited.has(neighbour)) {
+          frontier.push({ node: neighbour, depth: depth + 1 });
+        }
+      }
     }
-
-    // If all characters matched
-    if (j < 0) {
-      return idx;                // Found at position idx
-    }
-
-    // Mismatch: figure out how far to shift
-    const mismatchedChar = text[idx + m - 1];
-    const shift = shiftTable.get(mismatchedChar) ?? m;
-    idx += shift;
   }
-
-  return -1;                     // No match found
+  return result;
 }
-const txt = "ABAAABCDABCABABCAB";
-const pat = "ABCAB";
-
-const pos = boyerMooreHorspool(txt, pat);
-if (pos >= 0) {
-  console.log(`"${pat}" found at index ${pos}`);
-} else {
-  console.log(`"${pat}" not found`);
-}
-"ABCAB" found at index 12
