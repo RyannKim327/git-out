@@ -1,71 +1,50 @@
 /**
- * Returns true if `a` and `b` contain exactly the same letters,
- * disregarding order.
+ * Returns the longest common subsequence of two strings.
  *
- * @param a – first string
- * @param b – second string
- * @param options – optional flags
- *   - ignoreSpaces: treat spaces as insignificant
- *   - ignorePunctuation: strip punctuation marks
- *   - ignoreCase: treat uppercase and lowercase as the same
+ * @param a The first string.
+ * @param b The second string.
+ * @returns The LCS string.
  */
-export function areAnagrams(
-  a: string,
-  b: string,
-  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
-): boolean {
-  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
+export function lcs(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-  const sanitize = (s: string) => {
-    if (ignoreCase) s = s.toLowerCase();
-    if (ignoreSpaces) s = s.replace(/\s+/g, '');
-    if (ignorePunctuation) s = s.replace(/[^\w]/g, ''); // keep letters & digits
-    return s;
-  };
+  // dp[i][j] will hold the length of LCS of a[0..i-1] and b[0..j-1].
+  // We keep one extra row/column at index 0 for the empty prefix.
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  const sa = sanitize(a).split('').sort().join('');
-  const sb = sanitize(b).split('').sort().join('');
-
-  return sa === sb;
-}
-/**
- * Frequency‑count version – O(n) time, O(σ) space  
- * (σ = size of alphabet, constant for ASCII/Unicode)
- */
-export function areAnagramsFast(
-  a: string,
-  b: string,
-  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
-): boolean {
-  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
-
-  const count = (s: string) => {
-    const map = new Map<string, number>();
-    for (const ch of s) {
-      const key = ignoreCase ? ch.toLowerCase() : ch;
-      if (ignoreSpaces && key === ' ') continue;
-      if (ignorePunctuation && !/[A-Za-z0-9]/.test(key)) continue;
-      map.set(key, (map.get(key) ?? 0) + 1);
+  // Build the table bottom‑up.
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
-    return map;
-  };
-
-  const aMap = count(a);
-  const bMap = count(b);
-
-  if (aMap.size !== bMap.size) return false; // quick early exit
-
-  for (const [char, aCount] of aMap.entries()) {
-    if (bMap.get(char) !== aCount) return false;
   }
 
-  return true;
+  // Reconstruct one LCS by walking back through the table.
+  let i = m, j = n;
+  const chars: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      // The character is part of the LCS.
+      chars.push(a[i - 1]);
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;          // Move up.
+    } else {
+      j--;          // Move left.
+    }
+  }
+
+  // The chars array holds the LCS in reverse order.
+  return chars.reverse().join('');
 }
-// Basic usage
-areAnagrams('Listen', 'Silent'); // true
+const s1 = "AGGTAB";
+const s2 = "GXTXAYB";
 
-// Ignoring case & spaces
-areAnagrams('Dormitory', 'Dirty room', { ignoreSpaces: true, ignoreCase: true }); // true
-
-// Fast version with punctuation handling
-areAnagramsFast("A!b@c#d", "c b a d", { ignorePunctuation: true, ignoreCase: true }); // true
+console.log(lcs(s1, s2)); // "GTAB"
