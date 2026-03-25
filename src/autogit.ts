@@ -1,50 +1,34 @@
-// A minimal, generic node
-export type ListNode<T> = {
-  value: T;
-  next: ListNode<T> | null;
-};
-export function reverseIter<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let current: ListNode<T> | null = head;
+/**
+ * Recursively binary‑searches a *sorted* array for `target`.
+ *
+ * @param arr   Sorted array of comparable values.
+ * @param target Value to locate.
+ * @returns      Index of `target` in `arr`, or -1 if absent.
+ */
+export function binarySearchRecursive<T extends number | string>(
+  arr: T[],
+  target: T
+): number {
+  // Helper that takes start/end indices.
+  function search(start: number, end: number): number {
+    if (start > end) return -1;              // Empty slice – no hit.
 
-  while (current !== null) {
-    const next = current.next; // remember where we’re going
-    current.next = prev;       // flip the link
-    prev = current;            // move prev forward
-    current = next;            // advance current
+    const mid = Math.floor((start + end) / 2);
+    const midVal = arr[mid];
+
+    if (midVal === target) return mid;       // Bingo!
+    if (midVal > target) {
+      // Target lives (potentially) in the left half.
+      return search(start, mid - 1);
+    }
+    // Target is bigger – search the right half.
+    return search(mid + 1, end);
   }
-  // prev is the new head
-  return prev;
-}
-export function reverseRec<T>(
-  head: ListNode<T> | null,
-  prev: ListNode<T> | null = null
-): ListNode<T> | null {
-  if (head === null) return prev;          // base case: end of list
-  const next = head.next;                  // keep track of next node
-  head.next = prev;                        // flip link
-  return reverseRec(next, head);           // recurse
-}
-// Build a tiny list: 1 → 2 → 3 → null
-const a: ListNode<number> = { value: 1, next: null };
-const b: ListNode<number> = { value: 2, next: a };
-const c: ListNode<number> = { value: 3, next: b };
 
-// Reverse it
-const reversed = reverseIter(c);
-
-// Print out the new list
-let node: ListNode<number> | null = reversed;
-while (node !== null) {
-  console.log(node.value); // 1, 2, 3
-  node = node.next;
+  return search(0, arr.length - 1);
 }
-class SinglyLinkedList<T> {
-  head: ListNode<T> | null = null;
+const data = [3, 7, 12, 17, 25, 36, 42, 58, 71];
+const idx  = binarySearchRecursive(data, 25);
 
-  // push, pop, etc.
-
-  reverse(): void {
-    this.head = reverseIter(this.head);
-  }
-}
+console.log(idx); // → 4
+console.log(binarySearchRecursive(data, 13)); // → -1
