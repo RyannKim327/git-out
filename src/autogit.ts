@@ -1,57 +1,65 @@
 /**
- * Heap sort – sorts the array *in place* in ascending order.
+ * Returns the longest common contiguous substring of two strings.
+ * If there are multiple with the same length, the first one found
+ * (by scanning from the top‑left of the DP table) is returned.
  *
- * @param arr - mutable array of comparable values
+ * @param s1 First string
+ * @param s2 Second string
+ * @returns The longest common substring
  */
-export function heapSort<T>(arr: T[], cmp: (a: T, b: T) => number = defaultCmp): void {
-  const n = arr.length;
+export function longestCommonSubstring(s1: string, s2: string): string {
+  const m = s1.length;
+  const n = s2.length;
 
-  /** Default comparator for numbers / strings */
-  function defaultCmp(a: T, b: T): number {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  }
+  // Early exit for empty input
+  if (m === 0 || n === 0) return '';
 
-  /* ---------- heapify ----------
-   *  Rearranges subtree rooted at `i` so that
-   *  arr[i] is the largest of the subtree.
-   *  `size` is the effective heap size.
-   */
-  const heapify = (i: number, size: number): void => {
-    let largest = i;
-    const left  = 2 * i + 1;
-    const right = 2 * i + 2;
+  // dp[i][j] holds length of longest common suffix of s1[0..i-1] and s2[0..j-1]
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-    if (left < size && cmp(arr[left], arr[largest]) > 0)
-      largest = left;
+  let maxLen = 0;
+  let endPosInS1 = 0; // index where the best substring ends in s1
 
-    if (right < size && cmp(arr[right], arr[largest]) > 0)
-      largest = right;
-
-    if (largest !== i) {
-      [arr[i], arr[largest]] = [arr[largest], arr[i]];
-      heapify(largest, size);       // continue down
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > maxLen) {
+          maxLen = dp[i][j];
+          endPosInS1 = i; // i is exclusive, so substring ends at i-1
+        }
+      } else {
+        dp[i][j] = 0;
+      }
     }
-  };
-
-  /* ---------- 1. build max‑heap ---------- */
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-    heapify(i, n);
   }
 
-  /* ---------- 2. extract max repeatedly ---------- */
-  for (let size = n; size > 1; size--) {
-    // Move current max to the end.
-    [arr[0], arr[size - 1]] = [arr[size - 1], arr[0]];
+  if (maxLen === 0) return ''; // no common substring
 
-    // Restore heap property on the reduced heap.
-    heapify(0, size - 1);
-  }
+  // Slice out the substring from the first string
+  return s1.slice(endPosInS1 - maxLen, endPosInS1);
 }
+const a = 'ababc';
+const b = 'babca';
 
-/* ---------- Usage example ---------- */
-const data = [5, 3, 8, 4, 1, 9, 2];
-heapSort(data);          // in‑place
-console.log(data);       // [1, 2, 3, 4, 5, 8, 9]
-heapSort(array);          // sorts in place, ascending
+console.log(longestCommonSubstring(a, b)); // outputs: 'abc'
+export function longestCommonSubstringLength(s1: string, s2: string): number {
+  const [a, b] = s1.length >= s2.length ? [s1, s2] : [s2, s1]; // make b the shorter string
+  const m = a.length, n = b.length;
+  const prev = new Uint32Array(n + 1);
+  let maxLen = 0;
+
+  for (let i = 1; i <= m; i++) {
+    const cur = new Uint32Array(n + 1);
+    const ca = a.charCodeAt(i - 1);
+
+    for (let j = 1; j <= n; j++) {
+      if (ca === b.charCodeAt(j - 1)) {
+        cur[j] = prev[j - 1] + 1;
+        if (cur[j] > maxLen) maxLen = cur[j];
+      }
+    }
+    prev.set(cur);
+  }
+  return maxLen;
+}
