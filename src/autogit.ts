@@ -1,69 +1,71 @@
 /**
- * Returns the majority element if it exists,
- * otherwise returns null.
+ * Returns true if `a` and `b` contain exactly the same letters,
+ * disregarding order.
+ *
+ * @param a – first string
+ * @param b – second string
+ * @param options – optional flags
+ *   - ignoreSpaces: treat spaces as insignificant
+ *   - ignorePunctuation: strip punctuation marks
+ *   - ignoreCase: treat uppercase and lowercase as the same
  */
-function majorityElement(arr: number[]): number | null {
-  if (arr.length === 0) return null;
+export function areAnagrams(
+  a: string,
+  b: string,
+  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
+): boolean {
+  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
 
-  // 1st pass – find a candidate
-  let candidate = arr[0];
-  let count = 0;
+  const sanitize = (s: string) => {
+    if (ignoreCase) s = s.toLowerCase();
+    if (ignoreSpaces) s = s.replace(/\s+/g, '');
+    if (ignorePunctuation) s = s.replace(/[^\w]/g, ''); // keep letters & digits
+    return s;
+  };
 
-  for (const num of arr) {
-    if (count === 0) {
-      candidate = num;
-      count = 1;
-    } else {
-      count += num === candidate ? 1 : -1;
-    }
-  }
+  const sa = sanitize(a).split('').sort().join('');
+  const sb = sanitize(b).split('').sort().join('');
 
-  // 2nd pass – confirm candidate (optional but safe)
-  count = 0;
-  for (const num of arr) {
-    if (num === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
+  return sa === sb;
 }
 /**
- * Returns the majority element if it exists,
- * otherwise returns null.
+ * Frequency‑count version – O(n) time, O(σ) space  
+ * (σ = size of alphabet, constant for ASCII/Unicode)
  */
-function majorityElementMap(arr: number[]): number | null {
-  const freq = new Map<number, number>();
+export function areAnagramsFast(
+  a: string,
+  b: string,
+  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
+): boolean {
+  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
 
-  for (const num of arr) {
-    freq.set(num, (freq.get(num) ?? 0) + 1);
-  }
-
-  const n = arr.length;
-  for (const [num, count] of freq.entries()) {
-    if (count > Math.floor(n / 2)) {
-      return num;
+  const count = (s: string) => {
+    const map = new Map<string, number>();
+    for (const ch of s) {
+      const key = ignoreCase ? ch.toLowerCase() : ch;
+      if (ignoreSpaces && key === ' ') continue;
+      if (ignorePunctuation && !/[A-Za-z0-9]/.test(key)) continue;
+      map.set(key, (map.get(key) ?? 0) + 1);
     }
-  }
-  return null;
-}
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElementSorted(arr: number[]): number | null {
-  if (arr.length === 0) return null;
+    return map;
+  };
 
-  // Make a copy so we don’t mutate the caller’s array
-  const sorted = [...arr].sort((a, b) => a - b);
-  const candidate = sorted[Math.floor(sorted.length / 2)];
-  let count = 0;
+  const aMap = count(a);
+  const bMap = count(b);
 
-  for (const num of sorted) {
-    if (num === candidate) count++;
+  if (aMap.size !== bMap.size) return false; // quick early exit
+
+  for (const [char, aCount] of aMap.entries()) {
+    if (bMap.get(char) !== aCount) return false;
   }
 
-  return count > Math.floor(arr.length / 2) ? candidate : null;
+  return true;
 }
-const testArray = [2, 2, 1, 1, 1, 2, 2];
-console.log(majorityElement(testArray));      // 2
-console.log(majorityElementMap(testArray));   // 2
-console.log(majorityElementSorted(testArray)); // 2
+// Basic usage
+areAnagrams('Listen', 'Silent'); // true
+
+// Ignoring case & spaces
+areAnagrams('Dormitory', 'Dirty room', { ignoreSpaces: true, ignoreCase: true }); // true
+
+// Fast version with punctuation handling
+areAnagramsFast("A!b@c#d", "c b a d", { ignorePunctuation: true, ignoreCase: true }); // true
