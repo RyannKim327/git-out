@@ -1,15 +1,34 @@
 /**
- * Returns a random integer between min and max (inclusive).
- * @param min The lower bound (inclusive)
- * @param max The upper bound (inclusive)
+ * Recursively binary‑searches a *sorted* array for `target`.
+ *
+ * @param arr   Sorted array of comparable values.
+ * @param target Value to locate.
+ * @returns      Index of `target` in `arr`, or -1 if absent.
  */
-function randInt(min: number, max: number): number {
-  // Clamp the bounds to whole numbers
-  const lower = Math.ceil(min);
-  const upper = Math.floor(max);
+export function binarySearchRecursive<T extends number | string>(
+  arr: T[],
+  target: T
+): number {
+  // Helper that takes start/end indices.
+  function search(start: number, end: number): number {
+    if (start > end) return -1;              // Empty slice – no hit.
 
-  // Math.random() -> [0, 1)
-  // Multiply by the range width + 1 to get inclusive bounds
-  return lower + Math.floor(Math.random() * (upper - lower + 1));
+    const mid = Math.floor((start + end) / 2);
+    const midVal = arr[mid];
+
+    if (midVal === target) return mid;       // Bingo!
+    if (midVal > target) {
+      // Target lives (potentially) in the left half.
+      return search(start, mid - 1);
+    }
+    // Target is bigger – search the right half.
+    return search(mid + 1, end);
+  }
+
+  return search(0, arr.length - 1);
 }
-console.log(randInt(1, 10)); // might output: 7
+const data = [3, 7, 12, 17, 25, 36, 42, 58, 71];
+const idx  = binarySearchRecursive(data, 25);
+
+console.log(idx); // → 4
+console.log(binarySearchRecursive(data, 13)); // → -1
