@@ -1,15 +1,43 @@
-/**
- * Returns a random integer between min and max (inclusive).
- * @param min The lower bound (inclusive)
- * @param max The upper bound (inclusive)
- */
-function randInt(min: number, max: number): number {
-  // Clamp the bounds to whole numbers
-  const lower = Math.ceil(min);
-  const upper = Math.floor(max);
+// Stack.ts
+export class Stack<T> {
+  // Underlying array that holds the stack items
+  private items: T[] = [];
 
-  // Math.random() -> [0, 1)
-  // Multiply by the range width + 1 to get inclusive bounds
-  return lower + Math.floor(Math.random() * (upper - lower + 1));
+  // Push a value onto the top of the stack
+  push(value: T): void {
+    this.items.push(value);
+  }
+
+  // Remove and return the item from the top of the stack.
+  // Returns undefined if the stack is empty.
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  // Peek at the top item without removing it.
+  // Returns undefined if the stack is empty.
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  // Report how many items are currently in the stack
+  get size(): number {
+    return this.items.length;
+  }
+
+  // Is the stack empty?
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
 }
-console.log(randInt(1, 10)); // might output: 7
+import { Stack } from './Stack';
+
+const intStack = new Stack<number>();
+
+intStack.push(10);
+intStack.push(20);
+intStack.push(30);
+
+console.log(intStack.peek()); // 30
+console.log(intStack.pop());  // 30
+console.log(intStack.size);   // 2
