@@ -1,34 +1,24 @@
-/**
- * Recursively binary‑searches a *sorted* array for `target`.
- *
- * @param arr   Sorted array of comparable values.
- * @param target Value to locate.
- * @returns      Index of `target` in `arr`, or -1 if absent.
- */
-export function binarySearchRecursive<T extends number | string>(
-  arr: T[],
-  target: T
-): number {
-  // Helper that takes start/end indices.
-  function search(start: number, end: number): number {
-    if (start > end) return -1;              // Empty slice – no hit.
+// A very minimal node definition
+interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
+}
 
-    const mid = Math.floor((start + end) / 2);
-    const midVal = arr[mid];
+// Utility to compute length
+function linkedListLength<T>(head: ListNode<T> | null): number {
+  let len = 0;
+  let cur = head;
 
-    if (midVal === target) return mid;       // Bingo!
-    if (midVal > target) {
-      // Target lives (potentially) in the left half.
-      return search(start, mid - 1);
-    }
-    // Target is bigger – search the right half.
-    return search(mid + 1, end);
+  while (cur) {
+    len++;
+    cur = cur.next;
   }
 
-  return search(0, arr.length - 1);
+  return len;
 }
-const data = [3, 7, 12, 17, 25, 36, 42, 58, 71];
-const idx  = binarySearchRecursive(data, 25);
+// Build a simple list: 1 → 2 → 3
+const node3: ListNode<number> = { value: 3, next: null };
+const node2: ListNode<number> = { value: 2, next: node3 };
+const node1: ListNode<number> = { value: 1, next: node2 };
 
-console.log(idx); // → 4
-console.log(binarySearchRecursive(data, 13)); // → -1
+console.log(linkedListLength(node1)); // 3
