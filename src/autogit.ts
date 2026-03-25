@@ -1,74 +1,40 @@
 /**
- * Builds the LPS (Longest Proper Prefix which is also Suffix) table for `pattern`.
- * The table tells us how far to jump when a mismatch occurs.
+ * Return the longest common prefix among the strings.
+ *
+ * @param words - Array of strings (non‑empty works great, but you can pass an empty array and get `""` back)
+ * @returns the longest common prefix, or an empty string if there isn’t one
  */
-function buildLPS(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let length = 0;            // length of the previous longest prefix suffix
-  let i = 1;                 // we start from the second character
+export function longestCommonPrefix(words: string[]): string {
+  if (!words.length) return '';
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        length = lps[length - 1];
-        // we don't increment i here; we try the new length
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
+  // Work with a copy to avoid mutating the caller’s array
+  const sorted = [...words].sort();
+
+  // The prefix can’t be longer than the shortest word, so we cap it early.
+  const [shortest] = sorted.reduce((prev, curr) => (curr.length < prev[0].length ? [curr, ...prev] : prev), [''] as [string, ...string[]]);
+
+  // Compare characters of the first and last words
+  let prefix = '';
+  for (let i = 0; i < shortest.length; i++) {
+    const char = sorted[0][i];
+    if (sorted[0][i] !== sorted[sorted.length - 1][i]) break;
+    prefix += char;
   }
 
-  return lps;
+  return prefix;
 }
-
-/**
- * Returns an array of all start indices where `pattern` is found in `text`.
- * If the pattern has length 0, returns an empty array (no meaningful search).
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return [];
-
-  const lps   = buildLPS(pattern);
-  const indices: number[] = [];
-
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-    }
-
-    if (j === pattern.length) {
-      // full match found
-      indices.push(i - j);
-      j = lps[j - 1]; // continue searching for next possible match
-    } else if (i < text.length && text[i] !== pattern[j]) {
-      // mismatch after j matches
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i++;
-      }
+console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // "fl"
+console.log(longestCommonPrefix(['dog', 'racecar', 'car']));   // ""
+console.log(longestCommonPrefix(['interspecies', 'interstellar', 'interstate'])); // "inters"
+console.log(longestCommonPrefix([])); // ""
+export function lcpLinear(words: string[]): string {
+  if (!words.length) return '';
+  let prefix = words[0];
+  for (let i = 1; i < words.length; i++) {
+    while (!words[i].startsWith(prefix)) {
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return '';
     }
   }
-
-  return indices;
-}
-import { kmpSearch } from './kmp';
-
-const text = 'ABABDABACDABABCABAB';
-const pattern = 'ABCABAB';
-
-const positions = kmpSearch(text, pattern);
-console.log(positions);   // → [ 9 ]
-export function kmpIndexOf(text: string, pattern: string): number {
-  const matches = kmpSearch(text, pattern);
-  return matches.length > 0 ? matches[0] : -1;
+  return prefix;
 }
