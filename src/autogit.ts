@@ -1,39 +1,62 @@
 /**
- * Return true if `a` and `b` are anagrams.
+ * Builds the longest‑prefix‑suffix (LPS) array for the pattern.
+ * LPS[i] stores the length of the longest proper prefix of P[0…i]
+ * that is also a suffix of P[0…i].
  *
- * @param a      First string
- * @param b      Second string
- * @param options  Optional settings – case sensitivity & ignoring non‑letters
+ * Complexity: O(m)
  */
-function areAnagrams(
-  a: string,
-  b: string,
-  options?: {
-    caseSensitive?: boolean;
-    ignoreNonAlpha?: boolean;
+function buildLps(p: string): number[] {
+  const lps: number[] = new Array(p.length).fill(0);
+  let len = 0;            // current length of the previous longest prefix
+  let i = 1;
+
+  while (i < p.length) {
+    if (p[i] === p[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      if (len !== 0) {
+        // fall back to the last known good prefix
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
+    }
   }
-): boolean {
-  const { caseSensitive = false, ignoreNonAlpha = false } = options || {};
-
-  // Helper to canonicalise a string
-  const canon = (s: string) =>
-    s
-      .split('')
-      .filter((ch) => !ignoreNonAlpha || /[a-zA-Z]/.test(ch))
-      .map((ch) => (caseSensitive ? ch : ch.toLowerCase()))
-      .sort(); // array of chars, sorted
-
-  const aChars = canon(a);
-  const bChars = canon(b);
-
-  if (aChars.length !== bChars.length) return false;
-
-  for (let i = 0; i < aChars.length; i++) {
-    if (aChars[i] !== bChars[i]) return false;
-  }
-
-  return true;
+  return lps;
 }
-areAnagrams('Listen', 'Silent');           // true
-areAnagrams('Hello', 'Ollhe', { caseSensitive: true }); // false
-areAnagrams('Dormitory', 'Dirty room', { ignoreNonAlpha: true }); // true
+
+/**
+ * Performs KMP search.
+ *
+ * Returns the starting index of the first match
+ * or -1 if the pattern does not occur in the text.
+ *
+ * Complexity: O(n + m)
+ */
+export function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;
+  const lps = buildLps(pattern);
+
+  let i = 0; // index in text
+  let j = 0; // index in pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) return i - j; // match found
+    } else {
+      if (j !== 0) {
+        j = lps[j - 1]; // use LPS to skip comparisons
+      } else {
+        i++;
+      }
+    }
+  }
+  return -1; // no match
+}
+console.log(kmpSearch('ababcabcab', 'abc')); // 3
+console.log(kmpSearch('aaaa', 'b'));        // -1
