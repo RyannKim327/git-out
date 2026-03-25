@@ -1,26 +1,19 @@
-/**
- * Performs an in‑place insertion sort on an array of numeric values.
- * @param data The array to sort – it will be mutated directly.
- */
-export function insertionSort<T extends number[]> (data: T): void {
-  // walk from the second element to the end
-  for (let i = 1; i < data.length; i++) {
-    const key = data[i];          // value we’re trying to insert
-    let j = i - 1;
+function firstRepeated(str: string): string | null {
+  // Map will keep a count of each char we’ve seen
+  const seen = new Map<string, number>();
 
-    /* Shift elements that are greater than `key` up by one
-       position until we find the spot for the key. */
-    while (j >= 0 && data[j] > key) {
-      data[j + 1] = data[j];
-      j--;
+  for (const ch of str) {
+    const count = seen.get(ch) ?? 0;
+    if (count === 1) {
+      // This is the second time we’re seeing `ch`
+      return ch;
     }
-
-    // put the key into its final place
-    data[j + 1] = key;
+    // Mark that we’ve seen this char once (or increment if it’s that later)
+    seen.set(ch, count + 1);
   }
+  // No repeats
+  return null;
 }
-import { insertionSort } from "./insertion-sort";
-
-const nums = [34, 8, 64, 51, 32, 24];
-insertionSort(nums);
-console.log(nums);  // → [ 8, 24, 32, 34, 51, 64 ]
+console.log(firstRepeated("hello")); // → "l"  (first ‘l’ repeats)
+console.log(firstRepeated("world")); // → null  (no repeats)
+console.log(firstRepeated("javascript")); // → "a"
