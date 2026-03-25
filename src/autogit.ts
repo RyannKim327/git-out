@@ -1,47 +1,99 @@
-/**
- * Return the median of two sorted arrays `a` and `b`.
- * Both inputs must be sorted in non‑decreasing order.
- */
-export function medianOfTwoSortedArrays(a: number[], b: number[]): number {
-  // Make sure `a` is the shorter array – this keeps the binary search
-  // on the smaller size which guarantees the log(min(n, m)) bound.
-  if (a.length > b.length) return medianOfTwoSortedArrays(b, a);
+export interface PriorityQueue<T> {
+  enqueue(item: T, priority: number): void;
+  dequeue(): T | undefined;         // removes the highest‑priority item
+  peek(): T | undefined;            // look at the next item without removing
+  size(): number;
+  isEmpty(): boolean;
+}
+type HeapNode<T> = { value: T; priority: number };
 
-  const m = a.length;
-  const n = b.length;
-  const half = Math.floor((m + n + 1) / 2); // number of elements that go to the left side
+export class BinaryHeap<T> implements PriorityQueue<T> {
+  /** Internal array that holds the heap nodes. */
+  private heap: HeapNode<T>[] = [];
 
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2); // elements taken from `a`
-    const j = half - i;                     // elements taken from `b`
-
-    const aLeft  = (i === 0)          ? -Infinity : a[i - 1];
-    const aRight = (i === m)          ?  Infinity : a[i];
-    const bLeft  = (j === 0)          ? -Infinity : b[j - 1];
-    const bRight = (j === n)          ?  Infinity : b[j];
-
-    // Check if we have found the perfect split
-    if (aLeft <= bRight && bLeft <= aRight) {
-      // Odd total: middle element is the rightmost of the left side
-      if ((m + n) % 2 === 1) {
-        return Math.max(aLeft, bLeft);
-      }
-      // Even total: average of two middle elements
-      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
-    } else if (aLeft > bRight) {
-      // Too many elements taken from `a`, shift left
-      high = i - 1;
-    } else {
-      // Too few elements taken from `a`, shift right
-      low = i + 1;
-    }
+  /** Returns the array length, i.e. number of elements in the queue. */
+  size() {
+    return this.heap.length;
   }
 
-  // If we reach here something is wrong with the inputs
-  throw new Error('Input arrays are not sorted or contain incompatible lengths.');
+  isEmpty() {
+    return this.heap.length === 0;
+  }
+
+  /** Put a new (value, priority) pair into the heap. */
+  enqueue(value: T, priority: number) {
+    const node: HeapNode<T> = { value, priority };
+    this.heap.push(node);               // add to the bottom
+    this.bubbleUp(this.heap.length - 1); // restore heap property
+  }
+
+  /** Remove and return the value with the lowest priority value. */
+  dequeue(): T | undefined {
+    if (this.isEmpty()) return undefined;
+
+    const root = this.heap[0];
+    const last = this.heap.pop()!;          // guaranteed non‑empty
+
+    if (!this.isEmpty()) {
+      this.heap[0] = last;                  // move the last node to root
+      this.bubbleDown(0);                   // restore heap property
+    }
+
+    return root.value;
+  }
+
+  /** Peek at the next value that would be dequeued. */
+  peek(): T | undefined {
+    return this.isEmpty() ? undefined : this.heap[0].value;
+  }
+
+  /* ---------- internal helpers ---------- */
+
+  private bubbleUp(idx: number) {
+    const node = this.heap[idx];
+    while (idx > 0) {
+      const parentIdx = (idx - 1) >> 1; // same as Math.floor((idx-1)/2)
+      const parent = this.heap[parentIdx];
+      if (node.priority >= parent.priority) break; // correct place found
+      this.heap[idx] = parent;                     // move parent down
+      idx = parentIdx;
+    }
+    this.heap[idx] = node; // place the new node
+  }
+
+  private bubbleDown(idx: number) {
+    const length = this.heap.length;
+    const node = this.heap[idx];
+
+    while (true) {
+      const leftIdx = idx * 2 + 1;
+      const rightIdx = leftIdx + 1;
+      let smallestIdx = idx;
+
+      if (leftIdx < length && this.heap[leftIdx].priority < this.heap[smallestIdx].priority) {
+        smallestIdx = leftIdx;
+      }
+      if (rightIdx < length && this.heap[rightIdx].priority < this.heap[smallestIdx].priority) {
+        smallestIdx = rightIdx;
+      }
+
+      if (smallestIdx === idx) break; // node is smaller than both children
+
+      this.heap[idx] = this.heap[smallestIdx];
+      idx = smallestIdx;
+    }
+
+    this.heap[idx] = node;
+  }
 }
-console.log(medianOfTwoSortedArrays([1, 3, 8], [7, 9, 10, 11])); // 8
-console.log(medianOfTwoSortedArrays([1, 2], [3, 4]));             // 2.5
+const pq = new BinaryHeap<string>();
+
+pq.enqueue('task A', 5);
+pq.enqueue('task B', 2);
+pq.enqueue('task C', 8);
+
+console.log(pq.peek());   // => 'task B' (priority 2)
+while (!pq.isEmpty()) {
+  console.log(pq.dequeue()); // prints B, A, C in priority order
+}
+type Comparator<T> = (a: T, b: T) => number; // <0: a before b
