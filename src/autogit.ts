@@ -1,50 +1,57 @@
 /**
- * Returns the longest common subsequence of two strings.
+ * Heap sort – sorts the array *in place* in ascending order.
  *
- * @param a The first string.
- * @param b The second string.
- * @returns The LCS string.
+ * @param arr - mutable array of comparable values
  */
-export function lcs(a: string, b: string): string {
-  const m = a.length;
-  const n = b.length;
+export function heapSort<T>(arr: T[], cmp: (a: T, b: T) => number = defaultCmp): void {
+  const n = arr.length;
 
-  // dp[i][j] will hold the length of LCS of a[0..i-1] and b[0..j-1].
-  // We keep one extra row/column at index 0 for the empty prefix.
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-
-  // Build the table bottom‑up.
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
+  /** Default comparator for numbers / strings */
+  function defaultCmp(a: T, b: T): number {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
   }
 
-  // Reconstruct one LCS by walking back through the table.
-  let i = m, j = n;
-  const chars: string[] = [];
+  /* ---------- heapify ----------
+   *  Rearranges subtree rooted at `i` so that
+   *  arr[i] is the largest of the subtree.
+   *  `size` is the effective heap size.
+   */
+  const heapify = (i: number, size: number): void => {
+    let largest = i;
+    const left  = 2 * i + 1;
+    const right = 2 * i + 2;
 
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      // The character is part of the LCS.
-      chars.push(a[i - 1]);
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;          // Move up.
-    } else {
-      j--;          // Move left.
+    if (left < size && cmp(arr[left], arr[largest]) > 0)
+      largest = left;
+
+    if (right < size && cmp(arr[right], arr[largest]) > 0)
+      largest = right;
+
+    if (largest !== i) {
+      [arr[i], arr[largest]] = [arr[largest], arr[i]];
+      heapify(largest, size);       // continue down
     }
+  };
+
+  /* ---------- 1. build max‑heap ---------- */
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+    heapify(i, n);
   }
 
-  // The chars array holds the LCS in reverse order.
-  return chars.reverse().join('');
+  /* ---------- 2. extract max repeatedly ---------- */
+  for (let size = n; size > 1; size--) {
+    // Move current max to the end.
+    [arr[0], arr[size - 1]] = [arr[size - 1], arr[0]];
+
+    // Restore heap property on the reduced heap.
+    heapify(0, size - 1);
+  }
 }
-const s1 = "AGGTAB";
-const s2 = "GXTXAYB";
 
-console.log(lcs(s1, s2)); // "GTAB"
+/* ---------- Usage example ---------- */
+const data = [5, 3, 8, 4, 1, 9, 2];
+heapSort(data);          // in‑place
+console.log(data);       // [1, 2, 3, 4, 5, 8, 9]
+heapSort(array);          // sorts in place, ascending
