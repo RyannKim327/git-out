@@ -1,36 +1,69 @@
 /**
- * Returns the first character that appears only once.
- * If all characters repeat, null is returned.
+ * Returns the majority element if it exists,
+ * otherwise returns null.
  */
-function firstNonRepeating(str: string): string | null {
-  // Build a frequency map
-  const freq = new Map<string, number>();
-  for (const ch of str) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+function majorityElement(arr: number[]): number | null {
+  if (arr.length === 0) return null;
+
+  // 1st pass – find a candidate
+  let candidate = arr[0];
+  let count = 0;
+
+  for (const num of arr) {
+    if (count === 0) {
+      candidate = num;
+      count = 1;
+    } else {
+      count += num === candidate ? 1 : -1;
+    }
   }
 
-  // Find the first character with a count of 1
-  for (const ch of str) {
-    if (freq.get(ch) === 1) return ch;
+  // 2nd pass – confirm candidate (optional but safe)
+  count = 0;
+  for (const num of arr) {
+    if (num === candidate) count++;
   }
 
-  return null;   // nothing found
+  return count > Math.floor(arr.length / 2) ? candidate : null;
 }
+/**
+ * Returns the majority element if it exists,
+ * otherwise returns null.
+ */
+function majorityElementMap(arr: number[]): number | null {
+  const freq = new Map<number, number>();
 
-// --- examples -------------------------------------------------
-console.log(firstNonRepeating('abacabad')); // "c"
-console.log(firstNonRepeating('aabbcc'));   // null
-function firstNonRepeatingOnePass(str: string): string | null {
-  const counts: Record<string, number> = {};
-  const queue: string[] = [];
-
-  for (const ch of str) {
-    counts[ch] = (counts[ch] ?? 0) + 1;
-    if (counts[ch] === 1) queue.push(ch);
-
-    // purge invalid candidates from the front
-    while (queue.length && counts[queue[0]] > 1) queue.shift();
+  for (const num of arr) {
+    freq.set(num, (freq.get(num) ?? 0) + 1);
   }
 
-  return queue.length ? queue[0] : null;
+  const n = arr.length;
+  for (const [num, count] of freq.entries()) {
+    if (count > Math.floor(n / 2)) {
+      return num;
+    }
+  }
+  return null;
 }
+/**
+ * Returns the majority element if it exists,
+ * otherwise returns null.
+ */
+function majorityElementSorted(arr: number[]): number | null {
+  if (arr.length === 0) return null;
+
+  // Make a copy so we don’t mutate the caller’s array
+  const sorted = [...arr].sort((a, b) => a - b);
+  const candidate = sorted[Math.floor(sorted.length / 2)];
+  let count = 0;
+
+  for (const num of sorted) {
+    if (num === candidate) count++;
+  }
+
+  return count > Math.floor(arr.length / 2) ? candidate : null;
+}
+const testArray = [2, 2, 1, 1, 1, 2, 2];
+console.log(majorityElement(testArray));      // 2
+console.log(majorityElementMap(testArray));   // 2
+console.log(majorityElementSorted(testArray)); // 2
