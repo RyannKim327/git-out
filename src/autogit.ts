@@ -1,40 +1,37 @@
-/**
- * Return the longest common prefix among the strings.
- *
- * @param words - Array of strings (non‑empty works great, but you can pass an empty array and get `""` back)
- * @returns the longest common prefix, or an empty string if there isn’t one
- */
-export function longestCommonPrefix(words: string[]): string {
-  if (!words.length) return '';
+// Basic binary‑tree node
+class TreeNode<T> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
+}
 
-  // Work with a copy to avoid mutating the caller’s array
-  const sorted = [...words].sort();
+// Main helper that returns the height of a node and updates maxDiameter
+function computeHeight<T>(node: TreeNode<T> | null, maxDiameter: { value: number }): number {
+  if (!node) return -1; // height of empty subtree is -1 so that a single node gives 0
 
-  // The prefix can’t be longer than the shortest word, so we cap it early.
-  const [shortest] = sorted.reduce((prev, curr) => (curr.length < prev[0].length ? [curr, ...prev] : prev), [''] as [string, ...string[]]);
+  const leftHeight = computeHeight(node.left, maxDiameter);
+  const rightHeight = computeHeight(node.right, maxDiameter);
 
-  // Compare characters of the first and last words
-  let prefix = '';
-  for (let i = 0; i < shortest.length; i++) {
-    const char = sorted[0][i];
-    if (sorted[0][i] !== sorted[sorted.length - 1][i]) break;
-    prefix += char;
+  // Path that passes through this node
+  const diameterAtNode = leftHeight + rightHeight + 2; // +2 edges to connect left and right via current node
+  if (diameterAtNode > maxDiameter.value) {
+    maxDiameter.value = diameterAtNode;
   }
 
-  return prefix;
+  // Return height of this subtree
+  return Math.max(leftHeight, rightHeight) + 1;
 }
-console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // "fl"
-console.log(longestCommonPrefix(['dog', 'racecar', 'car']));   // ""
-console.log(longestCommonPrefix(['interspecies', 'interstellar', 'interstate'])); // "inters"
-console.log(longestCommonPrefix([])); // ""
-export function lcpLinear(words: string[]): string {
-  if (!words.length) return '';
-  let prefix = words[0];
-  for (let i = 1; i < words.length; i++) {
-    while (!words[i].startsWith(prefix)) {
-      prefix = prefix.slice(0, -1);
-      if (!prefix) return '';
-    }
-  }
-  return prefix;
+
+// Public API
+export function treeDiameter<T>(root: TreeNode<T> | null): number {
+  const maxDiameter = { value: 0 };
+  computeHeight(root, maxDiameter);
+  return maxDiameter.value; // number of edges on the longest path
 }
+        1
+       / \
+      2   3
+     / \     
+    4   5    
