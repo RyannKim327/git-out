@@ -1,24 +1,15 @@
-// A very minimal node definition
-interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
+/**
+ * Returns a random integer between min and max (inclusive).
+ * @param min The lower bound (inclusive)
+ * @param max The upper bound (inclusive)
+ */
+function randInt(min: number, max: number): number {
+  // Clamp the bounds to whole numbers
+  const lower = Math.ceil(min);
+  const upper = Math.floor(max);
+
+  // Math.random() -> [0, 1)
+  // Multiply by the range width + 1 to get inclusive bounds
+  return lower + Math.floor(Math.random() * (upper - lower + 1));
 }
-
-// Utility to compute length
-function linkedListLength<T>(head: ListNode<T> | null): number {
-  let len = 0;
-  let cur = head;
-
-  while (cur) {
-    len++;
-    cur = cur.next;
-  }
-
-  return len;
-}
-// Build a simple list: 1 → 2 → 3
-const node3: ListNode<number> = { value: 3, next: null };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const node1: ListNode<number> = { value: 1, next: node2 };
-
-console.log(linkedListLength(node1)); // 3
+console.log(randInt(1, 10)); // might output: 7
