@@ -1,35 +1,69 @@
 /**
- * Bubble sort for an array of numbers.
- * The function mutates the passed array and returns it so you can chain or immediately inspect it.
- *
- * @param arr – the array to sort
- * @returns the sorted array (same reference as `arr`)
+ * Returns the majority element if it exists,
+ * otherwise returns null.
  */
-export function bubbleSort(arr: number[]): number[] {
-  // The array’s length is used repeatedly, so cache it for speed.
-  const n = arr.length;
+function majorityElement(arr: number[]): number | null {
+  if (arr.length === 0) return null;
 
-  // Outer loop – each pass pushes the next largest element to its final spot at the end.
-  // We can stop one element earlier on each pass because the last `pass` items are already sorted.
-  for (let pass = 0; pass < n - 1; pass++) {
-    // Track whether any swap happened this pass. If none, the array is sorted.
-    let swapped = false;
+  // 1st pass – find a candidate
+  let candidate = arr[0];
+  let count = 0;
 
-    // Inner loop – compare adjacent pairs and swap if out of order.
-    // We only need to go up to `n - pass - 1` because the last `pass` elements are in place.
-    for (let i = 0; i < n - pass - 1; i++) {
-      if (arr[i] > arr[i + 1]) {
-        // Simple swap using destructuring.
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
-        swapped = true;
-      }
+  for (const num of arr) {
+    if (count === 0) {
+      candidate = num;
+      count = 1;
+    } else {
+      count += num === candidate ? 1 : -1;
     }
-
-    // If no two elements were swapped, no more passes are required.
-    if (!swapped) break;
   }
 
-  return arr;
+  // 2nd pass – confirm candidate (optional but safe)
+  count = 0;
+  for (const num of arr) {
+    if (num === candidate) count++;
+  }
+
+  return count > Math.floor(arr.length / 2) ? candidate : null;
 }
-const unsorted = [64, 34, 25, 12, 22, 11, 90];
-console.log(bubbleSort(unsorted));        // [11, 12, 22, 25, 34, 64, 90]
+/**
+ * Returns the majority element if it exists,
+ * otherwise returns null.
+ */
+function majorityElementMap(arr: number[]): number | null {
+  const freq = new Map<number, number>();
+
+  for (const num of arr) {
+    freq.set(num, (freq.get(num) ?? 0) + 1);
+  }
+
+  const n = arr.length;
+  for (const [num, count] of freq.entries()) {
+    if (count > Math.floor(n / 2)) {
+      return num;
+    }
+  }
+  return null;
+}
+/**
+ * Returns the majority element if it exists,
+ * otherwise returns null.
+ */
+function majorityElementSorted(arr: number[]): number | null {
+  if (arr.length === 0) return null;
+
+  // Make a copy so we don’t mutate the caller’s array
+  const sorted = [...arr].sort((a, b) => a - b);
+  const candidate = sorted[Math.floor(sorted.length / 2)];
+  let count = 0;
+
+  for (const num of sorted) {
+    if (num === candidate) count++;
+  }
+
+  return count > Math.floor(arr.length / 2) ? candidate : null;
+}
+const testArray = [2, 2, 1, 1, 1, 2, 2];
+console.log(majorityElement(testArray));      // 2
+console.log(majorityElementMap(testArray));   // 2
+console.log(majorityElementSorted(testArray)); // 2
