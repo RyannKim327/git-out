@@ -1,37 +1,80 @@
-// Basic binary‑tree node
-class TreeNode<T> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
+// 1️⃣  Graph node type (you can replace this with a more complex type)
+type Node = string | number;
 
-// Main helper that returns the height of a node and updates maxDiameter
-function computeHeight<T>(node: TreeNode<T> | null, maxDiameter: { value: number }): number {
-  if (!node) return -1; // height of empty subtree is -1 so that a single node gives 0
+// 2️⃣  Adjacency list: each node maps to an array of its neighbors
+type Graph = Map<Node, Node[]>;
 
-  const leftHeight = computeHeight(node.left, maxDiameter);
-  const rightHeight = computeHeight(node.right, maxDiameter);
+/**
+ * Breadth‑first search: returns the order nodes were visited.
+ * @param graph The adjacency list.
+ * @param start The node to start from.
+ */
+export function bfsTraversal(graph: Graph, start: Node): Node[] {
+  const queue: Node[] = [start];
+  const visited = new Set<Node>([start]);
+  const order: Node[] = [];
 
-  // Path that passes through this node
-  const diameterAtNode = leftHeight + rightHeight + 2; // +2 edges to connect left and right via current node
-  if (diameterAtNode > maxDiameter.value) {
-    maxDiameter.value = diameterAtNode;
+  while (queue.length) {
+    const current = queue.shift()!;
+    order.push(current);
+
+    const neighbors = graph.get(current) ?? [];
+    for (const nb of neighbors) {
+      if (!visited.has(nb)) {
+        visited.add(nb);
+        queue.push(nb);
+      }
+    }
   }
 
-  // Return height of this subtree
-  return Math.max(leftHeight, rightHeight) + 1;
+  return order;
 }
 
-// Public API
-export function treeDiameter<T>(root: TreeNode<T> | null): number {
-  const maxDiameter = { value: 0 };
-  computeHeight(root, maxDiameter);
-  return maxDiameter.value; // number of edges on the longest path
+/**
+ * BFS that stops when it finds a target node.
+ * Returns the path from start to target (inclusive).
+ * @param graph The adjacency list.
+ * @param start The node to start from.
+ * @param target The node we’re looking for.
+ */
+export function bfsPath(graph: Graph, start: Node, target: Node): Node[] | null {
+  if (start === target) return [start];
+
+  const queue: Node[] = [start];
+  const visited = new Set<Node>([start]);
+  const parent = new Map<Node, Node>();
+
+  while (queue.length) {
+    const current = queue.shift()!;
+    for (const nb of graph.get(current) ?? []) {
+      if (!visited.has(nb)) {
+        visited.add(nb);
+        parent.set(nb, current);
+        if (nb === target) {
+          // Reconstruct path from target back to start
+          const path: Node[] = [target];
+          let p = nb;
+          while (p !== start) {
+            p = parent.get(p)!;
+            path.unshift(p);
+          }
+          return path;
+        }
+        queue.push(nb);
+      }
+    }
+  }
+
+  return null; // target not reachable
 }
-        1
-       / \
-      2   3
-     / \     
-    4   5    
+const g: Graph = new Map([
+  ['A', ['B', 'C']],
+  ['B', ['D']],
+  ['C', ['E']],
+  ['D', ['F']],
+  ['E', []],
+  ['F', []]
+]);
+
+console.log(bfsTraversal(g, 'A')); // ["A","B","C","D","E","F"]
+console.log(bfsPath(g, 'A', 'F')); // ["A","B","D","F"]
