@@ -1,102 +1,50 @@
-/** One directed edge in the graph */
-interface Edge {
-  from: number;   // source vertex id
-  to: number;     // target vertex id
-  weight: number; // edge weight
-}
-
-/** Graph represented only by its edge list */
-type Graph = Edge[];
-
-/** Result of the shortest‑path computation */
-interface BellmanFordResult {
-  /** distance from source to every vertex (Infinity if unreachable) */
-  distances: number[];
-  /** predecessor of each vertex on the shortest path tree */
-  predecessors: (number | null)[];
-  /** true if a negative cycle was detected that is reachable from the source */
-  negativeCycleDetected: boolean;
-}
 /**
- * Bellman‑Ford single‑source shortest‑path solver.
- * @param edges  complete list of directed edges in the graph
- * @param vertexCount total number of vertices, 0 … vertexCount‑1
- * @param source id of the source vertex
- * @returns distances, predecessors and a flag for a reachable negative cycle
+ * Returns the longest common subsequence of two strings.
+ *
+ * @param a The first string.
+ * @param b The second string.
+ * @returns The LCS string.
  */
-export function bellmanFord(
-  edges: Graph,
-  vertexCount: number,
-  source: number
-): BellmanFordResult {
-  const INF = Number.POSITIVE_INFINITY;
+export function lcs(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-  const distances = Array(vertexCount).fill(INF);
-  const predecessors = Array<null | number>(vertexCount).fill(null);
+  // dp[i][j] will hold the length of LCS of a[0..i-1] and b[0..j-1].
+  // We keep one extra row/column at index 0 for the empty prefix.
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  distances[source] = 0;
-
-  /* Relax edges V‑1 times */
-  for (let i = 0; i < vertexCount - 1; i++) {
-    let changed = false;
-    for (const e of edges) {
-      const { from, to, weight } = e;
-      if (distances[from] !== INF && distances[from] + weight < distances[to]) {
-        distances[to] = distances[from] + weight;
-        predecessors[to] = from;
-        changed = true;
+  // Build the table bottom‑up.
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
       }
     }
-    /* Early exit if no relaxation happened */
-    if (!changed) break;
   }
 
-  /* Check for negative‑weight cycles reachable from source */
-  let negativeCycleDetected = false;
-  for (const e of edges) {
-    const { from, to, weight } = e;
-    if (distances[from] !== INF && distances[from] + weight < distances[to]) {
-      negativeCycleDetected = true;
-      break;
+  // Reconstruct one LCS by walking back through the table.
+  let i = m, j = n;
+  const chars: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      // The character is part of the LCS.
+      chars.push(a[i - 1]);
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;          // Move up.
+    } else {
+      j--;          // Move left.
     }
   }
 
-  return { distances, predecessors, negativeCycleDetected };
+  // The chars array holds the LCS in reverse order.
+  return chars.reverse().join('');
 }
-/**
- * Retrieves the shortest path from source to `target` after a Bellman‑Ford run.
- * Returns `undefined` if the target is unreachable.
- */
-export function reconstructPath(
-  target: number,
-  predecessors: (number | null)[]
-): number[] | undefined {
-  if (predecessors[target] === null) return undefined;
+const s1 = "AGGTAB";
+const s2 = "GXTXAYB";
 
-  const path: number[] = [];
-  for (let v = target; v !== null; v = predecessors[v]) {
-    path.push(v);
-  }
-  return path.reverse();
-}
-// A small graph with both positive and negative edges
-const graph: Graph = [
-  { from: 0, to: 1, weight: 4 },
-  { from: 0, to: 2, weight: 5 },
-  { from: 1, to: 2, weight: -3 },
-  { from: 1, to: 3, weight: 2 },
-  { from: 2, to: 3, weight: 4 },
-];
-
-const vertexCount = 4;          // vertices 0 … 3
-const source = 0;
-const result = bellmanFord(graph, vertexCount, source);
-
-console.log('Distances:', result.distances);
-// [0, 1, 2, 3]
-
-console.log('Negative cycle detected?', result.negativeCycleDetected);
-// false
-
-const pathTo3 = reconstructPath(3, result.predecessors);
-console.log('Path 0 → 3:', pathTo3); // [0, 1, 3]
+console.log(lcs(s1, s2)); // "GTAB"
