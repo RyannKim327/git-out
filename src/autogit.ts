@@ -1,68 +1,66 @@
-// A minimal list node definition
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null
-  ) {}
+/**
+ * In‑place selection sort.
+ *
+ * @param arr  The array to sort.
+ * @param compare Optional comparison callback. Should return:
+ *                 < 0 if a < b
+ *                 > 0 if a > b
+ *                 0 if a == b
+ */
+export function selectionSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): void {
+  const cmp = compare ?? defaultCompare;
+
+  const len = arr.length;
+  for (let i = 0; i < len - 1; i++) {
+    // Find the minimum element in arr[i…len-1]
+    let minIdx = i;
+    for (let j = i + 1; j < len; j++) {
+      if (cmp(arr[j], arr[minIdx]) < 0) {
+        minIdx = j;
+      }
+    }
+    // Swap the found minimum with the first element
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+    }
+  }
 }
 
 /**
- * Returns the intersection node, or null if none exists.
- *
- * Idea:
- * 1. Walk each list once to get its length.
- * 2. Advance the longer list by the length difference.
- * 3. Move both pointers together – the first time they’re equal
- *    (by reference) is the intersection.
- *
- * Time: O(n + m)   (one pass per list + one optional “skip” pass)
- * Space: O(1)      (no extra container)
+ * Default comparer for numbers and strings.
  */
-export function getIntersectionNode<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  // helper to measure length
-  function len(node: ListNode<T> | null): number {
-    let l = 0;
-    while (node !== null) {
-      l++;
-      node = node.next;
-    }
-    return l;
-  }
-
-  let lenA = len(headA);
-  let lenB = len(headB);
-
-  // Advance the longer head so that the remaining steps are equal
-  let diff = Math.abs(lenA - lenB);
-  let longer = lenA > lenB ? headA : headB;
-  let shorter = lenA > lenB ? headB : headA;
-
-  while (diff--) {
-    if (longer !== null) longer = longer.next;
-  }
-
-  // Walk together until they meet
-  while (longer !== null && shorter !== null) {
-    if (longer === shorter) return longer; // same reference
-    longer = longer.next;
-    shorter = shorter.next;
-  }
-
-  return null; // never intersected
+function defaultCompare(a: any, b: any): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
 }
-const a1 = new ListNode(1);
-const a2 = new ListNode(2);
-const a3 = new ListNode(3);
-const a4 = new ListNode(4);
-const a5 = new ListNode(5);
-a1.next = a2; a2.next = a3; a3.next = a4; a4.next = a5;
+// 1. Sorting numbers
+const nums = [64, 25, 12, 22, 11];
+selectionSort(nums);
+console.log(nums); // [11, 12, 22, 25, 64]
 
-const b1 = new ListNode(9);
-const b2 = new ListNode(8);
-b1.next = b2; b2.next = a3; // both lists point to `a3`
+// 2. Sorting strings
+const fruits = ['banana', 'apple', 'cherry'];
+selectionSort(fruits);
+console.log(fruits); // ['apple', 'banana', 'cherry']
 
-const intersection = getIntersectionNode(a1, b1);
-console.log(intersection?.val); // 3
+// 3. Sorting objects by a key
+type Person = { name: string; age: number };
+const people: Person[] = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob', age: 22 },
+  { name: 'Carol', age: 25 },
+];
+
+selectionSort(people, (a, b) => a.age - b.age);
+console.log(people);
+/*
+[
+  { name: 'Bob', age: 22 },
+  { name: 'Carol', age: 25 },
+  { name: 'Alice', age: 30 }
+]
+*/
