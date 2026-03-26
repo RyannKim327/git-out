@@ -1,57 +1,65 @@
 /**
- * Generic binary search.
+ * Returns the longest common contiguous substring of two strings.
+ * If there are multiple with the same length, the first one found
+ * (by scanning from the top‑left of the DP table) is returned.
  *
- * @param arr   Sorted array.
- * @param key  Value you’re looking for.
- * @param cmp  Optional comparison callback.
- *
- * @returns The index of `key` if found, otherwise –1.
+ * @param s1 First string
+ * @param s2 Second string
+ * @returns The longest common substring
  */
-export function binarySearch<T>(
-    arr: T[],
-    key: T,
-    cmp?: (a: T, b: T) => number
-): number {
-    if (arr.length === 0) return -1;
+export function longestCommonSubstring(s1: string, s2: string): string {
+  const m = s1.length;
+  const n = s2.length;
 
-    // Default to natural ordering for primitives.
-    const compare = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  // Early exit for empty input
+  if (m === 0 || n === 0) return '';
 
-    let low = 0;
-    let high = arr.length - 1;
+  // dp[i][j] holds length of longest common suffix of s1[0..i-1] and s2[0..j-1]
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-    while (low <= high) {
-        // Guard against overflow in large arrays.
-        const mid = low + ((high - low) >> 1);
-        const midVal = arr[mid];
+  let maxLen = 0;
+  let endPosInS1 = 0; // index where the best substring ends in s1
 
-        const comparison = compare(midVal, key);
-
-        if (comparison === 0) {
-            return mid;          // Found!
-        } else if (comparison < 0) {
-            low = mid + 1;
-        } else {
-            high = mid - 1;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > maxLen) {
+          maxLen = dp[i][j];
+          endPosInS1 = i; // i is exclusive, so substring ends at i-1
         }
+      } else {
+        dp[i][j] = 0;
+      }
     }
+  }
 
-    return -1;  // Not found
+  if (maxLen === 0) return ''; // no common substring
+
+  // Slice out the substring from the first string
+  return s1.slice(endPosInS1 - maxLen, endPosInS1);
 }
-// 1️⃣ Integers (no cmp needed)
-const numbers = [3, 7, 12, 19, 27];
-const idx1 = binarySearch(numbers, 12); // 2
+const a = 'ababc';
+const b = 'babca';
 
-// 2️⃣ Strings
-const words = ['apple', 'banana', 'cherry', 'date'];
-const idx2 = binarySearch(words, 'cherry'); // 2
+console.log(longestCommonSubstring(a, b)); // outputs: 'abc'
+export function longestCommonSubstringLength(s1: string, s2: string): number {
+  const [a, b] = s1.length >= s2.length ? [s1, s2] : [s2, s1]; // make b the shorter string
+  const m = a.length, n = b.length;
+  const prev = new Uint32Array(n + 1);
+  let maxLen = 0;
 
-// 3️⃣ Objects – supply a compare
-type User = { id: number; name: string };
-const users: User[] = [
-    { id: 10, name: 'Zoe' },
-    { id: 20, name: 'Bob' },
-    { id: 30, name: 'Alice' },
-].sort((a, b) => a.id - b.id);
+  for (let i = 1; i <= m; i++) {
+    const cur = new Uint32Array(n + 1);
+    const ca = a.charCodeAt(i - 1);
 
-const idx3 = binarySearch(users, { id: 20, name: '' }, (a, b) => a.id - b.id); // 1
+    for (let j = 1; j <= n; j++) {
+      if (ca === b.charCodeAt(j - 1)) {
+        cur[j] = prev[j - 1] + 1;
+        if (cur[j] > maxLen) maxLen = cur[j];
+      }
+    }
+    prev.set(cur);
+  }
+  return maxLen;
+}
