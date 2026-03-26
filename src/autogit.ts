@@ -1,58 +1,62 @@
 /**
- * Return the largest prime factor of a positive integer `n`.
- * For `n <= 1` returns `null` (no prime factors).
+ * Quick‑sort a mutable array in‑place.
  *
- * @param n – a number > 0 (use Number if you’re certain it fits in a double precision float)
+ * @template T The element type to sort.
+ * @param array    The array to sort.
+ * @param compare  Optional comparator:
+ *                 -<0 if a < b
+ *                  0 if a == b
+ *                 >0 if a > b
+ *                  Defaults to the built‑in `<`/`>` for primitive types.
  */
-function largestPrimeFactor(n: number): number | null {
-  if (n <= 1) return null;          // 0 or 1 has no prime factors
+function quickSort<T>(array: T[], compare?: (a: T, b: T) => number): void {
+  const cmp = compare ?? defaultCompare;
 
-  let remainder = n;
-  let largest = 2;
+  // Public wrapper that starts the recursive routine.
+  sort(0, array.length - 1);
 
-  // Always strip out factors of 2 first – saves time later
-  while (remainder % 2 === 0) {
-    largest = 2;
-    remainder /= 2;
+  /** Recursive partitioning */
+  function sort(left: number, right: number): void {
+    if (left >= right) return;          // one element or invalid range
+    const pivotIdx = partition(left, right);
+    sort(left, pivotIdx - 1);            // left partition
+    sort(pivotIdx + 1, right);           // right partition
   }
 
-  // Now test only odd divisors (3,5,7,…)
-  const limit = Math.sqrt(remainder);
-  for (let divisor = 3; divisor <= limit; divisor += 2) {
-    while (remainder % divisor === 0) {
-      largest = divisor;
-      remainder /= divisor;
+  /**
+   * Partition the sub‑array [left … right] around a pivot.
+   * Returns the final pivot index so the caller can split.
+   */
+  function partition(left: number, right: number): number {
+    const pivotIndex = right;            // choose the last element as pivot
+    const pivotValue = array[pivotIndex];
+    let storeIndex = left;               // first place where a value < pivot will go
+
+    for (let i = left; i < right; i++) {
+      if (cmp(array[i], pivotValue) < 0) {
+        [array[i], array[storeIndex]] = [array[storeIndex], array[i]];
+        storeIndex++;
+      }
     }
+    // Move pivot to its final place
+    [array[storeIndex], array[pivotIndex]] = [array[pivotIndex], array[storeIndex]];
+    return storeIndex;
   }
-
-  // If anything left of 1, it’s prime and bigger than any we found
-  if (remainder > 1) largest = remainder;
-
-  return largest;
 }
-console.log(largestPrimeFactor(15));    // 5
-console.log(largestPrimeFactor(21));    // 7
-console.log(largestPrimeFactor(26));    // 13
-console.log(largestPrimeFactor(120));   // 5   (120 = 2⁴·3·5)
-function largestPrimeFactorBig(n: bigint): bigint | null {
-  if (n <= 1n) return null;
-  let remainder = n;
-  let largest = 2n;
 
-  while (remainder % 2n === 0n) {
-    largest = 2n;
-    remainder /= 2n;
-  }
-
-  let divisor = 3n;
-  while (divisor * divisor <= remainder) {
-    while (remainder % divisor === 0n) {
-      largest = divisor;
-      remainder /= divisor;
-    }
-    divisor += 2n;
-  }
-
-  if (remainder > 1n) largest = remainder;
-  return largest;
+/** Default comparator for primitive types. */
+function defaultCompare(a: unknown, b: unknown): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
 }
+const nums = [3, 8, 4, 1, 9, 5];
+quickSort(nums);               // sorts in place
+console.log(nums);             // [1, 3, 4, 5, 8, 9]
+
+const words = ["banana", "apple", "pear"];
+quickSort(words);              // defaults to lexical order
+console.log(words);            // ["apple", "banana", "pear"]
+
+// Custom order: descending numbers
+quickSort(nums, (a, b) => b - a);
+console.log(nums);             // [9, 8, 5, 4, 3, 1]
