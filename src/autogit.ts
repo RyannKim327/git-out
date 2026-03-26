@@ -1,62 +1,74 @@
 /**
- * Quick‑sort a mutable array in‑place.
- *
- * @template T The element type to sort.
- * @param array    The array to sort.
- * @param compare  Optional comparator:
- *                 -<0 if a < b
- *                  0 if a == b
- *                 >0 if a > b
- *                  Defaults to the built‑in `<`/`>` for primitive types.
+ * Builds the LPS (Longest Proper Prefix which is also Suffix) table for `pattern`.
+ * The table tells us how far to jump when a mismatch occurs.
  */
-function quickSort<T>(array: T[], compare?: (a: T, b: T) => number): void {
-  const cmp = compare ?? defaultCompare;
+function buildLPS(pattern: string): number[] {
+  const lps = new Array(pattern.length).fill(0);
+  let length = 0;            // length of the previous longest prefix suffix
+  let i = 1;                 // we start from the second character
 
-  // Public wrapper that starts the recursive routine.
-  sort(0, array.length - 1);
-
-  /** Recursive partitioning */
-  function sort(left: number, right: number): void {
-    if (left >= right) return;          // one element or invalid range
-    const pivotIdx = partition(left, right);
-    sort(left, pivotIdx - 1);            // left partition
-    sort(pivotIdx + 1, right);           // right partition
-  }
-
-  /**
-   * Partition the sub‑array [left … right] around a pivot.
-   * Returns the final pivot index so the caller can split.
-   */
-  function partition(left: number, right: number): number {
-    const pivotIndex = right;            // choose the last element as pivot
-    const pivotValue = array[pivotIndex];
-    let storeIndex = left;               // first place where a value < pivot will go
-
-    for (let i = left; i < right; i++) {
-      if (cmp(array[i], pivotValue) < 0) {
-        [array[i], array[storeIndex]] = [array[storeIndex], array[i]];
-        storeIndex++;
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
+    } else {
+      if (length !== 0) {
+        length = lps[length - 1];
+        // we don't increment i here; we try the new length
+      } else {
+        lps[i] = 0;
+        i++;
       }
     }
-    // Move pivot to its final place
-    [array[storeIndex], array[pivotIndex]] = [array[pivotIndex], array[storeIndex]];
-    return storeIndex;
   }
+
+  return lps;
 }
 
-/** Default comparator for primitive types. */
-function defaultCompare(a: unknown, b: unknown): number {
-  if (a === b) return 0;
-  return a < b ? -1 : 1;
+/**
+ * Returns an array of all start indices where `pattern` is found in `text`.
+ * If the pattern has length 0, returns an empty array (no meaningful search).
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  if (pattern.length === 0) return [];
+
+  const lps   = buildLPS(pattern);
+  const indices: number[] = [];
+
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+    }
+
+    if (j === pattern.length) {
+      // full match found
+      indices.push(i - j);
+      j = lps[j - 1]; // continue searching for next possible match
+    } else if (i < text.length && text[i] !== pattern[j]) {
+      // mismatch after j matches
+      if (j !== 0) {
+        j = lps[j - 1];
+      } else {
+        i++;
+      }
+    }
+  }
+
+  return indices;
 }
-const nums = [3, 8, 4, 1, 9, 5];
-quickSort(nums);               // sorts in place
-console.log(nums);             // [1, 3, 4, 5, 8, 9]
+import { kmpSearch } from './kmp';
 
-const words = ["banana", "apple", "pear"];
-quickSort(words);              // defaults to lexical order
-console.log(words);            // ["apple", "banana", "pear"]
+const text = 'ABABDABACDABABCABAB';
+const pattern = 'ABCABAB';
 
-// Custom order: descending numbers
-quickSort(nums, (a, b) => b - a);
-console.log(nums);             // [9, 8, 5, 4, 3, 1]
+const positions = kmpSearch(text, pattern);
+console.log(positions);   // → [ 9 ]
+export function kmpIndexOf(text: string, pattern: string): number {
+  const matches = kmpSearch(text, pattern);
+  return matches.length > 0 ? matches[0] : -1;
+}
