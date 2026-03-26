@@ -1,66 +1,62 @@
 /**
- * In‑place selection sort.
+ * Builds the longest‑prefix‑suffix (LPS) array for the pattern.
+ * LPS[i] stores the length of the longest proper prefix of P[0…i]
+ * that is also a suffix of P[0…i].
  *
- * @param arr  The array to sort.
- * @param compare Optional comparison callback. Should return:
- *                 < 0 if a < b
- *                 > 0 if a > b
- *                 0 if a == b
+ * Complexity: O(m)
  */
-export function selectionSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): void {
-  const cmp = compare ?? defaultCompare;
+function buildLps(p: string): number[] {
+  const lps: number[] = new Array(p.length).fill(0);
+  let len = 0;            // current length of the previous longest prefix
+  let i = 1;
 
-  const len = arr.length;
-  for (let i = 0; i < len - 1; i++) {
-    // Find the minimum element in arr[i…len-1]
-    let minIdx = i;
-    for (let j = i + 1; j < len; j++) {
-      if (cmp(arr[j], arr[minIdx]) < 0) {
-        minIdx = j;
+  while (i < p.length) {
+    if (p[i] === p[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      if (len !== 0) {
+        // fall back to the last known good prefix
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
       }
     }
-    // Swap the found minimum with the first element
-    if (minIdx !== i) {
-      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-    }
   }
+  return lps;
 }
 
 /**
- * Default comparer for numbers and strings.
+ * Performs KMP search.
+ *
+ * Returns the starting index of the first match
+ * or -1 if the pattern does not occur in the text.
+ *
+ * Complexity: O(n + m)
  */
-function defaultCompare(a: any, b: any): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
+export function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;
+  const lps = buildLps(pattern);
+
+  let i = 0; // index in text
+  let j = 0; // index in pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) return i - j; // match found
+    } else {
+      if (j !== 0) {
+        j = lps[j - 1]; // use LPS to skip comparisons
+      } else {
+        i++;
+      }
+    }
+  }
+  return -1; // no match
 }
-// 1. Sorting numbers
-const nums = [64, 25, 12, 22, 11];
-selectionSort(nums);
-console.log(nums); // [11, 12, 22, 25, 64]
-
-// 2. Sorting strings
-const fruits = ['banana', 'apple', 'cherry'];
-selectionSort(fruits);
-console.log(fruits); // ['apple', 'banana', 'cherry']
-
-// 3. Sorting objects by a key
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 22 },
-  { name: 'Carol', age: 25 },
-];
-
-selectionSort(people, (a, b) => a.age - b.age);
-console.log(people);
-/*
-[
-  { name: 'Bob', age: 22 },
-  { name: 'Carol', age: 25 },
-  { name: 'Alice', age: 30 }
-]
-*/
+console.log(kmpSearch('ababcabcab', 'abc')); // 3
+console.log(kmpSearch('aaaa', 'b'));        // -1
