@@ -1,68 +1,46 @@
-// A minimal list node definition
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null
-  ) {}
+// A typical binary‑tree node.
+export interface TreeNode {
+  value: number;
+  left?: TreeNode;
+  right?: TreeNode;
 }
 
 /**
- * Returns the intersection node, or null if none exists.
- *
- * Idea:
- * 1. Walk each list once to get its length.
- * 2. Advance the longer list by the length difference.
- * 3. Move both pointers together – the first time they’re equal
- *    (by reference) is the intersection.
- *
- * Time: O(n + m)   (one pass per list + one optional “skip” pass)
- * Space: O(1)      (no extra container)
+ * Recursively finds the longest path from this node down to a leaf.
+ * depth(node) = 1 + max(depth(left), depth(right))
+ * Leaves contribute 1; an empty tree contributes 0.
  */
-export function getIntersectionNode<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  // helper to measure length
-  function len(node: ListNode<T> | null): number {
-    let l = 0;
-    while (node !== null) {
-      l++;
-      node = node.next;
-    }
-    return l;
-  }
+export function maxDepth(node?: TreeNode): number {
+  if (!node) return 0;
 
-  let lenA = len(headA);
-  let lenB = len(headB);
+  const leftDepth  = maxDepth(node.left);
+  const rightDepth = maxDepth(node.right);
 
-  // Advance the longer head so that the remaining steps are equal
-  let diff = Math.abs(lenA - lenB);
-  let longer = lenA > lenB ? headA : headB;
-  let shorter = lenA > lenB ? headB : headA;
-
-  while (diff--) {
-    if (longer !== null) longer = longer.next;
-  }
-
-  // Walk together until they meet
-  while (longer !== null && shorter !== null) {
-    if (longer === shorter) return longer; // same reference
-    longer = longer.next;
-    shorter = shorter.next;
-  }
-
-  return null; // never intersected
+  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
 }
-const a1 = new ListNode(1);
-const a2 = new ListNode(2);
-const a3 = new ListNode(3);
-const a4 = new ListNode(4);
-const a5 = new ListNode(5);
-a1.next = a2; a2.next = a3; a3.next = a4; a4.next = a5;
+export function maxDepthIterative(root?: TreeNode): number {
+  if (!root) return 0;
 
-const b1 = new ListNode(9);
-const b2 = new ListNode(8);
-b1.next = b2; b2.next = a3; // both lists point to `a3`
+  let max = 0;
+  const queue: Array<TreeNode> = [root];
 
-const intersection = getIntersectionNode(a1, b1);
-console.log(intersection?.val); // 3
+  while (queue.length) {
+    const levelSize = queue.length;
+    max++; // we’re on a new level
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!; // queue is non‑empty
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
+  }
+  return max;
+}
+const root: TreeNode = {
+  value: 1,
+  left:  { value: 2, right: { value: 4 } },
+  right: { value: 3 }
+};
+
+console.log(maxDepth(root));          // → 3
+console.log(maxDepthIterative(root)); // → 3
