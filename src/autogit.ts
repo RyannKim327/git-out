@@ -1,66 +1,36 @@
-/**
- * In‑place selection sort.
- *
- * @param arr  The array to sort.
- * @param compare Optional comparison callback. Should return:
- *                 < 0 if a < b
- *                 > 0 if a > b
- *                 0 if a == b
- */
-export function selectionSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): void {
-  const cmp = compare ?? defaultCompare;
+function countOccurrences(str: string, word: string): number {
+  // \b = word boundary; 'gi' = case‑insensitive, global
+  const regex = new RegExp(`\\b${word}\\b`, 'gi');
+  return str.split(regex).length - 1;
+}
+function countOccurrences2(str: string, word: string): number {
+  const regex = new RegExp(`\\b${word}\\b`, 'gi');
+  const matches = str.match(regex);
+  return matches ? matches.length : 0;
+}
+function countOccurrences3(str: string, word: string): number {
+  let count = 0;
+  let pos = 0;
 
-  const len = arr.length;
-  for (let i = 0; i < len - 1; i++) {
-    // Find the minimum element in arr[i…len-1]
-    let minIdx = i;
-    for (let j = i + 1; j < len; j++) {
-      if (cmp(arr[j], arr[minIdx]) < 0) {
-        minIdx = j;
-      }
+  while ((pos = str.toLowerCase().indexOf(word.toLowerCase(), pos)) !== -1) {
+    // Ensure whole‑word match using boundaries (optional)
+    const before = pos === 0 || /\W/.test(str[pos - 1]);
+    const after  = pos + word.length === str.length
+                 || /\W/.test(str[pos + word.length]);
+
+    if (before && after) {
+      count++;
     }
-    // Swap the found minimum with the first element
-    if (minIdx !== i) {
-      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-    }
+    pos += word.length;
   }
+
+  return count;
 }
+const paragraph = `
+  TypeScript is great. TypeScript's type system helps catch bugs early.
+  A developer who uses typescript should ideally care about types.
+`;
 
-/**
- * Default comparer for numbers and strings.
- */
-function defaultCompare(a: any, b: any): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-// 1. Sorting numbers
-const nums = [64, 25, 12, 22, 11];
-selectionSort(nums);
-console.log(nums); // [11, 12, 22, 25, 64]
-
-// 2. Sorting strings
-const fruits = ['banana', 'apple', 'cherry'];
-selectionSort(fruits);
-console.log(fruits); // ['apple', 'banana', 'cherry']
-
-// 3. Sorting objects by a key
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 22 },
-  { name: 'Carol', age: 25 },
-];
-
-selectionSort(people, (a, b) => a.age - b.age);
-console.log(people);
-/*
-[
-  { name: 'Bob', age: 22 },
-  { name: 'Carol', age: 25 },
-  { name: 'Alice', age: 30 }
-]
-*/
+console.log(countOccurrences(paragraph, 'typescript'));   // → 4
+console.log(countOccurrences2(paragraph, 'typescript')); // → 4
+console.log(countOccurrences3(paragraph, 'typescript')); // → 4
