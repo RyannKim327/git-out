@@ -1,68 +1,58 @@
 /**
- * Pre‑computes the shift table for a pattern.
- *   pattern: the pattern we’re searching for
- *   Returns: a Map from character → shift distance
+ * Return the largest prime factor of a positive integer `n`.
+ * For `n <= 1` returns `null` (no prime factors).
+ *
+ * @param n – a number > 0 (use Number if you’re certain it fits in a double precision float)
  */
-function buildShiftTable(pattern: string): Map<string, number> {
-  const table = new Map<string, number>();
-  const m = pattern.length;
+function largestPrimeFactor(n: number): number | null {
+  if (n <= 1) return null;          // 0 or 1 has no prime factors
 
-  // All characters that appear in the pattern get an initial shift of m
-  for (const ch of pattern) {
-    table.set(ch, m);
+  let remainder = n;
+  let largest = 2;
+
+  // Always strip out factors of 2 first – saves time later
+  while (remainder % 2 === 0) {
+    largest = 2;
+    remainder /= 2;
   }
 
-  // For each character except the last one, set its shift to (m - i - 1)
-  for (let i = 0; i < m - 1; ++i) {
-    table.set(pattern[i], m - i - 1);
-  }
-
-  return table;
-}
-/**
- * Implements Boyer‑Moore‑Horspool.
- * @param text   – the text to search
- * @param pattern – the pattern to find
- * @returns      – the index of the first match, or -1 if none
- */
-export function boyerMooreHorspool(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
-
-  if (m === 0) return 0;          // Empty pattern
-  if (m > n) return -1;           // Pattern longer than text
-
-  const shiftTable = buildShiftTable(pattern);
-
-  let idx = 0;                    // Index of the leftmost character of the window
-  while (idx <= n - m) {
-    let j = m - 1;
-
-    // Compare pattern from right to left
-    while (j >= 0 && text[idx + j] === pattern[j]) {
-      j -= 1;
+  // Now test only odd divisors (3,5,7,…)
+  const limit = Math.sqrt(remainder);
+  for (let divisor = 3; divisor <= limit; divisor += 2) {
+    while (remainder % divisor === 0) {
+      largest = divisor;
+      remainder /= divisor;
     }
-
-    // If all characters matched
-    if (j < 0) {
-      return idx;                // Found at position idx
-    }
-
-    // Mismatch: figure out how far to shift
-    const mismatchedChar = text[idx + m - 1];
-    const shift = shiftTable.get(mismatchedChar) ?? m;
-    idx += shift;
   }
 
-  return -1;                     // No match found
-}
-const txt = "ABAAABCDABCABABCAB";
-const pat = "ABCAB";
+  // If anything left of 1, it’s prime and bigger than any we found
+  if (remainder > 1) largest = remainder;
 
-const pos = boyerMooreHorspool(txt, pat);
-if (pos >= 0) {
-  console.log(`"${pat}" found at index ${pos}`);
-} else {
-  console.log(`"${pat}" not found`);
+  return largest;
 }
-"ABCAB" found at index 12
+console.log(largestPrimeFactor(15));    // 5
+console.log(largestPrimeFactor(21));    // 7
+console.log(largestPrimeFactor(26));    // 13
+console.log(largestPrimeFactor(120));   // 5   (120 = 2⁴·3·5)
+function largestPrimeFactorBig(n: bigint): bigint | null {
+  if (n <= 1n) return null;
+  let remainder = n;
+  let largest = 2n;
+
+  while (remainder % 2n === 0n) {
+    largest = 2n;
+    remainder /= 2n;
+  }
+
+  let divisor = 3n;
+  while (divisor * divisor <= remainder) {
+    while (remainder % divisor === 0n) {
+      largest = divisor;
+      remainder /= divisor;
+    }
+    divisor += 2n;
+  }
+
+  if (remainder > 1n) largest = remainder;
+  return largest;
+}
