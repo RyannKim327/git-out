@@ -1,82 +1,71 @@
-const decimal = 42;
-const binaryStr = decimal.toString(2); // "101010"
-console.log(binaryStr);
-function toFixedBinary(n: number, width: number): string {
-  const bin = n.toString(2);
-  return bin.padStart(width, '0');
+/**
+ * Returns true if `a` and `b` contain exactly the same letters,
+ * disregarding order.
+ *
+ * @param a – first string
+ * @param b – second string
+ * @param options – optional flags
+ *   - ignoreSpaces: treat spaces as insignificant
+ *   - ignorePunctuation: strip punctuation marks
+ *   - ignoreCase: treat uppercase and lowercase as the same
+ */
+export function areAnagrams(
+  a: string,
+  b: string,
+  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
+): boolean {
+  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
+
+  const sanitize = (s: string) => {
+    if (ignoreCase) s = s.toLowerCase();
+    if (ignoreSpaces) s = s.replace(/\s+/g, '');
+    if (ignorePunctuation) s = s.replace(/[^\w]/g, ''); // keep letters & digits
+    return s;
+  };
+
+  const sa = sanitize(a).split('').sort().join('');
+  const sb = sanitize(b).split('').sort().join('');
+
+  return sa === sb;
 }
+/**
+ * Frequency‑count version – O(n) time, O(σ) space  
+ * (σ = size of alphabet, constant for ASCII/Unicode)
+ */
+export function areAnagramsFast(
+  a: string,
+  b: string,
+  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
+): boolean {
+  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
 
-console.log(toFixedBinary(5, 8)); // "00000101"
-function decimalToBinary(num: number): string {
-  if (num === 0) return '0';
-  let n = Math.abs(num);
-  let bits = '';
-  while (n > 0) {
-    bits = (n % 2).toString() + bits;
-    n = Math.floor(n / 2);
+  const count = (s: string) => {
+    const map = new Map<string, number>();
+    for (const ch of s) {
+      const key = ignoreCase ? ch.toLowerCase() : ch;
+      if (ignoreSpaces && key === ' ') continue;
+      if (ignorePunctuation && !/[A-Za-z0-9]/.test(key)) continue;
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
+    return map;
+  };
+
+  const aMap = count(a);
+  const bMap = count(b);
+
+  if (aMap.size !== bMap.size) return false; // quick early exit
+
+  for (const [char, aCount] of aMap.entries()) {
+    if (bMap.get(char) !== aCount) return false;
   }
-  // Two's complement for negatives (using 32‑bit for illustration)
-  if (num < 0) {
-    // Pad to 32 bits
-    bits = bits.padStart(32, '0');
-    // Invert bits
-    bits = bits.split('').map(c => (c === '0' ? '1' : '0')).join('');
-    // Add 1
-    let carry = 1;
-    bits = bits.split('').reverse().map((b, idx) => {
-      const sum = Number(b) + carry;
-      carry = Math.floor(sum / 2);
-      return (sum % 2).toString();
-    }).reverse().join('');
-  }
-  return bits;
+
+  return true;
 }
+// Basic usage
+areAnagrams('Listen', 'Silent'); // true
 
-console.log(decimalToBinary(101)); // "1100101"
-console.log(decimalToBinary(-3));  // "11111111111111111111111111111101" (32‑bit two's complement)
-function bigIntToBinary(n: bigint): string {
-  if (n === 0n) return '0';
-  let negative = false;
-  if (n < 0n) {
-    negative = true;
-    n = -n;          // work with the absolute value
-  }
-  let bits = '';
-  while (n > 0n) {
-    bits = (n & 1n).toString() + bits; // n & 1n gives lowest bit
-    n >>= 1n;                          // shift right
-  }
-  return negative ? '-' + bits : bits;
-}
+// Ignoring case & spaces
+areAnagrams('Dormitory', 'Dirty room', { ignoreSpaces: true, ignoreCase: true }); // true
 
-const huge = BigInt('123456789012345678901234567890');
-console.log(bigIntToBinary(huge));
-// prints a long binary string
-export type BinaryOpts = {
-  width?: number;          // pad to this width
-  useBigInt?: boolean;     // switch to BigInt mode
-  signed?: boolean;        // two’s complement for negatives
-};
-
-export function toBinary(
-  num: number | bigint,
-  opts: BinaryOpts = {}
-): string {
-  const { width, useBigInt = false, signed = false } = opts;
-
-  let bin: string;
-
-  if (useBigInt) {
-    const big = typeof num === 'bigint' ? num : BigInt(num);
-    bin = signed ? bigIntToBinary(big) : big.toString(2);
-  } else {
-    bin = signed
-      ? decimalToBinary(Number(num))
-      : Number(num).toString(2);
-  }
-
-  return width ? bin.padStart(width, '0') : bin;
-}
-console.log(toBinary(42));                 // "101010"
-console.log(toBinary(42, { width: 8 }));   // "00101010"
-console.log(toBinary(-3, { useBigInt: true, signed: true })); // 32‑bit two's complement
+// Fast version with punctuation handling
+areAnagramsFast("A!b@c#d", "c b a d", { ignorePunctuation: true, ignoreCase: true }); // true
