@@ -1,71 +1,62 @@
 /**
- * Returns true if `a` and `b` contain exactly the same letters,
- * disregarding order.
+ * Returns the index of `target` in a sorted array `arr` or -1 if not found.
  *
- * @param a – first string
- * @param b – second string
- * @param options – optional flags
- *   - ignoreSpaces: treat spaces as insignificant
- *   - ignorePunctuation: strip punctuation marks
- *   - ignoreCase: treat uppercase and lowercase as the same
+ * @param arr     Sorted array of numbers (ascending or descending)
+ * @param target  Value to search for
+ * @returns Index or -1
  */
-export function areAnagrams(
-  a: string,
-  b: string,
-  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
-): boolean {
-  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
+export function interpolationSearch(arr: number[], target: number): number {
+  if (!arr.length) return -1;
 
-  const sanitize = (s: string) => {
-    if (ignoreCase) s = s.toLowerCase();
-    if (ignoreSpaces) s = s.replace(/\s+/g, '');
-    if (ignorePunctuation) s = s.replace(/[^\w]/g, ''); // keep letters & digits
-    return s;
-  };
+  let lo = 0;
+  let hi = arr.length - 1;
 
-  const sa = sanitize(a).split('').sort().join('');
-  const sb = sanitize(b).split('').sort().join('');
+  // Handle both ascending and descending arrays.
+  const isAscending = arr[hi] > arr[lo];
 
-  return sa === sb;
-}
-/**
- * Frequency‑count version – O(n) time, O(σ) space  
- * (σ = size of alphabet, constant for ASCII/Unicode)
- */
-export function areAnagramsFast(
-  a: string,
-  b: string,
-  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
-): boolean {
-  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
-
-  const count = (s: string) => {
-    const map = new Map<string, number>();
-    for (const ch of s) {
-      const key = ignoreCase ? ch.toLowerCase() : ch;
-      if (ignoreSpaces && key === ' ') continue;
-      if (ignorePunctuation && !/[A-Za-z0-9]/.test(key)) continue;
-      map.set(key, (map.get(key) ?? 0) + 1);
-    }
-    return map;
-  };
-
-  const aMap = count(a);
-  const bMap = count(b);
-
-  if (aMap.size !== bMap.size) return false; // quick early exit
-
-  for (const [char, aCount] of aMap.entries()) {
-    if (bMap.get(char) !== aCount) return false;
+  // If target is out of the array’s bounds, it can’t be there.
+  while (
+    (isAscending
+      ? target < arr[lo] || target > arr[hi]
+      : target > arr[lo] || target < arr[hi])
+  ) {
+    return -1;
   }
 
-  return true;
+  while (lo <= hi) {
+    // Avoid division by zero when lo and hi point to the same value.
+    if (arr[lo] === arr[hi]) {
+      return arr[lo] === target ? lo : -1;
+    }
+
+    // Estimate the next probe position.
+    const pos =
+      lo +
+      Math.floor(
+        ((target - arr[lo]) * (hi - lo)) /
+          (arr[hi] - arr[lo])
+      );
+
+    // Guard against unexpected inequalities after casting to int.
+    if (pos < lo || pos > hi) return -1;
+
+    if (arr[pos] === target) return pos;
+
+    if (arr[pos] < target) {
+      lo = pos + 1;
+    } else {
+      hi = pos - 1;
+    }
+  }
+
+  return -1;
 }
-// Basic usage
-areAnagrams('Listen', 'Silent'); // true
+// sorted ascending
+const asc = [1, 3, 5, 7, 9, 11, 13];
+console.log(interpolationSearch(asc, 7)); // 3
+console.log(interpolationSearch(asc, 2)); // -1
 
-// Ignoring case & spaces
-areAnagrams('Dormitory', 'Dirty room', { ignoreSpaces: true, ignoreCase: true }); // true
-
-// Fast version with punctuation handling
-areAnagramsFast("A!b@c#d", "c b a d", { ignorePunctuation: true, ignoreCase: true }); // true
+// sorted descending
+const desc = [20, 15, 10, 5, 0];
+console.log(interpolationSearch(desc, 10)); // 2
+console.log(interpolationSearch(desc, -5)); // -1
