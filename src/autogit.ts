@@ -1,17 +1,13 @@
-const raw = '  Hello,\t\nWorld!  \u3000';
-
-const trimmed = raw.trim();                 // "Hello,\t\nWorld!  \u3000"
-const noWhitespace = raw.replace(/\s+/g, ''); // "Hello,World!"
-const collapsed = raw.replace(/\s+/g, ' ');   // "Hello, World!"
-
-console.log({ trimmed, noWhitespace, collapsed });
-/**
- * Strip all whitespace from a string, or optionally replace it with another string.
- *
- * @param input   The string to clean.
- * @param replace What to put in place of each whitespace run (default: empty string).
- * @returns The cleaned string.
- */
-function cleanWhitespace(input: string, replace = ''): string {
-  return input.replace(/\s+/g, replace);
+function removeVowels(text: string): string {
+  // Matches a, e, i, o, u in either case – change the set if you need accents, etc.
+  return text.replace(/[aeiouAEIOU]/g, '');
+}
+const original = "Hello, World!";
+const cleaned = removeVowels(original);
+console.log(cleaned); // "Hll, Wrld!"
+// Includes accented vowels and lowercase “y”
+const regex = /[aeiouáéíóúAEIOUÁÉÍÓÚyY]/g;
+function removeVowelsSafe(text?: string | null): string {
+  const safeText = text ?? '';
+  return safeText.replace(/[aeiouAEIOU]/g, '');
 }
