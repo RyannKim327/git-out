@@ -1,90 +1,39 @@
-/**
- * Returns the k‑th smallest element (1‑based index) in `arr`.
- *
- * @param arr - The array of numbers (can contain duplicates).
- * @param k   - 1 = smallest, 2 = second smallest, …, arr.length = largest.
- * @returns   The value of the k‑th smallest element.
- *
- * @throws    If k is out of bounds.
- */
-function kthSmallest(arr: number[], k: number): number;
-function partition(
-  arr: number[],
-  left: number,
-  right: number,
-  pivotIndex: number
-): number {
-  const pivotValue = arr[pivotIndex];
-  // Move pivot to end
-  [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
-  let storeIndex = left;
-
-  for (let i = left; i < right; i++) {
-    if (arr[i] < pivotValue) {
-      [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
-      storeIndex++;
-    }
-  }
-  // Move pivot to its final place
-  [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
-  return storeIndex;
+// A minimal singly‑linked‑list node for TS
+interface ListNode<T = any> {
+  value: T;
+  next: ListNode<T> | null;
 }
-function quickSelect(
-  arr: number[],
-  left: number,
-  right: number,
-  k: number // 0‑based rank we’re looking for
-): number {
-  if (left === right) {
-    return arr[left];
+
+// Returns the nth node from the tail (1‑based, so n = 1 gives the last node)
+// If n is larger than the length, returns null
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;           // sanity guard
+
+  let lead: ListNode<T> | null = head;
+  let trail: ListNode<T> | null = head;
+
+  // Move lead n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!lead) return null;          // n > length
+    lead = lead.next;
   }
 
-  // Pick a pivot (here: random for average‑case safety)
-  const pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
-  const pivotPos   = partition(arr, left, right, pivotIndex);
-
-  if (k === pivotPos) {
-    return arr[pivotPos];
-  } else if (k < pivotPos) {
-    return quickSelect(arr, left, pivotPos - 1, k);
-  } else {
-    return quickSelect(arr, pivotPos + 1, right, k);
+  // Advance both until lead reaches the end
+  while (lead) {
+    lead = lead.next;
+    trail = trail!.next;             // trail is guaranteed non‑null here
   }
+
+  return trail;
 }
-function kthSmallest(arr: number[], k: number): number {
-  if (k < 1 || k > arr.length) {
-    throw new Error("k is out of bounds");
-  }
+// build 1 → 2 → 3 → 4 → 5
+let node5: ListNode = { value: 5, next: null };
+let node4: ListNode = { value: 4, next: node5 };
+let node3: ListNode = { value: 3, next: node4 };
+let node2: ListNode = { value: 2, next: node3 };
+let node1: ListNode = { value: 1, next: node2 };
 
-  // idx = k‑1 because we want 1‑based → 0‑based conversion
-  const idx = k - 1;
-  // We’ll mutate the original array – if you want to avoid that, clone it:
-  // const copy = arr.slice();
-  // const result = quickSelect(copy, 0, copy.length - 1, idx);
-
-  return quickSelect(arr, 0, arr.length - 1, idx);
-}
-const sample = [12, 3, 5, 7, 4, 19, 26];
-console.log(kthSmallest(sample, 1)); // 3  (smallest)
-console.log(kthSmallest(sample, 3)); // 5  (third smallest)
-console.log(kthSmallest(sample, 7)); // 26 (largest)
-function kthSmallestIter(arr: number[], k: number): number {
-  if (k < 1 || k > arr.length) throw new Error("k out of bounds");
-  let left = 0;
-  let right = arr.length - 1;
-  const target = k - 1;
-
-  while (true) {
-    const pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
-    const pivotPos = partition(arr, left, right, pivotIndex);
-
-    if (pivotPos === target) {
-      return arr[pivotPos];
-    }
-    if (pivotPos > target) {
-      right = pivotPos - 1;
-    } else {
-      left = pivotPos + 1;
-    }
-  }
-}
+console.log(nthFromEnd(node1, 1)) // → 5
+console.log(nthFromEnd(node1, 3)) // → 3
+console.log(nthFromEnd(node1, 5)) // → 1
+console.log(nthFromEnd(node1, 6)) // → null
