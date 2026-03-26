@@ -1,58 +1,45 @@
 /**
- * Return the largest prime factor of a positive integer `n`.
- * For `n <= 1` returns `null` (no prime factors).
+ * Return true if `left` and `right` contain exactly the same character counts.
  *
- * @param n – a number > 0 (use Number if you’re certain it fits in a double precision float)
+ * @param left   – first string
+ * @param right  – second string
+ * @param options – tweak the comparison:
+ *   - `caseSensitive`: default `false` – treats 'A' and 'a' as equal
+ *   - `ignoreNonAlpha`: default `false` – strips out everything other than a‑z/A‑Z
  */
-function largestPrimeFactor(n: number): number | null {
-  if (n <= 1) return null;          // 0 or 1 has no prime factors
+function areAnagrams(
+  left: string,
+  right: string,
+  options?: { caseSensitive?: boolean; ignoreNonAlpha?: boolean }
+): boolean {
+  const { caseSensitive = false, ignoreNonAlpha = false } = options ?? {};
 
-  let remainder = n;
-  let largest = 2;
+  const normalize = (s: string) =>
+    s
+      .split('')
+      .filter((c) => (!ignoreNonAlpha || /[a-zA-Z]/.test(c)))   // drop non‑letters if asked
+      .map((c) => (caseSensitive ? c : c.toLowerCase()))        // case folding
+      .sort()
+      .join('');
 
-  // Always strip out factors of 2 first – saves time later
-  while (remainder % 2 === 0) {
-    largest = 2;
-    remainder /= 2;
-  }
-
-  // Now test only odd divisors (3,5,7,…)
-  const limit = Math.sqrt(remainder);
-  for (let divisor = 3; divisor <= limit; divisor += 2) {
-    while (remainder % divisor === 0) {
-      largest = divisor;
-      remainder /= divisor;
-    }
-  }
-
-  // If anything left of 1, it’s prime and bigger than any we found
-  if (remainder > 1) largest = remainder;
-
-  return largest;
+  return normalize(left) === normalize(right);
 }
-console.log(largestPrimeFactor(15));    // 5
-console.log(largestPrimeFactor(21));    // 7
-console.log(largestPrimeFactor(26));    // 13
-console.log(largestPrimeFactor(120));   // 5   (120 = 2⁴·3·5)
-function largestPrimeFactorBig(n: bigint): bigint | null {
-  if (n <= 1n) return null;
-  let remainder = n;
-  let largest = 2n;
+console.log(areAnagrams('listen', 'silent'));            // true
+console.log(areAnagrams('Tinsel', 'Listen'));            // true
+console.log(areAnagrams('hello', 'world'));              // false
+console.log(areAnagrams('William Shakespeare', 'I am a weakish speller', {
+  ignoreNonAlpha: true,
+}));                                                   // true
+function areAnagramsFast(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-  while (remainder % 2n === 0n) {
-    largest = 2n;
-    remainder /= 2n;
+  const count: Record<string, number> = {};
+
+  for (const char of a) count[char] = (count[char] ?? 0) + 1;
+  for (const char of b) {
+    if (!count[char]) return false; // missing or too many of this char
+    count[char]!--;
   }
 
-  let divisor = 3n;
-  while (divisor * divisor <= remainder) {
-    while (remainder % divisor === 0n) {
-      largest = divisor;
-      remainder /= divisor;
-    }
-    divisor += 2n;
-  }
-
-  if (remainder > 1n) largest = remainder;
-  return largest;
+  return true;
 }
