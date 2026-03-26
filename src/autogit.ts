@@ -1,54 +1,57 @@
-// ------------------------------------------------------------
-//  Fetch‑and‑hydrate example in TypeScript
-// ------------------------------------------------------------
+/**
+ * Generic binary search.
+ *
+ * @param arr   Sorted array.
+ * @param key  Value you’re looking for.
+ * @param cmp  Optional comparison callback.
+ *
+ * @returns The index of `key` if found, otherwise –1.
+ */
+export function binarySearch<T>(
+    arr: T[],
+    key: T,
+    cmp?: (a: T, b: T) => number
+): number {
+    if (arr.length === 0) return -1;
 
-type Post = {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-};
+    // Default to natural ordering for primitives.
+    const compare = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
-type User = {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-};
+    let low = 0;
+    let high = arr.length - 1;
 
-async function fetchUserWithPosts(userId: number): Promise<{ user: User; posts: Post[] }> {
-  // Base endpoint
-  const base = 'https://jsonplaceholder.typicode.com';
+    while (low <= high) {
+        // Guard against overflow in large arrays.
+        const mid = low + ((high - low) >> 1);
+        const midVal = arr[mid];
 
-  // Helper that throws on non‑2xx
-  const safeFetch = async <T>(url: string): Promise<T> => {
-    const resp = await fetch(url);
+        const comparison = compare(midVal, key);
 
-    if (!resp.ok) {
-      const text = await resp.text();
-      throw new Error(`Failed to fetch ${url} – ${resp.status}: ${text}`);
+        if (comparison === 0) {
+            return mid;          // Found!
+        } else if (comparison < 0) {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
     }
 
-    // Guard against empty body
-    const data = await resp.json();
-    return data as T;
-  };
-
-  // Pull user
-  const user = await safeFetch<User>(`${base}/users/${userId}`);
-
-  // Pull that user’s posts in parallel
-  const posts = await safeFetch<Post[]>(`${base}/posts?userId=${userId}`);
-
-  return { user, posts };
+    return -1;  // Not found
 }
+// 1️⃣ Integers (no cmp needed)
+const numbers = [3, 7, 12, 19, 27];
+const idx1 = binarySearch(numbers, 12); // 2
 
+// 2️⃣ Strings
+const words = ['apple', 'banana', 'cherry', 'date'];
+const idx2 = binarySearch(words, 'cherry'); // 2
 
-// Demo call – tweak the ID at will
-fetchUserWithPosts(1)
-  .then(({ user, posts }) => {
-    console.log('User:', user);
-    console.log(`Found ${posts.length} posts:`);
-    posts.slice(0, 3).forEach((p) => console.log(` • ${p.title}`));
-  })
-  .catch((err) => console.error('Oops!', err.message));
+// 3️⃣ Objects – supply a compare
+type User = { id: number; name: string };
+const users: User[] = [
+    { id: 10, name: 'Zoe' },
+    { id: 20, name: 'Bob' },
+    { id: 30, name: 'Alice' },
+].sort((a, b) => a.id - b.id);
+
+const idx3 = binarySearch(users, { id: 20, name: '' }, (a, b) => a.id - b.id); // 1
