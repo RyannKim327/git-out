@@ -1,15 +1,17 @@
-/**
- * Returns a random integer between min and max (inclusive).
- * @param min The lower bound (inclusive)
- * @param max The upper bound (inclusive)
- */
-function randInt(min: number, max: number): number {
-  // Clamp the bounds to whole numbers
-  const lower = Math.ceil(min);
-  const upper = Math.floor(max);
+const raw = '  Hello,\t\nWorld!  \u3000';
 
-  // Math.random() -> [0, 1)
-  // Multiply by the range width + 1 to get inclusive bounds
-  return lower + Math.floor(Math.random() * (upper - lower + 1));
+const trimmed = raw.trim();                 // "Hello,\t\nWorld!  \u3000"
+const noWhitespace = raw.replace(/\s+/g, ''); // "Hello,World!"
+const collapsed = raw.replace(/\s+/g, ' ');   // "Hello, World!"
+
+console.log({ trimmed, noWhitespace, collapsed });
+/**
+ * Strip all whitespace from a string, or optionally replace it with another string.
+ *
+ * @param input   The string to clean.
+ * @param replace What to put in place of each whitespace run (default: empty string).
+ * @returns The cleaned string.
+ */
+function cleanWhitespace(input: string, replace = ''): string {
+  return input.replace(/\s+/g, replace);
 }
-console.log(randInt(1, 10)); // might output: 7
