@@ -1,53 +1,68 @@
-/** Node definition for a singly linked list. */
-interface ListNode<T> {
-  value: T;
-  next?: ListNode<T>;
-}
-
-/** Helper to build a list from an array (for demo testing). */
-function buildList<T>(arr: T[]): ListNode<T> | undefined {
-  let head: ListNode<T> | undefined;
-  let tail: ListNode<T> | undefined;
-  for (const val of arr) {
-    const node: ListNode<T> = { value: val };
-    if (!head) {
-      head = node;
-      tail = node;
-    } else {
-      tail!.next = node;
-      tail = node;
-    }
-  }
-  return head;
+// A minimal list node definition
+export class ListNode<T> {
+  constructor(
+    public val: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
 
 /**
- * Finds the **lower** middle of a singly linked list.
- * If the list is empty, returns undefined.
+ * Returns the intersection node, or null if none exists.
+ *
+ * Idea:
+ * 1. Walk each list once to get its length.
+ * 2. Advance the longer list by the length difference.
+ * 3. Move both pointers together – the first time they’re equal
+ *    (by reference) is the intersection.
+ *
+ * Time: O(n + m)   (one pass per list + one optional “skip” pass)
+ * Space: O(1)      (no extra container)
  */
-function getMiddle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  if (!head) return undefined;
-
-  let slow = head;
-  let fast = head;
-
-  // Advance fast by 2 and slow by 1.
-  // When fast reaches the end, slow is at the middle.
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+export function getIntersectionNode<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  // helper to measure length
+  function len(node: ListNode<T> | null): number {
+    let l = 0;
+    while (node !== null) {
+      l++;
+      node = node.next;
+    }
+    return l;
   }
 
-  return slow;
+  let lenA = len(headA);
+  let lenB = len(headB);
+
+  // Advance the longer head so that the remaining steps are equal
+  let diff = Math.abs(lenA - lenB);
+  let longer = lenA > lenB ? headA : headB;
+  let shorter = lenA > lenB ? headB : headA;
+
+  while (diff--) {
+    if (longer !== null) longer = longer.next;
+  }
+
+  // Walk together until they meet
+  while (longer !== null && shorter !== null) {
+    if (longer === shorter) return longer; // same reference
+    longer = longer.next;
+    shorter = shorter.next;
+  }
+
+  return null; // never intersected
 }
+const a1 = new ListNode(1);
+const a2 = new ListNode(2);
+const a3 = new ListNode(3);
+const a4 = new ListNode(4);
+const a5 = new ListNode(5);
+a1.next = a2; a2.next = a3; a3.next = a4; a4.next = a5;
 
-/** Demo */
-const list = buildList([10, 20, 30, 40, 50]);   // odd length
-console.log(getMiddle(list)?.value); // → 30
+const b1 = new ListNode(9);
+const b2 = new ListNode(8);
+b1.next = b2; b2.next = a3; // both lists point to `a3`
 
-const listEven = buildList([1, 2, 3, 4]);        // even length
-console.log(getMiddle(listEven)?.value); // → 2  (lower middle)
-
-// If you want the *upper* middle for even lists, just change the loop:
-//   while (fast.next) { ... }
-//   return slow.next!;   // after the loop, slow is just before the upper middle.
+const intersection = getIntersectionNode(a1, b1);
+console.log(intersection?.val); // 3
