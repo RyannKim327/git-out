@@ -1,17 +1,16 @@
-const raw = '  Hello,\t\nWorld!  \u3000';
-
-const trimmed = raw.trim();                 // "Hello,\t\nWorld!  \u3000"
-const noWhitespace = raw.replace(/\s+/g, ''); // "Hello,World!"
-const collapsed = raw.replace(/\s+/g, ' ');   // "Hello, World!"
-
-console.log({ trimmed, noWhitespace, collapsed });
 /**
- * Strip all whitespace from a string, or optionally replace it with another string.
- *
- * @param input   The string to clean.
- * @param replace What to put in place of each whitespace run (default: empty string).
- * @returns The cleaned string.
+ * Returns true if the array is sorted in non‑decreasing order.
+ * Works for any type that supports the <= operator.
  */
-function cleanWhitespace(input: string, replace = ''): string {
-  return input.replace(/\s+/g, replace);
+function isSortedAscending<T>(arr: T[]): boolean {
+  for (let i = 0; i < arr.length - 1; i++) {
+    if (arr[i] > arr[i + 1]) {
+      return false;                // found a violation
+    }
+  }
+  return true;                     // no violations found
 }
+console.log(isSortedAscending([1, 2, 3, 4]));   // true
+console.log(isSortedAscending([1, 3, 2, 4]));   // false
+const isSortedAsc = (arr: number[]) =>
+  arr.every((v, i) => i === 0 || arr[i - 1] <= v);
