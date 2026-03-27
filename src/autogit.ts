@@ -1,36 +1,56 @@
-function countOccurrences(str: string, word: string): number {
-  // \b = word boundary; 'gi' = case‑insensitive, global
-  const regex = new RegExp(`\\b${word}\\b`, 'gi');
-  return str.split(regex).length - 1;
+// 1️⃣  Node definition
+class Node<T> {
+  constructor(public value: T, public next: Node<T> | null = null) {}
 }
-function countOccurrences2(str: string, word: string): number {
-  const regex = new RegExp(`\\b${word}\\b`, 'gi');
-  const matches = str.match(regex);
-  return matches ? matches.length : 0;
-}
-function countOccurrences3(str: string, word: string): number {
-  let count = 0;
-  let pos = 0;
 
-  while ((pos = str.toLowerCase().indexOf(word.toLowerCase(), pos)) !== -1) {
-    // Ensure whole‑word match using boundaries (optional)
-    const before = pos === 0 || /\W/.test(str[pos - 1]);
-    const after  = pos + word.length === str.length
-                 || /\W/.test(str[pos + word.length]);
+// 2️⃣  Queue skeleton
+class LinkedQueue<T> {
+  private head: Node<T> | null = null; // front of the queue
+  private tail: Node<T> | null = null; // rear of the queue
+  private _size = 0;
 
-    if (before && after) {
-      count++;
+  // 3️⃣  Enqueue: add to the tail
+  enqueue(value: T): void {
+    const newNode = new Node(value);
+    if (this.tail) {             // queue is not empty
+      this.tail.next = newNode;
+    } else {                      // queue was empty ‑ new node is both head & tail
+      this.head = newNode;
     }
-    pos += word.length;
+    this.tail = newNode;
+    this._size++;
   }
 
-  return count;
-}
-const paragraph = `
-  TypeScript is great. TypeScript's type system helps catch bugs early.
-  A developer who uses typescript should ideally care about types.
-`;
+  // 4️⃣  Dequeue: remove from the head
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // nothing to pop
 
-console.log(countOccurrences(paragraph, 'typescript'));   // → 4
-console.log(countOccurrences2(paragraph, 'typescript')); // → 4
-console.log(countOccurrences3(paragraph, 'typescript')); // → 4
+    const removed = this.head.value;
+    this.head = this.head.next;       // advance head
+    if (!this.head) this.tail = null; // queue became empty
+
+    this._size--;
+    return removed;
+  }
+
+  // 5️⃣  Peek at the front without removing
+  peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  // 6️⃣  Convenience helpers
+  size(): number   { return this._size; }
+  isEmpty(): boolean { return this._size === 0; }
+}
+const q = new LinkedQueue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.dequeue()); // 30
+console.log(q.dequeue()); // undefined (empty)
+console.log(q.isEmpty()); // true
