@@ -1,16 +1,45 @@
-/**
- * Returns true if the array is sorted in non‑decreasing order.
- * Works for any type that supports the <= operator.
- */
-function isSortedAscending<T>(arr: T[]): boolean {
-  for (let i = 0; i < arr.length - 1; i++) {
-    if (arr[i] > arr[i + 1]) {
-      return false;                // found a violation
-    }
-  }
-  return true;                     // no violations found
+// src/cronJob.ts
+
+import cron from 'node-cron';
+
+// Helper: generate a random number between 1 and 100
+const randomInt = () => Math.floor(Math.random() * 100) + 1;
+
+// The job – runs every minute (`* * * * *`)
+const job = cron.schedule('* * * * *', () => {
+  const now = new Date().toISOString();
+  const rand = randomInt();
+  console.log(`[${now}] Random number: ${rand}`);
+  // You can place any logic here (DB ops, API calls, etc.)
+});
+
+// Start the job
+job.start();
+console.log('Cron job scheduled: every minute.');
+# 1️⃣ Create a new TS project (if you haven't already)
+mkdir cron-demo && cd cron-demo
+npm init -y
+
+# 2️⃣ Install the required packages
+npm i node-cron
+npm i -D typescript @types/node
+
+# 3️⃣ Add a tsconfig.json (basic version)
+cat <<'EOF' > tsconfig.json
+{
+  "compilerOptions": {
+    "target": "es2019",
+    "module": "commonjs",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true
+  },
+  "include": ["src"]
 }
-console.log(isSortedAscending([1, 2, 3, 4]));   // true
-console.log(isSortedAscending([1, 3, 2, 4]));   // false
-const isSortedAsc = (arr: number[]) =>
-  arr.every((v, i) => i === 0 || arr[i - 1] <= v);
+EOF
+
+# 4️⃣ Place the `cronJob.ts` file in ./src
+# 5️⃣ Compile and run
+npx tsc
+node dist/cronJob.js
