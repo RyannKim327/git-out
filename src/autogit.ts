@@ -1,26 +1,43 @@
-/**
- * Performs an in‑place insertion sort on an array of numeric values.
- * @param data The array to sort – it will be mutated directly.
- */
-export function insertionSort<T extends number[]> (data: T): void {
-  // walk from the second element to the end
-  for (let i = 1; i < data.length; i++) {
-    const key = data[i];          // value we’re trying to insert
-    let j = i - 1;
+// shellSort.ts
 
-    /* Shift elements that are greater than `key` up by one
-       position until we find the spot for the key. */
-    while (j >= 0 && data[j] > key) {
-      data[j + 1] = data[j];
-      j--;
+/**
+ * Shell sort – an insertion‑sort based algorithm that improves on the
+ * “gaps” of ordinary insertion sort using a diminishing sequence.
+ *
+ * @param arr The array to sort in place.  It must contain elements that
+ *            can be compared with the `<` operator.
+ * @returns The same array reference, now sorted.
+ */
+export function shellSort<T>(arr: T[]): T[] {
+  const n = arr.length;
+  // Standard Shell sequence: start with ~n/2, then halve until 1
+  let gap = Math.floor(n / 2);
+
+  while (gap > 0) {
+    for (let i = gap; i < n; i++) {
+      // Perform a "gapped" insertion sort on the sub‑array
+      const temp = arr[i];
+      let j = i;
+
+      while (j >= gap && arr[j - gap] > temp) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+
+      arr[j] = temp;
     }
 
-    // put the key into its final place
-    data[j + 1] = key;
+    gap = Math.floor(gap / 2);
   }
-}
-import { insertionSort } from "./insertion-sort";
 
-const nums = [34, 8, 64, 51, 32, 24];
-insertionSort(nums);
-console.log(nums);  // → [ 8, 24, 32, 34, 51, 64 ]
+  return arr;
+}
+import { shellSort } from "./shellSort";
+
+const unsorted = [23, 12, 1, 8, 33, -6, 10];
+console.log("Before:", unsorted);
+
+shellSort(unsorted);
+console.log("After:", unsorted);
+// → Before: [23, 12, 1, 8, 33, -6, 10]
+//    After:  [-6, 1, 8, 10, 12, 23, 33]
