@@ -1,46 +1,81 @@
-// A typical binary‑tree node.
-export interface TreeNode {
-  value: number;
-  left?: TreeNode;
-  right?: TreeNode;
-}
-
+// 0‑based directed graph
+export type Graph = number[][];   // graph[u] = list of vertices that u points to
 /**
- * Recursively finds the longest path from this node down to a leaf.
- * depth(node) = 1 + max(depth(left), depth(right))
- * Leaves contribute 1; an empty tree contributes 0.
+ * Returns an array of strongly connected components.
+ * Each component is an array of vertex indices, in the order they were popped.
  */
-export function maxDepth(node?: TreeNode): number {
-  if (!node) return 0;
+export function tarjanSCC(graph: Graph): number[][] {
+  const n = graph.length;
+  const indices = new Array<number>(n).fill(-1);   // -1 = unvisited
+  const lowlink = new Array<number>(n).fill(0);
+  const onStack = new Array<boolean>(n).fill(false);
+  const stack: number[] = [];
 
-  const leftDepth  = maxDepth(node.left);
-  const rightDepth = maxDepth(node.right);
+  const sccs: number[][] = [];
+  let nextIdx = 0;
 
-  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
-}
-export function maxDepthIterative(root?: TreeNode): number {
-  if (!root) return 0;
+  function strongConnect(v: number) {
+    // 1️⃣  Discovery
+    indices[v] = lowlink[v] = nextIdx++;
+    stack.push(v);
+    onStack[v] = true;
 
-  let max = 0;
-  const queue: Array<TreeNode> = [root];
+    // 2️⃣  Explore neighbors
+    for (const w of graph[v]) {
+      if (indices[w] === -1) {
+        // w has not been visited – recurse
+        strongConnect(w);
+        lowlink[v] = Math.min(lowlink[v], lowlink[w]);
+      } else if (onStack[w]) {
+        // w is on stack → back‑edge
+        lowlink[v] = Math.min(lowlink[v], indices[w]);
+      }
+    }
 
-  while (queue.length) {
-    const levelSize = queue.length;
-    max++; // we’re on a new level
-
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()!; // queue is non‑empty
-      if (node.left)  queue.push(node.left);
-      if (node.right) queue.push(node.right);
+    // 3️⃣  Root check
+    if (lowlink[v] === indices[v]) {
+      const component: number[] = [];
+      let w: number;
+      do {
+        w = stack.pop()!;
+        onStack[w] = false;
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
     }
   }
-  return max;
-}
-const root: TreeNode = {
-  value: 1,
-  left:  { value: 2, right: { value: 4 } },
-  right: { value: 3 }
-};
 
-console.log(maxDepth(root));          // → 3
-console.log(maxDepthIterative(root)); // → 3
+  // kick off DFS from every unvisited vertex
+  for (let v = 0; v < n; v++) {
+    if (indices[v] === -1) {
+      strongConnect(v);
+    }
+  }
+
+  return sccs;
+}
+const graph: Graph = [
+  [1],          // 0 → 1
+  [2],          // 1 → 2
+  [0, 3],       // 2 → 0, 2 → 3
+  [4],          // 3 → 4
+  [5, 6],       // 4 → 5, 4 → 6
+  [3],          // 5 → 3
+  [4]           // 6 → 4
+];
+
+const sccs = tarjanSCC(graph);
+console.log(sccs);
+// Expected output (order of components may vary):
+// [
+//   [0, 1, 2],   // one SCC (0↔1↔2)
+//   [3],         // single node
+//   [4],         // single node
+//   [5],         // single node
+//   [6]          // single node
+// ]
+// A cycle of length 5
+const cycle: Graph = [ [1], [2], [3], [4], [0] ];
+console.assert(tarjanSCC(cycle).length === 1 &&
+               tarjanSCC(cycle)[0].length === 5, 'Cycle should be one SCC');
+
