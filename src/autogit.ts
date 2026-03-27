@@ -1,37 +1,26 @@
-// Basic binary‑tree node
-class TreeNode<T> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
+/**
+ * Performs an in‑place insertion sort on an array of numeric values.
+ * @param data The array to sort – it will be mutated directly.
+ */
+export function insertionSort<T extends number[]> (data: T): void {
+  // walk from the second element to the end
+  for (let i = 1; i < data.length; i++) {
+    const key = data[i];          // value we’re trying to insert
+    let j = i - 1;
 
-// Main helper that returns the height of a node and updates maxDiameter
-function computeHeight<T>(node: TreeNode<T> | null, maxDiameter: { value: number }): number {
-  if (!node) return -1; // height of empty subtree is -1 so that a single node gives 0
+    /* Shift elements that are greater than `key` up by one
+       position until we find the spot for the key. */
+    while (j >= 0 && data[j] > key) {
+      data[j + 1] = data[j];
+      j--;
+    }
 
-  const leftHeight = computeHeight(node.left, maxDiameter);
-  const rightHeight = computeHeight(node.right, maxDiameter);
-
-  // Path that passes through this node
-  const diameterAtNode = leftHeight + rightHeight + 2; // +2 edges to connect left and right via current node
-  if (diameterAtNode > maxDiameter.value) {
-    maxDiameter.value = diameterAtNode;
+    // put the key into its final place
+    data[j + 1] = key;
   }
-
-  // Return height of this subtree
-  return Math.max(leftHeight, rightHeight) + 1;
 }
+import { insertionSort } from "./insertion-sort";
 
-// Public API
-export function treeDiameter<T>(root: TreeNode<T> | null): number {
-  const maxDiameter = { value: 0 };
-  computeHeight(root, maxDiameter);
-  return maxDiameter.value; // number of edges on the longest path
-}
-        1
-       / \
-      2   3
-     / \     
-    4   5    
+const nums = [34, 8, 64, 51, 32, 24];
+insertionSort(nums);
+console.log(nums);  // → [ 8, 24, 32, 34, 51, 64 ]
