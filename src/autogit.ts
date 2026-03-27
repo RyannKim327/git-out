@@ -1,100 +1,97 @@
-/* 1️⃣  A node holds a value and a pointer to the next node   */
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
+// ------------------------------------------------------------
+// 1. Node
+// ------------------------------------------------------------
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null = null;
+  right: TreeNode<T> | null = null;
+
+  constructor(value: T) {
+    this.value = value;
+  }
 }
 
-/* 2️⃣  The list itself                                               */
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+// ------------------------------------------------------------
+// 2. BinarySearchTree
+// ------------------------------------------------------------
+class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
 
-  /* Useful for debugging or quick inspection */
-  get size() : number { return this._size; }
+  // -------------------------------------------
+  // Insert a value into the BST
+  // -------------------------------------------
+  insert(value: T, comparator?: (a: T, b: T) => number): void {
+    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
-  /* 🔄  Add at the end – amortised O(1)                      */
-  push(val: T) : void {
-    const node = new ListNode(val);
-    if (!this.head) {   // first element
-      this.head = this.tail = node;
-    } else {
-      // tail is guaranteed not null here
-      this.tail!.next = node;
-      this.tail = node;
-    }
-    this._size++;
-  }
+    const insertRec = (node: TreeNode<T> | null, val: T): TreeNode<T> => {
+      if (!node) return new TreeNode(val);
 
-  /* ⬅️  Remove from the end – O(n) because we’d have to
-        find the previous node. This simple version walks
-        to the node before the tail.                        */
-  pop() : T | undefined {
-    if (!this.head) return;
-    if (this.head === this.tail) {   // one element left
-      const val = this.head.value;
-      this.head = this.tail = null;
-      this._size = 0;
-      return val;
-    }
-
-    let prev = this.head;
-    while (prev.next !== this.tail) {
-      prev = prev.next!;
-    }
-    const val = this.tail!.value;
-    prev.next = null;
-    this.tail = prev;
-    this._size--;
-    return val;
-  }
-
-  /* 🔍  Find the index of a value – O(n)                   */
-  indexOf(val: T) : number {
-    let cur = this.head;
-    let i = 0;
-    while (cur) {
-      if (cur.value === val) return i;
-      cur = cur.next;
-      i++;
-    }
-    return -1;
-  }
-
-  /* 🔢  Grab the value at an index – guard against
-        out‑of‑range access. O(n)                               */
-  getAt(index: number) : T | undefined {
-    if (index < 0 || index >= this._size) return;
-    let cur = this.head;
-    let i = 0;
-    while (cur && i < index) {
-      cur = cur.next;
-      i++;
-    }
-    return cur?.value;
-  }
-
-  /* 🔁  Iterate over values – handy for `for..of`            */
-  [Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    return {
-      next: () => {
-        if (!current) return { done: true, value: undefined };
-        const value = current.value;
-        current = current.next;
-        return { done: false, value };
+      if (compare(val, node.value) < 0) {
+        node.left = insertRec(node.left, val);
+      } else {
+        node.right = insertRec(node.right, val);
       }
+      return node;
     };
+
+    this.root = insertRec(this.root, value);
+  }
+
+  // -------------------------------------------
+  // Search for a value – returns the node or null
+  // -------------------------------------------
+  search(value: T, comparator?: (a: T, b: T) => number): TreeNode<T> | null {
+    const compare = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    let curr = this.root;
+
+    while (curr) {
+      if (compare(value, curr.value) < 0) {
+        curr = curr.left;
+      } else if (compare(value, curr.value) > 0) {
+        curr = curr.right;
+      } else {
+        return curr; // found
+      }
+    }
+    return null; // not found
+  }
+
+  // -------------------------------------------
+  // In‑order traversal – returns an array of values
+  // -------------------------------------------
+  inorder(): T[] {
+    const res: T[] = [];
+    const walk = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      walk(node.left);
+      res.push(node.value);
+      walk(node.right);
+    };
+    walk(this.root);
+    return res;
+  }
+
+  // -------------------------------------------
+  // Convenience: return value of inorder traversal
+  // -------------------------------------------
+  toArray(): T[] {
+    return this.inorder();
   }
 }
 
-/* 3️⃣  Quick sanity test                                   */
-const nums = new LinkedList<number>();
-nums.push(10);
-nums.push(20);
-nums.push(30);
-console.log(nums.size);          // 3
-console.log([...nums]);          // [10, 20, 30]
-console.log(nums.pop());         // 30
-console.log(nums.size);          // 2
-console.log(nums.indexOf(20));   // 1
-console.log(nums.getAt(0));      // 10
+// ------------------------------------------------------------
+// 3. Demo
+// ------------------------------------------------------------
+const bst = new BinarySearchTree<number>();
+
+// Inserting some numbers
+[42, 23, 57, 12, 34, 73, 8].forEach(n => bst.insert(n));
+
+console.log('In‑order traversal:', bst.inorder()); // sorted ascending
+
+const foundNode = bst.search(34);
+if (foundNode) {
+  console.log(`Found node with value ${foundNode.value}`);
+} else {
+  console.log('Value not found');
+}
