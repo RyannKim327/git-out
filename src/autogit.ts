@@ -1,81 +1,128 @@
-// 0‑based directed graph
-export type Graph = number[][];   // graph[u] = list of vertices that u points to
-/**
- * Returns an array of strongly connected components.
- * Each component is an array of vertex indices, in the order they were popped.
- */
-export function tarjanSCC(graph: Graph): number[][] {
-  const n = graph.length;
-  const indices = new Array<number>(n).fill(-1);   // -1 = unvisited
-  const lowlink = new Array<number>(n).fill(0);
-  const onStack = new Array<boolean>(n).fill(false);
-  const stack: number[] = [];
+// ---------- TYPES ----------
+type Comparator<T> = (a: T, b: T) => number;
 
-  const sccs: number[][] = [];
-  let nextIdx = 0;
+interface Node<T> {
+  key: T;
+  left: Node<T> | null;
+  right: Node<T> | null;
+}
 
-  function strongConnect(v: number) {
-    // 1️⃣  Discovery
-    indices[v] = lowlink[v] = nextIdx++;
-    stack.push(v);
-    onStack[v] = true;
+// ---------- BST CLASS ----------
+class BinarySearchTree<T> {
+  // root can stay undefined at construction time
+  private root: Node<T> | null = null;
 
-    // 2️⃣  Explore neighbors
-    for (const w of graph[v]) {
-      if (indices[w] === -1) {
-        // w has not been visited – recurse
-        strongConnect(w);
-        lowlink[v] = Math.min(lowlink[v], lowlink[w]);
-      } else if (onStack[w]) {
-        // w is on stack → back‑edge
-        lowlink[v] = Math.min(lowlink[v], indices[w]);
+  /**
+   * Allows you to plug in any way you want keys compared.
+   * If none is supplied, `>`, `<`, and `===` are used for primitive values.
+   */
+  constructor(private readonly cmp: Comparator<T> = defaultCompare) {}
+
+  /** Insert new key into tree */
+  insert(key: T): void {
+    const node: Node<T> = { key, left: null, right: null };
+    if (!this.root) {
+      this.root = node;
+      return;
+    }
+
+    let curr = this.root;
+    while (true) {
+      const cmp = this.cmp(key, curr.key);
+      if (cmp < 0) {
+        if (curr.left) {
+          curr = curr.left;
+        } else {
+          curr.left = node;
+          break;
+        }
+      } else if (cmp > 0) {
+        if (curr.right) {
+          curr = curr.right;
+        } else {
+          curr.right = node;
+          break;
+        }
+      } else {
+        // key already exists – replace or ignore, here we ignore
+        break;
       }
     }
-
-    // 3️⃣  Root check
-    if (lowlink[v] === indices[v]) {
-      const component: number[] = [];
-      let w: number;
-      do {
-        w = stack.pop()!;
-        onStack[w] = false;
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
-    }
   }
 
-  // kick off DFS from every unvisited vertex
-  for (let v = 0; v < n; v++) {
-    if (indices[v] === -1) {
-      strongConnect(v);
+  /** Search for a key. Returns the node if found or null. */
+  search(key: T): Node<T> | null {
+    let curr = this.root;
+    while (curr) {
+      const cmp = this.cmp(key, curr.key);
+      if (cmp < 0) {
+        curr = curr.left;
+      } else if (cmp > 0) {
+        curr = curr.right;
+      } else {
+        return curr;
+      }
     }
+    return null;
   }
 
-  return sccs;
+  /** In‑order traversal – gives sorted keys. */
+  inorder(callback: (key: T) => void): void {
+    function walk(node: Node<T> | null) {
+      if (!node) return;
+      walk(node.left);
+      callback(node.key);
+      walk(node.right);
+    }
+    walk(this.root);
+  }
+
+  /** Delete a key. Simple implementation that preserves BST shape. */
+  delete(key: T): void {
+    const deleteRec = (node: Node<T> | null, key: T): Node<T> | null => {
+      if (!node) return null;
+
+      const cmp = this.cmp(key, node.key);
+      if (cmp < 0) {
+        node.left = deleteRec(node.left, key);
+      } else if (cmp > 0) {
+        node.right = deleteRec(node.right, key);
+      } else {
+        // node to delete found
+        if (!node.left) return node.right;
+        if (!node.right) return node.left;
+
+        // two children: find in‑order successor (smallest node on right)
+        let succ = node.right;
+        while (succ.left) succ = succ.left;
+        node.key = succ.key; // copy successor key
+        node.right = deleteRec(node.right, succ.key); // delete successor
+      }
+      return node;
+    };
+
+    this.root = deleteRec(this.root, key);
+  }
 }
-const graph: Graph = [
-  [1],          // 0 → 1
-  [2],          // 1 → 2
-  [0, 3],       // 2 → 0, 2 → 3
-  [4],          // 3 → 4
-  [5, 6],       // 4 → 5, 4 → 6
-  [3],          // 5 → 3
-  [4]           // 6 → 4
-];
 
-const sccs = tarjanSCC(graph);
-console.log(sccs);
-// Expected output (order of components may vary):
-// [
-//   [0, 1, 2],   // one SCC (0↔1↔2)
-//   [3],         // single node
-//   [4],         // single node
-//   [5],         // single node
-//   [6]          // single node
-// ]
-// A cycle of length 5
-const cycle: Graph = [ [1], [2], [3], [4], [0] ];
-console.assert(tarjanSCC(cycle).length === 1 &&
-               tarjanSCC(cycle)[0].length === 5, 'Cycle should be one SCC');
+// ---------- DEFAULT COMPARATOR ----------
+function defaultCompare<T>(a: T, b: T): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
 
+// ---------- USAGE EXAMPLE ----------
+const bst = new BinarySearchTree<number>();
+
+[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v));
+
+console.log('Search 5:', bst.search(5) !== null);   // true
+console.log('Search 4:', bst.search(4) !== null);   // false
+
+console.log('In‑order traversal:');
+bst.inorder(k => console.log(k));   // 1 3 5 7 8 9 10
+
+bst.delete(7);
+console.log('After deleting 7:');
+bst.inorder(k => console.log(k));   // 1 3 5 8 9 10
