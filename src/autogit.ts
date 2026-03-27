@@ -1,26 +1,53 @@
 /**
- * Performs an in‑place insertion sort on an array of numeric values.
- * @param data The array to sort – it will be mutated directly.
+ * Shuffle an array in place using Fisher–Yates algorithm
  */
-export function insertionSort<T extends number[]> (data: T): void {
-  // walk from the second element to the end
-  for (let i = 1; i < data.length; i++) {
-    const key = data[i];          // value we’re trying to insert
-    let j = i - 1;
-
-    /* Shift elements that are greater than `key` up by one
-       position until we find the spot for the key. */
-    while (j >= 0 && data[j] > key) {
-      data[j + 1] = data[j];
-      j--;
-    }
-
-    // put the key into its final place
-    data[j + 1] = key;
+function shuffle<T>(arr: T[]): void {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
 }
-import { insertionSort } from "./insertion-sort";
 
-const nums = [34, 8, 64, 51, 32, 24];
-insertionSort(nums);
-console.log(nums);  // → [ 8, 24, 32, 34, 51, 64 ]
+/**
+ * Check whether an array of numbers is sorted ascending
+ */
+function isSorted(arr: number[]): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i - 1] > arr[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Bogosort: shuffle until the array is sorted
+ */
+function bogosort(arr: number[]): Promise<{
+  sortedArray: number[];
+  iterations: number;
+  shuffles: number;
+}> {
+  return new Promise((resolve) => {
+    let iterations = 0;
+    const attempt = () => {
+      iterations++;
+      if (isSorted(arr)) {
+        resolve({ sortedArray: arr, iterations, shuffles: iterations });
+      } else {
+        shuffle(arr);
+        // This recursion is intentionally "random"; adding a tiny async
+        // delay keeps the UI responsive if called in a browser context.
+        setTimeout(attempt, 0);
+      }
+    };
+    attempt();
+  });
+}
+
+// Example usage:
+const data = [5, 2, 9, 1, 5, 6];
+bogosort(data).then(({ sortedArray, iterations, shuffles }) => {
+  console.log(`Sorted array: ${sortedArray}`);
+  console.log(`Iterations taken: ${iterations}`);
+});
