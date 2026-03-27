@@ -1,53 +1,54 @@
-/** Node definition for a singly linked list. */
-interface ListNode<T> {
-  value: T;
-  next?: ListNode<T>;
-}
+// ------------------------------------------------------------
+//  Fetch‑and‑hydrate example in TypeScript
+// ------------------------------------------------------------
 
-/** Helper to build a list from an array (for demo testing). */
-function buildList<T>(arr: T[]): ListNode<T> | undefined {
-  let head: ListNode<T> | undefined;
-  let tail: ListNode<T> | undefined;
-  for (const val of arr) {
-    const node: ListNode<T> = { value: val };
-    if (!head) {
-      head = node;
-      tail = node;
-    } else {
-      tail!.next = node;
-      tail = node;
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
+
+type User = {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+};
+
+async function fetchUserWithPosts(userId: number): Promise<{ user: User; posts: Post[] }> {
+  // Base endpoint
+  const base = 'https://jsonplaceholder.typicode.com';
+
+  // Helper that throws on non‑2xx
+  const safeFetch = async <T>(url: string): Promise<T> => {
+    const resp = await fetch(url);
+
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`Failed to fetch ${url} – ${resp.status}: ${text}`);
     }
-  }
-  return head;
+
+    // Guard against empty body
+    const data = await resp.json();
+    return data as T;
+  };
+
+  // Pull user
+  const user = await safeFetch<User>(`${base}/users/${userId}`);
+
+  // Pull that user’s posts in parallel
+  const posts = await safeFetch<Post[]>(`${base}/posts?userId=${userId}`);
+
+  return { user, posts };
 }
 
-/**
- * Finds the **lower** middle of a singly linked list.
- * If the list is empty, returns undefined.
- */
-function getMiddle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  if (!head) return undefined;
 
-  let slow = head;
-  let fast = head;
-
-  // Advance fast by 2 and slow by 1.
-  // When fast reaches the end, slow is at the middle.
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  return slow;
-}
-
-/** Demo */
-const list = buildList([10, 20, 30, 40, 50]);   // odd length
-console.log(getMiddle(list)?.value); // → 30
-
-const listEven = buildList([1, 2, 3, 4]);        // even length
-console.log(getMiddle(listEven)?.value); // → 2  (lower middle)
-
-// If you want the *upper* middle for even lists, just change the loop:
-//   while (fast.next) { ... }
-//   return slow.next!;   // after the loop, slow is just before the upper middle.
+// Demo call – tweak the ID at will
+fetchUserWithPosts(1)
+  .then(({ user, posts }) => {
+    console.log('User:', user);
+    console.log(`Found ${posts.length} posts:`);
+    posts.slice(0, 3).forEach((p) => console.log(` • ${p.title}`));
+  })
+  .catch((err) => console.error('Oops!', err.message));
