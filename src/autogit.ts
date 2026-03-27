@@ -1,102 +1,86 @@
-/** One directed edge in the graph */
-interface Edge {
-  from: number;   // source vertex id
-  to: number;     // target vertex id
-  weight: number; // edge weight
-}
+// -----------------------------------------------------------------------------
+//  Simple DFS – TypeScript
+// -----------------------------------------------------------------------------
 
-/** Graph represented only by its edge list */
-type Graph = Edge[];
-
-/** Result of the shortest‑path computation */
-interface BellmanFordResult {
-  /** distance from source to every vertex (Infinity if unreachable) */
-  distances: number[];
-  /** predecessor of each vertex on the shortest path tree */
-  predecessors: (number | null)[];
-  /** true if a negative cycle was detected that is reachable from the source */
-  negativeCycleDetected: boolean;
-}
 /**
- * Bellman‑Ford single‑source shortest‑path solver.
- * @param edges  complete list of directed edges in the graph
- * @param vertexCount total number of vertices, 0 … vertexCount‑1
- * @param source id of the source vertex
- * @returns distances, predecessors and a flag for a reachable negative cycle
+ * A graph represented as an adjacency list.
+ * The keys are the node identifiers (string or number) and the values are
+ * arrays of neighboring node identifiers.
  */
-export function bellmanFord(
-  edges: Graph,
-  vertexCount: number,
-  source: number
-): BellmanFordResult {
-  const INF = Number.POSITIVE_INFINITY;
+type Graph = Record<string, string[]>;
 
-  const distances = Array(vertexCount).fill(INF);
-  const predecessors = Array<null | number>(vertexCount).fill(null);
+/**
+ * Depth‑first search.
+ *
+ * @param graph     – The adjacency list.
+ * @param start     – The node to start from.
+ * @param visitAll  – If true, the function visits all components of a
+ *                    disconnected graph; otherwise it stops after exploring
+ *                    the component that contains `start`.
+ * @returns The visited nodes in the order they were first encountered.
+ */
+function depthFirstSearch(
+  graph: Graph,
+  start: string,
+  visitAll: boolean = false
+): string[] {
+  const visited = new Set<string>();
+  const order: string[] = [];
+  const stack: string[] = [start];
 
-  distances[source] = 0;
+  while (stack.length) {
+    const node = stack.pop()!;           // <-- pop top of the stack
+    if (!visited.has(node)) {
+      visited.add(node);
+      order.push(node);
 
-  /* Relax edges V‑1 times */
-  for (let i = 0; i < vertexCount - 1; i++) {
-    let changed = false;
-    for (const e of edges) {
-      const { from, to, weight } = e;
-      if (distances[from] !== INF && distances[from] + weight < distances[to]) {
-        distances[to] = distances[from] + weight;
-        predecessors[to] = from;
-        changed = true;
+      // push neighbors in reverse to keep the natural traversal order
+      const neighbors = graph[node] ?? [];
+      for (let i = neighbors.length - 1; i >= 0; i--) {
+        const neighbour = neighbors[i];
+        if (!visited.has(neighbour)) stack.push(neighbour);
       }
     }
-    /* Early exit if no relaxation happened */
-    if (!changed) break;
   }
 
-  /* Check for negative‑weight cycles reachable from source */
-  let negativeCycleDetected = false;
-  for (const e of edges) {
-    const { from, to, weight } = e;
-    if (distances[from] !== INF && distances[from] + weight < distances[to]) {
-      negativeCycleDetected = true;
-      break;
+  if (visitAll) {
+    // explore every component that hasn't been visited yet
+    for (const node of Object.keys(graph)) {
+      if (!visited.has(node)) stack.push(node);
+      while (stack.length) {
+        const cur = stack.pop()!;
+        if (!visited.has(cur)) {
+          visited.add(cur);
+          order.push(cur);
+          const neighbors = graph[cur] ?? [];
+          for (let i = neighbors.length - 1; i >= 0; i--)
+            if (!visited.has(neighbors[i])) stack.push(neighbors[i]);
+        }
+      }
     }
   }
 
-  return { distances, predecessors, negativeCycleDetected };
+  return order;
 }
-/**
- * Retrieves the shortest path from source to `target` after a Bellman‑Ford run.
- * Returns `undefined` if the target is unreachable.
- */
-export function reconstructPath(
-  target: number,
-  predecessors: (number | null)[]
-): number[] | undefined {
-  if (predecessors[target] === null) return undefined;
 
-  const path: number[] = [];
-  for (let v = target; v !== null; v = predecessors[v]) {
-    path.push(v);
-  }
-  return path.reverse();
-}
-// A small graph with both positive and negative edges
-const graph: Graph = [
-  { from: 0, to: 1, weight: 4 },
-  { from: 0, to: 2, weight: 5 },
-  { from: 1, to: 2, weight: -3 },
-  { from: 1, to: 3, weight: 2 },
-  { from: 2, to: 3, weight: 4 },
-];
+// -----------------------------------------------------------------------------
+//  Example usage
+// -----------------------------------------------------------------------------
 
-const vertexCount = 4;          // vertices 0 … 3
-const source = 0;
-const result = bellmanFord(graph, vertexCount, source);
+const sampleGraph: Graph = {
+  A: ["B", "C"],
+  B: ["D", "E"],
+  C: ["F"],
+  D: [],
+  E: ["F"],
+  F: [],
+  G: ["H"],   // disconnected component
+  H: [],
+};
 
-console.log('Distances:', result.distances);
-// [0, 1, 2, 3]
+console.log("DFS from 'A' (component‐only):", depthFirstSearch(sampleGraph, "A"));
+// → [ 'A', 'B', 'D', 'E', 'F', 'C' ]
 
-console.log('Negative cycle detected?', result.negativeCycleDetected);
-// false
+console.log("DFS from 'A' (all components):", depthFirstSearch(sampleGraph, "A", true));
+// → [ 'A', 'B', 'D', 'E', 'F', 'C', 'G', 'H' ]
 
-const pathTo3 = reconstructPath(3, result.predecessors);
-console.log('Path 0 → 3:', pathTo3); // [0, 1, 3]
