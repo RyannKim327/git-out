@@ -1,39 +1,27 @@
-const a = [1, 2, 3, 4, 5];
-const b = [3, 4, 5, 6, 7];
+/**
+ * Returns true if `n` is a prime number, false otherwise.
+ * Handles integer inputs, explicitly rejects non‑integers and numbers ≤ 1.
+ */
+function isPrime(n: number): boolean {
+  // 0, 1, negatives and non‑integers are not prime
+  if (!Number.isInteger(n) || n < 2) return false;
 
-const intersection = a.filter(item => new Set(b).has(item));
-console.log(intersection); // [3, 4, 5]
-const a = [1, 2, 3, 4, 5, 5];
-const b = [3, 4, 5, 5, 6];
+  // 2 and 3 are prime
+  if (n === 2 || n === 3) return true;
 
-const setA = new Set(a);
-const setB = new Set(b);
+  // Eliminate even numbers and multiples of 3 early
+  if (n % 2 === 0 || n % 3 === 0) return false;
 
-const intersection = [...setA].filter(item => setB.has(item));
-console.log(intersection); // [3, 4, 5]
-function multisetIntersection<T>(arr1: T[], arr2: T[]): T[] {
-  const counter = new Map<T, number>();
-
-  // Count each element of arr1
-  for (const v of arr1) {
-    counter.set(v, (counter.get(v) ?? 0) + 1);
+  // Only test up to √n. Use step 6k±1 pattern to skip even numbers.
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 5; i <= limit; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
   }
 
-  // For each element in arr2, if it exists in the counter use it
-  const result: T[] = [];
-  for (const v of arr2) {
-    const count = counter.get(v);
-    if (count && count > 0) {
-      result.push(v);
-      counter.set(v, count - 1);
-    }
-  }
-  return result;
+  return true;
 }
-
-console.log(multisetIntersection([1, 2, 2, 3], [2, 2, 4]));
-// → [2, 2]
-const intersection = a.reduce((acc, item) => {
-  if (b.includes(item) && !acc.includes(item)) acc.push(item);
-  return acc;
-}, [] as number[]);
+console.log(isPrime(1));   // false
+console.log(isPrime(2));   // true
+console.log(isPrime(29));  // true
+console.log(isPrime(30));  // false
+console.log(isPrime(97));  // true
