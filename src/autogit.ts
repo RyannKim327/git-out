@@ -1,31 +1,17 @@
-// Returns n! for n >= 0.
-function factorial(n: number): number {
-  if (n < 0) throw new Error('Negative numbers don’t have factorials!');
-  if (n <= 1) return 1;
-  return n * factorial(n - 1);
-}
-function factorialIter(n: number): number {
-  if (n < 0) throw new Error('Negative numbers don’t have factorials!');
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
-}
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error('Negative numbers don’t have factorials!');
-  let result = 1n;              // 1n is a BigInt literal
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
-}
-console.log(factorialBigInt(20)); // 2432902008176640000n
-const memo: Record<number, number> = { 0: 1, 1: 1 };
+const raw = '  Hello,\t\nWorld!  \u3000';
 
-function memoisedFactorial(n: number): number {
-  if (n < 0) throw new Error('Negative numbers don’t have factorials!');
-  if (n in memo) return memo[n];
-  memo[n] = n * memoisedFactorial(n - 1);
-  return memo[n];
+const trimmed = raw.trim();                 // "Hello,\t\nWorld!  \u3000"
+const noWhitespace = raw.replace(/\s+/g, ''); // "Hello,World!"
+const collapsed = raw.replace(/\s+/g, ' ');   // "Hello, World!"
+
+console.log({ trimmed, noWhitespace, collapsed });
+/**
+ * Strip all whitespace from a string, or optionally replace it with another string.
+ *
+ * @param input   The string to clean.
+ * @param replace What to put in place of each whitespace run (default: empty string).
+ * @returns The cleaned string.
+ */
+function cleanWhitespace(input: string, replace = ''): string {
+  return input.replace(/\s+/g, replace);
 }
