@@ -1,43 +1,66 @@
 /**
- * Merge‑sort an array **in place** using a bottom‑up (iterative) scheme.
+ * In‑place selection sort.
  *
- * @param arr   The array to sort. Elements must be comparable using the `<=` operator.
- * @param buf   Optional temporary buffer. If omitted, a new one of the same length is created.
- * @returns     The sorted array (same reference as `arr`).
+ * @param arr  The array to sort.
+ * @param compare Optional comparison callback. Should return:
+ *                 < 0 if a < b
+ *                 > 0 if a > b
+ *                 0 if a == b
  */
-export function mergeSortIterative<T>(arr: T[], buf?: T[]): T[] {
-  const n = arr.length;
-  if (n < 2) return arr;            // already sorted
+export function selectionSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): void {
+  const cmp = compare ?? defaultCompare;
 
-  // Use an explicit buffer if one isn't supplied.
-  const buffer = buf ?? (arr as unknown as T[]).slice();
-
-  // start with run-length 1, double every pass
-  for (let len = 1; len < n; len <<= 1) {
-    // Scan over pairs of runs
-    for (let i = 0; i < n; i += len * 2) {
-      const left  = i;
-      const mid   = Math.min(i + len, n);
-      const right = Math.min(i + len * 2, n);
-
-      // Merge arr[left…mid) and arr[mid…right) into buffer[left…right)
-      let p = left, q = mid, b = left;
-      while (p < mid && q < right) {
-        buffer[b++] = (arr[p] <= arr[q] ? arr[p++] : arr[q++]);
+  const len = arr.length;
+  for (let i = 0; i < len - 1; i++) {
+    // Find the minimum element in arr[i…len-1]
+    let minIdx = i;
+    for (let j = i + 1; j < len; j++) {
+      if (cmp(arr[j], arr[minIdx]) < 0) {
+        minIdx = j;
       }
-      while (p < mid) buffer[b++] = arr[p++];
-      while (q < right) buffer[b++] = arr[q++];
     }
-    // swap roles: buffer → arr
-    [arr, buffer] = [buffer, arr];
+    // Swap the found minimum with the first element
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+    }
   }
-
-  // If the final sorted data sits in `buffer` we copy it back.
-  if (Array.isArray(buffer) && arr !== buffer) {
-    for (let i = 0; i < n; i++) arr[i] = buffer[i];
-  }
-  return arr;
 }
-const data = [9, 3, 7, 1, 4, 8, 0, 5, 2, 6];
-mergeSortIterative(data);   // data is now sorted
-console.log(data);          // [0,1,2,3,4,5,6,7,8,9]
+
+/**
+ * Default comparer for numbers and strings.
+ */
+function defaultCompare(a: any, b: any): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+// 1. Sorting numbers
+const nums = [64, 25, 12, 22, 11];
+selectionSort(nums);
+console.log(nums); // [11, 12, 22, 25, 64]
+
+// 2. Sorting strings
+const fruits = ['banana', 'apple', 'cherry'];
+selectionSort(fruits);
+console.log(fruits); // ['apple', 'banana', 'cherry']
+
+// 3. Sorting objects by a key
+type Person = { name: string; age: number };
+const people: Person[] = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob', age: 22 },
+  { name: 'Carol', age: 25 },
+];
+
+selectionSort(people, (a, b) => a.age - b.age);
+console.log(people);
+/*
+[
+  { name: 'Bob', age: 22 },
+  { name: 'Carol', age: 25 },
+  { name: 'Alice', age: 30 }
+]
+*/
