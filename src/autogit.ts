@@ -1,72 +1,81 @@
-interface Node<T = any> {
-  value: T;
-  neighbors: Node<T>[];
-  // optional metadata for the search
-  depth?: number;
-}
-function depthLimitedSearch<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  function dfs(node: Node<T>, depth: number): Node<T> | null {
-    if (depth > maxDepth) return null;          // over the ceiling
-    if (isGoal(node)) return node;             // goal found
+// 0‑based directed graph
+export type Graph = number[][];   // graph[u] = list of vertices that u points to
+/**
+ * Returns an array of strongly connected components.
+ * Each component is an array of vertex indices, in the order they were popped.
+ */
+export function tarjanSCC(graph: Graph): number[][] {
+  const n = graph.length;
+  const indices = new Array<number>(n).fill(-1);   // -1 = unvisited
+  const lowlink = new Array<number>(n).fill(0);
+  const onStack = new Array<boolean>(n).fill(false);
+  const stack: number[] = [];
 
-    for (const neigh of node.neighbors) {
-      const result = dfs(neigh, depth + 1);
-      if (result) return result;               // propagate up
+  const sccs: number[][] = [];
+  let nextIdx = 0;
+
+  function strongConnect(v: number) {
+    // 1️⃣  Discovery
+    indices[v] = lowlink[v] = nextIdx++;
+    stack.push(v);
+    onStack[v] = true;
+
+    // 2️⃣  Explore neighbors
+    for (const w of graph[v]) {
+      if (indices[w] === -1) {
+        // w has not been visited – recurse
+        strongConnect(w);
+        lowlink[v] = Math.min(lowlink[v], lowlink[w]);
+      } else if (onStack[w]) {
+        // w is on stack → back‑edge
+        lowlink[v] = Math.min(lowlink[v], indices[w]);
+      }
     }
-    return null;                               // no goal along this path
-  }
 
-  return dfs(root, 0);
-}
-function depthLimitedIterative<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-
-    if (depth > maxDepth) continue;          // skip over‑depth nodes
-    if (isGoal(node)) return node;           // hit the target
-
-    // Push neighbors in reverse order if you want the left‑most first
-    for (let i = node.neighbors.length - 1; i >= 0; i--) {
-      stack.push({ node: node.neighbors[i], depth: depth + 1 });
-    }
-  }
-
-  return null; // exhausted without finding goal
-}
-// Build a tiny graph
-const leaf = { value: 'leaf', neighbors: [] };
-const mid   = { value: 'mid',   neighbors: [leaf] };
-const root  = { value: 'root',  neighbors: [mid] };
-
-const found = depthLimitedSearch(root, node => node.value === 'leaf', 3);
-console.log(found?.value); // → "leaf"
-function breadthLimitedSearch<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  const queue: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;
-
-    if (depth > maxDepth) continue;
-    if (isGoal(node)) return node;
-
-    for (const neigh of node.neighbors) {
-      queue.push({ node: neigh, depth: depth + 1 });
+    // 3️⃣  Root check
+    if (lowlink[v] === indices[v]) {
+      const component: number[] = [];
+      let w: number;
+      do {
+        w = stack.pop()!;
+        onStack[w] = false;
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
     }
   }
 
-  return null;
+  // kick off DFS from every unvisited vertex
+  for (let v = 0; v < n; v++) {
+    if (indices[v] === -1) {
+      strongConnect(v);
+    }
+  }
+
+  return sccs;
 }
+const graph: Graph = [
+  [1],          // 0 → 1
+  [2],          // 1 → 2
+  [0, 3],       // 2 → 0, 2 → 3
+  [4],          // 3 → 4
+  [5, 6],       // 4 → 5, 4 → 6
+  [3],          // 5 → 3
+  [4]           // 6 → 4
+];
+
+const sccs = tarjanSCC(graph);
+console.log(sccs);
+// Expected output (order of components may vary):
+// [
+//   [0, 1, 2],   // one SCC (0↔1↔2)
+//   [3],         // single node
+//   [4],         // single node
+//   [5],         // single node
+//   [6]          // single node
+// ]
+// A cycle of length 5
+const cycle: Graph = [ [1], [2], [3], [4], [0] ];
+console.assert(tarjanSCC(cycle).length === 1 &&
+               tarjanSCC(cycle)[0].length === 5, 'Cycle should be one SCC');
+
