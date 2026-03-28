@@ -1,62 +1,43 @@
+// shellSort.ts
+
 /**
- * Returns the index of `target` in a sorted array `arr` or -1 if not found.
+ * Shell sort – an insertion‑sort based algorithm that improves on the
+ * “gaps” of ordinary insertion sort using a diminishing sequence.
  *
- * @param arr     Sorted array of numbers (ascending or descending)
- * @param target  Value to search for
- * @returns Index or -1
+ * @param arr The array to sort in place.  It must contain elements that
+ *            can be compared with the `<` operator.
+ * @returns The same array reference, now sorted.
  */
-export function interpolationSearch(arr: number[], target: number): number {
-  if (!arr.length) return -1;
+export function shellSort<T>(arr: T[]): T[] {
+  const n = arr.length;
+  // Standard Shell sequence: start with ~n/2, then halve until 1
+  let gap = Math.floor(n / 2);
 
-  let lo = 0;
-  let hi = arr.length - 1;
+  while (gap > 0) {
+    for (let i = gap; i < n; i++) {
+      // Perform a "gapped" insertion sort on the sub‑array
+      const temp = arr[i];
+      let j = i;
 
-  // Handle both ascending and descending arrays.
-  const isAscending = arr[hi] > arr[lo];
+      while (j >= gap && arr[j - gap] > temp) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
 
-  // If target is out of the array’s bounds, it can’t be there.
-  while (
-    (isAscending
-      ? target < arr[lo] || target > arr[hi]
-      : target > arr[lo] || target < arr[hi])
-  ) {
-    return -1;
-  }
-
-  while (lo <= hi) {
-    // Avoid division by zero when lo and hi point to the same value.
-    if (arr[lo] === arr[hi]) {
-      return arr[lo] === target ? lo : -1;
+      arr[j] = temp;
     }
 
-    // Estimate the next probe position.
-    const pos =
-      lo +
-      Math.floor(
-        ((target - arr[lo]) * (hi - lo)) /
-          (arr[hi] - arr[lo])
-      );
-
-    // Guard against unexpected inequalities after casting to int.
-    if (pos < lo || pos > hi) return -1;
-
-    if (arr[pos] === target) return pos;
-
-    if (arr[pos] < target) {
-      lo = pos + 1;
-    } else {
-      hi = pos - 1;
-    }
+    gap = Math.floor(gap / 2);
   }
 
-  return -1;
+  return arr;
 }
-// sorted ascending
-const asc = [1, 3, 5, 7, 9, 11, 13];
-console.log(interpolationSearch(asc, 7)); // 3
-console.log(interpolationSearch(asc, 2)); // -1
+import { shellSort } from "./shellSort";
 
-// sorted descending
-const desc = [20, 15, 10, 5, 0];
-console.log(interpolationSearch(desc, 10)); // 2
-console.log(interpolationSearch(desc, -5)); // -1
+const unsorted = [23, 12, 1, 8, 33, -6, 10];
+console.log("Before:", unsorted);
+
+shellSort(unsorted);
+console.log("After:", unsorted);
+// → Before: [23, 12, 1, 8, 33, -6, 10]
+//    After:  [-6, 1, 8, 10, 12, 23, 33]
