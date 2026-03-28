@@ -1,49 +1,54 @@
-/*  Depth‑first search (BFS) that stops after exploring a given number of levels.
- *
- *  - `Node`   – a generic representation of a graph vertex.
- *  - `getNeighbors` – a callback that returns the adjacent nodes.
- *  - `goal` – a predicate that tells whether the node is satisfactory.
- *  - `maxDepth` – how many edges away from the start we’ll consider.
- *
- *  The function yields an array of nodes in the order they were visited
- *  (first‑in, first‑out).  The result can be empty when the goal isn’t
- *  found before the depth limit.
- */
+// ------------------------------------------------------------------
+// 1️⃣ Define the tree node (you can adapt it to your existing type)
+export interface TreeNode {
+  val: number;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
+}
 
-type Node = {
-  id: string | number;
-  // … other properties
+// ------------------------------------------------------------------
+// 2️⃣ Recursive – the most idiomatic way in TypeScript
+
+export function sumRecursive(root: TreeNode | null): number {
+  if (!root) return 0;                     // base case
+  return root.val + sumRecursive(root.left) + sumRecursive(root.right);
+}
+
+// ------------------------------------------------------------------
+// 3️⃣ Iterative – using a stack (no recursion, useful for very deep trees)
+
+export function sumIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+
+  let stack: Array<TreeNode> = [root];
+  let total = 0;
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    total += node.val;
+
+    if (node.right) stack.push(node.right);
+    if (node.left)  stack.push(node.left);
+  }
+  return total;
+}
+
+// ------------------------------------------------------------------
+// 4️⃣ Quick sanity‑check
+
+// Build a tiny sample tree:
+//
+//          5
+//        /   \
+//       3     8
+//      / \     \
+//     1   4     10
+//
+const sampleRoot: TreeNode = {
+  val: 5,
+  left: { val: 3, left: { val: 1 }, right: { val: 4 } },
+  right: { val: 8, right: { val: 10 } },
 };
 
-export function breadthLimitedSearch(
-  start: Node,
-  maxDepth: number,
-  goal: (n: Node) => boolean,
-  getNeighbors: (n: Node) => Node[]
-): Node[] {
-  if (maxDepth < 0) return [];
-
-  const frontier: Array<{ node: Node; depth: number }> = [{ node: start, depth: 0 }];
-  const visited = new Set<Node>();
-  const result: Node[] = [];
-
-  while (frontier.length) {
-    const { node, depth } = frontier.shift()!; // safe pop because we always pop a value
-    if (visited.has(node)) continue;
-    visited.add(node);
-
-    result.push(node);
-    if (goal(node)) break;
-
-    // If we haven’t hit the depth ceiling, enqueue the next layer
-    if (depth < maxDepth) {
-      const neighbours = getNeighbors(node);
-      for (const neighbour of neighbours) {
-        if (!visited.has(neighbour)) {
-          frontier.push({ node: neighbour, depth: depth + 1 });
-        }
-      }
-    }
-  }
-  return result;
-}
+console.log('Recursive sum:', sumRecursive(sampleRoot));   // → 31
+console.log('Iterative sum:', sumIterative(sampleRoot));   // → 31
