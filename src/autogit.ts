@@ -1,57 +1,45 @@
-/**
- * Generic binary search.
- *
- * @param arr   Sorted array.
- * @param key  Value you’re looking for.
- * @param cmp  Optional comparison callback.
- *
- * @returns The index of `key` if found, otherwise –1.
- */
-export function binarySearch<T>(
-    arr: T[],
-    key: T,
-    cmp?: (a: T, b: T) => number
-): number {
-    if (arr.length === 0) return -1;
+// src/cronJob.ts
 
-    // Default to natural ordering for primitives.
-    const compare = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+import cron from 'node-cron';
 
-    let low = 0;
-    let high = arr.length - 1;
+// Helper: generate a random number between 1 and 100
+const randomInt = () => Math.floor(Math.random() * 100) + 1;
 
-    while (low <= high) {
-        // Guard against overflow in large arrays.
-        const mid = low + ((high - low) >> 1);
-        const midVal = arr[mid];
+// The job – runs every minute (`* * * * *`)
+const job = cron.schedule('* * * * *', () => {
+  const now = new Date().toISOString();
+  const rand = randomInt();
+  console.log(`[${now}] Random number: ${rand}`);
+  // You can place any logic here (DB ops, API calls, etc.)
+});
 
-        const comparison = compare(midVal, key);
+// Start the job
+job.start();
+console.log('Cron job scheduled: every minute.');
+# 1️⃣ Create a new TS project (if you haven't already)
+mkdir cron-demo && cd cron-demo
+npm init -y
 
-        if (comparison === 0) {
-            return mid;          // Found!
-        } else if (comparison < 0) {
-            low = mid + 1;
-        } else {
-            high = mid - 1;
-        }
-    }
+# 2️⃣ Install the required packages
+npm i node-cron
+npm i -D typescript @types/node
 
-    return -1;  // Not found
+# 3️⃣ Add a tsconfig.json (basic version)
+cat <<'EOF' > tsconfig.json
+{
+  "compilerOptions": {
+    "target": "es2019",
+    "module": "commonjs",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true
+  },
+  "include": ["src"]
 }
-// 1️⃣ Integers (no cmp needed)
-const numbers = [3, 7, 12, 19, 27];
-const idx1 = binarySearch(numbers, 12); // 2
+EOF
 
-// 2️⃣ Strings
-const words = ['apple', 'banana', 'cherry', 'date'];
-const idx2 = binarySearch(words, 'cherry'); // 2
-
-// 3️⃣ Objects – supply a compare
-type User = { id: number; name: string };
-const users: User[] = [
-    { id: 10, name: 'Zoe' },
-    { id: 20, name: 'Bob' },
-    { id: 30, name: 'Alice' },
-].sort((a, b) => a.id - b.id);
-
-const idx3 = binarySearch(users, { id: 20, name: '' }, (a, b) => a.id - b.id); // 1
+# 4️⃣ Place the `cronJob.ts` file in ./src
+# 5️⃣ Compile and run
+npx tsc
+node dist/cronJob.js
