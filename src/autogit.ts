@@ -1,45 +1,26 @@
-// src/cronJob.ts
+/**
+ * Performs an in‑place insertion sort on an array of numeric values.
+ * @param data The array to sort – it will be mutated directly.
+ */
+export function insertionSort<T extends number[]> (data: T): void {
+  // walk from the second element to the end
+  for (let i = 1; i < data.length; i++) {
+    const key = data[i];          // value we’re trying to insert
+    let j = i - 1;
 
-import cron from 'node-cron';
+    /* Shift elements that are greater than `key` up by one
+       position until we find the spot for the key. */
+    while (j >= 0 && data[j] > key) {
+      data[j + 1] = data[j];
+      j--;
+    }
 
-// Helper: generate a random number between 1 and 100
-const randomInt = () => Math.floor(Math.random() * 100) + 1;
-
-// The job – runs every minute (`* * * * *`)
-const job = cron.schedule('* * * * *', () => {
-  const now = new Date().toISOString();
-  const rand = randomInt();
-  console.log(`[${now}] Random number: ${rand}`);
-  // You can place any logic here (DB ops, API calls, etc.)
-});
-
-// Start the job
-job.start();
-console.log('Cron job scheduled: every minute.');
-# 1️⃣ Create a new TS project (if you haven't already)
-mkdir cron-demo && cd cron-demo
-npm init -y
-
-# 2️⃣ Install the required packages
-npm i node-cron
-npm i -D typescript @types/node
-
-# 3️⃣ Add a tsconfig.json (basic version)
-cat <<'EOF' > tsconfig.json
-{
-  "compilerOptions": {
-    "target": "es2019",
-    "module": "commonjs",
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "strict": true,
-    "esModuleInterop": true
-  },
-  "include": ["src"]
+    // put the key into its final place
+    data[j + 1] = key;
+  }
 }
-EOF
+import { insertionSort } from "./insertion-sort";
 
-# 4️⃣ Place the `cronJob.ts` file in ./src
-# 5️⃣ Compile and run
-npx tsc
-node dist/cronJob.js
+const nums = [34, 8, 64, 51, 32, 24];
+insertionSort(nums);
+console.log(nums);  // → [ 8, 24, 32, 34, 51, 64 ]
