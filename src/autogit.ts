@@ -1,43 +1,36 @@
-// shellSort.ts
-
 /**
- * Shell sort – an insertion‑sort based algorithm that improves on the
- * “gaps” of ordinary insertion sort using a diminishing sequence.
- *
- * @param arr The array to sort in place.  It must contain elements that
- *            can be compared with the `<` operator.
- * @returns The same array reference, now sorted.
+ * Returns the first character that appears only once.
+ * If all characters repeat, null is returned.
  */
-export function shellSort<T>(arr: T[]): T[] {
-  const n = arr.length;
-  // Standard Shell sequence: start with ~n/2, then halve until 1
-  let gap = Math.floor(n / 2);
-
-  while (gap > 0) {
-    for (let i = gap; i < n; i++) {
-      // Perform a "gapped" insertion sort on the sub‑array
-      const temp = arr[i];
-      let j = i;
-
-      while (j >= gap && arr[j - gap] > temp) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-
-      arr[j] = temp;
-    }
-
-    gap = Math.floor(gap / 2);
+function firstNonRepeating(str: string): string | null {
+  // Build a frequency map
+  const freq = new Map<string, number>();
+  for (const ch of str) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  return arr;
+  // Find the first character with a count of 1
+  for (const ch of str) {
+    if (freq.get(ch) === 1) return ch;
+  }
+
+  return null;   // nothing found
 }
-import { shellSort } from "./shellSort";
 
-const unsorted = [23, 12, 1, 8, 33, -6, 10];
-console.log("Before:", unsorted);
+// --- examples -------------------------------------------------
+console.log(firstNonRepeating('abacabad')); // "c"
+console.log(firstNonRepeating('aabbcc'));   // null
+function firstNonRepeatingOnePass(str: string): string | null {
+  const counts: Record<string, number> = {};
+  const queue: string[] = [];
 
-shellSort(unsorted);
-console.log("After:", unsorted);
-// → Before: [23, 12, 1, 8, 33, -6, 10]
-//    After:  [-6, 1, 8, 10, 12, 23, 33]
+  for (const ch of str) {
+    counts[ch] = (counts[ch] ?? 0) + 1;
+    if (counts[ch] === 1) queue.push(ch);
+
+    // purge invalid candidates from the front
+    while (queue.length && counts[queue[0]] > 1) queue.shift();
+  }
+
+  return queue.length ? queue[0] : null;
+}
