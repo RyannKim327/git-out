@@ -1,26 +1,28 @@
 /**
- * Performs an in‑place insertion sort on an array of numeric values.
- * @param data The array to sort – it will be mutated directly.
+ * Return the maximum sum of any contiguous sub‑array.
+ *
+ * @param arr - array of numbers (can contain negatives)
+ * @returns the maximum sub‑array sum
  */
-export function insertionSort<T extends number[]> (data: T): void {
-  // walk from the second element to the end
-  for (let i = 1; i < data.length; i++) {
-    const key = data[i];          // value we’re trying to insert
-    let j = i - 1;
-
-    /* Shift elements that are greater than `key` up by one
-       position until we find the spot for the key. */
-    while (j >= 0 && data[j] > key) {
-      data[j + 1] = data[j];
-      j--;
-    }
-
-    // put the key into its final place
-    data[j + 1] = key;
+export function maxSubarraySum(arr: number[]): number {
+  if (arr.length === 0) {
+    throw new Error('Array must contain at least one element');
   }
-}
-import { insertionSort } from "./insertion-sort";
 
-const nums = [34, 8, 64, 51, 32, 24];
-insertionSort(nums);
-console.log(nums);  // → [ 8, 24, 32, 34, 51, 64 ]
+  // Initialise both values to the first element
+  let currentSum = arr[0];
+  let maxSum = arr[0];
+
+  // Scan the rest of the array once
+  for (let i = 1; i < arr.length; i++) {
+    // Either continue the current sub‑array or start fresh at arr[i]
+    currentSum = Math.max(arr[i], currentSum + arr[i]);
+
+    // Update the global maximum if we found a bigger one
+    maxSum = Math.max(maxSum, currentSum);
+  }
+
+  return maxSum;
+}
+console.log(maxSubarraySum([2, -3, 4, -1, 2, 1])); // 6  (sub‑array 4,-1,2,1)
+console.log(maxSubarraySum([-2, -3, -1, -4]));      // -1 (single element)
