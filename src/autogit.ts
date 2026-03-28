@@ -1,54 +1,30 @@
-// ------------------------------------------------------------------
-// 1️⃣ Define the tree node (you can adapt it to your existing type)
-export interface TreeNode {
-  val: number;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
-
-// ------------------------------------------------------------------
-// 2️⃣ Recursive – the most idiomatic way in TypeScript
-
-export function sumRecursive(root: TreeNode | null): number {
-  if (!root) return 0;                     // base case
-  return root.val + sumRecursive(root.left) + sumRecursive(root.right);
-}
-
-// ------------------------------------------------------------------
-// 3️⃣ Iterative – using a stack (no recursion, useful for very deep trees)
-
-export function sumIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  let stack: Array<TreeNode> = [root];
-  let total = 0;
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    total += node.val;
-
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
+/**
+ * Compute n! recursively.
+ *
+ * @param n – non‑negative integer (or BigInt)
+ * @returns n! as the same numeric type that was passed in
+ */
+function factorial(n: number): number;
+function factorial(n: BigInt): BigInt;
+function factorial(n: number | BigInt): number | BigInt {
+  // Validate the input
+  if (typeof n === "number") {
+    if (!Number.isInteger(n) || n < 0) {
+      throw new Error("n must be a non‑negative integer");
+    }
+    // Base case
+    if (n <= 1) return 1;
+    // Recursive step
+    return n * factorial(n - 1);
+  } else {
+    // BigInt path – same logic, but with BigInt operations
+    if (n < 0n) {
+      throw new Error("n must be a non‑negative integer");
+    }
+    if (n <= 1n) return 1n;
+    return n * factorial(n - 1n);
   }
-  return total;
 }
-
-// ------------------------------------------------------------------
-// 4️⃣ Quick sanity‑check
-
-// Build a tiny sample tree:
-//
-//          5
-//        /   \
-//       3     8
-//      / \     \
-//     1   4     10
-//
-const sampleRoot: TreeNode = {
-  val: 5,
-  left: { val: 3, left: { val: 1 }, right: { val: 4 } },
-  right: { val: 8, right: { val: 10 } },
-};
-
-console.log('Recursive sum:', sumRecursive(sampleRoot));   // → 31
-console.log('Iterative sum:', sumIterative(sampleRoot));   // → 31
+console.log(factorial(5));   // 120
+console.log(factorial(20));  // 2432902008176640000
+console.log(factorial(20n)); // 2432902008176640000n (BigInt)
