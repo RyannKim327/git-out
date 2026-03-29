@@ -1,35 +1,99 @@
-/**
- * Bubble sort for an array of numbers.
- * The function mutates the passed array and returns it so you can chain or immediately inspect it.
- *
- * @param arr – the array to sort
- * @returns the sorted array (same reference as `arr`)
- */
-export function bubbleSort(arr: number[]): number[] {
-  // The array’s length is used repeatedly, so cache it for speed.
-  const n = arr.length;
+export interface PriorityQueue<T> {
+  enqueue(item: T, priority: number): void;
+  dequeue(): T | undefined;         // removes the highest‑priority item
+  peek(): T | undefined;            // look at the next item without removing
+  size(): number;
+  isEmpty(): boolean;
+}
+type HeapNode<T> = { value: T; priority: number };
 
-  // Outer loop – each pass pushes the next largest element to its final spot at the end.
-  // We can stop one element earlier on each pass because the last `pass` items are already sorted.
-  for (let pass = 0; pass < n - 1; pass++) {
-    // Track whether any swap happened this pass. If none, the array is sorted.
-    let swapped = false;
+export class BinaryHeap<T> implements PriorityQueue<T> {
+  /** Internal array that holds the heap nodes. */
+  private heap: HeapNode<T>[] = [];
 
-    // Inner loop – compare adjacent pairs and swap if out of order.
-    // We only need to go up to `n - pass - 1` because the last `pass` elements are in place.
-    for (let i = 0; i < n - pass - 1; i++) {
-      if (arr[i] > arr[i + 1]) {
-        // Simple swap using destructuring.
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
-        swapped = true;
-      }
-    }
-
-    // If no two elements were swapped, no more passes are required.
-    if (!swapped) break;
+  /** Returns the array length, i.e. number of elements in the queue. */
+  size() {
+    return this.heap.length;
   }
 
-  return arr;
+  isEmpty() {
+    return this.heap.length === 0;
+  }
+
+  /** Put a new (value, priority) pair into the heap. */
+  enqueue(value: T, priority: number) {
+    const node: HeapNode<T> = { value, priority };
+    this.heap.push(node);               // add to the bottom
+    this.bubbleUp(this.heap.length - 1); // restore heap property
+  }
+
+  /** Remove and return the value with the lowest priority value. */
+  dequeue(): T | undefined {
+    if (this.isEmpty()) return undefined;
+
+    const root = this.heap[0];
+    const last = this.heap.pop()!;          // guaranteed non‑empty
+
+    if (!this.isEmpty()) {
+      this.heap[0] = last;                  // move the last node to root
+      this.bubbleDown(0);                   // restore heap property
+    }
+
+    return root.value;
+  }
+
+  /** Peek at the next value that would be dequeued. */
+  peek(): T | undefined {
+    return this.isEmpty() ? undefined : this.heap[0].value;
+  }
+
+  /* ---------- internal helpers ---------- */
+
+  private bubbleUp(idx: number) {
+    const node = this.heap[idx];
+    while (idx > 0) {
+      const parentIdx = (idx - 1) >> 1; // same as Math.floor((idx-1)/2)
+      const parent = this.heap[parentIdx];
+      if (node.priority >= parent.priority) break; // correct place found
+      this.heap[idx] = parent;                     // move parent down
+      idx = parentIdx;
+    }
+    this.heap[idx] = node; // place the new node
+  }
+
+  private bubbleDown(idx: number) {
+    const length = this.heap.length;
+    const node = this.heap[idx];
+
+    while (true) {
+      const leftIdx = idx * 2 + 1;
+      const rightIdx = leftIdx + 1;
+      let smallestIdx = idx;
+
+      if (leftIdx < length && this.heap[leftIdx].priority < this.heap[smallestIdx].priority) {
+        smallestIdx = leftIdx;
+      }
+      if (rightIdx < length && this.heap[rightIdx].priority < this.heap[smallestIdx].priority) {
+        smallestIdx = rightIdx;
+      }
+
+      if (smallestIdx === idx) break; // node is smaller than both children
+
+      this.heap[idx] = this.heap[smallestIdx];
+      idx = smallestIdx;
+    }
+
+    this.heap[idx] = node;
+  }
 }
-const unsorted = [64, 34, 25, 12, 22, 11, 90];
-console.log(bubbleSort(unsorted));        // [11, 12, 22, 25, 34, 64, 90]
+const pq = new BinaryHeap<string>();
+
+pq.enqueue('task A', 5);
+pq.enqueue('task B', 2);
+pq.enqueue('task C', 8);
+
+console.log(pq.peek());   // => 'task B' (priority 2)
+while (!pq.isEmpty()) {
+  console.log(pq.dequeue()); // prints B, A, C in priority order
+}
+type Comparator<T> = (a: T, b: T) => number; // <0: a before b
