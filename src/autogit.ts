@@ -1,71 +1,100 @@
-// src/api/remote.ts
-import { NativeModules, NativeEventEmitter } from 'react-native';
+/* 1️⃣  A node holds a value and a pointer to the next node   */
+class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
+}
 
-const { AndroidAsyncTask } = NativeModules;
+/* 2️⃣  The list itself                                               */
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
 
-// -----------------------------------------------------------------
-// 1️⃣  The simple JS/TS side: an async fetch helper
-// -----------------------------------------------------------------
-export async function loadRemoteJson(url: string): Promise<any> {
-  try {
-    const response = await fetch(url, { method: 'GET' });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} – ${response.statusText}`);
+  /* Useful for debugging or quick inspection */
+  get size() : number { return this._size; }
+
+  /* 🔄  Add at the end – amortised O(1)                      */
+  push(val: T) : void {
+    const node = new ListNode(val);
+    if (!this.head) {   // first element
+      this.head = this.tail = node;
+    } else {
+      // tail is guaranteed not null here
+      this.tail!.next = node;
+      this.tail = node;
     }
-    const payload = await response.json();
-    return payload;
-  } catch (err) {
-    console.error('loadRemoteJson error:', err);
-    throw err;
+    this._size++;
+  }
+
+  /* ⬅️  Remove from the end – O(n) because we’d have to
+        find the previous node. This simple version walks
+        to the node before the tail.                        */
+  pop() : T | undefined {
+    if (!this.head) return;
+    if (this.head === this.tail) {   // one element left
+      const val = this.head.value;
+      this.head = this.tail = null;
+      this._size = 0;
+      return val;
+    }
+
+    let prev = this.head;
+    while (prev.next !== this.tail) {
+      prev = prev.next!;
+    }
+    const val = this.tail!.value;
+    prev.next = null;
+    this.tail = prev;
+    this._size--;
+    return val;
+  }
+
+  /* 🔍  Find the index of a value – O(n)                   */
+  indexOf(val: T) : number {
+    let cur = this.head;
+    let i = 0;
+    while (cur) {
+      if (cur.value === val) return i;
+      cur = cur.next;
+      i++;
+    }
+    return -1;
+  }
+
+  /* 🔢  Grab the value at an index – guard against
+        out‑of‑range access. O(n)                               */
+  getAt(index: number) : T | undefined {
+    if (index < 0 || index >= this._size) return;
+    let cur = this.head;
+    let i = 0;
+    while (cur && i < index) {
+      cur = cur.next;
+      i++;
+    }
+    return cur?.value;
+  }
+
+  /* 🔁  Iterate over values – handy for `for..of`            */
+  [Symbol.iterator](): Iterator<T> {
+    let current = this.head;
+    return {
+      next: () => {
+        if (!current) return { done: true, value: undefined };
+        const value = current.value;
+        current = current.next;
+        return { done: false, value };
+      }
+    };
   }
 }
 
-// -----------------------------------------------------------------
-// 2️⃣  The bridge to Android (AsyncTask)
-// -----------------------------------------------------------------
-// On Android, create a module that exposes `runAsyncTask`
-// which internally spawns an AsyncTask that returns a JSON string.
-
-export function runAndroidTask(
-  taskName: string,
-  args: Record<string, any>
-): Promise<any> {
-  // The native module returns a Promise that resolves with a string
-  return AndroidAsyncTask.runAsyncTask(taskName, args).then((result: string) => {
-    try {
-      return JSON.parse(result);
-    } catch (err) {
-      console.warn('Failed to parse JSON from Android:', err);
-      throw err;
-    }
-  });
-}
-
-// -----------------------------------------------------------------
-// 3️⃣  Example usage (e.g. inside a component)
-// -----------------------------------------------------------------
-/*
-import React, { useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
-import { loadRemoteJson, runAndroidTask } from './api/remote';
-
-export default function Demo() {
-  const [data, setData] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Option A – vanilla fetch
-    loadRemoteJson('https://jsonplaceholder.typicode.com/todos/1')
-      .then(setData)
-      .catch(err => setError(err.message));
-
-    // Option B – delegate to Android AsyncTask
-    // runAndroidTask('fetchTodo', { id: 1 })
-    //   .then(setData)
-    //   .catch(err => setError(err.message));
-  }, []);
-
-  if (error) return <View><Text>❌ {error}</Text></View>;
-  return data ? <Text>✅ {JSON.stringify(data)}</Text> : <Text>⏳ Loading…</Text>;
-}
-*/
+/* 3️⃣  Quick sanity test                                   */
+const nums = new LinkedList<number>();
+nums.push(10);
+nums.push(20);
+nums.push(30);
+console.log(nums.size);          // 3
+console.log([...nums]);          // [10, 20, 30]
+console.log(nums.pop());         // 30
+console.log(nums.size);          // 2
+console.log(nums.indexOf(20));   // 1
+console.log(nums.getAt(0));      // 10
