@@ -1,133 +1,71 @@
-enum Color { RED, BLACK }
+/**
+ * Returns true if `a` and `b` contain exactly the same letters,
+ * disregarding order.
+ *
+ * @param a – first string
+ * @param b – second string
+ * @param options – optional flags
+ *   - ignoreSpaces: treat spaces as insignificant
+ *   - ignorePunctuation: strip punctuation marks
+ *   - ignoreCase: treat uppercase and lowercase as the same
+ */
+export function areAnagrams(
+  a: string,
+  b: string,
+  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
+): boolean {
+  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
 
-class RBNode<T> {
-  val: T
-  color: Color
-  left: RBNode<T> | null
-  right: RBNode<T> | null
-  parent: RBNode<T> | null
+  const sanitize = (s: string) => {
+    if (ignoreCase) s = s.toLowerCase();
+    if (ignoreSpaces) s = s.replace(/\s+/g, '');
+    if (ignorePunctuation) s = s.replace(/[^\w]/g, ''); // keep letters & digits
+    return s;
+  };
 
-  constructor(val: T, color = Color.RED) {
-    this.val = val
-    this.color = color
-    this.left = null
-    this.right = null
-    this.parent = null
-  }
+  const sa = sanitize(a).split('').sort().join('');
+  const sb = sanitize(b).split('').sort().join('');
+
+  return sa === sb;
 }
-class RedBlackTree<T> {
-  root: RBNode<T> | null = null
+/**
+ * Frequency‑count version – O(n) time, O(σ) space  
+ * (σ = size of alphabet, constant for ASCII/Unicode)
+ */
+export function areAnagramsFast(
+  a: string,
+  b: string,
+  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
+): boolean {
+  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
 
-  /* ===================== SEARCH ===================== */
-  search(val: T): RBNode<T> | null {
-    let node = this.root
-    while (node) {
-      if (val < node.val) node = node.left
-      else if (val > node.val) node = node.right
-      else return node
+  const count = (s: string) => {
+    const map = new Map<string, number>();
+    for (const ch of s) {
+      const key = ignoreCase ? ch.toLowerCase() : ch;
+      if (ignoreSpaces && key === ' ') continue;
+      if (ignorePunctuation && !/[A-Za-z0-9]/.test(key)) continue;
+      map.set(key, (map.get(key) ?? 0) + 1);
     }
-    return null
+    return map;
+  };
+
+  const aMap = count(a);
+  const bMap = count(b);
+
+  if (aMap.size !== bMap.size) return false; // quick early exit
+
+  for (const [char, aCount] of aMap.entries()) {
+    if (bMap.get(char) !== aCount) return false;
   }
 
-  /* ===================== INSERT ===================== */
-  insert(val: T): void {
-    const newNode = new RBNode(val)          // starts RED
-    let y: RBNode<T> | null = null
-    let x = this.root
-
-    while (x) {
-      y = x
-      x = val < x.val ? x.left : x.right
-    }
-
-    newNode.parent = y
-    if (!y) {                               // tree was empty
-      this.root = newNode
-    } else if (val < y.val) {
-      y.left = newNode
-    } else {
-      y.right = newNode
-    }
-
-    this.insertFixup(newNode)
-  }
-
-  private insertFixup(node: RBNode<T>) {
-    while (node.parent && node.parent.color === Color.RED) {
-      const gp = node.parent.parent!
-      if (node.parent === gp.left) {
-        const uncle = gp.right
-        if (uncle && uncle.color === Color.RED) {
-          // Case 1 – recolor
-          node.parent.color = Color.BLACK
-          uncle.color = Color.BLACK
-          gp.color = Color.RED
-          node = gp
-        } else {
-          if (node === node.parent.right) {
-            // Case 2 – left rotate at parent
-            node = node.parent
-            this.rotateLeft(node)
-          }
-          // Case 3 – right rotate at grandparent
-          node.parent!.color = Color.BLACK
-          gp.color = Color.RED
-          this.rotateRight(gp)
-        }
-      } else {
-        // Mirror of above (swap left/right)
-        const uncle = gp.left
-        if (uncle && uncle.color === Color.RED) {
-          node.parent.color = Color.BLACK
-          uncle.color = Color.BLACK
-          gp.color = Color.RED
-          node = gp
-        } else {
-          if (node === node.parent.left) {
-            node = node.parent
-            this.rotateRight(node)
-          }
-          node.parent!.color = Color.BLACK
-          gp.color = Color.RED
-          this.rotateLeft(gp)
-        }
-      }
-    }
-    this.root!.color = Color.BLACK
-  }
-
-  /* ===================== ROTAIONS ===================== */
-  private rotateLeft(x: RBNode<T>) {
-    const y = x.right!
-    x.right = y.left
-    if (y.left) y.left.parent = x
-    y.parent = x.parent
-    if (!x.parent) this.root = y
-    else if (x === x.parent.left) x.parent.left = y
-    else x.parent.right = y
-    y.left = x
-    x.parent = y
-  }
-
-  private rotateRight(x: RBNode<T>) {
-    const y = x.left!
-    x.left = y.right
-    if (y.right) y.right.parent = x
-    y.parent = x.parent
-    if (!x.parent) this.root = y
-    else if (x === x.parent.right) x.parent.right = y
-    else x.parent.left = y
-    y.right = x
-    x.parent = y
-  }
-
-  /* ===================== DELETE (stub) ===================== */
-  // A full delete implementation is longer – you can copy from a standard textbook
-  // or use an existing implementation if you only need it for production.
+  return true;
 }
-const tree = new RedBlackTree<number>()
+// Basic usage
+areAnagrams('Listen', 'Silent'); // true
 
-[10, 20, 30, 15, 5, 25].forEach(v => tree.insert(v))
+// Ignoring case & spaces
+areAnagrams('Dormitory', 'Dirty room', { ignoreSpaces: true, ignoreCase: true }); // true
 
-console.log(tree.search(15) !== null) // true
-console.log(tree.search(99) === null) // true
+// Fast version with punctuation handling
+areAnagramsFast("A!b@c#d", "c b a d", { ignorePunctuation: true, ignoreCase: true }); // true
