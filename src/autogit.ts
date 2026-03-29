@@ -1,56 +1,71 @@
-// 1️⃣  Node definition
-class Node<T> {
-  constructor(public value: T, public next: Node<T> | null = null) {}
+/**
+ * Returns true if `a` and `b` contain exactly the same letters,
+ * disregarding order.
+ *
+ * @param a – first string
+ * @param b – second string
+ * @param options – optional flags
+ *   - ignoreSpaces: treat spaces as insignificant
+ *   - ignorePunctuation: strip punctuation marks
+ *   - ignoreCase: treat uppercase and lowercase as the same
+ */
+export function areAnagrams(
+  a: string,
+  b: string,
+  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
+): boolean {
+  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
+
+  const sanitize = (s: string) => {
+    if (ignoreCase) s = s.toLowerCase();
+    if (ignoreSpaces) s = s.replace(/\s+/g, '');
+    if (ignorePunctuation) s = s.replace(/[^\w]/g, ''); // keep letters & digits
+    return s;
+  };
+
+  const sa = sanitize(a).split('').sort().join('');
+  const sb = sanitize(b).split('').sort().join('');
+
+  return sa === sb;
 }
+/**
+ * Frequency‑count version – O(n) time, O(σ) space  
+ * (σ = size of alphabet, constant for ASCII/Unicode)
+ */
+export function areAnagramsFast(
+  a: string,
+  b: string,
+  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
+): boolean {
+  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
 
-// 2️⃣  Queue skeleton
-class LinkedQueue<T> {
-  private head: Node<T> | null = null; // front of the queue
-  private tail: Node<T> | null = null; // rear of the queue
-  private _size = 0;
-
-  // 3️⃣  Enqueue: add to the tail
-  enqueue(value: T): void {
-    const newNode = new Node(value);
-    if (this.tail) {             // queue is not empty
-      this.tail.next = newNode;
-    } else {                      // queue was empty ‑ new node is both head & tail
-      this.head = newNode;
+  const count = (s: string) => {
+    const map = new Map<string, number>();
+    for (const ch of s) {
+      const key = ignoreCase ? ch.toLowerCase() : ch;
+      if (ignoreSpaces && key === ' ') continue;
+      if (ignorePunctuation && !/[A-Za-z0-9]/.test(key)) continue;
+      map.set(key, (map.get(key) ?? 0) + 1);
     }
-    this.tail = newNode;
-    this._size++;
+    return map;
+  };
+
+  const aMap = count(a);
+  const bMap = count(b);
+
+  if (aMap.size !== bMap.size) return false; // quick early exit
+
+  for (const [char, aCount] of aMap.entries()) {
+    if (bMap.get(char) !== aCount) return false;
   }
 
-  // 4️⃣  Dequeue: remove from the head
-  dequeue(): T | undefined {
-    if (!this.head) return undefined; // nothing to pop
-
-    const removed = this.head.value;
-    this.head = this.head.next;       // advance head
-    if (!this.head) this.tail = null; // queue became empty
-
-    this._size--;
-    return removed;
-  }
-
-  // 5️⃣  Peek at the front without removing
-  peek(): T | undefined {
-    return this.head?.value;
-  }
-
-  // 6️⃣  Convenience helpers
-  size(): number   { return this._size; }
-  isEmpty(): boolean { return this._size === 0; }
+  return true;
 }
-const q = new LinkedQueue<number>();
+// Basic usage
+areAnagrams('Listen', 'Silent'); // true
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+// Ignoring case & spaces
+areAnagrams('Dormitory', 'Dirty room', { ignoreSpaces: true, ignoreCase: true }); // true
 
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.dequeue()); // 30
-console.log(q.dequeue()); // undefined (empty)
-console.log(q.isEmpty()); // true
+// Fast version with punctuation handling
+areAnagramsFast("A!b@c#d", "c b a d", { ignorePunctuation: true, ignoreCase: true }); // true
