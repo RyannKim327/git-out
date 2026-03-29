@@ -1,86 +1,39 @@
-// -----------------------------------------------------------------------------
-//  Simple DFS – TypeScript
-// -----------------------------------------------------------------------------
-
-/**
- * A graph represented as an adjacency list.
- * The keys are the node identifiers (string or number) and the values are
- * arrays of neighboring node identifiers.
- */
-type Graph = Record<string, string[]>;
-
-/**
- * Depth‑first search.
- *
- * @param graph     – The adjacency list.
- * @param start     – The node to start from.
- * @param visitAll  – If true, the function visits all components of a
- *                    disconnected graph; otherwise it stops after exploring
- *                    the component that contains `start`.
- * @returns The visited nodes in the order they were first encountered.
- */
-function depthFirstSearch(
-  graph: Graph,
-  start: string,
-  visitAll: boolean = false
-): string[] {
-  const visited = new Set<string>();
-  const order: string[] = [];
-  const stack: string[] = [start];
-
-  while (stack.length) {
-    const node = stack.pop()!;           // <-- pop top of the stack
-    if (!visited.has(node)) {
-      visited.add(node);
-      order.push(node);
-
-      // push neighbors in reverse to keep the natural traversal order
-      const neighbors = graph[node] ?? [];
-      for (let i = neighbors.length - 1; i >= 0; i--) {
-        const neighbour = neighbors[i];
-        if (!visited.has(neighbour)) stack.push(neighbour);
-      }
-    }
-  }
-
-  if (visitAll) {
-    // explore every component that hasn't been visited yet
-    for (const node of Object.keys(graph)) {
-      if (!visited.has(node)) stack.push(node);
-      while (stack.length) {
-        const cur = stack.pop()!;
-        if (!visited.has(cur)) {
-          visited.add(cur);
-          order.push(cur);
-          const neighbors = graph[cur] ?? [];
-          for (let i = neighbors.length - 1; i >= 0; i--)
-            if (!visited.has(neighbors[i])) stack.push(neighbors[i]);
-        }
-      }
-    }
-  }
-
-  return order;
+// A minimal singly‑linked‑list node for TS
+interface ListNode<T = any> {
+  value: T;
+  next: ListNode<T> | null;
 }
 
-// -----------------------------------------------------------------------------
-//  Example usage
-// -----------------------------------------------------------------------------
+// Returns the nth node from the tail (1‑based, so n = 1 gives the last node)
+// If n is larger than the length, returns null
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;           // sanity guard
 
-const sampleGraph: Graph = {
-  A: ["B", "C"],
-  B: ["D", "E"],
-  C: ["F"],
-  D: [],
-  E: ["F"],
-  F: [],
-  G: ["H"],   // disconnected component
-  H: [],
-};
+  let lead: ListNode<T> | null = head;
+  let trail: ListNode<T> | null = head;
 
-console.log("DFS from 'A' (component‐only):", depthFirstSearch(sampleGraph, "A"));
-// → [ 'A', 'B', 'D', 'E', 'F', 'C' ]
+  // Move lead n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!lead) return null;          // n > length
+    lead = lead.next;
+  }
 
-console.log("DFS from 'A' (all components):", depthFirstSearch(sampleGraph, "A", true));
-// → [ 'A', 'B', 'D', 'E', 'F', 'C', 'G', 'H' ]
+  // Advance both until lead reaches the end
+  while (lead) {
+    lead = lead.next;
+    trail = trail!.next;             // trail is guaranteed non‑null here
+  }
 
+  return trail;
+}
+// build 1 → 2 → 3 → 4 → 5
+let node5: ListNode = { value: 5, next: null };
+let node4: ListNode = { value: 4, next: node5 };
+let node3: ListNode = { value: 3, next: node4 };
+let node2: ListNode = { value: 2, next: node3 };
+let node1: ListNode = { value: 1, next: node2 };
+
+console.log(nthFromEnd(node1, 1)) // → 5
+console.log(nthFromEnd(node1, 3)) // → 3
+console.log(nthFromEnd(node1, 5)) // → 1
+console.log(nthFromEnd(node1, 6)) // → null
