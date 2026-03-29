@@ -1,27 +1,17 @@
-/**
- * Returns true if `str` reads the same forwards and backwards.
- *
- * @param str – The string you want to test.
- * @returns  boolean – palindrome status.
- */
-export function isPalindrome(str: string): boolean {
-  // Remove all non‑alphanumeric characters and ignore case.
-  const cleaned = str.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
-
-  // Two‑pointer scan is faster than reversing a long string.
-  let left = 0;
-  let right = cleaned.length - 1;
-
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) {
-      return false;
-    }
-    left++;
-    right--;
-  }
-  return true;
+interface ListNode<T> {
+    value: T;
+    next: ListNode<T> | null;
 }
-console.log(isPalindrome('racecar'));          // true
-console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
-console.log(isPalindrome('hello'));            // false
-console.log(isPalindrome(''));                 // true (empty string)
+
+function length<T>(head: ListNode<T> | null): number {
+    let count = 0;
+    for (let curr = head; curr !== null; curr = curr.next) {
+        count++;
+    }
+    return count;
+}
+const node3: ListNode<number> = { value: 3, next: null };
+const node2: ListNode<number> = { value: 2, next: node3 };
+const node1: ListNode<number> = { value: 1, next: node2 };
+
+console.log(length(node1)); // 3
