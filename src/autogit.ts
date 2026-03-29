@@ -1,35 +1,39 @@
-/**
- * Bubble sort for an array of numbers.
- * The function mutates the passed array and returns it so you can chain or immediately inspect it.
- *
- * @param arr – the array to sort
- * @returns the sorted array (same reference as `arr`)
- */
-export function bubbleSort(arr: number[]): number[] {
-  // The array’s length is used repeatedly, so cache it for speed.
-  const n = arr.length;
+// A minimal singly‑linked‑list node for TS
+interface ListNode<T = any> {
+  value: T;
+  next: ListNode<T> | null;
+}
 
-  // Outer loop – each pass pushes the next largest element to its final spot at the end.
-  // We can stop one element earlier on each pass because the last `pass` items are already sorted.
-  for (let pass = 0; pass < n - 1; pass++) {
-    // Track whether any swap happened this pass. If none, the array is sorted.
-    let swapped = false;
+// Returns the nth node from the tail (1‑based, so n = 1 gives the last node)
+// If n is larger than the length, returns null
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;           // sanity guard
 
-    // Inner loop – compare adjacent pairs and swap if out of order.
-    // We only need to go up to `n - pass - 1` because the last `pass` elements are in place.
-    for (let i = 0; i < n - pass - 1; i++) {
-      if (arr[i] > arr[i + 1]) {
-        // Simple swap using destructuring.
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
-        swapped = true;
-      }
-    }
+  let lead: ListNode<T> | null = head;
+  let trail: ListNode<T> | null = head;
 
-    // If no two elements were swapped, no more passes are required.
-    if (!swapped) break;
+  // Move lead n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!lead) return null;          // n > length
+    lead = lead.next;
   }
 
-  return arr;
+  // Advance both until lead reaches the end
+  while (lead) {
+    lead = lead.next;
+    trail = trail!.next;             // trail is guaranteed non‑null here
+  }
+
+  return trail;
 }
-const unsorted = [64, 34, 25, 12, 22, 11, 90];
-console.log(bubbleSort(unsorted));        // [11, 12, 22, 25, 34, 64, 90]
+// build 1 → 2 → 3 → 4 → 5
+let node5: ListNode = { value: 5, next: null };
+let node4: ListNode = { value: 4, next: node5 };
+let node3: ListNode = { value: 3, next: node4 };
+let node2: ListNode = { value: 2, next: node3 };
+let node1: ListNode = { value: 1, next: node2 };
+
+console.log(nthFromEnd(node1, 1)) // → 5
+console.log(nthFromEnd(node1, 3)) // → 3
+console.log(nthFromEnd(node1, 5)) // → 1
+console.log(nthFromEnd(node1, 6)) // → null
