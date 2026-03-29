@@ -1,49 +1,35 @@
-/*  Depth‑first search (BFS) that stops after exploring a given number of levels.
+/**
+ * Bubble sort for an array of numbers.
+ * The function mutates the passed array and returns it so you can chain or immediately inspect it.
  *
- *  - `Node`   – a generic representation of a graph vertex.
- *  - `getNeighbors` – a callback that returns the adjacent nodes.
- *  - `goal` – a predicate that tells whether the node is satisfactory.
- *  - `maxDepth` – how many edges away from the start we’ll consider.
- *
- *  The function yields an array of nodes in the order they were visited
- *  (first‑in, first‑out).  The result can be empty when the goal isn’t
- *  found before the depth limit.
+ * @param arr – the array to sort
+ * @returns the sorted array (same reference as `arr`)
  */
+export function bubbleSort(arr: number[]): number[] {
+  // The array’s length is used repeatedly, so cache it for speed.
+  const n = arr.length;
 
-type Node = {
-  id: string | number;
-  // … other properties
-};
+  // Outer loop – each pass pushes the next largest element to its final spot at the end.
+  // We can stop one element earlier on each pass because the last `pass` items are already sorted.
+  for (let pass = 0; pass < n - 1; pass++) {
+    // Track whether any swap happened this pass. If none, the array is sorted.
+    let swapped = false;
 
-export function breadthLimitedSearch(
-  start: Node,
-  maxDepth: number,
-  goal: (n: Node) => boolean,
-  getNeighbors: (n: Node) => Node[]
-): Node[] {
-  if (maxDepth < 0) return [];
-
-  const frontier: Array<{ node: Node; depth: number }> = [{ node: start, depth: 0 }];
-  const visited = new Set<Node>();
-  const result: Node[] = [];
-
-  while (frontier.length) {
-    const { node, depth } = frontier.shift()!; // safe pop because we always pop a value
-    if (visited.has(node)) continue;
-    visited.add(node);
-
-    result.push(node);
-    if (goal(node)) break;
-
-    // If we haven’t hit the depth ceiling, enqueue the next layer
-    if (depth < maxDepth) {
-      const neighbours = getNeighbors(node);
-      for (const neighbour of neighbours) {
-        if (!visited.has(neighbour)) {
-          frontier.push({ node: neighbour, depth: depth + 1 });
-        }
+    // Inner loop – compare adjacent pairs and swap if out of order.
+    // We only need to go up to `n - pass - 1` because the last `pass` elements are in place.
+    for (let i = 0; i < n - pass - 1; i++) {
+      if (arr[i] > arr[i + 1]) {
+        // Simple swap using destructuring.
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+        swapped = true;
       }
     }
+
+    // If no two elements were swapped, no more passes are required.
+    if (!swapped) break;
   }
-  return result;
+
+  return arr;
 }
+const unsorted = [64, 34, 25, 12, 22, 11, 90];
+console.log(bubbleSort(unsorted));        // [11, 12, 22, 25, 34, 64, 90]
