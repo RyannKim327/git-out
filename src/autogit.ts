@@ -1,34 +1,49 @@
-/**
- * Recursively binary‑searches a *sorted* array for `target`.
+/*  Depth‑first search (BFS) that stops after exploring a given number of levels.
  *
- * @param arr   Sorted array of comparable values.
- * @param target Value to locate.
- * @returns      Index of `target` in `arr`, or -1 if absent.
+ *  - `Node`   – a generic representation of a graph vertex.
+ *  - `getNeighbors` – a callback that returns the adjacent nodes.
+ *  - `goal` – a predicate that tells whether the node is satisfactory.
+ *  - `maxDepth` – how many edges away from the start we’ll consider.
+ *
+ *  The function yields an array of nodes in the order they were visited
+ *  (first‑in, first‑out).  The result can be empty when the goal isn’t
+ *  found before the depth limit.
  */
-export function binarySearchRecursive<T extends number | string>(
-  arr: T[],
-  target: T
-): number {
-  // Helper that takes start/end indices.
-  function search(start: number, end: number): number {
-    if (start > end) return -1;              // Empty slice – no hit.
 
-    const mid = Math.floor((start + end) / 2);
-    const midVal = arr[mid];
+type Node = {
+  id: string | number;
+  // … other properties
+};
 
-    if (midVal === target) return mid;       // Bingo!
-    if (midVal > target) {
-      // Target lives (potentially) in the left half.
-      return search(start, mid - 1);
+export function breadthLimitedSearch(
+  start: Node,
+  maxDepth: number,
+  goal: (n: Node) => boolean,
+  getNeighbors: (n: Node) => Node[]
+): Node[] {
+  if (maxDepth < 0) return [];
+
+  const frontier: Array<{ node: Node; depth: number }> = [{ node: start, depth: 0 }];
+  const visited = new Set<Node>();
+  const result: Node[] = [];
+
+  while (frontier.length) {
+    const { node, depth } = frontier.shift()!; // safe pop because we always pop a value
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    result.push(node);
+    if (goal(node)) break;
+
+    // If we haven’t hit the depth ceiling, enqueue the next layer
+    if (depth < maxDepth) {
+      const neighbours = getNeighbors(node);
+      for (const neighbour of neighbours) {
+        if (!visited.has(neighbour)) {
+          frontier.push({ node: neighbour, depth: depth + 1 });
+        }
+      }
     }
-    // Target is bigger – search the right half.
-    return search(mid + 1, end);
   }
-
-  return search(0, arr.length - 1);
+  return result;
 }
-const data = [3, 7, 12, 17, 25, 36, 42, 58, 71];
-const idx  = binarySearchRecursive(data, 25);
-
-console.log(idx); // → 4
-console.log(binarySearchRecursive(data, 13)); // → -1
