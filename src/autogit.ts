@@ -1,81 +1,86 @@
-// 0‑based directed graph
-export type Graph = number[][];   // graph[u] = list of vertices that u points to
+// -----------------------------------------------------------------------------
+//  Simple DFS – TypeScript
+// -----------------------------------------------------------------------------
+
 /**
- * Returns an array of strongly connected components.
- * Each component is an array of vertex indices, in the order they were popped.
+ * A graph represented as an adjacency list.
+ * The keys are the node identifiers (string or number) and the values are
+ * arrays of neighboring node identifiers.
  */
-export function tarjanSCC(graph: Graph): number[][] {
-  const n = graph.length;
-  const indices = new Array<number>(n).fill(-1);   // -1 = unvisited
-  const lowlink = new Array<number>(n).fill(0);
-  const onStack = new Array<boolean>(n).fill(false);
-  const stack: number[] = [];
+type Graph = Record<string, string[]>;
 
-  const sccs: number[][] = [];
-  let nextIdx = 0;
+/**
+ * Depth‑first search.
+ *
+ * @param graph     – The adjacency list.
+ * @param start     – The node to start from.
+ * @param visitAll  – If true, the function visits all components of a
+ *                    disconnected graph; otherwise it stops after exploring
+ *                    the component that contains `start`.
+ * @returns The visited nodes in the order they were first encountered.
+ */
+function depthFirstSearch(
+  graph: Graph,
+  start: string,
+  visitAll: boolean = false
+): string[] {
+  const visited = new Set<string>();
+  const order: string[] = [];
+  const stack: string[] = [start];
 
-  function strongConnect(v: number) {
-    // 1️⃣  Discovery
-    indices[v] = lowlink[v] = nextIdx++;
-    stack.push(v);
-    onStack[v] = true;
+  while (stack.length) {
+    const node = stack.pop()!;           // <-- pop top of the stack
+    if (!visited.has(node)) {
+      visited.add(node);
+      order.push(node);
 
-    // 2️⃣  Explore neighbors
-    for (const w of graph[v]) {
-      if (indices[w] === -1) {
-        // w has not been visited – recurse
-        strongConnect(w);
-        lowlink[v] = Math.min(lowlink[v], lowlink[w]);
-      } else if (onStack[w]) {
-        // w is on stack → back‑edge
-        lowlink[v] = Math.min(lowlink[v], indices[w]);
+      // push neighbors in reverse to keep the natural traversal order
+      const neighbors = graph[node] ?? [];
+      for (let i = neighbors.length - 1; i >= 0; i--) {
+        const neighbour = neighbors[i];
+        if (!visited.has(neighbour)) stack.push(neighbour);
       }
     }
+  }
 
-    // 3️⃣  Root check
-    if (lowlink[v] === indices[v]) {
-      const component: number[] = [];
-      let w: number;
-      do {
-        w = stack.pop()!;
-        onStack[w] = false;
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
+  if (visitAll) {
+    // explore every component that hasn't been visited yet
+    for (const node of Object.keys(graph)) {
+      if (!visited.has(node)) stack.push(node);
+      while (stack.length) {
+        const cur = stack.pop()!;
+        if (!visited.has(cur)) {
+          visited.add(cur);
+          order.push(cur);
+          const neighbors = graph[cur] ?? [];
+          for (let i = neighbors.length - 1; i >= 0; i--)
+            if (!visited.has(neighbors[i])) stack.push(neighbors[i]);
+        }
+      }
     }
   }
 
-  // kick off DFS from every unvisited vertex
-  for (let v = 0; v < n; v++) {
-    if (indices[v] === -1) {
-      strongConnect(v);
-    }
-  }
-
-  return sccs;
+  return order;
 }
-const graph: Graph = [
-  [1],          // 0 → 1
-  [2],          // 1 → 2
-  [0, 3],       // 2 → 0, 2 → 3
-  [4],          // 3 → 4
-  [5, 6],       // 4 → 5, 4 → 6
-  [3],          // 5 → 3
-  [4]           // 6 → 4
-];
 
-const sccs = tarjanSCC(graph);
-console.log(sccs);
-// Expected output (order of components may vary):
-// [
-//   [0, 1, 2],   // one SCC (0↔1↔2)
-//   [3],         // single node
-//   [4],         // single node
-//   [5],         // single node
-//   [6]          // single node
-// ]
-// A cycle of length 5
-const cycle: Graph = [ [1], [2], [3], [4], [0] ];
-console.assert(tarjanSCC(cycle).length === 1 &&
-               tarjanSCC(cycle)[0].length === 5, 'Cycle should be one SCC');
+// -----------------------------------------------------------------------------
+//  Example usage
+// -----------------------------------------------------------------------------
+
+const sampleGraph: Graph = {
+  A: ["B", "C"],
+  B: ["D", "E"],
+  C: ["F"],
+  D: [],
+  E: ["F"],
+  F: [],
+  G: ["H"],   // disconnected component
+  H: [],
+};
+
+console.log("DFS from 'A' (component‐only):", depthFirstSearch(sampleGraph, "A"));
+// → [ 'A', 'B', 'D', 'E', 'F', 'C' ]
+
+console.log("DFS from 'A' (all components):", depthFirstSearch(sampleGraph, "A", true));
+// → [ 'A', 'B', 'D', 'E', 'F', 'C', 'G', 'H' ]
 
