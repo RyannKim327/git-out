@@ -1,57 +1,71 @@
-/**
- * Heap sort – sorts the array *in place* in ascending order.
- *
- * @param arr - mutable array of comparable values
- */
-export function heapSort<T>(arr: T[], cmp: (a: T, b: T) => number = defaultCmp): void {
-  const n = arr.length;
+// src/api/remote.ts
+import { NativeModules, NativeEventEmitter } from 'react-native';
 
-  /** Default comparator for numbers / strings */
-  function defaultCmp(a: T, b: T): number {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  }
+const { AndroidAsyncTask } = NativeModules;
 
-  /* ---------- heapify ----------
-   *  Rearranges subtree rooted at `i` so that
-   *  arr[i] is the largest of the subtree.
-   *  `size` is the effective heap size.
-   */
-  const heapify = (i: number, size: number): void => {
-    let largest = i;
-    const left  = 2 * i + 1;
-    const right = 2 * i + 2;
-
-    if (left < size && cmp(arr[left], arr[largest]) > 0)
-      largest = left;
-
-    if (right < size && cmp(arr[right], arr[largest]) > 0)
-      largest = right;
-
-    if (largest !== i) {
-      [arr[i], arr[largest]] = [arr[largest], arr[i]];
-      heapify(largest, size);       // continue down
+// -----------------------------------------------------------------
+// 1️⃣  The simple JS/TS side: an async fetch helper
+// -----------------------------------------------------------------
+export async function loadRemoteJson(url: string): Promise<any> {
+  try {
+    const response = await fetch(url, { method: 'GET' });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} – ${response.statusText}`);
     }
-  };
-
-  /* ---------- 1. build max‑heap ---------- */
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-    heapify(i, n);
-  }
-
-  /* ---------- 2. extract max repeatedly ---------- */
-  for (let size = n; size > 1; size--) {
-    // Move current max to the end.
-    [arr[0], arr[size - 1]] = [arr[size - 1], arr[0]];
-
-    // Restore heap property on the reduced heap.
-    heapify(0, size - 1);
+    const payload = await response.json();
+    return payload;
+  } catch (err) {
+    console.error('loadRemoteJson error:', err);
+    throw err;
   }
 }
 
-/* ---------- Usage example ---------- */
-const data = [5, 3, 8, 4, 1, 9, 2];
-heapSort(data);          // in‑place
-console.log(data);       // [1, 2, 3, 4, 5, 8, 9]
-heapSort(array);          // sorts in place, ascending
+// -----------------------------------------------------------------
+// 2️⃣  The bridge to Android (AsyncTask)
+// -----------------------------------------------------------------
+// On Android, create a module that exposes `runAsyncTask`
+// which internally spawns an AsyncTask that returns a JSON string.
+
+export function runAndroidTask(
+  taskName: string,
+  args: Record<string, any>
+): Promise<any> {
+  // The native module returns a Promise that resolves with a string
+  return AndroidAsyncTask.runAsyncTask(taskName, args).then((result: string) => {
+    try {
+      return JSON.parse(result);
+    } catch (err) {
+      console.warn('Failed to parse JSON from Android:', err);
+      throw err;
+    }
+  });
+}
+
+// -----------------------------------------------------------------
+// 3️⃣  Example usage (e.g. inside a component)
+// -----------------------------------------------------------------
+/*
+import React, { useEffect, useState } from 'react';
+import { View, Text } from 'react-native';
+import { loadRemoteJson, runAndroidTask } from './api/remote';
+
+export default function Demo() {
+  const [data, setData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Option A – vanilla fetch
+    loadRemoteJson('https://jsonplaceholder.typicode.com/todos/1')
+      .then(setData)
+      .catch(err => setError(err.message));
+
+    // Option B – delegate to Android AsyncTask
+    // runAndroidTask('fetchTodo', { id: 1 })
+    //   .then(setData)
+    //   .catch(err => setError(err.message));
+  }, []);
+
+  if (error) return <View><Text>❌ {error}</Text></View>;
+  return data ? <Text>✅ {JSON.stringify(data)}</Text> : <Text>⏳ Loading…</Text>;
+}
+*/
