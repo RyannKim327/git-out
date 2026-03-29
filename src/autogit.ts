@@ -1,39 +1,62 @@
-// A minimal singly‑linked‑list node for TS
-interface ListNode<T = any> {
-  value: T;
-  next: ListNode<T> | null;
-}
+/**
+ * Quick‑sort a mutable array in‑place.
+ *
+ * @template T The element type to sort.
+ * @param array    The array to sort.
+ * @param compare  Optional comparator:
+ *                 -<0 if a < b
+ *                  0 if a == b
+ *                 >0 if a > b
+ *                  Defaults to the built‑in `<`/`>` for primitive types.
+ */
+function quickSort<T>(array: T[], compare?: (a: T, b: T) => number): void {
+  const cmp = compare ?? defaultCompare;
 
-// Returns the nth node from the tail (1‑based, so n = 1 gives the last node)
-// If n is larger than the length, returns null
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;           // sanity guard
+  // Public wrapper that starts the recursive routine.
+  sort(0, array.length - 1);
 
-  let lead: ListNode<T> | null = head;
-  let trail: ListNode<T> | null = head;
-
-  // Move lead n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!lead) return null;          // n > length
-    lead = lead.next;
+  /** Recursive partitioning */
+  function sort(left: number, right: number): void {
+    if (left >= right) return;          // one element or invalid range
+    const pivotIdx = partition(left, right);
+    sort(left, pivotIdx - 1);            // left partition
+    sort(pivotIdx + 1, right);           // right partition
   }
 
-  // Advance both until lead reaches the end
-  while (lead) {
-    lead = lead.next;
-    trail = trail!.next;             // trail is guaranteed non‑null here
+  /**
+   * Partition the sub‑array [left … right] around a pivot.
+   * Returns the final pivot index so the caller can split.
+   */
+  function partition(left: number, right: number): number {
+    const pivotIndex = right;            // choose the last element as pivot
+    const pivotValue = array[pivotIndex];
+    let storeIndex = left;               // first place where a value < pivot will go
+
+    for (let i = left; i < right; i++) {
+      if (cmp(array[i], pivotValue) < 0) {
+        [array[i], array[storeIndex]] = [array[storeIndex], array[i]];
+        storeIndex++;
+      }
+    }
+    // Move pivot to its final place
+    [array[storeIndex], array[pivotIndex]] = [array[pivotIndex], array[storeIndex]];
+    return storeIndex;
   }
-
-  return trail;
 }
-// build 1 → 2 → 3 → 4 → 5
-let node5: ListNode = { value: 5, next: null };
-let node4: ListNode = { value: 4, next: node5 };
-let node3: ListNode = { value: 3, next: node4 };
-let node2: ListNode = { value: 2, next: node3 };
-let node1: ListNode = { value: 1, next: node2 };
 
-console.log(nthFromEnd(node1, 1)) // → 5
-console.log(nthFromEnd(node1, 3)) // → 3
-console.log(nthFromEnd(node1, 5)) // → 1
-console.log(nthFromEnd(node1, 6)) // → null
+/** Default comparator for primitive types. */
+function defaultCompare(a: unknown, b: unknown): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
+const nums = [3, 8, 4, 1, 9, 5];
+quickSort(nums);               // sorts in place
+console.log(nums);             // [1, 3, 4, 5, 8, 9]
+
+const words = ["banana", "apple", "pear"];
+quickSort(words);              // defaults to lexical order
+console.log(words);            // ["apple", "banana", "pear"]
+
+// Custom order: descending numbers
+quickSort(nums, (a, b) => b - a);
+console.log(nums);             // [9, 8, 5, 4, 3, 1]
